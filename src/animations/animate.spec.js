@@ -1,8 +1,8 @@
-import { dealoc } from "../../shared/dom.js";
-import { Angular } from "../../angular.js";
-import { isObject } from "../../shared/utils.js";
-import { isFunction } from "../../shared/utils.js";
-import { createInjector } from "../di/injector.js";
+import { dealoc } from "../shared/dom.js";
+import { Angular } from "../angular.js";
+import { isObject } from "../shared/utils.js";
+import { isFunction } from "../shared/utils.js";
+import { createInjector } from "../core/di/injector.js";
 
 describe("$animate", () => {
   describe("without animation", () => {
@@ -28,6 +28,10 @@ describe("$animate", () => {
           $animate = _$animate_;
         },
       );
+    });
+
+    afterEach(() => {
+      dealoc(element);
     });
 
     it("should add element at the start of enter animation", () => {
