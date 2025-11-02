@@ -168,6 +168,7 @@ export class Scope {
    */
   $postUpdate(fn: Function): void;
   $destroy(): void;
+  $flushQueue(): void;
   /**
    * Searches the scope instance
    *

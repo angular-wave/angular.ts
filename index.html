@@ -66,6 +66,36 @@
           .controller("DemoCtrl", Demo);
       });
     </script>
+
+    <style>
+      .fade {
+        background-color: red;
+      }
+      /* The starting CSS styles for the enter animation */
+      .fade.ng-enter {
+        transition: 0.5s linear all;
+        background-color: unset;
+        opacity: 0;
+      }
+
+      /* The finishing CSS styles for the enter animation */
+      .fade.ng-enter.ng-enter-active {
+        opacity: 1;
+        background-color: red;
+      }
+
+      /* The starting CSS styles for the leave animation */
+      .fade.ng-leave {
+        transition: 0.5s linear all;
+        opacity: 1;
+      }
+
+      /* The finishing CSS styles for the leave animation */
+      .fade.ng-leave.ng-leave-active {
+        opacity: 0;
+        background-color: unset;
+      }
+    </style>
   </head>
   <body ng-app="todo">
     <div ng-controller="TodoCtrl as $ctrl">
@@ -82,10 +112,10 @@
         <button type="submit">Add</button>
       </form>
 
-      <button ng-get="/mock/jsonobject" target="$ctrl.person" trigger="load">
+      <button ng-get="/mock/div" target="#p" trigger="click" animate="true">
         Get
       </button>
-      {{ $ctrl.person.name }} {{ $ctrl.person.age }}
+      <div id="p"></div>
     </div>
   </body>
 </html>

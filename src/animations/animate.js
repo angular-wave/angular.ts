@@ -389,7 +389,7 @@ export function AnimateProvider($provide) {
          *
          * @param {Element} element - the element which will be inserted into the DOM
          * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
-         * @param {Element} after - after the sibling element after which the element will be appended
+         * @param {Element} [after] - after the sibling element after which the element will be appended
          * @param {AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
          * @returns {import('./animate-runner.js').AnimateRunner} the animation runner
          */

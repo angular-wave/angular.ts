@@ -4,7 +4,7 @@ import { hasAnimate } from "../../shared/utils.js";
 ngIfDirective.$inject = ["$animate"];
 /**
  * @param {*}  $animate
- * @returns {import("../../interface.ts").Directive}
+ * @returns {ng.Directive}
  */
 export function ngIfDirective($animate) {
   return {
@@ -14,10 +14,10 @@ export function ngIfDirective($animate) {
     restrict: "A",
     /**
      *
-     * @param {import("../../core/scope/scope.js").Scope} $scope
+     * @param {ng.Scope} $scope
      * @param {Element} $element
-     * @param {import("../../core/compile/attributes.js").Attributes} $attr
-     * @param {Object} _ctrl
+     * @param {ng.Attributes} $attr
+     * @param {*} _ctrl
      * @param {*} $transclude
      */
     link($scope, $element, $attr, _ctrl, $transclude) {
@@ -29,7 +29,7 @@ export function ngIfDirective($animate) {
 
       let previousElements;
 
-      $scope.$watch($attr["ngIf"], (value) => {
+      $scope.$watch($attr.ngIf, (value) => {
         if (value) {
           if (!childScope) {
             $transclude((clone, newScope) => {

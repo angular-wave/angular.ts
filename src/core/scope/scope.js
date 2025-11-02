@@ -194,6 +194,7 @@ export class Scope {
       $new: this.$new.bind(this),
       $newIsolate: this.$newIsolate.bind(this),
       $destroy: this.$destroy.bind(this),
+      $flushQueue: this.$flushQueue.bind(this),
       $eval: this.$eval.bind(this),
       $apply: this.$apply.bind(this),
       $postUpdate: this.$postUpdate.bind(this),
@@ -1165,6 +1166,12 @@ export class Scope {
       }
     } catch (e) {
       $exceptionHandler(e);
+    }
+  }
+
+  $flushQueue() {
+    while ($postUpdateQueue.length) {
+      $postUpdateQueue.shift()();
     }
   }
 

@@ -129,7 +129,7 @@ export function stripCommentsFromElement(element) {
  * @returns {Node}
  */
 export function extractElementNode(element) {
-  if (!element) return /** @type {Node} */ (element);
+  if (!element || !Array.isArray(element)) return /** @type {Node} */ (element);
   for (let i = 0; i < /** @type {NodeList} */ (element).length; i++) {
     const elm = element[i];
     if (elm.nodeType === Node.ELEMENT_NODE) {

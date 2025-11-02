@@ -23,6 +23,7 @@ function defineDirective(method, attrOverride) {
     $.$parse,
     $.$state,
     $.$sse,
+    $.$animate,
   ];
   return directive;
 }
@@ -66,6 +67,8 @@ export function getEventNameForElement(element) {
  * @returns {ng.DirectiveFactory}
  */
 export function createHttpDirective(method, attrName) {
+  let content = undefined;
+
   /**
    * @param {ng.HttpService} $http
    * @param {ng.CompileService} $compile
@@ -75,7 +78,7 @@ export function createHttpDirective(method, attrName) {
    * @param {ng.SseService} $sse
    * @returns {ng.Directive}
    */
-  return function ($http, $compile, $log, $parse, $state, $sse) {
+  return function ($http, $compile, $log, $parse, $state, $sse, $animate) {
     /**
      * Handles DOM manipulation based on a swap strategy and server-rendered HTML.
      *
@@ -86,6 +89,10 @@ export function createHttpDirective(method, attrName) {
      * @param {Element} element
      */
     function handleSwapResponse(html, swap, scope, attrs, element) {
+      let animationEnabled = false;
+      if (attrs.animate) {
+        animationEnabled = true;
+      }
       let nodes = [];
       if (!["textcontent", "delete", "none"].includes(swap)) {
         if (!html) return;
@@ -118,7 +125,22 @@ export function createHttpDirective(method, attrName) {
 
       switch (swap) {
         case "innerHTML":
-          target.replaceChildren(...nodes);
+          if (animationEnabled) {
+            if (content) {
+              $animate.leave(content).done(() => {
+                content = nodes[0];
+                $animate.enter(nodes[0], target);
+                scope.$flushQueue();
+              });
+              scope.$flushQueue();
+            } else {
+              content = nodes[0];
+              $animate.enter(nodes[0], target);
+              scope.$flushQueue();
+            }
+          } else {
+            target.replaceChildren(...nodes);
+          }
           break;
 
         case "outerHTML": {
@@ -126,7 +148,21 @@ export function createHttpDirective(method, attrName) {
           if (!parent) return;
           const frag = document.createDocumentFragment();
           nodes.forEach((n) => frag.appendChild(n));
-          parent.replaceChild(frag, target);
+          if (animationEnabled) {
+            const placeholder = document.createComment("placeholder");
+            target.parentNode.insertBefore(placeholder, target.nextSibling);
+            $animate.leave(target).done(() => {
+              const insertedNodes = Array.from(frag.childNodes);
+              insertedNodes.forEach((n) =>
+                $animate.enter(n, parent, placeholder),
+              );
+              content = insertedNodes;
+              scope.$flushQueue();
+            });
+            scope.$flushQueue();
+          } else {
+            parent.replaceChild(frag, target);
+          }
           break;
         }
 

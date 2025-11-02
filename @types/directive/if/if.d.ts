@@ -1,10 +1,8 @@
 /**
  * @param {*}  $animate
- * @returns {import("../../interface.ts").Directive}
+ * @returns {ng.Directive}
  */
-export function ngIfDirective(
-  $animate: any,
-): import("../../interface.ts").Directive;
+export function ngIfDirective($animate: any): ng.Directive;
 export namespace ngIfDirective {
   let $inject: string[];
 }

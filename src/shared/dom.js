@@ -1,5 +1,6 @@
 import { concat, hasOwn, isDefined, isObject } from "./utils.js";
 import { Cache } from "./cache.js";
+import { extractElementNode } from "../animations/shared.js";
 
 /** @type {number} */
 let jqId = 1;
@@ -680,11 +681,7 @@ export function domInsert(element, parentElement, afterElement) {
   // just stick to using the parent element as the anchor
   if (afterElement) {
     const afterNode = extractElementNode(afterElement);
-    if (
-      afterNode &&
-      !afterNode.parentNode &&
-      !afterNode.previousElementSibling
-    ) {
+    if (afterNode && !afterNode.parentNode && !afterNode.previousSibling) {
       afterElement = null;
     }
   }
@@ -692,16 +689,6 @@ export function domInsert(element, parentElement, afterElement) {
     afterElement.after(element);
   } else {
     parentElement.prepend(element);
-  }
-}
-
-function extractElementNode(element) {
-  const { length } = element;
-  for (let i = 0; i < length; i++) {
-    const elm = element[i];
-    if (elm.nodeType === Node.ELEMENT_NODE) {
-      return elm;
-    }
   }
 }
 

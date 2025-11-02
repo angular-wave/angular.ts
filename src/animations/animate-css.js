@@ -624,7 +624,9 @@ export function AnimateCssProvider() {
 
           if (events && events.length) {
             // Remove the transitionend / animationend listener(s)
-            element.off(events.join(" "), onAnimationProgress);
+            events.forEach((i) =>
+              element.removeEventListener(i, onAnimationProgress),
+            );
           }
 
           // Cancel the fallback closing timeout and remove the timer data
