@@ -1,4 +1,4 @@
-import { dealoc } from "../shared/dom.js";
+import { createElementFromHTML, dealoc } from "../shared/dom.js";
 import { Angular } from "../angular.js";
 import { isObject } from "../shared/utils.js";
 import { isFunction } from "../shared/utils.js";
@@ -6,8 +6,7 @@ import { createInjector } from "../core/di/injector.js";
 
 describe("$animate", () => {
   describe("without animation", () => {
-    let dummy = document.getElementById("app");
-    let element;
+    let element = document.getElementById("app");
     let $compile;
     let $rootElement;
     let $rootScope;
@@ -18,12 +17,11 @@ describe("$animate", () => {
     beforeEach(() => {
       window.angular = new Angular();
       defaultModule = window.angular.module("defaultModule", ["ng"]);
-      injector = window.angular.bootstrap(dummy, ["defaultModule"]);
+      injector = window.angular.bootstrap(element, ["defaultModule"]);
       injector.invoke(
         (_$compile_, _$rootElement_, _$rootScope_, _$animate_) => {
           $compile = _$compile_;
           $rootScope = _$rootScope_;
-          element = $compile("<div></div>")($rootScope);
           $rootElement = _$rootElement_;
           $animate = _$animate_;
         },
@@ -43,13 +41,11 @@ describe("$animate", () => {
 
     it("should enter the element to the start of the parent container", () => {
       for (let i = 0; i < 5; i++) {
-        element.append(`<div> ${i}</div>`);
+        element.append(createElementFromHTML(`<div>${i}</div>`));
       }
-
-      const child = "<div>first</div>";
+      const child = createElementFromHTML("<div>first</div>");
       $animate.enter(child, element);
-
-      expect(element.textContent).toEqual("first 0 1 2 3 4");
+      expect(element.textContent).toEqual("first01234");
     });
 
     it("should remove the element at the end of leave animation", () => {
