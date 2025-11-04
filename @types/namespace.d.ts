@@ -52,6 +52,10 @@ import {
   LinkFnMapping as TLinkFnMapping,
   CompositeLinkFn as TCompositeLinkFn,
 } from "./core/compile/inteface.ts";
+import {
+  WorkerConnection as TWorkerConnection,
+  WorkerConfig as TWorkerConfig,
+} from "./services/worker/interface.ts";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -101,5 +105,7 @@ declare global {
     type ErrorHandlingConfig = TErrorHandlingConfig;
     type WindowService = Window;
     type DocumentService = Document;
+    type WorkerConfig = TWorkerConfig;
+    type WorkerConnection = TWorkerConnection;
   }
 }

@@ -1,3 +1,5 @@
+import { WorkerConfig } from "./services/worker/interface.ts";
+
 export { angular } from "./index.js";
 
 import { Angular as TAngular } from "./angular.js";
@@ -56,6 +58,10 @@ import {
   LinkFnMapping as TLinkFnMapping,
   CompositeLinkFn as TCompositeLinkFn,
 } from "./core/compile/inteface.ts";
+import {
+  WorkerConnection as TWorkerConnection,
+  WorkerConfig as TWorkerConfig,
+} from "./services/worker/interface.ts";
 
 /* ────────────────────────────────────────────────
    Runtime global initialization
@@ -122,5 +128,7 @@ declare global {
     export type ErrorHandlingConfig = TErrorHandlingConfig;
     export type WindowService = Window;
     export type DocumentService = Document;
+    export type WorkerConfig = TWorkerConfig;
+    export type WorkerConnection = TWorkerConnection;
   }
 }

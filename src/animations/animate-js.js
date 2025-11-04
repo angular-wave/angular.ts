@@ -9,14 +9,14 @@ import { $injectTokens as $t } from "../injection-tokens.js";
 // TODO: use caching here to speed things up for detection
 // TODO: add documentation
 
-AnimateJsProvider.$inject = ["$animateProvider"];
+AnimateJsProvider.$inject = [$t.$animate + "Provider"];
 export function AnimateJsProvider($animateProvider) {
   this.$get = [
     $t.$injector,
     "$$AnimateRunner",
     /**
      *
-     * @param {import("../core/di/internal-injector").InjectorService} $injector
+     * @param {ng.InjectorService} $injector
      * @param {*} $$AnimateRunner
      * @returns
      */

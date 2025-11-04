@@ -4,7 +4,7 @@ export class AnimateJsProvider {
   $get: (
     | string
     | ((
-        $injector: any,
+        $injector: ng.InjectorService,
         $$AnimateRunner: any,
       ) => (
         element: any,

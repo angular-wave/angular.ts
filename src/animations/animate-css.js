@@ -141,6 +141,7 @@ function registerRestorableStyles(backup, node, properties) {
 }
 
 export function AnimateCssProvider() {
+  let activeClasses;
   this.$get = [
     "$$AnimateRunner",
     "$$animateCache",
@@ -484,10 +485,7 @@ export function AnimateCssProvider() {
           return closeAndReturnNoopAnimator();
         }
 
-        let activeClasses = pendClasses(
-          preparationClasses,
-          ACTIVE_CLASS_SUFFIX,
-        );
+        activeClasses = pendClasses(preparationClasses, ACTIVE_CLASS_SUFFIX);
 
         if (options.delay != null) {
           if (typeof options.delay !== "boolean") {

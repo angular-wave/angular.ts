@@ -137,6 +137,8 @@ import { ngInjectDirective } from "./directive/inject/inject.js";
 import { ngElDirective } from "./directive/el/el.js";
 import { SseProvider } from "./services/sse/sse.js";
 import { ngViewportDirective } from "./directive/viewport/viewport.js";
+import { ngWorkerDirective } from "./directive/worker/worker.js";
+import { WorkerProvider } from "./services/worker/worker.js";
 
 /**
  * Initializes core `ng` module.
@@ -216,6 +218,7 @@ export function registerNgModule(angular) {
               ngValue: ngValueDirective,
               ngModelOptions: ngModelOptionsDirective,
               ngViewport: ngViewportDirective,
+              ngWorker: ngWorkerDirective,
             })
             .directive({
               input: hiddenInputBrowserCacheDirective,
@@ -283,6 +286,7 @@ export function registerNgModule(angular) {
             $url: UrlService,
             $stateRegistry: StateRegistryProvider,
             $eventBus: PubSubProvider,
+            $worker: WorkerProvider,
           });
         },
       ],
