@@ -3,6 +3,7 @@ import {
   callBackAfterFirst,
   isDefined,
   isObject,
+  isString,
   toKeyValue,
   wait,
 } from "../../shared/utils.js";
@@ -96,16 +97,6 @@ export function createHttpDirective(method, attrName) {
       let nodes = [];
       if (!["textcontent", "delete", "none"].includes(swap)) {
         if (!html) return;
-
-        if (isObject(html)) {
-          if (attrs.target) {
-            scope.$eval(`${attrs.target} = ${JSON.stringify(html)}`);
-          } else {
-            scope.$merge(html);
-          }
-          return;
-        }
-
         const compiled = $compile(html)(scope);
         nodes =
           compiled instanceof DocumentFragment
@@ -324,8 +315,15 @@ export function createHttpDirective(method, attrName) {
               }
             }
 
-            // simplified call (no long parameter list)
-            handleSwapResponse(html, swap, scope, attrs, element);
+            if (isObject(html)) {
+              if (attrs.target) {
+                scope.$eval(`${attrs.target} = ${JSON.stringify(html)}`);
+              } else {
+                scope.$merge(html);
+              }
+            } else if (isString(html)) {
+              handleSwapResponse(html, swap, scope, attrs, element);
+            }
           };
 
           if (isDefined(attrs.delay)) {
