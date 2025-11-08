@@ -6,6 +6,9 @@ export * from "./services/location/location.js";
 export * from "./services/pubsub/pubsub.js";
 export * from "./services/template-cache/template-cache.js";
 export * from "./index.js";
+export * from "./angular.js";
+export * from "./core/di/internal-injector.js";
+export * from "./core/scope/scope.js";
 
 import { Attributes } from "./core/compile/attributes.js";
 import { Scope } from "./core/scope/scope.js";

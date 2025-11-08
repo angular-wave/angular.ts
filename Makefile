@@ -37,9 +37,9 @@ types:
 TYPEDOC_DIR = docs/static/typedoc
 doc: 
 	@rm -rf $(TYPEDOC_DIR)
-	@npm run generate-docs
+	@node_modules/.bin/typedoc
 	@npx prettier ./typedoc --write
-	mv typedoc $(TYPEDOC_DIR)
+	@mv typedoc $(TYPEDOC_DIR)
 
 serve:
 	@npm run serve

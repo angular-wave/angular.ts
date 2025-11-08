@@ -61,7 +61,7 @@ export class Angular {
     modules?: Array<string | any>,
     config?: import("./interface.ts").AngularBootstrapConfig,
   ): import("./core/di/internal-injector.js").InjectorService;
-  $injector: import("./core/di/internal-injector.js").InjectorService;
+  $injector: import("./interface.ts").InjectorService;
   /**
    * @param {any[]} modules
    * @param {boolean?} strictDi
