@@ -1,4 +1,4 @@
-/* Version: 0.9.9 - October 28, 2025 22:08:28 */
+/* Version: 0.10.0 - November 8, 2025 10:37:13 */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -912,7 +912,7 @@
     return arg;
   }
 
-  /** @type {import("./interface.js").ErrorHandlingConfig} */
+  /** @type {import("./interface.ts").ErrorHandlingConfig} */
   const minErrConfig = {
     objectMaxDepth: 5,
     urlErrorParamsEnabled: true,
@@ -1203,6 +1203,382 @@
    * @type {Map<number, import('../interface.ts').ExpandoStore>}
    */
   const Cache = new Map();
+
+  /**
+   * @readonly
+   * @enum {number}
+   */
+  const ASTType = {
+    Program: 1,
+    ExpressionStatement: 2,
+    AssignmentExpression: 3,
+    ConditionalExpression: 4,
+    LogicalExpression: 5,
+    BinaryExpression: 6,
+    UnaryExpression: 7,
+    CallExpression: 8,
+    MemberExpression: 9,
+    Identifier: 10,
+    Literal: 11,
+    ArrayExpression: 12,
+    Property: 13,
+    ObjectExpression: 14,
+    ThisExpression: 15,
+    LocalsExpression: 16,
+    NGValueParameter: 17,
+  };
+
+  const ADD_CLASS_SUFFIX = "-add";
+  const REMOVE_CLASS_SUFFIX = "-remove";
+  const EVENT_CLASS_PREFIX = "ng-";
+  const ACTIVE_CLASS_SUFFIX = "-active";
+  const PREPARE_CLASS_SUFFIX = "-prepare";
+
+  const NG_ANIMATE_CLASSNAME = "ng-animate";
+  const NG_ANIMATE_CHILDREN_DATA = "$$ngAnimateChildren";
+  let TRANSITION_PROP;
+  let TRANSITIONEND_EVENT;
+  let ANIMATION_PROP;
+  let ANIMATIONEND_EVENT;
+
+  // If unprefixed events are not supported but webkit-prefixed are, use the latter.
+  // Otherwise, just use W3C names, browsers not supporting them at all will just ignore them.
+  // Note: Chrome implements `window.onwebkitanimationend` and doesn't implement `window.onanimationend`
+  // but at the same time dispatches the `animationend` event and not `webkitAnimationEnd`.
+  // Register both events in case `window.onanimationend` is not supported because of that,
+  // do the same for `transitionend` as Safari is likely to exhibit similar behavior.
+  // Also, the only modern browser that uses vendor prefixes for transitions/keyframes is webkit
+  // therefore there is no reason to test anymore for other vendor prefixes:
+  // http://caniuse.com/#search=transition
+  if (
+    window.ontransitionend === undefined &&
+    window.onwebkittransitionend !== undefined
+  ) {
+    TRANSITION_PROP = "WebkitTransition";
+    TRANSITIONEND_EVENT = "webkitTransitionEnd transitionend";
+  } else {
+    TRANSITION_PROP = "transition";
+    TRANSITIONEND_EVENT = "transitionend";
+  }
+
+  if (
+    window.onanimationend === undefined &&
+    window.onwebkitanimationend !== undefined
+  ) {
+    ANIMATION_PROP = "WebkitAnimation";
+    ANIMATIONEND_EVENT = "webkitAnimationEnd animationend";
+  } else {
+    ANIMATION_PROP = "animation";
+    ANIMATIONEND_EVENT = "animationend";
+  }
+
+  const DURATION_KEY = "Duration";
+  const PROPERTY_KEY = ASTType.Property;
+  const DELAY_KEY = "Delay";
+  const TIMING_KEY = "TimingFunction";
+  const ANIMATION_ITERATION_COUNT_KEY = "IterationCount";
+  const ANIMATION_PLAYSTATE_KEY = "PlayState";
+  const SAFE_FAST_FORWARD_DURATION_VALUE = 9999;
+
+  const ANIMATION_DELAY_PROP = ANIMATION_PROP + DELAY_KEY;
+  const ANIMATION_DURATION_PROP = ANIMATION_PROP + DURATION_KEY;
+  const TRANSITION_DELAY_PROP = TRANSITION_PROP + DELAY_KEY;
+  const TRANSITION_DURATION_PROP = TRANSITION_PROP + DURATION_KEY;
+
+  const ngMinErr$1 = minErr("ng");
+  function assertArg(arg, name, reason) {
+    if (!arg) {
+      throw ngMinErr$1(
+        "areq",
+        "Argument '{0}' is {1}",
+        name || "?",
+        reason,
+      );
+    }
+    return arg;
+  }
+
+  function packageStyles(options) {
+    const styles = {};
+    if (options && (options.to || options.from)) {
+      styles.to = options.to;
+      styles.from = options.from;
+    }
+    return styles;
+  }
+
+  function pendClasses(classes, fix, isPrefix) {
+    let className = "";
+
+    classes = Array.isArray(classes)
+      ? classes
+      : classes && isString(classes) && classes.length
+        ? classes.split(/\s+/)
+        : [];
+    classes.forEach((klass, i) => {
+      if (klass && klass.length > 0) {
+        className += i > 0 ? " " : "";
+        className += isPrefix ? fix + klass : klass + fix;
+      }
+    });
+    return className;
+  }
+
+  function removeFromArray(arr, val) {
+    const index = arr.indexOf(val);
+    if (val >= 0) {
+      arr.splice(index, 1);
+    }
+  }
+
+  /**
+   *
+   * @param {NodeList|Node} element
+   * @returns {Node[]|Node|undefined}
+   */
+  function stripCommentsFromElement(element) {
+    if (element instanceof NodeList) {
+      return Array.from(element).filter((x) => x.nodeType == Node.ELEMENT_NODE);
+    } else if (element.nodeType === Node.ELEMENT_NODE) {
+      return /** @type {Node} */ (element);
+    } else {
+      return undefined;
+    }
+  }
+
+  /**
+   * @param {NodeList|Node} element
+   * @returns {Node}
+   */
+  function extractElementNode(element) {
+    if (!element || !Array.isArray(element)) return /** @type {Node} */ (element);
+    for (let i = 0; i < /** @type {NodeList} */ (element).length; i++) {
+      const elm = element[i];
+      if (elm.nodeType === Node.ELEMENT_NODE) {
+        return elm;
+      }
+    }
+  }
+
+  function applyAnimationClassesFactory() {
+    return function (element, options) {
+      if (options.addClass) {
+        element.classList.add(...options.addClass.trim().split(" "));
+        options.addClass = null;
+      }
+      if (options.removeClass) {
+        element.classList.remove(...options.removeClass.trim().split(" "));
+        options.removeClass = null;
+      }
+    };
+  }
+
+  function prepareAnimationOptions(options) {
+    options = options || {};
+    if (!options.$$prepared) {
+      let domOperation = options.domOperation || (() => {});
+      options.domOperation = function () {
+        options.$$domOperationFired = true;
+        domOperation();
+        domOperation = () => {};
+      };
+      options.$$prepared = true;
+    }
+    return options;
+  }
+
+  function applyAnimationStyles(element, options) {
+    applyAnimationFromStyles(element, options);
+    applyAnimationToStyles(element, options);
+  }
+
+  /**
+   * Applies initial animation styles to a DOM element.
+   *
+   * This function sets the element's inline styles using the properties
+   * defined in `options.from`, then clears the property to prevent reuse.
+   *
+   * @param {HTMLElement} element - The target DOM element to apply styles to.
+   * @param {{ from?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
+   */
+  function applyAnimationFromStyles(element, options) {
+    if (options.from) {
+      Object.assign(element.style, options.from);
+      options.from = null;
+    }
+  }
+
+  /**
+   * Applies final animation styles to a DOM element.
+   *
+   * This function sets the element's inline styles using the properties
+   * defined in `options.to`, then clears the property to prevent reuse.
+   *
+   * @param {HTMLElement} element - The target DOM element to apply styles to.
+   * @param {{ to?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
+   */
+  function applyAnimationToStyles(element, options) {
+    if (options.to) {
+      Object.assign(element.style, options.to);
+      options.to = null;
+    }
+  }
+
+  function mergeAnimationDetails(element, oldAnimation, newAnimation) {
+    const target = oldAnimation.options || {};
+    const newOptions = newAnimation.options || {};
+
+    const toAdd = `${target.addClass || ""} ${newOptions.addClass || ""}`;
+    const toRemove = `${target.removeClass || ""} ${newOptions.removeClass || ""}`;
+    const classes = resolveElementClasses(
+      element.getAttribute("class"),
+      toAdd,
+      toRemove,
+    );
+
+    if (newOptions.preparationClasses) {
+      target.preparationClasses = concatWithSpace(
+        newOptions.preparationClasses,
+        target.preparationClasses,
+      );
+      delete newOptions.preparationClasses;
+    }
+
+    extend(target, newOptions);
+
+    if (classes.addClass) {
+      target.addClass = classes.addClass;
+    } else {
+      target.addClass = null;
+    }
+
+    if (classes.removeClass) {
+      target.removeClass = classes.removeClass;
+    } else {
+      target.removeClass = null;
+    }
+
+    oldAnimation.addClass = target.addClass;
+    oldAnimation.removeClass = target.removeClass;
+
+    return target;
+  }
+
+  function resolveElementClasses(existing, toAdd, toRemove) {
+    const ADD_CLASS = 1;
+    const REMOVE_CLASS = -1;
+
+    const flags = {};
+    existing = splitClassesToLookup(existing);
+
+    toAdd = splitClassesToLookup(toAdd);
+    Object.keys(toAdd).forEach((key) => {
+      flags[key] = ADD_CLASS;
+    });
+
+    toRemove = splitClassesToLookup(toRemove);
+    Object.keys(toRemove).forEach((key) => {
+      flags[key] = flags[key] === ADD_CLASS ? null : REMOVE_CLASS;
+    });
+
+    const classes = {
+      addClass: "",
+      removeClass: "",
+    };
+
+    Object.entries(flags).forEach(([klass, val]) => {
+      let prop, allow;
+      if (val === ADD_CLASS) {
+        prop = "addClass";
+        allow = !existing[klass] || existing[klass + REMOVE_CLASS_SUFFIX];
+      } else if (val === REMOVE_CLASS) {
+        prop = "removeClass";
+        allow = existing[klass] || existing[klass + ADD_CLASS_SUFFIX];
+      }
+      if (allow) {
+        if (classes[prop].length) {
+          classes[prop] += " ";
+        }
+        classes[prop] += klass;
+      }
+    });
+
+    function splitClassesToLookup(classes) {
+      if (isString(classes)) {
+        classes = classes.trim().split(" ");
+      }
+
+      const obj = {};
+      if (classes) {
+        classes.forEach((klass) => {
+          // sometimes the split leaves empty string values
+          // incase extra spaces were applied to the options
+          if (klass.length) {
+            obj[klass] = true;
+          }
+        });
+      }
+      return obj;
+    }
+
+    return classes;
+  }
+
+  function applyGeneratedPreparationClasses(element, event, options) {
+    let classes = "";
+    if (event) {
+      classes = pendClasses(event, EVENT_CLASS_PREFIX, true);
+    }
+    if (options.addClass) {
+      classes = concatWithSpace(
+        classes,
+        pendClasses(options.addClass, ADD_CLASS_SUFFIX),
+      );
+    }
+    if (options.removeClass) {
+      classes = concatWithSpace(
+        classes,
+        pendClasses(options.removeClass, REMOVE_CLASS_SUFFIX),
+      );
+    }
+    if (classes.length) {
+      options.preparationClasses = classes;
+      element.className += ` ${classes}`;
+    }
+  }
+
+  function clearGeneratedClasses(element, options) {
+    if (options.preparationClasses) {
+      options.preparationClasses
+        .split(" ")
+        .forEach((cls) => element.classList.remove(cls));
+      options.preparationClasses = null;
+    }
+    if (options.activeClasses) {
+      options.activeClasses
+        .split(" ")
+        .forEach((cls) => element.classList.remove(cls));
+      options.activeClasses = null;
+    }
+  }
+
+  function blockKeyframeAnimations(node, applyBlock) {
+    const value = applyBlock ? "paused" : "";
+    const key = ANIMATION_PROP + ANIMATION_PLAYSTATE_KEY;
+    applyInlineStyle(node, [key, value]);
+    return [key, value];
+  }
+
+  function applyInlineStyle(node, styleTuple) {
+    const prop = styleTuple[0];
+    node.style[prop] = styleTuple[1];
+  }
+
+  function concatWithSpace(a, b) {
+    if (!a) return b;
+    if (!b) return a;
+    return `${a} ${b}`;
+  }
 
   /** @type {number} */
   let jqId = 1;
@@ -1725,12 +2101,8 @@
     // from the dom sometime before this code runs then let's
     // just stick to using the parent element as the anchor
     if (afterElement) {
-      const afterNode = extractElementNode$1(afterElement);
-      if (
-        afterNode &&
-        !afterNode.parentNode &&
-        !afterNode.previousElementSibling
-      ) {
+      const afterNode = extractElementNode(afterElement);
+      if (afterNode && !afterNode.parentNode && !afterNode.previousSibling) {
         afterElement = null;
       }
     }
@@ -1738,16 +2110,6 @@
       afterElement.after(element);
     } else {
       parentElement.prepend(element);
-    }
-  }
-
-  function extractElementNode$1(element) {
-    const { length } = element;
-    for (let i = 0; i < length; i++) {
-      const elm = element[i];
-      if (elm.nodeType === Node.ELEMENT_NODE) {
-        return elm;
-      }
     }
   }
 
@@ -1869,7 +2231,7 @@
     /**
      * @param {string} name - Name of the module
      * @param {Array<string>} requires - List of modules which the injector will load before the current module
-     * @param {import("../../interface.js").Injectable<any>} [configFn]
+     * @param {import("../../interface.ts").Injectable<any>} [configFn]
      */
     constructor(name, requires, configFn) {
       assert(isString(name), "name required");
@@ -1895,7 +2257,7 @@
       /** @type {!Array<Array<*>>} */
       this.configBlocks = [];
 
-      /** @type {!Array.<import("../../interface.js").Injectable<any>>} */
+      /** @type {!Array.<import("../../interface.ts").Injectable<any>>} */
       this.runBlocks = [];
 
       if (configFn) {
@@ -1999,7 +2361,7 @@
 
     /**
      * @param {string} name
-     * @param {import("../../interface.js").Injectable<any>} decorFn
+     * @param {import("../../interface.ts").Injectable<any>} decorFn
      * @returns {NgModule}
      */
     decorator(name, decorFn) {
@@ -2012,7 +2374,7 @@
 
     /**
      * @param {string} name
-     * @param {import("../../interface.js").Injectable<any>} directiveFactory
+     * @param {import("../../interface.ts").Injectable<any>} directiveFactory
      * @returns {NgModule}
      */
     directive(name, directiveFactory) {
@@ -2029,7 +2391,7 @@
 
     /**
      * @param {string} name
-     * @param {import("../../interface.js").Injectable<any>} animationFactory
+     * @param {import("../../interface.ts").Injectable<any>} animationFactory
      * @returns {NgModule}
      */
     animation(name, animationFactory) {
@@ -2046,7 +2408,7 @@
 
     /**
      * @param {string} name
-     * @param {import("../../interface.js").Injectable<any>} filterFn
+     * @param {import("../../interface.ts").Injectable<any>} filterFn
      * @return {NgModule}
      */
     filter(name, filterFn) {
@@ -2059,7 +2421,7 @@
 
     /**
      * @param {string} name
-     * @param {import("../../interface.js").Injectable<any>} ctlFn
+     * @param {import("../../interface.ts").Injectable<any>} ctlFn
      * @returns {NgModule}
      */
     controller(name, ctlFn) {
@@ -2444,7 +2806,7 @@
      * Registers a factory.
      * @param {string} name
      * @param {(string|(function(*): *))[]} factoryFn
-     * @returns {import('../../interface.js').ServiceProvider}
+     * @returns {import('../../interface.ts').ServiceProvider}
      */
     function factory(name, factoryFn) {
       return provider(name, {
@@ -2466,7 +2828,7 @@
      * Registers a service constructor.
      * @param {string} name
      * @param {Function} constructor
-     * @returns {import('../../interface.js').ServiceProvider}
+     * @returns {import('../../interface.ts').ServiceProvider}
      */
     function service(name, constructor) {
       return factory(name, [
@@ -2935,7 +3297,7 @@
 
       /**
        * @param {import("../../core/di/internal-injector.js").InjectorService} $injector
-       * @returns {import("./interface.js").ControllerService} A service function that creates controllers.
+       * @returns {import("./interface.ts").ControllerService} A service function that creates controllers.
        */
       ($injector) => {
         return (expression, locals, later, ident) => {
@@ -3053,18 +3415,19 @@
         );
       }
       locals.$scope[identifier] = instance;
+      locals.$scope["$controllerIdentifier"] = identifier;
     }
   }
 
   const originUrl = urlResolve(window.location.href);
 
   /**
-   * @param {import("./interface.js").ResolvableUrl} url
-   * @return {import("./interface.js").ParsedUrl}
+   * @param {import("./interface.ts").ResolvableUrl} url
+   * @return {import("./interface.ts").ParsedUrl}
    */
   function urlResolve(url) {
     if (!isString(url))
-      return /** @type {import("./interface.js").ParsedUrl} */ (url);
+      return /** @type {import("./interface.ts").ParsedUrl} */ (url);
 
     const urlParsingNode = new URL(
       /** @type {string} */ (url),
@@ -3096,7 +3459,7 @@
    * Parse a request URL and determine whether this is a same-origin request as the application
    * document.
    *
-   * @param {import("./interface.js").ResolvableUrl} requestUrl The url of the request as a string that will be resolved
+   * @param {import("./interface.ts").ResolvableUrl} requestUrl The url of the request as a string that will be resolved
    * or a parsed URL object.
    * @returns {boolean} Whether the request is for the same origin as the application document.
    */
@@ -3110,7 +3473,7 @@
    * Note: The base URL is usually the same as the document location (`location.href`) but can
    * be overriden by using the `<base>` tag.
    *
-   * @param {import("./interface.js").ResolvableUrl} requestUrl The url of the request as a string that will be resolved
+   * @param {import("./interface.ts").ResolvableUrl} requestUrl The url of the request as a string that will be resolved
    * or a parsed URL object.
    * @returns {boolean} Whether the URL is same-origin as the document base URL.
    */
@@ -3124,7 +3487,7 @@
    *
    * @param {string[]} trustedOriginUrls - A list of URLs (strings), whose origins are trusted.
    *
-   * @returns {(url: import("./interface.js").ResolvableUrl) => boolean } - A function that receives a URL (string or parsed URL object) and returns
+   * @returns {(url: import("./interface.ts").ResolvableUrl) => boolean } - A function that receives a URL (string or parsed URL object) and returns
    *     whether it is of an allowed origin.
    */
   function urlIsAllowedOriginFactory(trustedOriginUrls) {
@@ -3137,7 +3500,7 @@
      * based on a list of trusted-origin URLs. The current location's origin is implicitly
      * trusted.
      *
-     * @param {import("./interface.js").ResolvableUrl} requestUrl - The URL to be checked (provided as a string that will be
+     * @param {import("./interface.ts").ResolvableUrl} requestUrl - The URL to be checked (provided as a string that will be
      *     resolved or a parsed URL object).
      *
      * @returns {boolean} - Whether the specified URL is of an allowed origin.
@@ -3153,9 +3516,9 @@
   /**
    * Determine if two URLs share the same origin.
    *
-   * @param {import("./interface.js").ResolvableUrl} url1 - First URL to compare as a string or a normalized URL in the form of
+   * @param {import("./interface.ts").ResolvableUrl} url1 - First URL to compare as a string or a normalized URL in the form of
    *     a dictionary object returned by `urlResolve()`.
-   * @param {import("./interface.js").ResolvableUrl} url2 - Second URL to compare as a string or a normalized URL in the form
+   * @param {import("./interface.ts").ResolvableUrl} url2 - Second URL to compare as a string or a normalized URL in the form
    *     of a dictionary object returned by `urlResolve()`.
    *
    * @returns {boolean} - True if both URLs have the same origin, and false otherwise.
@@ -3789,7 +4152,7 @@
          *
          * @param {string} type The SCE context in which this result will be used.
          * @param {string} expr String expression to compile.
-         * @return {import("../../core/parse/interface.js").CompiledExpression} A function which represents the compiled expression:
+         * @return {import("../../core/parse/interface.ts").CompiledExpression} A function which represents the compiled expression:
          *
          *    * `context` – `{object}` – an object against which any expressions embedded in the
          *      strings are evaluated against (typically a scope object).
@@ -4021,26 +4384,23 @@
    */
   const ngEventDirectives = {};
 
-  "click copy cut dblclick focus blur keydown keyup load mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste submit touchstart touchend touchmove offline online"
+  "click copy cut dblclick focus blur keydown keyup load mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste submit touchstart touchend touchmove"
     .split(" ")
     .forEach((eventName) => {
       const directiveName = directiveNormalize(`ng-${eventName}`);
       ngEventDirectives[directiveName] = [
         $injectTokens.$parse,
         $injectTokens.$exceptionHandler,
-        $injectTokens.$window,
 
         /**
-         * @param {import("../../core/parse/interface.ts").ParseService} $parse
+         * @param {ng.ParseService} $parse
          * @param {ng.ExceptionHandlerService} $exceptionHandler
-         * @param {ng.WindowService} $window
          * @returns
          */
-        ($parse, $exceptionHandler, $window) => {
+        ($parse, $exceptionHandler) => {
           return createEventDirective(
             $parse,
             $exceptionHandler,
-            $window,
             directiveName,
             eventName,
           );
@@ -4052,7 +4412,6 @@
    *
    * @param {ng.ParseService} $parse
    * @param {ng.ExceptionHandlerService} $exceptionHandler
-   * @param {ng.WindowService} $window
    * @param {string} directiveName
    * @param {string} eventName
    * @returns {ng.Directive}
@@ -4060,7 +4419,6 @@
   function createEventDirective(
     $parse,
     $exceptionHandler,
-    $window,
     directiveName,
     eventName,
   ) {
@@ -4129,16 +4487,13 @@
   const SIMPLE_ATTR_NAME = /^\w/;
   const specialAttrHolder = document.createElement("div");
 
-  /**
-   * @implements {Record<string, any>}
-   */
   class Attributes {
     static $nonscope = true;
 
     /**
-     * @param {import('../scope/scope.js').Scope} $rootScope
+     * @param {ng.Scope} $rootScope
      * @param {*} $animate
-     * @param {import("../../services/exception/exception-handler.js").ErrorHandler} $exceptionHandler
+     * @param {ng.ExceptionHandlerService} $exceptionHandler
      * @param {*} $sce
      * @param {import("../../shared/noderef.js").NodeRef} [nodeRef]
      * @param {Object} [attributesToCopy]
@@ -4451,19 +4806,18 @@
   /**
    * @param {string} source - the name of the attribute to be observed
    * @param {string} prop - the scope property to be updated with attribute value
-   * @returns {import("../../interface.ts").Directive}
+   * @returns {ng.Directive}
    */
   function ngObserveDirective(source, prop) {
     return {
       restrict: "A",
       compile: () => (scope, element) => {
-        const targetElement = element;
         if (prop === "") {
           prop = source;
         }
         const normalized = kebabToCamel(prop);
         if (!scope[normalized]) {
-          scope[normalized] = targetElement.getAttribute(source);
+          scope[normalized] = element.getAttribute(source);
         }
 
         const observer = new MutationObserver((mutations) => {
@@ -4476,7 +4830,7 @@
           }
         });
 
-        observer.observe(targetElement, {
+        observer.observe(element, {
           attributes: true,
           attributeFilter: [source],
         });
@@ -4502,7 +4856,7 @@
     /* @ignore */ static $inject = [$injectTokens.$provide, $injectTokens.$$sanitizeUriProvider];
 
     /**
-     * @param {import('../../interface.js').Provider} $provide
+     * @param {import('../../interface.ts').Provider} $provide
      * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $$sanitizeUriProvider
      */
     constructor($provide, $$sanitizeUriProvider) {
@@ -4692,7 +5046,7 @@
       /**
        * @param {string|Object} name Name of the component in camelCase (i.e. `myComp` which will match `<my-comp>`),
        *    or an object map of components where the keys are the names and the values are the component definition objects.
-       * @param {import("../../interface.js").Component} options Component definition object (a simplified
+       * @param {import("../../interface.ts").Component} options Component definition object (a simplified
        *    {directive definition object}),
        *    with the following properties (all optional):
        *
@@ -5478,12 +5832,12 @@
                         createEventDirective(
                           $parse,
                           $exceptionHandler,
-                          window,
                           nName,
                           name,
                         ),
                       );
                     } else {
+                      // isWindow
                       directives.push(
                         createWindowEventDirective(
                           $parse,
@@ -7473,7 +7827,7 @@
                               scope.$handler.watchers
                                 .get(attrs[attrName])
                                 ?.forEach((watchFn) => {
-                                  watchFn.listenerFn(val);
+                                  watchFn.listenerFn(val, scope.$target);
                                 });
                             }
                           }
@@ -7886,8 +8240,14 @@
      * state (ng-dirty class). This method will also propagate to parent forms.
      */
     $setDirty() {
-      this.$$animate.removeClass(this.$$element, PRISTINE_CLASS);
-      this.$$animate.addClass(this.$$element, DIRTY_CLASS);
+      if (hasAnimate(this.$$element)) {
+        this.$$animate.removeClass(this.$$element, PRISTINE_CLASS);
+        this.$$animate.addClass(this.$$element, DIRTY_CLASS);
+      } else {
+        // Fallback for non-animated environments
+        this.$$element.classList.remove(PRISTINE_CLASS);
+        this.$$element.classList.add(DIRTY_CLASS);
+      }
       this.$dirty = true;
       this.$pristine = false;
       this.$$parentForm.$setDirty();
@@ -7906,11 +8266,18 @@
      * saving or resetting it.
      */
     $setPristine() {
-      this.$$animate.setClass(
-        this.$$element,
-        PRISTINE_CLASS,
-        `${DIRTY_CLASS} ${SUBMITTED_CLASS}`,
-      );
+      if (hasAnimate(this.$$element)) {
+        this.$$animate.setClass(
+          this.$$element,
+          PRISTINE_CLASS,
+          `${DIRTY_CLASS} ${SUBMITTED_CLASS}`,
+        );
+      } else {
+        // Fallback for non-animated environments
+        this.$$element.classList.remove(DIRTY_CLASS, SUBMITTED_CLASS);
+        this.$$element.classList.add(PRISTINE_CLASS);
+      }
+
       this.$dirty = false;
       this.$pristine = true;
       this.$submitted = false;
@@ -7948,7 +8315,11 @@
     }
 
     $$setSubmitted() {
-      this.$$animate.addClass(this.$$element, SUBMITTED_CLASS);
+      if (hasAnimate(this.$$element)) {
+        this.$$animate.addClass(this.$$element, SUBMITTED_CLASS);
+      } else {
+        this.$$element.classList.add(SUBMITTED_CLASS);
+      }
       this.$submitted = true;
       this.$$controls.forEach((control) => {
         if (control.$$setSubmitted) {
@@ -11558,7 +11929,7 @@
   ngIfDirective.$inject = ["$animate"];
   /**
    * @param {*}  $animate
-   * @returns {import("../../interface.ts").Directive}
+   * @returns {ng.Directive}
    */
   function ngIfDirective($animate) {
     return {
@@ -11568,10 +11939,10 @@
       restrict: "A",
       /**
        *
-       * @param {import("../../core/scope/scope.js").Scope} $scope
+       * @param {ng.Scope} $scope
        * @param {Element} $element
-       * @param {import("../../core/compile/attributes.js").Attributes} $attr
-       * @param {Object} _ctrl
+       * @param {ng.Attributes} $attr
+       * @param {*} _ctrl
        * @param {*} $transclude
        */
       link($scope, $element, $attr, _ctrl, $transclude) {
@@ -11583,7 +11954,7 @@
 
         let previousElements;
 
-        $scope.$watch($attr["ngIf"], (value) => {
+        $scope.$watch($attr.ngIf, (value) => {
           if (value) {
             if (!childScope) {
               $transclude((clone, newScope) => {
@@ -11638,7 +12009,7 @@
    * @param {import("../../services/anchor-scroll/anchor-scroll.js").AnchorScrollFunction} $anchorScroll
    * @param {*} $animate
    * @param {import('../../services/exception/interface.ts').ErrorHandler} $exceptionHandler
-   * @returns {import('../../interface.js').Directive}
+   * @returns {import('../../interface.ts').Directive}
    */
   function ngIncludeDirective(
     $templateRequest,
@@ -13020,7 +13391,7 @@
   const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
 
   /**
-   * @type {Record<string, import("../../interface.js").DirectiveFactory>}
+   * @type {Record<string, import("../../interface.ts").DirectiveFactory>}
    */
   const ngAttributeAliasDirectives = {};
 
@@ -13593,364 +13964,6 @@
     ];
   }
 
-  /**
-   * @readonly
-   * @enum {number}
-   */
-  const ASTType = {
-    Program: 1,
-    ExpressionStatement: 2,
-    AssignmentExpression: 3,
-    ConditionalExpression: 4,
-    LogicalExpression: 5,
-    BinaryExpression: 6,
-    UnaryExpression: 7,
-    CallExpression: 8,
-    MemberExpression: 9,
-    Identifier: 10,
-    Literal: 11,
-    ArrayExpression: 12,
-    Property: 13,
-    ObjectExpression: 14,
-    ThisExpression: 15,
-    LocalsExpression: 16,
-    NGValueParameter: 17,
-  };
-
-  const ADD_CLASS_SUFFIX = "-add";
-  const REMOVE_CLASS_SUFFIX = "-remove";
-  const EVENT_CLASS_PREFIX = "ng-";
-  const ACTIVE_CLASS_SUFFIX = "-active";
-  const PREPARE_CLASS_SUFFIX = "-prepare";
-
-  const NG_ANIMATE_CLASSNAME = "ng-animate";
-  const NG_ANIMATE_CHILDREN_DATA = "$$ngAnimateChildren";
-  let TRANSITION_PROP;
-  let TRANSITIONEND_EVENT;
-  let ANIMATION_PROP;
-  let ANIMATIONEND_EVENT;
-
-  // If unprefixed events are not supported but webkit-prefixed are, use the latter.
-  // Otherwise, just use W3C names, browsers not supporting them at all will just ignore them.
-  // Note: Chrome implements `window.onwebkitanimationend` and doesn't implement `window.onanimationend`
-  // but at the same time dispatches the `animationend` event and not `webkitAnimationEnd`.
-  // Register both events in case `window.onanimationend` is not supported because of that,
-  // do the same for `transitionend` as Safari is likely to exhibit similar behavior.
-  // Also, the only modern browser that uses vendor prefixes for transitions/keyframes is webkit
-  // therefore there is no reason to test anymore for other vendor prefixes:
-  // http://caniuse.com/#search=transition
-  if (
-    window.ontransitionend === undefined &&
-    window.onwebkittransitionend !== undefined
-  ) {
-    TRANSITION_PROP = "WebkitTransition";
-    TRANSITIONEND_EVENT = "webkitTransitionEnd transitionend";
-  } else {
-    TRANSITION_PROP = "transition";
-    TRANSITIONEND_EVENT = "transitionend";
-  }
-
-  if (
-    window.onanimationend === undefined &&
-    window.onwebkitanimationend !== undefined
-  ) {
-    ANIMATION_PROP = "WebkitAnimation";
-    ANIMATIONEND_EVENT = "webkitAnimationEnd animationend";
-  } else {
-    ANIMATION_PROP = "animation";
-    ANIMATIONEND_EVENT = "animationend";
-  }
-
-  const DURATION_KEY = "Duration";
-  const PROPERTY_KEY = ASTType.Property;
-  const DELAY_KEY = "Delay";
-  const TIMING_KEY = "TimingFunction";
-  const ANIMATION_ITERATION_COUNT_KEY = "IterationCount";
-  const ANIMATION_PLAYSTATE_KEY = "PlayState";
-  const SAFE_FAST_FORWARD_DURATION_VALUE = 9999;
-
-  const ANIMATION_DELAY_PROP = ANIMATION_PROP + DELAY_KEY;
-  const ANIMATION_DURATION_PROP = ANIMATION_PROP + DURATION_KEY;
-  const TRANSITION_DELAY_PROP = TRANSITION_PROP + DELAY_KEY;
-  const TRANSITION_DURATION_PROP = TRANSITION_PROP + DURATION_KEY;
-
-  const ngMinErr$1 = minErr("ng");
-  function assertArg(arg, name, reason) {
-    if (!arg) {
-      throw ngMinErr$1(
-        "areq",
-        "Argument '{0}' is {1}",
-        name || "?",
-        reason,
-      );
-    }
-    return arg;
-  }
-
-  function packageStyles(options) {
-    const styles = {};
-    if (options && (options.to || options.from)) {
-      styles.to = options.to;
-      styles.from = options.from;
-    }
-    return styles;
-  }
-
-  function pendClasses(classes, fix, isPrefix) {
-    let className = "";
-
-    classes = Array.isArray(classes)
-      ? classes
-      : classes && isString(classes) && classes.length
-        ? classes.split(/\s+/)
-        : [];
-    classes.forEach((klass, i) => {
-      if (klass && klass.length > 0) {
-        className += i > 0 ? " " : "";
-        className += isPrefix ? fix + klass : klass + fix;
-      }
-    });
-    return className;
-  }
-
-  function removeFromArray(arr, val) {
-    const index = arr.indexOf(val);
-    if (val >= 0) {
-      arr.splice(index, 1);
-    }
-  }
-
-  /**
-   *
-   * @param {NodeList|Node} element
-   * @returns {Node[]|Node|undefined}
-   */
-  function stripCommentsFromElement(element) {
-    if (element instanceof NodeList) {
-      return Array.from(element).filter((x) => x.nodeType == Node.ELEMENT_NODE);
-    } else if (element.nodeType === Node.ELEMENT_NODE) {
-      return /** @type {Node} */ (element);
-    } else {
-      return undefined;
-    }
-  }
-
-  /**
-   * @param {NodeList|Node} element
-   * @returns {Node}
-   */
-  function extractElementNode(element) {
-    if (!element) return /** @type {Node} */ (element);
-    for (let i = 0; i < /** @type {NodeList} */ (element).length; i++) {
-      const elm = element[i];
-      if (elm.nodeType === Node.ELEMENT_NODE) {
-        return elm;
-      }
-    }
-  }
-
-  function applyAnimationClassesFactory() {
-    return function (element, options) {
-      if (options.addClass) {
-        element.classList.add(...options.addClass.trim().split(" "));
-        options.addClass = null;
-      }
-      if (options.removeClass) {
-        element.classList.remove(...options.removeClass.trim().split(" "));
-        options.removeClass = null;
-      }
-    };
-  }
-
-  function prepareAnimationOptions(options) {
-    options = options || {};
-    if (!options.$$prepared) {
-      let domOperation = options.domOperation || (() => {});
-      options.domOperation = function () {
-        options.$$domOperationFired = true;
-        domOperation();
-        domOperation = () => {};
-      };
-      options.$$prepared = true;
-    }
-    return options;
-  }
-
-  function applyAnimationStyles(element, options) {
-    applyAnimationFromStyles(element, options);
-    applyAnimationToStyles(element, options);
-  }
-
-  function applyAnimationFromStyles(element, options) {
-    if (options.from) {
-      //element.css(options.from);
-      options.from = null;
-    }
-  }
-
-  function applyAnimationToStyles(element, options) {
-    if (options.to) {
-      //element.css(options.to);
-      options.to = null;
-    }
-  }
-
-  function mergeAnimationDetails(element, oldAnimation, newAnimation) {
-    const target = oldAnimation.options || {};
-    const newOptions = newAnimation.options || {};
-
-    const toAdd = `${target.addClass || ""} ${newOptions.addClass || ""}`;
-    const toRemove = `${target.removeClass || ""} ${newOptions.removeClass || ""}`;
-    const classes = resolveElementClasses(
-      element.getAttribute("class"),
-      toAdd,
-      toRemove,
-    );
-
-    if (newOptions.preparationClasses) {
-      target.preparationClasses = concatWithSpace(
-        newOptions.preparationClasses,
-        target.preparationClasses,
-      );
-      delete newOptions.preparationClasses;
-    }
-
-    extend(target, newOptions);
-
-    if (classes.addClass) {
-      target.addClass = classes.addClass;
-    } else {
-      target.addClass = null;
-    }
-
-    if (classes.removeClass) {
-      target.removeClass = classes.removeClass;
-    } else {
-      target.removeClass = null;
-    }
-
-    oldAnimation.addClass = target.addClass;
-    oldAnimation.removeClass = target.removeClass;
-
-    return target;
-  }
-
-  function resolveElementClasses(existing, toAdd, toRemove) {
-    const ADD_CLASS = 1;
-    const REMOVE_CLASS = -1;
-
-    const flags = {};
-    existing = splitClassesToLookup(existing);
-
-    toAdd = splitClassesToLookup(toAdd);
-    Object.keys(toAdd).forEach((key) => {
-      flags[key] = ADD_CLASS;
-    });
-
-    toRemove = splitClassesToLookup(toRemove);
-    Object.keys(toRemove).forEach((key) => {
-      flags[key] = flags[key] === ADD_CLASS ? null : REMOVE_CLASS;
-    });
-
-    const classes = {
-      addClass: "",
-      removeClass: "",
-    };
-
-    Object.entries(flags).forEach(([klass, val]) => {
-      let prop, allow;
-      if (val === ADD_CLASS) {
-        prop = "addClass";
-        allow = !existing[klass] || existing[klass + REMOVE_CLASS_SUFFIX];
-      } else if (val === REMOVE_CLASS) {
-        prop = "removeClass";
-        allow = existing[klass] || existing[klass + ADD_CLASS_SUFFIX];
-      }
-      if (allow) {
-        if (classes[prop].length) {
-          classes[prop] += " ";
-        }
-        classes[prop] += klass;
-      }
-    });
-
-    function splitClassesToLookup(classes) {
-      if (isString(classes)) {
-        classes = classes.trim().split(" ");
-      }
-
-      const obj = {};
-      if (classes) {
-        classes.forEach((klass) => {
-          // sometimes the split leaves empty string values
-          // incase extra spaces were applied to the options
-          if (klass.length) {
-            obj[klass] = true;
-          }
-        });
-      }
-      return obj;
-    }
-
-    return classes;
-  }
-
-  function applyGeneratedPreparationClasses(element, event, options) {
-    let classes = "";
-    if (event) {
-      classes = pendClasses(event, EVENT_CLASS_PREFIX, true);
-    }
-    if (options.addClass) {
-      classes = concatWithSpace(
-        classes,
-        pendClasses(options.addClass, ADD_CLASS_SUFFIX),
-      );
-    }
-    if (options.removeClass) {
-      classes = concatWithSpace(
-        classes,
-        pendClasses(options.removeClass, REMOVE_CLASS_SUFFIX),
-      );
-    }
-    if (classes.length) {
-      options.preparationClasses = classes;
-      element.className += ` ${classes}`;
-    }
-  }
-
-  function clearGeneratedClasses(element, options) {
-    if (options.preparationClasses) {
-      options.preparationClasses
-        .split(" ")
-        .forEach((cls) => element.classList.remove(cls));
-      options.preparationClasses = null;
-    }
-    if (options.activeClasses) {
-      options.activeClasses
-        .split(" ")
-        .forEach((cls) => element.classList.remove(cls));
-      options.activeClasses = null;
-    }
-  }
-
-  function blockKeyframeAnimations(node, applyBlock) {
-    const value = applyBlock ? "paused" : "";
-    const key = ANIMATION_PROP + ANIMATION_PLAYSTATE_KEY;
-    applyInlineStyle(node, [key, value]);
-    return [key, value];
-  }
-
-  function applyInlineStyle(node, styleTuple) {
-    const prop = styleTuple[0];
-    node.style[prop] = styleTuple[1];
-  }
-
-  function concatWithSpace(a, b) {
-    if (!a) return b;
-    if (!b) return a;
-    return `${a} ${b}`;
-  }
-
   /** @typedef {"enter"|"leave"|"move"|"addClass"|"setClass"|"removeClass"} AnimationMethod */
 
   /**
@@ -14338,7 +14351,7 @@
            *
            * @param {Element} element - the element which will be inserted into the DOM
            * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
-           * @param {Element} after - after the sibling element after which the element will be appended
+           * @param {Element} [after] - after the sibling element after which the element will be appended
            * @param {AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
            * @returns {import('./animate-runner.js').AnimateRunner} the animation runner
            */
@@ -17816,7 +17829,7 @@
               return concat.join("");
             };
 
-            return /**@type {import("./interface.js").InterpolationFunction}  */ extend(
+            return /**@type {import("./interface.ts").InterpolationFunction}  */ extend(
               (context, cb) => {
                 let i = 0;
                 const ii = expressions.length;
@@ -19484,7 +19497,7 @@
     /**
      * Registers a callback to be called when the URL changes.
      *
-     * @param {import("./interface.js").UrlChangeListener} callback - The callback function to register.
+     * @param {import("./interface.ts").UrlChangeListener} callback - The callback function to register.
      * @returns void
      */
     #onUrlChange(callback) {
@@ -20077,15 +20090,8 @@
    */
   let $parse;
 
-  /**@type {import('../../services/exception/exception-handler.js').ErrorHandler} */
+  /**@type {ng.ExceptionHandlerService} */
   let $exceptionHandler;
-
-  /**
-   * @typedef {Object} AsyncQueueTask
-   * @property {Scope} handler
-   * @property {Function} fn
-   * @property {Object} locals
-   */
 
   const $postUpdateQueue = [];
 
@@ -20095,11 +20101,11 @@
     }
 
     $get = [
-      "$exceptionHandler",
-      "$parse",
+      $injectTokens.$exceptionHandler,
+      $injectTokens.$parse,
       /**
-       * @param {import('../../services/exception/exception-handler.js').ErrorHandler} exceptionHandler
-       * @param {import('../parse/interface.ts').ParseService} parse
+       * @param {ng.ExceptionHandlerService} exceptionHandler
+       * @param {ng.ParseService} parse
        */
       (exceptionHandler, parse) => {
         $exceptionHandler = exceptionHandler;
@@ -20157,27 +20163,6 @@
   }
 
   /**
-   * Listener function definition.
-   * @typedef {Object} Listener
-   * @property {Object} originalTarget - The original target object.
-   * @property {ListenerFunction} listenerFn - The function invoked when changes are detected.
-   * @property {import("../parse/interface.ts").CompiledExpression} watchFn
-   * @property {number} id - Deregistration id
-   * @property {number} scopeId - The scope that created the Listener
-   * @property {string[]} property
-   * @property {string} [watchProp] - The original property to watch if different from observed key
-   * @property {Proxy} [foreignListener]
-   *
-   */
-
-  /**
-   * Listener function type.
-   * @callback ListenerFunction
-   * @param {*} newValue - The new value of the changed property.
-   * @param {Object} originalTarget - The original target object.
-   */
-
-  /**
    * Decorator for excluding objects from scope observability
    */
   const NONSCOPE = "$nonscope";
@@ -20202,13 +20187,13 @@
           : context
         : undefined;
 
-      /** @type {Map<string, Array<Listener>>} Watch listeners */
+      /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners */
       this.watchers = context ? context.watchers : new Map();
 
       /** @type {Map<String, Function[]>} Event listeners */
       this.$$listeners = new Map();
 
-      /** @type {Map<string, Array<Listener>>} Watch listeners from other proxies */
+      /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
       this.foreignListeners = context ? context.foreignListeners : new Map();
 
       /** @type {Set<ProxyConstructor>} */
@@ -20253,7 +20238,7 @@
           ? null
           : context;
 
-      /** @type {AsyncQueueTask[]} */
+      /** @type {import('./interface.ts').AsyncQueueTask[]} */
       this.$$asyncQueue = [];
 
       this.filters = [];
@@ -20262,6 +20247,31 @@
       this.$$destroyed = false;
 
       this.scheduled = [];
+
+      /** @private */
+      this.propertyMap = {
+        $watch: this.$watch.bind(this),
+        $new: this.$new.bind(this),
+        $newIsolate: this.$newIsolate.bind(this),
+        $destroy: this.$destroy.bind(this),
+        $flushQueue: this.$flushQueue.bind(this),
+        $eval: this.$eval.bind(this),
+        $apply: this.$apply.bind(this),
+        $postUpdate: this.$postUpdate.bind(this),
+        $isRoot: this.#isRoot.bind(this),
+        $proxy: this.$proxy,
+        $on: this.$on.bind(this),
+        $emit: this.$emit.bind(this),
+        $broadcast: this.$broadcast.bind(this),
+        $transcluded: this.$transcluded.bind(this),
+        $handler: /** @type {Scope} */ (this),
+        $parent: this.$parent,
+        $root: this.$root,
+        $children: this.$children,
+        $id: this.$id,
+        $merge: this.$merge.bind(this),
+        $getById: this.$getById.bind(this),
+      };
     }
 
     /**
@@ -20457,8 +20467,8 @@
             // filter for repeaters
             if (this.$target.$$hashKey) {
               foreignListeners = foreignListeners.filter((x) =>
-                x.originalTarget.$$hashKey
-                  ? x.originalTarget.$$hashKey == this.$target.$$hashKey
+                x.originalTarget["$$hashKey"]
+                  ? x.originalTarget["$$hashKey"] === this.$target.$$hashKey
                   : false,
               );
             }
@@ -20503,29 +20513,8 @@
         this.$proxy = proxy;
       }
 
-      this.propertyMap = {
-        $watch: this.$watch.bind(this),
-        $new: this.$new.bind(this),
-        $newIsolate: this.$newIsolate.bind(this),
-        $destroy: this.$destroy.bind(this),
-        $eval: this.$eval.bind(this),
-        $apply: this.$apply.bind(this),
-        $postUpdate: this.$postUpdate.bind(this),
-        $isRoot: this.#isRoot.bind(this),
-        $target: target,
-        $proxy: this.$proxy,
-        $on: this.$on.bind(this),
-        $emit: this.$emit.bind(this),
-        $broadcast: this.$broadcast.bind(this),
-        $transcluded: this.$transcluded.bind(this),
-        $handler: /** @type {Scope} */ (this),
-        $parent: this.$parent,
-        $root: this.$root,
-        $children: this.$children,
-        $id: this.$id,
-        $merge: this.$merge.bind(this),
-        $getById: this.$getById.bind(this),
-      };
+      this.propertyMap.$target = target;
+      this.propertyMap.$proxy = proxy;
 
       if (
         Array.isArray(target) &&
@@ -20620,7 +20609,7 @@
     }
 
     /**
-     * @param {Listener[]} listeners
+     * @param {import('./interface.ts').Listener[]} listeners
      * @param {Function} filter
      */
     #scheduleListener(listeners, filter = (val) => val) {
@@ -20644,7 +20633,7 @@
      * function is invoked when changes to that property are detected.
      *
      * @param {string} watchProp - An expression to be watched in the context of this model.
-     * @param {ListenerFunction} [listenerFn] - A function to execute when changes are detected on watched context.
+     * @param {import('./interface.ts').ListenerFunction} [listenerFn] - A function to execute when changes are detected on watched context.
      * @param {boolean} [lazy] - A flag to indicate if the listener should be invoked immediately. Defaults to false.
      */
     $watch(watchProp, listenerFn, lazy = false) {
@@ -20666,7 +20655,7 @@
         return () => {};
       }
 
-      /** @type {Listener} */
+      /** @type {import('./interface.ts').Listener} */
       const listener = {
         originalTarget: this.$target,
         listenerFn: listenerFn,
@@ -20778,7 +20767,7 @@
 
             let potentialProxy = $parse(
               watchProp.split(".").slice(0, -1).join("."),
-            )(listener.originalTarget);
+            )(/** @type {Scope} */ (listener.originalTarget));
             if (potentialProxy && this.foreignProxies.has(potentialProxy)) {
               potentialProxy.$handler.#registerForeignKey(key, listener);
               potentialProxy.$handler.#scheduleListener([listener]);
@@ -20976,21 +20965,21 @@
       return true;
     }
 
-    // deregisterForeignKey(key, id) {
-    //   const listenerList = this.foreignListeners.get(key);
-    //   if (!listenerList) return false;
+    deregisterForeignKey(key, id) {
+      const listenerList = this.foreignListeners.get(key);
+      if (!listenerList) return false;
 
-    //   const index = listenerList.findIndex((x) => x.id === id);
-    //   if (index === -1) return false;
+      const index = listenerList.findIndex((x) => x.id === id);
+      if (index === -1) return false;
 
-    //   listenerList.splice(index, 1);
-    //   if (listenerList.length) {
-    //     this.foreignListeners.set(key, listenerList);
-    //   } else {
-    //     this.foreignListeners.delete(key);
-    //   }
-    //   return true;
-    // }
+      listenerList.splice(index, 1);
+      if (listenerList.length) {
+        this.foreignListeners.set(key, listenerList);
+      } else {
+        this.foreignListeners.delete(key);
+      }
+      return true;
+    }
 
     $eval(expr, locals) {
       const fn = $parse(expr);
@@ -21023,7 +21012,7 @@
     }
 
     /**
-     * @param {import('../../interface.js').Expression} expr
+     * @param {import('../../interface.ts').Expression} expr
      * @returns {any}
      */
     $apply(expr) {
@@ -21204,12 +21193,12 @@
 
     /**
      * @internal
-     * @param {Listener} listener - The property path that was changed.
+     * @param {import('./interface.ts').Listener} listener - The property path that was changed.
      */
     #notifyListener(listener, target) {
       const { originalTarget, listenerFn, watchFn } = listener;
       try {
-        let newVal = watchFn(originalTarget);
+        let newVal = watchFn(/** @type {Scope} */ (originalTarget));
         if (isUndefined(newVal)) {
           newVal = watchFn(target);
         }
@@ -21236,6 +21225,13 @@
         }
       } catch (e) {
         $exceptionHandler(e);
+      }
+    }
+
+    /* @ignore */
+    $flushQueue() {
+      while ($postUpdateQueue.length) {
+        $postUpdateQueue.shift()();
       }
     }
 
@@ -21749,7 +21745,7 @@
 
   /**
    * @param {boolean} isDefault
-   * @returns {(any) => import("../../interface.js").Directive}
+   * @returns {(any) => import("../../interface.ts").Directive}
    */
   function ngMessageDirectiveFactory(isDefault) {
     ngMessageDirective.$inject = ["$animate"];
@@ -21956,6 +21952,9 @@
     return $aria.$$watchExpr("ngShow", "aria-hidden", [], true);
   }
 
+  /**
+   * @return {ng.Directive}
+   */
   function ngMessagesAriaDirective() {
     return {
       restrict: "A",
@@ -21971,18 +21970,21 @@
   }
 
   ngClickAriaDirective.$inject = [$injectTokens.$aria, $injectTokens.$parse];
+
+  /**
+   * @param $aria
+   * @param {ng.ParseService} $parse
+   * @return {ng.Directive}
+   */
   function ngClickAriaDirective($aria, $parse) {
     return {
       restrict: "A",
       compile(_elem, attr) {
         if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
 
-        const fn = $parse(attr.ngClick);
+        const fn = $parse(attr["ngClick"]);
 
-        /**
-         * @param {Element} elem
-         */
-        return function (scope, elem, attr) {
+        return (scope, elem, attr) => {
           if (!isNodeOneOf(elem, nativeAriaNodeNames)) {
             if ($aria.config("bindRoleForClick") && !elem.hasAttribute("role")) {
               elem.setAttribute("role", "button");
@@ -22019,10 +22021,6 @@
                       // See https://github.com/angular/angular.js/issues/16664
                       event.preventDefault();
                     }
-                    scope.$apply(callback);
-                  }
-
-                  function callback() {
                     fn(scope, { $event: event });
                   }
                 },
@@ -22344,6 +22342,7 @@
   }
 
   function AnimateCssProvider() {
+    let activeClasses;
     this.$get = [
       "$$AnimateRunner",
       "$$animateCache",
@@ -22687,10 +22686,7 @@
             return closeAndReturnNoopAnimator();
           }
 
-          let activeClasses = pendClasses(
-            preparationClasses,
-            ACTIVE_CLASS_SUFFIX,
-          );
+          activeClasses = pendClasses(preparationClasses, ACTIVE_CLASS_SUFFIX);
 
           if (options.delay != null) {
             if (typeof options.delay !== "boolean") {
@@ -22827,7 +22823,9 @@
 
             if (events && events.length) {
               // Remove the transitionend / animationend listener(s)
-              element.off(events.join(" "), onAnimationProgress);
+              events.forEach((i) =>
+                element.removeEventListener(i, onAnimationProgress),
+              );
             }
 
             // Cancel the fallback closing timeout and remove the timer data
@@ -23262,11 +23260,6 @@
       ) {
         const activeAnimationsLookup = new Map();
         const disabledElementsLookup = new Map();
-        let animationsEnabled = null;
-
-        function removeFromDisabledElementsLookup(evt) {
-          disabledElementsLookup.delete(evt.target);
-        }
 
         function postDigestTaskFactory() {
           let postDigestCalled = false;
@@ -23306,11 +23299,6 @@
               // any animations are triggered.
               $rootScope.$postUpdate(() => {
                 $rootScope.$postUpdate(() => {
-                  // we check for null directly in the event that the application already called
-                  // .enabled() with whatever arguments that it provided it with
-                  if (animationsEnabled === null) {
-                    animationsEnabled = true;
-                  }
                 });
               });
             }
@@ -23449,47 +23437,6 @@
             options.domOperation = domOperation;
             return queueAnimation(element, event, options);
           },
-
-          // this method has four signatures:
-          //  () - global getter
-          //  (bool) - global setter
-          //  (element) - element getter
-          //  (element, bool) - element setter<F37>
-          enabled(element, bool) {
-            const argCount = arguments.length;
-
-            if (argCount === 0) {
-              // () - Global getter
-              bool = !!animationsEnabled;
-            } else {
-              const hasElement = isElement(element);
-
-              if (!hasElement) {
-                // (bool) - Global setter
-                bool = animationsEnabled = !!element;
-              } else {
-                const node = element;
-
-                if (argCount === 1) {
-                  // (element) - Element getter
-                  bool = !disabledElementsLookup.get(node);
-                } else {
-                  // (element, bool) - Element setter
-                  if (!disabledElementsLookup.has(node)) {
-                    // The element is added to the map for the first time.
-                    // Create a listener to remove it on `$destroy` (to avoid memory leak).
-                    element.addEventListener(
-                      "$destroy",
-                      removeFromDisabledElementsLookup,
-                    );
-                  }
-                  disabledElementsLookup.set(node, !bool);
-                }
-              }
-            }
-
-            return bool;
-          },
         };
 
         return $animate;
@@ -23546,6 +23493,7 @@
           if (options.to && !isObject(options.to)) {
             options.to = null;
           }
+
           // If animations are hard-disabled for the whole application there is no need to continue.
           // There are also situations where a directive issues an animation for a JQLite wrapper that
           // contains only comment nodes. In this case, there is no way we can perform an animation.
@@ -23558,7 +23506,6 @@
             close();
             return runner;
           }
-
           const isStructural = ["enter", "move", "leave"].indexOf(event) >= 0;
 
           // This is a hard disable of all animations the element itself, therefore  there is no need to
@@ -23794,6 +23741,8 @@
             });
           });
 
+          // Since we don't have digest any more - trigger queue here
+          setTimeout($rootScope.$flushQueue, 0);
           return runner;
 
           function notifyProgress(runner, event, phase, data) {
@@ -23957,14 +23906,14 @@
   // TODO: use caching here to speed things up for detection
   // TODO: add documentation
 
-  AnimateJsProvider.$inject = ["$animateProvider"];
+  AnimateJsProvider.$inject = [$injectTokens.$animate + "Provider"];
   function AnimateJsProvider($animateProvider) {
     this.$get = [
       $injectTokens.$injector,
       "$$AnimateRunner",
       /**
        *
-       * @param {import("../core/di/internal-injector").InjectorService} $injector
+       * @param {ng.InjectorService} $injector
        * @param {*} $$AnimateRunner
        * @returns
        */
@@ -24823,8 +24772,8 @@
   }
 
   /**
-   * @typedef {import('./interface.js').RafScheduler} RafScheduler
-   * @typedef {import('../interface.js').ServiceProvider} ServiceProvider
+   * @typedef {import('./interface.ts').RafScheduler} RafScheduler
+   * @typedef {import('../interface.ts').ServiceProvider} ServiceProvider
    */
 
   /**
@@ -25339,9 +25288,9 @@
     ];
   }
 
-  ngAnimateSwapDirective.$inject = ["$animate"];
+  ngAnimateSwapDirective.$inject = [$injectTokens.$animate];
   /**
-   * @returns {import('../interface.ts').Directive}
+   * @returns {ng.Directive}
    */
   function ngAnimateSwapDirective($animate) {
     return {
@@ -25350,10 +25299,10 @@
       terminal: true,
       priority: 550, // We use 550 here to ensure that the directive is caught before others,
       // but after `ngIf` (at priority 600).
-      link(scope, $element, attrs, ctrl, $transclude) {
+      link(scope, $element, attrs, _ctrl, $transclude) {
         let previousElement;
         let previousScope;
-        scope.$watch(attrs["ngAnimateSwap"] || attrs["for"], (value) => {
+        scope.$watch(attrs.ngAnimateSwap || attrs.for, (value) => {
           if (previousElement) {
             $animate.leave(previousElement);
           }
@@ -27580,7 +27529,7 @@
      * @param {PathNode[]} fromPath
      * @param {PathNode[]} toPath
      * @param {boolean} [reloadState]
-     * @returns {import("../transition/interface.js").TreeChanges}
+     * @returns {import("../transition/interface.ts").TreeChanges}
      */
     static treeChanges(fromPath, toPath, reloadState) {
       const max = Math.min(fromPath.length, toPath.length);
@@ -28316,25 +28265,6 @@
   };
 
   /**
-   * An object for Transition Hook Phases
-   * @enum {number}
-   * @readonly
-   */
-  const TransitionHookPhase = {
-    CREATE: 0,
-    BEFORE: 1,
-    RUN: 2,
-    SUCCESS: 3,
-    ERROR: 4,
-  };
-
-  /** An object for Transition Hook Scopes */
-  const TransitionHookScope = {
-    TRANSITION: 0,
-    STATE: 1,
-  };
-
-  /**
    * An object for Transition Rejection reasons.
    * @enum {number}
    */
@@ -28453,7 +28383,7 @@
     }
   }
 
-  /** @typedef {import('../../interface.js').ServiceProvider} ServiceProvider
+  /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider
 
   /**
    * Configurable provider for an injectable event bus
@@ -28809,6 +28739,31 @@
     traceData: {},
     bind: null,
   };
+
+  /**
+   * Enum representing the different phases of a transition hook.
+   *
+   * @readonly
+   * @enum {number}
+   */
+  const TransitionHookPhase = Object.freeze({
+    CREATE: 0,
+    BEFORE: 1,
+    RUN: 2,
+    SUCCESS: 3,
+    ERROR: 4,
+  });
+
+  /**
+   * Enum representing the scope in which a transition hook operates.
+   *
+   * @readonly
+   * @enum {number}
+   */
+  const TransitionHookScope = Object.freeze({
+    TRANSITION: 0,
+    STATE: 1,
+  });
 
   class TransitionHook {
     /**
@@ -30628,7 +30583,6 @@
     }
 
     _defineCoreEvents() {
-      const Phase = TransitionHookPhase;
       const TH = TransitionHook;
       const paths = this._criteriaPaths;
       const NORMAL_SORT = false,
@@ -30636,7 +30590,7 @@
       const SYNCHRONOUS = true;
       this._defineEvent(
         "onCreate",
-        Phase.CREATE,
+        TransitionHookPhase.CREATE,
         0,
         paths.to,
         NORMAL_SORT,
@@ -30644,15 +30598,21 @@
         TH.THROW_ERROR,
         SYNCHRONOUS,
       );
-      this._defineEvent("onBefore", Phase.BEFORE, 0, paths.to);
-      this._defineEvent("onStart", Phase.RUN, 0, paths.to);
-      this._defineEvent("onExit", Phase.RUN, 100, paths.exiting, REVERSE_SORT);
-      this._defineEvent("onRetain", Phase.RUN, 200, paths.retained);
-      this._defineEvent("onEnter", Phase.RUN, 300, paths.entering);
-      this._defineEvent("onFinish", Phase.RUN, 400, paths.to);
+      this._defineEvent("onBefore", TransitionHookPhase.BEFORE, 0, paths.to);
+      this._defineEvent("onStart", TransitionHookPhase.RUN, 0, paths.to);
+      this._defineEvent(
+        "onExit",
+        TransitionHookPhase.RUN,
+        100,
+        paths.exiting,
+        REVERSE_SORT,
+      );
+      this._defineEvent("onRetain", TransitionHookPhase.RUN, 200, paths.retained);
+      this._defineEvent("onEnter", TransitionHookPhase.RUN, 300, paths.entering);
+      this._defineEvent("onFinish", TransitionHookPhase.RUN, 400, paths.to);
       this._defineEvent(
         "onSuccess",
-        Phase.SUCCESS,
+        TransitionHookPhase.SUCCESS,
         0,
         paths.to,
         NORMAL_SORT,
@@ -30662,7 +30622,7 @@
       );
       this._defineEvent(
         "onError",
-        Phase.ERROR,
+        TransitionHookPhase.ERROR,
         0,
         paths.to,
         NORMAL_SORT,
@@ -30928,7 +30888,7 @@
 
     /**
      *
-     * @param {import("./interface.js").StateDeclaration} definition
+     * @param {import("./interface.ts").StateDeclaration} definition
      */
     state(definition) {
       if (!definition.name) {
@@ -32228,7 +32188,7 @@
     );
   }
 
-  /** @typedef {import('./interface.js').StateDeclaration} StateDeclaration */
+  /** @typedef {import('./interface.ts').StateDeclaration} StateDeclaration */
 
   /**
    * Internal representation of a ng-router state.
@@ -32251,7 +32211,7 @@
     includes = undefined;
 
     /**
-     * @param {import('./interface.js').StateDeclaration} config
+     * @param {import('./interface.ts').StateDeclaration} config
      */
     constructor(config) {
       Object.assign(this, config);
@@ -32259,7 +32219,7 @@
         return this;
       };
       /**
-       * @type {import('./interface.js').StateDeclaration}
+       * @type {import('./interface.ts').StateDeclaration}
        */
       this.self = config;
       /**
@@ -34648,7 +34608,7 @@
    * ```
    */
 
-  /** @type {import("../../interface.js").AnnotatedDirectiveFactory} */
+  /** @type {import("../../interface.ts").AnnotatedDirectiveFactory} */
   let ngView = [
     "$view",
     "$animate",
@@ -34659,7 +34619,7 @@
      * @param {*} $animate
      * @param {*} $viewScroll
      * @param {*} $interpolate
-     * @returns {import("../../interface.js").Directive}
+     * @returns {import("../../interface.ts").Directive}
      */
     function $ViewDirective($view, $animate, $viewScroll, $interpolate) {
       function getRenderer() {
@@ -35085,7 +35045,8 @@
   }
 
   /**
-   * @param {"get" | "delete" | "post" | "put"} method
+   * @param {"get" | "delete" | "post" | "put"} method - HTTP method applied to request
+   * @param {string} [attrOverride] - Custom name to use for the attribute
    * @returns {ng.DirectiveFactory}
    */
   function defineDirective(method, attrOverride) {
@@ -35099,6 +35060,7 @@
       $injectTokens.$parse,
       $injectTokens.$state,
       $injectTokens.$sse,
+      $injectTokens.$animate,
     ];
     return directive;
   }
@@ -35119,14 +35081,10 @@
   const ngSseDirective = defineDirective("get", "ngSse");
 
   /**
-   * @typedef {"click" | "change" | "submit"} EventType
-   */
-
-  /**
    * Selects DOM event to listen for based on the element type.
    *
    * @param {Element} element - The DOM element to inspect.
-   * @returns {EventType} The name of the event to listen for.
+   * @returns {"click" | "change" | "submit"} The name of the event to listen for.
    */
   function getEventNameForElement(element) {
     const tag = element.tagName.toLowerCase();
@@ -35139,89 +35097,6 @@
   }
 
   /**
-   * Handles DOM manipulation based on a swap strategy and server-rendered HTML.
-   *
-   * @param {string} html - The HTML string returned from the server.
-   * @param {import("./interface.ts").SwapModeType} swap
-   * @param {Element} target - The target DOM element to apply the swap to.
-   * @param {ng.Scope} scope
-   * @param {ng.CompileService} $compile
-   */
-  function handleSwapResponse(html, swap, target, scope, $compile) {
-    let nodes = [];
-    if (!["textcontent", "delete", "none"].includes(swap)) {
-      if (!html) {
-        return;
-      }
-
-      if (isObject(html)) {
-        scope.$merge(html);
-        return;
-      }
-
-      const compiled = $compile(html)(scope);
-      nodes =
-        compiled instanceof DocumentFragment
-          ? Array.from(compiled.childNodes)
-          : [compiled];
-    }
-
-    switch (swap) {
-      case "innerHTML":
-        target.replaceChildren(...nodes);
-        break;
-
-      case "outerHTML": {
-        const parent = target.parentNode;
-        if (!parent) return;
-        const frag = document.createDocumentFragment();
-        nodes.forEach((n) => frag.appendChild(n));
-        parent.replaceChild(frag, target);
-        break;
-      }
-
-      case "textContent":
-        target.textContent = html;
-        break;
-
-      case "beforebegin":
-        nodes.forEach((node) => target.parentNode.insertBefore(node, target));
-        break;
-
-      case "afterbegin":
-        nodes
-          .slice()
-          .reverse()
-          .forEach((node) => target.insertBefore(node, target.firstChild));
-        break;
-
-      case "beforeend":
-        nodes.forEach((node) => target.appendChild(node));
-        break;
-
-      case "afterend":
-        nodes
-          .slice()
-          .reverse()
-          .forEach((node) =>
-            target.parentNode.insertBefore(node, target.nextSibling),
-          );
-        break;
-
-      case "delete":
-        target.remove();
-        break;
-
-      case "none":
-        break;
-
-      default:
-        target.replaceChildren(...nodes);
-        break;
-    }
-  }
-
-  /**
    * Creates an HTTP directive factory that supports GET, DELETE, POST, PUT.
    *
    * @param {"get" | "delete" | "post" | "put"} method - HTTP method to use.
@@ -35229,6 +35104,8 @@
    * @returns {ng.DirectiveFactory}
    */
   function createHttpDirective(method, attrName) {
+    let content = undefined;
+
     /**
      * @param {ng.HttpService} $http
      * @param {ng.CompileService} $compile
@@ -35238,7 +35115,125 @@
      * @param {ng.SseService} $sse
      * @returns {ng.Directive}
      */
-    return function ($http, $compile, $log, $parse, $state, $sse) {
+    return function ($http, $compile, $log, $parse, $state, $sse, $animate) {
+      /**
+       * Handles DOM manipulation based on a swap strategy and server-rendered HTML.
+       *
+       * @param {string | Object} html - The HTML string or object returned from the server.
+       * @param {import("./interface.ts").SwapModeType} swap
+       * @param {ng.Scope} scope
+       * @param {ng.Attributes} attrs
+       * @param {Element} element
+       */
+      function handleSwapResponse(html, swap, scope, attrs, element) {
+        let animationEnabled = false;
+        if (attrs.animate) {
+          animationEnabled = true;
+        }
+        let nodes = [];
+        if (!["textcontent", "delete", "none"].includes(swap)) {
+          if (!html) return;
+          const compiled = $compile(html)(scope);
+          nodes =
+            compiled instanceof DocumentFragment
+              ? Array.from(compiled.childNodes)
+              : [compiled];
+        }
+
+        const targetSelector = attrs["target"];
+        const target = targetSelector
+          ? document.querySelector(targetSelector)
+          : element;
+
+        if (!target) {
+          $log.warn(`${attrName}: target "${targetSelector}" not found`);
+          return;
+        }
+
+        switch (swap) {
+          case "innerHTML":
+            if (animationEnabled) {
+              if (content) {
+                $animate.leave(content).done(() => {
+                  content = nodes[0];
+                  $animate.enter(nodes[0], target);
+                  scope.$flushQueue();
+                });
+                scope.$flushQueue();
+              } else {
+                content = nodes[0];
+                $animate.enter(nodes[0], target);
+                scope.$flushQueue();
+              }
+            } else {
+              target.replaceChildren(...nodes);
+            }
+            break;
+
+          case "outerHTML": {
+            const parent = target.parentNode;
+            if (!parent) return;
+            const frag = document.createDocumentFragment();
+            nodes.forEach((n) => frag.appendChild(n));
+            if (animationEnabled) {
+              const placeholder = document.createComment("placeholder");
+              target.parentNode.insertBefore(placeholder, target.nextSibling);
+              $animate.leave(target).done(() => {
+                const insertedNodes = Array.from(frag.childNodes);
+                insertedNodes.forEach((n) =>
+                  $animate.enter(n, parent, placeholder),
+                );
+                content = insertedNodes;
+                scope.$flushQueue();
+              });
+              scope.$flushQueue();
+            } else {
+              parent.replaceChild(frag, target);
+            }
+            break;
+          }
+
+          case "textContent":
+            target.textContent = html;
+            break;
+
+          case "beforebegin":
+            nodes.forEach((node) => target.parentNode.insertBefore(node, target));
+            break;
+
+          case "afterbegin":
+            nodes
+              .slice()
+              .reverse()
+              .forEach((node) => target.insertBefore(node, target.firstChild));
+            break;
+
+          case "beforeend":
+            nodes.forEach((node) => target.appendChild(node));
+            break;
+
+          case "afterend":
+            nodes
+              .slice()
+              .reverse()
+              .forEach((node) =>
+                target.parentNode.insertBefore(node, target.nextSibling),
+              );
+            break;
+
+          case "delete":
+            target.remove();
+            break;
+
+          case "none":
+            break;
+
+          default:
+            target.replaceChildren(...nodes);
+            break;
+        }
+      }
+
       /**
        * Collects form data from the element or its associated form.
        *
@@ -35252,15 +35247,12 @@
         const tag = element.tagName.toLowerCase();
 
         if (tag === "form") {
-          /** @type {HTMLFormElement} */
           form = /** @type {HTMLFormElement} */ (element);
         } else if ("form" in element && element.form) {
-          /** @type {HTMLFormElement} */
           form = /** @type {HTMLFormElement} */ (element.form);
         } else if (element.hasAttribute("form")) {
           const formId = element.getAttribute("form");
           if (formId) {
-            /** @type {HTMLElement | null} */
             const maybeForm = document.getElementById(formId);
             if (maybeForm && maybeForm.tagName.toLowerCase() === "form") {
               form = /** @type {HTMLFormElement} */ (maybeForm);
@@ -35298,13 +35290,10 @@
       return {
         restrict: "A",
         link(scope, element, attrs) {
-          const eventName =
-            attrs["trigger"] ||
-            /** @type {EventType} */ getEventNameForElement(element);
-
+          const eventName = attrs.trigger || getEventNameForElement(element);
           const tag = element.tagName.toLowerCase();
 
-          if (isDefined(attrs["latch"])) {
+          if (isDefined(attrs.latch)) {
             attrs.$observe(
               "latch",
               callBackAfterFirst(() =>
@@ -35320,24 +35309,14 @@
             element.dispatchEvent(new Event(eventName));
             intervalId = setInterval(
               () => element.dispatchEvent(new Event(eventName)),
-              parseInt(attrs["interval"]) || 1000,
+              parseInt(attrs.interval) || 1000,
             );
           }
 
           element.addEventListener(eventName, async (event) => {
             if (/** @type {HTMLButtonElement} */ (element).disabled) return;
             if (tag === "form") event.preventDefault();
-            const swap = attrs["swap"] || "innerHTML";
-            const targetSelector = attrs["target"];
-            const target = targetSelector
-              ? document.querySelector(targetSelector)
-              : element;
-
-            if (!target) {
-              $log.warn(`${attrName}: target "${targetSelector}" not found`);
-              return;
-            }
-
+            const swap = attrs.swap || "innerHTML";
             const url = attrs[attrName];
             if (!url) {
               $log.warn(`${attrName}: no URL specified`);
@@ -35345,56 +35324,57 @@
             }
 
             const handler = (res) => {
-              if (isDefined(attrs["loading"])) {
+              if (isDefined(attrs.loading)) {
                 attrs.$set("loading", false);
               }
 
-              if (isDefined(attrs["loadingClass"])) {
-                attrs.$removeClass(attrs["loadingClass"]);
+              if (isDefined(attrs.loadingClass)) {
+                attrs.$removeClass(attrs.loadingClass);
               }
 
               const html = res.data;
               if (200 <= res.status && res.status <= 299) {
-                if (isDefined(attrs["success"])) {
-                  $parse(attrs["success"])(scope, { $res: html });
+                if (isDefined(attrs.success)) {
+                  $parse(attrs.success)(scope, { $res: html });
                 }
 
-                if (isDefined(attrs["stateSuccess"])) {
-                  $state.go(attrs["stateSuccess"]);
+                if (isDefined(attrs.stateSuccess)) {
+                  $state.go(attrs.stateSuccess);
                 }
               } else if (400 <= res.status && res.status <= 599) {
-                if (isDefined(attrs["error"])) {
-                  $parse(attrs["error"])(scope, { $res: html });
+                if (isDefined(attrs.error)) {
+                  $parse(attrs.error)(scope, { $res: html });
                 }
 
-                if (isDefined(attrs["stateError"])) {
-                  $state.go(attrs["stateError"]);
+                if (isDefined(attrs.stateError)) {
+                  $state.go(attrs.stateError);
                 }
               }
 
-              handleSwapResponse(
-                html,
-                /** @type {import("./interface.ts").SwapModeType} */ (swap),
-                target,
-                scope,
-                $compile,
-              );
+              if (isObject(html)) {
+                if (attrs.target) {
+                  scope.$eval(`${attrs.target} = ${JSON.stringify(html)}`);
+                } else {
+                  scope.$merge(html);
+                }
+              } else if (isString(html)) {
+                handleSwapResponse(html, swap, scope, attrs, element);
+              }
             };
-            if (isDefined(attrs["delay"])) {
-              await wait(parseInt(attrs["delay"]) | 0);
+
+            if (isDefined(attrs.delay)) {
+              await wait(parseInt(attrs.delay) | 0);
             }
 
-            if (throttled) {
-              return;
-            }
+            if (throttled) return;
 
-            if (isDefined(attrs["throttle"])) {
+            if (isDefined(attrs.throttle)) {
               throttled = true;
               attrs.$set("throttled", true);
               setTimeout(() => {
                 attrs.$set("throttled", false);
                 throttled = false;
-              }, parseInt(attrs["throttle"]));
+              }, parseInt(attrs.throttle));
             }
 
             if (isDefined(attrs["loading"])) {
@@ -35402,13 +35382,13 @@
             }
 
             if (isDefined(attrs["loadingClass"])) {
-              attrs.$addClass(attrs["loadingClass"]);
+              attrs.$addClass(attrs.loadingClass);
             }
 
             if (method === "post" || method === "put") {
               let data;
               const config = {};
-              if (attrs["enctype"]) {
+              if (attrs.enctype) {
                 config.headers = {
                   "Content-Type": attrs["enctype"],
                 };
@@ -35418,11 +35398,10 @@
               }
               $http[method](url, data, config).then(handler).catch(handler);
             } else {
-              // If SSE mode is enabled
-              if (method === "get" && attrs["ngSse"]) {
+              if (method === "get" && attrs.ngSse) {
                 const sseUrl = url;
                 const config = {
-                  withCredentials: attrs["withCredentials"] === "true",
+                  withCredentials: attrs.withCredentials === "true",
                   transformMessage: (data) => {
                     try {
                       return JSON.parse(data);
@@ -35432,9 +35411,9 @@
                   },
                   onOpen: () => {
                     $log.info(`${attrName}: SSE connection opened to ${sseUrl}`);
-                    if (isDefined(attrs["loading"])) attrs.$set("loading", false);
-                    if (isDefined(attrs["loadingClass"]))
-                      attrs.$removeClass(attrs["loadingClass"]);
+                    if (isDefined(attrs.loading)) attrs.$set("loading", false);
+                    if (isDefined(attrs.loadingClass))
+                      attrs.$removeClass(attrs.loadingClass);
                   },
                   onMessage: (data) => {
                     const res = { status: 200, data };
@@ -35445,12 +35424,15 @@
                     const res = { status: 500, data: err };
                     handler(res);
                   },
+                  onReconnect: (count) => {
+                    $log.info(`ngSse: reconnected ${count} time(s)`);
+                    if (attrs.onReconnect)
+                      $parse(attrs.onReconnect)(scope, { $count: count });
+                  },
                 };
 
-                // Open the SSE connection using the injected service
                 const source = $sse(sseUrl, config);
 
-                // Cleanup on scope destroy
                 scope.$on("$destroy", () => {
                   $log.info(`${attrName}: closing SSE connection`);
                   source.close();
@@ -35465,7 +35447,6 @@
             scope.$on("$destroy", () => clearInterval(intervalId));
           }
 
-          // Eagerly execute for 'load' event
           if (eventName == "load") {
             element.dispatchEvent(new Event("load"));
           }
@@ -35546,38 +35527,54 @@
    *   const source = $sse('/events', {
    *     onMessage: (data) => console.log(data),
    *     onError: (err) => console.error(err),
-   *     withCredentials: true
+   *     retryDelay: 2000,
+   *     heartbeatTimeout: 10000,
    *   });
    *
-   *   // later:
    *   source.close();
    */
-
   class SseProvider {
     constructor() {
       /**
        * Optional provider-level defaults
        * @type {ng.SseConfig}
        */
-      this.defaults = {};
+      this.defaults = {
+        retryDelay: 1000,
+        maxRetries: Infinity,
+        heartbeatTimeout: 15000, // 15 seconds
+        transformMessage(data) {
+          try {
+            return JSON.parse(data);
+          } catch {
+            return data;
+          }
+        },
+      };
     }
 
     /**
      * Returns the $sse service function
      * @returns {ng.SseService}
      */
-    $get =
-      () =>
-      (url, config = {}) => {
-        const finalUrl = this.#buildUrl(url, config.params);
-        return this.#createEventSource(finalUrl, config);
-      };
+    $get = [
+      $injectTokens.$log,
+      /** @param {ng.LogService} log */
+      (log) => {
+        this.$log = log;
+        return (url, config = {}) => {
+          const mergedConfig = { ...this.defaults, ...config };
+          const finalUrl = this.#buildUrl(url, mergedConfig.params);
+          return this.#createConnection(finalUrl, mergedConfig);
+        };
+      },
+    ];
 
     /**
      * Build URL with query parameters
-     * @param {string} url - Base URL
-     * @param {Record<string, any>=} params - Query parameters
-     * @returns {string} URL with serialized query string
+     * @param {string} url
+     * @param {Record<string, any>=} params
+     * @returns {string}
      */
     #buildUrl(url, params) {
       if (!params) return url;
@@ -35588,37 +35585,81 @@
     }
 
     /**
-     * Create and manage an EventSource
-     * @param {string} url - URL for SSE connection
-     * @param {ng.SseConfig} config - Configuration object
-     * @returns {EventSource} The EventSource instance wrapped as SseService
+     * Creates a managed SSE connection with reconnect and heartbeat
+     * @param {string} url
+     * @param {ng.SseConfig} config
+     * @returns {import("./interface.ts").SseConnection}
      */
-    #createEventSource(url, config) {
-      const es = new EventSource(url, {
-        withCredentials: !!config.withCredentials,
-      });
+    #createConnection(url, config) {
+      let es;
+      let retryCount = 0;
+      let closed = false;
+      let heartbeatTimer;
 
-      if (config.onOpen) {
-        es.addEventListener("open", (e) => config.onOpen(e));
-      }
+      const connect = () => {
+        if (closed) return;
 
-      es.addEventListener("message", (e) => {
-        let data = e.data;
-        try {
-          data = config.transformMessage
-            ? config.transformMessage(data)
-            : JSON.parse(data);
-        } catch {
-          // leave as raw string if not JSON
-        }
-        config.onMessage?.(data, e);
-      });
+        es = new EventSource(url, {
+          withCredentials: !!config.withCredentials,
+        });
 
-      if (config.onError) {
-        es.addEventListener("error", (e) => config.onError(e));
-      }
+        es.addEventListener("open", (e) => {
+          retryCount = 0;
+          config.onOpen?.(e);
+          if (config.heartbeatTimeout) resetHeartbeat();
+        });
 
-      return es;
+        es.addEventListener("message", (e) => {
+          let data = e.data;
+          try {
+            data = config.transformMessage ? config.transformMessage(data) : data;
+          } catch {
+            /* empty */
+          }
+          config.onMessage?.(data, e);
+          if (config.heartbeatTimeout) resetHeartbeat();
+        });
+
+        es.addEventListener("error", (err) => {
+          config.onError?.(err);
+          if (closed) return;
+          es.close();
+
+          if (retryCount < config.maxRetries) {
+            retryCount++;
+            config.onReconnect?.(retryCount);
+            setTimeout(connect, config.retryDelay);
+          } else {
+            this.$log.warn("SSE: Max retries reached");
+          }
+        });
+      };
+
+      const resetHeartbeat = () => {
+        clearTimeout(heartbeatTimer);
+        heartbeatTimer = setTimeout(() => {
+          this.$log.warn("SSE: heartbeat timeout, reconnecting...");
+          es.close();
+          config.onReconnect?.(++retryCount);
+          connect();
+        }, config.heartbeatTimeout);
+      };
+
+      connect();
+
+      return {
+        close() {
+          closed = true;
+          clearTimeout(heartbeatTimer);
+          es.close();
+        },
+        connect() {
+          if (closed == false) {
+            close();
+          }
+          connect();
+        },
+      };
     }
   }
 
@@ -35675,6 +35716,248 @@
     };
   }
 
+  ngWorkerDirective.$inject = ["$worker", $injectTokens.$parse, $injectTokens.$log];
+  /**
+   * ngWorker directive factory
+   * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
+   */
+  function ngWorkerDirective($worker, $parse, $log) {
+    return {
+      restrict: "A",
+      link(scope, element, attrs) {
+        const workerName = attrs.ngWorker;
+        if (!workerName) {
+          $log.warn("ngWorker: missing worker name");
+          return;
+        }
+
+        const eventName = attrs.trigger || getEventNameForElement(element);
+
+        let throttled = false;
+        let intervalId;
+
+        if (isDefined(attrs.latch)) {
+          attrs.$observe(
+            "latch",
+            callBackAfterFirst(() => element.dispatchEvent(new Event(eventName))),
+          );
+        }
+
+        if (isDefined(attrs.interval)) {
+          element.dispatchEvent(new Event(eventName));
+          intervalId = setInterval(
+            () => element.dispatchEvent(new Event(eventName)),
+            parseInt(attrs.interval) || 1000,
+          );
+        }
+
+        const worker = $worker(workerName, {
+          onMessage: (result) => {
+            if (isDefined(attrs.dataOnResult)) {
+              $parse(attrs.dataOnResult)(scope, { $result: result });
+            } else {
+              const swap = attrs.swap || "innerHTML";
+              handleSwap(result, swap, element);
+            }
+          },
+          onError: (err) => {
+            $log.error(`[ng-worker:${workerName}]`, err);
+            if (isDefined(attrs.dataOnError)) {
+              $parse(attrs.dataOnError)(scope, { $error: err });
+            } else {
+              element.textContent = "Error";
+            }
+          },
+        });
+
+        element.addEventListener(eventName, async () => {
+          if (element.disabled) return;
+
+          if (isDefined(attrs.delay)) {
+            await wait(parseInt(attrs.delay) || 0);
+          }
+
+          if (throttled) return;
+
+          if (isDefined(attrs.throttle)) {
+            throttled = true;
+            attrs.$set("throttled", true);
+            setTimeout(() => {
+              attrs.$set("throttled", false);
+              throttled = false;
+            }, parseInt(attrs.throttle));
+          }
+
+          let params;
+          try {
+            params = attrs.params ? scope.$eval(attrs.params) : undefined;
+          } catch (err) {
+            $log.error("ngWorker: failed to evaluate data-params", err);
+            params = undefined;
+          }
+
+          worker.post(params);
+        });
+
+        if (intervalId) {
+          scope.$on("$destroy", () => clearInterval(intervalId));
+        }
+
+        if (eventName === "load") {
+          element.dispatchEvent(new Event("load"));
+        }
+      },
+    };
+  }
+
+  /**
+   * Swap result into DOM based on strategy
+   */
+  function handleSwap(result, swap, element) {
+    switch (swap) {
+      case "outerHTML": {
+        const parent = element.parentNode;
+        if (!parent) return;
+        const temp = document.createElement("div");
+        temp.innerHTML = result;
+        parent.replaceChild(temp.firstChild, element);
+        break;
+      }
+      case "textContent":
+        element.textContent = result;
+        break;
+      case "beforebegin":
+        element.insertAdjacentHTML("beforebegin", result);
+        break;
+      case "afterbegin":
+        element.insertAdjacentHTML("afterbegin", result);
+        break;
+      case "beforeend":
+        element.insertAdjacentHTML("beforeend", result);
+        break;
+      case "afterend":
+        element.insertAdjacentHTML("afterend", result);
+        break;
+      case "innerHTML":
+      default:
+        element.innerHTML = result;
+        break;
+    }
+  }
+
+  /**
+   * Worker Provider
+   *
+   * Usage:
+   *   const worker = $worker('./math.worker.js', {
+   *     onMessage: (data) => console.log('Result:', data),
+   *     onError: (err) => console.error('Worker error:', err),
+   *     autoTerminate: false,
+   *     transformMessage: (d) => d,
+   *   });
+   *
+   *   worker.post({ action: 'fib', n: 20 });
+   *   worker.terminate();
+   */
+  class WorkerProvider {
+    /**
+     * @type {ng.LogService}
+     */
+    $log;
+    constructor() {
+      /**
+       * Optional provider-level defaults
+       * @type {ng.WorkerConfig}
+       */
+      this.defaults = {
+        autoTerminate: false,
+        transformMessage(data) {
+          try {
+            return JSON.parse(data);
+          } catch {
+            return data;
+          }
+        },
+      };
+    }
+
+    /**
+     * Returns the $worker service function
+     * @returns {ng.WorkerService}
+     */
+    $get = [
+      $injectTokens.$log,
+      /** @param {ng.LogService} log */
+      (log) => {
+        this.$log = log;
+        return (scriptPath, config = {}) => {
+          const merged = { ...this.defaults, ...config };
+          return this.#createWorker(scriptPath, merged);
+        };
+      },
+    ];
+
+    /**
+     * Creates a managed Web Worker instance
+     * @param {string | URL} scriptPath
+     * @param {ng.WorkerConfig} config
+     * @returns {import("./interface.ts").WorkerConnection}
+     */
+    #createWorker(scriptPath, config) {
+      if (!scriptPath) throw new Error("Worker script path required");
+
+      let worker = new Worker(scriptPath, { type: "module" });
+      let terminated = false;
+
+      const reconnect = () => {
+        if (terminated) return;
+        this.$log.info("Worker: restarting...");
+        worker.terminate();
+        worker = new Worker(scriptPath, { type: "module" });
+        wire(worker);
+      };
+
+      const wire = (w) => {
+        w.onmessage = (e) => {
+          let data = e.data;
+          try {
+            data = config.transformMessage ? config.transformMessage(data) : data;
+          } catch {
+            /* no-op */
+          }
+          config.onMessage?.(data, e);
+        };
+
+        w.onerror = (err) => {
+          config.onError?.(err);
+          if (config.autoRestart) reconnect();
+        };
+      };
+
+      wire(worker);
+      let that = this;
+      return {
+        post(data) {
+          if (terminated) return that.$log.warn("Worker already terminated");
+          try {
+            worker.postMessage(data);
+          } catch (err) {
+            that.$log.error("Worker post failed", err);
+          }
+        },
+        terminate() {
+          terminated = true;
+          worker.terminate();
+        },
+        restart() {
+          if (terminated)
+            return that.$log.warn("Worker cannot restart after terminate");
+          reconnect();
+        },
+      };
+    }
+  }
+
   /**
    * Initializes core `ng` module.
    * @param {import('./angular.js').Angular} angular
@@ -35687,7 +35970,7 @@
         [],
         [
           $injectTokens.$provide,
-          /** @param {import("./interface.js").Provider} $provide */
+          /** @param {import("./interface.ts").Provider} $provide */
           ($provide) => {
             // $$sanitizeUriProvider needs to be before $compileProvider as it is used by it.
             $provide.provider({
@@ -35753,6 +36036,7 @@
                 ngValue: ngValueDirective,
                 ngModelOptions: ngModelOptionsDirective,
                 ngViewport: ngViewportDirective,
+                ngWorker: ngWorkerDirective,
               })
               .directive({
                 input: hiddenInputBrowserCacheDirective,
@@ -35820,6 +36104,7 @@
               $url: UrlService,
               $stateRegistry: StateRegistryProvider,
               $eventBus: PubSubProvider,
+              $worker: WorkerProvider,
             });
           },
         ],
@@ -35851,7 +36136,7 @@
       /**
        * @type {string} `version` from `package.json`
        */
-      this.version = "0.9.9"; //inserted via rollup plugin
+      this.version = "0.10.0"; //inserted via rollup plugin
 
       /** @type {!Array<string|any>} */
       this.bootsrappedModules = [];
@@ -36074,7 +36359,7 @@
      * @param {string} name The name of the module to create or retrieve.
      * @param {Array.<string>} [requires] If specified then new module is being created. If
      *        unspecified then the module is being retrieved for further configuration.
-     * @param {import("./interface.js").Injectable<any>} [configFn] Optional configuration function for the module that gets
+     * @param {import("./interface.ts").Injectable<any>} [configFn] Optional configuration function for the module that gets
      *        passed to {@link NgModule.config NgModule.config()}.
      * @returns {NgModule} A newly registered module.
      */
