@@ -1169,6 +1169,7 @@ export class Scope {
     }
   }
 
+  /* @ignore */
   $flushQueue() {
     while ($postUpdateQueue.length) {
       $postUpdateQueue.shift()();

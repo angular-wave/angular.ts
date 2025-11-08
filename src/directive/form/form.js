@@ -8,6 +8,7 @@ import {
   isUndefined,
   isObjectEmpty,
   isProxy,
+  hasAnimate,
 } from "../../shared/utils.js";
 import {
   PRISTINE_CLASS,
@@ -264,8 +265,14 @@ export class FormController {
    * state (ng-dirty class). This method will also propagate to parent forms.
    */
   $setDirty() {
-    this.$$animate.removeClass(this.$$element, PRISTINE_CLASS);
-    this.$$animate.addClass(this.$$element, DIRTY_CLASS);
+    if (hasAnimate(this.$$element)) {
+      this.$$animate.removeClass(this.$$element, PRISTINE_CLASS);
+      this.$$animate.addClass(this.$$element, DIRTY_CLASS);
+    } else {
+      // Fallback for non-animated environments
+      this.$$element.classList.remove(PRISTINE_CLASS);
+      this.$$element.classList.add(DIRTY_CLASS);
+    }
     this.$dirty = true;
     this.$pristine = false;
     this.$$parentForm.$setDirty();
@@ -284,11 +291,18 @@ export class FormController {
    * saving or resetting it.
    */
   $setPristine() {
-    this.$$animate.setClass(
-      this.$$element,
-      PRISTINE_CLASS,
-      `${DIRTY_CLASS} ${SUBMITTED_CLASS}`,
-    );
+    if (hasAnimate(this.$$element)) {
+      this.$$animate.setClass(
+        this.$$element,
+        PRISTINE_CLASS,
+        `${DIRTY_CLASS} ${SUBMITTED_CLASS}`,
+      );
+    } else {
+      // Fallback for non-animated environments
+      this.$$element.classList.remove(DIRTY_CLASS, SUBMITTED_CLASS);
+      this.$$element.classList.add(PRISTINE_CLASS);
+    }
+
     this.$dirty = false;
     this.$pristine = true;
     this.$submitted = false;
@@ -326,7 +340,11 @@ export class FormController {
   }
 
   $$setSubmitted() {
-    this.$$animate.addClass(this.$$element, SUBMITTED_CLASS);
+    if (hasAnimate(this.$$element)) {
+      this.$$animate.addClass(this.$$element, SUBMITTED_CLASS);
+    } else {
+      this.$$element.classList.add(SUBMITTED_CLASS);
+    }
     this.$submitted = true;
     this.$$controls.forEach((control) => {
       if (control.$$setSubmitted) {
