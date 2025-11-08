@@ -419,7 +419,7 @@ export function setIsolateScope(element, scope) {
  * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
  *
  * @param {Element} element - The DOM element to get data from.
- * @param {string} [name] - The DOM element to get data from.
+ * @param {string} [name] - Controller name.
  * @returns {import("../core/scope/scope.js").Scope|undefined} - The retrieved data
  */
 export function getController(element, name) {
@@ -604,7 +604,7 @@ export function cleanElementData(nodes) {
 /**
  * Return instance of InjectorService attached to element
  * @param {Element} element
- * @returns {import('../core/di/internal-injector.js').InjectorService}
+ * @returns {ng.InjectorService}
  */
 export function getInjector(element) {
   return getInheritedData(element, "$injector");

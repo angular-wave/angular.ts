@@ -30,7 +30,7 @@ export class Angular {
   constructor() {
     this.$cache = Cache;
 
-    /** @type {import('./services/pubsub/pubsub.js').PubSub} */
+    /** @type {ng.PubSubService} */
     this.$eventBus = EventBus;
 
     /**
@@ -41,9 +41,25 @@ export class Angular {
     /** @type {!Array<string|any>} */
     this.bootsrappedModules = [];
 
+    /**
+     * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
+     *
+     * @type {(element: Element, name: string?) => ng.Scope|undefined}
+     */
     this.getController = getController;
+
+    /**
+     * Return instance of InjectorService attached to element
+     * @type {(Element) => ng.InjectorService}
+     */
     this.getInjector = getInjector;
+
+    /**
+     * Gets scope for a given element.
+     * @type {(Element) => *}
+     */
     this.getScope = getScope;
+
     this.errorHandlingConfig = errorHandlingConfig;
     this.$t = $t;
 
@@ -136,7 +152,8 @@ export class Angular {
        */
       (scope, el, compile, $injector) => {
         // ng-route deps
-        this.$injector = $injector;
+        this.$injector = $injector; // TODO refactor away as this as this prevents multiple apps from being used
+
         setCacheData(el, "$injector", $injector);
 
         const compileFn = compile(el);

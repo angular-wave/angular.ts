@@ -1,16 +1,32 @@
 export class Angular {
   $cache: Map<number, import("./interface.ts").ExpandoStore>;
-  /** @type {import('./services/pubsub/pubsub.js').PubSub} */
-  $eventBus: import("./services/pubsub/pubsub.js").PubSub;
+  /** @type {ng.PubSubService} */
+  $eventBus: ng.PubSubService;
   /**
    * @type {string} `version` from `package.json`
    */
   version: string;
   /** @type {!Array<string|any>} */
   bootsrappedModules: Array<string | any>;
-  getController: typeof getController;
-  getInjector: typeof getInjector;
-  getScope: typeof getScope;
+  /**
+   * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
+   *
+   * @type {(element: Element, name: string?) => ng.Scope|undefined}
+   */
+  getController: (
+    element: Element,
+    name: string | null,
+  ) => ng.Scope | undefined;
+  /**
+   * Return instance of InjectorService attached to element
+   * @type {(Element) => ng.InjectorService}
+   */
+  getInjector: (Element: any) => ng.InjectorService;
+  /**
+   * Gets scope for a given element.
+   * @type {(Element) => *}
+   */
+  getScope: (Element: any) => any;
   errorHandlingConfig: typeof errorHandlingConfig;
   $t: Readonly<Record<string, string>>;
   /**
@@ -128,8 +144,5 @@ export class Angular {
     configFn?: import("./interface.ts").Injectable<any>,
   ): NgModule;
 }
-import { getController } from "./shared/dom.js";
-import { getInjector } from "./shared/dom.js";
-import { getScope } from "./shared/dom.js";
 import { errorHandlingConfig } from "./shared/utils.js";
 import { NgModule } from "./core/di/ng-module.js";
