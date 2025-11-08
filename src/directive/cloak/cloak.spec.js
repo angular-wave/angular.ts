@@ -25,20 +25,4 @@ describe("ngCloak", () => {
     $compile(element);
     expect(element.getAttribute("ng-cloak")).toBeNull();
   });
-
-  it("should remove ngCloak class from a compiled element with attribute", () => {
-    element = createElementFromHTML(
-      '<div ng-cloak class="foo ng-cloak bar"></div>',
-    );
-
-    expect(element.classList.contains("foo")).toBe(true);
-    expect(element.classList.contains("ng-cloak")).toBe(true);
-    expect(element.classList.contains("bar")).toBe(true);
-
-    $compile(element);
-
-    expect(element.classList.contains("foo")).toBe(true);
-    expect(element.classList.contains("ng-cloak")).toBe(false);
-    expect(element.classList.contains("bar")).toBe(true);
-  });
 });

@@ -3,9 +3,8 @@
  */
 export function ngCloakDirective() {
   return {
-    compile(element, attr) {
+    compile(_, attr) {
       attr.$set("ngCloak", undefined);
-      element.classList.remove("ng-cloak");
     },
   };
 }
