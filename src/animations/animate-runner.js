@@ -1,193 +1,241 @@
-export function AnimateAsyncRunFactoryProvider() {
-  this.$get = [
-    function () {
-      let waitQueue = [];
+/**
+ * Provides a frame-synchronized asynchronous execution queue.
+ * Schedules functions to run on the next animation frame (via `requestAnimationFrame`)
+ * or in a microtask (via `queueMicrotask`) when the document is hidden.
+ */
+export class AnimateAsyncRunFactoryProvider {
+  constructor() {
+    this.$get = () => {
+      /**
+       * Schedule a callback for the next repaint or microtask if tab is hidden.
+       * @param {VoidFunction} fn - The callback to schedule.
+       */
+      const nextFrame = (fn) => {
+        if (document.hidden) queueMicrotask(fn);
+        else requestAnimationFrame(fn);
+      };
 
-      function waitForTick(fn) {
-        waitQueue.push(fn);
-        if (waitQueue.length > 1) return;
-        window.requestAnimationFrame(function () {
-          for (let i = 0; i < waitQueue.length; i++) {
-            waitQueue[i]();
-          }
-          waitQueue = [];
-        });
-      }
+      /**
+       * Creates a frame-based batching scheduler.
+       * Multiple calls in a single frame will be batched together and flushed once.
+       *
+       * @returns {Function} A scheduler function that queues callbacks for the next frame.
+       */
+      return () => {
+        let queue = [];
+        let scheduled = false;
 
-      return function () {
-        let passed = false;
-        waitForTick(function () {
-          passed = true;
-        });
-        return function (callback) {
-          if (passed) {
-            callback();
-          } else {
-            waitForTick(callback);
+        const flush = () => {
+          const tasks = queue.slice();
+          queue.length = 0;
+          scheduled = false;
+          for (const fn of tasks) fn();
+        };
+
+        return (fn) => {
+          queue.push(fn);
+          if (!scheduled) {
+            scheduled = true;
+            nextFrame(flush);
           }
         };
       };
-    },
-  ];
+    };
+  }
 }
 
-const INITIAL_STATE = 0;
-const DONE_PENDING_STATE = 1;
-const DONE_COMPLETE_STATE = 2;
+// Internal runner states
+const STATE_INITIAL = 0;
+const STATE_PENDING = 1;
+const STATE_DONE = 2;
+
 let $$animateAsyncRun;
 
-export function AnimateRunnerFactoryProvider() {
-  this.$get = [
-    "$$animateAsyncRun",
-    function (animateAsyncRun) {
-      $$animateAsyncRun = animateAsyncRun;
-      return AnimateRunner;
-    },
-  ];
+/**
+ * Provides the `AnimateRunner` service used by AngularJS animation subsystems.
+ */
+export class AnimateRunnerFactoryProvider {
+  constructor() {
+    this.$get = [
+      "$$animateAsyncRun",
+      /**
+       * @param {Function} animateAsyncRun - Factory for frame-based async scheduling.
+       * @returns {typeof AnimateRunner} The AnimateRunner class.
+       */
+      (animateAsyncRun) => {
+        $$animateAsyncRun = animateAsyncRun;
+        return AnimateRunner;
+      },
+    ];
+  }
 }
 
+/**
+ * Represents an asynchronous animation operation, providing both
+ * callback-based and promise-based APIs for completion tracking.
+ */
 export class AnimateRunner {
-  static chain(chain, callback) {
-    let index = 0;
-
-    function next() {
-      if (index === chain.length) {
-        callback(true);
+  /**
+   * Run an array of animation runners in sequence.
+   * Each runner waits for the previous one to complete.
+   *
+   * @param {Array<AnimateRunner>} runners - Array of runners to execute in order.
+   * @param {Function} callback - Called once all runners complete or one fails.
+   */
+  static chain(runners, callback) {
+    let i = 0;
+    const next = (ok = true) => {
+      if (!ok || i >= runners.length) {
+        callback(ok);
         return;
       }
-
-      chain[index]((response) => {
-        if (response === false) {
-          callback(false);
-          return;
-        }
-        index++;
-        next();
-      });
-    }
-
+      runners[i++].done(next);
+    };
     next();
   }
 
+  /**
+   * Waits for all animation runners to complete before invoking the callback.
+   *
+   * @param {Array<AnimateRunner>} runners - Array of active runners.
+   * @param {Function} callback - Called when all runners complete.
+   */
   static all(runners, callback) {
-    let count = 0;
+    let remaining = runners.length;
     let status = true;
-
-    runners.forEach((runner) => {
-      runner.done(onProgress);
-    });
-
-    function onProgress(response) {
-      status = status && response;
-      if (++count === runners.length) {
-        callback(status);
-      }
+    for (const r of runners) {
+      r.done((result) => {
+        status = status && result !== false;
+        if (--remaining === 0) callback(status);
+      });
     }
   }
 
-  constructor(host) {
-    this.setHost(host);
-
-    const rafTick = $$animateAsyncRun();
-    const timeoutTick = (fn) => {
-      setTimeout(fn, 0, false);
-    };
-
+  /**
+   * Creates a new animation runner instance.
+   *
+   * @param {Object} [host] - Optional host object implementing animation lifecycle methods:
+   *   - `pause()`, `resume()`, `end()`, `cancel()`, `progress()`
+   * @param {Function} [frameScheduler] - Optional injected frame scheduler.
+   */
+  constructor(host, frameScheduler) {
+    this.host = host || {};
     this._doneCallbacks = [];
-    this._tick = (fn) => {
-      if (document.hidden) {
-        timeoutTick(fn);
-      } else {
-        rafTick(fn);
-      }
-    };
-    this._state = 0;
+    this._state = STATE_INITIAL;
+    this._promise = null;
+
+    // Scheduler: prefer injected $$animateAsyncRun, else fallback to RAF
+    const asyncRunFactory = frameScheduler || $$animateAsyncRun;
+    this._schedule =
+      (asyncRunFactory && asyncRunFactory()) ||
+      ((fn) => requestAnimationFrame(fn));
   }
 
+  /**
+   * Sets or updates the animation host.
+   * @param {Object} host - The host object.
+   */
   setHost(host) {
     this.host = host || {};
   }
 
+  /**
+   * Registers a callback to be called once the animation is complete.
+   * If the animation is already complete, it is called immediately.
+   *
+   * @param {Function} fn - The callback to invoke upon completion.
+   */
   done(fn) {
-    if (this._state === DONE_COMPLETE_STATE) {
-      fn();
+    if (this._state === STATE_DONE) {
+      fn(true);
     } else {
       this._doneCallbacks.push(fn);
     }
   }
 
-  progress() {}
+  /**
+   * Notifies the host of animation progress.
+   * @param {...any} args - Optional progress parameters.
+   */
+  progress(...args) {
+    this.host.progress?.(...args);
+  }
 
+  /** Pauses the animation, if supported by the host. */
+  pause() {
+    this.host.pause?.();
+  }
+
+  /** Resumes the animation, if supported by the host. */
+  resume() {
+    this.host.resume?.();
+  }
+
+  /** Ends the animation successfully. */
+  end() {
+    this.host.end?.();
+    this._finish(true);
+  }
+
+  /** Cancels the animation. */
+  cancel() {
+    this.host.cancel?.();
+    this._finish(false);
+  }
+
+  /**
+   * Marks the animation as complete on the next animation frame.
+   *
+   * @param {boolean} [status=true] - Whether the animation succeeded.
+   */
+  complete(status = true) {
+    if (this._state === STATE_INITIAL) {
+      this._state = STATE_PENDING;
+      this._schedule(() => this._finish(status));
+    }
+  }
+
+  /**
+   * Returns a promise that resolves or rejects when the animation completes.
+   * @returns {Promise<void>} Promise resolved on success or rejected on cancel.
+   */
   getPromise() {
-    if (!this.promise) {
-      const self = this;
-      this.promise = new Promise((resolve, reject) => {
-        self.done((status) => {
-          if (status === false) {
-            reject();
-          } else {
-            resolve();
-          }
+    if (!this._promise) {
+      this._promise = new Promise((resolve, reject) => {
+        this.done((success) => {
+          if (success === false) reject();
+          else resolve();
         });
       });
     }
-    return this.promise;
+    return this._promise;
   }
 
-  then(resolveHandler, rejectHandler) {
-    return this.getPromise().then(resolveHandler, rejectHandler);
+  /** Promise-compatible `then()` method. */
+  then(onFulfilled, onRejected) {
+    return this.getPromise().then(onFulfilled, onRejected);
   }
 
-  catch(handler) {
-    return this.getPromise().catch(handler);
+  /** Promise-compatible `catch()` method. */
+  catch(onRejected) {
+    return this.getPromise().catch(onRejected);
   }
 
-  finally(handler) {
-    return this.getPromise().finally(handler);
+  /** Promise-compatible `finally()` method. */
+  finally(onFinally) {
+    return this.getPromise().finally(onFinally);
   }
 
-  pause() {
-    if (this.host.pause) {
-      this.host.pause();
-    }
-  }
-
-  resume() {
-    if (this.host.resume) {
-      this.host.resume();
-    }
-  }
-
-  end() {
-    if (this.host.end) {
-      this.host.end();
-    }
-    this._resolve(true);
-  }
-
-  cancel() {
-    if (this.host.cancel) {
-      this.host.cancel();
-    }
-    this._resolve(false);
-  }
-
-  complete(response) {
-    if (this._state === INITIAL_STATE) {
-      this._state = DONE_PENDING_STATE;
-      this._tick(() => {
-        this._resolve(response);
-      });
-    }
-  }
-
-  _resolve(response) {
-    if (this._state !== DONE_COMPLETE_STATE) {
-      this._doneCallbacks.forEach((fn) => {
-        fn(response);
-      });
-      this._doneCallbacks.length = 0;
-      this._state = DONE_COMPLETE_STATE;
-    }
+  /**
+   * @private
+   * Completes the animation and invokes all done callbacks.
+   *
+   * @param {boolean} status - True if completed successfully, false if cancelled.
+   */
+  _finish(status) {
+    if (this._state === STATE_DONE) return;
+    this._state = STATE_DONE;
+    for (const fn of this._doneCallbacks) fn(status);
+    this._doneCallbacks.length = 0;
   }
 }
