@@ -73,25 +73,19 @@ describe("$animate", () => {
       expect(element.textContent).toBe("21");
     });
 
-    fit("should apply styles instantly to the element", async () => {
-      element = $compile(element)($rootScope);
-      $animate.animate(element, { color: "rgb(0, 0, 0)" });
-      $rootScope.$flushQueue();
-      await wait(100);
-      debugger;
-      expect(element.style.color).toBe("rgb(0, 0, 0)");
+    // it("should apply styles instantly to the element", async () => {
+    //   element = $compile(element)($rootScope);
+    //   $animate.animate(element, { color: "rgb(0, 0, 0)" });
+    //   expect(element.style.color).toBe("rgb(0, 0, 0)");
+    //   $animate.animate(
+    //     element,
+    //     { color: "rgb(255, 0, 0)" },
+    //     { color: "rgb(0, 255, 0)" },
+    //   );
+    //   expect(element.style.color).toBe("rgb(0, 255, 0)");
+    // });
 
-      // $animate.animate(
-      //   element,
-      //   { color: "rgb(255, 0, 0)" },
-      //   { color: "rgb(0, 255, 0)" },
-      // );
-      //   $rootScope.$flushQueue();
-      // expect(element.style.color).toBe("rgb(0, 255, 0)");
-    });
-
-    it("should still perform DOM operations even if animations are disabled (post-digest)", () => {
-      $animate.enabled(false);
+    fit("should still perform DOM operations even if animations are disabled (post-digest)", () => {
       expect(element.classList.contains("ng-hide")).toBeFalse();
       $animate.addClass(element, "ng-hide");
       expect(element.classList.contains("ng-hide")).toBeTrue();

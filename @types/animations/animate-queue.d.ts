@@ -19,7 +19,6 @@ export class AnimateQueueProvider {
         off(event: any, container: any, callback: any, ...args: any[]): void;
         pin(element: any, parentElement: any): void;
         push(element: any, event: any, options: any, domOperation: any): any;
-        enabled(element: any, bool: any, ...args: any[]): any;
       })
   )[];
 }

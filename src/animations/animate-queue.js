@@ -168,10 +168,6 @@ export function AnimateQueueProvider($animateProvider) {
       const disabledElementsLookup = new Map();
       let animationsEnabled = null;
 
-      function removeFromDisabledElementsLookup(evt) {
-        disabledElementsLookup.delete(evt.target);
-      }
-
       function postDigestTaskFactory() {
         let postDigestCalled = false;
         return function (fn) {
@@ -352,47 +348,6 @@ export function AnimateQueueProvider($animateProvider) {
           options = options || {};
           options.domOperation = domOperation;
           return queueAnimation(element, event, options);
-        },
-
-        // this method has four signatures:
-        //  () - global getter
-        //  (bool) - global setter
-        //  (element) - element getter
-        //  (element, bool) - element setter<F37>
-        enabled(element, bool) {
-          const argCount = arguments.length;
-
-          if (argCount === 0) {
-            // () - Global getter
-            bool = !!animationsEnabled;
-          } else {
-            const hasElement = isElement(element);
-
-            if (!hasElement) {
-              // (bool) - Global setter
-              bool = animationsEnabled = !!element;
-            } else {
-              const node = element;
-
-              if (argCount === 1) {
-                // (element) - Element getter
-                bool = !disabledElementsLookup.get(node);
-              } else {
-                // (element, bool) - Element setter
-                if (!disabledElementsLookup.has(node)) {
-                  // The element is added to the map for the first time.
-                  // Create a listener to remove it on `$destroy` (to avoid memory leak).
-                  element.addEventListener(
-                    "$destroy",
-                    removeFromDisabledElementsLookup,
-                  );
-                }
-                disabledElementsLookup.set(node, !bool);
-              }
-            }
-          }
-
-          return bool;
         },
       };
 
