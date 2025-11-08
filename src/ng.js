@@ -52,10 +52,7 @@ import { ngAttributeAliasDirectives } from "./directive/attrs/attrs.js";
 import { ngEventDirectives } from "./directive/events/events.js";
 import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
 import { AnimateProvider } from "./animations/animate.js";
-import {
-  AnimateAsyncRunFactoryProvider,
-  AnimateRunnerFactoryProvider,
-} from "./animations/animate-runner.js";
+import { AnimateRunnerFactoryProvider } from "./animations/animate-runner.js";
 import { TemplateCacheProvider } from "./services/template-cache/template-cache.js";
 import { ControllerProvider } from "./core/controller/controller.js";
 import { ExceptionHandlerProvider } from "./services/exception/exception-handler.js";
@@ -259,7 +256,6 @@ export function registerNgModule(angular) {
             $$animateCache: AnimateCacheProvider,
             $$animateQueue: AnimateQueueProvider,
             $$AnimateRunner: AnimateRunnerFactoryProvider,
-            $$animateAsyncRun: AnimateAsyncRunFactoryProvider,
             $controller: ControllerProvider,
             $exceptionHandler: ExceptionHandlerProvider,
             $filter: FilterProvider,

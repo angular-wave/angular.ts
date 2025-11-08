@@ -3,44 +3,60 @@
  * Schedules functions to run on the next animation frame (via `requestAnimationFrame`)
  * or in a microtask (via `queueMicrotask`) when the document is hidden.
  */
-export class AnimateAsyncRunFactoryProvider {
+export class AnimateAsyncRun {
   constructor() {
-    this.$get = () => {
-      /**
-       * Schedule a callback for the next repaint or microtask if tab is hidden.
-       * @param {VoidFunction} fn - The callback to schedule.
-       */
-      const nextFrame = (fn) => {
-        if (document.hidden) queueMicrotask(fn);
-        else requestAnimationFrame(fn);
-      };
+    /** @private @type {Array<VoidFunction>} */
+    this._queue = [];
 
-      /**
-       * Creates a frame-based batching scheduler.
-       * Multiple calls in a single frame will be batched together and flushed once.
-       *
-       * @returns {Function} A scheduler function that queues callbacks for the next frame.
-       */
-      return () => {
-        let queue = [];
-        let scheduled = false;
+    /** @private */
+    this._scheduled = false;
+  }
 
-        const flush = () => {
-          const tasks = queue.slice();
-          queue.length = 0;
-          scheduled = false;
-          for (const fn of tasks) fn();
-        };
+  /**
+   * Schedule a callback for the next repaint or microtask if tab is hidden.
+   * @param {VoidFunction} fn - The callback to schedule.
+   * @private
+   */
+  _nextFrame(fn) {
+    if (typeof document !== "undefined" && document.hidden) {
+      if (typeof queueMicrotask === "function") {
+        queueMicrotask(fn);
+      } else {
+        Promise.resolve().then(fn); // fallback for environments without queueMicrotask
+      }
+    } else if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(fn);
+    } else {
+      setTimeout(fn, 0); // ultimate fallback
+    }
+  }
 
-        return (fn) => {
-          queue.push(fn);
-          if (!scheduled) {
-            scheduled = true;
-            nextFrame(flush);
-          }
-        };
-      };
-    };
+  /**
+   * Add a function to the frame queue. Multiple calls in the same frame are batched.
+   * @param {VoidFunction} fn - The callback to run in the next frame.
+   */
+  schedule(fn) {
+    this._queue.push(fn);
+    if (!this._scheduled) {
+      this._scheduled = true;
+      this._nextFrame(() => this._flush());
+    }
+  }
+
+  /** @private Flush all queued callbacks */
+  _flush() {
+    const tasks = this._queue.slice();
+    this._queue.length = 0;
+    this._scheduled = false;
+    for (const fn of tasks) fn();
+  }
+
+  /**
+   * Returns a scheduler function compatible with AngularJS-style `$animateAsyncRun`.
+   * @returns {function(VoidFunction): void}
+   */
+  createScheduler() {
+    return (fn) => this.schedule(fn);
   }
 }
 
@@ -49,7 +65,42 @@ const STATE_INITIAL = 0;
 const STATE_PENDING = 1;
 const STATE_DONE = 2;
 
-let $$animateAsyncRun;
+let $$animateAsyncRun = (() => {
+  /**
+   * Schedule a callback for the next repaint or microtask if tab is hidden.
+   * @param {VoidFunction} fn - The callback to schedule.
+   */
+  const nextFrame = (fn) => {
+    if (document.hidden) queueMicrotask(fn);
+    else requestAnimationFrame(fn);
+  };
+
+  /**
+   * Creates a frame-based batching scheduler.
+   * Multiple calls in a single frame will be batched together and flushed once.
+   *
+   * @returns {Function} A scheduler function that queues callbacks for the next frame.
+   */
+  return () => {
+    let queue = [];
+    let scheduled = false;
+
+    const flush = () => {
+      const tasks = queue.slice();
+      queue.length = 0;
+      scheduled = false;
+      for (const fn of tasks) fn();
+    };
+
+    return (fn) => {
+      queue.push(fn);
+      if (!scheduled) {
+        scheduled = true;
+        nextFrame(flush);
+      }
+    };
+  };
+})();
 
 /**
  * Provides the `AnimateRunner` service used by AngularJS animation subsystems.
@@ -57,13 +108,7 @@ let $$animateAsyncRun;
 export class AnimateRunnerFactoryProvider {
   constructor() {
     this.$get = [
-      "$$animateAsyncRun",
-      /**
-       * @param {Function} animateAsyncRun - Factory for frame-based async scheduling.
-       * @returns {typeof AnimateRunner} The AnimateRunner class.
-       */
-      (animateAsyncRun) => {
-        $$animateAsyncRun = animateAsyncRun;
+      () => {
         return AnimateRunner;
       },
     ];

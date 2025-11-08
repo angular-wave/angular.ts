@@ -3,14 +3,35 @@
  * Schedules functions to run on the next animation frame (via `requestAnimationFrame`)
  * or in a microtask (via `queueMicrotask`) when the document is hidden.
  */
-export class AnimateAsyncRunFactoryProvider {
-  $get: () => () => Function;
+export class AnimateAsyncRun {
+  /** @private @type {Array<VoidFunction>} */
+  private _queue;
+  /** @private */
+  private _scheduled;
+  /**
+   * Schedule a callback for the next repaint or microtask if tab is hidden.
+   * @param {VoidFunction} fn - The callback to schedule.
+   * @private
+   */
+  private _nextFrame;
+  /**
+   * Add a function to the frame queue. Multiple calls in the same frame are batched.
+   * @param {VoidFunction} fn - The callback to run in the next frame.
+   */
+  schedule(fn: VoidFunction): void;
+  /** @private Flush all queued callbacks */
+  private _flush;
+  /**
+   * Returns a scheduler function compatible with AngularJS-style `$animateAsyncRun`.
+   * @returns {function(VoidFunction): void}
+   */
+  createScheduler(): (arg0: VoidFunction) => void;
 }
 /**
  * Provides the `AnimateRunner` service used by AngularJS animation subsystems.
  */
 export class AnimateRunnerFactoryProvider {
-  $get: (string | ((animateAsyncRun: Function) => typeof AnimateRunner))[];
+  $get: (() => typeof AnimateRunner)[];
 }
 /**
  * Represents an asynchronous animation operation, providing both
