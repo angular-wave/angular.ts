@@ -47,7 +47,7 @@ export class Transition implements IHookRegistry {
   _targetState: import("../state/target-state.js").TargetState;
   _options: any;
   $id: number;
-  _treeChanges: import("./interface.js").TreeChanges;
+  _treeChanges: import("./interface.ts").TreeChanges;
   onStart: any;
   onBefore: any;
   onSuccess: any;
@@ -251,7 +251,7 @@ export class Transition implements IHookRegistry {
     pathname: any,
   ):
     | import("../path/path-node.js").PathNode[]
-    | import("./interface.js").TreeChanges;
+    | import("./interface.ts").TreeChanges;
   /**
    * Creates a new transition that is a redirection of the current one.
    *

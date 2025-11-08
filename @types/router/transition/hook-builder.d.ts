@@ -45,4 +45,4 @@ export class HookBuilder {
    */
   getMatchingHooks(hookType: any, treeChanges: any, transition: any): any;
 }
-import { TransitionHookPhase } from "./interface.js";
+import { TransitionHookPhase } from "./transition-hook.js";

@@ -1,4 +1,3 @@
-import { TransitionHookScope, TransitionHookPhase } from "./interface.js";
 import { Transition } from "./transition.js";
 import { makeEvent } from "./hook-registry.js";
 import {
@@ -23,7 +22,11 @@ import { registerUpdateGlobalState } from "../hooks/update-globals.js";
 
 import { registerLazyLoadHook } from "../hooks/lazy-load.js";
 import { TransitionEventType } from "./transition-event-type.js";
-import { TransitionHook } from "./transition-hook.js";
+import {
+  TransitionHook,
+  TransitionHookPhase,
+  TransitionHookScope,
+} from "./transition-hook.js";
 import { isDefined } from "../../shared/utils.js";
 import { registerIgnoredTransitionHook } from "../hooks/ignored-transition.js";
 import { registerInvalidTransitionHook } from "../hooks/invalid-transition.js";
@@ -157,7 +160,6 @@ export class TransitionProvider {
   }
 
   _defineCoreEvents() {
-    const Phase = TransitionHookPhase;
     const TH = TransitionHook;
     const paths = this._criteriaPaths;
     const NORMAL_SORT = false,
@@ -165,7 +167,7 @@ export class TransitionProvider {
     const SYNCHRONOUS = true;
     this._defineEvent(
       "onCreate",
-      Phase.CREATE,
+      TransitionHookPhase.CREATE,
       0,
       paths.to,
       NORMAL_SORT,
@@ -173,15 +175,21 @@ export class TransitionProvider {
       TH.THROW_ERROR,
       SYNCHRONOUS,
     );
-    this._defineEvent("onBefore", Phase.BEFORE, 0, paths.to);
-    this._defineEvent("onStart", Phase.RUN, 0, paths.to);
-    this._defineEvent("onExit", Phase.RUN, 100, paths.exiting, REVERSE_SORT);
-    this._defineEvent("onRetain", Phase.RUN, 200, paths.retained);
-    this._defineEvent("onEnter", Phase.RUN, 300, paths.entering);
-    this._defineEvent("onFinish", Phase.RUN, 400, paths.to);
+    this._defineEvent("onBefore", TransitionHookPhase.BEFORE, 0, paths.to);
+    this._defineEvent("onStart", TransitionHookPhase.RUN, 0, paths.to);
+    this._defineEvent(
+      "onExit",
+      TransitionHookPhase.RUN,
+      100,
+      paths.exiting,
+      REVERSE_SORT,
+    );
+    this._defineEvent("onRetain", TransitionHookPhase.RUN, 200, paths.retained);
+    this._defineEvent("onEnter", TransitionHookPhase.RUN, 300, paths.entering);
+    this._defineEvent("onFinish", TransitionHookPhase.RUN, 400, paths.to);
     this._defineEvent(
       "onSuccess",
-      Phase.SUCCESS,
+      TransitionHookPhase.SUCCESS,
       0,
       paths.to,
       NORMAL_SORT,
@@ -191,7 +199,7 @@ export class TransitionProvider {
     );
     this._defineEvent(
       "onError",
-      Phase.ERROR,
+      TransitionHookPhase.ERROR,
       0,
       paths.to,
       NORMAL_SORT,

@@ -1,4 +1,3 @@
-import { TransitionHookPhase } from "./interface.js";
 import { defaults, silentRejection } from "../../shared/common.js";
 import { fnToString, maxLength } from "../../shared/strings.js";
 import { isPromise } from "../../shared/predicates.js";
@@ -14,6 +13,31 @@ const defaultOptions = {
   traceData: {},
   bind: null,
 };
+
+/**
+ * Enum representing the different phases of a transition hook.
+ *
+ * @readonly
+ * @enum {number}
+ */
+export const TransitionHookPhase = Object.freeze({
+  CREATE: 0,
+  BEFORE: 1,
+  RUN: 2,
+  SUCCESS: 3,
+  ERROR: 4,
+});
+
+/**
+ * Enum representing the scope in which a transition hook operates.
+ *
+ * @readonly
+ * @enum {number}
+ */
+export const TransitionHookScope = Object.freeze({
+  TRANSITION: 0,
+  STATE: 1,
+});
 
 export class TransitionHook {
   /**

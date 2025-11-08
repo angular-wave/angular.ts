@@ -117,4 +117,4 @@ export class TransitionProvider {
   _registerCoreTransitionHooks(): void;
 }
 import { Transition } from "./transition.js";
-import { TransitionHookPhase } from "./interface.js";
+import { TransitionHookPhase } from "./transition-hook.js";

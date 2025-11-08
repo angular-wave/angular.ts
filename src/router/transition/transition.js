@@ -11,8 +11,7 @@ import {
 } from "../../shared/common.js";
 import { isUndefined, isObject, assert } from "../../shared/utils.js";
 import { propEq, val, is } from "../../shared/hof.js";
-import { TransitionHookPhase } from "./interface.js"; // has or is using
-import { TransitionHook } from "./transition-hook.js";
+import { TransitionHook, TransitionHookPhase } from "./transition-hook.js";
 import { matchState, makeEvent } from "./hook-registry.js";
 import { HookBuilder } from "./hook-builder.js";
 import { PathUtils } from "../path/path-utils.js";

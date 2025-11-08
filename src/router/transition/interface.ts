@@ -5,6 +5,7 @@ import { StateObject } from "../state/state-object.js";
 import { PathNode } from "../path/path-node.js";
 import { TargetState } from "../state/target-state.js";
 import { RegisteredHook } from "./hook-registry.js";
+import { TransitionHookScope } from "./transition-hook.js";
 
 /**
  * The TransitionOptions object can be used to change the behavior of a transition.
@@ -906,17 +907,3 @@ export interface PathType {
  * Or, `true` to always match
  */
 export type HookMatchCriterion = string | IStateMatch | boolean;
-
-enum TransitionHookPhase {
-  CREATE,
-  BEFORE,
-  RUN,
-  SUCCESS,
-  ERROR,
-}
-enum TransitionHookScope {
-  TRANSITION,
-  STATE,
-}
-
-export { TransitionHookPhase, TransitionHookScope };

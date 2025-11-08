@@ -1,5 +1,5 @@
 import { assertPredicate, unnestR } from "../../shared/common.js";
-import { TransitionHookPhase, TransitionHookScope } from "./interface.js";
+import { TransitionHookPhase, TransitionHookScope } from "./transition-hook.js";
 import { TransitionHook } from "./transition-hook.js";
 
 /**
