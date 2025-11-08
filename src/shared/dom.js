@@ -692,6 +692,26 @@ export function domInsert(element, parentElement, afterElement) {
   }
 }
 
+export function animatedomInsert(element, parent, after) {
+  const originalVisibility = element.style.visibility;
+  const originalPosition = element.style.position;
+  const originalPointerEvents = element.style.pointerEvents;
+
+  Object.assign(element.style, {
+    visibility: "hidden",
+    position: "absolute",
+    pointerEvents: "none",
+  });
+
+  domInsert(element, parent, after);
+
+  requestAnimationFrame(() => {
+    element.style.visibility = originalVisibility;
+    element.style.position = originalPosition;
+    element.style.pointerEvents = originalPointerEvents;
+  });
+}
+
 /**
  * Returns the base href of the document.
  *

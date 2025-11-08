@@ -1,5 +1,5 @@
 import { isFunction, isObject, minErr, extend } from "../shared/utils.js";
-import { removeElement, domInsert } from "../shared/dom.js";
+import { removeElement, animatedomInsert } from "../shared/dom.js";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
 
 /** @typedef {"enter"|"leave"|"move"|"addClass"|"setClass"|"removeClass"} AnimationMethod */
@@ -395,7 +395,7 @@ export function AnimateProvider($provide) {
          */
         enter(element, parent, after, options) {
           parent = parent || after.parentElement;
-          domInsert(element, parent, after);
+          animatedomInsert(element, parent, after);
           return $$animateQueue.push(
             element,
             "enter",
@@ -417,7 +417,7 @@ export function AnimateProvider($provide) {
          */
         move(element, parent, after, options) {
           parent = parent || after.parentElement;
-          domInsert(element, parent, after);
+          animatedomInsert(element, parent, after);
           return $$animateQueue.push(
             element,
             "move",

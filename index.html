@@ -116,6 +116,10 @@
         Get
       </button>
       <div id="p"></div>
+
+      <div ng-if="bool" class="fade" animate="true">Fade me in out</div>
+      <button ng-click="bool=true">Fade In!</button>
+      <button ng-click="bool=false">Fade Out!</button>
     </div>
   </body>
 </html>

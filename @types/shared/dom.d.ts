@@ -240,6 +240,7 @@ export function domInsert(
   parentElement: any,
   afterElement: any,
 ): void;
+export function animatedomInsert(element: any, parent: any, after: any): void;
 /**
  * Returns the base href of the document.
  *
