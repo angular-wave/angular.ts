@@ -10,7 +10,11 @@
     <script src="https://cdn.jsdelivr.net/npm/angular@1.8.3/angular.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/angular-animate@1.8.3/angular-animate.js"></script>
     <script>window.angular.module("test", [])</script> -->
-
+    <style>
+      .red {
+        background-color: red;
+      }
+    </style>
     <script type="module" src="/src/index.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -18,9 +22,8 @@
           "$animate",
           function ($animate) {
             return {
-              compile(e) {
-                debugger;
-                $animate.animate(e, { color: "rgb(255, 0, 0)" });
+              link(scope, e) {
+                $animate.addClass(e, "red");
               },
             };
           },

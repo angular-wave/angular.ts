@@ -405,6 +405,7 @@ export function AnimateQueueProvider($animateProvider) {
         if (options.to && !isObject(options.to)) {
           options.to = null;
         }
+
         // If animations are hard-disabled for the whole application there is no need to continue.
         // There are also situations where a directive issues an animation for a JQLite wrapper that
         // contains only comment nodes. In this case, there is no way we can perform an animation.
@@ -417,7 +418,6 @@ export function AnimateQueueProvider($animateProvider) {
           close();
           return runner;
         }
-
         const isStructural = ["enter", "move", "leave"].indexOf(event) >= 0;
 
         // This is a hard disable of all animations the element itself, therefore  there is no need to
@@ -653,6 +653,8 @@ export function AnimateQueueProvider($animateProvider) {
           });
         });
 
+        // Since we don't have digest any more - trigger queue here
+        setTimeout($rootScope.$flushQueue, 0);
         return runner;
 
         function notifyProgress(runner, event, phase, data) {

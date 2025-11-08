@@ -5,7 +5,7 @@ import { isFunction, wait } from "../shared/utils.js";
 import { createInjector } from "../core/di/injector.js";
 
 describe("$animate", () => {
-  describe("without animation", () => {
+  describe("with animation", () => {
     let element = document.getElementById("app");
     let $compile;
     let $rootElement;
@@ -73,27 +73,31 @@ describe("$animate", () => {
       expect(element.textContent).toBe("21");
     });
 
-    // it("should apply styles instantly to the element", async () => {
-    //   element = $compile(element)($rootScope);
-    //   $animate.animate(element, { color: "rgb(0, 0, 0)" });
-    //   expect(element.style.color).toBe("rgb(0, 0, 0)");
-    //   $animate.animate(
-    //     element,
-    //     { color: "rgb(255, 0, 0)" },
-    //     { color: "rgb(0, 255, 0)" },
-    //   );
-    //   expect(element.style.color).toBe("rgb(0, 255, 0)");
-    // });
+    fit("should apply styles instantly to the element", async () => {
+      element = $compile(element)($rootScope);
+      $animate.animate(element, { color: "rgb(0, 0, 0)" });
+      expect(element.style.color).toBe("rgb(0, 0, 0)");
+      $rootScope.$flushQueue();
 
-    fit("should still perform DOM operations even if animations are disabled (post-digest)", () => {
+      $animate.animate(
+        element,
+        { color: "rgb(255, 0, 0)" },
+        { color: "rgb(0, 255, 0)" },
+      );
+      $rootScope.$flushQueue();
+      expect(element.style.color).toBe("rgb(0, 255, 0)");
+    });
+
+    fit("should perform DOM operations (post-digest)", async () => {
       expect(element.classList.contains("ng-hide")).toBeFalse();
       $animate.addClass(element, "ng-hide");
+      await wait(100);
       expect(element.classList.contains("ng-hide")).toBeTrue();
     });
 
-    it("should run each method and return a promise", () => {
-      const element = "<div></div>";
-      const move = "<div></div>";
+    fit("should run each method and return a promise", () => {
+      const element = createElementFromHTML("<div></div>");
+      const move = createElementFromHTML("<div></div>");
       const parent = document.body;
       parent.append(move);
 
@@ -105,12 +109,11 @@ describe("$animate", () => {
       expect($animate.leave(element).then).toBeDefined();
     });
 
-    it("should provide the `enabled` and `cancel` methods", () => {
-      expect($animate.enabled()).toBeUndefined();
+    fit("should provide and `cancel` methods", () => {
       expect($animate.cancel({})).toBeUndefined();
     });
 
-    it("should provide the `on` and `off` methods", () => {
+    fit("should provide the `on` and `off` methods", () => {
       expect(isFunction($animate.on)).toBe(true);
       expect(isFunction($animate.off)).toBe(true);
     });

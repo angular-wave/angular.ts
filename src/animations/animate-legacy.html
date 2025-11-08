@@ -17,14 +17,19 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
+    <style>
+      .red {
+        background-color: red;
+      }
+    </style>
     <script>
-      window.angular.module("test", []).directive("test", [
+      window.angular.module("test", ["ngAnimate"]).directive("test", [
         "$animate",
         function ($animate) {
           return {
             compile(e) {
-              debugger;
-              $animate.animate(e, { color: "rgb(255, 0, 0)" });
+              $animate.enabled(true);
+              $animate.addClass(e, "red");
             },
           };
         },

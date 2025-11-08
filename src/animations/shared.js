@@ -170,16 +170,34 @@ export function applyAnimationStyles(element, options) {
   applyAnimationToStyles(element, options);
 }
 
+/**
+ * Applies initial animation styles to a DOM element.
+ *
+ * This function sets the element's inline styles using the properties
+ * defined in `options.from`, then clears the property to prevent reuse.
+ *
+ * @param {HTMLElement} element - The target DOM element to apply styles to.
+ * @param {{ from?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
+ */
 export function applyAnimationFromStyles(element, options) {
   if (options.from) {
-    //element.css(options.from);
+    Object.assign(element.style, options.from);
     options.from = null;
   }
 }
 
+/**
+ * Applies final animation styles to a DOM element.
+ *
+ * This function sets the element's inline styles using the properties
+ * defined in `options.to`, then clears the property to prevent reuse.
+ *
+ * @param {HTMLElement} element - The target DOM element to apply styles to.
+ * @param {{ to?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
+ */
 export function applyAnimationToStyles(element, options) {
   if (options.to) {
-    //element.css(options.to);
+    Object.assign(element.style, options.to);
     options.to = null;
   }
 }

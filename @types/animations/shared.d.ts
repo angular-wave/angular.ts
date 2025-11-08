@@ -24,8 +24,36 @@ export function applyAnimationClassesFactory(): (
 ) => void;
 export function prepareAnimationOptions(options: any): any;
 export function applyAnimationStyles(element: any, options: any): void;
-export function applyAnimationFromStyles(element: any, options: any): void;
-export function applyAnimationToStyles(element: any, options: any): void;
+/**
+ * Applies initial animation styles to a DOM element.
+ *
+ * This function sets the element's inline styles using the properties
+ * defined in `options.from`, then clears the property to prevent reuse.
+ *
+ * @param {HTMLElement} element - The target DOM element to apply styles to.
+ * @param {{ from?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
+ */
+export function applyAnimationFromStyles(
+  element: HTMLElement,
+  options: {
+    from?: Partial<CSSStyleDeclaration> | null;
+  },
+): void;
+/**
+ * Applies final animation styles to a DOM element.
+ *
+ * This function sets the element's inline styles using the properties
+ * defined in `options.to`, then clears the property to prevent reuse.
+ *
+ * @param {HTMLElement} element - The target DOM element to apply styles to.
+ * @param {{ to?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
+ */
+export function applyAnimationToStyles(
+  element: HTMLElement,
+  options: {
+    to?: Partial<CSSStyleDeclaration> | null;
+  },
+): void;
 export function mergeAnimationDetails(
   element: any,
   oldAnimation: any,

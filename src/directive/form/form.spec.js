@@ -1342,7 +1342,6 @@ describe("form", () => {
   });
 
   it("should rename forms with an initially blank name", async () => {
-    debugger;
     const element = $compile('<form name="{{name}}"></form>')(scope);
     await wait();
     const form = getController(element, "form");
