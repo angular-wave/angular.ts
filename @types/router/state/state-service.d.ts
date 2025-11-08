@@ -27,7 +27,7 @@ export class StateProvider {
    *
    * @deprecated This is a passthrough through to [[Router.current]]
    */
-  get current(): import("./interface.js").StateDeclaration;
+  get current(): import("./interface.ts").StateDeclaration;
   /**
    * The current [[StateObject]] (an internal API)
    *
@@ -134,9 +134,9 @@ export class StateProvider {
   decorator(name: string, func: object): object;
   /**
    *
-   * @param {import("./interface.js").StateDeclaration} definition
+   * @param {import("./interface.ts").StateDeclaration} definition
    */
-  state(definition: import("./interface.js").StateDeclaration): this;
+  state(definition: import("./interface.ts").StateDeclaration): this;
   /**
    * Handler for when [[transitionTo]] is called with an invalid state.
    *

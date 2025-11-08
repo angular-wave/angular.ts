@@ -953,7 +953,7 @@ export class Scope {
   }
 
   /**
-   * @param {import('../../interface.js').Expression} expr
+   * @param {import('../../interface.ts').Expression} expr
    * @returns {any}
    */
   $apply(expr) {

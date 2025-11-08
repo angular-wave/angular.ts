@@ -101,7 +101,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
    * Registers a factory.
    * @param {string} name
    * @param {(string|(function(*): *))[]} factoryFn
-   * @returns {import('../../interface.js').ServiceProvider}
+   * @returns {import('../../interface.ts').ServiceProvider}
    */
   function factory(name, factoryFn) {
     return provider(name, {
@@ -123,7 +123,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
    * Registers a service constructor.
    * @param {string} name
    * @param {Function} constructor
-   * @returns {import('../../interface.js').ServiceProvider}
+   * @returns {import('../../interface.ts').ServiceProvider}
    */
   function service(name, constructor) {
     return factory(name, [

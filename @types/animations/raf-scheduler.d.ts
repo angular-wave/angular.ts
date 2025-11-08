@@ -1,6 +1,6 @@
 /**
- * @typedef {import('./interface.js').RafScheduler} RafScheduler
- * @typedef {import('../interface.js').ServiceProvider} ServiceProvider
+ * @typedef {import('./interface.ts').RafScheduler} RafScheduler
+ * @typedef {import('../interface.ts').ServiceProvider} ServiceProvider
  */
 /**
  * Service provider that creates a requestAnimationFrame-based scheduler.
@@ -33,5 +33,5 @@ export class RafSchedulerProvider {
    */
   $get(): RafScheduler;
 }
-export type RafScheduler = import("./interface.js").RafScheduler;
-export type ServiceProvider = import("../interface.js").ServiceProvider;
+export type RafScheduler = import("./interface.ts").RafScheduler;
+export type ServiceProvider = import("../interface.ts").ServiceProvider;

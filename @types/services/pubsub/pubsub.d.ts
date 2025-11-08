@@ -1,4 +1,4 @@
-/** @typedef {import('../../interface.js').ServiceProvider} ServiceProvider
+/** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider
 
 /**
  * Configurable provider for an injectable event bus
@@ -182,4 +182,4 @@ export const EventBus: PubSub;
  * /**
  * Configurable provider for an injectable event bus
  */
-export type ServiceProvider = import("../../interface.js").ServiceProvider;
+export type ServiceProvider = import("../../interface.ts").ServiceProvider;

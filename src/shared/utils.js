@@ -970,7 +970,7 @@ export function assertArgFn(arg, name, acceptArrayAnnotation) {
   return arg;
 }
 
-/** @type {import("./interface.js").ErrorHandlingConfig} */
+/** @type {import("./interface.ts").ErrorHandlingConfig} */
 const minErrConfig = {
   objectMaxDepth: 5,
   urlErrorParamsEnabled: true,

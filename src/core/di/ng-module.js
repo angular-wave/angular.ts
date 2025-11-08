@@ -26,7 +26,7 @@ export class NgModule {
   /**
    * @param {string} name - Name of the module
    * @param {Array<string>} requires - List of modules which the injector will load before the current module
-   * @param {import("../../interface.js").Injectable<any>} [configFn]
+   * @param {import("../../interface.ts").Injectable<any>} [configFn]
    */
   constructor(name, requires, configFn) {
     assert(isString(name), "name required");
@@ -52,7 +52,7 @@ export class NgModule {
     /** @type {!Array<Array<*>>} */
     this.configBlocks = [];
 
-    /** @type {!Array.<import("../../interface.js").Injectable<any>>} */
+    /** @type {!Array.<import("../../interface.ts").Injectable<any>>} */
     this.runBlocks = [];
 
     if (configFn) {
@@ -156,7 +156,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.js").Injectable<any>} decorFn
+   * @param {import("../../interface.ts").Injectable<any>} decorFn
    * @returns {NgModule}
    */
   decorator(name, decorFn) {
@@ -169,7 +169,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.js").Injectable<any>} directiveFactory
+   * @param {import("../../interface.ts").Injectable<any>} directiveFactory
    * @returns {NgModule}
    */
   directive(name, directiveFactory) {
@@ -186,7 +186,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.js").Injectable<any>} animationFactory
+   * @param {import("../../interface.ts").Injectable<any>} animationFactory
    * @returns {NgModule}
    */
   animation(name, animationFactory) {
@@ -203,7 +203,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.js").Injectable<any>} filterFn
+   * @param {import("../../interface.ts").Injectable<any>} filterFn
    * @return {NgModule}
    */
   filter(name, filterFn) {
@@ -216,7 +216,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.js").Injectable<any>} ctlFn
+   * @param {import("../../interface.ts").Injectable<any>} ctlFn
    * @returns {NgModule}
    */
   controller(name, ctlFn) {

@@ -629,7 +629,7 @@ export function SceProvider() {
        *
        * @param {string} type The SCE context in which this result will be used.
        * @param {string} expr String expression to compile.
-       * @return {import("../../core/parse/interface.js").CompiledExpression} A function which represents the compiled expression:
+       * @return {import("../../core/parse/interface.ts").CompiledExpression} A function which represents the compiled expression:
        *
        *    * `context` – `{object}` – an object against which any expressions embedded in the
        *      strings are evaluated against (typically a scope object).

@@ -177,7 +177,7 @@ export class StateProvider {
 
   /**
    *
-   * @param {import("./interface.js").StateDeclaration} definition
+   * @param {import("./interface.ts").StateDeclaration} definition
    */
   state(definition) {
     if (!definition.name) {

@@ -134,5 +134,5 @@ export namespace $ViewDirectiveFill {
  * });
  * ```
  */
-/** @type {import("../../interface.js").AnnotatedDirectiveFactory} */
-export let ngView: import("../../interface.js").AnnotatedDirectiveFactory;
+/** @type {import("../../interface.ts").AnnotatedDirectiveFactory} */
+export let ngView: import("../../interface.ts").AnnotatedDirectiveFactory;

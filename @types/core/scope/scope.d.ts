@@ -141,10 +141,10 @@ export class Scope {
    */
   $merge(newTarget: any): void;
   /**
-   * @param {import('../../interface.js').Expression} expr
+   * @param {import('../../interface.ts').Expression} expr
    * @returns {any}
    */
-  $apply(expr: import("../../interface.js").Expression): any;
+  $apply(expr: import("../../interface.ts").Expression): any;
   /**
    * @param {string} name
    * @param {Function} listener

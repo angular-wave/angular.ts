@@ -152,7 +152,7 @@ export function registerNgModule(angular) {
       [],
       [
         $t.$provide,
-        /** @param {import("./interface.js").Provider} $provide */
+        /** @param {import("./interface.ts").Provider} $provide */
         ($provide) => {
           // $$sanitizeUriProvider needs to be before $compileProvider as it is used by it.
           $provide.provider({

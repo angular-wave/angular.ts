@@ -500,7 +500,7 @@ export class LocationProvider {
   /**
    * Registers a callback to be called when the URL changes.
    *
-   * @param {import("./interface.js").UrlChangeListener} callback - The callback function to register.
+   * @param {import("./interface.ts").UrlChangeListener} callback - The callback function to register.
    * @returns void
    */
   #onUrlChange(callback) {

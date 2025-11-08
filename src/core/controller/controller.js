@@ -71,7 +71,7 @@ export class ControllerProvider {
 
     /**
      * @param {import("../../core/di/internal-injector.js").InjectorService} $injector
-     * @returns {import("./interface.js").ControllerService} A service function that creates controllers.
+     * @returns {import("./interface.ts").ControllerService} A service function that creates controllers.
      */
     ($injector) => {
       return (expression, locals, later, ident) => {

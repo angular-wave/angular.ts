@@ -6,7 +6,7 @@ import { $injectTokens } from "../../injection-tokens.js";
 export const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
 
 /**
- * @type {Record<string, import("../../interface.js").DirectiveFactory>}
+ * @type {Record<string, import("../../interface.ts").DirectiveFactory>}
  */
 export const ngAttributeAliasDirectives = {};
 

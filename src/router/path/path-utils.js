@@ -95,7 +95,7 @@ export class PathUtils {
    * @param {PathNode[]} fromPath
    * @param {PathNode[]} toPath
    * @param {boolean} [reloadState]
-   * @returns {import("../transition/interface.js").TreeChanges}
+   * @returns {import("../transition/interface.ts").TreeChanges}
    */
   static treeChanges(fromPath, toPath, reloadState) {
     const max = Math.min(fromPath.length, toPath.length);

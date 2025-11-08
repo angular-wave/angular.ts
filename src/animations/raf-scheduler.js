@@ -1,6 +1,6 @@
 /**
- * @typedef {import('./interface.js').RafScheduler} RafScheduler
- * @typedef {import('../interface.js').ServiceProvider} ServiceProvider
+ * @typedef {import('./interface.ts').RafScheduler} RafScheduler
+ * @typedef {import('../interface.ts').ServiceProvider} ServiceProvider
  */
 
 /**

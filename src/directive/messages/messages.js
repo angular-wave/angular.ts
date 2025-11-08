@@ -240,7 +240,7 @@ export const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
 
 /**
  * @param {boolean} isDefault
- * @returns {(any) => import("../../interface.js").Directive}
+ * @returns {(any) => import("../../interface.ts").Directive}
  */
 function ngMessageDirectiveFactory(isDefault) {
   ngMessageDirective.$inject = ["$animate"];

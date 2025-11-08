@@ -20,13 +20,13 @@ export namespace ngMessagesIncludeDirective {
 }
 export const ngMessageDirective: (
   any: any,
-) => import("../../interface.js").Directive;
+) => import("../../interface.ts").Directive;
 export const ngMessageExpDirective: (
   any: any,
-) => import("../../interface.js").Directive;
+) => import("../../interface.ts").Directive;
 export const ngMessageDefaultDirective: (
   any: any,
-) => import("../../interface.js").Directive;
+) => import("../../interface.ts").Directive;
 declare class NgMessageCtrl {
   /**
    * @param {Element} $element

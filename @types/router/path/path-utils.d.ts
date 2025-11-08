@@ -37,13 +37,13 @@ export class PathUtils {
    * @param {PathNode[]} fromPath
    * @param {PathNode[]} toPath
    * @param {boolean} [reloadState]
-   * @returns {import("../transition/interface.js").TreeChanges}
+   * @returns {import("../transition/interface.ts").TreeChanges}
    */
   static treeChanges(
     fromPath: PathNode[],
     toPath: PathNode[],
     reloadState?: boolean,
-  ): import("../transition/interface.js").TreeChanges;
+  ): import("../transition/interface.ts").TreeChanges;
   /**
    * Returns a new path which is: the subpath of the first path which matches the second path.
    *

@@ -138,7 +138,7 @@ import { getLocals } from "../state/state-registry.js";
  * ```
  */
 
-/** @type {import("../../interface.js").AnnotatedDirectiveFactory} */
+/** @type {import("../../interface.ts").AnnotatedDirectiveFactory} */
 export let ngView = [
   "$view",
   "$animate",
@@ -149,7 +149,7 @@ export let ngView = [
    * @param {*} $animate
    * @param {*} $viewScroll
    * @param {*} $interpolate
-   * @returns {import("../../interface.js").Directive}
+   * @returns {import("../../interface.ts").Directive}
    */
   function $ViewDirective($view, $animate, $viewScroll, $interpolate) {
     function getRenderer() {

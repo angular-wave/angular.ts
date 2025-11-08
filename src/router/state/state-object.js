@@ -3,7 +3,7 @@ import { propEq } from "../../shared/hof.js";
 import { Glob } from "../glob/glob.js";
 import { hasOwn, isFunction, isObject } from "../../shared/utils.js";
 
-/** @typedef {import('./interface.js').StateDeclaration} StateDeclaration */
+/** @typedef {import('./interface.ts').StateDeclaration} StateDeclaration */
 
 /**
  * Internal representation of a ng-router state.
@@ -26,7 +26,7 @@ export class StateObject {
   includes = undefined;
 
   /**
-   * @param {import('./interface.js').StateDeclaration} config
+   * @param {import('./interface.ts').StateDeclaration} config
    */
   constructor(config) {
     Object.assign(this, config);
@@ -34,7 +34,7 @@ export class StateObject {
       return this;
     };
     /**
-     * @type {import('./interface.js').StateDeclaration}
+     * @type {import('./interface.ts').StateDeclaration}
      */
     this.self = config;
     /**

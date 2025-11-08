@@ -309,7 +309,7 @@ export class InterpolateProvider {
             return concat.join("");
           };
 
-          return /**@type {import("./interface.js").InterpolationFunction}  */ extend(
+          return /**@type {import("./interface.ts").InterpolationFunction}  */ extend(
             (context, cb) => {
               let i = 0;
               const ii = expressions.length;
