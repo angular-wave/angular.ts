@@ -1,86 +1,67 @@
 /**
- * Provides a frame-synchronized asynchronous execution queue.
- * Schedules functions to run on the next animation frame (via `requestAnimationFrame`)
- * or in a microtask (via `queueMicrotask`) when the document is hidden.
+ * Schedule a callback to run on the next animation frame.
+ * Multiple calls within the same frame are batched together.
+ *
+ * @param {VoidFunction} fn - The callback to execute.
  */
-export class AnimateAsyncRun {
-  /** @private @type {Array<VoidFunction>} */
-  private _queue;
-  /** @private */
-  private _scheduled;
-  /**
-   * Schedule a callback for the next repaint or microtask if tab is hidden.
-   * @param {VoidFunction} fn - The callback to schedule.
-   * @private
-   */
-  private _nextFrame;
-  /**
-   * Add a function to the frame queue. Multiple calls in the same frame are batched.
-   * @param {VoidFunction} fn - The callback to run in the next frame.
-   */
-  schedule(fn: VoidFunction): void;
-  /** @private Flush all queued callbacks */
-  private _flush;
-  /**
-   * Returns a scheduler function compatible with AngularJS-style `$animateAsyncRun`.
-   * @returns {function(VoidFunction): void}
-   */
-  createScheduler(): (arg0: VoidFunction) => void;
-}
+export function schedule(fn: VoidFunction): void;
 /**
- * Provides the `AnimateRunner` service used by AngularJS animation subsystems.
+ * Provider for the `$$AnimateRunner` service.
+ * Used to inject the runner into the animation subsystem.
  */
 export class AnimateRunnerFactoryProvider {
-  $get: (() => typeof AnimateRunner)[];
+  /** @type {() => typeof AnimateRunner} */
+  $get: () => typeof AnimateRunner;
 }
 /**
- * Represents an asynchronous animation operation, providing both
- * callback-based and promise-based APIs for completion tracking.
+ * Represents an asynchronous animation operation.
+ * Provides both callback-based and promise-based completion APIs.
  */
 export class AnimateRunner {
   /**
    * Run an array of animation runners in sequence.
    * Each runner waits for the previous one to complete.
    *
-   * @param {Array<AnimateRunner>} runners - Array of runners to execute in order.
-   * @param {Function} callback - Called once all runners complete or one fails.
+   * @param {AnimateRunner[]} runners - Runners to execute in order.
+   * @param {(ok: boolean) => void} callback - Invoked when all complete or one fails.
    */
-  static chain(runners: Array<AnimateRunner>, callback: Function): void;
+  static chain(runners: AnimateRunner[], callback: (ok: boolean) => void): void;
   /**
    * Waits for all animation runners to complete before invoking the callback.
    *
-   * @param {Array<AnimateRunner>} runners - Array of active runners.
-   * @param {Function} callback - Called when all runners complete.
+   * @param {AnimateRunner[]} runners - Active runners to wait for.
+   * @param {(ok: boolean) => void} callback - Called when all runners complete.
    */
-  static all(runners: Array<AnimateRunner>, callback: Function): void;
+  static all(runners: AnimateRunner[], callback: (ok: boolean) => void): void;
   /**
-   * Creates a new animation runner instance.
-   *
-   * @param {Object} [host] - Optional host object implementing animation lifecycle methods:
-   *   - `pause()`, `resume()`, `end()`, `cancel()`, `progress()`
-   * @param {Function} [frameScheduler] - Optional injected frame scheduler.
+   * @param {import("./interface.ts").AnimationHost} [host] - Optional animation host.
    */
-  constructor(host?: any, frameScheduler?: Function);
-  host: any;
-  _doneCallbacks: any[];
-  _state: number;
-  _promise: Promise<any>;
-  _schedule: any;
+  constructor(host?: import("./interface.ts").AnimationHost);
+  /** @type {import("./interface.ts").AnimationHost} */
+  host: import("./interface.ts").AnimationHost;
+  /** @type {Array<(ok: boolean) => void>} */
+  _doneCallbacks: Array<(ok: boolean) => void>;
+  /** @type {0|1|2} */
+  _state: 0 | 1 | 2;
+  /** @type {Promise<void>|null} */
+  _promise: Promise<void> | null;
+  /** @type {(fn: VoidFunction) => void} */
+  _schedule: (fn: VoidFunction) => void;
   /**
    * Sets or updates the animation host.
-   * @param {Object} host - The host object.
+   * @param {import("./interface.ts").AnimationHost} host - The host object.
    */
-  setHost(host: any): void;
+  setHost(host: import("./interface.ts").AnimationHost): void;
   /**
-   * Registers a callback to be called once the animation is complete.
-   * If the animation is already complete, it is called immediately.
+   * Registers a callback to be called once the animation completes.
+   * If the animation is already complete, it's called immediately.
    *
-   * @param {Function} fn - The callback to invoke upon completion.
+   * @param {(ok: boolean) => void} fn - Completion callback.
    */
-  done(fn: Function): void;
+  done(fn: (ok: boolean) => void): void;
   /**
    * Notifies the host of animation progress.
-   * @param {...any} args - Optional progress parameters.
+   * @param {...any} args - Progress arguments.
    */
   progress(...args: any[]): void;
   /** Pauses the animation, if supported by the host. */
@@ -93,8 +74,7 @@ export class AnimateRunner {
   cancel(): void;
   /**
    * Marks the animation as complete on the next animation frame.
-   *
-   * @param {boolean} [status=true] - Whether the animation succeeded.
+   * @param {boolean} [status=true] - True if successful, false if canceled.
    */
   complete(status?: boolean): void;
   /**
@@ -102,17 +82,16 @@ export class AnimateRunner {
    * @returns {Promise<void>} Promise resolved on success or rejected on cancel.
    */
   getPromise(): Promise<void>;
-  /** Promise-compatible `then()` method. */
+  /** @inheritdoc */
   then(onFulfilled: any, onRejected: any): Promise<void>;
-  /** Promise-compatible `catch()` method. */
+  /** @inheritdoc */
   catch(onRejected: any): Promise<void>;
-  /** Promise-compatible `finally()` method. */
+  /** @inheritdoc */
   finally(onFinally: any): Promise<void>;
   /**
-   * @private
    * Completes the animation and invokes all done callbacks.
-   *
-   * @param {boolean} status - True if completed successfully, false if cancelled.
+   * @private
+   * @param {boolean} status - True if completed successfully, false if canceled.
    */
   private _finish;
 }

@@ -3,7 +3,7 @@ export class AnimateCssProvider {
   $get: (
     | string
     | ((
-        $$AnimateRunner: any,
+        $$AnimateRunner: typeof import("./animate-runner.js").AnimateRunner,
         $$animateCache: any,
         $$rAFScheduler: any,
       ) => (

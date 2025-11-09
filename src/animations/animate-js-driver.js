@@ -4,6 +4,12 @@ export function AnimateJsDriverProvider($$animationProvider) {
   this.$get = [
     "$$animateJs",
     "$$AnimateRunner",
+    /**
+     *
+     * @param {*} $$animateJs
+     * @param {typeof import("./animate-runner.js").AnimateRunner} $$AnimateRunner
+     * @returns
+     */
     function ($$animateJs, $$AnimateRunner) {
       return function initDriverFn(animationDetails) {
         if (animationDetails.from && animationDetails.to) {

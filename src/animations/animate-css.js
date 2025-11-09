@@ -149,7 +149,7 @@ export function AnimateCssProvider() {
 
     /**
      *
-     * @param {*} $$AnimateRunner
+     * @param {typeof import("./animate-runner.js").AnimateRunner} $$AnimateRunner
      * @param {*} $$animateCache
      * @param {import("./raf-scheduler").RafScheduler} $$rAFScheduler
      * @returns

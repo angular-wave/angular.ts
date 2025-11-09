@@ -5,7 +5,7 @@ export class AnimateJsDriverProvider {
     | string
     | ((
         $$animateJs: any,
-        $$AnimateRunner: any,
+        $$AnimateRunner: typeof import("./animate-runner.js").AnimateRunner,
       ) => (animationDetails: any) => any)
   )[];
 }

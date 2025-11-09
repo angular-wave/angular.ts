@@ -12,7 +12,7 @@ export class AnimateQueueProvider {
         $rootScope: import("../core/scope/scope.js").Scope,
         $injector: import("../core/di/internal-injector.js").InjectorService,
         $$animation: any,
-        $$AnimateRunner: any,
+        $$AnimateRunner: typeof import("./animate-runner.js").AnimateRunner,
         $templateRequest: any,
       ) => {
         on(event: any, container: any, callback: any): void;

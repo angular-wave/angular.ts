@@ -17,7 +17,7 @@ export function AnimateJsProvider($animateProvider) {
     /**
      *
      * @param {ng.InjectorService} $injector
-     * @param {*} $$AnimateRunner
+     * @param {typeof import('./animate-runner.js').AnimateRunner} $$AnimateRunner
      * @returns
      */
     function ($injector, $$AnimateRunner) {
@@ -118,30 +118,54 @@ export function AnimateJsProvider($animateProvider) {
             }
 
             runner = new $$AnimateRunner();
+            /** @type {(cancelled?: boolean) => void} */
             let closeActiveAnimations;
+
             const chain = [];
 
             if (before) {
-              chain.push((fn) => {
-                closeActiveAnimations = before(fn);
+              const runnerBefore = new $$AnimateRunner({
+                end(fn) {
+                  // call the before animation function, then mark runner done
+                  const endFn = before(fn) || (() => {});
+                  endFn();
+                },
+                cancel() {
+                  (before(true) || (() => {}))();
+                },
               });
+              chain.push(runnerBefore);
             }
 
             if (chain.length) {
-              chain.push((fn) => {
-                applyOptions();
-                fn(true);
+              const runnerApplyOptions = new $$AnimateRunner({
+                end(fn) {
+                  applyOptions();
+                  fn(true);
+                },
+                cancel() {
+                  applyOptions();
+                },
               });
+              chain.push(runnerApplyOptions);
             } else {
               applyOptions();
             }
 
             if (after) {
-              chain.push((fn) => {
-                closeActiveAnimations = after(fn);
+              const runnerAfter = new $$AnimateRunner({
+                end(fn) {
+                  const endFn = after(fn) || (() => {});
+                  endFn();
+                },
+                cancel() {
+                  (after(true) || (() => {}))();
+                },
               });
+              chain.push(runnerAfter);
             }
 
+            // finally, set host for overall runner
             runner.setHost({
               end() {
                 endAnimations();

@@ -15,3 +15,15 @@ export type RafScheduler = {
    */
   waitUntilQuiet(fn: () => void): void;
 };
+export interface AnimationHost {
+  /** Pause animation. */
+  pause?: () => void;
+  /** Resume animation. */
+  resume?: () => void;
+  /** End animation. */
+  end?: () => void;
+  /** Cancel animation. */
+  cancel?: () => void;
+  /** Report animation progress. */
+  progress?: (...args: any[]) => void;
+}

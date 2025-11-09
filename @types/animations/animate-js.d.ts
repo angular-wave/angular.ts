@@ -5,7 +5,7 @@ export class AnimateJsProvider {
     | string
     | ((
         $injector: ng.InjectorService,
-        $$AnimateRunner: any,
+        $$AnimateRunner: typeof import("./animate-runner.js").AnimateRunner,
       ) => (
         element: any,
         event: any,
