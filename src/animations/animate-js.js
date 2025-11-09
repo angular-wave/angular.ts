@@ -17,7 +17,7 @@ export function AnimateJsProvider($animateProvider) {
     /**
      *
      * @param {ng.InjectorService} $injector
-     * @param {typeof import('./animate-runner.js').AnimateRunner} $$AnimateRunner
+     * @param {typeof import('./runner/animate-runner.js').AnimateRunner} $$AnimateRunner
      * @returns
      */
     function ($injector, $$AnimateRunner) {

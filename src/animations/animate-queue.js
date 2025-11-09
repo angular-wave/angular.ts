@@ -153,7 +153,7 @@ export function AnimateQueueProvider($animateProvider) {
      * @param {import('../core/scope/scope.js').Scope} $rootScope
      * @param {import('../core/di/internal-injector.js').InjectorService} $injector
      * @param {*} $$animation
-     * @param {typeof import('./animate-runner.js').AnimateRunner} $$AnimateRunner
+     * @param {typeof import('./runner/animate-runner.js').AnimateRunner} $$AnimateRunner
      * @param {*} $templateRequest
      * @returns
      */

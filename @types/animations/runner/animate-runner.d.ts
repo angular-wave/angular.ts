@@ -34,11 +34,11 @@ export class AnimateRunner {
    */
   static all(runners: AnimateRunner[], callback: (ok: boolean) => void): void;
   /**
-   * @param {import("./interface.ts").AnimationHost} [host] - Optional animation host.
+   * @param {import("../interface.ts").AnimationHost} [host] - Optional animation host.
    */
-  constructor(host?: import("./interface.ts").AnimationHost);
-  /** @type {import("./interface.ts").AnimationHost} */
-  host: import("./interface.ts").AnimationHost;
+  constructor(host?: import("../interface.ts").AnimationHost);
+  /** @type {import("../interface.ts").AnimationHost} */
+  host: import("../interface.ts").AnimationHost;
   /** @type {Array<(ok: boolean) => void>} */
   _doneCallbacks: Array<(ok: boolean) => void>;
   /** @type {0|1|2} */
@@ -49,9 +49,9 @@ export class AnimateRunner {
   _schedule: (fn: VoidFunction) => void;
   /**
    * Sets or updates the animation host.
-   * @param {import("./interface.ts").AnimationHost} host - The host object.
+   * @param {import("../interface.ts").AnimationHost} host - The host object.
    */
-  setHost(host: import("./interface.ts").AnimationHost): void;
+  setHost(host: import("../interface.ts").AnimationHost): void;
   /**
    * Registers a callback to be called once the animation completes.
    * If the animation is already complete, it's called immediately.

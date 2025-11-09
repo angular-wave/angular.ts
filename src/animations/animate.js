@@ -311,7 +311,7 @@ export function AnimateProvider($provide) {
        * Note that this does not cancel the underlying operation, e.g. the setting of classes or
        * adding the element to the DOM.
        *
-       * @param {import('./animate-runner.js').AnimateRunner} runner An animation runner returned by an $animate function.
+       * @param {import('./runner/animate-runner.js').AnimateRunner} runner An animation runner returned by an $animate function.
        *
        * @example
         <example module="animationExample" deps="angular-animate.js" animations="true" name="animate-cancel">
@@ -391,7 +391,7 @@ export function AnimateProvider($provide) {
          * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
          * @param {Element} [after] - after the sibling element after which the element will be appended
          * @param {AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
-         * @returns {import('./animate-runner.js').AnimateRunner} the animation runner
+         * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
          */
         enter(element, parent, after, options) {
           parent = parent || after.parentElement;
@@ -413,7 +413,7 @@ export function AnimateProvider($provide) {
          * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
          * @param {Element} after - after the sibling element after which the element will be appended
          * @param {AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
-         * @returns {import('./animate-runner.js').AnimateRunner} the animation runner
+         * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
          */
         move(element, parent, after, options) {
           parent = parent || after.parentElement;
@@ -432,7 +432,7 @@ export function AnimateProvider($provide) {
          *
          * @param {Element} element the element which will be removed from the DOM
          * @param {AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
-         * @returns {import('./animate-runner.js').AnimateRunner} the animation runner
+         * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
          */
         leave(element, options) {
           return $$animateQueue.push(
@@ -461,7 +461,7 @@ export function AnimateProvider($provide) {
          * @param {Element} element the element which the CSS classes will be applied to
          * @param {string} className the CSS class(es) that will be added (multiple classes are separated via spaces)
          * @param {AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
-         * @return {import('./animate-runner.js').AnimateRunner}} animationRunner the animation runner
+         * @return {import('./runner/animate-runner.js').AnimateRunner}} animationRunner the animation runner
          */
         addClass(element, className, options) {
           options = prepareAnimateOptions(options);
@@ -480,7 +480,7 @@ export function AnimateProvider($provide) {
          * @param {Element} element the element which the CSS classes will be applied to
          * @param {string} className the CSS class(es) that will be removed (multiple classes are separated via spaces)
          * @param {AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.         *
-         * @return {import('./animate-runner.js').AnimateRunner} animationRunner the animation runner
+         * @return {import('./runner/animate-runner.js').AnimateRunner} animationRunner the animation runner
          */
         removeClass(element, className, options) {
           options = prepareAnimateOptions(options);
@@ -501,7 +501,7 @@ export function AnimateProvider($provide) {
          * @param {string} remove the CSS class(es) that will be removed (multiple classes are separated via spaces)
          * @param {object=} options an optional collection of options/styles that will be applied to the element.
          *
-         * @return {import('./animate-runner.js').AnimateRunner} the animation runner
+         * @return {import('./runner/animate-runner.js').AnimateRunner} the animation runner
          */
         setClass(element, add, remove, options) {
           options = prepareAnimateOptions(options);
@@ -529,7 +529,7 @@ export function AnimateProvider($provide) {
          *   }
          * });
          * ```
-         *  @return {import('./animate-runner.js').AnimateRunner} the animation runner
+         *  @return {import('./runner/animate-runner.js').AnimateRunner} the animation runner
          */
         animate(element, from, to, className, options) {
           options = prepareAnimateOptions(options);

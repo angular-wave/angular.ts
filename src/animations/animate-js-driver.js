@@ -7,7 +7,7 @@ export function AnimateJsDriverProvider($$animationProvider) {
     /**
      *
      * @param {*} $$animateJs
-     * @param {typeof import("./animate-runner.js").AnimateRunner} $$AnimateRunner
+     * @param {typeof import("./runner/animate-runner.js").AnimateRunner} $$AnimateRunner
      * @returns
      */
     function ($$animateJs, $$AnimateRunner) {

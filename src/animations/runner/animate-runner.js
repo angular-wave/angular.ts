@@ -97,10 +97,10 @@ export class AnimateRunner {
   }
 
   /**
-   * @param {import("./interface.ts").AnimationHost} [host] - Optional animation host.
+   * @param {import("../interface.ts").AnimationHost} [host] - Optional animation host.
    */
   constructor(host) {
-    /** @type {import("./interface.ts").AnimationHost} */
+    /** @type {import("../interface.ts").AnimationHost} */
     this.host = host || {};
 
     /** @type {Array<(ok: boolean) => void>} */
@@ -118,7 +118,7 @@ export class AnimateRunner {
 
   /**
    * Sets or updates the animation host.
-   * @param {import("./interface.ts").AnimationHost} host - The host object.
+   * @param {import("../interface.ts").AnimationHost} host - The host object.
    */
   setHost(host) {
     this.host = host || {};
