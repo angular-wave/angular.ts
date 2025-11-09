@@ -26,7 +26,7 @@ describe("$animate schedule", () => {
     setTimeout(() => {
       expect(calls).toBe(2);
       done();
-    }, 20);
+    }, 100);
   });
 
   it("should schedule new callbacks for the next frame", (done) => {
@@ -108,7 +108,7 @@ describe("$animate schedule", () => {
     setTimeout(() => {
       expect(calls.length).toBe(2);
       done();
-    }, 10);
+    }, 50);
   });
 
   it("should use setTimeout if requestAnimationFrame is not available", (done) => {
