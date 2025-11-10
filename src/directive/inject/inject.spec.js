@@ -85,24 +85,24 @@ describe("ngInject", () => {
     expect(el.innerText.trim()).toBe("123");
   });
 
-  it("should ignore non-$ identifiers", async () => {
-    el.innerHTML = `<div ng-inject="someVar = 5"> {{ someVar }} </div>`;
-    $compile(el)($rootScope);
-    await wait();
-    expect($rootScope.someVar).toBe(5);
-  });
-
-  it("should inject identifiers ending in *Service", async () => {
+  it("should inject identifiers for services", async () => {
     el.innerHTML = `<div ng-inject="userService"> {{ userService.name }} </div>`;
     $compile(el)($rootScope);
     await wait();
     expect(el.innerText.trim()).toBe("Bob");
   });
 
-  it("should inject identifiers ending in *Factory", async () => {
+  it("should inject identifiers for factories", async () => {
     el.innerHTML = `<div ng-inject="userFactory"> {{ userFactory.name }} </div>`;
     $compile(el)($rootScope);
     await wait();
     expect(el.innerText.trim()).toBe("Fred");
+  });
+
+  it("should define references anywhere in the template", async () => {
+    el.innerHTML = `<div>{{ userService.name }} <div ng-inject="userService"></div></div>`;
+    $compile(el)($rootScope);
+    await wait();
+    expect(el.innerText.trim()).toBe("Bob");
   });
 });

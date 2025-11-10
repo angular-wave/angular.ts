@@ -11,25 +11,20 @@ export function ngInjectDirective($log, $injector) {
   return {
     restrict: "A",
     link(scope, _element, attrs) {
-      const expr = attrs["ngInject"];
-
+      const expr = attrs.ngInject;
       if (!expr) return;
-      // Match any identifier that starts with $, or ends with Service/Factory
-      // Example matches: $http, userService, authFactory
-      const replacedExpr = expr.replace(
-        /(\$[\w]+|[\w]+(?:Service|Factory))/g,
-        (match, name) => {
-          try {
-            const service = $injector.get(name);
-            scope.$target[name] = service;
-            return name;
-          } catch {
-            $log.warn(`Injectable ${name} not found in $injector`);
-            return match;
-          }
-        },
-      );
-      scope.$apply(replacedExpr);
+      const tokens = expr
+        .split(";")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      for (const name of tokens) {
+        if ($injector.has(name)) {
+          scope[name] = $injector.get(name);
+        } else {
+          $log.warn(`Injectable ${name} not found in $injector`);
+        }
+      }
     },
   };
 }
