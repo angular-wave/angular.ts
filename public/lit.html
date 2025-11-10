@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS</title>
+    <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <script type="module" src="/src/index.js"></script>
+
+    <script type="module">
+      import {
+        LitElement,
+        html,
+      } from "https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js";
+
+      export class SimpleGreeting extends LitElement {
+        static properties = {
+          name: { type: String },
+        };
+
+        constructor() {
+          super();
+          this.name = "Somebody";
+        }
+
+        render() {
+          return html`<p>Hello, ${this.name}!</p>`;
+        }
+      }
+      customElements.define("simple-greeting", SimpleGreeting);
+    </script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        var res = window.angular.module("lit", []).value("$user", {
+          name: "Bob",
+        });
+      });
+    </script>
+  </head>
+  <body ng-app="lit">
+    <simple-greeting ng-inject="$user" name="{{$user.name}}"></simple-greeting>
+  </body>
+</html>
