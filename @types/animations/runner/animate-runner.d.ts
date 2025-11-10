@@ -6,14 +6,6 @@
  */
 export function schedule(fn: VoidFunction): void;
 /**
- * Provider for the `$$AnimateRunner` service.
- * Used to inject the runner into the animation subsystem.
- */
-export class AnimateRunnerFactoryProvider {
-  /** @type {() => typeof AnimateRunner} */
-  $get: () => typeof AnimateRunner;
-}
-/**
  * Represents an asynchronous animation operation.
  * Provides both callback-based and promise-based completion APIs.
  */
@@ -41,8 +33,8 @@ export class AnimateRunner {
   host: import("../interface.ts").AnimationHost;
   /** @type {Array<(ok: boolean) => void>} */
   _doneCallbacks: Array<(ok: boolean) => void>;
-  /** @type {0|1|2} */
-  _state: 0 | 1 | 2;
+  /** @type {RunnerState} */
+  _state: RunnerState;
   /** @type {Promise<void>|null} */
   _promise: Promise<void> | null;
   /** @type {(fn: VoidFunction) => void} */
@@ -95,3 +87,13 @@ export class AnimateRunner {
    */
   private _finish;
 }
+/**
+ * Internal runner states.
+ */
+type RunnerState = number;
+declare namespace RunnerState {
+  let INITIAL: number;
+  let PENDING: number;
+  let DONE: number;
+}
+export {};

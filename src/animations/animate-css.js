@@ -4,6 +4,7 @@ import {
   setCacheData,
 } from "../shared/dom.js";
 import { isDefined } from "../shared/utils.js";
+import { AnimateRunner } from "./runner/animate-runner.js";
 import {
   ACTIVE_CLASS_SUFFIX,
   ADD_CLASS_SUFFIX,
@@ -143,18 +144,16 @@ function registerRestorableStyles(backup, node, properties) {
 export function AnimateCssProvider() {
   let activeClasses;
   this.$get = [
-    "$$AnimateRunner",
     "$$animateCache",
     "$$rAFScheduler",
 
     /**
      *
-     * @param {typeof import("./runner/animate-runner.js").AnimateRunner} $$AnimateRunner
      * @param {*} $$animateCache
      * @param {import("./raf-scheduler").RafScheduler} $$rAFScheduler
      * @returns
      */
-    function ($$AnimateRunner, $$animateCache, $$rAFScheduler) {
+    function ($$animateCache, $$rAFScheduler) {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
       function computeCachedCssStyles(
@@ -552,7 +551,7 @@ export function AnimateCssProvider() {
               pause: null,
             };
 
-            runner = new $$AnimateRunner(runnerHost);
+            runner = new AnimateRunner(runnerHost);
 
             waitUntilQuiet(start);
 
@@ -651,7 +650,7 @@ export function AnimateCssProvider() {
         }
 
         function closeAndReturnNoopAnimator() {
-          runner = new $$AnimateRunner({
+          runner = new AnimateRunner({
             end: endFn,
             cancel: cancelFn,
           });

@@ -1,16 +1,15 @@
+import { AnimateRunner } from "./runner/animate-runner.js";
+
 AnimateJsDriverProvider.$inject = ["$$animationProvider"];
 export function AnimateJsDriverProvider($$animationProvider) {
   $$animationProvider.drivers.push("$$animateJsDriver");
   this.$get = [
     "$$animateJs",
-    "$$AnimateRunner",
     /**
      *
      * @param {*} $$animateJs
-     * @param {typeof import("./runner/animate-runner.js").AnimateRunner} $$AnimateRunner
-     * @returns
      */
-    function ($$animateJs, $$AnimateRunner) {
+    function ($$animateJs) {
       return function initDriverFn(animationDetails) {
         if (animationDetails.from && animationDetails.to) {
           const fromAnimation = prepareAnimation(animationDetails.from);
@@ -29,9 +28,9 @@ export function AnimateJsDriverProvider($$animationProvider) {
                 animationRunners.push(toAnimation.start());
               }
 
-              $$AnimateRunner.all(animationRunners, done);
+              AnimateRunner.all(animationRunners, done);
 
-              const runner = new $$AnimateRunner({
+              const runner = new AnimateRunner({
                 end: endFnFactory(),
                 cancel: endFnFactory(),
               });

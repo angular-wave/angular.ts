@@ -19,7 +19,6 @@ export const $injectTokens = Object.freeze({
   $attrs: "$attrs",
   $scope: "$scope",
   $element: "$element",
-  $$AnimateRunner: "$$AnimateRunner",
   $$animateCache: "$$animateCache",
   $$animateCssDriver: "$$animateCssDriver",
   $$animateJs: "$$animateJs",

@@ -1,4 +1,5 @@
 import { isString } from "../shared/utils.js";
+import { AnimateRunner } from "./runner/animate-runner.js";
 import { concatWithSpace } from "./shared.js";
 
 const NG_ANIMATE_SHIM_CLASS_NAME = "ng-animate-shim";
@@ -20,16 +21,14 @@ export function AnimateCssDriverProvider($$animationProvider) {
    */
   this.$get = [
     "$animateCss",
-    "$$AnimateRunner",
     "$rootElement",
     /**
      *
      * @param {*} $animateCss
-     * @param {typeof import('./runner/animate-runner.js').AnimateRunner} $$AnimateRunner
      * @param {Element} $rootElement
      * @returns
      */
-    function ($animateCss, $$AnimateRunner, $rootElement) {
+    function ($animateCss, $rootElement) {
       const bodyNode = document.body;
       const rootNode = $rootElement;
 
@@ -102,7 +101,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
               runner.complete();
             });
 
-            runner = new $$AnimateRunner({
+            runner = new AnimateRunner({
               end: endFn,
               cancel: endFn,
             });
@@ -213,12 +212,12 @@ export function AnimateCssDriverProvider($$animationProvider) {
               animationRunners.push(animation.start());
             });
 
-            const runner = new $$AnimateRunner({
+            const runner = new AnimateRunner({
               end: endFn,
               cancel: endFn, // CSS-driven animations cannot be cancelled, only ended
             });
 
-            $$AnimateRunner.all(animationRunners, (status) => {
+            AnimateRunner.all(animationRunners, (status) => {
               runner.complete(status);
             });
 

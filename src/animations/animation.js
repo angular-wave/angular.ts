@@ -13,6 +13,7 @@ import {
   prepareAnimationOptions,
 } from "./shared.js";
 import { $injectTokens as $t } from "../injection-tokens.js";
+import { AnimateRunner } from "./runner/animate-runner.js";
 
 const RUNNER_STORAGE_KEY = "$$animationRunner";
 const PREPARE_CLASSES_KEY = "$$animatePrepareClasses";
@@ -37,25 +38,17 @@ export function AnimationProvider() {
   this.$get = [
     $t.$rootScope,
     $t.$injector,
-    $t.$$AnimateRunner,
     $t.$$rAFScheduler,
     $t.$$animateCache,
     /**
      *
      * @param {ng.RootScopeService} $rootScope
      * @param {import("../core/di/internal-injector").InjectorService} $injector
-     * @param {typeof import('./runner/animate-runner.js').AnimateRunner } $$AnimateRunner
      * @param {import("./raf-scheduler").RafScheduler} $$rAFScheduler
      * @param {*} $$animateCache
      * @returns
      */
-    function (
-      $rootScope,
-      $injector,
-      $$AnimateRunner,
-      $$rAFScheduler,
-      $$animateCache,
-    ) {
+    function ($rootScope, $injector, $$rAFScheduler, $$animateCache) {
       const animationQueue = [];
       const applyAnimationClasses = applyAnimationClassesFactory();
 
@@ -156,7 +149,7 @@ export function AnimationProvider() {
         // these runner methods will get later updated with the
         // methods leading into the driver's end/cancel methods
         // for now they just stop the animation from starting
-        const runner = new $$AnimateRunner({
+        const runner = new AnimateRunner({
           end() {
             close();
           },

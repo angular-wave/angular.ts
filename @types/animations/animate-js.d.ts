@@ -3,10 +3,7 @@ export class AnimateJsProvider {
   constructor($animateProvider: any);
   $get: (
     | string
-    | ((
-        $injector: ng.InjectorService,
-        $$AnimateRunner: typeof import("./runner/animate-runner.js").AnimateRunner,
-      ) => (
+    | (($injector: ng.InjectorService) => (
         element: any,
         event: any,
         classes: any,

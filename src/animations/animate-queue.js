@@ -20,6 +20,7 @@ import {
   stripCommentsFromElement,
 } from "./shared.js";
 import { $injectTokens as $t } from "../injection-tokens.js";
+import { AnimateRunner } from "./runner/animate-runner.js";
 
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 const NG_ANIMATE_PIN_DATA = "$ngAnimatePin";
@@ -146,24 +147,16 @@ export function AnimateQueueProvider($animateProvider) {
     $t.$rootScope,
     $t.$injector,
     $t.$$animation,
-    $t.$$AnimateRunner,
     $t.$templateRequest,
     /**
      *
      * @param {import('../core/scope/scope.js').Scope} $rootScope
      * @param {import('../core/di/internal-injector.js').InjectorService} $injector
      * @param {*} $$animation
-     * @param {typeof import('./runner/animate-runner.js').AnimateRunner} $$AnimateRunner
      * @param {*} $templateRequest
      * @returns
      */
-    function (
-      $rootScope,
-      $injector,
-      $$animation,
-      $$AnimateRunner,
-      $templateRequest,
-    ) {
+    function ($rootScope, $injector, $$animation, $templateRequest) {
       const activeAnimationsLookup = new Map();
       const disabledElementsLookup = new Map();
       let animationsEnabled = null;
@@ -377,7 +370,7 @@ export function AnimateQueueProvider($animateProvider) {
 
         // we create a fake runner with a working promise.
         // These methods will become available after the digest has passed
-        const runner = new $$AnimateRunner();
+        const runner = new AnimateRunner();
 
         // this is used to trigger callbacks in postDigest mode
         const runInNextPostDigestOrNow = postDigestTaskFactory();

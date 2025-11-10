@@ -8,7 +8,6 @@ export class AnimateCssDriverProvider {
     | string
     | ((
         $animateCss: any,
-        $$AnimateRunner: typeof import("./runner/animate-runner.js").AnimateRunner,
         $rootElement: Element,
       ) => (animationDetails: any) => any)
   )[];

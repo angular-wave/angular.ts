@@ -6,13 +6,9 @@ export class AnimationProvider {
     | ((
         $rootScope: ng.RootScopeService,
         $injector: any,
-        $$AnimateRunner: typeof import("./runner/animate-runner.js").AnimateRunner,
         $$rAFScheduler: any,
         $$animateCache: any,
-      ) => (
-        element: any,
-        event: any,
-        options: any,
-      ) => import("./runner/animate-runner.js").AnimateRunner)
+      ) => (element: any, event: any, options: any) => AnimateRunner)
   )[];
 }
+import { AnimateRunner } from "./runner/animate-runner.js";

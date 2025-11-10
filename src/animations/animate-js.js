@@ -5,6 +5,7 @@ import {
   prepareAnimationOptions,
 } from "./shared.js";
 import { $injectTokens as $t } from "../injection-tokens.js";
+import { AnimateRunner } from "./runner/animate-runner.js";
 
 // TODO: use caching here to speed things up for detection
 // TODO: add documentation
@@ -13,14 +14,12 @@ AnimateJsProvider.$inject = [$t.$animate + "Provider"];
 export function AnimateJsProvider($animateProvider) {
   this.$get = [
     $t.$injector,
-    "$$AnimateRunner",
     /**
      *
      * @param {ng.InjectorService} $injector
-     * @param {typeof import('./runner/animate-runner.js').AnimateRunner} $$AnimateRunner
      * @returns
      */
-    function ($injector, $$AnimateRunner) {
+    function ($injector) {
       const applyAnimationClasses = applyAnimationClassesFactory();
       // $animateJs(element, 'enter');
       return function (element, event, classes, options) {
@@ -107,7 +106,7 @@ export function AnimateJsProvider($animateProvider) {
               runner.end();
             } else {
               close();
-              runner = new $$AnimateRunner();
+              runner = new AnimateRunner();
               runner.complete(true);
             }
             return runner;
@@ -117,14 +116,14 @@ export function AnimateJsProvider($animateProvider) {
               return runner;
             }
 
-            runner = new $$AnimateRunner();
+            runner = new AnimateRunner();
             /** @type {(cancelled?: boolean) => void} */
             let closeActiveAnimations;
 
             const chain = [];
 
             if (before) {
-              const runnerBefore = new $$AnimateRunner({
+              const runnerBefore = new AnimateRunner({
                 end(fn) {
                   // call the before animation function, then mark runner done
                   const endFn = before(fn) || (() => {});
@@ -138,7 +137,7 @@ export function AnimateJsProvider($animateProvider) {
             }
 
             if (chain.length) {
-              const runnerApplyOptions = new $$AnimateRunner({
+              const runnerApplyOptions = new AnimateRunner({
                 end(fn) {
                   applyOptions();
                   fn(true);
@@ -153,7 +152,7 @@ export function AnimateJsProvider($animateProvider) {
             }
 
             if (after) {
-              const runnerAfter = new $$AnimateRunner({
+              const runnerAfter = new AnimateRunner({
                 end(fn) {
                   const endFn = after(fn) || (() => {});
                   endFn();
@@ -175,7 +174,7 @@ export function AnimateJsProvider($animateProvider) {
               },
             });
 
-            $$AnimateRunner.chain(chain, onComplete);
+            AnimateRunner.chain(chain, onComplete);
             return runner;
 
             function onComplete(success) {
@@ -224,7 +223,7 @@ export function AnimateJsProvider($animateProvider) {
               value = value.start();
             }
 
-            if (value instanceof $$AnimateRunner) {
+            if (value instanceof AnimateRunner) {
               value.done(onDone);
             } else if (isFunction(value)) {
               // optional onEnd / onCancel callback
@@ -261,7 +260,7 @@ export function AnimateJsProvider($animateProvider) {
                 }
               };
 
-              runner = new $$AnimateRunner({
+              runner = new AnimateRunner({
                 end() {
                   onAnimationComplete();
                 },
@@ -357,7 +356,7 @@ export function AnimateJsProvider($animateProvider) {
             }
 
             if (runners.length) {
-              $$AnimateRunner.all(runners, callback);
+              AnimateRunner.all(runners, callback);
             } else {
               callback();
             }

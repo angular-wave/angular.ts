@@ -2,12 +2,19 @@
  * @fileoverview
  * Frame-synchronized animation runner and scheduler.
  * Provides async batching of animation callbacks using requestAnimationFrame.
+ * In AngularJS, this user to be implemented as `$$AnimateRunner`
  */
 
-/** @enum {number} Internal runner states. */
-const STATE_INITIAL = 0;
-const STATE_PENDING = 1;
-const STATE_DONE = 2;
+/**
+ * Internal runner states.
+ * @readonly
+ * @enum {number}
+ */
+const RunnerState = {
+  INITIAL: 0,
+  PENDING: 1,
+  DONE: 2,
+};
 
 /** @type {VoidFunction[]} */
 let queue = [];
@@ -41,17 +48,6 @@ export function schedule(fn) {
     (typeof requestAnimationFrame === "function"
       ? requestAnimationFrame
       : setTimeout)(flush, 0);
-  }
-}
-
-/**
- * Provider for the `$$AnimateRunner` service.
- * Used to inject the runner into the animation subsystem.
- */
-export class AnimateRunnerFactoryProvider {
-  constructor() {
-    /** @type {() => typeof AnimateRunner} */
-    this.$get = () => AnimateRunner; // Returning a class itself, not at instance
   }
 }
 
@@ -106,8 +102,8 @@ export class AnimateRunner {
     /** @type {Array<(ok: boolean) => void>} */
     this._doneCallbacks = [];
 
-    /** @type {0|1|2} */
-    this._state = STATE_INITIAL;
+    /** @type {RunnerState} */
+    this._state = RunnerState.INITIAL;
 
     /** @type {Promise<void>|null} */
     this._promise = null;
@@ -131,7 +127,7 @@ export class AnimateRunner {
    * @param {(ok: boolean) => void} fn - Completion callback.
    */
   done(fn) {
-    if (this._state === STATE_DONE) {
+    if (this._state === RunnerState.DONE) {
       fn(true);
     } else {
       this._doneCallbacks.push(fn);
@@ -173,8 +169,8 @@ export class AnimateRunner {
    * @param {boolean} [status=true] - True if successful, false if canceled.
    */
   complete(status = true) {
-    if (this._state === STATE_INITIAL) {
-      this._state = STATE_PENDING;
+    if (this._state === RunnerState.INITIAL) {
+      this._state = RunnerState.PENDING;
       this._schedule(() => this._finish(status));
     }
   }
@@ -216,8 +212,8 @@ export class AnimateRunner {
    * @param {boolean} status - True if completed successfully, false if canceled.
    */
   _finish(status) {
-    if (this._state === STATE_DONE) return;
-    this._state = STATE_DONE;
+    if (this._state === RunnerState.DONE) return;
+    this._state = RunnerState.DONE;
 
     const callbacks = this._doneCallbacks;
     for (let i = 0; i < callbacks.length; i++) {
