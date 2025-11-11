@@ -1,4 +1,4 @@
-/* Version: 0.10.0 - November 8, 2025 10:37:13 */
+/* Version: 0.11.0 - November 11, 2025 21:55:55 */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -1903,7 +1903,7 @@
    * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
    *
    * @param {Element} element - The DOM element to get data from.
-   * @param {string} [name] - The DOM element to get data from.
+   * @param {string} [name] - Controller name.
    * @returns {import("../core/scope/scope.js").Scope|undefined} - The retrieved data
    */
   function getController(element, name) {
@@ -2053,7 +2053,7 @@
   /**
    * Return instance of InjectorService attached to element
    * @param {Element} element
-   * @returns {import('../core/di/internal-injector.js').InjectorService}
+   * @returns {ng.InjectorService}
    */
   function getInjector(element) {
     return getInheritedData(element, "$injector");
@@ -2113,6 +2113,26 @@
     }
   }
 
+  function animatedomInsert(element, parent, after) {
+    const originalVisibility = element.style.visibility;
+    const originalPosition = element.style.position;
+    const originalPointerEvents = element.style.pointerEvents;
+
+    Object.assign(element.style, {
+      visibility: "hidden",
+      position: "absolute",
+      pointerEvents: "none",
+    });
+
+    domInsert(element, parent, after);
+
+    requestAnimationFrame(() => {
+      element.style.visibility = originalVisibility;
+      element.style.position = originalPosition;
+      element.style.pointerEvents = originalPointerEvents;
+    });
+  }
+
   /**
    * Returns the base href of the document.
    *
@@ -2144,8 +2164,6 @@
     $attrs: "$attrs",
     $scope: "$scope",
     $element: "$element",
-    $$AnimateRunner: "$$AnimateRunner",
-    $$animateAsyncRun: "$$animateAsyncRun",
     $$animateCache: "$$animateCache",
     $$animateCssDriver: "$$animateCssDriver",
     $$animateJs: "$$animateJs",
@@ -2648,6 +2666,8 @@
       const hasCache = hasOwn(this.cache, name);
       return hasProvider || hasCache;
     }
+
+    loadNewModules() {}
   }
 
   // Helpers
@@ -10874,9 +10894,9 @@
   inputDirective.$inject = ["$filter", "$parse"];
 
   /**
-   * @param {*} $filter
-   * @param {*} $parse
-   * @returns {import('../../interface.ts').Directive}
+   * @param {ng.FilterService} $filter
+   * @param {ng.ParseService} $parse
+   * @returns {ng.Directive}
    */
   function inputDirective($filter, $parse) {
     return {
@@ -10900,7 +10920,7 @@
   }
 
   /**
-   * @returns {import('../../interface.ts').Directive}
+   * @returns {ng.Directive}
    */
   function hiddenInputBrowserCacheDirective() {
     const valueProperty = {
@@ -10946,7 +10966,7 @@
   const CONSTANT_VALUE_REGEXP = /^(true|false|\d+)$/;
 
   /**
-   * @returns {import('../../interface.ts').Directive}
+   * @returns {ng.Directive}
    */
   function ngValueDirective() {
     /**
@@ -10970,15 +10990,15 @@
     return {
       restrict: "A",
       priority: 100,
-      compile(tpl, tplAttr) {
-        if (CONSTANT_VALUE_REGEXP.test(tplAttr["ngValue"])) {
-          return function ngValueConstantLink(scope, elm, attr) {
-            const value = scope.$eval(attr["ngValue"]);
+      compile(_, tplAttr) {
+        if (CONSTANT_VALUE_REGEXP.test(tplAttr.ngValue)) {
+          return function (scope, elm, attr) {
+            const value = scope.$eval(attr.ngValue);
             updateElementValue(elm, attr, value);
           };
         }
-        return function ngValueLink(scope, elm, attr) {
-          scope.$watch(attr["ngValue"], (value) => {
+        return function (scope, elm, attr) {
+          scope.$watch(attr.ngValue, (value) => {
             updateElementValue(elm, attr, value);
           });
         };
@@ -11659,17 +11679,20 @@
   /**
    * @param {string} name
    * @param {boolean|number} selector
-   * @returns {() => import("../../interface.ts").Directive}
+   * @returns {ng.DirectiveFactory}
    */
   function classDirective(name, selector) {
     name = `ngClass${name}`;
 
+    /**
+     * @returns {ng.Directive}
+     */
     return function () {
       return {
         /**
-         * @param {import("../../core/scope/scope.js").Scope} scope
-         * @param {Element} element
-         * @param {import("../../core/compile/attributes").Attributes} attr
+         * @param {ng.Scope} scope
+         * @param {HTMLElement} element
+         * @param {ng.Attributes} attr
          */
         link(scope, element, attr) {
           let classCounts = getCacheData(element, "$classCounts");
@@ -11843,9 +11866,8 @@
    */
   function ngCloakDirective() {
     return {
-      compile(element, attr) {
+      compile(_, attr) {
         attr.$set("ngCloak", undefined);
-        element.classList.remove("ng-cloak");
       },
     };
   }
@@ -11949,7 +11971,7 @@
         /** @type {Element} */
         let block;
 
-        /** @type {import('../../core/scope/scope.js').Scope} */
+        /** @type {ng.Scope} */
         let childScope;
 
         let previousElements;
@@ -13998,7 +14020,7 @@
 
   AnimateProvider.$inject = ["$provide"];
 
-  /** @param {import('../interface.ts').Provider} $provide */
+  /** @param {ng.ProvideService} $provide */
   function AnimateProvider($provide) {
     const provider = this;
     let classNameFilter = null;
@@ -14273,7 +14295,7 @@
          * Note that this does not cancel the underlying operation, e.g. the setting of classes or
          * adding the element to the DOM.
          *
-         * @param {import('./animate-runner.js').AnimateRunner} runner An animation runner returned by an $animate function.
+         * @param {import('./runner/animate-runner.js').AnimateRunner} runner An animation runner returned by an $animate function.
          *
          * @example
           <example module="animationExample" deps="angular-animate.js" animations="true" name="animate-cancel">
@@ -14353,11 +14375,11 @@
            * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
            * @param {Element} [after] - after the sibling element after which the element will be appended
            * @param {AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
-           * @returns {import('./animate-runner.js').AnimateRunner} the animation runner
+           * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
            */
           enter(element, parent, after, options) {
             parent = parent || after.parentElement;
-            domInsert(element, parent, after);
+            animatedomInsert(element, parent, after);
             return $$animateQueue.push(
               element,
               "enter",
@@ -14375,11 +14397,11 @@
            * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
            * @param {Element} after - after the sibling element after which the element will be appended
            * @param {AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
-           * @returns {import('./animate-runner.js').AnimateRunner} the animation runner
+           * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
            */
           move(element, parent, after, options) {
             parent = parent || after.parentElement;
-            domInsert(element, parent, after);
+            animatedomInsert(element, parent, after);
             return $$animateQueue.push(
               element,
               "move",
@@ -14394,7 +14416,7 @@
            *
            * @param {Element} element the element which will be removed from the DOM
            * @param {AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
-           * @returns {import('./animate-runner.js').AnimateRunner} the animation runner
+           * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
            */
           leave(element, options) {
             return $$animateQueue.push(
@@ -14423,7 +14445,7 @@
            * @param {Element} element the element which the CSS classes will be applied to
            * @param {string} className the CSS class(es) that will be added (multiple classes are separated via spaces)
            * @param {AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
-           * @return {import('./animate-runner.js').AnimateRunner}} animationRunner the animation runner
+           * @return {import('./runner/animate-runner.js').AnimateRunner}} animationRunner the animation runner
            */
           addClass(element, className, options) {
             options = prepareAnimateOptions(options);
@@ -14442,7 +14464,7 @@
            * @param {Element} element the element which the CSS classes will be applied to
            * @param {string} className the CSS class(es) that will be removed (multiple classes are separated via spaces)
            * @param {AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.         *
-           * @return {import('./animate-runner.js').AnimateRunner} animationRunner the animation runner
+           * @return {import('./runner/animate-runner.js').AnimateRunner} animationRunner the animation runner
            */
           removeClass(element, className, options) {
             options = prepareAnimateOptions(options);
@@ -14463,7 +14485,7 @@
            * @param {string} remove the CSS class(es) that will be removed (multiple classes are separated via spaces)
            * @param {object=} options an optional collection of options/styles that will be applied to the element.
            *
-           * @return {import('./animate-runner.js').AnimateRunner} the animation runner
+           * @return {import('./runner/animate-runner.js').AnimateRunner} the animation runner
            */
           setClass(element, add, remove, options) {
             options = prepareAnimateOptions(options);
@@ -14491,7 +14513,7 @@
            *   }
            * });
            * ```
-           *  @return {import('./animate-runner.js').AnimateRunner} the animation runner
+           *  @return {import('./runner/animate-runner.js').AnimateRunner} the animation runner
            */
           animate(element, from, to, className, options) {
             options = prepareAnimateOptions(options);
@@ -14505,200 +14527,6 @@
         };
       },
     ];
-  }
-
-  function AnimateAsyncRunFactoryProvider() {
-    this.$get = [
-      function () {
-        let waitQueue = [];
-
-        function waitForTick(fn) {
-          waitQueue.push(fn);
-          if (waitQueue.length > 1) return;
-          window.requestAnimationFrame(function () {
-            for (let i = 0; i < waitQueue.length; i++) {
-              waitQueue[i]();
-            }
-            waitQueue = [];
-          });
-        }
-
-        return function () {
-          let passed = false;
-          waitForTick(function () {
-            passed = true;
-          });
-          return function (callback) {
-            if (passed) {
-              callback();
-            } else {
-              waitForTick(callback);
-            }
-          };
-        };
-      },
-    ];
-  }
-
-  const INITIAL_STATE = 0;
-  const DONE_PENDING_STATE = 1;
-  const DONE_COMPLETE_STATE = 2;
-  let $$animateAsyncRun;
-
-  function AnimateRunnerFactoryProvider() {
-    this.$get = [
-      "$$animateAsyncRun",
-      function (animateAsyncRun) {
-        $$animateAsyncRun = animateAsyncRun;
-        return AnimateRunner;
-      },
-    ];
-  }
-
-  class AnimateRunner {
-    static chain(chain, callback) {
-      let index = 0;
-
-      function next() {
-        if (index === chain.length) {
-          callback(true);
-          return;
-        }
-
-        chain[index]((response) => {
-          if (response === false) {
-            callback(false);
-            return;
-          }
-          index++;
-          next();
-        });
-      }
-
-      next();
-    }
-
-    static all(runners, callback) {
-      let count = 0;
-      let status = true;
-
-      runners.forEach((runner) => {
-        runner.done(onProgress);
-      });
-
-      function onProgress(response) {
-        status = status && response;
-        if (++count === runners.length) {
-          callback(status);
-        }
-      }
-    }
-
-    constructor(host) {
-      this.setHost(host);
-
-      const rafTick = $$animateAsyncRun();
-      const timeoutTick = (fn) => {
-        setTimeout(fn, 0, false);
-      };
-
-      this._doneCallbacks = [];
-      this._tick = (fn) => {
-        if (document.hidden) {
-          timeoutTick(fn);
-        } else {
-          rafTick(fn);
-        }
-      };
-      this._state = 0;
-    }
-
-    setHost(host) {
-      this.host = host || {};
-    }
-
-    done(fn) {
-      if (this._state === DONE_COMPLETE_STATE) {
-        fn();
-      } else {
-        this._doneCallbacks.push(fn);
-      }
-    }
-
-    progress() {}
-
-    getPromise() {
-      if (!this.promise) {
-        const self = this;
-        this.promise = new Promise((resolve, reject) => {
-          self.done((status) => {
-            if (status === false) {
-              reject();
-            } else {
-              resolve();
-            }
-          });
-        });
-      }
-      return this.promise;
-    }
-
-    then(resolveHandler, rejectHandler) {
-      return this.getPromise().then(resolveHandler, rejectHandler);
-    }
-
-    catch(handler) {
-      return this.getPromise().catch(handler);
-    }
-
-    finally(handler) {
-      return this.getPromise().finally(handler);
-    }
-
-    pause() {
-      if (this.host.pause) {
-        this.host.pause();
-      }
-    }
-
-    resume() {
-      if (this.host.resume) {
-        this.host.resume();
-      }
-    }
-
-    end() {
-      if (this.host.end) {
-        this.host.end();
-      }
-      this._resolve(true);
-    }
-
-    cancel() {
-      if (this.host.cancel) {
-        this.host.cancel();
-      }
-      this._resolve(false);
-    }
-
-    complete(response) {
-      if (this._state === INITIAL_STATE) {
-        this._state = DONE_PENDING_STATE;
-        this._tick(() => {
-          this._resolve(response);
-        });
-      }
-    }
-
-    _resolve(response) {
-      if (this._state !== DONE_COMPLETE_STATE) {
-        this._doneCallbacks.forEach((fn) => {
-          fn(response);
-        });
-        this._doneCallbacks.length = 0;
-        this._state = DONE_COMPLETE_STATE;
-      }
-    }
   }
 
   /**
@@ -15280,7 +15108,7 @@
     /* @ignore */ static $inject = [$injectTokens.$provide];
 
     /**
-     * @param {import('../../interface.ts').Provider} $provide
+     * @param {ng.ProvideService} $provide
      */
     constructor($provide) {
       this.$provide = $provide;
@@ -19525,8 +19353,6 @@
        * @returns {Location}
        */
       ($rootScope, $rootElement) => {
-        /** @type {Location} */
-        let $location;
         const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
         const initialUrl = trimEmptyHash(window.location.href);
         let appBase;
@@ -19544,7 +19370,7 @@
         }
         const appBaseNoFile = stripFile(appBase);
 
-        $location = new Location(
+        const $location = new Location(
           appBase,
           appBaseNoFile,
           this.html5ModeConf.enabled,
@@ -20134,6 +19960,9 @@
     }
 
     if (typeof target === "object") {
+      if (isUnsafeGlobal(target)) {
+        return target;
+      }
       const proxy = new Proxy(target, context || new Scope());
       for (const key in target) {
         if (hasOwn(target, key)) {
@@ -20151,7 +19980,7 @@
               target[key] = createScope(target[key], proxy.$handler);
             }
           } catch {
-            // convert only what we can
+            /* empty */
           }
         }
       }
@@ -20159,6 +19988,45 @@
       return proxy;
     } else {
       return target;
+    }
+  }
+
+  /**
+   * @param {any} target
+   * @returns {boolean}
+   */
+  function isUnsafeGlobal(target) {
+    if (target == null) return false;
+    const t = typeof target;
+    if (t !== "object" && t !== "function") return false;
+
+    const g = globalThis;
+    if (
+      target === g ||
+      target === g.window ||
+      target === g.document ||
+      target === g.self ||
+      target === g.frames
+    ) {
+      return true;
+    }
+
+    // DOM / browser host object checks
+    if (
+      (typeof Window !== "undefined" && target instanceof Window) ||
+      (typeof Document !== "undefined" && target instanceof Document) ||
+      (typeof Element !== "undefined" && target instanceof Element) ||
+      (typeof Node !== "undefined" && target instanceof Node) ||
+      (typeof EventTarget !== "undefined" && target instanceof EventTarget)
+    ) {
+      return true;
+    }
+
+    // Cross-origin or non-enumerable window objects
+    try {
+      return Object.prototype.toString.call(target) === "[object Window]";
+    } catch {
+      return true;
     }
   }
 
@@ -22235,6 +22103,231 @@
     };
   }
 
+  /**
+   * @fileoverview
+   * Frame-synchronized animation runner and scheduler.
+   * Provides async batching of animation callbacks using requestAnimationFrame.
+   * In AngularJS, this user to be implemented as `$$AnimateRunner`
+   */
+
+  /**
+   * Internal runner states.
+   * @readonly
+   * @enum {number}
+   */
+  const RunnerState = {
+    INITIAL: 0,
+    PENDING: 1,
+    DONE: 2,
+  };
+
+  /** @type {VoidFunction[]} */
+  let queue = [];
+
+  /** @type {boolean} */
+  let scheduled = false;
+
+  /**
+   * Flush all queued callbacks.
+   * @private
+   */
+  function flush() {
+    const tasks = queue;
+    queue = [];
+    scheduled = false;
+    for (let i = 0; i < tasks.length; i++) {
+      tasks[i]();
+    }
+  }
+
+  /**
+   * Schedule a callback to run on the next animation frame.
+   * Multiple calls within the same frame are batched together.
+   *
+   * @param {VoidFunction} fn - The callback to execute.
+   */
+  function schedule(fn) {
+    queue.push(fn);
+    if (!scheduled) {
+      scheduled = true;
+      (typeof requestAnimationFrame === "function"
+        ? requestAnimationFrame
+        : setTimeout)(flush, 0);
+    }
+  }
+
+  /**
+   * Represents an asynchronous animation operation.
+   * Provides both callback-based and promise-based completion APIs.
+   */
+  class AnimateRunner {
+    /**
+     * Run an array of animation runners in sequence.
+     * Each runner waits for the previous one to complete.
+     *
+     * @param {AnimateRunner[]} runners - Runners to execute in order.
+     * @param {(ok: boolean) => void} callback - Invoked when all complete or one fails.
+     */
+    static chain(runners, callback) {
+      let i = 0;
+      const next = (ok = true) => {
+        if (!ok || i >= runners.length) {
+          callback(ok);
+          return;
+        }
+        runners[i++].done(next);
+      };
+      next();
+    }
+
+    /**
+     * Waits for all animation runners to complete before invoking the callback.
+     *
+     * @param {AnimateRunner[]} runners - Active runners to wait for.
+     * @param {(ok: boolean) => void} callback - Called when all runners complete.
+     */
+    static all(runners, callback) {
+      let remaining = runners.length;
+      let status = true;
+      for (const r of runners) {
+        r.done((result) => {
+          status = status && result !== false;
+          if (--remaining === 0) callback(status);
+        });
+      }
+    }
+
+    /**
+     * @param {import("../interface.ts").AnimationHost} [host] - Optional animation host.
+     */
+    constructor(host) {
+      /** @type {import("../interface.ts").AnimationHost} */
+      this.host = host || {};
+
+      /** @type {Array<(ok: boolean) => void>} */
+      this._doneCallbacks = [];
+
+      /** @type {RunnerState} */
+      this._state = RunnerState.INITIAL;
+
+      /** @type {Promise<void>|null} */
+      this._promise = null;
+
+      /** @type {(fn: VoidFunction) => void} */
+      this._schedule = schedule;
+    }
+
+    /**
+     * Sets or updates the animation host.
+     * @param {import("../interface.ts").AnimationHost} host - The host object.
+     */
+    setHost(host) {
+      this.host = host || {};
+    }
+
+    /**
+     * Registers a callback to be called once the animation completes.
+     * If the animation is already complete, it's called immediately.
+     *
+     * @param {(ok: boolean) => void} fn - Completion callback.
+     */
+    done(fn) {
+      if (this._state === RunnerState.DONE) {
+        fn(true);
+      } else {
+        this._doneCallbacks.push(fn);
+      }
+    }
+
+    /**
+     * Notifies the host of animation progress.
+     * @param {...any} args - Progress arguments.
+     */
+    progress(...args) {
+      this.host.progress?.(...args);
+    }
+
+    /** Pauses the animation, if supported by the host. */
+    pause() {
+      this.host.pause?.();
+    }
+
+    /** Resumes the animation, if supported by the host. */
+    resume() {
+      this.host.resume?.();
+    }
+
+    /** Ends the animation successfully. */
+    end() {
+      this.host.end?.();
+      this._finish(true);
+    }
+
+    /** Cancels the animation. */
+    cancel() {
+      this.host.cancel?.();
+      this._finish(false);
+    }
+
+    /**
+     * Marks the animation as complete on the next animation frame.
+     * @param {boolean} [status=true] - True if successful, false if canceled.
+     */
+    complete(status = true) {
+      if (this._state === RunnerState.INITIAL) {
+        this._state = RunnerState.PENDING;
+        this._schedule(() => this._finish(status));
+      }
+    }
+
+    /**
+     * Returns a promise that resolves or rejects when the animation completes.
+     * @returns {Promise<void>} Promise resolved on success or rejected on cancel.
+     */
+    getPromise() {
+      if (!this._promise) {
+        this._promise = new Promise((resolve, reject) => {
+          this.done((success) => {
+            if (success === false) reject();
+            else resolve();
+          });
+        });
+      }
+      return this._promise;
+    }
+
+    /** @inheritdoc */
+    then(onFulfilled, onRejected) {
+      return this.getPromise().then(onFulfilled, onRejected);
+    }
+
+    /** @inheritdoc */
+    catch(onRejected) {
+      return this.getPromise().catch(onRejected);
+    }
+
+    /** @inheritdoc */
+    finally(onFinally) {
+      return this.getPromise().finally(onFinally);
+    }
+
+    /**
+     * Completes the animation and invokes all done callbacks.
+     * @private
+     * @param {boolean} status - True if completed successfully, false if canceled.
+     */
+    _finish(status) {
+      if (this._state === RunnerState.DONE) return;
+      this._state = RunnerState.DONE;
+
+      const callbacks = this._doneCallbacks;
+      for (let i = 0; i < callbacks.length; i++) {
+        callbacks[i](status);
+      }
+      callbacks.length = 0;
+    }
+  }
+
   const ANIMATE_TIMER_KEY = "$$animateCss";
 
   const ONE_SECOND = 1000;
@@ -22344,18 +22437,16 @@
   function AnimateCssProvider() {
     let activeClasses;
     this.$get = [
-      "$$AnimateRunner",
       "$$animateCache",
       "$$rAFScheduler",
 
       /**
        *
-       * @param {*} $$AnimateRunner
        * @param {*} $$animateCache
        * @param {import("./raf-scheduler").RafScheduler} $$rAFScheduler
        * @returns
        */
-      function ($$AnimateRunner, $$animateCache, $$rAFScheduler) {
+      function ($$animateCache, $$rAFScheduler) {
         const applyAnimationClasses = applyAnimationClassesFactory();
 
         function computeCachedCssStyles(
@@ -22753,7 +22844,7 @@
                 pause: null,
               };
 
-              runner = new $$AnimateRunner(runnerHost);
+              runner = new AnimateRunner(runnerHost);
 
               waitUntilQuiet(start);
 
@@ -22852,7 +22943,7 @@
           }
 
           function closeAndReturnNoopAnimator() {
-            runner = new $$AnimateRunner({
+            runner = new AnimateRunner({
               end: endFn,
               cancel: cancelFn,
             });
@@ -23240,24 +23331,16 @@
       $injectTokens.$rootScope,
       $injectTokens.$injector,
       $injectTokens.$$animation,
-      $injectTokens.$$AnimateRunner,
       $injectTokens.$templateRequest,
       /**
        *
-       * @param {import('../core/scope/scope.js').Scope} $rootScope
-       * @param {import('../core/di/internal-injector.js').InjectorService} $injector
+       * @param {ng.RootScopeService} $rootScope
+       * @param {ng.InjectorService} $injector
        * @param {*} $$animation
-       * @param {*} $$AnimateRunner
        * @param {*} $templateRequest
        * @returns
        */
-      function (
-        $rootScope,
-        $injector,
-        $$animation,
-        $$AnimateRunner,
-        $templateRequest,
-      ) {
+      function ($rootScope, $injector, $$animation, $templateRequest) {
         const activeAnimationsLookup = new Map();
         const disabledElementsLookup = new Map();
 
@@ -23465,7 +23548,7 @@
 
           // we create a fake runner with a working promise.
           // These methods will become available after the digest has passed
-          const runner = new $$AnimateRunner();
+          const runner = new AnimateRunner();
 
           // this is used to trigger callbacks in postDigest mode
           const runInNextPostDigestOrNow = postDigestTaskFactory();
@@ -23910,14 +23993,12 @@
   function AnimateJsProvider($animateProvider) {
     this.$get = [
       $injectTokens.$injector,
-      "$$AnimateRunner",
       /**
        *
        * @param {ng.InjectorService} $injector
-       * @param {*} $$AnimateRunner
        * @returns
        */
-      function ($injector, $$AnimateRunner) {
+      function ($injector) {
         const applyAnimationClasses = applyAnimationClassesFactory();
         // $animateJs(element, 'enter');
         return function (element, event, classes, options) {
@@ -24004,7 +24085,7 @@
                 runner.end();
               } else {
                 close();
-                runner = new $$AnimateRunner();
+                runner = new AnimateRunner();
                 runner.complete(true);
               }
               return runner;
@@ -24014,31 +24095,53 @@
                 return runner;
               }
 
-              runner = new $$AnimateRunner();
-              let closeActiveAnimations;
+              runner = new AnimateRunner();
+
               const chain = [];
 
               if (before) {
-                chain.push((fn) => {
-                  closeActiveAnimations = before(fn);
+                const runnerBefore = new AnimateRunner({
+                  end(fn) {
+                    // call the before animation function, then mark runner done
+                    const endFn = before(fn) || (() => {});
+                    endFn();
+                  },
+                  cancel() {
+                    (before(true) || (() => {}))();
+                  },
                 });
+                chain.push(runnerBefore);
               }
 
               if (chain.length) {
-                chain.push((fn) => {
-                  applyOptions();
-                  fn(true);
+                const runnerApplyOptions = new AnimateRunner({
+                  end(fn) {
+                    applyOptions();
+                    fn(true);
+                  },
+                  cancel() {
+                    applyOptions();
+                  },
                 });
+                chain.push(runnerApplyOptions);
               } else {
                 applyOptions();
               }
 
               if (after) {
-                chain.push((fn) => {
-                  closeActiveAnimations = after(fn);
+                const runnerAfter = new AnimateRunner({
+                  end(fn) {
+                    const endFn = after(fn) || (() => {});
+                    endFn();
+                  },
+                  cancel() {
+                    (after(true) || (() => {}))();
+                  },
                 });
+                chain.push(runnerAfter);
               }
 
+              // finally, set host for overall runner
               runner.setHost({
                 end() {
                   endAnimations();
@@ -24048,7 +24151,7 @@
                 },
               });
 
-              $$AnimateRunner.chain(chain, onComplete);
+              AnimateRunner.chain(chain, onComplete);
               return runner;
 
               function onComplete(success) {
@@ -24058,7 +24161,6 @@
 
               function endAnimations(cancelled) {
                 if (!animationClosed) {
-                  (closeActiveAnimations || (() => {}))(cancelled);
                   onComplete(cancelled);
                 }
               }
@@ -24097,7 +24199,7 @@
                 value = value.start();
               }
 
-              if (value instanceof $$AnimateRunner) {
+              if (value instanceof AnimateRunner) {
                 value.done(onDone);
               } else if (isFunction(value)) {
                 // optional onEnd / onCancel callback
@@ -24134,7 +24236,7 @@
                   }
                 };
 
-                runner = new $$AnimateRunner({
+                runner = new AnimateRunner({
                   end() {
                     onAnimationComplete();
                   },
@@ -24230,7 +24332,7 @@
               }
 
               if (runners.length) {
-                $$AnimateRunner.all(runners, callback);
+                AnimateRunner.all(runners, callback);
               } else {
                 callback();
               }
@@ -24290,25 +24392,17 @@
     this.$get = [
       $injectTokens.$rootScope,
       $injectTokens.$injector,
-      $injectTokens.$$AnimateRunner,
       $injectTokens.$$rAFScheduler,
       $injectTokens.$$animateCache,
       /**
        *
        * @param {ng.RootScopeService} $rootScope
        * @param {import("../core/di/internal-injector").InjectorService} $injector
-       * @param {*} $$AnimateRunner
        * @param {import("./raf-scheduler").RafScheduler} $$rAFScheduler
        * @param {*} $$animateCache
        * @returns
        */
-      function (
-        $rootScope,
-        $injector,
-        $$AnimateRunner,
-        $$rAFScheduler,
-        $$animateCache,
-      ) {
+      function ($rootScope, $injector, $$rAFScheduler, $$animateCache) {
         const animationQueue = [];
         const applyAnimationClasses = applyAnimationClassesFactory();
 
@@ -24409,7 +24503,7 @@
           // these runner methods will get later updated with the
           // methods leading into the driver's end/cancel methods
           // for now they just stop the animation from starting
-          const runner = new $$AnimateRunner({
+          const runner = new AnimateRunner({
             end() {
               close();
             },
@@ -24964,16 +25058,14 @@
      */
     this.$get = [
       "$animateCss",
-      "$$AnimateRunner",
       "$rootElement",
       /**
        *
        * @param {*} $animateCss
-       * @param {typeof import('./animate-runner.js').AnimateRunner} $$AnimateRunner
        * @param {Element} $rootElement
        * @returns
        */
-      function ($animateCss, $$AnimateRunner, $rootElement) {
+      function ($animateCss, $rootElement) {
         const bodyNode = document.body;
         const rootNode = $rootElement;
 
@@ -25046,7 +25138,7 @@
                 runner.complete();
               });
 
-              runner = new $$AnimateRunner({
+              runner = new AnimateRunner({
                 end: endFn,
                 cancel: endFn,
               });
@@ -25157,12 +25249,12 @@
                 animationRunners.push(animation.start());
               });
 
-              const runner = new $$AnimateRunner({
+              const runner = new AnimateRunner({
                 end: endFn,
                 cancel: endFn, // CSS-driven animations cannot be cancelled, only ended
               });
 
-              $$AnimateRunner.all(animationRunners, (status) => {
+              AnimateRunner.all(animationRunners, (status) => {
                 runner.complete(status);
               });
 
@@ -25232,8 +25324,11 @@
     $$animationProvider.drivers.push("$$animateJsDriver");
     this.$get = [
       "$$animateJs",
-      "$$AnimateRunner",
-      function ($$animateJs, $$AnimateRunner) {
+      /**
+       *
+       * @param {*} $$animateJs
+       */
+      function ($$animateJs) {
         return function initDriverFn(animationDetails) {
           if (animationDetails.from && animationDetails.to) {
             const fromAnimation = prepareAnimation(animationDetails.from);
@@ -25252,9 +25347,9 @@
                   animationRunners.push(toAnimation.start());
                 }
 
-                $$AnimateRunner.all(animationRunners, done);
+                AnimateRunner.all(animationRunners, done);
 
-                const runner = new $$AnimateRunner({
+                const runner = new AnimateRunner({
                   end: endFnFactory(),
                   cancel: endFnFactory(),
                 });
@@ -35460,31 +35555,26 @@
   /**
    * @param {ng.LogService} $log
    * @param {ng.InjectorService} $injector
-   * @returns {import('interface.ts').Directive}
+   * @returns {ng.Directive}
    */
   function ngInjectDirective($log, $injector) {
     return {
       restrict: "A",
       link(scope, _element, attrs) {
-        const expr = attrs["ngInject"];
-
+        const expr = attrs.ngInject;
         if (!expr) return;
-        // Match any identifier that starts with $, or ends with Service/Factory
-        // Example matches: $http, userService, authFactory
-        const replacedExpr = expr.replace(
-          /(\$[\w]+|[\w]+(?:Service|Factory))/g,
-          (match, name) => {
-            try {
-              const service = $injector.get(name);
-              scope.$target[name] = service;
-              return name;
-            } catch {
-              $log.warn(`Injectable ${name} not found in $injector`);
-              return match;
-            }
-          },
-        );
-        scope.$apply(replacedExpr);
+        const tokens = expr
+          .split(";")
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+        for (const name of tokens) {
+          if ($injector.has(name)) {
+            scope[name] = $injector.get(name);
+          } else {
+            $log.warn(`Injectable ${name} not found in $injector`);
+          }
+        }
       },
     };
   }
@@ -35960,8 +36050,8 @@
 
   /**
    * Initializes core `ng` module.
-   * @param {import('./angular.js').Angular} angular
-   * @returns {import('./core/di/ng-module.js').NgModule} `ng` module
+   * @param {ng.Angular} angular
+   * @returns {ng.NgModule} `ng` module
    */
   function registerNgModule(angular) {
     return angular
@@ -35970,14 +36060,14 @@
         [],
         [
           $injectTokens.$provide,
-          /** @param {import("./interface.ts").Provider} $provide */
+          /** @param {ng.ProvideService} $provide */
           ($provide) => {
             // $$sanitizeUriProvider needs to be before $compileProvider as it is used by it.
             $provide.provider({
               $$sanitizeUri: SanitizeUriProvider,
             });
-            $provide.value("$window", window);
-            $provide.value("$document", document);
+            $provide.value($injectTokens.$window, window);
+            $provide.value($injectTokens.$document, document);
             $provide
               .provider($injectTokens.$compile, CompileProvider)
               .directive({
@@ -35990,6 +36080,7 @@
                 ngBind: ngBindDirective,
                 ngBindHtml: ngBindHtmlDirective,
                 ngBindTemplate: ngBindTemplateDirective,
+                ngChannel: ngChannelDirective,
                 ngClass: ngClassDirective,
                 ngClassEven: ngClassEvenDirective,
                 ngClassOdd: ngClassOddDirective,
@@ -36042,6 +36133,7 @@
                 input: hiddenInputBrowserCacheDirective,
                 ngAnimateSwap: ngAnimateSwapDirective,
                 ngAnimateChildren: $$AnimateChildrenDirective,
+                // aria directives
                 ngChecked: ngCheckedAriaDirective,
                 ngClick: ngClickAriaDirective,
                 ngDblclick: ngDblclickAriaDirective,
@@ -36053,12 +36145,12 @@
                 ngReadonly: ngReadonlyAriaDirective,
                 ngRequired: ngRequiredAriaDirective,
                 ngValue: ngValueAriaDirective,
+                // router directives
                 ngSref: $StateRefDirective,
                 ngSrefActive: $StateRefActiveDirective,
                 ngSrefActiveEq: $StateRefActiveDirective,
                 ngState: $StateRefDynamicDirective,
                 ngView: ngView,
-                ngChannel: ngChannelDirective,
               })
               .directive({
                 ngView: $ViewDirectiveFill,
@@ -36076,8 +36168,6 @@
               $$animateJsDriver: AnimateJsDriverProvider,
               $$animateCache: AnimateCacheProvider,
               $$animateQueue: AnimateQueueProvider,
-              $$AnimateRunner: AnimateRunnerFactoryProvider,
-              $$animateAsyncRun: AnimateAsyncRunFactoryProvider,
               $controller: ControllerProvider,
               $exceptionHandler: ExceptionHandlerProvider,
               $filter: FilterProvider,
@@ -36130,20 +36220,36 @@
     constructor() {
       this.$cache = Cache;
 
-      /** @type {import('./services/pubsub/pubsub.js').PubSub} */
+      /** @type {ng.PubSubService} */
       this.$eventBus = EventBus;
 
       /**
        * @type {string} `version` from `package.json`
        */
-      this.version = "0.10.0"; //inserted via rollup plugin
+      this.version = "0.11.0"; //inserted via rollup plugin
 
       /** @type {!Array<string|any>} */
       this.bootsrappedModules = [];
 
+      /**
+       * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
+       *
+       * @type {(element: Element, name: string?) => ng.Scope|undefined}
+       */
       this.getController = getController;
+
+      /**
+       * Return instance of InjectorService attached to element
+       * @type {(Element) => ng.InjectorService}
+       */
       this.getInjector = getInjector;
+
+      /**
+       * Gets scope for a given element.
+       * @type {(Element) => *}
+       */
       this.getScope = getScope;
+
       this.errorHandlingConfig = errorHandlingConfig;
       this.$t = $injectTokens;
 
@@ -36236,7 +36342,8 @@
          */
         (scope, el, compile, $injector) => {
           // ng-route deps
-          this.$injector = $injector;
+          this.$injector = $injector; // TODO refactor away as this as this prevents multiple apps from being used
+
           setCacheData(el, "$injector", $injector);
 
           const compileFn = compile(el);
