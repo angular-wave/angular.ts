@@ -6,7 +6,7 @@ description: >
 
 ### Description
 
-The `ng-inject` directive injects registerred injectables (services, factories,
+The `ng-inject` directive injects registered injectables (services, factories,
 etc.) into the current scope for direct access within templates or expressions.
 This allows access to application state without having to create intermediary
 controllers.
@@ -24,8 +24,6 @@ under its corresponding name.
 
 - **Type:** `string`
 - **Restrict:** `A`
-- **Element:** ANY
-- **Priority:** `0`
 - **Description:**  
    A semicolon-separated list of injectable' names to attach to current scope.
 - **Example:**
@@ -41,3 +39,5 @@ under its corresponding name.
 {{< showhtml src="examples/ng-inject/ng-inject.html" >}}
 
 {{< showraw src="examples/ng-inject/ng-inject.html" >}}
+
+---
