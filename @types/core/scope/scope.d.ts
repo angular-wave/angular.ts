@@ -9,6 +9,11 @@ export function nextId(): number;
  *                                     or the original value if the target is not an object.
  */
 export function createScope(target?: any, context?: Scope): Scope;
+/**
+ * @param {any} target
+ * @returns {boolean}
+ */
+export function isUnsafeGlobal(target: any): boolean;
 export const $postUpdateQueue: any[];
 export class RootScopeProvider {
   rootScope: Scope;

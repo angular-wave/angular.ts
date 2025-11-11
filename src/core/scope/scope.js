@@ -74,8 +74,7 @@ export function createScope(target = {}, context) {
   }
 
   if (typeof target === "object") {
-    // Never wrap globals
-    if (Object.values(globalThis).includes(target)) {
+    if (isUnsafeGlobal(target)) {
       return target;
     }
     const proxy = new Proxy(target, context || new Scope());
@@ -103,6 +102,45 @@ export function createScope(target = {}, context) {
     return proxy;
   } else {
     return target;
+  }
+}
+
+/**
+ * @param {any} target
+ * @returns {boolean}
+ */
+export function isUnsafeGlobal(target) {
+  if (target == null) return false;
+  const t = typeof target;
+  if (t !== "object" && t !== "function") return false;
+
+  const g = globalThis;
+  if (
+    target === g ||
+    target === g.window ||
+    target === g.document ||
+    target === g.self ||
+    target === g.frames
+  ) {
+    return true;
+  }
+
+  // DOM / browser host object checks
+  if (
+    (typeof Window !== "undefined" && target instanceof Window) ||
+    (typeof Document !== "undefined" && target instanceof Document) ||
+    (typeof Element !== "undefined" && target instanceof Element) ||
+    (typeof Node !== "undefined" && target instanceof Node) ||
+    (typeof EventTarget !== "undefined" && target instanceof EventTarget)
+  ) {
+    return true;
+  }
+
+  // Cross-origin or non-enumerable window objects
+  try {
+    return Object.prototype.toString.call(target) === "[object Window]";
+  } catch {
+    return true;
   }
 }
 

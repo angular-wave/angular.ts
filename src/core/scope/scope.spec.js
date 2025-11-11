@@ -1,5 +1,5 @@
 import { wait } from "../../shared/test-utils.js";
-import { $postUpdateQueue, createScope } from "./scope.js";
+import { $postUpdateQueue, createScope, isUnsafeGlobal } from "./scope.js";
 import { Angular } from "../../angular.js";
 import { createInjector } from "../di/injector.js";
 import { isDefined, isProxy, sliceArgs } from "../../shared/utils.js";
@@ -2996,5 +2996,66 @@ describe("Scope", () => {
       await wait();
       expect($scope.greeting).toEqual("Hello Misko!");
     });
+  });
+});
+
+describe("isUnsafeGlobal", () => {
+  it("returns false for plain objects", () => {
+    expect(isUnsafeGlobal({})).toBe(false);
+    expect(isUnsafeGlobal([])).toBe(false);
+    expect(isUnsafeGlobal(Object.create(null))).toBe(false);
+  });
+
+  it("returns false for primitives", () => {
+    expect(isUnsafeGlobal(null)).toBe(false);
+    expect(isUnsafeGlobal(42)).toBe(false);
+    expect(isUnsafeGlobal("hello")).toBe(false);
+    expect(isUnsafeGlobal(true)).toBe(false);
+    expect(isUnsafeGlobal(undefined)).toBe(false);
+  });
+
+  it("returns true for globalThis and window", () => {
+    expect(isUnsafeGlobal(globalThis)).toBe(true);
+    if (typeof window !== "undefined") {
+      expect(isUnsafeGlobal(window)).toBe(true);
+    }
+  });
+
+  it("returns true for document", () => {
+    if (typeof document !== "undefined") {
+      expect(isUnsafeGlobal(document)).toBe(true);
+    }
+  });
+
+  it("returns true for DOM elements", () => {
+    if (typeof document !== "undefined") {
+      const div = document.createElement("div");
+      expect(isUnsafeGlobal(div)).toBe(true);
+    }
+  });
+
+  it("returns true for Node and EventTarget", () => {
+    if (typeof document !== "undefined") {
+      const textNode = document.createTextNode("test");
+      expect(isUnsafeGlobal(textNode)).toBe(true);
+
+      const evt = new Event("test");
+      expect(isUnsafeGlobal(evt.target || document)).toBe(true);
+    }
+  });
+
+  it("returns false for user-defined classes", () => {
+    class Foo {}
+    const instance = new Foo();
+    expect(isUnsafeGlobal(instance)).toBe(false);
+  });
+
+  it("handles cross-origin or inaccessible objects gracefully", () => {
+    const fakeCrossOrigin = {
+      toString: () => {
+        throw new Error("cross-origin");
+      },
+    };
+    expect(() => isUnsafeGlobal(fakeCrossOrigin)).not.toThrow();
   });
 });
