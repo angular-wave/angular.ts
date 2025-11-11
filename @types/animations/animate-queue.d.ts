@@ -9,8 +9,8 @@ export class AnimateQueueProvider {
   $get: (
     | string
     | ((
-        $rootScope: import("../core/scope/scope.js").Scope,
-        $injector: import("../core/di/internal-injector.js").InjectorService,
+        $rootScope: ng.RootScopeService,
+        $injector: ng.InjectorService,
         $$animation: any,
         $templateRequest: any,
       ) => {

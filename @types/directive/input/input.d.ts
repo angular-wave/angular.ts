@@ -45,25 +45,25 @@ export function rangeInputType(
   ctrl: any,
 ): void;
 /**
- * @param {*} $filter
- * @param {*} $parse
- * @returns {import('../../interface.ts').Directive}
+ * @param {ng.FilterService} $filter
+ * @param {ng.ParseService} $parse
+ * @returns {ng.Directive}
  */
 export function inputDirective(
-  $filter: any,
-  $parse: any,
-): import("../../interface.ts").Directive;
+  $filter: ng.FilterService,
+  $parse: ng.ParseService,
+): ng.Directive;
 export namespace inputDirective {
   let $inject: string[];
 }
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
-export function hiddenInputBrowserCacheDirective(): import("../../interface.ts").Directive;
+export function hiddenInputBrowserCacheDirective(): ng.Directive;
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
-export function ngValueDirective(): import("../../interface.ts").Directive;
+export function ngValueDirective(): ng.Directive;
 export const ISO_DATE_REGEXP: RegExp;
 export const URL_REGEXP: RegExp;
 export const EMAIL_REGEXP: RegExp;

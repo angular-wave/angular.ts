@@ -24,7 +24,7 @@ export function ngIfDirective($animate) {
       /** @type {Element} */
       let block;
 
-      /** @type {import('../../core/scope/scope.js').Scope} */
+      /** @type {ng.Scope} */
       let childScope;
 
       let previousElements;

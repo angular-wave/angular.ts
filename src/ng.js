@@ -148,14 +148,14 @@ export function registerNgModule(angular) {
       [],
       [
         $t.$provide,
-        /** @param {import("./interface.ts").Provider} $provide */
+        /** @param {ng.ProvideService} $provide */
         ($provide) => {
           // $$sanitizeUriProvider needs to be before $compileProvider as it is used by it.
           $provide.provider({
             $$sanitizeUri: SanitizeUriProvider,
           });
-          $provide.value("$window", window);
-          $provide.value("$document", document);
+          $provide.value($t.$window, window);
+          $provide.value($t.$document, document);
           $provide
             .provider($t.$compile, CompileProvider)
             .directive({
@@ -168,6 +168,7 @@ export function registerNgModule(angular) {
               ngBind: ngBindDirective,
               ngBindHtml: ngBindHtmlDirective,
               ngBindTemplate: ngBindTemplateDirective,
+              ngChannel: ngChannelDirective,
               ngClass: ngClassDirective,
               ngClassEven: ngClassEvenDirective,
               ngClassOdd: ngClassOddDirective,
@@ -220,6 +221,7 @@ export function registerNgModule(angular) {
               input: hiddenInputBrowserCacheDirective,
               ngAnimateSwap: ngAnimateSwapDirective,
               ngAnimateChildren: $$AnimateChildrenDirective,
+              // aria directives
               ngChecked: ngCheckedAriaDirective,
               ngClick: ngClickAriaDirective,
               ngDblclick: ngDblclickAriaDirective,
@@ -231,12 +233,12 @@ export function registerNgModule(angular) {
               ngReadonly: ngReadonlyAriaDirective,
               ngRequired: ngRequiredAriaDirective,
               ngValue: ngValueAriaDirective,
+              // router directives
               ngSref: $StateRefDirective,
               ngSrefActive: $StateRefActiveDirective,
               ngSrefActiveEq: $StateRefActiveDirective,
               ngState: $StateRefDynamicDirective,
               ngView: ngView,
-              ngChannel: ngChannelDirective,
             })
             .directive({
               ngView: $ViewDirectiveFill,

@@ -56,6 +56,8 @@ import {
   WorkerConnection as TWorkerConnection,
   WorkerConfig as TWorkerConfig,
 } from "./services/worker/interface.ts";
+import { Provider as TProvideService } from "./interface.ts";
+import { Location as TLocationService } from "./services/location/location.js";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -92,8 +94,10 @@ declare global {
     type HttpService = THttpService;
     type InterpolateService = TInterpolateService;
     type InjectorService = TInjectorService;
+    type LocationService = TLocationService;
     type LogService = TLogService;
     type ParseService = TParseService;
+    type ProvideService = TProvideService;
     type PubSubService = TPubSub;
     type RootElementService = Element;
     type RootScopeService = TScope;

@@ -16,7 +16,6 @@ const pkg = JSON.parse(
 
 const baseInput = "src/index.js";
 
-// 👇 Custom CSS minify plugin
 function cssMinifyPlugin() {
   return {
     name: "css-minify",
@@ -25,15 +24,12 @@ function cssMinifyPlugin() {
       const destDir = path.resolve(__dirname, "dist");
       const css = readFileSync(srcPath, "utf-8");
 
-      // Run cssnano
       const result = await postcss([cssnano()]).process(css, {
         from: srcPath,
         to: path.join(destDir, "angular.css"),
       });
 
       writeFileSync(path.join(destDir, "angular.css"), result.css);
-
-      console.log("✅ CSS minified:", path.join(destDir, "angular.css"));
     },
   };
 }

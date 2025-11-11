@@ -105,4 +105,11 @@ describe("ngInject", () => {
     await wait();
     expect(el.innerText.trim()).toBe("Bob");
   });
+
+  it("should inject globals", async () => {
+    el.innerHTML = `<div ng-inject="$window"></div>`;
+    $compile(el)($rootScope);
+    await wait();
+    expect($rootScope.$window).toBe(window);
+  });
 });

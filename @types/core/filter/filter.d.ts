@@ -1,9 +1,9 @@
 export class FilterProvider {
   static $inject: string[];
   /**
-   * @param {import('../../interface.ts').Provider} $provide
+   * @param {ng.ProvideService} $provide
    */
-  constructor($provide: import("../../interface.ts").Provider);
+  constructor($provide: ng.ProvideService);
   $provide: import("../../interface.ts").Provider;
   /**
    * @param {string|Record<string, ng.FilterFn>} name

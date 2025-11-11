@@ -5,7 +5,6 @@ import { StateObject } from "../state/state-object.js";
 import { PathNode } from "../path/path-node.js";
 import { TargetState } from "../state/target-state.js";
 import { RegisteredHook } from "./hook-registry.js";
-import { TransitionHookScope } from "./transition-hook.js";
 /**
  * The TransitionOptions object can be used to change the behavior of a transition.
  *
@@ -79,16 +78,6 @@ export interface TransitionOptions {
    * @default `true`
    */
   supercede?: boolean;
-  /** @internal */
-  reloadState?: StateObject;
-  /** @internal
-   * If this transition is a redirect, this property should be the original Transition (which was redirected to this one)
-   */
-  redirectedFrom?: Transition;
-  /** @internal */
-  current?: () => Transition;
-  /** @internal */
-  source?: "sref" | "url" | "redirect" | "otherwise" | "unknown";
 }
 export interface TransitionHookOptions {
   current?: () => Transition;
@@ -299,10 +288,6 @@ export interface HookRegOptions {
  * Note: the Transition object only allows hooks to be registered before the Transition is started.
  */
 export interface IHookRegistry {
-  /** @internal place to store the hooks */
-  _registeredHooks: {
-    [key: string]: RegisteredHook[];
-  };
   /**
    * Registers a [[TransitionHookFn]], called *before a transition starts*.
    *
@@ -837,24 +822,6 @@ export interface IMatchingNodes {
   exiting: PathNode[];
   retained: PathNode[];
   entering: PathNode[];
-}
-/** @internal */
-export interface RegisteredHooks {
-  [key: string]: RegisteredHook[];
-}
-/** @internal */
-export interface PathTypes {
-  [key: string]: PathType;
-  to: PathType;
-  from: PathType;
-  exiting: PathType;
-  retained: PathType;
-  entering: PathType;
-}
-/** @internal */
-export interface PathType {
-  name: string;
-  scope: TransitionHookScope;
 }
 /**
  * Hook Criterion used to match a transition.

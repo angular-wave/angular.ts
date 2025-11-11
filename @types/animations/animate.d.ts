@@ -1,10 +1,8 @@
-/** @param {import('../interface.ts').Provider} $provide */
-export function AnimateProvider(
-  $provide: import("../interface.ts").Provider,
-): void;
+/** @param {ng.ProvideService} $provide */
+export function AnimateProvider($provide: ng.ProvideService): void;
 export class AnimateProvider {
-  /** @param {import('../interface.ts').Provider} $provide */
-  constructor($provide: import("../interface.ts").Provider);
+  /** @param {ng.ProvideService} $provide */
+  constructor($provide: ng.ProvideService);
   $$registeredAnimations: any;
   /**
    * Registers a new injectable animation factory function. The factory function produces the

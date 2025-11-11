@@ -132,7 +132,7 @@ export interface Provider {
    */
   value(name: string, val: any): Provider;
   /**
-   * Register a constant value (available during config).
+   * Register a constant service, such as a string, a number, an array, an object or a function, with the $injector. Unlike value it can be injected into a module configuration function (see config) and it cannot be overridden by an Angular decorator.
    * @param name - The name of the constant.
    * @param val - The constant value.
    */
@@ -147,7 +147,9 @@ export interface Provider {
 /**
  * A controller constructor function used in AngularTS.
  */
-export type ControllerConstructor = (...args: any[]) => void | Controller;
+export type ControllerConstructor =
+  | (new (...args: any[]) => Controller)
+  | ((...args: any[]) => void | Controller);
 /**
  * Describes the changes in component bindings during `$onChanges`.
  */
@@ -163,17 +165,41 @@ export interface ChangesObject<T = any> {
 export type OnChangesObject = Record<string, ChangesObject>;
 /**
  * AngularTS component lifecycle interface.
+ * Directive controllers have a well-defined lifecycle. Each controller can implement "lifecycle hooks". These are methods that
+ * will be called by Angular at certain points in the life cycle of the directive.
+ * https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
+ * https://docs.angularjs.org/guide/component
  */
 export interface Controller {
+  [s: string]: any;
   /** Optional controller name (used in debugging) */
   name?: string;
-  /** Called when the controller is initialized */
+  /**
+   * Called on each controller after all the controllers on an element have been constructed and had their bindings
+   * initialized (and before the pre & post linking functions for the directives on this element). This is a good
+   * place to put initialization code for your controller.
+   */
   $onInit?: () => void;
-  /** Called when one-way bindings are updated */
+  /**
+   * Called whenever one-way bindings are updated. The onChangesObj is a hash whose keys are the names of the bound
+   * properties that have changed, and the values are an {@link IChangesObject} object  of the form
+   * { currentValue, previousValue, isFirstChange() }. Use this hook to trigger updates within a component such as
+   * cloning the bound value to prevent accidental mutation of the outer value.
+   */
   $onChanges?: (changes: OnChangesObject) => void;
-  /** Called before the controller is destroyed */
+  /**
+   * Called on a controller when its containing scope is destroyed. Use this hook for releasing external resources,
+   * watches and event handlers.
+   */
   $onDestroy?: () => void;
-  /** Called after the component is linked */
+  /**
+   * Called after this controller's element and its children have been linked. Similar to the post-link function this
+   * hook can be used to set up DOM event handlers and do direct DOM manipulation. Note that child elements that contain
+   * templateUrl directives will not have been compiled and linked since they are waiting for their template to load
+   * asynchronously and their own compilation and linking has been suspended until that occurs. This hook can be considered
+   * analogous to the ngAfterViewInit and ngAfterContentInit hooks in Angular 2. Since the compilation process is rather
+   * different in Angular 1 there is no direct mapping and care should be taken when upgrading.
+   */
   $postLink?: () => void;
 }
 /**

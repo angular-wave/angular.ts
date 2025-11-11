@@ -150,8 +150,8 @@ export function AnimateQueueProvider($animateProvider) {
     $t.$templateRequest,
     /**
      *
-     * @param {import('../core/scope/scope.js').Scope} $rootScope
-     * @param {import('../core/di/internal-injector.js').InjectorService} $injector
+     * @param {ng.RootScopeService} $rootScope
+     * @param {ng.InjectorService} $injector
      * @param {*} $$animation
      * @param {*} $templateRequest
      * @returns

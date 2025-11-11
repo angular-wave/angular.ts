@@ -4,17 +4,20 @@ import { hasAnimate, isObject, isString } from "../../shared/utils.js";
 /**
  * @param {string} name
  * @param {boolean|number} selector
- * @returns {() => import("../../interface.ts").Directive}
+ * @returns {ng.DirectiveFactory}
  */
 function classDirective(name, selector) {
   name = `ngClass${name}`;
 
+  /**
+   * @returns {ng.Directive}
+   */
   return function () {
     return {
       /**
-       * @param {import("../../core/scope/scope.js").Scope} scope
-       * @param {Element} element
-       * @param {import("../../core/compile/attributes").Attributes} attr
+       * @param {ng.Scope} scope
+       * @param {HTMLElement} element
+       * @param {ng.Attributes} attr
        */
       link(scope, element, attr) {
         let classCounts = getCacheData(element, "$classCounts");

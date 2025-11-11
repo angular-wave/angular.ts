@@ -36,7 +36,7 @@ function prepareAnimateOptions(options) {
 
 AnimateProvider.$inject = ["$provide"];
 
-/** @param {import('../interface.ts').Provider} $provide */
+/** @param {ng.ProvideService} $provide */
 export function AnimateProvider($provide) {
   const provider = this;
   let classNameFilter = null;

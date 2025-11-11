@@ -62,6 +62,8 @@ import {
   WorkerConnection as TWorkerConnection,
   WorkerConfig as TWorkerConfig,
 } from "./services/worker/interface.ts";
+import { Provider as TProvideService } from "./interface.ts";
+import { Location as TLocationService } from "./services/location/location.js";
 
 /* ────────────────────────────────────────────────
    Runtime global initialization
@@ -113,8 +115,10 @@ declare global {
     export type HttpService = THttpService;
     export type InterpolateService = TInterpolateService;
     export type InjectorService = TInjectorService;
+    export type LocationService = TLocationService;
     export type LogService = TLogService;
     export type ParseService = TParseService;
+    export type ProvideService = TProvideService;
     export type PubSubService = TPubSub;
     export type RootElementService = Element;
     export type RootScopeService = TScope;

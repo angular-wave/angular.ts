@@ -5,7 +5,7 @@ ngInjectDirective.$inject = [$t.$log, $t.$injector];
 /**
  * @param {ng.LogService} $log
  * @param {ng.InjectorService} $injector
- * @returns {import('interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function ngInjectDirective($log, $injector) {
   return {

@@ -74,6 +74,10 @@ export function createScope(target = {}, context) {
   }
 
   if (typeof target === "object") {
+    // Never wrap globals
+    if (Object.values(globalThis).includes(target)) {
+      return target;
+    }
     const proxy = new Proxy(target, context || new Scope());
     for (const key in target) {
       if (hasOwn(target, key)) {
@@ -90,8 +94,8 @@ export function createScope(target = {}, context) {
           } else {
             target[key] = createScope(target[key], proxy.$handler);
           }
-        } catch {
-          // convert only what we can
+        } catch (e) {
+          $exceptionHandler(e);
         }
       }
     }

@@ -15,7 +15,7 @@ export class FilterProvider {
   /* @ignore */ static $inject = [$t.$provide];
 
   /**
-   * @param {import('../../interface.ts').Provider} $provide
+   * @param {ng.ProvideService} $provide
    */
   constructor($provide) {
     this.$provide = $provide;

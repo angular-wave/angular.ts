@@ -528,8 +528,6 @@ export class LocationProvider {
      * @returns {Location}
      */
     ($rootScope, $rootElement) => {
-      /** @type {Location} */
-      let $location;
       const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
       const initialUrl = trimEmptyHash(window.location.href);
       let appBase;
@@ -547,7 +545,7 @@ export class LocationProvider {
       }
       const appBaseNoFile = stripFile(appBase);
 
-      $location = new Location(
+      const $location = new Location(
         appBase,
         appBaseNoFile,
         this.html5ModeConf.enabled,

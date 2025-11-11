@@ -6,6 +6,7 @@
     "allowJs": true,
     "allowImportingTsExtensions": true,
     "emitDeclarationOnly": true,
+    "stripInternal": true,
     "outDir": "@types",
     "target": "ES2023"
   },

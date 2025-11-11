@@ -965,9 +965,9 @@ function checkboxInputType(scope, element, attr, ctrl, $filter, $parse) {
 inputDirective.$inject = ["$filter", "$parse"];
 
 /**
- * @param {*} $filter
- * @param {*} $parse
- * @returns {import('../../interface.ts').Directive}
+ * @param {ng.FilterService} $filter
+ * @param {ng.ParseService} $parse
+ * @returns {ng.Directive}
  */
 export function inputDirective($filter, $parse) {
   return {
@@ -991,7 +991,7 @@ export function inputDirective($filter, $parse) {
 }
 
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function hiddenInputBrowserCacheDirective() {
   const valueProperty = {
@@ -1037,7 +1037,7 @@ export function hiddenInputBrowserCacheDirective() {
 const CONSTANT_VALUE_REGEXP = /^(true|false|\d+)$/;
 
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function ngValueDirective() {
   /**
@@ -1061,15 +1061,15 @@ export function ngValueDirective() {
   return {
     restrict: "A",
     priority: 100,
-    compile(tpl, tplAttr) {
-      if (CONSTANT_VALUE_REGEXP.test(tplAttr["ngValue"])) {
-        return function ngValueConstantLink(scope, elm, attr) {
-          const value = scope.$eval(attr["ngValue"]);
+    compile(_, tplAttr) {
+      if (CONSTANT_VALUE_REGEXP.test(tplAttr.ngValue)) {
+        return function (scope, elm, attr) {
+          const value = scope.$eval(attr.ngValue);
           updateElementValue(elm, attr, value);
         };
       }
-      return function ngValueLink(scope, elm, attr) {
-        scope.$watch(attr["ngValue"], (value) => {
+      return function (scope, elm, attr) {
+        scope.$watch(attr.ngValue, (value) => {
           updateElementValue(elm, attr, value);
         });
       };

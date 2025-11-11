@@ -212,31 +212,6 @@ export interface ParamDeclaration {
    */
   squash?: boolean | string;
   /**
-   * @internal
-   *
-   * An array of [[Replace]] objects.
-   *
-   * When creating a Transition, defines how to handle certain special values, such as `undefined`, `null`,
-   * or empty string `""`.  If the transition is started, and the parameter value is equal to one of the "to"
-   * values, then the parameter value is replaced with the "from" value.
-   *
-   * #### Example:
-   * ```js
-   * replace: [
-   *   { from: undefined, to: null },
-   *   { from: "", to: null }
-   * ]
-   * ```
-   */
-  replace?: Replace[];
-  /**
-   * @internal
-   * @internal
-   *
-   * This is not part of the declaration; it is a calculated value depending on if a default value was specified or not.
-   */
-  isOptional?: boolean;
-  /**
    * Dynamic flag
    *
    * When `dynamic` is `true`, changes to the parameter value will not cause the state to be entered/exited.

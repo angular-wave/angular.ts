@@ -386,15 +386,6 @@ export interface StateDeclaration {
    */
   parent?: string | StateDeclaration;
   /**
-   * Gets the internal State object API
-   *
-   * Gets the *internal API* for a registered state.
-   *
-   * Note: the internal [[StateObject]] API is subject to change without notice
-   * @internal
-   */
-  $$state?: () => StateObject;
-  /**
    * Resolve - a mechanism to asynchronously fetch data, participating in the Transition lifecycle
    *
    * The `resolve:` property defines data (or other dependencies) to be fetched asynchronously when the state is being entered.

@@ -216,6 +216,8 @@ export class InjectorService extends AbstractInjector {
     const hasCache = hasOwn(this.cache, name);
     return hasProvider || hasCache;
   }
+
+  loadNewModules() {}
 }
 
 // Helpers
