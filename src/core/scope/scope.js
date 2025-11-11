@@ -93,8 +93,8 @@ export function createScope(target = {}, context) {
           } else {
             target[key] = createScope(target[key], proxy.$handler);
           }
-        } catch (e) {
-          $exceptionHandler(e);
+        } catch {
+          /* empty */
         }
       }
     }
