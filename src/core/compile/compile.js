@@ -2767,14 +2767,23 @@ export class CompileProvider {
                           attr.$$element.classList.value,
                         );
                       } else {
-                        attr.$set(name, newValue);
+                        attr.$set(
+                          name,
+                          name === "srcset"
+                            ? $sce.getTrustedMediaUrl(newValue)
+                            : newValue,
+                        );
                       }
                     });
                   });
 
                   if (interpolateFn.expressions.length == 0) {
-                    // if there is nothing to watch, its a constant
-                    attr.$set(name, newValue);
+                    attr.$set(
+                      name,
+                      name === "srcset"
+                        ? $sce.getTrustedMediaUrl(newValue)
+                        : newValue,
+                    );
                   }
                 },
               };
