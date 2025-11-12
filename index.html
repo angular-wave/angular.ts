@@ -98,28 +98,10 @@
     </style>
   </head>
   <body ng-app="todo">
-    <div ng-controller="TodoCtrl as $ctrl">
-      <h3>Todos</h3>
-      <button ng-click="$ctrl.archive()">Archive</button>
-      <ul>
-        <li ng-repeat="todo in $ctrl.tasks">
-          {{ todo.task }} {{ todo.done }}
-          <input type="checkbox" ng-click="todo.done = !todo.done" />
-        </li>
-      </ul>
-      <form ng-submit="$ctrl.add(newTodo)">
-        <input type="text" ng-model="newTodo" ng-required="true" />
-        <button type="submit">Add</button>
-      </form>
-
-      <button ng-get="/mock/div" target="#p" trigger="click" animate="true">
-        Get
-      </button>
-      <div id="p"></div>
-
-      <div ng-if="bool" class="fade" animate="true">Fade me in out</div>
-      <button ng-click="bool=true">Fade In!</button>
-      <button ng-click="bool=false">Fade Out!</button>
-    </div>
+    <ng-wasm src="src/directive/wasm/math.wasm"></ng-wasm>
+    <input type="number" ng-model="a" />
+    <input type="number" ng-model="b" />
+    <button ng-click="x = demo.add(a, b)">test</button>
+    {{ x }}
   </body>
 </html>
