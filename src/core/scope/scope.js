@@ -616,7 +616,7 @@ export class Scope {
    * function is invoked when changes to that property are detected.
    *
    * @param {string} watchProp - An expression to be watched in the context of this model.
-   * @param {import('./interface.ts').ListenerFunction} [listenerFn] - A function to execute when changes are detected on watched context.
+   * @param {ng.ListenerFn} [listenerFn] - A function to execute when changes are detected on watched context.
    * @param {boolean} [lazy] - A flag to indicate if the listener should be invoked immediately. Defaults to false.
    */
   $watch(watchProp, listenerFn, lazy = false) {
@@ -638,7 +638,7 @@ export class Scope {
       return () => {};
     }
 
-    /** @type {import('./interface.ts').Listener} */
+    /** @type {ng.Listener} */
     const listener = {
       originalTarget: this.$target,
       listenerFn: listenerFn,
@@ -696,13 +696,34 @@ export class Scope {
       }
       // 6
       case ASTType.BinaryExpression: {
-        let expr = get.decoratedNode.body[0].expression.toWatch[0];
-        key = expr.property ? expr.property.name : expr.name;
-        if (!key) {
-          throw new Error("Unable to determine key");
+        if (get.decoratedNode.body[0].expression.isPure) {
+          let expr = get.decoratedNode.body[0].expression.toWatch[0];
+          key = expr.property ? expr.property.name : expr.name;
+          if (!key) {
+            throw new Error("Unable to determine key");
+          }
+          listener.property.push(key);
+          break;
+        } else {
+          let keys = [];
+          get.decoratedNode.body[0].expression.toWatch.forEach((x) => {
+            const k = x.property ? x.property.name : x.name;
+            if (!k) {
+              throw new Error("Unable to determine key");
+            }
+            keys.push(k);
+          });
+          keys.forEach((key) => {
+            this.#registerKey(key, listener);
+            this.#scheduleListener([listener]);
+          });
+
+          return () => {
+            keys.forEach((key) => {
+              this.#deregisterKey(key, listener.id);
+            });
+          };
         }
-        listener.property.push(key);
-        break;
       }
       // 7
       case ASTType.UnaryExpression: {

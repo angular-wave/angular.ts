@@ -1,4 +1,4 @@
-import { hashKey, startsWith } from "./utils.js";
+import { hashKey, mergeClasses, startsWith } from "./utils.js";
 
 describe("api", () => {
   describe("hashKey()", () => {
@@ -173,6 +173,74 @@ describe("api", () => {
 
     it("should return false if search is longer than the string", () => {
       expect(startsWith("short", "shorter")).toBe(false);
+    });
+  });
+
+  describe("mergeClasses", () => {
+    it("should return empty string if both arguments are null or undefined", () => {
+      expect(mergeClasses(null, null)).toBe("");
+      expect(mergeClasses(undefined, undefined)).toBe("");
+      expect(mergeClasses(null, undefined)).toBe("");
+    });
+
+    it("should return first argument if second is null/undefined", () => {
+      expect(mergeClasses("btn", null)).toBe("btn");
+      expect(mergeClasses(["btn", "primary"], undefined)).toBe("btn primary");
+    });
+
+    it("should return second argument if first is null/undefined", () => {
+      expect(mergeClasses(null, "active")).toBe("active");
+      expect(mergeClasses(undefined, ["active", "large"])).toBe("active large");
+    });
+
+    it("should merge two strings with a space", () => {
+      expect(mergeClasses("btn", "active")).toBe("btn active");
+    });
+
+    it("should always trim merged strings", () => {
+      expect(mergeClasses("btn  ", "  active")).toBe("btn active");
+    });
+
+    it("should merge two arrays of strings", () => {
+      expect(mergeClasses(["btn", "primary"], ["active", "large"])).toBe(
+        "btn primary active large",
+      );
+    });
+
+    it("should merge string and array", () => {
+      expect(mergeClasses("btn", ["active", "large"])).toBe("btn active large");
+      expect(mergeClasses(["btn", "primary"], "active")).toBe(
+        "btn primary active",
+      );
+    });
+
+    it("should ignore empty strings, null, and undefined in arrays", () => {
+      expect(
+        mergeClasses(["btn", "", null, undefined], ["active", "", null]),
+      ).toBe("btn active");
+    });
+
+    it("should ignore empty strings, null, and undefined in arrays if second argument is empty", () => {
+      expect(mergeClasses(["btn", "", null, undefined], undefined)).toBe("btn");
+    });
+
+    it("should ignore empty strings, null, and undefined in arrays if first argument is empty", () => {
+      expect(mergeClasses(undefined, ["btn", "", null, undefined])).toBe("btn");
+    });
+
+    it("should handle single argument arrays correctly", () => {
+      expect(mergeClasses(["btn"], ["active"])).toBe("btn active");
+    });
+
+    it("should handle single argument arrays correctly", () => {
+      expect(mergeClasses(["btn  ", "  test"], ["  active"])).toBe(
+        "btn test active",
+      );
+    });
+
+    it("should handle one argument as string and the other as empty array", () => {
+      expect(mergeClasses("btn", [])).toBe("btn");
+      expect(mergeClasses([], "active")).toBe("active");
     });
   });
 });

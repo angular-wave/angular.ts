@@ -1106,13 +1106,38 @@ export function hashKey(obj) {
   return `${objType}:${obj}`;
 }
 
+/**
+ * Merges two class name values into a single space-separated string.
+ * Accepts strings, arrays of strings, or null/undefined values.
+ *
+ * @param {string | string[] | null | undefined} a - The first class name(s).
+ * @param {string | string[] | null | undefined} b - The second class name(s).
+ * @returns {string} A single string containing all class names separated by spaces.
+ */
 export function mergeClasses(a, b) {
   if (!a && !b) return "";
-  if (!a) return b;
-  if (!b) return a;
-  if (Array.isArray(a)) a = a.join(" ");
-  if (Array.isArray(b)) b = b.join(" ");
-  return a + " " + b;
+  if (!a) return Array.isArray(b) ? b.join(" ").trim() : b;
+  if (!b) return Array.isArray(a) ? a.join(" ").trim() : a;
+  if (Array.isArray(a)) a = normalizeStringArray(a);
+  if (Array.isArray(b)) b = normalizeStringArray(b);
+  return `${a.trim()} ${b.trim()}`.trim();
+}
+
+/**
+ * Joins an array of strings into a single string, trimming each
+ * element and ignoring empty strings, null, and undefined
+ * @param {any[]} arr
+ * @returns {string}
+ */
+function normalizeStringArray(arr) {
+  const cleaned = [];
+  for (const item of arr) {
+    if (item) {
+      const trimmed = item.trim();
+      if (trimmed) cleaned.push(trimmed);
+    }
+  }
+  return cleaned.join(" ");
 }
 
 /**

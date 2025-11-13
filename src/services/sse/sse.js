@@ -134,7 +134,7 @@ export class SseProvider {
         es.close();
       },
       connect() {
-        if (closed == false) {
+        if (closed === false) {
           close();
         }
         connect();
