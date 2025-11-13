@@ -488,7 +488,18 @@ export function toDebugString(obj: any): any;
  *         The resulting string key is in 'type:hashKey' format.
  */
 export function hashKey(obj: any): string;
-export function mergeClasses(a: any, b: any): any;
+/**
+ * Merges two class name values into a single space-separated string.
+ * Accepts strings, arrays of strings, or null/undefined values.
+ *
+ * @param {string | string[] | null | undefined} a - The first class name(s).
+ * @param {string | string[] | null | undefined} b - The second class name(s).
+ * @returns {string} A single string containing all class names separated by spaces.
+ */
+export function mergeClasses(
+  a: string | string[] | null | undefined,
+  b: string | string[] | null | undefined,
+): string;
 /**
  * Converts all accepted directives format into proper directive name.
  * @param {string} name Name to normalize

@@ -128,12 +128,12 @@ export class Scope {
    * function is invoked when changes to that property are detected.
    *
    * @param {string} watchProp - An expression to be watched in the context of this model.
-   * @param {import('./interface.ts').ListenerFunction} [listenerFn] - A function to execute when changes are detected on watched context.
+   * @param {ng.ListenerFn} [listenerFn] - A function to execute when changes are detected on watched context.
    * @param {boolean} [lazy] - A flag to indicate if the listener should be invoked immediately. Defaults to false.
    */
   $watch(
     watchProp: string,
-    listenerFn?: import("./interface.ts").ListenerFunction,
+    listenerFn?: ng.ListenerFn,
     lazy?: boolean,
   ): () => void;
   $new(childInstance: any): any;

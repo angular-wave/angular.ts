@@ -2,7 +2,7 @@
  * @fileoverview
  * Frame-synchronized animation runner and scheduler.
  * Provides async batching of animation callbacks using requestAnimationFrame.
- * In AngularJS, this user to be implemented as `$$AnimateRunner`
+ * In AngularJS, this used to be implemented as `$$AnimateRunner`
  */
 
 /**

@@ -29,6 +29,14 @@ describe("$interpolate", () => {
     expect(interp({})).toEqual("why u no }}work{{");
   });
 
+  it("evaluates binary expressions", function () {
+    let interp = $interpolate("{{a + b}}");
+    expect(interp({ a: 11, b: 22 })).toEqual("33");
+
+    interp = $interpolate("{{a + b + c}}");
+    expect(interp({ a: 11, b: 22, c: 33 })).toEqual("66");
+  });
+
   it("evaluates many expressions", function () {
     const interp = $interpolate("First {{anAttr}}, then {{anotherAttr}}!");
     expect(interp({ anAttr: "42", anotherAttr: "43" })).toEqual(

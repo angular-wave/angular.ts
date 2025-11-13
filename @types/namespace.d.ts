@@ -2,6 +2,10 @@ export { angular } from "./index.js";
 import { Angular as TAngular } from "./angular.js";
 import { Attributes as TAttributes } from "./core/compile/attributes.js";
 import { Scope as TScope } from "./core/scope/scope.js";
+import {
+  ListenerFn as TListenerFn,
+  Listener as TListener,
+} from "./core/scope/interface.ts";
 import { NgModule as TNgModule } from "./core/di/ng-module.js";
 import { InjectorService as TInjectorService } from "./core/di/internal-injector.js";
 import {
@@ -107,8 +111,10 @@ declare global {
     type TemplateCacheService = Map<string, string>;
     type TemplateRequestService = TTemplateRequestService;
     type ErrorHandlingConfig = TErrorHandlingConfig;
-    type WindowService = Window;
+    type ListenerFn = TListenerFn;
+    type Listener = TListener;
     type DocumentService = Document;
+    type WindowService = Window;
     type WorkerConfig = TWorkerConfig;
     type WorkerConnection = TWorkerConnection;
   }

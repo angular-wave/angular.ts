@@ -67,8 +67,8 @@ export class NodeRef {
     }
 
     // Handle array of elements
-    else if (element instanceof Array) {
-      if (element.length == 1) {
+    else if (Array.isArray(element)) {
+      if (element.length === 1) {
         this.initial = element[0].cloneNode(true);
         this.node = element[0];
       } else {
@@ -129,19 +129,12 @@ export class NodeRef {
 
   /** @returns {NodeList|Node[]} */
   get nodelist() {
-    assertArg(this.isList, "nodes");
-    if (this._nodes.length === 0) {
-      return this._nodes;
-    }
-    if (this._nodes[0].parentElement) {
+    if (this._nodes.length === 0) return [];
+    if (this._nodes[0].parentElement)
       return this._nodes[0].parentElement.childNodes;
-    } else {
-      const fragment = document.createDocumentFragment();
-      this._nodes.forEach((el) => {
-        fragment.appendChild(el);
-      });
-      return fragment.childNodes;
-    }
+    const fragment = document.createDocumentFragment();
+    this._nodes.forEach((el) => fragment.appendChild(el));
+    return fragment.childNodes;
   }
 
   /** @returns {Element | Node | ChildNode | NodeList | Node[]} */

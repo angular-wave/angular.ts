@@ -107,7 +107,7 @@ describe("Scope", () => {
   });
 
   describe("$nonscope", () => {
-    it("should ignore objects with $nonscope property", () => {
+    it("should ignore objects with $nonscope propercoty", () => {
       const res = createScope({ $nonscope: true });
       expect(res.$id).toBeUndefined();
     });

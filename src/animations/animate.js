@@ -1,4 +1,10 @@
-import { isFunction, isObject, minErr, extend } from "../shared/utils.js";
+import {
+  isFunction,
+  isObject,
+  minErr,
+  extend,
+  mergeClasses,
+} from "../shared/utils.js";
 import { removeElement, animatedomInsert } from "../shared/dom.js";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
 
@@ -13,15 +19,6 @@ import { NG_ANIMATE_CLASSNAME } from "./shared.js";
  */
 
 const $animateMinErr = minErr("$animate");
-
-function mergeClasses(a, b) {
-  if (!a && !b) return "";
-  if (!a) return b;
-  if (!b) return a;
-  if (Array.isArray(a)) a = a.join(" ");
-  if (Array.isArray(b)) b = b.join(" ");
-  return `${a} ${b}`;
-}
 
 // if any other type of options value besides an Object value is
 // passed into the $animate.method() animation then this helper code

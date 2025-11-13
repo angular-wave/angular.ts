@@ -5,6 +5,10 @@ export { angular } from "./index.js";
 import { Angular as TAngular } from "./angular.js";
 import { Attributes as TAttributes } from "./core/compile/attributes.js";
 import { Scope as TScope } from "./core/scope/scope.js";
+import {
+  ListenerFn as TListenerFn,
+  Listener as TListener,
+} from "./core/scope/interface.ts";
 import { NgModule as TNgModule } from "./core/di/ng-module.js";
 import { InjectorService as TInjectorService } from "./core/di/internal-injector.js";
 
@@ -130,8 +134,10 @@ declare global {
 
     // Support types
     export type ErrorHandlingConfig = TErrorHandlingConfig;
-    export type WindowService = Window;
+    export type ListenerFn = TListenerFn;
+    export type Listener = TListener;
     export type DocumentService = Document;
+    export type WindowService = Window;
     export type WorkerConfig = TWorkerConfig;
     export type WorkerConnection = TWorkerConnection;
   }

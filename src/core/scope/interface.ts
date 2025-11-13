@@ -7,11 +7,11 @@ export interface AsyncQueueTask {
   locals: Record<string, any>;
 }
 
-export type ListenerFunction = (newValue: any, originalTarget: object) => void;
+export type ListenerFn = (newValue?: any, originalTarget?: object) => void;
 
 export interface Listener {
   originalTarget: object;
-  listenerFn: ListenerFunction;
+  listenerFn: ListenerFn;
   watchFn: CompiledExpression;
   id: number; // Deregistration id
   scopeId: number; // The scope id that created the Listener
