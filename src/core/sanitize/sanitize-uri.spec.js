@@ -8,7 +8,7 @@ describe("sanitizeUri", () => {
   let $$sanitizeUri;
   beforeEach(() => {
     sanitizeUriProvider = new SanitizeUriProvider();
-    $$sanitizeUri = sanitizeUriProvider.$get();
+    $$sanitizeUri = sanitizeUriProvider.$get[1](window);
 
     sanitizeHref = function (uri) {
       return $$sanitizeUri(uri, false);

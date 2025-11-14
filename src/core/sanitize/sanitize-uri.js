@@ -1,5 +1,4 @@
 import { isDefined } from "../../shared/utils.js";
-import { urlResolve } from "../../shared/url-utils/url-utils.js";
 
 /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider */
 
@@ -55,21 +54,27 @@ export class SanitizeUriProvider {
   /**
    * @returns {import("./interface").SanitizerFn}
    */
-  $get() {
-    return (uri, isMediaUrl) => {
-      if (!uri) return uri;
+  $get = [
+    "$window",
+    /** @param {ng.WindowService} $window */
+    ($window) => {
+      return /** @type {import("./interface").SanitizerFn} */ (
+        (uri, isMediaUrl) => {
+          if (!uri) return uri;
 
-      /** @type {RegExp} */
-      const regex = isMediaUrl
-        ? this._imgSrcSanitizationTrustedUrlList
-        : this._aHrefSanitizationTrustedUrlList;
+          /** @type {RegExp} */
+          const regex = isMediaUrl
+            ? this._imgSrcSanitizationTrustedUrlList
+            : this._aHrefSanitizationTrustedUrlList;
 
-      const normalizedVal = urlResolve(uri.trim()).href;
+          const normalizedVal = new URL(uri.trim(), $window.location.href).href;
 
-      if (normalizedVal !== "" && !normalizedVal.match(regex)) {
-        return `unsafe:${normalizedVal}`;
-      }
-      return uri;
-    };
-  }
+          if (normalizedVal !== "" && !normalizedVal.match(regex)) {
+            return `unsafe:${normalizedVal}`;
+          }
+          return uri;
+        }
+      );
+    },
+  ];
 }

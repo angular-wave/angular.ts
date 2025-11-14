@@ -107,7 +107,7 @@ describe("Scope", () => {
   });
 
   describe("$nonscope", () => {
-    it("should ignore objects with $nonscope propercoty", () => {
+    it("should ignore objects with $nonscope property", () => {
       const res = createScope({ $nonscope: true });
       expect(res.$id).toBeUndefined();
     });
@@ -592,7 +592,7 @@ describe("Scope", () => {
       expect(scope.counter).toBe(4);
     });
 
-    it("calls only the listeners registerred at the moment the watched value changes", async () => {
+    it("calls only the listeners registered at the moment the watched value changes", async () => {
       scope.someValue = "a";
       scope.counter = 0;
 
@@ -823,7 +823,7 @@ describe("Scope", () => {
         expect(scope.$$watchersCount).toEqual(scope.$handler.watchers.size);
       });
 
-      it("should fire upon $watch registration on initial registeration", async () => {
+      it("should fire upon $watch registration on initial registration", async () => {
         logs = "";
         scope.a = 1;
         scope.$watch("a", () => {
