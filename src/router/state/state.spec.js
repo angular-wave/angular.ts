@@ -118,7 +118,7 @@ describe("$state", () => {
       expect($stateProvider).toBeDefined();
     });
 
-    it("should should not allow states that are already registerred", () => {
+    it("should should not allow states that are already registered", () => {
       expect(() => {
         $stateProvider.state({ name: "toString", url: "/to-string" });
       }).not.toThrow();

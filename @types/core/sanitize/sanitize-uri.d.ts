@@ -35,6 +35,6 @@ export class SanitizeUriProvider implements ServiceProvider {
   /**
    * @returns {import("./interface").SanitizerFn}
    */
-  $get(): any;
+  $get: (string | (($window: ng.WindowService) => any))[];
 }
 export type ServiceProvider = import("../../interface.ts").ServiceProvider;

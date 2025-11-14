@@ -1,6 +1,6 @@
 import { createElementFromHTML, dealoc } from "../shared/dom.js";
 import { Angular } from "../angular.js";
-import { isObject, mergeClasses } from "../shared/utils.js";
+import { isObject } from "../shared/utils.js";
 import { isFunction, wait } from "../shared/utils.js";
 import { createInjector } from "../core/di/injector.js";
 
@@ -495,9 +495,5 @@ describe("$animate", () => {
         expect(target[0].classList.contains("test-class3")).toBeTrue();
       });
     });
-  });
-
-  describe("mergeClasses", () => {
-    expect(mergeClasses);
   });
 });
