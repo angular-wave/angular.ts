@@ -1,7 +1,7 @@
 export class Attributes {
   static $nonscope: boolean;
   /**
-   * @param {ng.Scope} $rootScope
+   * @param {ng.RootScopeService} $rootScope
    * @param {*} $animate
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    * @param {*} $sce
@@ -9,7 +9,7 @@ export class Attributes {
    * @param {Object} [attributesToCopy]
    */
   constructor(
-    $rootScope: ng.Scope,
+    $rootScope: ng.RootScopeService,
     $animate: any,
     $exceptionHandler: ng.ExceptionHandlerService,
     $sce: any,

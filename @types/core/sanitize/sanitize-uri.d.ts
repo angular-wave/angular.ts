@@ -33,8 +33,11 @@ export class SanitizeUriProvider implements ServiceProvider {
     regexp?: RegExp | undefined,
   ): RegExp | SanitizeUriProvider;
   /**
-   * @returns {import("./interface").SanitizerFn}
+   * @returns {import("./interface.ts").SanitizerFn}
    */
-  $get: (string | (($window: ng.WindowService) => any))[];
+  $get: (
+    | string
+    | (($window: ng.WindowService) => import("./interface.ts").SanitizerFn)
+  )[];
 }
 export type ServiceProvider = import("../../interface.ts").ServiceProvider;
