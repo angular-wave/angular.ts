@@ -136,6 +136,11 @@ export function isUnsafeGlobal(target) {
     return true;
   }
 
+  // Events
+  if (typeof Event !== "undefined" && target instanceof Event) {
+    return true;
+  }
+
   // Cross-origin or non-enumerable window objects
   try {
     return Object.prototype.toString.call(target) === "[object Window]";

@@ -21,7 +21,7 @@ export class Attributes {
   static $nonscope = true;
 
   /**
-   * @param {ng.Scope} $rootScope
+   * @param {ng.RootScopeService} $rootScope
    * @param {*} $animate
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    * @param {*} $sce

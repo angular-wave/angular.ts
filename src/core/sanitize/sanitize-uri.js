@@ -1,4 +1,5 @@
 import { isDefined } from "../../shared/utils.js";
+import { $injectTokens } from "../../injection-tokens.js";
 
 /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider */
 
@@ -52,13 +53,13 @@ export class SanitizeUriProvider {
   }
 
   /**
-   * @returns {import("./interface").SanitizerFn}
+   * @returns {import("./interface.ts").SanitizerFn}
    */
   $get = [
-    "$window",
+    $injectTokens.$window,
     /** @param {ng.WindowService} $window */
     ($window) => {
-      return /** @type {import("./interface").SanitizerFn} */ (
+      return /** @type {import("./interface.ts").SanitizerFn} */ (
         (uri, isMediaUrl) => {
           if (!uri) return uri;
 

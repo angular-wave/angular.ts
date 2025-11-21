@@ -3058,4 +3058,8 @@ describe("isUnsafeGlobal", () => {
     };
     expect(() => isUnsafeGlobal(fakeCrossOrigin)).not.toThrow();
   });
+
+  it("ignores events", () => {
+    expect(isUnsafeGlobal(new PointerEvent("test"))).toBeTrue();
+  });
 });

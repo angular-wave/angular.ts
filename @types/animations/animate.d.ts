@@ -212,74 +212,12 @@ export class AnimateProvider {
          */
         enabled: any;
         /**
-       * Cancels the provided animation and applies the end state of the animation.
-       * Note that this does not cancel the underlying operation, e.g. the setting of classes or
-       * adding the element to the DOM.
-       *
-       * @param {import('./runner/animate-runner.js').AnimateRunner} runner An animation runner returned by an $animate function.
-       *
-       * @example
-        <example module="animationExample" deps="angular-animate.js" animations="true" name="animate-cancel">
-          <file name="app.js">
-            angular.module('animationExample', []).component('cancelExample', {
-              templateUrl: 'template.html',
-              controller: function($element, $animate) {
-                this.runner = null;
-
-                this.addClass = function() {
-                  this.runner = $animate.addClass($element.querySelectorAll('div'), 'red');
-                  let ctrl = this;
-                  this.runner.finally(function() {
-                    ctrl.runner = null;
-                  });
-                };
-
-                this.removeClass = function() {
-                  this.runner = $animate.removeClass($element.querySelectorAll('div'), 'red');
-                  let ctrl = this;
-                  this.runner.finally(function() {
-                    ctrl.runner = null;
-                  });
-                };
-
-                this.cancel = function() {
-                  $animate.cancel(this.runner);
-                };
-              }
-            });
-          </file>
-          <file name="template.html">
-            <p>
-              <button id="add" ng-click="$ctrl.addClass()">Add</button>
-              <button ng-click="$ctrl.removeClass()">Remove</button>
-              <br>
-              <button id="cancel" ng-click="$ctrl.cancel()" ng-disabled="!$ctrl.runner">Cancel</button>
-              <br>
-              <div id="target">CSS-Animated Text</div>
-            </p>
-          </file>
-          <file name="index.html">
-            <cancel-example></cancel-example>
-          </file>
-          <file name="style.css">
-            .red-add, .red-remove {
-              transition: all 4s cubic-bezier(0.250, 0.460, 0.450, 0.940);
-            }
-
-            .red,
-            .red-add.red-add-active {
-              color: #FF0000;
-              font-size: 40px;
-            }
-
-            .red-remove.red-remove-active {
-              font-size: 10px;
-              color: black;
-            }
-
-          </file>
-        </example>
-       */
+         * Cancels the provided animation and applies the end state of the animation.
+         * Note that this does not cancel the underlying operation, e.g. the setting of classes or
+         * adding the element to the DOM.
+         *
+         * @param {import('./runner/animate-runner.js').AnimateRunner} runner An animation runner returned by an $animate function.
+         */
         cancel(
           runner: import("./runner/animate-runner.js").AnimateRunner,
         ): void;
