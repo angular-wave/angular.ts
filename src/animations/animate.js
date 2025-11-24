@@ -4,6 +4,7 @@ import {
   minErr,
   extend,
   mergeClasses,
+  hasAnimate,
 } from "../shared/utils.js";
 import { removeElement, animatedomInsert } from "../shared/dom.js";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
@@ -168,6 +169,9 @@ export function AnimateProvider($provide) {
 
   this.$get = [
     "$$animateQueue",
+    /**
+     * @param {import("./queue/interface.ts").AnimateQueueService} $$animateQueue
+     */
     function ($$animateQueue) {
       /**
        * The $animate service exposes a series of DOM utility methods that provide support
@@ -301,7 +305,13 @@ export function AnimateProvider($provide) {
          *
          * @return {boolean} whether or not animations are enabled
          */
-        enabled: $$animateQueue.enabled,
+        enabled: (element, enabled) => {
+          if (enabled !== undefined) {
+            return hasAnimate(element);
+          } else {
+            element.setAttribute("animate", `${enabled}`);
+          }
+        },
 
         /**
          * Cancels the provided animation and applies the end state of the animation.
