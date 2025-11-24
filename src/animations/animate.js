@@ -8,6 +8,7 @@ import {
 } from "../shared/utils.js";
 import { removeElement, animatedomInsert } from "../shared/dom.js";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
+import { $injectTokens } from "../injection-tokens";
 
 /** @typedef {"enter"|"leave"|"move"|"addClass"|"setClass"|"removeClass"} AnimationMethod */
 
@@ -168,9 +169,10 @@ export function AnimateProvider($provide) {
   };
 
   this.$get = [
-    "$$animateQueue",
+    $injectTokens.$$animateQueue,
     /**
      * @param {import("./queue/interface.ts").AnimateQueueService} $$animateQueue
+     * @returns {ng.AnimateService}
      */
     function ($$animateQueue) {
       /**

@@ -43,8 +43,8 @@ export function AnimationProvider() {
     /**
      *
      * @param {ng.RootScopeService} $rootScope
-     * @param {import("../core/di/internal-injector").InjectorService} $injector
-     * @param {import("./raf-scheduler").RafScheduler} $$rAFScheduler
+     * @param {ng.InjectorService} $injector
+     * @param {import("./raf-scheduler.js").RafScheduler} $$rAFScheduler
      * @param {*} $$animateCache
      * @returns
      */

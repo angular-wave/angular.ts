@@ -124,15 +124,15 @@ export class CompileProvider {
   $get: (
     | string
     | ((
-        $injector: import("../../core/di/internal-injector.js").InjectorService,
+        $injector: ng.InjectorService,
         $interpolate: any,
         $exceptionHandler: import("../../services/exception/exception-handler.js").ErrorHandler,
-        $templateRequest: any,
-        $parse: import("../parse/interface.ts").ParseService,
+        $templateRequest: ng.TemplateRequestService,
+        $parse: ng.ParseService,
         $controller: any,
         $rootScope: import("../scope/scope.js").Scope,
         $sce: any,
-        $animate: any,
+        $animate: ng.AnimateService,
       ) => (
         compileNode: string | Element | Node | ChildNode | NodeList,
         transcludeFn?: import("./inteface.ts").TranscludeFn,

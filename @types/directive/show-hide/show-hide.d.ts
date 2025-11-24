@@ -1,9 +1,8 @@
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @param {ng.AnimateService} $animate
+ * @returns {ng.Directive}
  */
-export function ngShowDirective(
-  $animate: any,
-): import("../../interface.ts").Directive;
+export function ngShowDirective($animate: ng.AnimateService): ng.Directive;
 export namespace ngShowDirective {
   let $inject: string[];
 }

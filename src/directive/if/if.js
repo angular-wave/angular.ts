@@ -3,7 +3,7 @@ import { hasAnimate } from "../../shared/utils.js";
 
 ngIfDirective.$inject = ["$animate"];
 /**
- * @param {*}  $animate
+ * @param {ng.AnimateService} $animate
  * @returns {ng.Directive}
  */
 export function ngIfDirective($animate) {

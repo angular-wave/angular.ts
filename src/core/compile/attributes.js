@@ -22,7 +22,7 @@ export class Attributes {
 
   /**
    * @param {ng.RootScopeService} $rootScope
-   * @param {*} $animate
+   * @param {ng.AnimateService} $animate
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    * @param {*} $sce
    * @param {import("../../shared/noderef.js").NodeRef} [nodeRef]
@@ -114,7 +114,7 @@ export class Attributes {
     const toAdd = tokenDifference(newClasses, oldClasses);
     if (toAdd && toAdd.length) {
       if (hasAnimate(this.$$element)) {
-        this.$animate.addClass(this.$$element, toAdd);
+        this.$animate.addClass(/** @type {Element }*/ (this.$$element), toAdd);
       } else {
         this.$nodeRef.element.classList.add(...toAdd.trim().split(/\s+/));
       }
@@ -122,7 +122,10 @@ export class Attributes {
     const toRemove = tokenDifference(oldClasses, newClasses);
     if (toRemove && toRemove.length) {
       if (hasAnimate(this.$$element)) {
-        this.$animate.removeClass(this.$$element, toRemove);
+        this.$animate.removeClass(
+          /** @type {Element }*/ (this.$$element),
+          toRemove,
+        );
       } else {
         this.$nodeRef.element.classList.remove(...toRemove.trim().split(/\s+/));
       }

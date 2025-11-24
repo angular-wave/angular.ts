@@ -5,7 +5,8 @@ const NG_HIDE_IN_PROGRESS_CLASS = "ng-hide-animate";
 
 ngShowDirective.$inject = ["$animate"];
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @param {ng.AnimateService} $animate
+ * @returns {ng.Directive}
  */
 export function ngShowDirective($animate) {
   return {
@@ -16,7 +17,7 @@ export function ngShowDirective($animate) {
      * @param $attr
      */
     link(scope, element, $attr) {
-      scope.$watch($attr["ngShow"], (value) => {
+      scope.$watch($attr.ngShow, (value) => {
         // we're adding a temporary, animation-specific class for ng-hide since this way
         // we can control when the element is actually displayed on screen without having
         // to have a global/greedy CSS selector that breaks when other animations are run.

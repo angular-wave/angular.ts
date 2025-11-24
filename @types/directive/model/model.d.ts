@@ -54,7 +54,7 @@ export class NgModelController {
    * @param {import('../../core/compile/attributes.js').Attributes} $attr
    * @param {Element} $element
    * @param {import("../../core/parse/interface.ts").ParseService} $parse
-   * @param {*} $animate
+   * @param {ng.AnimateService} $animate
    * @param {*} $interpolate
    */
   constructor(
@@ -63,7 +63,7 @@ export class NgModelController {
     $attr: import("../../core/compile/attributes.js").Attributes,
     $element: Element,
     $parse: import("../../core/parse/interface.ts").ParseService,
-    $animate: any,
+    $animate: ng.AnimateService,
     $interpolate: any,
   );
   /** @type {any} The actual value from the control's view  */
@@ -139,7 +139,7 @@ export class NgModelController {
   $$scope: import("../../core/scope/scope.js").Scope;
   $$attr: import("../../core/compile/attributes.js").Attributes;
   $$element: Element;
-  $$animate: any;
+  $$animate: import("../../interface.ts").AnimateService;
   $$parse: import("../../core/parse/interface.ts").ParseService;
   $$exceptionHandler: import("../../services/exception/interface.ts").ErrorHandler;
   $$hasNativeValidators: boolean;

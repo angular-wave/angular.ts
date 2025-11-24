@@ -1,10 +1,8 @@
 /**
- * @param {*} $animate
- * @returns {import('../../interface.ts').Directive}
+ * @param {ng.AnimateService} $animate
+ * @returns {ng.Directive}
  */
-export function ngSwitchDirective(
-  $animate: any,
-): import("../../interface.ts").Directive;
+export function ngSwitchDirective($animate: ng.AnimateService): ng.Directive;
 export namespace ngSwitchDirective {
   let $inject: string[];
 }

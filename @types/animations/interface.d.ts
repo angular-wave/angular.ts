@@ -1,3 +1,5 @@
+import { AnimationOptions } from "./animate.js";
+import { AnimateRunner } from "./runner/animate-runner.js";
 export type RafScheduler = {
   /**
    * Schedules a list of functions to run on the next animation frame(s).
@@ -26,4 +28,60 @@ export interface AnimationHost {
   cancel?: () => void;
   /** Report animation progress. */
   progress?: (...args: any[]) => void;
+}
+export interface AnimateService {
+  on(
+    event: string,
+    container: Element,
+    callback: (
+      element: Element,
+      phase: "start" | "close",
+      data: {
+        addClass: string | null;
+        removeClass: string | null;
+        from: Record<string, any> | null;
+        to: Record<string, any> | null;
+      },
+    ) => void,
+  ): void;
+  off(event: string, container?: Element, callback?: Function): void;
+  pin(element: Element, parentElement: Element): void;
+  enabled(element?: Element, enabled?: boolean): boolean;
+  cancel(runner: AnimateRunner): void;
+  enter(
+    element: Element,
+    parent: Element,
+    after?: Element,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+  move(
+    element: Element,
+    parent: Element,
+    after?: Element,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+  leave(element: Element, options?: AnimationOptions): AnimateRunner;
+  addClass(
+    element: Element,
+    className: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+  removeClass(
+    element: Element,
+    className: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+  setClass(
+    element: Element,
+    add: string,
+    remove: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+  animate(
+    element: Element,
+    from: Record<string, any>,
+    to: Record<string, any>,
+    className?: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
 }

@@ -535,15 +535,15 @@ export class CompileProvider {
       "$sce",
       "$animate",
       /**
-       * @param {import("../../core/di/internal-injector.js").InjectorService} $injector
+       * @param {ng.InjectorService} $injector
        * @param {*} $interpolate
        * @param {import("../../services/exception/exception-handler.js").ErrorHandler} $exceptionHandler
-       * @param {*} $templateRequest
-       * @param {import("../parse/interface.ts").ParseService} $parse
+       * @param {ng.TemplateRequestService} $templateRequest
+       * @param {ng.ParseService} $parse
        * @param {*} $controller
        * @param {import('../scope/scope.js').Scope} $rootScope
        * @param {*} $sce
-       * @param {*} $animate
+       * @param {ng.AnimateService} $animate
        * @returns
        */
       function (
@@ -2242,11 +2242,19 @@ export class CompileProvider {
             replace: null,
             $$originalDirective: origAsyncDirective,
           });
-          const templateUrl = isFunction(origAsyncDirective.templateUrl)
-            ? /** @type { ((element: Element, tAttrs: Attributes) => string) } */ (
+          /** @type {string} */
+          let templateUrl;
+
+          if (isFunction(origAsyncDirective.templateUrl)) {
+            templateUrl =
+              /** @type { ((element: Element, tAttrs: Attributes) => string) } */ (
                 origAsyncDirective.templateUrl
-              )($compileNode.element, tAttrs)
-            : origAsyncDirective.templateUrl;
+              )($compileNode.element, tAttrs);
+          } else {
+            templateUrl = /** @type {string} */ (
+              origAsyncDirective.templateUrl
+            );
+          }
           const { templateNamespace } = origAsyncDirective;
 
           emptyElement($compileNode.element);

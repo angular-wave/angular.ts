@@ -62,6 +62,7 @@ import {
 } from "./services/worker/interface.ts";
 import { Provider as TProvideService } from "./interface.ts";
 import { Location as TLocationService } from "./services/location/location.js";
+import { AnimateService as TAnimateService } from "./animations/interface.ts";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -90,6 +91,7 @@ declare global {
     type SceProvider = TSceProvider;
     type SceDelegateProvider = TSceDelegateProvider;
     type AnchorScrollService = TAnchorScrollService;
+    type AnimateService = TAnimateService;
     type CompileService = TCompileFn;
     type ControllerService = TControllerService;
     type ExceptionHandlerService = TErrorHandler;

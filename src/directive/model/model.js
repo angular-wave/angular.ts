@@ -83,7 +83,7 @@ export class NgModelController {
    * @param {import('../../core/compile/attributes.js').Attributes} $attr
    * @param {Element} $element
    * @param {import("../../core/parse/interface.ts").ParseService} $parse
-   * @param {*} $animate
+   * @param {ng.AnimateService} $animate
    * @param {*} $interpolate
    */
   constructor(
