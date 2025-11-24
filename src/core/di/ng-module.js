@@ -243,7 +243,7 @@ export class NgModule {
     this.invokeQueue.push([
       $t.$provide,
       "wasm",
-      [name, (async () => instantiateWasm(src))()],
+      [name, (() => instantiateWasm(src))()],
     ]);
     return this;
   }

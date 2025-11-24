@@ -1280,11 +1280,19 @@ export function startsWith(str, search) {
 }
 
 /**
- * @param {string} src
+ * Loads and instantiates a WebAssembly module with proper error handling.
+ *
+ * @param {string} src - URL to the wasm file
+ * @returns {Promise<Object>} - Resolves to wasm exports
  */
 export async function instantiateWasm(src) {
-  const response = await fetch(src);
-  const bytes = await response.arrayBuffer();
-  const { instance } = await WebAssembly.instantiate(bytes);
-  return instance.exports;
+  try {
+    const r = await fetch(src);
+    if (!r.ok) throw new Error(`${r}`);
+    const bytes = await r.arrayBuffer();
+    const { instance } = await WebAssembly.instantiate(bytes);
+    return instance.exports;
+  } catch (e) {
+    throw new Error(e);
+  }
 }
