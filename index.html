@@ -54,16 +54,22 @@
         }
 
         class Demo {
-          constructor($eventBus, $scope) {
-            $eventBus.subscribe("demo", (val) => {
-              $scope["$ctrl"].mailBox = val;
+          constructor($eventBus, $scope, adder) {
+            adder.then((x) => {
+              debugger;
+              this.adder = x;
             });
+          }
+
+          test() {
+            this.y = this.adder.add(1, 2);
           }
         }
         window.angular
           .module("todo", [])
           .controller("TodoCtrl", TodoController)
-          .controller("DemoCtrl", Demo);
+          .controller("DemoCtrl", Demo)
+          .wasm("adder", "src/directive/wasm/math.wasm");
       });
     </script>
 
@@ -98,10 +104,14 @@
     </style>
   </head>
   <body ng-app="todo">
-    <ng-wasm src="src/directive/wasm/math.wasm"></ng-wasm>
-    <input type="number" ng-model="a" />
-    <input type="number" ng-model="b" />
-    <button ng-click="x = demo.add(a, b)">test</button>
+    <div ng-controller="DemoCtrl as $ctrl">
+      {{ $ctrl.y }}
+      <button ng-click="$ctrl.test()">test</button>
+    </div>
+
+    <ng-wasm src="src/directive/wasm/math.wasm" as="demo1"></ng-wasm>
+    <input type="number" ng-model="a" ng-keyup="x = demo1.add(a, b)" />
+    <input type="number" ng-model="b" ng-keyup="x = demo1.add(a, b)" />
     {{ x }}
   </body>
 </html>
