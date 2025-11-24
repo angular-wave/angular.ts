@@ -1,4 +1,4 @@
-import { getOrSetCacheData, setCacheData } from "../shared/dom.js";
+import { getOrSetCacheData, setCacheData } from "../../shared/dom.js";
 import {
   isUndefined,
   isObject,
@@ -6,7 +6,7 @@ import {
   isElement,
   isDefined,
   extend,
-} from "../shared/utils.js";
+} from "../../shared/utils.js";
 import {
   NG_ANIMATE_CHILDREN_DATA,
   applyAnimationClassesFactory,
@@ -18,9 +18,9 @@ import {
   mergeAnimationDetails,
   prepareAnimationOptions,
   stripCommentsFromElement,
-} from "./shared.js";
-import { $injectTokens as $t } from "../injection-tokens.js";
-import { AnimateRunner } from "./runner/animate-runner.js";
+} from "../shared.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
+import { AnimateRunner } from "../runner/animate-runner.js";
 
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 const NG_ANIMATE_PIN_DATA = "$ngAnimatePin";
@@ -153,8 +153,8 @@ export function AnimateQueueProvider($animateProvider) {
      * @param {ng.RootScopeService} $rootScope
      * @param {ng.InjectorService} $injector
      * @param {*} $$animation
-     * @param {*} $templateRequest
-     * @returns
+     * @param {ng.TemplateRequestService} $templateRequest
+     * @returns {import("../queue/interface.ts").AnimateQueueService}
      */
     function ($rootScope, $injector, $$animation, $templateRequest) {
       const activeAnimationsLookup = new Map();

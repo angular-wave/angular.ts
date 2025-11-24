@@ -95,7 +95,7 @@ export class AnimateProvider {
   classNameFilter: (expression?: RegExp | undefined, ...args: any[]) => RegExp;
   $get: (
     | string
-    | (($$animateQueue: any) => {
+    | (($$animateQueue: import("./queue/interface.ts").AnimateQueueService) => {
         /**
          *
          * Sets up an event listener to fire whenever the animation event (enter, leave, move, etc...)
@@ -144,7 +144,11 @@ export class AnimateProvider {
          * Note that the callback does not trigger a scope digest. Wrap your call into a
          * {@link $rootScope.Scope#$apply scope.$apply} to propagate changes to the scope.
          */
-        on: any;
+        on: (
+          event: string,
+          container: Element,
+          callback: (el: Element, phase: string, data: any) => void,
+        ) => void;
         /**
          * Deregisters an event listener based on the event which has been associated with the provided element. This method
          * can be used in three different ways depending on the arguments:
@@ -170,7 +174,11 @@ export class AnimateProvider {
          * @param {Element=} container the container element the event listener was placed on
          * @param {Function=} callback the callback function that was registered as the listener
          */
-        off: any;
+        off: (
+          event: string,
+          container?: Element,
+          callback?: (el: Element, phase: string, data: any) => void,
+        ) => void;
         /**
          *  Associates the provided element with a host parent element to allow the element to be animated even if it exists
          *  outside of the DOM structure of the AngularTS application. By doing so, any animation triggered via `$animate` can be issued on the
@@ -184,7 +192,7 @@ export class AnimateProvider {
          * @param {Element} element the external element that will be pinned
          * @param {Element} parentElement the host parent element that will be associated with the external element
          */
-        pin: any;
+        pin: (element: Element, parentElement: Element) => void;
         /**
          * Used to get and set whether animations are enabled or not on the entire application or on an element and its children. This
          * function can be called in four ways:
@@ -210,7 +218,10 @@ export class AnimateProvider {
          *
          * @return {boolean} whether or not animations are enabled
          */
-        enabled: any;
+        enabled: (
+          element?: Element | undefined,
+          enabled?: boolean | undefined,
+        ) => boolean;
         /**
          * Cancels the provided animation and applies the end state of the animation.
          * Note that this does not cancel the underlying operation, e.g. the setting of classes or
