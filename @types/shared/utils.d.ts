@@ -582,5 +582,9 @@ export function wait(t?: number): Promise<void>;
  * // returns false
  */
 export function startsWith(str: string, search: string): boolean;
+/**
+ * @param {string} src
+ */
+export function instantiateWasm(src: string): Promise<WebAssembly.Exports>;
 export const isProxySymbol: unique symbol;
 export const ngAttrPrefixes: string[];

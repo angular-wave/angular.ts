@@ -49,6 +49,7 @@ export class NgModule {
   /** @type {!Array.<import("../../interface.ts").Injectable<any>>} */
   runBlocks: Array<import("../../interface.ts").Injectable<any>>;
   services: any[];
+  wasmModules: any[];
   /**
    * @param {string} name
    * @param {any} object
@@ -153,4 +154,10 @@ export class NgModule {
     name: string,
     ctlFn: import("../../interface.ts").Injectable<any>,
   ): NgModule;
+  /**
+   * @param {string} name
+   * @param {string} src
+   * @returns {NgModule}
+   */
+  wasm(name: string, src: string): NgModule;
 }

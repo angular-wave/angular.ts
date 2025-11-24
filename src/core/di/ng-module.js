@@ -1,5 +1,10 @@
 import { $injectTokens as $t } from "../../injection-tokens.js";
-import { isFunction, isString, assert } from "../../shared/utils.js";
+import {
+  isFunction,
+  isString,
+  assert,
+  instantiateWasm,
+} from "../../shared/utils.js";
 
 /** @private */
 export const INJECTOR_LITERAL = "$injector";
@@ -60,6 +65,8 @@ export class NgModule {
     }
 
     this.services = [];
+
+    this.wasmModules = [];
   }
 
   /**
@@ -224,6 +231,20 @@ export class NgModule {
       ctlFn["$$moduleName"] = name;
     }
     this.invokeQueue.push([CONTROLLER_LITERAL, "register", [name, ctlFn]]);
+    return this;
+  }
+
+  /**
+   * @param {string} name
+   * @param {string} src
+   * @returns {NgModule}
+   */
+  wasm(name, src) {
+    this.invokeQueue.push([
+      $t.$provide,
+      "wasm",
+      [name, (async () => instantiateWasm(src))()],
+    ]);
     return this;
   }
 }

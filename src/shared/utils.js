@@ -1278,3 +1278,13 @@ export function wait(t = 0) {
 export function startsWith(str, search) {
   return str.slice(0, search.length) === search;
 }
+
+/**
+ * @param {string} src
+ */
+export async function instantiateWasm(src) {
+  const response = await fetch(src);
+  const bytes = await response.arrayBuffer();
+  const { instance } = await WebAssembly.instantiate(bytes);
+  return instance.exports;
+}

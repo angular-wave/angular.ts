@@ -1,3 +1,3 @@
 export function ngWasmDirective(): {
-  link: ($scope: any, $element: any, $attrs: any) => Promise<void>;
+  link: ($scope: any, _: any, $attrs: any) => Promise<void>;
 };
