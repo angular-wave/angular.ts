@@ -136,6 +136,10 @@ export function isUnsafeGlobal(target) {
     return true;
   }
 
+  if (target instanceof Promise) {
+    return true;
+  }
+
   // Events
   if (typeof Event !== "undefined" && target instanceof Event) {
     return true;

@@ -55,14 +55,11 @@
 
         class Demo {
           constructor($eventBus, $scope, adder) {
-            adder.then((x) => {
-              debugger;
-              this.adder = x;
-            });
+            this.adder = adder;
           }
 
-          test() {
-            this.y = this.adder.add(1, 2);
+          async test() {
+            this.y = (await this.adder).add(1, 2);
           }
         }
         window.angular
@@ -108,7 +105,6 @@
       {{ $ctrl.y }}
       <button ng-click="$ctrl.test()">test</button>
     </div>
-
     <ng-wasm src="src/directive/wasm/math.wasm" as="demo1"></ng-wasm>
     <input type="number" ng-model="a" ng-keyup="x = demo1.add(a, b)" />
     <input type="number" ng-model="b" ng-keyup="x = demo1.add(a, b)" />
