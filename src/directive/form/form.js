@@ -107,9 +107,9 @@ export class FormController {
 
   /**
    * @param {Element} $element
-   * @param {import("../../core/compile/attributes.js").Attributes} $attrs
-   * @param {import("../../core/scope/scope.js").Scope} $scope
-   * @param {*} $animate
+   * @param {ng.Attributes} $attrs
+   * @param {ng.Scope} $scope
+   * @param {ng.AnimateService} $animate
    * @param {*} $interpolate
    */
   constructor($element, $attrs, $scope, $animate, $interpolate) {

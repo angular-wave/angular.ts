@@ -146,7 +146,7 @@ export let ngView = [
   "$interpolate",
   /**
    * @param {*} $view
-   * @param {*} $animate
+   * @param {ng.AnimateService} $animate
    * @param {*} $viewScroll
    * @param {*} $interpolate
    * @returns {import("../../interface.ts").Directive}

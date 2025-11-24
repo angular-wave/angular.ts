@@ -77,7 +77,7 @@ export function createHttpDirective(method, attrName) {
    * @param {ng.ParseService} $parse
    * @param {ng.StateService} $state
    * @param {ng.SseService} $sse
-   * @param {*} $animate
+   * @param {ng.AnimateService} $animate
    * @returns {ng.Directive}
    */
   return function ($http, $compile, $log, $parse, $state, $sse, $animate) {
@@ -146,7 +146,11 @@ export function createHttpDirective(method, attrName) {
             $animate.leave(target).done(() => {
               const insertedNodes = Array.from(frag.childNodes);
               insertedNodes.forEach((n) =>
-                $animate.enter(n, parent, placeholder),
+                $animate.enter(
+                  /** @type  {Element} */ (n),
+                  parent,
+                  placeholder,
+                ),
               );
               content = insertedNodes;
               scope.$flushQueue();

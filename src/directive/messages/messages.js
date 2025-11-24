@@ -6,9 +6,9 @@ const INACTIVE_CLASS = "ng-inactive";
 class NgMessageCtrl {
   /**
    * @param {Element} $element
-   * @param {import('../../core/scope/scope.js').Scope} $scope
-   * @param {import('../../core/compile/attributes').Attributes} $attrs
-   * @param {*} $animate
+   * @param {ng.Scope} $scope
+   * @param {ng.Attributes} $attrs
+   * @param {ng.AnimateService} $animate
    */
   constructor($element, $scope, $attrs, $animate) {
     this.$element = $element;
@@ -192,6 +192,10 @@ class NgMessageCtrl {
 }
 
 ngMessagesDirective.$inject = ["$animate"];
+/**
+ * @param {ng.AnimateService} $animate
+ * @returns {ng.Directive}
+ */
 export function ngMessagesDirective($animate) {
   return {
     require: "ngMessages",
@@ -240,10 +244,14 @@ export const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
 
 /**
  * @param {boolean} isDefault
- * @returns {(any) => import("../../interface.ts").Directive}
+ * @returns {(any) => ng.Directive}
  */
 function ngMessageDirectiveFactory(isDefault) {
   ngMessageDirective.$inject = ["$animate"];
+  /**
+   * @param {ng.AnimateService} $animate
+   * @returns {ng.Directive}
+   */
   function ngMessageDirective($animate) {
     return {
       restrict: "AE",

@@ -75,16 +75,16 @@ export class FormController {
   static $inject: string[];
   /**
    * @param {Element} $element
-   * @param {import("../../core/compile/attributes.js").Attributes} $attrs
-   * @param {import("../../core/scope/scope.js").Scope} $scope
-   * @param {*} $animate
+   * @param {ng.Attributes} $attrs
+   * @param {ng.Scope} $scope
+   * @param {ng.AnimateService} $animate
    * @param {*} $interpolate
    */
   constructor(
     $element: Element,
-    $attrs: import("../../core/compile/attributes.js").Attributes,
-    $scope: import("../../core/scope/scope.js").Scope,
-    $animate: any,
+    $attrs: ng.Attributes,
+    $scope: ng.Scope,
+    $animate: ng.AnimateService,
     $interpolate: any,
   );
   $$controls: any[];
@@ -103,7 +103,7 @@ export class FormController {
   /** @type {FormController|Object} */
   $$parentForm: FormController | any;
   $$element: Element;
-  $$animate: any;
+  $$animate: import("../../interface.ts").AnimateService;
   $error: {};
   $$success: {};
   $pending: any;

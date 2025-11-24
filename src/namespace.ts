@@ -68,6 +68,7 @@ import {
 } from "./services/worker/interface.ts";
 import { Provider as TProvideService } from "./interface.ts";
 import { Location as TLocationService } from "./services/location/location.js";
+import { AnimateService as TAnimateService } from "./animations/interface.ts";
 
 /* ────────────────────────────────────────────────
    Runtime global initialization
@@ -111,6 +112,7 @@ declare global {
 
     // Services
     export type AnchorScrollService = TAnchorScrollService;
+    export type AnimateService = TAnimateService;
     export type CompileService = TCompileFn;
     export type ControllerService = TControllerService;
     export type ExceptionHandlerService = TErrorHandler;

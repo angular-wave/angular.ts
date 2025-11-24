@@ -4,8 +4,8 @@ import { hasAnimate } from "../../shared/utils.js";
 ngSwitchDirective.$inject = ["$animate"];
 
 /**
- * @param {*} $animate
- * @returns {import('../../interface.ts').Directive}
+ * @param {ng.AnimateService} $animate
+ * @returns {ng.Directive}
  */
 export function ngSwitchDirective($animate) {
   return {
@@ -21,7 +21,7 @@ export function ngSwitchDirective($animate) {
       },
     ],
     link(scope, _element, attr, ngSwitchController) {
-      const watchExpr = attr["ngSwitch"] || attr["on"];
+      const watchExpr = attr.ngSwitch || attr.on;
       let selectedTranscludes = [];
       const selectedElements = [];
       const previousLeaveAnimations = [];
