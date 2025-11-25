@@ -59,7 +59,7 @@ import {
 import {
   WorkerConnection as TWorkerConnection,
   WorkerConfig as TWorkerConfig,
-} from "./services/worker/interface.ts";
+} from "./directive/worker/interface.ts";
 import { Provider as TProvideService } from "./interface.ts";
 import { Location as TLocationService } from "./services/location/location.js";
 import { AnimateService as TAnimateService } from "./animations/interface.ts";

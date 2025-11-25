@@ -2,12 +2,15 @@ import { $injectTokens as $t } from "../../injection-tokens.js";
 import { callBackAfterFirst, isDefined, wait } from "../../shared/utils.js";
 import { getEventNameForElement } from "../http/http.js";
 
-ngWorkerDirective.$inject = ["$worker", $t.$parse, $t.$log];
+ngWorkerDirective.$inject = [$t.$parse, $t.$log];
 /**
- * ngWorker directive factory
  * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
+ *
+ * @param {ng.ParseService} $parse
+ * @param {ng.LogService} $log
+ * @returns {ng.Directive}
  */
-export function ngWorkerDirective($worker, $parse, $log) {
+export function ngWorkerDirective($parse, $log) {
   return {
     restrict: "A",
     link(scope, element, attrs) {
@@ -17,6 +20,7 @@ export function ngWorkerDirective($worker, $parse, $log) {
         return;
       }
 
+      /** @type {string} */
       const eventName = attrs.trigger || getEventNameForElement(element);
 
       let throttled = false;
@@ -37,7 +41,7 @@ export function ngWorkerDirective($worker, $parse, $log) {
         );
       }
 
-      const worker = $worker(workerName, {
+      const worker = createWorkerConnection(workerName, {
         onMessage: (result) => {
           if (isDefined(attrs.dataOnResult)) {
             $parse(attrs.dataOnResult)(scope, { $result: result });
@@ -57,7 +61,7 @@ export function ngWorkerDirective($worker, $parse, $log) {
       });
 
       element.addEventListener(eventName, async () => {
-        if (element.disabled) return;
+        if (element["disabled"]) return;
 
         if (isDefined(attrs.delay)) {
           await wait(parseInt(attrs.delay) || 0);
@@ -129,4 +133,85 @@ function handleSwap(result, swap, element) {
       element.innerHTML = result;
       break;
   }
+}
+
+/**
+ * Creates a managed Web Worker connection.
+ *
+ * @param {string | URL} scriptPath
+ * @param {ng.WorkerConfig} [config]
+ * @returns {ng.WorkerConnection}
+ */
+export function createWorkerConnection(scriptPath, config) {
+  if (!scriptPath) throw new Error("Worker script path required");
+
+  const defaults = {
+    autoRestart: false,
+    autoTerminate: false,
+    onMessage: function () {},
+    onError: function () {},
+    transformMessage: function (data) {
+      try {
+        return JSON.parse(data);
+      } catch {
+        return data;
+      }
+    },
+  };
+
+  /** @type {ng.WorkerConfig} */
+  const cfg = Object.assign({}, defaults, config);
+  let worker = new Worker(scriptPath, { type: "module" });
+  let terminated = false;
+
+  const reconnect = function () {
+    if (terminated) return;
+    console.info("Worker: restarting...");
+    worker.terminate();
+    worker = new Worker(scriptPath, { type: "module" });
+    wire(worker);
+  };
+
+  const wire = function (w) {
+    w.onmessage = function (e) {
+      let data = e.data;
+      try {
+        data = cfg.transformMessage(data);
+      } catch {
+        /* no-op */
+      }
+      cfg.onMessage(data, e); // always provide both args
+    };
+
+    w.onerror = function (err) {
+      cfg.onError(err);
+      if (cfg.autoRestart) reconnect();
+    };
+  };
+
+  wire(worker);
+
+  return {
+    post: function (data) {
+      if (terminated) return console.warn("Worker already terminated");
+      try {
+        worker.postMessage(data);
+      } catch (err) {
+        console.error("Worker post failed", err);
+      }
+    },
+
+    terminate: function () {
+      terminated = true;
+      worker.terminate();
+    },
+
+    restart: function () {
+      if (terminated)
+        return console.warn("Worker cannot restart after terminate");
+      reconnect();
+    },
+
+    config: cfg,
+  };
 }

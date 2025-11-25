@@ -134,7 +134,6 @@ import { ngElDirective } from "./directive/el/el.js";
 import { SseProvider } from "./services/sse/sse.js";
 import { ngViewportDirective } from "./directive/viewport/viewport.js";
 import { ngWorkerDirective } from "./directive/worker/worker.js";
-import { WorkerProvider } from "./services/worker/worker.js";
 import { ngWasmDirective } from "./directive/wasm/wasm.js";
 
 /**
@@ -284,7 +283,6 @@ export function registerNgModule(angular) {
             $url: UrlService,
             $stateRegistry: StateRegistryProvider,
             $eventBus: PubSubProvider,
-            $worker: WorkerProvider,
           });
         },
       ],

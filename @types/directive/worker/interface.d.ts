@@ -9,4 +9,5 @@ export interface WorkerConnection {
   post(data: any): void;
   terminate(): void;
   restart(): void;
+  config: WorkerConfig;
 }

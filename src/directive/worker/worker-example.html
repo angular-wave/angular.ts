@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS</title>
+    <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <script type="module" src="/src/index.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        class Demo {
+          constructor(echo) {
+            this.echo = echo;
+            this.echo.config.onMessage = (e) => {
+              window.alert(e.echo);
+            };
+          }
+
+          test() {
+            this.echo.post("test");
+          }
+        }
+        window.angular
+          .module("todo", [])
+          .worker("echo", "/src/directive/worker/echo-worker.js", {})
+          .controller("DemoCtrl", Demo);
+      });
+    </script>
+  </head>
+  <body ng-app="todo">
+    <div ng-controller="DemoCtrl as $ctrl">
+      <button ng-click="$ctrl.test()">Test</button>
+    </div>
+  </body>
+</html>
+s

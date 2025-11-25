@@ -583,7 +583,7 @@ export function wait(t?: number): Promise<void>;
  */
 export function startsWith(str: string, search: string): boolean;
 /**
- * Loads and instantiates a WebAssembly module with proper error handling.
+ * Loads and instantiates a WebAssembly module
  *
  * @param {string} src - URL to the wasm file
  * @returns {Promise<Object>} - Resolves to wasm exports
