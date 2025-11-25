@@ -26,6 +26,14 @@ export class WorkerProvider {
    * Returns the $worker service function
    * @returns {ng.WorkerService}
    */
-  $get: any[];
+  $get: (
+    | string
+    | ((
+        log: ng.LogService,
+      ) => (
+        scriptPath: any,
+        config?: {},
+      ) => import("./interface.ts").WorkerConnection)
+  )[];
   #private;
 }

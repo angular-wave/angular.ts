@@ -344,24 +344,24 @@ export type DirectiveController =
 /**
  * Represents a controller used within directive link functions.
  */
-export type TController = DirectiveController | NgModelController;
+export type TController<T> = DirectiveController | NgModelController | T;
 
 /**
  * Defines optional pre/post link functions in directive compile phase.
  */
 export interface DirectivePrePost {
-  pre?: DirectiveLinkFn;
-  post?: DirectiveLinkFn;
+  pre?: DirectiveLinkFn<any>;
+  post?: DirectiveLinkFn<any>;
 }
 
 /**
  * A link function executed during directive linking.
  */
-export type DirectiveLinkFn = (
+export type DirectiveLinkFn<T> = (
   scope: Scope,
   element: HTMLElement,
   attrs: Attributes & Record<string, any>,
-  controller?: TController,
+  controller?: TController<T>,
   transclude?: (...args: any[]) => any,
 ) => void;
 
@@ -372,13 +372,12 @@ export type DirectiveCompileFn = (
   templateElement?: HTMLElement,
   templateAttributes?: Attributes & Record<string, any>,
   transclude?: (...args: any[]) => any,
-) => void | DirectiveLinkFn | DirectivePrePost;
+) => void | DirectiveLinkFn<any> | DirectivePrePost;
 
 /**
  * Defines the structure of an AngularTS directive.
- * @typedef {Object} Directive
  */
-export interface Directive {
+export interface Directive<TController = any> {
   /** Optional name (usually inferred) */
   name?: string;
   /** Restrict option: 'A' and/or 'E'. Defaults to 'EA' if not defined */
@@ -392,7 +391,7 @@ export interface Directive {
   /** Whether to bind scope to controller */
   bindToController?: boolean | Record<string, string>;
   /** Link function(s) executed during linking */
-  link?: DirectiveLinkFn | DirectivePrePost;
+  link?: DirectiveLinkFn<TController> | DirectivePrePost;
   /** Priority of the directive */
   priority?: number;
   /** Stops further directive processing if true */
@@ -418,7 +417,7 @@ export interface Directive {
 
 export type DirectiveFactoryFn = (
   ...args: any[]
-) => Directive | DirectiveLinkFn;
+) => Directive | DirectiveLinkFn<any>;
 
 export type AnnotatedDirectiveFactory = Array<string | DirectiveFactoryFn>;
 

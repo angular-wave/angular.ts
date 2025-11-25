@@ -5,14 +5,61 @@
     <title>AngularTS</title>
     <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
     <script type="module" src="/src/index.js"></script>
+    <style>
+      .animate {
+        background: white;
+        border: 1px solid black;
+        padding: 10px;
+        transition: all ease-in-out 0.5s;
+      }
+      .animate.ng-enter,
+      .animate.ng-leave.ng-leave-active {
+        opacity: 0;
+      }
+
+      .animate.ng-leave,
+      .animate.ng-enter.ng-enter-active {
+        opacity: 1;
+      }
+    </style>
   </head>
   <body ng-app>
-    <button ng-get="/mock" data-target="#output" trigger="load">Get</button>
     <div id="output"></div>
 
+    <button ng-get="/mock/hello" data-target="#output" trigger="click">
+      Get
+    </button>
     <button ng-get="/mock/jsonobject" target="person" trigger="load">
       Get
     </button>
     {{ person.name }} {{ person.age }}
+
+    <h1>Animated</h1>
+
+    <button ng-get="/mock/hello" animate="true" trigger="click">
+      Get with text
+    </button>
+    <button ng-get="/mock/div-animate" animate="true" trigger="click">
+      Get with div
+    </button>
+    <button
+      ng-get="/mock/div-animate"
+      animate="true"
+      target="#output"
+      trigger="click"
+    >
+      Get with div target
+    </button>
+
+    <h1>Animated outerHTML</h1>
+
+    <button
+      ng-get="/mock/hello"
+      animate="true"
+      swap="outerHTML"
+      trigger="click"
+    >
+      Get with text outer
+    </button>
   </body>
 </html>

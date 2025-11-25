@@ -233,10 +233,26 @@ export function emptyElement(element: Element): void;
  * @returns {boolean}
  */
 export function isRoot(element: Element): boolean;
+/**
+ * Inserts a DOM element before or at the beginning of a parent element.
+ *
+ * @param {HTMLElement | Element} element
+ *   The element to insert into the DOM.
+ *
+ * @param {HTMLElement | Element} parentElement
+ *   The parent element that will receive the inserted element.
+ *
+ * @param {HTMLElement | Element | null} [afterElement]
+ *   An optional sibling element — if present and valid, `element`
+ *   will be inserted after it. If omitted or invalid, `element`
+ *   is prepended to `parentElement`.
+ *
+ * @returns {void}
+ */
 export function domInsert(
-  element: any,
-  parentElement: any,
-  afterElement: any,
+  element: HTMLElement | Element,
+  parentElement: HTMLElement | Element,
+  afterElement?: HTMLElement | Element | null,
 ): void;
 export function animatedomInsert(element: any, parent: any, after: any): void;
 /**

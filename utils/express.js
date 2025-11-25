@@ -113,6 +113,10 @@ app.get("/div", (req, res) => {
   res.send("<div>Hello</div>");
 });
 
+app.get("/div-animate", (req, res) => {
+  res.send(`<div class='animate'>Hello ${Date.now().toString(10)}</div>`);
+});
+
 app.get("/divexpr", (req, res) => {
   res.send("<div>{{expr}}</div>");
 });

@@ -1,5 +1,5 @@
-import { AnimationOptions } from "./animate.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
+import { QueuePhase } from "./queue/interface.ts";
 
 export type RafScheduler = {
   /**
@@ -45,12 +45,12 @@ export interface AnimateService {
     container: Element,
     callback: (
       element: Element,
-      phase: "start" | "close",
+      phase: QueuePhase,
       data: {
-        addClass: string | null;
-        removeClass: string | null;
-        from: Record<string, any> | null;
-        to: Record<string, any> | null;
+        addClass?: string | null;
+        removeClass?: string | null;
+        from?: Record<string, any> | null;
+        to?: Record<string, any> | null;
       },
     ) => void,
   ): void;
@@ -111,4 +111,20 @@ export interface AnimateService {
     className?: string,
     options?: AnimationOptions,
   ): AnimateRunner;
+}
+
+export type AnimationMethod =
+  | "enter"
+  | "leave"
+  | "move"
+  | "addClass"
+  | "setClass"
+  | "removeClass";
+
+export interface AnimationOptions {
+  addClass?: string; // space-separated CSS classes to add to element
+  from?: Record<string, string | number>; // CSS properties & values at the beginning of animation
+  removeClass?: string; // space-separated CSS classes to remove from element
+  to?: Record<string, string | number>; // CSS properties & values at end of animation
+  tempClasses: string | string[]; // CSS classes during animation
 }

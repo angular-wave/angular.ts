@@ -194,7 +194,7 @@ class NgMessageCtrl {
 ngMessagesDirective.$inject = ["$animate"];
 /**
  * @param {ng.AnimateService} $animate
- * @returns {ng.Directive}
+ * @returns {ng.Directive<NgMessageCtrl>}
  */
 export function ngMessagesDirective($animate) {
   return {

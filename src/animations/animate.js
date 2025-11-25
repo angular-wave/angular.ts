@@ -10,16 +10,6 @@ import { removeElement, animatedomInsert } from "../shared/dom.js";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
 import { $injectTokens } from "../injection-tokens";
 
-/** @typedef {"enter"|"leave"|"move"|"addClass"|"setClass"|"removeClass"} AnimationMethod */
-
-/**
- * @typedef {Object} AnimationOptions
- * @property {string} addClass - space-separated CSS classes to add to element
- * @property {Object} from - CSS properties & values at the beginning of animation. Must have matching `to`
- * @property {string} removeClass - space-separated CSS classes to remove from element
- * @property {string} to - CSS properties & values at end of animation. Must have matching `from`
- */
-
 const $animateMinErr = minErr("$animate");
 
 // if any other type of options value besides an Object value is
@@ -337,7 +327,7 @@ export function AnimateProvider($provide) {
          * @param {Element} element - the element which will be inserted into the DOM
          * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
          * @param {Element} [after] - after the sibling element after which the element will be appended
-         * @param {AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
+         * @param {import("./interface.ts").AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
          * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
          */
         enter(element, parent, after, options) {
@@ -359,7 +349,7 @@ export function AnimateProvider($provide) {
          * @param {Element} element - the element which will be inserted into the DOM
          * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
          * @param {Element} after - after the sibling element after which the element will be appended
-         * @param {AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
+         * @param {import("./interface.ts").AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
          * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
          */
         move(element, parent, after, options) {
@@ -378,7 +368,7 @@ export function AnimateProvider($provide) {
          * digest once the animation has completed.
          *
          * @param {Element} element the element which will be removed from the DOM
-         * @param {AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
+         * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
          * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
          */
         leave(element, options) {
@@ -407,7 +397,7 @@ export function AnimateProvider($provide) {
          *
          * @param {Element} element the element which the CSS classes will be applied to
          * @param {string} className the CSS class(es) that will be added (multiple classes are separated via spaces)
-         * @param {AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
+         * @param {import("./interface").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
          * @return {import('./runner/animate-runner.js').AnimateRunner}} animationRunner the animation runner
          */
         addClass(element, className, options) {
@@ -426,7 +416,7 @@ export function AnimateProvider($provide) {
          *
          * @param {Element} element the element which the CSS classes will be applied to
          * @param {string} className the CSS class(es) that will be removed (multiple classes are separated via spaces)
-         * @param {AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.         *
+         * @param {import("./interface").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.         *
          * @return {import('./runner/animate-runner.js').AnimateRunner} animationRunner the animation runner
          */
         removeClass(element, className, options) {
