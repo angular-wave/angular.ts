@@ -184,7 +184,7 @@ export function createHttpDirective(method, attrName) {
                 : [compiled];
           }
 
-          const targetSelector = attrs["target"];
+          const targetSelector = attrs.target;
           const target = targetSelector
             ? document.querySelector(targetSelector)
             : element;
