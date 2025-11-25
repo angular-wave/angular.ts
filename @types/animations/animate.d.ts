@@ -98,28 +98,3 @@ export class AnimateProvider {
 export namespace AnimateProvider {
   let $inject: string[];
 }
-export type AnimationMethod =
-  | "enter"
-  | "leave"
-  | "move"
-  | "addClass"
-  | "setClass"
-  | "removeClass";
-export type AnimationOptions = {
-  /**
-   * - space-separated CSS classes to add to element
-   */
-  addClass: string;
-  /**
-   * - CSS properties & values at the beginning of animation. Must have matching `to`
-   */
-  from: any;
-  /**
-   * - space-separated CSS classes to remove from element
-   */
-  removeClass: string;
-  /**
-   * - CSS properties & values at end of animation. Must have matching `from`
-   */
-  to: string;
-};

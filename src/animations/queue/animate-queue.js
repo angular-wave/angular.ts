@@ -24,6 +24,7 @@ import { AnimateRunner } from "../runner/animate-runner.js";
 
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 const NG_ANIMATE_PIN_DATA = "$ngAnimatePin";
+
 AnimateQueueProvider.$inject = ["$animateProvider"];
 export function AnimateQueueProvider($animateProvider) {
   const PRE_DIGEST_STATE = 1;
@@ -674,6 +675,18 @@ export function AnimateQueueProvider($animateProvider) {
         }
       }
 
+      /**
+       * Closes and cleans up any child animations found under the given node.
+       *
+       * Looks for elements that have the NG_ANIMATE_ATTR_NAME attribute, checks their
+       * animation state, ends running animations, and removes them from the
+       * activeAnimationsLookup if appropriate.
+       *
+       * @param {Element | ParentNode} node
+       *   The DOM node whose descendant animations should be closed.
+       *
+       * @returns {void}
+       */
       function closeChildAnimations(node) {
         const children = node.querySelectorAll(`[${NG_ANIMATE_ATTR_NAME}]`);
         children.forEach((child) => {

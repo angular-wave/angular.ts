@@ -116,7 +116,7 @@ export function removeFromArray(arr, val) {
  */
 export function stripCommentsFromElement(element) {
   if (element instanceof NodeList) {
-    return Array.from(element).filter((x) => x.nodeType == Node.ELEMENT_NODE);
+    return Array.from(element).filter((x) => x.nodeType === Node.ELEMENT_NODE);
   } else if (element.nodeType === Node.ELEMENT_NODE) {
     return /** @type {Node} */ (element);
   } else {

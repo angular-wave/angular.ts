@@ -70,7 +70,7 @@ declare global {
   export namespace ng {
     type Angular = TAngular;
     type Attributes = TAttributes & Record<string, any>;
-    type Directive = TDirective;
+    type Directive<TController = any> = TDirective<TController>;
     type DirectiveFactory = TDirectiveFactory;
     type Component = TComponent;
     type Controller = TController;

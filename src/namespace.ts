@@ -1,5 +1,3 @@
-import { WorkerConfig } from "./services/worker/interface.ts";
-
 export { angular } from "./index.js";
 
 import { Angular as TAngular } from "./angular.js";
@@ -86,7 +84,7 @@ declare global {
     // Core types (docs preserved)
     export type Angular = TAngular;
     export type Attributes = TAttributes & Record<string, any>;
-    export type Directive = TDirective;
+    export type Directive<TController = any> = TDirective<TController>;
     export type DirectiveFactory = TDirectiveFactory;
     export type Component = TComponent;
     export type Controller = TController;

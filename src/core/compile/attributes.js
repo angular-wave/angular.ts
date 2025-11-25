@@ -80,7 +80,10 @@ export class Attributes {
   $addClass(classVal) {
     if (classVal && classVal.length > 0) {
       if (hasAnimate(this.$$element)) {
-        this.$animate.addClass(this.$$element, classVal);
+        this.$animate.addClass(
+          /** @type {Element} */ (this.$$element),
+          classVal,
+        );
       } else {
         this.$nodeRef.element.classList.add(classVal);
       }
@@ -96,7 +99,10 @@ export class Attributes {
   $removeClass(classVal) {
     if (classVal && classVal.length > 0) {
       if (hasAnimate(this.$$element)) {
-        this.$animate.removeClass(this.$$element, classVal);
+        this.$animate.removeClass(
+          /** @type {Element} */ (this.$$element),
+          classVal,
+        );
       } else {
         this.$nodeRef.element.classList.remove(classVal);
       }

@@ -1,5 +1,5 @@
-import { AnimationOptions } from "./animate.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
+import { QueuePhase } from "./queue/interface.ts";
 export type RafScheduler = {
   /**
    * Schedules a list of functions to run on the next animation frame(s).
@@ -35,12 +35,12 @@ export interface AnimateService {
     container: Element,
     callback: (
       element: Element,
-      phase: "start" | "close",
+      phase: QueuePhase,
       data: {
-        addClass: string | null;
-        removeClass: string | null;
-        from: Record<string, any> | null;
-        to: Record<string, any> | null;
+        addClass?: string | null;
+        removeClass?: string | null;
+        from?: Record<string, any> | null;
+        to?: Record<string, any> | null;
       },
     ) => void,
   ): void;
@@ -84,4 +84,18 @@ export interface AnimateService {
     className?: string,
     options?: AnimationOptions,
   ): AnimateRunner;
+}
+export type AnimationMethod =
+  | "enter"
+  | "leave"
+  | "move"
+  | "addClass"
+  | "setClass"
+  | "removeClass";
+export interface AnimationOptions {
+  addClass?: string;
+  from?: Record<string, string | number>;
+  removeClass?: string;
+  to?: Record<string, string | number>;
+  tempClasses: string | string[];
 }
