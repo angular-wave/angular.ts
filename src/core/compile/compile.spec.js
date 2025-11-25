@@ -14344,16 +14344,12 @@ describe("$compile", () => {
       );
       $rootScope.testUrl = "javascript:yay";
       await wait();
-      expect(element.getAttribute("srcset")).toEqual(
-        "someSanitizedUrl ,someSanitizedUrl",
-      );
+      expect(element.getAttribute("srcset")).toEqual("someSanitizedUrl");
 
       element = $compile('<img srcset="java{{testUrl}}"></img>')($rootScope);
       $rootScope.testUrl = "script:yay, javascript:nay";
       await wait();
-      expect(element.getAttribute("srcset")).toEqual(
-        "someSanitizedUrl ,someSanitizedUrl",
-      );
+      expect(element.getAttribute("srcset")).toEqual("someSanitizedUrl");
     });
 
     const testSet = {

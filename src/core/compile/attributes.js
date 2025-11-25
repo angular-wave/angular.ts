@@ -322,7 +322,8 @@ export class Attributes {
     if (lastTuple.length === 2) {
       result += " " + trim(lastTuple[1]);
     }
-    return result;
+
+    return result.replace(/unsafe:unsafe/g, "unsafe");
   }
 }
 
