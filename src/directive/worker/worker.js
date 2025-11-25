@@ -1,5 +1,5 @@
 import { $injectTokens as $t } from "../../injection-tokens.js";
-import { callBackAfterFirst, isDefined, wait } from "../../shared/utils";
+import { callBackAfterFirst, isDefined, wait } from "../../shared/utils.js";
 import { getEventNameForElement } from "../http/http.js";
 
 ngWorkerDirective.$inject = ["$worker", $t.$parse, $t.$log];

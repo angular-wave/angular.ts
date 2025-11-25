@@ -1280,7 +1280,7 @@ export function startsWith(str, search) {
 }
 
 /**
- * Loads and instantiates a WebAssembly module with proper error handling.
+ * Loads and instantiates a WebAssembly module
  *
  * @param {string} src - URL to the wasm file
  * @returns {Promise<Object>} - Resolves to wasm exports
