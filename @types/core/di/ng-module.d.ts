@@ -155,9 +155,24 @@ export class NgModule {
     ctlFn: import("../../interface.ts").Injectable<any>,
   ): NgModule;
   /**
+   * Register a named worker that will be instantiated via $provide.
+   *
    * @param {string} name
    * @param {string} src
    * @returns {NgModule}
    */
   wasm(name: string, src: string): NgModule;
+  /**
+   * Register a named worker that will be instantiated via $provide.
+   *
+   * @param {string} name
+   * @param {string | URL} scriptPath
+   * @param {ng.WorkerConfig} [config]
+   * @returns {NgModule}
+   */
+  worker(
+    name: string,
+    scriptPath: string | URL,
+    config?: ng.WorkerConfig,
+  ): NgModule;
 }

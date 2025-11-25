@@ -1,4 +1,5 @@
 import { $injectTokens as $t } from "../../injection-tokens.js";
+import { createWorkerConnection } from "../../directive/worker/worker.js";
 import {
   isFunction,
   isString,
@@ -235,6 +236,8 @@ export class NgModule {
   }
 
   /**
+   * Register a named worker that will be instantiated via $provide.
+   *
    * @param {string} name
    * @param {string} src
    * @returns {NgModule}
@@ -242,8 +245,40 @@ export class NgModule {
   wasm(name, src) {
     this.invokeQueue.push([
       $t.$provide,
-      "wasm",
-      [name, (() => instantiateWasm(src))()],
+      "provider",
+      [
+        name,
+        function () {
+          this.$get = function () {
+            return instantiateWasm(src);
+          };
+        },
+      ],
+    ]);
+
+    return this;
+  }
+
+  /**
+   * Register a named worker that will be instantiated via $provide.
+   *
+   * @param {string} name
+   * @param {string | URL} scriptPath
+   * @param {ng.WorkerConfig} [config]
+   * @returns {NgModule}
+   */
+  worker(name, scriptPath, config = {}) {
+    this.invokeQueue.push([
+      $t.$provide,
+      "provider",
+      [
+        name,
+        function () {
+          this.$get = function () {
+            return createWorkerConnection(scriptPath, config);
+          };
+        },
+      ],
     ]);
     return this;
   }

@@ -7,7 +7,6 @@ import {
   toKeyValue,
   wait,
 } from "../../shared/utils.js";
-import { createElementFromHTML } from "../../shared/dom.js";
 
 /**
  * @param {"get" | "delete" | "post" | "put"} method - HTTP method applied to request

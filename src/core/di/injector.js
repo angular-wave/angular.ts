@@ -39,7 +39,6 @@ export function createInjector(modulesToLoad, strictDi = false) {
       service: supportObject(service),
       value: supportObject(value),
       constant: supportObject(constant),
-      wasm: supportObject(wasm),
       decorator,
     },
   };
@@ -151,17 +150,6 @@ export function createInjector(modulesToLoad, strictDi = false) {
    */
   function constant(name, value) {
     assertNotHasOwnProperty(name, "constant");
-    providerInjector.cache[name] = value;
-    protoInstanceInjector.cache[name] = value;
-  }
-
-  /**
-   * Register a wasm module (available during config).
-   * @param {string} name
-   * @param {string} value
-   * @returns {void}
-   */
-  function wasm(name, value) {
     providerInjector.cache[name] = value;
     protoInstanceInjector.cache[name] = value;
   }
