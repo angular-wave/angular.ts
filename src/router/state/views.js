@@ -4,7 +4,7 @@ import { isInjectable } from "../../shared/predicates.js";
 import { trace } from "../common/trace.js";
 import { ResolveContext } from "../resolve/resolve-context.js";
 import { Resolvable } from "../resolve/resolvable.js";
-import { annotate } from "../../core/di/injector.js";
+import { annotate } from "../../core/di/di.js";
 
 export function getViewConfigFactory() {
   let templateFactory = null;

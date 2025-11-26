@@ -10,7 +10,7 @@ import { hasOwn, isDefined, isFunction, isString } from "../../shared/utils.js";
 import { stringify } from "../../shared/strings.js";
 import { is, pattern, val } from "../../shared/hof.js";
 import { Resolvable } from "../resolve/resolvable.js";
-import { annotate } from "../../core/di/injector.js";
+import { annotate } from "../../core/di/di.js";
 
 function parseUrl(url) {
   if (!isString(url)) return false;
