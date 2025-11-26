@@ -13,12 +13,13 @@ import {
   setCacheData,
 } from "./shared/dom.js";
 import { Cache } from "./shared/cache.js";
-import { annotate, createInjector } from "./core/di/injector.js";
+import { createInjector } from "./core/di/injector.js";
 import { NgModule } from "./core/di/ng-module/ng-module.js";
 import { registerNgModule } from "./ng.js";
 import { unnestR } from "./shared/common.js";
 import { EventBus } from "./services/pubsub/pubsub.js";
 import { $injectTokens as $t } from "./injection-tokens.js";
+import { annotate } from "./core/di/di.js";
 
 const ngMinErr = minErr("ng");
 const $injectorMinErr = minErr("$injector");

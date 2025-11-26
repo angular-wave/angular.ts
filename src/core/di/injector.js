@@ -12,11 +12,6 @@ import {
 import { INJECTOR_LITERAL } from "./ng-module/ng-module.js";
 import { InjectorService, ProviderInjector } from "./internal-injector.js";
 
-const ARROW_ARG = /^([^(]+?)=>/;
-const FN_ARGS = /^[^(]*\(\s*([^)]*)\)/m;
-const FN_ARG_SPLIT = /,/;
-const FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
-const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
 const $injectorMinErr = minErr(INJECTOR_LITERAL);
 const providerSuffix = "Provider";
 
@@ -234,64 +229,6 @@ export function createInjector(modulesToLoad, strictDi = false) {
     });
     return runBlocks;
   }
-}
-
-// Helpers
-
-/**
- * @param {String} fn
- * @returns {String}
- */
-function stringifyFn(fn) {
-  return Function.prototype.toString.call(fn);
-}
-
-/**
- * @param {String} fn
- * @returns {Array<any>}
- */
-function extractArgs(fn) {
-  const fnText = stringifyFn(fn).replace(STRIP_COMMENTS, "");
-  return fnText.match(ARROW_ARG) || fnText.match(FN_ARGS);
-}
-
-/**
- * @param {any} fn
- * @param {boolean} [strictDi]
- * @param {String} [name]
- * @returns {Array<string>}
- */
-export function annotate(fn, strictDi, name) {
-  let $inject, argDecl, last;
-
-  if (typeof fn === "function") {
-    if (!($inject = fn.$inject)) {
-      $inject = [];
-      if (fn.length) {
-        if (strictDi) {
-          throw $injectorMinErr(
-            "strictdi",
-            "{0} is not using explicit annotation and cannot be invoked in strict mode",
-            name,
-          );
-        }
-        argDecl = extractArgs(/** @type {String} */ (fn));
-        argDecl[1].split(FN_ARG_SPLIT).forEach(function (arg) {
-          arg.replace(FN_ARG, function (all, underscore, name) {
-            $inject.push(name);
-          });
-        });
-      }
-      fn.$inject = $inject;
-    }
-  } else if (Array.isArray(fn)) {
-    last = /** @type {Array} */ (fn).length - 1;
-    assertArgFn(fn[last], "fn");
-    $inject = /** @type {Array} */ (fn).slice(0, last);
-  } else {
-    assertArgFn(fn, "fn", true);
-  }
-  return $inject;
 }
 
 function supportObject(delegate) {
