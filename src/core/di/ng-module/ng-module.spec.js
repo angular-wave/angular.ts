@@ -6,7 +6,7 @@ import {
   FILTER_LITERAL,
   CONTROLLER_LITERAL,
 } from "./ng-module.js";
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../../injection-tokens.js";
 
 describe("NgModule", () => {
   /** @type {NgModule} */

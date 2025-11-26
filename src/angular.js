@@ -14,7 +14,7 @@ import {
 } from "./shared/dom.js";
 import { Cache } from "./shared/cache.js";
 import { annotate, createInjector } from "./core/di/injector.js";
-import { NgModule } from "./core/di/ng-module.js";
+import { NgModule } from "./core/di/ng-module/ng-module.js";
 import { registerNgModule } from "./ng.js";
 import { unnestR } from "./shared/common.js";
 import { EventBus } from "./services/pubsub/pubsub.js";

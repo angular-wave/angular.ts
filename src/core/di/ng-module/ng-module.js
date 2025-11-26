@@ -1,11 +1,11 @@
-import { $injectTokens as $t } from "../../injection-tokens.js";
-import { createWorkerConnection } from "../../directive/worker/worker.js";
+import { $injectTokens as $t } from "../../../injection-tokens.js";
+import { createWorkerConnection } from "../../../directive/worker/worker.js";
 import {
   isFunction,
   isString,
   assert,
   instantiateWasm,
-} from "../../shared/utils.js";
+} from "../../../shared/utils.js";
 
 /** @private */
 export const INJECTOR_LITERAL = "$injector";
@@ -32,7 +32,7 @@ export class NgModule {
   /**
    * @param {string} name - Name of the module
    * @param {Array<string>} requires - List of modules which the injector will load before the current module
-   * @param {import("../../interface.ts").Injectable<any>} [configFn]
+   * @param {ng.Injectable<any>} [configFn]
    */
   constructor(name, requires, configFn) {
     assert(isString(name), "name required");
@@ -58,7 +58,7 @@ export class NgModule {
     /** @type {!Array<Array<*>>} */
     this.configBlocks = [];
 
-    /** @type {!Array.<import("../../interface.ts").Injectable<any>>} */
+    /** @type {!Array.<ng.Injectable<any>>} */
     this.runBlocks = [];
 
     if (configFn) {
@@ -92,7 +92,7 @@ export class NgModule {
 
   /**
    *
-   * @param {import("../../interface.ts").Injectable<any>} configFn
+   * @param {ng.Injectable<any>} configFn
    * @returns {NgModule}
    */
   config(configFn) {
@@ -101,7 +101,7 @@ export class NgModule {
   }
 
   /**
-   * @param {import("../../interface.ts").Injectable<any>} block
+   * @param {ng.Injectable<any>} block
    * @returns {NgModule}
    */
   run(block) {
@@ -111,7 +111,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Component} options
+   * @param {ng.Component} options
    * @returns {NgModule}
    */
   component(name, options) {
@@ -124,7 +124,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} providerFunction
+   * @param {ng.Injectable<any>} providerFunction
    * @returns {NgModule}
    */
   factory(name, providerFunction) {
@@ -137,7 +137,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} serviceFunction
+   * @param {ng.Injectable<any>} serviceFunction
    * @returns {NgModule}
    */
   service(name, serviceFunction) {
@@ -151,7 +151,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} providerType
+   * @param {ng.Injectable<any>} providerType
    * @returns {NgModule}
    */
   provider(name, providerType) {
@@ -164,7 +164,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} decorFn
+   * @param {ng.Injectable<any>} decorFn
    * @returns {NgModule}
    */
   decorator(name, decorFn) {
@@ -177,7 +177,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} directiveFactory
+   * @param {ng.Injectable<any>} directiveFactory
    * @returns {NgModule}
    */
   directive(name, directiveFactory) {
@@ -194,7 +194,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} animationFactory
+   * @param {ng.Injectable<any>} animationFactory
    * @returns {NgModule}
    */
   animation(name, animationFactory) {
@@ -211,7 +211,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} filterFn
+   * @param {ng.Injectable<any>} filterFn
    * @return {NgModule}
    */
   filter(name, filterFn) {
@@ -224,7 +224,7 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} ctlFn
+   * @param {ng.Injectable<any>} ctlFn
    * @returns {NgModule}
    */
   controller(name, ctlFn) {

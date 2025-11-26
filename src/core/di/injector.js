@@ -9,7 +9,7 @@ import {
   isUndefined,
   minErr,
 } from "../../shared/utils.js";
-import { INJECTOR_LITERAL } from "./ng-module.js";
+import { INJECTOR_LITERAL } from "./ng-module/ng-module.js";
 import { InjectorService, ProviderInjector } from "./internal-injector.js";
 
 const ARROW_ARG = /^([^(]+?)=>/;
@@ -191,7 +191,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
 
       try {
         if (isString(module)) {
-          /** @type {import('./ng-module.js').NgModule} */
+          /** @type {ng.NgModule} */
           const moduleFn = window["angular"].module(module);
           instanceInjector.modules[/** @type {string } */ (module)] = moduleFn;
           runBlocks = runBlocks

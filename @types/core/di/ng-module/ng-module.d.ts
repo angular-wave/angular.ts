@@ -22,12 +22,12 @@ export class NgModule {
   /**
    * @param {string} name - Name of the module
    * @param {Array<string>} requires - List of modules which the injector will load before the current module
-   * @param {import("../../interface.ts").Injectable<any>} [configFn]
+   * @param {ng.Injectable<any>} [configFn]
    */
   constructor(
     name: string,
     requires: Array<string>,
-    configFn?: import("../../interface.ts").Injectable<any>,
+    configFn?: ng.Injectable<any>,
   );
   /**
    * Name of the current module.
@@ -46,8 +46,8 @@ export class NgModule {
   invokeQueue: Array<Array<any>>;
   /** @type {!Array<Array<*>>} */
   configBlocks: Array<Array<any>>;
-  /** @type {!Array.<import("../../interface.ts").Injectable<any>>} */
-  runBlocks: Array<import("../../interface.ts").Injectable<any>>;
+  /** @type {!Array.<ng.Injectable<any>>} */
+  runBlocks: Array<ng.Injectable<any>>;
   services: any[];
   wasmModules: any[];
   /**
@@ -64,96 +64,69 @@ export class NgModule {
   constant(name: string, object: any): NgModule;
   /**
    *
-   * @param {import("../../interface.ts").Injectable<any>} configFn
+   * @param {ng.Injectable<any>} configFn
    * @returns {NgModule}
    */
-  config(configFn: import("../../interface.ts").Injectable<any>): NgModule;
+  config(configFn: ng.Injectable<any>): NgModule;
   /**
-   * @param {import("../../interface.ts").Injectable<any>} block
+   * @param {ng.Injectable<any>} block
    * @returns {NgModule}
    */
-  run(block: import("../../interface.ts").Injectable<any>): NgModule;
-  /**
-   * @param {string} name
-   * @param {import("../../interface.ts").Component} options
-   * @returns {NgModule}
-   */
-  component(
-    name: string,
-    options: import("../../interface.ts").Component,
-  ): NgModule;
+  run(block: ng.Injectable<any>): NgModule;
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} providerFunction
+   * @param {ng.Component} options
    * @returns {NgModule}
    */
-  factory(
-    name: string,
-    providerFunction: import("../../interface.ts").Injectable<any>,
-  ): NgModule;
+  component(name: string, options: ng.Component): NgModule;
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} serviceFunction
+   * @param {ng.Injectable<any>} providerFunction
    * @returns {NgModule}
    */
-  service(
-    name: string,
-    serviceFunction: import("../../interface.ts").Injectable<any>,
-  ): NgModule;
+  factory(name: string, providerFunction: ng.Injectable<any>): NgModule;
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} providerType
+   * @param {ng.Injectable<any>} serviceFunction
    * @returns {NgModule}
    */
-  provider(
-    name: string,
-    providerType: import("../../interface.ts").Injectable<any>,
-  ): NgModule;
+  service(name: string, serviceFunction: ng.Injectable<any>): NgModule;
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} decorFn
+   * @param {ng.Injectable<any>} providerType
    * @returns {NgModule}
    */
-  decorator(
-    name: string,
-    decorFn: import("../../interface.ts").Injectable<any>,
-  ): NgModule;
+  provider(name: string, providerType: ng.Injectable<any>): NgModule;
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} directiveFactory
+   * @param {ng.Injectable<any>} decorFn
    * @returns {NgModule}
    */
-  directive(
-    name: string,
-    directiveFactory: import("../../interface.ts").Injectable<any>,
-  ): NgModule;
+  decorator(name: string, decorFn: ng.Injectable<any>): NgModule;
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} animationFactory
+   * @param {ng.Injectable<any>} directiveFactory
    * @returns {NgModule}
    */
-  animation(
-    name: string,
-    animationFactory: import("../../interface.ts").Injectable<any>,
-  ): NgModule;
+  directive(name: string, directiveFactory: ng.Injectable<any>): NgModule;
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} filterFn
+   * @param {ng.Injectable<any>} animationFactory
+   * @returns {NgModule}
+   */
+  animation(name: string, animationFactory: ng.Injectable<any>): NgModule;
+  /**
+   * @param {string} name
+   * @param {ng.Injectable<any>} filterFn
    * @return {NgModule}
    */
-  filter(
-    name: string,
-    filterFn: import("../../interface.ts").Injectable<any>,
-  ): NgModule;
+  filter(name: string, filterFn: ng.Injectable<any>): NgModule;
   /**
    * @param {string} name
-   * @param {import("../../interface.ts").Injectable<any>} ctlFn
+   * @param {ng.Injectable<any>} ctlFn
    * @returns {NgModule}
    */
-  controller(
-    name: string,
-    ctlFn: import("../../interface.ts").Injectable<any>,
-  ): NgModule;
+  controller(name: string, ctlFn: ng.Injectable<any>): NgModule;
   /**
    * Register a named worker that will be instantiated via $provide.
    *

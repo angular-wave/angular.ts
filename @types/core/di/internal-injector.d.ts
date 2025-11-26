@@ -45,9 +45,9 @@ declare class AbstractInjector {
   strictDi: boolean;
   /** @type {string[]} */
   path: string[];
-  /** @type {Object.<string, import("./ng-module.js").NgModule>} */
+  /** @type {Object.<string, ng.NgModule>} */
   modules: {
-    [x: string]: import("./ng-module.js").NgModule;
+    [x: string]: import("./ng-module/ng-module.js").NgModule;
   };
   /**
    * Get a service by name.
