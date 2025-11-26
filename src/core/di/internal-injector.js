@@ -1,5 +1,5 @@
 import { assertArgFn, hasOwn, minErr } from "../../shared/utils.js";
-import { INJECTOR_LITERAL } from "./ng-module";
+import { INJECTOR_LITERAL } from "./ng-module/ng-module.js";
 
 const ARROW_ARG = /^([^(]+?)=>/;
 const FN_ARGS = /^[^(]*\(\s*([^)]*)\)/m;
@@ -23,7 +23,7 @@ class AbstractInjector {
     this.strictDi = strictDi;
     /** @type {string[]} */
     this.path = [];
-    /** @type {Object.<string, import("./ng-module.js").NgModule>} */
+    /** @type {Object.<string, ng.NgModule>} */
     this.modules = {};
   }
 
@@ -190,7 +190,7 @@ export class InjectorService extends AbstractInjector {
 
     /** @type {ProviderInjector} */
     this.providerInjector = providerInjector;
-    /** @type {Object.<string, import("./ng-module.js").NgModule>} */
+    /** @type {Object.<string, ng.NgModule>} */
     this.modules = providerInjector.modules;
   }
 

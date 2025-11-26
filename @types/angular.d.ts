@@ -145,4 +145,4 @@ export class Angular {
   ): NgModule;
 }
 import { errorHandlingConfig } from "./shared/utils.js";
-import { NgModule } from "./core/di/ng-module.js";
+import { NgModule } from "./core/di/ng-module/ng-module.js";

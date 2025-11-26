@@ -7,7 +7,7 @@ import {
   ListenerFn as TListenerFn,
   Listener as TListener,
 } from "./core/scope/interface.ts";
-import { NgModule as TNgModule } from "./core/di/ng-module.js";
+import { NgModule as TNgModule } from "./core/di/ng-module/ng-module.js";
 import { InjectorService as TInjectorService } from "./core/di/internal-injector.js";
 
 import {
@@ -44,6 +44,7 @@ import {
   DirectiveFactory as TDirectiveFactory,
   Component as TComponent,
   Controller as TController,
+  Injectable as TInjectable,
 } from "./interface.ts";
 import {
   SseService as TSseService,
@@ -140,5 +141,10 @@ declare global {
     export type WindowService = Window;
     export type WorkerConfig = TWorkerConfig;
     export type WorkerConnection = TWorkerConnection;
+    export type Injectable<
+      T extends
+        | ((...args: any[]) => any)
+        | (abstract new (...args: any[]) => any),
+    > = TInjectable<T>;
   }
 }
