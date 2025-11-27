@@ -26,6 +26,7 @@ import { createElementFromHTML, dealoc, startingTag } from "./shared/dom.js";
 import { Angular } from "./angular.js";
 import { createInjector } from "./core/di/injector.js";
 import { wait } from "./shared/test-utils.js";
+import { NgModule } from "./core/di/ng-module/ng-module.js";
 
 describe("angular", () => {
   let element, document, module, injector, $rootScope, $compile, angular;
@@ -1040,6 +1041,22 @@ describe("module loader", () => {
     const gotModule = angular.module("myModule");
     expect(gotModule).toBeDefined();
     expect(gotModule).toBe(myModule);
+  });
+
+  it("allows recreating a module", () => {
+    angular.module("myModule", []);
+    const gotModule = angular.module("myModule");
+    const myModule2 = angular.module("myModule", []);
+    const gotModule2 = angular.module("myModule");
+    expect(myModule2).toBeDefined();
+    expect(myModule2).toBe(gotModule2);
+    expect(myModule2).not.toBe(gotModule);
+  });
+
+  it("allows creates an instance on NgModule", () => {
+    angular.module("myModule", []);
+    const gotModule = angular.module("myModule");
+    expect(gotModule).toBeInstanceOf(NgModule);
   });
 
   it("throws when trying to get a nonexistent module", () => {

@@ -98,13 +98,13 @@ export class Angular {
    * All modules (AngularTS core or 3rd party) that should be available to an application must be
    * registered using this mechanism.
    *
-   * Passing one argument retrieves an existing {@link import('./interface.ts').Module},
-   * whereas passing more than one argument creates a new {@link import('./interface.ts').Module}
+   * Passing one argument retrieves an existing {@link ng.NgModule},
+   * whereas passing more than one argument creates a new {@link ng.NgModule}
    *
    *
    * # Module
    *
-   * A module is a collection of services, directives, controllers, filters, and configuration information.
+   * A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information.
    * `angular.module` is used to configure the {@link auto.$injector $injector}.
    *
    * ```js
@@ -128,20 +128,20 @@ export class Angular {
    * ```
    *
    * However it's more likely that you'll just use
-   * {@link ng.directive:ngApp ngApp} or
-   * {@link angular.bootstrap} to simplify this process for you.
+   * `ng-app` directive or
+   * {@link bootstrap} to simplify this process for you.
    *
    * @param {string} name The name of the module to create or retrieve.
    * @param {Array.<string>} [requires] If specified then new module is being created. If
    *        unspecified then the module is being retrieved for further configuration.
-   * @param {import("./interface.ts").Injectable<any>} [configFn] Optional configuration function for the module that gets
+   * @param {ng.Injectable<any>} [configFn] Optional configuration function for the module that gets
    *        passed to {@link NgModule.config NgModule.config()}.
    * @returns {NgModule} A newly registered module.
    */
   module(
     name: string,
     requires?: Array<string>,
-    configFn?: import("./interface.ts").Injectable<any>,
+    configFn?: ng.Injectable<any>,
   ): NgModule;
 }
 import { errorHandlingConfig } from "./shared/utils.js";
