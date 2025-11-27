@@ -65,6 +65,7 @@ import { Provider as TProvideService } from "./interface.ts";
 import { Location as TLocationService } from "./services/location/location.js";
 import { AnimateService as TAnimateService } from "./animations/interface.ts";
 import { StorageBackend as TStorageBackend } from "./services/storage/interface.ts";
+import { StreamConnectionConfig as TStreamConnectionConfig } from "./services/stream/interface.ts";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -130,5 +131,6 @@ declare global {
         | (abstract new (...args: any[]) => any),
     > = TInjectable<T>;
     type StorageBackend = TStorageBackend;
+    type StreamConnectionConfig = TStreamConnectionConfig;
   }
 }
