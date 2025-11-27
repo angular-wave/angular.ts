@@ -68,6 +68,7 @@ import {
 import { Provider as TProvideService } from "./interface.ts";
 import { Location as TLocationService } from "./services/location/location.js";
 import { AnimateService as TAnimateService } from "./animations/interface.ts";
+import { StorageBackend as TStorageBackend } from "./services/storage/interface.ts";
 
 /* ────────────────────────────────────────────────
    Runtime global initialization
@@ -79,6 +80,10 @@ if (typeof globalThis.ng === "undefined") {
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
+  }
+
+  interface Window {
+    angular: TAngular;
   }
 
   export namespace ng {
@@ -146,5 +151,6 @@ declare global {
         | ((...args: any[]) => any)
         | (abstract new (...args: any[]) => any),
     > = TInjectable<T>;
+    export type StorageBackend = TStorageBackend;
   }
 }

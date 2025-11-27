@@ -3,7 +3,6 @@ import {
   isUndefined,
   isObject,
   isString,
-  isElement,
   isDefined,
   extend,
 } from "../../shared/utils.js";
@@ -12,7 +11,6 @@ import {
   applyAnimationClassesFactory,
   applyAnimationStyles,
   applyGeneratedPreparationClasses,
-  assertArg,
   clearGeneratedClasses,
   extractElementNode,
   mergeAnimationDetails,
@@ -329,12 +327,6 @@ export function AnimateQueueProvider($animateProvider) {
         },
 
         pin(element, parentElement) {
-          assertArg(isElement(element), "element", "not an element");
-          assertArg(
-            isElement(parentElement),
-            "parentElement",
-            "not an element",
-          );
           setCacheData(element, NG_ANIMATE_PIN_DATA, parentElement);
         },
 

@@ -1,8 +1,11 @@
 import { instantiateWasm } from "../../shared/utils.js";
 
+/**
+ * @return {ng.Directive}
+ */
 export function ngWasmDirective() {
   return {
-    link: async function ($scope, _, $attrs) {
+    async link($scope, _, $attrs) {
       $scope.$target[$attrs.as || "wasm"] = await instantiateWasm($attrs.src);
     },
   };

@@ -10,12 +10,11 @@ import {
   isProxy,
   isString,
   isUndefined,
-  lowercase,
   nextUid,
   timezoneToOffset,
   trim,
 } from "../../shared/utils.js";
-import { ngModelMinErr } from "./../model/model";
+import { ngModelMinErr } from "./../model/model.js";
 
 // Regex code was initially obtained from SO prior to modification: https://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#answer-3143231
 export const ISO_DATE_REGEXP =
@@ -976,7 +975,7 @@ export function inputDirective($filter, $parse) {
     link: {
       pre(scope, element, attr, ctrls) {
         if (ctrls[0]) {
-          (inputType[lowercase(attr["type"])] || inputType.text)(
+          (inputType[attr.type?.toLowerCase()] || inputType.text)(
             scope,
             element,
             attr,
@@ -1009,7 +1008,7 @@ export function hiddenInputBrowserCacheDirective() {
     restrict: "E",
     priority: 200,
     compile(_, attr) {
-      if (lowercase(attr["type"]) !== "hidden") {
+      if (attr.type?.toLowerCase() !== "hidden") {
         return;
       }
 

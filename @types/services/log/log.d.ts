@@ -19,7 +19,7 @@ export class LogProvider {
    */
   private consoleLog;
   /**
-   * @returns {import("./interface.ts").LogService}
+   * @returns {ng.LogService}
    */
-  $get(): import("./interface.ts").LogService;
+  $get(): ng.LogService;
 }

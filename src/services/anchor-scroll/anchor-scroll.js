@@ -1,5 +1,4 @@
 import {
-  isElement,
   isFunction,
   isNumber,
   isString,
@@ -55,7 +54,7 @@ export class AnchorScrollProvider {
 
         if (isFunction(offset)) {
           offset = /** @type {Function} */ (offset)();
-        } else if (isElement(offset)) {
+        } else if (offset instanceof Element) {
           const elem = offset[0];
           const style = window.getComputedStyle(elem);
           if (style.position !== "fixed") {

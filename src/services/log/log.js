@@ -50,7 +50,7 @@ export class LogProvider {
   }
 
   /**
-   * @returns {import("./interface.ts").LogService}
+   * @returns {ng.LogService}
    */
   $get() {
     if (this._override) {

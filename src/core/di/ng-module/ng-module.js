@@ -282,4 +282,48 @@ export class NgModule {
     ]);
     return this;
   }
+
+  /**
+   * @param {string} name
+   * @param {Function} ctor
+   * @returns {NgModule}
+   */
+  session(name, ctor) {
+    if (ctor && isFunction(ctor)) {
+      ctor["$$moduleName"] = name;
+    }
+    this.invokeQueue.push([$t.$provide, "session", [name, ctor]]);
+    return this;
+  }
+
+  /**
+   * @param {string} name
+   * @param {Function} ctor
+   * @returns {NgModule}
+   */
+  local(name, ctor) {
+    if (ctor && isFunction(ctor)) {
+      ctor["$$moduleName"] = name;
+    }
+    this.invokeQueue.push([$t.$provide, "local", [name, ctor]]);
+    return this;
+  }
+
+  /**
+   * @param {string} name
+   * @param {Function} ctor
+   * @param {ng.StorageBackend} backendOrConfig
+   * @returns {NgModule}
+   */
+  store(name, ctor, backendOrConfig) {
+    if (ctor && isFunction(ctor)) {
+      ctor["$$moduleName"] = name;
+    }
+    this.invokeQueue.push([
+      $t.$provide,
+      "store",
+      [name, ctor, backendOrConfig],
+    ]);
+    return this;
+  }
 }

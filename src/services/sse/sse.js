@@ -33,13 +33,13 @@ export class SseProvider {
     };
   }
 
-  /**
-   * Returns the $sse service function
-   * @returns {ng.SseService}
-   */
   $get = [
     $injectTokens.$log,
-    /** @param {ng.LogService} log */
+    /**
+     * Returns the $sse service function
+     * @param {ng.LogService} log
+     * @returns {ng.SseService}
+     */
     (log) => {
       this.$log = log;
       return (url, config = {}) => {

@@ -7,98 +7,24 @@
     <script type="module" src="/src/index.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        class Todo {
-          constructor(task) {
-            this.task = task;
-            this.done = false;
-          }
-        }
-        class TodoController {
-          constructor() {
-            this.greeting = "Todos";
-            this.model = {
-              name: "John",
-              lastName: "Doe",
-            };
-            this.tasks = [
-              new Todo("Learn AngularTS"),
-              new Todo("Build an AngularTS app"),
-            ];
-          }
-
-          get() {
-            return this.counter;
-          }
-
-          increase() {
-            console.log(this);
-            this.counter++;
-          }
-
-          /**
-           * @param {String} task
-           * @return {void}
-           */
-          add(task) {
-            this.tasks.push(new Todo(task));
-          }
-
-          /**
-           * Delete all finished tasks
-           * @return {void}
-           */
-          archive() {
-            let newTasks = this.tasks.filter((task) => !task.done);
-            this.tasks = newTasks;
-          }
-        }
-
         class Demo {
-          constructor($eventBus, $scope, adder) {
+          constructor(adder) {
             this.adder = adder;
           }
 
           async test() {
-            this.y = (await this.adder).add(1, 2);
+            this.y = (await this.adder).add(
+              Math.floor(Math.random() * 100),
+              Math.floor(Math.random() * 100),
+            );
           }
         }
         window.angular
           .module("todo", [])
-          .controller("TodoCtrl", TodoController)
           .controller("DemoCtrl", Demo)
           .wasm("adder", "/src/directive/wasm/math.wasm");
       });
     </script>
-
-    <style>
-      .fade {
-        background-color: red;
-      }
-      /* The starting CSS styles for the enter animation */
-      .fade.ng-enter {
-        transition: 0.5s linear all;
-        background-color: unset;
-        opacity: 0;
-      }
-
-      /* The finishing CSS styles for the enter animation */
-      .fade.ng-enter.ng-enter-active {
-        opacity: 1;
-        background-color: red;
-      }
-
-      /* The starting CSS styles for the leave animation */
-      .fade.ng-leave {
-        transition: 0.5s linear all;
-        opacity: 1;
-      }
-
-      /* The finishing CSS styles for the leave animation */
-      .fade.ng-leave.ng-leave-active {
-        opacity: 0;
-        background-color: unset;
-      }
-    </style>
   </head>
   <body ng-app="todo">
     <div ng-controller="DemoCtrl as $ctrl">

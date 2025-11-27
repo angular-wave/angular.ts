@@ -21,7 +21,6 @@ import {
   isFunction,
   isObject,
   isString,
-  lowercase,
   extend,
   isScope,
   inherit,
@@ -3200,7 +3199,7 @@ function removeComments(jqNodes) {
  */
 function assertValidDirectiveName(name) {
   const letter = name.charAt(0);
-  if (!letter || letter !== lowercase(letter)) {
+  if (!letter || letter !== letter.toLowerCase()) {
     throw $compileMinErr(
       "baddir",
       "Directive/Component name '{0}' is invalid. The first character must be a lowercase letter",

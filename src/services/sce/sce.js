@@ -9,7 +9,6 @@ import {
   isRegExp,
   isString,
   isUndefined,
-  lowercase,
   minErr,
   shallowCopy,
 } from "../../shared/utils.js";
@@ -755,7 +754,7 @@ export function SceProvider() {
       const { trustAs } = sce;
 
       Object.entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
-        const lName = lowercase(name);
+        const lName = name.toLowerCase();
         sce[snakeToCamel(`parse_as_${lName}`)] = function (expr) {
           return parse(enumValue, expr);
         };

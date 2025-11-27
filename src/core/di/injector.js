@@ -11,6 +11,7 @@ import {
 } from "../../shared/utils.js";
 import { INJECTOR_LITERAL } from "./ng-module/ng-module.js";
 import { InjectorService, ProviderInjector } from "./internal-injector.js";
+import { createPersistentProxy } from "../../services/storage/storage.js";
 
 const $injectorMinErr = minErr(INJECTOR_LITERAL);
 const providerSuffix = "Provider";
@@ -34,6 +35,9 @@ export function createInjector(modulesToLoad, strictDi = false) {
       service: supportObject(service),
       value: supportObject(value),
       constant: supportObject(constant),
+      session: supportObject(session),
+      local: supportObject(local),
+      store: supportObject(store),
       decorator,
     },
   };
@@ -168,6 +172,71 @@ export function createInjector(modulesToLoad, strictDi = false) {
   }
 
   /**
+   * Registers a session-persistent service
+   */
+  function session(name, ctor) {
+    return provider(name, {
+      $get: ($injector) => {
+        const instance = $injector.instantiate(ctor);
+        return createPersistentProxy(instance, name, sessionStorage);
+      },
+    });
+  }
+
+  /**
+   * Registers a localStorage-persistent service
+   */
+  function local(name, ctor) {
+    return provider(name, {
+      $get: ($injector) => {
+        const instance = $injector.instantiate(ctor);
+        return createPersistentProxy(instance, name, localStorage);
+      },
+    });
+  }
+
+  /**
+   * Registers a service persisted in a custom storage
+   *
+   * @param {string} name - Service name
+   * @param {Function} ctor - Constructor for the service
+   * @param {Storage|Object} backendOrConfig - Either a Storage-like object (getItem/setItem) or a config object
+   *                                           with { backend, serialize, deserialize }
+   */
+  function store(name, ctor, backendOrConfig) {
+    return provider(name, {
+      $get: ($injector) => {
+        const instance = $injector.instantiate(ctor);
+
+        let backend;
+        let serialize = JSON.stringify;
+        let deserialize = JSON.parse;
+
+        if (backendOrConfig) {
+          if (typeof backendOrConfig.getItem === "function") {
+            // raw Storage object
+            backend = backendOrConfig;
+          } else if (isObject(backendOrConfig)) {
+            backend = backendOrConfig.backend || localStorage;
+            if (backendOrConfig.serialize)
+              serialize = backendOrConfig.serialize;
+            if (backendOrConfig.deserialize)
+              deserialize = backendOrConfig.deserialize;
+          }
+        } else {
+          // fallback default
+          backend = localStorage;
+        }
+
+        return createPersistentProxy(instance, name, backend, {
+          serialize,
+          deserialize,
+        });
+      },
+    });
+  }
+
+  /**
    *
    * @param {Array<String|Function>} modulesToLoad
    * @returns
@@ -187,7 +256,9 @@ export function createInjector(modulesToLoad, strictDi = false) {
       try {
         if (isString(module)) {
           /** @type {ng.NgModule} */
-          const moduleFn = window["angular"].module(module);
+          const moduleFn = window["angular"].module(
+            /** @type {string} */ (module),
+          );
           instanceInjector.modules[/** @type {string } */ (module)] = moduleFn;
           runBlocks = runBlocks
             .concat(loadModules(moduleFn.requires))

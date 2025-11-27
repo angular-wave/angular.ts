@@ -1,4 +1,4 @@
-declare namespace angular {
+declare namespace legacy {
   // not directly implemented, but ensures that constructed class implements $get
 
   ///////////////////////////////////////////////////////////////////////////

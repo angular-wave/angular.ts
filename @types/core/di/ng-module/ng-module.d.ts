@@ -148,4 +148,27 @@ export class NgModule {
     scriptPath: string | URL,
     config?: ng.WorkerConfig,
   ): NgModule;
+  /**
+   * @param {string} name
+   * @param {Function} ctor
+   * @returns {NgModule}
+   */
+  session(name: string, ctor: Function): NgModule;
+  /**
+   * @param {string} name
+   * @param {Function} ctor
+   * @returns {NgModule}
+   */
+  local(name: string, ctor: Function): NgModule;
+  /**
+   * @param {string} name
+   * @param {Function} ctor
+   * @param {ng.StorageBackend} backendOrConfig
+   * @returns {NgModule}
+   */
+  store(
+    name: string,
+    ctor: Function,
+    backendOrConfig: ng.StorageBackend,
+  ): NgModule;
 }
