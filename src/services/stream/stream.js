@@ -4,9 +4,9 @@
  */
 export class StreamConnection {
   /**
-   * @param {() => EventSource | WebSocket} createFn - function that creates a new EventSource or WebSocket
-   * @param {Object} config - config object with callbacks, retries, heartbeat, transformMessage
-   * @param {ng.LogService} log - optional logger
+   * @param {() => EventSource | WebSocket} createFn - Function that creates a new EventSource or WebSocket.
+   * @param {ng.StreamConnectionConfig} config - Configuration object with callbacks, retries, heartbeat, transformMessage.
+   * @param {ng.LogService} log - Optional logger (default: console).
    */
   constructor(createFn, config = {}, log = console) {
     this.createFn = createFn;
@@ -33,6 +33,10 @@ export class StreamConnection {
     this.connect();
   }
 
+  /**
+   * Establishes a new connection using the provided createFn.
+   * Closes any existing connection before creating a new one.
+   */
   connect() {
     if (this.closed) return;
 
@@ -48,6 +52,10 @@ export class StreamConnection {
     this.bindEvents();
   }
 
+  /**
+   * Binds event handlers to the underlying connection (EventSource or WebSocket)
+   * for open, message, error, and close events.
+   */
   bindEvents() {
     const conn = this.connection;
 
@@ -63,12 +71,22 @@ export class StreamConnection {
     }
   }
 
+  /**
+   * Handles the open event from the connection.
+   * @param {Event} event - The open event.
+   */
   handleOpen(event) {
     this.retryCount = 0;
     this.config.onOpen?.(event);
     this.resetHeartbeat();
   }
 
+  /**
+   * Handles incoming messages, applies the transformMessage function,
+   * and calls the onMessage callback.
+   * @param {any} data - Raw message data.
+   * @param {Event} event - The message event.
+   */
   handleMessage(data, event) {
     try {
       data = this.config.transformMessage?.(data) ?? data;
@@ -79,15 +97,28 @@ export class StreamConnection {
     this.resetHeartbeat();
   }
 
+  /**
+   * Handles errors emitted from the connection.
+   * Calls onError callback and schedules a reconnect.
+   * @param {any} err - Error object or message.
+   */
   handleError(err) {
     this.config.onError?.(err);
     this.scheduleReconnect();
   }
 
+  /**
+   * Handles close events for WebSocket connections.
+   * Triggers reconnect logic.
+   */
   handleClose() {
     this.scheduleReconnect();
   }
 
+  /**
+   * Schedules a reconnect attempt based on retryCount and config.maxRetries.
+   * Calls onReconnect callback if reconnecting.
+   */
   scheduleReconnect() {
     if (this.closed) return;
 
@@ -100,6 +131,10 @@ export class StreamConnection {
     }
   }
 
+  /**
+   * Resets the heartbeat timer. If the timer expires, the connection is closed
+   * and a reconnect is attempted.
+   */
   resetHeartbeat() {
     if (!this.config.heartbeatTimeout) return;
     clearTimeout(this.heartbeatTimer);
@@ -111,6 +146,11 @@ export class StreamConnection {
     }, this.config.heartbeatTimeout);
   }
 
+  /**
+   * Sends data over a WebSocket connection.
+   * Logs a warning if called on a non-WebSocket connection.
+   * @param {any} data - Data to send.
+   */
   send(data) {
     if (this.connection instanceof WebSocket) {
       this.connection.send(JSON.stringify(data));
@@ -119,16 +159,14 @@ export class StreamConnection {
     }
   }
 
+  /**
+   * Closes the connection manually and clears the heartbeat timer.
+   */
   close() {
     this.closed = true;
     clearTimeout(this.heartbeatTimer);
-    if (this.connection) {
-      if (
-        this.connection instanceof EventSource ||
-        this.connection instanceof WebSocket
-      ) {
-        this.connection.close();
-      }
+    if (this.connection && this.connection.close) {
+      this.connection.close();
     }
   }
 }
