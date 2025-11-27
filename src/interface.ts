@@ -69,14 +69,14 @@ export type InjectableClass<TInstance = any> = new (...args: any) => TInstance;
  *
  * Parentheses are required around constructor types when used in unions.
  */
+type FactoryFunction<T> = T extends abstract new (...args: any[]) => any
+  ? (...args: ConstructorParameters<T>) => InstanceType<T>
+  : T;
+
 export type Injectable<
   T extends ((...args: any[]) => any) | (abstract new (...args: any[]) => any),
 > =
-  | AnnotatedFactory<
-      T extends abstract new (...args: any[]) => any
-        ? (...args: ConstructorParameters<T>) => InstanceType<T>
-        : T
-    >
+  | AnnotatedFactory<FactoryFunction<T>>
   | (T extends abstract new (...args: any[]) => any
       ? InjectableClass<InstanceType<T>>
       : never)

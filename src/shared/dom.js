@@ -3,7 +3,7 @@ import { Cache } from "./cache.js";
 import { extractElementNode } from "../animations/shared.js";
 
 /** @type {number} */
-let jqId = 1;
+let elId = 1;
 
 /**
  * Key for storing isolate scope data, attached to an element
@@ -76,8 +76,8 @@ const BOOLEAN_ELEMENTS = [
  *
  * @returns {number} Next unique JQInstance id
  */
-function jqNextId() {
-  return ++jqId;
+function elemNextId() {
+  return ++elId;
 }
 
 /**
@@ -143,7 +143,7 @@ export function getExpando(element, createIfNecessary = false) {
   let expandoStore = expandoId && Cache.get(expandoId);
 
   if (createIfNecessary && !expandoStore) {
-    element[EXPANDO] = expandoId = jqNextId();
+    element[EXPANDO] = expandoId = elemNextId();
     expandoStore = {
       data: {},
     };
@@ -379,7 +379,7 @@ export function deleteCacheData(element, key) {
  * Gets scope for a given element.
  *
  * @param {Element} element - The DOM element to get data from.
- * @returns {*} - The retrieved data for the given key or all data if no key is provided.
+ * @returns {ng.Scope} - The retrieved data for the given key or all data if no key is provided.
  */
 export function getScope(element) {
   return getCacheData(element, SCOPE_KEY);

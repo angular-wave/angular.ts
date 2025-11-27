@@ -9,13 +9,7 @@ import {
   getScope,
   getIsolateScope,
 } from "../../shared/dom.js";
-import {
-  isFunction,
-  isElement,
-  getNodeName,
-  extend,
-  assert,
-} from "../../shared/utils.js";
+import { isFunction, getNodeName, extend, assert } from "../../shared/utils.js";
 import { Cache } from "../../shared/cache.js";
 import { wait } from "../../shared/test-utils.js";
 
@@ -779,7 +773,7 @@ describe("$compile", () => {
           compile(element, templateAttr) {
             expect(typeof templateAttr.$normalize).toBe("function");
             expect(typeof templateAttr.$set).toBe("function");
-            expect(isElement(templateAttr.$$element)).toBeTruthy();
+            expect(templateAttr.$$element instanceof Element).toBeTrue();
             expect(element.textContent).toEqual("unlinked");
             expect(templateAttr.exp).toEqual("abc");
             expect(templateAttr.aa).toEqual("A");

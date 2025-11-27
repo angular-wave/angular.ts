@@ -57,7 +57,7 @@ export class Angular {
 
     /**
      * Gets scope for a given element.
-     * @type {(Element) => *}
+     * @type {(Element) => ng.Scope}
      */
     this.getScope = getScope;
 
@@ -66,6 +66,70 @@ export class Angular {
 
     window["angular"] = this;
     registerNgModule(this);
+  }
+
+  /**
+   *
+   * The `angular.module` is a global place for creating, registering and retrieving AngularTS
+   * modules.
+   * All modules (AngularTS core or 3rd party) that should be available to an application must be
+   * registered using this mechanism.
+   *
+   * Passing one argument retrieves an existing {@link ng.NgModule},
+   * whereas passing more than one argument creates a new {@link ng.NgModule}
+   *
+   *
+   * # Module
+   *
+   * A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information.
+   * `angular.module` is used to configure the {@link auto.$injector $injector}.
+   *
+   * ```js
+   * // Create a new module
+   * let myModule = angular.module('myModule', []);
+   *
+   * // register a new service
+   * myModule.value('appName', 'MyCoolApp');
+   *
+   * // configure existing services inside initialization blocks.
+   * myModule.config(['$locationProvider', function($locationProvider) {
+   *   // Configure existing providers
+   *   $locationProvider.hashPrefix('!');
+   * }]);
+   * ```
+   *
+   * Then you can create an injector and load your modules like this:
+   *
+   * ```js
+   * let injector = angular.injector(['ng', 'myModule'])
+   * ```
+   *
+   * However it's more likely that you'll just use
+   * `ng-app` directive or
+   * {@link bootstrap} to simplify this process for you.
+   *
+   * @param {string} name The name of the module to create or retrieve.
+   * @param {Array.<string>} [requires] If specified then new module is being created. If
+   *        unspecified then the module is being retrieved for further configuration.
+   * @param {ng.Injectable<any>} [configFn] Optional configuration function for the module that gets
+   *        passed to {@link NgModule.config NgModule.config()}.
+   * @returns {NgModule} A newly registered module.
+   */
+  module(name, requires, configFn) {
+    assertNotHasOwnProperty(name, "module");
+    if (requires && hasOwn(modules, name)) {
+      modules[name] = null; // force ensure to recreate the module
+    }
+    return ensure(modules, name, () => {
+      if (!requires) {
+        throw $injectorMinErr(
+          "nomod",
+          "Module '{0}' is not available. Possibly misspelled or not loaded",
+          name,
+        );
+      }
+      return new NgModule(name, requires, configFn);
+    });
   }
 
   /**
@@ -232,70 +296,6 @@ export class Angular {
       config.strictDi = getNgAttribute(appElement, "strict-di") !== null;
       this.bootstrap(appElement, module ? [module] : [], config);
     }
-  }
-
-  /**
-   *
-   * The `angular.module` is a global place for creating, registering and retrieving AngularTS
-   * modules.
-   * All modules (AngularTS core or 3rd party) that should be available to an application must be
-   * registered using this mechanism.
-   *
-   * Passing one argument retrieves an existing {@link ng.NgModule},
-   * whereas passing more than one argument creates a new {@link ng.NgModule}
-   *
-   *
-   * # Module
-   *
-   * A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information.
-   * `angular.module` is used to configure the {@link auto.$injector $injector}.
-   *
-   * ```js
-   * // Create a new module
-   * let myModule = angular.module('myModule', []);
-   *
-   * // register a new service
-   * myModule.value('appName', 'MyCoolApp');
-   *
-   * // configure existing services inside initialization blocks.
-   * myModule.config(['$locationProvider', function($locationProvider) {
-   *   // Configure existing providers
-   *   $locationProvider.hashPrefix('!');
-   * }]);
-   * ```
-   *
-   * Then you can create an injector and load your modules like this:
-   *
-   * ```js
-   * let injector = angular.injector(['ng', 'myModule'])
-   * ```
-   *
-   * However it's more likely that you'll just use
-   * `ng-app` directive or
-   * {@link bootstrap} to simplify this process for you.
-   *
-   * @param {string} name The name of the module to create or retrieve.
-   * @param {Array.<string>} [requires] If specified then new module is being created. If
-   *        unspecified then the module is being retrieved for further configuration.
-   * @param {ng.Injectable<any>} [configFn] Optional configuration function for the module that gets
-   *        passed to {@link NgModule.config NgModule.config()}.
-   * @returns {NgModule} A newly registered module.
-   */
-  module(name, requires, configFn) {
-    assertNotHasOwnProperty(name, "module");
-    if (requires && hasOwn(modules, name)) {
-      modules[name] = null; // force ensure to recreate the module
-    }
-    return ensure(modules, name, () => {
-      if (!requires) {
-        throw $injectorMinErr(
-          "nomod",
-          "Module '{0}' is not available. Possibly misspelled or not loaded",
-          name,
-        );
-      }
-      return new NgModule(name, requires, configFn);
-    });
   }
 }
 

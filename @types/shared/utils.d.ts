@@ -209,19 +209,6 @@ export function isNumberNaN(num: any): boolean;
 export function inherit(parent: any, extra: any): any;
 export function hasCustomToString(obj: any): boolean;
 /**
- * @module angular
- * @function isElement
-
- * @function
- *
- * @description
- * Determines if a reference is a DOM element (or wrapped jQuery element).
- *
- * @param {*} node Reference to check.
- * @returns {boolean} True if `value` is a DOM element (or wrapped jQuery element).
- */
-export function isElement(node: any): boolean;
-/**
  * Returns a string appropriate for the type of node.
  *
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)

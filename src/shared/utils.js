@@ -344,8 +344,6 @@ export function baseExtend(dst, objs, deep) {
           dst[key] = new RegExp(src);
         } else if (src.nodeName) {
           dst[key] = src.cloneNode(true);
-        } else if (isElement(src)) {
-          dst[key] = src[0].cloneNode(true);
         } else if (key !== "__proto__") {
           if (!isObject(dst[key])) dst[key] = Array.isArray(src) ? [] : {};
           baseExtend(dst[key], [src], true);
@@ -394,26 +392,6 @@ export function inherit(parent, extra) {
 
 export function hasCustomToString(obj) {
   return isFunction(obj.toString) && obj.toString !== toString;
-}
-
-/**
- * @module angular
- * @function isElement
-
- * @function
- *
- * @description
- * Determines if a reference is a DOM element (or wrapped jQuery element).
- *
- * @param {*} node Reference to check.
- * @returns {boolean} True if `value` is a DOM element (or wrapped jQuery element).
- */
-export function isElement(node) {
-  return !!(
-    node &&
-    (node.nodeName || // We are a direct element.
-      (node.attr && node.find))
-  ); // We have an on and find method part of jQuery API.
 }
 
 /**

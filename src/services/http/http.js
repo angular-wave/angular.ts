@@ -155,7 +155,7 @@ function parseHeaders(headers) {
     );
   } else if (isObject(headers)) {
     Object.entries(headers).forEach(([headerKey, headerVal]) => {
-      fillInParsed(lowercase(headerKey), trim(headerVal));
+      fillInParsed(headerKey.toLowerCase(), trim(headerVal));
     });
   }
 
@@ -181,7 +181,7 @@ function headersGetter(headers) {
     if (!headersObj) headersObj = parseHeaders(headers);
 
     if (name) {
-      let value = headersObj[lowercase(name)];
+      let value = headersObj[name.toLowerCase()];
       if (value === undefined) {
         value = null;
       }

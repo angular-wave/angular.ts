@@ -99,9 +99,9 @@ export function deleteCacheData(element: Element, key: string): void;
  * Gets scope for a given element.
  *
  * @param {Element} element - The DOM element to get data from.
- * @returns {*} - The retrieved data for the given key or all data if no key is provided.
+ * @returns {ng.Scope} - The retrieved data for the given key or all data if no key is provided.
  */
-export function getScope(element: Element): any;
+export function getScope(element: Element): ng.Scope;
 /**
  * Set scope for a given element.
  *

@@ -1,3 +1,4 @@
-export function ngWasmDirective(): {
-  link: ($scope: any, _: any, $attrs: any) => Promise<void>;
-};
+/**
+ * @return {ng.Directive}
+ */
+export function ngWasmDirective(): ng.Directive;
