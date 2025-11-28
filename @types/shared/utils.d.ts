@@ -570,11 +570,16 @@ export function wait(t?: number): Promise<void>;
  */
 export function startsWith(str: string, search: string): boolean;
 /**
- * Loads and instantiates a WebAssembly module
- *
- * @param {string} src - URL to the wasm file
- * @returns {Promise<Object>} - Resolves to wasm exports
+ * Loads and instantiates a WebAssembly module.
+ * Tries streaming first, then falls back.
  */
-export function instantiateWasm(src: string): Promise<any>;
+export function instantiateWasm(
+  src: any,
+  imports?: {},
+): Promise<{
+  instance: WebAssembly.Instance;
+  exports: WebAssembly.Exports;
+  module: WebAssembly.Module;
+}>;
 export const isProxySymbol: unique symbol;
 export const ngAttrPrefixes: string[];

@@ -236,21 +236,39 @@ export class NgModule {
   }
 
   /**
-   * Register a named worker that will be instantiated via $provide.
+   * Register a named WebAssembly module that will be instantiated via $provide.
    *
-   * @param {string} name
-   * @param {string} src
+   * @param {string} name - The injectable name used to access the instantiated WebAssembly module.
+   *
+   * @param {string} src - URL of the `.wasm` file to fetch and instantiate.
+   *
+   * @param {Object<string, any>} [imports] WebAssembly import object, passed to `WebAssembly.instantiate` or  `WebAssembly.instantiateStreaming`.
+   *
+   * @param {Object<string, any>} [opts] - Configuration object.
+   *
+   *   Supported keys:
+   *   - **raw**: `boolean`
+   *       - `false` (default): the injectable resolves to `instance.exports`
+   *         (ideal for plain WASM modules).
+   *       - `true`: the injectable resolves to the full instantiation result:
+   *         `{ instance, exports, module }`
+   *         (required for runtimes such as Go, Emscripten, wasm-bindgen, etc).
+   *
    * @returns {NgModule}
    */
-  wasm(name, src) {
+  wasm(name, src, imports = {}, opts = {}) {
+    const raw = !!opts.raw;
+
     this.invokeQueue.push([
       $t.$provide,
       "provider",
       [
         name,
         function () {
-          this.$get = function () {
-            return instantiateWasm(src);
+          this.$get = () => {
+            return instantiateWasm(src, imports).then((result) =>
+              raw ? result : result.exports,
+            );
           };
         },
       ],
