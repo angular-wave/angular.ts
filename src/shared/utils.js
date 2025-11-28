@@ -1258,19 +1258,25 @@ export function startsWith(str, search) {
 }
 
 /**
- * Loads and instantiates a WebAssembly module
- *
- * @param {string} src - URL to the wasm file
- * @returns {Promise<Object>} - Resolves to wasm exports
+ * Loads and instantiates a WebAssembly module.
+ * Tries streaming first, then falls back.
  */
-export async function instantiateWasm(src) {
+export async function instantiateWasm(src, imports = {}) {
+  const res = await fetch(src);
+  if (!res.ok) throw new Error("fetch failed");
+
   try {
-    const r = await fetch(src);
-    if (!r.ok) throw new Error(`${r}`);
-    const bytes = await r.arrayBuffer();
-    const { instance } = await WebAssembly.instantiate(bytes);
-    return instance.exports;
-  } catch (e) {
-    throw new Error(e);
+    const { instance, module } = await WebAssembly.instantiateStreaming(
+      res.clone(),
+      imports,
+    );
+    return { instance, exports: instance.exports, module };
+  } catch {
+    /* empty */
   }
+
+  const bytes = await res.arrayBuffer();
+  const { instance, module } = await WebAssembly.instantiate(bytes, imports);
+
+  return { instance, exports: instance.exports, module };
 }
