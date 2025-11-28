@@ -96,19 +96,8 @@ export function stringify(o) {
   }
   return JSON.stringify(o, (key, value) => format(value)).replace(/\\"/g, '"');
 }
-/** Returns a function that splits a string on a character or substring */
-export const beforeAfterSubstr = (char) => (str) => {
-  if (!str) return ["", ""];
-  const idx = str.indexOf(char);
-  if (idx === -1) return [str, ""];
-  return [str.substring(0, idx), str.substring(idx + 1)];
-};
-export const hostRegex = new RegExp("^(?:[a-z]+:)?//[^/]+/");
+
 export const stripLastPathElement = (str) => str.replace(/\/[^/]*$/, "");
-export const splitHash = beforeAfterSubstr("#");
-export const splitQuery = beforeAfterSubstr("?");
-export const splitEqual = beforeAfterSubstr("=");
-export const trimHashVal = (str) => (str ? str.replace(/^#/, "") : "");
 /**
  * Splits on a delimiter, but returns the delimiters in the array
  *

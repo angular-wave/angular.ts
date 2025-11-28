@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens";
+import { $injectTokens } from "../../injection-tokens.js";
 
 /**
  * SSE Provider
