@@ -6,6 +6,18 @@
     <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
     <script type="module" src="/src/index.js"></script>
     <script>
+      const myStorage = {
+        _data: {},
+
+        getItem(key) {
+          return this._data[key] || null;
+        },
+
+        setItem(key, value) {
+          this._data[key] = value;
+        },
+      };
+
       document.addEventListener("DOMContentLoaded", () => {
         angular
           .module("app", [])
@@ -20,6 +32,13 @@
             class {
               counter = 0;
             },
+          )
+          .myStorage(
+            "memoryStore",
+            class {
+              counter = 0;
+            },
+            myStorage,
           );
       });
     </script>
@@ -35,6 +54,13 @@
     <div ng-inject="localStore">
       {{ localStore.counter }}
       <button ng-click="localStore.counter = localStore.counter + 1">+</button>
+    </div>
+
+    <div ng-inject="memoryStore">
+      {{ memoryStore.counter }}
+      <button ng-click="memoryStore.counter = memoryStore.counter + 1">
+        +
+      </button>
     </div>
   </body>
 </html>
