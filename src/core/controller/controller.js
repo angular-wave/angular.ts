@@ -123,6 +123,10 @@ export class ControllerProvider {
             );
           }
 
+          if (instance?.constructor?.$scopename) {
+            locals.$scope.$scopename = instance.constructor.$scopename;
+          }
+
           return function () {
             const result = $injector.invoke(
               expression,

@@ -9,8 +9,8 @@ describe("angular", () => {
 
   beforeEach(() => {
     angular = new Angular();
-    module = angular.module("defaultModule", ["ng"]);
-    injector = createInjector(["ng", "defaultModule"]);
+    module = angular.module("default", ["ng"]);
+    injector = createInjector(["ng", "default"]);
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");
   });
@@ -215,8 +215,8 @@ describe("angular", () => {
 
     beforeEach(() => {
       angular = new Angular();
-      module = angular.module("defaultModule", ["ng"]);
-      injector = createInjector(["defaultModule"]);
+      module = angular.module("default", ["ng"]);
+      injector = createInjector(["default"]);
       $rootScope = injector.get("$rootScope");
       $compile = injector.get("$compile");
     });
@@ -246,8 +246,13 @@ describe("angular", () => {
 
     beforeEach(() => {
       angular = new Angular();
-      module = angular.module("defaultModule", ["ng"]);
-      injector = createInjector(["defaultModule"]);
+      module = angular.module("default", ["ng"]).controller(
+        "demo",
+        class Demo {
+          static $scopename = "demo";
+        },
+      );
+      injector = createInjector(["default"]);
     });
 
     it("should return named scope", () => {
@@ -263,6 +268,22 @@ describe("angular", () => {
       angular.bootstrap(element);
 
       expect(angular.getScopeByName("fail")).toBeUndefined();
+    });
+
+    it("should return controllers with static $scopename property", () => {
+      const element = createElementFromHTML("<div ng-controller='demo'></div>");
+      angular.bootstrap(element, ["default"]);
+
+      expect(angular.getScopeByName("demo")).toBeDefined();
+    });
+
+    it("should return controllers with static $scopename property registered with `as` syntax", () => {
+      const element = createElementFromHTML(
+        "<div ng-controller='demo as $ctrl'></div>",
+      );
+      angular.bootstrap(element, ["default"]);
+
+      expect(angular.getScopeByName("demo")).toBeDefined();
     });
   });
 });

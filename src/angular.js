@@ -304,7 +304,8 @@ export class Angular {
    *
    * Internally, this walks down the `Scope` tree starting from `$rootScope`
    * and checks for a matching `$scopename` property. The `$scopename` property
-   * may be defined statically or assigned via the `ngScope` directive.
+   * may be defined statically on controllers using `as` syntax, assigned via the `ngScope` directive,
+   * or defined on `$scope` injectable.
    *
    * @param {string} name
    * @returns {ProxyHandler<ng.Scope>|undefined}
