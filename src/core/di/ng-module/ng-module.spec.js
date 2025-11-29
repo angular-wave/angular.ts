@@ -18,6 +18,7 @@ describe("NgModule", () => {
   it("can be instantiated", () => {
     expect(ngModule).toBeDefined();
     expect(ngModule.name).toBeDefined();
+    expect(ngModule.name).toEqual("test");
     expect(ngModule.requires).toEqual(["otherModule"]);
   });
 

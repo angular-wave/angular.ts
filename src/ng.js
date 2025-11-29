@@ -135,6 +135,7 @@ import { SseProvider } from "./services/sse/sse.js";
 import { ngViewportDirective } from "./directive/viewport/viewport.js";
 import { ngWorkerDirective } from "./directive/worker/worker.js";
 import { ngWasmDirective } from "./directive/wasm/wasm.js";
+import { ngScopeDirective } from "./directive/scope/scope.js";
 
 /**
  * Initializes core `ng` module.
@@ -217,6 +218,7 @@ export function registerNgModule(angular) {
               ngViewport: ngViewportDirective,
               ngWasm: ngWasmDirective,
               ngWorker: ngWorkerDirective,
+              ngScope: ngScopeDirective,
             })
             .directive({
               input: hiddenInputBrowserCacheDirective,

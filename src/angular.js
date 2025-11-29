@@ -216,6 +216,7 @@ export class Angular {
        * @param {ng.InjectorService} $injector
        */
       (scope, el, compile, $injector) => {
+        this.$rootScope = scope;
         // ng-route deps
         this.$injector = $injector; // TODO refactor away as this as this prevents multiple apps from being used
 
@@ -295,6 +296,17 @@ export class Angular {
     if (appElement) {
       config.strictDi = getNgAttribute(appElement, "strict-di") !== null;
       this.bootstrap(appElement, module ? [module] : [], config);
+    }
+  }
+
+  /**
+   * @param {string} name
+   * @returns {ProxyHandler<ng.Scope>}
+   */
+  getNamedScope(name) {
+    const scope = this.$rootScope.$searchByName(name);
+    if (scope) {
+      return scope.$proxy;
     }
   }
 }

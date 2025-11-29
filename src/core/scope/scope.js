@@ -35,9 +35,11 @@ let $exceptionHandler;
 
 export const $postUpdateQueue = [];
 
+export let rootScope;
+
 export class RootScopeProvider {
   constructor() {
-    this.rootScope = createScope();
+    rootScope = this.rootScope = createScope();
   }
 
   $get = [
@@ -239,6 +241,8 @@ export class Scope {
 
     this.scheduled = [];
 
+    this.$scopename = undefined;
+
     /** @private */
     this.propertyMap = {
       $watch: this.$watch.bind(this),
@@ -250,18 +254,20 @@ export class Scope {
       $apply: this.$apply.bind(this),
       $postUpdate: this.$postUpdate.bind(this),
       $isRoot: this.#isRoot.bind(this),
-      $proxy: this.$proxy,
       $on: this.$on.bind(this),
       $emit: this.$emit.bind(this),
       $broadcast: this.$broadcast.bind(this),
       $transcluded: this.$transcluded.bind(this),
       $handler: /** @type {Scope} */ (this),
+      $merge: this.$merge.bind(this),
+      $getById: this.$getById.bind(this),
+      $searchByName: this.$searchByName.bind(this),
+      $proxy: this.$proxy,
       $parent: this.$parent,
       $root: this.$root,
       $children: this.$children,
       $id: this.$id,
-      $merge: this.$merge.bind(this),
-      $getById: this.$getById.bind(this),
+      $scopename: this.$scopename,
     };
   }
 
@@ -277,8 +283,14 @@ export class Scope {
    */
   set(target, property, value, proxy) {
     if (property === "undefined") {
-      throw new Error("Attempting to set undefined property");
+      return false;
     }
+
+    if (property === "$scopename") {
+      this.$scopename = value;
+      return true;
+    }
+
     if (
       (target.constructor?.$nonscope &&
         Array.isArray(target.constructor.$nonscope) &&
@@ -496,9 +508,9 @@ export class Scope {
    * @returns {*} - The value of the property or a method if accessing `watch` or `sync`.
    */
   get(target, property, proxy) {
+    if (property === "$scopename" && this.$scopename) return this.$scopename;
     if (property === "$$watchersCount") return calculateWatcherCount(this);
     if (property === isProxySymbol) return true;
-
     if (target[property] && isProxy(target[property])) {
       this.$proxy = target[property];
     } else {
@@ -527,7 +539,6 @@ export class Scope {
         this.#scheduleListener(this.scheduled);
       }
     }
-
     if (hasOwn(this.propertyMap, property)) {
       this.$target = target;
       return this.propertyMap[property];
@@ -1271,6 +1282,26 @@ export class Scope {
       }
       return res;
     }
+  }
+
+  $searchByName(name) {
+    const getByName = (scope, name) => {
+      if (scope.$scopename === name) {
+        return scope;
+      } else {
+        let res = undefined;
+        for (const child of scope.$children) {
+          let found = getByName(child, name);
+          if (found) {
+            res = found;
+            break;
+          }
+        }
+        return res;
+      }
+    };
+
+    return getByName(this.$root, name);
   }
 }
 
