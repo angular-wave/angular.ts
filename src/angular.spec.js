@@ -271,7 +271,7 @@ describe("module loader", () => {
     expect(myModule2).not.toBe(gotModule);
   });
 
-  it("allows creates an instance on NgModule", () => {
+  it("creates an instance on NgModule", () => {
     angular.module("myModule", []);
     const gotModule = angular.module("myModule");
     expect(gotModule).toBeInstanceOf(NgModule);

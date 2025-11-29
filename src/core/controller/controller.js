@@ -70,7 +70,7 @@ export class ControllerProvider {
     "$injector",
 
     /**
-     * @param {import("../../core/di/internal-injector.js").InjectorService} $injector
+     * @param {ng.InjectorService} $injector
      * @returns {import("./interface.ts").ControllerService} A service function that creates controllers.
      */
     ($injector) => {
