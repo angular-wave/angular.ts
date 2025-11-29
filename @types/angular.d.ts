@@ -129,6 +129,7 @@ export class Angular {
     modules?: Array<string | any>,
     config?: import("./interface.ts").AngularBootstrapConfig,
   ): import("./core/di/internal-injector.js").InjectorService;
+  $rootScope: import("./interface.ts").Scope;
   $injector: import("./interface.ts").InjectorService;
   /**
    * @param {any[]} modules
@@ -143,6 +144,17 @@ export class Angular {
    * @param {Element|Document} element
    */
   init(element: Element | Document): void;
+  /**
+   * Retrieves a scope by its registered name and returns its Proxy wrapper.
+   *
+   * Internally, this walks down the `Scope` tree starting from `$rootScope`
+   * and checks for a matching `$scopename` property. The `$scopename` property
+   * may be defined statically or assigned via the `ngScope` directive.
+   *
+   * @param {string} name
+   * @returns {ProxyHandler<ng.Scope>|undefined}
+   */
+  getScopeByName(name: string): ProxyHandler<ng.Scope> | undefined;
 }
 import { errorHandlingConfig } from "./shared/utils.js";
 import { NgModule } from "./core/di/ng-module/ng-module.js";

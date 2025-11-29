@@ -49,10 +49,4 @@ export function splitOnDelim(delim: any): (str: any) => any;
  * ```
  */
 export function joinNeighborsR(acc: any, x: any): any;
-export function beforeAfterSubstr(char: any): (str: any) => any[];
-export const hostRegex: RegExp;
 export function stripLastPathElement(str: any): any;
-export function splitHash(str: any): any[];
-export function splitQuery(str: any): any[];
-export function splitEqual(str: any): any[];
-export function trimHashVal(str: any): any;

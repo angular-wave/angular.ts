@@ -300,10 +300,16 @@ export class Angular {
   }
 
   /**
+   * Retrieves a scope by its registered name and returns its Proxy wrapper.
+   *
+   * Internally, this walks down the `Scope` tree starting from `$rootScope`
+   * and checks for a matching `$scopename` property. The `$scopename` property
+   * may be defined statically or assigned via the `ngScope` directive.
+   *
    * @param {string} name
-   * @returns {ProxyHandler<ng.Scope>}
+   * @returns {ProxyHandler<ng.Scope>|undefined}
    */
-  getNamedScope(name) {
+  getScopeByName(name) {
     const scope = this.$rootScope.$searchByName(name);
     if (scope) {
       return scope.$proxy;
