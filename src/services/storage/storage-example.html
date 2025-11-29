@@ -6,15 +6,48 @@
     <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
     <script type="module" src="/src/index.js"></script>
     <script>
-      const myStorage = {
-        _data: {},
-
+      const cookieStorage = {
         getItem(key) {
-          return this._data[key] || null;
+          const cookies = document.cookie.split(";").map((c) => c.trim());
+          for (const c of cookies) {
+            const [k, ...rest] = c.split("=");
+            if (k === decodeURIComponent(key)) {
+              return decodeURIComponent(rest.join("="));
+            }
+          }
+          return null;
         },
 
-        setItem(key, value) {
-          this._data[key] = value;
+        setItem(key, value, options = {}) {
+          const cookie = [
+            `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
+            options.expires ? `Expires=${options.expires.toUTCString()}` : "",
+            options.path ? `Path=${options.path}` : "Path=/",
+            options.domain ? `Domain=${options.domain}` : "",
+            options.secure ? "Secure" : "",
+            options.sameSite ? `SameSite=${options.sameSite}` : "",
+          ]
+            .filter(Boolean)
+            .join("; ");
+
+          document.cookie = cookie;
+        },
+
+        removeItem(key, options = {}) {
+          this.setItem(key, "", {
+            ...options,
+            expires: new Date(0),
+          });
+        },
+
+        getAll() {
+          const out = {};
+          const cookies = document.cookie.split(";").map((c) => c.trim());
+          for (const c of cookies) {
+            const [k, ...rest] = c.split("=");
+            out[decodeURIComponent(k)] = decodeURIComponent(rest.join("="));
+          }
+          return out;
         },
       };
 
@@ -33,12 +66,12 @@
               counter = 0;
             },
           )
-          .myStorage(
-            "memoryStore",
+          .store(
+            "cookieStore",
             class {
               counter = 0;
             },
-            myStorage,
+            cookieStorage,
           );
       });
     </script>
@@ -56,9 +89,9 @@
       <button ng-click="localStore.counter = localStore.counter + 1">+</button>
     </div>
 
-    <div ng-inject="memoryStore">
-      {{ memoryStore.counter }}
-      <button ng-click="memoryStore.counter = memoryStore.counter + 1">
+    <div ng-inject="cookieStore">
+      {{ cookieStore.counter }}
+      <button ng-click="cookieStore.counter = cookieStore.counter + 1">
         +
       </button>
     </div>
