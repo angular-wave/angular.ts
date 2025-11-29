@@ -240,6 +240,31 @@ describe("angular", () => {
       dealoc(element);
     });
   });
+
+  describe("getScopeByName", () => {
+    let module, injector, $rootScope, $compile, angular;
+
+    beforeEach(() => {
+      angular = new Angular();
+      module = angular.module("defaultModule", ["ng"]);
+      injector = createInjector(["defaultModule"]);
+    });
+
+    it("should return named scope", () => {
+      const element = createElementFromHTML("<div ng-scope='test'></div>");
+      const injector = angular.bootstrap(element);
+
+      expect(angular.getScopeByName("test")).toBeDefined();
+      expect(angular.getScopeByName("test")).toBe(injector.get("$rootScope"));
+    });
+
+    it("should return undefined when not found", () => {
+      const element = createElementFromHTML("<div ng-scope='test'></div>");
+      angular.bootstrap(element);
+
+      expect(angular.getScopeByName("fail")).toBeUndefined();
+    });
+  });
 });
 
 describe("module loader", () => {

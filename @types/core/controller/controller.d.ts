@@ -34,7 +34,7 @@ export class ControllerProvider {
   $get: (
     | string
     | ((
-        $injector: import("../../core/di/internal-injector.js").InjectorService,
+        $injector: ng.InjectorService,
       ) => import("./interface.ts").ControllerService)
   )[];
   /**

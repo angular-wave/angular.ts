@@ -15,6 +15,7 @@ export function createScope(target?: any, context?: Scope): Scope;
  */
 export function isUnsafeGlobal(target: any): boolean;
 export const $postUpdateQueue: any[];
+export let rootScope: any;
 export class RootScopeProvider {
   rootScope: Scope;
   $get: (
@@ -89,6 +90,7 @@ export class Scope {
   /** @type {boolean} */
   $$destroyed: boolean;
   scheduled: any[];
+  $scopename: any;
   /** @private */
   private propertyMap;
   /**
@@ -181,5 +183,6 @@ export class Scope {
    * @returns {Scope|undefined}
    */
   $getById(id: string | number): Scope | undefined;
+  $searchByName(name: any): any;
   #private;
 }
