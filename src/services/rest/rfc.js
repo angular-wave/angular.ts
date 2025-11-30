@@ -17,7 +17,7 @@ export function expandUriTemplate(template, vars = {}) {
   if (typeof template !== "string")
     throw new TypeError("template must be a string");
 
-  return template.replace(/\{([^\}]+)\}/g, (match, expression) => {
+  return template.replace(/\{([^}]+)\}/g, (match, expression) => {
     return expandExpression(expression, vars);
   });
 }
@@ -126,7 +126,7 @@ export function expandExpression(expression, vars) {
 
   for (const spec of varspecs) {
     // parse varspec: name, explode (*), prefix (:len)
-    const m = /^([A-Za-z0-9_\.]+)(\*|(?::(\d+)))?$/.exec(spec);
+    const m = /^([A-Za-z0-9_.]+)(\*|(?::(\d+)))?$/.exec(spec);
     if (!m) throw new Error("Invalid varspec: " + spec);
     const varname = m[1];
     const explode = m[2] === "*";
