@@ -136,6 +136,7 @@ import { ngViewportDirective } from "./directive/viewport/viewport.js";
 import { ngWorkerDirective } from "./directive/worker/worker.js";
 import { ngWasmDirective } from "./directive/wasm/wasm.js";
 import { ngScopeDirective } from "./directive/scope/scope.js";
+import { CookieProvider } from "./services/cookie/cookie.js";
 
 /**
  * Initializes core `ng` module.
@@ -260,6 +261,7 @@ export function registerNgModule(angular) {
             $$animateCache: AnimateCacheProvider,
             $$animateQueue: AnimateQueueProvider,
             $controller: ControllerProvider,
+            $cookie: CookieProvider,
             $exceptionHandler: ExceptionHandlerProvider,
             $filter: FilterProvider,
             $interpolate: InterpolateProvider,

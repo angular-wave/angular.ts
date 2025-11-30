@@ -66,6 +66,11 @@ import { Location as TLocationService } from "./services/location/location.js";
 import { AnimateService as TAnimateService } from "./animations/interface.ts";
 import { StorageBackend as TStorageBackend } from "./services/storage/interface.ts";
 import { StreamConnectionConfig as TStreamConnectionConfig } from "./services/stream/interface.ts";
+import { CookieService as TCookieService } from "./services/cookie/cookie.js";
+import {
+  CookieStoreOptions as TCookieStoreOptions,
+  CookieOptions as TCookieOptions,
+} from "./services/cookie/interface.ts";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -100,6 +105,7 @@ declare global {
     type AnimateService = TAnimateService;
     type CompileService = TCompileFn;
     type ControllerService = TControllerService;
+    type CookieService = TCookieService;
     type ExceptionHandlerService = TErrorHandler;
     type FilterService = TFilterFactory;
     type HttpParamSerializerSerService = THttpParamSerializer;
@@ -132,5 +138,7 @@ declare global {
     > = TInjectable<T>;
     type StorageBackend = TStorageBackend;
     type StreamConnectionConfig = TStreamConnectionConfig;
+    type CookieOptions = TCookieOptions;
+    type CookieStoreOptions = TCookieStoreOptions;
   }
 }
