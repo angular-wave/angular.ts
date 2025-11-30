@@ -1,6 +1,13 @@
-/**
- * @typedef {import("./interface.ts").CookieOptions} CookieOptions
- */
+import { $injectTokens } from "../../injection-tokens.js";
+import {
+  assert,
+  isDefined,
+  isFunction,
+  isNullOrUndefined,
+  isNumber,
+  isObject,
+  isString,
+} from "../../shared/utils.js";
 
 /**
  * @returns {Record<string,string>}
@@ -13,6 +20,7 @@ function parseCookies() {
   const parts = document.cookie.split("; ");
   for (const part of parts) {
     const eq = part.indexOf("=");
+    if (eq === -1) continue; // skip malformed cookie
     const key = decodeURIComponent(part.substring(0, eq));
     const val = decodeURIComponent(part.substring(eq + 1));
     out[key] = val;
@@ -23,27 +31,70 @@ function parseCookies() {
 /** Utility: stringify options */
 /**
  *
- * @param {CookieOptions} opts
+ * @param {ng.CookieOptions} opts
  * @returns {string}
  */
+/**
+ * Build cookie options string from an options object.
+ * Safely validates types for path, domain, expires, secure, and samesite.
+ *
+ * @param {ng.CookieOptions} opts
+ * @returns {string}
+ * @throws {TypeError} if any of options are invalid
+ */
 function buildOptions(opts = {}) {
-  let s = "";
+  const parts = [];
 
-  if (opts.path) s += `;path=${opts.path}`;
-  if (opts.domain) s += `;domain=${opts.domain}`;
-
-  if (opts.expires) {
-    const exp =
-      opts.expires instanceof Date
-        ? opts.expires.toUTCString()
-        : new Date(opts.expires).toUTCString();
-    s += `;expires=${exp}`;
+  // Path
+  if (isDefined(opts.path)) {
+    if (!isString(opts.path)) throw new TypeError(`badarg:path ${opts.path}`);
+    parts.push(`path=${opts.path}`);
   }
 
-  if (opts.secure) s += `;secure`;
-  if (opts.samesite) s += `;samesite=${opts.samesite}`;
+  // Domain
+  if (isDefined(opts.domain)) {
+    if (!isString(opts.domain))
+      throw new TypeError(`badarg:domain ${opts.domain}`);
+    parts.push(`domain=${opts.domain}`);
+  }
 
-  return s;
+  // Expires
+  if (opts.expires != null) {
+    let expDate;
+
+    if (opts.expires instanceof Date) {
+      expDate = opts.expires;
+    } else if (isNumber(opts.expires) || isString(opts.expires)) {
+      expDate = new Date(opts.expires);
+    } else {
+      throw new TypeError(`badarg:expires ${String(opts.expires)}`);
+    }
+
+    if (isNaN(expDate.getTime())) {
+      throw new TypeError(`badarg:expires ${String(opts.expires)}`);
+    }
+
+    parts.push(`expires=${expDate.toUTCString()}`);
+  }
+
+  // Secure
+  if (opts.secure) {
+    parts.push("secure");
+  }
+
+  // SameSite
+  if (isDefined(opts.samesite)) {
+    if (!isString(opts.samesite))
+      throw new TypeError(`badarg:samesite ${opts.samesite}`);
+    const s = opts.samesite.toLowerCase();
+    if (!["lax", "strict", "none"].includes(s)) {
+      throw new TypeError(`badarg:samesite ${opts.samesite}`);
+    }
+    parts.push(`samesite=${s}`);
+  }
+
+  // Join all parts with semicolons
+  return parts.length ? ";" + parts.join(";") : "";
 }
 
 /**
@@ -58,10 +109,14 @@ export class CookieService {
   /**
    * @param {ng.CookieOptions} defaults
    *   Default cookie attributes defined by `$cookiesProvider.defaults`.
+   * @param {ng.ExceptionHandlerService} $exceptionHandler
    */
-  constructor(defaults) {
-    /** @type {CookieOptions} */
-    this.defaults = defaults;
+  constructor(defaults, $exceptionHandler) {
+    assert(isObject(defaults), "badarg");
+    assert(isFunction($exceptionHandler), "badarg");
+    /** @type {ng.CookieOptions} */
+    this.defaults = Object.freeze({ ...defaults });
+    this.$exceptionHandler = $exceptionHandler;
   }
 
   /**
@@ -71,6 +126,7 @@ export class CookieService {
    * @returns {string|null}
    */
   get(key) {
+    assert(isString(key), "badarg");
     const all = parseCookies();
     return all[key] || null;
   }
@@ -81,14 +137,18 @@ export class CookieService {
    * @template T
    * @param {string} key
    * @returns {T|null}
+   * @throws {SyntaxError} if cookie JSON is invalid
    */
   getObject(key) {
+    assert(isString(key), "badarg");
     const raw = this.get(key);
     if (!raw) return null;
     try {
       return /** @type {T} */ (JSON.parse(raw));
-    } catch {
-      return null;
+    } catch (err) {
+      const error = new SyntaxError(`badparse: "${key}" => ${err.message}`);
+      this.$exceptionHandler(error);
+      throw error;
     }
   }
 
@@ -106,15 +166,22 @@ export class CookieService {
    *
    * @param {string} key
    * @param {string} value
-   * @param {CookieOptions} [options]
+   * @param {ng.CookieOptions} [options]
    */
   put(key, value, options = {}) {
+    assert(isString(key), "badarg: key");
+    assert(isString(value), "badarg: value");
     const encodedKey = encodeURIComponent(key);
     const encodedVal = encodeURIComponent(value);
 
-    document.cookie =
-      `${encodedKey}=${encodedVal}` +
-      buildOptions({ ...this.defaults, ...options });
+    try {
+      document.cookie =
+        `${encodedKey}=${encodedVal}` +
+        buildOptions({ ...this.defaults, ...options });
+    } catch (e) {
+      this.$exceptionHandler(e);
+      throw e;
+    }
   }
 
   /**
@@ -122,19 +189,30 @@ export class CookieService {
    *
    * @param {string} key
    * @param {any} value
-   * @param {CookieOptions} [options]
+   * @param {ng.CookieOptions} [options]
+   * @throws {TypeError} if Object cannot be converted to JSON
    */
   putObject(key, value, options) {
-    this.put(key, JSON.stringify(value), options);
+    assert(isString(key), "badarg: key");
+    assert(!isNullOrUndefined(key), "badarg: key");
+    try {
+      const str = JSON.stringify(value);
+      this.put(key, str, options);
+    } catch (err) {
+      const error = new TypeError(`badserialize: "${key}" => ${err.message}`);
+      this.$exceptionHandler(error);
+      throw error;
+    }
   }
 
   /**
    * Removes a cookie by setting an expired date.
    *
    * @param {string} key
-   * @param {CookieOptions} [options]
+   * @param {ng.CookieOptions} [options]
    */
   remove(key, options = {}) {
+    assert(isString(key), "badarg");
     this.put(key, "", {
       ...this.defaults,
       ...options,
@@ -148,7 +226,9 @@ export class CookieProvider {
     this.defaults = {};
   }
 
-  $get() {
-    return new CookieService(this.defaults);
-  }
+  $get = [
+    $injectTokens.$exceptionHandler,
+    /** @param {ng.ExceptionHandlerService} $exceptionHandler  */
+    ($exceptionHandler) => new CookieService(this.defaults, $exceptionHandler),
+  ];
 }

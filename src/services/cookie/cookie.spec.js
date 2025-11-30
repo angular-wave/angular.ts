@@ -51,9 +51,12 @@ describe("$cookie service", () => {
     expect($cookie.getObject("user")).toEqual(obj);
   });
 
-  it("should return null for invalid JSON in getObject", () => {
+  it("should throw SyntaxError for invalid JSON in getObject", () => {
     document.cookie = "broken={unclosed";
-    expect($cookie.getObject("broken")).toBeNull();
+    expect(() => $cookie.getObject("broken")).toThrowError(
+      SyntaxError,
+      /^badparse: "broken" =>/,
+    );
   });
 
   it("getAll should return all cookies as an object", () => {
@@ -105,6 +108,36 @@ describe("$cookie service", () => {
     $cookie.remove("c1");
     expect($cookie.get("c1")).toBeNull();
     expect($cookie.get("c2")).toBe("v2");
+  });
+
+  it("should throw TypeError if expires is invalid type", () => {
+    const invalidValues = [true, {}, [], () => {}, Symbol()];
+    invalidValues.forEach((val) => {
+      expect(() => $cookie.put("badExp", "x", { expires: val })).toThrowError(
+        TypeError,
+        /^badarg:expires/,
+      );
+    });
+  });
+
+  it("should throw TypeError if expires is an invalid date", () => {
+    expect(() =>
+      $cookie.put("badDate", "x", { expires: "invalid-date" }),
+    ).toThrowError(TypeError, /^badarg:expires/);
+  });
+
+  it("should accept a valid Date object in expires", () => {
+    const exp = new Date(Date.now() + 1000 * 60); // 1 minute in future
+    expect(() => $cookie.put("goodDate", "v", { expires: exp })).not.toThrow();
+    expect($cookie.get("goodDate")).toBe("v");
+  });
+
+  it("should accept a valid date string in expires", () => {
+    const exp = new Date(Date.now() + 1000 * 60).toUTCString();
+    expect(() =>
+      $cookie.put("goodString", "v", { expires: exp }),
+    ).not.toThrow();
+    expect($cookie.get("goodString")).toBe("v");
   });
 
   function clearCookies() {

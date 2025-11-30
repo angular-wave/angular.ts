@@ -10,10 +10,15 @@ export class CookieService {
   /**
    * @param {ng.CookieOptions} defaults
    *   Default cookie attributes defined by `$cookiesProvider.defaults`.
+   * @param {ng.ExceptionHandlerService} $exceptionHandler
    */
-  constructor(defaults: ng.CookieOptions);
-  /** @type {CookieOptions} */
-  defaults: CookieOptions;
+  constructor(
+    defaults: ng.CookieOptions,
+    $exceptionHandler: ng.ExceptionHandlerService,
+  );
+  /** @type {ng.CookieOptions} */
+  defaults: ng.CookieOptions;
+  $exceptionHandler: import("../exception/interface.ts").ErrorHandler;
   /**
    * Retrieves a raw cookie value.
    *
@@ -27,6 +32,7 @@ export class CookieService {
    * @template T
    * @param {string} key
    * @returns {T|null}
+   * @throws {SyntaxError} if cookie JSON is invalid
    */
   getObject<T>(key: string): T | null;
   /**
@@ -40,27 +46,30 @@ export class CookieService {
    *
    * @param {string} key
    * @param {string} value
-   * @param {CookieOptions} [options]
+   * @param {ng.CookieOptions} [options]
    */
-  put(key: string, value: string, options?: CookieOptions): void;
+  put(key: string, value: string, options?: ng.CookieOptions): void;
   /**
    * Serializes an object as JSON and stores it as a cookie.
    *
    * @param {string} key
    * @param {any} value
-   * @param {CookieOptions} [options]
+   * @param {ng.CookieOptions} [options]
+   * @throws {TypeError} if Object cannot be converted to JSON
    */
-  putObject(key: string, value: any, options?: CookieOptions): void;
+  putObject(key: string, value: any, options?: ng.CookieOptions): void;
   /**
    * Removes a cookie by setting an expired date.
    *
    * @param {string} key
-   * @param {CookieOptions} [options]
+   * @param {ng.CookieOptions} [options]
    */
-  remove(key: string, options?: CookieOptions): void;
+  remove(key: string, options?: ng.CookieOptions): void;
 }
 export class CookieProvider {
   defaults: {};
-  $get(): CookieService;
+  $get: (
+    | string
+    | (($exceptionHandler: ng.ExceptionHandlerService) => CookieService)
+  )[];
 }
-export type CookieOptions = import("./interface.ts").CookieOptions;
