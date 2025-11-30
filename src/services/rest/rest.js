@@ -1,211 +1,196 @@
 import { $injectTokens } from "../../injection-tokens.js";
+import { assert, isString } from "../../shared/utils.js";
 import { expandUriTemplate } from "./rfc.js";
 
 /**
  * @template T, ID
  */
 export class RestService {
+  static $nonscope = true;
+
   /**
+   * Core REST service for CRUD operations.
+   * Safe, predictable, and optionally maps raw JSON to entity class instances.
+   *
    * @param {ng.HttpService} $http Angular-like $http service
-   * @param {string} baseUrl Base URL template, e.g. "/users/:id{/subId}{?page,limit}"
-   * @param {{new(data: any): T}=} entityClass Optional constructor for mapping JSON to class instances
-   * @param {Object=} providerDefaults Optional defaults from RestProvider
+   * @param {string} baseUrl Base URL or URI template
+   * @param {{new(data: any): T}=} entityClass Optional constructor to map JSON to objects
+   * @param {Object=} options Optional settings (interceptors, headers, etc.)
    */
-  constructor($http, baseUrl, entityClass, providerDefaults = {}) {
-    /** @private @type {ng.HttpService} */
+  constructor($http, baseUrl, entityClass, options = {}) {
+    assert(isString(baseUrl) && baseUrl.length > 0, "baseUrl required");
+
+    /** @private */
     this.$http = $http;
-    /** @private @type {string} */
+    /** @private */
     this.baseUrl = baseUrl;
-    /** @private @type {{new(data: any): T}=} */
+    /** @private */
     this.entityClass = entityClass;
-
-    /** @type {Object} global defaults from provider */
-    this.providerDefaults = providerDefaults;
-
-    /** @type {Array<(config: any) => any | Promise<any>>} */
-    this.requestInterceptors = [];
-    /** @type {Array<(response: any) => any | Promise<any>>} */
-    this.responseInterceptors = [];
+    /** @private */
+    this.options = options;
   }
 
   /**
-   * Apply all request interceptors sequentially
-   * @private
+   * Build full URL from template and parameters
+   * @param {string} template
+   * @param {Record<string, any>} params
+   * @returns {string}
    */
-  async _applyRequestInterceptors(config) {
-    let cfg = config;
-    for (const interceptor of this.requestInterceptors) {
-      cfg = await interceptor(cfg);
-    }
-    return cfg;
+  buildUrl(template, params) {
+    // Safe: ensure params is an object
+    return expandUriTemplate(template, params || {});
   }
 
   /**
-   * Apply all response interceptors sequentially
-   * @private
+   * Map raw JSON to entity instance or return as-is
+   * @param {any} data
+   * @returns {T|any}
    */
-  async _applyResponseInterceptors(response) {
-    let resp = response;
-    for (const interceptor of this.responseInterceptors) {
-      resp = await interceptor(resp);
-    }
-    return resp;
-  }
-
-  /**
-   * @private
-   */
-  async _request(method, url, data, params) {
-    let config = { method, url, data, params };
-
-    // Apply request interceptors
-    config = await this._applyRequestInterceptors(config);
-
-    let resp;
-    try {
-      resp = await this.$http(config);
-    } catch (err) {
-      // Apply response interceptors on error
-      resp = await this._applyResponseInterceptors(Promise.reject(err));
-      throw resp;
-    }
-
-    // Apply response interceptors
-    return this._applyResponseInterceptors(resp);
-  }
-
-  /** @private map raw data to entity class */
-  mapEntity(data) {
+  #mapEntity(data) {
+    if (!data) return data;
     return this.entityClass ? new this.entityClass(data) : data;
   }
 
   /**
-   * @private
-   * Build URL by replacing colon-style params first, then expanding RFC 6570 template
-   * @param {string} template
-   * @param {Record<string, any>} [params]
-   * @returns {string}
+   * List entities
+   * @param {Record<string, any>=} params
+   * @returns {Promise<T[]>}
    */
-  buildUrl(template, params = {}) {
-    // Replace :param style first
-    let url = template.replace(/:([A-Za-z0-9_]+)/g, (_, key) => {
-      if (params[key] === undefined || params[key] === null) {
-        throw new Error(`Missing value for parameter "${key}"`);
-      }
-      const val = encodeURIComponent(params[key]);
-      delete params[key]; // remove so RFC expansion doesn't include it
-      return val;
-    });
-
-    // Expand remaining RFC 6570 expressions
-    return expandUriTemplate(url, params);
-  }
-
-  /** List entities (optional query params) */
   async list(params = {}) {
     const url = this.buildUrl(this.baseUrl, params);
-    const resp = await this._request("get", url, null, params);
-
-    const data = Array.isArray(resp.data) ? resp.data : [];
-    return data.map((d) => (this.entityClass ? new this.entityClass(d) : d));
+    const resp = await this.#request("get", url, null, params);
+    if (!Array.isArray(resp.data)) return [];
+    return resp.data.map((d) => this.#mapEntity(d));
   }
 
-  /** Read entity by ID (ID can be in colon or RFC template) */
+  /**
+   * Read single entity by ID
+   * @param {ID} id
+   * @param {Record<string, any>=} params
+   * @returns {Promise<T|null>}
+   */
   async read(id, params = {}) {
-    const url = this.buildUrl(`${this.baseUrl}/:id`, { id, ...params });
-    const resp = await this._request("get", url, null, params);
-    return resp.data
-      ? this.entityClass
-        ? new this.entityClass(resp.data)
-        : resp.data
-      : null;
+    if (id == null) return null;
+    const url = this.buildUrl(`${this.baseUrl}/${id}`, params);
+    try {
+      const resp = await this.#request("get", url, null, params);
+      return this.#mapEntity(resp.data);
+    } catch {
+      return null; // fail-safe
+    }
   }
 
-  async create(item, params = {}) {
-    const url = this.buildUrl(this.baseUrl, params);
-    const resp = await this._request("post", url, item, params);
-    return this.entityClass ? new this.entityClass(resp.data) : resp.data;
+  /**
+   * Create a new entity
+   * @param {T} item
+   * @returns {Promise<T>}
+   */
+  async create(item) {
+    assert(item != null, "item required for create");
+    const resp = await this.#request("post", this.baseUrl, item);
+    return this.#mapEntity(resp.data);
   }
 
-  async update(id, item, params = {}) {
-    const url = this.buildUrl(`${this.baseUrl}/:id`, { id, ...params });
-    const resp = await this._request("put", url, item, params);
-    return resp.data
-      ? this.entityClass
-        ? new this.entityClass(resp.data)
-        : resp.data
-      : null;
+  /**
+   * Update entity by ID
+   * @param {ID} id
+   * @param {Partial<T>} item
+   * @returns {Promise<T|null>}
+   */
+  async update(id, item) {
+    assert(id != null, "id required for update");
+    const url = `${this.baseUrl}/${id}`;
+    try {
+      const resp = await this.#request("put", url, item);
+      return this.#mapEntity(resp.data);
+    } catch {
+      return null;
+    }
   }
 
-  async delete(id, params = {}) {
-    const url = this.buildUrl(`${this.baseUrl}/:id`, { id, ...params });
-    const resp = await this._request("delete", url, null, params);
-    return resp.status >= 200 && resp.status < 300;
+  /**
+   * Delete entity by ID
+   * @param {ID} id
+   * @returns {Promise<boolean>}
+   */
+  async delete(id) {
+    if (id == null) return false;
+    const url = `${this.baseUrl}/${id}`;
+    try {
+      await this.#request("delete", url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Core HTTP request wrapper
+   * @param {"get"|"post"|"put"|"delete"} method
+   * @param {string} url
+   * @param {any=} data
+   * @param {Record<string, any>=} params
+   * @returns {Promise<any>}
+   */
+  async #request(method, url, data = null, params = {}) {
+    try {
+      return await this.$http({
+        method,
+        url,
+        data,
+        params,
+        ...this.options,
+      });
+    } catch (err) {
+      console.error(`[RestService] HTTP ${method} failed for ${url}`, err);
+      throw err; // propagate for caller handling
+    }
   }
 }
 
 /**
- * RestProvider - register named rest stores at config time.
- *
- * Usage (in config):
- *   restProvider.rest('user', '/api/users', User);
- *
- * Then at runtime you can inject `rest` factory and do:
- *   const userApi = rest('/api/users', User);
- * or use the pre-registered named services:
- *   const userApi = rest.get('user');
+ * Provider for registering REST endpoints during module configuration.
  */
 export class RestProvider {
   constructor() {
-    /** @private @type {import('./interface.ts').RestDefinition[]} */
+    /** @private @type {ng.RestDefinition<any>[]} */
     this.definitions = [];
-    /** provider-level defaults (optional) */
-    this.defaults = {};
   }
 
   /**
-   * Register a named rest definition during configtime
+   * Register a REST resource at config phase
    * @template T
-   * @param {string} name
-   * @param {string} url
-   * @param {{new(data:any):T}=} entityClass
+   * @param {string} name Service name
+   * @param {string} url Base URL or URI template
+   * @param {{new(data:any):T}=} entityClass Optional entity constructor
+   * @param {Object=} options Optional service options
    */
-  rest(name, url, entityClass) {
-    this.definitions.push({ name, url, entityClass });
+  rest(name, url, entityClass, options = {}) {
+    this.definitions.push({ name, url, entityClass, options });
   }
 
   /**
-   * $get factory: returns a `rest` factory function and allows access
-   * to pre-registered services via rest.get(name).
-   *
-   * @returns {(baseUrl:string, entityClass?:Function, options?:object) => RestService}
+   * $get factory: returns a factory function and allows access to named services
+   * @returns {(baseUrl:string, entityClass?:Function, options?:object) => RestService & { get(name:string): RestService, listNames(): string[] }}
    */
   $get = [
-    /* inject $http token name according to your app's token system */
     $injectTokens.$http,
     ($http) => {
       const services = new Map();
 
-      // factory to create ad-hoc RestService instances
-      const factory = (baseUrl, entityClass, options) => {
-        const svc = new RestService($http, baseUrl, entityClass, options || {});
-        // apply provider-level defaults directly if any (non-invasive)
-        if (this.defaults && typeof this.defaults === "object") {
-          svc.providerDefaults = this.defaults;
-        }
+      const factory = (baseUrl, entityClass, options = {}) => {
+        const svc = new RestService($http, baseUrl, entityClass, options);
         return svc;
       };
 
-      // create named services from definitions registered during config()
+      // create services from pre-registered definitions
       for (const def of this.definitions) {
-        const svc = factory(def.url, def.entityClass, def.options || {});
+        const svc = factory(def.url, def.entityClass, def.options);
         services.set(def.name, svc);
       }
 
-      // attach helper to fetch pre-registered named service
+      // helpers to fetch named services
       factory.get = (name) => services.get(name);
-
-      // also expose list of names for convenience
       factory.listNames = () => Array.from(services.keys());
 
       return factory;

@@ -2,11 +2,15 @@
  * @template T, ID
  */
 export class RestService<T, ID> {
+  static $nonscope: boolean;
   /**
+   * Core REST service for CRUD operations.
+   * Safe, predictable, and optionally maps raw JSON to entity class instances.
+   *
    * @param {ng.HttpService} $http Angular-like $http service
-   * @param {string} baseUrl Base URL template, e.g. "/users/:id{/subId}{?page,limit}"
-   * @param {{new(data: any): T}=} entityClass Optional constructor for mapping JSON to class instances
-   * @param {Object=} providerDefaults Optional defaults from RestProvider
+   * @param {string} baseUrl Base URL or URI template
+   * @param {{new(data: any): T}=} entityClass Optional constructor to map JSON to objects
+   * @param {Object=} options Optional settings (interceptors, headers, etc.)
    */
   constructor(
     $http: ng.HttpService,
@@ -16,74 +20,70 @@ export class RestService<T, ID> {
           new (data: any): T;
         }
       | undefined,
-    providerDefaults?: any | undefined,
+    options?: any | undefined,
   );
-  /** @private @type {ng.HttpService} */
+  /** @private */
   private $http;
-  /** @private @type {string} */
+  /** @private */
   private baseUrl;
-  /** @private @type {{new(data: any): T}=} */
+  /** @private */
   private entityClass;
-  /** @type {Object} global defaults from provider */
-  providerDefaults: any;
-  /** @type {Array<(config: any) => any | Promise<any>>} */
-  requestInterceptors: Array<(config: any) => any | Promise<any>>;
-  /** @type {Array<(response: any) => any | Promise<any>>} */
-  responseInterceptors: Array<(response: any) => any | Promise<any>>;
+  /** @private */
+  private options;
   /**
-   * Apply all request interceptors sequentially
-   * @private
-   */
-  private _applyRequestInterceptors;
-  /**
-   * Apply all response interceptors sequentially
-   * @private
-   */
-  private _applyResponseInterceptors;
-  /**
-   * @private
-   */
-  private _request;
-  /** @private map raw data to entity class */
-  private mapEntity;
-  /**
-   * @private
-   * Build URL by replacing colon-style params first, then expanding RFC 6570 template
+   * Build full URL from template and parameters
    * @param {string} template
-   * @param {Record<string, any>} [params]
+   * @param {Record<string, any>} params
    * @returns {string}
    */
-  private buildUrl;
-  /** List entities (optional query params) */
-  list(params?: {}): Promise<any>;
-  /** Read entity by ID (ID can be in colon or RFC template) */
-  read(id: any, params?: {}): Promise<any>;
-  create(item: any, params?: {}): Promise<any>;
-  update(id: any, item: any, params?: {}): Promise<any>;
-  delete(id: any, params?: {}): Promise<boolean>;
+  buildUrl(template: string, params: Record<string, any>): string;
+  /**
+   * List entities
+   * @param {Record<string, any>=} params
+   * @returns {Promise<T[]>}
+   */
+  list(params?: Record<string, any> | undefined): Promise<T[]>;
+  /**
+   * Read single entity by ID
+   * @param {ID} id
+   * @param {Record<string, any>=} params
+   * @returns {Promise<T|null>}
+   */
+  read(id: ID, params?: Record<string, any> | undefined): Promise<T | null>;
+  /**
+   * Create a new entity
+   * @param {T} item
+   * @returns {Promise<T>}
+   */
+  create(item: T): Promise<T>;
+  /**
+   * Update entity by ID
+   * @param {ID} id
+   * @param {Partial<T>} item
+   * @returns {Promise<T|null>}
+   */
+  update(id: ID, item: Partial<T>): Promise<T | null>;
+  /**
+   * Delete entity by ID
+   * @param {ID} id
+   * @returns {Promise<boolean>}
+   */
+  delete(id: ID): Promise<boolean>;
+  #private;
 }
 /**
- * RestProvider - register named rest stores at config time.
- *
- * Usage (in config):
- *   restProvider.rest('user', '/api/users', User);
- *
- * Then at runtime you can inject `rest` factory and do:
- *   const userApi = rest('/api/users', User);
- * or use the pre-registered named services:
- *   const userApi = rest.get('user');
+ * Provider for registering REST endpoints during module configuration.
  */
 export class RestProvider {
-  /** @private @type {import('./interface.ts').RestDefinition[]} */
+  /** @private @type {ng.RestDefinition<any>[]} */
   private definitions;
-  /** provider-level defaults (optional) */
-  defaults: {};
   /**
-   * Register a named rest definition during configtime
+   * Register a REST resource at config phase
    * @template T
-   * @param {string} name
-   * @param {string} url
-   * @param {{new(data:any):T}=} entityClass
+   * @param {string} name Service name
+   * @param {string} url Base URL or URI template
+   * @param {{new(data:any):T}=} entityClass Optional entity constructor
+   * @param {Object=} options Optional service options
    */
   rest<T>(
     name: string,
@@ -93,17 +93,16 @@ export class RestProvider {
           new (data: any): T;
         }
       | undefined,
+    options?: any | undefined,
   ): void;
   /**
-   * $get factory: returns a `rest` factory function and allows access
-   * to pre-registered services via rest.get(name).
-   *
-   * @returns {(baseUrl:string, entityClass?:Function, options?:object) => RestService}
+   * $get factory: returns a factory function and allows access to named services
+   * @returns {(baseUrl:string, entityClass?:Function, options?:object) => RestService & { get(name:string): RestService, listNames(): string[] }}
    */
   $get: (
     | string
     | (($http: any) => {
-        (baseUrl: any, entityClass: any, options: any): RestService<any, any>;
+        (baseUrl: any, entityClass: any, options?: {}): RestService<any, any>;
         get(name: any): any;
         listNames(): any[];
       })
