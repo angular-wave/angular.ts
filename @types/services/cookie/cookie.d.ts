@@ -1,4 +1,15 @@
 /**
+ * Service provider that creates a {@link ng.CookieService $cookie} service.
+ * @type {ng.ServiceProvider}
+ */
+export class CookieProvider {
+  defaults: {};
+  $get: (
+    | string
+    | (($exceptionHandler: ng.ExceptionHandlerService) => CookieService)
+  )[];
+}
+/**
  * $cookies service class
  *
  * Provides high-level APIs for interacting with browser cookies:
@@ -65,11 +76,4 @@ export class CookieService {
    * @param {ng.CookieOptions} [options]
    */
   remove(key: string, options?: ng.CookieOptions): void;
-}
-export class CookieProvider {
-  defaults: {};
-  $get: (
-    | string
-    | (($exceptionHandler: ng.ExceptionHandlerService) => CookieService)
-  )[];
 }

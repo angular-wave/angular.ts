@@ -76,6 +76,7 @@ import {
   EntityClass as TEntityClass,
 } from "./services/rest/interface.ts";
 import { RestService as TRestService } from "./services/rest/rest.js";
+import { ServiceProvider as TServiceProvider } from "./interface.ts";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -148,5 +149,6 @@ declare global {
     type RestService<T, ID> = TRestService<T, ID>;
     type RestDefinition<T> = TRestDefinition<T>;
     type EntityClass<T> = TEntityClass<T>;
+    type ServiceProvider = TServiceProvider;
   }
 }
