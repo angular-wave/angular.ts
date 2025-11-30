@@ -75,6 +75,11 @@ import {
   CookieStoreOptions as TCookieStoreOptions,
   CookieOptions as TCookieOptions,
 } from "./services/cookie/interface.ts";
+import {
+  RestDefinition as TRestDefinition,
+  EntityClass as TEntityClass,
+} from "./services/rest/interface.ts";
+import { RestService as TRestService } from "./services/rest/rest.js";
 
 /* ────────────────────────────────────────────────
    Runtime global initialization
@@ -162,5 +167,8 @@ declare global {
     export type StreamConnectionConfig = TStreamConnectionConfig;
     export type CookieOptions = TCookieOptions;
     export type CookieStoreOptions = TCookieStoreOptions;
+    export type RestService<T, ID> = TRestService<T, ID>;
+    export type RestDefinition<T> = TRestDefinition<T>;
+    export type EntityClass<T> = TEntityClass<T>;
   }
 }

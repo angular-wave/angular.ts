@@ -45,6 +45,7 @@ export const $injectTokens = Object.freeze({
   $log: "$log",
   $viewScroll: "$viewScroll",
   $parse: "$parse",
+  $rest: "$rest",
   $rootScope: "$rootScope",
   $rootElement: "$rootElement",
   $router: "$router",

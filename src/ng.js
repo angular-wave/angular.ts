@@ -137,6 +137,7 @@ import { ngWorkerDirective } from "./directive/worker/worker.js";
 import { ngWasmDirective } from "./directive/wasm/wasm.js";
 import { ngScopeDirective } from "./directive/scope/scope.js";
 import { CookieProvider } from "./services/cookie/cookie.js";
+import { RestProvider } from "./services/rest/rest.js";
 
 /**
  * Initializes core `ng` module.
@@ -271,6 +272,7 @@ export function registerNgModule(angular) {
             $log: LogProvider,
             $parse: ParseProvider,
             $$rAFScheduler: RafSchedulerProvider,
+            $rest: RestProvider,
             $rootScope: RootScopeProvider,
             $router: Router,
             $sce: SceProvider,

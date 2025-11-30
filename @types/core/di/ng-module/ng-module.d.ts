@@ -50,6 +50,7 @@ export class NgModule {
   runBlocks: Array<ng.Injectable<any>>;
   services: any[];
   wasmModules: any[];
+  restDefinitions: any[];
   /**
    * @param {string} name
    * @param {any} object
@@ -199,5 +200,20 @@ export class NgModule {
     name: string,
     ctor: Function,
     backendOrConfig: ng.StorageBackend,
+  ): NgModule;
+  /**
+   * @template T, ID
+   * Register a REST resource during module configuration.
+   * @param {string} name - Service name
+   * @param {string} url - Base URL or URI template
+   * @param {ng.EntityClass<T>} entityClass - Optional constructor for mapping JSON
+   * @param {Object=} options - Optional RestService options (interceptors, etc)
+   * @returns {NgModule}
+   */
+  rest<T, ID>(
+    name: string,
+    url: string,
+    entityClass: ng.EntityClass<T>,
+    options?: any | undefined,
   ): NgModule;
 }
