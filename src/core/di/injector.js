@@ -216,16 +216,16 @@ export function createInjector(modulesToLoad, strictDi = false) {
           const cookieOpts = options.cookie ?? {};
 
           return createPersistentProxy(instance, name, {
-            getItem: (key) => {
+            getItem(key) {
               const raw = $cookie.get(key);
               return raw == null ? null : raw;
             },
 
-            setItem: (key, value) => {
+            setItem(key, value) {
               $cookie.put(key, value, cookieOpts);
             },
 
-            removeItem: (key) => {
+            removeItem(key) {
               $cookie.remove(key, cookieOpts);
             },
 
