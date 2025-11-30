@@ -186,6 +186,12 @@ export class NgModule {
   /**
    * @param {string} name
    * @param {Function} ctor
+   * @returns {NgModule}
+   */
+  cookie(name: string, ctor: Function): NgModule;
+  /**
+   * @param {string} name
+   * @param {Function} ctor
    * @param {ng.StorageBackend} backendOrConfig
    * @returns {NgModule}
    */

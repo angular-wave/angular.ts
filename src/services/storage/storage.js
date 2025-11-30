@@ -27,8 +27,8 @@ export function createPersistentProxy(target, key, storage, options = {}) {
       obj[prop] = value;
       try {
         storage.setItem(key, serialize(obj));
-      } catch {
-        console.warn(`Failed to persist data for key "${key}"`);
+      } catch (e) {
+        console.warn(`Failed to persist data for key "${e}"`);
       }
       return true;
     },

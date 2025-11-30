@@ -330,6 +330,19 @@ export class NgModule {
   /**
    * @param {string} name
    * @param {Function} ctor
+   * @returns {NgModule}
+   */
+  cookie(name, ctor) {
+    if (ctor && isFunction(ctor)) {
+      ctor["$$moduleName"] = name;
+    }
+    this.invokeQueue.push([$t.$provide, "cookie", [name, ctor]]);
+    return this;
+  }
+
+  /**
+   * @param {string} name
+   * @param {Function} ctor
    * @param {ng.StorageBackend} backendOrConfig
    * @returns {NgModule}
    */

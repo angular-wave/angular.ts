@@ -32,6 +32,7 @@ export const $injectTokens = Object.freeze({
   $animateCss: "$animateCss",
   $aria: "$aria",
   $compile: "$compile",
+  $cookie: "$cookie",
   $controller: "$controller",
   $document: "$document",
   $eventBus: "$eventBus",
