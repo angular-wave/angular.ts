@@ -68,6 +68,8 @@ export class NgModule {
     this.services = [];
 
     this.wasmModules = [];
+
+    this.restDefinitions = [];
   }
 
   /**
@@ -355,6 +357,37 @@ export class NgModule {
       "store",
       [name, ctor, backendOrConfig],
     ]);
+    return this;
+  }
+
+  /**
+   * @template T, ID
+   * Register a REST resource during module configuration.
+   * @param {string} name - Service name
+   * @param {string} url - Base URL or URI template
+   * @param {ng.EntityClass<T>} entityClass - Optional constructor for mapping JSON
+   * @param {Object=} options - Optional RestService options (interceptors, etc)
+   * @returns {NgModule}
+   */
+  rest(name, url, entityClass, options = {}) {
+    const def = { name, url, entityClass, options };
+    this.restDefinitions.push(def);
+
+    // push provider/factory to invokeQueue
+    this.invokeQueue.push([
+      $t.$provide,
+      "factory",
+      [
+        name,
+        [
+          $t.$rest,
+          /** @param {(baseUrl:string, entityClass?:Function, options?:object) => ng.RestService<T, ID>} $rest */ (
+            $rest,
+          ) => $rest(url, entityClass, options),
+        ],
+      ],
+    ]);
+
     return this;
   }
 }

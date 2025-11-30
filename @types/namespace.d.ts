@@ -71,6 +71,11 @@ import {
   CookieStoreOptions as TCookieStoreOptions,
   CookieOptions as TCookieOptions,
 } from "./services/cookie/interface.ts";
+import {
+  RestDefinition as TRestDefinition,
+  EntityClass as TEntityClass,
+} from "./services/rest/interface.ts";
+import { RestService as TRestService } from "./services/rest/rest.js";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -140,5 +145,8 @@ declare global {
     type StreamConnectionConfig = TStreamConnectionConfig;
     type CookieOptions = TCookieOptions;
     type CookieStoreOptions = TCookieStoreOptions;
+    type RestService<T, ID> = TRestService<T, ID>;
+    type RestDefinition<T> = TRestDefinition<T>;
+    type EntityClass<T> = TEntityClass<T>;
   }
 }
