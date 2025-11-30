@@ -21,6 +21,11 @@ function parseCookies() {
 }
 
 /** Utility: stringify options */
+/**
+ *
+ * @param {CookieOptions} opts
+ * @returns {string}
+ */
 function buildOptions(opts = {}) {
   let s = "";
 
