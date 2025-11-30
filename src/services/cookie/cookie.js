@@ -10,91 +10,19 @@ import {
 } from "../../shared/utils.js";
 
 /**
- * @returns {Record<string,string>}
+ * Service provider that creates a {@link ng.CookieService $cookie} service.
+ * @type {ng.ServiceProvider}
  */
-function parseCookies() {
-  /** @type {Record<string, string>} */
-  const out = {};
-  if (!document.cookie) return out;
-
-  const parts = document.cookie.split("; ");
-  for (const part of parts) {
-    const eq = part.indexOf("=");
-    if (eq === -1) continue; // skip malformed cookie
-    const key = decodeURIComponent(part.substring(0, eq));
-    const val = decodeURIComponent(part.substring(eq + 1));
-    out[key] = val;
-  }
-  return out;
-}
-
-/** Utility: stringify options */
-/**
- *
- * @param {ng.CookieOptions} opts
- * @returns {string}
- */
-/**
- * Build cookie options string from an options object.
- * Safely validates types for path, domain, expires, secure, and samesite.
- *
- * @param {ng.CookieOptions} opts
- * @returns {string}
- * @throws {TypeError} if any of options are invalid
- */
-function buildOptions(opts = {}) {
-  const parts = [];
-
-  // Path
-  if (isDefined(opts.path)) {
-    if (!isString(opts.path)) throw new TypeError(`badarg:path ${opts.path}`);
-    parts.push(`path=${opts.path}`);
+export class CookieProvider {
+  constructor() {
+    this.defaults = {};
   }
 
-  // Domain
-  if (isDefined(opts.domain)) {
-    if (!isString(opts.domain))
-      throw new TypeError(`badarg:domain ${opts.domain}`);
-    parts.push(`domain=${opts.domain}`);
-  }
-
-  // Expires
-  if (opts.expires != null) {
-    let expDate;
-
-    if (opts.expires instanceof Date) {
-      expDate = opts.expires;
-    } else if (isNumber(opts.expires) || isString(opts.expires)) {
-      expDate = new Date(opts.expires);
-    } else {
-      throw new TypeError(`badarg:expires ${String(opts.expires)}`);
-    }
-
-    if (isNaN(expDate.getTime())) {
-      throw new TypeError(`badarg:expires ${String(opts.expires)}`);
-    }
-
-    parts.push(`expires=${expDate.toUTCString()}`);
-  }
-
-  // Secure
-  if (opts.secure) {
-    parts.push("secure");
-  }
-
-  // SameSite
-  if (isDefined(opts.samesite)) {
-    if (!isString(opts.samesite))
-      throw new TypeError(`badarg:samesite ${opts.samesite}`);
-    const s = opts.samesite.toLowerCase();
-    if (!["lax", "strict", "none"].includes(s)) {
-      throw new TypeError(`badarg:samesite ${opts.samesite}`);
-    }
-    parts.push(`samesite=${s}`);
-  }
-
-  // Join all parts with semicolons
-  return parts.length ? ";" + parts.join(";") : "";
+  $get = [
+    $injectTokens.$exceptionHandler,
+    /** @param {ng.ExceptionHandlerService} $exceptionHandler  */
+    ($exceptionHandler) => new CookieService(this.defaults, $exceptionHandler),
+  ];
 }
 
 /**
@@ -221,14 +149,86 @@ export class CookieService {
   }
 }
 
-export class CookieProvider {
-  constructor() {
-    this.defaults = {};
+/*----------Helpers----------*/
+
+/**
+ * @returns {Record<string,string>}
+ */
+function parseCookies() {
+  /** @type {Record<string, string>} */
+  const out = {};
+  if (!document.cookie) return out;
+
+  const parts = document.cookie.split("; ");
+  for (const part of parts) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue; // skip malformed cookie
+    const key = decodeURIComponent(part.substring(0, eq));
+    const val = decodeURIComponent(part.substring(eq + 1));
+    out[key] = val;
+  }
+  return out;
+}
+
+/**
+ * Build cookie options string from an options object.
+ * Safely validates types for path, domain, expires, secure, and samesite.
+ *
+ * @param {ng.CookieOptions} opts
+ * @returns {string}
+ * @throws {TypeError} if any of options are invalid
+ */
+function buildOptions(opts = {}) {
+  const parts = [];
+
+  // Path
+  if (isDefined(opts.path)) {
+    if (!isString(opts.path)) throw new TypeError(`badarg:path ${opts.path}`);
+    parts.push(`path=${opts.path}`);
   }
 
-  $get = [
-    $injectTokens.$exceptionHandler,
-    /** @param {ng.ExceptionHandlerService} $exceptionHandler  */
-    ($exceptionHandler) => new CookieService(this.defaults, $exceptionHandler),
-  ];
+  // Domain
+  if (isDefined(opts.domain)) {
+    if (!isString(opts.domain))
+      throw new TypeError(`badarg:domain ${opts.domain}`);
+    parts.push(`domain=${opts.domain}`);
+  }
+
+  // Expires
+  if (opts.expires != null) {
+    let expDate;
+
+    if (opts.expires instanceof Date) {
+      expDate = opts.expires;
+    } else if (isNumber(opts.expires) || isString(opts.expires)) {
+      expDate = new Date(opts.expires);
+    } else {
+      throw new TypeError(`badarg:expires ${String(opts.expires)}`);
+    }
+
+    if (isNaN(expDate.getTime())) {
+      throw new TypeError(`badarg:expires ${String(opts.expires)}`);
+    }
+
+    parts.push(`expires=${expDate.toUTCString()}`);
+  }
+
+  // Secure
+  if (opts.secure) {
+    parts.push("secure");
+  }
+
+  // SameSite
+  if (isDefined(opts.samesite)) {
+    if (!isString(opts.samesite))
+      throw new TypeError(`badarg:samesite ${opts.samesite}`);
+    const s = opts.samesite.toLowerCase();
+    if (!["lax", "strict", "none"].includes(s)) {
+      throw new TypeError(`badarg:samesite ${opts.samesite}`);
+    }
+    parts.push(`samesite=${s}`);
+  }
+
+  // Join all parts with semicolons
+  return parts.length ? ";" + parts.join(";") : "";
 }
