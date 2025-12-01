@@ -36,10 +36,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
       service: supportObject(service),
       value: supportObject(value),
       constant: supportObject(constant),
-      session: supportObject(session),
-      local: supportObject(local),
-      store: supportObject(store),
-      cookie: supportObject(cookie),
+      store,
       decorator,
     },
   };
@@ -174,106 +171,80 @@ export function createInjector(modulesToLoad, strictDi = false) {
   }
 
   /**
-   * Registers a session-persistent service
-   */
-  function session(name, ctor) {
-    return provider(name, {
-      $get: ($injector) => {
-        const instance = $injector.instantiate(ctor);
-        return createPersistentProxy(instance, name, sessionStorage);
-      },
-    });
-  }
-
-  /**
-   * Registers a localStorage-persistent service
-   */
-  function local(name, ctor) {
-    return provider(name, {
-      $get: ($injector) => {
-        const instance = $injector.instantiate(ctor);
-        return createPersistentProxy(instance, name, localStorage);
-      },
-    });
-  }
-
-  /**
-   * Registers a cookie-persistent service.
-   *
-   * @param {string} name
-   * @param {Function} ctor
-   * @param {ng.CookieStoreOptions} [options]
-   */
-  function cookie(name, ctor, options = {}) {
-    return provider(name, {
-      $get: [
-        $injectTokens.$injector,
-        ($injector) => {
-          const instance = $injector.instantiate(ctor);
-          const $cookie = $injector.get($injectTokens.$cookie);
-          const serialize = options.serialize ?? JSON.stringify;
-          const deserialize = options.deserialize ?? JSON.parse;
-          const cookieOpts = options.cookie ?? {};
-
-          return createPersistentProxy(instance, name, {
-            getItem(key) {
-              const raw = $cookie.get(key);
-              return raw == null ? null : raw;
-            },
-
-            setItem(key, value) {
-              $cookie.put(key, value, cookieOpts);
-            },
-
-            removeItem(key) {
-              $cookie.remove(key, cookieOpts);
-            },
-
-            serialize,
-            deserialize,
-          });
-        },
-      ],
-    });
-  }
-
-  /**
-   * Registers a service persisted in a custom storage
+   * Registers a service persisted in a storage
    *
    * @param {string} name - Service name
    * @param {Function} ctor - Constructor for the service
+   * @param {ng.StorageType} type - Type of storage to be instantiated
    * @param {Storage|Object} backendOrConfig - Either a Storage-like object (getItem/setItem) or a config object
    *                                           with { backend, serialize, deserialize }
    */
-  function store(name, ctor, backendOrConfig) {
+  function store(name, ctor, type, backendOrConfig = {}) {
     return provider(name, {
-      $get: ($injector) => {
-        const instance = $injector.instantiate(ctor);
-
-        let backend;
-        let serialize = JSON.stringify;
-        let deserialize = JSON.parse;
-
-        if (backendOrConfig) {
-          if (typeof backendOrConfig.getItem === "function") {
-            // raw Storage object
-            backend = backendOrConfig;
-          } else if (isObject(backendOrConfig)) {
-            backend = backendOrConfig.backend || localStorage;
-            if (backendOrConfig.serialize)
-              serialize = backendOrConfig.serialize;
-            if (backendOrConfig.deserialize)
-              deserialize = backendOrConfig.deserialize;
+      $get: /** @param {ng.InjectorService} $injector */ ($injector) => {
+        switch (type) {
+          case "session": {
+            const instance = $injector.instantiate(ctor);
+            return createPersistentProxy(instance, name, sessionStorage);
           }
-        } else {
-          // fallback default
-          backend = localStorage;
-        }
+          case "local": {
+            const instance = $injector.instantiate(ctor);
+            return createPersistentProxy(instance, name, localStorage);
+          }
+          case "cookie": {
+            const instance = $injector.instantiate(ctor);
+            const $cookie = $injector.get($injectTokens.$cookie);
+            const serialize = backendOrConfig.serialize ?? JSON.stringify;
+            const deserialize = backendOrConfig.deserialize ?? JSON.parse;
+            const cookieOpts = backendOrConfig.cookie ?? {};
 
-        return createPersistentProxy(instance, name, backend, {
-          serialize,
-          deserialize,
-        });
+            return createPersistentProxy(instance, name, {
+              getItem(key) {
+                const raw = $cookie.get(key);
+                return raw == null ? null : raw;
+              },
+
+              setItem(key, value) {
+                $cookie.put(key, value, cookieOpts);
+              },
+
+              removeItem(key) {
+                $cookie.remove(key, cookieOpts);
+              },
+
+              serialize,
+              deserialize,
+            });
+          }
+          case "custom": {
+            const instance = $injector.instantiate(ctor);
+
+            let backend;
+            let serialize = JSON.stringify;
+            let deserialize = JSON.parse;
+
+            if (backendOrConfig) {
+              if (typeof backendOrConfig.getItem === "function") {
+                // raw Storage object
+                backend = backendOrConfig;
+              } else if (isObject(backendOrConfig)) {
+                backend = backendOrConfig.backend || localStorage;
+                if (backendOrConfig.serialize)
+                  serialize = backendOrConfig.serialize;
+                if (backendOrConfig.deserialize)
+                  deserialize = backendOrConfig.deserialize;
+              }
+            } else {
+              // fallback default
+              backend = localStorage;
+            }
+
+            return createPersistentProxy(instance, name, backend, {
+              serialize,
+              deserialize,
+            });
+          }
+        }
       },
     });
   }

@@ -319,43 +319,18 @@ export class NgModule {
   /**
    * @param {string} name
    * @param {Function} ctor
+   * @param {ng.StorageType} type
+   * @param {ng.StorageBackend} [backendOrConfig]
    * @returns {NgModule}
    */
-  local(name, ctor) {
-    if (ctor && isFunction(ctor)) {
-      ctor["$$moduleName"] = name;
-    }
-    this.invokeQueue.push([$t.$provide, "local", [name, ctor]]);
-    return this;
-  }
-
-  /**
-   * @param {string} name
-   * @param {Function} ctor
-   * @returns {NgModule}
-   */
-  cookie(name, ctor) {
-    if (ctor && isFunction(ctor)) {
-      ctor["$$moduleName"] = name;
-    }
-    this.invokeQueue.push([$t.$provide, "cookie", [name, ctor]]);
-    return this;
-  }
-
-  /**
-   * @param {string} name
-   * @param {Function} ctor
-   * @param {ng.StorageBackend} backendOrConfig
-   * @returns {NgModule}
-   */
-  store(name, ctor, backendOrConfig) {
+  store(name, ctor, type, backendOrConfig) {
     if (ctor && isFunction(ctor)) {
       ctor["$$moduleName"] = name;
     }
     this.invokeQueue.push([
       $t.$provide,
       "store",
-      [name, ctor, backendOrConfig],
+      [name, ctor, type, backendOrConfig],
     ]);
     return this;
   }

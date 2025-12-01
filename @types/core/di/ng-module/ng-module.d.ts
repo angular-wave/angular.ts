@@ -181,25 +181,15 @@ export class NgModule {
   /**
    * @param {string} name
    * @param {Function} ctor
-   * @returns {NgModule}
-   */
-  local(name: string, ctor: Function): NgModule;
-  /**
-   * @param {string} name
-   * @param {Function} ctor
-   * @returns {NgModule}
-   */
-  cookie(name: string, ctor: Function): NgModule;
-  /**
-   * @param {string} name
-   * @param {Function} ctor
-   * @param {ng.StorageBackend} backendOrConfig
+   * @param {ng.StorageType} type
+   * @param {ng.StorageBackend} [backendOrConfig]
    * @returns {NgModule}
    */
   store(
     name: string,
     ctor: Function,
-    backendOrConfig: ng.StorageBackend,
+    type: ng.StorageType,
+    backendOrConfig?: ng.StorageBackend,
   ): NgModule;
   /**
    * @template T, ID

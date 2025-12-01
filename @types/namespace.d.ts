@@ -64,7 +64,10 @@ import {
 import { Provider as TProvideService } from "./interface.ts";
 import { Location as TLocationService } from "./services/location/location.js";
 import { AnimateService as TAnimateService } from "./animations/interface.ts";
-import { StorageBackend as TStorageBackend } from "./services/storage/interface.ts";
+import {
+  StorageBackend as TStorageBackend,
+  StorageType as TStorageType,
+} from "./services/storage/interface.ts";
 import { StreamConnectionConfig as TStreamConnectionConfig } from "./services/stream/interface.ts";
 import { CookieService as TCookieService } from "./services/cookie/cookie.js";
 import {
@@ -143,6 +146,7 @@ declare global {
         | (abstract new (...args: any[]) => any),
     > = TInjectable<T>;
     type StorageBackend = TStorageBackend;
+    type StorageType = TStorageType;
     type StreamConnectionConfig = TStreamConnectionConfig;
     type CookieOptions = TCookieOptions;
     type CookieStoreOptions = TCookieStoreOptions;
