@@ -76,9 +76,9 @@ export class CookieService {
     try {
       return /** @type {T} */ (JSON.parse(raw));
     } catch (err) {
-      const error = new SyntaxError(`badparse: "${key}" => ${err.message}`);
-      this.$exceptionHandler(error);
-      throw error;
+      this.$exceptionHandler(
+        new SyntaxError(`badparse: "${key}" => ${err.message}`),
+      );
     }
   }
 
@@ -110,7 +110,6 @@ export class CookieService {
         buildOptions({ ...this.defaults, ...options });
     } catch (e) {
       this.$exceptionHandler(e);
-      throw e;
     }
   }
 
@@ -129,9 +128,9 @@ export class CookieService {
       const str = JSON.stringify(value);
       this.put(key, str, options);
     } catch (err) {
-      const error = new TypeError(`badserialize: "${key}" => ${err.message}`);
-      this.$exceptionHandler(error);
-      throw error;
+      this.$exceptionHandler(
+        new TypeError(`badserialize: "${key}" => ${err.message}`),
+      );
     }
   }
 
