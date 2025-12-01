@@ -8,7 +8,7 @@ description: >
 
 Instance of [PubSubProvider](../../../typedoc/classes/PubSubProvider.html) for
 configuring the `$eventBus` service. The default implementation returns the
-global `angular.EventBus` instance, which is an async instance of
+global [angular.EventBus](../../../typedoc/classes/Angular.html#eventbus) instance, which is an async instance of
 [PubSub](../../../typedoc/classes/PubSub.html) class.
 
 ### Properties
@@ -25,9 +25,14 @@ Customize event bus instance.
 - **Example:**
 
   ```js
-  angular.module('demo', []).config(($eventBusProvider) => {
-    eventBusProvider.eventBus = new MyCustomPubsub();
-  });
+  angular.module('demo', [])
+    .config([
+      "$eventBusProvider",
+      /** @param {ng.PubSubProvider} $eventBusProvider */
+      ($eventBusProvider) => {
+        eventBusProvider.eventBus = new MyCustomPubsub();
+      }
+    ]);
   ```
 
 ---
