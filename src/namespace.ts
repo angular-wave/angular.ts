@@ -16,7 +16,7 @@ import {
 } from "./services/anchor-scroll/anchor-scroll.js";
 
 import { ControllerService as TControllerService } from "./core/controller/interface.ts";
-import { ErrorHandler as TErrorHandler } from "./services/exception/interface.ts";
+import { ExceptionHandler as TExceptionHandler } from "./services/exception/interface.ts";
 import { ParseService as TParseService } from "./core/parse/interface.ts";
 import { TemplateRequestService as TTemplateRequestService } from "./services/template-request/interface.ts";
 
@@ -135,7 +135,7 @@ declare global {
     export type CompileService = TCompileFn;
     export type ControllerService = TControllerService;
     export type CookieService = TCookieService;
-    export type ExceptionHandlerService = TErrorHandler;
+    export type ExceptionHandlerService = TExceptionHandler;
     export type FilterService = TFilterFactory;
     export type HttpParamSerializerSerService = THttpParamSerializer;
     export type HttpService = THttpService;

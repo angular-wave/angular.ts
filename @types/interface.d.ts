@@ -12,6 +12,7 @@ export * from "./core/di/internal-injector.js";
 export * from "./core/scope/scope.js";
 export * from "./services/cookie/cookie.js";
 export * from "./services/cookie/interface.ts";
+export * from "./services/exception/exception.ts";
 export * from "./services/exception/interface.ts";
 export * from "./core/parse/interface.ts";
 import { Attributes } from "./core/compile/attributes.js";

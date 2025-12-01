@@ -54,7 +54,7 @@ import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js"
 import { AnimateProvider } from "./animations/animate.js";
 import { TemplateCacheProvider } from "./services/template-cache/template-cache.js";
 import { ControllerProvider } from "./core/controller/controller.js";
-import { ExceptionHandlerProvider } from "./services/exception/exception-handler.js";
+import { ExceptionHandlerProvider } from "./services/exception/exception.js";
 import { FilterProvider } from "./core/filter/filter.js";
 import { InterpolateProvider } from "./core/interpolate/interpolate.js";
 import {
