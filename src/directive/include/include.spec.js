@@ -125,7 +125,7 @@ describe("ngInclude", () => {
     it("should fire $includeContentRequested event on scope after making the xhr call", (done) => {
       let called = false;
 
-      window.angular.module("myModule", []).run(($rootScope) => {
+      module.run(($rootScope) => {
         $rootScope.$on("$includeContentRequested", (event) => {
           called = true;
         });
@@ -166,7 +166,7 @@ describe("ngInclude", () => {
       const contentLoadedSpy = jasmine.createSpy("content loaded");
       const contentErrorSpy = jasmine.createSpy("content error");
 
-      window.angular.module("myModule", []).run(($rootScope) => {
+      module.run(($rootScope) => {
         $rootScope.url = "/mock/401";
         $rootScope.$on("$includeContentLoaded", contentLoadedSpy);
         $rootScope.$on("$includeContentError", contentErrorSpy);
@@ -186,8 +186,6 @@ describe("ngInclude", () => {
     });
 
     it("should evaluate onload expression when a partial is loaded", (done) => {
-      window.angular.module("myModule", []);
-
       element = createElementFromHTML(
         '<div><div><ng-include src="url" onload="loaded = true"></ng-include></div></div>',
       );
@@ -203,8 +201,6 @@ describe("ngInclude", () => {
     });
 
     it("should create child scope and destroy old one", (done) => {
-      window.angular.module("myModule", []);
-
       element = createElementFromHTML(
         '<div><ng-include src="url"></ng-include></div>',
       );
@@ -240,7 +236,6 @@ describe("ngInclude", () => {
     });
 
     it("should do xhr request and cache it", async () => {
-      window.angular.module("myModule", []);
       element = createElementFromHTML(
         '<div><ng-include src="url"></ng-include></div>',
       );
@@ -260,7 +255,6 @@ describe("ngInclude", () => {
     });
 
     it("should clear content when error during xhr request", async () => {
-      window.angular.module("myModule", []);
       element = createElementFromHTML(
         '<div><ng-include src="url">content</ng-include></div>',
       );
@@ -272,7 +266,6 @@ describe("ngInclude", () => {
     });
 
     it("should be async even if served from cache", (done) => {
-      window.angular.module("myModule", []);
       element = createElementFromHTML(
         '<div><ng-include src="url"></ng-include></div>',
       );
@@ -287,7 +280,6 @@ describe("ngInclude", () => {
     });
 
     it("should discard pending xhr callbacks if a new template is requested before the current finished loading", (done) => {
-      window.angular.module("myModule", []);
       element = createElementFromHTML(
         "<div><ng-include src='templateUrl'></ng-include></div>",
       );
