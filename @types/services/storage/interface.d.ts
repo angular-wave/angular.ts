@@ -3,3 +3,4 @@ export interface StorageBackend {
   set(key: string, value: string): void;
   remove(key: string): void;
 }
+export type StorageType = "local" | "session" | "cookie" | "custom";

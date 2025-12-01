@@ -54,24 +54,26 @@
       document.addEventListener("DOMContentLoaded", () => {
         angular
           .module("app", [])
-          .session(
+          .store(
             "sessionStore",
             class {
               counter = 0;
             },
+            "session",
           )
-          .local(
+          .store(
             "localStore",
             class {
               counter = 0;
             },
+            "local",
           )
-          .cookie(
+          .store(
             "cookieStore",
             class {
               counter = 0;
             },
-            cookieStorage,
+            "cookie",
           );
       });
     </script>
