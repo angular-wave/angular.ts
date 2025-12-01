@@ -13,7 +13,7 @@ import {
 } from "../../shared/utils.js";
 
 /**
- * Service provider that creates a {@link ng.CookieService $cookie} service.
+ * Service provider that creates a {@link CookieService $cookie} service.
  * @type {ng.ServiceProvider}
  */
 export class CookieProvider {
@@ -29,7 +29,6 @@ export class CookieProvider {
 }
 
 /**
- * $cookies service class
  *
  * Provides high-level APIs for interacting with browser cookies:
  *  - Raw get/set/remove

@@ -10,6 +10,9 @@ export * from "./index.js";
 export * from "./angular.js";
 export * from "./core/di/internal-injector.js";
 export * from "./core/scope/scope.js";
+export * from "./services/cookie/cookie.js";
+export * from "./services/cookie/interface.ts";
+export * from "./services/exception/interface.ts";
 import { Attributes } from "./core/compile/attributes.js";
 import { Scope } from "./core/scope/scope.js";
 /**
