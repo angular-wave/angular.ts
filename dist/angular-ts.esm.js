@@ -1,4 +1,4 @@
-/* Version: 0.12.0 - December 1, 2025 01:49:08 */
+/* Version: 0.13.0 - December 2, 2025 01:18:46 */
 const VALID_CLASS = "ng-valid";
 const INVALID_CLASS = "ng-invalid";
 const PRISTINE_CLASS = "ng-pristine";
@@ -22,6 +22,9 @@ const ALIASED_ATTR = {
 };
 
 const isProxySymbol = Symbol("isProxy");
+const BADARG = "badarg";
+const BADARGKEY = "badarg: key";
+const BADARGVALUE = "badarg: value";
 
 /**
  *
@@ -1754,7 +1757,7 @@ function elementAcceptsData(node) {
  * @returns {void}
  */
 function dealoc(element, onlyDescendants) {
-  if (!element) return;
+  if (!element || element instanceof Comment) return;
   if (Array.isArray(element)) {
     element.forEach((x) => dealoc(x, onlyDescendants));
   } else {
@@ -1893,7 +1896,7 @@ function getScope(element) {
  * Set scope for a given element.
  *
  * @param {Element|Node|ChildNode} element - The DOM element to set data on.
- * @param {import("../core/scope/scope.js").Scope} scope - The Scope attached to this element
+ * @param {ng.Scope} scope - The Scope attached to this element
  */
 function setScope(element, scope) {
   return setCacheData(element, SCOPE_KEY, scope);
@@ -1903,7 +1906,7 @@ function setScope(element, scope) {
  * Set isolate scope for a given element.
  *
  * @param {Element} element - The DOM element to set data on.
- * @param {import("../core/scope/scope.js").Scope} scope - The Scope attached to this element
+ * @param {ng.Scope} scope - The Scope attached to this element
  */
 function setIsolateScope(element, scope) {
   return setCacheData(element, ISOLATE_SCOPE_KEY, scope);
@@ -1914,7 +1917,7 @@ function setIsolateScope(element, scope) {
  *
  * @param {Element} element - The DOM element to get data from.
  * @param {string} [name] - Controller name.
- * @returns {import("../core/scope/scope.js").Scope|undefined} - The retrieved data
+ * @returns {ng.Scope|undefined} - The retrieved data
  */
 function getController(element, name) {
   return getInheritedData(element, `$${name || "ngController"}Controller`);
@@ -3264,43 +3267,18 @@ class NgModule {
   /**
    * @param {string} name
    * @param {Function} ctor
+   * @param {ng.StorageType} type
+   * @param {ng.StorageBackend} [backendOrConfig]
    * @returns {NgModule}
    */
-  local(name, ctor) {
-    if (ctor && isFunction(ctor)) {
-      ctor["$$moduleName"] = name;
-    }
-    this.invokeQueue.push([$injectTokens.$provide, "local", [name, ctor]]);
-    return this;
-  }
-
-  /**
-   * @param {string} name
-   * @param {Function} ctor
-   * @returns {NgModule}
-   */
-  cookie(name, ctor) {
-    if (ctor && isFunction(ctor)) {
-      ctor["$$moduleName"] = name;
-    }
-    this.invokeQueue.push([$injectTokens.$provide, "cookie", [name, ctor]]);
-    return this;
-  }
-
-  /**
-   * @param {string} name
-   * @param {Function} ctor
-   * @param {ng.StorageBackend} backendOrConfig
-   * @returns {NgModule}
-   */
-  store(name, ctor, backendOrConfig) {
+  store(name, ctor, type, backendOrConfig) {
     if (ctor && isFunction(ctor)) {
       ctor["$$moduleName"] = name;
     }
     this.invokeQueue.push([
       $injectTokens.$provide,
       "store",
-      [name, ctor, backendOrConfig],
+      [name, ctor, type, backendOrConfig],
     ]);
     return this;
   }
@@ -3694,10 +3672,7 @@ function createInjector(modulesToLoad, strictDi = false) {
       service: supportObject(service),
       value: supportObject(value),
       constant: supportObject(constant),
-      session: supportObject(session),
-      local: supportObject(local),
-      store: supportObject(store),
-      cookie: supportObject(cookie),
+      store,
       decorator,
     },
   };
@@ -3832,106 +3807,80 @@ function createInjector(modulesToLoad, strictDi = false) {
   }
 
   /**
-   * Registers a session-persistent service
-   */
-  function session(name, ctor) {
-    return provider(name, {
-      $get: ($injector) => {
-        const instance = $injector.instantiate(ctor);
-        return createPersistentProxy(instance, name, sessionStorage);
-      },
-    });
-  }
-
-  /**
-   * Registers a localStorage-persistent service
-   */
-  function local(name, ctor) {
-    return provider(name, {
-      $get: ($injector) => {
-        const instance = $injector.instantiate(ctor);
-        return createPersistentProxy(instance, name, localStorage);
-      },
-    });
-  }
-
-  /**
-   * Registers a cookie-persistent service.
-   *
-   * @param {string} name
-   * @param {Function} ctor
-   * @param {ng.CookieStoreOptions} [options]
-   */
-  function cookie(name, ctor, options = {}) {
-    return provider(name, {
-      $get: [
-        $injectTokens.$injector,
-        ($injector) => {
-          const instance = $injector.instantiate(ctor);
-          const $cookie = $injector.get($injectTokens.$cookie);
-          const serialize = options.serialize ?? JSON.stringify;
-          const deserialize = options.deserialize ?? JSON.parse;
-          const cookieOpts = options.cookie ?? {};
-
-          return createPersistentProxy(instance, name, {
-            getItem(key) {
-              const raw = $cookie.get(key);
-              return raw == null ? null : raw;
-            },
-
-            setItem(key, value) {
-              $cookie.put(key, value, cookieOpts);
-            },
-
-            removeItem(key) {
-              $cookie.remove(key, cookieOpts);
-            },
-
-            serialize,
-            deserialize,
-          });
-        },
-      ],
-    });
-  }
-
-  /**
-   * Registers a service persisted in a custom storage
+   * Registers a service persisted in a storage
    *
    * @param {string} name - Service name
    * @param {Function} ctor - Constructor for the service
+   * @param {ng.StorageType} type - Type of storage to be instantiated
    * @param {Storage|Object} backendOrConfig - Either a Storage-like object (getItem/setItem) or a config object
    *                                           with { backend, serialize, deserialize }
    */
-  function store(name, ctor, backendOrConfig) {
+  function store(name, ctor, type, backendOrConfig = {}) {
     return provider(name, {
-      $get: ($injector) => {
-        const instance = $injector.instantiate(ctor);
-
-        let backend;
-        let serialize = JSON.stringify;
-        let deserialize = JSON.parse;
-
-        if (backendOrConfig) {
-          if (typeof backendOrConfig.getItem === "function") {
-            // raw Storage object
-            backend = backendOrConfig;
-          } else if (isObject(backendOrConfig)) {
-            backend = backendOrConfig.backend || localStorage;
-            if (backendOrConfig.serialize)
-              serialize = backendOrConfig.serialize;
-            if (backendOrConfig.deserialize)
-              deserialize = backendOrConfig.deserialize;
+      $get: /** @param {ng.InjectorService} $injector */ ($injector) => {
+        switch (type) {
+          case "session": {
+            const instance = $injector.instantiate(ctor);
+            return createPersistentProxy(instance, name, sessionStorage);
           }
-        } else {
-          // fallback default
-          backend = localStorage;
-        }
+          case "local": {
+            const instance = $injector.instantiate(ctor);
+            return createPersistentProxy(instance, name, localStorage);
+          }
+          case "cookie": {
+            const instance = $injector.instantiate(ctor);
+            const $cookie = $injector.get($injectTokens.$cookie);
+            const serialize = backendOrConfig.serialize ?? JSON.stringify;
+            const deserialize = backendOrConfig.deserialize ?? JSON.parse;
+            const cookieOpts = backendOrConfig.cookie ?? {};
 
-        return createPersistentProxy(instance, name, backend, {
-          serialize,
-          deserialize,
-        });
+            return createPersistentProxy(instance, name, {
+              getItem(key) {
+                const raw = $cookie.get(key);
+                return raw == null ? null : raw;
+              },
+
+              setItem(key, value) {
+                $cookie.put(key, value, cookieOpts);
+              },
+
+              removeItem(key) {
+                $cookie.remove(key, cookieOpts);
+              },
+
+              serialize,
+              deserialize,
+            });
+          }
+          case "custom": {
+            const instance = $injector.instantiate(ctor);
+
+            let backend;
+            let serialize = JSON.stringify;
+            let deserialize = JSON.parse;
+
+            if (backendOrConfig) {
+              if (typeof backendOrConfig.getItem === "function") {
+                // raw Storage object
+                backend = backendOrConfig;
+              } else if (isObject(backendOrConfig)) {
+                backend = backendOrConfig.backend || localStorage;
+                if (backendOrConfig.serialize)
+                  serialize = backendOrConfig.serialize;
+                if (backendOrConfig.deserialize)
+                  deserialize = backendOrConfig.deserialize;
+              }
+            } else {
+              // fallback default
+              backend = localStorage;
+            }
+
+            return createPersistentProxy(instance, name, backend, {
+              serialize,
+              deserialize,
+            });
+          }
+        }
       },
     });
   }
@@ -5796,7 +5745,7 @@ class CompileProvider {
     const bindingCache = Object.create(null);
 
     /**
-     * @param {import("../scope/scope.js").Scope} scope
+     * @param {ng.Scope} scope
      * @param {string} directiveName
      * @param {boolean} isController
      * @returns {Object} a configuration object for attribute bindings
@@ -5934,8 +5883,8 @@ class CompileProvider {
             "$injector",
             "$exceptionHandler",
             /**
-             * @param {import("../../core/di/internal-injector.js").InjectorService} $injector
-             * @param {import('../../services/exception/exception-handler.js').ErrorHandler} $exceptionHandler
+             * @param {ng.InjectorService} $injector
+             * @param {ng.ExceptionHandlerService} $exceptionHandler
              */
             function ($injector, $exceptionHandler) {
               const directives = [];
@@ -6263,11 +6212,11 @@ class CompileProvider {
       /**
        * @param {ng.InjectorService} $injector
        * @param {*} $interpolate
-       * @param {import("../../services/exception/exception-handler.js").ErrorHandler} $exceptionHandler
+       * @param {ng.ExceptionHandlerService} $exceptionHandler
        * @param {ng.TemplateRequestService} $templateRequest
        * @param {ng.ParseService} $parse
        * @param {*} $controller
-       * @param {import('../scope/scope.js').Scope} $rootScope
+       * @param {ng.Scope} $rootScope
        * @param {*} $sce
        * @param {ng.AnimateService} $animate
        * @returns
@@ -6554,7 +6503,7 @@ class CompileProvider {
           /**
            * The composite link function links all the individual nodes
            *
-           * @param {import("../scope/scope.js").Scope} scope
+           * @param {ng.Scope} scope
            * @param {NodeRef} nodeRef
            * @param {*} [parentBoundTranscludeFn]
            */
@@ -7114,7 +7063,7 @@ class CompileProvider {
                   transcludeFn,
                 );
               } catch (e) {
-                $exceptionHandler(e, startingTag($element.getAny()));
+                $exceptionHandler(e);
               }
             }
 
@@ -7167,7 +7116,7 @@ class CompileProvider {
                   transcludeFn,
                 );
               } catch (e) {
-                $exceptionHandler(e, startingTag($element.getAny()));
+                $exceptionHandler(e);
               }
             }
 
@@ -7632,7 +7581,7 @@ class CompileProvider {
                   );
                 }
               } catch (e) {
-                $exceptionHandler(e, startingTag(compileNodeRef.getAny()));
+                $exceptionHandler(e);
               }
             }
 
@@ -8583,9 +8532,9 @@ class CompileProvider {
         // Set up $watches for isolate scope and controller bindings.
         /**
          *
-         * @param {import('../scope/scope.js').Scope} scope
+         * @param {ng.Scope} scope
          * @param {*} attrs
-         * @param {import('../scope/scope.js').Scope}  destination - child scope or isolate scope
+         * @param {ng.Scope}  destination - child scope or isolate scope
          * @param {*} bindings
          * @param {*} directive
          * @returns
@@ -9793,11 +9742,11 @@ class NgModelController {
   ];
 
   /**
-   * @param {import('../../core/scope/scope.js').Scope} $scope
-   * @param {import('../../services/exception/exception-handler.js').ErrorHandler} $exceptionHandler
-   * @param {import('../../core/compile/attributes.js').Attributes} $attr
+   * @param {ng.Scope} $scope
+   * @param {ng.ExceptionHandlerService} $exceptionHandler
+   * @param {ng.Attributes} $attr
    * @param {Element} $element
-   * @param {import("../../core/parse/interface.ts").ParseService} $parse
+   * @param {ng.ParseService} $parse
    * @param {ng.AnimateService} $animate
    * @param {*} $interpolate
    */
@@ -9855,7 +9804,7 @@ class NgModelController {
 
     /**
      * @type {import("../../core/parse/interface.ts").CompiledExpression |
-     *        (function(import("../../core/scope/scope.js").Scope): any)}
+     *        (function(ng.Scope): any)}
      */
     this.$$ngModelGet = this.$$parsedNgModel;
     this.$$ngModelSet = this.$$parsedNgModelAssign;
@@ -9868,7 +9817,7 @@ class NgModelController {
     /** @type {number} */
     this.$$currentValidationRunId = 0;
 
-    /** @type {import('../../core/scope/scope.js').Scope} */
+    /** @type {ng.Scope} */
     this.$$scope = $scope; // attempt to bind to nearest controller if present
     this.$$attr = $attr;
     this.$$element = $element;
@@ -11974,13 +11923,13 @@ class SelectController {
 
   /**
    * @param {HTMLSelectElement} $element
-   * @param {import('../../core/scope/scope.js').Scope} $scope
+   * @param {ng.Scope} $scope
    */
   constructor($element, $scope) {
     /** @type {HTMLSelectElement} */
     this.$element = $element;
 
-    /** @type {import('../../core/scope/scope.js').Scope} */
+    /** @type {ng.Scope} */
     this.$scope = $scope;
 
     /** @type {Object<string, any>} */
@@ -12535,14 +12484,14 @@ function optionDirective($interpolate) {
 }
 
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 function ngBindDirective() {
   return {
     /**
-     * @param {import('../../core/scope/scope.js').Scope} scope
+     * @param {ng.Scope} scope
      * @param {Element} element
-     * @param {import('../../core/compile/attributes.js').Attributes} attr
+     * @param {ng.Attributes} attr
      */
     link(scope, element, attr) {
       scope.$watch(
@@ -12564,7 +12513,7 @@ function ngBindDirective() {
 function ngBindTemplateDirective() {
   return {
     /**
-     * @param {import('../../core/scope/scope.js').Scope} _scope
+     * @param {ng.Scope} _scope
      * @param {Element} element
      * @param {import('../../core/compile/attributes.js').Attributes} attr
      */
@@ -12588,7 +12537,7 @@ function ngBindHtmlDirective($parse) {
       $parse(tAttrs["ngBindHtml"]); // checks for interpolation errors
       return (
         /**
-         * @param {import('../../core/scope/scope.js').Scope} scope
+         * @param {ng.Scope} scope
          * @param {Element} element
          */
         (scope, element) => {
@@ -12959,8 +12908,8 @@ ngIncludeDirective.$inject = [
  * @param {ng.TemplateRequestService} $templateRequest
  * @param {import("../../services/anchor-scroll/anchor-scroll.js").AnchorScrollFunction} $anchorScroll
  * @param {ng.AnimateService} $animate
- * @param {import('../../services/exception/interface.ts').ErrorHandler} $exceptionHandler
- * @returns {import('../../interface.ts').Directive}
+ * @param {ng.ExceptionHandlerService} $exceptionHandler
+ * @returns {ng.Directive}
  */
 function ngIncludeDirective(
   $templateRequest,
@@ -13487,7 +13436,7 @@ function ngRepeatDirective($animate) {
                   /**
                    * Clone attach function
                    * @param {Array<NodeList>} clone
-                   * @param {import("../../core/scope/scope.js").Scope} scope
+                   * @param {ng.Scope} scope
                    */
 
                   (clone, scope) => {
@@ -13713,14 +13662,14 @@ ngOptionsDirective.$inject = ["$compile", "$parse"];
 /**
  *
  * @param {ng.CompileService} $compile
- * @param {import("../../core/parse/interface.ts").ParseService} $parse
- * @returns {import("../../interface.ts").Directive}
+ * @param {ng.ParseService} $parse
+ * @returns {ng.Directive}
  */
 function ngOptionsDirective($compile, $parse) {
   /**
    * @param {import('../../interface.ts').Expression} optionsExp
    * @param {HTMLSelectElement} selectElement
-   * @param {import('../../core/scope/scope.js').Scope} scope
+   * @param {ng.Scope} scope
    * @returns
    */
   function parseOptionsExpression(optionsExp, selectElement, scope) {
@@ -13900,9 +13849,9 @@ function ngOptionsDirective($compile, $parse) {
 
   /**
    *
-   * @param {import("../../core/scope/scope.js").Scope} scope
+   * @param {ng.Scope} scope
    * @param {HTMLSelectElement} selectElement
-   * @param {import("../../core/compile/attributes.js").Attributes} attr
+   * @param {ng.Attributes} attr
    * @param {*} ctrls
    */
   function ngOptionsPostLink(scope, selectElement, attr, ctrls) {
@@ -14290,7 +14239,7 @@ function ngTranscludeDirective($compile) {
 
         /**
          * @param {NodeList | Node} clone
-         * @param {import("../../core/scope/scope.js").Scope} transcludedScope
+         * @param {ng.Scope} transcludedScope
          */
         function ngTranscludeCloneAttachFn(clone, transcludedScope) {
           if (notWhitespace(clone)) {
@@ -14475,7 +14424,7 @@ const requiredDirective = [
     require: "?ngModel",
     link:
       /**
-       * @param {import("../../core/scope/scope.js").Scope} scope
+       * @param {ng.Scope} scope
        * @param {Element} _elm
        * @param {import("../../core/compile/attributes.js").Attributes} attr
        * @param {import("../../interface.ts").NgModelController} ctrl
@@ -15404,78 +15353,66 @@ class TemplateCacheProvider {
 }
 
 /**
- * Handles uncaught exceptions thrown in AngularTS expressions.
+ * Unified exception handler used throughout AngularTS.
  *
- * By default, this service delegates to `$log.error()`, logging the exception to the browser console.
- * You can override this behavior to provide custom exception handling—such as reporting errors
- * to a backend server, or altering the log level used.
+ * This service receives uncaught exceptions from both synchronous and asynchronous operations.
+ * Its purpose is to provide a central point through which the framework
+ * processes errors.
  *
- * ## Default Behavior
+ * By default, `$exceptionHandler` simply rethrows the exception. This ensures fail-fast
+ * behavior, making errors visible immediately in development and in unit tests.
+ * Applications may override this service to introduce custom error handling.
  *
- * Uncaught exceptions within AngularTS expressions are intercepted and passed to this service.
- * The default implementation logs the error using `$log.error(exception, cause)`.
- *
- * ## Custom Implementation
- *
- * You can override the default `$exceptionHandler` by providing your own factory. This allows you to:
- * - Log errors to a remote server
- * - Change the log level (e.g., from `error` to `warn`)
- * - Trigger custom error-handling workflows
- *
- * ### Example: Overriding `$exceptionHandler`
+ * ### Example: Custom `$exceptionHandler`
  *
  * ```js
  * angular
- *   .module('exceptionOverwrite', [])
- *   .factory('$exceptionHandler', ['$log', 'logErrorsToBackend', function($log, logErrorsToBackend) {
- *     return function myExceptionHandler(exception, cause) {
- *       logErrorsToBackend(exception, cause);
- *       $log.warn(exception, cause); // Use warn instead of error
+ *   .module('app')
+ *   .factory('$exceptionHandler', function(myLogger) {
+ *     return function handleError(error) {
+ *       myLogger.capture(error);
+ *       // Rethrow to preserve fail-fast behavior:
+ *       throw error;
  *     };
- *   }]);
+ *   });
  * ```
- * - You may also manually invoke the exception handler:
+ *
+ * IMPORTANT: custom implementation should always rethrow the error as the framework assumes that `$exceptionHandler` always does the throwing.
+ *
+ * ### Manual Invocation
+ *
+ * You can invoke the exception handler directly when catching errors in your own code:
  *
  * ```js
  * try {
- *   // Some code that might throw
- * } catch (e) {
- *   $exceptionHandler(e, 'optional context');
+ *   riskyOperation();
+ * } catch (err) {
+ *   $exceptionHandler(err);
  * }
  * ```
  *
- * @see {@link angular.ErrorHandler AngularTS ErrorHandler}
+ * @see {@link ng.ExceptionHandlerService ExceptionHandlerService}
  */
 
-/** @typedef {import('../log/interface.ts').LogService} LogService */
-
-/** @typedef {import("./interface.ts").ErrorHandler}  ErrorHandler */
-
 /**
- * Provider for `$exceptionHandler` service. Delegates uncaught exceptions to `$log.error()` by default.
- * Can be overridden to implement custom error-handling logic.
+ * Provider for the `$exceptionHandler` service.
+ *
+ * The default implementation rethrows exceptions, enabling strict fail-fast behavior.
+ * Applications may replace the handler via by setting `errorHandler`property or by providing their own
+ * `$exceptionHandler` factory.
  */
 class ExceptionHandlerProvider {
   constructor() {
-    /** @type {LogService} */
-    this.log = window.console;
-
-    /** @type {ErrorHandler} */
-    this.errorHandler = (exception, cause) => {
-      this.log.error(exception, cause);
+    /** @type {ng.ExceptionHandlerService} */
+    this.handler = (exception) => {
+      throw exception;
     };
-
-    this.$get = [
-      "$log",
-      /**
-       * @param {LogService} $log
-       * @returns {ErrorHandler}
-       */
-      ($log) => {
-        this.log = $log;
-        return this.errorHandler;
-      },
-    ];
+  }
+  /**
+   * @returns {ng.ExceptionHandlerService}
+   */
+  $get() {
+    return (exception) => this.handler(exception);
   }
 }
 
@@ -18088,7 +18025,7 @@ function addWatchDelegate(parsedExpression) {
 
 /**
  *
- * @param {import('../scope/scope.js').Scope} scope
+ * @param {ng.Scope} scope
  * @param {Function} listener
  * @param {*} objectEquality
  * @param {import('./interface').CompiledExpression} parsedExpression
@@ -34005,8 +33942,8 @@ class UrlService {
     $injectTokens.$rootScope,
     /**
      *
-     * @param {import('../../services/location/location.js').Location} $location
-     * @param {import('../../core/scope/scope.js').Scope} $rootScope
+     * @param {ng.LocationService} $location
+     * @param {ng.Scope} $rootScope
      * @returns {UrlService}
      */
     ($location, $rootScope) => {
@@ -36359,7 +36296,7 @@ function ngScopeDirective() {
 }
 
 /**
- * Service provider that creates a {@link ng.CookieService $cookie} service.
+ * Service provider that creates a {@link CookieService $cookie} service.
  * @type {ng.ServiceProvider}
  */
 class CookieProvider {
@@ -36375,7 +36312,6 @@ class CookieProvider {
 }
 
 /**
- * $cookies service class
  *
  * Provides high-level APIs for interacting with browser cookies:
  *  - Raw get/set/remove
@@ -36389,8 +36325,8 @@ class CookieService {
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    */
   constructor(defaults, $exceptionHandler) {
-    assert(isObject(defaults), "badarg");
-    assert(isFunction($exceptionHandler), "badarg");
+    assert(isObject(defaults), BADARG);
+    assert(isFunction($exceptionHandler), BADARG);
     /** @type {ng.CookieOptions} */
     this.defaults = Object.freeze({ ...defaults });
     this.$exceptionHandler = $exceptionHandler;
@@ -36403,7 +36339,7 @@ class CookieService {
    * @returns {string|null}
    */
   get(key) {
-    assert(isString(key), "badarg");
+    assert(isString(key), BADARG);
     const all = parseCookies();
     return all[key] || null;
   }
@@ -36417,15 +36353,15 @@ class CookieService {
    * @throws {SyntaxError} if cookie JSON is invalid
    */
   getObject(key) {
-    assert(isString(key), "badarg");
+    assert(isString(key), BADARG);
     const raw = this.get(key);
     if (!raw) return null;
     try {
       return /** @type {T} */ (JSON.parse(raw));
     } catch (err) {
-      const error = new SyntaxError(`badparse: "${key}" => ${err.message}`);
-      this.$exceptionHandler(error);
-      throw error;
+      this.$exceptionHandler(
+        new SyntaxError(`badparse: "${key}" => ${err.message}`),
+      );
     }
   }
 
@@ -36446,8 +36382,8 @@ class CookieService {
    * @param {ng.CookieOptions} [options]
    */
   put(key, value, options = {}) {
-    assert(isString(key), "badarg: key");
-    assert(isString(value), "badarg: value");
+    assert(isString(key), BADARGKEY);
+    assert(isString(value), BADARGVALUE);
     const encodedKey = encodeURIComponent(key);
     const encodedVal = encodeURIComponent(value);
 
@@ -36457,7 +36393,6 @@ class CookieService {
         buildOptions({ ...this.defaults, ...options });
     } catch (e) {
       this.$exceptionHandler(e);
-      throw e;
     }
   }
 
@@ -36470,15 +36405,15 @@ class CookieService {
    * @throws {TypeError} if Object cannot be converted to JSON
    */
   putObject(key, value, options) {
-    assert(isString(key), "badarg: key");
-    assert(!isNullOrUndefined(key), "badarg: key");
+    assert(isString(key), BADARGKEY);
+    assert(!isNullOrUndefined(value), BADARGVALUE);
     try {
       const str = JSON.stringify(value);
       this.put(key, str, options);
     } catch (err) {
-      const error = new TypeError(`badserialize: "${key}" => ${err.message}`);
-      this.$exceptionHandler(error);
-      throw error;
+      this.$exceptionHandler(
+        new TypeError(`badserialize: "${key}" => ${err.message}`),
+      );
     }
   }
 
@@ -36489,7 +36424,7 @@ class CookieService {
    * @param {ng.CookieOptions} [options]
    */
   remove(key, options = {}) {
-    assert(isString(key), "badarg");
+    assert(isString(key), BADARG);
     this.put(key, "", {
       ...this.defaults,
       ...options,
@@ -36532,14 +36467,15 @@ function buildOptions(opts = {}) {
 
   // Path
   if (isDefined(opts.path)) {
-    if (!isString(opts.path)) throw new TypeError(`badarg:path ${opts.path}`);
+    if (!isString(opts.path))
+      throw new TypeError(BADARG + `:path ${opts.path}`);
     parts.push(`path=${opts.path}`);
   }
 
   // Domain
   if (isDefined(opts.domain)) {
     if (!isString(opts.domain))
-      throw new TypeError(`badarg:domain ${opts.domain}`);
+      throw new TypeError(BADARG + `:domain ${opts.domain}`);
     parts.push(`domain=${opts.domain}`);
   }
 
@@ -36552,11 +36488,11 @@ function buildOptions(opts = {}) {
     } else if (isNumber(opts.expires) || isString(opts.expires)) {
       expDate = new Date(opts.expires);
     } else {
-      throw new TypeError(`badarg:expires ${String(opts.expires)}`);
+      throw new TypeError(BADARG + `:expires ${String(opts.expires)}`);
     }
 
     if (isNaN(expDate.getTime())) {
-      throw new TypeError(`badarg:expires ${String(opts.expires)}`);
+      throw new TypeError(BADARG + `:expires ${String(opts.expires)}`);
     }
 
     parts.push(`expires=${expDate.toUTCString()}`);
@@ -36570,10 +36506,10 @@ function buildOptions(opts = {}) {
   // SameSite
   if (isDefined(opts.samesite)) {
     if (!isString(opts.samesite))
-      throw new TypeError(`badarg:samesite ${opts.samesite}`);
+      throw new TypeError(BADARG + `:samesite ${opts.samesite}`);
     const s = opts.samesite.toLowerCase();
     if (!["lax", "strict", "none"].includes(s)) {
-      throw new TypeError(`badarg:samesite ${opts.samesite}`);
+      throw new TypeError(BADARG + `:samesite ${opts.samesite}`);
     }
     parts.push(`samesite=${s}`);
   }
@@ -37256,7 +37192,7 @@ class Angular {
     /**
      * @type {string} `version` from `package.json`
      */
-    this.version = "0.12.0"; //inserted via rollup plugin
+    this.version = "0.13.0"; //inserted via rollup plugin
 
     /** @type {!Array<string|any>} */
     this.bootsrappedModules = [];
@@ -37392,7 +37328,7 @@ class Angular {
    *     function that will be invoked by the injector as a `config` block.
    *     See: {@link angular.module modules}
    * @param {import("./interface.ts").AngularBootstrapConfig} [config]
-   * @returns {import('./core/di/internal-injector.js').InjectorService} The created injector instance for this application.
+   * @returns {ng.InjectorService} The created injector instance for this application.
    */
   bootstrap(element, modules, config) {
     config = config || {
