@@ -582,4 +582,7 @@ export function instantiateWasm(
   module: WebAssembly.Module;
 }>;
 export const isProxySymbol: unique symbol;
+export const BADARG: "badarg";
+export const BADARGKEY: "badarg: key";
+export const BADARGVALUE: "badarg: value";
 export const ngAttrPrefixes: string[];

@@ -1,6 +1,9 @@
 import { PREFIX_REGEXP, SPECIAL_CHARS_REGEXP } from "./constants.js";
 
 export const isProxySymbol = Symbol("isProxy");
+export const BADARG = "badarg";
+export const BADARGKEY = "badarg: key";
+export const BADARGVALUE = "badarg: value";
 
 /**
  *

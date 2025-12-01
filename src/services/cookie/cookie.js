@@ -1,6 +1,9 @@
 import { $injectTokens } from "../../injection-tokens.js";
 import {
   assert,
+  BADARG,
+  BADARGKEY,
+  BADARGVALUE,
   isDefined,
   isFunction,
   isNullOrUndefined,
@@ -40,8 +43,8 @@ export class CookieService {
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    */
   constructor(defaults, $exceptionHandler) {
-    assert(isObject(defaults), "badarg");
-    assert(isFunction($exceptionHandler), "badarg");
+    assert(isObject(defaults), BADARG);
+    assert(isFunction($exceptionHandler), BADARG);
     /** @type {ng.CookieOptions} */
     this.defaults = Object.freeze({ ...defaults });
     this.$exceptionHandler = $exceptionHandler;
@@ -54,7 +57,7 @@ export class CookieService {
    * @returns {string|null}
    */
   get(key) {
-    assert(isString(key), "badarg");
+    assert(isString(key), BADARG);
     const all = parseCookies();
     return all[key] || null;
   }
@@ -68,7 +71,7 @@ export class CookieService {
    * @throws {SyntaxError} if cookie JSON is invalid
    */
   getObject(key) {
-    assert(isString(key), "badarg");
+    assert(isString(key), BADARG);
     const raw = this.get(key);
     if (!raw) return null;
     try {
@@ -97,8 +100,8 @@ export class CookieService {
    * @param {ng.CookieOptions} [options]
    */
   put(key, value, options = {}) {
-    assert(isString(key), "badarg: key");
-    assert(isString(value), "badarg: value");
+    assert(isString(key), BADARGKEY);
+    assert(isString(value), BADARGVALUE);
     const encodedKey = encodeURIComponent(key);
     const encodedVal = encodeURIComponent(value);
 
@@ -121,8 +124,8 @@ export class CookieService {
    * @throws {TypeError} if Object cannot be converted to JSON
    */
   putObject(key, value, options) {
-    assert(isString(key), "badarg: key");
-    assert(!isNullOrUndefined(key), "badarg: key");
+    assert(isString(key), BADARGKEY);
+    assert(!isNullOrUndefined(value), BADARGVALUE);
     try {
       const str = JSON.stringify(value);
       this.put(key, str, options);
@@ -140,7 +143,7 @@ export class CookieService {
    * @param {ng.CookieOptions} [options]
    */
   remove(key, options = {}) {
-    assert(isString(key), "badarg");
+    assert(isString(key), BADARG);
     this.put(key, "", {
       ...this.defaults,
       ...options,
@@ -183,14 +186,15 @@ function buildOptions(opts = {}) {
 
   // Path
   if (isDefined(opts.path)) {
-    if (!isString(opts.path)) throw new TypeError(`badarg:path ${opts.path}`);
+    if (!isString(opts.path))
+      throw new TypeError(BADARG + `:path ${opts.path}`);
     parts.push(`path=${opts.path}`);
   }
 
   // Domain
   if (isDefined(opts.domain)) {
     if (!isString(opts.domain))
-      throw new TypeError(`badarg:domain ${opts.domain}`);
+      throw new TypeError(BADARG + `:domain ${opts.domain}`);
     parts.push(`domain=${opts.domain}`);
   }
 
@@ -203,11 +207,11 @@ function buildOptions(opts = {}) {
     } else if (isNumber(opts.expires) || isString(opts.expires)) {
       expDate = new Date(opts.expires);
     } else {
-      throw new TypeError(`badarg:expires ${String(opts.expires)}`);
+      throw new TypeError(BADARG + `:expires ${String(opts.expires)}`);
     }
 
     if (isNaN(expDate.getTime())) {
-      throw new TypeError(`badarg:expires ${String(opts.expires)}`);
+      throw new TypeError(BADARG + `:expires ${String(opts.expires)}`);
     }
 
     parts.push(`expires=${expDate.toUTCString()}`);
@@ -221,10 +225,10 @@ function buildOptions(opts = {}) {
   // SameSite
   if (isDefined(opts.samesite)) {
     if (!isString(opts.samesite))
-      throw new TypeError(`badarg:samesite ${opts.samesite}`);
+      throw new TypeError(BADARG + `:samesite ${opts.samesite}`);
     const s = opts.samesite.toLowerCase();
     if (!["lax", "strict", "none"].includes(s)) {
-      throw new TypeError(`badarg:samesite ${opts.samesite}`);
+      throw new TypeError(BADARG + `:samesite ${opts.samesite}`);
     }
     parts.push(`samesite=${s}`);
   }
