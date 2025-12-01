@@ -1,4 +1,4 @@
-/* Version: 0.12.0 - November 29, 2025 19:42:34 */
+/* Version: 0.12.0 - December 1, 2025 01:49:07 */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -2209,6 +2209,7 @@
     $animateCss: "$animateCss",
     $aria: "$aria",
     $compile: "$compile",
+    $cookie: "$cookie",
     $controller: "$controller",
     $document: "$document",
     $eventBus: "$eventBus",
@@ -2221,6 +2222,7 @@
     $log: "$log",
     $viewScroll: "$viewScroll",
     $parse: "$parse",
+    $rest: "$rest",
     $rootScope: "$rootScope",
     $rootElement: "$rootElement",
     $router: "$router",
@@ -3017,6 +3019,8 @@
       this.services = [];
 
       this.wasmModules = [];
+
+      this.restDefinitions = [];
     }
 
     /**
@@ -3279,6 +3283,19 @@
     /**
      * @param {string} name
      * @param {Function} ctor
+     * @returns {NgModule}
+     */
+    cookie(name, ctor) {
+      if (ctor && isFunction(ctor)) {
+        ctor["$$moduleName"] = name;
+      }
+      this.invokeQueue.push([$injectTokens.$provide, "cookie", [name, ctor]]);
+      return this;
+    }
+
+    /**
+     * @param {string} name
+     * @param {Function} ctor
      * @param {ng.StorageBackend} backendOrConfig
      * @returns {NgModule}
      */
@@ -3291,6 +3308,37 @@
         "store",
         [name, ctor, backendOrConfig],
       ]);
+      return this;
+    }
+
+    /**
+     * @template T, ID
+     * Register a REST resource during module configuration.
+     * @param {string} name - Service name
+     * @param {string} url - Base URL or URI template
+     * @param {ng.EntityClass<T>} entityClass - Optional constructor for mapping JSON
+     * @param {Object=} options - Optional RestService options (interceptors, etc)
+     * @returns {NgModule}
+     */
+    rest(name, url, entityClass, options = {}) {
+      const def = { name, url, entityClass, options };
+      this.restDefinitions.push(def);
+
+      // push provider/factory to invokeQueue
+      this.invokeQueue.push([
+        $injectTokens.$provide,
+        "factory",
+        [
+          name,
+          [
+            $injectTokens.$rest,
+            /** @param {(baseUrl:string, entityClass?:Function, options?:object) => ng.RestService<T, ID>} $rest */ (
+              $rest,
+            ) => $rest(url, entityClass, options),
+          ],
+        ],
+      ]);
+
       return this;
     }
   }
@@ -3613,8 +3661,8 @@
         obj[prop] = value;
         try {
           storage.setItem(key, serialize(obj));
-        } catch {
-          console.warn(`Failed to persist data for key "${key}"`);
+        } catch (e) {
+          console.warn(`Failed to persist data for key "${e}"`);
         }
         return true;
       },
@@ -3655,6 +3703,7 @@
         session: supportObject(session),
         local: supportObject(local),
         store: supportObject(store),
+        cookie: supportObject(cookie),
         decorator,
       },
     };
@@ -3809,6 +3858,46 @@
           const instance = $injector.instantiate(ctor);
           return createPersistentProxy(instance, name, localStorage);
         },
+      });
+    }
+
+    /**
+     * Registers a cookie-persistent service.
+     *
+     * @param {string} name
+     * @param {Function} ctor
+     * @param {ng.CookieStoreOptions} [options]
+     */
+    function cookie(name, ctor, options = {}) {
+      return provider(name, {
+        $get: [
+          $injectTokens.$injector,
+          ($injector) => {
+            const instance = $injector.instantiate(ctor);
+            const $cookie = $injector.get($injectTokens.$cookie);
+            const serialize = options.serialize ?? JSON.stringify;
+            const deserialize = options.deserialize ?? JSON.parse;
+            const cookieOpts = options.cookie ?? {};
+
+            return createPersistentProxy(instance, name, {
+              getItem(key) {
+                const raw = $cookie.get(key);
+                return raw == null ? null : raw;
+              },
+
+              setItem(key, value) {
+                $cookie.put(key, value, cookieOpts);
+              },
+
+              removeItem(key) {
+                $cookie.remove(key, cookieOpts);
+              },
+
+              serialize,
+              deserialize,
+            });
+          },
+        ],
       });
     }
 
@@ -25722,12 +25811,11 @@
 
   /**
    * @typedef {import('./interface.ts').RafScheduler} RafScheduler
-   * @typedef {import('../interface.ts').ServiceProvider} ServiceProvider
    */
 
   /**
    * Service provider that creates a requestAnimationFrame-based scheduler.
-   * @type {ServiceProvider}
+   * @type {ng.ServiceProvider}
    */
   class RafSchedulerProvider {
     constructor() {
@@ -36277,6 +36365,723 @@
   }
 
   /**
+   * Service provider that creates a {@link ng.CookieService $cookie} service.
+   * @type {ng.ServiceProvider}
+   */
+  class CookieProvider {
+    constructor() {
+      this.defaults = {};
+    }
+
+    $get = [
+      $injectTokens.$exceptionHandler,
+      /** @param {ng.ExceptionHandlerService} $exceptionHandler  */
+      ($exceptionHandler) => new CookieService(this.defaults, $exceptionHandler),
+    ];
+  }
+
+  /**
+   * $cookies service class
+   *
+   * Provides high-level APIs for interacting with browser cookies:
+   *  - Raw get/set/remove
+   *  - JSON serialization helpers
+   *  - Global defaults supplied by $cookiesProvider
+   */
+  class CookieService {
+    /**
+     * @param {ng.CookieOptions} defaults
+     *   Default cookie attributes defined by `$cookiesProvider.defaults`.
+     * @param {ng.ExceptionHandlerService} $exceptionHandler
+     */
+    constructor(defaults, $exceptionHandler) {
+      assert(isObject(defaults), "badarg");
+      assert(isFunction($exceptionHandler), "badarg");
+      /** @type {ng.CookieOptions} */
+      this.defaults = Object.freeze({ ...defaults });
+      this.$exceptionHandler = $exceptionHandler;
+    }
+
+    /**
+     * Retrieves a raw cookie value.
+     *
+     * @param {string} key
+     * @returns {string|null}
+     */
+    get(key) {
+      assert(isString(key), "badarg");
+      const all = parseCookies();
+      return all[key] || null;
+    }
+
+    /**
+     * Retrieves a cookie and deserializes its JSON content.
+     *
+     * @template T
+     * @param {string} key
+     * @returns {T|null}
+     * @throws {SyntaxError} if cookie JSON is invalid
+     */
+    getObject(key) {
+      assert(isString(key), "badarg");
+      const raw = this.get(key);
+      if (!raw) return null;
+      try {
+        return /** @type {T} */ (JSON.parse(raw));
+      } catch (err) {
+        const error = new SyntaxError(`badparse: "${key}" => ${err.message}`);
+        this.$exceptionHandler(error);
+        throw error;
+      }
+    }
+
+    /**
+     * Returns an object containing all raw cookies.
+     *
+     * @returns {Record<string, string>}
+     */
+    getAll() {
+      return parseCookies();
+    }
+
+    /**
+     * Sets a raw cookie value.
+     *
+     * @param {string} key
+     * @param {string} value
+     * @param {ng.CookieOptions} [options]
+     */
+    put(key, value, options = {}) {
+      assert(isString(key), "badarg: key");
+      assert(isString(value), "badarg: value");
+      const encodedKey = encodeURIComponent(key);
+      const encodedVal = encodeURIComponent(value);
+
+      try {
+        document.cookie =
+          `${encodedKey}=${encodedVal}` +
+          buildOptions({ ...this.defaults, ...options });
+      } catch (e) {
+        this.$exceptionHandler(e);
+        throw e;
+      }
+    }
+
+    /**
+     * Serializes an object as JSON and stores it as a cookie.
+     *
+     * @param {string} key
+     * @param {any} value
+     * @param {ng.CookieOptions} [options]
+     * @throws {TypeError} if Object cannot be converted to JSON
+     */
+    putObject(key, value, options) {
+      assert(isString(key), "badarg: key");
+      assert(!isNullOrUndefined(key), "badarg: key");
+      try {
+        const str = JSON.stringify(value);
+        this.put(key, str, options);
+      } catch (err) {
+        const error = new TypeError(`badserialize: "${key}" => ${err.message}`);
+        this.$exceptionHandler(error);
+        throw error;
+      }
+    }
+
+    /**
+     * Removes a cookie by setting an expired date.
+     *
+     * @param {string} key
+     * @param {ng.CookieOptions} [options]
+     */
+    remove(key, options = {}) {
+      assert(isString(key), "badarg");
+      this.put(key, "", {
+        ...this.defaults,
+        ...options,
+        expires: new Date(0),
+      });
+    }
+  }
+
+  /*----------Helpers----------*/
+
+  /**
+   * @returns {Record<string,string>}
+   */
+  function parseCookies() {
+    /** @type {Record<string, string>} */
+    const out = {};
+    if (!document.cookie) return out;
+
+    const parts = document.cookie.split("; ");
+    for (const part of parts) {
+      const eq = part.indexOf("=");
+      if (eq === -1) continue; // skip malformed cookie
+      const key = decodeURIComponent(part.substring(0, eq));
+      const val = decodeURIComponent(part.substring(eq + 1));
+      out[key] = val;
+    }
+    return out;
+  }
+
+  /**
+   * Build cookie options string from an options object.
+   * Safely validates types for path, domain, expires, secure, and samesite.
+   *
+   * @param {ng.CookieOptions} opts
+   * @returns {string}
+   * @throws {TypeError} if any of options are invalid
+   */
+  function buildOptions(opts = {}) {
+    const parts = [];
+
+    // Path
+    if (isDefined(opts.path)) {
+      if (!isString(opts.path)) throw new TypeError(`badarg:path ${opts.path}`);
+      parts.push(`path=${opts.path}`);
+    }
+
+    // Domain
+    if (isDefined(opts.domain)) {
+      if (!isString(opts.domain))
+        throw new TypeError(`badarg:domain ${opts.domain}`);
+      parts.push(`domain=${opts.domain}`);
+    }
+
+    // Expires
+    if (opts.expires != null) {
+      let expDate;
+
+      if (opts.expires instanceof Date) {
+        expDate = opts.expires;
+      } else if (isNumber(opts.expires) || isString(opts.expires)) {
+        expDate = new Date(opts.expires);
+      } else {
+        throw new TypeError(`badarg:expires ${String(opts.expires)}`);
+      }
+
+      if (isNaN(expDate.getTime())) {
+        throw new TypeError(`badarg:expires ${String(opts.expires)}`);
+      }
+
+      parts.push(`expires=${expDate.toUTCString()}`);
+    }
+
+    // Secure
+    if (opts.secure) {
+      parts.push("secure");
+    }
+
+    // SameSite
+    if (isDefined(opts.samesite)) {
+      if (!isString(opts.samesite))
+        throw new TypeError(`badarg:samesite ${opts.samesite}`);
+      const s = opts.samesite.toLowerCase();
+      if (!["lax", "strict", "none"].includes(s)) {
+        throw new TypeError(`badarg:samesite ${opts.samesite}`);
+      }
+      parts.push(`samesite=${s}`);
+    }
+
+    // Join all parts with semicolons
+    return parts.length ? ";" + parts.join(";") : "";
+  }
+
+  /**
+   * RFC 6570 Level 4 URI Template expander
+   *
+   * Supports operators: (none), +, #, ., /, ;, ?, &
+   * Supports varspec modifiers: explode (*) and prefix (:len)
+   *
+   * Usage:
+   *   expandUriTemplate("/users/{id}", { id: 10 }) === "/users/10"
+   *   expandUriTemplate("/search{?q,lang}", { q: "a b", lang: "en" }) === "/search?q=a%20b&lang=en"
+   *   expandUriTemplate("/repos/{owner}/{repo}/issues{?labels*}", { labels: ["bug","ui"] }) === "/repos/x/y/issues?labels=bug&labels=ui"
+   *
+   * @param {string} template
+   * @param {Object<string, any>} vars
+   * @returns {string}
+   */
+  function expandUriTemplate(template, vars = {}) {
+    if (typeof template !== "string")
+      throw new TypeError("template must be a string");
+
+    return template.replace(/\{([^}]+)\}/g, (match, expression) => {
+      return expandExpression(expression, vars);
+    });
+  }
+
+  /**
+   * Helper: percent-encode a string. If allowReserved true, reserved chars are NOT encoded.
+   * @param {string} str
+   * @param {boolean} allowReserved
+   * @returns {string}
+   */
+  function pctEncode(str, allowReserved) {
+    // encodeURIComponent, then restore reserved if allowed
+    const encoded = encodeURIComponent(String(str));
+    if (allowReserved) {
+      // Reserved characters per RFC 3986
+      return encoded.replace(
+        /(%3A|%2F|%3F|%23|%5B|%5D|%40|%21|%24|%26|%27|%28|%29|%2A|%2B|%2C|%3B|%3D)/gi,
+        (m) => decodeURIComponent(m),
+      );
+    }
+    return encoded;
+  }
+
+  /**
+   * Parse and expand a single expression (content between { and }).
+   * @param {string} expression
+   * @param {Object<string, any>} vars
+   * @returns {string}
+   */
+  function expandExpression(expression, vars) {
+    // Operator if first char in operator set
+    const operator = /^[+#./;?&]/.test(expression) ? expression[0] : "";
+    const op = operator;
+    const varlist = op ? expression.slice(1) : expression;
+
+    // operator configuration (separator, prefix, named, ifEmpty, allowReserved)
+    const OP = {
+      "": {
+        sep: ",",
+        prefix: "",
+        named: false,
+        ifEmpty: "",
+        allowReserved: false,
+      },
+      "+": {
+        sep: ",",
+        prefix: "",
+        named: false,
+        ifEmpty: "",
+        allowReserved: true,
+      },
+      "#": {
+        sep: ",",
+        prefix: "#",
+        named: false,
+        ifEmpty: "",
+        allowReserved: true,
+      },
+      ".": {
+        sep: ".",
+        prefix: ".",
+        named: false,
+        ifEmpty: "",
+        allowReserved: false,
+      },
+      "/": {
+        sep: "/",
+        prefix: "/",
+        named: false,
+        ifEmpty: "",
+        allowReserved: false,
+      },
+      ";": {
+        sep: ";",
+        prefix: ";",
+        named: true,
+        ifEmpty: "",
+        allowReserved: false,
+      },
+      "?": {
+        sep: "&",
+        prefix: "?",
+        named: true,
+        ifEmpty: "=",
+        allowReserved: false,
+      },
+      "&": {
+        sep: "&",
+        prefix: "&",
+        named: true,
+        ifEmpty: "=",
+        allowReserved: false,
+      },
+    };
+
+    const conf = OP[op];
+    if (!conf) throw new Error("Unsupported operator: " + op);
+
+    // split varspecs by comma, preserve whitespace trimmed
+    const varspecs = varlist
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const expandedParts = [];
+
+    for (const spec of varspecs) {
+      // parse varspec: name, explode (*), prefix (:len)
+      const m = /^([A-Za-z0-9_.]+)(\*|(?::(\d+)))?$/.exec(spec);
+      if (!m) throw new Error("Invalid varspec: " + spec);
+      const varname = m[1];
+      const explode = m[2] === "*";
+      const prefixLength = m[3] ? parseInt(m[3], 10) : undefined;
+
+      const value = vars[varname];
+
+      // undefined or null = skip (no expansion)
+      if (value === undefined || value === null) {
+        continue;
+      }
+
+      // PROCESS arrays
+      if (Array.isArray(value)) {
+        if (value.length === 0) {
+          // empty array: for named operators, emit key with empty ifEmpty, otherwise skip
+          if (conf.named) {
+            // emit key without value or with = depending on ifEmpty
+            if (conf.ifEmpty === "=") {
+              expandedParts.push(
+                `${pctEncode(varname, conf.allowReserved)}${conf.ifEmpty}`,
+              );
+            } else {
+              expandedParts.push(pctEncode(varname, conf.allowReserved));
+            }
+          }
+          continue;
+        }
+
+        if (explode) {
+          // each item becomes either 'k=v' (named) or 'v' (unnamed)
+          for (const item of value) {
+            if (item === null || item === undefined) continue;
+            if (conf.named) {
+              expandedParts.push(
+                `${pctEncode(varname, conf.allowReserved)}=${pctEncode(item, conf.allowReserved)}`,
+              );
+            } else {
+              expandedParts.push(pctEncode(item, conf.allowReserved));
+            }
+          }
+        } else {
+          // join by comma (or operator.sep?) — RFC: simple join with ','
+          const joined = value
+            .filter((v) => v !== null && v !== undefined)
+            .map((v) => pctEncode(v, conf.allowReserved))
+            .join(",");
+          if (conf.named) {
+            if (joined === "") {
+              expandedParts.push(
+                pctEncode(varname, conf.allowReserved) +
+                  (conf.ifEmpty === "=" ? conf.ifEmpty : ""),
+              );
+            } else {
+              expandedParts.push(
+                `${pctEncode(varname, conf.allowReserved)}=${joined}`,
+              );
+            }
+          } else {
+            expandedParts.push(joined);
+          }
+        }
+        continue;
+      }
+
+      // PROCESS objects (associative arrays)
+      if (typeof value === "object") {
+        const keys = Object.keys(value);
+        if (keys.length === 0) {
+          if (conf.named) {
+            expandedParts.push(
+              pctEncode(varname, conf.allowReserved) +
+                (conf.ifEmpty === "=" ? conf.ifEmpty : ""),
+            );
+          }
+          continue;
+        }
+
+        if (explode) {
+          // each key/value pair becomes k=v (named) or k,v? For explode + named, RFC says 'k=v'
+          for (const k of keys) {
+            const v = value[k];
+            if (v === null || v === undefined) continue;
+            if (conf.named) {
+              expandedParts.push(
+                `${pctEncode(k, conf.allowReserved)}=${pctEncode(v, conf.allowReserved)}`,
+              );
+            } else {
+              // unnamed explode => k,v form pairs
+              expandedParts.push(
+                `${pctEncode(k, conf.allowReserved)}=${pctEncode(v, conf.allowReserved)}`,
+              );
+            }
+          }
+        } else {
+          // not exploded: join k,v pairs by ','
+          const pairs = keys
+            .map(
+              (k) =>
+                `${pctEncode(k, conf.allowReserved)},${pctEncode(value[k], conf.allowReserved)}`,
+            )
+            .join(",");
+          if (conf.named) {
+            if (pairs === "") {
+              expandedParts.push(
+                pctEncode(varname, conf.allowReserved) +
+                  (conf.ifEmpty === "=" ? conf.ifEmpty : ""),
+              );
+            } else {
+              expandedParts.push(
+                `${pctEncode(varname, conf.allowReserved)}=${pairs}`,
+              );
+            }
+          } else {
+            expandedParts.push(pairs);
+          }
+        }
+        continue;
+      }
+
+      // PROCESS scalar (string/number/boolean)
+      let str = String(value);
+
+      // apply prefix modifier if present
+      if (typeof prefixLength === "number") {
+        str = str.substring(0, prefixLength);
+      }
+
+      // empty string handling
+      if (str === "") {
+        if (conf.named) {
+          // for named operators, emit key or key= depending on ifEmpty
+          if (conf.ifEmpty === "=") {
+            expandedParts.push(
+              `${pctEncode(varname, conf.allowReserved)}${conf.ifEmpty}`,
+            );
+          } else {
+            expandedParts.push(pctEncode(varname, conf.allowReserved));
+          }
+        } else {
+          // unnamed operators: empty string -> nothing (skip)
+          if (op === "+" || op === "#") {
+            // these allow empty expansions (produce nothing)
+            expandedParts.push(pctEncode(str, conf.allowReserved));
+          } else {
+            // skip adding anything
+            expandedParts.push(pctEncode(str, conf.allowReserved));
+          }
+        }
+        continue;
+      }
+
+      // default scalar behavior
+      if (conf.named) {
+        expandedParts.push(
+          `${pctEncode(varname, conf.allowReserved)}=${pctEncode(str, conf.allowReserved)}`,
+        );
+      } else {
+        expandedParts.push(pctEncode(str, conf.allowReserved));
+      }
+    } // end for varspecs
+
+    if (expandedParts.length === 0) return "";
+
+    // join parts with operator separator; prefix if needed
+    return conf.prefix + expandedParts.join(conf.sep);
+  }
+
+  /**
+   * @template T, ID
+   */
+  class RestService {
+    static $nonscope = true;
+
+    /**
+     * Core REST service for CRUD operations.
+     * Safe, predictable, and optionally maps raw JSON to entity class instances.
+     *
+     * @param {ng.HttpService} $http Angular-like $http service
+     * @param {string} baseUrl Base URL or URI template
+     * @param {{new(data: any): T}=} entityClass Optional constructor to map JSON to objects
+     * @param {Object=} options Optional settings (interceptors, headers, etc.)
+     */
+    constructor($http, baseUrl, entityClass, options = {}) {
+      assert(isString(baseUrl) && baseUrl.length > 0, "baseUrl required");
+
+      /** @private */
+      this.$http = $http;
+      /** @private */
+      this.baseUrl = baseUrl;
+      /** @private */
+      this.entityClass = entityClass;
+      /** @private */
+      this.options = options;
+    }
+
+    /**
+     * Build full URL from template and parameters
+     * @param {string} template
+     * @param {Record<string, any>} params
+     * @returns {string}
+     */
+    buildUrl(template, params) {
+      // Safe: ensure params is an object
+      return expandUriTemplate(template, params || {});
+    }
+
+    /**
+     * Map raw JSON to entity instance or return as-is
+     * @param {any} data
+     * @returns {T|any}
+     */
+    #mapEntity(data) {
+      if (!data) return data;
+      return this.entityClass ? new this.entityClass(data) : data;
+    }
+
+    /**
+     * List entities
+     * @param {Record<string, any>=} params
+     * @returns {Promise<T[]>}
+     */
+    async list(params = {}) {
+      const url = this.buildUrl(this.baseUrl, params);
+      const resp = await this.#request("get", url, null, params);
+      if (!Array.isArray(resp.data)) return [];
+      return resp.data.map((d) => this.#mapEntity(d));
+    }
+
+    /**
+     * Read single entity by ID
+     * @param {ID} id
+     * @param {Record<string, any>=} params
+     * @returns {Promise<T|null>}
+     */
+    async read(id, params = {}) {
+      if (id == null) return null;
+      const url = this.buildUrl(`${this.baseUrl}/${id}`, params);
+      try {
+        const resp = await this.#request("get", url, null, params);
+        return this.#mapEntity(resp.data);
+      } catch {
+        return null; // fail-safe
+      }
+    }
+
+    /**
+     * Create a new entity
+     * @param {T} item
+     * @returns {Promise<T>}
+     */
+    async create(item) {
+      assert(item != null, "item required for create");
+      const resp = await this.#request("post", this.baseUrl, item);
+      return this.#mapEntity(resp.data);
+    }
+
+    /**
+     * Update entity by ID
+     * @param {ID} id
+     * @param {Partial<T>} item
+     * @returns {Promise<T|null>}
+     */
+    async update(id, item) {
+      assert(id != null, "id required for update");
+      const url = `${this.baseUrl}/${id}`;
+      try {
+        const resp = await this.#request("put", url, item);
+        return this.#mapEntity(resp.data);
+      } catch {
+        return null;
+      }
+    }
+
+    /**
+     * Delete entity by ID
+     * @param {ID} id
+     * @returns {Promise<boolean>}
+     */
+    async delete(id) {
+      if (id == null) return false;
+      const url = `${this.baseUrl}/${id}`;
+      try {
+        await this.#request("delete", url);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    /**
+     * Core HTTP request wrapper
+     * @param {"get"|"post"|"put"|"delete"} method
+     * @param {string} url
+     * @param {any=} data
+     * @param {Record<string, any>=} params
+     * @returns {Promise<any>}
+     */
+    async #request(method, url, data = null, params = {}) {
+      try {
+        return await this.$http({
+          method,
+          url,
+          data,
+          params,
+          ...this.options,
+        });
+      } catch (err) {
+        console.error(`[RestService] HTTP ${method} failed for ${url}`, err);
+        throw err; // propagate for caller handling
+      }
+    }
+  }
+
+  /**
+   * Provider for registering REST endpoints during module configuration.
+   */
+  class RestProvider {
+    constructor() {
+      /** @private @type {ng.RestDefinition<any>[]} */
+      this.definitions = [];
+    }
+
+    /**
+     * Register a REST resource at config phase
+     * @template T
+     * @param {string} name Service name
+     * @param {string} url Base URL or URI template
+     * @param {{new(data:any):T}=} entityClass Optional entity constructor
+     * @param {Object=} options Optional service options
+     */
+    rest(name, url, entityClass, options = {}) {
+      this.definitions.push({ name, url, entityClass, options });
+    }
+
+    /**
+     * $get factory: returns a factory function and allows access to named services
+     * @returns {(baseUrl:string, entityClass?:Function, options?:object) => RestService & { get(name:string): RestService, listNames(): string[] }}
+     */
+    $get = [
+      $injectTokens.$http,
+      ($http) => {
+        const services = new Map();
+
+        const factory = (baseUrl, entityClass, options = {}) => {
+          const svc = new RestService($http, baseUrl, entityClass, options);
+          return svc;
+        };
+
+        // create services from pre-registered definitions
+        for (const def of this.definitions) {
+          const svc = factory(def.url, def.entityClass, def.options);
+          services.set(def.name, svc);
+        }
+
+        // helpers to fetch named services
+        factory.get = (name) => services.get(name);
+        factory.listNames = () => Array.from(services.keys());
+
+        return factory;
+      },
+    ];
+  }
+
+  /**
    * Initializes core `ng` module.
    * @param {ng.Angular} angular
    * @returns {ng.NgModule} `ng` module
@@ -36399,6 +37204,7 @@
               $$animateCache: AnimateCacheProvider,
               $$animateQueue: AnimateQueueProvider,
               $controller: ControllerProvider,
+              $cookie: CookieProvider,
               $exceptionHandler: ExceptionHandlerProvider,
               $filter: FilterProvider,
               $interpolate: InterpolateProvider,
@@ -36408,6 +37214,7 @@
               $log: LogProvider,
               $parse: ParseProvider,
               $$rAFScheduler: RafSchedulerProvider,
+              $rest: RestProvider,
               $rootScope: RootScopeProvider,
               $router: Router,
               $sce: SceProvider,
