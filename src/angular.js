@@ -173,7 +173,7 @@ export class Angular {
    *     function that will be invoked by the injector as a `config` block.
    *     See: {@link angular.module modules}
    * @param {import("./interface.ts").AngularBootstrapConfig} [config]
-   * @returns {import('./core/di/internal-injector.js').InjectorService} The created injector instance for this application.
+   * @returns {ng.InjectorService} The created injector instance for this application.
    */
   bootstrap(element, modules, config) {
     config = config || {
