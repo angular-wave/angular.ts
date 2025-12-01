@@ -38,14 +38,19 @@ unless overridden per-cookie.
 
 - **Example:**
   ```js
-  angular.module('demo', [])
-    .config(($cookieProvider) => {
+  angular
+    .module('demo', [])
+    .config([
+      '$cookieProvider',
+      /** @param {ng.CookieProvider} $cookieProvider */
+      ($cookieProvider) => {
         $cookieProvider.defaults = {
-            path: '/',
-            secure: true,
-            samesite: 'Lax'
+          path: '/',
+          secure: true,
+          samesite: 'Lax'
         };
-    });
+      }
+    ]);
   ```
 
 ---
