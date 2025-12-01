@@ -28,7 +28,7 @@ export class CookieService {
   );
   /** @type {ng.CookieOptions} */
   defaults: ng.CookieOptions;
-  $exceptionHandler: import("../exception/interface.ts").ErrorHandler;
+  $exceptionHandler: import("../exception/interface.ts").ExceptionHandler;
   /**
    * Retrieves a raw cookie value.
    *

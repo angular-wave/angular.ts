@@ -3,7 +3,7 @@
  *
  * This service receives uncaught exceptions from both synchronous and asynchronous operations.
  * Its purpose is to provide a central point through which the framework
- * surfaces errors.
+ * processes errors.
  *
  * By default, `$exceptionHandler` simply rethrows the exception. This ensures fail-fast
  * behavior, making errors visible immediately in development and in unit tests.
@@ -37,7 +37,7 @@
  * }
  * ```
  *
- * @see {@link angular.ErrorHandler AngularTS ErrorHandler}
+ * @see {@link ng.ExceptionHandlerService ExceptionHandlerService}
  */
 /**
  * Provider for the `$exceptionHandler` service.
@@ -48,7 +48,7 @@
  */
 export class ExceptionHandlerProvider {
   /** @type {ng.ExceptionHandlerService} */
-  errorHandler: ng.ExceptionHandlerService;
+  handler: ng.ExceptionHandlerService;
   /**
    * @returns {ng.ExceptionHandlerService}
    */

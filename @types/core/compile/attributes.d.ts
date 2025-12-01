@@ -18,7 +18,7 @@ export class Attributes {
   );
   $rootScope: import("../scope/scope.js").Scope;
   $animate: import("../../interface.ts").AnimateService;
-  $exceptionHandler: import("../../interface.ts").ErrorHandler;
+  $exceptionHandler: import("../../interface.ts").ExceptionHandler;
   $sce: any;
   $attr: {};
   /** @type {import("../../shared/noderef.js").NodeRef} */

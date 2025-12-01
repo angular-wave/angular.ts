@@ -53,6 +53,7 @@ function bootstrap(htmlContent, moduleName) {
 describe("$compile", () => {
   let $rootScope,
     injector,
+    defaultModule,
     element,
     $compile,
     $templateCache,

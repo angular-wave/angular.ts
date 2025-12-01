@@ -13,7 +13,7 @@ import {
   AnchorScrollService as TAnchorScrollService,
 } from "./services/anchor-scroll/anchor-scroll.js";
 import { ControllerService as TControllerService } from "./core/controller/interface.ts";
-import { ErrorHandler as TErrorHandler } from "./services/exception/interface.ts";
+import { ExceptionHandler as TExceptionHandler } from "./services/exception/interface.ts";
 import { ParseService as TParseService } from "./core/parse/interface.ts";
 import { TemplateRequestService as TTemplateRequestService } from "./services/template-request/interface.ts";
 import { HttpParamSerializer as THttpParamSerializer } from "./services/http/interface.ts";
@@ -115,7 +115,7 @@ declare global {
     type CompileService = TCompileFn;
     type ControllerService = TControllerService;
     type CookieService = TCookieService;
-    type ExceptionHandlerService = TErrorHandler;
+    type ExceptionHandlerService = TExceptionHandler;
     type FilterService = TFilterFactory;
     type HttpParamSerializerSerService = THttpParamSerializer;
     type HttpService = THttpService;

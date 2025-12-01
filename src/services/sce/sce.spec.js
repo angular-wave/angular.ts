@@ -7,16 +7,22 @@ describe("SCE", () => {
   let $sce, $rootScope;
   let sceDelegateProvider;
   let logs = [];
+  let errorLog = [];
 
   describe("when disabled", () => {
     beforeEach(function () {
       window.angular = new Angular();
-      window.angular.module("myModule", ["ng"]);
+      window.angular
+        .module("myModule", ["ng"])
+        .decorator("$exceptionHandler", function () {
+          return (exception) => {
+            errorLog.push(exception.message);
+          };
+        });
       createInjector([
         "myModule",
         function ($sceProvider, $exceptionHandlerProvider) {
-          $exceptionHandlerProvider.errorHandler = (err) =>
-            logs.push(err.message);
+          $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
           $sceProvider.enabled(false);
         },
       ]).invoke((_$sce_) => {
@@ -42,8 +48,9 @@ describe("SCE", () => {
       createInjector([
         "ng",
         function ($sceProvider, $exceptionHandlerProvider) {
-          $exceptionHandlerProvider.errorHandler = (err) =>
+          $exceptionHandlerProvider.handler = (err) => {
             logs.push(err.message);
+          };
           $sceProvider.enabled(true);
         },
       ]).invoke((_$sce_) => {
@@ -180,8 +187,7 @@ describe("SCE", () => {
       createInjector([
         "ng",
         function ($exceptionHandlerProvider) {
-          $exceptionHandlerProvider.errorHandler = (err) =>
-            logs.push(err.message);
+          $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
         },
       ]).invoke((_$sce_, _$rootScope_) => {
         $sce = _$sce_;
@@ -243,8 +249,7 @@ describe("SCE", () => {
       createInjector([
         "ng",
         ($sceDelegateProvider, $exceptionHandlerProvider) => {
-          $exceptionHandlerProvider.errorHandler = (err) =>
-            logs.push(err.message);
+          $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
           sceDelegateProvider = $sceDelegateProvider;
         },
       ]).invoke((_$sce_) => {
@@ -299,8 +304,7 @@ describe("SCE", () => {
         createInjector([
           "ng",
           ($sceDelegateProvider, $exceptionHandlerProvider) => {
-            $exceptionHandlerProvider.errorHandler = (err) =>
-              logs.push(err.message);
+            $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
             sceDelegateProvider = $sceDelegateProvider;
           },
         ]).invoke((_$sce_) => {
@@ -353,8 +357,7 @@ describe("SCE", () => {
         createInjector([
           "ng",
           ($sceDelegateProvider, $exceptionHandlerProvider) => {
-            $exceptionHandlerProvider.errorHandler = (err) =>
-              logs.push(err.message);
+            $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
             sceDelegateProvider = $sceDelegateProvider;
           },
         ]).invoke((_$sce_) => {
@@ -440,8 +443,7 @@ describe("SCE", () => {
         createInjector([
           "ng",
           ($sceDelegateProvider, $exceptionHandlerProvider) => {
-            $exceptionHandlerProvider.errorHandler = (err) =>
-              logs.push(err.message);
+            $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
             sceDelegateProvider = $sceDelegateProvider;
           },
         ]).invoke((_$sce_) => {
@@ -467,7 +469,7 @@ describe("SCE", () => {
           createInjector([
             "ng",
             ($sceDelegateProvider, $exceptionHandlerProvider) => {
-              $exceptionHandlerProvider.errorHandler = (err) =>
+              $exceptionHandlerProvider.handler = (err) =>
                 logs.push(err.message);
               sceDelegateProvider = $sceDelegateProvider;
               sceDelegateProvider.trustedResourceUrlList(["self"]);
