@@ -7,10 +7,16 @@ describe("$aria", () => {
   let scope;
   let $compile;
   let element;
+  let errorLog = [];
 
   beforeEach(() => {
     window.angular = new Angular();
-    window.angular.module("test", ["ng"]);
+    window.angular
+      .module("test", ["ng"])
+      .decorator(
+        "$exceptionHandler",
+        () => (exception) => errorLog.push(exception.message),
+      );
     let injector = createInjector(["test"]);
     scope = injector.get("$rootScope");
     $compile = injector.get("$compile");

@@ -97,8 +97,8 @@ export class UrlService {
     $t.$rootScope,
     /**
      *
-     * @param {import('../../services/location/location.js').Location} $location
-     * @param {import('../../core/scope/scope.js').Scope} $rootScope
+     * @param {ng.LocationService} $location
+     * @param {ng.Scope} $rootScope
      * @returns {UrlService}
      */
     ($location, $rootScope) => {

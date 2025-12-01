@@ -8,14 +8,14 @@ import {
 import { $injectTokens } from "../../injection-tokens.js";
 
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function ngBindDirective() {
   return {
     /**
-     * @param {import('../../core/scope/scope.js').Scope} scope
+     * @param {ng.Scope} scope
      * @param {Element} element
-     * @param {import('../../core/compile/attributes.js').Attributes} attr
+     * @param {ng.Attributes} attr
      */
     link(scope, element, attr) {
       scope.$watch(
@@ -37,7 +37,7 @@ export function ngBindDirective() {
 export function ngBindTemplateDirective() {
   return {
     /**
-     * @param {import('../../core/scope/scope.js').Scope} _scope
+     * @param {ng.Scope} _scope
      * @param {Element} element
      * @param {import('../../core/compile/attributes.js').Attributes} attr
      */
@@ -61,7 +61,7 @@ export function ngBindHtmlDirective($parse) {
       $parse(tAttrs["ngBindHtml"]); // checks for interpolation errors
       return (
         /**
-         * @param {import('../../core/scope/scope.js').Scope} scope
+         * @param {ng.Scope} scope
          * @param {Element} element
          */
         (scope, element) => {

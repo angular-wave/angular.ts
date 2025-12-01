@@ -210,7 +210,7 @@ function addWatchDelegate(parsedExpression) {
 
 /**
  *
- * @param {import('../scope/scope.js').Scope} scope
+ * @param {ng.Scope} scope
  * @param {Function} listener
  * @param {*} objectEquality
  * @param {import('./interface').CompiledExpression} parsedExpression

@@ -35,14 +35,14 @@ ngOptionsDirective.$inject = ["$compile", "$parse"];
 /**
  *
  * @param {ng.CompileService} $compile
- * @param {import("../../core/parse/interface.ts").ParseService} $parse
- * @returns {import("../../interface.ts").Directive}
+ * @param {ng.ParseService} $parse
+ * @returns {ng.Directive}
  */
 export function ngOptionsDirective($compile, $parse) {
   /**
    * @param {import('../../interface.ts').Expression} optionsExp
    * @param {HTMLSelectElement} selectElement
-   * @param {import('../../core/scope/scope.js').Scope} scope
+   * @param {ng.Scope} scope
    * @returns
    */
   function parseOptionsExpression(optionsExp, selectElement, scope) {
@@ -222,9 +222,9 @@ export function ngOptionsDirective($compile, $parse) {
 
   /**
    *
-   * @param {import("../../core/scope/scope.js").Scope} scope
+   * @param {ng.Scope} scope
    * @param {HTMLSelectElement} selectElement
-   * @param {import("../../core/compile/attributes.js").Attributes} attr
+   * @param {ng.Attributes} attr
    * @param {*} ctrls
    */
   function ngOptionsPostLink(scope, selectElement, attr, ctrls) {

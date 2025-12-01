@@ -5,6 +5,7 @@ import { wait } from "../../shared/test-utils.js";
 
 describe("$state", () => {
   let $injector, template, ctrlName, $provide, $compile, module, $stateRegistry;
+  let errorLog = [];
   let app = document.getElementById("app");
   let $stateProvider;
 
@@ -100,7 +101,13 @@ describe("$state", () => {
       dealoc(document.getElementById("app"));
       // some tests are polluting the cache
       window.angular = new Angular();
-      module = window.angular.module("defaultModule", []);
+      module = window.angular
+        .module("defaultModule", [])
+        .decorator("$exceptionHandler", function () {
+          return (exception) => {
+            errorLog.push(exception.message);
+          };
+        });
       module.config((_$stateProvider_, _$provide_, _$locationProvider_) => {
         $stateProvider = _$stateProvider_;
         _$locationProvider_.html5ModeConf.enabled = false;
@@ -139,11 +146,18 @@ describe("$state", () => {
 
   describe(".transitionTo()", function () {
     let $rootScope, $state, $stateParams, $transitions, $q, $location;
+    let errorLog = [];
 
     beforeEach(() => {
       dealoc(document.getElementById("app"));
       window.angular = new Angular();
-      module = window.angular.module("defaultModule", []);
+      module = window.angular
+        .module("defaultModule", [])
+        .decorator("$exceptionHandler", function () {
+          return (exception) => {
+            errorLog.push(exception.message);
+          };
+        });
       module.config((_$stateProvider_, _$provide_, _$locationProvider_) => {
         $stateProvider = _$stateProvider_;
         $provide = _$provide_;

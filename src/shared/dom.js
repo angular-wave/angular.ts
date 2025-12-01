@@ -247,7 +247,7 @@ export function parseHtml(html) {
  * @returns {void}
  */
 export function dealoc(element, onlyDescendants) {
-  if (!element) return;
+  if (!element || element instanceof Comment) return;
   if (Array.isArray(element)) {
     element.forEach((x) => dealoc(x, onlyDescendants));
   } else {
@@ -389,7 +389,7 @@ export function getScope(element) {
  * Set scope for a given element.
  *
  * @param {Element|Node|ChildNode} element - The DOM element to set data on.
- * @param {import("../core/scope/scope.js").Scope} scope - The Scope attached to this element
+ * @param {ng.Scope} scope - The Scope attached to this element
  */
 export function setScope(element, scope) {
   return setCacheData(element, SCOPE_KEY, scope);
@@ -409,7 +409,7 @@ export function getIsolateScope(element) {
  * Set isolate scope for a given element.
  *
  * @param {Element} element - The DOM element to set data on.
- * @param {import("../core/scope/scope.js").Scope} scope - The Scope attached to this element
+ * @param {ng.Scope} scope - The Scope attached to this element
  */
 export function setIsolateScope(element, scope) {
   return setCacheData(element, ISOLATE_SCOPE_KEY, scope);
@@ -420,7 +420,7 @@ export function setIsolateScope(element, scope) {
  *
  * @param {Element} element - The DOM element to get data from.
  * @param {string} [name] - Controller name.
- * @returns {import("../core/scope/scope.js").Scope|undefined} - The retrieved data
+ * @returns {ng.Scope|undefined} - The retrieved data
  */
 export function getController(element, name) {
   return getInheritedData(element, `$${name || "ngController"}Controller`);

@@ -69,7 +69,7 @@ export class CompileProvider {
     const bindingCache = Object.create(null);
 
     /**
-     * @param {import("../scope/scope.js").Scope} scope
+     * @param {ng.Scope} scope
      * @param {string} directiveName
      * @param {boolean} isController
      * @returns {Object} a configuration object for attribute bindings
@@ -207,8 +207,8 @@ export class CompileProvider {
             "$injector",
             "$exceptionHandler",
             /**
-             * @param {import("../../core/di/internal-injector.js").InjectorService} $injector
-             * @param {import('../../services/exception/exception-handler.js').ErrorHandler} $exceptionHandler
+             * @param {ng.InjectorService} $injector
+             * @param {ng.ExceptionHandlerService} $exceptionHandler
              */
             function ($injector, $exceptionHandler) {
               const directives = [];
@@ -536,11 +536,11 @@ export class CompileProvider {
       /**
        * @param {ng.InjectorService} $injector
        * @param {*} $interpolate
-       * @param {import("../../services/exception/exception-handler.js").ErrorHandler} $exceptionHandler
+       * @param {ng.ExceptionHandlerService} $exceptionHandler
        * @param {ng.TemplateRequestService} $templateRequest
        * @param {ng.ParseService} $parse
        * @param {*} $controller
-       * @param {import('../scope/scope.js').Scope} $rootScope
+       * @param {ng.Scope} $rootScope
        * @param {*} $sce
        * @param {ng.AnimateService} $animate
        * @returns
@@ -827,7 +827,7 @@ export class CompileProvider {
           /**
            * The composite link function links all the individual nodes
            *
-           * @param {import("../scope/scope.js").Scope} scope
+           * @param {ng.Scope} scope
            * @param {NodeRef} nodeRef
            * @param {*} [parentBoundTranscludeFn]
            */
@@ -1389,7 +1389,7 @@ export class CompileProvider {
                   transcludeFn,
                 );
               } catch (e) {
-                $exceptionHandler(e, startingTag($element.getAny()));
+                $exceptionHandler(e);
               }
             }
 
@@ -1442,7 +1442,7 @@ export class CompileProvider {
                   transcludeFn,
                 );
               } catch (e) {
-                $exceptionHandler(e, startingTag($element.getAny()));
+                $exceptionHandler(e);
               }
             }
 
@@ -1907,7 +1907,7 @@ export class CompileProvider {
                   );
                 }
               } catch (e) {
-                $exceptionHandler(e, startingTag(compileNodeRef.getAny()));
+                $exceptionHandler(e);
               }
             }
 
@@ -2858,9 +2858,9 @@ export class CompileProvider {
         // Set up $watches for isolate scope and controller bindings.
         /**
          *
-         * @param {import('../scope/scope.js').Scope} scope
+         * @param {ng.Scope} scope
          * @param {*} attrs
-         * @param {import('../scope/scope.js').Scope}  destination - child scope or isolate scope
+         * @param {ng.Scope}  destination - child scope or isolate scope
          * @param {*} bindings
          * @param {*} directive
          * @returns
