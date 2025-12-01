@@ -41,7 +41,7 @@ CSS styles are available in npm distribution:
 ```html
 <link
   rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/@angular-wave/angular.ts/css/angular.min.css"
+  href="https://cdn.jsdelivr.net/npm/@angular-wave/angular.ts/dist/angular.css"
 />
 ```
 
