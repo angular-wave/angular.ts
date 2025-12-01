@@ -7,3 +7,4 @@ playwright-report
 docs/public
 docs/resources
 typedoc
+*.md
