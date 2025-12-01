@@ -13,6 +13,7 @@ export * from "./core/scope/scope.js";
 export * from "./services/cookie/cookie.js";
 export * from "./services/cookie/interface.ts";
 export * from "./services/exception/interface.ts";
+export * from "./core/parse/interface.ts";
 import { Attributes } from "./core/compile/attributes.js";
 import { Scope } from "./core/scope/scope.js";
 /**
@@ -67,7 +68,7 @@ export type InjectableClass<TInstance = any> = new (...args: any) => TInstance;
  *
  * Parentheses are required around constructor types when used in unions.
  */
-type FactoryFunction<T> = T extends abstract new (...args: any[]) => any
+export type FactoryFunction<T> = T extends abstract new (...args: any[]) => any
   ? (...args: ConstructorParameters<T>) => InstanceType<T>
   : T;
 export type Injectable<
@@ -78,6 +79,12 @@ export type Injectable<
       ? InjectableClass<InstanceType<T>>
       : never)
   | T;
+export interface ServiceProviderClass {
+  new (...args: any[]): ServiceProvider;
+}
+export interface ServiceProviderFactory {
+  (...args: any[]): ServiceProvider;
+}
 /**
  * An object that defines how a service is constructed.
  *
@@ -166,6 +173,57 @@ export interface ChangesObject<T = any> {
  * Mapping of binding property names to their change metadata.
  */
 export type OnChangesObject = Record<string, ChangesObject>;
+/**
+ * Interface for the $onInit lifecycle hook
+ * https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
+ */
+export interface OnInit {
+  /**
+   * Called on each controller after all the controllers on an element have been constructed and had their bindings
+   * initialized (and before the pre & post linking functions for the directives on this element). This is a good
+   * place to put initialization code for your controller.
+   */
+  $onInit(): void;
+}
+/**
+ * Interface for the $onChanges lifecycle hook
+ * https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
+ */
+export interface OnChanges {
+  /**
+   * Called whenever one-way bindings are updated. The onChangesObj is a hash whose keys are the names of the bound
+   * properties that have changed, and the values are an {@link IChangesObject} object  of the form
+   * { currentValue, previousValue, isFirstChange() }. Use this hook to trigger updates within a component such as
+   * cloning the bound value to prevent accidental mutation of the outer value.
+   */
+  $onChanges(onChangesObj: OnChangesObject): void;
+}
+/**
+ * Interface for the $onDestroy lifecycle hook
+ * https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
+ */
+export interface OnDestroy {
+  /**
+   * Called on a controller when its containing scope is destroyed. Use this hook for releasing external resources,
+   * watches and event handlers.
+   */
+  $onDestroy(): void;
+}
+/**
+ * Interface for the $postLink lifecycle hook
+ * https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks
+ */
+export interface PostLink {
+  /**
+   * Called after this controller's element and its children have been linked. Similar to the post-link function this
+   * hook can be used to set up DOM event handlers and do direct DOM manipulation. Note that child elements that contain
+   * templateUrl directives will not have been compiled and linked since they are waiting for their template to load
+   * asynchronously and their own compilation and linking has been suspended until that occurs. This hook can be considered
+   * analogous to the ngAfterViewInit and ngAfterContentInit hooks in Angular 2. Since the compilation process is rather
+   * different in Angular 1 there is no direct mapping and care should be taken when upgrading.
+   */
+  $postLink(): void;
+}
 /**
  * AngularTS component lifecycle interface.
  * Directive controllers have a well-defined lifecycle. Each controller can implement "lifecycle hooks". These are methods that
