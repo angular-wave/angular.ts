@@ -57,7 +57,7 @@ export class ExceptionHandlerProvider {
 
     /** @type {ErrorHandler} */
     this.errorHandler = (exception, cause) => {
-      this.log.error(exception, cause);
+      throw exception;
     };
 
     this.$get = [
