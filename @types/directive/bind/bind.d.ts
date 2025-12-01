@@ -1,7 +1,7 @@
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
-export function ngBindDirective(): import("../../interface.ts").Directive;
+export function ngBindDirective(): ng.Directive;
 /**
  * @returns {import('../../interface.ts').Directive}
  */

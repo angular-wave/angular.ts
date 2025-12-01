@@ -106,11 +106,11 @@ export function getScope(element: Element): ng.Scope;
  * Set scope for a given element.
  *
  * @param {Element|Node|ChildNode} element - The DOM element to set data on.
- * @param {import("../core/scope/scope.js").Scope} scope - The Scope attached to this element
+ * @param {ng.Scope} scope - The Scope attached to this element
  */
 export function setScope(
   element: Element | Node | ChildNode,
-  scope: import("../core/scope/scope.js").Scope,
+  scope: ng.Scope,
 ): void;
 /**
  * Gets isolate scope for a given element.
@@ -123,23 +123,20 @@ export function getIsolateScope(element: Element): any;
  * Set isolate scope for a given element.
  *
  * @param {Element} element - The DOM element to set data on.
- * @param {import("../core/scope/scope.js").Scope} scope - The Scope attached to this element
+ * @param {ng.Scope} scope - The Scope attached to this element
  */
-export function setIsolateScope(
-  element: Element,
-  scope: import("../core/scope/scope.js").Scope,
-): void;
+export function setIsolateScope(element: Element, scope: ng.Scope): void;
 /**
  * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
  *
  * @param {Element} element - The DOM element to get data from.
  * @param {string} [name] - Controller name.
- * @returns {import("../core/scope/scope.js").Scope|undefined} - The retrieved data
+ * @returns {ng.Scope|undefined} - The retrieved data
  */
 export function getController(
   element: Element,
   name?: string,
-): import("../core/scope/scope.js").Scope | undefined;
+): ng.Scope | undefined;
 /**
  *
  * @param {Node} element

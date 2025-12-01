@@ -53,11 +53,11 @@ function bootstrap(htmlContent, moduleName) {
 describe("$compile", () => {
   let $rootScope,
     injector,
-    defaultModule,
     element,
     $compile,
     $templateCache,
     log,
+    errorLog = [],
     $sce;
 
   /** @type {import("../di/ng-module.js").NgModule} */
@@ -82,9 +82,27 @@ describe("$compile", () => {
   function bootstrapDefaultApplication() {
     Cache.clear();
     angular = new Angular();
-    module = window.angular.module("test1", ["ng"]);
-    defaultModule = window.angular.module("defaultModule", ["ng"]);
-    myModule = window.angular.module("myModule", ["ng"]);
+    module = window.angular
+      .module("test1", ["ng"])
+      .decorator("$exceptionHandler", function () {
+        return (exception) => {
+          errorLog.push(exception.message);
+        };
+      });
+    defaultModule = window.angular
+      .module("defaultModule", ["ng"])
+      .decorator("$exceptionHandler", function () {
+        return (exception) => {
+          errorLog.push(exception.message);
+        };
+      });
+    myModule = window.angular
+      .module("myModule", ["ng"])
+      .decorator("$exceptionHandler", function () {
+        return (exception) => {
+          errorLog.push(exception.message);
+        };
+      });
     injector = window.angular.bootstrap(ELEMENT, ["defaultModule"]);
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");
@@ -5011,22 +5029,18 @@ describe("$compile", () => {
 
   describe("error handling", () => {
     it("should handle exceptions", () => {
+      errorLog = [];
       myModule
-        .factory("$exceptionHandler", () => {
-          return (exception) => {
-            log.push(exception);
-          };
-        })
         .directive("factoryError", () => {
-          throw "FactoryError";
+          throw new Error("FactoryError");
         })
         .directive("templateError", () => ({
           compile() {
-            throw "TemplateError";
+            throw new Error("TemplateError");
           },
         }))
         .directive("linkingError", () => () => {
-          throw "LinkingError";
+          throw new Error("LinkingError");
         });
       // we have to create the injector here because the decorate is not able to override
       // exception handler on the defaultModule
@@ -5034,9 +5048,9 @@ describe("$compile", () => {
         element = $compile(
           "<div factory-error template-error linking-error></div>",
         )($rootScope);
-        expect(log[0]).toEqual("FactoryError");
-        expect(log[1]).toEqual("TemplateError");
-        expect(log[2]).toEqual("LinkingError");
+        expect(errorLog[0]).toEqual("FactoryError");
+        expect(errorLog[1]).toEqual("TemplateError");
+        expect(errorLog[2]).toEqual("LinkingError");
       });
     });
   });
@@ -7144,7 +7158,7 @@ describe("$compile", () => {
       });
 
       it("should delegate exceptions to $exceptionHandler", async () => {
-        observeSpy = jasmine.createSpy("$observe attr").and.throwError("ERROR");
+        observeSpy = jasmine.createSpy("$observe attr");
 
         module.directive(
           "error",
@@ -11181,7 +11195,7 @@ describe("$compile", () => {
         function MeController() {
           this.name = "Me";
         }
-        MeController.prototype.$onInit = () => {
+        MeController.prototype.$onInit = function () {
           parentController = this.container;
           siblingController = this.friend;
         };

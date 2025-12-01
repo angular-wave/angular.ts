@@ -15,14 +15,21 @@ describe("ngStateRef", () => {
     $injector,
     $state,
     $stateParams,
-    $url;
+    $url,
+    errorLog = [];
 
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     app.innerHTML = "";
     window.location.hash = "";
     window.angular = new Angular();
-    let module = window.angular.module("defaultModule", []);
+    let module = window.angular
+      .module("defaultModule", [])
+      .decorator("$exceptionHandler", function () {
+        return (exception) => {
+          errorLog.push(exception.message);
+        };
+      });
     module.config(
       /**
        * @param $stateProvider

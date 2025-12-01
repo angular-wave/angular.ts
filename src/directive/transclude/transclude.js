@@ -72,7 +72,7 @@ export function ngTranscludeDirective($compile) {
 
         /**
          * @param {NodeList | Node} clone
-         * @param {import("../../core/scope/scope.js").Scope} transcludedScope
+         * @param {ng.Scope} transcludedScope
          */
         function ngTranscludeCloneAttachFn(clone, transcludedScope) {
           if (notWhitespace(clone)) {

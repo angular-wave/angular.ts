@@ -49,20 +49,20 @@ export class NgModelController {
   static $nonscope: boolean;
   static $inject: string[];
   /**
-   * @param {import('../../core/scope/scope.js').Scope} $scope
-   * @param {import('../../services/exception/exception-handler.js').ErrorHandler} $exceptionHandler
-   * @param {import('../../core/compile/attributes.js').Attributes} $attr
+   * @param {ng.Scope} $scope
+   * @param {ng.ExceptionHandlerService} $exceptionHandler
+   * @param {ng.Attributes} $attr
    * @param {Element} $element
-   * @param {import("../../core/parse/interface.ts").ParseService} $parse
+   * @param {ng.ParseService} $parse
    * @param {ng.AnimateService} $animate
    * @param {*} $interpolate
    */
   constructor(
-    $scope: import("../../core/scope/scope.js").Scope,
-    $exceptionHandler: import("../../services/exception/exception-handler.js").ErrorHandler,
-    $attr: import("../../core/compile/attributes.js").Attributes,
+    $scope: ng.Scope,
+    $exceptionHandler: ng.ExceptionHandlerService,
+    $attr: ng.Attributes,
     $element: Element,
-    $parse: import("../../core/parse/interface.ts").ParseService,
+    $parse: ng.ParseService,
     $animate: ng.AnimateService,
     $interpolate: any,
   );
@@ -123,11 +123,11 @@ export class NgModelController {
   $$parsedNgModelAssign: (context: any, value: any) => any;
   /**
    * @type {import("../../core/parse/interface.ts").CompiledExpression |
-   *        (function(import("../../core/scope/scope.js").Scope): any)}
+   *        (function(ng.Scope): any)}
    */
   $$ngModelGet:
     | import("../../core/parse/interface.ts").CompiledExpression
-    | ((arg0: import("../../core/scope/scope.js").Scope) => any);
+    | ((arg0: ng.Scope) => any);
   $$ngModelSet: (context: any, value: any) => any;
   $$pendingDebounce: number;
   $$parserValid: boolean;
@@ -135,9 +135,9 @@ export class NgModelController {
   $$parserName: string;
   /** @type {number} */
   $$currentValidationRunId: number;
-  /** @type {import('../../core/scope/scope.js').Scope} */
-  $$scope: import("../../core/scope/scope.js").Scope;
-  $$attr: import("../../core/compile/attributes.js").Attributes;
+  /** @type {ng.Scope} */
+  $$scope: ng.Scope;
+  $$attr: ng.Attributes;
   $$element: Element;
   $$animate: import("../../interface.ts").AnimateService;
   $$parse: import("../../core/parse/interface.ts").ParseService;

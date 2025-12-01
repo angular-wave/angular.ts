@@ -78,11 +78,11 @@ export class NgModelController {
   ];
 
   /**
-   * @param {import('../../core/scope/scope.js').Scope} $scope
-   * @param {import('../../services/exception/exception-handler.js').ErrorHandler} $exceptionHandler
-   * @param {import('../../core/compile/attributes.js').Attributes} $attr
+   * @param {ng.Scope} $scope
+   * @param {ng.ExceptionHandlerService} $exceptionHandler
+   * @param {ng.Attributes} $attr
    * @param {Element} $element
-   * @param {import("../../core/parse/interface.ts").ParseService} $parse
+   * @param {ng.ParseService} $parse
    * @param {ng.AnimateService} $animate
    * @param {*} $interpolate
    */
@@ -140,7 +140,7 @@ export class NgModelController {
 
     /**
      * @type {import("../../core/parse/interface.ts").CompiledExpression |
-     *        (function(import("../../core/scope/scope.js").Scope): any)}
+     *        (function(ng.Scope): any)}
      */
     this.$$ngModelGet = this.$$parsedNgModel;
     this.$$ngModelSet = this.$$parsedNgModelAssign;
@@ -153,7 +153,7 @@ export class NgModelController {
     /** @type {number} */
     this.$$currentValidationRunId = 0;
 
-    /** @type {import('../../core/scope/scope.js').Scope} */
+    /** @type {ng.Scope} */
     this.$$scope = $scope; // attempt to bind to nearest controller if present
     this.$$attr = $attr;
     this.$$element = $element;

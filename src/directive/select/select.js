@@ -31,13 +31,13 @@ class SelectController {
 
   /**
    * @param {HTMLSelectElement} $element
-   * @param {import('../../core/scope/scope.js').Scope} $scope
+   * @param {ng.Scope} $scope
    */
   constructor($element, $scope) {
     /** @type {HTMLSelectElement} */
     this.$element = $element;
 
-    /** @type {import('../../core/scope/scope.js').Scope} */
+    /** @type {ng.Scope} */
     this.$scope = $scope;
 
     /** @type {Object<string, any>} */

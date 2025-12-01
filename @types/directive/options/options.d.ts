@@ -1,13 +1,13 @@
 /**
  *
  * @param {ng.CompileService} $compile
- * @param {import("../../core/parse/interface.ts").ParseService} $parse
- * @returns {import("../../interface.ts").Directive}
+ * @param {ng.ParseService} $parse
+ * @returns {ng.Directive}
  */
 export function ngOptionsDirective(
   $compile: ng.CompileService,
-  $parse: import("../../core/parse/interface.ts").ParseService,
-): import("../../interface.ts").Directive;
+  $parse: ng.ParseService,
+): ng.Directive;
 export namespace ngOptionsDirective {
   let $inject: string[];
 }

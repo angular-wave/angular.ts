@@ -12,7 +12,8 @@ describe("ngView", () => {
     app,
     $injector,
     $state,
-    $viewScroll;
+    $viewScroll,
+    errorLog = [];
 
   const aState = {
       name: "a",
@@ -128,6 +129,11 @@ describe("ngView", () => {
     log = "";
     app = window.angular
       .module("defaultModule", [])
+      .decorator("$exceptionHandler", function () {
+        return (exception) => {
+          errorLog.push(exception.message);
+        };
+      })
       .config(($provide, _$stateProvider_) => {
         $provide.decorator("$viewScroll", () => {
           return jasmine.createSpy("$viewScroll");
@@ -1012,13 +1018,19 @@ describe("angular 1.5+ style .component()", () => {
     svcs,
     $stateProvider,
     $templateCache,
-    $rootScope;
+    $rootScope,
+    errorLog = [];
 
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     window.angular
       .module("defaultModule", [])
+      .decorator("$exceptionHandler", function () {
+        return (exception) => {
+          errorLog.push(exception.message);
+        };
+      })
       .directive("ng12Directive", () => {
         return {
           restrict: "E",

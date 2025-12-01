@@ -24,7 +24,7 @@ describe("ngInclude", () => {
       module = angular
         .module("myModule", ["ng"])
         .decorator("$exceptionHandler", function () {
-          return (exception, cause) => {
+          return (exception) => {
             errorLog.push(exception.message);
           };
         });

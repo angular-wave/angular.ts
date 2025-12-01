@@ -1,75 +1,63 @@
 /**
- * Handles uncaught exceptions thrown in AngularTS expressions.
+ * Unified exception handler used throughout AngularTS.
  *
- * By default, this service delegates to `$log.error()`, logging the exception to the browser console.
- * You can override this behavior to provide custom exception handling—such as reporting errors
- * to a backend server, or altering the log level used.
+ * This service receives uncaught exceptions from both synchronous and asynchronous operations.
+ * Its purpose is to provide a central point through which the framework
+ * surfaces errors.
  *
- * ## Default Behavior
+ * By default, `$exceptionHandler` simply rethrows the exception. This ensures fail-fast
+ * behavior, making errors visible immediately in development and in unit tests.
+ * Applications may override this service to introduce custom error handling.
  *
- * Uncaught exceptions within AngularTS expressions are intercepted and passed to this service.
- * The default implementation logs the error using `$log.error(exception, cause)`.
- *
- * ## Custom Implementation
- *
- * You can override the default `$exceptionHandler` by providing your own factory. This allows you to:
- * - Log errors to a remote server
- * - Change the log level (e.g., from `error` to `warn`)
- * - Trigger custom error-handling workflows
- *
- * ### Example: Overriding `$exceptionHandler`
+ * ### Example: Custom `$exceptionHandler`
  *
  * ```js
  * angular
- *   .module('exceptionOverwrite', [])
- *   .factory('$exceptionHandler', ['$log', 'logErrorsToBackend', function($log, logErrorsToBackend) {
- *     return function myExceptionHandler(exception, cause) {
- *       logErrorsToBackend(exception, cause);
- *       $log.warn(exception, cause); // Use warn instead of error
+ *   .module('app')
+ *   .factory('$exceptionHandler', function(myLogger) {
+ *     return function handleError(error) {
+ *       myLogger.capture(error);
+ *       // Rethrow to preserve fail-fast behavior:
+ *       throw error;
  *     };
- *   }]);
+ *   });
  * ```
- * - You may also manually invoke the exception handler:
+ *
+ * IMPORTANT: custom implementation should always rethrow the error as the framework assumes that `$exceptionHandler` always does the throwing.
+ *
+ * ### Manual Invocation
+ *
+ * You can invoke the exception handler directly when catching errors in your own code:
  *
  * ```js
  * try {
- *   // Some code that might throw
- * } catch (e) {
- *   $exceptionHandler(e, 'optional context');
+ *   riskyOperation();
+ * } catch (err) {
+ *   $exceptionHandler(err);
  * }
  * ```
  *
  * @see {@link angular.ErrorHandler AngularTS ErrorHandler}
  */
 
-/** @typedef {import('../log/interface.ts').LogService} LogService */
-
-/** @typedef {import("./interface.ts").ErrorHandler}  ErrorHandler */
-
 /**
- * Provider for `$exceptionHandler` service. Delegates uncaught exceptions to `$log.error()` by default.
- * Can be overridden to implement custom error-handling logic.
+ * Provider for the `$exceptionHandler` service.
+ *
+ * The default implementation rethrows exceptions, enabling strict fail-fast behavior.
+ * Applications may replace the handler via by setting `errorHandler`property or by providing their own
+ * `$exceptionHandler` factory.
  */
 export class ExceptionHandlerProvider {
   constructor() {
-    /** @type {LogService} */
-    this.log = window.console;
-
-    /** @type {ErrorHandler} */
-    this.errorHandler = (exception, cause) => {
+    /** @type {ng.ExceptionHandlerService} */
+    this.errorHandler = (exception) => {
       throw exception;
     };
-
-    this.$get = [
-      "$log",
-      /**
-       * @param {LogService} $log
-       * @returns {ErrorHandler}
-       */
-      ($log) => {
-        this.log = $log;
-        return this.errorHandler;
-      },
-    ];
+  }
+  /**
+   * @returns {ng.ExceptionHandlerService}
+   */
+  $get() {
+    return (exception) => this.errorHandler(exception);
   }
 }

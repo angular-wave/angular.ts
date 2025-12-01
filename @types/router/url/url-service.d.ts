@@ -60,10 +60,7 @@ export class UrlService {
   getHash(): string;
   $get: (
     | string
-    | ((
-        $location: import("../../services/location/location.js").Location,
-        $rootScope: import("../../core/scope/scope.js").Scope,
-      ) => UrlService)
+    | (($location: ng.LocationService, $rootScope: ng.Scope) => UrlService)
   )[];
   /**
    * @returns {string}

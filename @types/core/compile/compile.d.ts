@@ -126,11 +126,11 @@ export class CompileProvider {
     | ((
         $injector: ng.InjectorService,
         $interpolate: any,
-        $exceptionHandler: import("../../services/exception/exception-handler.js").ErrorHandler,
+        $exceptionHandler: ng.ExceptionHandlerService,
         $templateRequest: ng.TemplateRequestService,
         $parse: ng.ParseService,
         $controller: any,
-        $rootScope: import("../scope/scope.js").Scope,
+        $rootScope: ng.Scope,
         $sce: any,
         $animate: ng.AnimateService,
       ) => (
