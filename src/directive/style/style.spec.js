@@ -149,11 +149,11 @@ describe("ng-style", () => {
 
     it("should clear style when the value is undefined or null", async () => {
       scope.styleObj = { height: "99px", width: "88px" };
-      await wait();
+      await wait(10);
       expect(element.style[preCompStyle]).toBe("88px");
       expect(element.style[postCompStyle]).toBe("99px");
       scope.styleObj = { height: undefined, width: null };
-      await wait();
+      await wait(10);
       expect(element.style[preCompStyle]).not.toBe("88px");
       expect(element.style[postCompStyle]).not.toBe("99px");
     });

@@ -1,5 +1,4 @@
 import {
-  INJECTOR_LITERAL,
   NgModule,
   COMPILE_LITERAL,
   ANIMATION_LITERAL,
@@ -82,12 +81,12 @@ describe("NgModule", () => {
 
     // then they are appended to config queue
     expect(ngModule.configBlocks[0]).toEqual([
-      INJECTOR_LITERAL,
+      $injectTokens.$injector,
       "invoke",
       [fn1],
     ]);
     expect(ngModule.configBlocks[1]).toEqual([
-      INJECTOR_LITERAL,
+      $injectTokens.$injector,
       "invoke",
       [fn2],
     ]);

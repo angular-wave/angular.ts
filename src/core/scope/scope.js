@@ -341,11 +341,10 @@ export class Scope {
 
       if (isObject(value)) {
         if (hasOwn(target, property)) {
-          Object.keys(oldValue)
-            .filter((x) => !value[x])
-            .forEach((k) => {
-              delete oldValue[k];
-            });
+          const keys = Object.keys(oldValue);
+          for (const k of keys) {
+            if (!value[k]) delete oldValue[k];
+          }
         }
 
         if (oldValue !== value) {
@@ -370,12 +369,17 @@ export class Scope {
 
       if (isUndefined(value)) {
         let called = false;
-        Object.keys(oldValue.$target).forEach((k) => {
-          if (oldValue.$target[k]?.[isProxySymbol]) {
+        const keys = Object.keys(oldValue.$target);
+        const tgt = oldValue.$target;
+        let i = 0;
+        for (i; i < keys.length; i++) {
+          const k = keys[i];
+          const v = tgt[k];
+          if (v && v[isProxySymbol]) {
             called = true;
           }
           delete oldValue[k];
-        });
+        }
 
         target[property] = undefined;
         if (!called) {
@@ -616,7 +620,7 @@ export class Scope {
    * @param {Function} filter
    */
   #scheduleListener(listeners, filter = (val) => val) {
-    Promise.resolve().then(() => {
+    queueMicrotask(() => {
       let index = 0;
       let filteredListeners = filter(listeners);
       while (index < filteredListeners.length) {

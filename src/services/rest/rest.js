@@ -14,8 +14,8 @@ export class RestService {
    *
    * @param {ng.HttpService} $http Angular-like $http service
    * @param {string} baseUrl Base URL or URI template
-   * @param {{new(data: any): T}=} entityClass Optional constructor to map JSON to objects
-   * @param {Object=} options Optional settings (interceptors, headers, etc.)
+   * @param {ng.EntityClass<T>} [entityClass] Optional constructor to map JSON to objects
+   * @param {Object} [options] Optional settings (interceptors, headers, etc.)
    */
   constructor($http, baseUrl, entityClass, options = {}) {
     assert(isString(baseUrl) && baseUrl.length > 0, "baseUrl required");

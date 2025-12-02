@@ -33,7 +33,6 @@ types:
 	@npx -p typescript tsc --project tsconfig.types.json
 	$(MAKE) pretty
 
-
 TYPEDOC_DIR = docs/static/typedoc
 doc: 
 	@rm -rf $(TYPEDOC_DIR)
@@ -42,7 +41,9 @@ doc:
 	@mv typedoc $(TYPEDOC_DIR)
 
 serve:
-	@npm run serve
+	@vite --config utils/vite.config.js & \
+	node --watch ./utils/express.js & \
+	wait
 
 prepare-release: test check types doc pretty build
 
