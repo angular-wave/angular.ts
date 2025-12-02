@@ -54,11 +54,16 @@ export class CookieService {
    *
    * @param {string} key
    * @returns {string|null}
+   * @throws {URIError} – If decodeURIComponent fails.
    */
   get(key) {
     assert(isString(key), BADARG);
-    const all = parseCookies();
-    return all[key] || null;
+    try {
+      const all = parseCookies();
+      return all[key] || null;
+    } catch (e) {
+      this.$exceptionHandler(e);
+    }
   }
 
   /**
@@ -86,9 +91,14 @@ export class CookieService {
    * Returns an object containing all raw cookies.
    *
    * @returns {Record<string, string>}
+   * @throws {URIError} – If decodeURIComponent fails
    */
   getAll() {
-    return parseCookies();
+    try {
+      return parseCookies();
+    } catch (e) {
+      this.$exceptionHandler(e);
+    }
   }
 
   /**
@@ -152,22 +162,44 @@ export class CookieService {
 
 /*----------Helpers----------*/
 
+// Internal cache
+let _lastCookieString = "";
+/** @type {Record<string, string>} */
+let _lastCookieMap = Object.create(null);
+
 /**
  * @returns {Record<string,string>}
+ * @throws {URIError} – If decodeURIComponent fails
  */
 function parseCookies() {
-  /** @type {Record<string, string>} */
-  const out = {};
-  if (!document.cookie) return out;
+  const current = document.cookie;
 
-  const parts = document.cookie.split("; ");
+  // Fast path: return cached object if nothing changed
+  if (current === _lastCookieString) {
+    return _lastCookieMap;
+  }
+
+  _lastCookieString = current;
+
+  /** @type {Record<string, string>} */
+  const out = Object.create(null);
+
+  if (!current) {
+    _lastCookieMap = out;
+    return out;
+  }
+
+  const parts = current.split("; ");
   for (const part of parts) {
     const eq = part.indexOf("=");
     if (eq === -1) continue; // skip malformed cookie
+
     const key = decodeURIComponent(part.substring(0, eq));
     const val = decodeURIComponent(part.substring(eq + 1));
-    out[key] = val;
+    out[key] = val; // last wins
   }
+
+  _lastCookieMap = out;
   return out;
 }
 

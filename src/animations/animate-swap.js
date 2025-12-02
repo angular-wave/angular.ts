@@ -13,7 +13,7 @@ export function ngAnimateSwapDirective($animate) {
     link(scope, $element, attrs, _ctrl, $transclude) {
       let previousElement;
       let previousScope;
-      scope.$watch(attrs.ngAnimateSwap || attrs.for, (value) => {
+      scope.$watch(attrs.ngAnimateSwap || attrs.for, function (value) {
         if (previousElement) {
           $animate.leave(previousElement);
         }
@@ -22,7 +22,7 @@ export function ngAnimateSwapDirective($animate) {
           previousScope = null;
         }
         if (value) {
-          $transclude((clone, childScope) => {
+          $transclude(function (clone, childScope) {
             previousElement = clone;
             previousScope = childScope;
             $animate.enter(clone, null, $element);

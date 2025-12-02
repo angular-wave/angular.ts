@@ -1,10 +1,4 @@
 declare namespace legacy {
-  // not directly implemented, but ensures that constructed class implements $get
-
-  ///////////////////////////////////////////////////////////////////////////
-  // Module
-  // see http://docs.angularjs.org/api/angular.Module
-  ///////////////////////////////////////////////////////////////////////////
   interface IModule {
     /**
      * Use this method to register a component.
@@ -40,21 +34,6 @@ declare namespace legacy {
      */
     constant<T>(name: string, value: T): IModule;
     constant(object: Object): IModule;
-    /**
-     * The $controller service is used by Angular to create new controllers.
-     *
-     * This provider allows controller registration via the register method.
-     *
-     * @param name Controller name, or an object map of controllers where the keys are the names and the values are the constructors.
-     * @param controllerConstructor Controller constructor fn (optionally decorated with DI annotations in the array notation).
-     */
-    controller(
-      name: string,
-      controllerConstructor: Injectable<IControllerConstructor>,
-    ): IModule;
-    controller(object: {
-      [name: string]: Injectable<IControllerConstructor>;
-    }): IModule;
     /**
      * Register a new directive with the compiler.
      *

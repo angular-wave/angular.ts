@@ -1,8 +1,8 @@
 import { hasOwn, minErr } from "../../shared/utils.js";
 import { annotate, isClass } from "./di.js";
-import { INJECTOR_LITERAL } from "./ng-module/ng-module.js";
+import { $injectTokens } from "../../injection-tokens.js";
 
-const $injectorMinErr = minErr(INJECTOR_LITERAL);
+const $injectorMinErr = minErr($injectTokens.$injector);
 
 const providerSuffix = "Provider";
 const INSTANTIATING = true;

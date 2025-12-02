@@ -1,25 +1,30 @@
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function ngStyleDirective() {
   return {
     restrict: "A",
     link(scope, element, attr) {
-      let oldStyles;
-      scope.$watch(attr["ngStyle"], (newStyles) => {
+      let oldStyles = null;
+
+      scope.$watch(attr.ngStyle, function (newStyles) {
+        const target = newStyles?.$target || newStyles;
+
         if (oldStyles) {
-          const oldKeys = Object.keys(oldStyles);
-          for (let i = 0, length = oldKeys.length; i < length; i++) {
-            element.style.removeProperty(oldKeys[i]);
+          for (const key in oldStyles) {
+            element.style.removeProperty(key);
           }
         }
-        if (newStyles) {
-          oldStyles = { ...newStyles.$target };
-          const newEntries = Object.entries(newStyles);
-          for (let i = 0, length = newEntries.length; i < length; i++) {
-            const [key, value] = newEntries[i];
+
+        if (target) {
+          oldStyles = {};
+          for (const key in target) {
+            const value = target[key];
             element.style.setProperty(key, value);
+            oldStyles[key] = value;
           }
+        } else {
+          oldStyles = null;
         }
       });
     },

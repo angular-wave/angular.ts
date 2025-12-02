@@ -9,12 +9,11 @@ import {
   isUndefined,
   minErr,
 } from "../../shared/utils.js";
-import { INJECTOR_LITERAL } from "./ng-module/ng-module.js";
 import { InjectorService, ProviderInjector } from "./internal-injector.js";
 import { createPersistentProxy } from "../../services/storage/storage.js";
 import { $injectTokens } from "../../injection-tokens";
 
-const $injectorMinErr = minErr(INJECTOR_LITERAL);
+const $injectorMinErr = minErr($injectTokens.$injector);
 const providerSuffix = "Provider";
 
 /**
@@ -55,7 +54,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
 
   let instanceInjector = protoInstanceInjector;
   const runBlocks = loadModules(modulesToLoad);
-  instanceInjector = protoInstanceInjector.get(INJECTOR_LITERAL);
+  instanceInjector = protoInstanceInjector.get($injectTokens.$injector);
 
   runBlocks.forEach((fn) => fn && instanceInjector.invoke(fn));
 
@@ -125,7 +124,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
    */
   function service(name, constructor) {
     return factory(name, [
-      INJECTOR_LITERAL,
+      $injectTokens.$injector,
       ($injector) => $injector.instantiate(constructor),
     ]);
   }

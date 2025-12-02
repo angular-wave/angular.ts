@@ -8,8 +8,6 @@ import {
 } from "../../../shared/utils.js";
 
 /** @private */
-export const INJECTOR_LITERAL = "$injector";
-/** @private */
 export const COMPILE_LITERAL = "$compileProvider";
 /** @private */
 export const ANIMATION_LITERAL = "$animateProvider";
@@ -23,10 +21,6 @@ export const CONTROLLER_LITERAL = "$controllerProvider";
  * controllers, directives, filters, etc. They provide recipes for the injector
  * to do the actual instantiation. A module itself has no behaviour but only state.
  * A such, it acts as a data structure between the Angular instance and the injector service.
- *
- * Since this is an internal structure that is exposed only via the Angular instance,
- * it contains no validation of the items it receives. It is up to the instantiator on
- * modules to do the actual validation.
  */
 export class NgModule {
   /**
@@ -67,8 +61,6 @@ export class NgModule {
 
     this.services = [];
 
-    this.wasmModules = [];
-
     this.restDefinitions = [];
   }
 
@@ -98,7 +90,7 @@ export class NgModule {
    * @returns {NgModule}
    */
   config(configFn) {
-    this.configBlocks.push([INJECTOR_LITERAL, "invoke", [configFn]]);
+    this.configBlocks.push([$t.$injector, "invoke", [configFn]]);
     return this;
   }
 
@@ -225,8 +217,11 @@ export class NgModule {
   }
 
   /**
-   * @param {string} name
-   * @param {ng.Injectable<any>} ctlFn
+   * The $controller service is used by Angular to create new controllers.
+   * This provider allows controller registration via the register method.
+   *
+   * @param {string} name Controller name
+   * @param {ng.Injectable<ng.ControllerConstructor>} ctlFn Controller constructor fn (optionally decorated with DI annotations in the array notation)
    * @returns {NgModule}
    */
   controller(name, ctlFn) {

@@ -1,11 +1,11 @@
 import { assertArgFn, minErr } from "../../shared/utils.js";
-import { INJECTOR_LITERAL } from "./ng-module/ng-module.js";
+import { $injectTokens } from "../../injection-tokens.js";
 
 /**
  * Shared utility functions
  */
 
-const $injectorMinErr = minErr(INJECTOR_LITERAL);
+const $injectorMinErr = minErr($injectTokens.$injector);
 const ARROW_ARG = /^([^(]+?)=>/;
 const FN_ARGS = /^[^(]*\(\s*([^)]*)\)/m;
 const FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
