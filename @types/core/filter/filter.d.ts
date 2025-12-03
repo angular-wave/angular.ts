@@ -1,3 +1,9 @@
+/**
+ * $filterProvider - $filter - provider in module ng
+ *
+ * Filters are just functions which transform input to an output. However filters need to be Dependency Injected. To achieve this a filter definition consists of a factory function which is annotated with dependencies and is responsible for creating a filter function.
+ * @extends {ng.ServiceProvider}
+ */
 export class FilterProvider {
   static $inject: string[];
   /**
@@ -6,18 +12,14 @@ export class FilterProvider {
   constructor($provide: ng.ProvideService);
   $provide: import("../../interface.ts").Provider;
   /**
-   * @param {string|Record<string, ng.FilterFn>} name
-   * @param {ng.FilterService} [factory]
-   * @return {import('../../interface.ts').Provider}
+   * Register a filter a config phase;
+   * @param {string} name
+   * @param {ng.Injectable<ng.FilterFactory>} factory
+   * @return {ng.FilterProvider}
    */
   register(
-    name: string | Record<string, ng.FilterFn>,
-    factory?: ng.FilterService,
-  ): import("../../interface.ts").Provider;
-  $get: (
-    | string
-    | ((
-        $injector: import("../../core/di/internal-injector.js").InjectorService,
-      ) => ng.FilterService)
-  )[];
+    name: string,
+    factory: ng.Injectable<ng.FilterFactory>,
+  ): ng.FilterProvider;
+  $get: (string | (($injector: ng.InjectorService) => ng.FilterFactory))[];
 }

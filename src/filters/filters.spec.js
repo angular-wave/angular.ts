@@ -1,15 +1,40 @@
 import { Angular } from "../angular.js";
 import { createInjector } from "../core/di/injector.js";
-import { toJson } from "../shared/utils.js";
+import { toJson, wait } from "../shared/utils.js";
 
 describe("filters", () => {
   let filter;
+  let filterProvider;
+  let el = document.getElementById("app");
 
   beforeEach(() => {
     window.angular = new Angular();
-    window.angular.module("myModule", ["ng"]);
+    window.angular.module("myModule", ["ng"]).config(($filterProvider) => {
+      filterProvider = $filterProvider;
+      filterProvider.register("test", () => (x) => x + "_test");
+    });
     const injector = createInjector(["myModule"]);
     filter = injector.get("$filter");
+  });
+
+  it("should be available at config phase", () => {
+    expect(filterProvider).toBeDefined();
+  });
+
+  it("should require name", () => {
+    expect(() => filterProvider.register()).toThrowError();
+  });
+
+  it("should require function", () => {
+    expect(() => filterProvider.register({ test: () => {} })).toThrowError();
+    expect(() => filterProvider.register("test", {})).toThrowError();
+  });
+
+  it("should dynamically register filters", async () => {
+    el.innerHTML = "<div> {{ 'hello' | test }}</div>";
+    window.angular.bootstrap(el, ["myModule"]);
+    await wait();
+    expect(el.innerText).toEqual("hello_test");
   });
 
   it("should call the filter when evaluating expression", () => {

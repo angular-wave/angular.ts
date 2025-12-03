@@ -2,7 +2,6 @@ import {
   NgModule,
   COMPILE_LITERAL,
   ANIMATION_LITERAL,
-  FILTER_LITERAL,
   CONTROLLER_LITERAL,
 } from "./ng-module.js";
 import { $injectTokens } from "../../../injection-tokens.js";
@@ -228,12 +227,12 @@ describe("NgModule", () => {
   it("can store filters", () => {
     ngModule.filter("aFilter", a).filter("bFilter", b);
     expect(ngModule.invokeQueue[0]).toEqual([
-      FILTER_LITERAL,
+      injectTokens.$filterProvider,
       "register",
       ["aFilter", a],
     ]);
     expect(ngModule.invokeQueue[1]).toEqual([
-      FILTER_LITERAL,
+      $injectTokens.$filterProvider,
       "register",
       ["bFilter", b],
     ]);

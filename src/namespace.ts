@@ -26,6 +26,7 @@ import {
   FilterFactory as TFilterFactory,
   FilterFn as TFilterFn,
 } from "./filters/interface.ts";
+import { FilterProvider as TFilterProvider } from "./core/filter/filter.js";
 import { InterpolateService as TInterpolateService } from "./core/interpolate/interface.ts";
 import { InterpolateProvider as TInterpolateProvider } from "./core/interpolate/interpolate.js";
 import {
@@ -114,7 +115,6 @@ declare global {
     export type Scope = TScope;
     export type NgModule = TNgModule;
     export type PubSubProvider = TPubSubProvider;
-    export type FilterFn = TFilterFn;
 
     export type CompositeLinkFn = TCompositeLinkFn;
     export type PublicLinkFn = TPublicLinkFn;
@@ -130,6 +130,7 @@ declare global {
     export type HttpParamSerializerProvider = THttpParamSerializerProvider;
     export type SceProvider = TSceProvider;
     export type SceDelegateProvider = TSceDelegateProvider;
+    export type FilterProvider = TFilterProvider;
 
     // Services
     export type AnchorScrollService = TAnchorScrollService;
@@ -138,7 +139,8 @@ declare global {
     export type ControllerService = TControllerService;
     export type CookieService = TCookieService;
     export type ExceptionHandlerService = TExceptionHandler;
-    export type FilterService = TFilterFactory;
+    export type FilterFn = TFilterFn;
+    export type FilterFactory = TFilterFactory;
     export type HttpParamSerializerSerService = THttpParamSerializer;
     export type HttpService = THttpService;
     export type InterpolateService = TInterpolateService;
