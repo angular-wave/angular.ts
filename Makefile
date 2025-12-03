@@ -41,7 +41,7 @@ doc:
 	@mv typedoc $(TYPEDOC_DIR)
 
 serve:
-	@vite --config utils/vite.config.js & \
+	@node_modules/.bin/vite --config utils/vite.config.js & \
 	node --watch ./utils/express.js & \
 	wait
 

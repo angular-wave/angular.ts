@@ -16,6 +16,11 @@ import { ASTType } from "../parse/ast-type.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
 /**
+ * Decorator for excluding objects from scope observability
+ */
+export const NONSCOPE = "$nonscope";
+
+/**
  * @type {number}
  */
 let uid = 0;
@@ -67,98 +72,64 @@ export class RootScopeProvider {
  *                                     or the original value if the target is not an object.
  */
 export function createScope(target = {}, context) {
-  if (
-    isNull(target) ||
-    target[NONSCOPE] === true ||
-    (target.constructor && target.constructor[NONSCOPE]) === true
-  ) {
-    return target;
+  if (!isObject(target) || isNonScope(target)) return target;
+
+  const proxy = new Proxy(target, context || new Scope());
+  const keys = Object.keys(target);
+  const ctorNonScope = Array.isArray(target.constructor?.$nonscope)
+    ? target.constructor.$nonscope
+    : null;
+  const instNonScope = Array.isArray(target.$nonscope)
+    ? target.$nonscope
+    : null;
+
+  for (let i = 0, l = keys.length; i < l; i++) {
+    const key = keys[i];
+    if (ctorNonScope?.includes(key) || instNonScope?.includes(key)) continue;
+    target[key] = createScope(target[key], proxy.$handler);
   }
 
-  if (typeof target === "object") {
-    if (isUnsafeGlobal(target)) {
-      return target;
-    }
-    const proxy = new Proxy(target, context || new Scope());
-    for (const key in target) {
-      if (hasOwn(target, key)) {
-        try {
-          if (
-            (target.constructor.$nonscope &&
-              Array.isArray(target.constructor.$nonscope) &&
-              target.constructor.$nonscope.includes(key)) ||
-            (target.$nonscope &&
-              Array.isArray(target.$nonscope) &&
-              target.$nonscope.includes(key))
-          ) {
-            /* empty */
-          } else {
-            target[key] = createScope(target[key], proxy.$handler);
-          }
-        } catch {
-          /* empty */
-        }
-      }
-    }
-
-    return proxy;
-  } else {
-    return target;
-  }
+  return proxy;
 }
 
+const g = globalThis;
+const proto = Object.prototype;
+const toString = proto.toString;
+const wStr = "[object Window]";
+
 /**
+ * @ignore
+ * Checks if a target should be excluded from scope observability
  * @param {any} target
  * @returns {boolean}
  */
-export function isUnsafeGlobal(target) {
-  if (target == null) return false;
-  const t = typeof target;
-  if (t !== "object" && t !== "function") return false;
-
-  const g = globalThis;
+export function isNonScope(target) {
   if (
-    target === g ||
+    target[NONSCOPE] === true ||
+    (target.constructor && target.constructor[NONSCOPE]) === true ||
     target === g.window ||
     target === g.document ||
     target === g.self ||
-    target === g.frames
+    target === g.frames ||
+    target instanceof Window ||
+    target instanceof Document ||
+    target instanceof Element ||
+    target instanceof Node ||
+    target instanceof EventTarget ||
+    target instanceof Promise ||
+    target instanceof HTMLCollection ||
+    target instanceof NodeList ||
+    target instanceof Event
   ) {
     return true;
   }
 
-  // DOM / browser host object checks
-  if (
-    (typeof Window !== "undefined" && target instanceof Window) ||
-    (typeof Document !== "undefined" && target instanceof Document) ||
-    (typeof Element !== "undefined" && target instanceof Element) ||
-    (typeof Node !== "undefined" && target instanceof Node) ||
-    (typeof EventTarget !== "undefined" && target instanceof EventTarget)
-  ) {
-    return true;
-  }
-
-  if (target instanceof Promise) {
-    return true;
-  }
-
-  // Events
-  if (typeof Event !== "undefined" && target instanceof Event) {
-    return true;
-  }
-
-  // Cross-origin or non-enumerable window objects
   try {
-    return Object.prototype.toString.call(target) === "[object Window]";
+    return toString.call(target) === wStr;
   } catch {
-    return true;
+    return false;
   }
 }
-
-/**
- * Decorator for excluding objects from scope observability
- */
-export const NONSCOPE = "$nonscope";
 
 /**
  * Scope class for the Proxy. It intercepts operations like property access (get)
@@ -230,9 +201,6 @@ export class Scope {
       : /** @type {Scope} */ (this).$root === /** @type {Scope} */ (this)
         ? null
         : context;
-
-    /** @type {import('./interface.ts').AsyncQueueTask[]} */
-    this.$$asyncQueue = [];
 
     this.filters = [];
 
@@ -651,7 +619,7 @@ export class Scope {
     // Constant are immediately passed to listener function
     if (get.constant) {
       if (listenerFn) {
-        Promise.resolve().then(() => {
+        queueMicrotask(() => {
           let res = get();
           while (isFunction(res)) {
             res = res();
@@ -693,8 +661,7 @@ export class Scope {
           while (isFunction(res)) {
             res = res(this.$target);
           }
-          Promise.resolve().then(res);
-          return () => {};
+          return;
         }
         key = get.decoratedNode.body[0].expression.left.name;
         break;
@@ -1242,11 +1209,6 @@ export class Scope {
         });
       }
       listenerFn(newVal, originalTarget);
-      this.$$asyncQueue.forEach((x) => {
-        if (x.handler.$id == this.$id) {
-          Promise.resolve().then(x.fn(x.handler, x.locals));
-        }
-      });
 
       while ($postUpdateQueue.length) {
         $postUpdateQueue.shift()();

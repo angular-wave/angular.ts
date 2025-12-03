@@ -661,7 +661,7 @@ export class LocationProvider {
           return;
         }
 
-        Promise.resolve().then(() => {
+        queueMicrotask(() => {
           const oldUrl = $location.absUrl;
           const oldState = $location.$$state;
           let defaultPrevented;
