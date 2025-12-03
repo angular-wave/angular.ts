@@ -1,4 +1,4 @@
-import { isObject, isFunction } from "../shared/utils.js";
+import { isFunction, isObject } from "../shared/utils.js";
 import {
   applyAnimationClassesFactory,
   applyAnimationStyles,
@@ -10,7 +10,7 @@ import { AnimateRunner } from "./runner/animate-runner.js";
 // TODO: use caching here to speed things up for detection
 // TODO: add documentation
 
-AnimateJsProvider.$inject = [$t.$animate + "Provider"];
+AnimateJsProvider.$inject = [`${$t.$animate}Provider`];
 export function AnimateJsProvider($animateProvider) {
   this.$get = [
     $t.$injector,
@@ -21,6 +21,7 @@ export function AnimateJsProvider($animateProvider) {
      */
     function ($injector) {
       const applyAnimationClasses = applyAnimationClassesFactory();
+
       // $animateJs(element, 'enter');
       return function (element, event, classes, options) {
         let animationClosed = false;
@@ -34,17 +35,21 @@ export function AnimateJsProvider($animateProvider) {
         }
 
         options = prepareAnimationOptions(options);
+
         if (!classes) {
           classes = element.getAttribute("class") || "";
+
           if (options.addClass) {
             classes += ` ${options.addClass}`;
           }
+
           if (options.removeClass) {
             classes += ` ${options.removeClass}`;
           }
         }
 
         const classesToAdd = options.addClass;
+
         const classesToRemove = options.removeClass;
 
         // the lookupAnimations function returns a series of animation objects that are
@@ -52,11 +57,16 @@ export function AnimateJsProvider($animateProvider) {
         // defined via the module.animation factory function. If nothing is detected then
         // we don't return anything which then makes $animation query the next driver.
         const animations = lookupAnimations(classes);
+
         let before;
+
         let after;
+
         if (animations.length) {
           let afterFn;
+
           let beforeFn;
+
           if (event === "leave") {
             beforeFn = "leave";
             afterFn = "afterLeave"; // TODO(matsko): get rid of this
@@ -109,6 +119,7 @@ export function AnimateJsProvider($animateProvider) {
               runner = new AnimateRunner();
               runner.complete(true);
             }
+
             return runner;
           },
           start() {
@@ -127,12 +138,14 @@ export function AnimateJsProvider($animateProvider) {
                 end(fn) {
                   // call the before animation function, then mark runner done
                   const endFn = before(fn) || (() => {});
+
                   endFn();
                 },
                 cancel() {
                   (before(true) || (() => {}))();
                 },
               });
+
               chain.push(runnerBefore);
             }
 
@@ -146,6 +159,7 @@ export function AnimateJsProvider($animateProvider) {
                   applyOptions();
                 },
               });
+
               chain.push(runnerApplyOptions);
             } else {
               applyOptions();
@@ -155,12 +169,14 @@ export function AnimateJsProvider($animateProvider) {
               const runnerAfter = new AnimateRunner({
                 end(fn) {
                   const endFn = after(fn) || (() => {});
+
                   endFn();
                 },
                 cancel() {
                   (after(true) || (() => {}))();
                 },
               });
+
               chain.push(runnerAfter);
             }
 
@@ -175,6 +191,7 @@ export function AnimateJsProvider($animateProvider) {
             });
 
             AnimateRunner.chain(chain, onComplete);
+
             return runner;
 
             function onComplete(success) {
@@ -193,6 +210,7 @@ export function AnimateJsProvider($animateProvider) {
 
         function executeAnimationFn(fn, element, event, options, onDone) {
           let args;
+
           switch (event) {
             case "animate":
               args = [element, options.from, options.to, onDone];
@@ -218,6 +236,7 @@ export function AnimateJsProvider($animateProvider) {
           args.push(options);
 
           let value = fn.apply(fn, args);
+
           if (value) {
             if (isFunction(value.start)) {
               value = value.start();
@@ -242,16 +261,20 @@ export function AnimateJsProvider($animateProvider) {
           fnName,
         ) {
           const operations = [];
+
           animations.forEach((ani) => {
             const animation = ani[fnName];
+
             if (!animation) return;
 
             // note that all of these animations will run in parallel
             operations.push(() => {
               let runner;
+
               let endProgressCb;
 
               let resolved = false;
+
               const onAnimationComplete = function (rejected) {
                 if (!resolved) {
                   resolved = true;
@@ -276,6 +299,7 @@ export function AnimateJsProvider($animateProvider) {
                 options,
                 (result) => {
                   const cancelled = result === false;
+
                   onAnimationComplete(cancelled);
                 },
               );
@@ -301,9 +325,12 @@ export function AnimateJsProvider($animateProvider) {
             animations,
             fnName,
           );
+
           if (operations.length === 0) {
             let a;
+
             let b;
+
             if (fnName === "beforeSetClass") {
               a = groupEventedAnimations(
                 element,
@@ -339,6 +366,7 @@ export function AnimateJsProvider($animateProvider) {
             if (a) {
               operations = operations.concat(a);
             }
+
             if (b) {
               operations = operations.concat(b);
             }
@@ -349,6 +377,7 @@ export function AnimateJsProvider($animateProvider) {
           // TODO(matsko): add documentation
           return function startAnimation(callback) {
             const runners = [];
+
             if (operations.length) {
               operations.forEach((animateFn) => {
                 runners.push(animateFn());
@@ -377,16 +406,21 @@ export function AnimateJsProvider($animateProvider) {
       function lookupAnimations(classes) {
         classes = Array.isArray(classes) ? classes : classes.split(" ");
         const matches = [];
+
         const flagMap = {};
+
         for (let i = 0; i < classes.length; i++) {
           const klass = classes[i];
+
           const animationFactory =
             $animateProvider.$$registeredAnimations[klass];
+
           if (animationFactory && !flagMap[klass]) {
             matches.push($injector.get(animationFactory));
             flagMap[klass] = true;
           }
         }
+
         return matches;
       }
     },

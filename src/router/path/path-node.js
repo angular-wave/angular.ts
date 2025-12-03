@@ -13,6 +13,7 @@ export class PathNode {
   constructor(stateOrNode) {
     if (stateOrNode instanceof PathNode) {
       const node = stateOrNode;
+
       this.state = node.state;
       this.paramSchema = node.paramSchema.slice();
       this.paramValues = Object.assign({}, node.paramValues);
@@ -20,6 +21,7 @@ export class PathNode {
       this.views = node.views && node.views.slice();
     } else {
       const state = stateOrNode;
+
       this.state = state;
       this.paramSchema = state.parameters({ inherit: false });
       this.paramValues = {};
@@ -37,10 +39,12 @@ export class PathNode {
       paramDef.id,
       paramDef.value(params[paramDef.id]),
     ];
+
     this.paramValues = this.paramSchema.reduce(
       (memo, pDef) => applyPairs(memo, getParamVal(pDef)),
       {},
     );
+
     return this;
   }
 
@@ -55,6 +59,7 @@ export class PathNode {
    */
   equals(node, paramsFn) {
     const diff = this.diff(node, paramsFn);
+
     return diff && diff.length === 0;
   }
 
@@ -73,6 +78,7 @@ export class PathNode {
   diff(node, paramsFn) {
     if (this.state !== node.state) return false;
     const params = paramsFn ? paramsFn(this) : this.paramSchema;
+
     return Param.changed(params, this.paramValues, node.paramValues);
   }
 }

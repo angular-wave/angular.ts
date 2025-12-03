@@ -26,12 +26,14 @@ export function treeChangesCleanup(trans) {
   const nodes = Object.values(trans.treeChanges())
     .reduce(unnestR, [])
     .reduce(uniqR, []);
+
   // If the resolvable is a Transition, return a new resolvable with null data
   const replaceTransitionWithNull = (r) => {
     return TRANSITION_TOKENS.includes(r.token)
       ? Resolvable.fromData(r.token, null)
       : r;
   };
+
   nodes.forEach((node) => {
     node.resolvables = node.resolvables.map(replaceTransitionWithNull);
   });

@@ -18,7 +18,9 @@ $IsStateFilter.$inject = [$t.$state];
 export function $IsStateFilter($state) {
   const isFilter = (state, params, options) =>
     $state.is(state, params, options);
+
   isFilter.$stateful = true;
+
   return isFilter;
 }
 
@@ -41,6 +43,8 @@ export function $IncludedByStateFilter($state) {
   const includesFilter = function (state, params, options) {
     return $state.includes(state, params, options);
   };
+
   includesFilter.$stateful = true;
+
   return includesFilter;
 }

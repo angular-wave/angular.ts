@@ -49,12 +49,15 @@ export class ViewService {
   createViewConfig(path, decl) {
     /** @type {function(any, any): any} */
     const cfgFactory = this.viewConfigFactory;
+
     if (!cfgFactory)
       throw new Error(
-        "ViewService: No view config factory registered for type " + decl.$type,
+        `ViewService: No view config factory registered for type ${decl.$type}`,
       );
+
     return cfgFactory(path, decl);
   }
+
   /**
    * Deactivates a ViewConfig.
    *
@@ -67,20 +70,24 @@ export class ViewService {
     trace.traceViewServiceEvent("<- Removing", viewConfig);
     removeFrom(this._viewConfigs, viewConfig);
   }
+
   activateViewConfig(viewConfig) {
     trace.traceViewServiceEvent("-> Registering", viewConfig);
     this._viewConfigs.push(viewConfig);
   }
+
   sync() {
     const ngViewsByFqn = this._ngViews
       .map((uiv) => [uiv.fqn, uiv])
       .reduce(applyPairs, {});
+
     // Return a weighted depth value for a ngView.
     // The depth is the nesting depth of ng-views (based on FQN; times 10,000)
     // plus the depth of the state that is populating the ngView
     function ngViewDepth(ngView) {
       const stateDepth = (context) =>
         context && context.parent ? stateDepth(context.parent) + 1 : 1;
+
       return (
         ngView.fqn.split(".").length * 10000 +
         stateDepth(ngView.creationContext)
@@ -90,7 +97,9 @@ export class ViewService {
     function viewConfigDepth(config) {
       let context = config.viewDecl.$context,
         count = 0;
+
       while (++count && context.parent) context = context.parent;
+
       return count;
     }
     // Given a depth function, returns a compare function which can return either ascending or descending order
@@ -98,18 +107,22 @@ export class ViewService {
       (depthFn, posNeg, left, right) =>
         posNeg * (depthFn(left) - depthFn(right)),
     );
+
     const matchingConfigPair = (ngView) => {
       const matchingConfigs = this._viewConfigs.filter(
         ViewService.matches(ngViewsByFqn, ngView),
       );
+
       if (matchingConfigs.length > 1) {
         // This is OK.  Child states can target a ng-view that the parent state also targets (the child wins)
         // Sort by depth and return the match from the deepest child
         // console.log(`Multiple matching view configs for ${ngView.fqn}`, matchingConfigs);
         matchingConfigs.sort(depthCompare(viewConfigDepth, -1)); // descending
       }
+
       return { ngView, viewConfig: matchingConfigs[0] };
     };
+
     const configureUIView = (tuple) => {
       // If a parent ng-view is reconfigured, it could destroy child ng-views.
       // Before configuring a child ng-view, make sure it's still in the active ngViews array.
@@ -117,21 +130,27 @@ export class ViewService {
         tuple.ngView.configUpdated(tuple.viewConfig);
       }
     };
+
     // Sort views by FQN and state depth. Process uiviews nearest the root first.
     const ngViewTuples = this._ngViews
       .sort(depthCompare(ngViewDepth, 1))
       .map(matchingConfigPair);
+
     const matchedViewConfigs = ngViewTuples.map((tuple) => tuple.viewConfig);
+
     const unmatchedConfigTuples = this._viewConfigs
       .filter((config) => !matchedViewConfigs.includes(config))
       .map((viewConfig) => ({ ngView: undefined, viewConfig }));
+
     ngViewTuples.forEach((tuple) => {
       configureUIView(tuple);
     });
     const allTuples = ngViewTuples.concat(unmatchedConfigTuples);
+
     this._listeners.forEach((cb) => cb(allTuples));
     trace.traceViewSync(allTuples);
   }
+
   /**
    * Registers a `ng-view` component
    *
@@ -150,24 +169,30 @@ export class ViewService {
   registerUIView(ngView) {
     trace.traceViewServiceUIViewEvent("-> Registering", ngView);
     const ngViews = this._ngViews;
+
     const fqnAndTypeMatches = (uiv) => uiv.fqn === ngView.fqn;
+
     if (ngViews.filter(fqnAndTypeMatches).length)
       trace.traceViewServiceUIViewEvent("!!!! duplicate ngView named:", ngView);
     ngViews.push(ngView);
     this.sync();
+
     return () => {
       const idx = ngViews.indexOf(ngView);
+
       if (idx === -1) {
         trace.traceViewServiceUIViewEvent(
           "Tried removing non-registered ngView",
           ngView,
         );
+
         return;
       }
       trace.traceViewServiceUIViewEvent("<- Deregistering", ngView);
       removeFrom(ngViews, ngView);
     };
   }
+
   /**
    * Returns the list of views currently available on the page, by fully-qualified name.
    *
@@ -176,6 +201,7 @@ export class ViewService {
   available() {
     return this._ngViews.map((x) => x.fqn);
   }
+
   /**
    * Returns the list of views on the page containing loaded content.
    *
@@ -247,8 +273,11 @@ ViewService.matches = (ngViewsByFqn, ngView) => (viewConfig) => {
   if (ngView.$type !== viewConfig.viewDecl.$type) return false;
   // Split names apart from both viewConfig and ngView into segments
   const vc = viewConfig.viewDecl;
+
   const vcSegments = vc.$ngViewName.split(".");
+
   const uivSegments = ngView.fqn.split(".");
+
   // Check if the tails of the segment arrays match. ex, these arrays' tails match:
   // vc: ["foo", "bar"], uiv fqn: ["$default", "foo", "bar"]
   if (!equals(vcSegments, uivSegments.slice(0 - vcSegments.length)))
@@ -256,7 +285,10 @@ ViewService.matches = (ngViewsByFqn, ngView) => (viewConfig) => {
   // Now check if the fqn ending at the first segment of the viewConfig matches the context:
   // ["$default", "foo"].join(".") == "$default.foo", does the ng-view $default.foo context match?
   const negOffset = 1 - vcSegments.length || undefined;
+
   const fqnToFirstSegment = uivSegments.slice(0, negOffset).join(".");
+
   const ngViewContext = ngViewsByFqn[fqnToFirstSegment].creationContext;
+
   return vc.$ngViewContextAnchor === (ngViewContext && ngViewContext.name);
 };

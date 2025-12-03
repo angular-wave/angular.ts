@@ -12,15 +12,19 @@ export function ngAnimateSwapDirective($animate) {
     // but after `ngIf` (at priority 600).
     link(scope, $element, attrs, _ctrl, $transclude) {
       let previousElement;
+
       let previousScope;
+
       scope.$watch(attrs.ngAnimateSwap || attrs.for, (value) => {
         if (previousElement) {
           $animate.leave(previousElement);
         }
+
         if (previousScope) {
           previousScope.$destroy();
           previousScope = null;
         }
+
         if (value) {
           $transclude((clone, childScope) => {
             previousElement = clone;

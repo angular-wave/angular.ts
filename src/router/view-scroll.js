@@ -19,6 +19,7 @@ export class ViewScrollProvider {
       if (this.enabled) {
         return $anchorScroll;
       }
+
       /**
        * @param {Element} $element
        * @returns {Promise<number>}

@@ -53,41 +53,55 @@ export const RejectType = {
 };
 
 let id = 0;
+
 export class Rejection {
   /** Returns a Rejection due to transition superseded */
   static superseded(detail, options) {
     const message =
       "The transition has been superseded by a different transition";
+
     const rejection = new Rejection(RejectType.SUPERSEDED, message, detail);
+
     if (options && options.redirected) {
       rejection.redirected = true;
     }
+
     return rejection;
   }
+
   /** Returns a Rejection due to redirected transition */
   static redirected(detail) {
     return Rejection.superseded(detail, { redirected: true });
   }
+
   /** Returns a Rejection due to invalid transition */
   static invalid(detail) {
     const message = "This transition is invalid";
+
     return new Rejection(RejectType.INVALID, message, detail);
   }
+
   /** Returns a Rejection due to ignored transition */
   static ignored(detail) {
     const message = "The transition was ignored";
+
     return new Rejection(RejectType.IGNORED, message, detail);
   }
+
   /** Returns a Rejection due to aborted transition */
   static aborted(detail) {
     const message = "The transition has been aborted";
+
     return new Rejection(RejectType.ABORTED, message, detail);
   }
+
   /** Returns a Rejection due to aborted transition */
   static errored(detail) {
     const message = "The transition errored";
+
     return new Rejection(RejectType.ERROR, message, detail);
   }
+
   /**
    * Returns a Rejection
    *
@@ -100,6 +114,7 @@ export class Rejection {
   static normalize(detail) {
     return is(Rejection)(detail) ? detail : Rejection.errored(detail);
   }
+
   constructor(type, message, detail) {
     this.$id = id++;
     this.type = type;
@@ -107,15 +122,20 @@ export class Rejection {
     this.detail = detail;
     this.redirected = false;
   }
+
   toString() {
     const detailString = (d) =>
       d && d.toString !== Object.prototype.toString
         ? d.toString()
         : stringify(d);
+
     const detail = detailString(this.detail);
+
     const { $id, type, message } = this;
+
     return `Transition Rejection($id: ${$id} type: ${type}, message: ${message}, detail: ${detail})`;
   }
+
   toPromise() {
     return Object.assign(silentRejection(this), { _transitionRejection: this });
   }

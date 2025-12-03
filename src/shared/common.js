@@ -2,16 +2,24 @@ import { isDate, isFunction, isRegExp, isString } from "./utils.js";
 
 export function equals(o1, o2) {
   if (o1 === o2) return true;
+
   if (o1 === null || o2 === null) return false;
+
   if (o1 !== o1 && o2 !== o2) return true; // NaN === NaN
   const t1 = typeof o1,
     t2 = typeof o2;
+
   if (t1 !== t2 || t1 !== "object") return false;
   const tup = [o1, o2];
+
   if (tup.every(Array.isArray)) return _arraysEq(o1, o2);
+
   if (tup.every(isDate)) return o1.getTime() === o2.getTime();
+
   if (tup.every(isRegExp)) return o1.toString() === o2.toString();
+
   if (tup.every(isFunction)) return true; // meh
+
   if ([isFunction, Array.isArray, isDate, isRegExp].some((fn) => !!fn(tup))) {
     return false;
   }
@@ -21,9 +29,11 @@ export function equals(o1, o2) {
     if (!equals(o1[key], o2[key])) return false;
     keys[key] = true;
   }
+
   for (const key in o2) {
     if (!keys[key]) return false;
   }
+
   return true;
 }
 
@@ -42,9 +52,11 @@ export function equals(o1, o2) {
  */
 export function inherit(parent, extra) {
   const newObj = Object.create(parent);
+
   if (extra) {
     Object.assign(newObj, extra);
   }
+
   return newObj;
 }
 
@@ -57,7 +69,9 @@ export function inherit(parent, extra) {
  */
 export function removeFrom(array, obj) {
   const i = array.indexOf(obj);
+
   if (i !== -1) array.splice(i, 1);
+
   return array;
 }
 
@@ -68,6 +82,7 @@ export function removeFrom(array, obj) {
  */
 export function defaults(opts, ...defaultsList) {
   const defaultVals = Object.assign({}, ...defaultsList.reverse());
+
   return Object.assign(defaultVals, pick(opts || {}, Object.keys(defaultVals)));
 }
 
@@ -80,10 +95,12 @@ export function defaults(opts, ...defaultsList) {
  */
 export function ancestors(first, second) {
   const path = [];
+
   for (const n in first.path) {
     if (first.path[n] !== second.path[n]) break;
     path.push(first.path[n]);
   }
+
   return path;
 }
 /**
@@ -99,11 +116,13 @@ export function ancestors(first, second) {
  */
 export function pick(obj, propNames) {
   const objCopy = {};
+
   for (const _prop in obj) {
     if (propNames.indexOf(_prop) !== -1) {
       objCopy[_prop] = obj[_prop];
     }
   }
+
   return objCopy;
 }
 /**
@@ -128,20 +147,26 @@ export function omit(obj, propNames) {
 export function filter(collection, callback) {
   const arr = Array.isArray(collection),
     result = arr ? [] : {};
+
   const accept = arr ? (x) => result.push(x) : (x, key) => (result[key] = x);
+
   Object.entries(collection).forEach(([i, item]) => {
     if (callback(item, i)) accept(item, i);
   });
+
   return result;
 }
 
 /** Finds an object from an array, or a property of an object, that matches a predicate */
 export function find(collection, callback) {
   let result;
+
   Object.entries(collection).forEach(([i, item]) => {
     if (result) return;
+
     if (callback(item, i)) result = item;
   });
+
   return result;
 }
 
@@ -151,6 +176,7 @@ export function map(collection, callback, target) {
   Object.entries(collection).forEach(
     ([i, item]) => (target[i] = callback(item, i)),
   );
+
   return target;
 }
 
@@ -212,6 +238,7 @@ export const flattenR = (memo, elem) =>
  */
 export function pushR(arr, obj) {
   arr.push(obj);
+
   return arr;
 }
 /** Reduce function that filters out duplicates */
@@ -247,9 +274,11 @@ export const assertPredicate = assertFn;
 export function assertFn(predicateOrMap, errMsg = "assert failure") {
   return (obj) => {
     const result = predicateOrMap(obj);
+
     if (!result) {
       throw new Error(errMsg);
     }
+
     return result;
   };
 }
@@ -283,7 +312,9 @@ export function arrayTuples(...args) {
     (min, arr) => Math.min(arr.length, min),
     9007199254740991,
   ); // aka 2^53 − 1 aka Number.MAX_SAFE_INTEGER
+
   const result = [];
+
   for (let i = 0; i < maxArrayLen; i++) {
     // This is a hot function
     // Unroll when there are 1-4 arguments
@@ -305,6 +336,7 @@ export function arrayTuples(...args) {
         break;
     }
   }
+
   return result;
 }
 /**
@@ -329,9 +361,12 @@ export function arrayTuples(...args) {
  */
 export function applyPairs(memo, keyValTuple) {
   let key, value;
+
   if (Array.isArray(keyValTuple)) [key, value] = keyValTuple;
+
   if (!isString(key)) throw new Error("invalid parameters to applyPairs");
   memo[key] = value;
+
   return memo;
 }
 
@@ -350,12 +385,15 @@ export function tail(arr) {
  */
 export function copy(src, dest) {
   if (dest) Object.keys(dest).forEach((key) => delete dest[key]);
+
   if (!dest) dest = {};
+
   return Object.assign(dest, src);
 }
 
 function _arraysEq(a1, a2) {
   if (a1.length !== a2.length) return false;
+
   return arrayTuples(a1, a2).reduce((b, t) => b && equals(t[0], t[1]), true);
 }
 // issue #2676

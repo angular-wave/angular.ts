@@ -1,6 +1,7 @@
 import { trimEmptyHash, urlResolve } from "../../shared/url-utils/url-utils.js";
 import {
   encodeUriSegment,
+  equals,
   isDefined,
   isNumber,
   isObject,
@@ -8,14 +9,14 @@ import {
   isUndefined,
   minErr,
   parseKeyValue,
-  toKeyValue,
-  equals,
   startsWith,
+  toKeyValue,
 } from "../../shared/utils.js";
 import { getBaseHref } from "../../shared/dom.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
 const PATH_MATCH = /^([^?#]*)(\?([^#]*))?(#(.*))?$/;
+
 const $locationMinErr = minErr("$location");
 
 let urlUpdatedByLocation = false;
@@ -122,9 +123,11 @@ export class Location {
    * @return {Location}
    */
   setPath(path) {
-    let newPath = path !== null ? path.toString() : "";
+    const newPath = path !== null ? path.toString() : "";
+
     $$path = newPath.charAt(0) === "/" ? newPath : `/${newPath}`;
     this.$$compose();
+
     return this;
   }
 
@@ -146,6 +149,7 @@ export class Location {
   setHash(hash) {
     $$hash = hash !== null ? hash.toString() : "";
     this.$$compose();
+
     return this;
   }
 
@@ -195,6 +199,7 @@ export class Location {
     }
 
     this.$$compose();
+
     return this;
   }
 
@@ -243,6 +248,7 @@ export class Location {
     // so the modification window is narrow.
     this.$$state = isUndefined(state) ? null : state;
     urlUpdatedByLocation = true;
+
     return this;
   }
 
@@ -265,14 +271,18 @@ export class Location {
         // special case for links to hash fragments:
         // keep the old url and only replace the hash fragment
         this.setHash(relHref.slice(1));
+
         return true;
       }
       let appUrl;
+
       let prevAppUrl;
+
       let rewrittenUrl;
 
       if (isDefined((appUrl = stripBaseUrl(this.appBase, url)))) {
         prevAppUrl = appUrl;
+
         if (
           this.basePrefix &&
           isDefined((appUrl = stripBaseUrl(this.basePrefix, appUrl)))
@@ -287,15 +297,19 @@ export class Location {
       } else if (this.appBaseNoFile === `${url}/`) {
         rewrittenUrl = this.appBaseNoFile;
       }
+
       if (rewrittenUrl) {
         this.parse(rewrittenUrl);
       }
+
       return !!rewrittenUrl;
     } else {
       if (stripHash(this.appBase) === stripHash(url)) {
         this.parse(url);
+
         return true;
       }
+
       return false;
     }
   }
@@ -307,6 +321,7 @@ export class Location {
   parse(url) {
     if (this.html5) {
       const pathUrl = stripBaseUrl(this.appBaseNoFile, url);
+
       if (!isString(pathUrl)) {
         throw $locationMinErr(
           "ipthprfx",
@@ -327,12 +342,14 @@ export class Location {
       const withoutBaseUrl =
         stripBaseUrl(this.appBase, url) ||
         stripBaseUrl(this.appBaseNoFile, url);
+
       let withoutHashUrl;
 
       if (!isUndefined(withoutBaseUrl) && withoutBaseUrl.charAt(0) === "#") {
         // The rest of the URL starts with a hash so we have
         // got either a hashbang path or a plain hash fragment
         withoutHashUrl = stripBaseUrl(this.hashPrefix, withoutBaseUrl);
+
         if (isUndefined(withoutHashUrl)) {
           // There was no hashbang prefix so we just have a hash fragment
           withoutHashUrl = withoutBaseUrl;
@@ -345,6 +362,7 @@ export class Location {
           withoutHashUrl = withoutBaseUrl;
         } else {
           withoutHashUrl = "";
+
           if (isUndefined(withoutBaseUrl)) {
             this.appBase = url;
           }
@@ -388,6 +406,7 @@ export class Location {
         }
 
         firstPathSegmentMatch = windowsFilePathExp.exec(path);
+
         return firstPathSegmentMatch ? firstPathSegmentMatch[1] : path;
       }
     }
@@ -434,6 +453,7 @@ export class LocationProvider {
     if (state === undefined) {
       state = null;
     }
+
     if (url) {
       url = new URL(url).href;
 
@@ -471,6 +491,7 @@ export class LocationProvider {
    */
   cacheState() {
     const currentState = history.state ?? null;
+
     if (!equals(currentState, this.lastCachedState)) {
       this.cachedState = currentState;
       this.lastCachedState = currentState;
@@ -483,7 +504,9 @@ export class LocationProvider {
    */
   #fireStateOrUrlChange() {
     const prevLastHistoryState = this.lastHistoryState;
+
     this.cacheState();
+
     if (
       this.lastBrowserUrl === this.getBrowserUrl() &&
       prevLastHistoryState === this.cachedState
@@ -529,7 +552,9 @@ export class LocationProvider {
      */
     ($rootScope, $rootElement) => {
       const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
+
       const initialUrl = trimEmptyHash(window.location.href);
+
       let appBase;
 
       if (this.html5ModeConf.enabled) {
@@ -551,6 +576,7 @@ export class LocationProvider {
         this.html5ModeConf.enabled,
         `#${this.hashPrefixConf}`,
       );
+
       $location.parseLinkUrl(initialUrl, initialUrl);
 
       $location.$$state = this.state();
@@ -559,7 +585,9 @@ export class LocationProvider {
 
       const setBrowserUrlWithFallback = (url, state) => {
         const oldUrl = $location.getUrl();
+
         const oldState = $location.$$state;
+
         try {
           this.setUrl(url, state);
 
@@ -580,7 +608,7 @@ export class LocationProvider {
         "click",
         /** @param {MouseEvent} event */
         (event) => {
-          const rewriteLinks = this.html5ModeConf.rewriteLinks;
+          const { rewriteLinks } = this.html5ModeConf;
           // TODO(vojta): rewrite link when opening in new tab/window (in legacy browser)
           // currently we open nice url link and redirect then
 
@@ -610,6 +638,7 @@ export class LocationProvider {
           }
 
           let absHref = elm.href;
+
           // get the actual href attribute - see
           // http://msdn.microsoft.com/en-us/library/ie/dd347148(v=vs.85).aspx
           const relHref =
@@ -623,6 +652,7 @@ export class LocationProvider {
             // an animation.
 
             const scvAnimatedString = /** @type {unknown} */ (absHref);
+
             absHref = new URL(
               /** @type {SVGAnimatedString } */ (scvAnimatedString).animVal,
             ).href;
@@ -658,13 +688,17 @@ export class LocationProvider {
         if (!startsWith(newUrl, appBaseNoFile)) {
           // If we are navigating outside of the app then force a reload
           window.location.href = newUrl;
+
           return;
         }
 
         queueMicrotask(() => {
           const oldUrl = $location.absUrl;
+
           const oldState = $location.$$state;
+
           let defaultPrevented;
+
           $location.parse(newUrl);
           $location.$$state = newState;
 
@@ -697,8 +731,11 @@ export class LocationProvider {
           urlUpdatedByLocation = false;
 
           const oldUrl = /** @type {string} */ (this.getBrowserUrl());
+
           const newUrl = $location.absUrl;
+
           const oldState = this.state();
+
           const urlOrStateChanged =
             !urlsEqual(oldUrl, newUrl) ||
             ($location.html5 && oldState !== $location.$$state);
@@ -708,6 +745,7 @@ export class LocationProvider {
 
             setTimeout(() => {
               const newUrl = $location.absUrl;
+
               const { defaultPrevented } = $rootScope.$broadcast(
                 "$locationChangeStart",
                 newUrl,
@@ -736,6 +774,7 @@ export class LocationProvider {
           }
         }
       };
+
       $location.$$updateBrowser = updateBrowser;
       updateBrowser();
       $rootScope.$on("$updateBrowser", updateBrowser);
@@ -788,6 +827,7 @@ export class LocationProvider {
  */
 export function encodePath(path) {
   const segments = path.split("/");
+
   let i = segments.length;
 
   while (i--) {
@@ -796,6 +836,7 @@ export function encodePath(path) {
     const decodedSegment = decodeURIComponent(
       segments[i].replace(/%2F/gi, "/"),
     );
+
     segments[i] = encodeUriSegment(decodedSegment);
   }
 
@@ -816,10 +857,12 @@ export function encodePath(path) {
  */
 export function decodePath(path, html5Mode) {
   const segments = path.split("/");
+
   let i = segments.length;
 
   while (i--) {
     segments[i] = decodeURIComponent(segments[i]);
+
     if (html5Mode) {
       // encode forward slashes to prevent them from being mistaken for path separators
       segments[i] = segments[i].replace(/\//g, "%2F");
@@ -858,7 +901,9 @@ export function decodePath(path, html5Mode) {
  */
 export function normalizePath(pathValue, searchValue, hashValue) {
   const search = toKeyValue(searchValue);
+
   const hash = hashValue ? `#${encodeUriSegment(hashValue)}` : "";
+
   const path = encodePath(pathValue);
 
   return path + (search ? `?${search}` : "") + hash;
@@ -878,14 +923,17 @@ export function parseAppUrl(url, html5Mode) {
   }
 
   const prefixed = url.charAt(0) !== "/";
+
   if (prefixed) {
     url = `/${url}`;
   }
   const match = urlResolve(url);
+
   const path =
     prefixed && match.pathname.charAt(0) === "/"
       ? match.pathname.substring(1)
       : match.pathname;
+
   $$path = decodePath(path, html5Mode);
   $$search = parseKeyValue(match.search);
   $$hash = decodeURIComponent(match.hash);
@@ -920,6 +968,7 @@ export function stripBaseUrl(base, url) {
  */
 export function stripHash(url) {
   const index = url.indexOf("#");
+
   return index === -1 ? url : url.substring(0, index);
 }
 
@@ -959,7 +1008,9 @@ export function stripFile(url) {
  */
 export function serverBase(url) {
   const start = url.indexOf("//") + 2;
+
   const slashIndex = url.indexOf("/", start);
+
   return slashIndex === -1 ? url : url.substring(0, slashIndex);
 }
 
@@ -986,6 +1037,7 @@ export function urlsEqual(a, b) {
  */
 function normalizeUrl(url) {
   const anchor = document.createElement("a");
+
   anchor.href = url;
 
   let normalized = anchor.href;

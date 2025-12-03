@@ -15,8 +15,10 @@ export function ngWorkerDirective($parse, $log) {
     restrict: "A",
     link(scope, element, attrs) {
       const workerName = attrs.ngWorker;
+
       if (!workerName) {
         $log.warn("ngWorker: missing worker name");
+
         return;
       }
 
@@ -24,6 +26,7 @@ export function ngWorkerDirective($parse, $log) {
       const eventName = attrs.trigger || getEventNameForElement(element);
 
       let throttled = false;
+
       let intervalId;
 
       if (isDefined(attrs.latch)) {
@@ -47,11 +50,13 @@ export function ngWorkerDirective($parse, $log) {
             $parse(attrs.dataOnResult)(scope, { $result: result });
           } else {
             const swap = attrs.swap || "innerHTML";
+
             handleSwap(result, swap, element);
           }
         },
         onError: (err) => {
           $log.error(`[ng-worker:${workerName}]`, err);
+
           if (isDefined(attrs.dataOnError)) {
             $parse(attrs.dataOnError)(scope, { $error: err });
           } else {
@@ -61,7 +66,7 @@ export function ngWorkerDirective($parse, $log) {
       });
 
       element.addEventListener(eventName, async () => {
-        if (element["disabled"]) return;
+        if (element.disabled) return;
 
         if (isDefined(attrs.delay)) {
           await wait(parseInt(attrs.delay) || 0);
@@ -79,6 +84,7 @@ export function ngWorkerDirective($parse, $log) {
         }
 
         let params;
+
         try {
           params = attrs.params ? scope.$eval(attrs.params) : undefined;
         } catch (err) {
@@ -107,8 +113,10 @@ function handleSwap(result, swap, element) {
   switch (swap) {
     case "outerHTML": {
       const parent = element.parentNode;
+
       if (!parent) return;
       const temp = document.createElement("div");
+
       temp.innerHTML = result;
       parent.replaceChild(temp.firstChild, element);
       break;
@@ -148,9 +156,9 @@ export function createWorkerConnection(scriptPath, config) {
   const defaults = {
     autoRestart: false,
     autoTerminate: false,
-    onMessage: function () {},
-    onError: function () {},
-    transformMessage: function (data) {
+    onMessage() {},
+    onError() {},
+    transformMessage(data) {
       try {
         return JSON.parse(data);
       } catch {
@@ -161,7 +169,9 @@ export function createWorkerConnection(scriptPath, config) {
 
   /** @type {ng.WorkerConfig} */
   const cfg = Object.assign({}, defaults, config);
+
   let worker = new Worker(scriptPath, { type: "module" });
+
   let terminated = false;
 
   const reconnect = function () {
@@ -174,7 +184,8 @@ export function createWorkerConnection(scriptPath, config) {
 
   const wire = function (w) {
     w.onmessage = function (e) {
-      let data = e.data;
+      let { data } = e;
+
       try {
         data = cfg.transformMessage(data);
       } catch {
@@ -185,6 +196,7 @@ export function createWorkerConnection(scriptPath, config) {
 
     w.onerror = function (err) {
       cfg.onError(err);
+
       if (cfg.autoRestart) reconnect();
     };
   };
@@ -192,8 +204,9 @@ export function createWorkerConnection(scriptPath, config) {
   wire(worker);
 
   return {
-    post: function (data) {
+    post(data) {
       if (terminated) return console.warn("Worker already terminated");
+
       try {
         worker.postMessage(data);
       } catch (err) {
@@ -201,12 +214,12 @@ export function createWorkerConnection(scriptPath, config) {
       }
     },
 
-    terminate: function () {
+    terminate() {
       terminated = true;
       worker.terminate();
     },
 
-    restart: function () {
+    restart() {
       if (terminated)
         return console.warn("Worker cannot restart after terminate");
       reconnect();

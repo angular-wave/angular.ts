@@ -31,9 +31,12 @@ export class Parser {
    */
   parse(exp) {
     const { ast } = this.getAst(exp);
+
     const fn = this.astCompiler.compile(ast);
+
     fn.literal = isLiteral(ast);
     fn.constant = isConstant(ast);
+
     return fn;
   }
 
@@ -43,6 +46,7 @@ export class Parser {
    */
   getAst(exp) {
     exp = exp.trim();
+
     return {
       ast: this.ast.ast(exp),
     };

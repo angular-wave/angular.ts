@@ -11,6 +11,7 @@ function prioritySort(a, b) {
 
 const typeSort = (a, b) => {
   const weights = { STATE: 4, URLMATCHER: 4, REGEXP: 3, RAW: 2, OTHER: 1 };
+
   return (weights[a.type] || 0) - (weights[b.type] || 0);
 };
 
@@ -22,7 +23,9 @@ const urlMatcherSort = (a, b) =>
 const idSort = (a, b) => {
   // Identically sorted STATE and URLMATCHER best rule will be chosen by `matchPriority` after each rule matches the URL
   const useMatchPriority = { STATE: true, URLMATCHER: true };
+
   const equal = useMatchPriority[a.type] && useMatchPriority[b.type];
+
   return equal ? 0 : (a.$id || 0) - (b.$id || 0);
 };
 
@@ -40,11 +43,15 @@ const idSort = (a, b) => {
  */
 function defaultRuleSortFn(a, b) {
   let cmp = prioritySort(a, b);
+
   if (cmp !== 0) return cmp;
   cmp = typeSort(a, b);
+
   if (cmp !== 0) return cmp;
   cmp = urlMatcherSort(a, b);
+
   if (cmp !== 0) return cmp;
+
   return idSort(a, b);
 }
 
@@ -59,6 +66,7 @@ function getHandlerFn(handler) {
       "'handler' must be a string, function, TargetState, or have a state: 'newtarget' property",
     );
   }
+
   return isFunction(handler) ? handler : val(handler);
 }
 /**
@@ -117,11 +125,14 @@ export class UrlRules {
    */
   initial(handler) {
     const handlerFn = getHandlerFn(handler);
+
     const matchFn = (urlParts, router) =>
       router.globals.transitionHistory.size() === 0 &&
       !!/^\/?$/.exec(urlParts.path);
+
     this.rule(this.urlRuleFactory.create(matchFn, handlerFn));
   }
+
   /**
    * Defines the state, url, or behavior to use when no other rule matches the URL.
    *
@@ -167,9 +178,11 @@ export class UrlRules {
    */
   otherwise(handler) {
     const handlerFn = getHandlerFn(handler);
+
     this._otherwiseFn = this.urlRuleFactory.create(val(true), handlerFn);
     this._sorted = false;
   }
+
   /**
    * Remove a rule previously registered
    *
@@ -178,6 +191,7 @@ export class UrlRules {
   removeRule(rule) {
     removeFrom(this._rules, rule);
   }
+
   /**
    * Manually adds a URL Rule.
    *
@@ -196,8 +210,10 @@ export class UrlRules {
     rule.priority = rule.priority || 0;
     this._rules.push(rule);
     this._sorted = false;
+
     return () => this.removeRule(rule);
   }
+
   /**
    * Gets all registered rules
    *
@@ -205,8 +221,10 @@ export class UrlRules {
    */
   rules() {
     this.ensureSorted();
+
     return this._rules.concat(this._otherwiseFn ? [this._otherwiseFn] : []);
   }
+
   /**
    * Defines URL Rule priorities
    *
@@ -254,10 +272,13 @@ export class UrlRules {
       this._rules,
       (this._sortFn = compareFn || this._sortFn),
     );
+
     // precompute _sortGroup values and apply to each rule
     let group = 0;
+
     for (let i = 0; i < sorted.length; i++) {
       sorted[i]._group = group;
+
       if (
         i < sorted.length - 1 &&
         this._sortFn(sorted[i], sorted[i + 1]) !== 0
@@ -275,12 +296,16 @@ export class UrlRules {
 
   stableSort(arr, compareFn) {
     const arrOfWrapper = arr.map((elem, idx) => ({ elem, idx }));
+
     arrOfWrapper.sort((wrapperA, wrapperB) => {
       const cmpDiff = compareFn(wrapperA.elem, wrapperB.elem);
+
       return cmpDiff === 0 ? wrapperA.idx - wrapperB.idx : cmpDiff;
     });
+
     return arrOfWrapper.map((wrapper) => wrapper.elem);
   }
+
   /**
    * Registers a `matcher` and `handler` for custom URLs handling.
    *
@@ -342,9 +367,11 @@ export class UrlRules {
    */
   when(matcher, handler, options) {
     const rule = this.urlRuleFactory.create(matcher, handler);
+
     if (isDefined(options && options.priority))
       rule.priority = options.priority;
     this.rule(rule);
+
     return rule;
   }
 }

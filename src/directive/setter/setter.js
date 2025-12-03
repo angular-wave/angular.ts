@@ -11,10 +11,11 @@ export function ngSetterDirective($parse, $log) {
   return {
     restrict: "A",
     link(scope, element, attrs) {
-      const modelExpression = attrs["ngSetter"];
+      const modelExpression = attrs.ngSetter;
 
       if (!modelExpression) {
         $log.warn("ng-setter: expression null");
+
         return;
       }
 
@@ -22,6 +23,7 @@ export function ngSetterDirective($parse, $log) {
 
       if (!assignModel) {
         $log.warn("ng-setter: expression invalid");
+
         return;
       }
 
@@ -31,6 +33,7 @@ export function ngSetterDirective($parse, $log) {
 
       const observer = new MutationObserver((mutationsList) => {
         let contentChanged = false;
+
         for (const mutation of mutationsList) {
           if (
             mutation.type === "childList" ||

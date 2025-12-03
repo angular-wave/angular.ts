@@ -5,6 +5,7 @@ import { $injectTokens } from "../../injection-tokens.js";
 const $injectorMinErr = minErr($injectTokens.$injector);
 
 const providerSuffix = "Provider";
+
 const INSTANTIATING = true;
 
 class AbstractInjector {
@@ -39,11 +40,13 @@ class AbstractInjector {
           `${serviceName} <- ${this.path.join(" <- ")}`,
         );
       }
+
       return this.cache[serviceName];
     }
 
     this.path.unshift(serviceName);
     this.cache[serviceName] = INSTANTIATING;
+
     try {
       this.cache[serviceName] = this.factory(serviceName);
     } catch (err) {
@@ -51,6 +54,7 @@ class AbstractInjector {
       delete this.cache[serviceName];
       throw err;
     }
+
     return this.cache[serviceName];
   }
 
@@ -64,10 +68,12 @@ class AbstractInjector {
    */
   injectionArgs(fn, locals, serviceName) {
     const args = [];
+
     const $inject = annotate(fn, this.strictDi, serviceName);
 
     for (let i = 0, { length } = $inject; i < length; i++) {
       const key = $inject[i];
+
       if (typeof key !== "string") {
         throw $injectorMinErr(
           "itkn",
@@ -77,6 +83,7 @@ class AbstractInjector {
       }
       args.push(locals && hasOwn(locals, key) ? locals[key] : this.get(key));
     }
+
     return args;
   }
 
@@ -100,12 +107,14 @@ class AbstractInjector {
       locals,
       serviceName,
     );
+
     if (Array.isArray(fn)) {
       fn = fn[fn.length - 1];
     }
 
     if (isClass(/** @type {Function} */ (fn))) {
       args.unshift(null);
+
       return new (Function.prototype.bind.apply(fn, args))();
     } else {
       return /** @type {Function} */ (fn).apply(self, args);
@@ -122,9 +131,12 @@ class AbstractInjector {
     // Check if type is annotated and use just the given function at n-1 as parameter
     // e.g. someModule.factory('greeter', ['$window', function(renamed$window) {}]);
     const ctor = Array.isArray(type) ? type[type.length - 1] : type;
+
     const args = this.injectionArgs(type, locals, serviceName);
+
     // Empty object at position 0 is ignored for invocation with `new`, but required.
     args.unshift(null);
+
     return new (Function.prototype.bind.apply(ctor, args))();
   }
 
@@ -197,6 +209,7 @@ export class InjectorService extends AbstractInjector {
    */
   factory(serviceName) {
     const provider = this.providerInjector.get(serviceName + providerSuffix);
+
     return this.invoke(provider.$get, provider, undefined, serviceName);
   }
 
@@ -210,7 +223,9 @@ export class InjectorService extends AbstractInjector {
       this.providerInjector.cache,
       name + providerSuffix,
     );
+
     const hasCache = hasOwn(this.cache, name);
+
     return hasProvider || hasCache;
   }
 

@@ -1,12 +1,12 @@
 import {
+  extend,
+  hasAnimate,
   isFunction,
   isObject,
-  minErr,
-  extend,
   mergeClasses,
-  hasAnimate,
+  minErr,
 } from "../shared/utils.js";
-import { removeElement, animatedomInsert } from "../shared/dom.js";
+import { animatedomInsert, removeElement } from "../shared/dom.js";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
 import { $injectTokens } from "../injection-tokens";
 
@@ -28,7 +28,9 @@ AnimateProvider.$inject = ["$provide"];
 /** @param {ng.ProvideService} $provide */
 export function AnimateProvider($provide) {
   const provider = this;
+
   let classNameFilter = null;
+
   let customFilter = null;
 
   this.$$registeredAnimations = Object.create(null);
@@ -78,6 +80,7 @@ export function AnimateProvider($provide) {
     }
 
     const key = `${name}-animation`;
+
     provider.$$registeredAnimations[name.substring(1)] = key;
     $provide.factory(key, factory);
   };
@@ -141,10 +144,12 @@ export function AnimateProvider($provide) {
   this.classNameFilter = function (expression) {
     if (arguments.length === 1) {
       classNameFilter = expression instanceof RegExp ? expression : null;
+
       if (classNameFilter) {
         const reservedRegex = new RegExp(
           `[(\\s|\\/)]${NG_ANIMATE_CLASSNAME}[(\\s|\\/)]`,
         );
+
         if (reservedRegex.test(classNameFilter.toString())) {
           classNameFilter = null;
           throw $animateMinErr(
@@ -155,6 +160,7 @@ export function AnimateProvider($provide) {
         }
       }
     }
+
     return classNameFilter;
   };
 
@@ -333,6 +339,7 @@ export function AnimateProvider($provide) {
         enter(element, parent, after, options) {
           parent = parent || after.parentElement;
           animatedomInsert(element, parent, after);
+
           return $$animateQueue.push(
             element,
             "enter",
@@ -355,6 +362,7 @@ export function AnimateProvider($provide) {
         move(element, parent, after, options) {
           parent = parent || after.parentElement;
           animatedomInsert(element, parent, after);
+
           return $$animateQueue.push(
             element,
             "move",
@@ -403,6 +411,7 @@ export function AnimateProvider($provide) {
         addClass(element, className, options) {
           options = prepareAnimateOptions(options);
           options.addClass = mergeClasses(options.addClass, className);
+
           return $$animateQueue.push(element, "addClass", options);
         },
 
@@ -422,6 +431,7 @@ export function AnimateProvider($provide) {
         removeClass(element, className, options) {
           options = prepareAnimateOptions(options);
           options.removeClass = mergeClasses(options.removeClass, className);
+
           return $$animateQueue.push(element, "removeClass", options);
         },
 
@@ -444,6 +454,7 @@ export function AnimateProvider($provide) {
           options = prepareAnimateOptions(options);
           options.addClass = mergeClasses(options.addClass, add);
           options.removeClass = mergeClasses(options.removeClass, remove);
+
           return $$animateQueue.push(element, "setClass", options);
         },
 
@@ -475,6 +486,7 @@ export function AnimateProvider($provide) {
 
           className = className || "ng-inline-animate";
           options.tempClasses = mergeClasses(options.tempClasses, className);
+
           return $$animateQueue.push(element, "animate", options);
         },
       };

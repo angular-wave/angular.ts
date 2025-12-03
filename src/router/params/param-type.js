@@ -39,26 +39,34 @@ export class ParamType {
   is(val) {
     return !!val;
   }
+
   encode(val) {
     return val;
   }
+
   decode(val) {
     return val;
   }
+
   equals(a, b) {
     return a == b;
   }
+
   $subPattern() {
     const sub = this.pattern.toString();
+
     return sub.substring(1, sub.length - 2);
   }
+
   toString() {
     return `{ParamType:${this.name}}`;
   }
+
   /** Given an encoded string, or a decoded object, returns a decoded object */
   $normalize(val) {
     return this.is(val) ? val : this.decode(val);
   }
+
   /**
    * Wraps an existing custom ParamType as an array of ParamType, depending on 'mode'.
    * e.g.:
@@ -71,8 +79,10 @@ export class ParamType {
    */
   $asArray(mode, isSearch) {
     if (!mode) return this;
+
     if (mode === "auto" && !isSearch)
       throw new Error("'auto' array mode is for query parameters only");
+
     return new ArrayType(this, mode);
   }
 }
@@ -98,7 +108,9 @@ function ArrayType(type, mode) {
     return function handleArray(val) {
       if (Array.isArray(val) && val.length === 0) return val;
       const arr = arrayWrap(val);
+
       const result = map(arr, callback);
+
       return allTruthyMode === true
         ? filter(result, (x) => !x).length === 0
         : arrayUnwrap(result);
@@ -109,16 +121,21 @@ function ArrayType(type, mode) {
     return function handleArray(val1, val2) {
       const left = arrayWrap(val1),
         right = arrayWrap(val2);
+
       if (left.length !== right.length) return false;
+
       for (let i = 0; i < left.length; i++) {
         if (!callback(left[i], right[i])) return false;
       }
+
       return true;
     };
   }
   ["encode", "decode", "equals", "$normalize"].forEach((name) => {
     const paramTypeFn = type[name].bind(type);
+
     const wrapperFn = name === "equals" ? arrayEqualsHandler : arrayHandler;
+
     this[name] = wrapperFn(paramTypeFn);
   });
   Object.assign(this, {

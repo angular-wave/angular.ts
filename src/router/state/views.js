@@ -8,15 +8,18 @@ import { annotate } from "../../core/di/di.js";
 
 export function getViewConfigFactory() {
   let templateFactory = null;
+
   return (path, view) => {
     templateFactory =
-      templateFactory || window["angular"].$injector.get("$templateFactory"); // TODO: remove static injector
+      templateFactory || window.angular.$injector.get("$templateFactory"); // TODO: remove static injector
+
     return new ViewConfig(path, view, templateFactory);
   };
 }
 
 const hasAnyKey = (keys, obj) =>
   keys.reduce((acc, key) => acc || isDefined(obj[key]), false);
+
 /**
  * This is a [[StateBuilder.builder]] function for angular1 `views`.
  *
@@ -46,6 +49,7 @@ export function ng1ViewsBuilder(state) {
     compKeys = ["component", "bindings", "componentProvider"],
     nonCompKeys = tplKeys.concat(ctrlKeys),
     allViewKeys = compKeys.concat(nonCompKeys);
+
   // Do not allow a state to have both state-level props and also a `views: {}` property.
   // A state without a `views: {}` property can declare properties for the `$default` view as properties of the state.
   // However, the `$default` approach should not be mixed with a separate `views: ` block.
@@ -59,13 +63,16 @@ export function ng1ViewsBuilder(state) {
   }
   const views = {},
     viewsObject = state.views || { $default: pick(state, allViewKeys) };
+
   Object.entries(viewsObject).forEach(([name, config]) => {
     // Account for views: { "": { template... } }
     name = name || "$default";
+
     // Account for views: { header: "headerComponent" }
     if (isString(config)) config = { component: config };
     // Make a shallow copy of the urlConfig object
     config = Object.assign({}, config);
+
     // Do not allow a view to mix props for component-style view with props for template/controller-style view
     if (hasAnyKey(compKeys, config) && hasAnyKey(nonCompKeys, config)) {
       throw new Error(
@@ -79,10 +86,12 @@ export function ng1ViewsBuilder(state) {
       config.$context,
       config.$name,
     );
+
     config.$ngViewName = normalized.ngViewName;
     config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
     views[name] = config;
   });
+
   return views;
 }
 
@@ -119,21 +128,26 @@ export class ViewConfig {
 
   load() {
     const context = new ResolveContext(this.path);
+
     const params = this.path.reduce(
       (acc, node) => Object.assign(acc, node.paramValues),
       {},
     );
+
     const promises = [
       Promise.resolve(this.factory.fromConfig(this.viewDecl, params, context)),
       Promise.resolve(this.getController(context)),
     ];
+
     return Promise.all(promises).then((results) => {
       trace.traceViewServiceEvent("Loaded", this);
       this.controller = results[1];
       Object.assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
+
       return this;
     });
   }
+
   /**
    * Gets the controller for a view configuration.
    *
@@ -141,10 +155,14 @@ export class ViewConfig {
    */
   getController(context) {
     const provider = this.viewDecl.controllerProvider;
+
     if (!isInjectable(provider)) return this.viewDecl.controller;
     const deps = annotate(provider);
+
     const providerFn = Array.isArray(provider) ? tail(provider) : provider;
+
     const resolvable = new Resolvable("", providerFn, deps);
+
     return resolvable.get(context);
   }
 
@@ -164,32 +182,40 @@ export class ViewConfig {
     // ex: "view.name@foo.bar" , "^.^.view.name" , "view.name@^.^" , "" ,
     // "@" , "$default@^" , "!$default.$default" , "!foo.bar"
     const viewAtContext = rawViewName.split("@");
+
     let ngViewName = viewAtContext[0] || "$default"; // default to unnamed view
+
     let ngViewContextAnchor = isString(viewAtContext[1])
       ? viewAtContext[1]
       : "^"; // default to parent context
+
     // Handle relative view-name sugar syntax.
     // Matches rawViewName "^.^.^.foo.bar" into array: ["^.^.^.foo.bar", "^.^.^", "foo.bar"],
     const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
+
     if (relativeViewNameSugar) {
       // Clobbers existing contextAnchor (rawViewName validation will fix this)
       ngViewContextAnchor = relativeViewNameSugar[1]; // set anchor to "^.^.^"
       ngViewName = relativeViewNameSugar[2]; // set view-name to "foo.bar"
     }
+
     if (ngViewName.charAt(0) === "!") {
       ngViewName = ngViewName.substring(1);
       ngViewContextAnchor = ""; // target absolutely from root
     }
     // handle parent relative targeting "^.^.^"
     const relativeMatch = /^(\^(?:\.\^)*)$/;
+
     if (relativeMatch.exec(ngViewContextAnchor)) {
       const anchorState = ngViewContextAnchor
         .split(".")
         .reduce((anchor) => anchor.parent, context);
+
       ngViewContextAnchor = anchorState.name;
     } else if (ngViewContextAnchor === ".") {
       ngViewContextAnchor = context.name;
     }
+
     return { ngViewName, ngViewContextAnchor };
   }
 }

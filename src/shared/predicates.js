@@ -18,6 +18,7 @@ export function isInjectable(val) {
       tail.filter((x) => !isFunction(x)).length
     );
   }
+
   return isFunction(val);
 }
 /**

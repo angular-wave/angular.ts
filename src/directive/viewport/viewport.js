@@ -5,8 +5,9 @@ export function ngViewportDirective() {
   return {
     restrict: "A",
     link(scope, element, attrs) {
-      const enterExpr = attrs["onEnter"];
-      const leaveExpr = attrs["onLeave"];
+      const enterExpr = attrs.onEnter;
+
+      const leaveExpr = attrs.onLeave;
 
       const observer = new IntersectionObserver(
         (entries) => {
@@ -28,7 +29,9 @@ export function ngViewportDirective() {
 
       // Clean up when the element is removed from DOM
       const parent = element.parentNode;
+
       let mutationObserver;
+
       if (parent) {
         mutationObserver = new MutationObserver((mutations) => {
           for (const mutation of mutations) {
@@ -45,6 +48,7 @@ export function ngViewportDirective() {
 
       scope.$on("$destroy", () => {
         observer.disconnect();
+
         if (mutationObserver) mutationObserver.disconnect();
       });
     },

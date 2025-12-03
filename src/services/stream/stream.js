@@ -165,6 +165,7 @@ export class StreamConnection {
   close() {
     this.closed = true;
     clearTimeout(this.heartbeatTimer);
+
     if (this.connection && this.connection.close) {
       this.connection.close();
     }

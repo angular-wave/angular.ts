@@ -30,8 +30,9 @@ class NgModelOptionsController {
     const parentOptions = this.parentCtrl
       ? this.parentCtrl.$options
       : defaultModelOptions;
+
     const modelOptionsDefinition = this.$$scope.$eval(
-      this.$$attrs["ngModelOptions"],
+      this.$$attrs.ngModelOptions,
     );
 
     this.$options = parentOptions.createChild(modelOptionsDefinition);
@@ -79,6 +80,7 @@ class ModelOptions {
           inheritAll = true;
         } else {
           options[key] = this.$$options[key];
+
           // `updateOn` is special so we must also inherit the `updateOnDefault` option
           if (key === "updateOn") {
             options.updateOnDefault = this.$$options.updateOnDefault;
@@ -91,6 +93,7 @@ class ModelOptions {
         options[key] = trim(
           /** @type {string} */ (option).replace(DEFAULT_REGEXP, () => {
             options.updateOnDefault = true;
+
             return " ";
           }),
         );

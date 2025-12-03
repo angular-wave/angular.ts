@@ -1,10 +1,10 @@
 import {
   applyPairs,
+  copy,
   inherit,
+  map,
   omit,
   tail,
-  copy,
-  map,
 } from "../../shared/common.js";
 import { hasOwn, isDefined, isFunction, isString } from "../../shared/utils.js";
 import { stringify } from "../../shared/strings.js";
@@ -15,11 +15,13 @@ import { annotate } from "../../core/di/di.js";
 function parseUrl(url) {
   if (!isString(url)) return false;
   const root = url.charAt(0) === "^";
+
   return { val: root ? url.substring(1) : url, root };
 }
 
 function selfBuilder(state) {
   state.self.$$state = () => state;
+
   return state.self;
 }
 
@@ -27,12 +29,14 @@ function dataBuilder(state) {
   if (state.parent && state.parent.data) {
     state.data = state.self.data = inherit(state.parent.data, state.data);
   }
+
   return state.data;
 }
 
 function getUrlBuilder($url, root) {
   return function (stateObject) {
     let stateDec = stateObject.self;
+
     // For future states, i.e., states whose name ends with `.**`,
     // match anything that starts with the url prefix
     if (
@@ -42,18 +46,24 @@ function getUrlBuilder($url, root) {
       stateDec.name.match(/\.\*\*$/)
     ) {
       const newStateDec = {};
+
       copy(stateDec, newStateDec);
       newStateDec.url += "{remainder:any}"; // match any path (.*)
       stateDec = newStateDec;
     }
-    const parent = stateObject.parent;
+    const { parent } = stateObject;
+
     const parsed = parseUrl(stateDec.url);
+
     const url = !parsed
       ? stateDec.url
       : $url.compile(parsed.val, { state: stateDec });
+
     if (!url) return null;
+
     if (!$url.isMatcher(url))
       throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
+
     return parsed && parsed.root
       ? url
       : ((parent && parent.navigable) || root()).url.append(url);
@@ -77,8 +87,10 @@ function getParamsBuilder(paramFactory) {
   return function (state) {
     const makeConfigParam = (_config, id) =>
       paramFactory.fromConfig(id, null, state.self);
+
     const urlParams =
       (state.url && state.url.parameters({ inherit: false })) || [];
+
     const nonUrlParams = Object.values(
       map(
         omit(
@@ -88,6 +100,7 @@ function getParamsBuilder(paramFactory) {
         makeConfigParam,
       ),
     );
+
     return urlParams
       .concat(nonUrlParams)
       .map((p) => [p.id, p])
@@ -101,7 +114,9 @@ function pathBuilder(state) {
 
 function includesBuilder(state) {
   const includes = state.parent ? Object.assign({}, state.parent.includes) : {};
+
   includes[state.name] = true;
+
   return includes;
 }
 
@@ -155,20 +170,24 @@ export function resolvablesBuilder(state) {
       deps: undefined,
       policy: resolvePolicies[token],
     }));
+
   /** fetch DI annotations from a function or ng1-style array */
   const annotateFn = (fn) => {
-    const $injector = window["angular"].$injector;
+    const { $injector } = window.angular;
+
     // ng1 doesn't have an $injector until runtime.
     // If the $injector doesn't exist, use "deferred" literal as a
     // marker indicating they should be annotated when runtime starts
     return (
-      fn["$inject"] ||
+      fn.$inject ||
       ($injector && annotate(fn, $injector.strictDi)) ||
       "deferred"
     );
   };
+
   /** true if the object has both `token` and `resolveFn`, and is probably a [[ResolveLiteral]] */
   const isResolveLiteral = (obj) => !!(obj.token && obj.resolveFn);
+
   /** true if the object looks like a tuple from obj2Tuples */
   const isTupleFromObj = (obj) =>
     !!(
@@ -207,6 +226,7 @@ export function resolvablesBuilder(state) {
       (p) => new Resolvable(getToken(p), (x) => x, [p.useExisting], p.policy),
     ],
   ]);
+
   const tuple2Resolvable = pattern([
     [
       (x) => isString(x.val),
@@ -234,6 +254,7 @@ export function resolvablesBuilder(state) {
         ),
     ],
   ]);
+
   const item2Resolvable = pattern([
     [is(Resolvable), (r) => r],
     [isResolveLiteral, literal2Resolvable],
@@ -241,16 +262,19 @@ export function resolvablesBuilder(state) {
     [
       val(true),
       (obj) => {
-        throw new Error("Invalid resolve value: " + stringify(obj));
+        throw new Error(`Invalid resolve value: ${stringify(obj)}`);
       },
     ],
   ]);
+
   // If resolveBlock is already an array, use it as-is.
   // Otherwise, assume it's an object and convert to an Array of tuples
   const decl = state.resolve;
+
   const items = Array.isArray(decl)
     ? decl
     : objects2Tuples(decl, state.resolvePolicy || {});
+
   return items.map(item2Resolvable);
 }
 /**
@@ -274,9 +298,12 @@ export class StateBuilder {
     this.matcher = matcher;
     this.$injector = undefined;
     const self = this;
+
     const root = () => matcher.find("");
+
     function parentBuilder(state) {
       if (isRoot(state)) return null;
+
       return matcher.find(self.parentName(state)) || root();
     }
     this.builders = {
@@ -300,17 +327,23 @@ export class StateBuilder {
       resolvables: [resolvablesBuilder],
     };
   }
+
   builder(name, fn) {
-    const builders = this.builders;
+    const { builders } = this;
+
     const array = builders[name] || [];
+
     // Backwards compat: if only one builder exists, return it, else return whole arary.
     if (isString(name) && !isDefined(fn))
       return array.length > 1 ? array : array[0];
+
     if (!isString(name) || !isFunction(fn)) return;
     builders[name] = array;
     builders[name].push(fn);
+
     return () => builders[name].splice(builders[name].indexOf(fn, 1)) && null;
   }
+
   /**
    * Builds all of the properties on an essentially blank State object, returning a State object which has all its
    * properties and API built.
@@ -320,49 +353,64 @@ export class StateBuilder {
    */
   build(state) {
     const { matcher, builders } = this;
+
     const parent = this.parentName(state);
+
     if (parent && !matcher.find(parent, undefined, false)) {
       return null;
     }
+
     for (const key in builders) {
       if (!hasOwn(builders, key)) continue;
       const chain = builders[key].reduce(
         (parentFn, step) => (_state) => step(_state, parentFn),
         () => {},
       );
+
       state[key] = chain(state);
     }
+
     return state;
   }
 
   parentName(state) {
     // name = 'foo.bar.baz.**'
     const name = state.name || "";
+
     // segments = ['foo', 'bar', 'baz', '.**']
     const segments = name.split(".");
+
     // segments = ['foo', 'bar', 'baz']
     const lastSegment = segments.pop();
+
     // segments = ['foo', 'bar'] (ignore .** segment for future states)
     if (lastSegment === "**") segments.pop();
+
     if (segments.length) {
       if (state.parent) {
         throw new Error(
           `States that specify the 'parent:' property should not have a '.' in their name (${name})`,
         );
       }
+
       // 'foo.bar'
       return segments.join(".");
     }
+
     if (!state.parent) return "";
+
     return isString(state.parent) ? state.parent : state.parent.name;
   }
+
   name(state) {
-    const name = state.name;
+    const { name } = state;
+
     if (name.indexOf(".") !== -1 || !state.parent) return name;
     const parentName = isString(state.parent)
       ? state.parent
       : state.parent.name;
-    return parentName ? parentName + "." + name : name;
+
+    return parentName ? `${parentName}.${name}` : name;
   }
 }
 

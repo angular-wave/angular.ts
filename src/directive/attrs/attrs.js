@@ -21,7 +21,8 @@ BOOLEAN_ATTR.forEach((i) => {
     });
   }
 
-  let normalized = directiveNormalize(`ng-${i}`);
+  const normalized = directiveNormalize(`ng-${i}`);
+
   let linkFn = defaultLinkFn;
 
   if (i === "checked") {
@@ -50,10 +51,12 @@ Object.entries(ALIASED_ATTR).forEach(([ngAttr]) => {
       link(scope, element, attr) {
         // special case ngPattern when a literal regular expression value
         // is used as the expression (this way we don't have to watch anything).
-        if (ngAttr === "ngPattern" && attr["ngPattern"].charAt(0) === "/") {
-          const match = attr["ngPattern"].match(REGEX_STRING_REGEXP);
+        if (ngAttr === "ngPattern" && attr.ngPattern.charAt(0) === "/") {
+          const match = attr.ngPattern.match(REGEX_STRING_REGEXP);
+
           if (match) {
             attr.$set("ngPattern", new RegExp(match[1], match[2]).toString());
+
             return;
           }
         }
@@ -69,6 +72,7 @@ Object.entries(ALIASED_ATTR).forEach(([ngAttr]) => {
 // ng-src, ng-srcset, ng-href are interpolated
 ["src", "srcset", "href"].forEach((attrName) => {
   const normalized = directiveNormalize(`ng-${attrName}`);
+
   ngAttributeAliasDirectives[normalized] = [
     $injectTokens.$sce,
     function ($sce) {
@@ -79,7 +83,7 @@ Object.entries(ALIASED_ATTR).forEach(([ngAttr]) => {
 
           if (
             attrName === "href" &&
-            toString.call(element["href"]) === "[object SVGAnimatedString]"
+            toString.call(element.href) === "[object SVGAnimatedString]"
           ) {
             name = "xlinkHref";
             attr.$attr[name] = "href";
@@ -94,6 +98,7 @@ Object.entries(ALIASED_ATTR).forEach(([ngAttr]) => {
               if (attrName === "href") {
                 attr.$set(name, null);
               }
+
               return;
             }
 

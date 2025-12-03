@@ -15,17 +15,20 @@ import { copy } from "../../shared/common.js";
  * @param {import('../transition/transition.js').Transition} trans
  */
 const updateGlobalState = (trans) => {
-  const globals = trans.globals;
+  const { globals } = trans;
+
   const transitionSuccessful = () => {
     globals.successfulTransitions.enqueue(trans);
     globals.$current = trans.$to();
     globals.current = globals.$current.self;
     copy(trans.params(), globals.params);
   };
+
   const clearCurrentTransition = () => {
     // Do not clear globals.transition if a different transition has started in the meantime
     if (globals.transition === trans) globals.transition = null;
   };
+
   trans.onSuccess({}, transitionSuccessful, { priority: 10000 });
   trans.promise.then(clearCurrentTransition, clearCurrentTransition);
 };

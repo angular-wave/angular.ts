@@ -15,9 +15,11 @@ import {
  */
 function defineDirective(method, attrOverride) {
   const attrName =
-    attrOverride || "ng" + method.charAt(0).toUpperCase() + method.slice(1);
+    attrOverride || `ng${method.charAt(0).toUpperCase()}${method.slice(1)}`;
+
   const directive = createHttpDirective(method, attrName);
-  directive["$inject"] = [
+
+  directive.$inject = [
     $.$http,
     $.$compile,
     $.$log,
@@ -26,6 +28,7 @@ function defineDirective(method, attrOverride) {
     $.$sse,
     $.$animate,
   ];
+
   return directive;
 }
 
@@ -52,11 +55,13 @@ export const ngSseDirective = defineDirective("get", "ngSse");
  */
 export function getEventNameForElement(element) {
   const tag = element.tagName.toLowerCase();
+
   if (["input", "textarea", "select"].includes(tag)) {
     return "change";
   } else if (tag === "form") {
     return "submit";
   }
+
   return "click";
 }
 
@@ -97,8 +102,10 @@ export function createHttpDirective(method, attrName) {
         form = /** @type {HTMLFormElement} */ (element.form);
       } else if (element.hasAttribute("form")) {
         const formId = element.getAttribute("form");
+
         if (formId) {
           const maybeForm = document.getElementById(formId);
+
           if (maybeForm && maybeForm.tagName.toLowerCase() === "form") {
             form = /** @type {HTMLFormElement} */ (maybeForm);
           }
@@ -117,18 +124,24 @@ export function createHttpDirective(method, attrName) {
             element instanceof HTMLSelectElement
           ) {
             const key = element.name;
-            const value = element.value;
+
+            const { value } = element;
+
             return { [key]: value };
           }
         }
+
         return {};
       }
 
       const formData = new FormData(form);
+
       const data = {};
+
       formData.forEach((value, key) => {
         data[key] = value;
       });
+
       return data;
     }
 
@@ -136,7 +149,9 @@ export function createHttpDirective(method, attrName) {
       restrict: "A",
       link(scope, element, attrs) {
         const eventName = attrs.trigger || getEventNameForElement(element);
+
         const tag = element.tagName.toLowerCase();
+
         let content = undefined;
 
         if (isDefined(attrs.latch)) {
@@ -149,9 +164,10 @@ export function createHttpDirective(method, attrName) {
         }
 
         let throttled = false;
+
         let intervalId;
 
-        if (isDefined(attrs["interval"])) {
+        if (isDefined(attrs.interval)) {
           element.dispatchEvent(new Event(eventName));
           intervalId = setInterval(
             () => element.dispatchEvent(new Event(eventName)),
@@ -170,13 +186,16 @@ export function createHttpDirective(method, attrName) {
          */
         function handleSwapResponse(html, swap, scope, attrs, element) {
           let animationEnabled = false;
+
           if (attrs.animate) {
             animationEnabled = true;
           }
           let nodes = [];
+
           if (!["textcontent", "delete", "none"].includes(swap)) {
             if (!html) return;
             const compiled = $compile(html)(scope);
+
             nodes =
               compiled instanceof DocumentFragment
                 ? Array.from(compiled.childNodes)
@@ -184,22 +203,26 @@ export function createHttpDirective(method, attrName) {
           }
 
           const targetSelector = attrs.target;
+
           const target = targetSelector
             ? document.querySelector(targetSelector)
             : element;
 
           if (!target) {
             $log.warn(`${attrName}: target "${targetSelector}" not found`);
+
             return;
           }
 
           switch (swap) {
             case "outerHTML": {
               const parent = target.parentNode;
+
               if (!parent) return;
 
               // Build fragment for static replacement OR a list for animation
               const frag = document.createDocumentFragment();
+
               nodes.forEach((n) => frag.appendChild(n));
 
               if (!animationEnabled) {
@@ -208,6 +231,7 @@ export function createHttpDirective(method, attrName) {
               }
 
               const placeholder = document.createElement("span");
+
               placeholder.style.display = "none";
               parent.insertBefore(placeholder, target.nextSibling);
 
@@ -253,6 +277,7 @@ export function createHttpDirective(method, attrName) {
 
             case "beforebegin": {
               const parent = target.parentNode;
+
               if (!parent) break;
 
               nodes.forEach((node) => {
@@ -268,7 +293,8 @@ export function createHttpDirective(method, attrName) {
             }
 
             case "afterbegin": {
-              const firstChild = target.firstChild;
+              const { firstChild } = target;
+
               [...nodes].reverse().forEach((node) => {
                 if (animationEnabled && node.nodeType === Node.ELEMENT_NODE) {
                   $animate.enter(node, target, firstChild); // insert before first child
@@ -296,8 +322,9 @@ export function createHttpDirective(method, attrName) {
 
             case "afterend": {
               const parent = target.parentNode;
+
               if (!parent) break;
-              const nextSibling = target.nextSibling;
+              const { nextSibling } = target;
 
               [...nodes].reverse().forEach((node) => {
                 if (animationEnabled && node.nodeType === Node.ELEMENT_NODE) {
@@ -338,6 +365,7 @@ export function createHttpDirective(method, attrName) {
                   scope.$flushQueue();
                 } else {
                   content = nodes[0];
+
                   if (content.nodeType === Node.TEXT_NODE) {
                     target.replaceChildren(...nodes);
                   } else {
@@ -354,11 +382,15 @@ export function createHttpDirective(method, attrName) {
 
         element.addEventListener(eventName, async (event) => {
           if (/** @type {HTMLButtonElement} */ (element).disabled) return;
+
           if (tag === "form") event.preventDefault();
           const swap = attrs.swap || "innerHTML";
+
           const url = attrs[attrName];
+
           if (!url) {
             $log.warn(`${attrName}: no URL specified`);
+
             return;
           }
 
@@ -372,6 +404,7 @@ export function createHttpDirective(method, attrName) {
             }
 
             const html = res.data;
+
             if (200 <= res.status && res.status <= 299) {
               if (isDefined(attrs.success)) {
                 $parse(attrs.success)(scope, { $res: html });
@@ -416,20 +449,22 @@ export function createHttpDirective(method, attrName) {
             }, parseInt(attrs.throttle));
           }
 
-          if (isDefined(attrs["loading"])) {
+          if (isDefined(attrs.loading)) {
             attrs.$set("loading", true);
           }
 
-          if (isDefined(attrs["loadingClass"])) {
+          if (isDefined(attrs.loadingClass)) {
             attrs.$addClass(attrs.loadingClass);
           }
 
           if (method === "post" || method === "put") {
             let data;
+
             const config = {};
+
             if (attrs.enctype) {
               config.headers = {
-                "Content-Type": attrs["enctype"],
+                "Content-Type": attrs.enctype,
               };
               data = toKeyValue(collectFormData(element));
             } else {
@@ -439,6 +474,7 @@ export function createHttpDirective(method, attrName) {
           } else {
             if (method === "get" && attrs.ngSse) {
               const sseUrl = url;
+
               const config = {
                 withCredentials: attrs.withCredentials === "true",
                 transformMessage: (data) => {
@@ -450,21 +486,26 @@ export function createHttpDirective(method, attrName) {
                 },
                 onOpen: () => {
                   $log.info(`${attrName}: SSE connection opened to ${sseUrl}`);
+
                   if (isDefined(attrs.loading)) attrs.$set("loading", false);
+
                   if (isDefined(attrs.loadingClass))
                     attrs.$removeClass(attrs.loadingClass);
                 },
                 onMessage: (data) => {
                   const res = { status: 200, data };
+
                   handler(res);
                 },
                 onError: (err) => {
                   $log.error(`${attrName}: SSE error`, err);
                   const res = { status: 500, data: err };
+
                   handler(res);
                 },
                 onReconnect: (count) => {
                   $log.info(`ngSse: reconnected ${count} time(s)`);
+
                   if (attrs.onReconnect)
                     $parse(attrs.onReconnect)(scope, { $count: count });
                 },

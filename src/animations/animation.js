@@ -16,6 +16,7 @@ import { $injectTokens as $t } from "../injection-tokens.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 
 const RUNNER_STORAGE_KEY = "$$animationRunner";
+
 const PREPARE_CLASSES_KEY = "$$animatePrepareClasses";
 
 export function AnimationProvider() {
@@ -50,11 +51,14 @@ export function AnimationProvider() {
      */
     function ($rootScope, $injector, $$rAFScheduler, $$animateCache) {
       const animationQueue = [];
+
       const applyAnimationClasses = applyAnimationClassesFactory();
 
       function sortAnimations(animations) {
         const tree = { children: [] };
+
         let i;
+
         const lookup = new Map();
 
         // this is done first beforehand so that the map
@@ -62,6 +66,7 @@ export function AnimationProvider() {
 
         for (i = 0; i < animations.length; i++) {
           const animation = animations[i];
+
           lookup.set(
             animation.domNode,
             (animations[i] = {
@@ -84,12 +89,16 @@ export function AnimationProvider() {
           entry.processed = true;
 
           const elementNode = entry.domNode;
+
           let { parentNode } = elementNode;
+
           lookup.set(elementNode, entry);
 
           let parentEntry;
+
           while (parentNode) {
             parentEntry = lookup.get(parentNode);
+
             if (parentEntry) {
               if (!parentEntry.processed) {
                 parentEntry = processNode(parentEntry);
@@ -100,12 +109,15 @@ export function AnimationProvider() {
           }
 
           (parentEntry || tree).children.push(entry);
+
           return entry;
         }
 
         function flatten(tree) {
           const result = [];
+
           const queue = [];
+
           let i;
 
           for (i = 0; i < tree.children.length; i++) {
@@ -113,11 +125,14 @@ export function AnimationProvider() {
           }
 
           let remainingLevelEntries = queue.length;
+
           let nextLevelEntries = 0;
+
           let row = [];
 
           for (i = 0; i < queue.length; i++) {
             const entry = queue[i];
+
             if (remainingLevelEntries <= 0) {
               remainingLevelEntries = nextLevelEntries;
               nextLevelEntries = 0;
@@ -160,6 +175,7 @@ export function AnimationProvider() {
 
         if (!drivers.length) {
           close();
+
           return runner;
         }
 
@@ -167,7 +183,9 @@ export function AnimationProvider() {
           element.getAttribute("class"),
           mergeClasses(options.addClass, options.removeClass),
         );
+
         let { tempClasses } = options;
+
         if (tempClasses) {
           classes += ` ${tempClasses}`;
           options.tempClasses = null;
@@ -203,6 +221,7 @@ export function AnimationProvider() {
         if (animationQueue.length > 1) return runner;
         $rootScope.$postUpdate(() => {
           const animations = [];
+
           animationQueue.forEach((entry) => {
             // the element was destroyed early on which removed the runner
             // form its storage. This means we can't animate this element
@@ -218,12 +237,14 @@ export function AnimationProvider() {
           animationQueue.length = 0;
 
           const groupedAnimations = groupAnimations(animations);
+
           const toBeSortedAnimations = [];
 
           groupedAnimations.forEach((animationEntry) => {
             const element = animationEntry.from
               ? animationEntry.from.element
               : animationEntry.element;
+
             let extraClasses = options.addClass;
 
             extraClasses =
@@ -240,6 +261,7 @@ export function AnimationProvider() {
               domNode: element,
               fn: function triggerAnimationStart() {
                 let startAnimationFn;
+
                 const closeFn = animationEntry.close;
 
                 // in the event that we've cached the animation status for this element
@@ -251,6 +273,7 @@ export function AnimationProvider() {
                   )
                 ) {
                   closeFn();
+
                   return;
                 }
 
@@ -267,6 +290,7 @@ export function AnimationProvider() {
 
                 if (getRunner(targetElement)) {
                   const operation = invokeFirstDriver(animationEntry);
+
                   if (operation) {
                     startAnimationFn = operation.start;
                   }
@@ -276,6 +300,7 @@ export function AnimationProvider() {
                   closeFn();
                 } else {
                   const animationRunner = startAnimationFn();
+
                   animationRunner.done((status) => {
                     closeFn(!status);
                   });
@@ -289,10 +314,13 @@ export function AnimationProvider() {
           // relationships. This ensures that the child classes are applied at the
           // right time.
           const finalAnimations = sortAnimations(toBeSortedAnimations);
+
           for (let i = 0; i < finalAnimations.length; i++) {
             const innerArray = finalAnimations[i];
+
             for (let j = 0; j < innerArray.length; j++) {
               const entry = innerArray[j];
+
               const { element } = entry;
 
               // the RAFScheduler code only uses functions
@@ -310,6 +338,7 @@ export function AnimationProvider() {
                 element,
                 PREPARE_CLASSES_KEY,
               );
+
               if (prepareClassName) {
                 element.classList.add(prepareClassName);
               }
@@ -324,27 +353,38 @@ export function AnimationProvider() {
         // TODO(matsko): change to reference nodes
         function getAnchorNodes(node) {
           const SELECTOR = `[${NG_ANIMATE_REF_ATTR}]`;
+
           const items = node.hasAttribute(NG_ANIMATE_REF_ATTR)
             ? [node]
             : node.querySelectorAll(SELECTOR);
+
           const anchors = [];
+
           items.forEach((node) => {
             const attr = node.getAttribute(NG_ANIMATE_REF_ATTR);
+
             if (attr && attr.length) {
               anchors.push(node);
             }
           });
+
           return anchors;
         }
 
         function groupAnimations(animations) {
           const preparedAnimations = [];
+
           const refLookup = {};
+
           animations.forEach((animation, index) => {
             const { element } = animation;
+
             const node = element;
+
             const { event } = animation;
+
             const enterOrMove = ["enter", "move"].indexOf(event) >= 0;
+
             const anchorNodes = animation.structural
               ? getAnchorNodes(node)
               : [];
@@ -354,6 +394,7 @@ export function AnimationProvider() {
 
               anchorNodes.forEach((anchor) => {
                 const key = anchor.getAttribute(NG_ANIMATE_REF_ATTR);
+
                 refLookup[key] = refLookup[key] || {};
                 refLookup[key][direction] = {
                   animationID: index,
@@ -366,26 +407,35 @@ export function AnimationProvider() {
           });
 
           const usedIndicesLookup = {};
+
           const anchorGroups = {};
+
           Object.values(refLookup).forEach((operations) => {
             const { from } = operations;
+
             const { to } = operations;
 
             if (!from || !to) {
               // only one of these is set therefore we can't have an
               // anchor animation since all three pieces are required
               const index = from ? from.animationID : to.animationID;
+
               const indexKey = index.toString();
+
               if (!usedIndicesLookup[indexKey]) {
                 usedIndicesLookup[indexKey] = true;
                 preparedAnimations.push(animations[index]);
               }
+
               return;
             }
 
             const fromAnimation = animations[from.animationID];
+
             const toAnimation = animations[to.animationID];
+
             const lookupKey = from.animationID.toString();
+
             if (!anchorGroups[lookupKey]) {
               const group = (anchorGroups[lookupKey] = {
                 structural: true,
@@ -433,6 +483,7 @@ export function AnimationProvider() {
 
           for (let i = 0; i < a.length; i++) {
             const aa = a[i];
+
             if (aa.substring(0, 3) === "ng-") continue;
 
             for (let j = 0; j < b.length; j++) {
@@ -451,8 +502,11 @@ export function AnimationProvider() {
           // may attempt more elements, but custom drivers are more particular
           for (let i = drivers.length - 1; i >= 0; i--) {
             const driverName = drivers[i];
+
             const factory = $injector.get(driverName);
+
             const driver = factory(animationDetails);
+
             if (driver) {
               return driver;
             }
@@ -464,6 +518,7 @@ export function AnimationProvider() {
             (tempClasses ? `${tempClasses} ` : "") + NG_ANIMATE_CLASSNAME;
           element.className += ` ${tempClasses}`;
           let prepareClassName = getCacheData(element, PREPARE_CLASSES_KEY);
+
           if (prepareClassName) {
             element.classList.remove(prepareClassName);
             prepareClassName = null;
@@ -480,12 +535,14 @@ export function AnimationProvider() {
 
           function update(element) {
             const runner = getRunner(element);
+
             if (runner) runner.setHost(newRunner);
           }
         }
 
         function handleDestroyedElement() {
           const runner = getRunner(element);
+
           if (runner && (event !== "leave" || !options.$$domOperationFired)) {
             runner.end();
           }

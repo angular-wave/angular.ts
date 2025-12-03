@@ -10,10 +10,12 @@
  */
 export function createPersistentProxy(target, key, storage, options = {}) {
   const serialize = options.serialize || JSON.stringify;
+
   const deserialize = options.deserialize || JSON.parse;
 
   // Restore saved state
   const saved = storage.getItem(key);
+
   if (saved) {
     try {
       Object.assign(target, deserialize(saved));
@@ -25,20 +27,24 @@ export function createPersistentProxy(target, key, storage, options = {}) {
   return new Proxy(target, {
     set(obj, prop, value) {
       obj[prop] = value;
+
       try {
         storage.setItem(key, serialize(obj));
       } catch (e) {
         console.warn(`Failed to persist data for key "${e}"`);
       }
+
       return true;
     },
     deleteProperty(obj, prop) {
       const deleted = delete obj[prop];
+
       try {
         storage.setItem(key, serialize(obj));
       } catch {
         console.warn(`Failed to persist data for key "${key}"`);
       }
+
       return deleted;
     },
   });

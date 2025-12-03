@@ -12,6 +12,7 @@ export function ngInjectDirective($log, $injector) {
     restrict: "A",
     link(scope, _element, attrs) {
       const expr = attrs.ngInject;
+
       if (!expr) return;
       const tokens = expr
         .split(";")

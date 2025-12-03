@@ -9,6 +9,7 @@ let elId = 1;
  * Key for storing isolate scope data, attached to an element
  */
 const ISOLATE_SCOPE_KEY = "$isolateScope";
+
 const EXPANDO = "ng";
 
 /**
@@ -17,8 +18,11 @@ const EXPANDO = "ng";
 const SCOPE_KEY = "$scope";
 
 const DASH_LOWERCASE_REGEXP = /-([a-z])/g;
+
 const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
+
 const SINGLE_TAG_REGEXP = /^<([\w-]+)\s*\/?>(?:<\/\1>|)$/;
+
 const TAG_NAME_REGEXP = /<([\w:-]+)/;
 
 // Table parts need to be wrapped with `<table>` or they're
@@ -116,6 +120,7 @@ export function snakeToCamel(name) {
  */
 export function removeElementData(element, name) {
   const expandoId = element[EXPANDO];
+
   const expandoStore = expandoId && Cache.get(expandoId);
 
   if (expandoStore) {
@@ -140,6 +145,7 @@ export function removeElementData(element, name) {
  */
 export function getExpando(element, createIfNecessary = false) {
   let expandoId = element[EXPANDO];
+
   let expandoStore = expandoId && Cache.get(expandoId);
 
   if (createIfNecessary && !expandoStore) {
@@ -188,10 +194,15 @@ function elementAcceptsData(node) {
 export function buildFragment(html) {
   /** @type {HTMLDivElement} */
   let tmp;
+
   let tag;
+
   let wrap;
-  let tempFragment = document.createDocumentFragment();
+
+  const tempFragment = document.createDocumentFragment();
+
   let nodes = [];
+
   let i;
 
   if (isTextNode(html)) {
@@ -207,6 +218,7 @@ export function buildFragment(html) {
 
     // Create wrappers & descend into them
     i = wrap.length;
+
     while (--i > -1) {
       tmp.appendChild(document.createElement(wrap[i]));
       tmp = /** @type {HTMLDivElement} */ (tmp.firstChild);
@@ -219,8 +231,10 @@ export function buildFragment(html) {
     tmp.textContent = "";
   }
 
-  let fragment = document.createDocumentFragment();
+  const fragment = document.createDocumentFragment();
+
   fragment.append(...nodes);
+
   return fragment;
 }
 
@@ -229,11 +243,13 @@ export function buildFragment(html) {
  * @returns {NodeListOf<ChildNode> | HTMLElement[]}
  */
 export function parseHtml(html) {
-  let regEx = SINGLE_TAG_REGEXP.exec(html);
+  const regEx = SINGLE_TAG_REGEXP.exec(html);
+
   if (regEx) {
     return [document.createElement(regEx[1])];
   }
-  let fragment = buildFragment(html);
+  const fragment = buildFragment(html);
+
   if (fragment) {
     return fragment.childNodes;
   }
@@ -248,6 +264,7 @@ export function parseHtml(html) {
  */
 export function dealoc(element, onlyDescendants) {
   if (!element || element instanceof Comment) return;
+
   if (Array.isArray(element)) {
     element.forEach((x) => dealoc(x, onlyDescendants));
   } else {
@@ -270,6 +287,7 @@ export function dealoc(element, onlyDescendants) {
  */
 function removeIfEmptyData(element) {
   const expandoId = element[EXPANDO];
+
   const { data } = Cache.get(expandoId);
 
   if (!data || !Object.keys(data).length) {
@@ -291,9 +309,13 @@ export function getOrSetCacheData(element, key, value) {
     let prop;
 
     const isSimpleSetter = isDefined(value);
+
     const isSimpleGetter = !isSimpleSetter && key && !isObject(key);
+
     const massGetter = !key;
+
     const expandoStore = getExpando(element, !isSimpleGetter);
+
     const data = expandoStore && expandoStore.data;
 
     if (isSimpleSetter) {
@@ -302,10 +324,12 @@ export function getOrSetCacheData(element, key, value) {
       if (massGetter) {
         return data;
       }
+
       if (isSimpleGetter) {
         // don't force creation of expandoStore if it doesn't exist yet
         return data && data[kebabToCamel(key)];
       }
+
       // mass-setter: data({key1: val1, key2: val2})
       for (prop in key) {
         data[kebabToCamel(prop)] = key[prop];
@@ -327,7 +351,9 @@ export function getOrSetCacheData(element, key, value) {
 export function setCacheData(element, key, value) {
   if (elementAcceptsData(element)) {
     const expandoStore = getExpando(/** @type {Element} */ (element), true);
+
     const data = expandoStore && expandoStore.data;
+
     data[kebabToCamel(key)] = value;
   } else {
     if (element.parentElement) {
@@ -347,12 +373,16 @@ export function setCacheData(element, key, value) {
 export function getCacheData(element, key) {
   if (elementAcceptsData(element)) {
     const expandoStore = getExpando(element, false); // Don't create if it doesn't exist
+
     const data = expandoStore && expandoStore.data;
+
     if (!key) {
       return undefined;
     }
+
     return data && data[kebabToCamel(key)];
   }
+
   return undefined;
 }
 
@@ -368,6 +398,7 @@ export function deleteCacheData(element, key) {
 
   if (elementAcceptsData(element)) {
     const expandoStore = getExpando(element, false); // Don't create if it doesn't exist
+
     const data = expandoStore?.data;
 
     if (data && hasOwn(data, kebabToCamel(key))) {
@@ -440,6 +471,7 @@ export function getInheritedData(element, name) {
   }
 
   let value;
+
   while (element) {
     if (
       isDefined((value = getCacheData(/** @type {Element} */ (element), name)))
@@ -501,6 +533,7 @@ export function removeElement(element, keepData = false) {
     dealoc(element);
   }
   const parent = element.parentNode;
+
   if (parent) parent.removeChild(element);
 }
 
@@ -515,7 +548,9 @@ export function startingTag(elementOrStr) {
 
   if (typeof elementOrStr === "string") {
     const parser = new DOMParser();
+
     const doc = parser.parseFromString(elementOrStr, "text/html");
+
     clone = doc.body.firstChild.cloneNode(true);
   } else if (elementOrStr instanceof Element || elementOrStr instanceof Node) {
     clone = elementOrStr.cloneNode(true);
@@ -528,6 +563,7 @@ export function startingTag(elementOrStr) {
   }
 
   const divWrapper = document.createElement("div");
+
   divWrapper.appendChild(clone);
   const elemHtml = divWrapper.innerHTML;
 
@@ -538,9 +574,10 @@ export function startingTag(elementOrStr) {
       return `<!--${/** @type {Comment} **/ (clone).data.trim()}-->`;
     } else {
       const match = elemHtml.match(/^(<[^>]+>)/);
+
       if (match) {
         return match[1].replace(/^<([\w-]+)/, (_match, nodeName) => {
-          return "<" + nodeName.toLowerCase();
+          return `<${nodeName.toLowerCase()}`;
         });
       }
     }
@@ -559,7 +596,9 @@ export function startingTag(elementOrStr) {
 export function getBlockNodes(nodes) {
   // TODO(perf): update `nodes` instead of creating a new object?
   let node = nodes[0];
+
   const endNode = nodes[nodes.length - 1];
+
   let blockNodes;
 
   for (let i = 1; node !== endNode && (node = node.nextSibling); i++) {
@@ -584,7 +623,9 @@ export function getBlockNodes(nodes) {
  */
 export function getBooleanAttrName(element, name) {
   const normalizedName = name.toLowerCase();
+
   const isBooleanAttr = BOOLEAN_ATTR.includes(normalizedName);
+
   return isBooleanAttr && BOOLEAN_ELEMENTS.includes(element.nodeName)
     ? normalizedName
     : false;
@@ -617,7 +658,9 @@ export function getInjector(element) {
  */
 export function createElementFromHTML(htmlString) {
   const template = document.createElement("template");
+
   template.innerHTML = htmlString.trim();
+
   return /** @type {Element} */ (template.content.firstChild);
 }
 
@@ -628,7 +671,9 @@ export function createElementFromHTML(htmlString) {
  */
 export function createNodelistFromHTML(htmlString) {
   const template = document.createElement("template");
+
   template.innerHTML = htmlString.trim();
+
   return template.content.childNodes;
 }
 
@@ -640,6 +685,7 @@ export function createNodelistFromHTML(htmlString) {
 export function appendNodesToElement(element, nodes) {
   if (typeof nodes === "string") {
     const template = document.createElement("template");
+
     template.innerHTML = nodes.trim();
     nodes = Array.from(template.content.childNodes);
   } else if (nodes instanceof Node) {
@@ -697,10 +743,12 @@ export function domInsert(element, parentElement, afterElement) {
   // just stick to using the parent element as the anchor
   if (afterElement) {
     const afterNode = extractElementNode(afterElement);
+
     if (afterNode && !afterNode.parentNode && !afterNode.previousSibling) {
       afterElement = null;
     }
   }
+
   if (afterElement) {
     afterElement.after(element);
   } else {
@@ -710,7 +758,9 @@ export function domInsert(element, parentElement, afterElement) {
 
 export function animatedomInsert(element, parent, after) {
   const originalVisibility = element.style.visibility;
+
   const originalPosition = element.style.position;
+
   const originalPointerEvents = element.style.pointerEvents;
 
   Object.assign(element.style, {
@@ -735,5 +785,6 @@ export function animatedomInsert(element, parent, after) {
  */
 export function getBaseHref() {
   const href = document.querySelector("base")?.getAttribute("href");
+
   return href ? href.replace(/^(https?:)?\/\/[^/]*/, "") : "";
 }

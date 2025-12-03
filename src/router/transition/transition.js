@@ -1,18 +1,18 @@
 import { trace } from "../common/trace.js";
 import { stringify } from "../../shared/strings.js";
 import {
-  map,
-  find,
-  tail,
-  omit,
-  arrayTuples,
-  unnestR,
   anyTrueR,
+  arrayTuples,
+  find,
+  map,
+  omit,
+  tail,
+  unnestR,
 } from "../../shared/common.js";
-import { isUndefined, isObject, assert } from "../../shared/utils.js";
-import { propEq, val, is } from "../../shared/hof.js";
+import { assert, isObject, isUndefined } from "../../shared/utils.js";
+import { is, propEq, val } from "../../shared/hof.js";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.js";
-import { matchState, makeEvent } from "./hook-registry.js";
+import { makeEvent, matchState } from "./hook-registry.js";
 import { HookBuilder } from "./hook-builder.js";
 import { PathUtils } from "../path/path-utils.js";
 import { Param } from "../params/param.js";
@@ -64,6 +64,7 @@ export class Transition {
     /** Checks if this transition is currently active/running. */
     this.isActive = () => this.globals.transition === this;
     this._targetState = targetState;
+
     if (!targetState.valid()) {
       throw new Error(targetState.error());
     }
@@ -74,6 +75,7 @@ export class Transition {
     );
     this.$id = transitionService._transitionCount++;
     const toPath = PathUtils.buildToPath(fromPath, targetState);
+
     this._treeChanges = PathUtils.treeChanges(
       fromPath,
       toPath,
@@ -83,6 +85,7 @@ export class Transition {
     const onCreateHooks = this._hookBuilder.buildHooksForPhase(
       TransitionHookPhase.CREATE,
     );
+
     TransitionHook.invokeHooks(onCreateHooks, () => null);
     this.applyViewConfigs();
     this.onStart = undefined;
@@ -112,24 +115,28 @@ export class Transition {
 
   applyViewConfigs() {
     const enteringStates = this._treeChanges.entering.map((node) => node.state);
+
     PathUtils.applyViewConfigs(
       this.transitionService.$view,
       this._treeChanges.to,
       enteringStates,
     );
   }
+
   /**
    * @returns {import('../state/state-object.js').StateObject} the internal from [State] object
    */
   $from() {
     return tail(this._treeChanges.from).state;
   }
+
   /**
    * @returns {import('../state/state-object.js').StateObject} the internal to [State] object
    */
   $to() {
     return tail(this._treeChanges.to).state;
   }
+
   /**
    * Returns the "from state"
    *
@@ -140,6 +147,7 @@ export class Transition {
   from() {
     return this.$from().self;
   }
+
   /**
    * Returns the "to state"
    *
@@ -150,6 +158,7 @@ export class Transition {
   to() {
     return this.$to().self;
   }
+
   /**
    * Gets the Target State
    *
@@ -160,6 +169,7 @@ export class Transition {
   targetState() {
     return this._targetState;
   }
+
   /**
    * Determines whether two transitions are equivalent.
    * @deprecated
@@ -169,11 +179,13 @@ export class Transition {
       // TODO: Also compare parameters
       return this.is({ to: compare.$to().name, from: compare.$from().name });
     }
+
     return !(
       (compare.to && !matchState(this.$to(), compare.to, this)) ||
       (compare.from && !matchState(this.$from(), compare.from, this))
     );
   }
+
   params(pathname = "to") {
     return Object.freeze(
       this._treeChanges[pathname]
@@ -255,17 +267,22 @@ export class Transition {
       ? resolvable
       : new Resolvable(resolvable);
     const stateName = typeof state === "string" ? state : state.name;
+
     const topath = this._treeChanges.to;
+
     const targetNode = find(topath, (node) => {
       return node.state.name === stateName;
     });
+
     assert(!!targetNode, `targetNode not found ${stateName}`);
     const resolveContext = new ResolveContext(topath);
+
     resolveContext.addResolvables(
       [resolvable],
       /** @type {import("../path/path-node.js").PathNode} */ (targetNode).state,
     );
   }
+
   /**
    * Gets the transition from which this transition was redirected.
    *
@@ -286,6 +303,7 @@ export class Transition {
   redirectedFrom() {
     return this._options.redirectedFrom || null;
   }
+
   /**
    * Gets the original transition in a redirect chain
    *
@@ -314,8 +332,10 @@ export class Transition {
    */
   originalTransition() {
     const rf = this.redirectedFrom();
+
     return (rf && rf.originalTransition()) || this;
   }
+
   /**
    * Get the transition options
    *
@@ -324,6 +344,7 @@ export class Transition {
   options() {
     return this._options;
   }
+
   /**
    * Gets the states being entered.
    *
@@ -332,6 +353,7 @@ export class Transition {
   entering() {
     return map(this._treeChanges.entering, (x) => x.state).map((x) => x.self);
   }
+
   /**
    * Gets the states being exited.
    *
@@ -342,6 +364,7 @@ export class Transition {
       .map((x) => x.self)
       .reverse();
   }
+
   /**
    * Gets the states being retained.
    *
@@ -351,6 +374,7 @@ export class Transition {
   retained() {
     return map(this._treeChanges.retained, (x) => x.state).map((x) => x.self);
   }
+
   /**
    * Get the [[ViewConfig]]s associated with this Transition
    *
@@ -365,12 +389,16 @@ export class Transition {
    */
   views(pathname = "entering", state) {
     let path = this._treeChanges[pathname];
+
     path = !state ? path : path.filter(propEq("state", state));
+
     return path.map((x) => x.views).reduce(unnestR, []);
   }
+
   treeChanges(pathname) {
     return pathname ? this._treeChanges[pathname] : this._treeChanges;
   }
+
   /**
    * Creates a new transition that is a redirection of the current one.
    *
@@ -384,11 +412,13 @@ export class Transition {
   redirect(targetState) {
     let redirects = 1,
       trans = this;
+
     while ((trans = trans.redirectedFrom()) != null) {
       if (++redirects > 20)
         throw new Error(`Too many consecutive Transition redirects (20+)`);
     }
     const redirectOpts = { redirectedFrom: this, source: "redirect" };
+
     // If the original transition was caused by URL sync, then use { location: 'replace' }
     // on the new transition (unless the target state explicitly specifies location: false).
     // This causes the original url to be replaced with the url for the redirect target
@@ -405,13 +435,17 @@ export class Transition {
       targetState.options(),
       redirectOpts,
     );
+
     targetState = targetState.withOptions(newOptions, true);
     const newTransition = this.transitionService.create(
       this._treeChanges.from,
       targetState,
     );
+
     const originalEnteringNodes = this._treeChanges.entering;
+
     const redirectEnteringNodes = newTransition._treeChanges.entering;
+
     // --- Re-use resolve data from original transition ---
     // When redirecting from a parent state to a child state where the parent parameter values haven't changed
     // (because of the redirect), the resolves fetched by the original transition are still valid in the
@@ -424,45 +458,57 @@ export class Transition {
     const nodeIsReloading = (reloadState) => (node) => {
       return reloadState && node.state.includes[reloadState.name];
     };
+
     // Find any "entering" nodes in the redirect path that match the original path and aren't being reloaded
     const matchingEnteringNodes = PathUtils.matching(
       redirectEnteringNodes,
       originalEnteringNodes,
       PathUtils.nonDynamicParams,
     ).filter((x) => !nodeIsReloading(targetState.options().reloadState)(x));
+
     // Use the existing (possibly pre-resolved) resolvables for the matching entering nodes.
     matchingEnteringNodes.forEach((node, idx) => {
       node.resolvables = originalEnteringNodes[idx].resolvables;
     });
+
     return newTransition;
   }
+
   /** @internal If a transition doesn't exit/enter any states, returns any [[Param]] whose value changed */
   _changedParams() {
     const tc = this._treeChanges;
+
     /** Return undefined if it's not a "dynamic" transition, for the following reasons */
     // If user explicitly wants a reload
     if (this._options.reload) return undefined;
+
     // If any states are exiting or entering
     if (tc.exiting.length || tc.entering.length) return undefined;
+
     // If to/from path lengths differ
     if (tc.to.length !== tc.from.length) return undefined;
     // If the to/from paths are different
     const pathsDiffer = arrayTuples(tc.to, tc.from)
       .map((tuple) => tuple[0].state !== tuple[1].state)
       .reduce(anyTrueR, false);
+
     if (pathsDiffer) return undefined;
     // Find any parameter values that differ
     const nodeSchemas = tc.to.map((node) => node.paramSchema);
+
     const [toValues, fromValues] = [tc.to, tc.from].map((path) =>
       path.map((x) => x.paramValues),
     );
+
     const tuples = arrayTuples(nodeSchemas, toValues, fromValues);
+
     return tuples
       .map(([schema, toVals, fromVals]) =>
         Param.changed(schema, toVals, fromVals),
       )
       .reduce(unnestR, []);
   }
+
   /**
    * Returns true if the transition is dynamic.
    *
@@ -472,10 +518,12 @@ export class Transition {
    */
   dynamic() {
     const changes = this._changedParams();
+
     return !changes
       ? false
       : changes.map((x) => x.dynamic).reduce(anyTrueR, false);
   }
+
   /**
    * Returns true if the transition is ignored.
    *
@@ -489,10 +537,13 @@ export class Transition {
 
   _ignoredReason() {
     const pending = this.globals.transition;
-    const reloadState = this._options.reloadState;
+
+    const { reloadState } = this._options;
+
     const same = (pathA, pathB) => {
       if (pathA.length !== pathB.length) return false;
       const matching = PathUtils.matching(pathA, pathB);
+
       return (
         pathA.length ===
         matching.filter(
@@ -500,14 +551,18 @@ export class Transition {
         ).length
       );
     };
+
     const newTC = this._treeChanges;
+
     const pendTC = pending && pending._treeChanges;
+
     if (
       pendTC &&
       same(pendTC.to, newTC.to) &&
       same(pendTC.exiting, newTC.exiting)
     )
       return "SameAsPending";
+
     if (
       newTC.exiting.length === 0 &&
       newTC.entering.length === 0 &&
@@ -528,6 +583,7 @@ export class Transition {
   run() {
     // Gets transition hooks array for the given phase
     const getHooksFor = (phase) => this._hookBuilder.buildHooksForPhase(phase);
+
     // When the chain is complete, then resolve or reject the deferred
     const transitionSuccess = () => {
       trace.traceSuccess(this.$to(), this);
@@ -536,6 +592,7 @@ export class Transition {
       const hooks = this._hookBuilder.buildHooksForPhase(
         TransitionHookPhase.SUCCESS,
       );
+
       hooks.forEach((hook) => {
         hook.invokeHook();
       });
@@ -547,6 +604,7 @@ export class Transition {
       this._deferred.reject(reason);
       this._error = reason;
       const hooks = getHooksFor(TransitionHookPhase.ERROR);
+
       hooks.forEach((hook) => hook.invokeHook());
     };
 
@@ -554,23 +612,32 @@ export class Transition {
       // Wait to build the RUN hook chain until the BEFORE hooks are done
       // This allows a BEFORE hook to dynamically add additional RUN hooks via the Transition object.
       const allRunHooks = getHooksFor(TransitionHookPhase.RUN);
+
       const resolved = Promise.resolve();
+
       return TransitionHook.invokeHooks(allRunHooks, () => resolved);
     };
+
     const startTransition = () => {
-      const globals = this.globals;
+      const { globals } = this;
+
       globals.lastStartedTransitionId = this.$id;
       globals.transition = this;
       globals.transitionHistory.enqueue(this);
       trace.traceTransitionStart(this);
+
       return Promise.resolve();
     };
+
     const allBeforeHooks = getHooksFor(TransitionHookPhase.BEFORE);
+
     TransitionHook.invokeHooks(allBeforeHooks, startTransition)
       .then(runTransition)
       .then(transitionSuccess, transitionError);
+
     return this.promise;
   }
+
   /**
    * Checks if the Transition is valid
    *
@@ -579,6 +646,7 @@ export class Transition {
   valid() {
     return !this.error() || this.success !== undefined;
   }
+
   /**
    * Aborts this transition
    *
@@ -591,6 +659,7 @@ export class Transition {
       this._aborted = true;
     }
   }
+
   /**
    * The Transition error reason.
    *
@@ -601,25 +670,33 @@ export class Transition {
    */
   error() {
     const state = this.$to();
+
     if (state.self.abstract) {
       return Rejection.invalid(
         `Cannot transition to abstract state '${state.name}'`,
       );
     }
     const paramDefs = state.parameters();
+
     const values = this.params();
+
     const invalidParams = paramDefs.filter(
       (param) => !param.validates(values[param.id]),
     );
+
     if (invalidParams.length) {
       const invalidValues = invalidParams
         .map((param) => `[${param.id}:${stringify(values[param.id])}]`)
         .join(", ");
+
       const detail = `The following parameter values are not valid for state '${state.name}': ${invalidValues}`;
+
       return Rejection.invalid(detail);
     }
+
     if (this.success === false) return this._error;
   }
+
   /**
    * A string representation of the Transition
    *
@@ -627,11 +704,14 @@ export class Transition {
    */
   toString() {
     const fromStateOrName = this.from();
+
     const toStateOrName = this.to();
+
     const avoidEmptyHash = (params) =>
       params["#"] !== null && params["#"] !== undefined
         ? params
         : omit(params, ["#"]);
+
     // (X) means the to state is invalid.
     const id = this.$id,
       from = isObject(fromStateOrName) ? fromStateOrName.name : fromStateOrName,
@@ -645,6 +725,7 @@ export class Transition {
       toValid = this.valid() ? "" : "(X) ",
       to = isObject(toStateOrName) ? toStateOrName.name : toStateOrName,
       toParams = stringify(avoidEmptyHash(this.params()));
+
     return `Transition#${id}( '${from}'${fromParams} -> ${toValid}'${to}'${toParams} )`;
   }
 }

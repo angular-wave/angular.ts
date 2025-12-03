@@ -1,5 +1,7 @@
 const KEY = "$animId";
+
 let parentCounter = 0;
+
 const cache = new Map();
 
 export function animateCache() {
@@ -14,10 +16,15 @@ export function animateCache() {
      */
     cacheKey(node, method, addClass, removeClass) {
       const { parentNode } = node;
+
       const parentID = parentNode[KEY] ?? (parentNode[KEY] = ++parentCounter);
+
       const parts = [parentID, method, node.getAttribute("class")];
+
       if (addClass) parts.push(addClass);
+
       if (removeClass) parts.push(removeClass);
+
       return parts.join(" ");
     },
 
@@ -28,6 +35,7 @@ export function animateCache() {
      */
     containsCachedAnimationWithoutDuration(key) {
       const entry = cache.get(key);
+
       return entry ? !entry.isValid : false;
     },
 
@@ -65,6 +73,7 @@ export function animateCache() {
      */
     put(key, value, isValid) {
       const entry = cache.get(key);
+
       if (entry) {
         entry.total++;
         entry.value = value;

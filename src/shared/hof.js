@@ -45,6 +45,7 @@ export function curry(fn) {
       return fn.apply(this, arguments);
     }
     const args = Array.prototype.slice.call(arguments);
+
     return curried.bind(this, ...args);
   };
 }
@@ -56,11 +57,15 @@ export function curry(fn) {
  */
 export function compose() {
   const args = arguments;
+
   const start = args.length - 1;
+
   return function () {
     let i = start,
       result = args[start].apply(this, arguments);
+
     while (i--) result = args[i].call(this, result);
+
     return result;
   };
 }
@@ -83,6 +88,7 @@ export const propEq = curry((name, _val, obj) => obj && obj[name] === _val);
  */
 export const parse = (path) => {
   const parts = path.split(".");
+
   return (obj) => parts.reduce((acc, key) => acc && acc[key], obj);
 };
 

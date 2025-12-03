@@ -21,7 +21,7 @@ import {
   minErr,
   snakeCase,
 } from "../../shared/utils.js";
-import { nullFormCtrl, PENDING_CLASS } from "../form/form.js";
+import { PENDING_CLASS, nullFormCtrl } from "../form/form.js";
 import { defaultModelOptions } from "../model-options/model-options.js";
 import { startingTag } from "../../shared/dom.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
@@ -128,14 +128,14 @@ export class NgModelController {
     this.$error = {}; // keep invalid keys here
     this.$$success = {}; // keep valid keys here
     this.$pending = undefined; // keep pending keys here
-    this.$name = $interpolate($attr["name"] || "", false)($scope);
+    this.$name = $interpolate($attr.name || "", false)($scope);
     this.$$parentForm = nullFormCtrl;
     this.$options = defaultModelOptions;
     this.$$updateEvents = "";
     // Attach the correct context to the event handler function for updateOn
     this.$$updateEventHandler = this.$$updateEventHandler.bind(this);
 
-    this.$$parsedNgModel = $parse($attr["ngModel"]);
+    this.$$parsedNgModel = $parse($attr.ngModel);
     this.$$parsedNgModelAssign = this.$$parsedNgModel.assign;
 
     /**
@@ -165,6 +165,7 @@ export class NgModelController {
 
     this.$$classCache = {};
     const isValid = this.$$element.classList.contains(VALID_CLASS);
+
     this.$$classCache[VALID_CLASS] = isValid;
     this.$$classCache[INVALID_CLASS] = !isValid;
 
@@ -176,12 +177,13 @@ export class NgModelController {
   set(object, property) {
     object[property] = true;
   }
+
   unset(object, property) {
     delete object[property];
   }
 
   $setValidity(validationErrorKey, state) {
-    let that = this;
+    const that = this;
 
     function createAndSet(ctrl, name, value) {
       if (!ctrl[name]) {
@@ -194,6 +196,7 @@ export class NgModelController {
       if (ctrl[name]) {
         that.unset(ctrl[name], value);
       }
+
       if (isObjectEmpty(ctrl[name])) {
         ctrl[name] = undefined;
       }
@@ -240,6 +243,7 @@ export class NgModelController {
     } else {
       unsetAndCleanup(this, "$pending", validationErrorKey);
     }
+
     if (!isBoolean(state)) {
       delete this.$error[validationErrorKey];
       delete this.$$success[validationErrorKey];
@@ -250,6 +254,7 @@ export class NgModelController {
       this.set(this.$error, validationErrorKey);
       delete this.$$success[validationErrorKey];
     }
+
     if (this.$pending) {
       cachedToggleClass(this, PENDING_CLASS, true);
       this.$valid = this.$invalid = undefined;
@@ -266,6 +271,7 @@ export class NgModelController {
     // where setting/unsetting only increments/decrements the value,
     // and does not replace it.
     let combinedState;
+
     if (this.$pending && this.$pending[validationErrorKey]) {
       combinedState = undefined;
     } else if (this.$error[validationErrorKey]) {
@@ -282,14 +288,17 @@ export class NgModelController {
 
   $$initGetterSetters() {
     if (this.$options.getOption("getterSetter")) {
-      const invokeModelGetter = this.$$parse(`${this.$$attr["ngModel"]}()`);
-      const invokeModelSetter = this.$$parse(`${this.$$attr["ngModel"]}($$$p)`);
+      const invokeModelGetter = this.$$parse(`${this.$$attr.ngModel}()`);
+
+      const invokeModelSetter = this.$$parse(`${this.$$attr.ngModel}($$$p)`);
 
       this.$$ngModelGet = ($scope) => {
         let modelValue = this.$$parsedNgModel($scope);
+
         if (isFunction(modelValue)) {
           modelValue = invokeModelGetter($scope);
         }
+
         return modelValue;
       };
       this.$$ngModelSet = ($scope, newValue) => {
@@ -303,7 +312,7 @@ export class NgModelController {
       throw ngModelMinErr(
         "nonassign",
         "Expression '{0}' is non-assignable. Element: {1}",
-        this.$$attr["ngModel"],
+        this.$$attr.ngModel,
         startingTag(this.$$element),
       );
     }
@@ -377,7 +386,9 @@ export class NgModelController {
   $setPristine() {
     this.$dirty = false;
     this.$pristine = true;
+
     if (!this.$$element) return;
+
     if (hasAnimate(this.$$element)) {
       this.$$animate.removeClass(this.$$element, EMPTY_CLASS);
       this.$$animate.addClass(this.$$element, PRISTINE_CLASS);
@@ -397,6 +408,7 @@ export class NgModelController {
   $setDirty() {
     this.$dirty = true;
     this.$pristine = false;
+
     if (hasAnimate(this.$$element)) {
       this.$$animate.removeClass(this.$$element, PRISTINE_CLASS);
       this.$$animate.addClass(this.$$element, DIRTY_CLASS);
@@ -418,6 +430,7 @@ export class NgModelController {
   $setUntouched() {
     this.$touched = false;
     this.$untouched = true;
+
     if (hasAnimate(this.$$element)) {
       this.$$animate.setClass(this.$$element, UNTOUCHED_CLASS, TOUCHED_CLASS);
     } else {
@@ -436,6 +449,7 @@ export class NgModelController {
   $setTouched() {
     this.$touched = true;
     this.$untouched = false;
+
     if (hasAnimate(this.$$element)) {
       this.$$animate.setClass(this.$$element, TOUCHED_CLASS, UNTOUCHED_CLASS);
     } else {
@@ -550,6 +564,7 @@ export class NgModelController {
     }
 
     const viewValue = this.$$lastCommittedViewValue;
+
     // Note: we use the $$rawModelValue as $modelValue might have been
     // set to undefined during a view -> model update that found validation
     // errors. We can't parse the view here, since that could change
@@ -557,11 +572,13 @@ export class NgModelController {
     const modelValue = this.$$rawModelValue;
 
     const prevValid = this.$valid;
+
     const prevModelValue = this.$modelValue;
 
     const allowInvalid = this.$options.getOption("allowInvalid");
 
     const that = this;
+
     this.$$runValidators(modelValue, viewValue, (allValid) => {
       // If there was no change in validity, don't update the model
       // This prevents changing an invalid modelValue to undefined
@@ -582,15 +599,19 @@ export class NgModelController {
   $$runValidators(modelValue, viewValue, doneCallback) {
     this.$$currentValidationRunId++;
     const localValidationRunId = this.$$currentValidationRunId;
+
     const that = this;
 
     // check parser error
     if (!processParseErrors()) {
       validationDone(false);
+
       return;
     }
+
     if (!processSyncValidators()) {
       validationDone(false);
+
       return;
     }
     processAsyncValidators();
@@ -612,32 +633,42 @@ export class NgModelController {
 
         // Set the parse error last, to prevent unsetting it, should a $validators key == parserName
         setValidity(errorKey, that.$$parserValid);
+
         return that.$$parserValid;
       }
+
       return true;
     }
 
     function processSyncValidators() {
       let syncValidatorsValid = true;
+
       Object.entries(that.$validators).forEach(([name, validator]) => {
         const result = Boolean(validator(modelValue, viewValue));
+
         syncValidatorsValid = syncValidatorsValid && result;
         setValidity(name, result);
       });
+
       if (!syncValidatorsValid) {
         Object.keys(that.$asyncValidators).forEach((name) => {
           setValidity(name, null);
         });
+
         return false;
       }
+
       return true;
     }
 
     function processAsyncValidators() {
       const validatorPromises = [];
+
       let allValid = true;
+
       Object.entries(that.$asyncValidators).forEach(([name, validator]) => {
         const promise = validator(modelValue, viewValue);
+
         if (!isPromiseLike(promise)) {
           throw ngModelMinErr(
             "nopromise",
@@ -658,6 +689,7 @@ export class NgModelController {
           ),
         );
       });
+
       if (!validatorPromises.length) {
         validationDone(true);
       } else {
@@ -722,6 +754,7 @@ export class NgModelController {
 
   $$parseAndValidate() {
     let modelValue = this.$$lastCommittedViewValue;
+
     const that = this;
 
     this.$$parserValid = isUndefined(modelValue) ? undefined : true;
@@ -733,19 +766,23 @@ export class NgModelController {
     if (this.$$parserValid) {
       for (let i = 0; i < this.$parsers.length; i++) {
         modelValue = this.$parsers[i](modelValue);
+
         if (isUndefined(modelValue)) {
           this.$$parserValid = false;
           break;
         }
       }
     }
+
     if (isNumberNaN(this.$modelValue)) {
       // this.$modelValue has not been touched yet...
       // @ts-ignore
       this.$modelValue = this.$$ngModelGet(this.$$scope);
     }
     const prevModelValue = this.$modelValue;
+
     const allowInvalid = this.$options.getOption("allowInvalid");
+
     this.$$rawModelValue = modelValue;
 
     if (allowInvalid) {
@@ -841,6 +878,7 @@ export class NgModelController {
    */
   $setViewValue(value, trigger) {
     this.$viewValue = value;
+
     if (this.$options?.getOption("updateOnDefault")) {
       this.$$debounceViewValueCommit(trigger);
     }
@@ -852,18 +890,19 @@ export class NgModelController {
     if (isNumber(debounceDelay[trigger])) {
       debounceDelay = debounceDelay[trigger];
     } else if (
-      isNumber(debounceDelay["default"]) &&
+      isNumber(debounceDelay.default) &&
       /** @type {string} */ (this.$options.getOption("updateOn")).indexOf(
         trigger,
       ) === -1
     ) {
-      debounceDelay = debounceDelay["default"];
+      debounceDelay = debounceDelay.default;
     } else if (isNumber(debounceDelay["*"])) {
       debounceDelay = debounceDelay["*"];
     }
 
     clearTimeout(this.$$pendingDebounce);
     const that = this;
+
     if (/** @type {number} */ (debounceDelay) > 0) {
       // this fails if debounceDelay is an object
       this.$$pendingDebounce = setTimeout(() => {
@@ -1027,9 +1066,11 @@ export class NgModelController {
    */
   $$format() {
     const formatters = this.$formatters;
+
     let idx = formatters.length;
 
     let viewValue = this.$modelValue;
+
     while (idx--) {
       viewValue = formatters[idx](viewValue);
     }
@@ -1064,6 +1105,7 @@ export class NgModelController {
     this.$$updateEvents = /** @type {string} */ (
       this.$options.getOption("updateOn")
     );
+
     if (this.$$updateEvents) {
       this.$$updateEvents.split(" ").forEach((ev) => {
         this.$$element.addEventListener(ev, this.$$updateEventHandler);
@@ -1119,10 +1161,13 @@ export function ngModelDirective() {
       (element) => {
         // Setup initial state of the control
         element.classList.add(PRISTINE_CLASS, UNTOUCHED_CLASS, VALID_CLASS);
+
         return {
           pre: (scope, _element, attr, ctrls) => {
             const modelCtrl = ctrls[0];
+
             const formCtrl = ctrls[1] || modelCtrl.$$parentForm;
+
             const optionsCtrl = ctrls[2];
 
             if (optionsCtrl) {
@@ -1138,7 +1183,7 @@ export function ngModelDirective() {
                 modelCtrl.$$parentForm.$$renameControl(modelCtrl, newValue);
               }
             });
-            let deregisterWatch = scope.$watch(attr["ngModel"], (val) => {
+            const deregisterWatch = scope.$watch(attr.ngModel, (val) => {
               modelCtrl.$$setModelValue(isProxy(val) ? val.$target : val);
             });
 
@@ -1149,6 +1194,7 @@ export function ngModelDirective() {
           },
           post: (scope, element, _attr, ctrls) => {
             const modelCtrl = ctrls[0];
+
             modelCtrl.$$setUpdateOnEvents();
 
             function setTouched() {
@@ -1161,7 +1207,7 @@ export function ngModelDirective() {
             });
 
             modelCtrl.$viewChangeListeners.push(() =>
-              scope.$eval(element.dataset["change"]),
+              scope.$eval(element.dataset.change),
             );
           },
         };

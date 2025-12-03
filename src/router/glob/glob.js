@@ -73,15 +73,17 @@ export class Glob {
       .split(".")
       .map((seg) => {
         if (seg === "**") return "(?:|(?:\\.[^.]*)*)";
+
         if (seg === "*") return "\\.[^.]*";
-        return "\\." + seg;
+
+        return `\\.${seg}`;
       })
       .join("");
 
     /**
      * @type {RegExp}
      */
-    this.regexp = new RegExp("^" + regexpString + "$");
+    this.regexp = new RegExp(`^${regexpString}$`);
   }
 
   /**
@@ -89,7 +91,7 @@ export class Glob {
    * @return {boolean}
    */
   matches(name) {
-    return this.regexp.test("." + name);
+    return this.regexp.test(`.${name}`);
   }
 }
 

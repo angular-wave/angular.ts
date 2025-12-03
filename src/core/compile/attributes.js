@@ -1,20 +1,22 @@
 import { getBooleanAttrName } from "../../shared/dom.js";
 import {
-  isString,
-  snakeCase,
-  isUndefined,
   arrayRemove,
-  minErr,
-  trim,
   directiveNormalize,
   hasAnimate,
-  isProxy,
   hasOwn,
+  isProxy,
+  isString,
+  isUndefined,
+  minErr,
+  snakeCase,
+  trim,
 } from "../../shared/utils.js";
 import { ALIASED_ATTR } from "../../shared/constants.js";
 
 const $compileMinErr = minErr("$compile");
+
 const SIMPLE_ATTR_NAME = /^\w/;
+
 const specialAttrHolder = document.createElement("div");
 
 export class Attributes {
@@ -40,10 +42,13 @@ export class Attributes {
     this.$animate = $animate;
     this.$exceptionHandler = $exceptionHandler;
     this.$sce = $sce;
+
     if (attributesToCopy) {
       const keys = Object.keys(attributesToCopy);
+
       for (let i = 0, l = keys.length; i < l; i++) {
         const key = keys[i];
+
         this[key] = attributesToCopy[key];
       }
     } else {
@@ -118,6 +123,7 @@ export class Attributes {
    */
   $updateClass(newClasses, oldClasses) {
     const toAdd = tokenDifference(newClasses, oldClasses);
+
     if (toAdd && toAdd.length) {
       if (hasAnimate(this.$$element)) {
         this.$animate.addClass(/** @type {Element }*/ (this.$$element), toAdd);
@@ -126,6 +132,7 @@ export class Attributes {
       }
     }
     const toRemove = tokenDifference(oldClasses, newClasses);
+
     if (toRemove && toRemove.length) {
       if (hasAnimate(this.$$element)) {
         this.$animate.removeClass(
@@ -153,8 +160,11 @@ export class Attributes {
     // become unstable.
 
     const node = this.$$element;
+
     const booleanKey = getBooleanAttrName(/** @type {Element}   */ (node), key);
+
     const aliasedKey = ALIASED_ATTR[key];
+
     let observer = key;
 
     if (booleanKey) {
@@ -172,12 +182,13 @@ export class Attributes {
       this.$attr[key] = attrName;
     } else {
       attrName = this.$attr[key];
+
       if (!attrName) {
         this.$attr[key] = attrName = snakeCase(key, "-");
       }
     }
 
-    let nodeName = this.$nodeRef.node.nodeName.toLowerCase();
+    const nodeName = this.$nodeRef.node.nodeName.toLowerCase();
 
     // Sanitize img[srcset] values.
     if (nodeName === "img" && key === "srcset") {
@@ -185,9 +196,10 @@ export class Attributes {
     }
 
     if (writeAttr !== false) {
-      let elem = isProxy(this.$$element)
-        ? this.$$element["$target"]
+      const elem = isProxy(this.$$element)
+        ? this.$$element.$target
         : this.$$element;
+
       if (value === null || isUndefined(value)) {
         elem.removeAttribute(attrName);
         //
@@ -213,6 +225,7 @@ export class Attributes {
 
     // fire observers
     const { $$observers } = this;
+
     if ($$observers && $$observers[observer]) {
       $$observers[observer].forEach((fn) => {
         try {
@@ -241,9 +254,11 @@ export class Attributes {
   $observe(key, fn) {
     const $$observers =
       this.$$observers || (this.$$observers = Object.create(null));
+
     const listeners = $$observers[key] || ($$observers[key] = []);
 
     listeners.push(fn);
+
     if (!listeners.$$inter && hasOwn(this, key) && !isUndefined(this[key])) {
       // no one registered attribute interpolation function, so lets call it manually
       fn(this[key]);
@@ -262,7 +277,9 @@ export class Attributes {
     const { attributes } = /** @type {Element} */ (
       specialAttrHolder.firstChild
     );
+
     const attribute = attributes[0];
+
     // We have to remove the attribute from its container element before we can add it to the destination element
     attributes.removeNamedItem(attribute.name);
     attribute.value = value;
@@ -271,9 +288,11 @@ export class Attributes {
 
   sanitizeSrcset(value, invokeType) {
     let i;
+
     if (!value) {
       return value;
     }
+
     if (!isString(value)) {
       throw $compileMinErr(
         "srcset",
@@ -295,8 +314,10 @@ export class Attributes {
 
     // first check if there are spaces because it's not the same pattern
     const trimmedSrcset = trim(value);
+
     //                (   999x   ,|   999w   ,|   ,|,   )
     const srcPattern = /(\s+\d+x\s*,|\s+\d+w\s*,|\s+,|,\s+)/;
+
     const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
 
     // split srcset into tuple of uri and descriptor except for the last item
@@ -304,12 +325,14 @@ export class Attributes {
 
     // for each tuples
     const nbrUrisWith2parts = Math.floor(rawUris.length / 2);
+
     for (i = 0; i < nbrUrisWith2parts; i++) {
       const innerIdx = i * 2;
+
       // sanitize the uri
       result += this.$sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
       // add the descriptor
-      result += " " + trim(rawUris[innerIdx + 1]);
+      result += ` ${trim(rawUris[innerIdx + 1])}`;
     }
 
     // split the last item into uri and descriptor
@@ -320,7 +343,7 @@ export class Attributes {
 
     // and add the last descriptor if any
     if (lastTuple.length === 2) {
-      result += " " + trim(lastTuple[1]);
+      result += ` ${trim(lastTuple[1])}`;
     }
 
     return result.replace(/unsafe:unsafe/g, "unsafe");
@@ -337,8 +360,10 @@ export class Attributes {
  */
 function tokenDifference(str1, str2) {
   const tokens1 = new Set(str1.split(/\s+/));
+
   const tokens2 = new Set(str2.split(/\s+/));
 
   const difference = Array.from(tokens1).filter((token) => !tokens2.has(token));
+
   return difference.join(" ");
 }

@@ -53,6 +53,7 @@ export class Lexer {
 
     while (this.index < this.text.length) {
       const ch = this.text.charAt(this.index);
+
       if (ch === '"' || ch === "'") {
         this.readString(ch);
       } else if (
@@ -72,12 +73,18 @@ export class Lexer {
         this.index++;
       } else {
         const ch2 = ch + this.peek();
+
         const ch3 = ch2 + this.peek(2);
+
         const op1 = OPERATORS.has(ch);
+
         const op2 = OPERATORS.has(ch2);
+
         const op3 = OPERATORS.has(ch3);
+
         if (op1 || op2 || op3) {
           const token = op3 ? ch3 : op2 ? ch2 : ch;
+
           this.tokens.push({ index: this.index, text: token, operator: true });
           this.index += token.length;
         } else {
@@ -89,6 +96,7 @@ export class Lexer {
         }
       }
     }
+
     return this.tokens;
   }
 
@@ -109,6 +117,7 @@ export class Lexer {
    */
   peek(i) {
     const num = i || 1;
+
     return this.index + num < this.text.length
       ? this.text.charAt(this.index + num)
       : false;
@@ -170,6 +179,7 @@ export class Lexer {
    */
   codePointAt(ch) {
     if (ch.length === 1) return ch.charCodeAt(0);
+
     return (ch.charCodeAt(0) << 10) + ch.charCodeAt(1) - 0x35fdc00;
   }
 
@@ -179,15 +189,20 @@ export class Lexer {
    */
   peekMultichar() {
     const ch = this.text.charAt(this.index);
+
     const peek = this.peek();
+
     if (!peek) {
       return ch;
     }
     const cp1 = ch.charCodeAt(0);
+
     const cp2 = peek.charCodeAt(0);
+
     if (cp1 >= 0xd800 && cp1 <= 0xdbff && cp2 >= 0xdc00 && cp2 <= 0xdfff) {
       return ch + peek;
     }
+
     return ch;
   }
 
@@ -212,6 +227,7 @@ export class Lexer {
     const colStr = isDefined(start)
       ? `s ${start}-${this.index} [${this.text.substring(start, end)}]`
       : ` ${end}`;
+
     throw $parseMinErr(
       "lexerr",
       `Lexer Error: ${error} at column${colStr} in expression [${this.text}].`,
@@ -224,13 +240,17 @@ export class Lexer {
    */
   readNumber() {
     let number = "";
+
     const start = this.index;
+
     while (this.index < this.text.length) {
       const ch = this.text.charAt(this.index).toLowerCase();
+
       if (ch === "." || this.isNumber(ch)) {
         number += ch;
       } else {
         const peekCh = this.peek();
+
         if (ch === "e" && this.isExpOperator(/** @type {string} */ (peekCh))) {
           number += ch;
         } else if (
@@ -265,9 +285,12 @@ export class Lexer {
    */
   readIdent() {
     const start = this.index;
+
     this.index += this.peekMultichar().length;
+
     while (this.index < this.text.length) {
       const ch = this.peekMultichar();
+
       if (this.isIdentifierContinue && !this.isIdentifierContinue(ch)) {
         break;
       }
@@ -286,7 +309,9 @@ export class Lexer {
    */
   readString(quote) {
     const start = this.index;
+
     let string = "";
+
     let escape = false;
 
     this.index++; // Skip opening quote
@@ -313,6 +338,7 @@ export class Lexer {
           value: string,
         });
         this.index++; // Skip closing quote
+
         return;
       } else {
         string += ch;
@@ -329,10 +355,12 @@ export class Lexer {
    */
   handleUnicodeEscape() {
     const hex = this.text.substring(this.index + 1, this.index + 5);
+
     if (!hex.match(/[\da-f]{4}/i)) {
       this.throwError(`Invalid unicode escape [\\u${hex}]`);
     }
     this.index += 4; // Move index past the four hexadecimal digits
+
     return String.fromCharCode(parseInt(hex, 16));
   }
 }

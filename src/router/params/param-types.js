@@ -43,8 +43,10 @@ export class ParamTypes {
     // Register default types. Store them in the prototype of this.types.
     const makeType = (definition, name) =>
       new ParamType(Object.assign({ name }, definition));
+
     this.types = inherit(map(this.defaultTypes, makeType), {});
   }
+
   /**
    * Registers a parameter type
    *
@@ -52,23 +54,29 @@ export class ParamTypes {
    */
   type(name, definition, definitionFn) {
     if (!isDefined(definition)) return this.types[name];
+
     if (hasOwn(this.types, name))
       throw new Error(`A type named '${name}' has already been defined.`);
     this.types[name] = new ParamType(Object.assign({ name }, definition));
+
     if (definitionFn) {
       this.typeQueue.push({ name, def: definitionFn });
+
       if (!this.enqueue) this._flushTypeQueue();
     }
+
     return this;
   }
+
   _flushTypeQueue() {
     while (this.typeQueue.length) {
       const type = this.typeQueue.shift();
+
       if (type.pattern)
         throw new Error("You cannot override a type's .pattern at runtime.");
       Object.assign(
         this.types[type.name],
-        window["angular"].$injector.invoke(type.def),
+        window.angular.$injector.invoke(type.def),
       );
     }
   }
@@ -76,6 +84,7 @@ export class ParamTypes {
 function initDefaultTypes() {
   const makeDefaultType = (def) => {
     const valToString = (val) => (val != null ? val.toString() : val);
+
     const defaultTypeBase = {
       encode: valToString,
       decode: valToString,
@@ -84,8 +93,10 @@ function initDefaultTypes() {
 
       equals: (a, b) => a == b, // allow coersion for null/undefined/""
     };
+
     return Object.assign({}, defaultTypeBase, def);
   };
+
   // Default Parameter Type Definitions
   Object.assign(ParamTypes.prototype, {
     string: makeDefaultType({}),
@@ -98,7 +109,7 @@ function initDefaultTypes() {
     }),
     int: makeDefaultType({
       decode: (val) => parseInt(val, 10),
-      is: function (val) {
+      is(val) {
         return !isNullOrUndefined(val) && this.decode(val.toString()) === val;
       },
       pattern: /-?\d+/,
@@ -110,18 +121,19 @@ function initDefaultTypes() {
       pattern: /[01]/,
     }),
     date: makeDefaultType({
-      encode: function (val) {
+      encode(val) {
         return !this.is(val)
           ? undefined
           : [
               val.getFullYear(),
-              ("0" + (val.getMonth() + 1)).slice(-2),
-              ("0" + val.getDate()).slice(-2),
+              `0${val.getMonth() + 1}`.slice(-2),
+              `0${val.getDate()}`.slice(-2),
             ].join("-");
       },
-      decode: function (val) {
+      decode(val) {
         if (this.is(val)) return val;
         const match = this.capture.exec(val);
+
         return match ? new Date(match[1], match[2] - 1, match[3]) : undefined;
       },
       is: (val) => val instanceof Date && !isNaN(val.valueOf()),
@@ -138,7 +150,7 @@ function initDefaultTypes() {
       encode: JSON.stringify,
       decode: JSON.parse,
       is: is(Object),
-      equals: equals,
+      equals,
       pattern: /[^/]*/,
     }),
     // does not encode/decode
@@ -146,7 +158,7 @@ function initDefaultTypes() {
       encode: (x) => x,
       decode: (x) => x,
       is: () => true,
-      equals: equals,
+      equals,
     }),
   });
 }

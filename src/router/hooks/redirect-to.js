@@ -1,4 +1,4 @@
-import { isString, isFunction } from "../../shared/utils.js";
+import { isFunction, isString } from "../../shared/utils.js";
 import { TargetState } from "../state/target-state";
 
 export const registerRedirectToHook = (transitionService, stateService) => {
@@ -11,23 +11,30 @@ export const registerRedirectToHook = (transitionService, stateService) => {
    */
   const redirectToHook = (trans) => {
     const redirect = trans.to().redirectTo;
+
     if (!redirect) return;
     const $state = stateService;
+
     function handleResult(result) {
       if (!result) return;
+
       if (result instanceof TargetState) return result;
+
       if (isString(result))
         return $state.target(result, trans.params(), trans.options());
-      if (result["state"] || result["params"])
+
+      if (result.state || result.params)
         return $state.target(
-          result["state"] || trans.to(),
-          result["params"] || trans.params(),
+          result.state || trans.to(),
+          result.params || trans.params(),
           trans.options(),
         );
     }
+
     if (isFunction(redirect)) {
       return Promise.resolve(redirect(trans)).then(handleResult);
     }
+
     return handleResult(redirect);
   };
 

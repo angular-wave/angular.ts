@@ -42,9 +42,11 @@ export class AST {
     this.text = text;
     this.tokens = this.lexer.lex(text);
     const value = this.program();
+
     if (this.tokens.length !== 0) {
       this.throwError("is an unexpected token", this.tokens[0]);
     }
+
     return value;
   }
 
@@ -54,14 +56,18 @@ export class AST {
    */
   program() {
     const body = [];
+
     let hasMore = true;
+
     while (hasMore) {
       if (this.tokens.length > 0 && !this.peek("}", ")", ";", "]"))
         body.push(this.expressionStatement());
+
       if (!this.expect(";")) {
         hasMore = false;
       }
     }
+
     return { type: ASTType.Program, body };
   }
 
@@ -82,9 +88,11 @@ export class AST {
    */
   filterChain() {
     let left = this.assignment();
+
     while (this.expect("|")) {
       left = this.filter(left);
     }
+
     return left;
   }
 
@@ -94,6 +102,7 @@ export class AST {
    */
   assignment() {
     let result = this.ternary();
+
     if (this.expect("=")) {
       if (!isAssignable(result)) {
         throw $parseMinErr("lval", "Trying to assign a value to a non l-value");
@@ -106,6 +115,7 @@ export class AST {
         operator: "=",
       };
     }
+
     return result;
   }
 
@@ -115,12 +125,17 @@ export class AST {
    */
   ternary() {
     const test = this.logicalOR();
+
     let alternate;
+
     let consequent;
+
     if (this.expect("?")) {
       alternate = this.assignment();
+
       if (this.consume(":")) {
         consequent = this.assignment();
+
         return {
           type: ASTType.ConditionalExpression,
           test,
@@ -129,6 +144,7 @@ export class AST {
         };
       }
     }
+
     return test;
   }
 
@@ -138,6 +154,7 @@ export class AST {
    */
   logicalOR() {
     let left = this.logicalAND();
+
     while (this.expect("||")) {
       left = {
         type: ASTType.LogicalExpression,
@@ -146,6 +163,7 @@ export class AST {
         right: this.logicalAND(),
       };
     }
+
     return left;
   }
 
@@ -155,6 +173,7 @@ export class AST {
    */
   logicalAND() {
     let left = this.equality();
+
     while (this.expect("&&")) {
       left = {
         type: ASTType.LogicalExpression,
@@ -163,6 +182,7 @@ export class AST {
         right: this.equality(),
       };
     }
+
     return left;
   }
 
@@ -172,7 +192,9 @@ export class AST {
    */
   equality() {
     let left = this.relational();
+
     let token;
+
     while ((token = this.expect("==", "!=", "===", "!=="))) {
       left = {
         type: ASTType.BinaryExpression,
@@ -181,6 +203,7 @@ export class AST {
         right: this.relational(),
       };
     }
+
     return left;
   }
 
@@ -190,7 +213,9 @@ export class AST {
    */
   relational() {
     let left = this.additive();
+
     let token;
+
     while ((token = this.expect("<", ">", "<=", ">="))) {
       left = {
         type: ASTType.BinaryExpression,
@@ -199,6 +224,7 @@ export class AST {
         right: this.additive(),
       };
     }
+
     return left;
   }
 
@@ -208,7 +234,9 @@ export class AST {
    */
   additive() {
     let left = this.multiplicative();
+
     let token;
+
     while ((token = this.expect("+", "-"))) {
       left = {
         type: ASTType.BinaryExpression,
@@ -217,6 +245,7 @@ export class AST {
         right: this.multiplicative(),
       };
     }
+
     return left;
   }
 
@@ -226,7 +255,9 @@ export class AST {
    */
   multiplicative() {
     let left = this.unary();
+
     let token;
+
     while ((token = this.expect("*", "/", "%"))) {
       left = {
         type: ASTType.BinaryExpression,
@@ -235,6 +266,7 @@ export class AST {
         right: this.unary(),
       };
     }
+
     return left;
   }
 
@@ -244,6 +276,7 @@ export class AST {
    */
   unary() {
     let token;
+
     if ((token = this.expect("+", "-", "!"))) {
       return {
         type: ASTType.UnaryExpression,
@@ -252,6 +285,7 @@ export class AST {
         argument: this.unary(),
       };
     }
+
     return this.primary();
   }
 
@@ -261,6 +295,7 @@ export class AST {
    */
   primary() {
     let primary;
+
     if (this.expect("(")) {
       primary = this.filterChain();
       this.consume(")");
@@ -300,6 +335,7 @@ export class AST {
     }
 
     let next;
+
     while ((next = this.expect("(", "[", "."))) {
       if (
         /** @type {import("../lexer/lexer.js").Token} */ (next).text === "("
@@ -333,6 +369,7 @@ export class AST {
         this.throwError("IMPOSSIBLE");
       }
     }
+
     return primary;
   }
 
@@ -344,6 +381,7 @@ export class AST {
   filter(baseExpression) {
     /** @type {ASTNode[]} */
     const args = [baseExpression];
+
     const result = {
       type: ASTType.CallExpression,
       callee: this.identifier(),
@@ -365,11 +403,13 @@ export class AST {
   parseArguments() {
     /** @type {ASTNode[]} */
     const args = [];
+
     if (this.peekToken().text !== ")") {
       do {
         args.push(this.filterChain());
       } while (this.expect(","));
     }
+
     return args;
   }
 
@@ -379,9 +419,11 @@ export class AST {
    */
   identifier() {
     const token = this.consume();
+
     if (!token.identifier) {
       this.throwError("is not a valid identifier", token);
     }
+
     return { type: ASTType.Identifier, name: token.text };
   }
 
@@ -401,6 +443,7 @@ export class AST {
   arrayDeclaration() {
     /** @type {ASTNode[]} */
     const elements = [];
+
     if (this.peekToken().text !== "]") {
       do {
         if (this.peek("]")) {
@@ -422,8 +465,10 @@ export class AST {
   object() {
     /** @type {ASTNode[]} */
     const properties = [];
+
     /** @type {ASTNode} */
     let property;
+
     if (this.peekToken().text !== "}") {
       do {
         if (this.peek("}")) {
@@ -431,6 +476,7 @@ export class AST {
           break;
         }
         property = { type: ASTType.Property, kind: "init" };
+
         if (
           /** @type {import("../lexer/lexer.js").Token} */ (this.peek())
             .constant
@@ -445,6 +491,7 @@ export class AST {
         ) {
           property.key = this.identifier();
           property.computed = false;
+
           if (this.peek(":")) {
             this.consume(":");
             property.value = this.assignment();
@@ -504,6 +551,7 @@ export class AST {
     }
 
     const token = this.expect(e1);
+
     if (!token) {
       this.throwError(
         `is unexpected, expecting [${e1}]`,
@@ -526,6 +574,7 @@ export class AST {
         this.text,
       );
     }
+
     return this.tokens[0];
   }
 
@@ -547,7 +596,9 @@ export class AST {
   peekAhead(i, ...expected) {
     if (this.tokens.length > i) {
       const token = this.tokens[i];
+
       const t = token.text;
+
       if (
         expected.includes(t) ||
         (!expected[0] && !expected[1] && !expected[2] && !expected[3])
@@ -555,6 +606,7 @@ export class AST {
         return token;
       }
     }
+
     return false;
   }
 
@@ -565,10 +617,13 @@ export class AST {
    */
   expect(...expected) {
     const token = this.peek(...expected);
+
     if (token) {
       this.tokens.shift();
+
       return token;
     }
+
     return false;
   }
 }

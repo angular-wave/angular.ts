@@ -31,6 +31,7 @@ export class RafSchedulerProvider {
     if (!this.queue.length) return;
 
     const items = this.queue.shift();
+
     items.forEach((fn) => fn());
 
     if (!this.cancelFn) {

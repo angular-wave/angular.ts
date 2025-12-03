@@ -26,6 +26,7 @@ let uid = 0;
  */
 export function nextUid() {
   uid += 1;
+
   return uid;
 }
 
@@ -188,6 +189,7 @@ export function isDate(value) {
  */
 export function isError(value) {
   const tag = toString.call(value);
+
   switch (tag) {
     case "[object Error]":
       return true;
@@ -310,6 +312,7 @@ export function trim(value) {
 
 export function snakeCase(name, separator) {
   const modseparator = separator || "_";
+
   return name.replace(
     /[A-Z]/g,
     (letter, pos) => (pos ? modseparator : "") + letter.toLowerCase(),
@@ -334,10 +337,13 @@ export function baseExtend(dst, objs, deep) {
 
   for (let i = 0, ii = objs.length; i < ii; ++i) {
     const obj = objs[i];
+
     if (!isObject(obj) && !isFunction(obj)) continue;
     const keys = Object.keys(obj);
+
     for (let j = 0, jj = keys.length; j < jj; j++) {
       const key = keys[j];
+
       const src = obj[key];
 
       if (deep && isObject(src)) {
@@ -358,6 +364,7 @@ export function baseExtend(dst, objs, deep) {
   }
 
   setHashKey(dst, h);
+
   return dst;
 }
 
@@ -423,9 +430,11 @@ export function includes(array, obj) {
  */
 export function arrayRemove(array, value) {
   const index = array.indexOf(value);
+
   if (index >= 0) {
     array.splice(index, 1);
   }
+
   return index;
 }
 
@@ -492,28 +501,38 @@ export function simpleCompare(a, b) {
  */
 export function equals(o1, o2) {
   if (o1 === o2) return true;
+
   if (o1 === null || o2 === null) return false;
 
   if (o1 !== o1 && o2 !== o2) return true; // NaN === NaN
   const t1 = typeof o1;
+
   const t2 = typeof o2;
+
   let length;
+
   let key;
+
   let keySet;
+
   if (t1 === t2 && t1 === "object") {
     if (Array.isArray(o1)) {
       if (!Array.isArray(o2)) return false;
+
       if ((length = o1.length) === o2.length) {
         for (key = 0; key < length; key++) {
           if (!equals(o1[key], o2[key])) return false;
         }
+
         return true;
       }
     } else if (isDate(o1)) {
       if (!isDate(o2)) return false;
+
       return simpleCompare(o1.getTime(), o2.getTime());
     } else if (isRegExp(o1)) {
       if (!isRegExp(o2)) return false;
+
       return o1.toString() === o2.toString();
     } else {
       if (
@@ -527,11 +546,14 @@ export function equals(o1, o2) {
       )
         return false;
       keySet = Object.create(null);
+
       for (key in o1) {
         if (key.charAt(0) === "$" || isFunction(o1[key])) continue;
+
         if (!equals(o1[key], o2[key])) return false;
         keySet[key] = true;
       }
+
       for (key in o2) {
         if (
           !(key in keySet) &&
@@ -541,9 +563,11 @@ export function equals(o1, o2) {
         )
           return false;
       }
+
       return true;
     }
   }
+
   return false;
 }
 
@@ -559,6 +583,7 @@ export function csp() {
       const ngCspAttribute =
         ngCspElement.getAttribute("ng-csp") ||
         ngCspElement.getAttribute("data-ng-csp");
+
       cspCache.rules = {
         noUnsafeEval:
           !ngCspAttribute || ngCspAttribute.indexOf("no-unsafe-eval") !== -1,
@@ -578,6 +603,7 @@ export function csp() {
   function noUnsafeEval() {
     try {
       new Function("");
+
       return false;
     } catch {
       return true;
@@ -650,6 +676,7 @@ export function sliceArgs(args, startIndex) {
  */
 export function bind(context, fn) {
   const curryArgs = arguments.length > 2 ? sliceArgs(arguments, 2) : [];
+
   if (isFunction(fn) && !(fn instanceof RegExp)) {
     return curryArgs.length
       ? function () {
@@ -663,6 +690,7 @@ export function bind(context, fn) {
             : fn.call(context);
         };
   }
+
   // In IE, native methods are not functions so they cannot be bound (note: they don't need to be).
   return fn;
 }
@@ -719,9 +747,11 @@ function toJsonReplacer(key, value) {
  */
 export function toJson(obj, pretty) {
   if (isUndefined(obj)) return undefined;
+
   if (!isNumber(pretty)) {
     pretty = pretty ? 2 : null;
   }
+
   return JSON.stringify(obj, toJsonReplacer, /** @type {Number} */ (pretty));
 }
 
@@ -738,6 +768,7 @@ export function fromJson(json) {
 export function timezoneToOffset(timezone, fallback) {
   const requestedTimezoneOffset =
     Date.parse(`Jan 01, 1970 00:00:00 ${timezone}`) / 60000;
+
   return isNumberNaN(requestedTimezoneOffset)
     ? fallback
     : requestedTimezoneOffset;
@@ -745,14 +776,19 @@ export function timezoneToOffset(timezone, fallback) {
 
 export function addDateMinutes(date, minutes) {
   const newDate = new Date(date.getTime());
+
   newDate.setMinutes(newDate.getMinutes() + minutes);
+
   return newDate;
 }
 
 export function convertTimezoneToLocal(date, timezone, reverse) {
   const doReverse = reverse ? -1 : 1;
+
   const dateTimezoneOffset = date.getTimezoneOffset();
+
   const timezoneOffset = timezoneToOffset(timezone, dateTimezoneOffset);
+
   return addDateMinutes(
     date,
     doReverse * (timezoneOffset - dateTimezoneOffset),
@@ -766,20 +802,27 @@ export function convertTimezoneToLocal(date, timezone, reverse) {
  */
 export function parseKeyValue(keyValue) {
   const obj = {};
+
   (keyValue || "").split("&").forEach((keyValue) => {
     let splitPoint;
+
     let key;
+
     let val;
+
     if (keyValue) {
       key = keyValue = keyValue.replace(/\+/g, "%20");
       splitPoint = keyValue.indexOf("=");
+
       if (splitPoint !== -1) {
         key = keyValue.substring(0, splitPoint);
         val = keyValue.substring(splitPoint + 1);
       }
       key = tryDecodeURIComponent(key);
+
       if (isDefined(key)) {
         val = isDefined(val) ? tryDecodeURIComponent(val) : true;
+
         if (!hasOwn(obj, /** @type {string} */ (key))) {
           obj[key] = val;
         } else if (Array.isArray(obj[key])) {
@@ -790,11 +833,13 @@ export function parseKeyValue(keyValue) {
       }
     }
   });
+
   return /** @type {Object.<string,boolean|Array>} */ (obj);
 }
 
 export function toKeyValue(obj) {
   const parts = [];
+
   obj &&
     Object.entries(obj).forEach(([key, value]) => {
       if (Array.isArray(value)) {
@@ -813,6 +858,7 @@ export function toKeyValue(obj) {
         );
       }
     });
+
   return parts.length ? parts.join("&") : "";
 }
 
@@ -874,14 +920,19 @@ export const ngAttrPrefixes = ["ng-", "data-ng-"];
 
 export function getNgAttribute(element, ngAttr) {
   let attr;
+
   let i;
+
   const ii = ngAttrPrefixes.length;
+
   for (i = 0; i < ii; ++i) {
     attr = ngAttrPrefixes[i] + ngAttr;
+
     if (isString((attr = element.getAttribute(attr)))) {
       return attr;
     }
   }
+
   return null;
 }
 
@@ -933,6 +984,7 @@ export function assertArg(arg, name, reason) {
       reason || "required",
     );
   }
+
   return arg;
 }
 
@@ -950,6 +1002,7 @@ export function assertArgFn(arg, name, acceptArrayAnnotation) {
         : typeof arg
     }`,
   );
+
   return arg;
 }
 
@@ -975,6 +1028,7 @@ export function errorHandlingConfig(config) {
         ? config.objectMaxDepth
         : NaN;
     }
+
     if (
       isDefined(config.urlErrorParamsEnabled) &&
       isBoolean(config.urlErrorParamsEnabled)
@@ -982,6 +1036,7 @@ export function errorHandlingConfig(config) {
       minErrConfig.urlErrorParamsEnabled = config.urlErrorParamsEnabled;
     }
   }
+
   return minErrConfig;
 }
 
@@ -1013,8 +1068,11 @@ export function errorHandlingConfig(config) {
 export function minErr(module) {
   return function (...args) {
     const code = args[0];
+
     const template = args[1];
+
     let message = `[${module ? `${module}:` : ""}${code}] `;
+
     const templateArgs = sliceArgs(args, 2).map((arg) => toDebugString(arg));
 
     message += template.replace(/\{\d+\}/g, (match) => {
@@ -1035,22 +1093,29 @@ export function toDebugString(obj) {
   if (typeof obj === "function") {
     return obj.toString().replace(/ \{[\s\S]*$/, "");
   }
+
   if (isUndefined(obj)) {
     return "undefined";
   }
+
   if (typeof obj !== "string") {
     const seen = [];
-    let copyObj = structuredClone(isProxy(obj) ? obj.$target : obj);
+
+    const copyObj = structuredClone(isProxy(obj) ? obj.$target : obj);
+
     return JSON.stringify(copyObj, (key, val) => {
       const replace = toJsonReplacer(key, val);
+
       if (isObject(replace)) {
         if (seen.indexOf(replace) >= 0) return "...";
 
         seen.push(replace);
       }
+
       return replace;
     });
   }
+
   return obj;
 }
 
@@ -1073,18 +1138,22 @@ export function hashKey(obj) {
     if (typeof key === "function") {
       return obj.$$hashKey();
     }
+
     return key;
   }
 
   const objType = typeof obj;
+
   if (objType === "function" || (objType === "object" && obj !== null)) {
     obj.$$hashKey = `${objType}:${nextUid()}`;
+
     return obj.$$hashKey;
   }
 
   if (objType === "undefined") {
     return `${objType}:${nextUid()}`;
   }
+
   // account for primitives
   return `${objType}:${obj}`;
 }
@@ -1099,10 +1168,15 @@ export function hashKey(obj) {
  */
 export function mergeClasses(a, b) {
   if (!a && !b) return "";
+
   if (!a) return Array.isArray(b) ? b.join(" ").trim() : b;
+
   if (!b) return Array.isArray(a) ? a.join(" ").trim() : a;
+
   if (Array.isArray(a)) a = normalizeStringArray(a);
+
   if (Array.isArray(b)) b = normalizeStringArray(b);
+
   return `${a.trim()} ${b.trim()}`.trim();
 }
 
@@ -1114,12 +1188,15 @@ export function mergeClasses(a, b) {
  */
 function normalizeStringArray(arr) {
   const cleaned = [];
+
   for (const item of arr) {
     if (item) {
       const trimmed = item.trim();
+
       if (trimmed) cleaned.push(trimmed);
     }
   }
+
   return cleaned.join(" ");
 }
 
@@ -1154,6 +1231,7 @@ export function hasAnimate(node) {
 function hasCustomOrDataAttribute(node, attr) {
   if (node.nodeType !== Node.ELEMENT_NODE) return false;
   const element = /** @type {HTMLElement} */ (node);
+
   return (
     element.dataset[attr] === "true" || element.getAttribute(attr) === "true"
   );
@@ -1165,6 +1243,7 @@ function hasCustomOrDataAttribute(node, attr) {
  */
 export function isObjectEmpty(obj) {
   if (!obj) return true;
+
   return !Object.keys(obj).length;
 }
 
@@ -1199,6 +1278,7 @@ export function callBackOnce(fn) {
   return function (...args) {
     if (!called) {
       called = true;
+
       return fn.apply(this, args);
     }
   };
@@ -1268,6 +1348,7 @@ export function startsWith(str, search) {
  */
 export async function instantiateWasm(src, imports = {}) {
   const res = await fetch(src);
+
   if (!res.ok) throw new Error("fetch failed");
 
   try {
@@ -1275,12 +1356,14 @@ export async function instantiateWasm(src, imports = {}) {
       res.clone(),
       imports,
     );
+
     return { instance, exports: instance.exports, module };
   } catch {
     /* empty */
   }
 
   const bytes = await res.arrayBuffer();
+
   const { instance, module } = await WebAssembly.instantiate(bytes, imports);
 
   return { instance, exports: instance.exports, module };

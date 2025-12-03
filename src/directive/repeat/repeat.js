@@ -1,15 +1,16 @@
 import {
-  minErr,
+  callBackOnce,
+  hasOwn,
   hashKey,
   isArrayLike,
-  hasOwn,
   isDefined,
-  callBackOnce,
+  minErr,
 } from "../../shared/utils.js";
 import { getBlockNodes, removeElement } from "../../shared/dom.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
 const NG_REMOVED = "$$NG_REMOVED";
+
 const ngRepeatMinErr = minErr("ngRepeat");
 
 /**
@@ -54,6 +55,7 @@ export function ngRepeatDirective($animate) {
     }
 
     if (keyIdentifier) scope[keyIdentifier] = key;
+
     if (value) {
       scope.$target.$$hashKey = value.$$hashKey;
     }
@@ -86,8 +88,9 @@ export function ngRepeatDirective($animate) {
     priority: 1000,
     terminal: true,
     compile: (_$element, $attr) => {
-      const expression = $attr["ngRepeat"];
-      const hasAnimate = !!$attr["animate"];
+      const expression = $attr.ngRepeat;
+
+      const hasAnimate = !!$attr.animate;
 
       let match = expression.match(
         /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?(?:\s+track\s+by\s+([\s\S]+?))?\s*$/,
@@ -102,7 +105,9 @@ export function ngRepeatDirective($animate) {
       }
 
       const lhs = match[1];
+
       const rhs = match[2];
+
       const aliasAs = match[3];
 
       match = lhs.match(VAR_OR_TUPLE_REGEX);
@@ -115,6 +120,7 @@ export function ngRepeatDirective($animate) {
         );
       }
       const valueIdentifier = match[3] || match[1];
+
       const keyIdentifier = match[2];
 
       if (
@@ -134,9 +140,9 @@ export function ngRepeatDirective($animate) {
       let trackByIdExpFn;
 
       const swap = callBackOnce(() => {
-        if (isDefined($attr["lazy"]) && isDefined($attr["swap"])) {
+        if (isDefined($attr.lazy) && isDefined($attr.swap)) {
           document
-            .querySelectorAll($attr["swap"])
+            .querySelectorAll($attr.swap)
             .forEach((x) => removeElement(x));
         }
       });
@@ -151,6 +157,7 @@ export function ngRepeatDirective($animate) {
         // We are using no-proto object so that we don't need to guard against inherited props via
         // hasOwnProperty.
         let lastBlockMap = Object.create(null);
+
         // watch props
         $scope.$watch(
           rhs,
@@ -161,9 +168,11 @@ export function ngRepeatDirective($animate) {
               previousNode = $element, // node that cloned nodes should be inserted after
               // initialized to the comment node anchor
               nextNode;
+
             const // Same as lastBlockMap but it has the current state. It will become the
               // lastBlockMap on the next iteration.
               nextBlockMap = Object.create(null);
+
             let collectionLength,
               key,
               value, // key/value of iteration
@@ -185,6 +194,7 @@ export function ngRepeatDirective($animate) {
               trackByIdFn = trackByIdExpFn || trackByIdObjFn;
               // if object, extract keys, in enumeration order, unsorted
               collectionKeys = [];
+
               for (const itemKey in collection) {
                 if (hasOwn(collection, itemKey) && itemKey.charAt(0) !== "$") {
                   collectionKeys.push(itemKey);
@@ -201,6 +211,7 @@ export function ngRepeatDirective($animate) {
                 collection === collectionKeys ? index : collectionKeys[index];
               value = collection[key];
               trackById = trackByIdFn($scope, key, value);
+
               if (lastBlockMap[trackById]) {
                 // found previously seen block
                 block = lastBlockMap[trackById];
@@ -231,14 +242,16 @@ export function ngRepeatDirective($animate) {
             }
 
             // remove leftover items
-            for (let blockKey in lastBlockMap) {
+            for (const blockKey in lastBlockMap) {
               block = lastBlockMap[blockKey];
               elementsToRemove = block.clone;
+
               if (hasAnimate) {
                 $animate.leave(elementsToRemove);
               } else {
                 elementsToRemove.remove();
               }
+
               if (elementsToRemove.parentNode) {
                 // if the element was not removed yet because of pending animation, mark it as deleted
                 // so that we can ignore it later
@@ -296,6 +309,7 @@ export function ngRepeatDirective($animate) {
                   (clone, scope) => {
                     block.scope = scope;
                     const endNode = clone;
+
                     if (hasAnimate) {
                       $animate.enter(clone, null, previousNode);
                     } else {
@@ -325,7 +339,7 @@ export function ngRepeatDirective($animate) {
             }
             lastBlockMap = nextBlockMap;
           },
-          isDefined($attr["lazy"]),
+          isDefined($attr.lazy),
         );
       };
     },

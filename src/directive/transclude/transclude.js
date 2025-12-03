@@ -29,6 +29,7 @@ export function ngTranscludeDirective($compile) {
     compile: function ngTranscludeCompile(tElement) {
       // Remove and cache any original content to act as a fallback
       const fallbackLinkFn = $compile(tElement.childNodes);
+
       emptyElement(tElement);
 
       /**
@@ -57,10 +58,10 @@ export function ngTranscludeDirective($compile) {
         }
 
         // If the attribute is of the form: `ng-transclude="ng-transclude"` then treat it like the default
-        if ($attrs["ngTransclude"] === $attrs.$attr.ngTransclude) {
-          $attrs["ngTransclude"] = "";
+        if ($attrs.ngTransclude === $attrs.$attr.ngTransclude) {
+          $attrs.ngTransclude = "";
         }
-        const slotName = $attrs["ngTransclude"] || $attrs["ngTranscludeSlot"];
+        const slotName = $attrs.ngTransclude || $attrs.ngTranscludeSlot;
 
         // If the slot is required and no transclusion content is provided then this call will throw an error
         $transclude(ngTranscludeCloneAttachFn, null, slotName);

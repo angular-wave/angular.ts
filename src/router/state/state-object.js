@@ -41,8 +41,10 @@ export class StateObject {
      * @type {?Glob}
      */
     const nameGlob = this.name ? Glob.fromString(this.name) : null;
+
     this.__stateObjectCache = { nameGlob };
   }
+
   /**
    * Returns true if the provided parameter is the same state.
    *
@@ -57,6 +59,7 @@ export class StateObject {
   is(ref) {
     return this === ref || this.self === ref || this.fqn() === ref;
   }
+
   /**
    * @deprecated this does not properly handle dot notation
    * @returns Returns a dot-separated name of the state.
@@ -65,8 +68,10 @@ export class StateObject {
     if (!this.parent || !(this.parent instanceof this.constructor))
       return this.name;
     const name = this.parent.fqn();
-    return name ? name + "." + this.name : this.name;
+
+    return name ? `${name}.${this.name}` : this.name;
   }
+
   /**
    * Returns the root node of this state's tree.
    *
@@ -75,6 +80,7 @@ export class StateObject {
   root() {
     return (this.parent && this.parent.root()) || this;
   }
+
   /**
    * Gets the state's `Param` objects
    *
@@ -88,12 +94,14 @@ export class StateObject {
     opts = defaults(opts, { inherit: true, matchingKeys: null });
     const inherited =
       (opts.inherit && this.parent && this.parent.parameters()) || [];
+
     return inherited
       .concat(Object.values(this.params))
       .filter(
         (param) => !opts.matchingKeys || hasOwn(opts.matchingKeys, param.id),
       );
   }
+
   /**
    * Returns a single [[Param]] that is owned by the state
    *
@@ -108,11 +116,12 @@ export class StateObject {
       (opts.inherit && this.parent && this.parent.parameter(id))
     );
   }
+
   toString() {
     return this.fqn();
   }
 }
 /** Predicate which returns true if the object is a [[StateDeclaration]] object */
-StateObject.isStateDeclaration = (obj) => isFunction(obj["$$state"]);
+StateObject.isStateDeclaration = (obj) => isFunction(obj.$$state);
 /** Predicate which returns true if the object is an internal [[StateObject]] object */
-StateObject.isState = (obj) => isObject(obj["__stateObjectCache"]);
+StateObject.isState = (obj) => isObject(obj.__stateObjectCache);

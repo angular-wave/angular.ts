@@ -33,9 +33,11 @@ export class Queue {
    */
   enqueue(item) {
     this._items.push(item);
+
     if (this._limit !== null && this._items.length > this._limit) {
       this.evict();
     }
+
     return item;
   }
 
@@ -45,9 +47,11 @@ export class Queue {
    */
   evict() {
     const item = this._items.shift();
+
     if (item !== undefined) {
       this._evictListeners.forEach((fn) => fn(item));
     }
+
     return item;
   }
 
@@ -65,7 +69,9 @@ export class Queue {
    */
   clear() {
     const cleared = [...this._items];
+
     this._items.length = 0;
+
     return cleared;
   }
 
@@ -84,6 +90,7 @@ export class Queue {
    */
   remove(item) {
     const index = this._items.indexOf(item);
+
     return index !== -1 ? this._items.splice(index, 1)[0] : false;
   }
 

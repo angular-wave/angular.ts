@@ -9,7 +9,7 @@ import { Queue } from "../../shared/queue.js";
 import { makeTargetState } from "../path/path-utils.js";
 import { PathNode } from "../path/path-node.js";
 import { defaultTransOpts } from "../transition/transition-service.js";
-import { Rejection, RejectType } from "../transition/reject-factory.js";
+import { RejectType, Rejection } from "../transition/reject-factory.js";
 import { TargetState } from "./target-state.js";
 import { Param } from "../params/param.js";
 import { Glob } from "../glob/glob.js";
@@ -32,6 +32,7 @@ export class StateProvider {
   get params() {
     return this.globals.params;
   }
+
   /**
    * The current [[StateDeclaration]]
    *
@@ -40,6 +41,7 @@ export class StateProvider {
   get current() {
     return this.globals.current;
   }
+
   /**
    * The current [[StateObject]] (an internal API)
    *
@@ -183,11 +185,13 @@ export class StateProvider {
     if (!definition.name) {
       throw err("stateinvalid", `'name' required`);
     }
+
     try {
       this.stateRegistry.register(definition);
     } catch (e) {
       throw err("stateinvalid", e.message);
     }
+
     return this;
   }
 
@@ -204,48 +208,63 @@ export class StateProvider {
    */
   _handleInvalidTargetState(fromPath, toState) {
     const fromState = makeTargetState(this.stateRegistry, fromPath);
-    const globals = this.globals;
+
+    const { globals } = this;
+
     const latestThing = () => globals.transitionHistory.peekTail();
+
     const latest = latestThing();
+
     /** @type {Queue<Function>} */
     const callbackQueue = new Queue(this.invalidCallbacks.slice());
+
     const injector = this.$injector;
+
     const checkForRedirect = (result) => {
       if (!(result instanceof TargetState)) {
         return;
       }
       let target = result;
+
       // Recreate the TargetState, in case the state is now defined.
       target = this.target(
         target.identifier(),
         target.params(),
         target.options(),
       );
+
       if (!target.valid()) {
         return Rejection.invalid(target.error()).toPromise();
       }
+
       if (latestThing() !== latest) {
         return Rejection.superseded().toPromise();
       }
+
       return this.transitionTo(
         target.identifier(),
         target.params(),
         target.options(),
       );
     };
+
     function invokeNextCallback() {
       const nextCallback = callbackQueue.dequeue();
+
       if (nextCallback === undefined)
         return Rejection.invalid(toState.error()).toPromise();
       const callbackResult = Promise.resolve(
         nextCallback(toState, fromState, injector),
       );
+
       return callbackResult
         .then(checkForRedirect)
         .then((result) => result || invokeNextCallback());
     }
+
     return invokeNextCallback();
   }
+
   /**
    * Registers an Invalid State handler
    *
@@ -272,10 +291,12 @@ export class StateProvider {
    */
   onInvalid(callback) {
     this.invalidCallbacks.push(callback);
+
     return function deregisterListener() {
       removeFrom(this.invalidCallbacks, callback);
     }.bind(this);
   }
+
   /**
    * Reloads the current state
    *
@@ -327,6 +348,7 @@ export class StateProvider {
       notify: false,
     });
   }
+
   /**
    * Transition to a different state and/or parameters
    *
@@ -369,9 +391,12 @@ export class StateProvider {
    */
   go(to, params, options) {
     const defautGoOpts = { relative: this.$current, inherit: true };
+
     const transOpts = defaults(options, defautGoOpts, defaultTransOpts);
+
     return this.transitionTo(to, params, transOpts);
   }
+
   /**
    * Creates a [[TargetState]]
    *
@@ -384,23 +409,30 @@ export class StateProvider {
     if (isObject(options.reload) && !options.reload.name)
       throw new Error("Invalid reload state object");
     const reg = this.stateRegistry;
+
     options.reloadState =
       options.reload === true
         ? reg.root()
         : reg.matcher.find(options.reload, options.relative);
+
     if (options.reload && !options.reloadState)
       throw new Error(
         `No such reload state '${isString(options.reload) ? options.reload : options.reload.name}'`,
       );
+
     return new TargetState(this.stateRegistry, identifier, params, options);
   }
 
   getCurrentPath() {
-    const globals = this.globals;
+    const { globals } = this;
+
     const latestSuccess = globals.successfulTransitions.peekTail();
+
     const rootPath = () => [new PathNode(this.stateRegistry.root())];
+
     return latestSuccess ? latestSuccess._treeChanges.to : rootPath();
   }
+
   /**
    * Low-level method for transitioning to a new state.
    *
@@ -427,11 +459,16 @@ export class StateProvider {
   transitionTo(to, toParams = {}, options = {}) {
     options = defaults(options, defaultTransOpts);
     const getCurrent = () => this.globals.transition;
+
     options = Object.assign(options, { current: getCurrent });
     const ref = this.target(to, toParams, options);
+
     const currentPath = this.getCurrentPath();
+
     if (!ref.exists()) return this._handleInvalidTargetState(currentPath, ref);
+
     if (!ref.valid()) return silentRejection(ref.error());
+
     if (options.supercede === false && getCurrent()) {
       return Rejection.ignored(
         "Another transition is in progress and supercede has been set to false in TransitionOptions for the transition. So the transition was ignored in favour of the existing one in progress.",
@@ -449,12 +486,15 @@ export class StateProvider {
     const rejectedTransitionHandler = (trans) => (error) => {
       if (error instanceof Rejection) {
         const isLatest = this.globals.lastStartedTransitionId <= trans.$id;
+
         if (error.type === RejectType.IGNORED) {
           isLatest && this.urlService.update();
+
           // Consider ignored `Transition.run()` as a successful `transitionTo`
           return Promise.resolve(this.globals.current);
         }
-        const detail = error.detail;
+        const { detail } = error;
+
         if (
           error.type === RejectType.SUPERSEDED &&
           error.redirected &&
@@ -463,25 +503,35 @@ export class StateProvider {
           // If `Transition.run()` was redirected, allow the `transitionTo()` promise to resolve successfully
           // by returning the promise for the new (redirect) `Transition.run()`.
           const redirect = trans.redirect(detail);
+
           return redirect.run().catch(rejectedTransitionHandler(redirect));
         }
+
         if (error.type === RejectType.ABORTED) {
           isLatest && this.urlService.update();
+
           return Promise.reject(error);
         }
       }
       const errorHandler = this.defaultErrorHandler();
+
       errorHandler(error);
+
       return Promise.reject(error);
     };
+
     const transition = this.transitionService.create(currentPath, ref);
+
     const transitionToPromise = transition
       .run()
       .catch(rejectedTransitionHandler(transition));
+
     silenceUncaughtInPromise(transitionToPromise); // issue #2676
+
     // Return a promise for the transition, which also has the transition object on it.
     return Object.assign(transitionToPromise, { transition });
   }
+
   /**
    * Checks if the current state *is* the provided state
    *
@@ -519,16 +569,21 @@ export class StateProvider {
       stateOrName,
       options.relative,
     );
+
     if (!isDefined(state)) return undefined;
+
     if (this.$current !== state) return false;
+
     if (!params) return true;
     const schema = state.parameters({ inherit: true, matchingKeys: params });
+
     return Param.equals(
       schema,
       Param.values(schema, params),
       this.globals.params,
     );
   }
+
   /**
    * Checks if the current state *includes* the provided state
    *
@@ -570,6 +625,7 @@ export class StateProvider {
   includes(stateOrName, params, options) {
     options = defaults(options, { relative: this.$current });
     const glob = isString(stateOrName) && Glob.fromString(stateOrName);
+
     if (glob) {
       if (!glob.matches(this.$current.name)) return false;
       stateOrName = this.$current.name;
@@ -578,17 +634,23 @@ export class StateProvider {
       stateOrName,
       options.relative,
     );
+
     const include = this.$current.includes;
+
     if (!isDefined(state)) return undefined;
+
     if (!isDefined(include[state.name])) return false;
+
     if (!params) return true;
     const schema = state.parameters({ inherit: true, matchingKeys: params });
+
     return Param.equals(
       schema,
       Param.values(schema, params),
       this.globals.params,
     );
   }
+
   /**
    * Generates a URL for a state and parameters
    *
@@ -612,23 +674,29 @@ export class StateProvider {
       absolute: false,
       relative: this.$current,
     };
+
     options = defaults(options, defaultHrefOpts);
     params = params || {};
     const state = this.stateRegistry.matcher.find(
       stateOrName,
       options.relative,
     );
+
     if (!isDefined(state)) return null;
+
     if (options.inherit)
       params = this.globals.params.$inherit(params, this.$current, state);
     const nav = state && options.lossy ? state.navigable : state;
+
     if (!nav || nav.url === undefined || nav.url === null) {
       return null;
     }
+
     return this.urlService.href(nav.url, params, {
       absolute: options.absolute,
     });
   }
+
   /**
    * Sets or gets the default [[transitionTo]] error handler.
    *
@@ -659,9 +727,12 @@ export class StateProvider {
 
   get(stateOrName, base) {
     const reg = this.stateRegistry;
+
     if (arguments.length === 0) return reg.get();
+
     return reg.get(stateOrName, base || this.$current);
   }
+
   /**
    * Lazy loads a state
    *
@@ -676,12 +747,16 @@ export class StateProvider {
    */
   lazyLoad(stateOrName, transition) {
     const state = this.get(stateOrName);
+
     if (!state || !state.lazyLoad)
-      throw new Error("Can not lazy load " + stateOrName);
+      throw new Error(`Can not lazy load ${stateOrName}`);
     const currentPath = this.getCurrentPath();
+
     const target = makeTargetState(this.stateRegistry, currentPath);
+
     transition =
       transition || this.transitionService.create(currentPath, target);
+
     return lazyLoadState(transition, state);
   }
 }

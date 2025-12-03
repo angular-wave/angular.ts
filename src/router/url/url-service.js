@@ -1,6 +1,6 @@
 import {
-  isFunction,
   isDefined,
+  isFunction,
   isObject,
   isString,
 } from "../../shared/utils.js";
@@ -81,6 +81,7 @@ export class UrlService {
   getSearch() {
     return this.$location.getSearch();
   }
+
   /**
    * Gets the hash part of the current url
    *
@@ -109,6 +110,7 @@ export class UrlService {
         });
       });
       this.listen(true);
+
       return this;
     },
   ];
@@ -177,9 +179,12 @@ export class UrlService {
   url(newUrl, state) {
     if (isDefined(newUrl)) {
       const decodeUri = decodeURIComponent(newUrl);
+
       this.$location.setUrl(decodeUri);
     }
+
     if (state) this.$location.setState(state);
+
     return this.$location.getUrl();
   }
 
@@ -200,6 +205,7 @@ export class UrlService {
    */
   onChange(callback) {
     this._urlListeners.push(callback);
+
     return () => removeFrom(this._urlListeners, callback);
   }
 
@@ -240,16 +246,19 @@ export class UrlService {
    */
   sync(evt) {
     if (evt && evt.defaultPrevented) return;
-    const stateService = this.stateService;
+    const { stateService } = this;
+
     const url = {
       path: this.$location.getPath(),
       search: this.$location.getSearch(),
       hash: this.$location.getHash(),
     };
+
     /**
      * @type {*}
      */
     const best = this.match(url);
+
     const applyResult = pattern([
       [isString, (newurl) => this.url(newurl)],
       [
@@ -265,6 +274,7 @@ export class UrlService {
 
     applyResult(best && best.rule.handler(best.match, url));
   }
+
   /**
    * Starts or stops listening for URL changes
    *
@@ -306,6 +316,7 @@ export class UrlService {
   match(url) {
     url = Object.assign({ path: "", search: {}, hash: "" }, url);
     const rules = this.rules.rules();
+
     // Checks a single rule. Returns { rule: rule, match: match, weight: weight } if it matched, or undefined
     /**
      *
@@ -313,29 +324,36 @@ export class UrlService {
      */
     const checkRule = (rule) => {
       const match = rule.match(url);
+
       return match && { match, rule, weight: rule.matchPriority(match) };
     };
+
     // The rules are pre-sorted.
     // - Find the first matching rule.
     // - Find any other matching rule that sorted *exactly the same*, according to `.sort()`.
     // - Choose the rule with the highest match weight.
     let best;
+
     for (let i = 0; i < rules.length; i++) {
       // Stop when there is a 'best' rule and the next rule sorts differently than it.
       if (best && best.rule._group !== rules[i]._group) break;
       const current = checkRule(rules[i]);
+
       // Pick the best MatchResult
       best =
         !best || (current && current.weight > best.weight) ? current : best;
     }
+
     return best;
   }
 
   update(read) {
     if (read) {
       this.location = this.url();
+
       return;
     }
+
     if (this.url() === this.location) return;
     this.url(/** @type {string} */ (this.location), true);
   }
@@ -352,6 +370,7 @@ export class UrlService {
    */
   push(urlMatcher, params, options) {
     const replace = options && !!options.replace;
+
     this.url(urlMatcher.format(params || {}), replace);
   }
 
@@ -376,17 +395,21 @@ export class UrlService {
    */
   href(urlMatcher, params, options) {
     let url = urlMatcher.format(params);
+
     if (url == null) return null;
     options = options || { absolute: false };
     const isHtml5 = this.$locationProvider.html5ModeConf.enabled;
+
     if (!isHtml5) {
-      url = "#" + this.$locationProvider.hashPrefixConf + url;
+      url = `#${this.$locationProvider.hashPrefixConf}${url}`;
     }
     url = appendBasePath(url, isHtml5, options.absolute, this.baseHref());
+
     if (!options.absolute || !url) {
       return url;
     }
     const slash = !isHtml5 && url ? "/" : "";
+
     return [
       `${window.location.protocol}//`,
       window.location.host,
@@ -404,13 +427,16 @@ export class UrlService {
    */
   compile(pattern, config) {
     const urlConfig = this.config;
+
     // backward-compatible support for config.params -> config.state.params
     const params = config && !config.state && config.params;
+
     config = params ? Object.assign({ state: { params } }, config) : config;
     const globalConfig = {
       strict: urlConfig._isStrictMode,
       caseInsensitive: urlConfig._isCaseInsensitive,
     };
+
     return new UrlMatcher(
       pattern,
       urlConfig.paramTypes,
@@ -430,17 +456,22 @@ export class UrlService {
     // TODO: typeof?
     if (!isObject(object)) return false;
     let result = true;
+
     Object.entries(UrlMatcher.prototype).forEach(([name, val]) => {
       if (isFunction(val))
         result = result && isDefined(object[name]) && isFunction(object[name]);
     });
+
     return result;
   }
 }
 
 function appendBasePath(url, isHtml5, absolute, baseHref) {
   if (baseHref === "/") return url;
+
   if (isHtml5) return stripLastPathElement(baseHref) + url;
+
   if (absolute) return baseHref.slice(1) + url;
+
   return url;
 }

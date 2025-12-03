@@ -1,11 +1,11 @@
 import { $injectTokens as $t } from "../../../injection-tokens.js";
 import { createWorkerConnection } from "../../../directive/worker/worker.js";
 import {
-  isFunction,
-  isString,
+  BADARG,
   assert,
   instantiateWasm,
-  BADARG,
+  isFunction,
+  isString,
 } from "../../../shared/utils.js";
 
 /** @private */
@@ -70,6 +70,7 @@ export class NgModule {
    */
   value(name, object) {
     this.invokeQueue.push([$t.$provide, "value", [name, object]]);
+
     return this;
   }
 
@@ -80,6 +81,7 @@ export class NgModule {
    */
   constant(name, object) {
     this.invokeQueue.unshift([$t.$provide, "constant", [name, object]]);
+
     return this;
   }
 
@@ -90,6 +92,7 @@ export class NgModule {
    */
   config(configFn) {
     this.configBlocks.push([$t.$injector, "invoke", [configFn]]);
+
     return this;
   }
 
@@ -99,6 +102,7 @@ export class NgModule {
    */
   run(block) {
     this.runBlocks.push(block);
+
     return this;
   }
 
@@ -109,9 +113,10 @@ export class NgModule {
    */
   component(name, options) {
     if (options && isFunction(options)) {
-      options["$$moduleName"] = name;
+      options.$$moduleName = name;
     }
     this.invokeQueue.push([COMPILE_LITERAL, "component", [name, options]]);
+
     return this;
   }
 
@@ -122,9 +127,10 @@ export class NgModule {
    */
   factory(name, providerFunction) {
     if (providerFunction && isFunction(providerFunction)) {
-      providerFunction["$$moduleName"] = name;
+      providerFunction.$$moduleName = name;
     }
     this.invokeQueue.push([$t.$provide, "factory", [name, providerFunction]]);
+
     return this;
   }
 
@@ -135,10 +141,11 @@ export class NgModule {
    */
   service(name, serviceFunction) {
     if (serviceFunction && isFunction(serviceFunction)) {
-      serviceFunction["$$moduleName"] = name;
+      serviceFunction.$$moduleName = name;
     }
     this.services.push(name);
     this.invokeQueue.push([$t.$provide, "service", [name, serviceFunction]]);
+
     return this;
   }
 
@@ -149,9 +156,10 @@ export class NgModule {
    */
   provider(name, providerType) {
     if (providerType && isFunction(providerType)) {
-      providerType["$$moduleName"] = name;
+      providerType.$$moduleName = name;
     }
     this.invokeQueue.push([$t.$provide, "provider", [name, providerType]]);
+
     return this;
   }
 
@@ -162,9 +170,10 @@ export class NgModule {
    */
   decorator(name, decorFn) {
     if (decorFn && isFunction(decorFn)) {
-      decorFn["$$moduleName"] = name;
+      decorFn.$$moduleName = name;
     }
     this.configBlocks.push([$t.$provide, "decorator", [name, decorFn]]);
+
     return this;
   }
 
@@ -175,13 +184,14 @@ export class NgModule {
    */
   directive(name, directiveFactory) {
     if (directiveFactory && isFunction(directiveFactory)) {
-      directiveFactory["$$moduleName"] = name;
+      directiveFactory.$$moduleName = name;
     }
     this.invokeQueue.push([
       COMPILE_LITERAL,
       "directive",
       [name, directiveFactory],
     ]);
+
     return this;
   }
 
@@ -192,13 +202,14 @@ export class NgModule {
    */
   animation(name, animationFactory) {
     if (animationFactory && isFunction(animationFactory)) {
-      animationFactory["$$moduleName"] = name;
+      animationFactory.$$moduleName = name;
     }
     this.invokeQueue.push([
       ANIMATION_LITERAL,
       "register",
       [name, animationFactory],
     ]);
+
     return this;
   }
 
@@ -208,10 +219,11 @@ export class NgModule {
    * @return {NgModule}
    */
   filter(name, filterFn) {
-    assert(isString(name), BADARG + `:name ${name}`);
-    assert(isFunction(filterFn), BADARG + `:filter ${filterFn}`);
-    filterFn["$$moduleName"] = name;
+    assert(isString(name), `${BADARG}:name ${name}`);
+    assert(isFunction(filterFn), `${BADARG}:filter ${filterFn}`);
+    filterFn.$$moduleName = name;
     this.invokeQueue.push([$t.$filterProvider, "register", [name, filterFn]]);
+
     return this;
   }
 
@@ -225,9 +237,10 @@ export class NgModule {
    */
   controller(name, ctlFn) {
     if (ctlFn && isFunction(ctlFn)) {
-      ctlFn["$$moduleName"] = name;
+      ctlFn.$$moduleName = name;
     }
     this.invokeQueue.push([CONTROLLER_LITERAL, "register", [name, ctlFn]]);
+
     return this;
   }
 
@@ -294,6 +307,7 @@ export class NgModule {
         },
       ],
     ]);
+
     return this;
   }
 
@@ -304,9 +318,10 @@ export class NgModule {
    */
   session(name, ctor) {
     if (ctor && isFunction(ctor)) {
-      ctor["$$moduleName"] = name;
+      ctor.$$moduleName = name;
     }
     this.invokeQueue.push([$t.$provide, "session", [name, ctor]]);
+
     return this;
   }
 
@@ -319,13 +334,14 @@ export class NgModule {
    */
   store(name, ctor, type, backendOrConfig) {
     if (ctor && isFunction(ctor)) {
-      ctor["$$moduleName"] = name;
+      ctor.$$moduleName = name;
     }
     this.invokeQueue.push([
       $t.$provide,
       "store",
       [name, ctor, type, backendOrConfig],
     ]);
+
     return this;
   }
 
@@ -340,6 +356,7 @@ export class NgModule {
    */
   rest(name, url, entityClass, options = {}) {
     const def = { name, url, entityClass, options };
+
     this.restDefinitions.push(def);
 
     // push provider/factory to invokeQueue

@@ -19,14 +19,17 @@ export function limitToFilter() {
     if (isFunction(input)) {
       input = /** @type {Function} */ (input)();
     }
+
     if (Math.abs(Number(limit)) === Infinity) {
       limit = Number(limit);
     } else {
       limit = parseInt(/** @type {string} */ (limit), 10);
     }
+
     if (isNumberNaN(limit)) return input;
 
     if (isNumber(input)) input = input.toString();
+
     if (!isArrayLike(input)) return input;
 
     begin =

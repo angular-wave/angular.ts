@@ -14,6 +14,7 @@ export const ngEventDirectives = {};
   .split(" ")
   .forEach((eventName) => {
     const directiveName = directiveNormalize(`ng-${eventName}`);
+
     ngEventDirectives[directiveName] = [
       $t.$parse,
       $t.$exceptionHandler,
@@ -52,6 +53,7 @@ export function createEventDirective(
     restrict: "A",
     compile(_element, attr) {
       const fn = $parse(attr[directiveName]);
+
       return (scope, element) => {
         const handler = (event) => {
           try {
@@ -60,6 +62,7 @@ export function createEventDirective(
             $exceptionHandler(error);
           }
         };
+
         element.addEventListener(eventName, handler);
 
         scope.$on("$destroy", () =>
@@ -90,6 +93,7 @@ export function createWindowEventDirective(
     restrict: "A",
     compile(_element, attr) {
       const fn = $parse(attr[directiveName]);
+
       return (scope) => {
         const handler = (event) => {
           try {

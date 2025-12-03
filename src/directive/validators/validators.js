@@ -1,10 +1,10 @@
 import {
-  isNumberNaN,
-  isString,
-  minErr,
-  isUndefined,
-  isProxy,
   hasOwn,
+  isNumberNaN,
+  isProxy,
+  isString,
+  isUndefined,
+  minErr,
 } from "../../shared/utils.js";
 import { REGEX_STRING_REGEXP } from "./../attrs/attrs.js";
 import { startingTag } from "../../shared/dom.js";
@@ -53,16 +53,15 @@ export const requiredDirective = [
       (scope, _elm, attr, ctrl) => {
         if (!ctrl) return;
         // For boolean attributes like required, presence means true
-        let value =
-          hasOwn(attr, "required") || $parse(attr["ngRequired"])(scope);
+        let value = hasOwn(attr, "required") || $parse(attr.ngRequired)(scope);
 
-        if (!attr["ngRequired"]) {
+        if (!attr.ngRequired) {
           // force truthy in case we are on non input element
           // (input elements do this automatically for boolean attributes like required)
-          attr["required"] = true;
+          attr.required = true;
         }
 
-        ctrl["$validators"].required = (_modelValue, viewValue) => {
+        ctrl.$validators.required = (_modelValue, viewValue) => {
           return !value || !ctrl.$isEmpty(viewValue);
         };
 
@@ -126,37 +125,39 @@ export const patternDirective = [
     require: "?ngModel",
     compile: (_Elm, tAttr) => {
       let patternExp;
+
       let parseFn;
 
-      if (tAttr["ngPattern"]) {
-        patternExp = tAttr["ngPattern"];
+      if (tAttr.ngPattern) {
+        patternExp = tAttr.ngPattern;
 
         // ngPattern might be a scope expression, or an inlined regex, which is not parsable.
         // We get value of the attribute here, so we can compare the old and the new value
         // in the observer to avoid unnecessary validations
         if (
-          tAttr["ngPattern"].charAt(0) === "/" &&
-          REGEX_STRING_REGEXP.test(tAttr["ngPattern"])
+          tAttr.ngPattern.charAt(0) === "/" &&
+          REGEX_STRING_REGEXP.test(tAttr.ngPattern)
         ) {
           parseFn = function () {
-            return tAttr["ngPattern"];
+            return tAttr.ngPattern;
           };
         } else {
-          parseFn = $parse(tAttr["ngPattern"]);
+          parseFn = $parse(tAttr.ngPattern);
         }
       }
 
       return function (scope, elm, attr, ctrl) {
         if (!ctrl) return;
-        let attrVal = attr["pattern"];
+        let attrVal = attr.pattern;
 
-        if (attr["ngPattern"]) {
+        if (attr.ngPattern) {
           attrVal = parseFn(scope);
         } else {
-          patternExp = attr["pattern"];
+          patternExp = attr.pattern;
         }
 
         let regexp = parsePatternAttr(attrVal, patternExp, elm);
+
         attr.$observe("pattern", (newVal) => {
           const oldRegexp = regexp;
 
@@ -166,11 +167,11 @@ export const patternDirective = [
             (oldRegexp && oldRegexp.toString()) !==
             (regexp && regexp.toString())
           ) {
-            ctrl["$validate"]();
+            ctrl.$validate();
           }
         });
 
-        ctrl["$validators"]["pattern"] = (_modelValue, viewValue) => {
+        ctrl.$validators.pattern = (_modelValue, viewValue) => {
           // HTML5 pattern constraint validates the input value, so we validate the viewValue
           return (
             // @ts-ignore
@@ -234,7 +235,8 @@ export const maxlengthDirective = [
       (scope, _elm, attr, ctrl) => {
         if (!ctrl) return;
 
-        let maxlength = attr["maxlength"] || $parse(attr["ngMaxlength"])(scope);
+        let maxlength = attr.maxlength || $parse(attr.ngMaxlength)(scope);
+
         let maxlengthParsed = parseLength(maxlength);
 
         attr.$observe("maxlength", (value) => {
@@ -244,7 +246,7 @@ export const maxlengthDirective = [
             ctrl.$validate();
           }
         });
-        ctrl["$validators"].maxlength = function (_modelValue, viewValue) {
+        ctrl.$validators.maxlength = function (_modelValue, viewValue) {
           return (
             maxlengthParsed < 0 ||
             ctrl.$isEmpty(viewValue) ||
@@ -295,6 +297,7 @@ export const minlengthDirective = [
       if (!ctrl) return;
 
       let minlength = attr.minlength || $parse(attr.ngMinlength)(scope);
+
       let minlengthParsed = parseLength(minlength) || -1;
 
       attr.$observe("minlength", (value) => {
@@ -320,6 +323,7 @@ function parsePatternAttr(regex, patternExp, elm) {
 
   if (isString(regex)) {
     const match = regex.match(/^\/(.*)\/([gimsuy]*)$/);
+
     if (match) {
       regex = new RegExp(match[1], match[2]);
     } else {
@@ -342,5 +346,6 @@ function parsePatternAttr(regex, patternExp, elm) {
 
 function parseLength(val) {
   const intVal = parseInt(val, 10);
+
   return isNumberNaN(intVal) ? -1 : intVal;
 }

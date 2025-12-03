@@ -35,6 +35,7 @@ export class UrlConfigProvider {
      *
      */
     const pathType = this.type("path");
+
     pathType.encode = (x) =>
       x != null
         ? x.toString().replace(/([~/])/g, (m) => ({ "~": "~~", "/": "~2F" })[m])
@@ -72,6 +73,7 @@ export class UrlConfigProvider {
       ? value
       : this._isCaseInsensitive);
   }
+
   /**
    * Sets the default behavior when generating or matching URLs with default parameter values.
    *
@@ -99,10 +101,12 @@ export class UrlConfigProvider {
       throw new Error(
         `Invalid squash policy: ${value}. Valid policies: false, true, arbitrary-string`,
       );
+
     return (this._defaultSquashPolicy = isDefined(value)
       ? value
       : this._defaultSquashPolicy);
   }
+
   /**
    * Defines whether URLs should match trailing slashes, or not (the default behavior).
    *
@@ -118,6 +122,7 @@ export class UrlConfigProvider {
   strictMode(value) {
     return (this._isStrictMode = isDefined(value) ? value : this._isStrictMode);
   }
+
   /**
    * Creates and registers a custom [[ParamType]] object
    *
@@ -150,6 +155,7 @@ export class UrlConfigProvider {
    */
   type(name, definition, definitionFn) {
     const type = this.paramTypes.type(name, definition, definitionFn);
+
     return !isDefined(definition) ? type : this;
   }
 }

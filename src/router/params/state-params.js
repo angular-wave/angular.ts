@@ -4,6 +4,7 @@ export class StateParams {
   constructor(params = {}) {
     Object.assign(this, params);
   }
+
   /**
    * Merges a set of parameters with all parameters inherited between the common parents of the
    * current state and a given destination state.
@@ -16,11 +17,15 @@ export class StateParams {
     const parents = ancestors($current, $to),
       inherited = {},
       inheritList = [];
+
     for (const i in parents) {
       if (!parents[i] || !parents[i].params) continue;
       const parentParams = parents[i].params;
+
       const parentParamsKeys = Object.keys(parentParams);
+
       if (!parentParamsKeys.length) continue;
+
       for (const j in parentParamsKeys) {
         if (
           parentParams[parentParamsKeys[j]].inherit == false ||
@@ -31,6 +36,7 @@ export class StateParams {
         inherited[parentParamsKeys[j]] = this[parentParamsKeys[j]];
       }
     }
+
     return Object.assign({}, inherited, newParams);
   }
 }

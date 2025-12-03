@@ -12,7 +12,8 @@ $$AnimateChildrenDirective.$inject = [$t.$interpolate];
 export function $$AnimateChildrenDirective($interpolate) {
   return {
     link(scope, element, attrs) {
-      const val = attrs["ngAnimateChildren"];
+      const val = attrs.ngAnimateChildren;
+
       if (isString(val) && val.length === 0) {
         // empty attribute
         setCacheData(element, NG_ANIMATE_CHILDREN_DATA, true);

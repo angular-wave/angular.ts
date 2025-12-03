@@ -7,7 +7,9 @@
 function makeEnterExitRetainHook(hookName) {
   return (transition, state) => {
     const _state = state.$$state();
+
     const hookFn = _state[hookName];
+
     return hookFn(transition, state);
   };
 }
@@ -21,6 +23,7 @@ function makeEnterExitRetainHook(hookName) {
  * See: [[IHookRegistry.onExit]]
  */
 const onExitHook = makeEnterExitRetainHook("onExit");
+
 export const registerOnExitHook = (transitionService) =>
   transitionService.onExit({ exiting: (state) => !!state.onExit }, onExitHook);
 /**
@@ -33,6 +36,7 @@ export const registerOnExitHook = (transitionService) =>
  * See: [[IHookRegistry.onRetain]]
  */
 const onRetainHook = makeEnterExitRetainHook("onRetain");
+
 export const registerOnRetainHook = (transitionService) =>
   transitionService.onRetain(
     { retained: (state) => !!state.onRetain },
@@ -48,6 +52,7 @@ export const registerOnRetainHook = (transitionService) =>
  * See: [[IHookRegistry.onEnter]]
  */
 const onEnterHook = makeEnterExitRetainHook("onEnter");
+
 export const registerOnEnterHook = (transitionService) =>
   transitionService.onEnter(
     { entering: (state) => !!state.onEnter },

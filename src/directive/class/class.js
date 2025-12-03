@@ -21,7 +21,9 @@ function classDirective(name, selector) {
        */
       link(scope, element, attr) {
         let classCounts = getCacheData(element, "$classCounts");
+
         let oldModulo = true;
+
         /** @type {string|undefined} */
         let oldClassString;
 
@@ -34,7 +36,7 @@ function classDirective(name, selector) {
 
         if (name !== "ngClass") {
           scope.$watch("$index", () => {
-            ngClassIndexWatchAction(scope["$index"] & 1);
+            ngClassIndexWatchAction(scope.$index & 1);
           });
         }
         scope.$watch(attr[name], (val) => {
@@ -46,6 +48,7 @@ function classDirective(name, selector) {
          */
         function addClasses(classString) {
           classString = digestClassCounts(split(classString), 1);
+
           if (hasAnimate(element)) {
             attr.$addClass(classString);
           } else {
@@ -62,6 +65,7 @@ function classDirective(name, selector) {
          */
         function removeClasses(classString) {
           classString = digestClassCounts(split(classString), -1);
+
           if (hasAnimate(element)) {
             attr.$removeClass(classString);
           } else {
@@ -79,13 +83,17 @@ function classDirective(name, selector) {
          */
         function updateClasses(oldClassString, newClassString) {
           const oldClassArray = split(oldClassString);
+
           const newClassArray = split(newClassString);
 
           const toRemoveArray = arrayDifference(oldClassArray, newClassArray);
+
           const toAddArray = arrayDifference(newClassArray, oldClassArray);
 
           const toRemoveString = digestClassCounts(toRemoveArray, -1);
+
           const toAddString = digestClassCounts(toAddArray, 1);
+
           if (hasAnimate(element)) {
             attr.$addClass(toAddString);
             attr.$removeClass(toRemoveString);
@@ -93,6 +101,7 @@ function classDirective(name, selector) {
             if (toAddString !== "") {
               element.classList.add(...toAddString.trim().split(" "));
             }
+
             if (toRemoveString !== "") {
               element.classList.remove(...toRemoveString.trim().split(" "));
             }
@@ -101,16 +110,19 @@ function classDirective(name, selector) {
 
         function digestClassCounts(classArray, count) {
           const classesToUpdate = [];
+
           if (classArray) {
             classArray.forEach((className) => {
               if (count > 0 || classCounts[className]) {
                 classCounts[className] = (classCounts[className] || 0) + count;
+
                 if (classCounts[className] === +(count > 0)) {
                   classesToUpdate.push(className);
                 }
               }
             });
           }
+
           return classesToUpdate.join(" ");
         }
 
@@ -145,12 +157,14 @@ function classDirective(name, selector) {
 // Helpers
 function arrayDifference(tokens1, tokens2) {
   if (!tokens1 || !tokens1.length) return [];
+
   if (!tokens2 || !tokens2.length) return tokens1;
 
   const values = [];
 
   outer: for (let i = 0; i < tokens1.length; i++) {
     const token = tokens1[i];
+
     for (let j = 0; j < tokens2.length; j++) {
       if (token === tokens2[j]) continue outer;
     }

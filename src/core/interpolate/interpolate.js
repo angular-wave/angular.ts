@@ -9,6 +9,7 @@ import { constantWatchDelegate } from "../parse/parse.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
 const $interpolateMinErr = minErr("$interpolate");
+
 function throwNoconcat(text) {
   throw $interpolateMinErr(
     "noconcat",
@@ -65,13 +66,16 @@ export class InterpolateProvider {
     function ($parse, $sce) {
       /** @type {InterpolateProvider} */
       const provider = this;
+
       const startSymbolLength = provider.startSymbol.length;
+
       const endSymbolLength = provider.endSymbol.length;
 
       const escapedStartRegexp = new RegExp(
         provider.startSymbol.replace(/./g, escape),
         "g",
       );
+
       const escapedEndRegexp = new RegExp(
         provider.endSymbol.replace(/./g, escape),
         "g",
@@ -211,6 +215,7 @@ export class InterpolateProvider {
           if (mustHaveExpression) return;
 
           let unescapedText = unescapeText(text);
+
           if (contextAllowsConcatenation) {
             unescapedText = $sce.getTrusted(trustedContext, unescapedText);
           }
@@ -219,6 +224,7 @@ export class InterpolateProvider {
            * @type {any}
            */
           const constantInterp = () => unescapedText;
+
           constantInterp.exp = text;
           constantInterp.expressions = [];
           constantInterp.$$watchDelegate = constantWatchDelegate;
@@ -228,14 +234,23 @@ export class InterpolateProvider {
 
         allOrNothing = !!allOrNothing;
         let startIndex;
+
         let endIndex;
+
         let index = 0;
+
         const expressions = [];
+
         let parseFns;
+
         const textLength = text.length;
+
         let exp;
+
         const concat = [];
+
         const expressionPositions = [];
+
         let singleExpression;
 
         while (index < textLength) {
@@ -272,6 +287,7 @@ export class InterpolateProvider {
           contextAllowsConcatenation && singleExpression
             ? undefined
             : parseStringifyInterceptor;
+
         parseFns = expressions.map((exp) => $parse(exp, interceptor));
 
         // Concatenating expressions makes it hard to reason about whether some combination of
@@ -301,10 +317,12 @@ export class InterpolateProvider {
                 singleExpression ? concat[0] : concat.join(""),
               );
             }
+
             if (trustedContext && concat.length > 1) {
               // This context does not allow more than one part, e.g. expr + string or exp + exp.
               throwNoconcat(text);
             }
+
             // In an unprivileged context or only one part: just concatenate and return.
             return concat.join("");
           };
@@ -312,17 +330,24 @@ export class InterpolateProvider {
           return /**@type {import("./interface.ts").InterpolationFunction}  */ extend(
             (context, cb) => {
               let i = 0;
+
               const ii = expressions.length;
+
               const values = new Array(ii);
+
               try {
                 for (; i < ii; i++) {
                   if (cb) {
                     const watchProp = expressions[i].trim();
+
                     context.$watch(watchProp, () => {
-                      let vals = new Array(ii);
+                      const vals = new Array(ii);
+
                       let j = 0;
+
                       for (; j < ii; j++) {
-                        let fn = parseFns[j];
+                        const fn = parseFns[j];
+
                         vals[j] = fn(context);
                       }
                       cb(compute(vals));
@@ -344,10 +369,12 @@ export class InterpolateProvider {
               expressions,
               $$watchDelegate(scope, listener) {
                 let lastValue;
+
                 return scope.$watch(
                   parseFns,
                   function interpolateFnWatcher(values, oldValues) {
                     const currValue = compute(values);
+
                     listener.call(
                       this,
                       currValue,
@@ -372,6 +399,7 @@ export class InterpolateProvider {
               trustedContext && !contextAllowsConcatenation
                 ? $sce.getTrusted(trustedContext, value)
                 : $sce.valueOf(value);
+
             return allOrNothing && !isDefined(value) ? value : stringify(value);
           } catch (err) {
             interr(text, err);
