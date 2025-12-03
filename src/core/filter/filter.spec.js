@@ -20,20 +20,19 @@ describe("filter", function () {
     expect($filter("my")).toBe(myFilter);
   });
 
-  it("allows registering multiple filters with an object", () => {
+  it("allows registering multiple filters with a builder", () => {
     const myFilter = () => {};
     const myOtherFilter = () => {};
     const injector = createInjector([
       "ng",
       function ($filterProvider) {
-        $filterProvider.register({
-          my: () => {
+        $filterProvider
+          .register("my", () => {
             return myFilter;
-          },
-          myOther: () => {
+          })
+          .register("myOther", () => {
             return myOtherFilter;
-          },
-        });
+          });
       },
     ]);
     const $filter = injector.get("$filter");
@@ -115,35 +114,11 @@ describe("$filter", () => {
         };
       };
 
-      $filterProvider.register("foo", FooFilter);
+      const res = $filterProvider.register("foo", FooFilter);
 
       const fooFilter = $filter("foo");
       expect(fooFilter()).toBe("foo");
-    });
-
-    it("should allow registration of a map of filters", () => {
-      const FooFilter = function () {
-        return function () {
-          return "foo";
-        };
-      };
-
-      const BarFilter = function () {
-        return function () {
-          return "bar";
-        };
-      };
-
-      $filterProvider.register({
-        foo: FooFilter,
-        bar: BarFilter,
-      });
-
-      const fooFilter = $filter("foo");
-      expect(fooFilter()).toBe("foo");
-
-      const barFilter = $filter("bar");
-      expect(barFilter()).toBe("bar");
+      expect(res).toBe($filterProvider);
     });
   });
 });

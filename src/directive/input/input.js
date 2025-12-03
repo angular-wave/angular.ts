@@ -964,7 +964,7 @@ function checkboxInputType(scope, element, attr, ctrl, $filter, $parse) {
 inputDirective.$inject = ["$filter", "$parse"];
 
 /**
- * @param {ng.FilterService} $filter
+ * @param {ng.FilterFactory} $filter
  * @param {ng.ParseService} $parse
  * @returns {ng.Directive}
  */

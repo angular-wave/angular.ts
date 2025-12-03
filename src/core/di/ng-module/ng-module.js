@@ -12,8 +12,6 @@ export const COMPILE_LITERAL = "$compileProvider";
 /** @private */
 export const ANIMATION_LITERAL = "$animateProvider";
 /** @private */
-export const FILTER_LITERAL = "$filterProvider";
-/** @private */
 export const CONTROLLER_LITERAL = "$controllerProvider";
 
 /**
@@ -205,14 +203,14 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {ng.Injectable<any>} filterFn
+   * @param {ng.Injectable<ng.FilterFactory>} filterFn
    * @return {NgModule}
    */
   filter(name, filterFn) {
-    if (filterFn && isFunction(filterFn)) {
+    if (isFunction(filterFn)) {
       filterFn["$$moduleName"] = name;
     }
-    this.invokeQueue.push([FILTER_LITERAL, "register", [name, filterFn]]);
+    this.invokeQueue.push([$t.$filterProvider, "register", [name, filterFn]]);
     return this;
   }
 

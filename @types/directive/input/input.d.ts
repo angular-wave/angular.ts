@@ -45,12 +45,12 @@ export function rangeInputType(
   ctrl: any,
 ): void;
 /**
- * @param {ng.FilterService} $filter
+ * @param {ng.FilterFactory} $filter
  * @param {ng.ParseService} $parse
  * @returns {ng.Directive}
  */
 export function inputDirective(
-  $filter: ng.FilterService,
+  $filter: ng.FilterFactory,
   $parse: ng.ParseService,
 ): ng.Directive;
 export namespace inputDirective {

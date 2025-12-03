@@ -3,8 +3,6 @@ export const COMPILE_LITERAL: "$compileProvider";
 /** @private */
 export const ANIMATION_LITERAL: "$animateProvider";
 /** @private */
-export const FILTER_LITERAL: "$filterProvider";
-/** @private */
 export const CONTROLLER_LITERAL: "$controllerProvider";
 /**
  * Modules are collections of application configuration information for components:
@@ -111,10 +109,10 @@ export class NgModule {
   animation(name: string, animationFactory: ng.Injectable<any>): NgModule;
   /**
    * @param {string} name
-   * @param {ng.Injectable<any>} filterFn
+   * @param {ng.Injectable<ng.FilterFactory>} filterFn
    * @return {NgModule}
    */
-  filter(name: string, filterFn: ng.Injectable<any>): NgModule;
+  filter(name: string, filterFn: ng.Injectable<ng.FilterFactory>): NgModule;
   /**
    * The $controller service is used by Angular to create new controllers.
    * This provider allows controller registration via the register method.
