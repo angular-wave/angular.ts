@@ -16,6 +16,9 @@ export * from "./services/exception/exception.ts";
 export * from "./services/exception/interface.ts";
 export * from "./core/parse/interface.ts";
 
+export * from "./filters/interface.ts";
+export * from "./core/filter/filter.js";
+
 import { Attributes } from "./core/compile/attributes.js";
 import { Scope } from "./core/scope/scope.js";
 

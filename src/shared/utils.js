@@ -916,7 +916,9 @@ export function shallowCopy(src, dst) {
  * @param {string} errorMsg
  */
 export function assert(argument, errorMsg = "Assertion failed") {
-  if (!argument) throw new Error(errorMsg);
+  if (!argument) {
+    throw new Error(errorMsg);
+  }
 }
 
 /**

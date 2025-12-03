@@ -20,6 +20,7 @@ import { HttpParamSerializer as THttpParamSerializer } from "./services/http/int
 import { HttpParamSerializerProvider as THttpParamSerializerProvider } from "./services/http/http.js";
 import {
   FilterFactory as TFilterFactory,
+  FilterService as TFilterService,
   FilterFn as TFilterFn,
 } from "./filters/interface.ts";
 import { FilterProvider as TFilterProvider } from "./core/filter/filter.js";
@@ -121,6 +122,7 @@ declare global {
     type ExceptionHandlerService = TExceptionHandler;
     type FilterFn = TFilterFn;
     type FilterFactory = TFilterFactory;
+    type FilterService = TFilterService;
     type HttpParamSerializerSerService = THttpParamSerializer;
     type HttpService = THttpService;
     type InterpolateService = TInterpolateService;

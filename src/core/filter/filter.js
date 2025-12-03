@@ -15,6 +15,7 @@ import {
   isString,
 } from "../../shared/utils.js";
 
+/* @ignore */
 const SUFFIX = "Filter";
 
 /**
@@ -45,15 +46,12 @@ export class FilterProvider {
   /**
    * Register a filter a config phase;
    * @param {string} name
-   * @param {ng.Injectable<ng.FilterFactory>} factory
+   * @param {ng.FilterFactory} factory
    * @return {ng.FilterProvider}
    */
   register(name, factory) {
     assert(isString(name), BADARG + `:name ${name}`);
-    assert(
-      isFunction(factory) || Array.isArray(factory),
-      BADARG + `:factory ${factory}`,
-    );
+    assert(isFunction(factory), BADARG + `:factory ${factory}`);
     this.$provide.factory(name + SUFFIX, factory);
     return this;
   }
@@ -62,7 +60,7 @@ export class FilterProvider {
     $t.$injector,
     /**
      * @param {ng.InjectorService} $injector
-     * @returns {ng.FilterFactory}
+     * @returns {ng.FilterService}
      */
     ($injector) => (name) => {
       assert(isString(name), BADARG + `:name ${name}`);

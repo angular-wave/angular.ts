@@ -5,6 +5,7 @@ import {
   isString,
   assert,
   instantiateWasm,
+  BADARG,
 } from "../../../shared/utils.js";
 
 /** @private */
@@ -203,13 +204,13 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {ng.Injectable<ng.FilterFactory>} filterFn
+   * @param {ng.FilterFactory} filterFn
    * @return {NgModule}
    */
   filter(name, filterFn) {
-    if (isFunction(filterFn)) {
-      filterFn["$$moduleName"] = name;
-    }
+    assert(isString(name), BADARG + `:name ${name}`);
+    assert(isFunction(filterFn), BADARG + `:filter ${filterFn}`);
+    filterFn["$$moduleName"] = name;
     this.invokeQueue.push([$t.$filterProvider, "register", [name, filterFn]]);
     return this;
   }
