@@ -11,6 +11,7 @@ describe("NgModule", () => {
   let ngModule;
   let a = new Object();
   let b = () => {};
+  let cf = () => {};
   beforeEach(() => (ngModule = new NgModule("test", ["otherModule"])));
 
   it("can be instantiated", () => {
@@ -225,11 +226,11 @@ describe("NgModule", () => {
   });
 
   it("can store filters", () => {
-    ngModule.filter("aFilter", a).filter("bFilter", b);
+    ngModule.filter("aFilter", cf).filter("bFilter", b);
     expect(ngModule.invokeQueue[0]).toEqual([
-      injectTokens.$filterProvider,
+      $injectTokens.$filterProvider,
       "register",
-      ["aFilter", a],
+      ["aFilter", cf],
     ]);
     expect(ngModule.invokeQueue[1]).toEqual([
       $injectTokens.$filterProvider,
