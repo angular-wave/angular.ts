@@ -10,10 +10,16 @@ export function nextId(): number;
  */
 export function createScope(target?: any, context?: Scope): Scope;
 /**
+ * @ignore
+ * Checks if a target should be excluded from scope observability
  * @param {any} target
  * @returns {boolean}
  */
-export function isUnsafeGlobal(target: any): boolean;
+export function isNonScope(target: any): boolean;
+/**
+ * Decorator for excluding objects from scope observability
+ */
+export const NONSCOPE: "$nonscope";
 export const $postUpdateQueue: any[];
 export let rootScope: any;
 export class RootScopeProvider {
@@ -26,10 +32,6 @@ export class RootScopeProvider {
       ) => Scope)
   )[];
 }
-/**
- * Decorator for excluding objects from scope observability
- */
-export const NONSCOPE: "$nonscope";
 /**
  * Scope class for the Proxy. It intercepts operations like property access (get)
  * and property setting (set), and adds support for deep change tracking and
@@ -84,8 +86,6 @@ export class Scope {
    */
   $root: Scope;
   $parent: Scope;
-  /** @type {import('./interface.ts').AsyncQueueTask[]} */
-  $$asyncQueue: import("./interface.ts").AsyncQueueTask[];
   filters: any[];
   /** @type {boolean} */
   $$destroyed: boolean;

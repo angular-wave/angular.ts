@@ -34,6 +34,7 @@ export class CookieService {
    *
    * @param {string} key
    * @returns {string|null}
+   * @throws {URIError} – If decodeURIComponent fails.
    */
   get(key: string): string | null;
   /**
@@ -49,6 +50,7 @@ export class CookieService {
    * Returns an object containing all raw cookies.
    *
    * @returns {Record<string, string>}
+   * @throws {URIError} – If decodeURIComponent fails
    */
   getAll(): Record<string, string>;
   /**

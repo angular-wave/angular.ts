@@ -4,7 +4,6 @@ import {
   hasOwn,
   isDefined,
   isFunction,
-  isNull,
   isObject,
   isProxy,
   isProxySymbol,

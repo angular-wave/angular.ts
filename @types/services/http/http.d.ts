@@ -108,6 +108,7 @@ export class HttpProvider {
     | ((
         $injector: ng.InjectorService,
         $sce: any,
+        $cookie: ng.CookieService,
       ) => {
         (requestConfig: any): Promise<any>;
         pendingRequests: any[];
