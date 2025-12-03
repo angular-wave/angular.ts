@@ -109,10 +109,10 @@ export class NgModule {
   animation(name: string, animationFactory: ng.Injectable<any>): NgModule;
   /**
    * @param {string} name
-   * @param {ng.Injectable<ng.FilterFactory>} filterFn
+   * @param {ng.FilterFactory} filterFn
    * @return {NgModule}
    */
-  filter(name: string, filterFn: ng.Injectable<ng.FilterFactory>): NgModule;
+  filter(name: string, filterFn: ng.FilterFactory): NgModule;
   /**
    * The $controller service is used by Angular to create new controllers.
    * This provider allows controller registration via the register method.

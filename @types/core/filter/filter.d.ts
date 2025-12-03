@@ -14,12 +14,9 @@ export class FilterProvider {
   /**
    * Register a filter a config phase;
    * @param {string} name
-   * @param {ng.Injectable<ng.FilterFactory>} factory
+   * @param {ng.FilterFactory} factory
    * @return {ng.FilterProvider}
    */
-  register(
-    name: string,
-    factory: ng.Injectable<ng.FilterFactory>,
-  ): ng.FilterProvider;
-  $get: (string | (($injector: ng.InjectorService) => ng.FilterFactory))[];
+  register(name: string, factory: ng.FilterFactory): ng.FilterProvider;
+  $get: (string | (($injector: ng.InjectorService) => ng.FilterService))[];
 }
