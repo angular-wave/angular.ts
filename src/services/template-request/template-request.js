@@ -85,8 +85,8 @@ export function TemplateRequestProvider() {
             if (!tpl) {
               return Promise.reject("Template not found");
             }
-          } catch (e) {
-            return Promise.reject(e.message);
+          } catch (err) {
+            return Promise.reject(err.message);
           }
         }
 

@@ -1,5 +1,5 @@
-import { isObject } from "./utils.js";
 import { dealoc } from "./dom.js";
+import { isObject } from "./utils.js";
 
 /**
  * Triggers a browser event on the specified element.
@@ -26,14 +26,14 @@ export function browserTrigger(element, options) {
  * Delays execution for a specified number of milliseconds.
  * TODO remove
  *
- * @param {number} [t=0] - The number of milliseconds to wait. Defaults to 0.
+ * @param {number} [timeout=0] - The number of milliseconds to wait. Defaults to 0.
  * @returns {Promise<void>} A promise that resolves after the delay.
  */
-export function wait(t = 0) {
-  return new Promise((resolve) => setTimeout(resolve, t));
+export function wait(timeout = 0) {
+  return new Promise((resolve) => setTimeout(resolve, timeout));
 }
 
-let ELEMENT;
+export let ELEMENT;
 
 /**
  * Helper for bootstraping content onto default element
@@ -41,7 +41,6 @@ let ELEMENT;
 export function bootstrap(htmlContent, moduleName) {
   if (!ELEMENT) {
     ELEMENT = document.getElementById("app");
-    window.ELEMENT = ELEMENT;
   }
   dealoc(ELEMENT);
   ELEMENT.innerHTML = htmlContent;

@@ -16,7 +16,7 @@ export class Attributes {
     nodeRef?: import("../../shared/noderef.js").NodeRef,
     attributesToCopy?: any,
   );
-  $rootScope: import("../scope/scope.js").Scope;
+  $rootScope: ng.RootScopeService;
   $animate: import("../../interface.ts").AnimateService;
   $exceptionHandler: import("../../interface.ts").ExceptionHandler;
   $sce: any;

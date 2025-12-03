@@ -251,8 +251,8 @@ export class CompileProvider {
                   );
                   directive.$$moduleName = directiveFactory.$$moduleName;
                   directives.push(directive);
-                } catch (e) {
-                  $exceptionHandler(e);
+                } catch (err) {
+                  $exceptionHandler(err);
                 }
               });
 
@@ -598,8 +598,8 @@ export class CompileProvider {
           for (let i = 0, ii = onChangesQueue.length; i < ii; ++i) {
             try {
               onChangesQueue[i]();
-            } catch (e) {
-              $exceptionHandler(e);
+            } catch (err) {
+              $exceptionHandler(err);
             }
           }
           // Reset the queue to trigger a new schedule next time there is a change
@@ -1450,16 +1450,16 @@ export class CompileProvider {
                     controllerInstance.$onChanges(
                       controller.bindingInfo.initialChanges,
                     );
-                  } catch (e) {
-                    $exceptionHandler(e);
+                  } catch (err) {
+                    $exceptionHandler(err);
                   }
                 }
 
                 if (isFunction(controllerInstance.$onInit)) {
                   try {
                     controllerInstance.$target.$onInit();
-                  } catch (e) {
-                    $exceptionHandler(e);
+                  } catch (err) {
+                    $exceptionHandler(err);
                   }
                 }
 
@@ -1493,8 +1493,8 @@ export class CompileProvider {
                   controllers,
                   transcludeFn,
                 );
-              } catch (e) {
-                $exceptionHandler(e);
+              } catch (err) {
+                $exceptionHandler(err);
               }
             }
 
@@ -1549,8 +1549,8 @@ export class CompileProvider {
                   controllers,
                   transcludeFn,
                 );
-              } catch (e) {
-                $exceptionHandler(e);
+              } catch (err) {
+                $exceptionHandler(err);
               }
             }
 
@@ -2031,8 +2031,8 @@ export class CompileProvider {
                     bind(context, linkFn.post),
                   );
                 }
-              } catch (e) {
-                $exceptionHandler(e);
+              } catch (err) {
+                $exceptionHandler(err);
               }
             }
 

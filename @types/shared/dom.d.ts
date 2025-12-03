@@ -149,13 +149,13 @@ export function getInheritedData(element: Node, name: string): any;
  * @param {Node} element
  * @param {string|string[]} name
  * @param {any} [value]
- * @returns
+ * @returns {any|undefined}
  */
 export function setInheritedData(
   element: Node,
   name: string | string[],
   value?: any,
-): any;
+): any | undefined;
 /**
  *
  * @param {Element} element

@@ -3,6 +3,7 @@
  * Provides guarantees around presence and access.
  */
 export class NodeRef {
+  static $nonscope: boolean;
   /**
    * @param {Node | Element | string | NodeList | Node[]} element - The DOM node(s) or HTML string to wrap.
    * @throws {Error} If the argument is invalid or cannot be wrapped properly.

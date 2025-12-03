@@ -14,8 +14,8 @@ export function isInjectable(val) {
       tail = val.slice(-1);
 
     return !(
-      head.filter((x) => !isString(x)).length ||
-      tail.filter((x) => !isFunction(x)).length
+      head.filter((injectable) => !isString(injectable)).length ||
+      tail.filter((injectable) => !isFunction(injectable)).length
     );
   }
 

@@ -1,4 +1,4 @@
-import { assertArgFn, minErr } from "../../shared/utils.js";
+import { assertArgFn, isFunction, minErr } from "../../shared/utils.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
 /**
@@ -50,8 +50,10 @@ export function isClass(func) {
 export function annotate(fn, strictDi, name) {
   let $inject, argDecl, last;
 
-  if (typeof fn === "function") {
-    if (!($inject = fn.$inject)) {
+  if (isFunction(fn)) {
+    $inject = fn.$inject;
+
+    if (!$inject) {
       $inject = [];
 
       if (fn.length) {
@@ -64,8 +66,8 @@ export function annotate(fn, strictDi, name) {
         }
         argDecl = extractArgs(fn);
         argDecl[1].split(/,/).forEach(function (arg) {
-          arg.replace(FN_ARG, function (_all, _underscore, name) {
-            $inject.push(name);
+          arg.replace(FN_ARG, function (_all, _underscore, injName) {
+            $inject.push(injName);
           });
         });
       }

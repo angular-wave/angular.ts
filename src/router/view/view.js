@@ -19,6 +19,9 @@ import { getViewConfigFactory } from "../state/views.js";
  * are configured with the matching [[ViewConfig]](s)
  *
  */
+
+const FQN_MULTIPLIER = 10_000;
+
 export class ViewService {
   constructor() {
     this._ngViews = [];
@@ -89,7 +92,7 @@ export class ViewService {
         context && context.parent ? stateDepth(context.parent) + 1 : 1;
 
       return (
-        ngView.fqn.split(".").length * 10000 +
+        ngView.fqn.split(".").length * FQN_MULTIPLIER +
         stateDepth(ngView.creationContext)
       );
     }
@@ -199,7 +202,7 @@ export class ViewService {
    * @return {Array} Returns an array of fully-qualified view names.
    */
   available() {
-    return this._ngViews.map((x) => x.fqn);
+    return this._ngViews.map((view) => view.fqn);
   }
 
   /**
@@ -208,7 +211,9 @@ export class ViewService {
    * @return {Array} Returns an array of fully-qualified view names.
    */
   active() {
-    return this._ngViews.filter((x) => x.$config).map((x) => x.name);
+    return this._ngViews
+      .filter((view) => view.$config)
+      .map((view) => view.name);
   }
 }
 /**

@@ -46,7 +46,7 @@ export const requiredDirective = [
       /**
        * @param {ng.Scope} scope
        * @param {Element} _elm
-       * @param {import("../../core/compile/attributes.js").Attributes} attr
+       * @param {ng.Attributes} attr
        * @param {import("../../interface.ts").NgModelController} ctrl
        * @returns
        */

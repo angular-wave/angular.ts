@@ -266,7 +266,7 @@ export function dealoc(element, onlyDescendants) {
   if (!element || element instanceof Comment) return;
 
   if (Array.isArray(element)) {
-    element.forEach((x) => dealoc(x, onlyDescendants));
+    element.forEach((item) => dealoc(item, onlyDescendants));
   } else {
     if (!onlyDescendants && elementAcceptsData(element)) {
       cleanElementData([element]);
@@ -335,8 +335,11 @@ export function getOrSetCacheData(element, key, value) {
         data[kebabToCamel(prop)] = key[prop];
       }
     }
+
+    return undefined;
   } else {
     // TODO: check should occur perhaps prior at compilation level that this is a valid element
+    return undefined;
   }
 }
 
@@ -486,6 +489,8 @@ export function getInheritedData(element, name) {
       (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE &&
         /** @type {ShadowRoot} */ (element).host);
   }
+
+  return undefined;
 }
 
 /**
@@ -493,7 +498,7 @@ export function getInheritedData(element, name) {
  * @param {Node} element
  * @param {string|string[]} name
  * @param {any} [value]
- * @returns
+ * @returns {any|undefined}
  */
 export function setInheritedData(element, name, value) {
   // if element is the document object work with the html element instead
@@ -521,6 +526,8 @@ export function setInheritedData(element, name, value) {
       (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE &&
         /** @type {ShadowRoot} */ (element).host);
   }
+
+  return undefined;
 }
 
 /**

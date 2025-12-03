@@ -43,7 +43,12 @@ export class LogProvider {
   consoleLog(type) {
     const console = window.console || {};
 
-    const logFn = console[type] || console.log || (() => {});
+    const logFn =
+      console[type] ||
+      console.log ||
+      (() => {
+        /* empty */
+      });
 
     return (...args) => {
       const formattedArgs = args.map((arg) => this.formatError(arg));

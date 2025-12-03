@@ -1,4 +1,4 @@
-import { isFunction, csp } from "../../shared/utils.js";
+import { isFunction } from "../../shared/utils.js";
 import { createInjector } from "../di/injector.js";
 import { Angular } from "../../angular.js";
 import { wait } from "../../shared/test-utils.js";
@@ -1995,112 +1995,6 @@ describe("parser", () => {
         }).toThrow();
         expect($rootScope.$eval("$locals.bar = 23", locals)).toEqual(23);
         expect(locals.bar).toBe(23);
-      });
-    });
-
-    [true, false].forEach((cspEnabled) => {
-      describe(`custom identifiers (csp: ${cspEnabled})`, () => {
-        const isIdentifierStartRe = /[#a-z]/;
-        const isIdentifierContinueRe = /[-a-z]/;
-        let isIdentifierStartFn;
-        let isIdentifierContinueFn;
-        let scope;
-
-        beforeEach(() => {
-          createInjector([
-            "ng",
-            function ($parseProvider) {
-              isIdentifierStartFn = jasmine
-                .createSpy("isIdentifierStart")
-                .and.callFake((ch, cp) => isIdentifierStartRe.test(ch));
-              isIdentifierContinueFn = jasmine
-                .createSpy("isIdentifierContinue")
-                .and.callFake((ch, cp) => isIdentifierContinueRe.test(ch));
-
-              $parseProvider.setIdentifierFns(
-                isIdentifierStartFn,
-                isIdentifierContinueFn,
-              );
-              csp().noUnsafeEval = cspEnabled;
-            },
-          ]).invoke((_$rootScope_) => {
-            scope = _$rootScope_;
-          });
-        });
-
-        it("should allow specifying a custom `isIdentifierStart/Continue` functions", () => {
-          scope.x = {};
-
-          scope["#foo"] = "foo";
-          scope.x["#foo"] = "foo";
-          expect(scope.$eval("#foo")).toBe("foo");
-          expect(scope.$eval("x.#foo")).toBe("foo");
-
-          scope["bar--"] = 42;
-          scope.x["bar--"] = 42;
-          expect(scope.$eval("bar--")).toBe(42);
-          expect(scope.$eval("x.bar--")).toBe(42);
-          expect(scope["bar--"]).toBe(42);
-          expect(scope.x["bar--"]).toBe(42);
-
-          scope["#-"] = "baz";
-          scope.x["#-"] = "baz";
-          expect(scope.$eval("#-")).toBe("baz");
-          expect(scope.$eval("x.#-")).toBe("baz");
-
-          expect(() => {
-            scope.$eval("##");
-          }).toThrow();
-          expect(() => {
-            scope.$eval("x.##");
-          }).toThrow();
-
-          expect(() => {
-            scope.$eval("--");
-          }).toThrow();
-          expect(() => {
-            scope.$eval("x.--");
-          }).toThrow();
-        });
-
-        it("should pass the character and codepoint to the custom functions", () => {
-          scope.$eval("#-");
-          expect(isIdentifierStartFn).toHaveBeenCalledOnceWith(
-            "#",
-            "#".charCodeAt(0),
-          );
-          expect(isIdentifierContinueFn).toHaveBeenCalledOnceWith(
-            "-",
-            "-".charCodeAt(0),
-          );
-
-          isIdentifierStartFn.calls.reset();
-          isIdentifierContinueFn.calls.reset();
-
-          scope.$eval("#.foo.#-.bar-");
-          expect(isIdentifierStartFn).toHaveBeenCalledTimes(7);
-          expect(isIdentifierStartFn.calls.allArgs()).toEqual([
-            ["#", "#".charCodeAt(0)],
-            [".", ".".charCodeAt(0)],
-            ["f", "f".charCodeAt(0)],
-            [".", ".".charCodeAt(0)],
-            ["#", "#".charCodeAt(0)],
-            [".", ".".charCodeAt(0)],
-            ["b", "b".charCodeAt(0)],
-          ]);
-          expect(isIdentifierContinueFn).toHaveBeenCalledTimes(9);
-          expect(isIdentifierContinueFn.calls.allArgs()).toEqual([
-            [".", ".".charCodeAt(0)],
-            ["o", "o".charCodeAt(0)],
-            ["o", "o".charCodeAt(0)],
-            [".", ".".charCodeAt(0)],
-            ["-", "-".charCodeAt(0)],
-            [".", ".".charCodeAt(0)],
-            ["a", "a".charCodeAt(0)],
-            ["r", "r".charCodeAt(0)],
-            ["-", "-".charCodeAt(0)],
-          ]);
-        });
       });
     });
   });

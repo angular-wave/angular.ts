@@ -57,7 +57,7 @@ export function uppercase(string) {
  */
 export function isArrayLike(obj) {
   // `null`, `undefined` and `window` are not array-like
-  if (obj == null || isWindow(obj)) return false;
+  if (isNull(obj) || isWindow(obj)) return false;
 
   // arrays, strings and jQuery/jqLite objects are array like
   // * we have to check the existence of JQLite first as this method is called
@@ -322,18 +322,18 @@ export function snakeCase(name, separator) {
 /**
  * Set or clear the hashkey for an object.
  * @param obj object
- * @param h the hashkey (!truthy to delete the hashkey)
+ * @param hashkey the hashkey (!truthy to delete the hashkey)
  */
-export function setHashKey(obj, h) {
-  if (h) {
-    obj.$$hashKey = h;
+export function setHashKey(obj, hashkey) {
+  if (hashkey) {
+    obj.$$hashKey = hashkey;
   } else {
     delete obj.$$hashKey;
   }
 }
 
 export function baseExtend(dst, objs, deep) {
-  const h = dst.$$hashKey;
+  const hasKey = dst.$$hashKey;
 
   for (let i = 0, ii = objs.length; i < ii; ++i) {
     const obj = objs[i];
@@ -363,7 +363,7 @@ export function baseExtend(dst, objs, deep) {
     }
   }
 
-  setHashKey(dst, h);
+  setHashKey(dst, hasKey);
 
   return dst;
 }
@@ -438,8 +438,8 @@ export function arrayRemove(array, value) {
   return index;
 }
 
-export function simpleCompare(a, b) {
-  return a === b || (a !== a && b !== b);
+export function simpleCompare(val1, val2) {
+  return val1 === val2 || (Number.isNaN(val1) && Number.isNaN(val2));
 }
 
 /**
@@ -504,111 +504,77 @@ export function equals(o1, o2) {
 
   if (o1 === null || o2 === null) return false;
 
-  if (o1 !== o1 && o2 !== o2) return true; // NaN === NaN
+  if (Number.isNaN(o1) && Number.isNaN(o2)) return true; // NaN === NaN
+
   const t1 = typeof o1;
 
   const t2 = typeof o2;
 
-  let length;
+  if (t1 !== t2 || t1 !== "object") return false;
 
-  let key;
+  // Handle arrays
+  if (Array.isArray(o1)) {
+    if (!Array.isArray(o2)) return false;
 
-  let keySet;
+    const { length } = o1;
 
-  if (t1 === t2 && t1 === "object") {
-    if (Array.isArray(o1)) {
-      if (!Array.isArray(o2)) return false;
+    if (length !== o2.length) return false;
 
-      if ((length = o1.length) === o2.length) {
-        for (key = 0; key < length; key++) {
-          if (!equals(o1[key], o2[key])) return false;
-        }
-
-        return true;
-      }
-    } else if (isDate(o1)) {
-      if (!isDate(o2)) return false;
-
-      return simpleCompare(o1.getTime(), o2.getTime());
-    } else if (isRegExp(o1)) {
-      if (!isRegExp(o2)) return false;
-
-      return o1.toString() === o2.toString();
-    } else {
-      if (
-        isScope(o1) ||
-        isScope(o2) ||
-        isWindow(o1) ||
-        isWindow(o2) ||
-        Array.isArray(o2) ||
-        isDate(o2) ||
-        isRegExp(o2)
-      )
-        return false;
-      keySet = Object.create(null);
-
-      for (key in o1) {
-        if (key.charAt(0) === "$" || isFunction(o1[key])) continue;
-
-        if (!equals(o1[key], o2[key])) return false;
-        keySet[key] = true;
-      }
-
-      for (key in o2) {
-        if (
-          !(key in keySet) &&
-          key.charAt(0) !== "$" &&
-          isDefined(o2[key]) &&
-          !isFunction(o2[key])
-        )
-          return false;
-      }
-
-      return true;
+    for (let key = 0; key < length; key++) {
+      if (!equals(o1[key], o2[key])) return false;
     }
+
+    return true;
   }
 
-  return false;
-}
+  // Handle Dates
+  if (isDate(o1)) {
+    if (!isDate(o2)) return false;
 
-const cspCache = {};
-
-export function csp() {
-  if (!isDefined(cspCache.rules)) {
-    const ngCspElement =
-      document.querySelector("[ng-csp]") ||
-      document.querySelector("[data-ng-csp]");
-
-    if (ngCspElement) {
-      const ngCspAttribute =
-        ngCspElement.getAttribute("ng-csp") ||
-        ngCspElement.getAttribute("data-ng-csp");
-
-      cspCache.rules = {
-        noUnsafeEval:
-          !ngCspAttribute || ngCspAttribute.indexOf("no-unsafe-eval") !== -1,
-        noInlineStyle:
-          !ngCspAttribute || ngCspAttribute.indexOf("no-inline-style") !== -1,
-      };
-    } else {
-      cspCache.rules = {
-        noUnsafeEval: noUnsafeEval(),
-        noInlineStyle: false,
-      };
-    }
+    return simpleCompare(o1.getTime(), o2.getTime());
   }
 
-  return cspCache.rules;
+  // Handle RegExps
+  if (isRegExp(o1)) {
+    if (!isRegExp(o2)) return false;
 
-  function noUnsafeEval() {
-    try {
-      new Function("");
+    return o1.toString() === o2.toString();
+  }
 
+  // Reject unsafe objects
+  if (
+    isScope(o1) ||
+    isScope(o2) ||
+    isWindow(o1) ||
+    isWindow(o2) ||
+    Array.isArray(o2) ||
+    isDate(o2) ||
+    isRegExp(o2)
+  )
+    return false;
+
+  // Handle general objects
+  const keySet = Object.create(null);
+
+  for (const key in o1) {
+    if (key.charAt(0) === "$" || isFunction(o1[key])) continue;
+
+    if (!equals(o1[key], o2[key])) return false;
+    keySet[key] = true;
+  }
+
+  for (const key in o2) {
+    if (
+      !(key in keySet) &&
+      key.charAt(0) !== "$" &&
+      isDefined(o2[key]) &&
+      !isFunction(o2[key])
+    ) {
       return false;
-    } catch {
-      return true;
     }
   }
+
+  return true;
 }
 
 /**
@@ -627,8 +593,7 @@ export function assertNotHasOwnProperty(name, context) {
 }
 
 export function stringify(value) {
-  if (value == null) {
-    // null || undefined
+  if (isNull(value) || isUndefined(value)) {
     return "";
   }
   switch (typeof value) {
@@ -765,9 +730,11 @@ export function fromJson(json) {
   return isString(json) ? JSON.parse(json) : json;
 }
 
+const MS_PER_MINUTE = 60_000; // 60,000 ms in a minute
+
 export function timezoneToOffset(timezone, fallback) {
   const requestedTimezoneOffset =
-    Date.parse(`Jan 01, 1970 00:00:00 ${timezone}`) / 60000;
+    Date.parse(`Jan 01, 1970 00:00:00 ${timezone}`) / MS_PER_MINUTE;
 
   return isNumberNaN(requestedTimezoneOffset)
     ? fallback
@@ -803,20 +770,20 @@ export function convertTimezoneToLocal(date, timezone, reverse) {
 export function parseKeyValue(keyValue) {
   const obj = {};
 
-  (keyValue || "").split("&").forEach((keyValue) => {
+  (keyValue || "").split("&").forEach((item) => {
     let splitPoint;
 
     let key;
 
     let val;
 
-    if (keyValue) {
-      key = keyValue = keyValue.replace(/\+/g, "%20");
-      splitPoint = keyValue.indexOf("=");
+    if (item) {
+      key = keyValue = item.replace(/\+/g, "%20");
+      splitPoint = item.indexOf("=");
 
       if (splitPoint !== -1) {
-        key = keyValue.substring(0, splitPoint);
-        val = keyValue.substring(splitPoint + 1);
+        key = item.substring(0, splitPoint);
+        val = item.substring(splitPoint + 1);
       }
       key = tryDecodeURIComponent(key);
 
@@ -866,13 +833,13 @@ export function toKeyValue(obj) {
  * Tries to decode the URI component without throwing an exception.
  *
  * @param  {string} value potential URI component to check.
- * @returns {string|void}
+ * @returns {string|undefined}
  */
 export function tryDecodeURIComponent(value) {
   try {
     return decodeURIComponent(value);
   } catch {
-    /* empty */
+    return undefined;
   }
 }
 
@@ -1162,22 +1129,27 @@ export function hashKey(obj) {
  * Merges two class name values into a single space-separated string.
  * Accepts strings, arrays of strings, or null/undefined values.
  *
- * @param {string | string[] | null | undefined} a - The first class name(s).
- * @param {string | string[] | null | undefined} b - The second class name(s).
+ * @param {string | string[] | null | undefined} firstClass - The first class name(s).
+ * @param {string | string[] | null | undefined} secondClass - The second class name(s).
  * @returns {string} A single string containing all class names separated by spaces.
  */
-export function mergeClasses(a, b) {
-  if (!a && !b) return "";
+export function mergeClasses(firstClass, secondClass) {
+  if (!firstClass && !secondClass) return "";
 
-  if (!a) return Array.isArray(b) ? b.join(" ").trim() : b;
+  if (!firstClass)
+    return Array.isArray(secondClass)
+      ? secondClass.join(" ").trim()
+      : secondClass;
 
-  if (!b) return Array.isArray(a) ? a.join(" ").trim() : a;
+  if (!secondClass)
+    return Array.isArray(firstClass) ? firstClass.join(" ").trim() : firstClass;
 
-  if (Array.isArray(a)) a = normalizeStringArray(a);
+  if (Array.isArray(firstClass)) firstClass = normalizeStringArray(firstClass);
 
-  if (Array.isArray(b)) b = normalizeStringArray(b);
+  if (Array.isArray(secondClass))
+    secondClass = normalizeStringArray(secondClass);
 
-  return `${a.trim()} ${b.trim()}`.trim();
+  return `${firstClass.trim()} ${secondClass.trim()}`.trim();
 }
 
 /**
@@ -1209,7 +1181,7 @@ function normalizeStringArray(arr) {
 export function directiveNormalize(name) {
   return name
     .replace(PREFIX_REGEXP, "")
-    .replace(SPECIAL_CHARS_REGEXP, (_, letter, offset) =>
+    .replace(SPECIAL_CHARS_REGEXP, (_name, letter, offset) =>
       offset ? letter.toUpperCase() : letter,
     );
 }
@@ -1275,12 +1247,14 @@ export function hasOwn(obj, key) {
 export function callBackOnce(fn) {
   let called = false;
 
-  return function (...args) {
+  return (...args) => {
     if (!called) {
       called = true;
 
-      return fn.apply(this, args);
+      return fn(...args);
     }
+
+    return undefined; // satisfies consistent-return
   };
 }
 
@@ -1294,22 +1268,24 @@ export function callBackOnce(fn) {
 export function callBackAfterFirst(fn) {
   let calledOnce = false;
 
-  return function (...args) {
+  return (...args) => {
     if (calledOnce) {
-      return fn.apply(this, args);
+      return fn(...args);
     }
     calledOnce = true;
+
+    return undefined;
   };
 }
 
 /**
  * Delays execution for a specified number of milliseconds.
  *
- * @param {number} [t=0] - The number of milliseconds to wait. Defaults to 0.
+ * @param {number} [timeout=0] - The number of milliseconds to wait. Defaults to 0.
  * @returns {Promise<void>} A promise that resolves after the delay.
  */
-export function wait(t = 0) {
-  return new Promise((resolve) => setTimeout(resolve, t));
+export function wait(timeout = 0) {
+  return new Promise((resolve) => setTimeout(resolve, timeout));
 }
 
 /**

@@ -1,19 +1,3 @@
-/**
- * The View service
- *
- * This service pairs existing `ng-view` components (which live in the DOM)
- * with view configs (from the state declaration objects: [[StateDeclaration.views]]).
- *
- * - After a successful Transition, the views from the newly entered states are activated via [[activateViewConfig]].
- *   The views from exited states are deactivated via [[deactivateViewConfig]].
- *   (See: the [[registerActivateViews]] Transition Hook)
- *
- * - As `ng-view` components pop in and out of existence, they register themselves using [[registerUIView]].
- *
- * - When the [[sync]] function is called, the registered `ng-view`(s) ([[ActiveUIView]])
- * are configured with the matching [[ViewConfig]](s)
- *
- */
 export class ViewService {
   _ngViews: any[];
   _viewConfigs: any[];

@@ -180,9 +180,9 @@ export function snakeCase(name: any, separator: any): any;
 /**
  * Set or clear the hashkey for an object.
  * @param obj object
- * @param h the hashkey (!truthy to delete the hashkey)
+ * @param hashkey the hashkey (!truthy to delete the hashkey)
  */
-export function setHashKey(obj: any, h: any): void;
+export function setHashKey(obj: any, hashkey: any): void;
 export function baseExtend(dst: any, objs: any, deep: any): any;
 /**
  * Extends the destination object `dst` by copying own enumerable properties from the `src` object(s)
@@ -227,7 +227,7 @@ export function includes(array: any, obj: any): boolean;
  * @returns {number} - The index of the removed value, or -1 if the value was not found.
  */
 export function arrayRemove<T>(array: Array<T>, value: T): number;
-export function simpleCompare(a: any, b: any): boolean;
+export function simpleCompare(val1: any, val2: any): boolean;
 /**
  * Determines if two objects or two values are equivalent. Supports value types, regular
  * expressions, arrays and objects.
@@ -286,7 +286,6 @@ export function simpleCompare(a: any, b: any): boolean;
   </example>
  */
 export function equals(o1: any, o2: any): boolean;
-export function csp(): any;
 /**
  * throw error if the name given is hasOwnProperty
  * @param  {string} name    the name to test
@@ -373,9 +372,9 @@ export function toKeyValue(obj: any): string;
  * Tries to decode the URI component without throwing an exception.
  *
  * @param  {string} value potential URI component to check.
- * @returns {string|void}
+ * @returns {string|undefined}
  */
-export function tryDecodeURIComponent(value: string): string | void;
+export function tryDecodeURIComponent(value: string): string | undefined;
 /**
  * We need our custom method because encodeURIComponent is too aggressive and doesn't follow
  * http://www.ietf.org/rfc/rfc3986.txt with regards to the character set (pchar) allowed in path
@@ -479,13 +478,13 @@ export function hashKey(obj: any): string;
  * Merges two class name values into a single space-separated string.
  * Accepts strings, arrays of strings, or null/undefined values.
  *
- * @param {string | string[] | null | undefined} a - The first class name(s).
- * @param {string | string[] | null | undefined} b - The second class name(s).
+ * @param {string | string[] | null | undefined} firstClass - The first class name(s).
+ * @param {string | string[] | null | undefined} secondClass - The second class name(s).
  * @returns {string} A single string containing all class names separated by spaces.
  */
 export function mergeClasses(
-  a: string | string[] | null | undefined,
-  b: string | string[] | null | undefined,
+  firstClass: string | string[] | null | undefined,
+  secondClass: string | string[] | null | undefined,
 ): string;
 /**
  * Converts all accepted directives format into proper directive name.
@@ -538,10 +537,10 @@ export function callBackAfterFirst(fn: Function): Function;
 /**
  * Delays execution for a specified number of milliseconds.
  *
- * @param {number} [t=0] - The number of milliseconds to wait. Defaults to 0.
+ * @param {number} [timeout=0] - The number of milliseconds to wait. Defaults to 0.
  * @returns {Promise<void>} A promise that resolves after the delay.
  */
-export function wait(t?: number): Promise<void>;
+export function wait(timeout?: number): Promise<void>;
 /**
  * Checks if a given string starts with a specified substring.
  *
