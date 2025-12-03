@@ -37,7 +37,7 @@
  * }
  * ```
  *
- * @see {@link ng.ExceptionHandlerService ExceptionHandlerService}
+ * @see {@link ng.ExceptionHandlerService} ExceptionHandlerService
  */
 /**
  * Provider for the `$exceptionHandler` service.

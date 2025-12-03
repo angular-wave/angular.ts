@@ -1,6 +1,4 @@
 /** @private */
-export const INJECTOR_LITERAL: "$injector";
-/** @private */
 export const COMPILE_LITERAL: "$compileProvider";
 /** @private */
 export const ANIMATION_LITERAL: "$animateProvider";
@@ -13,10 +11,6 @@ export const CONTROLLER_LITERAL: "$controllerProvider";
  * controllers, directives, filters, etc. They provide recipes for the injector
  * to do the actual instantiation. A module itself has no behaviour but only state.
  * A such, it acts as a data structure between the Angular instance and the injector service.
- *
- * Since this is an internal structure that is exposed only via the Angular instance,
- * it contains no validation of the items it receives. It is up to the instantiator on
- * modules to do the actual validation.
  */
 export class NgModule {
   /**
@@ -49,7 +43,6 @@ export class NgModule {
   /** @type {!Array.<ng.Injectable<any>>} */
   runBlocks: Array<ng.Injectable<any>>;
   services: any[];
-  wasmModules: any[];
   restDefinitions: any[];
   /**
    * @param {string} name
@@ -123,11 +116,17 @@ export class NgModule {
    */
   filter(name: string, filterFn: ng.Injectable<any>): NgModule;
   /**
-   * @param {string} name
-   * @param {ng.Injectable<any>} ctlFn
+   * The $controller service is used by Angular to create new controllers.
+   * This provider allows controller registration via the register method.
+   *
+   * @param {string} name Controller name
+   * @param {ng.Injectable<ng.ControllerConstructor>} ctlFn Controller constructor fn (optionally decorated with DI annotations in the array notation)
    * @returns {NgModule}
    */
-  controller(name: string, ctlFn: ng.Injectable<any>): NgModule;
+  controller(
+    name: string,
+    ctlFn: ng.Injectable<ng.ControllerConstructor>,
+  ): NgModule;
   /**
    * Register a named WebAssembly module that will be instantiated via $provide.
    *

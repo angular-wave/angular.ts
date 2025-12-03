@@ -40,6 +40,7 @@ import {
   DirectiveFactory as TDirectiveFactory,
   Component as TComponent,
   Controller as TController,
+  ControllerConstructor as TControllerConstructor,
   Injectable as TInjectable,
 } from "./interface.ts";
 import {
@@ -149,6 +150,7 @@ declare global {
     type StorageType = TStorageType;
     type StreamConnectionConfig = TStreamConnectionConfig;
     type CookieOptions = TCookieOptions;
+    type ControllerConstructor = TControllerConstructor;
     type CookieStoreOptions = TCookieStoreOptions;
     type RestService<T, ID> = TRestService<T, ID>;
     type RestDefinition<T> = TRestDefinition<T>;
