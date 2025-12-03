@@ -4,7 +4,7 @@ export function $ViewDirectiveFill(
   $transitions: any,
 ): {
   priority: number;
-  compile: (tElement: any) => (scope: any, $element: any) => void;
+  compile(tElement: any): (scope: any, $element: any) => void;
 };
 export namespace $ViewDirectiveFill {
   let $inject: string[];
@@ -135,4 +135,4 @@ export namespace $ViewDirectiveFill {
  * ```
  */
 /** @type {import("../../interface.ts").AnnotatedDirectiveFactory} */
-export let ngView: import("../../interface.ts").AnnotatedDirectiveFactory;
+export const ngView: import("../../interface.ts").AnnotatedDirectiveFactory;

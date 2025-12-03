@@ -98,7 +98,7 @@ declare global {
     type DirectiveFactory = TDirectiveFactory;
     type Component = TComponent;
     type Controller = TController;
-    type Scope = TScope;
+    type Scope = TScope & Record<string, any>;
     type NgModule = TNgModule;
     type PubSubProvider = TPubSubProvider;
     type CompositeLinkFn = TCompositeLinkFn;
@@ -133,7 +133,7 @@ declare global {
     type ProvideService = TProvideService;
     type PubSubService = TPubSub;
     type RootElementService = Element;
-    type RootScopeService = TScope;
+    type RootScopeService = TScope & Record<string, any>;
     type StateService = TStateProvider;
     type SseService = TSseService;
     type SseConfig = TSseConfig;

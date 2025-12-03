@@ -1,5 +1,10 @@
 import { $injectTokens } from "../../injection-tokens.js";
-import { assert, isString } from "../../shared/utils.js";
+import {
+  assert,
+  BADARG,
+  isNullOrUndefined,
+  isString,
+} from "../../shared/utils.js";
 import { expandUriTemplate } from "./rfc.js";
 
 /**
@@ -64,7 +69,7 @@ export class RestService {
 
     if (!Array.isArray(resp.data)) return [];
 
-    return resp.data.map((d) => this.#mapEntity(d));
+    return resp.data.map((data) => this.#mapEntity(data));
   }
 
   /**
@@ -74,16 +79,12 @@ export class RestService {
    * @returns {Promise<T|null>}
    */
   async read(id, params = {}) {
-    if (id == null) return null;
+    assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
     const url = this.buildUrl(`${this.baseUrl}/${id}`, params);
 
-    try {
-      const resp = await this.#request("get", url, null, params);
+    const resp = await this.#request("get", url, null, params);
 
-      return this.#mapEntity(resp.data);
-    } catch {
-      return null; // fail-safe
-    }
+    return this.#mapEntity(resp.data);
   }
 
   /**
@@ -92,7 +93,7 @@ export class RestService {
    * @returns {Promise<T>}
    */
   async create(item) {
-    assert(item != null, "item required for create");
+    assert(!isNullOrUndefined(item), `${BADARG}:item ${item}`);
     const resp = await this.#request("post", this.baseUrl, item);
 
     return this.#mapEntity(resp.data);
@@ -105,7 +106,7 @@ export class RestService {
    * @returns {Promise<T|null>}
    */
   async update(id, item) {
-    assert(id != null, "id required for update");
+    assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
     const url = `${this.baseUrl}/${id}`;
 
     try {
@@ -123,7 +124,7 @@ export class RestService {
    * @returns {Promise<boolean>}
    */
   async delete(id) {
-    if (id == null) return false;
+    assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
     const url = `${this.baseUrl}/${id}`;
 
     try {
@@ -144,18 +145,13 @@ export class RestService {
    * @returns {Promise<any>}
    */
   async #request(method, url, data = null, params = {}) {
-    try {
-      return await this.$http({
-        method,
-        url,
-        data,
-        params,
-        ...this.options,
-      });
-    } catch (err) {
-      console.error(`[RestService] HTTP ${method} failed for ${url}`, err);
-      throw err; // propagate for caller handling
-    }
+    return await this.$http({
+      method,
+      url,
+      data,
+      params,
+      ...this.options,
+    });
   }
 }
 

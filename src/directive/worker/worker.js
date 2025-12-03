@@ -66,7 +66,7 @@ export function ngWorkerDirective($parse, $log) {
       });
 
       element.addEventListener(eventName, async () => {
-        if (element.disabled) return;
+        if (element.hasAttribute("disabled")) return;
 
         if (isDefined(attrs.delay)) {
           await wait(parseInt(attrs.delay) || 0);

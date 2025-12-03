@@ -129,7 +129,7 @@ export class Angular {
     modules?: Array<string | any>,
     config?: import("./interface.ts").AngularBootstrapConfig,
   ): ng.InjectorService;
-  $rootScope: import("./interface.ts").Scope;
+  $rootScope: ng.Scope;
   $injector: import("./interface.ts").InjectorService;
   /**
    * @param {any[]} modules

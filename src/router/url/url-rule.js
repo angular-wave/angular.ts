@@ -18,6 +18,9 @@ import { StateObject } from "../state/state-object.js";
  * - `RegExp`
  * - [[StateObject]]
  */
+
+const LOWEST = 0.000001;
+
 export class UrlRuleFactory {
   /**
    * @param {import('../url/url-service.js').UrlService} urlService
@@ -114,7 +117,7 @@ export class UrlRuleFactory {
         .parameters()
         .filter((param) => param.isOptional);
 
-      if (!optional.length) return 0.000001;
+      if (!optional.length) return LOWEST;
       const matched = optional.filter((param) => params[param.id]);
 
       return matched.length / optional.length;

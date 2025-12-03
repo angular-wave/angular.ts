@@ -53,7 +53,11 @@ export default defineConfig([
       "no-implicit-globals": "error",
       "no-magic-numbers": [
         "warn",
-        { ignore: [0, 1, -1], ignoreArrayIndexes: true, enforceConst: true },
+        {
+          ignore: [0, 1, -1, 2, 3, 4],
+          ignoreArrayIndexes: true,
+          enforceConst: true,
+        },
       ],
       "no-empty-function": "error",
       "no-fallthrough": "error",
@@ -90,15 +94,16 @@ export default defineConfig([
         "always",
         { exceptAfterSingleLine: true },
       ],
-      "max-classes-per-file": ["error", 1],
+      "max-classes-per-file": ["error", 3],
       "consistent-return": "error",
       "dot-notation": "error",
-      "id-length": ["warn", { min: 2, exceptions: ["i", "j"] }],
+      "id-length": ["warn", { min: 2, exceptions: ["i", "j", "_", "__"] }],
       "sort-imports": [
         "error",
         {
           ignoreCase: false,
-          ignoreDeclarationSort: false,
+          ignoreDeclarationSort: true,
+          ignoreMemberSort: true,
           memberSyntaxSortOrder: ["none", "all", "multiple", "single"],
         },
       ],

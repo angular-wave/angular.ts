@@ -113,7 +113,7 @@ declare global {
     export type DirectiveFactory = TDirectiveFactory;
     export type Component = TComponent;
     export type Controller = TController;
-    export type Scope = TScope;
+    export type Scope = TScope & Record<string, any>;
     export type NgModule = TNgModule;
     export type PubSubProvider = TPubSubProvider;
 
@@ -153,7 +153,7 @@ declare global {
     export type ProvideService = TProvideService;
     export type PubSubService = TPubSub;
     export type RootElementService = Element;
-    export type RootScopeService = TScope;
+    export type RootScopeService = TScope & Record<string, any>;
     export type StateService = TStateProvider;
     export type SseService = TSseService;
     export type SseConfig = TSseConfig;

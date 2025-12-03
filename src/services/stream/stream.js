@@ -60,13 +60,15 @@ export class StreamConnection {
     const conn = this.connection;
 
     if (conn instanceof EventSource) {
-      conn.addEventListener("open", (e) => this.handleOpen(e));
-      conn.addEventListener("message", (e) => this.handleMessage(e.data, e));
-      conn.addEventListener("error", (e) => this.handleError(e));
+      conn.addEventListener("open", (err) => this.handleOpen(err));
+      conn.addEventListener("message", (err) =>
+        this.handleMessage(err.data, err),
+      );
+      conn.addEventListener("error", (err) => this.handleError(err));
     } else if (conn instanceof WebSocket) {
-      conn.onopen = (e) => this.handleOpen(e);
-      conn.onmessage = (e) => this.handleMessage(e.data, e);
-      conn.onerror = (e) => this.handleError(e);
+      conn.onopen = (err) => this.handleOpen(err);
+      conn.onmessage = (err) => this.handleMessage(err.data, err);
+      conn.onerror = (err) => this.handleError(err);
       conn.onclose = () => this.handleClose();
     }
   }

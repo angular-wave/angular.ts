@@ -17,33 +17,20 @@ export function createPersistentProxy(target, key, storage, options = {}) {
   const saved = storage.getItem(key);
 
   if (saved) {
-    try {
-      Object.assign(target, deserialize(saved));
-    } catch {
-      console.warn(`Failed to deserialize persisted data for key "${key}"`);
-    }
+    Object.assign(target, deserialize(saved));
   }
 
   return new Proxy(target, {
     set(obj, prop, value) {
       obj[prop] = value;
-
-      try {
-        storage.setItem(key, serialize(obj));
-      } catch (e) {
-        console.warn(`Failed to persist data for key "${e}"`);
-      }
+      storage.setItem(key, serialize(obj));
 
       return true;
     },
     deleteProperty(obj, prop) {
       const deleted = delete obj[prop];
 
-      try {
-        storage.setItem(key, serialize(obj));
-      } catch {
-        console.warn(`Failed to persist data for key "${key}"`);
-      }
+      storage.setItem(key, serialize(obj));
 
       return deleted;
     },

@@ -36,7 +36,7 @@ export function pctEncode(str, allowReserved) {
     // Reserved characters per RFC 3986
     return encoded.replace(
       /(%3A|%2F|%3F|%23|%5B|%5D|%40|%21|%24|%26|%27|%28|%29|%2A|%2B|%2C|%3B|%3D)/gi,
-      (m) => decodeURIComponent(m),
+      (char) => decodeURIComponent(char),
     );
   }
 
@@ -124,21 +124,21 @@ export function expandExpression(expression, vars) {
   // split varspecs by comma, preserve whitespace trimmed
   const varspecs = varlist
     .split(",")
-    .map((s) => s.trim())
+    .map((str) => str.trim())
     .filter(Boolean);
 
   const expandedParts = [];
 
   for (const spec of varspecs) {
     // parse varspec: name, explode (*), prefix (:len)
-    const m = /^([A-Za-z0-9_.]+)(\*|(?::(\d+)))?$/.exec(spec);
+    const varspec = /^([A-Za-z0-9_.]+)(\*|(?::(\d+)))?$/.exec(spec);
 
-    if (!m) throw new Error(`Invalid varspec: ${spec}`);
-    const varname = m[1];
+    if (!varspec) throw new Error(`Invalid varspec: ${spec}`);
+    const varname = varspec[1];
 
-    const explode = m[2] === "*";
+    const explode = varspec[2] === "*";
 
-    const prefixLength = m[3] ? parseInt(m[3], 10) : undefined;
+    const prefixLength = varspec[3] ? parseInt(varspec[3], 10) : undefined;
 
     const value = vars[varname];
 
@@ -180,8 +180,8 @@ export function expandExpression(expression, vars) {
       } else {
         // join by comma (or operator.sep?) — RFC: simple join with ','
         const joined = value
-          .filter((v) => v !== null && v !== undefined)
-          .map((v) => pctEncode(v, conf.allowReserved))
+          .filter((val) => val !== null && val !== undefined)
+          .map((val) => pctEncode(val, conf.allowReserved))
           .join(",");
 
         if (conf.named) {
@@ -218,19 +218,19 @@ export function expandExpression(expression, vars) {
 
       if (explode) {
         // each key/value pair becomes k=v (named) or k,v? For explode + named, RFC says 'k=v'
-        for (const k of keys) {
-          const v = value[k];
+        for (const key of keys) {
+          const encVal = value[key];
 
-          if (v === null || v === undefined) continue;
+          if (encVal === null || encVal === undefined) continue;
 
           if (conf.named) {
             expandedParts.push(
-              `${pctEncode(k, conf.allowReserved)}=${pctEncode(v, conf.allowReserved)}`,
+              `${pctEncode(key, conf.allowReserved)}=${pctEncode(encVal, conf.allowReserved)}`,
             );
           } else {
-            // unnamed explode => k,v form pairs
+            // unnamed explode => k,encVal form pairs
             expandedParts.push(
-              `${pctEncode(k, conf.allowReserved)}=${pctEncode(v, conf.allowReserved)}`,
+              `${pctEncode(key, conf.allowReserved)}=${pctEncode(encVal, conf.allowReserved)}`,
             );
           }
         }

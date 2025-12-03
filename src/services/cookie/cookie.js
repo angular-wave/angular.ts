@@ -244,7 +244,7 @@ function buildOptions(opts = {}) {
   }
 
   // Expires
-  if (opts.expires != null) {
+  if (!isNullOrUndefined(opts.expires)) {
     let expDate;
 
     if (opts.expires instanceof Date) {

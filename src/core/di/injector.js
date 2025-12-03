@@ -314,24 +314,24 @@ export function createInjector(modulesToLoad, strictDi = false) {
         } else {
           assertArgFn(module, "module");
         }
-      } catch (e) {
+      } catch (err) {
         if (Array.isArray(module)) {
           module = module[module.length - 1];
         }
 
-        if (e.message && e.stack && e.stack.indexOf(e.message) === -1) {
+        if (err.message && err.stack && err.stack.indexOf(err.message) === -1) {
           // Safari & FF's stack traces don't contain error.message content
           // unlike those of Chrome and IE
           // So if stack doesn't contain message, we create a new string that contains both.
           // Since error.stack is read-only in Safari, I'm overriding e and not e.stack here.
 
-          e.message = `${e.message}\n${e.stack}`;
+          err.message = `${err.message}\n${err.stack}`;
         }
         throw $injectorMinErr(
           "modulerr",
           "Failed to instantiate module {0} due to:\n{1}",
           module,
-          e.stack || e.message || e,
+          err.stack || err.message || err,
         );
       }
     });

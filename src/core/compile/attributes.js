@@ -196,9 +196,7 @@ export class Attributes {
     }
 
     if (writeAttr !== false) {
-      const elem = isProxy(this.$$element)
-        ? this.$$element.$target
-        : this.$$element;
+      const elem = this.$$element;
 
       if (value === null || isUndefined(value)) {
         elem.removeAttribute(attrName);
@@ -230,8 +228,8 @@ export class Attributes {
       $$observers[observer].forEach((fn) => {
         try {
           fn(value);
-        } catch (e) {
-          this.$exceptionHandler(e);
+        } catch (err) {
+          this.$exceptionHandler(err);
         }
       });
     }

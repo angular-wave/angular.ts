@@ -310,8 +310,8 @@ export function arrayTuples(...args) {
   if (args.length === 0) return [];
   const maxArrayLen = args.reduce(
     (min, arr) => Math.min(arr.length, min),
-    9007199254740991,
-  ); // aka 2^53 − 1 aka Number.MAX_SAFE_INTEGER
+    Number.MAX_SAFE_INTEGER,
+  );
 
   const result = [];
 

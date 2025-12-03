@@ -1,13 +1,3 @@
-/**
- * Creates a [[UrlRule]]
- *
- * Creates a [[UrlRule]] from a:
- *
- * - `string`
- * - [[UrlMatcher]]
- * - `RegExp`
- * - [[StateObject]]
- */
 export class UrlRuleFactory {
   /**
    * @param {import('../url/url-service.js').UrlService} urlService

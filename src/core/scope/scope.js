@@ -1248,14 +1248,16 @@ export class Scope {
 
           cb.apply(null, listenerArgs);
 
-          if (listeners.length !== length) {
-            if (listeners.length < length) {
+          const currentLength = listeners.length;
+
+          if (currentLength !== length) {
+            if (currentLength < length) {
               i--;
             }
-            length = listeners.length;
+            length = currentLength;
           }
-        } catch (e) {
-          $exceptionHandler(e);
+        } catch (err) {
+          $exceptionHandler(err);
         }
       }
     }
@@ -1291,7 +1293,7 @@ export class Scope {
    * @returns {boolean}
    */
   #isRoot() {
-    return this.$root == /** @type {Scope} */ (this);
+    return this.$root === /** @type {Scope} */ (this);
   }
 
   /**

@@ -46,7 +46,7 @@ export function curry(fn: any): any | (() => any | any);
  * let composed = compose(f,g,h)
  * then, composed is: f(g(h(x)))
  */
-export function compose(...args: any[]): () => any;
+export function compose(...fns: any[]): (...args: any[]) => any;
 /**
  * Given a class constructor, returns a predicate function that checks
  * whether a given object is an instance of that class.
@@ -105,4 +105,4 @@ export function pattern(struct: any): (arg0: any) => any;
  */
 export const propEq: any;
 export function parse(path: any): (obj: any) => any;
-export function val(v: any): () => any;
+export function val(value: any): () => any;

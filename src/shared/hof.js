@@ -40,31 +40,34 @@
  * @returns {*|function(): (*|any)}
  */
 export function curry(fn) {
-  return function curried() {
-    if (arguments.length >= fn.length) {
-      return fn.apply(this, arguments);
+  const curried = (...args) => {
+    if (args.length >= fn.length) {
+      return fn(...args);
     }
-    const args = Array.prototype.slice.call(arguments);
 
-    return curried.bind(this, ...args);
+    return (...nextArgs) => curried(...args, ...nextArgs);
   };
+
+  return curried;
 }
+
 /**
  * Given a varargs list of functions, returns a function that composes the argument functions, right-to-left
  * given: f(x), g(x), h(x)
  * let composed = compose(f,g,h)
  * then, composed is: f(g(h(x)))
  */
-export function compose() {
-  const args = arguments;
+export function compose(...fns) {
+  const start = fns.length - 1;
 
-  const start = args.length - 1;
+  return (...args) => {
+    let i = start;
 
-  return function () {
-    let i = start,
-      result = args[start].apply(this, arguments);
+    let result = fns[start](...args);
 
-    while (i--) result = args[i].call(this, result);
+    while (i--) {
+      result = fns[i](result);
+    }
 
     return result;
   };
@@ -107,12 +110,15 @@ export function is(ctor) {
    * @returns {boolean} True if the object is an instance of the given class.
    */
   return function (obj) {
-    return (obj != null && obj.constructor === ctor) || obj instanceof ctor;
+    return (
+      (obj !== null && obj !== undefined && obj.constructor === ctor) ||
+      obj instanceof ctor
+    );
   };
 }
 
 /** Given a value, returns a function which returns the value */
-export const val = (v) => () => v;
+export const val = (value) => () => value;
 
 /**
  * Sorta like Pattern Matching (a functional programming conditional construct)
@@ -155,9 +161,11 @@ export const val = (v) => () => v;
  * @returns {function(any): *}
  */
 export function pattern(struct) {
-  return function (x) {
+  return function (item) {
     for (let i = 0; i < struct.length; i++) {
-      if (struct[i][0](x)) return struct[i][1](x);
+      if (struct[i][0](item)) return struct[i][1](item);
     }
+
+    return undefined;
   };
 }

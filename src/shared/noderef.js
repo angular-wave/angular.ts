@@ -6,6 +6,7 @@ import { createElementFromHTML } from "./dom.js";
  * Provides guarantees around presence and access.
  */
 export class NodeRef {
+  static $nonscope = true;
   /**
    * @param {Node | Element | string | NodeList | Node[]} element - The DOM node(s) or HTML string to wrap.
    * @throws {Error} If the argument is invalid or cannot be wrapped properly.
@@ -46,9 +47,9 @@ export class NodeRef {
 
     // Handle NodeList
     else if (element instanceof NodeList) {
-      this.initial = Array.from(element).map((e) => e.cloneNode(true));
+      this.initial = Array.from(element).map((elem) => elem.cloneNode(true));
 
-      if (element.length == 1) {
+      if (element.length === 1) {
         this.node = element[0];
       } else {
         this._nodes = Array.from(element);
@@ -74,7 +75,7 @@ export class NodeRef {
         this.initial = element[0].cloneNode(true);
         this.node = element[0];
       } else {
-        this.initial = Array.from(element).map((e) => e.cloneNode(true));
+        this.initial = Array.from(element).map((node) => node.cloneNode(true));
         this.nodes = element;
       }
     } else {
@@ -119,7 +120,7 @@ export class NodeRef {
   /** @param {Array<Node>} nodes */
   set nodes(nodes) {
     assertArg(
-      Array.isArray(nodes) && nodes.every((n) => n instanceof Node),
+      Array.isArray(nodes) && nodes.every((node) => node instanceof Node),
       "nodes",
     );
     this._nodes = nodes;

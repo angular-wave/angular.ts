@@ -171,3 +171,8 @@ export function http(
   eventHandlers?: Record<string, EventListener>,
   uploadEventHandlers?: Record<string, EventListener>,
 ): void;
+export const Http: Readonly<{
+  OK: 200;
+  MultipleChoices: 300;
+  NotFound: 404;
+}>;

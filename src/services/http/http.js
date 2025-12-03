@@ -27,6 +27,12 @@ import { $injectTokens as $t } from "../../injection-tokens.js";
 
 const APPLICATION_JSON = "application/json";
 
+export const Http = Object.freeze({
+  OK: 200,
+  MultipleChoices: 300,
+  NotFound: 404,
+});
+
 const CONTENT_TYPE_APPLICATION_JSON = {
   "Content-Type": `${APPLICATION_JSON};charset=utf-8`,
 };
@@ -230,7 +236,7 @@ function transformData(data, headers, status, fns) {
 }
 
 function isSuccess(status) {
-  return status >= 200 && status < 300;
+  return status >= Http.OK && status < Http.MultipleChoices;
 }
 
 /**
@@ -816,7 +822,7 @@ export function HttpProvider() {
                   cachedResp[4],
                 );
               } else {
-                resolvePromise(cachedResp, 200, {}, "OK", "complete");
+                resolvePromise(cachedResp, Http.OK, {}, "OK", "complete");
               }
             }
           } else {
@@ -1022,7 +1028,11 @@ export function http(
     const statusText = xhr.statusText || "";
 
     if (status === 0) {
-      status = xhr.response ? 200 : new URL(url).protocol === "file:" ? 404 : 0;
+      status = xhr.response
+        ? Http.OK
+        : new URL(url).protocol === "file:"
+          ? Http.NotFound
+          : 0;
     }
 
     completeRequest(
@@ -1071,7 +1081,7 @@ export function http(
     timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
   } else if (isPromiseLike(timeout)) {
     /** @type {Promise} */ (timeout).then(() => {
-      timeoutRequest(isDefined(timeout.$$timeoutId) ? "timeout" : "abort");
+      timeoutRequest("timeout");
     });
   }
 

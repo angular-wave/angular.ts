@@ -1,3 +1,5 @@
+import { pushR, tail } from "./common.js";
+import { pattern, val } from "./hof.js";
 import { isInjectable, isPromise } from "./predicates.js";
 import {
   isFunction,
@@ -6,12 +8,12 @@ import {
   isString,
   isUndefined,
 } from "./utils.js";
-import { pushR, tail } from "./common.js";
-import { pattern, val } from "./hof.js";
 
 /**
  * Functions that manipulate strings
  */
+
+const DOTS = "...";
 
 /**
  * Returns a string shortened to a maximum length
@@ -19,13 +21,14 @@ import { pattern, val } from "./hof.js";
  * If the string is already less than the `max` length, return the string.
  * Else return the string, shortened to `max - 3` and append three dots ("...").
  *
- * @param max the maximum length of the string to return
- * @param str the input string
+ * @param {number} max the maximum length of the string to return
+ * @param {string} str the input string
+ * @returns {string}
  */
 export function maxLength(max, str) {
   if (str.length <= max) return str;
 
-  return `${str.substring(0, max - 3)}...`;
+  return `${str.substring(0, max - DOTS.length)}${DOTS}`;
 }
 /**
  * Returns a string, with spaces added to the end, up to a desired str length
@@ -46,6 +49,9 @@ export function kebobString(camelCase) {
     .replace(/^([A-Z])/, ($1) => $1.toLowerCase()) // replace first char
     .replace(/([A-Z])/g, ($1) => `-${$1.toLowerCase()}`); // replace rest
 }
+
+const FN_LENGTH = 9;
+
 export function functionToString(fn) {
   const fnStr = fnToString(fn);
 
@@ -56,7 +62,7 @@ export function functionToString(fn) {
   const fnName = fn.name || "";
 
   if (fnName && toStr.match(/function \(/)) {
-    return `function ${fnName}${toStr.substring(9)}`;
+    return `function ${fnName}${toStr.substring(FN_LENGTH)}`;
   }
 
   return toStr;
@@ -66,14 +72,15 @@ export function fnToString(fn) {
 
   return (_fn && _fn.toString()) || "undefined";
 }
-export function stringify(o) {
+
+export function stringify(value) {
   const seen = [];
 
   const isRejection = (obj) => {
     return (
       obj &&
       typeof obj.then === "function" &&
-      obj.constructor.name == "Rejection"
+      obj.constructor.name === "Rejection"
     );
   };
 
@@ -87,29 +94,32 @@ export function stringify(o) {
     [isUndefined, val("undefined")],
     [isNull, val("null")],
     [isPromise, val("[Promise]")],
-    [isRejection, (x) => x._transitionRejection.toString()],
-    [hasToString, (x) => x.toString()],
+    [isRejection, (reg) => reg._transitionRejection.toString()],
+    [hasToString, (str) => str.toString()],
     [isInjectable, functionToString],
-    [val(true), (x) => x],
+    [val(true), (bool) => bool],
   ]);
 
-  function format(value) {
-    if (isObject(value)) {
-      if (seen.indexOf(value) !== -1) return "[circular ref]";
-      seen.push(value);
+  function format(item) {
+    if (isObject(item)) {
+      if (seen.indexOf(item) !== -1) return "[circular ref]";
+      seen.push(item);
     }
 
-    return stringifyPattern(value);
+    return stringifyPattern(item);
   }
 
-  if (isUndefined(o)) {
+  if (isUndefined(value)) {
     // Workaround for IE & Edge Spec incompatibility where replacer function would not be called when JSON.stringify
     // is given `undefined` as value. To work around that, we simply detect `undefined` and bail out early by
     // manually stringifying it.
-    return format(o);
+    return format(value);
   }
 
-  return JSON.stringify(o, (key, value) => format(value)).replace(/\\"/g, '"');
+  return JSON.stringify(value, (_key, item) => format(item)).replace(
+    /\\"/g,
+    '"',
+  );
 }
 
 export const stripLastPathElement = (str) => str.replace(/\/[^/]*$/, "");
@@ -140,9 +150,9 @@ export function splitOnDelim(delim) {
  * arr.reduce(joinNeighborsR, []) // ["foobar", 1, "bazqux" ]
  * ```
  */
-export function joinNeighborsR(acc, x) {
-  if (isString(tail(acc)) && isString(x))
-    return acc.slice(0, -1).concat(tail(acc) + x);
+export function joinNeighborsR(acc, str) {
+  if (isString(tail(acc)) && isString(str))
+    return acc.slice(0, -1).concat(tail(acc) + str);
 
-  return pushR(acc, x);
+  return pushR(acc, str);
 }

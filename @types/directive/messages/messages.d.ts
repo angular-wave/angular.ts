@@ -37,7 +37,7 @@ declare class NgMessageCtrl {
     $animate: ng.AnimateService,
   );
   $element: Element;
-  $scope: import("../../interface.ts").Scope;
+  $scope: ng.Scope;
   $attrs: ng.Attributes;
   $animate: import("../../interface.ts").AnimateService;
   latestKey: number;
