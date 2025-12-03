@@ -371,12 +371,10 @@ export class Scope {
         if (Array.isArray(target)) {
           if (this.objectListeners.has(proxy) && property !== "length") {
             let keys = this.objectListeners.get(proxy);
-            keys.forEach((key) => {
-              const listeners = this.watchers.get(key);
-              if (listeners) {
-                this.#scheduleListener(listeners);
-              }
-            });
+            for (let i = 0, l = keys.length; i < l; i++) {
+              const listeners = this.watchers.get(keys[i]);
+              if (listeners) this.#scheduleListener(listeners);
+            }
             decodeURI;
           }
         }
@@ -406,30 +404,56 @@ export class Scope {
           if (!this.objectListeners.has(target[property])) {
             this.objectListeners.set(target[property], [property]);
           }
-          for (const k of Object.keys(value)) {
-            this.watchers.get(k)?.forEach((l) => listeners.push(l));
-            // overwhrite the context so we pass the owneship test in filter
-            expectedTarget = value;
+          const keys = Object.keys(value);
+          for (let i = 0, l = keys.length; i < l; i++) {
+            const key = keys[i];
+            const keyListeners = this.watchers.get(key);
+            if (keyListeners) {
+              for (let j = 0, jl = keyListeners.length; j < jl; j++) {
+                listeners.push(keyListeners[j]);
+              }
+            }
           }
+          expectedTarget = value;
         }
 
         if (Array.isArray(target)) {
-          this.watchers.get("length")?.forEach((l) => listeners.push(l));
+          const lengthListeners = this.watchers.get("length");
+          if (lengthListeners) {
+            for (let i = 0, l = lengthListeners.length; i < l; i++) {
+              listeners.push(lengthListeners[i]);
+            }
+          }
         }
 
-        this.watchers.get(property)?.forEach((l) => listeners.push(l));
+        const propListeners = this.watchers.get(property);
+        if (propListeners) {
+          for (let i = 0, l = propListeners.length; i < l; i++) {
+            listeners.push(propListeners[i]);
+          }
+        }
+
         if (listeners.length > 0) {
-          // check if the listener actually appllies to this target
-          this.#scheduleListener(listeners, (x) => {
-            return x.filter((x) => {
-              if (!x.watchProp) return true;
-              // Compute the expected target based on `watchProp`
+          this.#scheduleListener(listeners, (list) => {
+            const scheduled = [];
+            for (let i = 0, l = list.length; i < l; i++) {
+              const x = list[i];
+
+              if (!x.watchProp) {
+                scheduled.push(x);
+                continue;
+              }
+
               const wrapperExpr = x.watchProp.split(".").slice(0, -1).join(".");
               const expectedHandler = $parse(wrapperExpr)(
                 x.originalTarget,
               )?.$handler;
-              return expectedTarget === expectedHandler?.$target;
-            });
+
+              if (expectedTarget === expectedHandler?.$target) {
+                scheduled.push(x);
+              }
+            }
+            return scheduled;
           });
         }
 
@@ -439,29 +463,35 @@ export class Scope {
           foreignListeners = this.$parent.foreignListeners.get(property);
         }
         if (foreignListeners) {
+          let scheduled = foreignListeners;
+
           // filter for repeaters
-          if (this.$target.$$hashKey) {
-            foreignListeners = foreignListeners.filter((x) =>
-              x.originalTarget["$$hashKey"]
-                ? x.originalTarget["$$hashKey"] === this.$target.$$hashKey
-                : false,
-            );
+          const hashKey = this.$target.$$hashKey;
+          if (hashKey) {
+            scheduled = [];
+            for (let i = 0, l = foreignListeners.length; i < l; i++) {
+              const listener = foreignListeners[i];
+              if (listener.originalTarget["$$hashKey"] === hashKey) {
+                scheduled.push(listener);
+              }
+            }
           }
 
-          this.#scheduleListener(foreignListeners);
+          if (scheduled.length > 0) {
+            this.#scheduleListener(scheduled);
+          }
         }
       }
 
       if (this.objectListeners.has(proxy) && property !== "length") {
-        let keys = this.objectListeners.get(proxy);
-        keys.forEach((key) => {
+        const keys = this.objectListeners.get(proxy);
+        for (let i = 0, l = keys.length; i < l; i++) {
+          const key = keys[i];
           const listeners = this.watchers.get(key);
-          if (listeners) {
-            if (this.scheduled !== listeners) {
-              this.#scheduleListener(listeners);
-            }
+          if (listeners && this.scheduled !== listeners) {
+            this.#scheduleListener(listeners);
           }
-        });
+        }
       }
 
       return true;
@@ -496,16 +526,16 @@ export class Scope {
       ["pop", "shift", "unshift"].includes(/** @type { string } */ (property))
     ) {
       if (this.objectListeners.has(proxy)) {
-        let keys = this.objectListeners.get(this.$proxy);
-        keys.forEach((key) => {
+        const keys = this.objectListeners.get(proxy);
+        for (let i = 0, l = keys.length; i < l; i++) {
+          const key = keys[i];
           const listeners = this.watchers.get(key);
           if (listeners) {
             this.scheduled = listeners;
           }
-        });
+        }
       }
 
-      // TODO aditional testing
       if (property === "unshift") {
         this.#scheduleListener(this.scheduled);
       }
@@ -529,13 +559,12 @@ export class Scope {
         this.#scheduleListener(listeners);
       }
       if (this.objectListeners.has(this.$proxy)) {
-        let keys = this.objectListeners.get(this.$proxy);
-        keys.forEach((key) => {
-          listeners = this.watchers.get(key);
-          if (listeners) {
-            this.#scheduleListener(listeners);
-          }
-        });
+        const keys = this.objectListeners.get(this.$proxy);
+        for (let i = 0, l = keys.length; i < l; i++) {
+          const key = keys[i];
+          const listeners = this.watchers.get(key);
+          if (listeners) this.#scheduleListener(listeners);
+        }
       }
 
       if (this.scheduled) {
@@ -548,13 +577,12 @@ export class Scope {
     delete target[property];
 
     if (this.objectListeners.has(this.$proxy)) {
-      let keys = this.objectListeners.get(this.$proxy);
-      keys.forEach((key) => {
+      const keys = this.objectListeners.get(this.$proxy);
+      for (let i = 0, l = keys.length; i < l; i++) {
+        const key = keys[i];
         const listeners = this.watchers.get(key);
-        if (listeners) {
-          this.#scheduleListener(listeners);
-        }
-      });
+        if (listeners) this.#scheduleListener(listeners);
+      }
     } else {
       const listeners = this.watchers.get(property);
       if (listeners) {
@@ -644,14 +672,6 @@ export class Scope {
 
     let type = get.decoratedNode.body[0].expression.type;
     switch (type) {
-      // 1
-      case ASTType.Program: {
-        throw new Error("Unsupported type " + type);
-      }
-      // 2
-      case ASTType.ExpressionStatement: {
-        throw new Error("Unsupported type " + type);
-      }
       // 3
       case ASTType.AssignmentExpression:
         // assignment calls without listener functions
@@ -672,16 +692,21 @@ export class Scope {
       }
       // 5
       case ASTType.LogicalExpression: {
-        let keys = [];
-        keys.push(get.decoratedNode.body[0].expression.left.toWatch[0]?.name);
-        keys.push(get.decoratedNode.body[0].expression.right.toWatch[0]?.name);
-        keys.forEach((key) => {
-          this.#registerKey(key, listener);
-        });
+        const keys = [
+          get.decoratedNode.body[0].expression.left.toWatch[0]?.name,
+          get.decoratedNode.body[0].expression.right.toWatch[0]?.name,
+        ];
+
+        for (let i = 0, l = keys.length; i < l; i++) {
+          const key = keys[i];
+          if (key) this.#registerKey(key, listener);
+        }
+
         return () => {
-          keys.forEach((key) => {
+          for (let i = 0, l = keys.length; i < l; i++) {
+            const key = keys[i];
             this.#deregisterKey(key, listener.id);
-          });
+          }
         };
       }
       // 6
@@ -695,23 +720,23 @@ export class Scope {
           listener.property.push(key);
           break;
         } else {
-          let keys = [];
-          get.decoratedNode.body[0].expression.toWatch.forEach((x) => {
-            const k = x.property ? x.property.name : x.name;
-            if (!k) {
-              throw new Error("Unable to determine key");
-            }
-            keys.push(k);
-          });
-          keys.forEach((key) => {
+          const toWatch = get.decoratedNode.body[0].expression.toWatch;
+          for (let i = 0, l = toWatch.length; i < l; i++) {
+            const x = toWatch[i];
+            const key = x.property ? x.property.name : x.name;
+            if (!key) throw new Error("Unable to determine key");
+
             this.#registerKey(key, listener);
             this.#scheduleListener([listener]);
-          });
+          }
 
+          // Return deregistration function
           return () => {
-            keys.forEach((key) => {
+            for (let i = 0, l = toWatch.length; i < l; i++) {
+              const x = toWatch[i];
+              const key = x.property ? x.property.name : x.name;
               this.#deregisterKey(key, listener.id);
-            });
+            }
           };
         }
       }
@@ -727,21 +752,24 @@ export class Scope {
       }
       // 8 function
       case ASTType.CallExpression: {
-        let keys = [];
-        get.decoratedNode.body[0].expression.toWatch.forEach((x) => {
-          if (isDefined(x)) {
-            keys.push(x.name);
-          }
-        });
-        keys.forEach((key) => {
+        const toWatch = get.decoratedNode.body[0].expression.toWatch;
+        for (let i = 0, l = toWatch.length; i < l; i++) {
+          const x = toWatch[i];
+          if (!isDefined(x)) continue;
+
+          const key = x.name;
           this.#registerKey(key, listener);
           this.#scheduleListener([listener]);
-        });
+        }
 
         return () => {
-          keys.forEach((key) => {
+          for (let i = 0, l = toWatch.length; i < l; i++) {
+            const x = toWatch[i];
+            if (!isDefined(x)) continue;
+
+            const key = x.name;
             this.#deregisterKey(key, listener.id);
-          });
+          }
         };
       }
 
@@ -779,74 +807,53 @@ export class Scope {
         break;
       }
 
-      // 11
-      case ASTType.Literal: {
-        throw new Error("Unsupported type " + type);
-      }
-
       // 12
       case ASTType.ArrayExpression: {
-        let keys = get.decoratedNode.body[0].expression.elements
-          .map((x) => {
-            switch (x.type) {
-              case 11:
-                return x.value;
-              default:
-                return x.toWatch[0].name;
-            }
-          })
-          .filter((x) => !!x);
-        keys.forEach((key) => {
+        const elements = get.decoratedNode.body[0].expression.elements;
+        for (let i = 0, l = elements.length; i < l; i++) {
+          const x = elements[i];
+          const key = x.type === 11 ? x.value : x.toWatch[0]?.name;
+          if (!key) continue;
+
           this.#registerKey(key, listener);
           this.#scheduleListener([listener]);
-        });
-        return () => {
-          keys.forEach((key) => {
-            this.#deregisterKey(key, listener.id);
-          });
-        };
-      }
+        }
 
-      // 13
-      case ASTType.Property: {
-        throw new Error("Unsupported type " + type);
+        return () => {
+          for (let i = 0, l = elements.length; i < l; i++) {
+            const x = elements[i];
+            const key = x.type === 11 ? x.value : x.toWatch[0]?.name;
+            if (!key) continue;
+
+            this.#deregisterKey(key, listener.id);
+          }
+        };
       }
 
       // 14
       case ASTType.ObjectExpression: {
-        get.decoratedNode.body[0].expression.properties.forEach((prop) => {
-          if (prop.key.isPure === false) {
-            keySet.push(prop.key.name);
-            listener.property.push(key);
-          } else {
-            if (prop.value.name) {
-              keySet.push(prop.value.name);
-              listener.property.push(key);
-            } else {
-              const target = get.decoratedNode.body[0].expression.toWatch[0];
-              key = target.property ? target.property.name : target.name;
-              listener.property.push(key);
-            }
-          }
-        });
+        const properties = get.decoratedNode.body[0].expression.properties;
+        for (let i = 0, l = properties.length; i < l; i++) {
+          const prop = properties[i];
+          let key;
 
-        // key = get.decoratedNode.body[0].expression.toWatch[0].name;
-        // listener.property.push(key);
+          if (prop.key.isPure === false) {
+            key = prop.key.name;
+          } else if (prop.value?.name) {
+            key = prop.value.name;
+          } else {
+            const target = get.decoratedNode.body[0].expression.toWatch[0];
+            key = target.property ? target.property.name : target.name;
+          }
+
+          if (key) {
+            keySet.push(key);
+            listener.property.push(key);
+          }
+        }
         break;
       }
-
-      // 15
-      case ASTType.ThisExpression: {
-        throw new Error("Unsupported type " + type);
-      }
-
-      // 16
-      case ASTType.LocalsExpression: {
-        throw new Error("Unsupported type " + type);
-      }
-
-      // 17
-      case ASTType.NGValueParameter: {
+      default: {
         throw new Error("Unsupported type " + type);
       }
     }
@@ -858,9 +865,9 @@ export class Scope {
     }
 
     if (keySet.length > 0) {
-      keySet.forEach((key) => {
-        this.#registerKey(key, listener);
-      });
+      for (let i = 0, l = keySet.length; i < l; i++) {
+        this.#registerKey(keySet[i], listener);
+      }
     } else {
       this.#registerKey(key, listener);
     }
@@ -871,12 +878,12 @@ export class Scope {
     return () => {
       if (keySet.length > 0) {
         let res = true;
-        keySet.forEach((key) => {
-          let success = this.#deregisterKey(key, listener.id);
+        for (let i = 0, l = keySet.length; i < l; i++) {
+          let success = this.#deregisterKey(keySet[i], listener.id);
           if (!success) {
             res = false;
           }
-        });
+        }
         return res;
       } else {
         return this.#deregisterKey(key, listener.id);
@@ -903,7 +910,6 @@ export class Scope {
       child = childInstance;
     } else {
       child = Object.create(this.$target);
-      // child.$parent = this.$parent;
     }
 
     const proxy = new Proxy(child, new Scope(this));
@@ -959,21 +965,21 @@ export class Scope {
     return true;
   }
 
-  deregisterForeignKey(key, id) {
-    const listenerList = this.foreignListeners.get(key);
-    if (!listenerList) return false;
+  // #deregisterForeignKey(key, id) {
+  //   const listenerList = this.foreignListeners.get(key);
+  //   if (!listenerList) return false;
 
-    const index = listenerList.findIndex((x) => x.id === id);
-    if (index === -1) return false;
+  //   const index = listenerList.findIndex((x) => x.id === id);
+  //   if (index === -1) return false;
 
-    listenerList.splice(index, 1);
-    if (listenerList.length) {
-      this.foreignListeners.set(key, listenerList);
-    } else {
-      this.foreignListeners.delete(key);
-    }
-    return true;
-  }
+  //   listenerList.splice(index, 1);
+  //   if (listenerList.length) {
+  //     this.foreignListeners.set(key, listenerList);
+  //   } else {
+  //     this.foreignListeners.delete(key);
+  //   }
+  //   return true;
+  // }
 
   $eval(expr, locals) {
     const fn = $parse(expr);
@@ -1000,13 +1006,15 @@ export class Scope {
    * @param {Object} newTarget
    */
   $merge(newTarget) {
-    Object.entries(newTarget).forEach(([key, value]) => {
+    const entries = Object.entries(newTarget);
+    for (let i = 0, l = entries.length; i < l; i++) {
+      const [key, value] = entries[i];
       this.set(this.$target, key, value, this.$proxy);
-    });
+    }
   }
 
   /**
-   * @param {import('../../interface.ts').Expression} expr
+   * @param {ng.Expression} expr
    * @returns {any}
    */
   $apply(expr) {
@@ -1166,22 +1174,33 @@ export class Scope {
     if (this.$$destroyed) return;
 
     this.$broadcast("$destroy");
-    Array.from(this.watchers.entries()).forEach(([key, val]) => {
-      this.watchers.set(
-        key,
-        val.filter((x) => x.scopeId !== this.$id),
-      );
-    });
+
+    for (const [key, val] of this.watchers) {
+      for (let i = val.length - 1; i >= 0; i--) {
+        if (val[i].scopeId === this.$id) {
+          val.splice(i, 1);
+        }
+      }
+      if (val.length === 0) {
+        this.watchers.delete(key);
+      } else {
+        this.watchers.set(key, val);
+      }
+    }
 
     if (this.#isRoot()) {
       this.watchers.clear();
     } else {
-      let i = this.$parent.$children.filter((x) => x.$id == this.$id)[0];
-      this.$parent.$children.splice(this.$parent.$children.indexOf(i), 1);
+      const children = this.$parent.$children;
+      for (let i = 0, l = children.length; i < l; i++) {
+        if (children[i].$id === this.$id) {
+          children.splice(i, 1);
+          break;
+        }
+      }
     }
 
     this.$$listeners.clear();
-
     this.$$destroyed = true;
   }
 
@@ -1192,25 +1211,28 @@ export class Scope {
   #notifyListener(listener, target) {
     const { originalTarget, listenerFn, watchFn } = listener;
     try {
-      let newVal = watchFn(/** @type {Scope} */ (originalTarget));
+      let newVal = watchFn(originalTarget);
       if (isUndefined(newVal)) {
         newVal = watchFn(target);
       }
+
       if (isFunction(newVal)) {
         newVal = newVal(originalTarget);
       }
 
       if (Array.isArray(newVal)) {
-        newVal.forEach((x, index) => {
-          if (isFunction(x)) {
-            newVal[index] = x(originalTarget);
+        for (let i = 0, l = newVal.length; i < l; i++) {
+          if (isFunction(newVal[i])) {
+            newVal[i] = newVal[i](originalTarget);
           }
-        });
+        }
       }
+
       listenerFn(newVal, originalTarget);
 
       while ($postUpdateQueue.length) {
-        $postUpdateQueue.shift()();
+        const fn = $postUpdateQueue.shift();
+        fn();
       }
     } catch (e) {
       $exceptionHandler(e);
@@ -1277,18 +1299,18 @@ export class Scope {
  * @returns {number}
  */
 function calculateWatcherCount(model) {
-  const childIds = collectChildIds(model).add(model.$id);
+  const childIds = collectChildIds(model);
 
-  return Array.from(model.watchers.values()).reduce(
-    (count, watcherArray) =>
-      count +
-      watcherArray.reduce(
-        (subCount, watcher) =>
-          subCount + (childIds.has(watcher.scopeId) ? 1 : 0),
-        0,
-      ),
-    0,
-  );
+  let count = 0;
+  for (const watchers of model.watchers.values()) {
+    for (let i = 0, l = watchers.length; i < l; i++) {
+      if (childIds.has(watchers[i].scopeId)) {
+        count++;
+      }
+    }
+  }
+
+  return count;
 }
 
 /**
@@ -1296,9 +1318,20 @@ function calculateWatcherCount(model) {
  * @returns {Set<number>}
  */
 function collectChildIds(child) {
-  const ids = new Set([child.$id]);
-  child.$children?.forEach((c) => {
-    collectChildIds(c).forEach((id) => ids.add(id));
-  });
+  const ids = new Set();
+  const stack = [child];
+
+  while (stack.length) {
+    const node = stack.pop();
+    if (!ids.has(node.$id)) {
+      ids.add(node.$id);
+      if (node.$children) {
+        for (let i = 0, l = node.$children.length; i < l; i++) {
+          stack.push(node.$children[i]);
+        }
+      }
+    }
+  }
+
   return ids;
 }

@@ -46,6 +46,7 @@ import {
   Controller as TController,
   ControllerConstructor as TControllerConstructor,
   Injectable as TInjectable,
+  Expression as TExpression,
 } from "./interface.ts";
 import {
   SseService as TSseService,
@@ -178,5 +179,6 @@ declare global {
     export type RestDefinition<T> = TRestDefinition<T>;
     export type EntityClass<T> = TEntityClass<T>;
     export type ServiceProvider = TServiceProvider;
+    export type Expression = TExpression;
   }
 }

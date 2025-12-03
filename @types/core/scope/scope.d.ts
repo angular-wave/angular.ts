@@ -141,17 +141,16 @@ export class Scope {
   $new(childInstance: any): any;
   $newIsolate(instance: any): any;
   $transcluded(parentInstance: any): any;
-  deregisterForeignKey(key: any, id: any): boolean;
   $eval(expr: any, locals: any): any;
   /**
    * @param {Object} newTarget
    */
   $merge(newTarget: any): void;
   /**
-   * @param {import('../../interface.ts').Expression} expr
+   * @param {ng.Expression} expr
    * @returns {any}
    */
-  $apply(expr: import("../../interface.ts").Expression): any;
+  $apply(expr: ng.Expression): any;
   /**
    * @param {string} name
    * @param {Function} listener
