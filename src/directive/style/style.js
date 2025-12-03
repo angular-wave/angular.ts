@@ -7,7 +7,7 @@ export function ngStyleDirective() {
     link(scope, element, attr) {
       let oldStyles = null;
 
-      scope.$watch(attr.ngStyle, function (newStyles) {
+      scope.$watch(attr.ngStyle, (newStyles) => {
         const target = newStyles?.$target || newStyles;
 
         if (oldStyles) {

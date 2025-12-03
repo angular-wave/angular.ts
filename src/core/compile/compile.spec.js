@@ -10503,7 +10503,6 @@ describe("$compile", () => {
 
         expect(childCtrl.fromParent1).toBe(parentCtrl.value1);
         expect(childCtrl.fromParent1).not.toBe(childCtrl.value1);
-        debugger;
         expect(childCtrl.fromParent2).toBe(parentCtrl.value2);
         expect(childCtrl.fromParent2).not.toBe(childCtrl.value2);
         expect(childCtrl.fromParent3()()).toBe(parentCtrl.value3());

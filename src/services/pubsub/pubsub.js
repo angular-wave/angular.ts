@@ -19,6 +19,7 @@ export class PubSubProvider {
 }
 
 export class PubSub {
+  static $nonscope;
   /**
    * Topic-based publish/subscribe channel.  Maintains a map of topics to
    * subscriptions.  When a message is published to a topic, all functions
@@ -173,7 +174,7 @@ export class PubSub {
    * @param {Array} args Arguments to pass to the function.
    */
   static runAsync_(fn, context, args) {
-    Promise.resolve().then(() => {
+    queueMicrotask(() => {
       fn.apply(context, args);
     });
   }
@@ -241,7 +242,7 @@ export class PubSub {
    * the order in which they were added, passing all arguments along.
    *
    * If this object was created with async=true, subscribed functions are called
-   * via Promise.resolve().  Otherwise, the functions are called directly, and if
+   * via `queueMicrotask`.  Otherwise, the functions are called directly, and if
    * any of them throw an uncaught error, publishing is aborted.
    *
    * @param {string} topic Topic to publish to.

@@ -50,7 +50,7 @@
 export class ExceptionHandlerProvider {
   constructor() {
     /** @type {ng.ExceptionHandlerService} */
-    this.handler = function (exception) {
+    this.handler = (exception) => {
       throw exception;
     };
   }

@@ -128,12 +128,12 @@ export class AnchorScrollProvider {
           // skip the initial scroll if $location.hash is empty
           if (newVal === oldVal && newVal === "") return;
 
-          const action = () => Promise.resolve().then(scroll);
+          const action = () => scroll(newVal);
           if (document.readyState === "complete") {
             // Force the action to be run async for consistent behavior
             // from the action's point of view
             // i.e. it will definitely not be in a $apply
-            window.setTimeout(() => action());
+            queueMicrotask(() => action());
           } else {
             window.addEventListener("load", () => action());
           }

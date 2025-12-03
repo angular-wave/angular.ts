@@ -1,5 +1,5 @@
 import { wait } from "../../shared/test-utils.js";
-import { $postUpdateQueue, createScope, isUnsafeGlobal } from "./scope.js";
+import { $postUpdateQueue, createScope, isNonScope } from "./scope.js";
 import { Angular } from "../../angular.js";
 import { createInjector } from "../di/injector.js";
 import { isDefined, isProxy, sliceArgs } from "../../shared/utils.js";
@@ -2999,55 +2999,60 @@ describe("Scope", () => {
   });
 });
 
-describe("isUnsafeGlobal", () => {
+describe("isNonScope", () => {
   it("returns false for plain objects", () => {
-    expect(isUnsafeGlobal({})).toBe(false);
-    expect(isUnsafeGlobal([])).toBe(false);
-    expect(isUnsafeGlobal(Object.create(null))).toBe(false);
+    expect(isNonScope({})).toBe(false);
+    expect(isNonScope([])).toBe(false);
+    expect(isNonScope(Object.create(null))).toBe(false);
   });
 
-  it("returns false for primitives", () => {
-    expect(isUnsafeGlobal(null)).toBe(false);
-    expect(isUnsafeGlobal(42)).toBe(false);
-    expect(isUnsafeGlobal("hello")).toBe(false);
-    expect(isUnsafeGlobal(true)).toBe(false);
-    expect(isUnsafeGlobal(undefined)).toBe(false);
+  it("returns true for $nonscoped classes and instances", () => {
+    expect(
+      isNonScope(
+        class {
+          static $nonscope = true;
+        },
+      ),
+    ).toBe(true);
+    const f = function F() {};
+    f.$nonscope = true;
+    expect(isNonScope(f)).toBe(true);
   });
 
   it("returns true for globalThis and window", () => {
-    expect(isUnsafeGlobal(globalThis)).toBe(true);
+    expect(isNonScope(globalThis)).toBe(true);
     if (typeof window !== "undefined") {
-      expect(isUnsafeGlobal(window)).toBe(true);
+      expect(isNonScope(window)).toBe(true);
     }
   });
 
   it("returns true for document", () => {
     if (typeof document !== "undefined") {
-      expect(isUnsafeGlobal(document)).toBe(true);
+      expect(isNonScope(document)).toBe(true);
     }
   });
 
   it("returns true for DOM elements", () => {
     if (typeof document !== "undefined") {
       const div = document.createElement("div");
-      expect(isUnsafeGlobal(div)).toBe(true);
+      expect(isNonScope(div)).toBe(true);
     }
   });
 
   it("returns true for Node and EventTarget", () => {
     if (typeof document !== "undefined") {
       const textNode = document.createTextNode("test");
-      expect(isUnsafeGlobal(textNode)).toBe(true);
+      expect(isNonScope(textNode)).toBe(true);
 
       const evt = new Event("test");
-      expect(isUnsafeGlobal(evt.target || document)).toBe(true);
+      expect(isNonScope(evt.target || document)).toBe(true);
     }
   });
 
   it("returns false for user-defined classes", () => {
     class Foo {}
     const instance = new Foo();
-    expect(isUnsafeGlobal(instance)).toBe(false);
+    expect(isNonScope(instance)).toBe(false);
   });
 
   it("handles cross-origin or inaccessible objects gracefully", () => {
@@ -3056,10 +3061,10 @@ describe("isUnsafeGlobal", () => {
         throw new Error("cross-origin");
       },
     };
-    expect(() => isUnsafeGlobal(fakeCrossOrigin)).not.toThrow();
+    expect(() => isNonScope(fakeCrossOrigin)).not.toThrow();
   });
 
   it("ignores events", () => {
-    expect(isUnsafeGlobal(new PointerEvent("test"))).toBeTrue();
+    expect(isNonScope(new PointerEvent("test"))).toBeTrue();
   });
 });
