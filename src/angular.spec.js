@@ -351,7 +351,7 @@ describe("module loader", () => {
     otherModule.config("otherInit");
 
     const myModule = angular.module("my", ["other"], "config");
-
+    const filterFn = () => () => "filterFn";
     expect(
       myModule
         .decorator("dk", "dv")
@@ -359,7 +359,7 @@ describe("module loader", () => {
         .factory("fk", "fv")
         .service("a", "aa")
         .value("k", "v")
-        .filter("f", "ff")
+        .filter("f", filterFn)
         .directive("d", "dd")
         .component("c", "cc")
         .controller("ctrl", "ccc")
@@ -375,7 +375,11 @@ describe("module loader", () => {
       ["$provide", "factory", jasmine.objectContaining(["fk", "fv"])],
       ["$provide", "service", jasmine.objectContaining(["a", "aa"])],
       ["$provide", "value", jasmine.objectContaining(["k", "v"])],
-      ["$filterProvider", "register", jasmine.objectContaining(["f", "ff"])],
+      [
+        "$filterProvider",
+        "register",
+        jasmine.objectContaining(["f", filterFn]),
+      ],
       ["$compileProvider", "directive", jasmine.objectContaining(["d", "dd"])],
       ["$compileProvider", "component", jasmine.objectContaining(["c", "cc"])],
       [
