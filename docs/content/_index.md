@@ -12,7 +12,7 @@ title: AngularTS
 
 <div id="download">
   <span id="version"> {{< version >}} </span>
-  <a class="btn btn-lg btn-secondary me-3 mb-4" href="https://github.com/angular-qave/angular.ts">
+  <a class="btn btn-lg btn-secondary me-3 mb-4" href="https://github.com/angular-wave/angular.ts">
     Download <i class="fab fa-github ms-2 "></i>
   </a>
 </div>
