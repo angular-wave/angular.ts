@@ -42,9 +42,12 @@ export class SseProvider {
      */
     (log) => {
       this.$log = log;
+
       return (url, config = {}) => {
         const mergedConfig = { ...this.defaults, ...config };
+
         const finalUrl = this.#buildUrl(url, mergedConfig.params);
+
         return this.#createConnection(finalUrl, mergedConfig);
       };
     },
@@ -61,6 +64,7 @@ export class SseProvider {
     const query = Object.entries(params)
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join("&");
+
     return url + (url.includes("?") ? "&" : "?") + query;
   }
 
@@ -72,8 +76,11 @@ export class SseProvider {
    */
   #createConnection(url, config) {
     let es;
+
     let retryCount = 0;
+
     let closed = false;
+
     let heartbeatTimer;
 
     const connect = () => {
@@ -86,22 +93,26 @@ export class SseProvider {
       es.addEventListener("open", (e) => {
         retryCount = 0;
         config.onOpen?.(e);
+
         if (config.heartbeatTimeout) resetHeartbeat();
       });
 
       es.addEventListener("message", (e) => {
-        let data = e.data;
+        let { data } = e;
+
         try {
           data = config.transformMessage ? config.transformMessage(data) : data;
         } catch {
           /* empty */
         }
         config.onMessage?.(data, e);
+
         if (config.heartbeatTimeout) resetHeartbeat();
       });
 
       es.addEventListener("error", (err) => {
         config.onError?.(err);
+
         if (closed) return;
         es.close();
 

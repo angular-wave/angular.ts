@@ -23,25 +23,32 @@ export class ASTInterpreter {
    * @returns {import("./interface.ts").CompiledExpression}
    */
   compile(ast) {
-    let decoratedNode = findConstantAndWatchExpressions(ast, this.$filter);
+    const decoratedNode = findConstantAndWatchExpressions(ast, this.$filter);
+
     /** @type {import("./ast/ast").ASTNode} */
     let assignable;
+
     /** @type {import("./interface.ts").CompiledExpression} */
     let assign;
+
     if ((assignable = assignableAST(decoratedNode))) {
       assign = /** @type {import("./interface.ts").CompiledExpression} */ (
         this.recurse(assignable)
       );
     }
     const toWatch = getInputs(decoratedNode.body);
+
     let inputs;
+
     if (toWatch) {
       inputs = [];
+
       for (const [key, watch] of Object.entries(toWatch)) {
         const input =
           /** @type {import("./interface.ts").CompiledExpression} */ (
             this.recurse(watch)
           );
+
         input.isPure = watch.isPure;
         watch.input = input;
         inputs.push(input);
@@ -49,6 +56,7 @@ export class ASTInterpreter {
       }
     }
     const expressions = [];
+
     decoratedNode.body.forEach((expression) => {
       expressions.push(this.recurse(expression.expression));
     });
@@ -61,18 +69,23 @@ export class ASTInterpreter {
           ? expressions[0]
           : function (scope, locals) {
               let lastValue;
+
               expressions.forEach((exp) => {
                 lastValue = exp(scope, locals);
               });
+
               return lastValue;
             };
+
     if (assign) {
       fn.assign = (scope, value, locals) => assign(scope, locals, value);
     }
+
     if (inputs) {
       fn.inputs = inputs;
     }
     fn.decoratedNode = decoratedNode;
+
     return fn;
   }
 
@@ -85,22 +98,29 @@ export class ASTInterpreter {
    */
   recurse(ast, context, create) {
     let left;
+
     let right;
+
     const self = this;
+
     let args;
+
     switch (ast.type) {
       case ASTType.Literal:
         return this.value(ast.value, context);
       case ASTType.UnaryExpression:
         right = this.recurse(ast.argument);
+
         return this[`unary${ast.operator}`](right, context);
       case ASTType.BinaryExpression:
         left = this.recurse(ast.left);
         right = this.recurse(ast.right);
+
         return this[`binary${ast.operator}`](left, right, context);
       case ASTType.LogicalExpression:
         left = this.recurse(ast.left);
         right = this.recurse(ast.right);
+
         return this[`binary${ast.operator}`](left, right, context);
       case ASTType.ConditionalExpression:
         return /** @type {import("./interface.ts").CompiledExpressionFunction} */ (
@@ -115,10 +135,13 @@ export class ASTInterpreter {
         return self.identifier(ast.name, context, create);
       case ASTType.MemberExpression:
         left = this.recurse(ast.object, false, !!create);
+
         if (!ast.computed) {
           right = ast.property.name;
         }
+
         if (ast.computed) right = this.recurse(ast.property);
+
         return /** @type {import("./interface.ts").CompiledExpressionFunction} */ (
           ast.computed
             ? this.computedMember(
@@ -139,22 +162,28 @@ export class ASTInterpreter {
         ast.arguments.forEach((expr) => {
           args.push(self.recurse(expr));
         });
+
         if (ast.filter) right = this.$filter(ast.callee.name);
+
         if (!ast.filter) right = this.recurse(ast.callee, true);
+
         return ast.filter
           ? (scope, locals, assign) => {
               const values = [];
+
               for (let i = 0; i < args.length; ++i) {
                 const res = args[i](
                   scope && scope.$target ? scope.$target : scope,
                   locals,
                   assign,
                 );
+
                 values.push(res);
               }
               const value = () => {
                 return right.apply(undefined, values);
               };
+
               return context
                 ? { context: undefined, name: undefined, value }
                 : value;
@@ -165,28 +194,38 @@ export class ASTInterpreter {
                 locals,
                 assign,
               );
+
               let value;
+
               if (rhs.value != null && isFunction(rhs.value)) {
                 const values = [];
+
                 for (let i = 0; i < args.length; ++i) {
                   const res = args[i](scope, locals, assign);
+
                   values.push(isFunction(res) ? res() : res);
                 }
                 value = rhs.value.apply(rhs.context, values);
               }
+
               return context ? { value } : value;
             };
       case ASTType.AssignmentExpression:
         left = this.recurse(ast.left, true, 1);
         right = this.recurse(ast.right);
+
         return (scope, locals, assign) => {
           const lhs = left(scope, locals, assign);
+
           const rhs = right(scope, locals, assign);
+
           // lhs.context[lhs.name] = rhs;
           const ctx = isProxy(lhs.context)
             ? lhs.context
             : (lhs.context.$proxy ?? lhs.context);
+
           ctx[lhs.name] = rhs;
+
           return context ? { value: rhs } : rhs;
         };
       case ASTType.ArrayExpression:
@@ -194,11 +233,14 @@ export class ASTInterpreter {
         ast.elements.forEach((expr) => {
           args.push(self.recurse(expr));
         });
+
         return (scope, locals, assign) => {
           const value = [];
+
           for (let i = 0; i < args.length; ++i) {
             value.push(args[i](scope, locals, assign));
           }
+
           return context ? { value } : value;
         };
       case ASTType.ObjectExpression:
@@ -221,8 +263,10 @@ export class ASTInterpreter {
             });
           }
         });
+
         return (scope, locals, assign) => {
           const value = {};
+
           for (let i = 0; i < args.length; ++i) {
             if (args[i].computed) {
               value[args[i].key(scope, locals, assign)] = args[i].value(
@@ -234,6 +278,7 @@ export class ASTInterpreter {
               value[args[i].key] = args[i].value(scope, locals, assign);
             }
           }
+
           return context ? { value } : value;
         };
       case ASTType.ThisExpression:
@@ -257,11 +302,13 @@ export class ASTInterpreter {
   "unary+"(argument, context) {
     return (scope, locals, assign) => {
       let arg = argument(scope, locals, assign);
+
       if (isDefined(arg)) {
         arg = +arg;
       } else {
         arg = 0;
       }
+
       return context ? { value: arg } : arg;
     };
   }
@@ -275,11 +322,13 @@ export class ASTInterpreter {
   "unary-"(argument, context) {
     return (scope, locals, assign) => {
       let arg = argument(scope, locals, assign);
+
       if (isDefined(arg)) {
         arg = -arg;
       } else {
         arg = -0;
       }
+
       return context ? { value: arg } : arg;
     };
   }
@@ -293,6 +342,7 @@ export class ASTInterpreter {
   "unary!"(argument, context) {
     return (scope, locals, assign) => {
       const arg = !argument(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -307,8 +357,11 @@ export class ASTInterpreter {
   "binary+"(left, right, context) {
     return (scope, locals, assign) => {
       const lhs = left(scope, locals, assign);
+
       const rhs = right(scope, locals, assign);
+
       const arg = plusFn(lhs, rhs);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -323,8 +376,11 @@ export class ASTInterpreter {
   "binary-"(left, right, context) {
     return (scope, locals, assign) => {
       const lhs = left(scope, locals, assign);
+
       const rhs = right(scope, locals, assign);
+
       const arg = (isDefined(lhs) ? lhs : 0) - (isDefined(rhs) ? rhs : 0);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -339,6 +395,7 @@ export class ASTInterpreter {
   "binary*"(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) * right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -346,6 +403,7 @@ export class ASTInterpreter {
   "binary/"(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) / right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -360,6 +418,7 @@ export class ASTInterpreter {
   "binary%"(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) % right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -374,6 +433,7 @@ export class ASTInterpreter {
   "binary==="(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) === right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -388,6 +448,7 @@ export class ASTInterpreter {
   "binary!=="(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) !== right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -402,6 +463,7 @@ export class ASTInterpreter {
   "binary=="(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) == right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -416,6 +478,7 @@ export class ASTInterpreter {
   "binary!="(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) != right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -430,6 +493,7 @@ export class ASTInterpreter {
   "binary<"(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) < right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -444,6 +508,7 @@ export class ASTInterpreter {
   "binary>"(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) > right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -458,6 +523,7 @@ export class ASTInterpreter {
   "binary<="(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) <= right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -472,9 +538,11 @@ export class ASTInterpreter {
   "binary>="(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) >= right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
+
   /**
    * Binary logical AND operation.
    * @param {function} left - The left operand function.
@@ -485,6 +553,7 @@ export class ASTInterpreter {
   "binary&&"(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) && right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -499,6 +568,7 @@ export class ASTInterpreter {
   "binary||"(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) || right(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -516,6 +586,7 @@ export class ASTInterpreter {
       const arg = test(scope, locals, assign)
         ? alternate(scope, locals, assign)
         : consequent(scope, locals, assign);
+
       return context ? { value: arg } : arg;
     };
   }
@@ -542,16 +613,20 @@ export class ASTInterpreter {
     return (scope, locals) => {
       const base =
         locals && name in locals ? locals : ((scope && scope.$proxy) ?? scope);
+
       if (create && create !== 1 && base && base[name] == null) {
         base[name] = {};
       }
       let value = undefined;
+
       if (base) {
-        value = base["$target"] ? base["$target"][name] : base[name];
+        value = base.$target ? base.$target[name] : base[name];
       }
+
       if (context) {
         return { context: base, name, value };
       }
+
       return value;
     };
   }
@@ -567,11 +642,15 @@ export class ASTInterpreter {
   computedMember(left, right, context, create) {
     return (scope, locals, assign) => {
       const lhs = left(scope, locals, assign);
+
       let rhs;
+
       let value;
+
       if (lhs != null) {
         rhs = right(scope, locals, assign);
         rhs = getStringValue(rhs);
+
         if (create && create !== 1) {
           if (lhs && !lhs[rhs]) {
             lhs[rhs] = {};
@@ -579,9 +658,11 @@ export class ASTInterpreter {
         }
         value = lhs[rhs];
       }
+
       if (context) {
         return { context: lhs, name: rhs, value };
       }
+
       return value;
     };
   }
@@ -597,15 +678,18 @@ export class ASTInterpreter {
   nonComputedMember(left, right, context, create) {
     return (scope, locals, assign) => {
       const lhs = left(scope, locals, assign);
+
       if (create && create !== 1) {
         if (lhs && lhs[right] == null) {
           lhs[right] = {};
         }
       }
       const value = lhs != null ? lhs[right] : undefined;
+
       if (context) {
         return { context: lhs, name: right, value };
       }
+
       return value;
     };
   }
@@ -628,9 +712,13 @@ export class ASTInterpreter {
  */
 function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
   let allConstants;
+
   let argsToWatch;
+
   let isStatelessFilter;
-  let decoratedNode = /** @type  {DecoratedASTNode} */ (ast);
+
+  const decoratedNode = /** @type  {DecoratedASTNode} */ (ast);
+
   let decoratedLeft,
     decoratedRight,
     decoratedTest,
@@ -639,6 +727,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
     decoratedObject,
     decoratedProperty,
     decoratedKey;
+
   // @ts-ignore
   const astIsPure = (decoratedNode.isPure = isPure(ast, parentIsPure));
 
@@ -646,18 +735,21 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
     case ASTType.Program:
       allConstants = true;
       decoratedNode.body.forEach((expr) => {
-        let decorated = findConstantAndWatchExpressions(
+        const decorated = findConstantAndWatchExpressions(
           expr.expression,
           $filter,
           astIsPure,
         );
+
         allConstants = allConstants && decorated.constant;
       });
       decoratedNode.constant = allConstants;
+
       return decoratedNode;
     case ASTType.Literal:
       decoratedNode.constant = true;
       decoratedNode.toWatch = [];
+
       return decoratedNode;
     case ASTType.UnaryExpression:
       var decorated = findConstantAndWatchExpressions(
@@ -665,8 +757,10 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
         $filter,
         astIsPure,
       );
+
       decoratedNode.constant = decorated.constant;
       decoratedNode.toWatch = decorated.toWatch;
+
       return decoratedNode;
     case ASTType.BinaryExpression:
       decoratedLeft = findConstantAndWatchExpressions(
@@ -684,6 +778,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       decoratedNode.toWatch = decoratedLeft.toWatch.concat(
         decoratedRight.toWatch,
       );
+
       return decoratedNode;
     case ASTType.LogicalExpression:
       decoratedLeft = findConstantAndWatchExpressions(
@@ -699,6 +794,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       decoratedNode.constant =
         decoratedLeft.constant && decoratedRight.constant;
       decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
+
       return decoratedNode;
     case ASTType.ConditionalExpression:
       decoratedTest = findConstantAndWatchExpressions(
@@ -721,10 +817,12 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
         decoratedAlternate.constant &&
         decoratedConsequent.constant;
       decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
+
       return decoratedNode;
     case ASTType.Identifier:
       decoratedNode.constant = false;
       decoratedNode.toWatch = [ast];
+
       return decoratedNode;
     case ASTType.MemberExpression:
       decoratedObject = findConstantAndWatchExpressions(
@@ -732,6 +830,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
         $filter,
         astIsPure,
       );
+
       if (ast.computed) {
         decoratedProperty = findConstantAndWatchExpressions(
           ast.property,
@@ -743,6 +842,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
         decoratedObject.constant &&
         (!decoratedNode.computed || decoratedProperty.constant);
       decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
+
       return decoratedNode;
     case ASTType.CallExpression:
       isStatelessFilter = ast.filter
@@ -757,6 +857,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       });
       decoratedNode.constant = allConstants;
       decoratedNode.toWatch = isStatelessFilter ? argsToWatch : [decoratedNode];
+
       return decoratedNode;
     case ASTType.AssignmentExpression:
       decoratedLeft = findConstantAndWatchExpressions(
@@ -772,6 +873,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       decoratedNode.constant =
         decoratedLeft.constant && decoratedRight.constant;
       decoratedNode.toWatch = [decoratedNode];
+
       return decoratedNode;
     case ASTType.ArrayExpression:
       allConstants = true;
@@ -783,6 +885,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       });
       decoratedNode.constant = allConstants;
       decoratedNode.toWatch = argsToWatch;
+
       return decoratedNode;
     case ASTType.ObjectExpression:
       allConstants = true;
@@ -795,6 +898,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
         );
         allConstants = allConstants && decorated.constant;
         argsToWatch.push.apply(argsToWatch, decorated.toWatch);
+
         if (property.computed) {
           // `{[key]: value}` implicitly does `key.toString()` which may be non-pure
           decoratedKey = findConstantAndWatchExpressions(
@@ -808,14 +912,17 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       });
       decoratedNode.constant = allConstants;
       decoratedNode.toWatch = argsToWatch;
+
       return decoratedNode;
     case ASTType.ThisExpression:
       decoratedNode.constant = false;
       decoratedNode.toWatch = [];
+
       return decoratedNode;
     case ASTType.LocalsExpression:
       decoratedNode.constant = false;
       decoratedNode.toWatch = [];
+
       return decoratedNode;
   }
 }
@@ -839,7 +946,9 @@ function assignableAST(ast) {
 
 function plusFn(l, r) {
   if (typeof l === "undefined" || isObject(l)) return r;
+
   if (typeof r === "undefined" || isObject(r)) return l;
+
   return l + r;
 }
 
@@ -851,8 +960,11 @@ function plusFn(l, r) {
 function getInputs(body) {
   if (body.length !== 1) return;
   const lastExpression = /** @type {DecoratedASTNode} */ (body[0].expression);
+
   const candidate = lastExpression.toWatch;
+
   if (candidate.length !== 1) return candidate;
+
   return candidate[0] !== lastExpression ? candidate : undefined;
 }
 
@@ -889,6 +1001,7 @@ function isPure(node, parentIsPure) {
 
 function isStateless($filter, filterName) {
   const fn = $filter(filterName);
+
   return !fn.$stateful;
 }
 

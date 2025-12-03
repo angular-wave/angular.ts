@@ -8,11 +8,14 @@
  */
 const loadEnteringViews = (transition) => {
   const enteringViews = transition.views("entering");
+
   if (!enteringViews.length) return;
+
   return Promise.all(
     enteringViews.map((view) => Promise.resolve(view.load())),
   ).then(() => {});
 };
+
 export const registerLoadEnteringViews = (transitionService) =>
   transitionService.onFinish({}, loadEnteringViews);
 
@@ -29,7 +32,9 @@ export const registerActivateViews = (transitionService, viewService) => {
    */
   const activateViews = (transition) => {
     const enteringViews = transition.views("entering");
+
     const exitingViews = transition.views("exiting");
+
     if (!enteringViews.length && !exitingViews.length) return;
     exitingViews.forEach((vc) => viewService.deactivateViewConfig(vc));
     enteringViews.forEach((vc) => {
@@ -37,5 +42,6 @@ export const registerActivateViews = (transitionService, viewService) => {
     });
     viewService.sync();
   };
+
   transitionService.onSuccess({}, activateViews);
 };

@@ -1,20 +1,20 @@
 import {
-  assertNotHasOwnProperty,
-  shallowCopy,
   arrayRemove,
-  isBoolean,
-  snakeCase,
+  assertNotHasOwnProperty,
   extend,
-  isUndefined,
+  hasAnimate,
+  isBoolean,
   isObjectEmpty,
   isProxy,
-  hasAnimate,
+  isUndefined,
+  shallowCopy,
+  snakeCase,
 } from "../../shared/utils.js";
 import {
-  PRISTINE_CLASS,
   DIRTY_CLASS,
-  VALID_CLASS,
   INVALID_CLASS,
+  PRISTINE_CLASS,
+  VALID_CLASS,
 } from "../../shared/constants.js";
 
 /**
@@ -115,7 +115,7 @@ export class FormController {
   constructor($element, $attrs, $scope, $animate, $interpolate) {
     this.$$controls = [];
 
-    this.$name = $interpolate($attrs["name"] || $attrs["ngForm"] || "")($scope);
+    this.$name = $interpolate($attrs.name || $attrs.ngForm || "")($scope);
 
     /**
      * @property {boolean} $dirty True if user has already interacted with the form.
@@ -139,6 +139,7 @@ export class FormController {
     this.$pending = undefined;
     this.$$classCache = {};
     const isValid = this.$$element.classList.contains(VALID_CLASS);
+
     this.$$classCache[VALID_CLASS] = isValid;
     this.$$classCache[INVALID_CLASS] = !isValid;
   }
@@ -255,7 +256,7 @@ export class FormController {
 
     arrayRemove(this.$$controls, control);
 
-    control.$target["$$parentForm"] = nullFormCtrl;
+    control.$target.$$parentForm = nullFormCtrl;
   }
 
   /**
@@ -333,6 +334,7 @@ export class FormController {
   $setSubmitted() {
     /** @type {FormController} */
     let rootForm = this;
+
     while (rootForm.$$parentForm && rootForm.$$parentForm !== nullFormCtrl) {
       rootForm = rootForm.$$parentForm;
     }
@@ -355,6 +357,7 @@ export class FormController {
 
   set(object, property, controller) {
     const list = object[property];
+
     if (!list) {
       if (isProxy(object)) {
         object = object.$target;
@@ -362,6 +365,7 @@ export class FormController {
       object[property] = [controller];
     } else {
       const index = list.indexOf(controller);
+
       if (index === -1) {
         list.push(controller);
       }
@@ -370,13 +374,16 @@ export class FormController {
 
   unset(object, property, controller) {
     const list = object[property];
+
     if (!list) {
       return;
     }
     const index = arrayRemove(list, controller);
+
     if (index === -1) {
       arrayRemove(list, controller.$target);
     }
+
     if (list.length === 0) {
       delete object[property];
     }
@@ -403,12 +410,14 @@ export class FormController {
    *        triggering the change.
    */
   $setValidity(validationErrorKey, state, controller) {
-    let that = this;
+    const that = this;
+
     if (isUndefined(state)) {
       createAndSet(this, "$pending", validationErrorKey, controller);
     } else {
       unsetAndCleanup(this, "$pending", validationErrorKey, controller);
     }
+
     if (!isBoolean(state)) {
       this.unset(this.$error, validationErrorKey, controller);
       this.unset(this.$$success, validationErrorKey, controller);
@@ -419,6 +428,7 @@ export class FormController {
       this.set(this.$error, validationErrorKey, controller);
       this.unset(this.$$success, validationErrorKey, controller);
     }
+
     if (this.$pending) {
       cachedToggleClass(this, PENDING_CLASS, true);
       this.$valid = this.$invalid = undefined;
@@ -435,6 +445,7 @@ export class FormController {
     // where setting/unsetting only increments/decrements the value,
     // and does not replace it.
     let combinedState;
+
     if (this.$pending && this.$pending[validationErrorKey]) {
       combinedState = undefined;
     } else if (this.$error[validationErrorKey]) {
@@ -458,6 +469,7 @@ export class FormController {
       if (ctrl[name]) {
         that.unset(ctrl[name], value, controller);
       }
+
       if (isObjectEmpty(ctrl[name])) {
         ctrl[name] = undefined;
       }
@@ -636,9 +648,10 @@ const formDirectiveFactory = function (isNgForm) {
               }
 
               const parentFormCtrl = ctrls[1] || controller.$$parentForm;
+
               parentFormCtrl.$addControl(controller);
 
-              let setter = nameAttr ? getSetter(controller.$name) : () => {};
+              const setter = nameAttr ? getSetter(controller.$name) : () => {};
 
               if (nameAttr) {
                 setter(scope, controller);
@@ -646,6 +659,7 @@ const formDirectiveFactory = function (isNgForm) {
                   if (controller.$name === newValue) return;
                   scope.$target[controller.$name] = undefined;
                   controller.$$parentForm.$$renameControl(controller, newValue);
+
                   if (
                     scope.$target !== controller.$$parentForm &&
                     controller.$$parentForm !== nullFormCtrl
@@ -670,6 +684,7 @@ const formDirectiveFactory = function (isNgForm) {
           // create an assignable expression, so forms with an empty name can be renamed later
           return $parse('this[""]').assign;
         }
+
         return $parse(expression).assign || (() => {});
       }
     },

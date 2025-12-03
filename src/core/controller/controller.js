@@ -1,19 +1,22 @@
 import {
   assertArgFn,
   assertNotHasOwnProperty,
-  minErr,
+  isFunction,
   isObject,
   isString,
-  isFunction,
+  minErr,
 } from "../../shared/utils.js";
 
 const $controllerMinErr = minErr("$controller");
 
 const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
+
 export function identifierForController(controller, ident) {
   if (ident && isString(ident)) return ident;
+
   if (isString(controller)) {
     const match = CNTRL_REG.exec(controller);
+
     if (match) return match[3];
   }
 }
@@ -54,6 +57,7 @@ export class ControllerProvider {
    */
   register(name, constructor) {
     assertNotHasOwnProperty(name, "controller");
+
     if (isObject(name)) {
       Object.entries(name).forEach(([key, value]) => {
         this.controllers.set(key, value);
@@ -76,13 +80,18 @@ export class ControllerProvider {
     ($injector) => {
       return (expression, locals, later, ident) => {
         let instance;
+
         let match;
+
         let constructor;
+
         let identifier = ident && isString(ident) ? ident : null;
+
         later = later === true;
 
         if (isString(expression)) {
           match = /** @type {string} */ (expression).match(CNTRL_REG);
+
           if (!match) {
             throw $controllerMinErr(
               "ctrlfmt",
@@ -111,10 +120,11 @@ export class ControllerProvider {
               ? expression[expression.length - 1]
               : expression
           ).prototype;
+
           instance = Object.create(controllerPrototype || null);
 
           if (identifier) {
-            instance["$controllerIdentifier"] = identifier;
+            instance.$controllerIdentifier = identifier;
             this.addIdentifier(
               locals,
               identifier,
@@ -140,8 +150,9 @@ export class ControllerProvider {
               (isObject(result) || isFunction(result))
             ) {
               instance = result;
+
               if (identifier) {
-                instance["$controllerIdentifier"] = identifier;
+                instance.$controllerIdentifier = identifier;
                 this.addIdentifier(
                   locals,
                   identifier,
@@ -193,6 +204,6 @@ export class ControllerProvider {
       );
     }
     locals.$scope[identifier] = instance;
-    locals.$scope["$controllerIdentifier"] = identifier;
+    locals.$scope.$controllerIdentifier = identifier;
   }
 }

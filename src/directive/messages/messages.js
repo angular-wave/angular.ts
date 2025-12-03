@@ -1,6 +1,7 @@
 import { hasOwn, isString } from "../../shared/utils.js";
 
 const ACTIVE_CLASS = "ng-active";
+
 const INACTIVE_CLASS = "ng-inactive";
 
 class NgMessageCtrl {
@@ -26,7 +27,7 @@ class NgMessageCtrl {
     this.default = undefined;
 
     this.$scope.$watch(
-      this.$attrs["ngMessages"] || this.$attrs["for"],
+      this.$attrs.ngMessages || this.$attrs.for,
       this.render.bind(this),
     );
   }
@@ -40,19 +41,25 @@ class NgMessageCtrl {
     this.cachedCollection = collection;
 
     const multiple =
-      isAttrTruthy(this.$scope, this.$attrs["ngMessagesMultiple"]) ||
-      isAttrTruthy(this.$scope, this.$attrs["multiple"]);
+      isAttrTruthy(this.$scope, this.$attrs.ngMessagesMultiple) ||
+      isAttrTruthy(this.$scope, this.$attrs.multiple);
 
     const unmatchedMessages = [];
+
     const matchedKeys = {};
+
     let truthyKeys = 0;
+
     let messageItem = this.head;
+
     let messageFound = false;
+
     let totalMessages = 0;
 
     while (messageItem) {
       totalMessages++;
       const messageCtrl = messageItem.message;
+
       let messageUsed = false;
 
       if (!messageFound) {
@@ -85,6 +92,7 @@ class NgMessageCtrl {
     });
 
     const messageMatched = unmatchedMessages.length !== totalMessages;
+
     const attachDefault = this.default && !messageMatched && truthyKeys > 0;
 
     if (attachDefault) {
@@ -116,6 +124,7 @@ class NgMessageCtrl {
       this.default = messageCtrl;
     } else {
       const nextKey = this.latestKey.toString();
+
       this.messages[nextKey] = {
         message: messageCtrl,
       };
@@ -132,6 +141,7 @@ class NgMessageCtrl {
       delete this.default;
     } else {
       const key = comment.$$ngMessageNode;
+
       delete comment.$$ngMessageNode;
       this.removeMessageNode(this.$element, comment, key);
       delete this.messages[key];
@@ -141,10 +151,12 @@ class NgMessageCtrl {
 
   findPreviousMessage(parent, comment) {
     let prevNode = comment;
+
     const parentLookup = [];
 
     while (prevNode && prevNode !== parent) {
       const prevKey = prevNode.$$ngMessageNode;
+
       if (prevKey && prevKey.length) {
         return this.messages[prevKey];
       }
@@ -163,10 +175,12 @@ class NgMessageCtrl {
 
   insertMessageNode(parent, comment, key) {
     const messageNode = this.messages[key];
+
     if (!this.head) {
       this.head = messageNode;
     } else {
       const match = this.findPreviousMessage(parent, comment);
+
       if (match) {
         messageNode.next = match.next;
         match.next = messageNode;
@@ -183,6 +197,7 @@ class NgMessageCtrl {
     if (!messageNode) return;
 
     const match = this.findPreviousMessage(parent, comment);
+
     if (match) {
       match.next = messageNode.next;
     } else {
@@ -223,8 +238,10 @@ export function ngMessagesIncludeDirective($templateRequest, $compile) {
     require: "^^ngMessages", // we only require this for validation sake
     link($scope, element, attrs) {
       const src = attrs.ngMessagesInclude || attrs.src;
+
       $templateRequest(src).then((html) => {
         if ($scope.$$destroyed) return;
+
         if (isString(html) && !html.trim()) {
           // Empty template - nothing to compile
         } else {
@@ -261,8 +278,11 @@ function ngMessageDirectiveFactory(isDefault) {
       require: "^^ngMessages",
       link(scope, element, attrs, ngMessagesCtrl, $transclude) {
         let commentNode;
+
         let records;
+
         let staticExp;
+
         let dynamicExp;
 
         if (!isDefault) {
@@ -288,7 +308,9 @@ function ngMessageDirectiveFactory(isDefault) {
         }
 
         let currentElement;
+
         let messageCtrl;
+
         ngMessagesCtrl.register(
           commentNode,
           (messageCtrl = {
@@ -327,6 +349,7 @@ function ngMessageDirectiveFactory(isDefault) {
             detach() {
               if (currentElement) {
                 const elm = currentElement;
+
                 currentElement = null;
                 $animate.leave(elm);
               }
@@ -345,6 +368,7 @@ function ngMessageDirectiveFactory(isDefault) {
       },
     };
   }
+
   return ngMessageDirective;
 }
 

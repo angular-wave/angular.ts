@@ -2,8 +2,8 @@ import { emptyElement, removeElement, startingTag } from "../../shared/dom.js";
 import {
   assertArg,
   equals,
-  hashKey,
   hasOwn,
+  hashKey,
   includes,
   isArrayLike,
   isDefined,
@@ -47,6 +47,7 @@ export function ngOptionsDirective($compile, $parse) {
    */
   function parseOptionsExpression(optionsExp, selectElement, scope) {
     const match = optionsExp.match(NG_OPTIONS_REGEXP);
+
     if (!match) {
       throw ngOptionsMinErr(
         "iexp",
@@ -61,17 +62,23 @@ export function ngOptionsDirective($compile, $parse) {
 
     // The variable name for the value of the item in the collection
     const valueName = match[5] || match[7];
+
     // The variable name for the key of the item in the collection
     const keyName = match[6];
 
     // An expression that generates the viewValue for an option if there is a label expression
     const selectAs = / as /.test(match[0]) && match[1];
+
     // An expression that is used to track the id of each object in the options collection
     const trackBy = match[9];
+
     // An expression that generates the viewValue for an option if there is no label expression
     const valueFn = $parse(match[2] ? match[1] : valueName);
+
     const selectAsFn = selectAs && $parse(selectAs);
+
     const viewValueFn = selectAsFn || valueFn;
+
     const trackByFn = trackBy && $parse(trackBy);
 
     // Get the value by which we are going to track the option
@@ -84,24 +91,31 @@ export function ngOptionsDirective($compile, $parse) {
       : function getHashOfValue(value) {
           return hashKey(value);
         };
+
     const getTrackByValue = function (value, key) {
       return getTrackByValueFn(value, getLocals(value, key));
     };
 
     const displayFn = $parse(match[2] || match[1]);
+
     const groupByFn = $parse(match[3] || "");
+
     const disableWhenFn = $parse(match[4] || "");
+
     const valuesFn = $parse(match[8]);
 
     const locals = {};
-    let getLocals = keyName
+
+    const getLocals = keyName
       ? function (value, key) {
           locals[keyName] = key;
           locals[valueName] = value;
+
           return locals;
         }
       : function (value) {
           locals[valueName] = value;
+
           return locals;
         };
 
@@ -123,12 +137,14 @@ export function ngOptionsDirective($compile, $parse) {
       } else {
         // if object, extract keys, in enumeration order, unsorted
         optionValuesKeys = [];
+
         for (const itemKey in optionValues) {
           if (hasOwn(optionValues, itemKey) && itemKey.charAt(0) !== "$") {
             optionValuesKeys.push(itemKey);
           }
         }
       }
+
       return optionValuesKeys;
     }
 
@@ -140,56 +156,76 @@ export function ngOptionsDirective($compile, $parse) {
         // so that they can all be watched using a single $watchCollection
         // that only runs the handler once if anything changes
         const watchedArray = [];
+
         optionValues = optionValues || [];
 
         const optionValuesKeys = getOptionValuesKeys(optionValues);
+
         const optionValuesLength = optionValuesKeys.length;
+
         for (let index = 0; index < optionValuesLength; index++) {
           const key =
             optionValues === optionValuesKeys ? index : optionValuesKeys[index];
+
           const value = optionValues[key];
 
           const locals = getLocals(value, key);
+
           const selectValue = getTrackByValueFn(value, locals);
+
           watchedArray.push(selectValue);
 
           // Only need to watch the displayFn if there is a specific label expression
           if (match[2] || match[1]) {
             const label = displayFn(scope, locals);
+
             watchedArray.push(label);
           }
 
           // Only need to watch the disableWhenFn if there is a specific disable expression
           if (match[4]) {
             const disableWhen = disableWhenFn(scope, locals);
+
             watchedArray.push(disableWhen);
           }
         }
+
         return watchedArray;
       }),
 
       getOptions() {
         /** @type {Option[]} */
         const optionItems = [];
+
         /** @type {Object.<string, Option>} */
         const selectValueMap = {};
 
         // The option values were already computed in the `getWatchables` fn,
         // which must have been called to trigger `getOptions`
         const optionValues = valuesFn(scope) || [];
+
         const optionValuesKeys = getOptionValuesKeys(optionValues);
+
         const optionValuesLength = optionValuesKeys.length;
 
         for (let index = 0; index < optionValuesLength; index++) {
           const key =
             optionValues === optionValuesKeys ? index : optionValuesKeys[index];
+
           const value = optionValues[key];
+
           const locals = getLocals(value, key);
+
           const viewValue = viewValueFn(scope, locals);
+
           const selectValue = getTrackByValueFn(viewValue, locals);
+
           const label = displayFn(scope, locals);
+
           const group = groupByFn(scope, locals);
+
           const disabled = disableWhenFn(scope, locals);
+
           const optionItem = new Option(
             selectValue,
             viewValue,
@@ -229,8 +265,10 @@ export function ngOptionsDirective($compile, $parse) {
    */
   function ngOptionsPostLink(scope, selectElement, attr, ctrls) {
     const selectCtrl = ctrls[0];
+
     const ngModelCtrl = ctrls[1];
-    const multiple = attr["multiple"];
+
+    const { multiple } = attr;
 
     // The emptyOption allows the application developer to provide their own custom "empty"
     // option when the viewValue does not match any of the option values.
@@ -252,15 +290,18 @@ export function ngOptionsDirective($compile, $parse) {
     const providedEmptyOption = !!selectCtrl.emptyOption;
 
     const unknownOption = optionTemplate.cloneNode(false);
+
     // TODO double check
     unknownOption.nodeValue = "?";
 
     let options;
+
     const ngOptions = parseOptionsExpression(
-      attr["ngOptions"],
+      attr.ngOptions,
       selectElement,
       scope,
     );
+
     // This stores the newly created options before they are appended to the select.
     // Since the contents are removed from the fragment when it is appended,
     // we only need to create it once.
@@ -277,6 +318,7 @@ export function ngOptionsDirective($compile, $parse) {
 
         const selectedOption =
           selectElement.options[selectElement.selectedIndex];
+
         const option = options.getOptionFromViewValue(value);
 
         // Make sure to remove the selected attribute from the previously selected option
@@ -308,8 +350,10 @@ export function ngOptionsDirective($compile, $parse) {
         if (selectedOption && !selectedOption.disabled) {
           selectCtrl.unselectEmptyOption();
           selectCtrl.removeUnknownOption();
+
           return options.getViewValueFromOption(selectedOption);
         }
+
         return null;
       };
 
@@ -340,10 +384,13 @@ export function ngOptionsDirective($compile, $parse) {
 
       selectCtrl.readValue = function readNgOptionsMultiple() {
         const selectedValues = selectElement.value || [];
+
         const selections = [];
+
         // @ts-ignore
         selectedValues.forEach((value) => {
           const option = options.selectValueMap[value];
+
           if (option && !option.disabled)
             selections.push(options.getViewValueFromOption(option));
         });
@@ -372,6 +419,7 @@ export function ngOptionsDirective($compile, $parse) {
     if (providedEmptyOption) {
       // compile the element since there might be bindings in it
       const linkFn = $compile(selectCtrl.emptyOption);
+
       assertArg(linkFn, "LinkFn required");
       selectElement.prepend(selectCtrl.emptyOption);
       linkFn(scope);
@@ -424,12 +472,14 @@ export function ngOptionsDirective($compile, $parse) {
       const optionElement = /** @type {HTMLOptionElement} */ (
         optionTemplate.cloneNode(false)
       );
+
       parent.appendChild(optionElement);
       updateOptionElement(option, optionElement);
     }
 
     function getAndUpdateSelectedOption(viewValue) {
       const option = options.getOptionFromViewValue(viewValue);
+
       const element = option && option.element;
 
       if (element && !element.selected) element.selected = true;
@@ -440,6 +490,7 @@ export function ngOptionsDirective($compile, $parse) {
     function updateOptionElement(option, element) {
       option.element = element;
       element.disabled = option.disabled;
+
       // Support: IE 11 only, Edge 12-13 only
       // NOTE: The label must be set before the value, otherwise IE 11 & Edge create unresponsive
       // selects in certain circumstances when multiple selects are next to each other and display
@@ -464,6 +515,7 @@ export function ngOptionsDirective($compile, $parse) {
       if (options) {
         for (let i = options.items.length - 1; i >= 0; i--) {
           const option = options.items[i];
+
           if (isDefined(option.group)) {
             removeElement(option.element.parentNode);
           } else {
@@ -512,7 +564,9 @@ export function ngOptionsDirective($compile, $parse) {
       // Check to see if the value has changed due to the update to the options
       if (!ngModelCtrl.$isEmpty(previousValue)) {
         const nextValue = selectCtrl.readValue();
+
         const isNotPrimitive = ngOptions.trackBy || multiple;
+
         if (
           isNotPrimitive
             ? !equals(previousValue, nextValue)

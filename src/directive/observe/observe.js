@@ -13,15 +13,18 @@ export function ngObserveDirective(source, prop) {
         prop = source;
       }
       const normalized = kebabToCamel(prop);
+
       if (!scope[normalized]) {
         scope[normalized] = element.getAttribute(source);
       }
 
       const observer = new MutationObserver((mutations) => {
         const mutation = mutations[0];
+
         const newValue = /** @type {HTMLElement} */ (
           mutation.target
         ).getAttribute(source);
+
         if (scope[normalized] !== newValue) {
           scope[normalized] = newValue;
         }

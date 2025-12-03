@@ -9,7 +9,8 @@ ngChannelDirective.$inject = [$injectTokens.$eventBus];
 export function ngChannelDirective($eventBus) {
   return {
     link: (scope, element, attrs) => {
-      const channel = attrs["ngChannel"];
+      const channel = attrs.ngChannel;
+
       const hasTemplateContent = element.childNodes.length > 0;
 
       const key = $eventBus.subscribe(channel, (value) => {

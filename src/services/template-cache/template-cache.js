@@ -6,6 +6,7 @@ export class TemplateCacheProvider {
     /** @type {ng.TemplateCacheService} */
     this.cache = new Map();
   }
+
   /**
    * @returns {ng.TemplateCacheService}
    */

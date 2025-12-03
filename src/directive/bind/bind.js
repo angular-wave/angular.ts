@@ -1,9 +1,9 @@
 import {
-  isUndefined,
-  stringify,
+  isDefined,
   isNull,
   isProxy,
-  isDefined,
+  isUndefined,
+  stringify,
 } from "../../shared/utils.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
@@ -19,13 +19,13 @@ export function ngBindDirective() {
      */
     link(scope, element, attr) {
       scope.$watch(
-        attr["ngBind"],
+        attr.ngBind,
         (value) => {
           element.textContent = stringify(
             isProxy(value) ? value.$target : value,
           );
         },
-        isDefined(attr["lazy"]),
+        isDefined(attr.lazy),
       );
     },
   };
@@ -58,14 +58,15 @@ export function ngBindHtmlDirective($parse) {
   return {
     restrict: "A",
     compile(_tElement, tAttrs) {
-      $parse(tAttrs["ngBindHtml"]); // checks for interpolation errors
+      $parse(tAttrs.ngBindHtml); // checks for interpolation errors
+
       return (
         /**
          * @param {ng.Scope} scope
          * @param {Element} element
          */
         (scope, element) => {
-          scope.$watch(tAttrs["ngBindHtml"], (val) => {
+          scope.$watch(tAttrs.ngBindHtml, (val) => {
             if (isUndefined(val) || isNull(val)) {
               val = "";
             }

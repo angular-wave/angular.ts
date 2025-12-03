@@ -3,9 +3,11 @@ import { AnimateRunner } from "./runner/animate-runner.js";
 import { concatWithSpace } from "./shared.js";
 
 const NG_ANIMATE_SHIM_CLASS_NAME = "ng-animate-shim";
+
 const NG_ANIMATE_ANCHOR_CLASS_NAME = "ng-anchor";
 
 const NG_OUT_ANCHOR_CLASS_NAME = "ng-anchor-out";
+
 const NG_IN_ANCHOR_CLASS_NAME = "ng-anchor-in";
 
 AnimateCssDriverProvider.$inject = ["$$animationProvider"];
@@ -30,6 +32,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
      */
     function ($animateCss, $rootElement) {
       const bodyNode = document.body;
+
       const rootNode = $rootElement;
 
       const rootBodyElement =
@@ -52,6 +55,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
       function prepareAnchoredAnimation(outAnchor, inAnchor) {
         const clone = outAnchor.cloneNode(true);
+
         const startingClasses = filterCssClasses(getClassVal(clone));
 
         outAnchor[0].classList.add(NG_ANIMATE_SHIM_CLASS_NAME);
@@ -62,6 +66,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
         rootBodyElement.append(clone);
 
         let animatorIn;
+
         const animatorOut = prepareOutAnimation();
 
         // the user may not end up using the `out` animation and
@@ -70,6 +75,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
         // animation is over unless both animations are not used.
         if (!animatorOut) {
           animatorIn = prepareInAnimation();
+
           if (!animatorIn) {
             return end();
           }
@@ -82,10 +88,13 @@ export function AnimateCssDriverProvider($$animationProvider) {
             let runner;
 
             let currentAnimation = startingAnimator.start();
+
             currentAnimation.done(() => {
               currentAnimation = null;
+
               if (!animatorIn) {
                 animatorIn = prepareInAnimation();
+
                 if (animatorIn) {
                   currentAnimation = animatorIn.start();
                   currentAnimation.done(() => {
@@ -93,6 +102,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
                     end();
                     runner.complete();
                   });
+
                   return currentAnimation;
                 }
               }
@@ -125,6 +135,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
           // all the keys for the coords object when iterated
           ["width", "height", "top", "left"].forEach((key) => {
             let value = coords[key];
+
             switch (key) {
               case "top":
                 value += bodyNode.scrollTop;
@@ -135,6 +146,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
             }
             styles[key] = `${Math.floor(value)}px`;
           });
+
           return styles;
         }
 
@@ -156,7 +168,9 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
         function prepareInAnimation() {
           const endingClasses = filterCssClasses(getClassVal(inAnchor));
+
           const toAdd = getUniqueValues(endingClasses, startingClasses);
+
           const toRemove = getUniqueValues(startingClasses, endingClasses);
 
           const animator = $animateCss(clone, {
@@ -180,13 +194,18 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
       function prepareFromToAnchorAnimation(from, to, anchors) {
         const fromAnimation = prepareRegularAnimation(from);
+
         const toAnimation = prepareRegularAnimation(to);
 
         const anchorAnimations = [];
+
         anchors.forEach((anchor) => {
           const outElement = anchor.out;
+
           const inElement = anchor.in;
+
           const animator = prepareAnchoredAnimation(outElement, inElement);
+
           if (animator) {
             anchorAnimations.push(animator);
           }
@@ -278,6 +297,8 @@ function filterCssClasses(classes) {
 
 function getUniqueValues(a, b) {
   if (isString(a)) a = a.split(" ");
+
   if (isString(b)) b = b.split(" ");
+
   return a.filter((val) => b.indexOf(val) === -1).join(" ");
 }

@@ -37,21 +37,29 @@ export const URL_REGEXP =
 export const EMAIL_REGEXP =
   /^(?=.{1,254}$)(?=.{1,64}@)[-!#$%&'*+/0-9=?A-Z^_`a-z{|}~]+(\.[-!#$%&'*+/0-9=?A-Z^_`a-z{|}~]+)*@[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$/;
 const NUMBER_REGEXP = /^\s*([-+])?(\d+|(\d*(\.\d*)))([eE][+-]?\d+)?\s*$/;
+
 const DATE_REGEXP = /^(\d{4,})-(\d{2})-(\d{2})$/;
+
 const DATETIMELOCAL_REGEXP =
   /^(\d{4,})-(\d\d)-(\d\d)T(\d\d):(\d\d)(?::(\d\d)(\.\d{1,3})?)?$/;
+
 const WEEK_REGEXP = /^(\d{4,})-W(\d\d)$/;
+
 const MONTH_REGEXP = /^(\d{4,})-(\d\d)$/;
+
 const TIME_REGEXP = /^(\d\d):(\d\d)(?::(\d\d)(\.\d{1,3})?)?$/;
+
 // The name of a form control's ValidityState property.
 // This is used so that it's possible for internal tests to create mock ValidityStates.
 export const VALIDITY_STATE_PROPERTY = "validity";
 
 const PARTIAL_VALIDATION_EVENTS = "keydown wheel mousedown";
+
 /**
  * @type {Map<string, boolean>}
  */
 const PARTIAL_VALIDATION_TYPES = new Map();
+
 "date,datetime-local,month,time,week".split(",").forEach((type) => {
   PARTIAL_VALIDATION_TYPES.set(type, true);
 });
@@ -113,7 +121,9 @@ function textInputType(scope, element, attr, ctrl) {
 
 function baseInputType(scope, element, attr, ctrl) {
   const type = element.type.toLowerCase();
+
   let composing = false;
+
   // In composition mode, users are still inputting intermediate text buffer,
   // hold the listener until composition is done.
   // More about composition events: https://developer.mozilla.org/en-US/docs/Web/API/CompositionEvent
@@ -128,13 +138,15 @@ function baseInputType(scope, element, attr, ctrl) {
 
   let timeout;
 
-  let listener = function (ev) {
+  const listener = function (ev) {
     if (timeout) {
       clearTimeout(timeout);
       timeout = null;
     }
+
     if (composing) return;
-    let value = element.value;
+    let { value } = element;
+
     const event = ev && ev.type;
 
     // By default we will trim the value
@@ -171,10 +183,14 @@ function baseInputType(scope, element, attr, ctrl) {
     element.addEventListener(PARTIAL_VALIDATION_EVENTS, function (ev) {
       if (!timeout) {
         const validity = this[VALIDITY_STATE_PROPERTY];
+
         const origBadInput = validity.badInput;
+
         const origTypeMismatch = validity.typeMismatch;
+
         timeout = setTimeout(() => {
           timeout = null;
+
           if (
             validity.badInput !== origBadInput ||
             validity.typeMismatch !== origTypeMismatch
@@ -189,6 +205,7 @@ function baseInputType(scope, element, attr, ctrl) {
   ctrl.$render = function () {
     // Workaround for Firefox validation #12102.
     const value = ctrl.$isEmpty(ctrl.$viewValue) ? "" : ctrl.$viewValue;
+
     if (element.value !== value) {
       element.value = value;
     }
@@ -203,6 +220,7 @@ export function weekParser(isoWeek, existingDate) {
   function getFirstThursdayOfYear(year) {
     // 0 = index of January
     const dayOfWeekOnFirst = new Date(year, 0, 1).getDay();
+
     // 4 = index of Thursday (+1 to account for 1st = 5)
     // 11 = index of *next* Thursday (+1 account for 1st = 12)
     return new Date(
@@ -215,14 +233,22 @@ export function weekParser(isoWeek, existingDate) {
   if (isString(isoWeek)) {
     WEEK_REGEXP.lastIndex = 0;
     const parts = WEEK_REGEXP.exec(isoWeek);
+
     if (parts) {
       const year = +parts[1];
+
       const week = +parts[2];
+
       let hours = 0;
+
       let minutes = 0;
+
       let seconds = 0;
+
       let milliseconds = 0;
+
       const firstThurs = getFirstThursdayOfYear(year);
+
       const addDays = (week - 1) * 7;
 
       if (existingDate) {
@@ -250,6 +276,7 @@ export function weekParser(isoWeek, existingDate) {
 export function createDateParser(regexp, mapping) {
   return function (iso, previousDate) {
     let parts;
+
     let map;
 
     if (isDate(iso)) {
@@ -263,6 +290,7 @@ export function createDateParser(regexp, mapping) {
       if (iso.charAt(0) === '"' && iso.charAt(iso.length - 1) === '"') {
         iso = iso.substring(1, iso.length - 1);
       }
+
       if (ISO_DATE_REGEXP.test(iso)) {
         return new Date(iso);
       }
@@ -271,6 +299,7 @@ export function createDateParser(regexp, mapping) {
 
       if (parts) {
         parts.shift();
+
         if (previousDate) {
           map = {
             yyyy: previousDate.getFullYear(),
@@ -300,6 +329,7 @@ export function createDateParser(regexp, mapping) {
           map.ss || 0,
           map.sss * 1000 || 0,
         );
+
         if (map.yyyy < 100) {
           // In the constructor, 2-digit years map to 1900-1999.
           // Use `setFullYear()` to set the correct year.
@@ -328,6 +358,7 @@ export function createDateInputType(type, regexp, parseDate) {
     badInputChecker(scope, element, attr, ctrl, type);
     baseInputType(scope, element, attr, ctrl);
     let previousDate;
+
     let previousTimezone;
 
     ctrl.$parsers.push((value) => {
@@ -345,6 +376,7 @@ export function createDateInputType(type, regexp, parseDate) {
         return parseDateAndConvertTimeZoneToLocal(value, previousDate);
       }
       ctrl.$$parserName = type;
+
       return undefined;
     });
 
@@ -357,6 +389,7 @@ export function createDateInputType(type, regexp, parseDate) {
         if (value == null) {
           return "";
         }
+
         if (!MONTH_INPUT_FORMAT.test(value)) {
           throw ngModelMinErr(
             "datefmt",
@@ -370,6 +403,7 @@ export function createDateInputType(type, regexp, parseDate) {
         if (value == null) {
           return "";
         }
+
         if (!WEEK_REGEXP.test(value)) {
           throw ngModelMinErr(
             "datefmt",
@@ -383,6 +417,7 @@ export function createDateInputType(type, regexp, parseDate) {
         if (value == null) {
           return "";
         }
+
         if (!DATETIMELOCAL_REGEXP.test(value)) {
           throw ngModelMinErr(
             "datefmt",
@@ -412,6 +447,7 @@ export function createDateInputType(type, regexp, parseDate) {
 
     if (isDefined(attr.min) || attr.ngMin) {
       let minVal = attr.min || $parse(attr.ngMin)(scope);
+
       let parsedMinVal = parseObservedDateValue(
         isProxy(minVal) ? minVal.$target : minVal,
       );
@@ -441,6 +477,7 @@ export function createDateInputType(type, regexp, parseDate) {
 
     if (isDefined(attr.max) || attr.ngMax) {
       let maxVal = attr.max || $parse(attr.ngMax)(scope);
+
       let parsedMaxVal = parseObservedDateValue(
         isProxy(maxVal) ? maxVal.$target : maxVal,
       );
@@ -452,6 +489,7 @@ export function createDateInputType(type, regexp, parseDate) {
             parseDate(value) <= parseDate(parsedMaxVal)
           );
         }
+
         return (
           !isValidDate(value) ||
           isUndefined(parsedMaxVal) ||
@@ -495,6 +533,7 @@ export function createDateInputType(type, regexp, parseDate) {
       if (!Number.isNaN(parsedDate) && timezone) {
         parsedDate = convertTimezoneToLocal(parsedDate, timezone);
       }
+
       return parsedDate;
     }
   };
@@ -508,8 +547,10 @@ export function badInputChecker(scope, element, attr, ctrl, parserName) {
   if (nativeValidation) {
     ctrl.$parsers.push((value) => {
       const validity = element[VALIDITY_STATE_PROPERTY] || {};
+
       if (validity.badInput || validity.typeMismatch) {
         ctrl.$$parserName = parserName;
+
         return undefined;
       }
 
@@ -521,9 +562,11 @@ export function badInputChecker(scope, element, attr, ctrl, parserName) {
 export function numberFormatterParser(ctrl) {
   ctrl.$parsers.push((value) => {
     if (ctrl.$isEmpty(value)) return null;
+
     if (NUMBER_REGEXP.test(value)) return parseFloat(value);
 
     ctrl.$$parserName = "number";
+
     return undefined;
   });
 
@@ -534,6 +577,7 @@ export function numberFormatterParser(ctrl) {
       }
       value = value.toString();
     }
+
     return value;
   });
 }
@@ -542,6 +586,7 @@ function parseNumberAttrVal(val) {
   if (isDefined(val) && !isNumber(val)) {
     val = parseFloat(val);
   }
+
   return !isNumberNaN(val) ? val : undefined;
 }
 
@@ -554,6 +599,7 @@ export function isNumberInteger(num) {
 
 export function countDecimals(num) {
   const numString = num.toString();
+
   const decimalSymbolIndex = numString.indexOf(".");
 
   if (decimalSymbolIndex === -1) {
@@ -578,14 +624,18 @@ export function isValidForStep(viewValue, stepBase, step) {
   let value = Number(viewValue);
 
   const isNonIntegerValue = !isNumberInteger(value);
+
   const isNonIntegerStepBase = !isNumberInteger(stepBase);
+
   const isNonIntegerStep = !isNumberInteger(step);
 
   // Due to limitations in Floating Point Arithmetic (e.g. `0.3 - 0.2 !== 0.1` or
   // `0.5 % 0.1 !== 0`), we need to convert all numbers to integers.
   if (isNonIntegerValue || isNonIntegerStepBase || isNonIntegerStep) {
     const valueDecimals = isNonIntegerValue ? countDecimals(value) : 0;
+
     const stepBaseDecimals = isNonIntegerStepBase ? countDecimals(stepBase) : 0;
+
     const stepDecimals = isNonIntegerStep ? countDecimals(step) : 0;
 
     const decimalCount = Math.max(
@@ -593,6 +643,7 @@ export function isValidForStep(viewValue, stepBase, step) {
       stepBaseDecimals,
       stepDecimals,
     );
+
     const multiplier = 10 ** decimalCount;
 
     value *= multiplier;
@@ -600,7 +651,9 @@ export function isValidForStep(viewValue, stepBase, step) {
     step *= multiplier;
 
     if (isNonIntegerValue) value = Math.round(value);
+
     if (isNonIntegerStepBase) stepBase = Math.round(stepBase);
+
     if (isNonIntegerStep) step = Math.round(step);
   }
 
@@ -616,6 +669,7 @@ export function numberInputType(scope, element, attr, ctrl, $filter, $parse) {
 
   if (isDefined(attr.min) || attr.ngMin) {
     let minVal = attr.min || $parse(attr.ngMin)(scope);
+
     parsedMinVal = parseNumberAttrVal(minVal);
 
     ctrl.$validators.min = function (modelValue, viewValue) {
@@ -638,6 +692,7 @@ export function numberInputType(scope, element, attr, ctrl, $filter, $parse) {
 
   if (isDefined(attr.max) || attr.ngMax) {
     let maxVal = attr.max || $parse(attr.ngMax)(scope);
+
     let parsedMaxVal = parseNumberAttrVal(maxVal);
 
     ctrl.$validators.max = function (modelValue, viewValue) {
@@ -660,6 +715,7 @@ export function numberInputType(scope, element, attr, ctrl, $filter, $parse) {
 
   if (isDefined(attr.step) || attr.ngStep) {
     let stepVal = attr.step || $parse(attr.ngStep)(scope);
+
     let parsedStepVal = parseNumberAttrVal(stepVal);
 
     ctrl.$validators.step = function (modelValue, viewValue) {
@@ -687,12 +743,19 @@ export function rangeInputType(scope, element, attr, ctrl) {
   baseInputType(scope, element, attr, ctrl);
 
   const supportsRange = ctrl.$$hasNativeValidators && element.type === "range";
+
   let minVal = supportsRange ? 0 : undefined;
+
   let maxVal = supportsRange ? 100 : undefined;
+
   let stepVal = supportsRange ? 1 : undefined;
+
   const { validity } = element;
+
   const hasMinAttr = isDefined(attr.min);
+
   const hasMaxAttr = isDefined(attr.max);
+
   const hasStepAttr = isDefined(attr.step);
 
   const originalRender = ctrl.$render;
@@ -777,6 +840,7 @@ export function rangeInputType(scope, element, attr, ctrl) {
     // input value based on the min/max value
     element.setAttribute(htmlAttrName, attr[htmlAttrName]);
     let oldVal = attr[htmlAttrName];
+
     attr.$observe(htmlAttrName, (val) => {
       if (val !== oldVal) {
         oldVal = val;
@@ -787,6 +851,7 @@ export function rangeInputType(scope, element, attr, ctrl) {
 
   function minChange(val) {
     minVal = parseNumberAttrVal(val);
+
     // ignore changes before model is initialized
     if (isNumberNaN(ctrl.$modelValue)) {
       return;
@@ -794,6 +859,7 @@ export function rangeInputType(scope, element, attr, ctrl) {
 
     if (supportsRange) {
       let elVal = element.value;
+
       // IE11 doesn't set the el val correctly if the minVal is greater than the element value
       if (minVal > elVal) {
         elVal = minVal;
@@ -808,6 +874,7 @@ export function rangeInputType(scope, element, attr, ctrl) {
 
   function maxChange(val) {
     maxVal = parseNumberAttrVal(val);
+
     // ignore changes before model is initialized
     if (isNumberNaN(ctrl.$modelValue)) {
       return;
@@ -815,6 +882,7 @@ export function rangeInputType(scope, element, attr, ctrl) {
 
     if (supportsRange) {
       let elVal = element.value;
+
       // IE11 doesn't set the el val correctly if the maxVal is less than the element value
       if (maxVal < elVal) {
         element.value = maxVal;
@@ -830,6 +898,7 @@ export function rangeInputType(scope, element, attr, ctrl) {
 
   function stepChange(val) {
     stepVal = parseNumberAttrVal(val);
+
     // ignore changes before model is initialized
     if (isNumberNaN(ctrl.$modelValue)) {
       return;
@@ -853,6 +922,7 @@ function urlInputType(scope, element, attr, ctrl) {
 
   ctrl.$validators.url = function (modelValue, viewValue) {
     const value = modelValue || viewValue;
+
     return ctrl.$isEmpty(value) || URL_REGEXP.test(value);
   };
 }
@@ -865,12 +935,14 @@ function emailInputType(scope, element, attr, ctrl) {
 
   ctrl.$validators.email = function (modelValue, viewValue) {
     const value = modelValue || viewValue;
+
     return ctrl.$isEmpty(value) || EMAIL_REGEXP.test(value);
   };
 }
 
 function radioInputType(scope, element, attr, ctrl) {
   const doTrim = !attr.ngTrim || trim(attr.ngTrim) !== "false";
+
   // make the name unique, if not defined
   if (isUndefined(attr.name)) {
     element.setAttribute("name", nextUid());
@@ -878,8 +950,10 @@ function radioInputType(scope, element, attr, ctrl) {
 
   const listener = function (ev) {
     let value;
+
     if (element.checked) {
       value = attr.value;
+
       if (doTrim) {
         value = trim(value);
       }
@@ -891,12 +965,14 @@ function radioInputType(scope, element, attr, ctrl) {
   // NgModelController call
   ctrl.$render = function () {
     let { value } = attr;
+
     if (doTrim) {
       value = trim(value);
     }
     const deproxy = isProxy(ctrl.$viewValue)
       ? ctrl.$viewValue.$target
       : ctrl.$viewValue;
+
     // the proxy may reach down two levels
     element.checked =
       (isProxy(value) ? value.$target : value) ===
@@ -908,8 +984,10 @@ function radioInputType(scope, element, attr, ctrl) {
 
 function parseConstantExpr($parse, context, name, expression, fallback) {
   let parseFn;
+
   if (isDefined(expression)) {
     parseFn = $parse(expression);
+
     if (!parseFn.constant) {
       throw ngModelMinErr(
         "constexpr",
@@ -918,8 +996,10 @@ function parseConstantExpr($parse, context, name, expression, fallback) {
         expression,
       );
     }
+
     return parseFn(context);
   }
+
   return fallback;
 }
 
@@ -931,6 +1011,7 @@ function checkboxInputType(scope, element, attr, ctrl, $filter, $parse) {
     attr.ngTrueValue,
     true,
   );
+
   const falseValue = parseConstantExpr(
     $parse,
     scope,
@@ -1049,7 +1130,7 @@ export function ngValueDirective() {
     // TODO REMOVE IS SUPPORT
     // Support: IE9 only
     // In IE9 values are converted to string (e.g. `input.value = null` results in `input.value === 'null'`).
-    element["value"] = isDefined(value)
+    element.value = isDefined(value)
       ? isProxy(value)
         ? value.$target
         : value
@@ -1064,9 +1145,11 @@ export function ngValueDirective() {
       if (CONSTANT_VALUE_REGEXP.test(tplAttr.ngValue)) {
         return function (scope, elm, attr) {
           const value = scope.$eval(attr.ngValue);
+
           updateElementValue(elm, attr, value);
         };
       }
+
       return function (scope, elm, attr) {
         scope.$watch(attr.ngValue, (value) => {
           updateElementValue(elm, attr, value);

@@ -33,8 +33,10 @@ export class SanitizeUriProvider {
   aHrefSanitizationTrustedUrlList(regexp) {
     if (isDefined(regexp)) {
       this._aHrefSanitizationTrustedUrlList = regexp;
+
       return this;
     }
+
     return this._aHrefSanitizationTrustedUrlList;
   }
 
@@ -47,8 +49,10 @@ export class SanitizeUriProvider {
   imgSrcSanitizationTrustedUrlList(regexp) {
     if (isDefined(regexp)) {
       this._imgSrcSanitizationTrustedUrlList = regexp;
+
       return this;
     }
+
     return this._imgSrcSanitizationTrustedUrlList;
   }
 
@@ -73,6 +77,7 @@ export class SanitizeUriProvider {
           if (normalizedVal !== "" && !normalizedVal.match(regex)) {
             return `unsafe:${normalizedVal}`;
           }
+
           return uri;
         }
       );

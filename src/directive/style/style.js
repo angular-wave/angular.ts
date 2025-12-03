@@ -18,8 +18,10 @@ export function ngStyleDirective() {
 
         if (target) {
           oldStyles = {};
+
           for (const key in target) {
             const value = target[key];
+
             element.style.setProperty(key, value);
             oldStyles[key] = value;
           }

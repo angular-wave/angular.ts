@@ -54,6 +54,7 @@ export class ExceptionHandlerProvider {
       throw exception;
     };
   }
+
   /**
    * @returns {ng.ExceptionHandlerService}
    */

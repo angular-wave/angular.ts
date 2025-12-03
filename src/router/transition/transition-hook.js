@@ -62,6 +62,7 @@ export class TransitionHook {
     // Chain the next hook off the previous
     const createHookChainR = (prev, nextHook) =>
       prev.then(() => nextHook.invokeHook());
+
     return hooks.reduce(createHookChainR, waitFor || Promise.resolve());
   }
 
@@ -79,13 +80,16 @@ export class TransitionHook {
   static invokeHooks(hooks, doneCallback) {
     for (let idx = 0; idx < hooks.length; idx++) {
       const hookResult = hooks[idx].invokeHook();
+
       if (isPromise(hookResult)) {
         const remainingHooks = hooks.slice(idx + 1);
+
         return TransitionHook.chain(remainingHooks, hookResult).then(() => {
           doneCallback();
         });
       }
     }
+
     return doneCallback();
   }
 
@@ -114,19 +118,27 @@ export class TransitionHook {
 
   invokeHook() {
     const hook = this.registeredHook;
+
     if (hook._deregistered) return;
     const notCurrent = this.getNotCurrentRejection();
+
     if (notCurrent) return notCurrent;
-    const options = this.options;
+    const { options } = this;
+
     trace.traceHookInvocation(this, this.transition, options);
     const invokeCallback = () =>
       hook.callback.call(options.bind, this.transition, this.stateContext);
+
     const normalizeErr = (err) => Rejection.normalize(err).toPromise();
+
     const handleError = (err) => hook.eventType.getErrorHandler(this)(err);
+
     const handleResult = (result) =>
       hook.eventType.getResultHandler(this)(result);
+
     try {
       const result = invokeCallback();
+
       if (!this.type.synchronous && isPromise(result)) {
         return result.catch(normalizeErr).then(handleResult, handleError);
       } else {
@@ -141,6 +153,7 @@ export class TransitionHook {
       }
     }
   }
+
   /**
    * This method handles the return value of a Transition Hook.
    *
@@ -152,13 +165,16 @@ export class TransitionHook {
    */
   handleHookResult(result) {
     const notCurrent = this.getNotCurrentRejection();
+
     if (notCurrent) return notCurrent;
+
     // Hook returned a promise
     if (isPromise(result)) {
       // Wait for the promise, then reprocess with the resulting value
       return result.then((val) => this.handleHookResult(val));
     }
     trace.traceHookResult(result, this.transition);
+
     // Hook returned false
     if (result === false) {
       // Abort this Transition
@@ -171,6 +187,7 @@ export class TransitionHook {
       return Rejection.redirected(result).toPromise();
     }
   }
+
   /**
    * Return a Rejection promise if the transition is no longer current due
    * a new transition has started and superseded this one.
@@ -179,6 +196,7 @@ export class TransitionHook {
     if (this.transition._aborted) {
       return Rejection.aborted().toPromise();
     }
+
     // This transition is no longer current.
     // Another transition started while this hook was still running.
     if (this.isSuperseded()) {
@@ -186,14 +204,17 @@ export class TransitionHook {
       return Rejection.superseded(this.options.current()).toPromise();
     }
   }
+
   toString() {
     const { options, registeredHook } = this;
+
     const event = parse("traceData.hookType")(options) || "internal",
       context =
         parse("traceData.context.state.name")(options) ||
         parse("traceData.context")(options) ||
         "unknown",
       name = fnToString(registeredHook.callback);
+
     return `${event} context: ${context}, ${maxLength(200, name)}`;
   }
 }
@@ -210,6 +231,7 @@ TransitionHook.HANDLE_RESULT = (hook) => (result) =>
 TransitionHook.LOG_REJECTED_RESULT = (hook) => (result) => {
   isPromise(result) &&
     result.catch((err) => hook.logError(Rejection.normalize(err)));
+
   return undefined;
 };
 /**

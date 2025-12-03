@@ -53,6 +53,7 @@ export function adjustMatcher(matcher) {
   if (matcher === "self") {
     return matcher;
   }
+
   if (isString(matcher)) {
     // Strings match exactly except for 2 wildcards - '*' and '**'.
     // '*' matches any character except those from the set ':/.?&'.
@@ -68,6 +69,7 @@ export function adjustMatcher(matcher) {
     matcher = escapeForRegexp(matcher)
       .replace(/\\\*\\\*/g, ".*")
       .replace(/\\\*/g, "[^:/.?&;]*");
+
     return new RegExp(`^${matcher}$`);
   }
 
@@ -166,6 +168,7 @@ export class SceDelegateProvider {
   constructor() {
     // Resource URLs can also be trusted by policy.
     let trustedResourceUrlList = ["self"];
+
     let bannedResourceUrlList = [];
 
     /**
@@ -193,6 +196,7 @@ export class SceDelegateProvider {
       if (arguments.length) {
         trustedResourceUrlList = value.map((v) => adjustMatcher(v));
       }
+
       return trustedResourceUrlList;
     };
 
@@ -222,6 +226,7 @@ export class SceDelegateProvider {
       if (arguments.length) {
         bannedResourceUrlList = value.map((v) => adjustMatcher(v));
       }
+
       return bannedResourceUrlList;
     };
 
@@ -261,15 +266,20 @@ export class SceDelegateProvider {
               urlIsSameOrigin(parsedUrl) || urlIsSameOriginAsBaseUrl(parsedUrl)
             );
           }
+
           // definitely a regex.  See adjustMatchers()
           return !!(/** @type {RegExp} */ (matcher).exec(parsedUrl.href));
         }
 
         function isResourceUrlAllowedByPolicy(url) {
           const parsedUrl = urlResolve(url.toString());
+
           let i;
+
           let n;
+
           let allowed = false;
+
           // Ensure that at least one item from the trusted resource URL list allows this url.
           for (i = 0, n = trustedResourceUrlList.length; i < n; i++) {
             if (matchUrl(trustedResourceUrlList[i], parsedUrl)) {
@@ -277,6 +287,7 @@ export class SceDelegateProvider {
               break;
             }
           }
+
           if (allowed) {
             // Ensure that no item from the banned resource URL list has blocked this url.
             for (i = 0, n = bannedResourceUrlList.length; i < n; i++) {
@@ -286,6 +297,7 @@ export class SceDelegateProvider {
               }
             }
           }
+
           return allowed;
         }
 
@@ -295,6 +307,7 @@ export class SceDelegateProvider {
               return trustedValue;
             };
           };
+
           if (Base) {
             holderType.prototype = new Base();
           }
@@ -304,10 +317,12 @@ export class SceDelegateProvider {
           holderType.prototype.toString = function sceToString() {
             return this.$$unwrapTrustedValue().toString();
           };
+
           return holderType;
         }
 
         const trustedValueHolderBase = generateHolderType();
+
         const byType = {};
 
         byType[SCE_CONTEXTS.HTML] = generateHolderType(trustedValueHolderBase);
@@ -345,6 +360,7 @@ export class SceDelegateProvider {
          */
         function trustAs(type, trustedValue) {
           const Constructor = hasOwn(byType, type) ? byType[type] : null;
+
           if (!Constructor) {
             $exceptionHandler(
               $sceMinErr(
@@ -354,8 +370,10 @@ export class SceDelegateProvider {
                 trustedValue,
               ),
             );
+
             return;
           }
+
           if (
             trustedValue === null ||
             isUndefined(trustedValue) ||
@@ -363,6 +381,7 @@ export class SceDelegateProvider {
           ) {
             return trustedValue;
           }
+
           // All the current contexts in SCE_CONTEXTS happen to be strings.  In order to avoid trusting
           // mutable objects, we ensure here that the value passed in is actually a string.
           if (typeof trustedValue !== "string") {
@@ -373,8 +392,10 @@ export class SceDelegateProvider {
                 type,
               ),
             );
+
             return;
           }
+
           return new Constructor(trustedValue);
         }
 
@@ -396,6 +417,7 @@ export class SceDelegateProvider {
           if (maybeTrusted instanceof trustedValueHolderBase) {
             return maybeTrusted.$$unwrapTrustedValue();
           }
+
           return maybeTrusted;
         }
 
@@ -438,6 +460,7 @@ export class SceDelegateProvider {
             return maybeTrusted;
           }
           const constructor = hasOwn(byType, type) ? byType[type] : null;
+
           // If maybeTrusted is a trusted class instance or subclass instance, then unwrap and return
           // as-is.
           if (constructor && maybeTrusted instanceof constructor) {
@@ -458,6 +481,7 @@ export class SceDelegateProvider {
               type === SCE_CONTEXTS.MEDIA_URL,
             );
           }
+
           if (type === SCE_CONTEXTS.RESOURCE_URL) {
             if (isResourceUrlAllowedByPolicy(maybeTrusted)) {
               return maybeTrusted;
@@ -469,6 +493,7 @@ export class SceDelegateProvider {
                 maybeTrusted.toString(),
               ),
             );
+
             return;
           } else if (type === SCE_CONTEXTS.HTML) {
             // htmlSanitizer throws its own error when no sanitizer is available.
@@ -503,6 +528,7 @@ export function SceProvider() {
     if (arguments.length) {
       enabled = !!value;
     }
+
     return enabled;
   };
 
@@ -558,9 +584,11 @@ export function SceProvider() {
        */
       sce.parseAs = (type, expr) => {
         const parsed = $parse(expr);
+
         if (parsed.literal && parsed.constant) {
           return parsed;
         }
+
         return $parse(expr, (value) => sce.getTrusted(type, value));
       };
 
@@ -750,11 +778,14 @@ export function SceProvider() {
 
       // Shorthand delegations.
       const parse = sce.parseAs;
+
       const { getTrusted } = sce;
+
       const { trustAs } = sce;
 
       Object.entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
         const lName = name.toLowerCase();
+
         sce[snakeToCamel(`parse_as_${lName}`)] = function (expr) {
           return parse(enumValue, expr);
         };

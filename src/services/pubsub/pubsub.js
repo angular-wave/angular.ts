@@ -110,13 +110,15 @@ export class PubSub {
    */
   subscribe(topic, fn, opt_context = null) {
     let keys = this.topics[topic];
+
     if (!keys) {
       // First subscription to this topic; initialize subscription key array.
       keys = this.topics[topic] = [];
     }
 
     // Push the tuple representing the subscription onto the subscription array.
-    const key = this.key;
+    const { key } = this;
+
     this.subscriptions[key] = topic;
     this.subscriptions[key + 1] = fn;
     this.subscriptions[key + 2] = opt_context;
@@ -162,6 +164,7 @@ export class PubSub {
       },
       this,
     );
+
     return key;
   }
 
@@ -191,8 +194,10 @@ export class PubSub {
    */
   unsubscribe(topic, fn, opt_context = null) {
     const keys = this.topics[topic];
+
     if (keys) {
-      const subscriptions = this.subscriptions;
+      const { subscriptions } = this;
+
       const key = keys.find(
         (k) =>
           subscriptions[k + 1] === fn && subscriptions[k + 2] === opt_context,
@@ -216,8 +221,9 @@ export class PubSub {
    */
   unsubscribeByKey(key) {
     const topic = this.subscriptions[key];
+
     if (topic) {
-      let keys = this.topics[topic];
+      const keys = this.topics[topic];
 
       if (this.publishDepth !== 0) {
         // Defer removal until after publishing is complete, but replace the
@@ -252,6 +258,7 @@ export class PubSub {
    */
   publish(topic, ...var_args) {
     const keys = this.topics[topic];
+
     if (keys) {
       const args = var_args;
 
@@ -260,6 +267,7 @@ export class PubSub {
         // the function to be applied to the arguments in the appropriate context.
         for (let i = 0; i < keys.length; i++) {
           const key = keys[i];
+
           PubSub.runAsync_(
             this.subscriptions[key + 1],
             this.subscriptions[key + 2],
@@ -276,6 +284,7 @@ export class PubSub {
             i++
           ) {
             const key = keys[i];
+
             this.subscriptions[key + 1].apply(
               this.subscriptions[key + 2],
               args,
@@ -286,6 +295,7 @@ export class PubSub {
 
           if (this.pendingKeys.length > 0 && this.publishDepth === 0) {
             let pendingKey;
+
             while ((pendingKey = this.pendingKeys.pop())) {
               this.unsubscribeByKey(pendingKey);
             }
@@ -306,6 +316,7 @@ export class PubSub {
   clear(opt_topic) {
     if (opt_topic) {
       const keys = this.topics[opt_topic];
+
       if (keys) {
         keys.forEach(this.unsubscribeByKey, this);
         delete this.topics[opt_topic];
@@ -325,10 +336,12 @@ export class PubSub {
   getCount(opt_topic) {
     if (opt_topic) {
       const keys = this.topics[opt_topic];
+
       return keys ? keys.length : 0;
     }
 
     let count = 0;
+
     for (const topic in this.topics) {
       count += this.getCount(topic);
     }

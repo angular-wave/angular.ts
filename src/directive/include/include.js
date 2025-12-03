@@ -29,9 +29,11 @@ export function ngIncludeDirective(
     transclude: "element",
     controller: () => {},
     compile(_element, attr) {
-      const srcExp = attr["ngInclude"] || attr["src"];
-      const onloadExp = attr["onload"] || "";
-      const autoScrollExp = attr["autoscroll"];
+      const srcExp = attr.ngInclude || attr.src;
+
+      const onloadExp = attr.onload || "";
+
+      const autoScrollExp = attr.autoscroll;
 
       return (scope, $element, _$attr, ctrl, $transclude) => {
         function maybeScroll() {
@@ -44,18 +46,24 @@ export function ngIncludeDirective(
         }
 
         let changeCounter = 0;
+
         let currentScope;
+
         let previousElement;
+
         let currentElement;
+
         const cleanupLastIncludeContent = () => {
           if (previousElement) {
             previousElement.remove();
             previousElement = null;
           }
+
           if (currentScope) {
             currentScope.$destroy();
             currentScope = null;
           }
+
           if (currentElement) {
             if (hasAnimate(currentElement)) {
               $animate.leave(currentElement).done((response) => {
@@ -76,15 +84,18 @@ export function ngIncludeDirective(
           };
 
           const thisChangeId = ++changeCounter;
+
           if (src) {
             // set the 2nd param to true to ignore the template request error so that the inner
             // contents and scope can be cleaned up.
             await $templateRequest(src, true).then(
               (response) => {
                 if (scope.$$destroyed) return;
+
                 if (thisChangeId !== changeCounter) return;
                 const newScope = scope.$new();
-                ctrl["template"] = response;
+
+                ctrl.template = response;
 
                 // Note: This will also link all children of ng-include that were contained in the original
                 // html. If that content contains controllers, ... they could pollute/change the scope.
@@ -94,6 +105,7 @@ export function ngIncludeDirective(
                 // directives to non existing elements.
                 const clone = $transclude(newScope, (clone) => {
                   cleanupLastIncludeContent();
+
                   if (hasAnimate(clone)) {
                     $animate.enter(clone, null, $element).done(afterAnimation);
                   } else {
@@ -120,7 +132,7 @@ export function ngIncludeDirective(
             scope.$emit("$includeContentRequested", src);
           } else {
             cleanupLastIncludeContent();
-            ctrl["template"] = null;
+            ctrl.template = null;
           }
         });
       };
@@ -144,7 +156,7 @@ export function ngIncludeFillContentDirective($compile) {
     priority: -400,
     require: "ngInclude",
     link(scope, $element, _$attr, ctrl) {
-      $element.innerHTML = ctrl["template"];
+      $element.innerHTML = ctrl.template;
       $compile($element.childNodes)(scope);
     },
   };

@@ -73,15 +73,18 @@ export function assertArg(arg, name, reason) {
       reason || "required",
     );
   }
+
   return arg;
 }
 
 export function packageStyles(options) {
   const styles = {};
+
   if (options && (options.to || options.from)) {
     styles.to = options.to;
     styles.from = options.from;
   }
+
   return styles;
 }
 
@@ -99,11 +102,13 @@ export function pendClasses(classes, fix, isPrefix) {
       className += isPrefix ? fix + klass : klass + fix;
     }
   });
+
   return className;
 }
 
 export function removeFromArray(arr, val) {
   const index = arr.indexOf(val);
+
   if (val >= 0) {
     arr.splice(index, 1);
   }
@@ -130,8 +135,10 @@ export function stripCommentsFromElement(element) {
  */
 export function extractElementNode(element) {
   if (!element || !Array.isArray(element)) return /** @type {Node} */ (element);
+
   for (let i = 0; i < /** @type {NodeList} */ (element).length; i++) {
     const elm = element[i];
+
     if (elm.nodeType === Node.ELEMENT_NODE) {
       return elm;
     }
@@ -144,6 +151,7 @@ export function applyAnimationClassesFactory() {
       element.classList.add(...options.addClass.trim().split(" "));
       options.addClass = null;
     }
+
     if (options.removeClass) {
       element.classList.remove(...options.removeClass.trim().split(" "));
       options.removeClass = null;
@@ -153,8 +161,10 @@ export function applyAnimationClassesFactory() {
 
 export function prepareAnimationOptions(options) {
   options = options || {};
+
   if (!options.$$prepared) {
     let domOperation = options.domOperation || (() => {});
+
     options.domOperation = function () {
       options.$$domOperationFired = true;
       domOperation();
@@ -162,6 +172,7 @@ export function prepareAnimationOptions(options) {
     };
     options.$$prepared = true;
   }
+
   return options;
 }
 
@@ -204,10 +215,13 @@ export function applyAnimationToStyles(element, options) {
 
 export function mergeAnimationDetails(element, oldAnimation, newAnimation) {
   const target = oldAnimation.options || {};
+
   const newOptions = newAnimation.options || {};
 
   const toAdd = `${target.addClass || ""} ${newOptions.addClass || ""}`;
+
   const toRemove = `${target.removeClass || ""} ${newOptions.removeClass || ""}`;
+
   const classes = resolveElementClasses(
     element.getAttribute("class"),
     toAdd,
@@ -244,9 +258,11 @@ export function mergeAnimationDetails(element, oldAnimation, newAnimation) {
 
 export function resolveElementClasses(existing, toAdd, toRemove) {
   const ADD_CLASS = 1;
+
   const REMOVE_CLASS = -1;
 
   const flags = {};
+
   existing = splitClassesToLookup(existing);
 
   toAdd = splitClassesToLookup(toAdd);
@@ -266,6 +282,7 @@ export function resolveElementClasses(existing, toAdd, toRemove) {
 
   Object.entries(flags).forEach(([klass, val]) => {
     let prop, allow;
+
     if (val === ADD_CLASS) {
       prop = "addClass";
       allow = !existing[klass] || existing[klass + REMOVE_CLASS_SUFFIX];
@@ -273,6 +290,7 @@ export function resolveElementClasses(existing, toAdd, toRemove) {
       prop = "removeClass";
       allow = existing[klass] || existing[klass + ADD_CLASS_SUFFIX];
     }
+
     if (allow) {
       if (classes[prop].length) {
         classes[prop] += " ";
@@ -287,6 +305,7 @@ export function resolveElementClasses(existing, toAdd, toRemove) {
     }
 
     const obj = {};
+
     if (classes) {
       classes.forEach((klass) => {
         // sometimes the split leaves empty string values
@@ -296,6 +315,7 @@ export function resolveElementClasses(existing, toAdd, toRemove) {
         }
       });
     }
+
     return obj;
   }
 
@@ -304,21 +324,25 @@ export function resolveElementClasses(existing, toAdd, toRemove) {
 
 export function applyGeneratedPreparationClasses(element, event, options) {
   let classes = "";
+
   if (event) {
     classes = pendClasses(event, EVENT_CLASS_PREFIX, true);
   }
+
   if (options.addClass) {
     classes = concatWithSpace(
       classes,
       pendClasses(options.addClass, ADD_CLASS_SUFFIX),
     );
   }
+
   if (options.removeClass) {
     classes = concatWithSpace(
       classes,
       pendClasses(options.removeClass, REMOVE_CLASS_SUFFIX),
     );
   }
+
   if (classes.length) {
     options.preparationClasses = classes;
     element.className += ` ${classes}`;
@@ -332,6 +356,7 @@ export function clearGeneratedClasses(element, options) {
       .forEach((cls) => element.classList.remove(cls));
     options.preparationClasses = null;
   }
+
   if (options.activeClasses) {
     options.activeClasses
       .split(" ")
@@ -342,18 +367,24 @@ export function clearGeneratedClasses(element, options) {
 
 export function blockKeyframeAnimations(node, applyBlock) {
   const value = applyBlock ? "paused" : "";
+
   const key = ANIMATION_PROP + ANIMATION_PLAYSTATE_KEY;
+
   applyInlineStyle(node, [key, value]);
+
   return [key, value];
 }
 
 export function applyInlineStyle(node, styleTuple) {
   const prop = styleTuple[0];
+
   node.style[prop] = styleTuple[1];
 }
 
 export function concatWithSpace(a, b) {
   if (!a) return b;
+
   if (!b) return a;
+
   return `${a} ${b}`;
 }

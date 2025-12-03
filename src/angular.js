@@ -22,6 +22,7 @@ import { $injectTokens as $t } from "./injection-tokens.js";
 import { annotate } from "./core/di/di.js";
 
 const ngMinErr = minErr("ng");
+
 const $injectorMinErr = minErr("$injector");
 
 /** @type {Object.<string, NgModule>} */
@@ -64,7 +65,7 @@ export class Angular {
     this.errorHandlingConfig = errorHandlingConfig;
     this.$t = $t;
 
-    window["angular"] = this;
+    window.angular = this;
     registerNgModule(this);
   }
 
@@ -117,9 +118,11 @@ export class Angular {
    */
   module(name, requires, configFn) {
     assertNotHasOwnProperty(name, "module");
+
     if (requires && hasOwn(modules, name)) {
       modules[name] = null; // force ensure to recreate the module
     }
+
     return ensure(modules, name, () => {
       if (!requires) {
         throw $injectorMinErr(
@@ -128,6 +131,7 @@ export class Angular {
           name,
         );
       }
+
       return new NgModule(name, requires, configFn);
     });
   }
@@ -204,6 +208,7 @@ export class Angular {
     this.bootsrappedModules.unshift("ng");
 
     const injector = createInjector(this.bootsrappedModules, config.strictDi);
+
     injector.invoke([
       $t.$rootScope,
       $t.$rootElement,
@@ -223,6 +228,7 @@ export class Angular {
         setCacheData(el, "$injector", $injector);
 
         const compileFn = compile(el);
+
         compileFn(scope);
 
         // https://github.com/angular-ui/ui-router/issues/3678
@@ -251,6 +257,7 @@ export class Angular {
           );
       },
     ]);
+
     return injector;
   }
 
@@ -268,11 +275,15 @@ export class Angular {
    */
   init(element) {
     let appElement;
+
     let module;
+
     const config = {};
+
     // The element `element` has priority over any other element.
     ngAttrPrefixes.forEach((prefix) => {
       const name = `${prefix}app`;
+
       if (
         /** @type {Element} */ (element).hasAttribute &&
         /** @type {Element} */ (element).hasAttribute(name)
@@ -283,6 +294,7 @@ export class Angular {
     });
     ngAttrPrefixes.forEach((prefix) => {
       const name = `${prefix}app`;
+
       let candidate;
 
       if (
@@ -293,6 +305,7 @@ export class Angular {
         module = candidate.getAttribute(name);
       }
     });
+
     if (appElement) {
       config.strictDi = getNgAttribute(appElement, "strict-di") !== null;
       this.bootstrap(appElement, module ? [module] : [], config);
@@ -312,6 +325,7 @@ export class Angular {
    */
   getScopeByName(name) {
     const scope = this.$rootScope.$searchByName(name);
+
     if (scope) {
       return scope.$proxy;
     }

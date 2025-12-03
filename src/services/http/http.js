@@ -3,44 +3,50 @@ import {
   urlIsAllowedOriginFactory,
 } from "../../shared/url-utils/url-utils.js";
 import {
-  minErr,
-  isObject,
-  isDate,
-  toJson,
-  isUndefined,
-  isFunction,
   encodeUriQuery,
-  isString,
-  fromJson,
-  lowercase,
-  trim,
-  isFile,
-  isBlob,
-  isFormData,
-  shallowCopy,
-  isDefined,
   extend,
-  uppercase,
+  fromJson,
+  isBlob,
+  isDate,
+  isDefined,
+  isFile,
+  isFormData,
+  isFunction,
+  isObject,
   isPromiseLike,
+  isString,
+  isUndefined,
+  lowercase,
+  minErr,
+  shallowCopy,
+  toJson,
+  trim,
+  uppercase,
 } from "../../shared/utils.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
 const APPLICATION_JSON = "application/json";
+
 const CONTENT_TYPE_APPLICATION_JSON = {
   "Content-Type": `${APPLICATION_JSON};charset=utf-8`,
 };
+
 const JSON_START = /^\[|^\{(?!\{)/;
+
 const JSON_ENDS = {
   "[": /]$/,
   "{": /}$/,
 };
+
 const JSON_PROTECTION_PREFIX = /^\)]\}',?\n/;
+
 const $httpMinErr = minErr("$http");
 
 function serializeValue(v) {
   if (isObject(v)) {
     return isDate(v) ? v.toISOString() : toJson(v);
   }
+
   return v;
 }
 
@@ -64,11 +70,14 @@ export function HttpParamSerializerProvider() {
     return (params) => {
       if (!params) return "";
       const parts = [];
+
       Object.keys(params)
         .sort()
         .forEach((key) => {
           const value = params[key];
+
           if (value === null || isUndefined(value) || isFunction(value)) return;
+
           if (Array.isArray(value)) {
             value.forEach((v) => {
               parts.push(
@@ -94,6 +103,7 @@ export function defaultHttpResponseTransform(data, headers) {
 
     if (tempData) {
       const contentType = headers("Content-Type");
+
       const hasJsonContentType =
         contentType && contentType.indexOf(APPLICATION_JSON) === 0;
 
@@ -121,6 +131,7 @@ export function defaultHttpResponseTransform(data, headers) {
 
 function isJsonLike(str) {
   const jsonStart = str.match(JSON_START);
+
   return jsonStart && JSON_ENDS[jsonStart[0]].test(str);
 }
 
@@ -132,6 +143,7 @@ function isJsonLike(str) {
  */
 function parseHeaders(headers) {
   const parsed = Object.create(null);
+
   let i;
 
   function fillInParsed(key, val) {
@@ -180,9 +192,11 @@ function headersGetter(headers) {
 
     if (name) {
       let value = headersObj[name.toLowerCase()];
+
       if (value === undefined) {
         value = null;
       }
+
       return value;
     }
 
@@ -317,8 +331,10 @@ export function HttpProvider() {
   this.useApplyAsync = function (value) {
     if (isDefined(value)) {
       useApplyAsync = !!value;
+
       return this;
     }
+
     return useApplyAsync;
   };
 
@@ -470,7 +486,9 @@ export function HttpProvider() {
           : config.paramSerializer;
 
         const requestInterceptors = [];
+
         const responseInterceptors = [];
+
         let promise = Promise.resolve(config);
 
         // apply interceptors
@@ -481,6 +499,7 @@ export function HttpProvider() {
               interceptor.requestError,
             );
           }
+
           if (interceptor.response || interceptor.responseError) {
             responseInterceptors.push(
               interceptor.response,
@@ -498,6 +517,7 @@ export function HttpProvider() {
         function chainInterceptors(promise, interceptors) {
           for (let i = 0, ii = interceptors.length; i < ii; ) {
             const thenFn = interceptors[i++];
+
             const rejectFn = interceptors[i++];
 
             promise = promise.then(thenFn, rejectFn);
@@ -510,11 +530,13 @@ export function HttpProvider() {
 
         function executeHeaderFns(headers, config) {
           let headerContent;
+
           const processedHeaders = {};
 
           Object.entries(headers).forEach(([header, headerFn]) => {
             if (isFunction(headerFn)) {
               headerContent = headerFn(config);
+
               if (headerContent != null) {
                 processedHeaders[header] = headerContent;
               }
@@ -538,11 +560,13 @@ export function HttpProvider() {
 
           Object.keys(defHeaders).forEach((defHeaderName) => {
             const lowercaseDefHeaderName = lowercase(defHeaderName);
+
             const hasMatchingHeader = Object.keys(reqHeaders).some(
               (reqHeaderName) => {
                 return lowercase(reqHeaderName) === lowercaseDefHeaderName;
               },
             );
+
             if (!hasMatchingHeader) {
               reqHeaders[defHeaderName] = defHeaders[defHeaderName];
             }
@@ -554,6 +578,7 @@ export function HttpProvider() {
 
         function serverRequest(config) {
           const { headers } = config;
+
           const reqData = transformData(
             config.data,
             headersGetter(headers),
@@ -587,12 +612,14 @@ export function HttpProvider() {
         function transformResponse(response) {
           // make a copy since the response must be cacheable
           const resp = extend({}, response);
+
           resp.data = transformData(
             response.data,
             response.headers,
             response.status,
             config.transformResponse,
           );
+
           return isSuccess(response.status) ? resp : Promise.reject(resp);
         }
       }
@@ -737,9 +764,13 @@ export function HttpProvider() {
        */
       function sendReq(config, reqData) {
         const { promise, resolve, reject } = Promise.withResolvers();
+
         let cache;
+
         let cachedResp;
+
         const reqHeaders = config.headers;
+
         let { url } = config;
 
         if (!isString(url)) {
@@ -766,6 +797,7 @@ export function HttpProvider() {
 
         if (cache) {
           cachedResp = cache.get(url);
+
           if (isDefined(cachedResp)) {
             if (isPromiseLike(cachedResp)) {
               // cached request has already been sent, but there is no response yet
@@ -799,6 +831,7 @@ export function HttpProvider() {
           const xsrfValue = urlIsAllowedOrigin(config.url)
             ? $cookie.getAll()[config.xsrfCookieName || defaults.xsrfCookieName]
             : undefined;
+
           if (xsrfValue) {
             reqHeaders[config.xsrfHeaderName || defaults.xsrfHeaderName] =
               xsrfValue;
@@ -827,6 +860,7 @@ export function HttpProvider() {
         function createApplyHandlers(eventHandlers) {
           if (eventHandlers) {
             const applyHandlers = {};
+
             Object.entries(eventHandlers).forEach(([key, eventHandler]) => {
               applyHandlers[key] = function (event) {
                 if (useApplyAsync) {
@@ -840,6 +874,7 @@ export function HttpProvider() {
                 }
               };
             });
+
             return /** @type {Record<string, EventListener>} */ (applyHandlers);
           } else {
             return {};
@@ -920,6 +955,7 @@ export function HttpProvider() {
 
         function removePendingReq() {
           const idx = $http.pendingRequests.indexOf(config);
+
           if (idx !== -1) $http.pendingRequests.splice(idx, 1);
         }
       }
@@ -928,6 +964,7 @@ export function HttpProvider() {
         if (serializedParams.length > 0) {
           url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
         }
+
         return url;
       }
     },
@@ -964,7 +1001,9 @@ export function http(
   url = url || trimEmptyHash(window.location.href);
 
   const xhr = new XMLHttpRequest();
+
   let abortedByTimeout = false;
+
   let timeoutId;
 
   xhr.open(method, url, true);
@@ -979,6 +1018,7 @@ export function http(
 
   xhr.onload = () => {
     let status = xhr.status || 0;
+
     const statusText = xhr.statusText || "";
 
     if (status === 0) {
@@ -1031,7 +1071,7 @@ export function http(
     timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
   } else if (isPromiseLike(timeout)) {
     /** @type {Promise} */ (timeout).then(() => {
-      timeoutRequest(isDefined(timeout["$$timeoutId"]) ? "timeout" : "abort");
+      timeoutRequest(isDefined(timeout.$$timeoutId) ? "timeout" : "abort");
     });
   }
 
@@ -1040,6 +1080,7 @@ export function http(
    */
   function timeoutRequest(reason) {
     abortedByTimeout = reason === "timeout";
+
     if (xhr) xhr.abort();
   }
 

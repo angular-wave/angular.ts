@@ -10,6 +10,7 @@ export const registerUpdateUrl = (
    */
   const updateUrl = (transition) => {
     const options = transition.options();
+
     const $state = stateService;
 
     // Dont update the url in these situations:
@@ -22,6 +23,7 @@ export const registerUpdateUrl = (
       $state.$current.navigable
     ) {
       const urlOptions = { replace: options.location === "replace" };
+
       urlService.push(
         $state.$current.navigable.url,
         $state.globals.params,
@@ -30,5 +32,6 @@ export const registerUpdateUrl = (
     }
     urlService.update(true);
   };
+
   transitionService.onSuccess({}, updateUrl, { priority: 9999 });
 };

@@ -9,8 +9,8 @@ export function scriptDirective($templateCache) {
     restrict: "E",
     terminal: true,
     compile(element, attr) {
-      if (attr["type"] === "text/ng-template") {
-        $templateCache.set(attr["id"], element.innerText);
+      if (attr.type === "text/ng-template") {
+        $templateCache.set(attr.id, element.innerText);
       }
     },
   };

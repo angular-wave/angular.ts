@@ -1,10 +1,10 @@
 import { isInjectable, isPromise } from "./predicates.js";
 import {
-  isUndefined,
   isFunction,
   isNull,
-  isString,
   isObject,
+  isString,
+  isUndefined,
 } from "./utils.js";
 import { pushR, tail } from "./common.js";
 import { pattern, val } from "./hof.js";
@@ -24,7 +24,8 @@ import { pattern, val } from "./hof.js";
  */
 export function maxLength(max, str) {
   if (str.length <= max) return str;
-  return str.substring(0, max - 3) + "...";
+
+  return `${str.substring(0, max - 3)}...`;
 }
 /**
  * Returns a string, with spaces added to the end, up to a desired str length
@@ -37,29 +38,37 @@ export function maxLength(max, str) {
  */
 export function padString(length, str) {
   while (str.length < length) str += " ";
+
   return str;
 }
 export function kebobString(camelCase) {
   return camelCase
     .replace(/^([A-Z])/, ($1) => $1.toLowerCase()) // replace first char
-    .replace(/([A-Z])/g, ($1) => "-" + $1.toLowerCase()); // replace rest
+    .replace(/([A-Z])/g, ($1) => `-${$1.toLowerCase()}`); // replace rest
 }
 export function functionToString(fn) {
   const fnStr = fnToString(fn);
+
   const namedFunctionMatch = fnStr.match(/^(function [^ ]+\([^)]*\))/);
+
   const toStr = namedFunctionMatch ? namedFunctionMatch[1] : fnStr;
-  const fnName = fn["name"] || "";
+
+  const fnName = fn.name || "";
+
   if (fnName && toStr.match(/function \(/)) {
-    return "function " + fnName + toStr.substring(9);
+    return `function ${fnName}${toStr.substring(9)}`;
   }
+
   return toStr;
 }
 export function fnToString(fn) {
   const _fn = Array.isArray(fn) ? fn.slice(-1)[0] : fn;
+
   return (_fn && _fn.toString()) || "undefined";
 }
 export function stringify(o) {
   const seen = [];
+
   const isRejection = (obj) => {
     return (
       obj &&
@@ -67,11 +76,13 @@ export function stringify(o) {
       obj.constructor.name == "Rejection"
     );
   };
+
   const hasToString = (obj) =>
     isObject(obj) &&
     !Array.isArray(obj) &&
     obj.constructor !== Object &&
     isFunction(obj.toString);
+
   const stringifyPattern = pattern([
     [isUndefined, val("undefined")],
     [isNull, val("null")],
@@ -81,19 +92,23 @@ export function stringify(o) {
     [isInjectable, functionToString],
     [val(true), (x) => x],
   ]);
+
   function format(value) {
     if (isObject(value)) {
       if (seen.indexOf(value) !== -1) return "[circular ref]";
       seen.push(value);
     }
+
     return stringifyPattern(value);
   }
+
   if (isUndefined(o)) {
     // Workaround for IE & Edge Spec incompatibility where replacer function would not be called when JSON.stringify
     // is given `undefined` as value. To work around that, we simply detect `undefined` and bail out early by
     // manually stringifying it.
     return format(o);
   }
+
   return JSON.stringify(o, (key, value) => format(value)).replace(/\\"/g, '"');
 }
 
@@ -109,7 +124,8 @@ export const stripLastPathElement = (str) => str.replace(/\/[^/]*$/, "");
  * ```
  */
 export function splitOnDelim(delim) {
-  const re = new RegExp("(" + delim + ")", "g");
+  const re = new RegExp(`(${delim})`, "g");
+
   return (str) => str.split(re).filter(Boolean);
 }
 /**
@@ -127,5 +143,6 @@ export function splitOnDelim(delim) {
 export function joinNeighborsR(acc, x) {
   if (isString(tail(acc)) && isString(x))
     return acc.slice(0, -1).concat(tail(acc) + x);
+
   return pushR(acc, x);
 }

@@ -32,6 +32,7 @@ export class LogProvider {
         arg = `${arg.message}\n${arg.sourceURL}:${arg.line}`;
       }
     }
+
     return arg;
   }
 
@@ -41,10 +42,12 @@ export class LogProvider {
    */
   consoleLog(type) {
     const console = window.console || {};
+
     const logFn = console[type] || console.log || (() => {});
 
     return (...args) => {
       const formattedArgs = args.map((arg) => this.formatError(arg));
+
       return logFn.apply(console, formattedArgs);
     };
   }
@@ -56,6 +59,7 @@ export class LogProvider {
     if (this._override) {
       return this._override();
     }
+
     return {
       log: this.consoleLog("log"),
       info: this.consoleLog("info"),
@@ -63,6 +67,7 @@ export class LogProvider {
       error: this.consoleLog("error"),
       debug: (() => {
         const fn = this.consoleLog("debug");
+
         return (...args) => {
           if (this.debug) {
             fn.apply(this, args);

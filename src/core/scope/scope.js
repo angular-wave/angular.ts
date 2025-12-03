@@ -26,6 +26,7 @@ let uid = 0;
 
 export function nextId() {
   uid += 1;
+
   return uid;
 }
 
@@ -56,6 +57,7 @@ export class RootScopeProvider {
     (exceptionHandler, parse) => {
       $exceptionHandler = exceptionHandler;
       $parse = parse;
+
       return this.rootScope;
     },
   ];
@@ -74,16 +76,20 @@ export function createScope(target = {}, context) {
   if (!isObject(target) || isNonScope(target)) return target;
 
   const proxy = new Proxy(target, context || new Scope());
+
   const keys = Object.keys(target);
+
   const ctorNonScope = Array.isArray(target.constructor?.$nonscope)
     ? target.constructor.$nonscope
     : null;
+
   const instNonScope = Array.isArray(target.$nonscope)
     ? target.$nonscope
     : null;
 
   for (let i = 0, l = keys.length; i < l; i++) {
     const key = keys[i];
+
     if (ctorNonScope?.includes(key) || instNonScope?.includes(key)) continue;
     target[key] = createScope(target[key], proxy.$handler);
   }
@@ -92,8 +98,11 @@ export function createScope(target = {}, context) {
 }
 
 const g = globalThis;
+
 const proto = Object.prototype;
-const toString = proto.toString;
+
+const { toString } = proto;
+
 const wStr = "[object Window]";
 
 /**
@@ -255,6 +264,7 @@ export class Scope {
 
     if (property === "$scopename") {
       this.$scopename = value;
+
       return true;
     }
 
@@ -267,6 +277,7 @@ export class Scope {
         target.$nonscope.includes(property))
     ) {
       target[property] = value;
+
       return true;
     }
 
@@ -282,6 +293,7 @@ export class Scope {
     ) {
       return true;
     }
+
     if (oldValue && oldValue[isProxySymbol]) {
       if (Array.isArray(value)) {
         if (oldValue !== value) {
@@ -303,12 +315,14 @@ export class Scope {
         }
         target[property] = createScope(value, this);
         this.objectListeners.set(target[property], [property]);
+
         return true;
       }
 
       if (isObject(value)) {
         if (hasOwn(target, property)) {
           const keys = Object.keys(oldValue);
+
           for (const k of keys) {
             if (!value[k]) delete oldValue[k];
           }
@@ -330,18 +344,25 @@ export class Scope {
           this.#checkeListenersForAllKeys(value);
         }
         target[property] = createScope(value, this);
+
         //setDeepValue(target[property], value);
         return true;
       }
 
       if (isUndefined(value)) {
         let called = false;
+
         const keys = Object.keys(oldValue.$target);
+
         const tgt = oldValue.$target;
+
         let i = 0;
+
         for (i; i < keys.length; i++) {
           const k = keys[i];
+
           const v = tgt[k];
+
           if (v && v[isProxySymbol]) {
             called = true;
           }
@@ -349,8 +370,9 @@ export class Scope {
         }
 
         target[property] = undefined;
+
         if (!called) {
-          let listeners = this.watchers.get(property);
+          const listeners = this.watchers.get(property);
 
           if (listeners) {
             this.#scheduleListener(listeners);
@@ -362,7 +384,7 @@ export class Scope {
 
       if (isDefined(value)) {
         target[property] = value;
-        let listeners = this.watchers.get(property);
+        const listeners = this.watchers.get(property);
 
         if (listeners) {
           this.#scheduleListener(listeners);
@@ -370,9 +392,11 @@ export class Scope {
 
         if (Array.isArray(target)) {
           if (this.objectListeners.has(proxy) && property !== "length") {
-            let keys = this.objectListeners.get(proxy);
+            const keys = this.objectListeners.get(proxy);
+
             for (let i = 0, l = keys.length; i < l; i++) {
               const listeners = this.watchers.get(keys[i]);
+
               if (listeners) this.#scheduleListener(listeners);
             }
             decodeURI;
@@ -381,15 +405,18 @@ export class Scope {
 
         return true;
       }
+
       return true;
     } else {
       if (isUndefined(target[property]) && isProxy(value)) {
         this.foreignProxies.add(value);
         target[property] = value;
+
         if (!this.watchers.has(property)) {
           return true;
         }
       }
+
       if (isUndefined(value)) {
         target[property] = value;
       } else {
@@ -398,16 +425,21 @@ export class Scope {
 
       if (oldValue !== value) {
         let expectedTarget = this.$target;
-        let listeners = [];
+
+        const listeners = [];
+
         // Handle the case where we need to start observing object after a watcher has been set
         if (isUndefined(oldValue) && isObject(target[property])) {
           if (!this.objectListeners.has(target[property])) {
             this.objectListeners.set(target[property], [property]);
           }
           const keys = Object.keys(value);
+
           for (let i = 0, l = keys.length; i < l; i++) {
             const key = keys[i];
+
             const keyListeners = this.watchers.get(key);
+
             if (keyListeners) {
               for (let j = 0, jl = keyListeners.length; j < jl; j++) {
                 listeners.push(keyListeners[j]);
@@ -419,6 +451,7 @@ export class Scope {
 
         if (Array.isArray(target)) {
           const lengthListeners = this.watchers.get("length");
+
           if (lengthListeners) {
             for (let i = 0, l = lengthListeners.length; i < l; i++) {
               listeners.push(lengthListeners[i]);
@@ -427,6 +460,7 @@ export class Scope {
         }
 
         const propListeners = this.watchers.get(property);
+
         if (propListeners) {
           for (let i = 0, l = propListeners.length; i < l; i++) {
             listeners.push(propListeners[i]);
@@ -436,6 +470,7 @@ export class Scope {
         if (listeners.length > 0) {
           this.#scheduleListener(listeners, (list) => {
             const scheduled = [];
+
             for (let i = 0, l = list.length; i < l; i++) {
               const x = list[i];
 
@@ -445,6 +480,7 @@ export class Scope {
               }
 
               const wrapperExpr = x.watchProp.split(".").slice(0, -1).join(".");
+
               const expectedHandler = $parse(wrapperExpr)(
                 x.originalTarget,
               )?.$handler;
@@ -453,6 +489,7 @@ export class Scope {
                 scheduled.push(x);
               }
             }
+
             return scheduled;
           });
         }
@@ -462,16 +499,20 @@ export class Scope {
         if (!foreignListeners && this.$parent?.foreignListeners) {
           foreignListeners = this.$parent.foreignListeners.get(property);
         }
+
         if (foreignListeners) {
           let scheduled = foreignListeners;
 
           // filter for repeaters
           const hashKey = this.$target.$$hashKey;
+
           if (hashKey) {
             scheduled = [];
+
             for (let i = 0, l = foreignListeners.length; i < l; i++) {
               const listener = foreignListeners[i];
-              if (listener.originalTarget["$$hashKey"] === hashKey) {
+
+              if (listener.originalTarget.$$hashKey === hashKey) {
                 scheduled.push(listener);
               }
             }
@@ -485,9 +526,12 @@ export class Scope {
 
       if (this.objectListeners.has(proxy) && property !== "length") {
         const keys = this.objectListeners.get(proxy);
+
         for (let i = 0, l = keys.length; i < l; i++) {
           const key = keys[i];
+
           const listeners = this.watchers.get(key);
+
           if (listeners && this.scheduled !== listeners) {
             this.#scheduleListener(listeners);
           }
@@ -510,8 +554,11 @@ export class Scope {
    */
   get(target, property, proxy) {
     if (property === "$scopename" && this.$scopename) return this.$scopename;
+
     if (property === "$$watchersCount") return calculateWatcherCount(this);
+
     if (property === isProxySymbol) return true;
+
     if (target[property] && isProxy(target[property])) {
       this.$proxy = target[property];
     } else {
@@ -527,9 +574,12 @@ export class Scope {
     ) {
       if (this.objectListeners.has(proxy)) {
         const keys = this.objectListeners.get(proxy);
+
         for (let i = 0, l = keys.length; i < l; i++) {
           const key = keys[i];
+
           const listeners = this.watchers.get(key);
+
           if (listeners) {
             this.scheduled = listeners;
           }
@@ -540,8 +590,10 @@ export class Scope {
         this.#scheduleListener(this.scheduled);
       }
     }
+
     if (hasOwn(this.propertyMap, property)) {
       this.$target = target;
+
       return this.propertyMap[property];
     } else {
       // we are a simple getter
@@ -554,15 +606,20 @@ export class Scope {
     if (target[property] && target[property][isProxySymbol]) {
       target[property] = undefined;
 
-      let listeners = this.watchers.get(property);
+      const listeners = this.watchers.get(property);
+
       if (listeners) {
         this.#scheduleListener(listeners);
       }
+
       if (this.objectListeners.has(this.$proxy)) {
         const keys = this.objectListeners.get(this.$proxy);
+
         for (let i = 0, l = keys.length; i < l; i++) {
           const key = keys[i];
+
           const listeners = this.watchers.get(key);
+
           if (listeners) this.#scheduleListener(listeners);
         }
       }
@@ -571,6 +628,7 @@ export class Scope {
         this.#scheduleListener(this.scheduled);
         this.scheduled = [];
       }
+
       return true;
     }
 
@@ -578,13 +636,17 @@ export class Scope {
 
     if (this.objectListeners.has(this.$proxy)) {
       const keys = this.objectListeners.get(this.$proxy);
+
       for (let i = 0, l = keys.length; i < l; i++) {
         const key = keys[i];
+
         const listeners = this.watchers.get(key);
+
         if (listeners) this.#scheduleListener(listeners);
       }
     } else {
       const listeners = this.watchers.get(property);
+
       if (listeners) {
         this.#scheduleListener(listeners, target[property]);
       }
@@ -604,6 +666,7 @@ export class Scope {
       if (listeners) {
         this.#scheduleListener(listeners);
       }
+
       if (isObject(value[k])) {
         this.#checkeListenersForAllKeys(value[k]);
       }
@@ -617,9 +680,12 @@ export class Scope {
   #scheduleListener(listeners, filter = (val) => val) {
     queueMicrotask(() => {
       let index = 0;
-      let filteredListeners = filter(listeners);
+
+      const filteredListeners = filter(listeners);
+
       while (index < filteredListeners.length) {
         const listener = filteredListeners[index];
+
         if (listener.foreignListener) {
           listener.foreignListener.#notifyListener(listener, this.$target);
         } else {
@@ -648,38 +714,45 @@ export class Scope {
       if (listenerFn) {
         queueMicrotask(() => {
           let res = get();
+
           while (isFunction(res)) {
             res = res();
           }
           listenerFn(res, this.$target);
         });
       }
+
       return () => {};
     }
 
     /** @type {ng.Listener} */
     const listener = {
       originalTarget: this.$target,
-      listenerFn: listenerFn,
+      listenerFn,
       watchFn: get,
       scopeId: this.$id,
       id: nextUid(),
       property: [],
     };
+
     // simplest case
     let key = get.decoratedNode.body[0].expression.name;
-    let keySet = [];
 
-    let type = get.decoratedNode.body[0].expression.type;
+    const keySet = [];
+
+    const { type } = get.decoratedNode.body[0].expression;
+
     switch (type) {
       // 3
       case ASTType.AssignmentExpression:
         // assignment calls without listener functions
         if (!listenerFn) {
           let res = get(this.$target);
+
           while (isFunction(res)) {
             res = res(this.$target);
           }
+
           return;
         }
         key = get.decoratedNode.body[0].expression.left.name;
@@ -699,12 +772,14 @@ export class Scope {
 
         for (let i = 0, l = keys.length; i < l; i++) {
           const key = keys[i];
+
           if (key) this.#registerKey(key, listener);
         }
 
         return () => {
           for (let i = 0, l = keys.length; i < l; i++) {
             const key = keys[i];
+
             this.#deregisterKey(key, listener.id);
           }
         };
@@ -712,18 +787,23 @@ export class Scope {
       // 6
       case ASTType.BinaryExpression: {
         if (get.decoratedNode.body[0].expression.isPure) {
-          let expr = get.decoratedNode.body[0].expression.toWatch[0];
+          const expr = get.decoratedNode.body[0].expression.toWatch[0];
+
           key = expr.property ? expr.property.name : expr.name;
+
           if (!key) {
             throw new Error("Unable to determine key");
           }
           listener.property.push(key);
           break;
         } else {
-          const toWatch = get.decoratedNode.body[0].expression.toWatch;
+          const { toWatch } = get.decoratedNode.body[0].expression;
+
           for (let i = 0, l = toWatch.length; i < l; i++) {
             const x = toWatch[i];
+
             const key = x.property ? x.property.name : x.name;
+
             if (!key) throw new Error("Unable to determine key");
 
             this.#registerKey(key, listener);
@@ -734,7 +814,9 @@ export class Scope {
           return () => {
             for (let i = 0, l = toWatch.length; i < l; i++) {
               const x = toWatch[i];
+
               const key = x.property ? x.property.name : x.name;
+
               this.#deregisterKey(key, listener.id);
             }
           };
@@ -742,8 +824,10 @@ export class Scope {
       }
       // 7
       case ASTType.UnaryExpression: {
-        let expr = get.decoratedNode.body[0].expression.toWatch[0];
+        const expr = get.decoratedNode.body[0].expression.toWatch[0];
+
         key = expr.property ? expr.property.name : expr.name;
+
         if (!key) {
           throw new Error("Unable to determine key");
         }
@@ -752,12 +836,15 @@ export class Scope {
       }
       // 8 function
       case ASTType.CallExpression: {
-        const toWatch = get.decoratedNode.body[0].expression.toWatch;
+        const { toWatch } = get.decoratedNode.body[0].expression;
+
         for (let i = 0, l = toWatch.length; i < l; i++) {
           const x = toWatch[i];
+
           if (!isDefined(x)) continue;
 
           const key = x.name;
+
           this.#registerKey(key, listener);
           this.#scheduleListener([listener]);
         }
@@ -765,9 +852,11 @@ export class Scope {
         return () => {
           for (let i = 0, l = toWatch.length; i < l; i++) {
             const x = toWatch[i];
+
             if (!isDefined(x)) continue;
 
             const key = x.name;
+
             this.#deregisterKey(key, listener.id);
           }
         };
@@ -783,16 +872,19 @@ export class Scope {
         }
 
         listener.property.push(key);
+
         if (watchProp !== key) {
           // Handle nested expression call
           listener.watchProp = watchProp;
 
-          let potentialProxy = $parse(
+          const potentialProxy = $parse(
             watchProp.split(".").slice(0, -1).join("."),
           )(/** @type {Scope} */ (listener.originalTarget));
+
           if (potentialProxy && this.foreignProxies.has(potentialProxy)) {
             potentialProxy.$handler.#registerForeignKey(key, listener);
             potentialProxy.$handler.#scheduleListener([listener]);
+
             return () => {
               return potentialProxy.$handler.#deregisterKey(key, listener.id);
             };
@@ -809,10 +901,13 @@ export class Scope {
 
       // 12
       case ASTType.ArrayExpression: {
-        const elements = get.decoratedNode.body[0].expression.elements;
+        const { elements } = get.decoratedNode.body[0].expression;
+
         for (let i = 0, l = elements.length; i < l; i++) {
           const x = elements[i];
+
           const key = x.type === 11 ? x.value : x.toWatch[0]?.name;
+
           if (!key) continue;
 
           this.#registerKey(key, listener);
@@ -822,7 +917,9 @@ export class Scope {
         return () => {
           for (let i = 0, l = elements.length; i < l; i++) {
             const x = elements[i];
+
             const key = x.type === 11 ? x.value : x.toWatch[0]?.name;
+
             if (!key) continue;
 
             this.#deregisterKey(key, listener.id);
@@ -832,9 +929,11 @@ export class Scope {
 
       // 14
       case ASTType.ObjectExpression: {
-        const properties = get.decoratedNode.body[0].expression.properties;
+        const { properties } = get.decoratedNode.body[0].expression;
+
         for (let i = 0, l = properties.length; i < l; i++) {
           const prop = properties[i];
+
           let key;
 
           if (prop.key.isPure === false) {
@@ -843,6 +942,7 @@ export class Scope {
             key = prop.value.name;
           } else {
             const target = get.decoratedNode.body[0].expression.toWatch[0];
+
             key = target.property ? target.property.name : target.name;
           }
 
@@ -854,12 +954,13 @@ export class Scope {
         break;
       }
       default: {
-        throw new Error("Unsupported type " + type);
+        throw new Error(`Unsupported type ${type}`);
       }
     }
 
     // if the target is an object, then start observing it
-    let listenerObject = listener.watchFn(this.$target);
+    const listenerObject = listener.watchFn(this.$target);
+
     if (isObject(listenerObject)) {
       this.objectListeners.set(listenerObject, [key]);
     }
@@ -875,15 +976,19 @@ export class Scope {
     if (!lazy) {
       this.#scheduleListener([listener]);
     }
+
     return () => {
       if (keySet.length > 0) {
         let res = true;
+
         for (let i = 0, l = keySet.length; i < l; i++) {
-          let success = this.#deregisterKey(keySet[i], listener.id);
+          const success = this.#deregisterKey(keySet[i], listener.id);
+
           if (!success) {
             res = false;
           }
         }
+
         return res;
       } else {
         return this.#deregisterKey(key, listener.id);
@@ -893,6 +998,7 @@ export class Scope {
 
   $new(childInstance) {
     let child;
+
     if (childInstance) {
       if (Object.getPrototypeOf(childInstance) === Object.prototype) {
         Object.setPrototypeOf(childInstance, this.$target);
@@ -913,21 +1019,29 @@ export class Scope {
     }
 
     const proxy = new Proxy(child, new Scope(this));
+
     this.$children.push(proxy);
+
     return proxy;
   }
 
   $newIsolate(instance) {
-    let child = instance ? Object.create(instance) : Object.create(null);
+    const child = instance ? Object.create(instance) : Object.create(null);
+
     const proxy = new Proxy(child, new Scope(this, this.$root));
+
     this.$children.push(proxy);
+
     return proxy;
   }
 
   $transcluded(parentInstance) {
-    let child = Object.create(this.$target);
+    const child = Object.create(this.$target);
+
     const proxy = new Proxy(child, new Scope(this, parentInstance));
+
     this.$children.push(proxy);
+
     return proxy;
   }
 
@@ -951,17 +1065,21 @@ export class Scope {
 
   #deregisterKey(key, id) {
     const listenerList = this.watchers.get(key);
+
     if (!listenerList) return false;
 
     const index = listenerList.findIndex((x) => x.id === id);
+
     if (index === -1) return false;
 
     listenerList.splice(index, 1);
+
     if (listenerList.length) {
       this.watchers.set(key, listenerList);
     } else {
       this.watchers.delete(key);
     }
+
     return true;
   }
 
@@ -983,14 +1101,17 @@ export class Scope {
 
   $eval(expr, locals) {
     const fn = $parse(expr);
+
     const res = fn(this, locals);
+
     if (isUndefined(res) || res === null) {
       return res;
     }
 
-    if (res["name"] === Object.hasOwnProperty["name"]) {
+    if (res.name === Object.hasOwnProperty.name) {
       return res;
     }
+
     if (isFunction(res)) {
       return res();
     }
@@ -1007,8 +1128,10 @@ export class Scope {
    */
   $merge(newTarget) {
     const entries = Object.entries(newTarget);
+
     for (let i = 0, l = entries.length; i < l; i++) {
       const [key, value] = entries[i];
+
       this.set(this.$target, key, value, this.$proxy);
     }
   }
@@ -1032,6 +1155,7 @@ export class Scope {
    */
   $on(name, listener) {
     let namedListeners = this.$$listeners.get(name);
+
     if (!namedListeners) {
       namedListeners = [];
       this.$$listeners.set(name, namedListeners);
@@ -1040,8 +1164,10 @@ export class Scope {
 
     return () => {
       const indexOfListener = namedListeners.indexOf(listener);
+
       if (indexOfListener !== -1) {
         namedListeners.splice(indexOfListener, 1);
+
         if (namedListeners.length == 0) {
           this.$$listeners.delete(name);
         }
@@ -1056,7 +1182,7 @@ export class Scope {
    */
   $emit(name, ...args) {
     return this.#eventHelper(
-      { name: name, event: undefined, broadcast: false },
+      { name, event: undefined, broadcast: false },
       ...args,
     );
   }
@@ -1068,7 +1194,7 @@ export class Scope {
    */
   $broadcast(name, ...args) {
     return this.#eventHelper(
-      { name: name, event: undefined, broadcast: true },
+      { name, event: undefined, broadcast: true },
       ...args,
     );
   }
@@ -1082,13 +1208,15 @@ export class Scope {
       if (!this.$$listeners.has(name)) {
         if (this.$parent) {
           return this.$parent.$handler.#eventHelper(
-            { name: name, event: event, broadcast: broadcast },
+            { name, event, broadcast },
             ...args,
           );
         }
+
         return;
       }
     }
+
     if (event) {
       event.currentScope = this.$target;
     } else {
@@ -1108,13 +1236,18 @@ export class Scope {
     }
 
     const listenerArgs = concat([event], [event].concat(args), 1);
-    let listeners = this.$$listeners.get(name);
+
+    const listeners = this.$$listeners.get(name);
+
     if (listeners) {
-      let length = listeners.length;
+      let { length } = listeners;
+
       for (let i = 0; i < length; i++) {
         try {
-          let cb = listeners[i];
+          const cb = listeners[i];
+
           cb.apply(null, listenerArgs);
+
           if (listeners.length !== length) {
             if (listeners.length < length) {
               i--;
@@ -1136,19 +1269,17 @@ export class Scope {
     if (broadcast) {
       if (this.$children.length > 0) {
         this.$children.forEach((child) => {
-          event = child["$handler"].#eventHelper(
-            { name: name, event: event, broadcast: broadcast },
+          event = child.$handler.#eventHelper(
+            { name, event, broadcast },
             ...args,
           );
         });
       }
+
       return event;
     } else {
       if (this.$parent) {
-        return this.$parent.#eventHelper(
-          { name: name, event: event, broadcast: broadcast },
-          ...args,
-        );
+        return this.$parent.#eventHelper({ name, event, broadcast }, ...args);
       } else {
         return event;
       }
@@ -1181,6 +1312,7 @@ export class Scope {
           val.splice(i, 1);
         }
       }
+
       if (val.length === 0) {
         this.watchers.delete(key);
       } else {
@@ -1192,6 +1324,7 @@ export class Scope {
       this.watchers.clear();
     } else {
       const children = this.$parent.$children;
+
       for (let i = 0, l = children.length; i < l; i++) {
         if (children[i].$id === this.$id) {
           children.splice(i, 1);
@@ -1210,8 +1343,10 @@ export class Scope {
    */
   #notifyListener(listener, target) {
     const { originalTarget, listenerFn, watchFn } = listener;
+
     try {
       let newVal = watchFn(originalTarget);
+
       if (isUndefined(newVal)) {
         newVal = watchFn(target);
       }
@@ -1232,6 +1367,7 @@ export class Scope {
 
       while ($postUpdateQueue.length) {
         const fn = $postUpdateQueue.shift();
+
         fn();
       }
     } catch (e) {
@@ -1256,17 +1392,21 @@ export class Scope {
     if (isString(id)) {
       id = parseInt(/** @type {string} */ (id), 10);
     }
+
     if (this.$id === id) {
       return this;
     } else {
       let res = undefined;
+
       for (const child of this.$children) {
-        let found = child.$getById(id);
+        const found = child.$getById(id);
+
         if (found) {
           res = found;
           break;
         }
       }
+
       return res;
     }
   }
@@ -1277,13 +1417,16 @@ export class Scope {
         return scope;
       } else {
         let res = undefined;
+
         for (const child of scope.$children) {
-          let found = getByName(child, name);
+          const found = getByName(child, name);
+
           if (found) {
             res = found;
             break;
           }
         }
+
         return res;
       }
     };
@@ -1302,6 +1445,7 @@ function calculateWatcherCount(model) {
   const childIds = collectChildIds(model);
 
   let count = 0;
+
   for (const watchers of model.watchers.values()) {
     for (let i = 0, l = watchers.length; i < l; i++) {
       if (childIds.has(watchers[i].scopeId)) {
@@ -1319,12 +1463,15 @@ function calculateWatcherCount(model) {
  */
 function collectChildIds(child) {
   const ids = new Set();
+
   const stack = [child];
 
   while (stack.length) {
     const node = stack.pop();
+
     if (!ids.has(node.$id)) {
       ids.add(node.$id);
+
       if (node.$children) {
         for (let i = 0, l = node.$children.length; i < l; i++) {
           stack.push(node.$children[i]);

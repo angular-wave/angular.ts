@@ -1,8 +1,8 @@
 import {
+  getNodeName,
   isFunction,
   isNumber,
   isString,
-  getNodeName,
 } from "../../shared/utils.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
@@ -39,12 +39,15 @@ export class AnchorScrollProvider {
       //  and working in all supported browsers.)
       function getFirstAnchor(list) {
         let result = null;
+
         Array.prototype.some.call(list, (element) => {
           if (getNodeName(element) === "a") {
             result = element;
+
             return true;
           }
         });
+
         return result;
       }
 
@@ -56,7 +59,9 @@ export class AnchorScrollProvider {
           offset = /** @type {Function} */ (offset)();
         } else if (offset instanceof Element) {
           const elem = offset[0];
+
           const style = window.getComputedStyle(elem);
+
           if (style.position !== "fixed") {
             offset = 0;
           } else {
@@ -90,6 +95,7 @@ export class AnchorScrollProvider {
             // the top of the element and the offset, which is enough to align the top of `elem` at the
             // desired position.
             const elemTop = elem.getBoundingClientRect().top;
+
             window.scrollBy(0, elemTop - /** @type {number} */ (offset));
           }
         } else {
@@ -123,12 +129,13 @@ export class AnchorScrollProvider {
       // does not scroll when user clicks on anchor link that is currently on
       // (no url change, no $location.getHash() change), browser native does scroll
       if (this.autoScrollingEnabled) {
-        $rootScope["$location"] = $location;
+        $rootScope.$location = $location;
         $rootScope.$watch("$location.$$hash", (newVal, oldVal) => {
           // skip the initial scroll if $location.hash is empty
           if (newVal === oldVal && newVal === "") return;
 
           const action = () => scroll(newVal);
+
           if (document.readyState === "complete") {
             // Force the action to be run async for consistent behavior
             // from the action's point of view

@@ -5,11 +5,13 @@ export function ngElDirective() {
   return {
     restrict: "A",
     link(scope, element, attrs) {
-      const expr = attrs["ngEl"];
+      const expr = attrs.ngEl;
+
       const key = !expr ? element.id : expr;
 
       scope.$target[key] = element;
       const parent = element.parentNode;
+
       if (!parent) return;
 
       const observer = new MutationObserver((mutations) => {

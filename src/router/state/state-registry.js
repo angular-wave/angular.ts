@@ -69,6 +69,7 @@ export class StateRegistryProvider {
     ($injector) => {
       this.$injector = $injector;
       this.builder.$injector = $injector;
+
       return this;
     },
   ];
@@ -83,19 +84,26 @@ export class StateRegistryProvider {
    * @internalapi
    */
   getStateHookBuilder(hookName) {
-    let that = this;
+    const that = this;
+
     return function stateHookBuilder(stateObject) {
       const hook = stateObject[hookName];
+
       const pathname = hookName === "onExit" ? "from" : "to";
+
       function decoratedNg1Hook(trans, state) {
         const resolveContext = new ResolveContext(trans.treeChanges(pathname));
+
         const subContext = resolveContext.subContext(state.$$state());
+
         const locals = Object.assign(getLocals(subContext), {
           $state$: state,
           $transition$: trans,
         });
+
         return that.$injector.invoke(hook, this, locals);
       }
+
       return hook ? decoratedNg1Hook : undefined;
     };
   }
@@ -113,6 +121,7 @@ export class StateRegistryProvider {
       },
       abstract: true,
     };
+
     this._root = this.stateQueue.register(rootStateDef);
     this._root.navigable = null;
   }
@@ -149,10 +158,12 @@ export class StateRegistryProvider {
    */
   onStatesChanged(listener) {
     this.listeners.push(listener);
+
     return function deregisterListener() {
       removeFrom(this.listeners, listener);
     }.bind(this);
   }
+
   /**
    * Gets the implicit root state
    *
@@ -165,6 +176,7 @@ export class StateRegistryProvider {
   root() {
     return this._root;
   }
+
   /**
    * Adds a state to the registry
    *
@@ -183,16 +195,22 @@ export class StateRegistryProvider {
 
   _deregisterTree(state) {
     const all = this.get().map((s) => s.$$state());
+
     const getChildren = (states) => {
       const _children = all.filter((s) => states.indexOf(s.parent) !== -1);
+
       return _children.length === 0
         ? _children
         : _children.concat(getChildren(_children));
     };
+
     const children = getChildren([state]);
+
     const deregistered = [state].concat(children).reverse();
+
     deregistered.forEach((_state) => {
       const rulesApi = this.urlServiceRules;
+
       // Remove URL rule
       rulesApi
         .rules()
@@ -201,8 +219,10 @@ export class StateRegistryProvider {
       // Remove state from registry
       delete this.states[_state.name];
     });
+
     return deregistered;
   }
+
   /**
    * Removes a state from the registry
    *
@@ -214,15 +234,18 @@ export class StateRegistryProvider {
    */
   deregister(stateOrName) {
     const _state = this.get(stateOrName);
+
     if (!_state)
-      throw new Error("Can't deregister state; not found: " + stateOrName);
+      throw new Error(`Can't deregister state; not found: ${stateOrName}`);
     const deregisteredStates = this._deregisterTree(_state.$$state());
+
     this.listeners.forEach((listener) =>
       listener(
         "deregistered",
         deregisteredStates.map((s) => s.self),
       ),
     );
+
     return deregisteredStates;
   }
 
@@ -230,6 +253,7 @@ export class StateRegistryProvider {
     if (arguments.length === 0)
       return Object.keys(this.states).map((name) => this.states[name].self);
     const found = this.matcher.find(stateOrName, base);
+
     return (found && found.self) || null;
   }
 
@@ -250,13 +274,17 @@ export class StateRegistryProvider {
 
 export const getLocals = (ctx) => {
   const tokens = ctx.getTokens().filter(isString);
+
   const tuples = tokens.map((key) => {
     const resolvable = ctx.getResolvable(key);
+
     const waitPolicy = ctx.getPolicy(resolvable).async;
+
     return [
       key,
       waitPolicy === "NOWAIT" ? resolvable.promise : resolvable.data,
     ];
   });
+
   return tuples.reduce(applyPairs, {});
 };

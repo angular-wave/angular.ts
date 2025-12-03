@@ -24,8 +24,10 @@ export function TemplateRequestProvider() {
   this.httpOptions = function (val) {
     if (val) {
       httpOptions = val;
+
       return this;
     }
+
     return httpOptions;
   };
 
@@ -79,6 +81,7 @@ export function TemplateRequestProvider() {
         if (!isString(tpl) || !$templateCache.has(tpl)) {
           try {
             tpl = $sce.getTrustedResourceUrl(tpl);
+
             if (!tpl) {
               return Promise.reject("Template not found");
             }
@@ -104,7 +107,7 @@ export function TemplateRequestProvider() {
             extend(
               {
                 cache: $templateCache,
-                transformResponse: transformResponse,
+                transformResponse,
               },
               httpOptions,
             ),
@@ -114,6 +117,7 @@ export function TemplateRequestProvider() {
           })
           .then(function (response) {
             $templateCache.set(tpl, response.data);
+
             return response.data;
           }, handleError);
 

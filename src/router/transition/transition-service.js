@@ -5,9 +5,9 @@ import {
   treeChangesCleanup,
 } from "../hooks/core-resolvables.js";
 import {
+  registerOnEnterHook,
   registerOnExitHook,
   registerOnRetainHook,
-  registerOnEnterHook,
 } from "../hooks/on-enter-exit-retain.js";
 import {
   registerEagerResolvePath,
@@ -40,7 +40,7 @@ import { $injectTokens as $t, provider } from "../../injection-tokens.js";
  * let reloadOpts = { reload: true, notify: true }
  * let options = defaults(theirOpts, customDefaults, defaultOptions);
  */
-export let defaultTransOpts = {
+export const defaultTransOpts = {
   location: true,
   relative: null,
   inherit: false,
@@ -117,6 +117,7 @@ export class TransitionProvider {
         this,
         viewService,
       );
+
       return this;
     },
   ];
@@ -161,10 +162,14 @@ export class TransitionProvider {
 
   _defineCoreEvents() {
     const TH = TransitionHook;
+
     const paths = this._criteriaPaths;
+
     const NORMAL_SORT = false,
       REVERSE_SORT = true;
+
     const SYNCHRONOUS = true;
+
     this._defineEvent(
       "onCreate",
       TransitionHookPhase.CREATE,
@@ -211,6 +216,7 @@ export class TransitionProvider {
 
   _defineCorePaths() {
     const { STATE, TRANSITION } = TransitionHookScope;
+
     this._definePathType("to", TRANSITION);
     this._definePathType("from", TRANSITION);
     this._definePathType("exiting", STATE);
@@ -238,6 +244,7 @@ export class TransitionProvider {
       getErrorHandler,
       synchronous,
     );
+
     this._eventTypes.push(eventType);
     makeEvent(this, this, eventType);
   }
@@ -250,11 +257,14 @@ export class TransitionProvider {
     const transitionHookTypes = isDefined(phase)
       ? this._eventTypes.filter((type) => type.hookPhase === phase)
       : this._eventTypes.slice();
+
     return transitionHookTypes.sort((l, r) => {
       const cmpByPhase = l.hookPhase - r.hookPhase;
+
       return cmpByPhase === 0 ? l.hookOrder - r.hookOrder : cmpByPhase;
     });
   }
+
   /**
    * Adds a Path to be used as a criterion against a TreeChanges path
    *
@@ -282,6 +292,7 @@ export class TransitionProvider {
 
   _registerCoreTransitionHooks() {
     const fns = this._deregisterHookFns;
+
     fns.addCoreResolves = registerAddCoreResolvables(this);
     fns.ignored = registerIgnoredTransitionHook(this);
     fns.invalid = registerInvalidTransitionHook(this);

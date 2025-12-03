@@ -8,7 +8,9 @@ import { dealoc } from "./dom.js";
  */
 export function browserTrigger(element, options) {
   const { type, ...eventProps } = options;
+
   let event;
+
   if (isObject(options) && type.startsWith("key")) {
     event = new KeyboardEvent(type, eventProps);
   } else if (isObject(options) && type.startsWith("mouse")) {
@@ -39,9 +41,10 @@ let ELEMENT;
 export function bootstrap(htmlContent, moduleName) {
   if (!ELEMENT) {
     ELEMENT = document.getElementById("app");
-    window["ELEMENT"] = ELEMENT;
+    window.ELEMENT = ELEMENT;
   }
   dealoc(ELEMENT);
   ELEMENT.innerHTML = htmlContent;
-  return window["angular"].bootstrap(ELEMENT, [moduleName || "myModule"]);
+
+  return window.angular.bootstrap(ELEMENT, [moduleName || "myModule"]);
 }

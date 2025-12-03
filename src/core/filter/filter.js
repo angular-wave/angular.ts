@@ -8,8 +8,8 @@ import {
   $IsStateFilter,
 } from "../../router/state-filters.js";
 import {
-  assert,
   BADARG,
+  assert,
   isDefined,
   isFunction,
   isString,
@@ -50,9 +50,10 @@ export class FilterProvider {
    * @return {ng.FilterProvider}
    */
   register(name, factory) {
-    assert(isString(name), BADARG + `:name ${name}`);
-    assert(isFunction(factory), BADARG + `:factory ${factory}`);
+    assert(isString(name), `${BADARG}:name ${name}`);
+    assert(isFunction(factory), `${BADARG}:factory ${factory}`);
     this.$provide.factory(name + SUFFIX, factory);
+
     return this;
   }
 
@@ -63,7 +64,8 @@ export class FilterProvider {
      * @returns {ng.FilterService}
      */
     ($injector) => (name) => {
-      assert(isString(name), BADARG + `:name ${name}`);
+      assert(isString(name), `${BADARG}:name ${name}`);
+
       return $injector.get(name + SUFFIX);
     },
   ];

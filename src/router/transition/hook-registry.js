@@ -1,5 +1,5 @@
-import { removeFrom, tail, map } from "../../shared/common.js";
-import { isString, isFunction } from "../../shared/utils.js";
+import { map, removeFrom, tail } from "../../shared/common.js";
+import { isFunction, isString } from "../../shared/utils.js";
 import { Glob } from "../glob/glob.js";
 import { TransitionHookScope } from "./transition-hook.js";
 /**
@@ -17,10 +17,13 @@ import { TransitionHookScope } from "./transition-hook.js";
  */
 export function matchState(state, criterion, transition) {
   const toMatch = isString(criterion) ? [criterion] : criterion;
+
   function matchGlobs(_state) {
     const globStrings = toMatch;
+
     for (let i = 0; i < globStrings.length; i++) {
       const glob = new Glob(globStrings[i]);
+
       if (
         (glob && glob.matches(_state.name)) ||
         (!glob && globStrings[i] === _state.name)
@@ -28,9 +31,11 @@ export function matchState(state, criterion, transition) {
         return true;
       }
     }
+
     return false;
   }
   const matchFn = isFunction(toMatch) ? toMatch : matchGlobs;
+
   return !!matchFn(state, transition);
 }
 /**
@@ -65,6 +70,7 @@ export class RegisteredHook {
     this.bind = options.bind || null;
     this.invokeLimit = options.invokeLimit;
   }
+
   /**
    * Gets the matching [[PathNode]]s
    *
@@ -85,8 +91,10 @@ export class RegisteredHook {
     const matching = nodes.filter((node) =>
       matchState(node.state, criterion, transition),
     );
+
     return matching.length ? matching : null;
   }
+
   /**
    * Gets the default match criteria (all `true`)
    *
@@ -104,6 +112,7 @@ export class RegisteredHook {
   _getDefaultMatchCriteria() {
     return map(this.tranSvc._getPathTypes(), () => true);
   }
+
   /**
    * Gets matching nodes as [[IMatchingNodes]]
    *
@@ -124,21 +133,28 @@ export class RegisteredHook {
       this._getDefaultMatchCriteria(),
       this.matchCriteria,
     );
+
     const paths = Object.values(this.tranSvc._getPathTypes());
+
     return paths.reduce((mn, pathtype) => {
       // STATE scope criteria matches against every node in the path.
       // TRANSITION scope criteria matches against only the last node in the path
       const isStateHook = pathtype.scope === TransitionHookScope.STATE;
+
       const path = treeChanges[pathtype.name] || [];
+
       const nodes = isStateHook ? path : [tail(path)];
+
       mn[pathtype.name] = this._matchingNodes(
         nodes,
         criteria[pathtype.name],
         transition,
       );
+
       return mn;
     }, {});
   }
+
   /**
    * Determines if this hook's [[matchCriteria]] match the given [[TreeChanges]]
    *
@@ -147,10 +163,13 @@ export class RegisteredHook {
    */
   matches(treeChanges, transition) {
     const matches = this._getMatchingNodes(treeChanges, transition);
+
     // Check if all the criteria matched the TreeChanges object
     const allMatched = Object.values(matches).every((x) => x);
+
     return allMatched ? matches : null;
   }
+
   deregister() {
     this.removeHookFromRegistry(this);
     this._deregistered = true;
@@ -161,8 +180,11 @@ export function makeEvent(registry, transitionService, eventType) {
   // Create the object which holds the registered transition hooks.
   const _registeredHooks = (registry._registeredHooks =
     registry._registeredHooks || {});
+
   const hooks = (_registeredHooks[eventType.name] = []);
+
   const removeHookFn = (x) => removeFrom(hooks, x);
+
   // Create hook registration function on the IHookRegistry for the event
   registry[eventType.name] = hookRegistrationFn;
   function hookRegistrationFn(matchObject, callback, options = {}) {
@@ -174,8 +196,11 @@ export function makeEvent(registry, transitionService, eventType) {
       removeHookFn,
       options,
     );
+
     hooks.push(registeredHook);
+
     return registeredHook.deregister.bind(registeredHook);
   }
+
   return hookRegistrationFn;
 }

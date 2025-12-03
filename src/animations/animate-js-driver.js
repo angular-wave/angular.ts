@@ -13,7 +13,9 @@ export function AnimateJsDriverProvider($$animationProvider) {
       return function initDriverFn(animationDetails) {
         if (animationDetails.from && animationDetails.to) {
           const fromAnimation = prepareAnimation(animationDetails.from);
+
           const toAnimation = prepareAnimation(animationDetails.to);
+
           if (!fromAnimation && !toAnimation) return;
 
           return {
@@ -52,12 +54,14 @@ export function AnimateJsDriverProvider($$animationProvider) {
             },
           };
         }
+
         return prepareAnimation(animationDetails);
       };
 
       function prepareAnimation(animationDetails) {
         // TODO(matsko): make sure to check for grouped animations and delegate down to normal animations
         const { element, event, options, classes } = animationDetails;
+
         return $$animateJs(element, event, classes, options);
       }
     },

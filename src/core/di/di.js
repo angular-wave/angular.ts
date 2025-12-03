@@ -6,9 +6,13 @@ import { $injectTokens } from "../../injection-tokens.js";
  */
 
 const $injectorMinErr = minErr($injectTokens.$injector);
+
 const ARROW_ARG = /^([^(]+?)=>/;
+
 const FN_ARGS = /^[^(]*\(\s*([^)]*)\)/m;
+
 const FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
+
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
 
 /**
@@ -25,6 +29,7 @@ export function stringifyFn(fn) {
  */
 export function extractArgs(fn) {
   const fnText = stringifyFn(fn).replace(STRIP_COMMENTS, "");
+
   return fnText.match(ARROW_ARG) || fnText.match(FN_ARGS);
 }
 
@@ -48,6 +53,7 @@ export function annotate(fn, strictDi, name) {
   if (typeof fn === "function") {
     if (!($inject = fn.$inject)) {
       $inject = [];
+
       if (fn.length) {
         if (strictDi) {
           throw $injectorMinErr(
@@ -72,5 +78,6 @@ export function annotate(fn, strictDi, name) {
   } else {
     assertArgFn(fn, "fn", true);
   }
+
   return $inject;
 }

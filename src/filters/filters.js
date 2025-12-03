@@ -1,7 +1,9 @@
 import { isNumber, isString, isUndefined, toJson } from "../shared/utils.js";
 
 const MAX_DIGITS = 22;
+
 const DECIMAL_SEP = ".";
+
 const ZERO_CHAR = "0";
 
 /**
@@ -19,10 +21,15 @@ const ZERO_CHAR = "0";
  */
 function parse(numStr) {
   let exponent = 0;
+
   let digits;
+
   let numberOfIntegerDigits;
+
   let i;
+
   let j;
+
   let zeros;
 
   // Decimal point?
@@ -53,11 +60,13 @@ function parse(numStr) {
   } else {
     // Count the number of trailing zeros
     zeros--;
+
     while (numStr.charAt(zeros) === ZERO_CHAR) zeros--;
 
     // Trailing zeros are insignificant so ignore them
     numberOfIntegerDigits -= i;
     digits = [];
+
     // Convert string to array of digits without leading/trailing zeros.
     for (j = 0; i <= zeros; i++, j++) {
       digits[j] = +numStr.charAt(i);
@@ -80,6 +89,7 @@ function parse(numStr) {
  */
 function roundNumber(parsedNumber, fractionSize, minFrac, maxFrac) {
   const digits = parsedNumber.d;
+
   let fractionLen = digits.length - parsedNumber.i;
 
   // determine fractionSize if it is not specified; `+fractionSize` converts it to a number
@@ -89,6 +99,7 @@ function roundNumber(parsedNumber, fractionSize, minFrac, maxFrac) {
 
   // The index of the digit to where rounding is to occur
   let roundAt = fractionSize + parsedNumber.i;
+
   const digit = digits[roundAt];
 
   if (roundAt > 0) {
@@ -105,6 +116,7 @@ function roundNumber(parsedNumber, fractionSize, minFrac, maxFrac) {
     parsedNumber.i = 1;
     digits.length = Math.max(1, (roundAt = fractionSize + 1));
     digits[0] = 0;
+
     for (let i = 1; i < roundAt; i++) digits[i] = 0;
   }
 
@@ -128,8 +140,10 @@ function roundNumber(parsedNumber, fractionSize, minFrac, maxFrac) {
   const carry = digits.reduceRight((carry, d, i, digits) => {
     d += carry;
     digits[i] = d % 10;
+
     return Math.floor(d / 10);
   }, 0);
+
   if (carry) {
     digits.unshift(carry);
     parsedNumber.i++;
@@ -166,9 +180,13 @@ export function formatNumber(
     return "";
 
   const isInfinity = !Number.isFinite(number);
+
   let isZero = false;
+
   const numStr = `${Math.abs(number)}`;
+
   let formattedText = "";
+
   let parsedNumber;
 
   if (isInfinity) {
@@ -179,9 +197,13 @@ export function formatNumber(
     roundNumber(parsedNumber, fractionSize, pattern.minFrac, pattern.maxFrac);
 
     let digits = parsedNumber.d;
+
     let integerLen = parsedNumber.i;
+
     const exponent = parsedNumber.e;
+
     let decimals = [];
+
     isZero = digits.reduce((isZero, d) => isZero && !d, true);
 
     // pad zeros for small numbers
@@ -200,12 +222,15 @@ export function formatNumber(
 
     // format the integer digits with grouping separators
     const groups = [];
+
     if (digits.length >= pattern.lgSize) {
       groups.unshift(digits.splice(-pattern.lgSize, digits.length).join(""));
     }
+
     while (digits.length > pattern.gSize) {
       groups.unshift(digits.splice(-pattern.gSize, digits.length).join(""));
     }
+
     if (digits.length) {
       groups.unshift(digits.join(""));
     }
@@ -220,9 +245,11 @@ export function formatNumber(
       formattedText += `e+${exponent}`;
     }
   }
+
   if (number < 0 && !isZero) {
     return pattern.negPre + formattedText + pattern.negSuf;
   }
+
   return pattern.posPre + formattedText + pattern.posSuf;
 }
 
@@ -234,6 +261,7 @@ export function jsonFilter() {
     if (isUndefined(spacing)) {
       spacing = 2;
     }
+
     return toJson(object, spacing);
   };
 }

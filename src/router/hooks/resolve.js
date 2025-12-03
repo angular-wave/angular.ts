@@ -15,6 +15,7 @@ const eagerResolvePath = (trans) =>
   new ResolveContext(trans.treeChanges().to)
     .resolvePath("EAGER", trans)
     .then(() => {});
+
 export const registerEagerResolvePath = (transitionService) =>
   transitionService.onStart({}, eagerResolvePath, {
     priority: RESOLVE_HOOK_PRIORITY,
@@ -33,6 +34,7 @@ const lazyResolveState = (trans, state) =>
     .subContext(state.$$state())
     .resolvePath("LAZY", trans)
     .then(() => {});
+
 export const registerLazyResolveState = (transitionService) =>
   transitionService.onEnter({ entering: val(true) }, lazyResolveState, {
     priority: RESOLVE_HOOK_PRIORITY,
@@ -51,6 +53,7 @@ const resolveRemaining = (trans) =>
   new ResolveContext(trans.treeChanges().to)
     .resolvePath("LAZY", trans)
     .then(() => {});
+
 export const registerResolveRemaining = (transitionService) =>
   transitionService.onFinish({}, resolveRemaining, {
     priority: RESOLVE_HOOK_PRIORITY,

@@ -45,24 +45,30 @@ export class HookBuilder {
    * @param hookType the type of the hook registration function, e.g., 'onEnter', 'onFinish'.
    */
   buildHooks(hookType) {
-    const transition = this.transition;
+    const { transition } = this;
+
     const treeChanges = transition.treeChanges();
+
     // Find all the matching registered hooks for a given hook type
     const matchingHooks = this.getMatchingHooks(
       hookType,
       treeChanges,
       transition,
     );
+
     if (!matchingHooks) return [];
     const baseHookOptions = {
-      transition: transition,
+      transition,
       current: transition.options().current,
     };
+
     const makeTransitionHooks = (hook) => {
       // Fetch the Nodes that caused this hook to match.
       const matches = hook.matches(treeChanges, transition);
+
       // Select the PathNode[] that will be used as TransitionHook context objects
       const matchingNodes = matches[hookType.criteriaMatchPath.name];
+
       // Return an array of HookTuples
       return matchingNodes.map((node) => {
         const _options = Object.assign(
@@ -72,25 +78,30 @@ export class HookBuilder {
           },
           baseHookOptions,
         );
+
         const state =
           hookType.criteriaMatchPath.scope === TransitionHookScope.STATE
             ? node.state.self
             : null;
+
         const transitionHook = new TransitionHook(
           transition,
           state,
           hook,
           _options,
         );
+
         return { hook, node, transitionHook };
       });
     };
+
     return matchingHooks
       .map(makeTransitionHooks)
       .reduce(unnestR, [])
       .sort(tupleSort(hookType.reverseSort))
       .map((tuple) => tuple.transitionHook);
   }
+
   /**
    * Finds all RegisteredHooks from:
    * - The Transition object instance hook registry
@@ -104,11 +115,14 @@ export class HookBuilder {
    */
   getMatchingHooks(hookType, treeChanges, transition) {
     const isCreate = hookType.hookPhase === TransitionHookPhase.CREATE;
+
     // Instance and Global hook registries
     const $transitions = this.transition.transitionService;
+
     const registries = isCreate
       ? [$transitions]
       : [this.transition, $transitions];
+
     return registries
       .map((reg) => reg.getHooks(hookType.name)) // Get named hooks from registries
       .filter(
@@ -130,8 +144,10 @@ export class HookBuilder {
 function tupleSort(reverseDepthSort = false) {
   return function nodeDepthThenPriority(l, r) {
     const factor = reverseDepthSort ? -1 : 1;
+
     const depthDelta =
       (l.node.state.path.length - r.node.state.path.length) * factor;
+
     return depthDelta !== 0 ? depthDelta : r.hook.priority - l.hook.priority;
   };
 }

@@ -28,8 +28,10 @@ let scheduled = false;
  */
 function flush() {
   const tasks = queue;
+
   queue = [];
   scheduled = false;
+
   for (let i = 0; i < tasks.length; i++) {
     tasks[i]();
   }
@@ -43,6 +45,7 @@ function flush() {
  */
 export function schedule(fn) {
   queue.push(fn);
+
   if (!scheduled) {
     scheduled = true;
     (typeof requestAnimationFrame === "function"
@@ -65,13 +68,16 @@ export class AnimateRunner {
    */
   static chain(runners, callback) {
     let i = 0;
+
     const next = (ok = true) => {
       if (!ok || i >= runners.length) {
         callback(ok);
+
         return;
       }
       runners[i++].done(next);
     };
+
     next();
   }
 
@@ -83,10 +89,13 @@ export class AnimateRunner {
    */
   static all(runners, callback) {
     let remaining = runners.length;
+
     let status = true;
+
     for (const r of runners) {
       r.done((result) => {
         status = status && result !== false;
+
         if (--remaining === 0) callback(status);
       });
     }
@@ -188,6 +197,7 @@ export class AnimateRunner {
         });
       });
     }
+
     return this._promise;
   }
 
@@ -216,6 +226,7 @@ export class AnimateRunner {
     this._state = RunnerState.DONE;
 
     const callbacks = this._doneCallbacks;
+
     for (let i = 0; i < callbacks.length; i++) {
       callbacks[i](status);
     }

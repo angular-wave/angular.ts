@@ -1,9 +1,9 @@
 import { $injectTokens } from "../../injection-tokens.js";
 import {
-  assert,
   BADARG,
   BADARGKEY,
   BADARGVALUE,
+  assert,
   isDefined,
   isFunction,
   isNullOrUndefined,
@@ -58,8 +58,10 @@ export class CookieService {
    */
   get(key) {
     assert(isString(key), BADARG);
+
     try {
       const all = parseCookies();
+
       return all[key] || null;
     } catch (e) {
       this.$exceptionHandler(e);
@@ -77,7 +79,9 @@ export class CookieService {
   getObject(key) {
     assert(isString(key), BADARG);
     const raw = this.get(key);
+
     if (!raw) return null;
+
     try {
       return /** @type {T} */ (JSON.parse(raw));
     } catch (err) {
@@ -112,12 +116,14 @@ export class CookieService {
     assert(isString(key), BADARGKEY);
     assert(isString(value), BADARGVALUE);
     const encodedKey = encodeURIComponent(key);
+
     const encodedVal = encodeURIComponent(value);
 
     try {
-      document.cookie =
-        `${encodedKey}=${encodedVal}` +
-        buildOptions({ ...this.defaults, ...options });
+      document.cookie = `${encodedKey}=${encodedVal}${buildOptions({
+        ...this.defaults,
+        ...options,
+      })}`;
     } catch (e) {
       this.$exceptionHandler(e);
     }
@@ -134,8 +140,10 @@ export class CookieService {
   putObject(key, value, options) {
     assert(isString(key), BADARGKEY);
     assert(!isNullOrUndefined(value), BADARGVALUE);
+
     try {
       const str = JSON.stringify(value);
+
       this.put(key, str, options);
     } catch (err) {
       this.$exceptionHandler(
@@ -164,6 +172,7 @@ export class CookieService {
 
 // Internal cache
 let _lastCookieString = "";
+
 /** @type {Record<string, string>} */
 let _lastCookieMap = Object.create(null);
 
@@ -186,20 +195,26 @@ function parseCookies() {
 
   if (!current) {
     _lastCookieMap = out;
+
     return out;
   }
 
   const parts = current.split("; ");
+
   for (const part of parts) {
     const eq = part.indexOf("=");
+
     if (eq === -1) continue; // skip malformed cookie
 
     const key = decodeURIComponent(part.substring(0, eq));
+
     const val = decodeURIComponent(part.substring(eq + 1));
+
     out[key] = val; // last wins
   }
 
   _lastCookieMap = out;
+
   return out;
 }
 
@@ -217,14 +232,14 @@ function buildOptions(opts = {}) {
   // Path
   if (isDefined(opts.path)) {
     if (!isString(opts.path))
-      throw new TypeError(BADARG + `:path ${opts.path}`);
+      throw new TypeError(`${BADARG}:path ${opts.path}`);
     parts.push(`path=${opts.path}`);
   }
 
   // Domain
   if (isDefined(opts.domain)) {
     if (!isString(opts.domain))
-      throw new TypeError(BADARG + `:domain ${opts.domain}`);
+      throw new TypeError(`${BADARG}:domain ${opts.domain}`);
     parts.push(`domain=${opts.domain}`);
   }
 
@@ -237,11 +252,11 @@ function buildOptions(opts = {}) {
     } else if (isNumber(opts.expires) || isString(opts.expires)) {
       expDate = new Date(opts.expires);
     } else {
-      throw new TypeError(BADARG + `:expires ${String(opts.expires)}`);
+      throw new TypeError(`${BADARG}:expires ${String(opts.expires)}`);
     }
 
     if (isNaN(expDate.getTime())) {
-      throw new TypeError(BADARG + `:expires ${String(opts.expires)}`);
+      throw new TypeError(`${BADARG}:expires ${String(opts.expires)}`);
     }
 
     parts.push(`expires=${expDate.toUTCString()}`);
@@ -255,14 +270,15 @@ function buildOptions(opts = {}) {
   // SameSite
   if (isDefined(opts.samesite)) {
     if (!isString(opts.samesite))
-      throw new TypeError(BADARG + `:samesite ${opts.samesite}`);
+      throw new TypeError(`${BADARG}:samesite ${opts.samesite}`);
     const s = opts.samesite.toLowerCase();
+
     if (!["lax", "strict", "none"].includes(s)) {
-      throw new TypeError(BADARG + `:samesite ${opts.samesite}`);
+      throw new TypeError(`${BADARG}:samesite ${opts.samesite}`);
     }
     parts.push(`samesite=${s}`);
   }
 
   // Join all parts with semicolons
-  return parts.length ? ";" + parts.join(";") : "";
+  return parts.length ? `;${parts.join(";")}` : "";
 }

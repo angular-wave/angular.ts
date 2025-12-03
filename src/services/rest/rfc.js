@@ -31,6 +31,7 @@ export function expandUriTemplate(template, vars = {}) {
 export function pctEncode(str, allowReserved) {
   // encodeURIComponent, then restore reserved if allowed
   const encoded = encodeURIComponent(String(str));
+
   if (allowReserved) {
     // Reserved characters per RFC 3986
     return encoded.replace(
@@ -38,6 +39,7 @@ export function pctEncode(str, allowReserved) {
       (m) => decodeURIComponent(m),
     );
   }
+
   return encoded;
 }
 
@@ -50,7 +52,9 @@ export function pctEncode(str, allowReserved) {
 export function expandExpression(expression, vars) {
   // Operator if first char in operator set
   const operator = /^[+#./;?&]/.test(expression) ? expression[0] : "";
+
   const op = operator;
+
   const varlist = op ? expression.slice(1) : expression;
 
   // operator configuration (separator, prefix, named, ifEmpty, allowReserved)
@@ -114,7 +118,8 @@ export function expandExpression(expression, vars) {
   };
 
   const conf = OP[op];
-  if (!conf) throw new Error("Unsupported operator: " + op);
+
+  if (!conf) throw new Error(`Unsupported operator: ${op}`);
 
   // split varspecs by comma, preserve whitespace trimmed
   const varspecs = varlist
@@ -127,9 +132,12 @@ export function expandExpression(expression, vars) {
   for (const spec of varspecs) {
     // parse varspec: name, explode (*), prefix (:len)
     const m = /^([A-Za-z0-9_.]+)(\*|(?::(\d+)))?$/.exec(spec);
-    if (!m) throw new Error("Invalid varspec: " + spec);
+
+    if (!m) throw new Error(`Invalid varspec: ${spec}`);
     const varname = m[1];
+
     const explode = m[2] === "*";
+
     const prefixLength = m[3] ? parseInt(m[3], 10) : undefined;
 
     const value = vars[varname];
@@ -160,6 +168,7 @@ export function expandExpression(expression, vars) {
         // each item becomes either 'k=v' (named) or 'v' (unnamed)
         for (const item of value) {
           if (item === null || item === undefined) continue;
+
           if (conf.named) {
             expandedParts.push(
               `${pctEncode(varname, conf.allowReserved)}=${pctEncode(item, conf.allowReserved)}`,
@@ -174,6 +183,7 @@ export function expandExpression(expression, vars) {
           .filter((v) => v !== null && v !== undefined)
           .map((v) => pctEncode(v, conf.allowReserved))
           .join(",");
+
         if (conf.named) {
           if (joined === "") {
             expandedParts.push(
@@ -195,6 +205,7 @@ export function expandExpression(expression, vars) {
     // PROCESS objects (associative arrays)
     if (typeof value === "object") {
       const keys = Object.keys(value);
+
       if (keys.length === 0) {
         if (conf.named) {
           expandedParts.push(
@@ -209,7 +220,9 @@ export function expandExpression(expression, vars) {
         // each key/value pair becomes k=v (named) or k,v? For explode + named, RFC says 'k=v'
         for (const k of keys) {
           const v = value[k];
+
           if (v === null || v === undefined) continue;
+
           if (conf.named) {
             expandedParts.push(
               `${pctEncode(k, conf.allowReserved)}=${pctEncode(v, conf.allowReserved)}`,
@@ -229,6 +242,7 @@ export function expandExpression(expression, vars) {
               `${pctEncode(k, conf.allowReserved)},${pctEncode(value[k], conf.allowReserved)}`,
           )
           .join(",");
+
         if (conf.named) {
           if (pairs === "") {
             expandedParts.push(

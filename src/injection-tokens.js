@@ -78,5 +78,5 @@ export const $injectTokens = Object.freeze({
  * @param {String[]} services
  */
 export function provider(services) {
-  return services.map((x) => x + "Provider");
+  return services.map((x) => `${x}Provider`);
 }

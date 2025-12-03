@@ -1,10 +1,10 @@
 import { UrlMatcher } from "./url-matcher.js";
 import {
-  isString,
-  isFunction,
-  isDefined,
-  isUndefined,
   assert,
+  isDefined,
+  isFunction,
+  isString,
+  isUndefined,
 } from "../../shared/utils.js";
 import { is, pattern } from "../../shared/hof.js";
 import { StateObject } from "../state/state-object.js";
@@ -38,6 +38,7 @@ export class UrlRuleFactory {
    */
   create(what, handler) {
     const { isState, isStateDeclaration } = StateObject;
+
     const makeRule = pattern([
       [isString, (_what) => makeRule(this.urlService.compile(_what))],
       [is(UrlMatcher), (_what) => this.fromUrlMatcher(_what, handler)],
@@ -48,10 +49,14 @@ export class UrlRuleFactory {
       [is(RegExp), (_what) => this.fromRegExp(_what, handler)],
       [isFunction, (_what) => new BaseUrlRule(_what, handler)],
     ]);
+
     const rule = makeRule(what);
+
     if (!rule) throw new Error("invalid 'what' in when()");
+
     return rule;
   }
+
   /**
    * A UrlRule which matches based on a UrlMatcher
    *
@@ -90,10 +95,13 @@ export class UrlRuleFactory {
    */
   fromUrlMatcher(urlMatcher, handler) {
     let _handler = handler;
+
     if (isString(handler)) handler = this.urlService.compile(handler);
+
     if (is(UrlMatcher)(handler)) _handler = (match) => handler.format(match);
     function matchUrlParamters(url) {
       const params = urlMatcher.exec(url.path, url.search, url.hash);
+
       return urlMatcher.validates(params) && params;
     }
     // Prioritize URLs, lowest to highest:
@@ -105,13 +113,17 @@ export class UrlRuleFactory {
       const optional = urlMatcher
         .parameters()
         .filter((param) => param.isOptional);
+
       if (!optional.length) return 0.000001;
       const matched = optional.filter((param) => params[param.id]);
+
       return matched.length / optional.length;
     }
     const details = { urlMatcher, matchPriority, type: "URLMATCHER" };
+
     return Object.assign(new BaseUrlRule(matchUrlParamters, _handler), details);
   }
+
   /**
    * A UrlRule which matches a state by its url
    *
@@ -127,6 +139,7 @@ export class UrlRuleFactory {
     const state = StateObject.isStateDeclaration(stateOrDecl)
       ? stateOrDecl.$$state()
       : stateOrDecl;
+
     /**
      * Handles match by transitioning to matched state
      *
@@ -136,6 +149,7 @@ export class UrlRuleFactory {
      */
     const handler = (match) => {
       const $state = stateService;
+
       if (
         $state.href(state, match) !==
         $state.href(globals.current, globals.params)
@@ -143,9 +157,12 @@ export class UrlRuleFactory {
         $state.transitionTo(state, match, { inherit: true, source: "url" });
       }
     };
+
     const details = { state, type: "STATE" };
+
     return Object.assign(this.fromUrlMatcher(state.url, handler), details);
   }
+
   /**
    * A UrlRule which matches based on a regular expression
    *
@@ -192,9 +209,13 @@ export class UrlRuleFactory {
         /\$(\$|\d{1,2})/,
         (m, what) => match[what === "$" ? 0 : Number(what)],
       );
+
     const _handler = isString(handler) ? redirectUrlTo : handler;
+
     const matchParamsFromRegexp = (url) => regexp.exec(url.path);
+
     const details = { regexp, type: "REGEXP" };
+
     return Object.assign(
       new BaseUrlRule(matchParamsFromRegexp, _handler),
       details,
@@ -226,6 +247,7 @@ export class BaseUrlRule {
    */
   matchPriority(params) {
     assert(isUndefined(params));
+
     return 0 - this.$id;
   }
 }

@@ -36,6 +36,7 @@ export function registerLazyLoadHook(
           // The original transition was not triggered via url sync
           // The lazy state should be loaded now, so re-try the original transition
           const orig = transition.targetState();
+
           return stateService.target(
             orig.identifier(),
             orig.params(),
@@ -45,12 +46,16 @@ export function registerLazyLoadHook(
         // The original transition was triggered via url sync
         // Run the URL rules and find the best match
         const result = urlService.match(urlService.parts());
+
         const rule = result && result.rule;
+
         // If the best match is a state, redirect the transition (instead
         // of calling sync() which supersedes the current transition)
         if (rule && rule.type === "STATE") {
-          const state = rule.state;
+          const { state } = rule;
+
           const params = result.match;
+
           return stateService.target(state, params, transition.options());
         }
         // No matching state found, so let .sync() choose the best non-state match/otherwise
@@ -60,6 +65,7 @@ export function registerLazyLoadHook(
         .entering()
         .filter((state) => !!state.$$state().lazyLoad)
         .map((state) => lazyLoadState(transition, state, stateRegistry));
+
       return Promise.all(promises).then(retryTransition);
     },
   );
@@ -74,20 +80,26 @@ export function registerLazyLoadHook(
  */
 export function lazyLoadState(transition, state, stateRegistry) {
   const lazyLoadFn = state.$$state().lazyLoad;
+
   // Store/get the lazy load promise on/from the hookfn so it doesn't get re-invoked
-  let promise = lazyLoadFn["_promise"];
+  let promise = lazyLoadFn._promise;
+
   if (!promise) {
     const success = (result) => {
       delete state.lazyLoad;
       delete state.$$state().lazyLoad;
-      delete lazyLoadFn["_promise"];
+      delete lazyLoadFn._promise;
+
       return result;
     };
+
     const error = (err) => {
-      delete lazyLoadFn["_promise"];
+      delete lazyLoadFn._promise;
+
       return Promise.reject(err);
     };
-    promise = lazyLoadFn["_promise"] = Promise.resolve(
+
+    promise = lazyLoadFn._promise = Promise.resolve(
       lazyLoadFn(transition, state),
     )
       .then(updateStateRegistry)
@@ -98,7 +110,9 @@ export function lazyLoadState(transition, state, stateRegistry) {
     if (result && Array.isArray(result.states)) {
       result.states.forEach((_state) => stateRegistry.register(_state));
     }
+
     return result;
   }
+
   return promise;
 }

@@ -1,15 +1,15 @@
 import {
   assert,
-  isFunction,
-  isObject,
-  isNullOrUndefined,
   hasOwn,
+  isFunction,
+  isNullOrUndefined,
+  isObject,
 } from "../../shared/utils.js";
 import { trace } from "../common/trace.js";
 import { stringify } from "../../shared/strings.js";
 
 // TODO: explicitly make this user configurable
-export let defaultResolvePolicy = {
+export const defaultResolvePolicy = {
   when: "LAZY",
   async: "WAIT",
 };
@@ -29,6 +29,7 @@ export class Resolvable {
   constructor(arg1, resolveFn, deps, policy, data) {
     this.resolved = false;
     this.promise = undefined;
+
     if (arg1 instanceof Resolvable) {
       Object.assign(this, arg1);
     } else if (isFunction(resolveFn)) {
@@ -55,7 +56,9 @@ export class Resolvable {
 
   getPolicy(state) {
     const thisPolicy = this.policy || {};
+
     const statePolicy = (state && state.resolvePolicy) || {};
+
     return {
       when: thisPolicy.when || statePolicy.when || defaultResolvePolicy.when,
       async:
@@ -78,29 +81,39 @@ export class Resolvable {
           .getDependencies(this)
           .map((resolvable) => resolvable.get(resolveContext, trans)),
       );
+
     // Invokes the resolve function passing the resolved dependencies as arguments
     const invokeResolveFn = (resolvedDeps) =>
       this.resolveFn.apply(null, resolvedDeps);
+
     const node = resolveContext.findNode(this);
+
     const state = node && node.state;
+
     const asyncPolicy = this.getPolicy(state).async;
+
     const customAsyncPolicy = isFunction(asyncPolicy) ? asyncPolicy : (x) => x;
+
     // After the final value has been resolved, update the state of the Resolvable
     const applyResolvedValue = (resolvedValue) => {
       this.data = resolvedValue;
       this.resolved = true;
       this.resolveFn = null;
       trace.traceResolvableResolved(this, trans);
+
       return this.data;
     };
+
     // Sets the promise property first, then getsResolvableDependencies in the context of the promise chain. Always waits one tick.
     this.promise = Promise.resolve()
       .then(getResolvableDependencies)
       .then(invokeResolveFn)
       .then(customAsyncPolicy)
       .then(applyResolvedValue);
+
     return this.promise;
   }
+
   /**
    * Gets a promise for this Resolvable's data.
    *

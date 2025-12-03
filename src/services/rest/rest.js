@@ -48,6 +48,7 @@ export class RestService {
    */
   #mapEntity(data) {
     if (!data) return data;
+
     return this.entityClass ? new this.entityClass(data) : data;
   }
 
@@ -58,8 +59,11 @@ export class RestService {
    */
   async list(params = {}) {
     const url = this.buildUrl(this.baseUrl, params);
+
     const resp = await this.#request("get", url, null, params);
+
     if (!Array.isArray(resp.data)) return [];
+
     return resp.data.map((d) => this.#mapEntity(d));
   }
 
@@ -72,8 +76,10 @@ export class RestService {
   async read(id, params = {}) {
     if (id == null) return null;
     const url = this.buildUrl(`${this.baseUrl}/${id}`, params);
+
     try {
       const resp = await this.#request("get", url, null, params);
+
       return this.#mapEntity(resp.data);
     } catch {
       return null; // fail-safe
@@ -88,6 +94,7 @@ export class RestService {
   async create(item) {
     assert(item != null, "item required for create");
     const resp = await this.#request("post", this.baseUrl, item);
+
     return this.#mapEntity(resp.data);
   }
 
@@ -100,8 +107,10 @@ export class RestService {
   async update(id, item) {
     assert(id != null, "id required for update");
     const url = `${this.baseUrl}/${id}`;
+
     try {
       const resp = await this.#request("put", url, item);
+
       return this.#mapEntity(resp.data);
     } catch {
       return null;
@@ -116,8 +125,10 @@ export class RestService {
   async delete(id) {
     if (id == null) return false;
     const url = `${this.baseUrl}/${id}`;
+
     try {
       await this.#request("delete", url);
+
       return true;
     } catch {
       return false;
@@ -180,12 +191,14 @@ export class RestProvider {
 
       const factory = (baseUrl, entityClass, options = {}) => {
         const svc = new RestService($http, baseUrl, entityClass, options);
+
         return svc;
       };
 
       // create services from pre-registered definitions
       for (const def of this.definitions) {
         const svc = factory(def.url, def.entityClass, def.options);
+
         services.set(def.name, svc);
       }
 

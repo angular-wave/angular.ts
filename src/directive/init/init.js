@@ -10,10 +10,11 @@ export function ngInitDirective() {
       return {
         pre(scope, element, attrs) {
           const controller = getController(element);
+
           if (controller) {
-            controller.$eval(attrs["ngInit"]);
+            controller.$eval(attrs.ngInit);
           } else {
-            scope.$eval(attrs["ngInit"]);
+            scope.$eval(attrs.ngInit);
           }
         },
       };

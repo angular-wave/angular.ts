@@ -14,6 +14,7 @@ import { createPersistentProxy } from "../../services/storage/storage.js";
 import { $injectTokens } from "../../injection-tokens";
 
 const $injectorMinErr = minErr($injectTokens.$injector);
+
 const providerSuffix = "Provider";
 
 /**
@@ -53,7 +54,9 @@ export function createInjector(modulesToLoad, strictDi = false) {
   };
 
   let instanceInjector = protoInstanceInjector;
+
   const runBlocks = loadModules(modulesToLoad);
+
   instanceInjector = protoInstanceInjector.get($injectTokens.$injector);
 
   runBlocks.forEach((fn) => fn && instanceInjector.invoke(fn));
@@ -76,6 +79,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
   function provider(name, provider) {
     assertNotHasOwnProperty(name, "service");
     let newProvider;
+
     if (isFunction(provider) || Array.isArray(provider)) {
       newProvider = providerInjector.instantiate(
         /** @type {Function} */ (provider),
@@ -83,6 +87,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
     } else {
       newProvider = provider;
     }
+
     if (!newProvider.$get) {
       throw $injectorMinErr(
         "pget",
@@ -91,6 +96,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
       );
     }
     providerCache[name + providerSuffix] = newProvider;
+
     return newProvider;
   }
 
@@ -104,6 +110,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
     return provider(name, {
       $get: () => {
         const result = instanceInjector.invoke(factoryFn, this);
+
         if (isUndefined(result)) {
           throw $injectorMinErr(
             "undef",
@@ -111,6 +118,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
             name,
           );
         }
+
         return result;
       },
     });
@@ -159,10 +167,12 @@ export function createInjector(modulesToLoad, strictDi = false) {
    */
   function decorator(serviceName, decorFn) {
     const origProvider = providerInjector.get(serviceName + providerSuffix);
+
     const origGet = origProvider.$get;
 
     origProvider.$get = function () {
       const origInstance = instanceInjector.invoke(origGet, origProvider);
+
       return instanceInjector.invoke(decorFn, null, {
         $delegate: origInstance,
       });
@@ -184,22 +194,29 @@ export function createInjector(modulesToLoad, strictDi = false) {
         switch (type) {
           case "session": {
             const instance = $injector.instantiate(ctor);
+
             return createPersistentProxy(instance, name, sessionStorage);
           }
           case "local": {
             const instance = $injector.instantiate(ctor);
+
             return createPersistentProxy(instance, name, localStorage);
           }
           case "cookie": {
             const instance = $injector.instantiate(ctor);
+
             const $cookie = $injector.get($injectTokens.$cookie);
+
             const serialize = backendOrConfig.serialize ?? JSON.stringify;
+
             const deserialize = backendOrConfig.deserialize ?? JSON.parse;
+
             const cookieOpts = backendOrConfig.cookie ?? {};
 
             return createPersistentProxy(instance, name, {
               getItem(key) {
                 const raw = $cookie.get(key);
+
                 return raw == null ? null : raw;
               },
 
@@ -219,7 +236,9 @@ export function createInjector(modulesToLoad, strictDi = false) {
             const instance = $injector.instantiate(ctor);
 
             let backend;
+
             let serialize = JSON.stringify;
+
             let deserialize = JSON.parse;
 
             if (backendOrConfig) {
@@ -228,8 +247,10 @@ export function createInjector(modulesToLoad, strictDi = false) {
                 backend = backendOrConfig;
               } else if (isObject(backendOrConfig)) {
                 backend = backendOrConfig.backend || localStorage;
+
                 if (backendOrConfig.serialize)
                   serialize = backendOrConfig.serialize;
+
                 if (backendOrConfig.deserialize)
                   deserialize = backendOrConfig.deserialize;
               }
@@ -268,9 +289,10 @@ export function createInjector(modulesToLoad, strictDi = false) {
       try {
         if (isString(module)) {
           /** @type {ng.NgModule} */
-          const moduleFn = window["angular"].module(
+          const moduleFn = window.angular.module(
             /** @type {string} */ (module),
           );
+
           instanceInjector.modules[/** @type {string } */ (module)] = moduleFn;
           runBlocks = runBlocks
             .concat(loadModules(moduleFn.requires))
@@ -279,8 +301,10 @@ export function createInjector(modulesToLoad, strictDi = false) {
           const invokeQueue = moduleFn.invokeQueue.concat(
             moduleFn.configBlocks,
           );
+
           invokeQueue.forEach((invokeArgs) => {
             const provider = providerInjector.get(invokeArgs[0]);
+
             provider[invokeArgs[1]].apply(provider, invokeArgs[2]);
           });
         } else if (isFunction(module)) {
@@ -294,6 +318,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
         if (Array.isArray(module)) {
           module = module[module.length - 1];
         }
+
         if (e.message && e.stack && e.stack.indexOf(e.message) === -1) {
           // Safari & FF's stack traces don't contain error.message content
           // unlike those of Chrome and IE
@@ -310,6 +335,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
         );
       }
     });
+
     return runBlocks;
   }
 }

@@ -61,6 +61,7 @@ export function AriaProvider() {
       if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
 
       const ariaCamelName = attr.$normalize(ariaAttr);
+
       if (
         config[ariaCamelName] &&
         !isNodeOneOf(elem, nativeAriaNodeNames) &&
@@ -130,7 +131,7 @@ export function ngClickAriaDirective($aria, $parse) {
     compile(_elem, attr) {
       if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
 
-      const fn = $parse(attr["ngClick"]);
+      const fn = $parse(attr.ngClick);
 
       return (scope, elem, attr) => {
         if (!isNodeOneOf(elem, nativeAriaNodeNames)) {
@@ -249,6 +250,7 @@ export function ngModelAriaDirective($aria) {
 
   function getShape(attr) {
     const { type } = attr;
+
     const { role } = attr;
 
     return (type || role) === "checkbox" || role === "menuitemcheckbox"
@@ -299,6 +301,7 @@ export function ngModelAriaDirective($aria) {
               if (shouldAttachRole(shape, elem)) {
                 elem.setAttribute("role", shape);
               }
+
               if (
                 shouldAttachAttr("aria-checked", "ariaChecked", elem, false)
               ) {
@@ -307,6 +310,7 @@ export function ngModelAriaDirective($aria) {
                   shape === "radio" ? getRadioReaction : getCheckboxReaction,
                 );
               }
+
               if (needsTabIndex) {
                 elem.setAttribute("tabindex", 0);
               }
@@ -315,13 +319,16 @@ export function ngModelAriaDirective($aria) {
               if (shouldAttachRole(shape, elem)) {
                 elem.setAttribute("role", "slider");
               }
+
               if ($aria.config("ariaValue")) {
                 const needsAriaValuemin =
                   !elem.hasAttribute("aria-valuemin") &&
                   (hasOwn(attr, "min") || hasOwn(attr, "ngMin"));
+
                 const needsAriaValuemax =
                   !elem.hasAttribute("aria-valuemax") &&
                   (hasOwn(attr, "max") || hasOwn(attr, "ngMax"));
+
                 const needsAriaValuenow = !elem.hasAttribute("aria-valuenow");
 
                 if (needsAriaValuemin) {
@@ -329,17 +336,20 @@ export function ngModelAriaDirective($aria) {
                     elem.setAttribute("aria-valuemin", newVal);
                   });
                 }
+
                 if (needsAriaValuemax) {
                   attr.$observe("max", (newVal) => {
                     elem.setAttribute("aria-valuemax", newVal);
                   });
                 }
+
                 if (needsAriaValuenow) {
                   ngModel.$watch("$modelValue", (newVal) => {
                     elem.setAttribute("aria-valuenow", newVal);
                   });
                 }
               }
+
               if (needsTabIndex) {
                 elem.setAttribute("tabindex", 0);
               }

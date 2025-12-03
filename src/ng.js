@@ -243,7 +243,7 @@ export function registerNgModule(angular) {
               ngSrefActive: $StateRefActiveDirective,
               ngSrefActiveEq: $StateRefActiveDirective,
               ngState: $StateRefDynamicDirective,
-              ngView: ngView,
+              ngView,
             })
             .directive({
               ngView: $ViewDirectiveFill,

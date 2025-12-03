@@ -1,11 +1,11 @@
 import {
-  minErr,
+  equals,
+  hasCustomToString,
   isArrayLike,
   isFunction,
-  isUndefined,
   isObject,
-  hasCustomToString,
-  equals,
+  isUndefined,
+  minErr,
 } from "../shared/utils.js";
 
 /**
@@ -72,6 +72,7 @@ function createPredicateFn(
 ) {
   const shouldMatchPrimitives =
     isObject(expression) && anyPropertyKey in expression;
+
   let predicateFn;
 
   if (comparator === true) {
@@ -82,10 +83,12 @@ function createPredicateFn(
         // No substring matching against `undefined`
         return false;
       }
+
       if (actual === null || expected === null) {
         // No substring matching against `null`; only match against `null`
         return actual === expected;
       }
+
       if (
         isObject(expected) ||
         (isObject(actual) && !hasCustomToString(actual))
@@ -96,6 +99,7 @@ function createPredicateFn(
 
       actual = `${actual}`.toLowerCase();
       expected = `${expected}`.toLowerCase();
+
       return actual.indexOf(expected) !== -1;
     };
   }
@@ -110,6 +114,7 @@ function createPredicateFn(
         false,
       );
     }
+
     return deepCompare(
       item,
       expression,
@@ -131,6 +136,7 @@ function deepCompare(
   dontMatchWholeObject,
 ) {
   const actualType = getTypeForFilter(actual);
+
   const expectedType = getTypeForFilter(expected);
 
   if (expectedType === "string" && expected.charAt(0) === "!") {
@@ -142,6 +148,7 @@ function deepCompare(
       matchAgainstAnyProp,
     );
   }
+
   if (Array.isArray(actual)) {
     // In case `actual` is an array, consider it a match
     // if ANY of it's items matches `expected`
@@ -159,7 +166,7 @@ function deepCompare(
   switch (actualType) {
     case "object":
       if (matchAgainstAnyProp) {
-        for (let key in actual) {
+        for (const key in actual) {
           // Under certain, rare, circumstances, key may not be a string and `charAt` will be undefined
           // See: https://github.com/angular/angular.js/issues/15644
           if (
@@ -170,19 +177,24 @@ function deepCompare(
             return true;
           }
         }
+
         return dontMatchWholeObject
           ? false
           : deepCompare(actual, expected, comparator, anyPropertyKey, false);
       }
+
       if (expectedType === "object") {
-        for (let key in expected) {
+        for (const key in expected) {
           const expectedVal = expected[key];
+
           if (isFunction(expectedVal) || isUndefined(expectedVal)) {
             continue;
           }
 
           const matchAnyProperty = key === anyPropertyKey;
+
           const actualVal = matchAnyProperty ? actual : actual[key];
+
           if (
             !deepCompare(
               actualVal,
@@ -196,8 +208,10 @@ function deepCompare(
             return false;
           }
         }
+
         return true;
       }
+
       return comparator(actual, expected);
 
     case "function":

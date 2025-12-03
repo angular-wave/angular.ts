@@ -36,6 +36,7 @@ export class ParseProvider {
     this.setIdentifierFns = function (identifierStart, identifierContinue) {
       identStart = identifierStart;
       identContinue = identifierContinue;
+
       return this;
     };
 
@@ -52,6 +53,7 @@ export class ParseProvider {
           isIdentifierStart: isFunction(identStart) && identStart,
           isIdentifierContinue: isFunction(identContinue) && identContinue,
         };
+
         return $parse;
 
         /**
@@ -71,11 +73,14 @@ export class ParseProvider {
 
               if (!parsedExpression) {
                 const lexer = new Lexer($lexerOptions);
+
                 const parser = new Parser(lexer, $filter);
+
                 parsedExpression = parser.parse(exp);
 
                 cache[cacheKey] = addWatchDelegate(parsedExpression);
               }
+
               return addInterceptor(parsedExpression, interceptorFn);
 
             case "function":
@@ -121,11 +126,13 @@ export class ParseProvider {
               useInputs && inputs
                 ? inputs[0]
                 : parsedExpression(scope, locals, assign, inputs);
+
             // Do not invoke for getters
             if (scope?.getter) {
               return;
             }
             const res = isFunction(value) ? value() : value;
+
             return interceptorFn(isProxy(res) ? res.$target : res);
           };
 
@@ -164,6 +171,7 @@ export class ParseProvider {
                     return e(s);
                   };
                 }
+
                 return e;
               });
             }
@@ -185,11 +193,13 @@ export function constantWatchDelegate(
   const unwatch = scope.$watch(
     () => {
       unwatch();
+
       return parsedExpression(scope);
     },
     listener,
     objectEquality,
   );
+
   return unwatch;
 }
 
@@ -222,17 +232,20 @@ function inputsWatchDelegate(
   objectEquality,
   parsedExpression,
 ) {
-  let inputExpressions = /** @type {Function} */ (parsedExpression.inputs);
+  const inputExpressions = /** @type {Function} */ (parsedExpression.inputs);
+
   let lastResult;
 
   if (inputExpressions.length === 1) {
     let oldInputValueOf = expressionInputDirtyCheck; // init to something unique so that equals check fails
 
-    let inputExpression = inputExpressions[0];
+    const inputExpression = inputExpressions[0];
+
     return scope.$watch(
       // @ts-ignore
       ($scope) => {
         const newInputValue = inputExpression($scope);
+
         if (
           !expressionInputDirtyCheck(
             newInputValue,
@@ -243,6 +256,7 @@ function inputsWatchDelegate(
           lastResult = parsedExpression($scope, undefined, [newInputValue]);
           oldInputValueOf = newInputValue && getValueOf(newInputValue);
         }
+
         return lastResult;
       },
       listener,
@@ -250,11 +264,14 @@ function inputsWatchDelegate(
     );
   } else {
     const oldInputValueOfValues = [];
+
     const oldInputValues = [];
+
     for (let i = 0, ii = inputExpressions.length; i < ii; i++) {
       oldInputValueOfValues[i] = expressionInputDirtyCheck; // init to something unique so that equals check fails
       oldInputValues[i] = null;
     }
+
     return scope.$watch(
       // @ts-ignore
       (scope) => {
@@ -262,6 +279,7 @@ function inputsWatchDelegate(
 
         for (let i = 0, ii = inputExpressions.length; i < ii; i++) {
           const newInputValue = inputExpressions[i](scope);
+
           if (
             changed ||
             (changed = !expressionInputDirtyCheck(

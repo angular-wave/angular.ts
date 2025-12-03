@@ -88,6 +88,7 @@ export function urlIsAllowedOriginFactory(trustedOriginUrls) {
    */
   return function urlIsAllowedOrigin(requestUrl) {
     const parsedUrl = urlResolve(requestUrl);
+
     return parsedAllowedOriginUrls.some(
       urlsAreSameOrigin.bind(null, parsedUrl),
     );

@@ -1,8 +1,8 @@
 import {
-  getNodeName,
-  minErr,
   directiveNormalize,
+  getNodeName,
   hasOwn,
+  minErr,
 } from "../../shared/utils.js";
 import { getCacheData } from "../../shared/dom.js";
 
@@ -28,6 +28,7 @@ import { getCacheData } from "../../shared/dom.js";
  */
 
 const ngRefMinErr = minErr("ngRef");
+
 ngRefDirective.$inject = ["$parse"];
 export function ngRefDirective($parse) {
   return {
@@ -39,6 +40,7 @@ export function ngRefDirective($parse) {
 
       // Get the expression for value binding
       const getter = $parse(tAttrs.ngRef);
+
       const setter =
         getter.assign ||
         function () {

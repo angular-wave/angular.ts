@@ -18,7 +18,9 @@ export const resolvePolicies = {
 };
 
 const ALL_WHENS = [resolvePolicies.when.EAGER, resolvePolicies.when.LAZY];
+
 const EAGER_WHENS = [resolvePolicies.when.EAGER];
+
 /**
  * Encapsulates Dependency Injection for a path of nodes
  *
@@ -33,6 +35,7 @@ export class ResolveContext {
   constructor(_path) {
     this._path = _path;
   }
+
   /** Gets all the tokens found in the resolve context, de-duplicated */
   getTokens() {
     return this._path
@@ -42,6 +45,7 @@ export class ResolveContext {
       )
       .reduce(uniqR, []);
   }
+
   /**
    * Gets the Resolvable that matches the token
    *
@@ -53,12 +57,14 @@ export class ResolveContext {
       .map((node) => node.resolvables)
       .reduce(unnestR, [])
       .filter((r) => r.token === token);
+
     return tail(matching);
   }
 
   /** Returns the [[ResolvePolicy]] for the given [[Resolvable]] */
   getPolicy(resolvable) {
     const node = this.findNode(resolvable);
+
     return resolvable.getPolicy(node);
   }
 
@@ -90,6 +96,7 @@ export class ResolveContext {
       PathUtils.subPath(this._path, (node) => node.state === state),
     );
   }
+
   /**
    * Adds Resolvables to the node that matches the state
    *
@@ -108,11 +115,14 @@ export class ResolveContext {
   addResolvables(newResolvables, state) {
     /** @type {import('../path/path-node').PathNode} */
     const node = find(this._path, propEq("state", state));
+
     const keys = newResolvables.map((r) => r.token);
+
     node.resolvables = node.resolvables
       .filter((r) => keys.indexOf(r.token) === -1)
       .concat(newResolvables);
   }
+
   /**
    * Returns a promise for an array of resolved path Element promises
    *
@@ -123,34 +133,44 @@ export class ResolveContext {
   resolvePath(when = "LAZY", trans) {
     // This option determines which 'when' policy Resolvables we are about to fetch.
     const whenOption = ALL_WHENS.includes(when) ? when : "LAZY";
+
     // If the caller specified EAGER, only the EAGER Resolvables are fetched.
     // if the caller specified LAZY, both EAGER and LAZY Resolvables are fetched.`
     const matchedWhens =
       whenOption === resolvePolicies.when.EAGER ? EAGER_WHENS : ALL_WHENS;
+
     // get the subpath to the state argument, if provided
     trace.traceResolvePath(this._path, when, trans);
     const matchesPolicy = (acceptedVals, whenOrAsync) => (resolvable) =>
       acceptedVals.includes(this.getPolicy(resolvable)[whenOrAsync]);
+
     // Trigger all the (matching) Resolvables in the path
     // Reduce all the "WAIT" Resolvables into an array
     const promises = this._path.reduce((acc, node) => {
       const nodeResolvables = node.resolvables.filter(
         matchesPolicy(matchedWhens, "when"),
       );
+
       const nowait = nodeResolvables.filter(matchesPolicy(["NOWAIT"], "async"));
+
       const wait = nodeResolvables.filter(
         (x) => !matchesPolicy(["NOWAIT"], "async")(x),
       );
+
       // For the matching Resolvables, start their async fetch process.
       const subContext = this.subContext(node.state);
+
       const getResult = (r) =>
         r
           .get(subContext, trans)
           // Return a tuple that includes the Resolvable's token
-          .then((value) => ({ token: r.token, value: value }));
+          .then((value) => ({ token: r.token, value }));
+
       nowait.forEach(getResult);
+
       return acc.concat(wait.map(getResult));
     }, []);
+
     // Wait for all the "WAIT" resolvables
     return Promise.all(promises);
   }
@@ -168,22 +188,28 @@ export class ResolveContext {
    */
   getDependencies(resolvable) {
     const node = this.findNode(resolvable);
+
     // Find which other resolvables are "visible" to the `resolvable` argument
     // subpath stopping at resolvable's node, or the whole path (if the resolvable isn't in the path)
     const subPath =
       PathUtils.subPath(this._path, (x) => x === node) || this._path;
+
     const availableResolvables = subPath
       .reduce((acc, _node) => acc.concat(_node.resolvables), []) // all of subpath's resolvables
       .filter((res) => res !== resolvable); // filter out the `resolvable` argument
+
     return resolvable.deps.map((token) => {
       const matching = availableResolvables.filter((r) => r.token === token);
+
       if (matching.length) return tail(matching);
-      const fromInjector = window["angular"].$injector.get(token);
+      const fromInjector = window.angular.$injector.get(token);
+
       if (isUndefined(fromInjector)) {
         throw new Error(
-          "Could not find Dependency Injection token: " + stringify(token),
+          `Could not find Dependency Injection token: ${stringify(token)}`,
         );
       }
+
       return new Resolvable(token, () => fromInjector, [], fromInjector);
     });
   }

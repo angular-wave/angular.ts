@@ -32,7 +32,8 @@ export class NodeRef {
     // Handle HTML string
     if (isString(element)) {
       this.initial = element;
-      let res = createElementFromHTML(/** @type {string} */ (element));
+      const res = createElementFromHTML(/** @type {string} */ (element));
+
       switch (true) {
         case res instanceof Element:
           this.element = res;
@@ -46,6 +47,7 @@ export class NodeRef {
     // Handle NodeList
     else if (element instanceof NodeList) {
       this.initial = Array.from(element).map((e) => e.cloneNode(true));
+
       if (element.length == 1) {
         this.node = element[0];
       } else {
@@ -83,6 +85,7 @@ export class NodeRef {
   /** @returns {Element} */
   get element() {
     assertArg(this._element, "element");
+
     return this._element;
   }
 
@@ -97,6 +100,7 @@ export class NodeRef {
   /** @returns {Node | ChildNode} */
   get node() {
     assertArg(this._node || this._element, "node");
+
     return this._node || this._element;
   }
 
@@ -104,6 +108,7 @@ export class NodeRef {
   set node(node) {
     assertArg(node instanceof Node, "node");
     this._node = node;
+
     if (node.nodeType === Node.ELEMENT_NODE) {
       this._element = /** @type {Element} */ (node);
     } else {
@@ -124,16 +129,20 @@ export class NodeRef {
   /** @returns {Array<Node>} */
   get nodes() {
     assertArg(this._nodes, "nodes");
+
     return this._nodes;
   }
 
   /** @returns {NodeList|Node[]} */
   get nodelist() {
     if (this._nodes.length === 0) return [];
+
     if (this._nodes[0].parentElement)
       return this._nodes[0].parentElement.childNodes;
     const fragment = document.createDocumentFragment();
+
     this._nodes.forEach((el) => fragment.appendChild(el));
+
     return fragment.childNodes;
   }
 
@@ -194,6 +203,7 @@ export class NodeRef {
   setIndex(index, node) {
     assertArg(index !== null, "index");
     assertArg(node, "node");
+
     if (this.isList) {
       this._nodes[index] = node;
     } else {

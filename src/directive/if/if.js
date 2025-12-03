@@ -38,6 +38,7 @@ export function ngIfDirective($animate) {
               // However, we need to keep the reference to the dom wrapper as it might be changed later
               // by a directive with templateUrl when its template arrives.
               block = clone;
+
               if (hasAnimate(clone)) {
                 $animate.enter(clone, $element.parentElement, $element);
               } else {
@@ -50,12 +51,15 @@ export function ngIfDirective($animate) {
             removeElement(previousElements);
             previousElements = null;
           }
+
           if (childScope) {
             childScope.$destroy();
             childScope = null;
           }
+
           if (block) {
             previousElements = block;
+
             if (hasAnimate(previousElements)) {
               $animate.leave(previousElements).done((response) => {
                 if (response !== false) previousElements = null;
