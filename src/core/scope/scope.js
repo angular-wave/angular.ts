@@ -755,7 +755,7 @@ export class Scope {
             res = res(this.$target);
           }
 
-          return;
+          return undefined;
         }
         key = get.decoratedNode.body[0].expression.left.name;
         break;
@@ -773,16 +773,16 @@ export class Scope {
         ];
 
         for (let i = 0, l = keys.length; i < l; i++) {
-          const key = keys[i];
+          const registerKey = keys[i];
 
-          if (key) this.#registerKey(key, listener);
+          if (registerKey) this.#registerKey(registerKey, listener);
         }
 
         return () => {
           for (let i = 0, l = keys.length; i < l; i++) {
-            const key = keys[i];
+            const deregisterKey = keys[i];
 
-            this.#deregisterKey(key, listener.id);
+            this.#deregisterKey(deregisterKey, listener.id);
           }
         };
       }
@@ -804,11 +804,11 @@ export class Scope {
           for (let i = 0, l = toWatch.length; i < l; i++) {
             const x = toWatch[i];
 
-            const key = x.property ? x.property.name : x.name;
+            const registerKey = x.property ? x.property.name : x.name;
 
-            if (!key) throw new Error("Unable to determine key");
+            if (!registerKey) throw new Error("Unable to determine key");
 
-            this.#registerKey(key, listener);
+            this.#registerKey(registerKey, listener);
             this.#scheduleListener([listener]);
           }
 
@@ -817,9 +817,9 @@ export class Scope {
             for (let i = 0, l = toWatch.length; i < l; i++) {
               const x = toWatch[i];
 
-              const key = x.property ? x.property.name : x.name;
+              const deregisterKey = x.property ? x.property.name : x.name;
 
-              this.#deregisterKey(key, listener.id);
+              this.#deregisterKey(deregisterKey, listener.id);
             }
           };
         }
@@ -844,10 +844,7 @@ export class Scope {
           const x = toWatch[i];
 
           if (!isDefined(x)) continue;
-
-          const key = x.name;
-
-          this.#registerKey(key, listener);
+          this.#registerKey(x.name, listener);
           this.#scheduleListener([listener]);
         }
 
@@ -856,10 +853,7 @@ export class Scope {
             const x = toWatch[i];
 
             if (!isDefined(x)) continue;
-
-            const key = x.name;
-
-            this.#deregisterKey(key, listener.id);
+            this.#deregisterKey(x.name, listener.id);
           }
         };
       }
@@ -908,11 +902,12 @@ export class Scope {
         for (let i = 0, l = elements.length; i < l; i++) {
           const x = elements[i];
 
-          const key = x.type === 11 ? x.value : x.toWatch[0]?.name;
+          const registerKey =
+            x.type === ASTType.Literal ? x.value : x.toWatch[0]?.name;
 
-          if (!key) continue;
+          if (!registerKey) continue;
 
-          this.#registerKey(key, listener);
+          this.#registerKey(registerKey, listener);
           this.#scheduleListener([listener]);
         }
 
@@ -920,11 +915,12 @@ export class Scope {
           for (let i = 0, l = elements.length; i < l; i++) {
             const x = elements[i];
 
-            const key = x.type === 11 ? x.value : x.toWatch[0]?.name;
+            const deregisterKey =
+              x.type === ASTType.Literal ? x.value : x.toWatch[0]?.name;
 
-            if (!key) continue;
+            if (!deregisterKey) continue;
 
-            this.#deregisterKey(key, listener.id);
+            this.#deregisterKey(deregisterKey, listener.id);
           }
         };
       }

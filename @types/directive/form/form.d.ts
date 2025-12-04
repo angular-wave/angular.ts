@@ -243,7 +243,12 @@ export const formDirective: (
         formElement: any,
         attr: any,
       ) => {
-        pre: (scope: any, formElement: any, attr: any, ctrls: any) => void;
+        pre: (
+          scope: any,
+          formElementParam: any,
+          attrParam: any,
+          ctrls: any,
+        ) => void;
       };
     })
 )[];
@@ -258,7 +263,12 @@ export const ngFormDirective: (
         formElement: any,
         attr: any,
       ) => {
-        pre: (scope: any, formElement: any, attr: any, ctrls: any) => void;
+        pre: (
+          scope: any,
+          formElementParam: any,
+          attrParam: any,
+          ctrls: any,
+        ) => void;
       };
     })
 )[];

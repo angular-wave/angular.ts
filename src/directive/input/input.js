@@ -530,19 +530,19 @@ export function createDateInputType(type, regexp, parseDate) {
         : val;
     }
 
-    function parseDateAndConvertTimeZoneToLocal(value, previousDate) {
+    function parseDateAndConvertTimeZoneToLocal(value, previousDateParam) {
       const timezone = ctrl.$options.getOption("timezone");
 
       if (previousTimezone && previousTimezone !== timezone) {
         // If the timezone has changed, adjust the previousDate to the default timezone
         // so that the new date is converted with the correct timezone offset
-        previousDate = addDateMinutes(
-          previousDate,
+        previousDateParam = addDateMinutes(
+          previousDateParam,
           timezoneToOffset(previousTimezone),
         );
       }
 
-      let parsedDate = parseDate(value, previousDate);
+      let parsedDate = parseDate(value, previousDateParam);
 
       if (!Number.isNaN(parsedDate) && timezone) {
         parsedDate = convertTimezoneToLocal(parsedDate, timezone);

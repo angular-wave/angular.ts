@@ -56,7 +56,7 @@ export function AriaProvider() {
     config = extend(config, newConfig);
   };
 
-  function watchExpr(attrName, ariaAttr, nativeAriaNodeNames, negate) {
+  function watchExpr(attrName, ariaAttr, nativeAriaNodeNamesParam, negate) {
     return function (scope, elem, attr) {
       if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
 
@@ -64,7 +64,7 @@ export function AriaProvider() {
 
       if (
         config[ariaCamelName] &&
-        !isNodeOneOf(elem, nativeAriaNodeNames) &&
+        !isNodeOneOf(elem, nativeAriaNodeNamesParam) &&
         !attr[ariaCamelName]
       ) {
         scope.$watch(attr[attrName], (boolVal) => {
@@ -133,7 +133,7 @@ export function ngClickAriaDirective($aria, $parse) {
 
       const fn = $parse(attr.ngClick);
 
-      return (scope, elem, attr) => {
+      return (scope, elem, attrParam) => {
         if (!isNodeOneOf(elem, nativeAriaNodeNames)) {
           if ($aria.config("bindRoleForClick") && !elem.hasAttribute("role")) {
             elem.setAttribute("role", "button");
@@ -145,9 +145,9 @@ export function ngClickAriaDirective($aria, $parse) {
 
           if (
             $aria.config("bindKeydown") &&
-            !attr.ngKeydown &&
-            !attr.ngKeypress &&
-            !attr.ngKeyup
+            !attrParam.ngKeydown &&
+            !attrParam.ngKeypress &&
+            !attrParam.ngKeyup
           ) {
             elem.addEventListener(
               "keydown",
@@ -155,6 +155,7 @@ export function ngClickAriaDirective($aria, $parse) {
               (event) => {
                 const keyCode = parseInt(event.key, 10);
 
+                // eslint-disable-next-line no-magic-numbers
                 if (keyCode === 13 || keyCode === 32) {
                   // If the event is triggered on a non-interactive element ...
                   if (
@@ -266,13 +267,13 @@ export function ngModelAriaDirective($aria) {
     restrict: "A",
     require: "ngModel",
     priority: 200, // Make sure watches are fired after any other directives that affect the ngModel value
-    compile(elem, attr) {
+    compile(_, attr) {
       if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
 
       const shape = getShape(attr);
 
       return {
-        post(scope, elem, attr, ngModel) {
+        post(_, elem, attrPost, ngModel) {
           const needsTabIndex = shouldAttachAttr(
             "tabindex",
             "tabindex",
@@ -284,7 +285,7 @@ export function ngModelAriaDirective($aria) {
             // Strict comparison would cause a BC
             elem.setAttribute(
               "aria-checked",
-              (attr.value == ngModel.$viewValue).toString(),
+              (attrPost.value == ngModel.$viewValue).toString(),
             );
           }
 
@@ -323,22 +324,22 @@ export function ngModelAriaDirective($aria) {
               if ($aria.config("ariaValue")) {
                 const needsAriaValuemin =
                   !elem.hasAttribute("aria-valuemin") &&
-                  (hasOwn(attr, "min") || hasOwn(attr, "ngMin"));
+                  (hasOwn(attrPost, "min") || hasOwn(attrPost, "ngMin"));
 
                 const needsAriaValuemax =
                   !elem.hasAttribute("aria-valuemax") &&
-                  (hasOwn(attr, "max") || hasOwn(attr, "ngMax"));
+                  (hasOwn(attrPost, "max") || hasOwn(attrPost, "ngMax"));
 
                 const needsAriaValuenow = !elem.hasAttribute("aria-valuenow");
 
                 if (needsAriaValuemin) {
-                  attr.$observe("min", (newVal) => {
+                  attrPost.$observe("min", (newVal) => {
                     elem.setAttribute("aria-valuemin", newVal);
                   });
                 }
 
                 if (needsAriaValuemax) {
-                  attr.$observe("max", (newVal) => {
+                  attrPost.$observe("max", (newVal) => {
                     elem.setAttribute("aria-valuemax", newVal);
                   });
                 }
@@ -357,13 +358,16 @@ export function ngModelAriaDirective($aria) {
           }
 
           if (
-            !hasOwn(attr, "ngRequired") &&
+            !hasOwn(attrPost, "ngRequired") &&
             ngModel.$validators.required &&
             shouldAttachAttr("aria-required", "ariaRequired", elem, false)
           ) {
             // ngModel.$error.required is undefined on custom controls
-            attr.$observe("required", () => {
-              elem.setAttribute("aria-required", (!!attr.required).toString());
+            attrPost.$observe("required", () => {
+              elem.setAttribute(
+                "aria-required",
+                (!!attrPost.required).toString(),
+              );
             });
           }
 
