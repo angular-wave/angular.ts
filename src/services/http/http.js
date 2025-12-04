@@ -1088,7 +1088,7 @@ export function http(
     timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
   } else if (isPromiseLike(timeout)) {
     /** @type {Promise} */ (timeout).then(() => {
-      timeoutRequest("timeout");
+      timeoutRequest("abort");
     });
   }
 
