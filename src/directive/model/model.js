@@ -364,7 +364,12 @@ export class NgModelController {
    * @returns {boolean} True if `value` is "empty".
    */
   $isEmpty(value) {
-    return isUndefined(value) || value === "" || value === null || isNaN(value);
+    return (
+      isUndefined(value) ||
+      value === "" ||
+      value === null ||
+      Number.isNaN(value)
+    );
   }
 
   $$updateEmptyClasses(value) {
@@ -825,7 +830,8 @@ export class NgModelController {
 
     function writeToModelIfNeeded() {
       // intentional loose equality
-      if (that.$modelValue !== prevModelValue) {
+      // eslint-disable-next-line eqeqeq
+      if (that.$modelValue != prevModelValue) {
         that.$$writeModelToScope();
       }
     }
@@ -1210,7 +1216,7 @@ export function ngModelDirective() {
               deregisterWatch();
             });
           },
-          post: (scope, element, _attr, ctrls) => {
+          post: (scope, elementPost, _attr, ctrls) => {
             const modelCtrl = ctrls[0];
 
             modelCtrl.$$setUpdateOnEvents();
@@ -1219,13 +1225,13 @@ export function ngModelDirective() {
               modelCtrl.$setTouched();
             }
 
-            element.addEventListener("blur", () => {
+            elementPost.addEventListener("blur", () => {
               if (modelCtrl.$touched) return;
               setTouched();
             });
 
             modelCtrl.$viewChangeListeners.push(() =>
-              scope.$eval(element.dataset.change),
+              scope.$eval(elementPost.dataset.change),
             );
           },
         };

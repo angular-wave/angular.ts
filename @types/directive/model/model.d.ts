@@ -5,7 +5,7 @@ export function ngModelDirective(): {
   priority: number;
   compile: (element: Element) => {
     pre: (scope: any, _element: any, attr: any, ctrls: any) => void;
-    post: (scope: any, element: any, _attr: any, ctrls: any) => void;
+    post: (scope: any, elementPost: any, _attr: any, ctrls: any) => void;
   };
 };
 export const ngModelMinErr: (arg0: string, ...arg1: any[]) => Error;
