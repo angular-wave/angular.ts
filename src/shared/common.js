@@ -5,7 +5,7 @@ export function equals(o1, o2) {
 
   if (o1 === null || o2 === null) return false;
 
-  if (isNaN(o1) && isNaN(o2)) return true; // NaN === NaN
+  if (Number.isNaN(o1) && Number.isNaN(o2)) return true; // NaN === NaN
   const t1 = typeof o1,
     t2 = typeof o2;
 
