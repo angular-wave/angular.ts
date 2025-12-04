@@ -54,7 +54,7 @@ export default defineConfig([
       "no-magic-numbers": [
         "warn",
         {
-          ignore: [0, 1, -1, 2, 3, 4],
+          ignore: [0, 1, -1, 2, 3, 4, 16],
           ignoreArrayIndexes: true,
           enforceConst: true,
         },

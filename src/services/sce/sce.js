@@ -45,8 +45,8 @@ export const SCE_CONTEXTS = {
 // Copied from:
 // http://docs.closure-library.googlecode.com/git/local_closure_goog_string_string.js.source.html#line1021
 // Prereq: s is a string.
-export function escapeForRegexp(s) {
-  return s.replace(/([-()[\]{}+?*.$^|,:#<!\\])/g, "\\$1");
+export function escapeForRegexp(str) {
+  return str.replace(/([-()[\]{}+?*.$^|,:#<!\\])/g, "\\$1");
 }
 
 export function adjustMatcher(matcher) {
@@ -369,7 +369,7 @@ export class SceDelegateProvider {
               ),
             );
 
-            return;
+            return undefined;
           }
 
           if (
@@ -391,10 +391,12 @@ export class SceDelegateProvider {
               ),
             );
 
-            return;
+            return undefined;
           }
 
-          return new Constructor(trustedValue);
+          const tst = new Constructor(trustedValue);
+
+          return tst;
         }
 
         /**
@@ -492,7 +494,7 @@ export class SceDelegateProvider {
               ),
             );
 
-            return;
+            return undefined;
           } else if (type === SCE_CONTEXTS.HTML) {
             // htmlSanitizer throws its own error when no sanitizer is available.
             return htmlSanitizer();

@@ -47,7 +47,7 @@ export const requiredDirective = [
        * @param {ng.Scope} scope
        * @param {Element} _elm
        * @param {ng.Attributes} attr
-       * @param {import("../../interface.ts").NgModelController} ctrl
+       * @param {ng.NgModelController} ctrl
        * @returns
        */
       (scope, _elm, attr, ctrl) => {
@@ -229,7 +229,7 @@ export const maxlengthDirective = [
        * @param {ng.Scope} scope
        * @param {Element} _elm
        * @param {ng.Attributes} attr
-       * @param {import("../../interface.ts").NgModelController} ctrl
+       * @param {ng.NgModelController} ctrl
        * @returns
        */
       (scope, _elm, attr, ctrl) => {

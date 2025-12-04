@@ -63,8 +63,8 @@ export class CookieService {
       const all = parseCookies();
 
       return all[key] || null;
-    } catch (e) {
-      this.$exceptionHandler(e);
+    } catch (err) {
+      throw this.$exceptionHandler(err);
     }
   }
 
@@ -85,7 +85,7 @@ export class CookieService {
     try {
       return /** @type {T} */ (JSON.parse(raw));
     } catch (err) {
-      this.$exceptionHandler(
+      throw this.$exceptionHandler(
         new SyntaxError(`badparse: "${key}" => ${err.message}`),
       );
     }
@@ -100,8 +100,8 @@ export class CookieService {
   getAll() {
     try {
       return parseCookies();
-    } catch (e) {
-      this.$exceptionHandler(e);
+    } catch (err) {
+      this.$exceptionHandler(err);
     }
   }
 

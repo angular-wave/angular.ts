@@ -1,4 +1,4 @@
-export function escapeForRegexp(s: any): any;
+export function escapeForRegexp(str: any): any;
 export function adjustMatcher(matcher: any): any;
 export function SceProvider(): void;
 export class SceProvider {

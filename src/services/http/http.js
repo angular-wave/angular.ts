@@ -116,7 +116,7 @@ export function defaultHttpResponseTransform(data, headers) {
       if (hasJsonContentType || isJsonLike(tempData)) {
         try {
           data = fromJson(tempData);
-        } catch (e) {
+        } catch (err) {
           if (!hasJsonContentType) {
             return data;
           }
@@ -125,7 +125,7 @@ export function defaultHttpResponseTransform(data, headers) {
             'Data must be a valid JSON object. Received: "{0}". ' +
               'Parse error: "{1}"',
             data,
-            e,
+            err,
           );
         }
       }

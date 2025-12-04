@@ -72,11 +72,17 @@ export class NgModelController {
   $modelValue: any;
   /** @type {any} */
   $$rawModelValue: any;
-  $validators: {};
-  $asyncValidators: {};
-  $parsers: any[];
-  $formatters: any[];
-  $viewChangeListeners: any[];
+  /** @type {any} */
+  $validators: any;
+  /** @type {any} */
+  $asyncValidators: any;
+  /** @type {Array<any>} */
+  $parsers: Array<any>;
+  /** @type {Array<any>} */
+  $formatters: Array<any>;
+  /** @type {Array<any>} */
+  $viewChangeListeners: Array<any>;
+  /** @type {boolean} */
   $untouched: boolean;
   /** @type {boolean} */
   $touched: boolean;

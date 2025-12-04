@@ -16,8 +16,8 @@ class NgModelOptionsController {
   /* @ignore */ static $inject = ["$attrs", "$scope"];
 
   /**
-   * @param {import('../../core/compile/attributes.js').Attributes} $attrs
-   * @param {import('../../core/scope/scope.js').Scope} $scope
+   * @param {ng.Attributes} $attrs
+   * @param {ng.Scope} $scope
    */
   constructor($attrs, $scope) {
     this.$$attrs = $attrs;
@@ -122,9 +122,9 @@ export const defaultModelOptions = new ModelOptions({
 });
 
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
-export const ngModelOptionsDirective = function () {
+export function ngModelOptionsDirective() {
   return {
     restrict: "A",
     // ngModelOptions needs to run before ngModel and input directives
@@ -133,7 +133,7 @@ export const ngModelOptionsDirective = function () {
     bindToController: true,
     controller: NgModelOptionsController,
   };
-};
+}
 
 // shallow copy over values from `src` that are not already specified on `dst`
 function defaults(dst, src) {

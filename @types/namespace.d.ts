@@ -40,6 +40,7 @@ import {
 import {
   Directive as TDirective,
   DirectiveFactory as TDirectiveFactory,
+  AnnotatedDirectiveFactory as TAnnotatedDirectiveFactory,
   Component as TComponent,
   Controller as TController,
   ControllerConstructor as TControllerConstructor,
@@ -84,9 +85,11 @@ import {
 } from "./services/rest/interface.ts";
 import { RestService as TRestService } from "./services/rest/rest.js";
 import { ServiceProvider as TServiceProvider } from "./interface.ts";
+import { NgModelController as TNgModelController } from "./directive/model/model.js";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
+    $$moduleName?: string | undefined;
   }
   interface Window {
     angular: TAngular;
@@ -95,17 +98,23 @@ declare global {
     type Angular = TAngular;
     type Attributes = TAttributes & Record<string, any>;
     type Directive<TController = any> = TDirective<TController>;
-    type DirectiveFactory = TDirectiveFactory;
-    type Component = TComponent;
+    type DirectiveFactory = TDirectiveFactory & Function;
+    type AnnotatedDirectiveFactory = TAnnotatedDirectiveFactory;
+    type Component = TComponent & Record<string, any>;
     type Controller = TController;
     type Scope = TScope & Record<string, any>;
     type NgModule = TNgModule;
     type PubSubProvider = TPubSubProvider;
     type CompositeLinkFn = TCompositeLinkFn;
-    type PublicLinkFn = TPublicLinkFn;
+    type PublicLinkFn = TPublicLinkFn & {
+      pre: any;
+      post: any;
+    };
     type NodeLinkFn = TNodeLinkFn;
     type NodeLinkFnCtx = TNodeLinkFnCtx;
-    type TranscludeFn = TTranscludeFn;
+    type TranscludeFn = TTranscludeFn & {
+      $$slots: any;
+    };
     type BoundTranscludeFn = TBoundTranscludeFn;
     type LinkFnMapping = TLinkFnMapping;
     type AnchorScrollProvider = TAnchorScrollProvider;
@@ -121,7 +130,9 @@ declare global {
     type CookieService = TCookieService;
     type ExceptionHandlerService = TExceptionHandler;
     type FilterFn = TFilterFn;
-    type FilterFactory = TFilterFactory;
+    type FilterFactory = TFilterFactory & {
+      $$moduleName: string;
+    };
     type FilterService = TFilterService;
     type HttpParamSerializerSerService = THttpParamSerializer;
     type HttpService = THttpService;
@@ -150,7 +161,9 @@ declare global {
       T extends
         | ((...args: any[]) => any)
         | (abstract new (...args: any[]) => any),
-    > = TInjectable<T>;
+    > = TInjectable<T> & {
+      $$moduleName: string;
+    };
     type StorageBackend = TStorageBackend;
     type StorageType = TStorageType;
     type StreamConnectionConfig = TStreamConnectionConfig;
@@ -162,5 +175,6 @@ declare global {
     type EntityClass<T> = TEntityClass<T>;
     type ServiceProvider = TServiceProvider;
     type Expression = TExpression;
+    type NgModelController = TNgModelController;
   }
 }

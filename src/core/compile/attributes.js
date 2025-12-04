@@ -195,7 +195,7 @@ export class Attributes {
     }
 
     if (writeAttr !== false) {
-      const elem = this.$$element;
+      const elem = /** @type {Element} */ (this.$$element);
 
       if (value === null || isUndefined(value)) {
         elem.removeAttribute(attrName);
@@ -210,9 +210,9 @@ export class Attributes {
           elem.removeAttribute(attrName);
         } else {
           if (booleanKey) {
-            elem.toggleAttribute(attrName, value);
+            elem.toggleAttribute(attrName, /** @type {boolean} */ (value));
           } else {
-            elem.setAttribute(attrName, value);
+            elem.setAttribute(attrName, /** @type {string} */ (value));
           }
         }
       } else {

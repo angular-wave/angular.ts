@@ -14,7 +14,7 @@ export class AnchorScrollProvider {
     | string
     | ((
         $location: import("../../services/location/location.js").Location,
-        $rootScope: import("../../core/scope/scope.js").Scope,
+        $rootScope: ng.Scope,
       ) => AnchorScrollFunction)
   )[];
 }

@@ -21,6 +21,7 @@ export * from "./core/filter/filter.js";
 
 import { Attributes } from "./core/compile/attributes.js";
 import { Scope } from "./core/scope/scope.js";
+import { NgModelController } from "./directive/model/model.js";
 
 /**
  * Configuration options for the AngularTS bootstrap process.
@@ -478,40 +479,6 @@ export interface NgModelOptions {
   timeSecondsFormat?: string;
   /** Whether to remove trailing :00 seconds */
   timeStripZeroSeconds?: boolean;
-}
-
-/**
- * Controller API for ngModel directive.
- */
-export interface NgModelController {
-  /** Updates the view when the model changes */
-  $render(): void;
-  /** Sets the validity state of the control */
-  $setValidity(validationErrorKey: string, isValid: boolean): void;
-  /** Updates the model value */
-  $setViewValue(value: any, trigger?: string): void;
-  /** Marks the control as pristine */
-  $setPristine(): void;
-  /** Marks the control as dirty */
-  $setDirty(): void;
-  /** Re-validates the model */
-  $validate(): void;
-  /** Marks the control as touched */
-  $setTouched(): void;
-  /** Marks the control as untouched */
-  $setUntouched(): void;
-  /** Rolls back to previous view value */
-  $rollbackViewValue(): void;
-  /** Commits the current view value to the model */
-  $commitViewValue(): void;
-  /** Processes view-to-model transformations */
-  $processModelValue(): void;
-  /** Determines if value is considered empty */
-  $isEmpty(value: any): boolean;
-  /** Overrides the model options dynamically */
-  $overrideModelOptions(options: NgModelOptions): void;
-  /** Current value shown in the view */
-  $viewValue: any;
 }
 
 export interface RootElementService extends Element {}

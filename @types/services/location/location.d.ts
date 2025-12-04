@@ -94,10 +94,10 @@ export function parseAppUrl(url: string, html5Mode: boolean): void;
  * Returns `undefined` if `url` does not start with `base`.
  * @param {string} base
  * @param {string} url
- * @returns {string} returns text from `url` after `base` or `undefined` if it does not begin with
+ * @returns {string|undefined} returns text from `url` after `base` or `undefined` if it does not begin with
  *                   the expected string.
  */
-export function stripBaseUrl(base: string, url: string): string;
+export function stripBaseUrl(base: string, url: string): string | undefined;
 /**
  * @ignore
  * Removes the hash fragment (including the '#') from the given URL string.
@@ -143,11 +143,11 @@ export function serverBase(url: string): string;
  * Determine if two URLs are equal despite potential differences in encoding,
  * trailing slashes, or empty hash fragments, such as between $location.absUrl() and $browser.url().
  *
- * @param {string} a - First URL to compare.
- * @param {string} b - Second URL to compare.
+ * @param {string} x - First URL to compare.
+ * @param {string} y - Second URL to compare.
  * @returns {boolean} True if URLs are equivalent after normalization.
  */
-export function urlsEqual(a: string, b: string): boolean;
+export function urlsEqual(x: string, y: string): boolean;
 export class Location {
   /**
    * @param {string} appBase application base URL
