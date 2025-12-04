@@ -932,21 +932,21 @@ export class Scope {
         for (let i = 0, l = properties.length; i < l; i++) {
           const prop = properties[i];
 
-          let key;
+          let currentKey;
 
           if (prop.key.isPure === false) {
-            key = prop.key.name;
+            currentKey = prop.key.name;
           } else if (prop.value?.name) {
-            key = prop.value.name;
+            currentKey = prop.value.name;
           } else {
             const target = get.decoratedNode.body[0].expression.toWatch[0];
 
-            key = target.property ? target.property.name : target.name;
+            currentKey = target.property ? target.property.name : target.name;
           }
 
-          if (key) {
-            keySet.push(key);
-            listener.property.push(key);
+          if (currentKey) {
+            keySet.push(currentKey);
+            listener.property.push(currentKey);
           }
         }
         break;
@@ -1001,7 +1001,7 @@ export class Scope {
       if (Object.getPrototypeOf(childInstance) === Object.prototype) {
         Object.setPrototypeOf(childInstance, this.$target);
       } else {
-        if (Object.getPrototypeOf(childInstance) == this.$target) {
+        if (Object.getPrototypeOf(childInstance) === this.$target) {
           Object.setPrototypeOf(childInstance, this.$target);
         } else {
           Object.setPrototypeOf(
@@ -1142,7 +1142,7 @@ export class Scope {
     try {
       return $parse(expr)(this.$proxy);
     } catch (err) {
-      $exceptionHandler(err);
+      return $exceptionHandler(err);
     }
   }
 
@@ -1166,7 +1166,7 @@ export class Scope {
       if (indexOfListener !== -1) {
         namedListeners.splice(indexOfListener, 1);
 
-        if (namedListeners.length == 0) {
+        if (namedListeners.length === 0) {
           this.$$listeners.delete(name);
         }
       }
@@ -1211,7 +1211,7 @@ export class Scope {
           );
         }
 
-        return;
+        return undefined;
       }
     }
 

@@ -1,4 +1,4 @@
-import { isFunction, isProxy } from "../../shared/utils.js";
+import { isFunction, isNullOrUndefined, isProxy } from "../../shared/utils.js";
 import { PURITY_RELATIVE } from "./interpreter.js";
 import { Lexer } from "./lexer/lexer.js";
 import { Parser } from "./parser/parser.js";
@@ -131,7 +131,7 @@ export class ParseProvider {
 
             // Do not invoke for getters
             if (scope?.getter) {
-              return;
+              return undefined;
             }
             const res = isFunction(value) ? value() : value;
 
@@ -165,16 +165,16 @@ export class ParseProvider {
               : [parsedExpression];
 
             if (!interceptorFn.$$pure) {
-              fn.inputs = fn.inputs.map(function (e) {
+              fn.inputs = fn.inputs.map(function (input) {
                 // Remove the isPure flag of inputs when it is not absolute because they are now wrapped in a
                 // non-pure interceptor function.
-                if (e.isPure === PURITY_RELATIVE) {
-                  return function depurifier(s) {
-                    return e(s);
+                if (input.isPure === PURITY_RELATIVE) {
+                  return function depurifier(x) {
+                    return input(x);
                   };
                 }
 
-                return e;
+                return input;
               });
             }
           }
@@ -226,7 +226,7 @@ function addWatchDelegate(parsedExpression) {
  * @param {Function} listener
  * @param {*} objectEquality
  * @param {import('./interface').CompiledExpression} parsedExpression
- * @returns
+ * @returns {any}
  */
 function inputsWatchDelegate(
   scope,
@@ -274,37 +274,39 @@ function inputsWatchDelegate(
       oldInputValues[i] = null;
     }
 
-    return scope.$watch(
-      // @ts-ignore
-      (scope) => {
-        let changed = false;
+    // return scope.$watch(
+    //   // @ts-ignore
+    //   (scope) => {
+    //     debugger
+    //     let changed = false;
 
-        for (let i = 0, ii = inputExpressions.length; i < ii; i++) {
-          const newInputValue = inputExpressions[i](scope);
+    //     for (let i = 0, ii = inputExpressions.length; i < ii; i++) {
+    //       const newInputValue = inputExpressions[i](scope);
 
-          if (
-            changed ||
-            (changed = !expressionInputDirtyCheck(
-              newInputValue,
-              oldInputValueOfValues[i],
-              inputExpressions[i].isPure,
-            ))
-          ) {
-            oldInputValues[i] = newInputValue;
-            oldInputValueOfValues[i] =
-              newInputValue && getValueOf(newInputValue);
-          }
-        }
+    //       if (
+    //         changed ||
+    //         (changed = !expressionInputDirtyCheck(
+    //           newInputValue,
+    //           oldInputValueOfValues[i],
+    //           inputExpressions[i].isPure,
+    //         ))
+    //       ) {
+    //         oldInputValues[i] = newInputValue;
+    //         oldInputValueOfValues[i] =
+    //           newInputValue && getValueOf(newInputValue);
+    //       }
+    //     }
 
-        if (changed) {
-          lastResult = parsedExpression(scope, undefined, oldInputValues);
-        }
+    //     if (changed) {
+    //       lastResult = parsedExpression(scope, undefined, oldInputValues);
+    //     }
 
-        return lastResult;
-      },
-      listener,
-      objectEquality,
-    );
+    //     return lastResult;
+    //   },
+    //   listener,
+    //   objectEquality,
+    // );
+    return undefined;
   }
 }
 
@@ -323,7 +325,7 @@ function expressionInputDirtyCheck(
   oldValueOfValue,
   compareObjectIdentity,
 ) {
-  if (newValue == null || oldValueOfValue == null) {
+  if (isNullOrUndefined(newValue) || isNullOrUndefined(oldValueOfValue)) {
     // null/undefined
     return newValue === oldValueOfValue;
   }
@@ -346,7 +348,7 @@ function expressionInputDirtyCheck(
 
   return (
     newValue === oldValueOfValue ||
-    (newValue !== newValue && oldValueOfValue !== oldValueOfValue)
+    (Number.isNaN(newValue) && Number.isNaN(oldValueOfValue))
   );
 }
 

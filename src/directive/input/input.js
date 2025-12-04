@@ -1103,10 +1103,10 @@ export function hiddenInputBrowserCacheDirective() {
     priority: 200,
     compile(_, attr) {
       if (attr.type?.toLowerCase() !== "hidden") {
-        return;
+        return undefined;
       }
 
-      return {
+      const res = {
         pre(_scope, element) {
           const node = element;
 
@@ -1125,6 +1125,8 @@ export function hiddenInputBrowserCacheDirective() {
           return undefined;
         },
       };
+
+      return res;
     },
   };
 }
