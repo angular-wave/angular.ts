@@ -20,6 +20,8 @@ const isNodeOneOf = function (elem, nodeTypeArray) {
   if (nodeTypeArray.indexOf(elem.nodeName) !== -1) {
     return true;
   }
+
+  return false;
 };
 
 /**
@@ -129,7 +131,7 @@ export function ngClickAriaDirective($aria, $parse) {
   return {
     restrict: "A",
     compile(_elem, attr) {
-      if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
+      if (hasOwn(attr, ARIA_DISABLE_ATTR)) return undefined;
 
       const fn = $parse(attr.ngClick);
 
@@ -268,7 +270,7 @@ export function ngModelAriaDirective($aria) {
     require: "ngModel",
     priority: 200, // Make sure watches are fired after any other directives that affect the ngModel value
     compile(_, attr) {
-      if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
+      if (hasOwn(attr, ARIA_DISABLE_ATTR)) return undefined;
 
       const shape = getShape(attr);
 

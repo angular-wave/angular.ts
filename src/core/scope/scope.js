@@ -97,7 +97,7 @@ export function createScope(target = {}, context) {
   return proxy;
 }
 
-const g = globalThis;
+const global = globalThis;
 
 const proto = Object.prototype;
 
@@ -115,10 +115,10 @@ export function isNonScope(target) {
   if (
     target[NONSCOPE] === true ||
     (target.constructor && target.constructor[NONSCOPE]) === true ||
-    target === g.window ||
-    target === g.document ||
-    target === g.self ||
-    target === g.frames ||
+    target === global.window ||
+    target === global.document ||
+    target === global.self ||
+    target === global.frames ||
     target instanceof Window ||
     target instanceof Document ||
     target instanceof Element ||
@@ -395,9 +395,9 @@ export class Scope {
             const keys = this.objectListeners.get(proxy);
 
             for (let i = 0, l = keys.length; i < l; i++) {
-              const listeners = this.watchers.get(keys[i]);
+              const currentListeners = this.watchers.get(keys[i]);
 
-              if (listeners) this.#scheduleListener(listeners);
+              if (currentListeners) this.#scheduleListener(currentListeners);
             }
             decodeURI;
           }
@@ -618,9 +618,9 @@ export class Scope {
         for (let i = 0, l = keys.length; i < l; i++) {
           const key = keys[i];
 
-          const listeners = this.watchers.get(key);
+          const currentListeners = this.watchers.get(key);
 
-          if (listeners) this.#scheduleListener(listeners);
+          if (currentListeners) this.#scheduleListener(currentListeners);
         }
       }
 
@@ -1141,8 +1141,8 @@ export class Scope {
   $apply(expr) {
     try {
       return $parse(expr)(this.$proxy);
-    } catch (e) {
-      $exceptionHandler(e);
+    } catch (err) {
+      $exceptionHandler(err);
     }
   }
 
@@ -1370,8 +1370,8 @@ export class Scope {
 
         fn();
       }
-    } catch (e) {
-      $exceptionHandler(e);
+    } catch (err) {
+      $exceptionHandler(err);
     }
   }
 
@@ -1412,14 +1412,14 @@ export class Scope {
   }
 
   $searchByName(name) {
-    const getByName = (scope, name) => {
-      if (scope.$scopename === name) {
+    const getByName = (scope, nameParam) => {
+      if (scope.$scopename === nameParam) {
         return scope;
       } else {
         let res = undefined;
 
         for (const child of scope.$children) {
-          const found = getByName(child, name);
+          const found = getByName(child, nameParam);
 
           if (found) {
             res = found;

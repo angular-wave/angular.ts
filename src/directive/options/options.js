@@ -169,22 +169,22 @@ export function ngOptionsDirective($compile, $parse) {
 
           const value = optionValues[key];
 
-          const locals = getLocals(value, key);
+          const updatedLocals = getLocals(value, key);
 
-          const selectValue = getTrackByValueFn(value, locals);
+          const selectValue = getTrackByValueFn(value, updatedLocals);
 
           watchedArray.push(selectValue);
 
           // Only need to watch the displayFn if there is a specific label expression
           if (match[2] || match[1]) {
-            const label = displayFn(scope, locals);
+            const label = displayFn(scope, updatedLocals);
 
             watchedArray.push(label);
           }
 
           // Only need to watch the disableWhenFn if there is a specific disable expression
           if (match[4]) {
-            const disableWhen = disableWhenFn(scope, locals);
+            const disableWhen = disableWhenFn(scope, updatedLocals);
 
             watchedArray.push(disableWhen);
           }
@@ -214,17 +214,17 @@ export function ngOptionsDirective($compile, $parse) {
 
           const value = optionValues[key];
 
-          const locals = getLocals(value, key);
+          const updatedLocals = getLocals(value, key);
 
-          const viewValue = viewValueFn(scope, locals);
+          const viewValue = viewValueFn(scope, updatedLocals);
 
-          const selectValue = getTrackByValueFn(viewValue, locals);
+          const selectValue = getTrackByValueFn(viewValue, updatedLocals);
 
-          const label = displayFn(scope, locals);
+          const label = displayFn(scope, updatedLocals);
 
-          const group = groupByFn(scope, locals);
+          const group = groupByFn(scope, updatedLocals);
 
-          const disabled = disableWhenFn(scope, locals);
+          const disabled = disableWhenFn(scope, updatedLocals);
 
           const optionItem = new Option(
             selectValue,
