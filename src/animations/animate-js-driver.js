@@ -41,9 +41,9 @@ export function AnimateJsDriverProvider($$animationProvider) {
 
               function endFnFactory() {
                 return function () {
-                  animationRunners.forEach((runner) => {
+                  animationRunners.forEach((x) => {
                     // at this point we cannot cancel animations for groups just yet. 1.5+
-                    runner.end();
+                    x.end();
                   });
                 };
               }

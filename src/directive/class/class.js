@@ -78,13 +78,13 @@ function classDirective(name, selector) {
         }
 
         /**
-         * @param {string} oldClassString
-         * @param {string} newClassString
+         * @param {string} oldClassStringParam
+         * @param {string} newClassStringParam
          */
-        function updateClasses(oldClassString, newClassString) {
-          const oldClassArray = split(oldClassString);
+        function updateClasses(oldClassStringParam, newClassStringParam) {
+          const oldClassArray = split(oldClassStringParam);
 
-          const newClassArray = split(newClassString);
+          const newClassArray = split(newClassStringParam);
 
           const toRemoveArray = arrayDifference(oldClassArray, newClassArray);
 

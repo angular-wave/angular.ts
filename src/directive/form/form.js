@@ -472,16 +472,16 @@ export class FormController {
 
     toggleValidationCss(this, validationErrorKey, combinedState);
     this.$$parentForm.$setValidity(validationErrorKey, combinedState, this);
-    function createAndSet(ctrl, name, value, controller) {
+    function createAndSet(ctrl, name, value, controllerParam) {
       if (!ctrl[name]) {
         ctrl[name] = {};
       }
-      that.set(ctrl[name], value, controller);
+      that.set(ctrl[name], value, controllerParam);
     }
 
-    function unsetAndCleanup(ctrl, name, value, controller) {
+    function unsetAndCleanup(ctrl, name, value, controllerParam) {
       if (ctrl[name]) {
-        that.unset(ctrl[name], value, controller);
+        that.unset(ctrl[name], value, controllerParam);
       }
 
       if (isObjectEmpty(ctrl[name])) {
@@ -499,19 +499,19 @@ export class FormController {
       }
     }
 
-    function toggleValidationCss(ctrl, validationErrorKey, isValid) {
-      validationErrorKey = validationErrorKey
-        ? `-${snakeCase(validationErrorKey, "-")}`
+    function toggleValidationCss(ctrl, validationErrorKeyParam, isValid) {
+      validationErrorKeyParam = validationErrorKeyParam
+        ? `-${snakeCase(validationErrorKeyParam, "-")}`
         : "";
 
       cachedToggleClass(
         ctrl,
-        VALID_CLASS + validationErrorKey,
+        VALID_CLASS + validationErrorKeyParam,
         isValid === true,
       );
       cachedToggleClass(
         ctrl,
-        INVALID_CLASS + validationErrorKey,
+        INVALID_CLASS + validationErrorKeyParam,
         isValid === false,
       );
     }
@@ -626,11 +626,16 @@ const formDirectiveFactory = function (isNgForm) {
               : false;
 
           return {
-            pre: function ngFormPreLink(scope, formElement, attr, ctrls) {
+            pre: function ngFormPreLink(
+              scope,
+              formElementParam,
+              attrParam,
+              ctrls,
+            ) {
               const controller = ctrls[0];
 
               // if `action` attr is not present on the form, prevent the default action (submission)
-              if (!("action" in attr)) {
+              if (!("action" in attrParam)) {
                 // we can't use jq events because if a form is destroyed during submission the default
                 // action is not prevented. see #1238
                 //
@@ -643,14 +648,17 @@ const formDirectiveFactory = function (isNgForm) {
                   event.preventDefault();
                 };
 
-                formElement.addEventListener("submit", handleFormSubmission);
+                formElementParam.addEventListener(
+                  "submit",
+                  handleFormSubmission,
+                );
 
                 // unregister the preventDefault listener so that we don't not leak memory but in a
                 // way that will achieve the prevention of the default action.
-                formElement.addEventListener("$destroy", () => {
+                formElementParam.addEventListener("$destroy", () => {
                   setTimeout(
                     () => {
-                      formElement.removeEventListener(
+                      formElementParam.removeEventListener(
                         "submit",
                         handleFormSubmission,
                       );
@@ -673,7 +681,7 @@ const formDirectiveFactory = function (isNgForm) {
 
               if (nameAttr) {
                 setter(scope, controller);
-                attr.$observe(nameAttr, (newValue) => {
+                attrParam.$observe(nameAttr, (newValue) => {
                   if (controller.$name === newValue) return;
                   scope.$target[controller.$name] = undefined;
                   controller.$$parentForm.$$renameControl(controller, newValue);
@@ -688,7 +696,7 @@ const formDirectiveFactory = function (isNgForm) {
                   }
                 });
               }
-              formElement.addEventListener("$destroy", () => {
+              formElementParam.addEventListener("$destroy", () => {
                 controller.$target.$$parentForm.$removeControl(controller);
                 setter(scope, undefined);
                 extend(controller, nullFormCtrl); // stop propagating child destruction handlers upwards

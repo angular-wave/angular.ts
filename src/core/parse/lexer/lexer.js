@@ -1,3 +1,5 @@
+/* eslint-disable id-length */
+/* eslint-disable no-magic-numbers */
 import { isDefined, minErr } from "../../../shared/utils.js";
 
 /**

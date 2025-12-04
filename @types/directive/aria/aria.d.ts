@@ -22,7 +22,7 @@ export class AriaProvider {
     $$watchExpr: (
       attrName: any,
       ariaAttr: any,
-      nativeAriaNodeNames: any,
+      nativeAriaNodeNamesParam: any,
       negate: any,
     ) => (scope: any, elem: any, attr: any) => void;
   };
@@ -83,10 +83,10 @@ export function ngModelAriaDirective($aria: any): {
   require: string;
   priority: number;
   compile(
-    elem: any,
+    _: any,
     attr: any,
   ): {
-    post(scope: any, elem: any, attr: any, ngModel: any): void;
+    post(_: any, elem: any, attrPost: any, ngModel: any): void;
   };
 };
 export namespace ngModelAriaDirective {

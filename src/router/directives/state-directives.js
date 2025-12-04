@@ -376,10 +376,17 @@ export function $StateRefActiveDirective(
           Object.entries(statesDefinition).forEach(
             ([activeClass, stateOrName]) => {
               // Helper function to abstract adding state.
-              const addStateForClass = function (stateOrName, activeClass) {
-                const ref = parseStateRef(stateOrName);
+              const addStateForClass = function (
+                stateOrNameParam,
+                activeClassParam,
+              ) {
+                const ref = parseStateRef(stateOrNameParam);
 
-                addState(ref.state, $scope.$eval(ref.paramExpr), activeClass);
+                addState(
+                  ref.state,
+                  $scope.$eval(ref.paramExpr),
+                  activeClassParam,
+                );
               };
 
               if (isString(stateOrName)) {
@@ -387,8 +394,8 @@ export function $StateRefActiveDirective(
                 addStateForClass(stateOrName, activeClass);
               } else if (Array.isArray(stateOrName)) {
                 // If state is an array, iterate over it and add each array item individually.
-                stateOrName.forEach((stateOrName) => {
-                  addStateForClass(stateOrName, activeClass);
+                stateOrName.forEach((stateOrNameParam) => {
+                  addStateForClass(stateOrNameParam, activeClass);
                 });
               }
             },

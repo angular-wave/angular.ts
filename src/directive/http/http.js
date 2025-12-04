@@ -1,4 +1,4 @@
-import { $injectTokens as $ } from "../../injection-tokens.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 import { Http } from "../../services/http/http.js";
 import {
   callBackAfterFirst,
@@ -21,13 +21,13 @@ function defineDirective(method, attrOverride) {
   const directive = createHttpDirective(method, attrName);
 
   directive.$inject = [
-    $.$http,
-    $.$compile,
-    $.$log,
-    $.$parse,
-    $.$state,
-    $.$sse,
-    $.$animate,
+    $t.$http,
+    $t.$compile,
+    $t.$log,
+    $t.$parse,
+    $t.$state,
+    $t.$sse,
+    $t.$animate,
   ];
 
   return directive;
@@ -231,7 +231,7 @@ export function createHttpDirective(method, attrName) {
               // Build fragment for static replacement OR a list for animation
               const frag = document.createDocumentFragment();
 
-              nodes.forEach((n) => frag.appendChild(n));
+              nodes.forEach((x) => frag.appendChild(x));
 
               if (!animationEnabled) {
                 parent.replaceChild(frag, target);
@@ -247,17 +247,17 @@ export function createHttpDirective(method, attrName) {
                 const insertedNodes = Array.from(frag.childNodes);
 
                 // Insert each node in order
-                for (const n of insertedNodes) {
-                  if (n.nodeType === Node.ELEMENT_NODE) {
+                for (const x of insertedNodes) {
+                  if (x.nodeType === Node.ELEMENT_NODE) {
                     // Animate elements
                     $animate.enter(
-                      /** @type {Element} */ (n),
+                      /** @type {Element} */ (x),
                       parent,
                       placeholder,
                     );
                   } else {
                     // Insert text nodes statically
-                    parent.insertBefore(n, placeholder);
+                    parent.insertBefore(x, placeholder);
                   }
                 }
 
