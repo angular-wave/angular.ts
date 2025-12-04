@@ -1178,7 +1178,7 @@ export class CompileProvider {
          * A function generator that is used to support both eager and lazy compilation
          * linking function.
          * @param eager
-         * @param {NodeList|Node} compileNodes
+         * @param {NodeList|Node} nodes
          * @param transcludeFn
          * @param maxPriority
          * @param ignoreDirective
@@ -1187,7 +1187,7 @@ export class CompileProvider {
          */
         function compilationGenerator(
           eager,
-          compileNodes,
+          nodes,
           transcludeFn,
           maxPriority,
           ignoreDirective,
@@ -1196,31 +1196,37 @@ export class CompileProvider {
           let compiled;
 
           if (eager) {
-            return compile(
-              compileNodes,
-              transcludeFn,
-              maxPriority,
-              ignoreDirective,
-              previousCompileContext,
+            return /** @type {ng.PublicLinkFn} */ (
+              compile(
+                nodes,
+                transcludeFn,
+                maxPriority,
+                ignoreDirective,
+                previousCompileContext,
+              )
             );
           }
 
-          return function lazyCompilation() {
+          function lazyCompilation() {
             if (!compiled) {
               compiled = compile(
-                compileNodes,
+                nodes,
                 transcludeFn,
                 maxPriority,
                 ignoreDirective,
                 previousCompileContext,
               );
 
-              // Null out all of these references for garbage collection
-              compileNodes = transcludeFn = previousCompileContext = null;
+              nodes = transcludeFn = previousCompileContext = null;
             }
 
-            return compiled.apply(this, arguments);
-          };
+            /* eslint-disable no-invalid-this */
+            const ctx = this;
+
+            return compiled.apply(ctx, arguments);
+          }
+
+          return /** @type {ng.PublicLinkFn} */ (lazyCompilation);
         }
 
         /**
@@ -1264,9 +1270,9 @@ export class CompileProvider {
             templateDirective,
             nonTlbTranscludeDirective,
             hasElementTranscludeDirective,
-            ctxNodeRef,
-            parentNodeRef,
           } = previousCompileContext;
+
+          const { ctxNodeRef, parentNodeRef } = previousCompileContext;
 
           let hasTranscludeDirective = false;
 
@@ -1315,8 +1321,6 @@ export class CompileProvider {
 
             let elementControllers;
 
-            let transcludeFn;
-
             let scopeToChild = scope;
 
             /** @type {NodeRef} */
@@ -1353,12 +1357,17 @@ export class CompileProvider {
             if (boundTranscludeFn) {
               // track `boundTranscludeFn` so it can be unwrapped if `transcludeFn`
               // is later passed as `parentBoundTranscludeFn` to `publicLinkFn`
-              transcludeFn = controllersBoundTransclude;
-              transcludeFn.$$boundTransclude = boundTranscludeFn;
+              /** @type {any} */
+              const newTrancludeFn = /** @type {any} */ (
+                controllersBoundTransclude
+              );
+
+              newTrancludeFn.$$boundTransclude = boundTranscludeFn;
               // expose the slots on the `$transclude` function
-              transcludeFn.isSlotFilled = function (slotName) {
+              newTrancludeFn.isSlotFilled = function (slotName) {
                 return !!boundTranscludeFn.$$slots[slotName];
               };
+              transcludeFn = newTrancludeFn;
             }
 
             if (controllerDirectives) {
@@ -1473,7 +1482,7 @@ export class CompileProvider {
 
             // PRELINKING
             for (i = 0, ii = preLinkFns.length; i < ii; i++) {
-              const preLinkFn = preLinkFns[i];
+              const preLinkFn = /** @type {any} */ (preLinkFns[i]);
 
               const controllers =
                 preLinkFn.require &&
@@ -1525,7 +1534,7 @@ export class CompileProvider {
 
             // POSTLINKING
             for (i = postLinkFns.length - 1; i >= 0; i--) {
-              const postLinkFn = postLinkFns[i];
+              const postLinkFn = /** @type {any} */ (postLinkFns[i]);
 
               const controllers =
                 postLinkFn.require &&

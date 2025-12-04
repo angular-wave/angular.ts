@@ -1,3 +1,4 @@
+make check
 make types
 make pretty
 git add ./

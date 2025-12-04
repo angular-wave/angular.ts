@@ -6,7 +6,7 @@ import { $injectTokens as $t } from "../../injection-tokens.js";
  */
 
 /**
- * @type {Record<string, ng.DirectiveFactory>}
+ * @type {Record<string, ng.Injectable<any>>}
  */
 export const ngEventDirectives = {};
 

@@ -83,7 +83,8 @@ Object.entries(ALIASED_ATTR).forEach(([ngAttr]) => {
 
           if (
             attrName === "href" &&
-            toString.call(element.href) === "[object SVGAnimatedString]"
+            toString.call(/** @type {HTMLLinkElement} */ (element).href) ===
+              "[object SVGAnimatedString]"
           ) {
             name = "xlinkHref";
             attr.$attr[name] = "href";

@@ -29,6 +29,6 @@ export function createWindowEventDirective(
   eventName: string,
 ): ng.Directive;
 /**
- * @type {Record<string, ng.DirectiveFactory>}
+ * @type {Record<string, ng.Injectable<any>>}
  */
-export const ngEventDirectives: Record<string, ng.DirectiveFactory>;
+export const ngEventDirectives: Record<string, ng.Injectable<any>>;

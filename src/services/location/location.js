@@ -3,6 +3,7 @@ import {
   encodeUriSegment,
   equals,
   isDefined,
+  isNull,
   isNumber,
   isObject,
   isString,
@@ -178,7 +179,7 @@ export class Location {
           search = structuredClone(search, {});
           // remove object undefined or null properties
           Object.entries(search).forEach(([key, value]) => {
-            if (value == null) delete search[key];
+            if (isNull(value)) delete search[key];
           });
 
           $$search = search;
@@ -950,13 +951,15 @@ export function parseAppUrl(url, html5Mode) {
  * Returns `undefined` if `url` does not start with `base`.
  * @param {string} base
  * @param {string} url
- * @returns {string} returns text from `url` after `base` or `undefined` if it does not begin with
+ * @returns {string|undefined} returns text from `url` after `base` or `undefined` if it does not begin with
  *                   the expected string.
  */
 export function stripBaseUrl(base, url) {
   if (startsWith(url, base)) {
     return url.substring(base.length);
   }
+
+  return undefined;
 }
 
 /**
@@ -1019,12 +1022,12 @@ export function serverBase(url) {
  * Determine if two URLs are equal despite potential differences in encoding,
  * trailing slashes, or empty hash fragments, such as between $location.absUrl() and $browser.url().
  *
- * @param {string} a - First URL to compare.
- * @param {string} b - Second URL to compare.
+ * @param {string} x - First URL to compare.
+ * @param {string} y - Second URL to compare.
  * @returns {boolean} True if URLs are equivalent after normalization.
  */
-export function urlsEqual(a, b) {
-  return normalizeUrl(a) === normalizeUrl(b);
+export function urlsEqual(x, y) {
+  return normalizeUrl(x) === normalizeUrl(y);
 }
 
 /**

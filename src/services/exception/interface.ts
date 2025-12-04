@@ -3,4 +3,4 @@
  *
  * @param {Error} exception - The exception associated with the error.
  */
-export type ExceptionHandler = (exception: Error) => void;
+export type ExceptionHandler = (exception: Error) => never;

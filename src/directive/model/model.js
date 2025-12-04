@@ -103,11 +103,22 @@ export class NgModelController {
     /** @type {any} */
     this.$$rawModelValue = undefined; // stores the parsed modelValue / model set from scope regardless of validity.
 
+    /** @type {any} */
     this.$validators = {};
+
+    /** @type {any} */
     this.$asyncValidators = {};
+
+    /** @type {Array<any>} */
     this.$parsers = [];
+
+    /** @type {Array<any>} */
     this.$formatters = [];
+
+    /** @type {Array<any>} */
     this.$viewChangeListeners = [];
+
+    /** @type {boolean} */
     this.$untouched = true;
 
     /** @type {boolean} */
@@ -890,12 +901,15 @@ export class NgModelController {
     if (isNumber(debounceDelay[trigger])) {
       debounceDelay = debounceDelay[trigger];
     } else if (
-      isNumber(debounceDelay.default) &&
+      isNumber(
+        /** @type {Object.<string, number>} */ (debounceDelay).default,
+      ) &&
       /** @type {string} */ (this.$options.getOption("updateOn")).indexOf(
         trigger,
       ) === -1
     ) {
-      debounceDelay = debounceDelay.default;
+      debounceDelay = /** @type {Object.<string, number>} */ (debounceDelay)
+        .default;
     } else if (isNumber(debounceDelay["*"])) {
       debounceDelay = debounceDelay["*"];
     }

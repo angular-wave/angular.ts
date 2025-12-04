@@ -40,7 +40,9 @@ export class FilterProvider {
       orderBy: orderByFilter,
       isState: $IsStateFilter,
       includedByState: $IncludedByStateFilter,
-    }).forEach(([k, v]) => this.register(k, v));
+    }).forEach(([k, v]) =>
+      this.register(k, /** @type {ng.FilterFactory} */ (v)),
+    );
   }
 
   /**

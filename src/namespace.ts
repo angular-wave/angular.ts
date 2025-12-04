@@ -44,6 +44,7 @@ import {
 import {
   Directive as TDirective,
   DirectiveFactory as TDirectiveFactory,
+  AnnotatedDirectiveFactory as TAnnotatedDirectiveFactory,
   Component as TComponent,
   Controller as TController,
   ControllerConstructor as TControllerConstructor,
@@ -88,6 +89,7 @@ import {
 } from "./services/rest/interface.ts";
 import { RestService as TRestService } from "./services/rest/rest.js";
 import { ServiceProvider as TServiceProvider } from "./interface.ts";
+import { NgModelController as TNgModelController } from "./directive/model/model.js";
 
 /* ────────────────────────────────────────────────
    Runtime global initialization
@@ -99,6 +101,7 @@ if (typeof globalThis.ng === "undefined") {
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
+    $$moduleName?: string | undefined;
   }
 
   interface Window {
@@ -110,18 +113,19 @@ declare global {
     export type Angular = TAngular;
     export type Attributes = TAttributes & Record<string, any>;
     export type Directive<TController = any> = TDirective<TController>;
-    export type DirectiveFactory = TDirectiveFactory;
-    export type Component = TComponent;
+    export type DirectiveFactory = TDirectiveFactory & Function;
+    export type AnnotatedDirectiveFactory = TAnnotatedDirectiveFactory;
+    export type Component = TComponent & Record<string, any>;
     export type Controller = TController;
     export type Scope = TScope & Record<string, any>;
     export type NgModule = TNgModule;
     export type PubSubProvider = TPubSubProvider;
 
     export type CompositeLinkFn = TCompositeLinkFn;
-    export type PublicLinkFn = TPublicLinkFn;
+    export type PublicLinkFn = TPublicLinkFn & { pre: any; post: any };
     export type NodeLinkFn = TNodeLinkFn;
     export type NodeLinkFnCtx = TNodeLinkFnCtx;
-    export type TranscludeFn = TTranscludeFn;
+    export type TranscludeFn = TTranscludeFn & { $$slots: any };
     export type BoundTranscludeFn = TBoundTranscludeFn;
     export type LinkFnMapping = TLinkFnMapping;
 
@@ -141,7 +145,7 @@ declare global {
     export type CookieService = TCookieService;
     export type ExceptionHandlerService = TExceptionHandler;
     export type FilterFn = TFilterFn;
-    export type FilterFactory = TFilterFactory;
+    export type FilterFactory = TFilterFactory & { $$moduleName: string };
     export type FilterService = TFilterService;
     export type HttpParamSerializerSerService = THttpParamSerializer;
     export type HttpService = THttpService;
@@ -172,7 +176,7 @@ declare global {
       T extends
         | ((...args: any[]) => any)
         | (abstract new (...args: any[]) => any),
-    > = TInjectable<T>;
+    > = TInjectable<T> & { $$moduleName: string };
     export type StorageBackend = TStorageBackend;
     export type StorageType = TStorageType;
     export type StreamConnectionConfig = TStreamConnectionConfig;
@@ -184,5 +188,6 @@ declare global {
     export type EntityClass<T> = TEntityClass<T>;
     export type ServiceProvider = TServiceProvider;
     export type Expression = TExpression;
+    export type NgModelController = TNgModelController;
   }
 }
