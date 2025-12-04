@@ -35,9 +35,8 @@ export class StateMatcher {
       );
 
       if (matches.length > 1) {
-        console.error(
-          `stateMatcher.find: Found multiple matches for ${name} using glob: `,
-          matches.map((match) => match.name),
+        throw new Error(
+          `stateMatcher.find: Found multiple matches for ${name} using glob: ${matches.map((match) => match.name)}`,
         );
       }
 

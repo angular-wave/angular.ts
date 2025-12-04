@@ -54,7 +54,7 @@ export default defineConfig([
       "no-magic-numbers": [
         "warn",
         {
-          ignore: [0, 1, -1, 2, 3, 4, 16],
+          ignore: [0, 1, -1, 2, -2, 3, 4, 5, 16, 10, 100, 200, 300, 400, 1000],
           ignoreArrayIndexes: true,
           enforceConst: true,
         },
@@ -99,7 +99,22 @@ export default defineConfig([
       "dot-notation": "error",
       "id-length": [
         "warn",
-        { min: 2, exceptions: ["i", "j", "x", "y", "k", "v", "_", "__"] },
+        {
+          min: 2,
+          exceptions: [
+            "i",
+            "j",
+            "l", // loops
+            "x",
+            "y", // anonymous fn params
+            "k",
+            "v", // key-vals
+            "a",
+            "b", // comparators
+            "_",
+            "__", // ignored
+          ],
+        },
       ],
       "sort-imports": [
         "error",

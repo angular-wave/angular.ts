@@ -588,7 +588,9 @@ export function ngOptionsDirective($compile, $parse) {
         // Deactivate the SelectController.register method to prevent
         // option directives from accidentally registering themselves
         // (and unwanted $destroy handlers etc.)
-        ctrls[0].registerOption = () => {};
+        ctrls[0].registerOption = () => {
+          /* empty */
+        };
       },
       post: ngOptionsPostLink,
     },

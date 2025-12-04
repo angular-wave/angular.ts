@@ -51,7 +51,7 @@ export class StateQueueManager {
         this.listeners.forEach((listener) =>
           listener(
             "registered",
-            registered.map((s) => s.self),
+            registered.map((x) => x.self),
           ),
         );
       }

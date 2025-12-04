@@ -5,6 +5,7 @@ import {
   hashKey,
   includes,
   isDefined,
+  isNullOrUndefined,
   isUndefined,
   shallowCopy,
 } from "../../shared/utils.js";
@@ -69,7 +70,9 @@ class SelectController {
 
     $scope.$on("$destroy", () => {
       // disable unknown option so that we don't do work when the whole select is being destroyed
-      this.renderUnknownOption = () => {};
+      this.renderUnknownOption = () => {
+        /* empty */
+      };
     });
   }
 
@@ -260,7 +263,7 @@ class SelectController {
    * @param {*} value
    */
   selectUnknownOrEmptyOption(value) {
-    if (value == null && this.emptyOption) {
+    if (isNullOrUndefined(value) && this.emptyOption) {
       this.removeUnknownOption();
       this.selectEmptyOption();
     } else if (this.unknownOption.parentElement) {
@@ -368,8 +371,6 @@ class SelectController {
         this.addOption(optionScope.value, optionElement);
       }
 
-      let oldVal;
-
       optionScope.$watch("value", () => {
         const newVal = interpolateTextFn(optionScope);
 
@@ -448,7 +449,9 @@ export function selectDirective() {
     // if ngModel is not defined, we don't need to do anything but set the registerOption
     // function to noop, so options don't get added internally
     if (!ngModelCtrl) {
-      selectCtrl.registerOption = () => {};
+      selectCtrl.registerOption = () => {
+        /* empty */
+      };
 
       return;
     }
@@ -606,12 +609,12 @@ export function optionDirective($interpolate) {
         }
       }
 
-      return function (scope, element, attr) {
+      return function (scope, elemParam, attrParam) {
         // This is an optimization over using ^^ since we don't want to have to search
         // all the way to the root of the DOM for every single option element
         const selectCtrlName = "$selectController";
 
-        const parent = element.parentElement;
+        const parent = elemParam.parentElement;
 
         const selectCtrl =
           getCacheData(parent, selectCtrlName) ||
@@ -620,8 +623,8 @@ export function optionDirective($interpolate) {
         if (selectCtrl) {
           selectCtrl.registerOption(
             scope,
-            element,
-            attr,
+            elemParam,
+            attrParam,
             interpolateValueFn,
             interpolateTextFn,
           );

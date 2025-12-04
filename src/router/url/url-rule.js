@@ -210,7 +210,7 @@ export class UrlRuleFactory {
       // Interpolates matched values into $1 $2, etc using a String.replace()-style pattern
       handler.replace(
         /\$(\$|\d{1,2})/,
-        (m, what) => match[what === "$" ? 0 : Number(what)],
+        (_, what) => match[what === "$" ? 0 : Number(what)],
       );
 
     const _handler = isString(handler) ? redirectUrlTo : handler;

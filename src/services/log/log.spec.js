@@ -49,10 +49,18 @@ describe("$logService", () => {
     angular.module("default2", []).config(($logProvider) => {
       $logProvider.setLogger(() => ({
         log: () => (called = true),
-        info: () => {},
-        warn: () => {},
-        error: () => {},
-        debug: () => {},
+        info: () => {
+          /* empty */
+        },
+        warn: () => {
+          /* empty */
+        },
+        error: () => {
+          /* empty */
+        },
+        debug: () => {
+          /* empty */
+        },
       }));
     });
 

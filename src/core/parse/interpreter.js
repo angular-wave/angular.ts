@@ -1,6 +1,7 @@
 import {
   isDefined,
   isFunction,
+  isNullOrUndefined,
   isObject,
   isProxy,
 } from "../../shared/utils.js";
@@ -64,7 +65,9 @@ export class ASTInterpreter {
     /** @type {import("./interface.ts").CompiledExpression} */
     const fn =
       decoratedNode.body.length === 0
-        ? () => {}
+        ? () => {
+            /* empty */
+          }
         : decoratedNode.body.length === 1
           ? expressions[0]
           : function (scope, locals) {
@@ -197,7 +200,7 @@ export class ASTInterpreter {
 
               let value;
 
-              if (rhs.value != null && isFunction(rhs.value)) {
+              if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
                 const values = [];
 
                 for (let i = 0; i < args.length; ++i) {
@@ -462,7 +465,7 @@ export class ASTInterpreter {
    */
   "binary=="(left, right, context) {
     return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) == right(scope, locals, assign);
+      const arg = left(scope, locals, assign) === right(scope, locals, assign);
 
       return context ? { value: arg } : arg;
     };
@@ -477,7 +480,7 @@ export class ASTInterpreter {
    */
   "binary!="(left, right, context) {
     return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) != right(scope, locals, assign);
+      const arg = left(scope, locals, assign) !== right(scope, locals, assign);
 
       return context ? { value: arg } : arg;
     };
@@ -614,7 +617,7 @@ export class ASTInterpreter {
       const base =
         locals && name in locals ? locals : ((scope && scope.$proxy) ?? scope);
 
-      if (create && create !== 1 && base && base[name] == null) {
+      if (create && create !== 1 && base && isNullOrUndefined(base[name])) {
         base[name] = {};
       }
       let value = undefined;
@@ -647,7 +650,7 @@ export class ASTInterpreter {
 
       let value;
 
-      if (lhs != null) {
+      if (!isNullOrUndefined(lhs)) {
         rhs = right(scope, locals, assign);
         rhs = getStringValue(rhs);
 
@@ -680,11 +683,11 @@ export class ASTInterpreter {
       const lhs = left(scope, locals, assign);
 
       if (create && create !== 1) {
-        if (lhs && lhs[right] == null) {
+        if (lhs && isNullOrUndefined(lhs[right])) {
           lhs[right] = {};
         }
       }
-      const value = lhs != null ? lhs[right] : undefined;
+      const value = !isNullOrUndefined(lhs) ? lhs[right] : undefined;
 
       if (context) {
         return { context: lhs, name: right, value };
@@ -925,6 +928,8 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
 
       return decoratedNode;
   }
+
+  return undefined;
 }
 
 /**

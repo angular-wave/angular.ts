@@ -4,6 +4,7 @@ import {
   equals,
   isDate,
   isDefined,
+  isNullOrUndefined,
   isNumber,
   isNumberNaN,
   isObject,
@@ -101,11 +102,21 @@ const inputType = {
   radio: radioInputType,
   range: rangeInputType,
   checkbox: checkboxInputType,
-  hidden: () => {},
-  button: () => {},
-  submit: () => {},
-  reset: () => {},
-  file: () => {},
+  hidden: () => {
+    /* empty */
+  },
+  button: () => {
+    /* empty */
+  },
+  submit: () => {
+    /* empty */
+  },
+  reset: () => {
+    /* empty */
+  },
+  file: () => {
+    /* empty */
+  },
 };
 
 function stringBasedInputType(ctrl) {
@@ -226,6 +237,7 @@ export function weekParser(isoWeek, existingDate) {
     return new Date(
       year,
       0,
+      // eslint-disable-next-line no-magic-numbers
       (dayOfWeekOnFirst <= 4 ? 5 : 12) - dayOfWeekOnFirst,
     );
   }
@@ -249,7 +261,9 @@ export function weekParser(isoWeek, existingDate) {
 
       const firstThurs = getFirstThursdayOfYear(year);
 
-      const addDays = (week - 1) * 7;
+      const DAYS = 7;
+
+      const addDays = (week - 1) * DAYS;
 
       if (existingDate) {
         hours = existingDate.getHours();
@@ -386,7 +400,7 @@ export function createDateInputType(type, regexp, parseDate) {
       }
 
       if (type === "month") {
-        if (value == null) {
+        if (isNullOrUndefined(value)) {
           return "";
         }
 
@@ -400,7 +414,7 @@ export function createDateInputType(type, regexp, parseDate) {
       }
 
       if (type === "week") {
-        if (value == null) {
+        if (isNullOrUndefined(value)) {
           return "";
         }
 
@@ -414,7 +428,7 @@ export function createDateInputType(type, regexp, parseDate) {
       }
 
       if (type === "datetimelocal") {
-        if (value == null) {
+        if (isNullOrUndefined(value)) {
           return "";
         }
 

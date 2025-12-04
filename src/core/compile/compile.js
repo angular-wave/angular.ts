@@ -319,7 +319,11 @@ export class CompileProvider {
         return this;
       }
 
-      const controller = options.controller || function () {};
+      const controller =
+        options.controller ||
+        function () {
+          /* empty */
+        };
 
       function factory($injector) {
         function makeInjectable(fn) {
@@ -3335,11 +3339,16 @@ export class CompileProvider {
                   // Don't assign Object.prototype method to scope
                   parentGet = hasOwn(attrs, attrName)
                     ? $parse(attrs[attrName])
-                    : () => {};
+                    : () => {
+                        /* empty */
+                      };
 
                   // Don't assign noop to destination if expression is not valid
                   if (
-                    parentGet.toString() === (() => {}).toString() &&
+                    parentGet.toString() ===
+                      (() => {
+                        /* empty */
+                      }).toString() &&
                     optional
                   ) {
                     break;

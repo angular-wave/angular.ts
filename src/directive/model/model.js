@@ -232,19 +232,19 @@ export class NgModelController {
       }
     }
 
-    function toggleValidationCss(ctrl, validationErrorKey, isValid) {
-      validationErrorKey = validationErrorKey
-        ? `-${snakeCase(validationErrorKey, "-")}`
+    function toggleValidationCss(ctrl, validationErrorKeyParam, isValid) {
+      validationErrorKeyParam = validationErrorKeyParam
+        ? `-${snakeCase(validationErrorKeyParam, "-")}`
         : "";
 
       cachedToggleClass(
         ctrl,
-        VALID_CLASS + validationErrorKey,
+        VALID_CLASS + validationErrorKeyParam,
         isValid === true,
       );
       cachedToggleClass(
         ctrl,
-        INVALID_CLASS + validationErrorKey,
+        INVALID_CLASS + validationErrorKeyParam,
         isValid === false,
       );
     }
@@ -345,7 +345,9 @@ export class NgModelController {
    * or `$viewValue` are objects (rather than a string or number) then `$render()` will not be
    * invoked if you only change a property on the objects.
    */
-  $render() {}
+  $render() {
+    /* empty */
+  }
 
   /**
    * This is called when we need to determine if the value of an input is empty.
@@ -362,9 +364,7 @@ export class NgModelController {
    * @returns {boolean} True if `value` is "empty".
    */
   $isEmpty(value) {
-    return (
-      isUndefined(value) || value === "" || value === null || value !== value
-    );
+    return isUndefined(value) || value === "" || value === null || isNaN(value);
   }
 
   $$updateEmptyClasses(value) {
@@ -708,7 +708,9 @@ export class NgModelController {
           () => {
             validationDone(allValid);
           },
-          () => {},
+          () => {
+            /* empty */
+          },
         );
       }
     }
@@ -823,7 +825,7 @@ export class NgModelController {
 
     function writeToModelIfNeeded() {
       // intentional loose equality
-      if (that.$modelValue != prevModelValue) {
+      if (that.$modelValue !== prevModelValue) {
         that.$$writeModelToScope();
       }
     }
@@ -834,8 +836,8 @@ export class NgModelController {
     Object.values(this.$viewChangeListeners).forEach((listener) => {
       try {
         listener();
-      } catch (e) {
-        this.$$exceptionHandler(e);
+      } catch (err) {
+        this.$$exceptionHandler(err);
       }
     }, this);
   }
@@ -1071,7 +1073,9 @@ export class NgModelController {
       this.$viewValue = this.$$lastCommittedViewValue = viewValue;
       this.$render();
       // It is possible that model and view value have been updated during render
-      this.$$runValidators(this.$modelValue, this.$viewValue, () => {});
+      this.$$runValidators(this.$modelValue, this.$viewValue, () => {
+        /* empty */
+      });
     }
   }
 
@@ -1154,7 +1158,7 @@ function setupModelWatcher(ctrl) {
       modelValue !== ctrl.$modelValue &&
       // checks for NaN is needed to allow setting the model to NaN when there's an asyncValidator
 
-      (ctrl.$modelValue === ctrl.$modelValue || modelValue === modelValue)
+      (!!ctrl.$modelValue || !!modelValue)
     ) {
       ctrl.$$setModelValue(modelValue);
     }

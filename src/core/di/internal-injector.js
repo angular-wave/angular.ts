@@ -143,7 +143,9 @@ class AbstractInjector {
   /**
    * @abstract
    */
-  loadNewModules() {}
+  loadNewModules() {
+    /* empty */
+  }
 
   /**
    * @abstract
@@ -183,7 +185,9 @@ export class ProviderInjector extends AbstractInjector {
     );
   }
 
-  loadNewModules() {}
+  loadNewModules() {
+    /* empty */
+  }
 }
 
 /**
@@ -229,5 +233,7 @@ export class InjectorService extends AbstractInjector {
     return hasProvider || hasCache;
   }
 
-  loadNewModules() {}
+  loadNewModules() {
+    /* empty */
+  }
 }

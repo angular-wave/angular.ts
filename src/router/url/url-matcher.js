@@ -10,7 +10,13 @@ import {
   unnestR,
 } from "../../shared/common.js";
 import { propEq } from "../../shared/hof.js";
-import { hasOwn, isDefined, isString } from "../../shared/utils.js";
+import {
+  hasOwn,
+  isDefined,
+  isNull,
+  isNullOrUndefined,
+  isString,
+} from "../../shared/utils.js";
 import { DefType, Param } from "../params/param.js";
 import { joinNeighborsR, splitOnDelim } from "../../shared/strings.js";
 
@@ -104,7 +110,7 @@ export class UrlMatcher {
     const staticSegments = matcher._segments;
 
     const pathParams = matcher._params.filter(
-      (p) => p.location === DefType.PATH,
+      (param) => param.location === DefType.PATH,
     );
 
     return arrayTuples(staticSegments, pathParams.concat(undefined))
@@ -114,7 +120,7 @@ export class UrlMatcher {
 
   /** @internal Given a matcher, return an array with the matcher's query params */
   static queryParams(matcher) {
-    return matcher._params.filter((p) => p.location === DefType.SEARCH);
+    return matcher._params.filter((param) => param.location === DefType.SEARCH);
   }
 
   /**
@@ -162,17 +168,19 @@ export class UrlMatcher {
           if (isString(segment)) return 2;
 
           if (segment instanceof Param) return 3;
+
+          return undefined;
         }));
 
     /**
      * Pads shorter array in-place (mutates)
      */
-    const padArrays = (l, r, padVal) => {
-      const len = Math.max(l.length, r.length);
+    const padArrays = (left, right, padVal) => {
+      const len = Math.max(left.length, right.length);
 
-      while (l.length < len) l.push(padVal);
+      while (left.length < len) left.push(padVal);
 
-      while (r.length < len) r.push(padVal);
+      while (right.length < len) right.push(padVal);
     };
 
     const weightsA = weights(a),
@@ -181,9 +189,9 @@ export class UrlMatcher {
     padArrays(weightsA, weightsB, 0);
     const _pairs = arrayTuples(weightsA, weightsB);
 
-    let cmp, i;
+    let cmp;
 
-    for (i = 0; i < _pairs.length; i++) {
+    for (let i = 0, l = _pairs.length; i < l; i++) {
       cmp = _pairs[i][0] - _pairs[i][1];
 
       if (cmp !== 0) return cmp;
@@ -249,13 +257,13 @@ export class UrlMatcher {
 
     // Split into static segments separated by path parameter placeholders.
     // The number of segments is always 1 more than the number of parameters.
-    const matchDetails = (m, isSearch) => {
+    const matchDetails = (match, isSearch) => {
       // IE[78] returns '' for unmatched groups instead of null
-      const id = m[2] || m[3];
+      const id = match[2] || match[3];
 
       const regexp = isSearch
-        ? m[4]
-        : m[4] || (m[1] === "*" ? "[\\s\\S]*" : null);
+        ? match[4]
+        : match[4] || (match[1] === "*" ? "[\\s\\S]*" : null);
 
       const makeRegexpType = (str) =>
         inherit(paramTypes.type(isSearch ? "query" : "path"), {
@@ -268,7 +276,7 @@ export class UrlMatcher {
       return {
         id,
         regexp,
-        segment: pattern.substring(last, m.index),
+        segment: pattern.substring(last, match.index),
         type: !regexp
           ? null
           : paramTypes.type(regexp) || makeRegexpType(regexp),
@@ -466,6 +474,8 @@ export class UrlMatcher {
       for (const param of this._params) {
         if (param.id === id) return param;
       }
+
+      return undefined;
     };
 
     const { parent } = this._cache;
@@ -571,7 +581,7 @@ export class UrlMatcher {
 
       if (squash !== false) return acc; // ?
 
-      if (encoded == null) return acc;
+      if (isNullOrUndefined(encoded)) return acc;
 
       // If this parameter value is an array, encode the value using encodeDashes
       if (Array.isArray(encoded))
@@ -588,13 +598,16 @@ export class UrlMatcher {
     // then mapping to key=value, then flattening and joining using "&"
     const queryString = queryParams
       .map((paramDetails) => {
-        let { param, squash, encoded, isDefaultValue } = paramDetails;
+        const { param, squash, isDefaultValue } = paramDetails;
 
-        if (encoded == null || (isDefaultValue && squash !== false)) return;
+        let { encoded } = paramDetails;
+
+        if (isNull(encoded) || (isDefaultValue && squash !== false))
+          return undefined;
 
         if (!Array.isArray(encoded)) encoded = [encoded];
 
-        if (encoded.length === 0) return;
+        if (encoded.length === 0) return undefined;
 
         if (!param.raw) encoded = map(encoded, encodeURIComponent);
 
@@ -618,6 +631,6 @@ function encodeDashes(str) {
   // Replace dashes with encoded "\-"
   return encodeURIComponent(str).replace(
     /-/g,
-    (c) => `%5C%${c.charCodeAt(0).toString(16).toUpperCase()}`,
+    (char) => `%5C%${char.charCodeAt(0).toString(16).toUpperCase()}`,
   );
 }

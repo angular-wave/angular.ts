@@ -153,7 +153,9 @@ describe("$animate", () => {
       // instead of inheriting properties from its original prototype.
       expect(provider.$$registeredAnimations.hasOwnProperty).toBeFalsy();
 
-      provider.register(".filter", () => {});
+      provider.register(".filter", () => {
+        /* empty */
+      });
       expect(provider.$$registeredAnimations.filter).toBe(".filter-animation");
     });
 

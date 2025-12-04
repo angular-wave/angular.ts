@@ -16,7 +16,7 @@ export function ngInjectDirective($log, $injector) {
       if (!expr) return;
       const tokens = expr
         .split(";")
-        .map((s) => s.trim())
+        .map((x) => x.trim())
         .filter(Boolean);
 
       for (const name of tokens) {

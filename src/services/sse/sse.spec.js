@@ -95,7 +95,9 @@ describe("$sse", () => {
       this.addEventListener = (t, fn) => {
         if (t === "error") setTimeout(() => fn(new Error("mock error")), 10);
       };
-      this.close = () => {};
+      this.close = () => {
+        /* empty */
+      };
     };
 
     const source = sse("/mock/events", {
@@ -121,7 +123,9 @@ describe("$sse", () => {
       this.addEventListener = (type, fn) => {
         this.listeners[type] = fn;
       };
-      this.close = () => {};
+      this.close = () => {
+        /* empty */
+      };
       // simulate an 'open' event
       setTimeout(() => this.listeners.open && this.listeners.open({}), 10);
     }

@@ -6,7 +6,9 @@ describe("filter", function () {
     window.angular = new Angular();
   });
   it("can be registered and obtained", () => {
-    const myFilter = () => {};
+    const myFilter = () => {
+      /* empty */
+    };
     const myFilterFactory = () => {
       return myFilter;
     };
@@ -21,8 +23,12 @@ describe("filter", function () {
   });
 
   it("allows registering multiple filters with a builder", () => {
-    const myFilter = () => {};
-    const myOtherFilter = () => {};
+    const myFilter = () => {
+      /* empty */
+    };
+    const myOtherFilter = () => {
+      /* empty */
+    };
     const injector = createInjector([
       "ng",
       function ($filterProvider) {
@@ -41,7 +47,9 @@ describe("filter", function () {
   });
 
   it("is available through injector", () => {
-    const myFilter = () => {};
+    const myFilter = () => {
+      /* empty */
+    };
     const injector = createInjector([
       "ng",
       function ($filterProvider) {
@@ -70,7 +78,9 @@ describe("filter", function () {
   });
 
   it("can be registered through module API", () => {
-    const myFilter = () => {};
+    const myFilter = () => {
+      /* empty */
+    };
     angular.module("myModule", []).filter("my", () => {
       return myFilter;
     });

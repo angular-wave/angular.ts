@@ -60,6 +60,8 @@ export function registerLazyLoadHook(
         }
         // No matching state found, so let .sync() choose the best non-state match/otherwise
         urlService.sync();
+
+        return undefined;
       }
       const promises = transition
         .entering()

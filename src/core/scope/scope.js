@@ -722,7 +722,9 @@ export class Scope {
         });
       }
 
-      return () => {};
+      return () => {
+        /* empty */
+      };
     }
 
     /** @type {ng.Listener} */

@@ -9,11 +9,13 @@
 const loadEnteringViews = (transition) => {
   const enteringViews = transition.views("entering");
 
-  if (!enteringViews.length) return;
+  if (!enteringViews.length) return undefined;
 
   return Promise.all(
     enteringViews.map((view) => Promise.resolve(view.load())),
-  ).then(() => {});
+  ).then(() => {
+    /* empty */
+  });
 };
 
 export const registerLoadEnteringViews = (transitionService) =>

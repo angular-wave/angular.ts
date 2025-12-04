@@ -231,11 +231,11 @@ export class UrlService {
   /**
    * Creates a [[UrlMatcher]] for the specified pattern.
    *
-   * @param pattern  The URL pattern.
+   * @param urlPattern  The URL pattern.
    * @param config  The config object hash.
    * @returns The UrlMatcher.
    */
-  compile(pattern: any, config: any): UrlMatcher;
+  compile(urlPattern: any, config: any): UrlMatcher;
   /**
    * Returns true if the specified object is a [[UrlMatcher]], or false otherwise.
    *

@@ -307,7 +307,11 @@ describe("Filter: orderBy", () => {
         expect(orderBy(items, expr, "reverse")).toEqual(sorted);
         expect(orderBy(items, expr, {})).toEqual(sorted);
         expect(orderBy(items, expr, [])).toEqual(sorted);
-        expect(orderBy(items, expr, () => {})).toEqual(sorted);
+        expect(
+          orderBy(items, expr, () => {
+            /* empty */
+          }),
+        ).toEqual(sorted);
       });
 
       it("should reverse collection if `reverse` param is `true`, even without an `expression`", () => {

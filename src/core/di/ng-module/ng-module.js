@@ -294,16 +294,14 @@ export class NgModule {
    * @param {ng.WorkerConfig} [config]
    * @returns {NgModule}
    */
-  worker(name, scriptPath, config = {}) {
+  worker(name, scriptPath, config) {
     this.invokeQueue.push([
       $t.$provide,
       "provider",
       [
         name,
-        function () {
-          this.$get = function () {
-            return createWorkerConnection(scriptPath, config);
-          };
+        class {
+          $get = () => createWorkerConnection(scriptPath, config);
         },
       ],
     ]);

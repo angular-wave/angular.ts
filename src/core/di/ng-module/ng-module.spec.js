@@ -10,8 +10,12 @@ describe("NgModule", () => {
   /** @type {NgModule} */
   let ngModule;
   let a = new Object();
-  let b = () => {};
-  let cf = () => {};
+  let b = () => {
+    /* empty */
+  };
+  let cf = () => {
+    /* empty */
+  };
   beforeEach(() => (ngModule = new NgModule("test", ["otherModule"])));
 
   it("can be instantiated", () => {
@@ -74,8 +78,12 @@ describe("NgModule", () => {
 
   it("can store config blocks", () => {
     // when config functions are registered
-    let fn1 = () => {};
-    let fn2 = () => {};
+    let fn1 = () => {
+      /* empty */
+    };
+    let fn2 = () => {
+      /* empty */
+    };
     ngModule.config(fn1);
     ngModule.config(fn2);
 

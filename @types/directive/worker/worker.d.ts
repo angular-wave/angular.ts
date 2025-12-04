@@ -3,11 +3,13 @@
  *
  * @param {ng.ParseService} $parse
  * @param {ng.LogService} $log
+ * @param {ng.ExceptionHandlerService} $exceptionHandler
  * @returns {ng.Directive}
  */
 export function ngWorkerDirective(
   $parse: ng.ParseService,
   $log: ng.LogService,
+  $exceptionHandler: ng.ExceptionHandlerService,
 ): ng.Directive;
 export namespace ngWorkerDirective {
   let $inject: string[];

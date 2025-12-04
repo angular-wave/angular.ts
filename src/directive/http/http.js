@@ -1,4 +1,5 @@
 import { $injectTokens as $ } from "../../injection-tokens.js";
+import { Http } from "../../services/http/http.js";
 import {
   callBackAfterFirst,
   isDefined,
@@ -99,6 +100,7 @@ export function createHttpDirective(method, attrName) {
       if (tag === "form") {
         form = /** @type {HTMLFormElement} */ (element);
       } else if ("form" in element && element.form) {
+        // eslint-disable-next-line prefer-destructuring
         form = /** @type {HTMLFormElement} */ (element.form);
       } else if (element.hasAttribute("form")) {
         const formId = element.getAttribute("form");
@@ -405,7 +407,7 @@ export function createHttpDirective(method, attrName) {
 
             const html = res.data;
 
-            if (200 <= res.status && res.status <= 299) {
+            if (Http.OK <= res.status && res.status <= 299) {
               if (isDefined(attrs.success)) {
                 $parse(attrs.success)(scope, { $res: html });
               }
@@ -527,7 +529,7 @@ export function createHttpDirective(method, attrName) {
           scope.$on("$destroy", () => clearInterval(intervalId));
         }
 
-        if (eventName == "load") {
+        if (eventName === "load") {
           element.dispatchEvent(new Event("load"));
         }
       },

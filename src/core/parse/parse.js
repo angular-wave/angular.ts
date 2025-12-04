@@ -87,7 +87,9 @@ export class ParseProvider {
               return addInterceptor(exp, interceptorFn);
 
             default:
-              return addInterceptor(() => {}, interceptorFn);
+              return addInterceptor(() => {
+                /* empty */
+              }, interceptorFn);
           }
         }
 

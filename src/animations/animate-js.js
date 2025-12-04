@@ -137,12 +137,21 @@ export function AnimateJsProvider($animateProvider) {
               const runnerBefore = new AnimateRunner({
                 end(fn) {
                   // call the before animation function, then mark runner done
-                  const endFn = before(fn) || (() => {});
+                  const endFn =
+                    before(fn) ||
+                    (() => {
+                      /* empty */
+                    });
 
                   endFn();
                 },
                 cancel() {
-                  (before(true) || (() => {}))();
+                  (
+                    before(true) ||
+                    (() => {
+                      /* empty */
+                    })
+                  )();
                 },
               });
 
@@ -168,12 +177,21 @@ export function AnimateJsProvider($animateProvider) {
             if (after) {
               const runnerAfter = new AnimateRunner({
                 end(fn) {
-                  const endFn = after(fn) || (() => {});
+                  const endFn =
+                    after(fn) ||
+                    (() => {
+                      /* empty */
+                    });
 
                   endFn();
                 },
                 cancel() {
-                  (after(true) || (() => {}))();
+                  (
+                    after(true) ||
+                    (() => {
+                      /* empty */
+                    })
+                  )();
                 },
               });
 
@@ -201,7 +219,12 @@ export function AnimateJsProvider($animateProvider) {
 
             function endAnimations(cancelled) {
               if (!animationClosed) {
-                (closeActiveAnimations || (() => {}))(cancelled);
+                (
+                  closeActiveAnimations ||
+                  (() => {
+                    /* empty */
+                  })
+                )(cancelled);
                 onComplete(cancelled);
               }
             }
@@ -250,7 +273,9 @@ export function AnimateJsProvider($animateProvider) {
             }
           }
 
-          return () => {};
+          return () => {
+            /* empty */
+          };
         }
 
         function groupEventedAnimations(
@@ -278,7 +303,12 @@ export function AnimateJsProvider($animateProvider) {
               const onAnimationComplete = function (rejected) {
                 if (!resolved) {
                   resolved = true;
-                  (endProgressCb || (() => {}))(rejected);
+                  (
+                    endProgressCb ||
+                    (() => {
+                      /* empty */
+                    })
+                  )(rejected);
                   runner.complete(!rejected);
                 }
               };

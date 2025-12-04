@@ -194,10 +194,10 @@ export class StateRegistryProvider {
   }
 
   _deregisterTree(state) {
-    const all = this.get().map((s) => s.$$state());
+    const all = this.get().map((x) => x.$$state());
 
     const getChildren = (states) => {
-      const _children = all.filter((s) => states.indexOf(s.parent) !== -1);
+      const _children = all.filter((x) => states.indexOf(x.parent) !== -1);
 
       return _children.length === 0
         ? _children
@@ -242,7 +242,7 @@ export class StateRegistryProvider {
     this.listeners.forEach((listener) =>
       listener(
         "deregistered",
-        deregisteredStates.map((s) => s.self),
+        deregisteredStates.map((x) => x.self),
       ),
     );
 

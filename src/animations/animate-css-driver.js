@@ -15,6 +15,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
   $$animationProvider.drivers.push("$$animateCssDriver");
 
   function isDocumentFragment(node) {
+    // eslint-disable-next-line no-magic-numbers
     return node.parentNode && node.parentNode.nodeType === 11;
   }
 
@@ -85,7 +86,10 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
         return {
           start() {
-            let runner;
+            const runner = new AnimateRunner({
+              end: endFn,
+              cancel: endFn,
+            });
 
             let currentAnimation = startingAnimator.start();
 
@@ -109,11 +113,8 @@ export function AnimateCssDriverProvider($$animationProvider) {
               // in the event that there is no `in` animation
               end();
               runner.complete();
-            });
 
-            runner = new AnimateRunner({
-              end: endFn,
-              cancel: endFn,
+              return undefined;
             });
 
             return runner;

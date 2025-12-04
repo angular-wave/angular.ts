@@ -51,7 +51,9 @@ describe("ngInit", () => {
     createInjector([
       "ng",
       ($controllerProvider) =>
-        $controllerProvider.register("TestCtrl", () => {}),
+        $controllerProvider.register("TestCtrl", () => {
+          /* empty */
+        }),
     ]).invoke((_$rootScope_, _$compile_) => {
       $rootScope = _$rootScope_;
       $compile = _$compile_;

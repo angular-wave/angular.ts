@@ -20,7 +20,7 @@ export class UrlConfigProvider {
   _isStrictMode: boolean;
   /** @type {boolean} */
   _defaultSquashPolicy: boolean;
-  $get: (() => any)[];
+  $get: () => this;
   /**
    * Defines whether URL matching should be case sensitive (the default behavior), or not.
    *

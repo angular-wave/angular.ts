@@ -33,7 +33,7 @@ export class AnchorScrollProvider {
      * @param {ng.Scope} $rootScope
      * @returns
      */
-    function ($location, $rootScope) {
+    ($location, $rootScope) => {
       // Helper function to get first anchor from a NodeList
       // (using `Array#some()` instead of `angular#forEach()` since it's more performant
       //  and working in all supported browsers.)
@@ -46,6 +46,8 @@ export class AnchorScrollProvider {
 
             return true;
           }
+
+          return false;
         });
 
         return result;

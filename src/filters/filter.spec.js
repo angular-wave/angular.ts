@@ -318,7 +318,12 @@ describe("Filter: filter", () => {
   it("should ignore function properties in items", () => {
     // Own function properties
     let items = [
-      { text: "hello", func: () => {} },
+      {
+        text: "hello",
+        func: () => {
+          /* empty */
+        },
+      },
       { text: "goodbye" },
       { text: "kittens" },
       { text: "puppies" },
@@ -359,7 +364,12 @@ describe("Filter: filter", () => {
       { text: "kittens" },
       { text: "puppies" },
     ];
-    let expr = { text: "hello", func: () => {} };
+    let expr = {
+      text: "hello",
+      func: () => {
+        /* empty */
+      },
+    };
 
     expect(filter(items, expr).length).toBe(1);
     expect(filter(items, expr)[0]).toBe(items[0]);

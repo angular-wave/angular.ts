@@ -201,7 +201,9 @@ describe("ngOptions", () => {
             link(scope, element) {
               const config = { childList: true };
 
-              childListMutationObserver = new window.MutationObserver(() => {});
+              childListMutationObserver = new window.MutationObserver(() => {
+                /* empty */
+              });
               childListMutationObserver.observe(element, config);
             },
           }));

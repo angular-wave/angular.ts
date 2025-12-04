@@ -682,7 +682,7 @@ describe("ngInclude", () => {
     //     module(($provide) => {
     //       $provide.decorator("$animate", ($delegate, $$q) => {
     //         const emptyPromise = Promise.withResolvers().promise;
-    //         emptyPromise.done = () => {};
+    //         emptyPromise.done = () => { /* empty */ };
 
     //         $delegate.leave = function () {
     //           return emptyPromise;

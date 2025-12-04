@@ -237,7 +237,9 @@ describe("$compile", () => {
   });
 
   it("allows creating directives", () => {
-    myModule.directive("testing", () => {});
+    myModule.directive("testing", () => {
+      /* empty */
+    });
     reloadModules();
     expect(injector.has("testingDirective")).toBe(true);
   });
@@ -253,7 +255,9 @@ describe("$compile", () => {
   });
 
   it("does not allow a directive called hasOwnProperty", () => {
-    myModule.directive("hasOwnProperty", () => {});
+    myModule.directive("hasOwnProperty", () => {
+      /* empty */
+    });
     expect(() => {
       reloadModules();
     }).toThrowError();
@@ -261,9 +265,15 @@ describe("$compile", () => {
 
   it("allows creating directives with object notation", () => {
     myModule.directive({
-      a: () => {},
-      b: () => {},
-      c: () => {},
+      a: () => {
+        /* empty */
+      },
+      b: () => {
+        /* empty */
+      },
+      c: () => {
+        /* empty */
+      },
     });
     reloadModules();
 
@@ -1144,7 +1154,11 @@ describe("$compile", () => {
 
   it("returns a public link function from compile", () => {
     registerDirectives("myDirective", () => {
-      return { compile: () => {} };
+      return {
+        compile: () => {
+          /* empty */
+        },
+      };
     });
     reloadModules();
     const el = $("<div my-directive></div>");
@@ -1156,7 +1170,11 @@ describe("$compile", () => {
   describe("linking", () => {
     it("takes a scope and attaches it to elements", async () => {
       registerDirectives("myDirective", () => {
-        return { compile: () => {} };
+        return {
+          compile: () => {
+            /* empty */
+          },
+        };
       });
       reloadModules();
       const el = $("<div my-directive></div>");
@@ -1748,7 +1766,9 @@ describe("$compile", () => {
           scope: {
             myAttr: "=?",
           },
-          link: () => {},
+          link: () => {
+            /* empty */
+          },
         };
       });
       reloadModules();
@@ -3598,7 +3618,9 @@ describe("$compile", () => {
       const el = $("<div my-directive></div>");
       const myScope = $rootScope.$new();
 
-      $compile(el)(myScope, () => {});
+      $compile(el)(myScope, () => {
+        /* empty */
+      });
 
       expect(gotCompileEl).not.toBe(gotLinkEl);
     });
@@ -4033,7 +4055,9 @@ describe("$compile", () => {
     it("cannot be done for event handler attributes", () => {
       registerDirectives({});
       reloadModules();
-      $rootScope.myFunction = () => {};
+      $rootScope.myFunction = () => {
+        /* empty */
+      };
       const el = $('<button onclick="{{myFunction()}}"></button>');
       expect(() => {
         $compile(el)($rootScope);
@@ -4298,7 +4322,9 @@ describe("$compile", () => {
       let secondControllerInstance;
       myModule
         .component("first", {
-          controller: () => {},
+          controller: () => {
+            /* empty */
+          },
         })
         .component("second", {
           require: { first: "^" },
@@ -4692,14 +4718,18 @@ describe("$compile", () => {
 
     it('should throw an exception if a directive is called "hasOwnProperty"', () => {
       expect(() => {
-        myModule.directive("hasOwnProperty", () => {});
+        myModule.directive("hasOwnProperty", () => {
+          /* empty */
+        });
         reloadModules();
       }).toThrowError(/hasOwnProperty is not a valid directive name/);
     });
 
     it("should throw an exception if a directive name starts with a non-lowercase letter", () => {
       expect(() => {
-        myModule.directive("BadDirectiveName", () => {});
+        myModule.directive("BadDirectiveName", () => {
+          /* empty */
+        });
         reloadModules();
       }).toThrowError(/The first character must be a lowercase letter/);
     });
@@ -4707,7 +4737,9 @@ describe("$compile", () => {
     it("should throw an exception if a directive name has leading or trailing whitespace", () => {
       function assertLeadingOrTrailingWhitespaceInDirectiveName(name) {
         expect(() => {
-          myModule.directive(name, () => {});
+          myModule.directive(name, () => {
+            /* empty */
+          });
           createInjector(["myModule"]).invoke(($compile) => {});
         }).toThrowError(/modulerr/);
       }
@@ -5821,11 +5853,15 @@ describe("$compile", () => {
           "<div><b hello></b><b cau></b><b c-error></b><b l-error></b></div>",
         );
 
-        let e1 = template($rootScope.$new(), () => {}); // clone
+        let e1 = template($rootScope.$new(), () => {
+          /* empty */
+        }); // clone
         expect(e1.innerText).toEqual("");
 
         let clone = $rootScope.$new();
-        let e2 = template(clone, () => {}); // clone
+        let e2 = template(clone, () => {
+          /* empty */
+        }); // clone
         expect(e2.innerText).toEqual("");
         await wait(100);
         expect(e1.innerText).toEqual("HelloElvis  ");
@@ -5843,9 +5879,13 @@ describe("$compile", () => {
         $rootScope.expr = "Elvis";
         const template = $compile("<div cau></div>");
 
-        let e1 = template($rootScope.$new(), () => {}); // clone
+        let e1 = template($rootScope.$new(), () => {
+          /* empty */
+        }); // clone
         expect(e1.innerText).toEqual("");
-        let e2 = template($rootScope.$new(), () => {}); // clone
+        let e2 = template($rootScope.$new(), () => {
+          /* empty */
+        }); // clone
         await wait(100);
         expect(e1.innerText).toEqual("Elvis");
         expect(e2.innerText).toEqual("Elvis");
@@ -5867,10 +5907,14 @@ describe("$compile", () => {
             "</div>",
         );
 
-        let e1 = template($rootScope.$new(), () => {}); // clone
+        let e1 = template($rootScope.$new(), () => {
+          /* empty */
+        }); // clone
         expect(e1.innerText).toEqual("");
 
-        let e2 = template($rootScope.$new(), () => {}); // clone
+        let e2 = template($rootScope.$new(), () => {
+          /* empty */
+        }); // clone
         await wait(100);
         expect(e1.innerText).toEqual("HelloElvis");
         expect(e2.innerText).toEqual("HelloElvis");
@@ -5884,9 +5928,13 @@ describe("$compile", () => {
         $rootScope.expr = "Elvis";
         const template = $compile('<div i-cau=""></div>');
 
-        let e1 = template($rootScope.$new(), () => {}); // clone
+        let e1 = template($rootScope.$new(), () => {
+          /* empty */
+        }); // clone
         expect(e1.innerText).toEqual("");
-        let e2 = template($rootScope.$new(), () => {}); // clone
+        let e2 = template($rootScope.$new(), () => {
+          /* empty */
+        }); // clone
         await wait(100);
         expect(e1.innerText).toEqual("Elvis");
         expect(e2.innerText).toEqual("Elvis");
@@ -7205,7 +7253,9 @@ describe("$compile", () => {
 
       it("should handle consecutive text elements as a single text element", async () => {
         // Create and register the MutationObserver
-        const observer = new window.MutationObserver(() => {});
+        const observer = new window.MutationObserver(() => {
+          /* empty */
+        });
         observer.observe(document.body, { childList: true, subtree: true });
 
         // Run the actual test
@@ -7536,8 +7586,16 @@ describe("$compile", () => {
 
           createInjector(["test1"]).invoke(($rootScope, $compile, state) => {
             const template = $compile("<div first second>");
-            dealoc(template($rootScope.$new(), () => {}));
-            dealoc(template($rootScope.$new(), () => {}));
+            dealoc(
+              template($rootScope.$new(), () => {
+                /* empty */
+              }),
+            );
+            dealoc(
+              template($rootScope.$new(), () => {
+                /* empty */
+              }),
+            );
 
             // instance between directives should be shared
             expect(state.first[0].template.element).toBe(
@@ -11675,7 +11733,9 @@ describe("$compile", () => {
             templateUrl: "myDirectiveAsync.html",
             controller: asyncCtrlSpy,
             compile() {
-              return () => {};
+              return () => {
+                /* empty */
+              };
             },
           }));
         initInjector("test1");
@@ -11894,7 +11954,9 @@ describe("$compile", () => {
         module.directive("aDir", () => ({
           restrict: "E",
           require: "ngModel",
-          link: () => {},
+          link: () => {
+            /* empty */
+          },
         }));
         initInjector("test1");
         expect(() => {
@@ -12237,7 +12299,7 @@ describe("$compile", () => {
         //   $templateCache = new Map();
         //   const destroyedScope = $rootScope.$new();
         //   destroyedScope.$destroy();
-        //   const clone = template(destroyedScope, () => {});
+        //   const clone = template(destroyedScope, () => { /* empty */ });
         //   ;
         //   // expect(linkFn).not.toHaveBeenCalled();
         //   // clone.remove();

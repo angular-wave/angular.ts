@@ -378,4 +378,6 @@ function contains(collection, key) {
       ? collection.indexOf(key) >= 0
       : hasOwn(collection, key);
   }
+
+  return undefined;
 }

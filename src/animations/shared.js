@@ -163,12 +163,18 @@ export function prepareAnimationOptions(options) {
   options = options || {};
 
   if (!options.$$prepared) {
-    let domOperation = options.domOperation || (() => {});
+    let domOperation =
+      options.domOperation ||
+      (() => {
+        /* empty */
+      });
 
     options.domOperation = function () {
       options.$$domOperationFired = true;
       domOperation();
-      domOperation = () => {};
+      domOperation = () => {
+        /* empty */
+      };
     };
     options.$$prepared = true;
   }

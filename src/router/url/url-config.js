@@ -1,5 +1,5 @@
 import { ParamTypes } from "../params/param-types";
-import { isDefined, isString } from "../../shared/utils.js";
+import { isDefined, isNullOrUndefined, isString } from "../../shared/utils.js";
 /**
  * An API to customize the URL behavior and retrieve URL configuration
  *
@@ -37,24 +37,22 @@ export class UrlConfigProvider {
     const pathType = this.type("path");
 
     pathType.encode = (x) =>
-      x != null
-        ? x.toString().replace(/([~/])/g, (m) => ({ "~": "~~", "/": "~2F" })[m])
-        : x;
-    pathType.decode = (x) =>
-      x != null
+      !isNullOrUndefined(x)
         ? x
             .toString()
-            .replace(/(~~|~2F)/g, (m) => ({ "~~": "~", "~2F": "/" })[m])
+            .replace(/([~/])/g, (match) => ({ "~": "~~", "/": "~2F" })[match])
+        : x;
+    pathType.decode = (x) =>
+      !isNullOrUndefined(x)
+        ? x
+            .toString()
+            .replace(/(~~|~2F)/g, (match) => ({ "~~": "~", "~2F": "/" })[match])
         : x;
     this.paramTypes.enqueue = false;
     this.paramTypes._flushTypeQueue();
   }
 
-  $get = [
-    function () {
-      return this;
-    },
-  ];
+  $get = () => this;
 
   /**
    * Defines whether URL matching should be case sensitive (the default behavior), or not.

@@ -37,7 +37,9 @@ describe("ngModel", () => {
       $$setPending: jasmine.createSpy("$$setPending"),
       $setValidity: jasmine.createSpy("$setValidity"),
       $setDirty: jasmine.createSpy("$setDirty"),
-      $$clearControlValidity: () => {},
+      $$clearControlValidity: () => {
+        /* empty */
+      },
     };
 
     element = createElementFromHTML("<form><input></form>");

@@ -61,7 +61,9 @@ describe("$location", () => {
         port: "",
         protocol: "file:",
         search: "",
-        setAttribute: () => {},
+        setAttribute: () => {
+          /* empty */
+        },
       };
     });
 
@@ -2883,7 +2885,7 @@ describe("$location", () => {
   //           expect(event).toEqual("click");
   //           clickHandler = handler;
   //         },
-  //         off: () => {},
+  //         off: () => { /* empty */ },
   //       });
   //       return function ($browser) {
   //         $browser.url((base = "http://server/"));
@@ -2915,7 +2917,7 @@ describe("$location", () => {
   //           expect(event).toEqual("click");
   //           clickHandler = handler;
   //         },
-  //         off: () => {},
+  //         off: () => { /* empty */ },
   //       });
   //       return function ($browser) {
   //         $browser.url((base = "http://server/"));
@@ -3717,8 +3719,8 @@ describe("$location", () => {
   //           if (url) win.location.href = url;
   //         },
   //       };
-  //       win.addEventListener = () => {};
-  //       win.removeEventListener = () => {};
+  //       win.addEventListener = () => { /* empty */ };
+  //       win.removeEventListener = () => { /* empty */ };
   //       win.location = {
   //         get href() {
   //           return this.$$getHref();

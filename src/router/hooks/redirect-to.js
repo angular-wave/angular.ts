@@ -12,11 +12,11 @@ export const registerRedirectToHook = (transitionService, stateService) => {
   const redirectToHook = (trans) => {
     const redirect = trans.to().redirectTo;
 
-    if (!redirect) return;
+    if (!redirect) return undefined;
     const $state = stateService;
 
     function handleResult(result) {
-      if (!result) return;
+      if (!result) return undefined;
 
       if (result instanceof TargetState) {
         return result;

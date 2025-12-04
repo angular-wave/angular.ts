@@ -101,7 +101,7 @@ export class CookieService {
     try {
       return parseCookies();
     } catch (err) {
-      this.$exceptionHandler(err);
+      return this.$exceptionHandler(err);
     }
   }
 

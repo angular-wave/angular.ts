@@ -12,6 +12,7 @@ export namespace Category {
 export class Trace {
   _enabled: {};
   approximateDigests: number;
+  $logger: any;
   _set(enabled: any, categories: any): void;
   enable(...categories: any[]): void;
   disable(...categories: any[]): void;

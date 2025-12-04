@@ -33,17 +33,31 @@ import {
  */
 export const nullFormCtrl = {
   $nonscope: true,
-  $addControl: () => {},
+  $addControl: () => {
+    /* empty */
+  },
   $getControls: () => [],
   $$renameControl: (control, name) => {
     control.$name = name;
   },
-  $removeControl: () => {},
-  $setValidity: () => {},
-  $setDirty: () => {},
-  $setPristine: () => {},
-  $setSubmitted: () => {},
-  $$setSubmitted: () => {},
+  $removeControl: () => {
+    /* empty */
+  },
+  $setValidity: () => {
+    /* empty */
+  },
+  $setDirty: () => {
+    /* empty */
+  },
+  $setPristine: () => {
+    /* empty */
+  },
+  $setSubmitted: () => {
+    /* empty */
+  },
+  $$setSubmitted: () => {
+    /* empty */
+  },
 };
 
 export const PENDING_CLASS = "ng-pending";
@@ -651,7 +665,11 @@ const formDirectiveFactory = function (isNgForm) {
 
               parentFormCtrl.$addControl(controller);
 
-              const setter = nameAttr ? getSetter(controller.$name) : () => {};
+              const setter = nameAttr
+                ? getSetter(controller.$name)
+                : () => {
+                    /* empty */
+                  };
 
               if (nameAttr) {
                 setter(scope, controller);
@@ -685,7 +703,12 @@ const formDirectiveFactory = function (isNgForm) {
           return $parse('this[""]').assign;
         }
 
-        return $parse(expression).assign || (() => {});
+        return (
+          $parse(expression).assign ||
+          (() => {
+            /* empty */
+          })
+        );
       }
     },
   ];

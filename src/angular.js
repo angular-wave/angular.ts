@@ -234,7 +234,9 @@ export class Angular {
         // https://github.com/angular-ui/ui-router/issues/3678
         if (!hasOwn($injector, "strictDi")) {
           try {
-            $injector.invoke(() => {});
+            $injector.invoke(() => {
+              /* empty */
+            });
           } catch (error) {
             $injector.strictDi = !!/strict mode/.exec(
               error && error.toString(),

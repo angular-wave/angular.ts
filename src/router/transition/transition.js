@@ -9,7 +9,12 @@ import {
   tail,
   unnestR,
 } from "../../shared/common.js";
-import { assert, isObject, isUndefined } from "../../shared/utils.js";
+import {
+  assert,
+  isNullOrUndefined,
+  isObject,
+  isUndefined,
+} from "../../shared/utils.js";
 import { is, propEq, val } from "../../shared/hof.js";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.js";
 import { makeEvent, matchState } from "./hook-registry.js";
@@ -21,6 +26,8 @@ import { ResolveContext } from "../resolve/resolve-context.js";
 import { Rejection } from "./reject-factory.js";
 
 /** @typedef {import('./interface.ts').IHookRegistry} IHookRegistry */
+
+const REDIRECT_MAX = 20;
 
 /**
  * Represents a transition between two states.
@@ -413,8 +420,8 @@ export class Transition {
     let redirects = 1,
       trans = this;
 
-    while ((trans = trans.redirectedFrom()) != null) {
-      if (++redirects > 20)
+    while (!isNullOrUndefined((trans = trans.redirectedFrom()))) {
+      if (++redirects > REDIRECT_MAX)
         throw new Error(`Too many consecutive Transition redirects (20+)`);
     }
     const redirectOpts = { redirectedFrom: this, source: "redirect" };
@@ -569,6 +576,8 @@ export class Transition {
       same(newTC.from, newTC.to)
     )
       return "SameAsCurrent";
+
+    return undefined;
   }
 
   /**
@@ -695,6 +704,8 @@ export class Transition {
     }
 
     if (this.success === false) return this._error;
+
+    return undefined;
   }
 
   /**

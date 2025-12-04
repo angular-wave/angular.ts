@@ -3,7 +3,7 @@ import {
   removeElementData,
   setCacheData,
 } from "../shared/dom.js";
-import { isDefined } from "../shared/utils.js";
+import { isDefined, isNullOrUndefined } from "../shared/utils.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 import {
   ACTIVE_CLASS_SUFFIX,
@@ -291,7 +291,9 @@ export function AnimateCssProvider() {
         let delayStyle;
 
         // we should stick to using that
-        let options = initialOptions || {};
+        let options = initialOptions || {
+          $$skipPreparationClasses: false,
+        };
 
         if (!options.$$prepared) {
           options = prepareAnimationOptions(structuredClone(options));
@@ -532,7 +534,7 @@ export function AnimateCssProvider() {
 
         activeClasses = pendClasses(preparationClasses, ACTIVE_CLASS_SUFFIX);
 
-        if (options.delay != null) {
+        if (!isNullOrUndefined(options.delay)) {
           if (typeof options.delay !== "boolean") {
             delayStyle = parseFloat(options.delay);
             // number in options.delay means we have to recalculate the delay for the closing timeout
@@ -551,7 +553,10 @@ export function AnimateCssProvider() {
         // we need to recalculate the delay value since we used a pre-emptive negative
         // delay value and the delay value is required for the final event checking. This
         // property will ensure that this will happen after the RAF phase has passed.
-        if (options.duration == null && timings.transitionDuration > 0) {
+        if (
+          isNullOrUndefined(options.duration) &&
+          timings.transitionDuration > 0
+        ) {
           flags.recalculateTimingStyles =
             flags.recalculateTimingStyles || isFirst;
         }
@@ -589,7 +594,7 @@ export function AnimateCssProvider() {
           $$willAnimate: true,
           end: endFn,
           start() {
-            if (animationClosed) return;
+            if (animationClosed) return undefined;
 
             runnerHost = {
               end: endFn,
@@ -705,7 +710,9 @@ export function AnimateCssProvider() {
           });
 
           // should flush the cache animation
-          waitUntilQuiet(() => {});
+          waitUntilQuiet(() => {
+            /* empty */
+          });
           close();
 
           return {

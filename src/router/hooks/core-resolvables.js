@@ -28,10 +28,10 @@ export function treeChangesCleanup(trans) {
     .reduce(uniqR, []);
 
   // If the resolvable is a Transition, return a new resolvable with null data
-  const replaceTransitionWithNull = (r) => {
-    return TRANSITION_TOKENS.includes(r.token)
-      ? Resolvable.fromData(r.token, null)
-      : r;
+  const replaceTransitionWithNull = (resolve) => {
+    return TRANSITION_TOKENS.includes(resolve.token)
+      ? Resolvable.fromData(resolve.token, null)
+      : resolve;
   };
 
   nodes.forEach((node) => {

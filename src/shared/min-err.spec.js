@@ -6,7 +6,9 @@ import {
 } from "./utils.js";
 
 describe("errors", () => {
-  afterEach(() => {});
+  afterEach(() => {
+    /* empty */
+  });
 
   describe("minErr", () => {
     const supportStackTraces = function () {
