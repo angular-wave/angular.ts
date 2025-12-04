@@ -249,9 +249,11 @@ export function createInjector(modulesToLoad, strictDi = false) {
                 backend = backendOrConfig.backend || localStorage;
 
                 if (backendOrConfig.serialize)
+                  // eslint-disable-next-line prefer-destructuring
                   serialize = backendOrConfig.serialize;
 
                 if (backendOrConfig.deserialize)
+                  // eslint-disable-next-line prefer-destructuring
                   deserialize = backendOrConfig.deserialize;
               }
             } else {
@@ -346,6 +348,8 @@ function supportObject(delegate) {
       Object.entries(key).forEach(([k, v]) => {
         delegate(k, v);
       });
+
+      return undefined;
     } else {
       return delegate(key, value);
     }

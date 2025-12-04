@@ -153,7 +153,7 @@ class AbstractInjector {
    * @returns {any}
    */
   factory(_serviceName) {
-    console.error(`Unhandled ${_serviceName}`);
+    /* empty */
   }
 }
 
