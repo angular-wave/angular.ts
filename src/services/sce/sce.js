@@ -194,7 +194,7 @@ export class SceDelegateProvider {
      */
     this.trustedResourceUrlList = function (value) {
       if (arguments.length) {
-        trustedResourceUrlList = value.map((v) => adjustMatcher(v));
+        trustedResourceUrlList = value.map(adjustMatcher);
       }
 
       return trustedResourceUrlList;
@@ -224,7 +224,7 @@ export class SceDelegateProvider {
      */
     this.bannedResourceUrlList = function (value) {
       if (arguments.length) {
-        bannedResourceUrlList = value.map((v) => adjustMatcher(v));
+        bannedResourceUrlList = value.map(adjustMatcher);
       }
 
       return bannedResourceUrlList;
@@ -274,14 +274,12 @@ export class SceDelegateProvider {
         function isResourceUrlAllowedByPolicy(url) {
           const parsedUrl = urlResolve(url.toString());
 
-          let i;
-
-          let n;
-
-          let allowed = false;
+          let i,
+            j,
+            allowed = false;
 
           // Ensure that at least one item from the trusted resource URL list allows this url.
-          for (i = 0, n = trustedResourceUrlList.length; i < n; i++) {
+          for (i = 0, j = trustedResourceUrlList.length; i < j; i++) {
             if (matchUrl(trustedResourceUrlList[i], parsedUrl)) {
               allowed = true;
               break;
@@ -290,7 +288,7 @@ export class SceDelegateProvider {
 
           if (allowed) {
             // Ensure that no item from the banned resource URL list has blocked this url.
-            for (i = 0, n = bannedResourceUrlList.length; i < n; i++) {
+            for (i = 0, j = bannedResourceUrlList.length; i < j; i++) {
               if (matchUrl(bannedResourceUrlList[i], parsedUrl)) {
                 allowed = false;
                 break;
@@ -499,8 +497,9 @@ export class SceDelegateProvider {
             // htmlSanitizer throws its own error when no sanitizer is available.
             return htmlSanitizer();
           }
+
           // Default error when the $sce service has no way to make the input safe.
-          $exceptionHandler(
+          return $exceptionHandler(
             $sceMinErr(
               "unsafe",
               "Attempting to use an unsafe value in a safe context.",
@@ -562,9 +561,7 @@ export function SceProvider() {
         sce.trustAs = sce.getTrusted = function (type, value) {
           return value;
         };
-        sce.valueOf = function ($) {
-          return $;
-        };
+        sce.valueOf = (v) => v;
       }
 
       /**

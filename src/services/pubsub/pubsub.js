@@ -229,7 +229,9 @@ export class PubSub {
         // Defer removal until after publishing is complete, but replace the
         // function with a no-op so it isn't called.
         this.pendingKeys.push(key);
-        this.subscriptions[key + 1] = () => {};
+        this.subscriptions[key + 1] = () => {
+          /* empty */
+        };
       } else {
         if (keys) {
           this.topics[topic] = keys.filter((k) => k !== key);

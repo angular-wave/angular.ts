@@ -1,4 +1,4 @@
-export function equals(o1: any, o2: any): any;
+export function equals(o1: any, o2: any): boolean;
 /**
  * prototypal inheritance helper.
  * Creates a new object which has `parent` object as its prototype, and then copies the properties from `extra` onto it

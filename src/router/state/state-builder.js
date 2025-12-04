@@ -103,7 +103,7 @@ function getParamsBuilder(paramFactory) {
 
     return urlParams
       .concat(nonUrlParams)
-      .map((p) => [p.id, p])
+      .map((x) => [x.id, x])
       .reduce(applyPairs, {});
   };
 }
@@ -200,30 +200,30 @@ export function resolvablesBuilder(state) {
   const literal2Resolvable = pattern([
     [
       (x) => x.resolveFn,
-      (p) => new Resolvable(getToken(p), p.resolveFn, p.deps, p.policy),
+      (y) => new Resolvable(getToken(y), y.resolveFn, y.deps, y.policy),
     ],
     [
       (x) => x.useFactory,
-      (p) =>
+      (y) =>
         new Resolvable(
-          getToken(p),
-          p.useFactory,
-          p.deps || p.dependencies,
-          p.policy,
+          getToken(y),
+          y.useFactory,
+          y.deps || y.dependencies,
+          y.policy,
         ),
     ],
     [
       (x) => x.useClass,
-      (p) => new Resolvable(getToken(p), () => new p.useClass(), [], p.policy),
+      (y) => new Resolvable(getToken(y), () => new y.useClass(), [], y.policy),
     ],
     [
       (x) => x.useValue,
-      (p) =>
-        new Resolvable(getToken(p), () => p.useValue, [], p.policy, p.useValue),
+      (y) =>
+        new Resolvable(getToken(y), () => y.useValue, [], y.policy, y.useValue),
     ],
     [
       (x) => x.useExisting,
-      (p) => new Resolvable(getToken(p), (x) => x, [p.useExisting], p.policy),
+      (y) => new Resolvable(getToken(y), (x) => x, [y.useExisting], y.policy),
     ],
   ]);
 

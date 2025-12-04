@@ -238,8 +238,8 @@ export function expandExpression(expression, vars) {
         // not exploded: join k,v pairs by ','
         const pairs = keys
           .map(
-            (k) =>
-              `${pctEncode(k, conf.allowReserved)},${pctEncode(value[k], conf.allowReserved)}`,
+            (key) =>
+              `${pctEncode(key, conf.allowReserved)},${pctEncode(value[key], conf.allowReserved)}`,
           )
           .join(",");
 

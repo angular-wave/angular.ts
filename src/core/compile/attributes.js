@@ -4,7 +4,6 @@ import {
   directiveNormalize,
   hasAnimate,
   hasOwn,
-  isProxy,
   isString,
   isUndefined,
   minErr,

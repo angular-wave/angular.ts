@@ -1070,8 +1070,8 @@ export function http(
   if (responseType) {
     try {
       xhr.responseType = responseType;
-    } catch (e) {
-      if (responseType !== "json") throw e;
+    } catch (err) {
+      if (responseType !== "json") throw err;
     }
   }
 

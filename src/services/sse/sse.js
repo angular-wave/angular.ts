@@ -90,22 +90,22 @@ export class SseProvider {
         withCredentials: !!config.withCredentials,
       });
 
-      es.addEventListener("open", (e) => {
+      es.addEventListener("open", (event) => {
         retryCount = 0;
-        config.onOpen?.(e);
+        config.onOpen?.(event);
 
         if (config.heartbeatTimeout) resetHeartbeat();
       });
 
-      es.addEventListener("message", (e) => {
-        let { data } = e;
+      es.addEventListener("message", (event) => {
+        let { data } = event;
 
         try {
           data = config.transformMessage ? config.transformMessage(data) : data;
         } catch {
           /* empty */
         }
-        config.onMessage?.(data, e);
+        config.onMessage?.(data, event);
 
         if (config.heartbeatTimeout) resetHeartbeat();
       });
