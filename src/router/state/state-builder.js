@@ -70,9 +70,9 @@ function getUrlBuilder($url, root) {
   };
 }
 
-function getNavigableBuilder(isRoot) {
+function getNavigableBuilder(rootFn) {
   return function (state) {
-    return !isRoot(state) && state.url
+    return !rootFn(state) && state.url
       ? state
       : state.parent
         ? state.parent.navigable
@@ -256,7 +256,7 @@ export function resolvablesBuilder(state) {
   ]);
 
   const item2Resolvable = pattern([
-    [is(Resolvable), (r) => r],
+    [is(Resolvable), (x) => x],
     [isResolveLiteral, literal2Resolvable],
     [isTupleFromObj, tuple2Resolvable],
     [
@@ -337,7 +337,7 @@ export class StateBuilder {
     if (isString(name) && !isDefined(fn))
       return array.length > 1 ? array : array[0];
 
-    if (!isString(name) || !isFunction(fn)) return;
+    if (!isString(name) || !isFunction(fn)) return undefined;
     builders[name] = array;
     builders[name].push(fn);
 
@@ -364,7 +364,9 @@ export class StateBuilder {
       if (!hasOwn(builders, key)) continue;
       const chain = builders[key].reduce(
         (parentFn, step) => (_state) => step(_state, parentFn),
-        () => {},
+        () => {
+          /* empty */
+        },
       );
 
       state[key] = chain(state);
@@ -419,6 +421,6 @@ function isRoot(state) {
 }
 
 /** extracts the token from a Provider or provide literal */
-function getToken(p) {
-  return p.provide || p.token;
+function getToken(provider) {
+  return provider.provide || provider.token;
 }

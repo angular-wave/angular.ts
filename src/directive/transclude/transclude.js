@@ -114,6 +114,8 @@ export function ngTranscludeDirective($compile) {
           ) {
             return true;
           }
+
+          return false;
         }
       }
 

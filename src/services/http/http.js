@@ -12,6 +12,7 @@ import {
   isFile,
   isFormData,
   isFunction,
+  isNullOrUndefined,
   isObject,
   isPromiseLike,
   isString,
@@ -294,10 +295,13 @@ export function HttpProvider() {
 
     // transform outgoing request data
     transformRequest: [
-      function (d) {
-        return isObject(d) && !isFile(d) && !isBlob(d) && !isFormData(d)
-          ? toJson(d)
-          : d;
+      function (data) {
+        return isObject(data) &&
+          !isFile(data) &&
+          !isBlob(data) &&
+          !isFormData(data)
+          ? toJson(data)
+          : data;
       },
     ],
 
@@ -408,6 +412,8 @@ export function HttpProvider() {
     },
   });
 
+  const that = this;
+
   this.$get = [
     $t.$injector,
     $t.$sce,
@@ -439,7 +445,7 @@ export function HttpProvider() {
        */
       const reversedInterceptors = [];
 
-      this.interceptors.forEach((interceptorFactory) => {
+      that.interceptors.forEach((interceptorFactory) => {
         reversedInterceptors.unshift(
           isString(interceptorFactory)
             ? $injector.get(interceptorFactory)
@@ -451,7 +457,7 @@ export function HttpProvider() {
        * A function to check request URLs against a list of allowed origins.
        */
       const urlIsAllowedOrigin = urlIsAllowedOriginFactory(
-        this.xsrfTrustedOrigins,
+        that.xsrfTrustedOrigins,
       );
 
       /**
@@ -520,30 +526,30 @@ export function HttpProvider() {
 
         return promise;
 
-        function chainInterceptors(promise, interceptors) {
+        function chainInterceptors(promiseParam, interceptors) {
           for (let i = 0, ii = interceptors.length; i < ii; ) {
             const thenFn = interceptors[i++];
 
             const rejectFn = interceptors[i++];
 
-            promise = promise.then(thenFn, rejectFn);
+            promiseParam = promiseParam.then(thenFn, rejectFn);
           }
 
           interceptors.length = 0;
 
-          return promise;
+          return promiseParam;
         }
 
-        function executeHeaderFns(headers, config) {
+        function executeHeaderFns(headers, configParam) {
           let headerContent;
 
           const processedHeaders = {};
 
           Object.entries(headers).forEach(([header, headerFn]) => {
             if (isFunction(headerFn)) {
-              headerContent = headerFn(config);
+              headerContent = headerFn(configParam);
 
-              if (headerContent != null) {
+              if (!isNullOrUndefined(headerContent)) {
                 processedHeaders[header] = headerContent;
               }
             } else {
@@ -554,14 +560,15 @@ export function HttpProvider() {
           return processedHeaders;
         }
 
-        function mergeHeaders(config) {
-          let defHeaders = defaults.headers,
-            reqHeaders = extend({}, config.headers);
+        function mergeHeaders(configParam) {
+          let defHeaders = defaults.headers;
+
+          const reqHeaders = extend({}, configParam.headers);
 
           defHeaders = extend(
             {},
             defHeaders.common,
-            defHeaders[lowercase(config.method)],
+            defHeaders[lowercase(configParam.method)],
           );
 
           Object.keys(defHeaders).forEach((defHeaderName) => {
@@ -579,17 +586,17 @@ export function HttpProvider() {
           });
 
           // execute if header value is a function for merged headers
-          return executeHeaderFns(reqHeaders, shallowCopy(config));
+          return executeHeaderFns(reqHeaders, shallowCopy(configParam));
         }
 
-        function serverRequest(config) {
-          const { headers } = config;
+        function serverRequest(configParam) {
+          const { headers } = configParam;
 
           const reqData = transformData(
-            config.data,
+            configParam.data,
             headersGetter(headers),
             undefined,
-            config.transformRequest,
+            configParam.transformRequest,
           );
 
           // strip content-type if data is undefined
@@ -602,14 +609,14 @@ export function HttpProvider() {
           }
 
           if (
-            isUndefined(config.withCredentials) &&
+            isUndefined(configParam.withCredentials) &&
             !isUndefined(defaults.withCredentials)
           ) {
-            config.withCredentials = defaults.withCredentials;
+            configParam.withCredentials = defaults.withCredentials;
           }
 
           // send request
-          return sendReq(config, reqData).then(
+          return sendReq(configParam, reqData).then(
             transformResponse,
             transformResponse,
           );

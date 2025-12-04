@@ -1,4 +1,9 @@
-import { isDefined, isFunction, isObject } from "../shared/utils.js";
+import {
+  isDefined,
+  isFunction,
+  isNullOrUndefined,
+  isObject,
+} from "../shared/utils.js";
 import { tail, unnestR } from "../shared/common.js";
 import { Resolvable } from "./resolve/resolvable.js";
 import { kebobString } from "../shared/strings.js";
@@ -74,16 +79,16 @@ export class TemplateFactoryProvider {
     const asComponent = (result) =>
       Promise.resolve(result).then((str) => ({ component: str }));
 
-    const getConfigType = (config) => {
-      if (isDefined(config.template)) return "template";
+    const getConfigType = (configParam) => {
+      if (isDefined(configParam.template)) return "template";
 
-      if (isDefined(config.templateUrl)) return "templateUrl";
+      if (isDefined(configParam.templateUrl)) return "templateUrl";
 
-      if (isDefined(config.templateProvider)) return "templateProvider";
+      if (isDefined(configParam.templateProvider)) return "templateProvider";
 
-      if (isDefined(config.component)) return "component";
+      if (isDefined(configParam.component)) return "component";
 
-      if (isDefined(config.componentProvider)) return "componentProvider";
+      if (isDefined(configParam.componentProvider)) return "componentProvider";
 
       return "default";
     };
@@ -135,7 +140,7 @@ export class TemplateFactoryProvider {
   fromUrl(url, params) {
     if (isFunction(url)) url = /** @type {Function} */ (url)(params);
 
-    if (url == null) return null;
+    if (isNullOrUndefined(url)) return null;
 
     if (this._useHttp) {
       return this.$http

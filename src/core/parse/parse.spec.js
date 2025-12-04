@@ -940,7 +940,9 @@ describe("parser", () => {
         return true;
       };
 
-      scope.$watch("a || b()", () => {});
+      scope.$watch("a || b()", () => {
+        /* empty */
+      });
       await wait();
       expect(bCalled).toBe(false);
 
@@ -959,7 +961,9 @@ describe("parser", () => {
         bCalled = true;
       };
 
-      scope.$watch("a ? b() : 1", () => {});
+      scope.$watch("a ? b() : 1", () => {
+        /* empty */
+      });
       await wait();
       expect(bCalled).toBe(false);
 
@@ -990,7 +994,9 @@ describe("parser", () => {
         return input;
       });
 
-      scope.$watch("a | foo:b:1", () => {});
+      scope.$watch("a | foo:b:1", () => {
+        /* empty */
+      });
       await wait();
       expect(filterCalled).toBe(true);
 
@@ -1014,7 +1020,9 @@ describe("parser", () => {
         return input;
       });
 
-      scope.$watch("[(a | foo:b:1), undefined]", () => {});
+      scope.$watch("[(a | foo:b:1), undefined]", () => {
+        /* empty */
+      });
 
       scope.a = 0;
       await wait();
@@ -1110,7 +1118,9 @@ describe("parser", () => {
       it("should always be reevaluated in literals", async () => {
         filterProvider.register("foo", () => (input) => input.b > 0);
 
-        scope.$watch("[(a | foo)]", () => {});
+        scope.$watch("[(a | foo)]", () => {
+          /* empty */
+        });
         scope.$apply("a = {b: 1}");
         await wait();
         // Would be great if filter-output was checked for changes and this didn't throw...
@@ -1121,7 +1131,9 @@ describe("parser", () => {
       });
 
       it("should always be reevaluated when passed literals", () => {
-        scope.$watch("[a] | filter", () => {});
+        scope.$watch("[a] | filter", () => {
+          /* empty */
+        });
 
         scope.$apply("a = 1");
 
@@ -1619,7 +1631,9 @@ describe("parser", () => {
       const objA = {};
       const objB = {};
 
-      scope.$watch("curObj.value = input", () => {});
+      scope.$watch("curObj.value = input", () => {
+        /* empty */
+      });
 
       scope.curObj = objA;
       scope.input = 1;

@@ -321,7 +321,11 @@ export class LocationProvider {
   lastCachedState: any;
   $get: (
     | string
-    | (($rootScope: ng.Scope, $rootElement: Element) => Location)
+    | ((
+        $rootScope: ng.Scope,
+        $rootElement: Element,
+        $exceptionHandler: ng.ExceptionHandlerService,
+      ) => Location)
   )[];
   #private;
 }

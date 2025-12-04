@@ -25,7 +25,7 @@ export function HttpProvider(): void;
 export class HttpProvider {
   defaults: {
     transformResponse: (typeof defaultHttpResponseTransform)[];
-    transformRequest: ((d: any) => any)[];
+    transformRequest: ((data: any) => any)[];
     headers: {
       common: {
         Accept: string;
@@ -120,7 +120,7 @@ export class HttpProvider {
          */
         defaults: {
           transformResponse: (typeof defaultHttpResponseTransform)[];
-          transformRequest: ((d: any) => any)[];
+          transformRequest: ((data: any) => any)[];
           headers: {
             common: {
               Accept: string;

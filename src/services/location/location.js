@@ -387,26 +387,24 @@ export class Location {
        * Inside of AngularTS, we're always using pathnames that
        * do not include drive names for routing.
        */
-      function removeWindowsDriveName(path, url, base) {
+      function removeWindowsDriveName(path, urlParam, base) {
         /*
         Matches paths for file protocol on windows,
         such as /C:/foo/bar, and captures only /foo/bar.
         */
         const windowsFilePathExp = /^\/[A-Z]:(\/.*)/;
 
-        let firstPathSegmentMatch;
-
         // Get the relative path from the input URL.
-        if (startsWith(url, base)) {
-          url = url.replace(base, "");
+        if (startsWith(urlParam, base)) {
+          urlParam = urlParam.replace(base, "");
         }
 
         // The input URL intentionally contains a first path segment that ends with a colon.
-        if (windowsFilePathExp.exec(url)) {
+        if (windowsFilePathExp.exec(urlParam)) {
           return path;
         }
 
-        firstPathSegmentMatch = windowsFilePathExp.exec(path);
+        const firstPathSegmentMatch = windowsFilePathExp.exec(path);
 
         return firstPathSegmentMatch ? firstPathSegmentMatch[1] : path;
       }
@@ -467,6 +465,8 @@ export class LocationProvider {
       history.pushState(state, "", url);
       this.cacheState();
     }
+
+    return this;
   }
 
   /**
@@ -545,13 +545,15 @@ export class LocationProvider {
   $get = [
     $t.$rootScope,
     $t.$rootElement,
+    $t.$exceptionHandler,
     /**
      *
      * @param {ng.Scope} $rootScope
      * @param {Element} $rootElement
+     * @param {ng.ExceptionHandlerService} $exceptionHandler
      * @returns {Location}
      */
-    ($rootScope, $rootElement) => {
+    ($rootScope, $rootElement, $exceptionHandler) => {
       const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
 
       const initialUrl = trimEmptyHash(window.location.href);
@@ -596,12 +598,11 @@ export class LocationProvider {
           // state object; this makes possible quick checking if the state changed in the digest
           // loop. Checking deep equality would be too expensive.
           $location.$$state = this.state();
-        } catch (e) {
+        } catch (err) {
           // Restore old values if pushState fails
           $location.setUrl(/** @type {string} */ (oldUrl));
           $location.$$state = oldState;
-
-          throw e;
+          $exceptionHandler(err);
         }
       };
 
@@ -698,18 +699,16 @@ export class LocationProvider {
 
           const oldState = $location.$$state;
 
-          let defaultPrevented;
-
           $location.parse(newUrl);
           $location.$$state = newState;
 
-          defaultPrevented = $rootScope.$broadcast(
+          const { defaultPrevented } = $rootScope.$broadcast(
             "$locationChangeStart",
             newUrl,
             oldUrl,
             newState,
             oldState,
-          ).defaultPrevented;
+          );
 
           // if the location was changed by a `$locationChangeStart` handler then stop
           // processing this location change
@@ -733,7 +732,7 @@ export class LocationProvider {
 
           const oldUrl = /** @type {string} */ (this.getBrowserUrl());
 
-          const newUrl = $location.absUrl;
+          let newUrl = $location.absUrl;
 
           const oldState = this.state();
 
@@ -745,11 +744,11 @@ export class LocationProvider {
             initializing = false;
 
             setTimeout(() => {
-              const newUrl = $location.absUrl;
+              newUrl = $location.absUrl;
 
               const { defaultPrevented } = $rootScope.$broadcast(
                 "$locationChangeStart",
-                newUrl,
+                $location.absUrl,
                 oldUrl,
                 $location.$$state,
                 oldState,

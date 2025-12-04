@@ -202,7 +202,9 @@ describe("angular", () => {
       const template = createElementFromHTML(
         '<div>{{greeting = "hello world"}}</div>',
       );
-      element = $compile(template)($rootScope, () => {});
+      element = $compile(template)($rootScope, () => {
+        /* empty */
+      });
       await wait();
       expect(template.textContent).toEqual('{{greeting = "hello world"}}');
       expect(element.textContent).toEqual("hello world");

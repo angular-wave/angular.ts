@@ -8,7 +8,7 @@ export function optionDirective($interpolate: any): {
   compile(
     element: any,
     attr: any,
-  ): (scope: any, element: any, attr: any) => void;
+  ): (scope: any, elemParam: any, attrParam: any) => void;
 };
 export namespace optionDirective {
   let $inject: string[];

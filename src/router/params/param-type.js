@@ -49,7 +49,7 @@ export class ParamType {
   }
 
   equals(a, b) {
-    return a == b;
+    return a === b;
   }
 
   $subPattern() {

@@ -1,6 +1,7 @@
 import {
   isDefined,
   isFunction,
+  isNull,
   isObject,
   isString,
 } from "../../shared/utils.js";
@@ -300,6 +301,8 @@ export class UrlService {
     if (enabled === false) {
       this._stopListeningFn && this._stopListeningFn();
       delete this._stopListeningFn;
+
+      return undefined;
     } else {
       return (this._stopListeningFn =
         this._stopListeningFn || this.onChange((evt) => this.sync(evt)));
@@ -396,7 +399,7 @@ export class UrlService {
   href(urlMatcher, params, options) {
     let url = urlMatcher.format(params);
 
-    if (url == null) return null;
+    if (isNull(url)) return null;
     options = options || { absolute: false };
     const isHtml5 = this.$locationProvider.html5ModeConf.enabled;
 
@@ -421,11 +424,11 @@ export class UrlService {
   /**
    * Creates a [[UrlMatcher]] for the specified pattern.
    *
-   * @param pattern  The URL pattern.
+   * @param urlPattern  The URL pattern.
    * @param config  The config object hash.
    * @returns The UrlMatcher.
    */
-  compile(pattern, config) {
+  compile(urlPattern, config) {
     const urlConfig = this.config;
 
     // backward-compatible support for config.params -> config.state.params
@@ -438,7 +441,7 @@ export class UrlService {
     };
 
     return new UrlMatcher(
-      pattern,
+      urlPattern,
       urlConfig.paramTypes,
       this.paramFactory,
       Object.assign(globalConfig, config),

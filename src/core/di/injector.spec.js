@@ -383,14 +383,34 @@ describe("annotate", () => {
     function fn() {}
     fn.$inject = ["a"];
     expect(annotate(fn)).toBe(fn.$inject);
-    expect(annotate(() => {})).toEqual([]);
-    expect(annotate(() => {})).toEqual([]);
-    expect(annotate(() => {})).toEqual([]);
-    expect(annotate(/* */ () => {})).toEqual([]);
+    expect(
+      annotate(() => {
+        /* empty */
+      }),
+    ).toEqual([]);
+    expect(
+      annotate(() => {
+        /* empty */
+      }),
+    ).toEqual([]);
+    expect(
+      annotate(() => {
+        /* empty */
+      }),
+    ).toEqual([]);
+    expect(
+      annotate(
+        /* */ () => {
+          /* empty */
+        },
+      ),
+    ).toEqual([]);
   });
 
   it("should create $inject", () => {
-    const extraParams = () => {};
+    const extraParams = () => {
+      /* empty */
+    };
     // keep the multi-line to make sure we can handle it
     function $f_n0 /*
      */(
@@ -494,20 +514,34 @@ describe("annotate", () => {
 
   it("returns the $inject annotation of a function when it has one", () => {
     const injector = createInjector([]);
-    const fn = () => {};
+    const fn = () => {
+      /* empty */
+    };
     fn.$inject = ["a", "b"];
     expect(annotate(fn)).toEqual(["a", "b"]);
   });
 
   it("returns the array-style annotations of a function", () => {
     const injector = createInjector([]);
-    const fn = ["a", "b", () => {}];
+    const fn = [
+      "a",
+      "b",
+      () => {
+        /* empty */
+      },
+    ];
     expect(annotate(fn)).toEqual(["a", "b"]);
   });
 
   it("returns the array-style annotations of a function", () => {
     const injector = createInjector([]);
-    const fn = ["a", "b", () => {}];
+    const fn = [
+      "a",
+      "b",
+      () => {
+        /* empty */
+      },
+    ];
     expect(annotate(fn)).toEqual(["a", "b"]);
   });
 
@@ -866,7 +900,9 @@ describe("provider", () => {
     });
     module.provider("b", function BProvider(aProvider) {
       aProvider.setValue(2);
-      this.$get = () => {};
+      this.$get = () => {
+        /* empty */
+      };
     });
     const injector = createInjector(["myModule"]);
     expect(injector.get("a")).toBe(2);
@@ -1556,7 +1592,9 @@ describe("module", () => {
       })
       .provider("$a", function Provider$a() {
         log += "$aProvider;";
-        this.$get = () => {};
+        this.$get = () => {
+          /* empty */
+        };
       });
     angular
       .module("b", [])
@@ -1565,7 +1603,9 @@ describe("module", () => {
       })
       .provider("$b", function Provider$b() {
         log += "$bProvider;";
-        this.$get = () => {};
+        this.$get = () => {
+          /* empty */
+        };
       });
 
     createInjector(["a"]);
@@ -1578,7 +1618,9 @@ describe("$provide", () => {
     createInjector([
       function ($provide) {
         expect(() => {
-          $provide.provider("hasOwnProperty", () => {});
+          $provide.provider("hasOwnProperty", () => {
+            /* empty */
+          });
         }).toThrowError(/badname/);
       },
     ]);
@@ -2293,7 +2335,9 @@ describe("strict-di injector", () => {
 
   it("should throw if factory does not return a value", () => {
     module.provider(($provide) => {
-      $provide.factory("$test", () => {});
+      $provide.factory("$test", () => {
+        /* empty */
+      });
     });
     expect(() => {
       $injector.invoke("$test");

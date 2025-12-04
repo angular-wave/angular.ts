@@ -47,18 +47,24 @@ describe("$animate schedule", () => {
   });
 
   it("should reset scheduled flag after flushing", (done) => {
-    schedule(() => {});
+    schedule(() => {
+      /* empty */
+    });
 
     setTimeout(() => {
       // After flush, queue should be empty and next schedule should trigger another flush
-      schedule(() => {});
+      schedule(() => {
+        /* empty */
+      });
       expect(true).toBe(true);
       done();
     }, 20);
   });
 
   it("should clear the queue after flush", (done) => {
-    schedule(() => {});
+    schedule(() => {
+      /* empty */
+    });
 
     setTimeout(() => {
       let calls = 0;

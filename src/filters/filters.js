@@ -80,6 +80,7 @@ function parse(numStr) {
     numberOfIntegerDigits = 1;
   }
 
+  // eslint-disable-next-line id-length
   return { d: digits, e: exponent, i: numberOfIntegerDigits };
 }
 
@@ -137,11 +138,11 @@ function roundNumber(parsedNumber, fractionSize, minFrac, maxFrac) {
   for (; fractionLen < Math.max(0, fractionSize); fractionLen++) digits.push(0);
 
   // Do any carrying, e.g. a digit was rounded up to 10
-  const carry = digits.reduceRight((carry, d, i, digits) => {
-    d += carry;
-    digits[i] = d % 10;
+  const carry = digits.reduceRight((x, y, i, digitsParam) => {
+    y += x;
+    digitsParam[i] = y % 10;
 
-    return Math.floor(d / 10);
+    return Math.floor(y / 10);
   }, 0);
 
   if (carry) {
@@ -204,7 +205,7 @@ export function formatNumber(
 
     let decimals = [];
 
-    isZero = digits.reduce((isZero, d) => isZero && !d, true);
+    isZero = digits.reduce((x, y) => x && !y, true);
 
     // pad zeros for small numbers
     while (integerLen < 0) {

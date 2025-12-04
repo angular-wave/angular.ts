@@ -83,7 +83,8 @@ export class ParamTypes {
 }
 function initDefaultTypes() {
   const makeDefaultType = (def) => {
-    const valToString = (val) => (val != null ? val.toString() : val);
+    const valToString = (val) =>
+      !isNullOrUndefined(val) ? val.toString() : val;
 
     const defaultTypeBase = {
       encode: valToString,
@@ -91,7 +92,7 @@ function initDefaultTypes() {
       is: is(String),
       pattern: /.*/,
 
-      equals: (a, b) => a == b, // allow coersion for null/undefined/""
+      equals: (a, b) => a === b, // allow coersion for null/undefined/""
     };
 
     return Object.assign({}, defaultTypeBase, def);
@@ -137,9 +138,9 @@ function initDefaultTypes() {
         return match ? new Date(match[1], match[2] - 1, match[3]) : undefined;
       },
       is: (val) => val instanceof Date && !isNaN(val.valueOf()),
-      equals(l, r) {
+      equals(left, right) {
         return ["getFullYear", "getMonth", "getDate"].reduce(
-          (acc, fn) => acc && l[fn]() === r[fn](),
+          (acc, fn) => acc && left[fn]() === right[fn](),
           true,
         );
       },

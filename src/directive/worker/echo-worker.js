@@ -10,7 +10,7 @@ self.onmessage = async (event) => {
   let result;
 
   if (data?.action === "fib") {
-    const fib = (n) => (n <= 1 ? n : fib(n - 1) + fib(n - 2));
+    const fib = (x) => (x <= 1 ? x : fib(x - 1) + fib(x - 2));
 
     result = fib(data.n);
   } else {

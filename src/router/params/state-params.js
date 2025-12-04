@@ -28,7 +28,7 @@ export class StateParams {
 
       for (const j in parentParamsKeys) {
         if (
-          parentParams[parentParamsKeys[j]].inherit == false ||
+          parentParams[parentParamsKeys[j]].inherit === false ||
           inheritList.indexOf(parentParamsKeys[j]) >= 0
         )
           continue;

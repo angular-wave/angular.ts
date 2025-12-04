@@ -16,7 +16,7 @@ import { Glob } from "../glob/glob.js";
 import { lazyLoadState } from "../hooks/lazy-load.js";
 import { EventBus } from "../../services/pubsub/pubsub.js";
 
-const err = minErr("$stateProvider");
+const stdErr = minErr("$stateProvider");
 
 /**
  * Provides services related to ng-router states.
@@ -77,8 +77,8 @@ export class StateProvider {
       }
     };
 
-    EventBus.subscribe("$stateService:defaultErrorHandler", (err) =>
-      this.defaultErrorHandler()(err),
+    EventBus.subscribe("$stateService:defaultErrorHandler", (error) =>
+      this.defaultErrorHandler()(error),
     );
   }
 
@@ -183,13 +183,13 @@ export class StateProvider {
    */
   state(definition) {
     if (!definition.name) {
-      throw err("stateinvalid", `'name' required`);
+      throw stdErr("stateinvalid", `'name' required`);
     }
 
     try {
       this.stateRegistry.register(definition);
-    } catch (e) {
-      throw err("stateinvalid", e.message);
+    } catch (err) {
+      throw err("stateinvalid", err.message);
     }
 
     return this;
@@ -222,7 +222,7 @@ export class StateProvider {
 
     const checkForRedirect = (result) => {
       if (!(result instanceof TargetState)) {
-        return;
+        return undefined;
       }
       let target = result;
 

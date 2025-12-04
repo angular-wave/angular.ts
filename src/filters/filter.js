@@ -3,6 +3,7 @@ import {
   hasCustomToString,
   isArrayLike,
   isFunction,
+  isNullOrUndefined,
   isObject,
   isUndefined,
   minErr,
@@ -22,7 +23,7 @@ export function filterFilter() {
    */
   return function (array, expression, comparator, anyPropertyKey) {
     if (!isArrayLike(array)) {
-      if (array == null) {
+      if (isNullOrUndefined(array)) {
         return array;
       }
       throw minErr("filter")(
@@ -73,8 +74,6 @@ function createPredicateFn(
   const shouldMatchPrimitives =
     isObject(expression) && anyPropertyKey in expression;
 
-  let predicateFn;
-
   if (comparator === true) {
     comparator = equals;
   } else if (!isFunction(comparator)) {
@@ -104,7 +103,7 @@ function createPredicateFn(
     };
   }
 
-  predicateFn = function (item) {
+  const predicateFn = function (item) {
     if (shouldMatchPrimitives && !isObject(item)) {
       return deepCompare(
         item,

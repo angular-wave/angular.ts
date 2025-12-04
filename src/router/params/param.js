@@ -1,6 +1,11 @@
 import { allTrueR, filter, find, map } from "../../shared/common.js";
 import { isInjectable } from "../../shared/predicates.js";
-import { isDefined, isString, isUndefined } from "../../shared/utils.js";
+import {
+  isDefined,
+  isNullOrUndefined,
+  isString,
+  isUndefined,
+} from "../../shared/utils.js";
 import { ParamType } from "./param-type.js";
 
 const isShorthand = (cfg) =>
@@ -81,7 +86,7 @@ function getSquashPolicy(config, isOptional, defaultPolicy) {
 
   if (!isOptional || squash === false) return false;
 
-  if (!isDefined(squash) || squash == null) return defaultPolicy;
+  if (!isDefined(squash) || isNullOrUndefined(squash)) return defaultPolicy;
 
   if (squash === true || isString(squash)) return squash;
   throw new Error(

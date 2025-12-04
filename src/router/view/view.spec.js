@@ -87,7 +87,9 @@ describe("view", () => {
     });
 
     it("uses the controllerProvider to get controller dynamically", async () => {
-      $controllerProvider.register("AcmeFooController", () => {});
+      $controllerProvider.register("AcmeFooController", () => {
+        /* empty */
+      });
       elem.innerHTML = "<div><ng-view></ng-view></div>";
       $compile(elem)(scope);
       await wait();

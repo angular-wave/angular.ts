@@ -1,4 +1,3 @@
-/** @typedef {import('./interface.ts').IHookRegistry} IHookRegistry */
 /**
  * Represents a transition between two states.
  *

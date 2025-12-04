@@ -11,7 +11,7 @@ import { Rejection } from "../transition/reject-factory.js";
 function ignoredHook(trans) {
   const ignoredReason = trans._ignoredReason();
 
-  if (!ignoredReason) return;
+  if (!ignoredReason) return undefined;
   trace.traceTransitionIgnored(trans);
   const pending = trans.globals.transition;
 

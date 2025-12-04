@@ -1,6 +1,9 @@
 import { assertPredicate, unnestR } from "../../shared/common.js";
-import { TransitionHookPhase, TransitionHookScope } from "./transition-hook.js";
-import { TransitionHook } from "./transition-hook.js";
+import {
+  TransitionHook,
+  TransitionHookPhase,
+  TransitionHookScope,
+} from "./transition-hook.js";
 
 /**
  * This class returns applicable TransitionHooks for a specific Transition instance.
@@ -142,12 +145,14 @@ export class HookBuilder {
  * @returns a tuple sort function
  */
 function tupleSort(reverseDepthSort = false) {
-  return function nodeDepthThenPriority(l, r) {
+  return function nodeDepthThenPriority(left, right) {
     const factor = reverseDepthSort ? -1 : 1;
 
     const depthDelta =
-      (l.node.state.path.length - r.node.state.path.length) * factor;
+      (left.node.state.path.length - right.node.state.path.length) * factor;
 
-    return depthDelta !== 0 ? depthDelta : r.hook.priority - l.hook.priority;
+    return depthDelta !== 0
+      ? depthDelta
+      : right.hook.priority - left.hook.priority;
   };
 }

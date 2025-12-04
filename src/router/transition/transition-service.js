@@ -258,10 +258,10 @@ export class TransitionProvider {
       ? this._eventTypes.filter((type) => type.hookPhase === phase)
       : this._eventTypes.slice();
 
-    return transitionHookTypes.sort((l, r) => {
-      const cmpByPhase = l.hookPhase - r.hookPhase;
+    return transitionHookTypes.sort((left, right) => {
+      const cmpByPhase = left.hookPhase - right.hookPhase;
 
-      return cmpByPhase === 0 ? l.hookOrder - r.hookOrder : cmpByPhase;
+      return cmpByPhase === 0 ? left.hookOrder - right.hookOrder : cmpByPhase;
     });
   }
 

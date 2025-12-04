@@ -80,7 +80,11 @@ describe("PubSub", function () {
     expect(pubsub.getCount("bar")).toBe(0);
 
     expect(pubsub.unsubscribe("baz", foo1)).toBe(false);
-    expect(pubsub.unsubscribe("foo", () => {})).toBe(false);
+    expect(
+      pubsub.unsubscribe("foo", () => {
+        /* empty */
+      }),
+    ).toBe(false);
   });
 
   it("should subscribe and unsubscribe with context correctly", function () {

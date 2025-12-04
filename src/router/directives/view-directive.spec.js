@@ -1244,7 +1244,12 @@ describe("angular 1.5+ style .component()", () => {
       expect(() => {
         $stateProvider.state(
           Object.assign(
-            { name: "route2cmp", templateProvider: () => {} },
+            {
+              name: "route2cmp",
+              templateProvider: () => {
+                /* empty */
+              },
+            },
             stateDef,
           ),
         );

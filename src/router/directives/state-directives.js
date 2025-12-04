@@ -1,5 +1,5 @@
 import { removeFrom, tail, uniqR, unnestR } from "../../shared/common.js";
-import { isObject, isString } from "../../shared/utils.js";
+import { isNullOrUndefined, isObject, isString } from "../../shared/utils.js";
 import { parse } from "../../shared/hof.js";
 import { getInheritedData } from "../../shared/dom.js";
 
@@ -54,45 +54,41 @@ function getTypeInfo(el) {
 }
 
 function clickHook(el, $state, type, getDef, scope) {
-  return function (e) {
-    const button = e.which || e.button,
+  return function (event) {
+    const button = event.which || event.button,
       target = getDef();
 
     const res =
       button > 1 ||
-      e.ctrlKey ||
-      e.metaKey ||
-      e.shiftKey ||
-      e.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey ||
       el.getAttribute("target");
 
     if (!res) {
       // HACK: This is to allow ng-clicks to be processed before the transition is initiated:
       const transition = setTimeout(function () {
         if (!el.getAttribute("disabled")) {
-          const res = $state.go(
-            target.ngState,
-            target.ngStateParams,
-            target.ngStateOpts,
-          );
-
-          res.then(() => {
-            scope.$emit("$updateBrowser");
-          });
+          $state
+            .go(target.ngState, target.ngStateParams, target.ngStateOpts)
+            .then(() => {
+              scope.$emit("$updateBrowser");
+            });
         }
       });
 
-      e.preventDefault();
+      event.preventDefault();
       // if the state has no URL, ignore one preventDefault from the <a> directive.
       let ignorePreventDefaultCount = type.isAnchor && !target.href ? 1 : 0;
 
-      e.preventDefault = function () {
+      event.preventDefault = function () {
         if (ignorePreventDefaultCount-- <= 0) clearTimeout(transition);
       };
     } else {
       // ignored
-      e.preventDefault();
-      e.stopImmediatePropagation();
+      event.preventDefault();
+      event.stopImmediatePropagation();
     }
   };
 }
@@ -106,11 +102,7 @@ function defaultOpts(el, $state) {
 }
 
 function bindEvents(element, scope, hookFn, ngStateOpts) {
-  let events;
-
-  if (ngStateOpts) {
-    events = ngStateOpts.events;
-  }
+  let events = ngStateOpts ? ngStateOpts.events : undefined;
 
   if (!Array.isArray(events)) {
     events = ["click"];
@@ -171,7 +163,7 @@ export function $StateRefDirective(
           unlinkInfoFn = active.$$addStateInfo(def.ngState, def.ngStateParams);
         }
 
-        if (def.href != null) {
+        if (!isNullOrUndefined(def.href)) {
           attrs.$set(type.attr, def.href);
         }
       }
@@ -232,8 +224,6 @@ export function $StateRefDynamicDirective(
 
       let unlinkInfoFn = null;
 
-      let hookFn;
-
       const rawDef = {};
 
       const getDef = () => processedDef($state, element, rawDef);
@@ -241,7 +231,12 @@ export function $StateRefDynamicDirective(
       const inputAttrs = ["ngState", "ngStateParams", "ngStateOpts"];
 
       const watchDeregFns = inputAttrs.reduce(
-        (acc, attr) => ((acc[attr] = () => {}), acc),
+        (acc, attr) => (
+          (acc[attr] = () => {
+            /* empty */
+          }),
+          acc
+        ),
         {},
       );
 
@@ -256,7 +251,7 @@ export function $StateRefDynamicDirective(
           unlinkInfoFn = active.$$addStateInfo(def.ngState, def.ngStateParams);
         }
 
-        if (def.href != null) {
+        if (!isNullOrUndefined(def.href)) {
           attrs.$set(type.attr, def.href);
         }
       }
@@ -275,7 +270,8 @@ export function $StateRefDynamicDirective(
       scope.$on("$destroy", $transitions.onSuccess({}, update));
 
       if (!type.clickable) return;
-      hookFn = clickHook(element, $state, type, getDef, scope);
+      const hookFn = clickHook(element, $state, type, getDef, scope);
+
       bindEvents(element, scope, hookFn, rawDef.ngStateOpts);
     },
   };
@@ -309,14 +305,15 @@ export function $StateRefActiveDirective(
     controller($scope, $element, $attrs) {
       let states = [];
 
-      let activeEqClass;
-
       let ngSrefActive;
 
       // There probably isn't much point in $observing this
       // ngSrefActive and ngSrefActiveEq share the same directive object with some
       // slight difference in logic routing
-      activeEqClass = $interpolate($attrs.ngSrefActiveEq || "", false)($scope);
+      const activeEqClass = $interpolate(
+        $attrs.ngSrefActiveEq || "",
+        false,
+      )($scope);
 
       try {
         ngSrefActive = $scope.$eval($attrs.ngSrefActive);
@@ -332,7 +329,7 @@ export function $StateRefActiveDirective(
         // we already got an explicit state provided by ng-sref-active, so we
         // shadow the one that comes from ng-sref
         if (isObject(ngSrefActive) && states.length > 0) {
-          return;
+          return undefined;
         }
         const deregister = addState(newState, newParams, ngSrefActive);
 
@@ -341,7 +338,9 @@ export function $StateRefActiveDirective(
         return deregister;
       };
       function updateAfterTransition(trans) {
-        trans.promise.then(update, () => {});
+        trans.promise.then(update, () => {
+          /* empty */
+        });
       }
       $scope.$on("$destroy", setupEventListeners());
 

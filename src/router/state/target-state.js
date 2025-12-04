@@ -110,6 +110,8 @@ export class TargetState {
 
     if (!this._definition.self)
       return `State '${this.name()}' has an invalid definition`;
+
+    return undefined;
   }
 
   toString() {

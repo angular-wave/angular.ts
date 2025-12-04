@@ -112,7 +112,7 @@ export function ngSwitchWhenDirective() {
         .sort()
         .filter(
           // Filter duplicate cases
-          (element, index, array) => array[index - 1] !== element,
+          (elementParam, index, array) => array[index - 1] !== elementParam,
         );
 
       cases.forEach((whenCase) => {

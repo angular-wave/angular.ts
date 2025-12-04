@@ -8,7 +8,9 @@ import { TargetState } from "../state/target-state.js";
 import { EventBus } from "../../services/pubsub/pubsub.js";
 
 const defaultOptions = {
-  current: () => {},
+  current: () => {
+    /* empty */
+  },
   transition: null,
   traceData: {},
   bind: null,
@@ -119,7 +121,7 @@ export class TransitionHook {
   invokeHook() {
     const hook = this.registeredHook;
 
-    if (hook._deregistered) return;
+    if (hook._deregistered) return undefined;
     const notCurrent = this.getNotCurrentRejection();
 
     if (notCurrent) return notCurrent;
@@ -186,6 +188,8 @@ export class TransitionHook {
       // Halt the current Transition and redirect (a new Transition) to the TargetState.
       return Rejection.redirected(result).toPromise();
     }
+
+    return undefined;
   }
 
   /**
@@ -203,6 +207,8 @@ export class TransitionHook {
       // Abort this transition
       return Rejection.superseded(this.options.current()).toPromise();
     }
+
+    return undefined;
   }
 
   toString() {

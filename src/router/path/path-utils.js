@@ -41,7 +41,7 @@ export class PathUtils {
       .forEach((node) => {
         const viewDecls = Object.values(node.state.views || {});
 
-        const subPath = PathUtils.subPath(path, (n) => n === node);
+        const subPath = PathUtils.subPath(path, (x) => x === node);
 
         const viewConfigs = viewDecls.map((view) => {
           return $view.createViewConfig(subPath, view);
@@ -136,16 +136,19 @@ export class PathUtils {
 
       return cloned;
     }
-    let from, retained, exiting, entering, to;
 
-    from = fromPath;
-    retained = from.slice(0, keep);
-    exiting = from.slice(keep);
+    const from = fromPath;
+
+    const retained = from.slice(0, keep);
+
+    const exiting = from.slice(keep);
+
     // Create a new retained path (with shallow copies of nodes) which have the params of the toPath mapped
     const retainedWithToParams = retained.map(applyToParams);
 
-    entering = toPath.slice(keep);
-    to = retainedWithToParams.concat(entering);
+    const entering = toPath.slice(keep);
+
+    const to = retainedWithToParams.concat(entering);
 
     return { from, to, retained, retainedWithToParams, exiting, entering };
   }

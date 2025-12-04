@@ -111,7 +111,15 @@ describe("$cookie service", () => {
   });
 
   it("should throw TypeError if expires is invalid type", () => {
-    const invalidValues = [true, {}, [], () => {}, Symbol()];
+    const invalidValues = [
+      true,
+      {},
+      [],
+      () => {
+        /* empty */
+      },
+      Symbol(),
+    ];
     invalidValues.forEach((val) => {
       expect(() => $cookie.put("badExp", "x", { expires: val })).toThrowError(
         TypeError,

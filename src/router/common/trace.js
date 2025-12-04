@@ -40,6 +40,9 @@ import {
   padString,
   stringify,
 } from "../../shared/strings.js";
+import { $injectTokens } from "../../injection-tokens.js";
+
+const MAX_PAD_LENGTH = 30;
 
 function ngViewString(ngView) {
   if (!ngView) return "ng-view (defunct)";
@@ -99,6 +102,7 @@ export class Trace {
   constructor() {
     this._enabled = {};
     this.approximateDigests = 0;
+    this.$logger = window.angular?.$injector?.get($injectTokens.$log);
   }
 
   _set(enabled, categories) {
@@ -137,13 +141,13 @@ export class Trace {
   /** @internal called by ng-router code */
   traceTransitionStart(trans) {
     if (!this.enabled(Category.TRANSITION)) return;
-    console.log(`${transLbl(trans)}: Started  -> ${stringify(trans)}`);
+    this.$logger.log(`${transLbl(trans)}: Started  -> ${stringify(trans)}`);
   }
 
   /** @internal called by ng-router code */
   traceTransitionIgnored(trans) {
     if (!this.enabled(Category.TRANSITION)) return;
-    console.log(`${transLbl(trans)}: Ignored  <> ${stringify(trans)}`);
+    this.$logger.log(`${transLbl(trans)}: Ignored  <> ${stringify(trans)}`);
   }
 
   /** @internal called by ng-router code */
@@ -156,7 +160,7 @@ export class Trace {
         "unknown",
       name = functionToString(step.registeredHook.callback);
 
-    console.log(
+    this.$logger.log(
       `${transLbl(trans)}:   Hook -> ${event} context: ${context}, ${maxLength(200, name)}`,
     );
   }
@@ -164,7 +168,7 @@ export class Trace {
   /** @internal called by ng-router code */
   traceHookResult(hookResult, trans) {
     if (!this.enabled(Category.HOOK)) return;
-    console.log(
+    this.$logger.log(
       `${transLbl(trans)}:   <- Hook returned: ${maxLength(200, stringify(hookResult))}`,
     );
   }
@@ -172,13 +176,13 @@ export class Trace {
   /** @internal called by ng-router code */
   traceResolvePath(path, when, trans) {
     if (!this.enabled(Category.RESOLVE)) return;
-    console.log(`${transLbl(trans)}:         Resolving ${path} (${when})`);
+    this.$logger.log(`${transLbl(trans)}:         Resolving ${path} (${when})`);
   }
 
   /** @internal called by ng-router code */
   traceResolvableResolved(resolvable, trans) {
     if (!this.enabled(Category.RESOLVE)) return;
-    console.log(
+    this.$logger.log(
       `${transLbl(trans)}:               <- Resolved  ${resolvable} to: ${maxLength(200, stringify(resolvable.data))}`,
     );
   }
@@ -186,7 +190,7 @@ export class Trace {
   /** @internal called by ng-router code */
   traceError(reason, trans) {
     if (!this.enabled(Category.TRANSITION)) return;
-    console.log(
+    this.$logger.log(
       `${transLbl(trans)}: <- Rejected ${stringify(trans)}, reason: ${reason}`,
     );
   }
@@ -194,7 +198,7 @@ export class Trace {
   /** @internal called by ng-router code */
   traceSuccess(finalState, trans) {
     if (!this.enabled(Category.TRANSITION)) return;
-    console.log(
+    this.$logger.log(
       `${transLbl(trans)}: <- Success  ${stringify(trans)}, final state: ${finalState.name}`,
     );
   }
@@ -202,8 +206,8 @@ export class Trace {
   /** @internal called by ng-router code */
   traceUIViewEvent(event, viewData, extra = "") {
     if (!this.enabled(Category.UIVIEW)) return;
-    console.log(
-      `ng-view: ${padString(30, event)} ${ngViewString(viewData)}${extra}`,
+    this.$logger.log(
+      `ng-view: ${padString(MAX_PAD_LENGTH, event)} ${ngViewString(viewData)}${extra}`,
     );
   }
 
@@ -242,19 +246,19 @@ export class Trace {
       })
       .sort((a, b) => (a[uivheader] || "").localeCompare(b[uivheader] || ""));
 
-    console.table(mapping);
+    this.$logger.table(mapping);
   }
 
   /** @internal called by ng-router code */
   traceViewServiceEvent(event, viewConfig) {
     if (!this.enabled(Category.VIEWCONFIG)) return;
-    console.log(`VIEWCONFIG: ${event} ${viewConfigString(viewConfig)}`);
+    this.$logger.log(`VIEWCONFIG: ${event} ${viewConfigString(viewConfig)}`);
   }
 
   /** @internal called by ng-router code */
   traceViewServiceUIViewEvent(event, viewData) {
     if (!this.enabled(Category.VIEWCONFIG)) return;
-    console.log(`VIEWCONFIG: ${event} ${ngViewString(viewData)}`);
+    this.$logger.log(`VIEWCONFIG: ${event} ${ngViewString(viewData)}`);
   }
 }
 /**

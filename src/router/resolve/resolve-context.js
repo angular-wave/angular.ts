@@ -40,7 +40,8 @@ export class ResolveContext {
   getTokens() {
     return this._path
       .reduce(
-        (acc, node) => acc.concat(node.resolvables.map((r) => r.token)),
+        (acc, node) =>
+          acc.concat(node.resolvables.map((resolve) => resolve.token)),
         [],
       )
       .reduce(uniqR, []);
@@ -56,7 +57,7 @@ export class ResolveContext {
     const matching = this._path
       .map((node) => node.resolvables)
       .reduce(unnestR, [])
-      .filter((r) => r.token === token);
+      .filter((resolve) => resolve.token === token);
 
     return tail(matching);
   }
@@ -116,10 +117,10 @@ export class ResolveContext {
     /** @type {import('../path/path-node').PathNode} */
     const node = find(this._path, propEq("state", state));
 
-    const keys = newResolvables.map((r) => r.token);
+    const keys = newResolvables.map((resolve) => resolve.token);
 
     node.resolvables = node.resolvables
-      .filter((r) => keys.indexOf(r.token) === -1)
+      .filter((resolve) => keys.indexOf(resolve.token) === -1)
       .concat(newResolvables);
   }
 
@@ -160,11 +161,11 @@ export class ResolveContext {
       // For the matching Resolvables, start their async fetch process.
       const subContext = this.subContext(node.state);
 
-      const getResult = (r) =>
-        r
+      const getResult = (resolve) =>
+        resolve
           .get(subContext, trans)
           // Return a tuple that includes the Resolvable's token
-          .then((value) => ({ token: r.token, value }));
+          .then((value) => ({ token: resolve.token, value }));
 
       nowait.forEach(getResult);
 
@@ -199,7 +200,9 @@ export class ResolveContext {
       .filter((res) => res !== resolvable); // filter out the `resolvable` argument
 
     return resolvable.deps.map((token) => {
-      const matching = availableResolvables.filter((r) => r.token === token);
+      const matching = availableResolvables.filter(
+        (resolve) => resolve.token === token,
+      );
 
       if (matching.length) return tail(matching);
       const fromInjector = window.angular.$injector.get(token);

@@ -2,6 +2,7 @@ import {
   hasCustomToString,
   isArrayLike,
   isFunction,
+  isNullOrUndefined,
   isObject,
   isString,
   minErr,
@@ -15,7 +16,7 @@ orderByFilter.$inject = [$injectTokens.$parse];
  */
 export function orderByFilter($parse) {
   return function (array, sortPredicate, reverseOrder, compareFn) {
-    if (array == null) return array;
+    if (isNullOrUndefined(array)) return array;
 
     if (isFunction(array)) return array();
 

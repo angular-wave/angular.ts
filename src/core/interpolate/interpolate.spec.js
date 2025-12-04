@@ -175,7 +175,9 @@ describe("$interpolate", () => {
 
     it("correctly returns new value", async () => {
       const interp = $interpolate("{{expr}}");
-      $rootScope.$watch("expr", () => {});
+      $rootScope.$watch("expr", () => {
+        /* empty */
+      });
       $rootScope.expr = 42;
       await wait();
       expect(interp($rootScope)).toEqual("42");

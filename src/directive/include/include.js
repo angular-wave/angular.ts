@@ -1,5 +1,4 @@
-import { isDefined } from "../../shared/utils.js";
-import { hasAnimate } from "../../shared/utils.js";
+import { isDefined, hasAnimate } from "../../shared/utils.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
 ngIncludeDirective.$inject = [
@@ -27,7 +26,9 @@ export function ngIncludeDirective(
     priority: 400,
     terminal: true,
     transclude: "element",
-    controller: () => {},
+    controller: () => {
+      /* empty */
+    },
     compile(_element, attr) {
       const srcExp = attr.ngInclude || attr.src;
 

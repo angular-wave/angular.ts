@@ -147,7 +147,7 @@ export function ngRepeatDirective($animate) {
         }
       });
 
-      return function ngRepeatLink($scope, $element, $attr, ctrl, $transclude) {
+      return function ngRepeatLink($scope, $element, attr, ctrl, $transclude) {
         // Store a list of elements from previous run. This is a hash where key is the item from the
         // iterator, and the value is objects with following properties.
         //   - scope: bound scope
@@ -164,7 +164,6 @@ export function ngRepeatDirective($animate) {
           (collection) => {
             swap();
             let index,
-              length,
               previousNode = $element, // node that cloned nodes should be inserted after
               // initialized to the comment node anchor
               nextNode;
@@ -173,14 +172,12 @@ export function ngRepeatDirective($animate) {
               // lastBlockMap on the next iteration.
               nextBlockMap = Object.create(null);
 
-            let collectionLength,
-              key,
+            let key,
               value, // key/value of iteration
               trackById,
               trackByIdFn,
               collectionKeys,
               block, // last object information {scope, element, id}
-              nextBlockOrder,
               elementsToRemove;
 
             if (aliasAs) {
@@ -202,8 +199,9 @@ export function ngRepeatDirective($animate) {
               }
             }
 
-            collectionLength = collectionKeys.length;
-            nextBlockOrder = new Array(collectionLength);
+            const collectionLength = collectionKeys.length;
+
+            const nextBlockOrder = new Array(collectionLength);
 
             // locate existing items
             for (index = 0; index < collectionLength; index++) {
@@ -220,8 +218,8 @@ export function ngRepeatDirective($animate) {
                 nextBlockOrder[index] = block;
               } else if (nextBlockMap[trackById]) {
                 // if collision detected. restore lastBlockMap and throw an error
-                Object.values(nextBlockOrder).forEach((block) => {
-                  if (block && block.scope) lastBlockMap[block.id] = block;
+                Object.values(nextBlockOrder).forEach((x) => {
+                  if (x && x.scope) lastBlockMap[x.id] = block;
                 });
                 throw ngRepeatMinErr(
                   "dupes",
@@ -255,12 +253,8 @@ export function ngRepeatDirective($animate) {
               if (elementsToRemove.parentNode) {
                 // if the element was not removed yet because of pending animation, mark it as deleted
                 // so that we can ignore it later
-                for (
-                  index = 0, length = elementsToRemove.length;
-                  index < length;
-                  index++
-                ) {
-                  elementsToRemove[index][NG_REMOVED] = true;
+                for (let i = 0, j = elementsToRemove.length; i < j; i++) {
+                  elementsToRemove[i][NG_REMOVED] = true;
                 }
               }
               block.scope.$destroy();
@@ -339,7 +333,7 @@ export function ngRepeatDirective($animate) {
             }
             lastBlockMap = nextBlockMap;
           },
-          isDefined($attr.lazy),
+          isDefined(attr.lazy),
         );
       };
     },

@@ -4,6 +4,8 @@ export interface WorkerConfig {
   autoRestart?: boolean;
   autoTerminate?: boolean;
   transformMessage?: (data: any) => any;
+  logger?: ng.LogService;
+  err?: ng.ExceptionHandlerService;
 }
 
 export interface WorkerConnection {

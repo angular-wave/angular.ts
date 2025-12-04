@@ -1040,7 +1040,9 @@ describe("$http", function () {
   it("allows attaching error handlers", async function () {
     let res;
     await $http.get("/mock/401").then(
-      () => {},
+      () => {
+        /* empty */
+      },
       function (r) {
         res = r;
       },
@@ -1097,7 +1099,9 @@ describe("$http", function () {
 
     it("are also cleared on failure", async function () {
       await $http.get("/mock/401").then(
-        () => {},
+        () => {
+          /* empty */
+        },
         (err) => {},
       );
 
@@ -1159,7 +1163,9 @@ describe("http", () => {
   });
 
   it("should do basics - open async xhr and send data", () => {
-    http("GET", "/some-url", "some-data", () => {});
+    http("GET", "/some-url", "some-data", () => {
+      /* empty */
+    });
     expect(requests.length).toBe(1);
     expect(requests[0].method).toBe("GET");
     expect(requests[0].url).toBe("/some-url");
@@ -1168,19 +1174,25 @@ describe("http", () => {
   });
 
   it("should pass null to send if no body is set", () => {
-    http("GET", "/some-url", undefined, () => {});
+    http("GET", "/some-url", undefined, () => {
+      /* empty */
+    });
     expect(requests[0].requestBody).toBe(null);
   });
 
   it("should pass the correct falsy value to send if falsy body is set (excluding undefined, NaN)", () => {
     [false, 0, "", null].forEach((value, index) => {
-      http("GET", "/some-url", value, () => {});
+      http("GET", "/some-url", value, () => {
+        /* empty */
+      });
       expect(requests[index].requestBody).toBe(value);
     });
   });
 
   it("should pass NaN to send if NaN body is set", () => {
-    http("GET", "/some-url", NaN, () => {});
+    http("GET", "/some-url", NaN, () => {
+      /* empty */
+    });
     expect(isNaN(requests[0].requestBody)).toEqual(true);
   });
 
@@ -1195,10 +1207,18 @@ describe("http", () => {
   });
 
   it("should set only the requested headers", () => {
-    http("POST", "URL", null, () => {}, {
-      "X-header1": "value1",
-      "X-header2": "value2",
-    });
+    http(
+      "POST",
+      "URL",
+      null,
+      () => {
+        /* empty */
+      },
+      {
+        "X-header1": "value1",
+        "X-header2": "value2",
+      },
+    );
     expect(requests[0].requestHeaders["X-header1"]).toEqual("value1");
     expect(requests[0].requestHeaders["X-header2"]).toEqual("value2");
   });
@@ -1284,7 +1304,7 @@ describe("http", () => {
   //     null,
   //     callback,
   //     {},
-  //     setTimeout(() => {}, 2000),
+  //     setTimeout(() => { /* empty */ }, 2000),
   //   );
   //   spyOn(xhr, "abort");
   //   expect(xhr.abort).toHaveBeenCalled();
@@ -1304,7 +1324,7 @@ describe("http", () => {
   //     null,
   //     callback,
   //     {},
-  //     setTimeout(() => {}, 2000),
+  //     setTimeout(() => { /* empty */ }, 2000),
   //   );
   //   xhr = MockXhr.$$lastInstance;
   //   spyOn(xhr, "abort");
@@ -1369,7 +1389,7 @@ describe("http", () => {
   //     null,
   //     callback,
   //     {},
-  //     setTimeout(() => {}, 2000),
+  //     setTimeout(() => { /* empty */ }, 2000),
   //   );
   //   spyOn(xhr, "abort").and.callThrough();
 
@@ -1483,7 +1503,7 @@ describe("http", () => {
   //     port: "",
   //     protocol: "file:",
   //     search: "",
-  //     setAttribute: () => {},
+  //     setAttribute: () => { /* empty */ },
   //   };
 
   //   try {
@@ -2574,7 +2594,7 @@ describe("http", () => {
 
 //       it("should $apply after error callback", () => {
 //         $httpBackend.when("GET").respond(404);
-//         await $http({ method: "GET", url: "/some" }).catch(() => {});
+//         await $http({ method: "GET", url: "/some" }).catch(() => { /* empty */ });
 //         $httpBackend.flush();
 //         expect($rootScope.$apply).toHaveBeenCalled();
 //       });
@@ -2961,7 +2981,7 @@ describe("http", () => {
 //           it("should not deserialize json when the opening and closing brackets do not match", () => {
 //             $httpBackend
 //               .expect("GET", "/url1")
-//               .respond("[Code](url): () => {}");
+//               .respond("[Code](url): () => { /* empty */ }");
 //             $httpBackend
 //               .expect("GET", "/url2")
 //               .respond('{"is": "not"} ["json"]');
@@ -2971,7 +2991,7 @@ describe("http", () => {
 
 //             expect(callback).toHaveBeenCalledTimes(2);
 //             expect(callback.calls.argsFor(0)[0].data).toEqual(
-//               "[Code](url): () => {}",
+//               "[Code](url): () => { /* empty */ }",
 //             );
 //             expect(callback.calls.argsFor(1)[0].data).toEqual(
 //               '{"is": "not"} ["json"]',
@@ -3124,7 +3144,7 @@ describe("http", () => {
 //         $httpBackend
 //           .expect(method || "GET", "/url")
 //           .respond(respStatus || 200, "content", headers);
-//         await $http({ method: method || "GET", url: "/url", cache }).catch(() => {});
+//         await $http({ method: method || "GET", url: "/url", cache }).catch(() => { /* empty */ });
 //         $httpBackend.flush();
 //       }
 
@@ -3374,7 +3394,7 @@ describe("http", () => {
 //           url: "/url",
 //           cache,
 //           headers: { foo: "bar" },
-//         }).catch(() => {});
+//         }).catch(() => { /* empty */ });
 
 //         await $http({
 //           method: "GET",
@@ -3565,7 +3585,7 @@ describe("http", () => {
 //         await $http({
 //           method: "GET",
 //           url: "/some",
-//           timeout: setTimeout(() => {}, 10),
+//           timeout: setTimeout(() => { /* empty */ }, 10),
 //         }).then(onFulfilled, onRejected);
 
 //         $timeout.flush(100);
@@ -3679,7 +3699,7 @@ describe("http", () => {
 //         expect(completeOutstandingRequestSpy).not.toHaveBeenCalled();
 //         $httpBackend.flush();
 //         expect(completeOutstandingRequestSpy).toHaveBeenCalledOnceWith(
-//           () => {},
+//           () => { /* empty */ },
 //           "$http",
 //         );
 //       });
@@ -3687,11 +3707,11 @@ describe("http", () => {
 //       it("should call `$browser.$$completeOutstandingRequest()` on error", () => {
 //         $httpBackend.when("GET").respond(500);
 
-//         $http.get("").catch(() => {});
+//         $http.get("").catch(() => { /* empty */ });
 //         expect(completeOutstandingRequestSpy).not.toHaveBeenCalled();
 //         $httpBackend.flush();
 //         expect(completeOutstandingRequestSpy).toHaveBeenCalledOnceWith(
-//           () => {},
+//           () => { /* empty */ },
 //           "$http",
 //         );
 //       });
@@ -3706,7 +3726,7 @@ describe("http", () => {
 //               throw new Error();
 //             },
 //           })
-//           .catch(() => {});
+//           .catch(() => { /* empty */ });
 
 //         expect(incOutstandingRequestCountSpy).toHaveBeenCalledOnceWith("$http");
 //         expect(completeOutstandingRequestSpy).not.toHaveBeenCalled();
@@ -3715,7 +3735,7 @@ describe("http", () => {
 
 //         expect(incOutstandingRequestCountSpy).toHaveBeenCalledOnceWith("$http");
 //         expect(completeOutstandingRequestSpy).toHaveBeenCalledOnceWith(
-//           () => {},
+//           () => { /* empty */ },
 //           "$http",
 //         );
 //       });
@@ -3731,7 +3751,7 @@ describe("http", () => {
 //               throw new Error();
 //             },
 //           })
-//           .catch(() => {});
+//           .catch(() => { /* empty */ });
 
 //         expect(incOutstandingRequestCountSpy).toHaveBeenCalledOnceWith("$http");
 //         expect(completeOutstandingRequestSpy).not.toHaveBeenCalled();
@@ -3740,7 +3760,7 @@ describe("http", () => {
 
 //         expect(incOutstandingRequestCountSpy).toHaveBeenCalledOnceWith("$http");
 //         expect(completeOutstandingRequestSpy).toHaveBeenCalledOnceWith(
-//           () => {},
+//           () => { /* empty */ },
 //           "$http",
 //         );
 //       });
@@ -3813,7 +3833,7 @@ describe("http", () => {
 //         expect(resInterceptorFulfilled).toBe(true);
 //         expect(incOutstandingRequestCountSpy).toHaveBeenCalledOnceWith("$http");
 //         expect(completeOutstandingRequestSpy).toHaveBeenCalledOnceWith(
-//           () => {},
+//           () => { /* empty */ },
 //           "$http",
 //         );
 //       });
@@ -3823,7 +3843,7 @@ describe("http", () => {
 //         expect(incOutstandingRequestCountSpy).not.toHaveBeenCalled();
 //         expect(completeOutstandingRequestSpy).not.toHaveBeenCalled();
 
-//         $http.get("").catch(() => {});
+//         $http.get("").catch(() => { /* empty */ });
 //         ;
 
 //         expect(reqInterceptorFulfilled).toBe(false);
@@ -3836,7 +3856,7 @@ describe("http", () => {
 //         expect(reqInterceptorFulfilled).toBe(true);
 //         expect(incOutstandingRequestCountSpy).toHaveBeenCalledOnceWith("$http");
 //         expect(completeOutstandingRequestSpy).toHaveBeenCalledOnceWith(
-//           () => {},
+//           () => { /* empty */ },
 //           "$http",
 //         );
 //       });
@@ -3847,7 +3867,7 @@ describe("http", () => {
 //         expect(incOutstandingRequestCountSpy).not.toHaveBeenCalled();
 //         expect(completeOutstandingRequestSpy).not.toHaveBeenCalled();
 
-//         $http.get("").catch(() => {});
+//         $http.get("").catch(() => { /* empty */ });
 //         ;
 
 //         expect(reqInterceptorFulfilled).toBe(false);
@@ -3870,7 +3890,7 @@ describe("http", () => {
 //         expect(resInterceptorFulfilled).toBe(true);
 //         expect(incOutstandingRequestCountSpy).toHaveBeenCalledOnceWith("$http");
 //         expect(completeOutstandingRequestSpy).toHaveBeenCalledOnceWith(
-//           () => {},
+//           () => { /* empty */ },
 //           "$http",
 //         );
 //       });
@@ -4074,7 +4094,7 @@ describe("http", () => {
 //       expect($httpBackend).toHaveBeenCalled();
 //     });
 
-//     $httpBackend.verifyNoOutstandingExpectation = () => {};
+//     $httpBackend.verifyNoOutstandingExpectation = () => { /* empty */ };
 //   });
 
 //   it("should use withCredentials from default", () => {
@@ -4102,7 +4122,7 @@ describe("http", () => {
 //       expect($httpBackend).toHaveBeenCalled();
 //     });
 
-//     $httpBackend.verifyNoOutstandingExpectation = () => {};
+//     $httpBackend.verifyNoOutstandingExpectation = () => { /* empty */ };
 //   });
 // });
 

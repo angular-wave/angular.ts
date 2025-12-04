@@ -438,13 +438,17 @@ describe("Scope", () => {
     });
 
     it("should return a deregistration function watch", () => {
-      let fn = scope.$watch("a", () => {});
+      let fn = scope.$watch("a", () => {
+        /* empty */
+      });
       expect(fn).toBeDefined();
       expect(typeof fn).toEqual("function");
     });
 
     it("should manipulate the $watcher count", () => {
-      let fn = scope.$watch("a", () => {});
+      let fn = scope.$watch("a", () => {
+        /* empty */
+      });
       expect(scope.$$watchersCount).toBeDefined();
       expect(scope.$$watchersCount).toEqual(1);
 
@@ -776,7 +780,9 @@ describe("Scope", () => {
 
     describe("constants", () => {
       it("does not watch constants", async () => {
-        scope.$watch("1", () => {});
+        scope.$watch("1", () => {
+          /* empty */
+        });
         expect(scope.$$watchersCount).toBe(0);
         await wait();
         expect(scope.$$watchersCount).toBe(0);
@@ -919,7 +925,9 @@ describe("Scope", () => {
     describe("array expressions", () => {
       it("adds watches for array expressions", async () => {
         expect(scope.$$watchersCount).toBe(0);
-        scope.$watch("foo[0]", () => {});
+        scope.$watch("foo[0]", () => {
+          /* empty */
+        });
 
         await wait();
         expect(scope.$$watchersCount).toBe(1);
@@ -950,7 +958,9 @@ describe("Scope", () => {
     describe("apply expression", () => {
       it("adds watches for expressions", async () => {
         expect(scope.$$watchersCount).toBe(0);
-        scope.$watch("foo = 1", () => {});
+        scope.$watch("foo = 1", () => {
+          /* empty */
+        });
 
         await wait();
         expect(scope.$$watchersCount).toBe(1);
@@ -958,14 +968,18 @@ describe("Scope", () => {
 
       it("applies a property change and continues watching the scopes", async () => {
         expect(scope.$$watchersCount).toBe(0);
-        scope.$watch("foo = 2", () => {});
+        scope.$watch("foo = 2", () => {
+          /* empty */
+        });
 
         await wait();
         expect(scope.$$watchersCount).toBe(1);
         expect(scope.$handler.watchers.has("foo")).toBeTrue();
         expect(scope.foo).toBe(2);
 
-        scope.$watch("boo = 3", () => {});
+        scope.$watch("boo = 3", () => {
+          /* empty */
+        });
 
         await wait();
         expect(scope.$$watchersCount).toBe(2);
@@ -1017,25 +1031,47 @@ describe("Scope", () => {
     describe("$watch on constants", () => {
       beforeEach(() => (logs = []));
       it("should not $watch constant literals ", () => {
-        scope.$watch("[]", () => {});
-        scope.$watch("{}", () => {});
-        scope.$watch("1", () => {});
-        scope.$watch('"foo"', () => {});
+        scope.$watch("[]", () => {
+          /* empty */
+        });
+        scope.$watch("{}", () => {
+          /* empty */
+        });
+        scope.$watch("1", () => {
+          /* empty */
+        });
+        scope.$watch('"foo"', () => {
+          /* empty */
+        });
         expect(scope.$$watchersCount).toEqual(0);
       });
 
       it("should not $watch filtered literals", () => {
-        scope.$watch('[1] | filter:"x"', () => {});
-        scope.$watch("1 | limitTo:2", () => {});
+        scope.$watch('[1] | filter:"x"', () => {
+          /* empty */
+        });
+        scope.$watch("1 | limitTo:2", () => {
+          /* empty */
+        });
         expect(scope.$$watchersCount).toEqual(0);
       });
 
       it("should ignore $watch of constant expressions", () => {
-        scope.$watch("1 + 1", () => {});
-        scope.$watch('"a" + "b"', () => {});
-        scope.$watch('"ab".length', () => {});
-        scope.$watch("[].length", () => {});
-        scope.$watch("(1 + 1) | limitTo:2", () => {});
+        scope.$watch("1 + 1", () => {
+          /* empty */
+        });
+        scope.$watch('"a" + "b"', () => {
+          /* empty */
+        });
+        scope.$watch('"ab".length', () => {
+          /* empty */
+        });
+        scope.$watch("[].length", () => {
+          /* empty */
+        });
+        scope.$watch("(1 + 1) | limitTo:2", () => {
+          /* empty */
+        });
         expect(scope.$$watchersCount).toEqual(0);
       });
     });
@@ -1292,19 +1328,27 @@ describe("Scope", () => {
 
         const grandChild1 = child1.$new();
         const grandChild2 = child2.$new();
-        child1.$watch("a", () => {});
+        child1.$watch("a", () => {
+          /* empty */
+        });
         expect(scope.$$watchersCount).toBe(1);
         expect(child1.$$watchersCount).toBe(1);
 
-        child2.$watch("a", () => {});
+        child2.$watch("a", () => {
+          /* empty */
+        });
         expect(scope.$$watchersCount).toBe(2);
         expect(child2.$$watchersCount).toBe(1);
 
-        grandChild1.$watch("a", () => {});
+        grandChild1.$watch("a", () => {
+          /* empty */
+        });
         expect(grandChild1.$$watchersCount).toBe(1);
         expect(child1.$$watchersCount).toBe(2);
 
-        grandChild2.$watch("a", () => {});
+        grandChild2.$watch("a", () => {
+          /* empty */
+        });
         expect(grandChild2.$$watchersCount).toBe(1);
         expect(child2.$$watchersCount).toBe(2);
 
@@ -1330,10 +1374,18 @@ describe("Scope", () => {
         const child2 = scope.$new();
         const grandChild1 = child1.$new();
         const grandChild2 = child2.$new();
-        let remove1 = child1.$watch("a", () => {});
-        child2.$watch("a", () => {});
-        grandChild1.$watch("a", () => {});
-        let remove2 = grandChild2.$watch("a", () => {});
+        let remove1 = child1.$watch("a", () => {
+          /* empty */
+        });
+        child2.$watch("a", () => {
+          /* empty */
+        });
+        grandChild1.$watch("a", () => {
+          /* empty */
+        });
+        let remove2 = grandChild2.$watch("a", () => {
+          /* empty */
+        });
 
         expect(grandChild2.$$watchersCount).toBe(1);
         expect(child2.$$watchersCount).toBe(2);
@@ -1520,8 +1572,12 @@ describe("Scope", () => {
           remove1();
           remove2();
         });
-        remove1 = scope.$watch("thing", () => {});
-        remove2 = scope.$watch("thing", () => {});
+        remove1 = scope.$watch("thing", () => {
+          /* empty */
+        });
+        remove2 = scope.$watch("thing", () => {
+          /* empty */
+        });
         expect(async () => {
           scope.$apply("remove = true");
           await wait();
@@ -1840,7 +1896,9 @@ describe("Scope", () => {
           it("should not infinitely digest when current value is NaN", async () => {
             scope.obj = { a: NaN };
             await wait();
-            expect(() => {}).not.toThrow();
+            expect(() => {
+              /* empty */
+            }).not.toThrow();
           });
 
           it("should handle objects created using `Object.create(null)`", async () => {
@@ -1927,7 +1985,9 @@ describe("Scope", () => {
           it("should not infinitely digest when current value is NaN", async () => {
             scope.obj = NaN;
             await wait();
-            expect(() => {}).not.toThrow();
+            expect(() => {
+              /* empty */
+            }).not.toThrow();
           });
         });
 
@@ -1966,7 +2026,9 @@ describe("Scope", () => {
           it("should not infinitely digest when current value is NaN", async () => {
             scope.obj = NaN;
             await wait();
-            expect(() => {}).not.toThrow();
+            expect(() => {
+              /* empty */
+            }).not.toThrow();
           });
         });
 
@@ -2025,7 +2087,9 @@ describe("Scope", () => {
           it("should not infinitely digest when key value is NaN", () => {
             scope.key = NaN;
             scope.obj = NaN;
-            expect(() => {}).not.toThrow();
+            expect(() => {
+              /* empty */
+            }).not.toThrow();
           });
         });
       });
@@ -2300,7 +2364,9 @@ describe("Scope", () => {
       expect(signature).toBe("");
       expect($postUpdateQueue.length).toBe(3);
 
-      scope.$watch("a", () => {});
+      scope.$watch("a", () => {
+        /* empty */
+      });
       scope.a = 1;
 
       await wait();
@@ -2328,7 +2394,9 @@ describe("Scope", () => {
       });
       expect(signature).toBe("");
 
-      scope.$watch("a", () => {});
+      scope.$watch("a", () => {
+        /* empty */
+      });
       scope.a = 1;
       await wait();
 
@@ -2354,7 +2422,9 @@ describe("Scope", () => {
 
       expect(count).toBe(0);
 
-      scope.$watch("a", () => {});
+      scope.$watch("a", () => {
+        /* empty */
+      });
       scope.a = 1;
       await wait();
 
@@ -2375,7 +2445,9 @@ describe("Scope", () => {
       });
 
       expect(signature).toBe("");
-      scope.$watch("a", () => {});
+      scope.$watch("a", () => {
+        /* empty */
+      });
       scope.a = 1;
       await wait();
       expect(signature).toBe("AB");
@@ -2461,8 +2533,12 @@ describe("Scope", () => {
         });
 
         it("should deallocate the listener array entry", () => {
-          const remove1 = scope.$on("abc", () => {});
-          scope.$on("abc", () => {});
+          const remove1 = scope.$on("abc", () => {
+            /* empty */
+          });
+          scope.$on("abc", () => {
+            /* empty */
+          });
 
           expect(scope.$handler.$$listeners.get("abc").length).toBe(2);
 
@@ -2926,7 +3002,9 @@ describe("Scope", () => {
   describe("$destroy", () => {
     it("should clean up all listeners for root", () => {
       const scope = createScope();
-      scope.$on("test", () => {});
+      scope.$on("test", () => {
+        /* empty */
+      });
       expect(scope.$handler.$$listeners.size).toEqual(1);
 
       scope.$destroy();
@@ -2935,7 +3013,9 @@ describe("Scope", () => {
 
     it("should clean up all watchers for root", () => {
       const scope = createScope();
-      scope.$watch("a", () => {});
+      scope.$watch("a", () => {
+        /* empty */
+      });
       expect(scope.$handler.watchers.size).toEqual(1);
 
       scope.$destroy();
@@ -2953,9 +3033,13 @@ describe("Scope", () => {
     it("should clean up all watchers for child", async () => {
       const scope = createScope();
 
-      scope.$watch("test", () => {});
+      scope.$watch("test", () => {
+        /* empty */
+      });
       const child = scope.$new();
-      child.$watch("test", () => {});
+      child.$watch("test", () => {
+        /* empty */
+      });
 
       expect(scope.$handler.watchers.size).toEqual(1);
       expect(scope.$handler.watchers.get("test").length).toEqual(2);
@@ -2968,7 +3052,7 @@ describe("Scope", () => {
 
     // it("should clean up all watchers for child", () => {
     //   const scope = createScope();
-    //   scope.$watch("a", () => {});
+    //   scope.$watch("a", () => { /* empty */ });
     //   expect(scope.$handler.watchers.size).toEqual(1);
     //
     //   scope.$destroy();

@@ -84,7 +84,11 @@ describe("utility functions", () => {
       const date = new Date();
 
       expect(hashKey(fn)).toBe(hashKey(fn));
-      expect(hashKey(fn)).not.toBe(hashKey(() => {}));
+      expect(hashKey(fn)).not.toBe(
+        hashKey(() => {
+          /* empty */
+        }),
+      );
       expect(hashKey(arr)).toBe(hashKey(arr));
       expect(hashKey(arr)).not.toBe(hashKey([]));
       expect(hashKey(obj)).toBe(hashKey(obj));
@@ -147,7 +151,9 @@ describe("utility functions", () => {
     });
 
     it("is the same key when asked for the same function many times", () => {
-      const fn = () => {};
+      const fn = () => {
+        /* empty */
+      };
       expect(hashKey(fn)).toEqual(hashKey(fn));
     });
 

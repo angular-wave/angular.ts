@@ -2,15 +2,16 @@ import { $injectTokens as $t } from "../../injection-tokens.js";
 import { callBackAfterFirst, isDefined, wait } from "../../shared/utils.js";
 import { getEventNameForElement } from "../http/http.js";
 
-ngWorkerDirective.$inject = [$t.$parse, $t.$log];
+ngWorkerDirective.$inject = [$t.$parse, $t.$log, $t.$exceptionHandler];
 /**
  * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
  *
  * @param {ng.ParseService} $parse
  * @param {ng.LogService} $log
+ * @param {ng.ExceptionHandlerService} $exceptionHandler
  * @returns {ng.Directive}
  */
-export function ngWorkerDirective($parse, $log) {
+export function ngWorkerDirective($parse, $log, $exceptionHandler) {
   return {
     restrict: "A",
     link(scope, element, attrs) {
@@ -45,6 +46,8 @@ export function ngWorkerDirective($parse, $log) {
       }
 
       const worker = createWorkerConnection(workerName, {
+        logger: $log,
+        err: $exceptionHandler,
         onMessage: (result) => {
           if (isDefined(attrs.dataOnResult)) {
             $parse(attrs.dataOnResult)(scope, { $result: result });
@@ -156,8 +159,12 @@ export function createWorkerConnection(scriptPath, config) {
   const defaults = {
     autoRestart: false,
     autoTerminate: false,
-    onMessage() {},
-    onError() {},
+    onMessage() {
+      /* empty */
+    },
+    onError() {
+      /* empty */
+    },
     transformMessage(data) {
       try {
         return JSON.parse(data);
@@ -176,25 +183,25 @@ export function createWorkerConnection(scriptPath, config) {
 
   const reconnect = function () {
     if (terminated) return;
-    console.info("Worker: restarting...");
+    cfg.logger.info("Worker: restarting...");
     worker.terminate();
     worker = new Worker(scriptPath, { type: "module" });
     wire(worker);
   };
 
-  const wire = function (w) {
-    w.onmessage = function (e) {
-      let { data } = e;
+  const wire = (workerParam) => {
+    workerParam.onmessage = function (event) {
+      let { data } = event;
 
       try {
         data = cfg.transformMessage(data);
       } catch {
         /* no-op */
       }
-      cfg.onMessage(data, e); // always provide both args
+      cfg.onMessage(data, event); // always provide both args
     };
 
-    w.onerror = function (err) {
+    workerParam.onerror = function (err) {
       cfg.onError(err);
 
       if (cfg.autoRestart) reconnect();
@@ -205,12 +212,14 @@ export function createWorkerConnection(scriptPath, config) {
 
   return {
     post(data) {
-      if (terminated) return console.warn("Worker already terminated");
+      if (terminated) {
+        cfg.logger.warn("Worker already terminated");
+      }
 
       try {
         worker.postMessage(data);
       } catch (err) {
-        console.error("Worker post failed", err);
+        cfg.logger.log("Worker post failed", err);
       }
     },
 
@@ -220,8 +229,7 @@ export function createWorkerConnection(scriptPath, config) {
     },
 
     restart() {
-      if (terminated)
-        return console.warn("Worker cannot restart after terminate");
+      if (terminated) cfg.logger.warn("Worker cannot restart after terminate");
       reconnect();
     },
 

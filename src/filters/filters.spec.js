@@ -26,7 +26,13 @@ describe("filters", () => {
   });
 
   it("should require function", () => {
-    expect(() => filterProvider.register({ test: () => {} })).toThrowError();
+    expect(() =>
+      filterProvider.register({
+        test: () => {
+          /* empty */
+        },
+      }),
+    ).toThrowError();
     expect(() => filterProvider.register("test", {})).toThrowError();
   });
 

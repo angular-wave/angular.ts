@@ -196,11 +196,27 @@ describe("$controller", () => {
     });
 
     it("should allow checking the availability of a controller", () => {
-      $controllerProvider.register("FooCtrl", () => {});
-      $controllerProvider.register("BarCtrl", ["dep1", "dep2", () => {}]);
+      $controllerProvider.register("FooCtrl", () => {
+        /* empty */
+      });
+      $controllerProvider.register("BarCtrl", [
+        "dep1",
+        "dep2",
+        () => {
+          /* empty */
+        },
+      ]);
       $controllerProvider.register({
-        BazCtrl: () => {},
-        QuxCtrl: ["dep1", "dep2", () => {}],
+        BazCtrl: () => {
+          /* empty */
+        },
+        QuxCtrl: [
+          "dep1",
+          "dep2",
+          () => {
+            /* empty */
+          },
+        ],
       });
 
       expect($controllerProvider.has("FooCtrl")).toBe(true);

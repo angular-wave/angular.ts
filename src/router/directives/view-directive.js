@@ -350,7 +350,12 @@ export function $ViewDirectiveFill($compile, $controller, $transitions) {
 
           return;
         }
-        const cfg = data.$cfg || { viewDecl: {}, getTemplate: () => {} };
+        const cfg = data.$cfg || {
+          viewDecl: {},
+          getTemplate: () => {
+            /* empty */
+          },
+        };
 
         const resolveCtx = cfg.path && new ResolveContext(cfg.path);
 
@@ -385,8 +390,8 @@ export function $ViewDirectiveFill($compile, $controller, $transitions) {
           // $view.componentLoaded(controllerInstance, { $scope: scope, $element: $element });
           // scope.$on('$destroy', () => $view.componentUnloaded(controllerInstance, { $scope: scope, $element: $element }));
           setCacheData($element, "$ngControllerController", controllerInstance);
-          Array.from($element.children).forEach((e) => {
-            setCacheData(e, "$ngControllerController", controllerInstance);
+          Array.from($element.children).forEach((ell) => {
+            setCacheData(ell, "$ngControllerController", controllerInstance);
           });
           registerControllerCallbacks(
             $transitions,

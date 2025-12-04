@@ -124,10 +124,10 @@ export class Rejection {
   }
 
   toString() {
-    const detailString = (d) =>
-      d && d.toString !== Object.prototype.toString
-        ? d.toString()
-        : stringify(d);
+    const detailString = (data) =>
+      data && data.toString !== Object.prototype.toString
+        ? data.toString()
+        : stringify(data);
 
     const detail = detailString(this.detail);
 
