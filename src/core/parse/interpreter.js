@@ -1,7 +1,6 @@
 import {
   isDefined,
   isFunction,
-  isNullOrUndefined,
   isObject,
   isProxy,
 } from "../../shared/utils.js";
@@ -200,7 +199,7 @@ export class ASTInterpreter {
 
               let value;
 
-              if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
+              if (rhs.value != null && isFunction(rhs.value)) {
                 const values = [];
 
                 for (let i = 0; i < args.length; ++i) {
@@ -465,7 +464,7 @@ export class ASTInterpreter {
    */
   "binary=="(left, right, context) {
     return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) === right(scope, locals, assign);
+      const arg = left(scope, locals, assign) == right(scope, locals, assign);
 
       return context ? { value: arg } : arg;
     };
@@ -480,7 +479,7 @@ export class ASTInterpreter {
    */
   "binary!="(left, right, context) {
     return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) !== right(scope, locals, assign);
+      const arg = left(scope, locals, assign) != right(scope, locals, assign);
 
       return context ? { value: arg } : arg;
     };
@@ -617,7 +616,7 @@ export class ASTInterpreter {
       const base =
         locals && name in locals ? locals : ((scope && scope.$proxy) ?? scope);
 
-      if (create && create !== 1 && base && isNullOrUndefined(base[name])) {
+      if (create && create !== 1 && base && base[name] == null) {
         base[name] = {};
       }
       let value = undefined;
@@ -650,7 +649,7 @@ export class ASTInterpreter {
 
       let value;
 
-      if (!isNullOrUndefined(lhs)) {
+      if (lhs != null) {
         rhs = right(scope, locals, assign);
         rhs = getStringValue(rhs);
 
@@ -683,11 +682,11 @@ export class ASTInterpreter {
       const lhs = left(scope, locals, assign);
 
       if (create && create !== 1) {
-        if (lhs && isNullOrUndefined(lhs[right])) {
+        if (lhs && lhs[right] == null) {
           lhs[right] = {};
         }
       }
-      const value = !isNullOrUndefined(lhs) ? lhs[right] : undefined;
+      const value = lhs != null ? lhs[right] : undefined;
 
       if (context) {
         return { context: lhs, name: right, value };
@@ -928,8 +927,6 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
 
       return decoratedNode;
   }
-
-  return undefined;
 }
 
 /**
