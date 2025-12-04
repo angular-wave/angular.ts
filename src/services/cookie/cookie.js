@@ -124,8 +124,8 @@ export class CookieService {
         ...this.defaults,
         ...options,
       })}`;
-    } catch (e) {
-      this.$exceptionHandler(e);
+    } catch (err) {
+      this.$exceptionHandler(err);
     }
   }
 
@@ -271,12 +271,12 @@ function buildOptions(opts = {}) {
   if (isDefined(opts.samesite)) {
     if (!isString(opts.samesite))
       throw new TypeError(`${BADARG}:samesite ${opts.samesite}`);
-    const s = opts.samesite.toLowerCase();
+    const samesite = opts.samesite.toLowerCase();
 
-    if (!["lax", "strict", "none"].includes(s)) {
+    if (!["lax", "strict", "none"].includes(samesite)) {
       throw new TypeError(`${BADARG}:samesite ${opts.samesite}`);
     }
-    parts.push(`samesite=${s}`);
+    parts.push(`samesite=${samesite}`);
   }
 
   // Join all parts with semicolons

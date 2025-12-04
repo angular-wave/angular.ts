@@ -18,17 +18,23 @@ export const registerRedirectToHook = (transitionService, stateService) => {
     function handleResult(result) {
       if (!result) return;
 
-      if (result instanceof TargetState) return result;
+      if (result instanceof TargetState) {
+        return result;
+      }
 
-      if (isString(result))
+      if (isString(result)) {
         return $state.target(result, trans.params(), trans.options());
+      }
 
-      if (result.state || result.params)
+      if (result.state || result.params) {
         return $state.target(
           result.state || trans.to(),
           result.params || trans.params(),
           trans.options(),
         );
+      }
+
+      return undefined;
     }
 
     if (isFunction(redirect)) {

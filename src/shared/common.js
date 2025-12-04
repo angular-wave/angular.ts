@@ -5,7 +5,7 @@ export function equals(o1, o2) {
 
   if (o1 === null || o2 === null) return false;
 
-  if (o1 !== o1 && o2 !== o2) return true; // NaN === NaN
+  if (isNaN(o1) && isNaN(o2)) return true; // NaN === NaN
   const t1 = typeof o1,
     t2 = typeof o2;
 
@@ -96,9 +96,9 @@ export function defaults(opts, ...defaultsList) {
 export function ancestors(first, second) {
   const path = [];
 
-  for (const n in first.path) {
-    if (first.path[n] !== second.path[n]) break;
-    path.push(first.path[n]);
+  for (const i in first.path) {
+    if (first.path[i] !== second.path[i]) break;
+    path.push(first.path[i]);
   }
 
   return path;
@@ -394,7 +394,11 @@ export function copy(src, dest) {
 function _arraysEq(a1, a2) {
   if (a1.length !== a2.length) return false;
 
-  return arrayTuples(a1, a2).reduce((b, t) => b && equals(t[0], t[1]), true);
+  for (let i = 0; i < a1.length; i++) {
+    if (!equals(a1[i], a2[i])) return false;
+  }
+
+  return true;
 }
 // issue #2676
 export const silenceUncaughtInPromise = (promise) =>

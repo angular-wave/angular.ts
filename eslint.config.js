@@ -97,7 +97,10 @@ export default defineConfig([
       "max-classes-per-file": ["error", 3],
       "consistent-return": "error",
       "dot-notation": "error",
-      "id-length": ["warn", { min: 2, exceptions: ["i", "j", "_", "__"] }],
+      "id-length": [
+        "warn",
+        { min: 2, exceptions: ["i", "j", "x", "y", "k", "v", "_", "__"] },
+      ],
       "sort-imports": [
         "error",
         {
