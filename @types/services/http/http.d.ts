@@ -174,5 +174,7 @@ export function http(
 export const Http: Readonly<{
   OK: 200;
   MultipleChoices: 300;
+  BadRequest: 400;
   NotFound: 404;
+  ErrorMax: 599;
 }>;

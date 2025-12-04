@@ -31,7 +31,9 @@ const APPLICATION_JSON = "application/json";
 export const Http = Object.freeze({
   OK: 200,
   MultipleChoices: 300,
+  BadRequest: 400,
   NotFound: 404,
+  ErrorMax: 599,
 });
 
 const CONTENT_TYPE_APPLICATION_JSON = {
