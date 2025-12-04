@@ -130,7 +130,7 @@ function textInputType(scope, element, attr, ctrl) {
   stringBasedInputType(ctrl);
 }
 
-function baseInputType(scope, element, attr, ctrl) {
+function baseInputType(_, element, attr, ctrl) {
   const type = element.type.toLowerCase();
 
   let composing = false;
@@ -193,6 +193,7 @@ function baseInputType(scope, element, attr, ctrl) {
   ) {
     element.addEventListener(PARTIAL_VALIDATION_EVENTS, function (ev) {
       if (!timeout) {
+        // eslint-disable-next-line no-invalid-this
         const validity = this[VALIDITY_STATE_PROPERTY];
 
         const origBadInput = validity.badInput;
@@ -521,7 +522,7 @@ export function createDateInputType(type, regexp, parseDate) {
 
     function isValidDate(value) {
       // Invalid Date: getTime() returns NaN
-      return value && !(value.getTime && value.getTime() !== value.getTime());
+      return value && !(value.getTime && Number.isNaN(value.getTime()));
     }
 
     function parseObservedDateValue(val) {
@@ -963,10 +964,8 @@ function radioInputType(scope, element, attr, ctrl) {
   }
 
   const listener = function (ev) {
-    let value;
-
     if (element.checked) {
-      value = attr.value;
+      let { value } = attr;
 
       if (doTrim) {
         value = trim(value);
@@ -1108,7 +1107,7 @@ export function hiddenInputBrowserCacheDirective() {
       }
 
       return {
-        pre(scope, element) {
+        pre(_scope, element) {
           const node = element;
 
           // Support: Edge
@@ -1122,6 +1121,8 @@ export function hiddenInputBrowserCacheDirective() {
           if (Object.defineProperty) {
             Object.defineProperty(node, "value", valueProperty);
           }
+
+          return undefined;
         },
       };
     },

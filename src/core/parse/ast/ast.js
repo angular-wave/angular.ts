@@ -560,6 +560,8 @@ export class AST {
     } else {
       return /** @type  {import("../lexer/lexer.js").Token} */ (token);
     }
+
+    return undefined;
   }
 
   /**
@@ -597,10 +599,10 @@ export class AST {
     if (this.tokens.length > i) {
       const token = this.tokens[i];
 
-      const t = token.text;
+      const { text } = token;
 
       if (
-        expected.includes(t) ||
+        expected.includes(text) ||
         (!expected[0] && !expected[1] && !expected[2] && !expected[3])
       ) {
         return token;

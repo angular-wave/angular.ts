@@ -171,6 +171,8 @@ class NgMessageCtrl {
         parentLookup.push(prevNode);
       }
     }
+
+    return undefined;
   }
 
   insertMessageNode(parent, comment, key) {
@@ -264,12 +266,12 @@ export const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
  * @returns {(any) => ng.Directive}
  */
 function ngMessageDirectiveFactory(isDefault) {
-  ngMessageDirective.$inject = ["$animate"];
+  ngMessageDirectiveFn.$inject = ["$animate"];
   /**
    * @param {ng.AnimateService} $animate
    * @returns {ng.Directive}
    */
-  function ngMessageDirective($animate) {
+  function ngMessageDirectiveFn($animate) {
     return {
       restrict: "AE",
       transclude: "element",
@@ -369,7 +371,7 @@ function ngMessageDirectiveFactory(isDefault) {
     };
   }
 
-  return ngMessageDirective;
+  return ngMessageDirectiveFn;
 }
 
 function contains(collection, key) {

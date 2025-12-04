@@ -101,7 +101,7 @@ export class StateRegistryProvider {
           $transition$: trans,
         });
 
-        return that.$injector.invoke(hook, this, locals);
+        return that.$injector.invoke(hook, that, locals);
       }
 
       return hook ? decoratedNg1Hook : undefined;
