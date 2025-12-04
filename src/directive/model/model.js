@@ -1164,7 +1164,7 @@ function setupModelWatcher(ctrl) {
       modelValue !== ctrl.$modelValue &&
       // checks for NaN is needed to allow setting the model to NaN when there's an asyncValidator
 
-      (!!ctrl.$modelValue || !!modelValue)
+      (!Number.isNaN(ctrl.$modelValue) || !Number.isNaN(modelValue))
     ) {
       ctrl.$$setModelValue(modelValue);
     }
