@@ -13,7 +13,6 @@ import { propEq } from "../../shared/hof.js";
 import {
   hasOwn,
   isDefined,
-  isNull,
   isNullOrUndefined,
   isString,
 } from "../../shared/utils.js";
