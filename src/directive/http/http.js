@@ -182,21 +182,27 @@ export function createHttpDirective(method, attrName) {
          *
          * @param {string | Object} html - The HTML string or object returned from the server.
          * @param {import("./interface.ts").SwapModeType} swap
-         * @param {ng.Scope} scope
-         * @param {ng.Attributes} attrs
-         * @param {Element} element
+         * @param {ng.Scope} scopeParam
+         * @param {ng.Attributes} attrsParam
+         * @param {Element} elmenetParam
          */
-        function handleSwapResponse(html, swap, scope, attrs, element) {
+        function handleSwapResponse(
+          html,
+          swap,
+          scopeParam,
+          attrsParam,
+          elmenetParam,
+        ) {
           let animationEnabled = false;
 
-          if (attrs.animate) {
+          if (attrsParam.animate) {
             animationEnabled = true;
           }
           let nodes = [];
 
           if (!["textcontent", "delete", "none"].includes(swap)) {
             if (!html) return;
-            const compiled = $compile(html)(scope);
+            const compiled = $compile(html)(scopeParam);
 
             nodes =
               compiled instanceof DocumentFragment
@@ -204,11 +210,11 @@ export function createHttpDirective(method, attrName) {
                 : [compiled];
           }
 
-          const targetSelector = attrs.target;
+          const targetSelector = attrsParam.target;
 
           const target = targetSelector
             ? document.querySelector(targetSelector)
-            : element;
+            : elmenetParam;
 
           if (!target) {
             $log.warn(`${attrName}: target "${targetSelector}" not found`);
@@ -256,10 +262,10 @@ export function createHttpDirective(method, attrName) {
                 }
 
                 content = insertedNodes;
-                scope.$flushQueue(); // flush once after all insertions
+                scopeParam.$flushQueue(); // flush once after all insertions
               });
 
-              scope.$flushQueue(); // flush leave animation
+              scopeParam.$flushQueue(); // flush leave animation
               break;
             }
 
@@ -268,10 +274,10 @@ export function createHttpDirective(method, attrName) {
                 $animate.leave(target).done(() => {
                   target.textContent = html;
                   $animate.enter(target, target.parentNode);
-                  scope.$flushQueue();
+                  scopeParam.$flushQueue();
                 });
 
-                scope.$flushQueue();
+                scopeParam.$flushQueue();
               } else {
                 target.textContent = html;
               }
@@ -290,7 +296,7 @@ export function createHttpDirective(method, attrName) {
                 }
               });
 
-              if (animationEnabled) scope.$flushQueue();
+              if (animationEnabled) scopeParam.$flushQueue();
               break;
             }
 
@@ -305,7 +311,7 @@ export function createHttpDirective(method, attrName) {
                 }
               });
 
-              if (animationEnabled) scope.$flushQueue();
+              if (animationEnabled) scopeParam.$flushQueue();
               break;
             }
 
@@ -318,7 +324,7 @@ export function createHttpDirective(method, attrName) {
                 }
               });
 
-              if (animationEnabled) scope.$flushQueue();
+              if (animationEnabled) scopeParam.$flushQueue();
               break;
             }
 
@@ -336,7 +342,7 @@ export function createHttpDirective(method, attrName) {
                 }
               });
 
-              if (animationEnabled) scope.$flushQueue();
+              if (animationEnabled) scopeParam.$flushQueue();
               break;
             }
 
@@ -344,9 +350,9 @@ export function createHttpDirective(method, attrName) {
               if (animationEnabled) {
                 $animate.leave(target).done(() => {
                   target.remove(); // safety: actually remove in case $animate.leave didn't
-                  scope.$flushQueue();
+                  scopeParam.$flushQueue();
                 });
-                scope.$flushQueue();
+                scopeParam.$flushQueue();
               } else {
                 target.remove();
               }
@@ -362,9 +368,9 @@ export function createHttpDirective(method, attrName) {
                   $animate.leave(content).done(() => {
                     content = nodes[0];
                     $animate.enter(nodes[0], target);
-                    scope.$flushQueue();
+                    scopeParam.$flushQueue();
                   });
-                  scope.$flushQueue();
+                  scopeParam.$flushQueue();
                 } else {
                   content = nodes[0];
 
@@ -372,7 +378,7 @@ export function createHttpDirective(method, attrName) {
                     target.replaceChildren(...nodes);
                   } else {
                     $animate.enter(nodes[0], target);
-                    scope.$flushQueue();
+                    scopeParam.$flushQueue();
                   }
                 }
               } else {
@@ -407,7 +413,10 @@ export function createHttpDirective(method, attrName) {
 
             const html = res.data;
 
-            if (Http.OK <= res.status && res.status <= 299) {
+            if (
+              Http.OK <= res.status &&
+              res.status <= Http.MultipleChoices - 1
+            ) {
               if (isDefined(attrs.success)) {
                 $parse(attrs.success)(scope, { $res: html });
               }
@@ -415,7 +424,10 @@ export function createHttpDirective(method, attrName) {
               if (isDefined(attrs.stateSuccess)) {
                 $state.go(attrs.stateSuccess);
               }
-            } else if (400 <= res.status && res.status <= 599) {
+            } else if (
+              Http.BadRequest <= res.status &&
+              res.status <= Http.ErrorMax
+            ) {
               if (isDefined(attrs.error)) {
                 $parse(attrs.error)(scope, { $res: html });
               }

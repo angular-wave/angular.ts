@@ -244,8 +244,8 @@ export function AnimateCssDriverProvider($$animationProvider) {
             return runner;
 
             function endFn() {
-              animationRunners.forEach((runner) => {
-                runner.end();
+              animationRunners.forEach((runnerItem) => {
+                runnerItem.end();
               });
             }
           },

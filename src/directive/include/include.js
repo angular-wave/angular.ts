@@ -104,13 +104,15 @@ export function ngIncludeDirective(
                 // Note: We can't remove them in the cloneAttchFn of $transclude as that
                 // function is called before linking the content, which would apply child
                 // directives to non existing elements.
-                const clone = $transclude(newScope, (clone) => {
+                const clone = $transclude(newScope, (cloneParam) => {
                   cleanupLastIncludeContent();
 
-                  if (hasAnimate(clone)) {
-                    $animate.enter(clone, null, $element).done(afterAnimation);
+                  if (hasAnimate(cloneParam)) {
+                    $animate
+                      .enter(cloneParam, null, $element)
+                      .done(afterAnimation);
                   } else {
-                    $element.after(clone);
+                    $element.after(cloneParam);
                     maybeScroll();
                   }
                 });

@@ -189,7 +189,7 @@ export class StateProvider {
     try {
       this.stateRegistry.register(definition);
     } catch (err) {
-      throw err("stateinvalid", err.message);
+      throw stdErr("stateinvalid", err.message);
     }
 
     return this;
