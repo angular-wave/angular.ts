@@ -33,7 +33,7 @@ export function limitToFilter() {
     if (!isArrayLike(input)) return input;
 
     begin =
-      !begin || Number.isNaN(/** @type {any} */ (begin))
+      !begin || isNaN(/** @type {any} */ (begin))
         ? 0
         : parseInt(/** @type {string} */ (begin), 10);
     begin =
