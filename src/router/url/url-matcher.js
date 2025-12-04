@@ -110,7 +110,7 @@ export class UrlMatcher {
     const staticSegments = matcher._segments;
 
     const pathParams = matcher._params.filter(
-      (param) => param.location === DefType.PATH,
+      (p) => p.location === DefType.PATH,
     );
 
     return arrayTuples(staticSegments, pathParams.concat(undefined))
@@ -120,7 +120,7 @@ export class UrlMatcher {
 
   /** @internal Given a matcher, return an array with the matcher's query params */
   static queryParams(matcher) {
-    return matcher._params.filter((param) => param.location === DefType.SEARCH);
+    return matcher._params.filter((p) => p.location === DefType.SEARCH);
   }
 
   /**
@@ -257,13 +257,13 @@ export class UrlMatcher {
 
     // Split into static segments separated by path parameter placeholders.
     // The number of segments is always 1 more than the number of parameters.
-    const matchDetails = (match, isSearch) => {
+    const matchDetails = (m, isSearch) => {
       // IE[78] returns '' for unmatched groups instead of null
-      const id = match[2] || match[3];
+      const id = m[2] || m[3];
 
       const regexp = isSearch
-        ? match[4]
-        : match[4] || (match[1] === "*" ? "[\\s\\S]*" : null);
+        ? m[4]
+        : m[4] || (m[1] === "*" ? "[\\s\\S]*" : null);
 
       const makeRegexpType = (str) =>
         inherit(paramTypes.type(isSearch ? "query" : "path"), {
@@ -276,7 +276,7 @@ export class UrlMatcher {
       return {
         id,
         regexp,
-        segment: pattern.substring(last, match.index),
+        segment: pattern.substring(last, m.index),
         type: !regexp
           ? null
           : paramTypes.type(regexp) || makeRegexpType(regexp),
@@ -602,7 +602,7 @@ export class UrlMatcher {
 
         let { encoded } = paramDetails;
 
-        if (isNull(encoded) || (isDefaultValue && squash !== false))
+        if (isNullOrUndefined(encoded) || (isDefaultValue && squash !== false))
           return undefined;
 
         if (!Array.isArray(encoded)) encoded = [encoded];
