@@ -143,7 +143,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
    * Register a fixed value as a service.
    * @param {String} name
    * @param {any} val
-   * @returns {import('../../interface.ts').ServiceProvider}
+   * @returns {ng.ServiceProvider}
    */
   function value(name, val) {
     return (providerCache[name + providerSuffix] = { $get: () => val });
@@ -164,8 +164,8 @@ export function createInjector(modulesToLoad, strictDi = false) {
 
   /**
    * Register a decorator function to modify or replace an existing service.
-   * @param name - The name of the service to decorate.
-   * @param fn - A function that takes `$delegate` and returns a decorated service.
+   * @param {string} serviceName - The name of the service to decorate.
+   * @param {Function} decorFn - A function that takes `$delegate` and returns a decorated service.
    * @returns {void}
    */
   function decorator(serviceName, decorFn) {
@@ -327,15 +327,6 @@ export function createInjector(modulesToLoad, strictDi = false) {
       } catch (err) {
         if (Array.isArray(module)) {
           module = module[module.length - 1];
-        }
-
-        if (err.message && err.stack && err.stack.indexOf(err.message) === -1) {
-          // Safari & FF's stack traces don't contain error.message content
-          // unlike those of Chrome and IE
-          // So if stack doesn't contain message, we create a new string that contains both.
-          // Since error.stack is read-only in Safari, I'm overriding e and not e.stack here.
-
-          err.message = `${err.message}\n${err.stack}`;
         }
         throw $injectorMinErr(
           "modulerr",

@@ -101,7 +101,6 @@ if (typeof globalThis.ng === "undefined") {
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
-    $$moduleName?: string | undefined;
   }
 
   interface Window {

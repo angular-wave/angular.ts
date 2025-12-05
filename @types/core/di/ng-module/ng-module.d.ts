@@ -1,9 +1,3 @@
-/** @private */
-export const COMPILE_LITERAL: "$compileProvider";
-/** @private */
-export const ANIMATION_LITERAL: "$animateProvider";
-/** @private */
-export const CONTROLLER_LITERAL: "$controllerProvider";
 /**
  * Modules are collections of application configuration information for components:
  * controllers, directives, filters, etc. They provide recipes for the injector
@@ -169,12 +163,6 @@ export class NgModule {
     scriptPath: string | URL,
     config?: ng.WorkerConfig,
   ): NgModule;
-  /**
-   * @param {string} name
-   * @param {Function} ctor
-   * @returns {NgModule}
-   */
-  session(name: string, ctor: Function): NgModule;
   /**
    * @param {string} name
    * @param {Function} ctor
