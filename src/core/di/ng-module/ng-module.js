@@ -1,11 +1,11 @@
 import { $injectTokens as $t } from "../../../injection-tokens.js";
 import { createWorkerConnection } from "../../../directive/worker/worker.js";
 import {
-  BADARG,
-  assert,
   instantiateWasm,
   isFunction,
   isString,
+  assertArg,
+  validate,
 } from "../../../shared/utils.js";
 
 /**
@@ -21,8 +21,8 @@ export class NgModule {
    * @param {ng.Injectable<any>} [configFn]
    */
   constructor(name, requires, configFn) {
-    assert(isString(name), "name required");
-    assert(Array.isArray(requires), "requires array required");
+    validate(isString, name, "name");
+    validate(Array.isArray, requires, "not array");
     /**
      * Name of the current module.
      * @type {string}
@@ -197,8 +197,8 @@ export class NgModule {
    * @return {NgModule}
    */
   filter(name, filterFn) {
-    assert(isString(name), `${BADARG}:name ${name}`);
-    assert(isFunction(filterFn), `${BADARG}:filter ${filterFn}`);
+    assertArg(isString(name), "name");
+    assertArg(isFunction(filterFn), `filterFn`);
     this.invokeQueue.push([$t.$filterProvider, "register", [name, filterFn]]);
 
     return this;
