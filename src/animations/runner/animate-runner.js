@@ -92,8 +92,8 @@ export class AnimateRunner {
 
     let status = true;
 
-    for (const r of runners) {
-      r.done((result) => {
+    for (const i of runners) {
+      i.done((result) => {
         status = status && result !== false;
 
         if (--remaining === 0) callback(status);

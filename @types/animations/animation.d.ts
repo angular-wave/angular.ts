@@ -8,7 +8,7 @@ export class AnimationProvider {
         $injector: ng.InjectorService,
         $$rAFScheduler: import("./raf-scheduler.js").RafScheduler,
         $$animateCache: any,
-      ) => (element: any, event: any, options: any) => AnimateRunner)
+      ) => (elementParam: any, event: any, options: any) => AnimateRunner)
   )[];
 }
 import { AnimateRunner } from "./runner/animate-runner.js";

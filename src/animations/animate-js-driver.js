@@ -16,7 +16,7 @@ export function AnimateJsDriverProvider($$animationProvider) {
 
           const toAnimation = prepareAnimation(animationDetails.to);
 
-          if (!fromAnimation && !toAnimation) return;
+          if (!fromAnimation && !toAnimation) return undefined;
 
           return {
             start() {

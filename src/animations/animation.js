@@ -105,6 +105,7 @@ export function AnimationProvider() {
               }
               break;
             }
+            // eslint-disable-next-line prefer-destructuring
             parentNode = parentNode.parentNode;
           }
 
@@ -113,15 +114,13 @@ export function AnimationProvider() {
           return entry;
         }
 
-        function flatten(tree) {
+        function flatten(theeParam) {
           const result = [];
 
           const queue = [];
 
-          let i;
-
-          for (i = 0; i < tree.children.length; i++) {
-            queue.push(tree.children[i]);
+          for (i = 0; i < theeParam.children.length; i++) {
+            queue.push(theeParam.children[i]);
           }
 
           let remainingLevelEntries = queue.length;
@@ -130,8 +129,8 @@ export function AnimationProvider() {
 
           let row = [];
 
-          for (i = 0; i < queue.length; i++) {
-            const entry = queue[i];
+          for (let j = 0; j < queue.length; j++) {
+            const entry = queue[j];
 
             if (remainingLevelEntries <= 0) {
               remainingLevelEntries = nextLevelEntries;
@@ -156,7 +155,7 @@ export function AnimationProvider() {
       }
 
       // TODO(matsko): document the signature in a better way
-      return function (element, event, options) {
+      return function (elementParam, event, options) {
         options = prepareAnimationOptions(options);
         const isStructural = ["enter", "move", "leave"].indexOf(event) >= 0;
 
@@ -180,7 +179,7 @@ export function AnimationProvider() {
         }
 
         let classes = mergeClasses(
-          element.getAttribute("class"),
+          elementParam.getAttribute("class"),
           mergeClasses(options.addClass, options.removeClass),
         );
 
@@ -193,18 +192,18 @@ export function AnimationProvider() {
 
         if (isStructural) {
           setCacheData(
-            element,
+            elementParam,
             PREPARE_CLASSES_KEY,
             `ng-${event}${PREPARE_CLASS_SUFFIX}`,
           );
         }
 
-        setRunner(element, runner);
+        setRunner(elementParam, runner);
 
         animationQueue.push({
           // this data is used by the postDigest code and passed into
           // the driver step function
-          element,
+          element: elementParam,
           classes,
           event,
           structural: isStructural,
@@ -213,7 +212,7 @@ export function AnimationProvider() {
           close,
         });
 
-        element.addEventListener("$destroy", handleDestroyedElement);
+        elementParam.addEventListener("$destroy", handleDestroyedElement);
 
         // we only want there to be one function called within the post digest
         // block. This way we can group animations for all the animations that
@@ -241,7 +240,7 @@ export function AnimationProvider() {
           const toBeSortedAnimations = [];
 
           groupedAnimations.forEach((animationEntry) => {
-            const element = animationEntry.from
+            const fromElement = animationEntry.from
               ? animationEntry.from.element
               : animationEntry.element;
 
@@ -250,15 +249,15 @@ export function AnimationProvider() {
             extraClasses =
               (extraClasses ? `${extraClasses} ` : "") + NG_ANIMATE_CLASSNAME;
             const cacheKey = $$animateCache.cacheKey(
-              element,
+              fromElement,
               animationEntry.event,
               extraClasses,
               options.removeClass,
             );
 
             toBeSortedAnimations.push({
-              element,
-              domNode: element,
+              element: fromElement,
+              domNode: fromElement,
               fn: function triggerAnimationStart() {
                 let startAnimationFn;
 
@@ -377,11 +376,10 @@ export function AnimationProvider() {
           const refLookup = {};
 
           animations.forEach((animation, index) => {
-            const { element } = animation;
+            // eslint-disable-next-line no-shadow
+            const { element, event } = animation;
 
             const node = element;
-
-            const { event } = animation;
 
             const enterOrMove = ["enter", "move"].indexOf(event) >= 0;
 
@@ -516,11 +514,14 @@ export function AnimationProvider() {
         function beforeStart() {
           tempClasses =
             (tempClasses ? `${tempClasses} ` : "") + NG_ANIMATE_CLASSNAME;
-          element.className += ` ${tempClasses}`;
-          let prepareClassName = getCacheData(element, PREPARE_CLASSES_KEY);
+          elementParam.className += ` ${tempClasses}`;
+          let prepareClassName = getCacheData(
+            elementParam,
+            PREPARE_CLASSES_KEY,
+          );
 
           if (prepareClassName) {
-            element.classList.remove(prepareClassName);
+            elementParam.classList.remove(prepareClassName);
             prepareClassName = null;
           }
         }
@@ -533,32 +534,27 @@ export function AnimationProvider() {
             update(animation.element);
           }
 
-          function update(element) {
-            const runner = getRunner(element);
-
-            if (runner) runner.setHost(newRunner);
+          function update(el) {
+            getRunner(el).setHost(newRunner);
           }
         }
 
         function handleDestroyedElement() {
-          const runner = getRunner(element);
-
-          if (runner && (event !== "leave" || !options.$$domOperationFired)) {
-            runner.end();
-          }
+          (event !== "leave" || !options.$$domOperationFired) &&
+            getRunner(elementParam)?.end();
         }
 
         function close(rejected) {
-          removeRunner(element);
+          removeRunner(elementParam);
 
-          applyAnimationClasses(element, options);
-          applyAnimationStyles(element, options);
+          applyAnimationClasses(elementParam, options);
+          applyAnimationStyles(elementParam, options);
           options.domOperation();
 
           if (tempClasses) {
             tempClasses
               .split(" ")
-              .forEach((cls) => element.classList.remove(cls));
+              .forEach((cls) => elementParam.classList.remove(cls));
           }
 
           runner.complete(!rejected);

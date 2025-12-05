@@ -4,6 +4,7 @@ import {
   assertArgFn,
   assertNotHasOwnProperty,
   isFunction,
+  isNullOrUndefined,
   isObject,
   isString,
   isUndefined,
@@ -76,6 +77,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
    * @param {import('../../interface.ts').ServiceProvider | import('../../interface.ts').Injectable<any>} provider
    * @returns {import('../../interface.ts').ServiceProvider}
    */
+  // eslint-disable-next-line no-shadow
   function provider(name, provider) {
     assertNotHasOwnProperty(name, "service");
     let newProvider;
@@ -217,15 +219,15 @@ export function createInjector(modulesToLoad, strictDi = false) {
               getItem(key) {
                 const raw = $cookie.get(key);
 
-                return raw == null ? null : raw;
+                return isNullOrUndefined(raw) ? null : raw;
               },
 
-              setItem(key, value) {
-                $cookie.put(key, value, cookieOpts);
+              setItem(k, v) {
+                $cookie.put(k, v, cookieOpts);
               },
 
-              removeItem(key) {
-                $cookie.remove(key, cookieOpts);
+              removeItem(k) {
+                $cookie.remove(k, cookieOpts);
               },
 
               serialize,
@@ -267,24 +269,26 @@ export function createInjector(modulesToLoad, strictDi = false) {
             });
           }
         }
+
+        return undefined;
       },
     });
   }
 
   /**
    *
-   * @param {Array<String|Function>} modulesToLoad
+   * @param {Array<String|Function>} modules
    * @returns
    */
-  function loadModules(modulesToLoad) {
+  function loadModules(modules) {
     assertArg(
-      isUndefined(modulesToLoad) || Array.isArray(modulesToLoad),
+      isUndefined(modules) || Array.isArray(modules),
       "modulesToLoad",
       "not an array",
     );
-    let runBlocks = [];
+    let moduleRunBlocks = [];
 
-    modulesToLoad.forEach((module) => {
+    modules.forEach((module) => {
       if (loadedModules.get(module)) return;
       loadedModules.set(module, true);
 
@@ -296,7 +300,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
           );
 
           instanceInjector.modules[/** @type {string } */ (module)] = moduleFn;
-          runBlocks = runBlocks
+          moduleRunBlocks = moduleRunBlocks
             .concat(loadModules(moduleFn.requires))
             .concat(moduleFn.runBlocks);
 
@@ -305,14 +309,17 @@ export function createInjector(modulesToLoad, strictDi = false) {
           );
 
           invokeQueue.forEach((invokeArgs) => {
-            const provider = providerInjector.get(invokeArgs[0]);
+            const providerInstance = providerInjector.get(invokeArgs[0]);
 
-            provider[invokeArgs[1]].apply(provider, invokeArgs[2]);
+            providerInstance[invokeArgs[1]].apply(
+              providerInstance,
+              invokeArgs[2],
+            );
           });
         } else if (isFunction(module)) {
-          runBlocks.push(providerInjector.invoke(module));
+          moduleRunBlocks.push(providerInjector.invoke(module));
         } else if (Array.isArray(module)) {
-          runBlocks.push(providerInjector.invoke(module));
+          moduleRunBlocks.push(providerInjector.invoke(module));
         } else {
           assertArgFn(module, "module");
         }
@@ -338,7 +345,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
       }
     });
 
-    return runBlocks;
+    return moduleRunBlocks;
   }
 }
 

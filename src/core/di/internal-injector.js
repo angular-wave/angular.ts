@@ -152,6 +152,7 @@ class AbstractInjector {
    * @param {string} _serviceName
    * @returns {any}
    */
+  // eslint-disable-next-line no-unused-vars
   factory(_serviceName) {
     /* empty */
   }

@@ -51,6 +51,7 @@ export function annotate(fn, strictDi, name) {
   let $inject, argDecl, last;
 
   if (isFunction(fn)) {
+    // eslint-disable-next-line prefer-destructuring
     $inject = fn.$inject;
 
     if (!$inject) {

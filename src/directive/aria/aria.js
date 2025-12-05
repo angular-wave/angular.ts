@@ -275,6 +275,7 @@ export function ngModelAriaDirective($aria) {
       const shape = getShape(attr);
 
       return {
+        // eslint-disable-next-line no-shadow
         post(_, elem, attrPost, ngModel) {
           const needsTabIndex = shouldAttachAttr(
             "tabindex",
@@ -287,6 +288,7 @@ export function ngModelAriaDirective($aria) {
             // Strict comparison would cause a BC
             elem.setAttribute(
               "aria-checked",
+              // eslint-disable-next-line eqeqeq
               (attrPost.value == ngModel.$viewValue).toString(),
             );
           }

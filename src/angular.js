@@ -26,7 +26,7 @@ const ngMinErr = minErr("ng");
 const $injectorMinErr = minErr("$injector");
 
 /** @type {Object.<string, NgModule>} */
-const modules = {};
+const moduleRegistry = {};
 
 export class Angular {
   constructor() {
@@ -119,11 +119,11 @@ export class Angular {
   module(name, requires, configFn) {
     assertNotHasOwnProperty(name, "module");
 
-    if (requires && hasOwn(modules, name)) {
-      modules[name] = null; // force ensure to recreate the module
+    if (requires && hasOwn(moduleRegistry, name)) {
+      moduleRegistry[name] = null; // force ensure to recreate the module
     }
 
-    return ensure(modules, name, () => {
+    return ensure(moduleRegistry, name, () => {
       if (!requires) {
         throw $injectorMinErr(
           "nomod",
@@ -331,6 +331,8 @@ export class Angular {
     if (scope) {
       return scope.$proxy;
     }
+
+    return undefined;
   }
 }
 
