@@ -58,6 +58,12 @@
               i18next.changeLanguage(y);
               return i18next.t(x);
             };
+          })
+          .filter('translatesimple', ($rootScope) => {
+            return (x) => {
+              i18next.changeLanguage($rootScope.lang);
+              return i18next.t(x);
+            };
           });
       });
     </script>
@@ -68,10 +74,12 @@
     </style>
   </head>
   <body ng-app="i18n" ng-init="lang = 'en'">
+    <div>Current lang: {{ lang }}</div>
     <input type="radio" ng-model="lang" value="en" /> English
-    <input type="radio" ng-model="lang" value="ru" /> Russian {{ lang }} {{
-    'greeting' | translate:lang }}
+    <input type="radio" ng-model="lang" value="ru" /> Russian
 
+    <div>{{ 'greeting' | translate:lang }}</div>
+    <div>{{ 'greeting' | translatesimple }}</div>
     <div ng-translate class="capitalize">Hello world</div>
   </body>
 </html>

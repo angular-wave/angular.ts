@@ -436,6 +436,10 @@ export function assert(argument: boolean, errorMsg?: string): void;
 /**
  * Throw error if the argument is falsy.
  */
+export function validate(fn: any, arg: any, name: any): any;
+/**
+ * Throw error if the argument is falsy.
+ */
 export function assertArg(arg: any, name: any, reason: any): any;
 export function assertArgFn(
   arg: any,

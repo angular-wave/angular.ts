@@ -949,6 +949,28 @@ export function assert(argument, errorMsg = "Assertion failed") {
   }
 }
 
+function getReason(val) {
+  switch (val) {
+    case isNullOrUndefined:
+      return "required";
+    case Array.isArray:
+      return "notarray";
+    default:
+      return "fail";
+  }
+}
+
+/**
+ * Throw error if the argument is falsy.
+ */
+export function validate(fn, arg, name) {
+  if (!fn(arg)) {
+    throw new TypeError(`badarg:${getReason(fn)} '${name}'=${arg}`);
+  }
+
+  return arg;
+}
+
 /**
  * Throw error if the argument is falsy.
  */
