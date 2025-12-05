@@ -59,6 +59,8 @@ const REQUIRE_PREFIX_REGEXP = /^(?:(\^\^?)?(\?)?(\^\^?)?)?/;
 // 'on' and be composed of only English letters.
 const EVENT_HANDLER_ATTR_REGEXP = /^(on[a-z]+|formaction)$/;
 
+const valueFn = (value) => () => value;
+
 export const DirectiveSuffix = "Directive";
 
 export class CompileProvider {
@@ -171,15 +173,21 @@ export class CompileProvider {
         directive.require || (directive.controller && directive.name);
 
       if (!Array.isArray(require) && isObject(require)) {
-        Object.entries(require).forEach(([key, value]) => {
+        const entries = Object.entries(require);
+
+        for (let i = 0, len = entries.length; i < len; i++) {
+          const [key, value] = entries[i];
+
           const match = value.match(REQUIRE_PREFIX_REGEXP);
+
+          if (!match) continue; // safety check if match fails
 
           const name = value.substring(match[0].length);
 
           if (!name) {
             require[key] = match[0] + key;
           }
-        });
+        }
       }
 
       return require;
@@ -229,11 +237,11 @@ export class CompileProvider {
             function ($injector, $exceptionHandler) {
               const directives = [];
 
-              hasDirectives[name].forEach((directiveFactoryInstance, index) => {
+              for (let i = 0, l = hasDirectives[name].length; i < l; i++) {
+                const directiveFactoryInstance = hasDirectives[name][i];
+
                 try {
                   let directive = $injector.invoke(directiveFactoryInstance);
-
-                  const valueFn = (value) => () => value;
 
                   if (isFunction(directive)) {
                     directive = { compile: valueFn(directive) };
@@ -242,18 +250,19 @@ export class CompileProvider {
                   }
 
                   directive.priority = directive.priority || 0;
-                  directive.index = index;
+                  directive.index = i;
                   directive.name = directive.name || name;
                   directive.require = getDirectiveRequire(directive);
                   directive.restrict = getDirectiveRestrict(
                     directive.restrict,
                     name,
                   );
+
                   directives.push(directive);
                 } catch (err) {
                   $exceptionHandler(err);
                 }
-              });
+              }
 
               return directives;
             },

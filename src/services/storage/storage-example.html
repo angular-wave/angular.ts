@@ -97,5 +97,10 @@
         +
       </button>
     </div>
+
+    <div ng-inject="sessionStore, cookieStore, localStore">
+      Total: {{ sessionStore.counter + cookieStore.counter + localStore.counter
+      }}
+    </div>
   </body>
 </html>
