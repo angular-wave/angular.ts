@@ -1,6 +1,5 @@
 import {
   assert,
-  assertArg,
   assertArgFn,
   assertNotHasOwnProperty,
   isFunction,
@@ -9,6 +8,7 @@ import {
   isString,
   isUndefined,
   minErr,
+  validateArray,
 } from "../../shared/utils.js";
 import { InjectorService, ProviderInjector } from "./internal-injector.js";
 import { createPersistentProxy } from "../../services/storage/storage.js";
@@ -282,11 +282,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
    * @returns
    */
   function loadModules(modules) {
-    assertArg(
-      isUndefined(modules) || Array.isArray(modules),
-      "modulesToLoad",
-      "not an array",
-    );
+    validateArray(modules, "modules");
     let moduleRunBlocks = [];
 
     modules.forEach((module) => {

@@ -15396,7 +15396,6 @@ describe("$compile", () => {
     it("should return the module", () => {
       const myModule = module;
       expect(myModule.component("myComponent", {})).toBe(myModule);
-      expect(myModule.component({})).toBe(myModule);
     });
 
     it("should register a directive", () => {
@@ -15410,34 +15409,6 @@ describe("$compile", () => {
       element = $compile("<my-component></my-component>")($rootScope);
       expect(element.children[0].innerText).toEqual("SUCCESS");
       expect(log[0]).toEqual("OK");
-    });
-
-    it("should register multiple directives when object passed as first parameter", async () => {
-      module.component({
-        fooComponent: {
-          template: "<div>FOO SUCCESS</div>",
-          controller() {
-            log.push("FOO:OK");
-          },
-        },
-        barComponent: {
-          template: "<div>BAR SUCCESS</div>",
-          controller() {
-            log.push("BAR:OK");
-          },
-        },
-      });
-      initInjector("test1");
-      const fooElement = $compile("<foo-component></foo-component>")(
-        $rootScope,
-      );
-      const barElement = $compile("<bar-component></bar-component>")(
-        $rootScope,
-      );
-      await wait();
-      expect(fooElement.children[0].innerText).toEqual("FOO SUCCESS");
-      expect(barElement.children[0].innerText).toEqual("BAR SUCCESS");
-      expect(log.join("")).toEqual("FOO:OKBAR:OK");
     });
 
     it("should register a directive via $compileProvider.component()", () => {

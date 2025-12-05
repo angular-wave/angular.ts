@@ -17,3 +17,4 @@ export interface ErrorHandlingConfig {
    */
   urlErrorParamsEnabled?: boolean;
 }
+export type Validator = (value: unknown) => boolean;

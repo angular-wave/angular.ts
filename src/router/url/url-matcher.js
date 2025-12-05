@@ -230,11 +230,22 @@ export class UrlMatcher {
     //    [^{}\\]+                       - anything other than curly braces or backslash
     //    \\.                            - a backslash escape
     //    \{(?:[^{}\\]+|\\.)*\}          - a matched set of curly braces containing other atoms
-    const placeholder =
-      /([:*])([\w[\]]+)|\{([\w[\]]+)(?::\s*((?:[^{}\\]|\\.)+))?}/g;
 
-    const searchPlaceholder =
-      /([:]?)([\w[\].-]+)|\{([\w[\].-]+)(?::\s*((?:[^\\{}]+|\\.|{(?:[^\\{}]+|\\.)*})+))?}/g;
+    const MAX_REGEX_LENGTH = 200; // or any safe limit
+
+    const placeholder = new RegExp(
+      `([:*])([\\w[\\]]+)|\\{([\\w[\\]]+)(?::\\s*((?:[^{}\\\\]{1,${
+        MAX_REGEX_LENGTH
+      }}|\\\\.|\\{(?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.)*\\})+))?\\}`,
+      "g",
+    );
+
+    const searchPlaceholder = new RegExp(
+      `([:]?)([\\w[\\].-]+)|\\{([\\w[\\].-]+)(?::\\s*((?:[^{}\\\\]{1,${
+        MAX_REGEX_LENGTH
+      }}|\\\\.|\\{(?:[^{}\\\\]{1,${MAX_REGEX_LENGTH}}|\\\\.)*\\})+))?\\}`,
+      "g",
+    );
 
     const patterns = [];
 

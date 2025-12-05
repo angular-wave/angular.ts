@@ -38,16 +38,16 @@ export class NgModule {
   restDefinitions: any[];
   /**
    * @param {string} name
-   * @param {any} object
+   * @param {any} object - Allows undefined
    * @returns {NgModule}
    */
   value(name: string, object: any): NgModule;
   /**
    * @param {string} name
-   * @param {any} object
+   * @param {Object|string|number} object
    * @returns {NgModule}
    */
-  constant(name: string, object: any): NgModule;
+  constant(name: string, object: any | string | number): NgModule;
   /**
    *
    * @param {ng.Injectable<any>} configFn
