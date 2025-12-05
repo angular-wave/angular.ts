@@ -22,6 +22,7 @@ import {
   toJson,
   toKeyValue,
   uppercase,
+  baseExtend,
 } from "./utils.js";
 import { createElementFromHTML, dealoc, startingTag } from "./dom.js";
 import { Angular } from "../angular.js";
@@ -190,6 +191,89 @@ describe("utility functions", () => {
           },
         }),
       ).toEqual("42");
+    });
+  });
+
+  describe("baseExtend", () => {
+    it("should extend objects shallowly", () => {
+      const dst = { a: 1 };
+      const src = { b: 2 };
+      const result = baseExtend(dst, [src], false);
+
+      expect(result).toEqual({ a: 1, b: 2 });
+      expect(result).toBe(dst); // should mutate dst
+    });
+
+    it("should extend objects deeply", () => {
+      const dst = { a: { x: 1 } };
+      const src = { a: { y: 2 }, b: 3 };
+      const result = baseExtend(dst, [src], true);
+
+      expect(result).toEqual({ a: { x: 1, y: 2 }, b: 3 });
+    });
+
+    it("should copy arrays when deep extending", () => {
+      const dst = {};
+      const src = { arr: [1, 2] };
+      const result = baseExtend(dst, [src], true);
+
+      expect(result.arr).toEqual([1, 2]);
+      expect(result.arr).not.toBe(src.arr); // cloned
+    });
+
+    it("should clone Date and RegExp objects", () => {
+      const date = new Date();
+      const regex = /abc/g;
+      const dst = {};
+      const src = { date, regex };
+      const result = baseExtend(dst, [src], true);
+
+      expect(result.date).toEqual(date);
+      expect(result.date).not.toBe(date); // cloned
+      expect(result.regex).toEqual(regex);
+      expect(result.regex).not.toBe(regex); // cloned
+    });
+
+    it("should clone DOM nodes", () => {
+      const node = document.createElement("div");
+      node.textContent = "hello";
+
+      const dst = {};
+      const src = { el: node };
+      const result = baseExtend(dst, [src], true);
+
+      expect(result.el.tagName).toBe("DIV");
+      expect(result.el.textContent).toBe("hello");
+      expect(result.el).not.toBe(node); // cloned node
+    });
+
+    it("should skip non-object values", () => {
+      const dst = { a: 1 };
+      const src = null;
+      const result = baseExtend(dst, [src], true);
+
+      expect(result).toEqual({ a: 1 });
+    });
+
+    it("should prevent prototype pollution", () => {
+      const dst = {};
+      const src = JSON.parse('{"__proto__": {"polluted": true}}');
+      baseExtend(dst, [src], true);
+
+      // Ensure Object.prototype was not polluted
+      expect({}.polluted).toBeUndefined();
+      expect(Object.prototype.polluted).toBeUndefined();
+
+      // Ensure dst itself does not have a __proto__ property
+      expect(dst.hasOwnProperty("__proto__")).toBe(false);
+    });
+
+    it("should preserve $$hashKey", () => {
+      const dst = { $$hashKey: "abc" };
+      const src = { a: 1 };
+      const result = baseExtend(dst, [src], false);
+
+      expect(result.$$hashKey).toBe("abc");
     });
   });
 

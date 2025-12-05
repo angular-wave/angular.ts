@@ -332,7 +332,17 @@ export function setHashKey(obj, hashkey) {
   }
 }
 
-export function baseExtend(dst, objs, deep) {
+/**
+ * Deeply extends a destination object with one or more source objects.
+ * Safely handles Dates, RegExps, DOM nodes, arrays, and nested objects.
+ * Ignores the `__proto__` key to prevent prototype pollution.
+ *
+ * @param {Object<string, any>} dst - The destination object to extend.
+ * @param {Array<Object<string, any>>} objs - Array of source objects to copy properties from.
+ * @param {boolean} [deep=false] - Whether to perform a deep merge of nested objects.
+ * @returns {Object<string, any>} The extended destination object.
+ */
+export function baseExtend(dst, objs, deep = false) {
   const hasKey = dst.$$hashKey;
 
   for (let i = 0, ii = objs.length; i < ii; ++i) {

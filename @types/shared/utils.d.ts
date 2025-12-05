@@ -183,7 +183,27 @@ export function snakeCase(name: any, separator: any): any;
  * @param hashkey the hashkey (!truthy to delete the hashkey)
  */
 export function setHashKey(obj: any, hashkey: any): void;
-export function baseExtend(dst: any, objs: any, deep: any): any;
+/**
+ * Deeply extends a destination object with one or more source objects.
+ * Safely handles Dates, RegExps, DOM nodes, arrays, and nested objects.
+ * Ignores the `__proto__` key to prevent prototype pollution.
+ *
+ * @param {Object<string, any>} dst - The destination object to extend.
+ * @param {Array<Object<string, any>>} objs - Array of source objects to copy properties from.
+ * @param {boolean} [deep=false] - Whether to perform a deep merge of nested objects.
+ * @returns {Object<string, any>} The extended destination object.
+ */
+export function baseExtend(
+  dst: {
+    [x: string]: any;
+  },
+  objs: Array<{
+    [x: string]: any;
+  }>,
+  deep?: boolean,
+): {
+  [x: string]: any;
+};
 /**
  * Extends the destination object `dst` by copying own enumerable properties from the `src` object(s)
  * to `dst`. You can specify multiple `src` objects. If you want to preserve original objects, you can do so
