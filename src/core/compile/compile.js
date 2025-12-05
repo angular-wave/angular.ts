@@ -229,9 +229,9 @@ export class CompileProvider {
             function ($injector, $exceptionHandler) {
               const directives = [];
 
-              hasDirectives[name].forEach((directiveFactory, index) => {
+              hasDirectives[name].forEach((directiveFactoryInstance, index) => {
                 try {
-                  let directive = $injector.invoke(directiveFactory);
+                  let directive = $injector.invoke(directiveFactoryInstance);
 
                   const valueFn = (value) => () => value;
 
@@ -249,7 +249,8 @@ export class CompileProvider {
                     directive.restrict,
                     name,
                   );
-                  directive.$$moduleName = directiveFactory.$$moduleName;
+                  directive.$$moduleName =
+                    directiveFactoryInstance.$$moduleName;
                   directives.push(directive);
                 } catch (err) {
                   $exceptionHandler(err);
@@ -329,6 +330,7 @@ export class CompileProvider {
         function makeInjectable(fn) {
           if (isFunction(fn) || Array.isArray(fn)) {
             return function (tElement, tAttrs) {
+              // eslint-disable-next-line no-invalid-this
               return $injector.invoke(fn, this, {
                 $element: tElement,
                 $attrs: tAttrs,
@@ -1581,7 +1583,7 @@ export class CompileProvider {
             // Example: function link (scope, element, attrs, ctrl, transclude) {}
             // Note: all arguments are optional!
             function controllersBoundTransclude(
-              scope,
+              scopeParam,
               cloneAttachFn,
               futureParentElement,
               slotName,
@@ -1589,11 +1591,11 @@ export class CompileProvider {
               let transcludeControllers;
 
               // No scope passed in:
-              if (!isScope(scope)) {
+              if (!isScope(scopeParam)) {
                 slotName = futureParentElement;
                 futureParentElement = cloneAttachFn;
-                cloneAttachFn = scope;
-                scope = undefined;
+                cloneAttachFn = scopeParam;
+                scopeParam = undefined;
               }
 
               if (hasElementTranscludeDirective) {
@@ -1615,7 +1617,7 @@ export class CompileProvider {
 
                 if (slotTranscludeFn) {
                   return slotTranscludeFn(
-                    scope,
+                    scopeParam,
                     cloneAttachFn,
                     transcludeControllers,
                     futureParentElement,
@@ -1632,9 +1634,11 @@ export class CompileProvider {
                     startingTag($element.element),
                   );
                 }
+
+                return undefined;
               } else {
                 return boundTranscludeFn(
-                  scope,
+                  scopeParam,
                   cloneAttachFn,
                   transcludeControllers,
                   futureParentElement,
@@ -2412,6 +2416,7 @@ export class CompileProvider {
                 origAsyncDirective.templateUrl
               )($compileNode.element, tAttrs);
           } else {
+            // eslint-disable-next-line prefer-destructuring
             templateUrl = /** @type {string} */ (
               origAsyncDirective.templateUrl
             );
@@ -2968,7 +2973,7 @@ export class CompileProvider {
                       scope;
 
                     targetScope.$watch(x, () => {
-                      const newValue = interpolateFn(scope);
+                      const newInterpolatedValue = interpolateFn(scope);
 
                       // special case for class attribute addition + removal
                       // so that class changes can tap into the animation
@@ -2978,21 +2983,21 @@ export class CompileProvider {
                       // the CSS classes are the non-interpolated values
                       if (name === "class") {
                         attr.$updateClass(
-                          newValue,
+                          newInterpolatedValue,
                           attr.$$element.classList.value,
                         );
                       } else {
                         attr.$set(
                           name,
                           name === "srcset"
-                            ? $sce.getTrustedMediaUrl(newValue)
-                            : newValue,
+                            ? $sce.getTrustedMediaUrl(newInterpolatedValue)
+                            : newInterpolatedValue,
                         );
                       }
                     });
                   });
 
-                  if (interpolateFn.expressions.length == 0) {
+                  if (interpolateFn.expressions.length === 0) {
                     attr.$set(
                       name,
                       name === "srcset"

@@ -359,11 +359,11 @@ export function AnimationProvider() {
 
           const anchors = [];
 
-          items.forEach((node) => {
-            const attr = node.getAttribute(NG_ANIMATE_REF_ATTR);
+          items.forEach((nodeItem) => {
+            const attr = nodeItem.getAttribute(NG_ANIMATE_REF_ATTR);
 
             if (attr && attr.length) {
-              anchors.push(node);
+              anchors.push(nodeItem);
             }
           });
 
@@ -509,6 +509,8 @@ export function AnimationProvider() {
               return driver;
             }
           }
+
+          return undefined;
         }
 
         function beforeStart() {

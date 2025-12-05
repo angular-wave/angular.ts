@@ -80,10 +80,10 @@ function computeCssStyles(element, properties) {
     let val = detectedStyles[formalStyleName];
 
     if (val) {
-      const c = val.charAt(0);
+      const char = val.charAt(0);
 
       // only numerical-based values have a negative sign or digit as the first value
-      if (c === "-" || c === "+" || c >= 0) {
+      if (char === "-" || char === "+" || char >= 0) {
         val = parseMaxTime(val);
       }
 
@@ -117,7 +117,7 @@ function parseMaxTime(str) {
 }
 
 function truthyTimingValue(val) {
-  return val === 0 || val != null;
+  return val === 0 || !isNullOrUndefined(val);
 }
 
 function getCssTransitionDurationStyle(duration, applyOnlyDuration) {
@@ -167,6 +167,7 @@ export function AnimateCssProvider() {
     function ($$animateCache, $$rAFScheduler) {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
+      // TODO add types
       function computeCachedCssStyles(
         node,
         cacheKey,
@@ -486,6 +487,7 @@ export function AnimateCssProvider() {
         let relativeDelay = timings.maxDelay;
 
         maxDelay = Math.max(relativeDelay, 0);
+        // eslint-disable-next-line prefer-destructuring
         maxDuration = timings.maxDuration;
 
         const flags = {};
@@ -851,6 +853,7 @@ export function AnimateCssProvider() {
               timings = computeTimings(node, cacheKey, false);
               relativeDelay = timings.maxDelay;
               maxDelay = Math.max(relativeDelay, 0);
+              // eslint-disable-next-line prefer-destructuring
               maxDuration = timings.maxDuration;
 
               if (maxDuration === 0) {
