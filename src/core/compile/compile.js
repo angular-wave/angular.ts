@@ -249,8 +249,6 @@ export class CompileProvider {
                     directive.restrict,
                     name,
                   );
-                  directive.$$moduleName =
-                    directiveFactoryInstance.$$moduleName;
                   directives.push(directive);
                 } catch (err) {
                   $exceptionHandler(err);
@@ -2646,18 +2644,12 @@ export class CompileProvider {
           directive,
           element,
         ) {
-          function wrapModuleNameIfDefined(moduleName) {
-            return moduleName ? ` (module: ${moduleName})` : "";
-          }
-
           if (previousDirective) {
             throw $compileMinErr(
               "multidir",
-              "Multiple directives [{0}{1}, {2}{3}] asking for {4} on: {5}",
+              "Multiple directives [{0}, {1}] asking for {3} on: {4}",
               previousDirective.name,
-              wrapModuleNameIfDefined(previousDirective.$$moduleName),
               directive.name,
-              wrapModuleNameIfDefined(directive.$$moduleName),
               what,
               startingTag(element.getAny()),
             );

@@ -8,13 +8,6 @@ import {
   isString,
 } from "../../../shared/utils.js";
 
-/** @private */
-export const COMPILE_LITERAL = "$compileProvider";
-/** @private */
-export const ANIMATION_LITERAL = "$animateProvider";
-/** @private */
-export const CONTROLLER_LITERAL = "$controllerProvider";
-
 /**
  * Modules are collections of application configuration information for components:
  * controllers, directives, filters, etc. They provide recipes for the injector
@@ -112,10 +105,7 @@ export class NgModule {
    * @returns {NgModule}
    */
   component(name, options) {
-    if (options && isFunction(options)) {
-      options.$$moduleName = name;
-    }
-    this.invokeQueue.push([COMPILE_LITERAL, "component", [name, options]]);
+    this.invokeQueue.push([$t.$compileProvider, "component", [name, options]]);
 
     return this;
   }
@@ -126,9 +116,6 @@ export class NgModule {
    * @returns {NgModule}
    */
   factory(name, providerFunction) {
-    if (providerFunction && isFunction(providerFunction)) {
-      providerFunction.$$moduleName = name;
-    }
     this.invokeQueue.push([$t.$provide, "factory", [name, providerFunction]]);
 
     return this;
@@ -140,9 +127,6 @@ export class NgModule {
    * @returns {NgModule}
    */
   service(name, serviceFunction) {
-    if (serviceFunction && isFunction(serviceFunction)) {
-      serviceFunction.$$moduleName = name;
-    }
     this.services.push(name);
     this.invokeQueue.push([$t.$provide, "service", [name, serviceFunction]]);
 
@@ -183,11 +167,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   directive(name, directiveFactory) {
-    if (directiveFactory && isFunction(directiveFactory)) {
-      directiveFactory.$$moduleName = name;
-    }
     this.invokeQueue.push([
-      COMPILE_LITERAL,
+      $t.$compileProvider,
       "directive",
       [name, directiveFactory],
     ]);
@@ -201,11 +182,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   animation(name, animationFactory) {
-    if (animationFactory && isFunction(animationFactory)) {
-      animationFactory.$$moduleName = name;
-    }
     this.invokeQueue.push([
-      ANIMATION_LITERAL,
+      $t.$animateProvider,
       "register",
       [name, animationFactory],
     ]);
@@ -221,7 +199,6 @@ export class NgModule {
   filter(name, filterFn) {
     assert(isString(name), `${BADARG}:name ${name}`);
     assert(isFunction(filterFn), `${BADARG}:filter ${filterFn}`);
-    filterFn.$$moduleName = name;
     this.invokeQueue.push([$t.$filterProvider, "register", [name, filterFn]]);
 
     return this;
@@ -236,10 +213,7 @@ export class NgModule {
    * @returns {NgModule}
    */
   controller(name, ctlFn) {
-    if (ctlFn && isFunction(ctlFn)) {
-      ctlFn.$$moduleName = name;
-    }
-    this.invokeQueue.push([CONTROLLER_LITERAL, "register", [name, ctlFn]]);
+    this.invokeQueue.push([$t.$controllerProvider, "register", [name, ctlFn]]);
 
     return this;
   }
@@ -312,28 +286,11 @@ export class NgModule {
   /**
    * @param {string} name
    * @param {Function} ctor
-   * @returns {NgModule}
-   */
-  session(name, ctor) {
-    if (ctor && isFunction(ctor)) {
-      ctor.$$moduleName = name;
-    }
-    this.invokeQueue.push([$t.$provide, "session", [name, ctor]]);
-
-    return this;
-  }
-
-  /**
-   * @param {string} name
-   * @param {Function} ctor
    * @param {ng.StorageType} type
    * @param {ng.StorageBackend} [backendOrConfig]
    * @returns {NgModule}
    */
   store(name, ctor, type, backendOrConfig) {
-    if (ctor && isFunction(ctor)) {
-      ctor.$$moduleName = name;
-    }
     this.invokeQueue.push([
       $t.$provide,
       "store",

@@ -89,7 +89,6 @@ import { NgModelController as TNgModelController } from "./directive/model/model
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
-    $$moduleName?: string | undefined;
   }
   interface Window {
     angular: TAngular;
