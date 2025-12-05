@@ -404,7 +404,7 @@ export function AnimateJsProvider($animateProvider) {
             }
           }
 
-          if (operations.length === 0) return;
+          if (operations.length === 0) return undefined;
 
           // TODO(matsko): add documentation
           return function startAnimation(callback) {
@@ -423,11 +423,11 @@ export function AnimateJsProvider($animateProvider) {
             }
 
             return function endFn(reject) {
-              runners.forEach((runner) => {
+              runners.forEach((i) => {
                 if (reject) {
-                  runner.cancel();
+                  i.cancel();
                 } else {
-                  runner.end();
+                  i.end();
                 }
               });
             };

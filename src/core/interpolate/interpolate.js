@@ -63,7 +63,7 @@ export class InterpolateProvider {
      * @param {*} $sce
      * @returns {ng.InterpolateService}
      */
-    function ($parse, $sce) {
+    ($parse, $sce) => {
       /** @type {InterpolateProvider} */
       const provider = this;
 

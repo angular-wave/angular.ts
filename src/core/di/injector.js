@@ -110,7 +110,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
    */
   function factory(name, factoryFn) {
     return provider(name, {
-      $get: () => {
+      $get() {
         const result = instanceInjector.invoke(factoryFn, this);
 
         if (isUndefined(result)) {
@@ -155,6 +155,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
    * @param {any} value
    * @returns {void}
    */
+  // eslint-disable-next-line no-shadow
   function constant(name, value) {
     assertNotHasOwnProperty(name, "constant");
     providerInjector.cache[name] = value;
