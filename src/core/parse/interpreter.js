@@ -65,7 +65,9 @@ export class ASTInterpreter {
     /** @type {import("./interface.ts").CompiledExpression} */
     const fn =
       decoratedNode.body.length === 0
-        ? () => {}
+        ? () => {
+            /* empty */
+          }
         : decoratedNode.body.length === 1
           ? expressions[0]
           : function (scope, locals) {
@@ -292,6 +294,8 @@ export class ASTInterpreter {
         return (scope, locals, assign) =>
           context ? { value: assign } : assign;
     }
+
+    return undefined;
   }
 
   /**
@@ -755,6 +759,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
 
       return decoratedNode;
     case ASTType.UnaryExpression:
+      // eslint-disable-next-line no-var
       var decorated = findConstantAndWatchExpressions(
         decoratedNode.argument,
         $filter,
@@ -928,6 +933,8 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
 
       return decoratedNode;
   }
+
+  return undefined;
 }
 
 /**
@@ -945,14 +952,16 @@ function assignableAST(ast) {
       operator: "=",
     };
   }
+
+  return undefined;
 }
 
-function plusFn(l, r) {
-  if (typeof l === "undefined" || isObject(l)) return r;
+function plusFn(left, right) {
+  if (typeof left === "undefined" || isObject(left)) return right;
 
-  if (typeof r === "undefined" || isObject(r)) return l;
+  if (typeof right === "undefined" || isObject(right)) return left;
 
-  return l + r;
+  return left + right;
 }
 
 /**
@@ -961,7 +970,7 @@ function plusFn(l, r) {
  * @returns {any}
  */
 function getInputs(body) {
-  if (body.length !== 1) return;
+  if (body.length !== 1) return undefined;
   const lastExpression = /** @type {DecoratedASTNode} */ (body[0].expression);
 
   const candidate = lastExpression.toWatch;

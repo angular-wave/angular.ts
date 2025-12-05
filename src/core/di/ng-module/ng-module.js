@@ -273,12 +273,12 @@ export class NgModule {
       "provider",
       [
         name,
-        function () {
-          this.$get = () => {
+        class {
+          $get() {
             return instantiateWasm(src, imports).then((result) =>
               raw ? result : result.exports,
             );
-          };
+          }
         },
       ],
     ]);

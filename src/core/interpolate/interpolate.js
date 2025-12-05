@@ -212,7 +212,7 @@ export class InterpolateProvider {
 
         // Provide a quick exit and simplified result function for text with no interpolation
         if (!text.length || text.indexOf(provider.startSymbol) === -1) {
-          if (mustHaveExpression) return;
+          if (mustHaveExpression) return undefined;
 
           let unescapedText = unescapeText(text);
 
@@ -241,8 +241,6 @@ export class InterpolateProvider {
 
         const expressions = [];
 
-        let parseFns;
-
         const textLength = text.length;
 
         let exp;
@@ -250,8 +248,6 @@ export class InterpolateProvider {
         const concat = [];
 
         const expressionPositions = [];
-
-        let singleExpression;
 
         while (index < textLength) {
           if (
@@ -278,8 +274,9 @@ export class InterpolateProvider {
           }
         }
 
-        singleExpression =
+        const singleExpression =
           concat.length === 1 && expressionPositions.length === 1;
+
         // Intercept expression if we need to stringify concatenated inputs, which may be SCE trusted
         // objects rather than simple strings
         // (we don't modify the expression if the input consists of only a single trusted input)
@@ -288,7 +285,7 @@ export class InterpolateProvider {
             ? undefined
             : parseStringifyInterceptor;
 
-        parseFns = expressions.map((exp) => $parse(exp, interceptor));
+        const parseFns = expressions.map((x) => $parse(x, interceptor));
 
         // Concatenating expressions makes it hard to reason about whether some combination of
         // concatenated values are unsafe to use and could easily lead to XSS.  By requiring that a
@@ -306,7 +303,7 @@ export class InterpolateProvider {
         if (!mustHaveExpression || expressions.length) {
           const compute = function (values) {
             for (let i = 0, ii = expressions.length; i < ii; i++) {
-              if (allOrNothing && isUndefined(values[i])) return;
+              if (allOrNothing && isUndefined(values[i])) return undefined;
               concat[expressionPositions[i]] = values[i];
             }
 
@@ -359,7 +356,7 @@ export class InterpolateProvider {
 
                 return compute(values);
               } catch (err) {
-                interr(text, err);
+                return interr(text, err);
               }
             },
             {
@@ -376,7 +373,7 @@ export class InterpolateProvider {
                     const currValue = compute(values);
 
                     listener.call(
-                      this,
+                      provider,
                       currValue,
                       values !== oldValues ? lastValue : currValue,
                       scope,
@@ -402,9 +399,11 @@ export class InterpolateProvider {
 
             return allOrNothing && !isDefined(value) ? value : stringify(value);
           } catch (err) {
-            interr(text, err);
+            return interr(text, err);
           }
         }
+
+        return undefined;
       }
 
       /**

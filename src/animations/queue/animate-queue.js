@@ -612,7 +612,7 @@ export function AnimateQueueProvider($animateProvider) {
 
           // animate/structural/class-based animations all have requirements. Otherwise there
           // is no point in performing an animation. The parent node must also be set.
-          const isValidAnimation =
+          const isCurrentAnimationValid =
             parentElement &&
             (animationDetails.event === "animate" ||
               animationDetails.structural ||
@@ -623,7 +623,7 @@ export function AnimateQueueProvider($animateProvider) {
           if (
             animationCancelled ||
             animationDetails.counter !== counter ||
-            !isValidAnimation
+            !isCurrentAnimationValid
           ) {
             // if another animation did not take over then we need
             // to make sure that the domOperation and options are
@@ -646,7 +646,7 @@ export function AnimateQueueProvider($animateProvider) {
             // in the event that the element animation was not cancelled or a follow-up animation
             // isn't allowed to animate from here then we need to clear the state of the element
             // so that any future animations won't read the expired animation data.
-            if (!isValidAnimation) {
+            if (!isCurrentAnimationValid) {
               clearElementAnimationState(node);
             }
 
@@ -675,9 +675,8 @@ export function AnimateQueueProvider($animateProvider) {
 
           realRunner.done((status) => {
             close(!status);
-            const animationDetails = activeAnimationsLookup.get(node);
 
-            if (animationDetails && animationDetails.counter === counter) {
+            if (activeAnimationsLookup.get(node)?.counter === counter) {
               clearElementAnimationState(node);
             }
             notifyProgress(runner, event, "close", getEventData(options));
@@ -689,9 +688,9 @@ export function AnimateQueueProvider($animateProvider) {
 
         return runner;
 
-        function notifyProgress(runner, event, phase, data) {
+        function notifyProgress(runnerParam, eventParam, phase, data) {
           runInNextPostDigestOrNow(() => {
-            const callbacks = findCallbacks(parentNode, node, event);
+            const callbacks = findCallbacks(parentNode, node, eventParam);
 
             if (callbacks.length) {
               callbacks.forEach((callback) => {
@@ -702,7 +701,7 @@ export function AnimateQueueProvider($animateProvider) {
               cleanupEventListeners(phase, node);
             }
           });
-          runner.progress(event, phase, data);
+          runnerParam.progress(eventParam, phase, data);
         }
 
         function close(reject) {
@@ -849,6 +848,7 @@ export function AnimateQueueProvider($animateProvider) {
             }
           }
 
+          // eslint-disable-next-line prefer-destructuring
           parentNode = parentNode.parentNode;
         }
 

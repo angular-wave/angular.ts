@@ -94,7 +94,7 @@ export function AnimateJsProvider($animateProvider) {
         }
 
         // no matching animations
-        if (!before && !after) return;
+        if (!before && !after) return undefined;
 
         function applyOptions() {
           options.domOperation();
@@ -231,32 +231,38 @@ export function AnimateJsProvider($animateProvider) {
           },
         };
 
-        function executeAnimationFn(fn, element, event, options, onDone) {
+        function executeAnimationFn(
+          fn,
+          elemParam,
+          eventParam,
+          optionsParam,
+          onDone,
+        ) {
           let args;
 
-          switch (event) {
+          switch (eventParam) {
             case "animate":
-              args = [element, options.from, options.to, onDone];
+              args = [elemParam, optionsParam.from, optionsParam.to, onDone];
               break;
 
             case "setClass":
-              args = [element, classesToAdd, classesToRemove, onDone];
+              args = [elemParam, classesToAdd, classesToRemove, onDone];
               break;
 
             case "addClass":
-              args = [element, classesToAdd, onDone];
+              args = [elemParam, classesToAdd, onDone];
               break;
 
             case "removeClass":
-              args = [element, classesToRemove, onDone];
+              args = [elemParam, classesToRemove, onDone];
               break;
 
             default:
-              args = [element, onDone];
+              args = [elemParam, onDone];
               break;
           }
 
-          args.push(options);
+          args.push(optionsParam);
 
           let value = fn.apply(fn, args);
 
@@ -279,24 +285,41 @@ export function AnimateJsProvider($animateProvider) {
         }
 
         function groupEventedAnimations(
-          element,
-          event,
-          options,
-          animations,
+          elemParam,
+          eventParam,
+          optionsParam,
+          animationsParam,
           fnName,
         ) {
           const operations = [];
 
-          animations.forEach((ani) => {
+          animationsParam.forEach((ani) => {
             const animation = ani[fnName];
 
             if (!animation) return;
 
             // note that all of these animations will run in parallel
             operations.push(() => {
-              let runner;
+              const newRunner = new AnimateRunner({
+                end() {
+                  onAnimationComplete();
+                },
+                cancel() {
+                  onAnimationComplete(true);
+                },
+              });
 
-              let endProgressCb;
+              const endProgressCb = executeAnimationFn(
+                animation,
+                elemParam,
+                eventParam,
+                optionsParam,
+                (result) => {
+                  const cancelled = result === false;
+
+                  onAnimationComplete(cancelled);
+                },
+              );
 
               let resolved = false;
 
@@ -309,32 +332,11 @@ export function AnimateJsProvider($animateProvider) {
                       /* empty */
                     })
                   )(rejected);
-                  runner.complete(!rejected);
+                  newRunner.complete(!rejected);
                 }
               };
 
-              runner = new AnimateRunner({
-                end() {
-                  onAnimationComplete();
-                },
-                cancel() {
-                  onAnimationComplete(true);
-                },
-              });
-
-              endProgressCb = executeAnimationFn(
-                animation,
-                element,
-                event,
-                options,
-                (result) => {
-                  const cancelled = result === false;
-
-                  onAnimationComplete(cancelled);
-                },
-              );
-
-              return runner;
+              return newRunner;
             });
           });
 
@@ -342,17 +344,17 @@ export function AnimateJsProvider($animateProvider) {
         }
 
         function packageAnimations(
-          element,
-          event,
-          options,
-          animations,
+          elementParam,
+          eventParam,
+          optionsParam,
+          animationsParam,
           fnName,
         ) {
           let operations = groupEventedAnimations(
-            element,
-            event,
-            options,
-            animations,
+            elementParam,
+            eventParam,
+            optionsParam,
+            animationsParam,
             fnName,
           );
 
@@ -363,32 +365,32 @@ export function AnimateJsProvider($animateProvider) {
 
             if (fnName === "beforeSetClass") {
               a = groupEventedAnimations(
-                element,
+                elementParam,
                 "removeClass",
-                options,
-                animations,
+                optionsParam,
+                animationsParam,
                 "beforeRemoveClass",
               );
               b = groupEventedAnimations(
-                element,
+                elementParam,
                 "addClass",
-                options,
-                animations,
+                optionsParam,
+                animationsParam,
                 "beforeAddClass",
               );
             } else if (fnName === "setClass") {
               a = groupEventedAnimations(
-                element,
+                elementParam,
                 "removeClass",
-                options,
-                animations,
+                optionsParam,
+                animationsParam,
                 "removeClass",
               );
               b = groupEventedAnimations(
-                element,
+                elementParam,
                 "addClass",
-                options,
-                animations,
+                optionsParam,
+                animationsParam,
                 "addClass",
               );
             }

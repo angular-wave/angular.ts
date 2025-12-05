@@ -19,6 +19,8 @@ export function identifierForController(controller, ident) {
 
     if (match) return match[3];
   }
+
+  return undefined;
 }
 
 /**

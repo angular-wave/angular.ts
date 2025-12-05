@@ -214,7 +214,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
         // no point in doing anything when there are no elements to animate
         if (!fromAnimation && !toAnimation && anchorAnimations.length === 0)
-          return;
+          return undefined;
 
         return {
           start() {

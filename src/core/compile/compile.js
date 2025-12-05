@@ -404,7 +404,7 @@ export class CompileProvider {
       if (isDefined(regexp)) {
         $$sanitizeUriProvider.aHrefSanitizationTrustedUrlList(regexp);
 
-        return;
+        return undefined;
       }
 
       return $$sanitizeUriProvider.aHrefSanitizationTrustedUrlList();
@@ -429,7 +429,7 @@ export class CompileProvider {
       if (isDefined(regexp)) {
         $$sanitizeUriProvider.imgSrcSanitizationTrustedUrlList(regexp);
 
-        return;
+        return undefined;
       }
 
       return $$sanitizeUriProvider.imgSrcSanitizationTrustedUrlList();
@@ -682,11 +682,9 @@ export class CompileProvider {
             }
 
             options = options || {};
-            let {
-              transcludeControllers,
-              parentBoundTranscludeFn,
-              futureParentElement,
-            } = options;
+            let { parentBoundTranscludeFn } = options;
+
+            const { transcludeControllers, futureParentElement } = options;
 
             // When `parentBoundTranscludeFn` is passed, it is a
             // `controllersBoundTransclude` function (it was previously passed
@@ -840,13 +838,13 @@ export class CompileProvider {
 
             let childLinkFn;
 
-            let childNodes;
-
             const nodeLinkFn = nodeLinkFnCtx?.nodeLinkFn;
+
+            const { childNodes } = nodeRefList.getIndex(i);
 
             if (
               (nodeLinkFn && nodeLinkFnCtx.terminal) ||
-              !(childNodes = nodeRefList.getIndex(i).childNodes) ||
+              !childNodes ||
               !childNodes.length
             ) {
               childLinkFn = null;
@@ -2759,6 +2757,8 @@ export class CompileProvider {
           ) {
             return $sce.URL;
           }
+
+          return undefined;
         }
 
         function getTrustedPropContext(nodeName, propNormalizedName) {

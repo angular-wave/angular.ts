@@ -309,6 +309,8 @@ export function AnimateProvider($provide) {
           } else {
             element.setAttribute("animate", `${enabled}`);
           }
+
+          return true;
         },
 
         /**

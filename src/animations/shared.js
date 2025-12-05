@@ -143,6 +143,8 @@ export function extractElementNode(element) {
       return elm;
     }
   }
+
+  return undefined; // TODO mayb throw?
 }
 
 export function applyAnimationClassesFactory() {
@@ -305,15 +307,15 @@ export function resolveElementClasses(existing, toAdd, toRemove) {
     }
   });
 
-  function splitClassesToLookup(classes) {
-    if (isString(classes)) {
-      classes = classes.trim().split(" ");
+  function splitClassesToLookup(cls) {
+    if (isString(cls)) {
+      cls = cls.trim().split(" ");
     }
 
     const obj = {};
 
-    if (classes) {
-      classes.forEach((klass) => {
+    if (cls) {
+      cls.forEach((klass) => {
         // sometimes the split leaves empty string values
         // incase extra spaces were applied to the options
         if (klass.length) {
