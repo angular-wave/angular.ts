@@ -1,4 +1,5 @@
 import { PREFIX_REGEXP, SPECIAL_CHARS_REGEXP } from "./constants.js";
+import { isInjectable } from "./predicates";
 
 export const isProxySymbol = Symbol("isProxy");
 export const BADARG = "badarg";
@@ -123,8 +124,7 @@ export function isBlankObject(value) {
 /**
  * Determines if a reference is a `String`.
  *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `String`.
+ * @type {ng.Validator}
  */
 export function isString(value) {
   return typeof value === "string";
@@ -148,6 +148,16 @@ export function isNull(value) {
  */
 export function isNullOrUndefined(obj) {
   return obj === null || typeof obj === "undefined";
+}
+
+/**
+ * Determines if a reference is not null or undefined.
+ *
+ * @param {*} obj Reference to check.
+ * @returns {boolean} True if `value` is null or undefined.
+ */
+export function notNullOrUndefined(obj) {
+  return !isNullOrUndefined(obj);
 }
 
 /**
@@ -949,26 +959,66 @@ export function assert(argument, errorMsg = "Assertion failed") {
   }
 }
 
+/** @type {Map<ng.Validator, string>} */
+const reasons = new Map([
+  [isNullOrUndefined, "required"],
+  [Array.isArray, "notarray"],
+  [isInjectable, "notinjectable"],
+  [isDefined, "required"],
+  [isString, "notstring"],
+]);
+
+/**
+ *
+ * @param {ng.Validator} val
+ * @returns {string}
+ */
 function getReason(val) {
-  switch (val) {
-    case isNullOrUndefined:
-      return "required";
-    case Array.isArray:
-      return "notarray";
-    default:
-      return "fail";
-  }
+  return reasons.get(val) ?? "fail";
 }
 
 /**
- * Throw error if the argument is falsy.
+ * Validate a value using a predicate function.
+ * Throws if the predicate returns false.
+ *
+ * @param {ng.Validator} fn - Predicate validator function.
+ * @param {*} arg - The value to validate.
+ * @param {string} name - Parameter name (included in error message).
+ * @returns {*} The validated value.
+ * @throws {TypeError} If the value does not satisfy the validator.
  */
 export function validate(fn, arg, name) {
-  if (!fn(arg)) {
-    throw new TypeError(`badarg:${getReason(fn)} '${name}'=${arg}`);
+  if (fn(arg)) return arg;
+
+  let v;
+
+  try {
+    v = JSON.stringify(arg);
+  } catch {
+    v = String(arg);
   }
 
-  return arg;
+  throw new TypeError(`badarg:${getReason(fn)} ${name}=${v}`);
+}
+
+/**
+ * @param {*} arg - The value to validate.
+ * @param {string} name - Parameter name (included in error message).
+ * @returns {*} The validated value.
+ * @throws {TypeError} If the value does not satisfy the validator.
+ */
+export function validateRequired(arg, name) {
+  return validate(notNullOrUndefined, arg, name);
+}
+
+/**
+ * @param {*} arg - The value to validate.
+ * @param {string} name - Parameter name (included in error message).
+ * @returns {*} The validated value.
+ * @throws {TypeError} If the value does not satisfy the validator.
+ */
+export function validateArray(arg, name) {
+  return validate(Array.isArray, arg, name);
 }
 
 /**
@@ -1005,7 +1055,7 @@ export function assertArgFn(arg, name, acceptArrayAnnotation) {
   return arg;
 }
 
-/** @type {import("./interface.ts").ErrorHandlingConfig} */
+/** @type {ng.ErrorHandlingConfig} */
 const minErrConfig = {
   objectMaxDepth: 5,
   urlErrorParamsEnabled: true,
@@ -1017,8 +1067,8 @@ const minErrConfig = {
  *
  * Omitted or undefined options will leave the corresponding configuration values unchanged.
  *
- * @param {import("./interface.ts").ErrorHandlingConfig} [config]
- * @returns {import("./interface.ts").ErrorHandlingConfig}
+ * @param {ng.ErrorHandlingConfig} [config]
+ * @returns {ng.ErrorHandlingConfig}
  */
 export function errorHandlingConfig(config) {
   if (isObject(config)) {

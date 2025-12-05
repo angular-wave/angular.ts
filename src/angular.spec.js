@@ -350,9 +350,15 @@ describe("module loader", () => {
 
   it("should record calls", () => {
     const otherModule = angular.module("other", []);
-    otherModule.config("otherInit");
 
-    const myModule = angular.module("my", ["other"], "config");
+    const init = () => {};
+    const config = () => {};
+    const init2 = () => {};
+    const run = () => {};
+
+    otherModule.config(init);
+
+    const myModule = angular.module("my", ["other"], config);
     const filterFn = () => () => "filterFn";
     expect(
       myModule
@@ -365,9 +371,9 @@ describe("module loader", () => {
         .directive("d", "dd")
         .component("c", "cc")
         .controller("ctrl", "ccc")
-        .config("init2")
+        .config(init2)
         .constant("abc", 123)
-        .run("runBlock"),
+        .run(run),
     ).toBe(myModule);
 
     expect(myModule.requires).toEqual(["other"]);
@@ -391,11 +397,11 @@ describe("module loader", () => {
       ],
     ]);
     expect(myModule.configBlocks).toEqual([
-      ["$injector", "invoke", jasmine.objectContaining(["config"])],
+      ["$injector", "invoke", jasmine.objectContaining([config])],
       ["$provide", "decorator", jasmine.objectContaining(["dk", "dv"])],
-      ["$injector", "invoke", jasmine.objectContaining(["init2"])],
+      ["$injector", "invoke", jasmine.objectContaining([init2])],
     ]);
-    expect(myModule.runBlocks).toEqual(["runBlock"]);
+    expect(myModule.runBlocks).toEqual([run]);
   });
 
   it("should not throw error when `module.decorator` is declared before provider that it decorates", () => {

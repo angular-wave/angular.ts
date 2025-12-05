@@ -57,13 +57,7 @@ export function isObject(value: any): boolean;
  * @returns {boolean} True if `value` is an `Object` with a null prototype
  */
 export function isBlankObject(value: any): boolean;
-/**
- * Determines if a reference is a `String`.
- *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `String`.
- */
-export function isString(value: any): boolean;
+export function isString(value: unknown): boolean;
 /**
  * Determines if a reference is a null.
  *
@@ -78,6 +72,13 @@ export function isNull(value: any): boolean;
  * @returns {boolean} True if `value` is null or undefined.
  */
 export function isNullOrUndefined(obj: any): boolean;
+/**
+ * Determines if a reference is not null or undefined.
+ *
+ * @param {*} obj Reference to check.
+ * @returns {boolean} True if `value` is null or undefined.
+ */
+export function notNullOrUndefined(obj: any): boolean;
 /**
  * Determines if a reference is a `Number`.
  *
@@ -434,9 +435,30 @@ export function shallowCopy(src: any, dst: any): any;
  */
 export function assert(argument: boolean, errorMsg?: string): void;
 /**
- * Throw error if the argument is falsy.
+ * Validate a value using a predicate function.
+ * Throws if the predicate returns false.
+ *
+ * @param {ng.Validator} fn - Predicate validator function.
+ * @param {*} arg - The value to validate.
+ * @param {string} name - Parameter name (included in error message).
+ * @returns {*} The validated value.
+ * @throws {TypeError} If the value does not satisfy the validator.
  */
-export function validate(fn: any, arg: any, name: any): any;
+export function validate(fn: ng.Validator, arg: any, name: string): any;
+/**
+ * @param {*} arg - The value to validate.
+ * @param {string} name - Parameter name (included in error message).
+ * @returns {*} The validated value.
+ * @throws {TypeError} If the value does not satisfy the validator.
+ */
+export function validateRequired(arg: any, name: string): any;
+/**
+ * @param {*} arg - The value to validate.
+ * @param {string} name - Parameter name (included in error message).
+ * @returns {*} The validated value.
+ * @throws {TypeError} If the value does not satisfy the validator.
+ */
+export function validateArray(arg: any, name: string): any;
 /**
  * Throw error if the argument is falsy.
  */
@@ -452,12 +474,12 @@ export function assertArgFn(
  *
  * Omitted or undefined options will leave the corresponding configuration values unchanged.
  *
- * @param {import("./interface.ts").ErrorHandlingConfig} [config]
- * @returns {import("./interface.ts").ErrorHandlingConfig}
+ * @param {ng.ErrorHandlingConfig} [config]
+ * @returns {ng.ErrorHandlingConfig}
  */
 export function errorHandlingConfig(
-  config?: import("./interface.ts").ErrorHandlingConfig,
-): import("./interface.ts").ErrorHandlingConfig;
+  config?: ng.ErrorHandlingConfig,
+): ng.ErrorHandlingConfig;
 /**
  * This object provides a utility for producing rich Error messages within
  * AngularTS. It can be called as follows:

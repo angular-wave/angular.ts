@@ -4,9 +4,10 @@ import {
   instantiateWasm,
   isFunction,
   isString,
-  assertArg,
   validate,
+  isDefined,
 } from "../../../shared/utils.js";
+import { isInjectable } from "../../../shared/predicates.js";
 
 /**
  * Modules are collections of application configuration information for components:
@@ -22,7 +23,7 @@ export class NgModule {
    */
   constructor(name, requires, configFn) {
     validate(isString, name, "name");
-    validate(Array.isArray, requires, "not array");
+    validate(Array.isArray, requires, "requires");
     /**
      * Name of the current module.
      * @type {string}
@@ -58,10 +59,12 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {any} object
+   * @param {any} object - Allows undefined
    * @returns {NgModule}
    */
   value(name, object) {
+    validate(isString, name, "name");
+
     this.invokeQueue.push([$t.$provide, "value", [name, object]]);
 
     return this;
@@ -69,10 +72,13 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {any} object
+   * @param {Object|string|number} object
    * @returns {NgModule}
    */
   constant(name, object) {
+    validate(isString, name, "name");
+    validate(isDefined, object, "object");
+
     this.invokeQueue.unshift([$t.$provide, "constant", [name, object]]);
 
     return this;
@@ -84,6 +90,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   config(configFn) {
+    validate(isInjectable, configFn, "configFn");
+
     this.configBlocks.push([$t.$injector, "invoke", [configFn]]);
 
     return this;
@@ -94,6 +102,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   run(block) {
+    validate(isInjectable, block, "block");
+
     this.runBlocks.push(block);
 
     return this;
@@ -105,6 +115,9 @@ export class NgModule {
    * @returns {NgModule}
    */
   component(name, options) {
+    validate(isString, name, "name");
+    validate(isDefined, options, "object");
+
     this.invokeQueue.push([$t.$compileProvider, "component", [name, options]]);
 
     return this;
@@ -197,8 +210,8 @@ export class NgModule {
    * @return {NgModule}
    */
   filter(name, filterFn) {
-    assertArg(isString(name), "name");
-    assertArg(isFunction(filterFn), `filterFn`);
+    validate(isString, name, "name");
+    validate(isFunction, filterFn, `filterFn`);
     this.invokeQueue.push([$t.$filterProvider, "register", [name, filterFn]]);
 
     return this;

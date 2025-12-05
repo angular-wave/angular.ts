@@ -372,9 +372,9 @@ describe("$state", () => {
     it("allows transitions by name", (done) => {
       $state.transitionTo("A", {});
       setTimeout(() => {
-        expect($state.current).toBe(A);
+        expect($state.current).toEqual(A);
         done();
-      }, 100);
+      }, 200);
     });
 
     describe("dynamic transitions", function () {

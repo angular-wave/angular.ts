@@ -55,7 +55,10 @@ import {
   SseService as TSseService,
   SseConfig as TSseConfig,
 } from "./services/sse/interface.ts";
-import type { ErrorHandlingConfig as TErrorHandlingConfig } from "./shared/interface.ts";
+import type {
+  ErrorHandlingConfig as TErrorHandlingConfig,
+  Validator as TValidator,
+} from "./shared/interface.ts";
 import {
   BoundTranscludeFn as TBoundTranscludeFn,
   CompileFn as TCompileFn,
@@ -188,5 +191,6 @@ declare global {
     export type ServiceProvider = TServiceProvider;
     export type Expression = TExpression;
     export type NgModelController = TNgModelController;
+    export type Validator = TValidator;
   }
 }
