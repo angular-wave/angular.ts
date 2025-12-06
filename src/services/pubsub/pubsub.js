@@ -27,174 +27,115 @@ export class PubSubProvider {
  *  - Minimal memory churn & stable hidden-class shapes
  *  - Fast publish using flat arrays
  *  - Preserves listener order
+ *  - All publishes are asynchronous (via queueMicrotask)
  */
 export class PubSub {
-  static $nonscope = true;
-  /**
-   * Topic-based publish/subscribe channel.  Maintains a map of topics to
-   * subscriptions.  When a message is published to a topic, all functions
-   * subscribed to that topic are invoked in the order they were added.
-   * Uncaught errors abort publishing.
-   *
-   * Topics may be identified by any nonempty string, <strong>except</strong>
-   * strings corresponding to native Object properties, e.g. "constructor",
-   * "toString", "hasOwnProperty", etc.
-   *
-   */
   constructor() {
-    this.disposed = false;
+    /** @private {Object<string, Array<{fn: Function, context: any}>>} */
+    this._topics = Object.create(null);
 
-    /**
-     * The next available subscription key.  Internally, this is an index into the
-     * sparse array of subscriptions.
-     *
-     * @private {number}
-     */
-    this.key = 1;
-
-    /**
-     * Array of subscription keys pending removal once publishing is done.
-     *
-     * @private {!Array<number>}
-     * @const
-     */
-    this.pendingKeys = [];
-
-    /**
-     * Lock to prevent the removal of subscriptions during publishing. Incremented
-     * at the beginning of {@link #publish}, and decremented at the end.
-     *
-     * @private {number}
-     */
-    this.publishDepth = 0;
-
-    /**
-     * Sparse array of subscriptions. Each subscription is represented by a tuple
-     * comprising a topic identifier, a function, and an optional context object.
-     * Each tuple occupies three consecutive positions in the array, with the
-     * topic identifier at index n, the function at index (n + 1), the context
-     * object at index (n + 2), the next topic at index (n + 3), etc. (This
-     * representation minimizes the number of object allocations and has been
-     * shown to be faster than an array of objects with three key-value pairs or
-     * three parallel arrays, especially on IE.)
-     *
-     * Once a subscription is removed via {@link unsubscribe} or {@link unsubscribeByKey}, the three
-     * corresponding array elements are deleted, and never reused. This means the
-     * total number of subscriptions during the lifetime of the pubsub channel is
-     * limited by the maximum length of a JavaScript array to (2^32 - 1) / 3 =
-     * 1,431,655,765 subscriptions, which should suffice for most applications.
-     *
-     * @private {!Array<?>}
-     * @const
-     */
-    this.subscriptions = [];
-
-    /**
-     * Map of topics to arrays of subscription keys.
-     *
-     * @private {!Object<!Array<number>>}
-     */
-    this.topics = {};
+    /** @private */
+    this._disposed = false;
   }
 
   /**
-   * Subscribes a function to a topic.  The function is invoked as a method on
-   * the given `opt_context` object, or in the global scope if no context
-   * is specified.  Subscribing the same function to the same topic multiple
-   * times will result in multiple function invocations while publishing.
-   * Returns a subscription key that can be used to unsubscribe the function from
-   * the topic via {@link unsubscribeByKey}.
-   *
-   * @param {string} topic Topic to subscribe to.
-   * @param {Function} fn Function to be invoked when a message is published to
-   *     the given topic.
-   * @param {Object=} opt_context Object in whose context the function is to be
-   *     called (the global scope if none).
-   * @return {number} Subscription key.
+   * Set instance to initial state
    */
-  subscribe(topic, fn, opt_context = null) {
-    let keys = this.topics[topic];
+  reset() {
+    /** @private {Object<string, Array<{fn: Function, context: any}>>} */
+    this._topics = Object.create(null);
 
-    if (!keys) {
-      // First subscription to this topic; initialize subscription key array.
-      keys = this.topics[topic] = [];
-    }
-
-    // Push the tuple representing the subscription onto the subscription array.
-    const { key } = this;
-
-    this.subscriptions[key] = topic;
-    this.subscriptions[key + 1] = fn;
-    this.subscriptions[key + 2] = opt_context;
-    this.key = key + 3;
-
-    // Push the subscription key onto the list of subscriptions for the topic.
-    keys.push(key);
-
-    // Return the subscription key.
-    return key;
+    /** @private */
+    this._disposed = false;
   }
 
   /**
-   * Subscribes a single-use function to a topic.  The function is invoked as a
-   * method on the given `opt_context` object, or in the global scope if
-   * no context is specified, and is then unsubscribed.  Returns a subscription
-   * key that can be used to unsubscribe the function from the topic via
-   * {@link unsubscribeByKey}.
-   *
-   * @param {string} topic Topic to subscribe to.
-   * @param {Function} fn Function to be invoked once and then unsubscribed when
-   *     a message is published to the given topic.
-   * @param {Object=} opt_context Object in whose context the function is to be
-   *     called (the global scope if none).
-   * @return {number} Subscription key.
+   * Checks if instance has been disposed.
+   * @returns {boolean} True if disposed.
    */
-  subscribeOnce(topic, fn, opt_context = null) {
+  isDisposed() {
+    return this._disposed;
+  }
+
+  /**
+   * Dispose the instance, removing all topics and listeners.
+   */
+  dispose() {
+    if (this._disposed) return;
+    this._disposed = true;
+    this._topics = Object.create(null);
+  }
+
+  /**
+   * Subscribe a function to a topic.
+   * @param {string} topic - The topic to subscribe to.
+   * @param {Function} fn - The callback function to invoke when published.
+   * @param {*} [context] - Optional `this` context for the callback.
+   * @returns {() => boolean} A function that unsubscribes this listener.
+   */
+  subscribe(topic, fn, context = undefined) {
+    if (this._disposed) return () => false;
+
+    /** @type {Array<{fn: Function, context: any}>} */
+    let listeners = this._topics[topic];
+
+    if (!listeners) this._topics[topic] = listeners = [];
+
+    const entry = { fn, context };
+
+    listeners.push(entry);
+
+    return () => this.unsubscribe(topic, fn, context);
+  }
+
+  /**
+   * Subscribe a function to a topic only once.
+   * Listener is removed before the first invocation.
+   * @param {string} topic - The topic to subscribe to.
+   * @param {Function} fn - The callback function.
+   * @param {*} [context] - Optional `this` context for the callback.
+   * @returns {() => boolean} A function that unsubscribes this listener.
+   */
+  subscribeOnce(topic, fn, context = undefined) {
+    if (this._disposed) return () => false;
+
     let called = false;
 
-    // Behold the power of lexical closures!
-    const key = this.subscribe(
-      topic,
-      (...args) => {
-        if (!called) {
-          called = true;
+    const wrapper = (...args) => {
+      if (called) return;
+      called = true;
 
-          // Unsubscribe before calling function so the function is unsubscribed
-          // even if it throws an exception.
-          this.unsubscribeByKey(key);
+      unsub(); // unsubscribe before running
+      fn.apply(context, args);
+    };
 
-          fn.apply(opt_context, args);
-        }
-      },
-      this,
-    );
+    const unsub = this.subscribe(topic, wrapper);
 
-    return key;
+    return unsub;
   }
 
   /**
-   * Unsubscribes a function from a topic.  Only deletes the first match found.
-   * Returns a Boolean indicating whether a subscription was removed.
-   *
-   * @param {string} topic Topic to unsubscribe from.
-   * @param {Function} fn Function to unsubscribe.
-   * @param {Object=} opt_context Object in whose context the function was to be
-   *     called (the global scope if none).
-   * @return {boolean} Whether a matching subscription was removed.
+   * Unsubscribe a specific function from a topic.
+   * Matches by function reference and optional context.
+   * @param {string} topic - The topic to unsubscribe from.
+   * @param {Function} fn - The listener function.
+   * @param {*} [context] - Optional `this` context.
+   * @returns {boolean} True if the listener was found and removed.
    */
-  unsubscribe(topic, fn, opt_context = null) {
-    const keys = this.topics[topic];
+  unsubscribe(topic, fn, context = undefined) {
+    if (this._disposed) return false;
 
-    if (keys) {
-      const { subscriptions } = this;
+    const listeners = this._topics[topic];
 
-      const key = keys.find(
-        (k) =>
-          subscriptions[k + 1] === fn && subscriptions[k + 2] === opt_context,
-      );
+    if (!listeners || listeners.length === 0) return false;
 
-      if (key !== undefined) {
-        return this.unsubscribeByKey(key);
+    for (let i = 0; i < listeners.length; i++) {
+      const l = listeners[i];
+
+      if (l.fn === fn && l.context === context) {
+        listeners.splice(i, 1);
+
+        return true;
       }
     }
 
@@ -202,126 +143,40 @@ export class PubSub {
   }
 
   /**
-   * Removes a subscription based on the key returned by {@link subscribe}.
-   * No-op if no matching subscription is found.  Returns a Boolean indicating
-   * whether a subscription was removed.
-   *
-   * @param {number} key Subscription key.
-   * @return {boolean} Whether a matching subscription was removed.
+   * Get the number of subscribers for a topic.
+   * @param {string} topic
+   * @returns {number}
    */
-  unsubscribeByKey(key) {
-    const topic = this.subscriptions[key];
+  getCount(topic) {
+    const listeners = this._topics[topic];
 
-    if (topic) {
-      const keys = this.topics[topic];
-
-      if (this.publishDepth !== 0) {
-        // Defer removal until after publishing is complete, but replace the
-        // function with a no-op so it isn't called.
-        this.pendingKeys.push(key);
-        this.subscriptions[key + 1] = () => {
-          /* empty */
-        };
-      } else {
-        if (keys) {
-          this.topics[topic] = keys.filter((k) => k !== key);
-        }
-        delete this.subscriptions[key];
-        delete this.subscriptions[key + 1];
-        delete this.subscriptions[key + 2];
-      }
-    }
-
-    return !!topic;
+    return listeners ? listeners.length : 0;
   }
 
   /**
-   * Publishes a message to a topic.  Calls functions subscribed to the topic in
-   * the order in which they were added, passing all arguments along.
-   *
-   * If this object was created with async=true, subscribed functions are called
-   * via `queueMicrotask`.  Otherwise, the functions are called directly, and if
-   * any of them throw an uncaught error, publishing is aborted.
-   *
-   * @param {string} topic Topic to publish to.
-   * @param {...*} var_args Arguments that are applied to each subscription
-   *     function.
-   * @return {boolean} Whether any subscriptions were called.
+   * Publish a value to a topic asynchronously.
+   * All listeners are invoked in the order they were added.
+   * @param {string} topic - The topic to publish.
+   * @param {...*} args - Arguments to pass to listeners.
+   * @returns {boolean} True if any listeners exist for this topic.
    */
-  publish(topic, ...var_args) {
-    const keys = this.topics[topic];
+  publish(topic, ...args) {
+    if (this._disposed) return false;
 
-    if (keys) {
-      const args = var_args;
+    const listeners = this._topics[topic];
 
-      // For each key in the list of subscription keys for the topic, schedule
-      // the function to be applied to the arguments in the appropriate context.
-      for (let i = 0, l = keys.length; i < l; i++) {
-        const key = keys[i];
+    if (!listeners || listeners.length === 0) return false;
 
-        const fn = this.subscriptions[key + 1];
+    // snapshot to prevent modifications during publish from affecting this call
+    const snapshot = listeners.slice();
 
-        const context = this.subscriptions[key + 2];
-
-        queueMicrotask(() => {
-          fn.apply(context, args);
-        });
+    queueMicrotask(() => {
+      for (const { fn, context } of snapshot) {
+        fn.apply(context, args);
       }
+    });
 
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Clears the subscription list for a topic, or all topics if unspecified.
-   * @param {string=} opt_topic Topic to clear (all topics if unspecified).
-   */
-  clear(opt_topic) {
-    if (opt_topic) {
-      const keys = this.topics[opt_topic];
-
-      if (keys) {
-        keys.forEach(this.unsubscribeByKey, this);
-        delete this.topics[opt_topic];
-      }
-    } else {
-      this.subscriptions.length = 0;
-      this.topics = {};
-    }
-  }
-
-  /**
-   * Returns the number of subscriptions to the given topic (or all topics if
-   * unspecified). This number will not change while publishing any messages.
-   * @param {string=} opt_topic The topic (all topics if unspecified).
-   * @return {number} Number of subscriptions to the topic.
-   */
-  getCount(opt_topic) {
-    if (opt_topic) {
-      const keys = this.topics[opt_topic];
-
-      return keys ? keys.length : 0;
-    }
-
-    let count = 0;
-
-    for (const topic in this.topics) {
-      count += this.getCount(topic);
-    }
-
-    return count;
-  }
-
-  isDisposed() {
-    return this.disposed;
-  }
-
-  dispose() {
-    this.clear();
-    this.pendingKeys.length = 0;
-    this.disposed = true;
+    return true;
   }
 }
 

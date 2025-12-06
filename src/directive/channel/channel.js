@@ -13,7 +13,7 @@ export function ngChannelDirective($eventBus) {
 
       const hasTemplateContent = element.childNodes.length > 0;
 
-      const key = $eventBus.subscribe(channel, (value) => {
+      const unsubscribe = $eventBus.subscribe(channel, (value) => {
         if (hasTemplateContent) {
           if (isObject(value)) {
             scope.$merge(value);
@@ -23,9 +23,7 @@ export function ngChannelDirective($eventBus) {
         }
       });
 
-      scope.$on("$destroy", () => {
-        $eventBus.unsubscribeByKey(key);
-      });
+      scope.$on("$destroy", () => unsubscribe());
     },
   };
 }

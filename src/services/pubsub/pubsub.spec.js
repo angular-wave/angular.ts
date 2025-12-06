@@ -15,15 +15,13 @@ describe("PubSubProvider", () => {
 
 describe("PubSub", function () {
   let pubsub;
-  let asyncPubsub;
 
   beforeEach(function () {
     pubsub = new PubSub();
-    asyncPubsub = new PubSub(true);
   });
 
   afterEach(function () {
-    asyncPubsub.dispose();
+    pubsub.dispose();
     pubsub.dispose();
   });
 
@@ -174,16 +172,14 @@ describe("PubSub", function () {
 
   it("should async subscribe once correctly", function (done) {
     let callCount = 0;
-    asyncPubsub.subscribeOnce("someTopic", () => {
+    pubsub.subscribeOnce("someTopic", () => {
       callCount++;
     });
-    expect(asyncPubsub.getCount("someTopic")).toBe(1);
-
-    asyncPubsub.publish("someTopic");
-    asyncPubsub.publish("someTopic");
+    expect(pubsub.getCount("someTopic")).toBe(1);
+    pubsub.publish("someTopic");
 
     setTimeout(() => {
-      expect(asyncPubsub.getCount("someTopic")).toBe(0);
+      expect(pubsub.getCount("someTopic")).toBe(0);
       expect(callCount).toBe(1);
       done();
     }, 0);
@@ -191,20 +187,20 @@ describe("PubSub", function () {
 
   it("should async subscribe once with context correctly", function (done) {
     const context = { callCount: 0 };
-    asyncPubsub.subscribeOnce(
+    pubsub.subscribeOnce(
       "someTopic",
       function () {
         this.callCount++;
       },
       context,
     );
-    expect(asyncPubsub.getCount("someTopic")).toBe(1);
+    expect(pubsub.getCount("someTopic")).toBe(1);
 
-    asyncPubsub.publish("someTopic");
-    asyncPubsub.publish("someTopic");
+    pubsub.publish("someTopic");
+    pubsub.publish("someTopic");
 
     setTimeout(() => {
-      expect(asyncPubsub.getCount("someTopic")).toBe(0);
+      expect(pubsub.getCount("someTopic")).toBe(0);
       expect(context.callCount).toBe(1);
       done();
     }, 0);
@@ -212,7 +208,7 @@ describe("PubSub", function () {
 
   it("should async subscribe once with context and value correctly", function (done) {
     const context = { callCount: 0, value: 0 };
-    asyncPubsub.subscribeOnce(
+    pubsub.subscribeOnce(
       "someTopic",
       function (value) {
         this.callCount++;
@@ -220,13 +216,13 @@ describe("PubSub", function () {
       },
       context,
     );
-    expect(asyncPubsub.getCount("someTopic")).toBe(1);
+    expect(pubsub.getCount("someTopic")).toBe(1);
 
-    asyncPubsub.publish("someTopic", 17);
-    asyncPubsub.publish("someTopic", 42);
+    pubsub.publish("someTopic", 17);
+    pubsub.publish("someTopic", 42);
 
     setTimeout(() => {
-      expect(asyncPubsub.getCount("someTopic")).toBe(0);
+      expect(pubsub.getCount("someTopic")).toBe(0);
       expect(context.callCount).toBe(1);
       expect(context.value).toBe(17);
       done();
@@ -317,33 +313,30 @@ describe("PubSub", function () {
     let value = null;
 
     function resubscribe(iteration, newValue) {
-      asyncPubsub.subscribeOnce(
-        "someTopic",
-        resubscribe.bind(null, iteration + 1),
-      );
+      pubsub.subscribeOnce("someTopic", resubscribe.bind(null, iteration + 1));
       value = `${newValue}:${iteration}`;
     }
 
-    asyncPubsub.subscribeOnce("someTopic", resubscribe.bind(null, 0));
-    expect(asyncPubsub.getCount("someTopic")).toBe(1);
+    pubsub.subscribeOnce("someTopic", resubscribe.bind(null, 0));
+    expect(pubsub.getCount("someTopic")).toBe(1);
     expect(value).toBeNull();
 
-    asyncPubsub.publish("someTopic", "foo");
+    pubsub.publish("someTopic", "foo");
 
     setTimeout(() => {
-      expect(asyncPubsub.getCount("someTopic")).toBe(1);
+      expect(pubsub.getCount("someTopic")).toBe(1);
       expect(value).toBe("foo:0");
 
-      asyncPubsub.publish("someTopic", "bar");
+      pubsub.publish("someTopic", "bar");
 
       setTimeout(() => {
-        expect(asyncPubsub.getCount("someTopic")).toBe(1);
+        expect(pubsub.getCount("someTopic")).toBe(1);
         expect(value).toBe("bar:1");
 
-        asyncPubsub.publish("someTopic", "baz");
+        pubsub.publish("someTopic", "baz");
 
         setTimeout(() => {
-          expect(asyncPubsub.getCount("someTopic")).toBe(1);
+          expect(pubsub.getCount("someTopic")).toBe(1);
           expect(value).toBe("baz:2");
           done();
         }, 0);
