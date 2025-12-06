@@ -19,7 +19,7 @@ export class PubSubProvider {
 }
 
 export class PubSub {
-  static $nonscope;
+  static $nonscope = true;
   /**
    * Topic-based publish/subscribe channel.  Maintains a map of topics to
    * subscriptions.  When a message is published to a topic, all functions
@@ -30,10 +30,8 @@ export class PubSub {
    * strings corresponding to native Object properties, e.g. "constructor",
    * "toString", "hasOwnProperty", etc.
    *
-   * @param {boolean=} async Enable asynchronous behavior.  Recommended for
-   *     new code.  See notes on the publish() method.
    */
-  constructor(async = false) {
+  constructor() {
     this.disposed = false;
 
     /**
@@ -68,8 +66,9 @@ export class PubSub {
      * object at index (n + 2), the next topic at index (n + 3), etc. (This
      * representation minimizes the number of object allocations and has been
      * shown to be faster than an array of objects with three key-value pairs or
-     * three parallel arrays, especially on IE.) Once a subscription is removed
-     * via {@link unsubscribe} or {@link unsubscribeByKey}, the three
+     * three parallel arrays, especially on IE.)
+     *
+     * Once a subscription is removed via {@link unsubscribe} or {@link unsubscribeByKey}, the three
      * corresponding array elements are deleted, and never reused. This means the
      * total number of subscriptions during the lifetime of the pubsub channel is
      * limited by the maximum length of a JavaScript array to (2^32 - 1) / 3 =
@@ -86,11 +85,6 @@ export class PubSub {
      * @private {!Object<!Array<number>>}
      */
     this.topics = {};
-
-    /**
-     * @private @const {boolean}
-     */
-    this.async_ = Boolean(async);
   }
 
   /**
@@ -176,7 +170,7 @@ export class PubSub {
    * @param {Object} context Context in which to run the function.
    * @param {Array} args Arguments to pass to the function.
    */
-  static runAsync_(fn, context, args) {
+  static runAsync(fn, context, args) {
     queueMicrotask(() => {
       fn.apply(context, args);
     });
@@ -264,45 +258,16 @@ export class PubSub {
     if (keys) {
       const args = var_args;
 
-      if (this.async_) {
-        // For each key in the list of subscription keys for the topic, schedule
-        // the function to be applied to the arguments in the appropriate context.
-        for (let i = 0; i < keys.length; i++) {
-          const key = keys[i];
+      // For each key in the list of subscription keys for the topic, schedule
+      // the function to be applied to the arguments in the appropriate context.
+      for (let i = 0, l = keys.length; i < l; i++) {
+        const key = keys[i];
 
-          PubSub.runAsync_(
-            this.subscriptions[key + 1],
-            this.subscriptions[key + 2],
-            args,
-          );
-        }
-      } else {
-        this.publishDepth++;
-
-        try {
-          for (
-            let i = 0, len = keys.length;
-            i < len && !this.isDisposed();
-            i++
-          ) {
-            const key = keys[i];
-
-            this.subscriptions[key + 1].apply(
-              this.subscriptions[key + 2],
-              args,
-            );
-          }
-        } finally {
-          this.publishDepth--;
-
-          if (this.pendingKeys.length > 0 && this.publishDepth === 0) {
-            let pendingKey;
-
-            while ((pendingKey = this.pendingKeys.pop())) {
-              this.unsubscribeByKey(pendingKey);
-            }
-          }
-        }
+        PubSub.runAsync(
+          this.subscriptions[key + 1],
+          this.subscriptions[key + 2],
+          args,
+        );
       }
 
       return true;
@@ -362,4 +327,4 @@ export class PubSub {
   }
 }
 
-export const EventBus = new PubSub(true);
+export const EventBus = new PubSub();

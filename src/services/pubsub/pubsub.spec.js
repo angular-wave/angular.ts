@@ -1,6 +1,7 @@
 import { PubSub } from "./pubsub.js";
 import { createInjector } from "../../core/di/injector.js";
 import { Angular } from "../../angular.js";
+import { wait } from "../../shared/utils.js";
 
 describe("PubSubProvider", () => {
   it("should be injectable", () => {
@@ -9,7 +10,6 @@ describe("PubSubProvider", () => {
     const $injector = createInjector(["test"]);
     expect($injector.has("$eventBus")).toBeTrue();
     expect($injector.get("$eventBus") instanceof PubSub).toBeTrue();
-    expect($injector.get("$eventBus").async_).toBeTrue();
   });
 });
 
@@ -117,7 +117,7 @@ describe("PubSub", function () {
     expect(pubsub.getCount("X")).toBe(0);
   });
 
-  it("should subscribe once correctly", function () {
+  it("should subscribe once correctly", async function () {
     let called;
     let context;
 
@@ -125,10 +125,12 @@ describe("PubSub", function () {
     pubsub.subscribeOnce("someTopic", () => {
       called = true;
     });
+    await wait();
     expect(pubsub.getCount("someTopic")).toBe(1);
     expect(called).toBe(false);
 
     pubsub.publish("someTopic");
+    await wait();
     expect(pubsub.getCount("someTopic")).toBe(0);
     expect(called).toBe(true);
 
@@ -140,10 +142,12 @@ describe("PubSub", function () {
       },
       context,
     );
+    await wait();
     expect(pubsub.getCount("someTopic")).toBe(1);
     expect(context.called).toBe(false);
 
     pubsub.publish("someTopic");
+    await wait();
     expect(pubsub.getCount("someTopic")).toBe(0);
     expect(context.called).toBe(true);
 
@@ -156,11 +160,13 @@ describe("PubSub", function () {
       },
       context,
     );
+    await wait();
     expect(pubsub.getCount("someTopic")).toBe(1);
     expect(context.called).toBe(false);
     expect(context.value).toBe(0);
 
     pubsub.publish("someTopic", 17);
+    await wait();
     expect(pubsub.getCount("someTopic")).toBe(0);
     expect(context.called).toBe(true);
     expect(context.value).toBe(17);
@@ -227,7 +233,7 @@ describe("PubSub", function () {
     }, 0);
   });
 
-  it("should subscribe once with bound function correctly", function () {
+  it("should subscribe once with bound function correctly", async function () {
     const context = { called: false, value: 0 };
 
     function subscriber(value) {
@@ -236,17 +242,21 @@ describe("PubSub", function () {
     }
 
     pubsub.subscribeOnce("someTopic", subscriber.bind(context));
+    await wait();
+
     expect(pubsub.getCount("someTopic")).toBe(1);
     expect(context.called).toBe(false);
     expect(context.value).toBe(0);
 
     pubsub.publish("someTopic", 17);
+    await wait();
+
     expect(pubsub.getCount("someTopic")).toBe(0);
     expect(context.called).toBe(true);
     expect(context.value).toBe(17);
   });
 
-  it("should subscribe once with partial function correctly", function () {
+  it("should subscribe once with partial function correctly", async function () {
     let called = false;
     let value = 0;
 
@@ -256,17 +266,21 @@ describe("PubSub", function () {
     }
 
     pubsub.subscribeOnce("someTopic", subscriber.bind(null, true));
+    await wait();
+
     expect(pubsub.getCount("someTopic")).toBe(1);
     expect(called).toBe(false);
     expect(value).toBe(0);
 
     pubsub.publish("someTopic", 17);
+    await wait();
+
     expect(pubsub.getCount("someTopic")).toBe(0);
     expect(called).toBe(true);
     expect(value).toBe(17);
   });
 
-  it("should handle self resubscribe correctly", function () {
+  it("should handle self resubscribe correctly", async function () {
     let value = null;
 
     function resubscribe(iteration, newValue) {
@@ -275,18 +289,26 @@ describe("PubSub", function () {
     }
 
     pubsub.subscribeOnce("someTopic", resubscribe.bind(null, 0));
+    await wait();
+
     expect(pubsub.getCount("someTopic")).toBe(1);
     expect(value).toBeNull();
 
     pubsub.publish("someTopic", "foo");
+    await wait();
+
     expect(pubsub.getCount("someTopic")).toBe(1);
     expect(value).toBe("foo:0");
 
     pubsub.publish("someTopic", "bar");
+    await wait();
+
     expect(pubsub.getCount("someTopic")).toBe(1);
     expect(value).toBe("bar:1");
 
     pubsub.publish("someTopic", "baz");
+    await wait();
+
     expect(pubsub.getCount("someTopic")).toBe(1);
     expect(value).toBe("baz:2");
   });
@@ -352,30 +374,35 @@ describe("PubSub", function () {
       expect(record.y).toBe("y");
     }
 
-    it("should call subscribed functions on publish", function () {
+    it("should call subscribed functions on publish", async function () {
       pubsub.subscribe(SOME_TOPIC, foo);
       pubsub.subscribe(SOME_TOPIC, bar, context);
 
       expect(pubsub.publish(SOME_TOPIC, { x: "x", y: "y" })).toBe(true);
+      await wait();
       expect(fooCalled).toBe(true, "foo() must have been called");
       expect(barCalled).toBe(true, "bar() must have been called");
     });
 
-    it("should not call unsubscribed functions on publish", function () {
+    it("should not call unsubscribed functions on publish", async function () {
       pubsub.subscribe(SOME_TOPIC, foo);
       pubsub.subscribe(SOME_TOPIC, bar, context);
 
       pubsub.publish(SOME_TOPIC, { x: "x", y: "y" });
+      await wait();
+      expect(fooCalled).toBe(true, "foo() must have been called");
+      expect(barCalled).toBe(true, "bar() must have been called");
       fooCalled = false;
       barCalled = false;
       expect(pubsub.unsubscribe(SOME_TOPIC, foo)).toBe(true);
-
       expect(pubsub.publish(SOME_TOPIC, { x: "x", y: "y" })).toBe(true);
+
+      await wait();
       expect(fooCalled).toBe(false, "foo() must not have been called");
       expect(barCalled).toBe(true, "bar() must have been called");
     });
 
-    it("should only call functions subscribed to the correct topic", function () {
+    it("should only call functions subscribed to the correct topic", async function () {
       pubsub.subscribe(SOME_TOPIC, bar, context);
       pubsub.subscribe("differentTopic", foo);
 
@@ -383,12 +410,13 @@ describe("PubSub", function () {
       fooCalled = false;
       barCalled = false;
 
+      await wait();
       expect(pubsub.publish(SOME_TOPIC, { x: "x", y: "y" })).toBe(true);
       expect(fooCalled).toBe(false, "foo() must not have been called");
       expect(barCalled).toBe(true, "bar() must have been called");
     });
 
-    it("should trigger functions if not arguments are provided", function () {
+    it("should trigger functions if not arguments are provided", async function () {
       let called = false;
       pubsub.subscribe(SOME_TOPIC, () => {
         called = true;
@@ -396,6 +424,7 @@ describe("PubSub", function () {
       });
 
       pubsub.publish(SOME_TOPIC);
+      await wait();
 
       expect(pubsub.publish(SOME_TOPIC)).toBe(true);
       expect(called).toBeTrue();
