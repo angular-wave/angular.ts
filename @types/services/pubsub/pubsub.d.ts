@@ -15,7 +15,7 @@ export class PubSubProvider {
   $get: () => PubSub;
 }
 export class PubSub {
-  static $nonscope: any;
+  static $nonscope: boolean;
   /**
    * Runs a function asynchronously.
    *
@@ -24,21 +24,7 @@ export class PubSub {
    * @param {Object} context Context in which to run the function.
    * @param {Array} args Arguments to pass to the function.
    */
-  private static runAsync_;
-  /**
-   * Topic-based publish/subscribe channel.  Maintains a map of topics to
-   * subscriptions.  When a message is published to a topic, all functions
-   * subscribed to that topic are invoked in the order they were added.
-   * Uncaught errors abort publishing.
-   *
-   * Topics may be identified by any nonempty string, <strong>except</strong>
-   * strings corresponding to native Object properties, e.g. "constructor",
-   * "toString", "hasOwnProperty", etc.
-   *
-   * @param {boolean=} async Enable asynchronous behavior.  Recommended for
-   *     new code.  See notes on the publish() method.
-   */
-  constructor(async?: boolean | undefined);
+  private static runAsync;
   disposed: boolean;
   /**
    * The next available subscription key.  Internally, this is an index into the
@@ -69,8 +55,9 @@ export class PubSub {
    * object at index (n + 2), the next topic at index (n + 3), etc. (This
    * representation minimizes the number of object allocations and has been
    * shown to be faster than an array of objects with three key-value pairs or
-   * three parallel arrays, especially on IE.) Once a subscription is removed
-   * via {@link unsubscribe} or {@link unsubscribeByKey}, the three
+   * three parallel arrays, especially on IE.)
+   *
+   * Once a subscription is removed via {@link unsubscribe} or {@link unsubscribeByKey}, the three
    * corresponding array elements are deleted, and never reused. This means the
    * total number of subscriptions during the lifetime of the pubsub channel is
    * limited by the maximum length of a JavaScript array to (2^32 - 1) / 3 =
@@ -86,10 +73,6 @@ export class PubSub {
    * @private {!Object<!Array<number>>}
    */
   private topics;
-  /**
-   * @private @const {boolean}
-   */
-  private async_;
   /**
    * Subscribes a function to a topic.  The function is invoked as a method on
    * the given `opt_context` object, or in the global scope if no context
