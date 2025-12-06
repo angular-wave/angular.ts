@@ -961,7 +961,7 @@ export function assert(argument, errorMsg = "Assertion failed") {
 
 /** @type {Map<ng.Validator, string>} */
 const reasons = new Map([
-  [isNullOrUndefined, "required"],
+  [notNullOrUndefined, "required"],
   [Array.isArray, "notarray"],
   [isInjectable, "notinjectable"],
   [isDefined, "required"],
@@ -980,6 +980,7 @@ function getReason(val) {
 /**
  * Validate a value using a predicate function.
  * Throws if the predicate returns false.
+ * IMPORTANT: use this function only for developper errors and not for user/data errors
  *
  * @param {ng.Validator} fn - Predicate validator function.
  * @param {*} arg - The value to validate.
@@ -1019,6 +1020,16 @@ export function validateRequired(arg, name) {
  */
 export function validateArray(arg, name) {
   return validate(Array.isArray, arg, name);
+}
+
+/**
+ * @param {*} arg - The value to validate.
+ * @param {string} name - Parameter name (included in error message).
+ * @returns {*} The validated value.
+ * @throws {TypeError} If the value does not satisfy the validator.
+ */
+export function validateIsString(arg, name) {
+  return validate(isString, arg, name);
 }
 
 /**
