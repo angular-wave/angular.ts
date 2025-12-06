@@ -11,7 +11,7 @@ A messaging service, backed by an instance of
 the original
 [Google Closure PubSub](https://google.github.io/closure-library/api/goog.pubsub.PubSub.html)
 but uses
-[`Promise.resolve()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/resolve)
+[`queueMicrotask`](https://developer.mozilla.org/en-US/docs/Web/API/Window/queueMicrotask)
 instead of
 [`Window.setTimeout()`](https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout)
 for its async implementation. `$eventBus` allows communication between an
