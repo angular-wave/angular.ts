@@ -30,6 +30,10 @@ describe("PubSub", function () {
     expect(pubsub instanceof PubSub).toBe(true);
   });
 
+  it("should provide injecables", function () {
+    expect(pubsub.$exceptionHandler).not.toBeNull();
+  });
+
   it("should dispose of the PubSub instance", function () {
     expect(pubsub.isDisposed()).toBe(false);
     pubsub.dispose();
@@ -421,6 +425,27 @@ describe("PubSub", function () {
 
       expect(pubsub.publish(SOME_TOPIC)).toBe(true);
       expect(called).toBeTrue();
+    });
+
+    it("should delegate to exception handler if an error is thrown", async function () {
+      let thrown = false;
+      let throwErro = new Error();
+      let receivedErr;
+
+      pubsub.$exceptionHandler = (err) => {
+        thrown = true;
+        receivedErr = err;
+      };
+
+      pubsub.subscribe(SOME_TOPIC, () => {
+        throw throwErro;
+      });
+
+      pubsub.publish(SOME_TOPIC);
+      await wait();
+
+      expect(thrown).toBe(true);
+      expect(receivedErr).toBe(throwErro);
     });
   });
 });

@@ -1,6 +1,7 @@
 {
   "entryPoints": ["src/interface.ts"],
   "entryPointStrategy": "expand",
+  "excludePrivate": true,
   "out": "./typedoc",
   "disableSources": true,
   "name": "AngularTS",

@@ -9,27 +9,16 @@ export class PubSubProvider {
    * @type {PubSub}
    */
   eventBus: PubSub;
-  /**
-   * @returns {PubSub}
-   */
-  $get: () => PubSub;
+  $get: any[];
+  $exceptionHandler: import("../exception/interface.ts").ExceptionHandler;
 }
-/**
- * A lightweight PubSub implementation optimized for
- * modern JavaScript engines.
- *
- * Features:
- *  - Constant-time subscribe / unsubscribe
- *  - Minimal memory churn & stable hidden-class shapes
- *  - Fast publish using flat arrays
- *  - Preserves listener order
- *  - All publishes are asynchronous (via queueMicrotask)
- */
 export class PubSub {
   /** @private {Object<string, Array<{fn: Function, context: any}>>} */
   private _topics;
   /** @private */
   private _disposed;
+  /** @type {ng.ExceptionHandlerService} */
+  $exceptionHandler: ng.ExceptionHandlerService;
   /**
    * Set instance to initial state
    */
