@@ -18,7 +18,6 @@ describe("channel", () => {
       });
 
     spyOn(EventBus, "subscribe").and.callThrough();
-    unsubscribeSpy = spyOn(EventBus, "unsubscribeByKey").and.callThrough();
   });
 
   it("should subscribe to the specified EventBus channel", () => {
@@ -42,11 +41,12 @@ describe("channel", () => {
   });
 
   it("should unsubscribe from the EventBus when the scope is destroyed", () => {
+    EventBus.reset();
     element = $compile('<div ng-channel="testChannel"></div>')($scope);
-
+    expect(EventBus.getCount("testChannel")).toEqual(1);
     $scope.$destroy();
 
-    expect(unsubscribeSpy).toHaveBeenCalled();
+    expect(EventBus.getCount("testChannel")).toEqual(0);
   });
 
   it("should handle templates when EventBus emits a value", async () => {
