@@ -1,15 +1,14 @@
 import { $injectTokens } from "../../injection-tokens.js";
 import {
   BADARG,
-  BADARGKEY,
   BADARGVALUE,
   assert,
   isDefined,
-  isFunction,
   isNullOrUndefined,
   isNumber,
-  isObject,
   isString,
+  validateIsString,
+  validateRequired,
 } from "../../shared/utils.js";
 
 /**
@@ -42,8 +41,6 @@ export class CookieService {
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    */
   constructor(defaults, $exceptionHandler) {
-    assert(isObject(defaults), BADARG);
-    assert(isFunction($exceptionHandler), BADARG);
     /** @type {ng.CookieOptions} */
     this.defaults = Object.freeze({ ...defaults });
     this.$exceptionHandler = $exceptionHandler;
@@ -57,7 +54,7 @@ export class CookieService {
    * @throws {URIError} – If decodeURIComponent fails.
    */
   get(key) {
-    assert(isString(key), BADARG);
+    validateIsString(key, "key");
 
     try {
       const all = parseCookies();
@@ -77,7 +74,8 @@ export class CookieService {
    * @throws {SyntaxError} if cookie JSON is invalid
    */
   getObject(key) {
-    assert(isString(key), BADARG);
+    validateIsString(key, "key");
+
     const raw = this.get(key);
 
     if (!raw) return null;
@@ -113,8 +111,8 @@ export class CookieService {
    * @param {ng.CookieOptions} [options]
    */
   put(key, value, options = {}) {
-    assert(isString(key), BADARGKEY);
-    assert(isString(value), BADARGVALUE);
+    validateIsString(key, "key");
+    validateIsString(value, "value");
     const encodedKey = encodeURIComponent(key);
 
     const encodedVal = encodeURIComponent(value);
@@ -138,7 +136,8 @@ export class CookieService {
    * @throws {TypeError} if Object cannot be converted to JSON
    */
   putObject(key, value, options) {
-    assert(isString(key), BADARGKEY);
+    validateIsString(key, "key");
+    validateRequired(value, "value");
     assert(!isNullOrUndefined(value), BADARGVALUE);
 
     try {
@@ -159,7 +158,7 @@ export class CookieService {
    * @param {ng.CookieOptions} [options]
    */
   remove(key, options = {}) {
-    assert(isString(key), BADARG);
+    validateIsString(key, "key");
     this.put(key, "", {
       ...this.defaults,
       ...options,
