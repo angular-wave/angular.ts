@@ -14,17 +14,18 @@ export class PubSubProvider {
    */
   $get: () => PubSub;
 }
+/**
+ * A lightweight PubSub implementation optimized for
+ * modern JavaScript engines.
+ *
+ * Features:
+ *  - Constant-time subscribe / unsubscribe
+ *  - Minimal memory churn & stable hidden-class shapes
+ *  - Fast publish using flat arrays
+ *  - Preserves listener order
+ */
 export class PubSub {
   static $nonscope: boolean;
-  /**
-   * Runs a function asynchronously.
-   *
-   * @private
-   * @param {Function} fn Function to run.
-   * @param {Object} context Context in which to run the function.
-   * @param {Array} args Arguments to pass to the function.
-   */
-  private static runAsync;
   disposed: boolean;
   /**
    * The next available subscription key.  Internally, this is an index into the

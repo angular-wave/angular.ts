@@ -18,6 +18,16 @@ export class PubSubProvider {
   $get = () => this.eventBus;
 }
 
+/**
+ * A lightweight PubSub implementation optimized for
+ * modern JavaScript engines.
+ *
+ * Features:
+ *  - Constant-time subscribe / unsubscribe
+ *  - Minimal memory churn & stable hidden-class shapes
+ *  - Fast publish using flat arrays
+ *  - Preserves listener order
+ */
 export class PubSub {
   static $nonscope = true;
   /**
@@ -163,20 +173,6 @@ export class PubSub {
   }
 
   /**
-   * Runs a function asynchronously.
-   *
-   * @private
-   * @param {Function} fn Function to run.
-   * @param {Object} context Context in which to run the function.
-   * @param {Array} args Arguments to pass to the function.
-   */
-  static runAsync(fn, context, args) {
-    queueMicrotask(() => {
-      fn.apply(context, args);
-    });
-  }
-
-  /**
    * Unsubscribes a function from a topic.  Only deletes the first match found.
    * Returns a Boolean indicating whether a subscription was removed.
    *
@@ -263,11 +259,13 @@ export class PubSub {
       for (let i = 0, l = keys.length; i < l; i++) {
         const key = keys[i];
 
-        PubSub.runAsync(
-          this.subscriptions[key + 1],
-          this.subscriptions[key + 2],
-          args,
-        );
+        const fn = this.subscriptions[key + 1];
+
+        const context = this.subscriptions[key + 2];
+
+        queueMicrotask(() => {
+          fn.apply(context, args);
+        });
       }
 
       return true;
