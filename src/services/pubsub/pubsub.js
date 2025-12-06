@@ -1,3 +1,5 @@
+import { $injectTokens } from "../../injection-tokens";
+
 /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider
 
 /**
@@ -12,23 +14,20 @@ export class PubSubProvider {
     this.eventBus = EventBus;
   }
 
-  /**
-   * @returns {PubSub}
-   */
-  $get = () => this.eventBus;
+  $get = [
+    $injectTokens.$exceptionHandler,
+    /**
+     * @param {ng.ExceptionHandlerService} $exceptionHandler
+     * @returns {PubSub}
+     */
+    ($exceptionHandler) => {
+      this.$exceptionHandler = $exceptionHandler;
+
+      return this.eventBus;
+    },
+  ];
 }
 
-/**
- * A lightweight PubSub implementation optimized for
- * modern JavaScript engines.
- *
- * Features:
- *  - Constant-time subscribe / unsubscribe
- *  - Minimal memory churn & stable hidden-class shapes
- *  - Fast publish using flat arrays
- *  - Preserves listener order
- *  - All publishes are asynchronous (via queueMicrotask)
- */
 export class PubSub {
   constructor() {
     /** @private {Object<string, Array<{fn: Function, context: any}>>} */
@@ -36,6 +35,9 @@ export class PubSub {
 
     /** @private */
     this._disposed = false;
+
+    /** @type {ng.ExceptionHandlerService} */
+    this.$exceptionHandler = undefined;
   }
 
   /**
@@ -172,7 +174,11 @@ export class PubSub {
 
     queueMicrotask(() => {
       for (const { fn, context } of snapshot) {
-        fn.apply(context, args);
+        try {
+          fn.apply(context, args);
+        } catch (err) {
+          this.$exceptionHandler(err);
+        }
       }
     });
 
