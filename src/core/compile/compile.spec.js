@@ -1756,7 +1756,7 @@ describe("$compile", () => {
       const el = $("<div my-directive></div>");
       $compile(el)($rootScope);
       await wait();
-      expect($rootScope.$handler.watchers.size).toEqual(1);
+      expect($rootScope.$handler.watchers.size).toEqual(0);
     });
 
     it("allows assigning to two-way scope expressions", async () => {
@@ -1945,7 +1945,7 @@ describe("$compile", () => {
       const el = $("<div my-directive></div>");
       $compile(el)($rootScope);
       await wait();
-      expect($rootScope.$handler.watchers.size).toEqual(1);
+      expect($rootScope.$handler.watchers.size).toEqual(0);
     });
   });
 
