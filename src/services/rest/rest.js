@@ -1,10 +1,6 @@
 import { $injectTokens } from "../../injection-tokens.js";
-import {
-  assert,
-  BADARG,
-  isNullOrUndefined,
-  isString,
-} from "../../shared/utils.js";
+import { assert, isNullOrUndefined, isString } from "../../shared/utils.js";
+import { BADARG } from "../../shared/validate.js";
 import { expandUriTemplate } from "./rfc.js";
 
 /**

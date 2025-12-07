@@ -4,12 +4,11 @@ import {
   instantiateWasm,
   isFunction,
   isString,
-  validate,
   isDefined,
-  validateRequired,
   isObject,
 } from "../../../shared/utils.js";
 import { isInjectable } from "../../../shared/predicates.js";
+import { validate, validateRequired } from "../../../shared/validate.js";
 
 /**
  * Modules are collections of application configuration information for components:

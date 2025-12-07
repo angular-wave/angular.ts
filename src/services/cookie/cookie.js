@@ -1,15 +1,17 @@
 import { $injectTokens } from "../../injection-tokens.js";
 import {
-  BADARG,
-  BADARGVALUE,
   assert,
   isDefined,
   isNullOrUndefined,
   isNumber,
   isString,
+} from "../../shared/utils.js";
+import {
   validateIsString,
   validateRequired,
-} from "../../shared/utils.js";
+  BADARGVALUE,
+  BADARG,
+} from "../../shared/validate.js";
 
 /**
  * Service provider that creates a {@link CookieService $cookie} service.

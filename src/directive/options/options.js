@@ -7,7 +7,6 @@ import {
   isArrayLike,
   isDefined,
   minErr,
-  validateRequired,
 } from "../../shared/utils.js";
 
 const ngOptionsMinErr = minErr("ngOptions");
@@ -420,7 +419,6 @@ export function ngOptionsDirective($compile, $parse) {
       // compile the element since there might be bindings in it
       const linkFn = $compile(selectCtrl.emptyOption);
 
-      validateRequired(linkFn, "linkFn");
       selectElement.prepend(selectCtrl.emptyOption);
       linkFn(scope);
 
