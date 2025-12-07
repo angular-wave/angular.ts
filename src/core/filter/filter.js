@@ -7,13 +7,8 @@ import {
   $IncludedByStateFilter,
   $IsStateFilter,
 } from "../../router/state-filters.js";
-import {
-  BADARG,
-  assert,
-  isDefined,
-  isFunction,
-  isString,
-} from "../../shared/utils.js";
+import { assert, isDefined, isFunction } from "../../shared/utils.js";
+import { validate, validateIsString } from "../../shared/validate.js";
 
 /* @ignore */
 const SUFFIX = "Filter";
@@ -52,8 +47,8 @@ export class FilterProvider {
    * @return {ng.FilterProvider}
    */
   register(name, factory) {
-    assert(isString(name), `${BADARG}:name ${name}`);
-    assert(isFunction(factory), `${BADARG}:factory ${factory}`);
+    validateIsString(name, "name");
+    validate(isFunction, factory, "factory");
     this.$provide.factory(name + SUFFIX, factory);
 
     return this;
@@ -66,7 +61,7 @@ export class FilterProvider {
      * @returns {ng.FilterService}
      */
     ($injector) => (name) => {
-      assert(isString(name), `${BADARG}:name ${name}`);
+      validateIsString(name, "name");
 
       return $injector.get(name + SUFFIX);
     },

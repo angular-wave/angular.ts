@@ -8,11 +8,11 @@ import {
   isString,
   isUndefined,
   minErr,
-  validateArray,
 } from "../../shared/utils.js";
 import { InjectorService, ProviderInjector } from "./internal-injector.js";
 import { createPersistentProxy } from "../../services/storage/storage.js";
-import { $injectTokens } from "../../injection-tokens";
+import { $injectTokens } from "../../injection-tokens.js";
+import { validateArray } from "../../shared/validate.js";
 
 const $injectorMinErr = minErr($injectTokens.$injector);
 
