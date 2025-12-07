@@ -10,7 +10,6 @@ export class PubSubProvider {
    */
   eventBus: PubSub;
   $get: any[];
-  $exceptionHandler: import("../exception/interface.ts").ExceptionHandler;
 }
 export class PubSub {
   /** @private {Object<string, Array<{fn: Function, context: any}>>} */
@@ -18,7 +17,7 @@ export class PubSub {
   /** @private */
   private _disposed;
   /** @type {ng.ExceptionHandlerService} */
-  $exceptionHandler: ng.ExceptionHandlerService;
+  _$exceptionHandler: ng.ExceptionHandlerService;
   /**
    * Set instance to initial state
    */
