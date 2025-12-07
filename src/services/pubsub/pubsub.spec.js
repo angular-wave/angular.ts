@@ -432,7 +432,7 @@ describe("PubSub", function () {
       let throwErro = new Error();
       let receivedErr;
 
-      pubsub.$exceptionHandler = (err) => {
+      pubsub._$exceptionHandler = (err) => {
         thrown = true;
         receivedErr = err;
       };
