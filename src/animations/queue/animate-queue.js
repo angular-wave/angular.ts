@@ -159,21 +159,17 @@ export function AnimateQueueProvider($animateProvider) {
     $t.$rootScope,
     $t.$injector,
     $t.$$animation,
-    $t.$templateRequest,
     /**
      *
      * @param {ng.RootScopeService} $rootScope
      * @param {ng.InjectorService} $injector
      * @param {*} $$animation
-     * @param {ng.TemplateRequestService} $templateRequest
      * @returns {import("../queue/interface.ts").AnimateQueueService}
      */
-    function ($rootScope, $injector, $$animation, $templateRequest) {
+    function ($rootScope, $injector, $$animation) {
       const activeAnimationsLookup = new Map();
 
       const disabledElementsLookup = new Map();
-
-      let animationsEnabled = null;
 
       function postDigestTaskFactory() {
         let postDigestCalled = false;
@@ -193,38 +189,6 @@ export function AnimateQueueProvider($animateProvider) {
           }
         };
       }
-
-      // Wait until all directive and route-related templates are downloaded and
-      // compiled. The $templateRequest.totalPendingRequests variable keeps track of
-      // all of the remote templates being currently downloaded. If there are no
-      // templates currently downloading then the watcher will still fire anyway.
-      $rootScope.templateRequest = $templateRequest;
-      const deregisterWatch = $rootScope.$watch(
-        "$templateRequest.totalPendingRequests",
-        (val) => {
-          if (val === 0) {
-            deregisterWatch();
-            $rootScope.$templateRequest = undefined;
-            // Now that all templates have been downloaded, $animate will wait until
-            // the post digest queue is empty before enabling animations. By having two
-            // calls to $postDigest calls we can ensure that the flag is enabled at the
-            // very end of the post digest queue. Since all of the animations in $animate
-            // use $postDigest, it's important that the code below executes at the end.
-            // This basically means that the page is fully downloaded and compiled before
-            // any animations are triggered.
-            $rootScope.$postUpdate(() => {
-              $rootScope.$postUpdate(() => {
-                // we check for null directly in the event that the application already called
-                // .enabled() with whatever arguments that it provided it with
-                if (animationsEnabled === null) {
-                  animationsEnabled = true;
-                }
-              });
-            });
-          }
-        },
-        true,
-      );
 
       const callbackRegistry = Object.create(null);
 
