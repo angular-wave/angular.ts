@@ -1,3 +1,5 @@
+import { isArray } from "./utils.js";
+
 /**
  * A simple bounded FIFO queue with optional eviction notifications.
  * @template T
@@ -9,7 +11,7 @@ export class Queue {
    */
   constructor(items = [], limit = null) {
     /** @type {T[]} */
-    this._items = Array.isArray(items) ? [...items] : [];
+    this._items = isArray(items) ? [...items] : [];
 
     /** @type {number|null} */
     this._limit = Number.isInteger(limit) && limit > 0 ? limit : null;

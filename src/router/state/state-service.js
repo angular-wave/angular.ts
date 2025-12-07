@@ -487,7 +487,7 @@ export class StateProvider {
       if (error instanceof Rejection) {
         const isLatest = this.globals.lastStartedTransitionId <= trans.$id;
 
-        if (error.type === RejectType.IGNORED) {
+        if (error.type === RejectType._IGNORED) {
           isLatest && this.urlService.update();
 
           // Consider ignored `Transition.run()` as a successful `transitionTo`
@@ -496,7 +496,7 @@ export class StateProvider {
         const { detail } = error;
 
         if (
-          error.type === RejectType.SUPERSEDED &&
+          error.type === RejectType._SUPERSEDED &&
           error.redirected &&
           detail instanceof TargetState
         ) {
@@ -507,7 +507,7 @@ export class StateProvider {
           return redirect.run().catch(rejectedTransitionHandler(redirect));
         }
 
-        if (error.type === RejectType.ABORTED) {
+        if (error.type === RejectType._ABORTED) {
           isLatest && this.urlService.update();
 
           return Promise.reject(error);

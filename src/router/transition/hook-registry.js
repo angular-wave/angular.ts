@@ -139,7 +139,7 @@ export class RegisteredHook {
     return paths.reduce((mn, pathtype) => {
       // STATE scope criteria matches against every node in the path.
       // TRANSITION scope criteria matches against only the last node in the path
-      const isStateHook = pathtype.scope === TransitionHookScope.STATE;
+      const isStateHook = pathtype.scope === TransitionHookScope._STATE;
 
       const path = treeChanges[pathtype.name] || [];
 

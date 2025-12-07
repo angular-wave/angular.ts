@@ -1,3 +1,5 @@
+import { isArray } from "../../shared/utils.js";
+
 /**
  * RFC 6570 Level 4 URI Template expander
  *
@@ -148,7 +150,7 @@ export function expandExpression(expression, vars) {
     }
 
     // PROCESS arrays
-    if (Array.isArray(value)) {
+    if (isArray(value)) {
       if (value.length === 0) {
         // empty array: for named operators, emit key with empty ifEmpty, otherwise skip
         if (conf.named) {

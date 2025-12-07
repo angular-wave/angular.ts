@@ -381,7 +381,7 @@ export interface Replace {
  *   pattern: new RegExp("[0-9]+(?:-[0-9]+)*")
  *
  *   // Ensure that the (decoded) object is an array, and that all its elements are numbers
- *   is: (obj) => Array.isArray(obj) &&
+ *   is: (obj) => isArray(obj) &&
  *       obj.reduce((acc, item) => acc && typeof item === 'number', true),
  *
  *   // Compare two arrays of integers
@@ -514,7 +514,7 @@ export interface ParamTypeDefinition {
    * input is an array of ints:
    *
    * ```
-   * is: (val) => Array.isArray(val) && array.reduce((acc, x) => acc && parseInt(val, 10) === val, true)
+   * is: (val) => isArray(val) && array.reduce((acc, x) => acc && parseInt(val, 10) === val, true)
    * ```
    *
    * If your type decodes the URL parameter value to a custom string, check that the string matches

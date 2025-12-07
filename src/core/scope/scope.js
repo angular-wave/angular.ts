@@ -2,6 +2,7 @@ import {
   assert,
   concat,
   hasOwn,
+  isArray,
   isDefined,
   isFunction,
   isObject,
@@ -9,6 +10,7 @@ import {
   isProxySymbol,
   isString,
   isUndefined,
+  keys,
   nextUid,
 } from "../../shared/utils.js";
 import { ASTType } from "../parse/ast-type.js";
@@ -77,18 +79,16 @@ export function createScope(target = {}, context) {
 
   const proxy = new Proxy(target, context || new Scope());
 
-  const keys = Object.keys(target);
+  const keyList = keys(target);
 
-  const ctorNonScope = Array.isArray(target.constructor?.$nonscope)
+  const ctorNonScope = isArray(target.constructor?.$nonscope)
     ? target.constructor.$nonscope
     : null;
 
-  const instNonScope = Array.isArray(target.$nonscope)
-    ? target.$nonscope
-    : null;
+  const instNonScope = isArray(target.$nonscope) ? target.$nonscope : null;
 
-  for (let i = 0, l = keys.length; i < l; i++) {
-    const key = keys[i];
+  for (let i = 0, l = keyList.length; i < l; i++) {
+    const key = keyList[i];
 
     if (ctorNonScope?.includes(key) || instNonScope?.includes(key)) continue;
     target[key] = createScope(target[key], proxy.$handler);
@@ -270,10 +270,10 @@ export class Scope {
 
     if (
       (target.constructor?.$nonscope &&
-        Array.isArray(target.constructor.$nonscope) &&
+        isArray(target.constructor.$nonscope) &&
         target.constructor.$nonscope.includes(property)) ||
       (target.$nonscope &&
-        Array.isArray(target.$nonscope) &&
+        isArray(target.$nonscope) &&
         target.$nonscope.includes(property))
     ) {
       target[property] = value;
@@ -295,7 +295,7 @@ export class Scope {
     }
 
     if (oldValue && oldValue[isProxySymbol]) {
-      if (Array.isArray(value)) {
+      if (isArray(value)) {
         if (oldValue !== value) {
           const listeners = this.watchers.get(property);
 
@@ -321,9 +321,9 @@ export class Scope {
 
       if (isObject(value)) {
         if (hasOwn(target, property)) {
-          const keys = Object.keys(oldValue);
+          const keyList = keys(oldValue);
 
-          for (const k of keys) {
+          for (const k of keyList) {
             if (!value[k]) delete oldValue[k];
           }
         }
@@ -352,14 +352,14 @@ export class Scope {
       if (isUndefined(value)) {
         let called = false;
 
-        const keys = Object.keys(oldValue.$target);
+        const keyList = keys(oldValue.$target);
 
         const tgt = oldValue.$target;
 
         let i = 0;
 
-        for (i; i < keys.length; i++) {
-          const k = keys[i];
+        for (i; i < keyList.length; i++) {
+          const k = keyList[i];
 
           const v = tgt[k];
 
@@ -390,12 +390,12 @@ export class Scope {
           this.#scheduleListener(listeners);
         }
 
-        if (Array.isArray(target)) {
+        if (isArray(target)) {
           if (this.objectListeners.has(proxy) && property !== "length") {
-            const keys = this.objectListeners.get(proxy);
+            const keyList = this.objectListeners.get(proxy);
 
-            for (let i = 0, l = keys.length; i < l; i++) {
-              const currentListeners = this.watchers.get(keys[i]);
+            for (let i = 0, l = keyList.length; i < l; i++) {
+              const currentListeners = this.watchers.get(keyList[i]);
 
               if (currentListeners) this.#scheduleListener(currentListeners);
             }
@@ -433,10 +433,10 @@ export class Scope {
           if (!this.objectListeners.has(target[property])) {
             this.objectListeners.set(target[property], [property]);
           }
-          const keys = Object.keys(value);
+          const keyList = keys(value);
 
-          for (let i = 0, l = keys.length; i < l; i++) {
-            const key = keys[i];
+          for (let i = 0, l = keyList.length; i < l; i++) {
+            const key = keyList[i];
 
             const keyListeners = this.watchers.get(key);
 
@@ -449,7 +449,7 @@ export class Scope {
           expectedTarget = value;
         }
 
-        if (Array.isArray(target)) {
+        if (isArray(target)) {
           const lengthListeners = this.watchers.get("length");
 
           if (lengthListeners) {
@@ -525,10 +525,10 @@ export class Scope {
       }
 
       if (this.objectListeners.has(proxy) && property !== "length") {
-        const keys = this.objectListeners.get(proxy);
+        const keyList = this.objectListeners.get(proxy);
 
-        for (let i = 0, l = keys.length; i < l; i++) {
-          const key = keys[i];
+        for (let i = 0, l = keyList.length; i < l; i++) {
+          const key = keyList[i];
 
           const listeners = this.watchers.get(key);
 
@@ -569,14 +569,14 @@ export class Scope {
     this.propertyMap.$proxy = proxy;
 
     if (
-      Array.isArray(target) &&
+      isArray(target) &&
       ["pop", "shift", "unshift"].includes(/** @type { string } */ (property))
     ) {
       if (this.objectListeners.has(proxy)) {
-        const keys = this.objectListeners.get(proxy);
+        const keyList = this.objectListeners.get(proxy);
 
-        for (let i = 0, l = keys.length; i < l; i++) {
-          const key = keys[i];
+        for (let i = 0, l = keyList.length; i < l; i++) {
+          const key = keyList[i];
 
           const listeners = this.watchers.get(key);
 
@@ -613,10 +613,10 @@ export class Scope {
       }
 
       if (this.objectListeners.has(this.$proxy)) {
-        const keys = this.objectListeners.get(this.$proxy);
+        const keyList = this.objectListeners.get(this.$proxy);
 
-        for (let i = 0, l = keys.length; i < l; i++) {
-          const key = keys[i];
+        for (let i = 0, l = keyList.length; i < l; i++) {
+          const key = keyList[i];
 
           const currentListeners = this.watchers.get(key);
 
@@ -635,10 +635,10 @@ export class Scope {
     delete target[property];
 
     if (this.objectListeners.has(this.$proxy)) {
-      const keys = this.objectListeners.get(this.$proxy);
+      const keyList = this.objectListeners.get(this.$proxy);
 
-      for (let i = 0, l = keys.length; i < l; i++) {
-        const key = keys[i];
+      for (let i = 0, l = keyList.length; i < l; i++) {
+        const key = keyList[i];
 
         const listeners = this.watchers.get(key);
 
@@ -660,7 +660,7 @@ export class Scope {
     if (isUndefined(value)) {
       return;
     }
-    Object.keys(value).forEach((k) => {
+    keys(value).forEach((k) => {
       const listeners = this.watchers.get(k);
 
       if (listeners) {
@@ -746,7 +746,7 @@ export class Scope {
 
     switch (type) {
       // 3
-      case ASTType.AssignmentExpression:
+      case ASTType._AssignmentExpression:
         // assignment calls without listener functions
         if (!listenerFn) {
           let res = get(this.$target);
@@ -760,34 +760,34 @@ export class Scope {
         key = get.decoratedNode.body[0].expression.left.name;
         break;
       // 4
-      case ASTType.ConditionalExpression: {
+      case ASTType._ConditionalExpression: {
         key = get.decoratedNode.body[0].expression.toWatch[0]?.test?.name;
         listener.property.push(key);
         break;
       }
       // 5
-      case ASTType.LogicalExpression: {
-        const keys = [
+      case ASTType._LogicalExpression: {
+        const keyList = [
           get.decoratedNode.body[0].expression.left.toWatch[0]?.name,
           get.decoratedNode.body[0].expression.right.toWatch[0]?.name,
         ];
 
-        for (let i = 0, l = keys.length; i < l; i++) {
-          const registerKey = keys[i];
+        for (let i = 0, l = keyList.length; i < l; i++) {
+          const registerKey = keyList[i];
 
           if (registerKey) this.#registerKey(registerKey, listener);
         }
 
         return () => {
-          for (let i = 0, l = keys.length; i < l; i++) {
-            const deregisterKey = keys[i];
+          for (let i = 0, l = keyList.length; i < l; i++) {
+            const deregisterKey = keyList[i];
 
             this.#deregisterKey(deregisterKey, listener.id);
           }
         };
       }
       // 6
-      case ASTType.BinaryExpression: {
+      case ASTType._BinaryExpression: {
         if (get.decoratedNode.body[0].expression.isPure) {
           const expr = get.decoratedNode.body[0].expression.toWatch[0];
 
@@ -825,7 +825,7 @@ export class Scope {
         }
       }
       // 7
-      case ASTType.UnaryExpression: {
+      case ASTType._UnaryExpression: {
         const expr = get.decoratedNode.body[0].expression.toWatch[0];
 
         key = expr.property ? expr.property.name : expr.name;
@@ -837,7 +837,7 @@ export class Scope {
         break;
       }
       // 8 function
-      case ASTType.CallExpression: {
+      case ASTType._CallExpression: {
         const { toWatch } = get.decoratedNode.body[0].expression;
 
         for (let i = 0, l = toWatch.length; i < l; i++) {
@@ -859,7 +859,7 @@ export class Scope {
       }
 
       // 9
-      case ASTType.MemberExpression: {
+      case ASTType._MemberExpression: {
         key = get.decoratedNode.body[0].expression.property.name;
 
         // array watcher
@@ -890,20 +890,20 @@ export class Scope {
       }
 
       // 10
-      case ASTType.Identifier: {
+      case ASTType._Identifier: {
         listener.property.push(get.decoratedNode.body[0].expression.name);
         break;
       }
 
       // 12
-      case ASTType.ArrayExpression: {
+      case ASTType._ArrayExpression: {
         const { elements } = get.decoratedNode.body[0].expression;
 
         for (let i = 0, l = elements.length; i < l; i++) {
           const x = elements[i];
 
           const registerKey =
-            x.type === ASTType.Literal ? x.value : x.toWatch[0]?.name;
+            x.type === ASTType._Literal ? x.value : x.toWatch[0]?.name;
 
           if (!registerKey) continue;
 
@@ -916,7 +916,7 @@ export class Scope {
             const x = elements[i];
 
             const deregisterKey =
-              x.type === ASTType.Literal ? x.value : x.toWatch[0]?.name;
+              x.type === ASTType._Literal ? x.value : x.toWatch[0]?.name;
 
             if (!deregisterKey) continue;
 
@@ -926,7 +926,7 @@ export class Scope {
       }
 
       // 14
-      case ASTType.ObjectExpression: {
+      case ASTType._ObjectExpression: {
         const { properties } = get.decoratedNode.body[0].expression;
 
         for (let i = 0, l = properties.length; i < l; i++) {
@@ -1355,7 +1355,7 @@ export class Scope {
         newVal = newVal(originalTarget);
       }
 
-      if (Array.isArray(newVal)) {
+      if (isArray(newVal)) {
         for (let i = 0, l = newVal.length; i < l; i++) {
           if (isFunction(newVal[i])) {
             newVal[i] = newVal[i](originalTarget);

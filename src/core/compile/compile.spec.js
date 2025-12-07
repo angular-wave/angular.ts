@@ -3775,7 +3775,7 @@ describe("$compile", () => {
       const el = $("<div my-other-directive my-transcluder></div>");
 
       $compile(el);
-      expect(gotCompiledEl.nodeType).toBe(Node.ELEMENT_NODE);
+      expect(gotCompiledEl.nodeType).toBe(1);
     });
 
     it("calls compile on child element directives", () => {

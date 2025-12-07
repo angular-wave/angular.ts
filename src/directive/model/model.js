@@ -18,6 +18,7 @@ import {
   isPromiseLike,
   isProxy,
   isUndefined,
+  keys,
   minErr,
   snakeCase,
 } from "../../shared/utils.js";
@@ -639,10 +640,10 @@ export class NgModelController {
         setValidity(errorKey, null);
       } else {
         if (!that.$$parserValid) {
-          Object.keys(that.$validators).forEach((name) => {
+          keys(that.$validators).forEach((name) => {
             setValidity(name, null);
           });
-          Object.keys(that.$asyncValidators).forEach((name) => {
+          keys(that.$asyncValidators).forEach((name) => {
             setValidity(name, null);
           });
         }
@@ -667,7 +668,7 @@ export class NgModelController {
       });
 
       if (!syncValidatorsValid) {
-        Object.keys(that.$asyncValidators).forEach((name) => {
+        keys(that.$asyncValidators).forEach((name) => {
           setValidity(name, null);
         });
 

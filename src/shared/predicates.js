@@ -1,4 +1,4 @@
-import { isFunction, isString } from "./utils.js";
+import { isArray, isFunction, isString } from "./utils.js";
 
 /**
  * Predicate which checks if a value is injectable
@@ -9,7 +9,7 @@ import { isFunction, isString } from "./utils.js";
  * @returns {boolean}
  */
 export function isInjectable(val) {
-  if (Array.isArray(val) && val.length) {
+  if (isArray(val) && val.length) {
     const head = val.slice(0, -1),
       tail = val.slice(-1);
 

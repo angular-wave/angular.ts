@@ -1,6 +1,7 @@
-import { getOrSetCacheData, setCacheData } from "../../shared/dom.js";
+import { getOrSetCacheData, NodeType, setCacheData } from "../../shared/dom.js";
 import {
   extend,
+  isArray,
   isDefined,
   isObject,
   isString,
@@ -338,8 +339,9 @@ export function AnimateQueueProvider($animateProvider) {
 
         // strip comments
 
-        let element = Array.isArray(originalElement)
-          ? originalElement.filter((x) => x.nodeName !== "#comment")[0]
+        let element = isArray(originalElement)
+          ? // @ts-ignore
+            originalElement.filter((x) => x.nodeName !== "#comment")[0]
           : originalElement;
 
         const node = element;
@@ -355,7 +357,7 @@ export function AnimateQueueProvider($animateProvider) {
         // this is used to trigger callbacks in postDigest mode
         const runInNextPostDigestOrNow = postDigestTaskFactory();
 
-        if (Array.isArray(options.addClass)) {
+        if (isArray(options.addClass)) {
           options.addClass = options.addClass.join(" ");
         }
 
@@ -363,7 +365,7 @@ export function AnimateQueueProvider($animateProvider) {
           options.addClass = null;
         }
 
-        if (Array.isArray(options.removeClass)) {
+        if (isArray(options.removeClass)) {
           options.removeClass = options.removeClass.join(" ");
         }
 
@@ -745,7 +747,7 @@ export function AnimateQueueProvider($animateProvider) {
             rootNodeDetected = parentNode === rootNode;
           }
 
-          if (parentNode.nodeType !== Node.ELEMENT_NODE) {
+          if (parentNode.nodeType !== NodeType._ELEMENT_NODE) {
             // no point in inspecting the #document element
             break;
           }

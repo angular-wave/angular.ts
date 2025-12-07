@@ -1,5 +1,11 @@
 import { getCacheData, setCacheData } from "../../shared/dom.js";
-import { hasAnimate, isObject, isString } from "../../shared/utils.js";
+import {
+  hasAnimate,
+  isArray,
+  isObject,
+  isString,
+  keys,
+} from "../../shared/utils.js";
 
 /**
  * @param {string} name
@@ -183,10 +189,10 @@ function toClassString(classValue) {
 
   let classString = classValue;
 
-  if (Array.isArray(classValue)) {
+  if (isArray(classValue)) {
     classString = classValue.map(toClassString).join(" ");
   } else if (isObject(classValue)) {
-    classString = Object.keys(classValue)
+    classString = keys(classValue)
       .filter((key) => classValue[key])
       .join(" ");
   } else if (!isString(classValue)) {

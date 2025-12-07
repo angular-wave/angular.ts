@@ -7,6 +7,7 @@ import postcss from "postcss";
 import { readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,7 +45,21 @@ export default [
         name: "angular",
         file: pkg.browser.replace(/\.js$/, ".min.js"),
         format: "umd",
-        plugins: [terser()],
+        plugins: [
+          terser({
+            compress: {
+              passes: 3,
+              keep_fnames: false,
+            },
+            mangle: {
+              toplevel: true,
+              properties: {
+                regex: /^_/, // match ALL private property names
+                keep_quoted: false, // allow mangling quoted keys
+              },
+            },
+          }),
+        ],
       },
       {
         name: "angular",

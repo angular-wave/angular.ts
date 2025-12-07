@@ -1,5 +1,10 @@
 import { $injectTokens } from "../../injection-tokens.js";
-import { assert, isNullOrUndefined, isString } from "../../shared/utils.js";
+import {
+  assert,
+  isArray,
+  isNullOrUndefined,
+  isString,
+} from "../../shared/utils.js";
 import { BADARG } from "../../shared/validate.js";
 import { expandUriTemplate } from "./rfc.js";
 
@@ -63,7 +68,7 @@ export class RestService {
 
     const resp = await this.#request("get", url, null, params);
 
-    if (!Array.isArray(resp.data)) return [];
+    if (!isArray(resp.data)) return [];
 
     return resp.data.map((data) => this.#mapEntity(data));
   }

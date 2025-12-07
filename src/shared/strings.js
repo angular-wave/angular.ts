@@ -2,6 +2,7 @@ import { pushR, tail } from "./common.js";
 import { pattern, val } from "./hof.js";
 import { isInjectable, isPromise } from "./predicates.js";
 import {
+  isArray,
   isFunction,
   isNull,
   isObject,
@@ -68,7 +69,7 @@ export function functionToString(fn) {
   return toStr;
 }
 export function fnToString(fn) {
-  const _fn = Array.isArray(fn) ? fn.slice(-1)[0] : fn;
+  const _fn = isArray(fn) ? fn.slice(-1)[0] : fn;
 
   return (_fn && _fn.toString()) || "undefined";
 }
@@ -86,7 +87,7 @@ export function stringify(value) {
 
   const hasToString = (obj) =>
     isObject(obj) &&
-    !Array.isArray(obj) &&
+    !isArray(obj) &&
     obj.constructor !== Object &&
     isFunction(obj.toString);
 

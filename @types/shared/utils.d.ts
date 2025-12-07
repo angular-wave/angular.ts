@@ -43,6 +43,14 @@ export function isUndefined(value: any): boolean;
  */
 export function isDefined(value: any): boolean;
 /**
+ * Wrapper for minification
+ *
+ * @template T
+ * @param {any} array
+ * @returns {array is T[]} true if array is an Array
+ */
+export function isArray<T>(array: any): array is T[];
+/**
  * Determines if a reference is an `Object`. Unlike `typeof` in JavaScript, `null`s are not
  * considered to be objects. Note that JavaScript arrays are objects.
  *
@@ -536,6 +544,11 @@ export function isObjectEmpty(obj: any | null | undefined): boolean;
  * hasOwn({}, 'bar'); // false
  */
 export function hasOwn(obj: object, key: string | number | symbol): boolean;
+/**
+ * @param {Object} obj
+ * @returns {string[]}
+ */
+export function keys(obj: any): string[];
 /**
  * Wraps a function so it can only be called once.
  * Subsequent calls do nothing and return undefined.

@@ -3,11 +3,11 @@
  */
 export type RejectType = number;
 export namespace RejectType {
-  let SUPERSEDED: number;
-  let ABORTED: number;
-  let INVALID: number;
-  let IGNORED: number;
-  let ERROR: number;
+  let _SUPERSEDED: number;
+  let _ABORTED: number;
+  let _INVALID: number;
+  let _IGNORED: number;
+  let _ERROR: number;
 }
 export class Rejection {
   /** Returns a Rejection due to transition superseded */

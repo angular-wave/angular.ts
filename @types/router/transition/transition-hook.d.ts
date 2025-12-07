@@ -2,33 +2,21 @@
  * Enum representing the different phases of a transition hook.
  */
 export type TransitionHookPhase = number;
-/**
- * Enum representing the different phases of a transition hook.
- *
- * @readonly
- * @enum {number}
- */
-export const TransitionHookPhase: Readonly<{
-  CREATE: 0;
-  BEFORE: 1;
-  RUN: 2;
-  SUCCESS: 3;
-  ERROR: 4;
-}>;
+export namespace TransitionHookPhase {
+  let _CREATE: number;
+  let _BEFORE: number;
+  let _RUN: number;
+  let _SUCCESS: number;
+  let _ERROR: number;
+}
 /**
  * Enum representing the scope in which a transition hook operates.
  */
 export type TransitionHookScope = number;
-/**
- * Enum representing the scope in which a transition hook operates.
- *
- * @readonly
- * @enum {number}
- */
-export const TransitionHookScope: Readonly<{
-  TRANSITION: 0;
-  STATE: 1;
-}>;
+export namespace TransitionHookScope {
+  let _TRANSITION: number;
+  let _STATE: number;
+}
 export class TransitionHook {
   /**
    * Chains together an array of TransitionHooks.

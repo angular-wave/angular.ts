@@ -1,4 +1,4 @@
-import { isDate, isFunction, isRegExp, isString } from "./utils.js";
+import { isArray, isDate, isFunction, isRegExp, isString } from "./utils.js";
 
 export function equals(o1, o2) {
   if (o1 === o2) return true;
@@ -12,7 +12,7 @@ export function equals(o1, o2) {
   if (t1 !== t2 || t1 !== "object") return false;
   const tup = [o1, o2];
 
-  if (tup.every(Array.isArray)) return _arraysEq(o1, o2);
+  if (tup.every(isArray)) return _arraysEq(o1, o2);
 
   if (tup.every(isDate)) return o1.getTime() === o2.getTime();
 
@@ -20,7 +20,7 @@ export function equals(o1, o2) {
 
   if (tup.every(isFunction)) return true; // meh
 
-  if ([isFunction, Array.isArray, isDate, isRegExp].some((fn) => !!fn(tup))) {
+  if ([isFunction, isArray, isDate, isRegExp].some((fn) => !!fn(tup))) {
     return false;
   }
   const keys = {};
@@ -145,7 +145,7 @@ export function omit(obj, propNames) {
 
 /** Filters an Array or an Object's properties based on a predicate */
 export function filter(collection, callback) {
-  const arr = Array.isArray(collection),
+  const arr = isArray(collection),
     result = arr ? [] : {};
 
   const accept = arr ? (x) => result.push(x) : (x, key) => (result[key] = x);
@@ -172,7 +172,7 @@ export function find(collection, callback) {
 
 /** Maps an array or object properties using a callback function */
 export function map(collection, callback, target) {
-  target = target || (Array.isArray(collection) ? [] : {});
+  target = target || (isArray(collection) ? [] : {});
   Object.entries(collection).forEach(
     ([i, item]) => (target[i] = callback(item, i)),
   );
@@ -229,9 +229,7 @@ export const unnestR = (memo, elem) => memo.concat(elem);
  * ```
  */
 export const flattenR = (memo, elem) =>
-  Array.isArray(elem)
-    ? memo.concat(elem.reduce(flattenR, []))
-    : pushR(memo, elem);
+  isArray(elem) ? memo.concat(elem.reduce(flattenR, [])) : pushR(memo, elem);
 /**
  * Reduce function that pushes an object to an array, then returns the array.
  * Mostly just for [[flattenR]] and [[uniqR]]
@@ -362,7 +360,7 @@ export function arrayTuples(...args) {
 export function applyPairs(memo, keyValTuple) {
   let key, value;
 
-  if (Array.isArray(keyValTuple)) [key, value] = keyValTuple;
+  if (isArray(keyValTuple)) [key, value] = keyValTuple;
 
   if (!isString(key)) throw new Error("invalid parameters to applyPairs");
   memo[key] = value;

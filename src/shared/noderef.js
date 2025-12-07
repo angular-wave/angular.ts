@@ -1,5 +1,5 @@
-import { assertArg, isString } from "./utils.js";
-import { createElementFromHTML } from "./dom.js";
+import { assertArg, isArray, isString } from "./utils.js";
+import { createElementFromHTML, NodeType } from "./dom.js";
 
 /**
  * A type-safe wrapper around a DOM Node, HTMLElement, HTML string, NodeList, or an array of Nodes.
@@ -70,13 +70,15 @@ export class NodeRef {
     }
 
     // Handle array of elements
-    else if (Array.isArray(element)) {
+    else if (isArray(element)) {
       if (element.length === 1) {
-        this.initial = element[0].cloneNode(true);
-        this.node = element[0];
+        this.node = /** @type {Node} */ (element[0]);
+        this.initial = this.node.cloneNode(true);
       } else {
-        this.initial = Array.from(element).map((node) => node.cloneNode(true));
-        this.nodes = element;
+        this.initial = Array.from(/** @type {Node[]} */ (element)).map((node) =>
+          node.cloneNode(true),
+        );
+        this.nodes = /** @type {Node[]} */ (element);
       }
     } else {
       throw new Error("Invalid element passed to NodeRef");
@@ -110,7 +112,7 @@ export class NodeRef {
     assertArg(node instanceof Node, "node");
     this._node = node;
 
-    if (node.nodeType === Node.ELEMENT_NODE) {
+    if (node.nodeType === NodeType._ELEMENT_NODE) {
       this._element = /** @type {Element} */ (node);
     } else {
       this._element = undefined;
@@ -120,7 +122,7 @@ export class NodeRef {
   /** @param {Array<Node>} nodes */
   set nodes(nodes) {
     assertArg(
-      Array.isArray(nodes) && nodes.every((node) => node instanceof Node),
+      isArray(nodes) && nodes.every((node) => node instanceof Node),
       "nodes",
     );
     this._nodes = nodes;

@@ -171,10 +171,11 @@ export function http(
   eventHandlers?: Record<string, EventListener>,
   uploadEventHandlers?: Record<string, EventListener>,
 ): void;
-export const Http: Readonly<{
-  OK: 200;
-  MultipleChoices: 300;
-  BadRequest: 400;
-  NotFound: 404;
-  ErrorMax: 599;
-}>;
+export type Http = number;
+export namespace Http {
+  let _OK: number;
+  let _MultipleChoices: number;
+  let _BadRequest: number;
+  let _NotFound: number;
+  let _ErrorMax: number;
+}

@@ -76,7 +76,7 @@ export class ParseProvider {
 
                 const parser = new Parser(lexer, $filter);
 
-                parsedExpression = parser.parse(exp);
+                parsedExpression = parser._parse(exp);
 
                 cache[cacheKey] = addWatchDelegate(parsedExpression);
               }

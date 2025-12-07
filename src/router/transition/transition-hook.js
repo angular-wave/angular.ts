@@ -18,28 +18,25 @@ const defaultOptions = {
 
 /**
  * Enum representing the different phases of a transition hook.
- *
- * @readonly
+ * @internal
  * @enum {number}
  */
-export const TransitionHookPhase = Object.freeze({
-  CREATE: 0,
-  BEFORE: 1,
-  RUN: 2,
-  SUCCESS: 3,
-  ERROR: 4,
-});
+export const TransitionHookPhase = {
+  _CREATE: 0,
+  _BEFORE: 1,
+  _RUN: 2,
+  _SUCCESS: 3,
+  _ERROR: 4,
+};
 
 /**
  * Enum representing the scope in which a transition hook operates.
- *
- * @readonly
  * @enum {number}
  */
-export const TransitionHookScope = Object.freeze({
-  TRANSITION: 0,
-  STATE: 1,
-});
+export const TransitionHookScope = {
+  _TRANSITION: 0,
+  _STATE: 1,
+};
 
 export class TransitionHook {
   /**
@@ -108,7 +105,7 @@ export class TransitionHook {
     this.registeredHook = registeredHook;
     this.options = options;
     this.isSuperseded = () =>
-      this.type.hookPhase === TransitionHookPhase.RUN &&
+      this.type.hookPhase === TransitionHookPhase._RUN &&
       !this.options.transition.isActive();
     this.options = defaults(options, defaultOptions);
     this.type = registeredHook.eventType;

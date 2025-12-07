@@ -44,8 +44,8 @@ export class CookieService {
    */
   constructor(defaults, $exceptionHandler) {
     /** @type {ng.CookieOptions} */
-    this.defaults = Object.freeze({ ...defaults });
-    this.$exceptionHandler = $exceptionHandler;
+    this._defaults = Object.freeze({ ...defaults });
+    this._$exceptionHandler = $exceptionHandler;
   }
 
   /**
@@ -63,7 +63,7 @@ export class CookieService {
 
       return all[key] || null;
     } catch (err) {
-      throw this.$exceptionHandler(err);
+      throw this._$exceptionHandler(err);
     }
   }
 
@@ -85,7 +85,7 @@ export class CookieService {
     try {
       return /** @type {T} */ (JSON.parse(raw));
     } catch (err) {
-      throw this.$exceptionHandler(
+      throw this._$exceptionHandler(
         new SyntaxError(`badparse: "${key}" => ${err.message}`),
       );
     }
@@ -101,7 +101,7 @@ export class CookieService {
     try {
       return parseCookies();
     } catch (err) {
-      return this.$exceptionHandler(err);
+      return this._$exceptionHandler(err);
     }
   }
 
@@ -121,11 +121,11 @@ export class CookieService {
 
     try {
       document.cookie = `${encodedKey}=${encodedVal}${buildOptions({
-        ...this.defaults,
+        ...this._defaults,
         ...options,
       })}`;
     } catch (err) {
-      this.$exceptionHandler(err);
+      this._$exceptionHandler(err);
     }
   }
 
@@ -147,7 +147,7 @@ export class CookieService {
 
       this.put(key, str, options);
     } catch (err) {
-      this.$exceptionHandler(
+      this._$exceptionHandler(
         new TypeError(`badserialize: "${key}" => ${err.message}`),
       );
     }
@@ -162,7 +162,7 @@ export class CookieService {
   remove(key, options = {}) {
     validateIsString(key, "key");
     this.put(key, "", {
-      ...this.defaults,
+      ...this._defaults,
       ...options,
       expires: new Date(0),
     });

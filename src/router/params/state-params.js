@@ -1,4 +1,5 @@
 import { ancestors } from "../../shared/common.js";
+import { keys } from "../../shared/utils.js";
 
 export class StateParams {
   constructor(params = {}) {
@@ -22,7 +23,7 @@ export class StateParams {
       if (!parents[i] || !parents[i].params) continue;
       const parentParams = parents[i].params;
 
-      const parentParamsKeys = Object.keys(parentParams);
+      const parentParamsKeys = keys(parentParams);
 
       if (!parentParamsKeys.length) continue;
 

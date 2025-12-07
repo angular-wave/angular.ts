@@ -3,6 +3,7 @@ import {
   errorHandlingConfig,
   getNgAttribute,
   hasOwn,
+  isArray,
   minErr,
   ngAttrPrefixes,
 } from "./shared/utils.js";
@@ -30,9 +31,10 @@ const moduleRegistry = {};
 
 export class Angular {
   constructor() {
+    /** @public */
     this.$cache = Cache;
 
-    /** @type {ng.PubSubService} */
+    /** @public @type {ng.PubSubService} */
     this.$eventBus = EventBus;
 
     /**
@@ -191,7 +193,7 @@ export class Angular {
       throw ngMinErr("btstrpd", "App already bootstrapped");
     }
 
-    if (Array.isArray(modules)) {
+    if (isArray(modules)) {
       this.bootsrappedModules = modules;
     }
 

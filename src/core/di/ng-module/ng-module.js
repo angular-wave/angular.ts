@@ -6,6 +6,7 @@ import {
   isString,
   isDefined,
   isObject,
+  isArray,
 } from "../../../shared/utils.js";
 import { isInjectable } from "../../../shared/predicates.js";
 import { validate, validateRequired } from "../../../shared/validate.js";
@@ -24,7 +25,7 @@ export class NgModule {
    */
   constructor(name, requires, configFn) {
     validate(isString, name, "name");
-    validate(Array.isArray, requires, "requires");
+    validate(isArray, requires, "requires");
     /**
      * Name of the current module.
      * @type {string}

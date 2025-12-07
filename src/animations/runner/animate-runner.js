@@ -7,13 +7,13 @@
 
 /**
  * Internal runner states.
- * @readonly
+ * @internal
  * @enum {number}
  */
 const RunnerState = {
-  INITIAL: 0,
-  PENDING: 1,
-  DONE: 2,
+  _INITIAL: 0,
+  _PENDING: 1,
+  _DONE: 2,
 };
 
 /** @type {VoidFunction[]} */
@@ -106,13 +106,13 @@ export class AnimateRunner {
    */
   constructor(host) {
     /** @type {import("../interface.ts").AnimationHost} */
-    this.host = host || {};
+    this._host = host || {};
 
     /** @type {Array<(ok: boolean) => void>} */
     this._doneCallbacks = [];
 
     /** @type {RunnerState} */
-    this._state = RunnerState.INITIAL;
+    this._state = RunnerState._INITIAL;
 
     /** @type {Promise<void>|null} */
     this._promise = null;
@@ -126,7 +126,7 @@ export class AnimateRunner {
    * @param {import("../interface.ts").AnimationHost} host - The host object.
    */
   setHost(host) {
-    this.host = host || {};
+    this._host = host || {};
   }
 
   /**
@@ -136,7 +136,7 @@ export class AnimateRunner {
    * @param {(ok: boolean) => void} fn - Completion callback.
    */
   done(fn) {
-    if (this._state === RunnerState.DONE) {
+    if (this._state === RunnerState._DONE) {
       fn(true);
     } else {
       this._doneCallbacks.push(fn);
@@ -148,28 +148,28 @@ export class AnimateRunner {
    * @param {...any} args - Progress arguments.
    */
   progress(...args) {
-    this.host.progress?.(...args);
+    this._host.progress?.(...args);
   }
 
   /** Pauses the animation, if supported by the host. */
   pause() {
-    this.host.pause?.();
+    this._host.pause?.();
   }
 
   /** Resumes the animation, if supported by the host. */
   resume() {
-    this.host.resume?.();
+    this._host.resume?.();
   }
 
   /** Ends the animation successfully. */
   end() {
-    this.host.end?.();
+    this._host.end?.();
     this._finish(true);
   }
 
   /** Cancels the animation. */
   cancel() {
-    this.host.cancel?.();
+    this._host.cancel?.();
     this._finish(false);
   }
 
@@ -178,8 +178,8 @@ export class AnimateRunner {
    * @param {boolean} [status=true] - True if successful, false if canceled.
    */
   complete(status = true) {
-    if (this._state === RunnerState.INITIAL) {
-      this._state = RunnerState.PENDING;
+    if (this._state === RunnerState._INITIAL) {
+      this._state = RunnerState._PENDING;
       this._schedule(() => this._finish(status));
     }
   }
@@ -222,8 +222,8 @@ export class AnimateRunner {
    * @param {boolean} status - True if completed successfully, false if canceled.
    */
   _finish(status) {
-    if (this._state === RunnerState.DONE) return;
-    this._state = RunnerState.DONE;
+    if (this._state === RunnerState._DONE) return;
+    this._state = RunnerState._DONE;
 
     const callbacks = this._doneCallbacks;
 

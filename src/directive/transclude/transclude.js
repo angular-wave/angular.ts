@@ -1,5 +1,5 @@
 import { minErr } from "../../shared/utils.js";
-import { emptyElement, startingTag } from "../../shared/dom.js";
+import { emptyElement, NodeType, startingTag } from "../../shared/dom.js";
 
 /**
  * Directive that marks the insertion point for the transcluded DOM of the nearest parent directive that uses transclusion.
@@ -109,7 +109,7 @@ export function ngTranscludeDirective($compile) {
           if (node instanceof Array) {
             return false;
           } else if (
-            node.nodeType !== Node.TEXT_NODE ||
+            node.nodeType !== NodeType._TEXT_NODE ||
             node.nodeValue.trim()
           ) {
             return true;

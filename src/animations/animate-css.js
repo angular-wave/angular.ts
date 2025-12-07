@@ -3,7 +3,7 @@ import {
   removeElementData,
   setCacheData,
 } from "../shared/dom.js";
-import { isDefined, isNullOrUndefined } from "../shared/utils.js";
+import { isArray, isDefined, isNullOrUndefined } from "../shared/utils.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 import {
   ACTIVE_CLASS_SUFFIX,
@@ -340,7 +340,7 @@ export function AnimateCssProvider() {
         }
 
         const method =
-          options.event && Array.isArray(options.event)
+          options.event && isArray(options.event)
             ? options.event.join(" ")
             : options.event;
 

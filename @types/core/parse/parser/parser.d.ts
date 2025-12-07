@@ -20,16 +20,11 @@ export class Parser {
   /** @type {ASTInterpreter} */
   astCompiler: ASTInterpreter;
   /**
-   *
    * @param {string} exp - Expression to be parsed
    * @returns {import("../interface.ts").CompiledExpression}
    */
-  parse(exp: string): import("../interface.ts").CompiledExpression;
-  /**
-   * @param {string} exp - Expression to be parsed
-   * @returns {ParsedAST}
-   */
-  getAst(exp: string): ParsedAST;
+  _parse(exp: string): import("../interface.ts").CompiledExpression;
+  #private;
 }
 export type ParsedAST = {
   /**

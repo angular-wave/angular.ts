@@ -2,6 +2,7 @@ import {
   assert,
   assertArgFn,
   assertNotHasOwnProperty,
+  isArray,
   isFunction,
   isNullOrUndefined,
   isObject,
@@ -25,7 +26,7 @@ const providerSuffix = "Provider";
  * @returns {InjectorService}
  */
 export function createInjector(modulesToLoad, strictDi = false) {
-  assert(Array.isArray(modulesToLoad), "modules required");
+  assert(isArray(modulesToLoad), "modules required");
 
   /** @type {Map<String|Function, boolean>} */
   const loadedModules = new Map(); // Keep track of loaded modules to avoid circular dependencies
@@ -82,7 +83,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
     assertNotHasOwnProperty(name, "service");
     let newProvider;
 
-    if (isFunction(provider) || Array.isArray(provider)) {
+    if (isFunction(provider) || isArray(provider)) {
       newProvider = providerInjector.instantiate(
         /** @type {Function} */ (provider),
       );
@@ -315,13 +316,13 @@ export function createInjector(modulesToLoad, strictDi = false) {
           });
         } else if (isFunction(module)) {
           moduleRunBlocks.push(providerInjector.invoke(module));
-        } else if (Array.isArray(module)) {
+        } else if (isArray(module)) {
           moduleRunBlocks.push(providerInjector.invoke(module));
         } else {
           assertArgFn(module, "module");
         }
       } catch (err) {
-        if (Array.isArray(module)) {
+        if (isArray(module)) {
           module = module[module.length - 1];
         }
         throw $injectorMinErr(

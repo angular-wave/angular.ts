@@ -1,4 +1,5 @@
 import { PREFIX_REGEXP, SPECIAL_CHARS_REGEXP } from "./constants.js";
+import { NodeType } from "./dom.js";
 
 export const isProxySymbol = Symbol("isProxy");
 
@@ -59,7 +60,7 @@ export function isArrayLike(obj) {
   // arrays, strings and jQuery/jqLite objects are array like
   // * we have to check the existence of JQLite first as this method is called
   //   via the forEach method when constructing the JQLite object in the first place
-  if (Array.isArray(obj) || obj instanceof Array || isString(obj)) return true;
+  if (isArray(obj) || obj instanceof Array || isString(obj)) return true;
 
   // Support: iOS 8.2 (not reproducible in simulator)
   // "length" in obj used to prevent JIT error (gh-11508)
@@ -91,6 +92,17 @@ export function isUndefined(value) {
  */
 export function isDefined(value) {
   return typeof value !== "undefined";
+}
+
+/**
+ * Wrapper for minification
+ *
+ * @template T
+ * @param {any} array
+ * @returns {array is T[]} true if array is an Array
+ */
+export function isArray(array) {
+  return Array.isArray(array);
 }
 
 /**
@@ -352,10 +364,10 @@ export function baseExtend(dst, objs, deep = false) {
     const obj = objs[i];
 
     if (!isObject(obj) && !isFunction(obj)) continue;
-    const keys = Object.keys(obj);
+    const keyList = keys(obj);
 
-    for (let j = 0, jj = keys.length; j < jj; j++) {
-      const key = keys[j];
+    for (let j = 0, jj = keyList.length; j < jj; j++) {
+      const key = keyList[j];
 
       const src = obj[key];
 
@@ -367,7 +379,7 @@ export function baseExtend(dst, objs, deep = false) {
         } else if (src.nodeName) {
           dst[key] = src.cloneNode(true);
         } else if (key !== "__proto__") {
-          if (!isObject(dst[key])) dst[key] = Array.isArray(src) ? [] : {};
+          if (!isObject(dst[key])) dst[key] = isArray(src) ? [] : {};
           baseExtend(dst[key], [src], true);
         }
       } else {
@@ -526,8 +538,8 @@ export function equals(o1, o2) {
   if (t1 !== t2 || t1 !== "object") return false;
 
   // Handle arrays
-  if (Array.isArray(o1)) {
-    if (!Array.isArray(o2)) return false;
+  if (isArray(o1)) {
+    if (!isArray(o2)) return false;
 
     const { length } = o1;
 
@@ -560,7 +572,7 @@ export function equals(o1, o2) {
     isScope(o2) ||
     isWindow(o1) ||
     isWindow(o2) ||
-    Array.isArray(o2) ||
+    isArray(o2) ||
     isDate(o2) ||
     isRegExp(o2)
   )
@@ -616,7 +628,7 @@ export function stringify(value) {
       value = `${value}`;
       break;
     default:
-      if (hasCustomToString(value) && !Array.isArray(value) && !isDate(value)) {
+      if (hasCustomToString(value) && !isArray(value) && !isDate(value)) {
         value = value.toString();
       } else {
         value = toJson(value);
@@ -805,7 +817,7 @@ export function parseKeyValue(keyValue) {
 
         if (!hasOwn(obj, /** @type {string} */ (key))) {
           obj[key] = val;
-        } else if (Array.isArray(obj[key])) {
+        } else if (isArray(obj[key])) {
           obj[key].push(val);
         } else {
           obj[key] = [obj[key], val];
@@ -822,7 +834,7 @@ export function toKeyValue(obj) {
 
   obj &&
     Object.entries(obj).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
+      if (isArray(value)) {
         value.forEach((arrayValue) => {
           parts.push(
             encodeUriQuery(key, true) +
@@ -922,7 +934,7 @@ export function getNgAttribute(element, ngAttr) {
  * Assumes that there are no proto properties for objects.
  */
 export function shallowCopy(src, dst) {
-  if (Array.isArray(src)) {
+  if (isArray(src)) {
     dst = dst || [];
 
     for (let i = 0, ii = src.length; i < ii; i++) {
@@ -969,7 +981,7 @@ export function assertArg(arg, name, reason) {
 }
 
 export function assertArgFn(arg, name, acceptArrayAnnotation) {
-  if (acceptArrayAnnotation && Array.isArray(arg)) {
+  if (acceptArrayAnnotation && isArray(arg)) {
     arg = arg[arg.length - 1];
   }
 
@@ -1150,18 +1162,20 @@ export function mergeClasses(firstClass, secondClass) {
   if (!firstClass && !secondClass) return "";
 
   if (!firstClass)
-    return Array.isArray(secondClass)
-      ? secondClass.join(" ").trim()
-      : secondClass;
+    // @ts-ignore
+    return isArray(secondClass) ? secondClass.join(" ").trim() : secondClass;
 
   if (!secondClass)
-    return Array.isArray(firstClass) ? firstClass.join(" ").trim() : firstClass;
+    // @ts-ignore
+    return isArray(firstClass) ? firstClass.join(" ").trim() : firstClass;
 
-  if (Array.isArray(firstClass)) firstClass = normalizeStringArray(firstClass);
+  // @ts-ignore
+  if (isArray(firstClass)) firstClass = normalizeStringArray(firstClass);
 
-  if (Array.isArray(secondClass))
-    secondClass = normalizeStringArray(secondClass);
+  // @ts-ignore
+  if (isArray(secondClass)) secondClass = normalizeStringArray(secondClass);
 
+  // @ts-ignore
   return `${firstClass.trim()} ${secondClass.trim()}`.trim();
 }
 
@@ -1214,7 +1228,7 @@ export function hasAnimate(node) {
  * @returns {boolean}
  */
 function hasCustomOrDataAttribute(node, attr) {
-  if (node.nodeType !== Node.ELEMENT_NODE) return false;
+  if (node.nodeType !== NodeType._ELEMENT_NODE) return false;
   const element = /** @type {HTMLElement} */ (node);
 
   return (
@@ -1248,6 +1262,14 @@ export function isObjectEmpty(obj) {
  */
 export function hasOwn(obj, key) {
   return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+/**
+ * @param {Object} obj
+ * @returns {string[]}
+ */
+export function keys(obj) {
+  return Object.keys(obj);
 }
 
 /**

@@ -1,6 +1,7 @@
 import {
   assertArgFn,
   assertNotHasOwnProperty,
+  isArray,
   isFunction,
   isObject,
   isString,
@@ -118,9 +119,7 @@ export class ControllerProvider {
 
         if (later) {
           const controllerPrototype = (
-            Array.isArray(expression)
-              ? expression[expression.length - 1]
-              : expression
+            isArray(expression) ? expression[expression.length - 1] : expression
           ).prototype;
 
           instance = Object.create(controllerPrototype || null);

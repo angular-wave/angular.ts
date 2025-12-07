@@ -12,6 +12,7 @@ import {
 import { propEq } from "../../shared/hof.js";
 import {
   hasOwn,
+  isArray,
   isDefined,
   isNullOrUndefined,
   isString,
@@ -109,7 +110,7 @@ export class UrlMatcher {
     const staticSegments = matcher._segments;
 
     const pathParams = matcher._params.filter(
-      (path) => path.location === DefType.PATH,
+      (path) => path.location === DefType._PATH,
     );
 
     return arrayTuples(staticSegments, pathParams.concat(undefined))
@@ -119,7 +120,7 @@ export class UrlMatcher {
 
   /** @internal Given a matcher, return an array with the matcher's query params */
   static queryParams(matcher) {
-    return matcher._params.filter((path) => path.location === DefType.SEARCH);
+    return matcher._params.filter((path) => path.location === DefType._SEARCH);
   }
 
   /**
@@ -594,8 +595,7 @@ export class UrlMatcher {
       if (isNullOrUndefined(encoded)) return acc;
 
       // If this parameter value is an array, encode the value using encodeDashes
-      if (Array.isArray(encoded))
-        return acc + map(encoded, encodeDashes).join("-");
+      if (isArray(encoded)) return acc + map(encoded, encodeDashes).join("-");
 
       // If the parameter type is "raw", then do not encodeURIComponent
       if (param.raw) return acc + encoded;
@@ -615,7 +615,7 @@ export class UrlMatcher {
         if (isNullOrUndefined(encoded) || (isDefaultValue && squash !== false))
           return undefined;
 
-        if (!Array.isArray(encoded)) encoded = [encoded];
+        if (!isArray(encoded)) encoded = [encoded];
 
         if (encoded.length === 0) return undefined;
 

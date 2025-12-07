@@ -25,12 +25,11 @@ export class Parser {
   }
 
   /**
-   *
    * @param {string} exp - Expression to be parsed
    * @returns {import("../interface.ts").CompiledExpression}
    */
-  parse(exp) {
-    const { ast } = this.getAst(exp);
+  _parse(exp) {
+    const { ast } = this.#getAst(exp);
 
     const fn = this.astCompiler.compile(ast);
 
@@ -44,7 +43,7 @@ export class Parser {
    * @param {string} exp - Expression to be parsed
    * @returns {ParsedAST}
    */
-  getAst(exp) {
+  #getAst(exp) {
     exp = exp.trim();
 
     return {
@@ -57,9 +56,9 @@ function isLiteral(ast) {
   return (
     ast.body.length === 0 ||
     (ast.body.length === 1 &&
-      (ast.body[0].expression.type === ASTType.Literal ||
-        ast.body[0].expression.type === ASTType.ArrayExpression ||
-        ast.body[0].expression.type === ASTType.ObjectExpression))
+      (ast.body[0].expression.type === ASTType._Literal ||
+        ast.body[0].expression.type === ASTType._ArrayExpression ||
+        ast.body[0].expression.type === ASTType._ObjectExpression))
   );
 }
 

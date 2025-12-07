@@ -1,7 +1,8 @@
 export class Angular {
-  $cache: Map<number, import("./interface.ts").ExpandoStore>;
-  /** @type {ng.PubSubService} */
-  $eventBus: ng.PubSubService;
+  /** @public */
+  public $cache: Map<number, import("./interface.ts").ExpandoStore>;
+  /** @public @type {ng.PubSubService} */
+  public $eventBus: ng.PubSubService;
   /**
    * @type {string} `version` from `package.json`
    */
