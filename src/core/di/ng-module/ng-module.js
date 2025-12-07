@@ -6,6 +6,8 @@ import {
   isString,
   validate,
   isDefined,
+  validateRequired,
+  isObject,
 } from "../../../shared/utils.js";
 import { isInjectable } from "../../../shared/predicates.js";
 
@@ -129,6 +131,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   factory(name, providerFunction) {
+    validate(isString, name, "name");
+    validateRequired(providerFunction, "providerFunction");
     this.invokeQueue.push([$t.$provide, "factory", [name, providerFunction]]);
 
     return this;
@@ -140,6 +144,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   service(name, serviceFunction) {
+    validate(isString, name, "name");
+    validateRequired(serviceFunction, "serviceFunction");
     this.services.push(name);
     this.invokeQueue.push([$t.$provide, "service", [name, serviceFunction]]);
 
@@ -152,9 +158,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   provider(name, providerType) {
-    if (providerType && isFunction(providerType)) {
-      providerType.$$moduleName = name;
-    }
+    validate(isString, name, "name");
+    validateRequired(providerType, "providerType");
     this.invokeQueue.push([$t.$provide, "provider", [name, providerType]]);
 
     return this;
@@ -166,9 +171,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   decorator(name, decorFn) {
-    if (decorFn && isFunction(decorFn)) {
-      decorFn.$$moduleName = name;
-    }
+    validate(isString, name, "name");
+    validateRequired(decorFn, "decorFn");
     this.configBlocks.push([$t.$provide, "decorator", [name, decorFn]]);
 
     return this;
@@ -180,6 +184,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   directive(name, directiveFactory) {
+    validate(isString, name, "name");
+    validateRequired(directiveFactory, "directiveFactory");
     this.invokeQueue.push([
       $t.$compileProvider,
       "directive",
@@ -195,6 +201,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   animation(name, animationFactory) {
+    validate(isString, name, "name");
+    validateRequired(animationFactory, "animationFactory");
     this.invokeQueue.push([
       $t.$animateProvider,
       "register",
@@ -226,6 +234,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   controller(name, ctlFn) {
+    validate(isString, name, "name");
+    validateRequired(ctlFn, `fictlFnlterFn`);
     this.invokeQueue.push([$t.$controllerProvider, "register", [name, ctlFn]]);
 
     return this;
@@ -253,6 +263,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   wasm(name, src, imports = {}, opts = {}) {
+    validate(isString, name, "name");
+    validate(isString, src, "src");
     const raw = !!opts.raw;
 
     this.invokeQueue.push([
@@ -282,6 +294,8 @@ export class NgModule {
    * @returns {NgModule}
    */
   worker(name, scriptPath, config) {
+    validate(isString, name, "name");
+    validate(isString, scriptPath, "scriptPath");
     this.invokeQueue.push([
       $t.$provide,
       "provider",
@@ -298,16 +312,18 @@ export class NgModule {
 
   /**
    * @param {string} name
-   * @param {Function} ctor
+   * @param {Function|Object} ctor - A regular function, an arrow function or an object
    * @param {ng.StorageType} type
    * @param {ng.StorageBackend} [backendOrConfig]
    * @returns {NgModule}
    */
   store(name, ctor, type, backendOrConfig) {
+    validate(isString, name, "name");
+    validateRequired(ctor, "ctor");
     this.invokeQueue.push([
       $t.$provide,
       "store",
-      [name, ctor, type, backendOrConfig],
+      [name, isObject(ctor) ? () => ctor : ctor, type, backendOrConfig],
     ]);
 
     return this;
@@ -323,6 +339,9 @@ export class NgModule {
    * @returns {NgModule}
    */
   rest(name, url, entityClass, options = {}) {
+    validate(isString, name, "name");
+    validate(isString, url, "url");
+    validate(isFunction, entityClass, "entityClass");
     const def = { name, url, entityClass, options };
 
     this.restDefinitions.push(def);

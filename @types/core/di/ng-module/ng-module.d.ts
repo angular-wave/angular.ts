@@ -165,14 +165,14 @@ export class NgModule {
   ): NgModule;
   /**
    * @param {string} name
-   * @param {Function} ctor
+   * @param {Function|Object} ctor - A regular function, an arrow function or an object
    * @param {ng.StorageType} type
    * @param {ng.StorageBackend} [backendOrConfig]
    * @returns {NgModule}
    */
   store(
     name: string,
-    ctor: Function,
+    ctor: Function | any,
     type: ng.StorageType,
     backendOrConfig?: ng.StorageBackend,
   ): NgModule;

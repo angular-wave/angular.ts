@@ -14,7 +14,9 @@ but uses
 [`queueMicrotask`](https://developer.mozilla.org/en-US/docs/Web/API/Window/queueMicrotask)
 instead of
 [`Window.setTimeout()`](https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout)
-for its async implementation. `$eventBus` allows communication between an
+for its async implementation.
+
+`$eventBus` allows communication between an
 Angular application instance and the outside context, which can be a different
 module, a non-Angular application, a third-party party library, or even a WASM
 application. Additionally, `$eventBus` can be used to communicate directly with

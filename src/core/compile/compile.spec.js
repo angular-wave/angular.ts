@@ -263,25 +263,6 @@ describe("$compile", () => {
     }).toThrowError();
   });
 
-  it("allows creating directives with object notation", () => {
-    myModule.directive({
-      a: () => {
-        /* empty */
-      },
-      b: () => {
-        /* empty */
-      },
-      c: () => {
-        /* empty */
-      },
-    });
-    reloadModules();
-
-    expect(injector.has("aDirective")).toBe(true);
-    expect(injector.has("bDirective")).toBe(true);
-    expect(injector.has("cDirective")).toBe(true);
-  });
-
   it("passes an element to directive compile", () => {
     let el;
     myModule.directive("myDirective", () => {
@@ -4758,7 +4739,7 @@ describe("$compile", () => {
       expect(() => {
         myModule.directive();
         createInjector(["myModule"]).invoke(($compile) => {});
-      }).toThrowError(/areq/);
+      }).toThrowError(/badarg/);
     });
 
     it("should ignore special chars before processing attribute directive name", () => {
@@ -4781,7 +4762,7 @@ describe("$compile", () => {
       expect(() => {
         myModule.directive("myDir");
         createInjector(["myModule"]).invoke(($compile) => {});
-      }).toThrowError(/areq/);
+      }).toThrowError(/badarg/);
     });
 
     it("should preserve context within declaration", async () => {
@@ -7491,13 +7472,11 @@ describe("$compile", () => {
 
       describe("attrs", () => {
         it("should allow setting of attributes", async () => {
-          module.directive({
-            setter: () => (scope, element, attr) => {
-              attr.$set("name", "abc");
-              attr.$set("disabled", true);
-              expect(attr.name).toBe("abc");
-              expect(attr.disabled).toBe(true);
-            },
+          module.directive("setter", () => (scope, element, attr) => {
+            attr.$set("name", "abc");
+            attr.$set("disabled", true);
+            expect(attr.name).toBe("abc");
+            expect(attr.disabled).toBe(true);
           });
 
           createInjector(["test1"]).invoke((_$compile_, _$rootScope_) => {
@@ -7513,13 +7492,11 @@ describe("$compile", () => {
 
         it("should read boolean attributes as boolean only on control elements", async () => {
           let value;
-          module.directive({
-            input: () => ({
-              link(scope, element, attr) {
-                value = attr.required;
-              },
-            }),
-          });
+          module.directive("input", () => ({
+            link(scope, element, attr) {
+              value = attr.required;
+            },
+          }));
 
           createInjector(["test1"]).invoke((_$compile_, _$rootScope_) => {
             $compile = _$compile_;
@@ -7533,13 +7510,11 @@ describe("$compile", () => {
 
         it("should read boolean attributes as text on non-control elements", async () => {
           let value;
-          module.directive({
-            div: () => ({
-              link(scope, element, attr) {
-                value = attr.required;
-              },
-            }),
-          });
+          module.directive("div", () => ({
+            link(scope, element, attr) {
+              value = attr.required;
+            },
+          }));
 
           createInjector(["test1"]).invoke((_$compile_, _$rootScope_) => {
             $compile = _$compile_;

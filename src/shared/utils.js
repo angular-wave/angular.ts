@@ -177,10 +177,7 @@ export function isNumber(value) {
 }
 
 /**
- * @module angular
- * @function isDate
  *
- * @description
  * Determines if a value is a date.
  *
  * @param {*} value Reference to check.
@@ -1436,4 +1433,12 @@ export async function instantiateWasm(src, imports = {}) {
   const { instance, module } = await WebAssembly.instantiate(bytes, imports);
 
   return { instance, exports: instance.exports, module };
+}
+
+/**
+ * @param {*} fn
+ * @returns {boolean}
+ */
+export function isArrowFunction(fn) {
+  return typeof fn === "function" && !fn.prototype;
 }

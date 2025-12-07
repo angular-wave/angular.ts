@@ -61,20 +61,8 @@
             },
             "session",
           )
-          .store(
-            "localStore",
-            class {
-              counter = 0;
-            },
-            "local",
-          )
-          .store(
-            "cookieStore",
-            class {
-              counter = 0;
-            },
-            "cookie",
-          );
+          .store("localStore", () => ({ counter: 0 }), "local")
+          .store("cookieStore", { counter: 0 }, "cookie");
       });
     </script>
   </head>
