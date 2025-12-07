@@ -5,7 +5,7 @@ import { applyPairs, removeFrom } from "../../shared/common.js";
 import { propEq } from "../../shared/hof.js";
 import { ResolveContext } from "../resolve/resolve-context.js";
 import { ng1ViewsBuilder } from "./views.js";
-import { isString } from "../../shared/utils.js";
+import { isString, keys } from "../../shared/utils.js";
 import { $injectTokens as $t, provider } from "../../injection-tokens.js";
 
 /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider } */
@@ -251,7 +251,7 @@ export class StateRegistryProvider {
 
   get(stateOrName, base) {
     if (arguments.length === 0)
-      return Object.keys(this.states).map((name) => this.states[name].self);
+      return keys(this.states).map((name) => this.states[name].self);
     const found = this.matcher.find(stateOrName, base);
 
     return (found && found.self) || null;

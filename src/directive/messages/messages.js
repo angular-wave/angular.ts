@@ -1,4 +1,4 @@
-import { hasOwn, isString } from "../../shared/utils.js";
+import { hasOwn, isArray, isString } from "../../shared/utils.js";
 
 const ACTIVE_CLASS = "ng-active";
 
@@ -294,7 +294,7 @@ function ngMessageDirectiveFactory(isDefault) {
 
           const assignRecords = function (items) {
             records = items
-              ? Array.isArray(items)
+              ? isArray(items)
                 ? items
                 : items.split(/[\s,]+/)
               : null;
@@ -376,7 +376,7 @@ function ngMessageDirectiveFactory(isDefault) {
 
 function contains(collection, key) {
   if (collection) {
-    return Array.isArray(collection)
+    return isArray(collection)
       ? collection.indexOf(key) >= 0
       : hasOwn(collection, key);
   }

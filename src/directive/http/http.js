@@ -1,5 +1,6 @@
 import { $injectTokens as $t } from "../../injection-tokens.js";
 import { Http } from "../../services/http/http.js";
+import { NodeType } from "../../shared/dom.js";
 import {
   callBackAfterFirst,
   isDefined,
@@ -248,7 +249,7 @@ export function createHttpDirective(method, attrName) {
 
                 // Insert each node in order
                 for (const x of insertedNodes) {
-                  if (x.nodeType === Node.ELEMENT_NODE) {
+                  if (x.nodeType === NodeType._ELEMENT_NODE) {
                     // Animate elements
                     $animate.enter(
                       /** @type {Element} */ (x),
@@ -289,7 +290,10 @@ export function createHttpDirective(method, attrName) {
               if (!parent) break;
 
               nodes.forEach((node) => {
-                if (animationEnabled && node.nodeType === Node.ELEMENT_NODE) {
+                if (
+                  animationEnabled &&
+                  node.nodeType === NodeType._ELEMENT_NODE
+                ) {
                   $animate.enter(node, parent, target); // insert before target
                 } else {
                   parent.insertBefore(node, target);
@@ -304,7 +308,10 @@ export function createHttpDirective(method, attrName) {
               const { firstChild } = target;
 
               [...nodes].reverse().forEach((node) => {
-                if (animationEnabled && node.nodeType === Node.ELEMENT_NODE) {
+                if (
+                  animationEnabled &&
+                  node.nodeType === NodeType._ELEMENT_NODE
+                ) {
                   $animate.enter(node, target, firstChild); // insert before first child
                 } else {
                   target.insertBefore(node, firstChild);
@@ -317,7 +324,10 @@ export function createHttpDirective(method, attrName) {
 
             case "beforeend": {
               nodes.forEach((node) => {
-                if (animationEnabled && node.nodeType === Node.ELEMENT_NODE) {
+                if (
+                  animationEnabled &&
+                  node.nodeType === NodeType._ELEMENT_NODE
+                ) {
                   $animate.enter(node, target, null); // append at end
                 } else {
                   target.appendChild(node);
@@ -335,7 +345,10 @@ export function createHttpDirective(method, attrName) {
               const { nextSibling } = target;
 
               [...nodes].reverse().forEach((node) => {
-                if (animationEnabled && node.nodeType === Node.ELEMENT_NODE) {
+                if (
+                  animationEnabled &&
+                  node.nodeType === NodeType._ELEMENT_NODE
+                ) {
                   $animate.enter(node, parent, nextSibling); // insert after target
                 } else {
                   parent.insertBefore(node, nextSibling);
@@ -364,7 +377,7 @@ export function createHttpDirective(method, attrName) {
             case "innerHTML":
             default:
               if (animationEnabled) {
-                if (content && content.nodeType !== Node.TEXT_NODE) {
+                if (content && content.nodeType !== NodeType._TEXT_NODE) {
                   $animate.leave(content).done(() => {
                     content = nodes[0];
                     $animate.enter(nodes[0], target);
@@ -374,7 +387,7 @@ export function createHttpDirective(method, attrName) {
                 } else {
                   content = nodes[0];
 
-                  if (content.nodeType === Node.TEXT_NODE) {
+                  if (content.nodeType === NodeType._TEXT_NODE) {
                     target.replaceChildren(...nodes);
                   } else {
                     $animate.enter(nodes[0], target);
@@ -414,8 +427,8 @@ export function createHttpDirective(method, attrName) {
             const html = res.data;
 
             if (
-              Http.OK <= res.status &&
-              res.status <= Http.MultipleChoices - 1
+              Http._OK <= res.status &&
+              res.status <= Http._MultipleChoices - 1
             ) {
               if (isDefined(attrs.success)) {
                 $parse(attrs.success)(scope, { $res: html });
@@ -425,8 +438,8 @@ export function createHttpDirective(method, attrName) {
                 $state.go(attrs.stateSuccess);
               }
             } else if (
-              Http.BadRequest <= res.status &&
-              res.status <= Http.ErrorMax
+              Http._BadRequest <= res.status &&
+              res.status <= Http._ErrorMax
             ) {
               if (isDefined(attrs.error)) {
                 $parse(attrs.error)(scope, { $res: html });

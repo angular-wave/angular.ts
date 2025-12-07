@@ -23,6 +23,7 @@ import {
   getNodeName,
   hasOwn,
   inherit,
+  isArray,
   isBoolean,
   isDefined,
   isError,
@@ -172,7 +173,7 @@ export class CompileProvider {
       const require =
         directive.require || (directive.controller && directive.name);
 
-      if (!Array.isArray(require) && isObject(require)) {
+      if (!isArray(require) && isObject(require)) {
         const entries = Object.entries(require);
 
         for (let i = 0, len = entries.length; i < len; i++) {
@@ -335,7 +336,7 @@ export class CompileProvider {
 
       function factory($injector) {
         function makeInjectable(fn) {
-          if (isFunction(fn) || Array.isArray(fn)) {
+          if (isFunction(fn) || isArray(fn)) {
             return function (tElement, tAttrs) {
               // eslint-disable-next-line no-invalid-this
               return $injector.invoke(fn, this, {
@@ -1055,7 +1056,7 @@ export class CompileProvider {
           let nodeName;
 
           switch (nodeType) {
-            case Node.ELEMENT_NODE /* Element */:
+            case 1 /* Element */:
               nodeName = node.nodeName.toLowerCase();
 
               if (ignoreDirective !== directiveNormalize(nodeName)) {
@@ -1443,7 +1444,7 @@ export class CompileProvider {
 
                   if (
                     controllerDirective.bindToController &&
-                    !Array.isArray(require) &&
+                    !isArray(require) &&
                     isObject(require)
                   ) {
                     extend(
@@ -1936,14 +1937,11 @@ export class CompileProvider {
                 if (isString($template)) {
                   $template = Array.from(
                     createNodelistFromHTML($template),
-                  ).filter((x) => x.nodeType === Node.ELEMENT_NODE);
+                  ).filter((x) => x.nodeType === 1);
                 }
                 compileNode = $template[0];
 
-                if (
-                  $template.length !== 1 ||
-                  compileNode.nodeType !== Node.ELEMENT_NODE
-                ) {
+                if ($template.length !== 1 || compileNode.nodeType !== 1) {
                   throw $compileMinErr(
                     "tplrt",
                     "Template for directive '{0}' must have exactly one root element. {1}",
@@ -2174,7 +2172,7 @@ export class CompileProvider {
                 directiveName,
               );
             }
-          } else if (Array.isArray(require)) {
+          } else if (isArray(require)) {
             value = [];
 
             for (let i = 0, ii = require.length; i < ii; i++) {
@@ -2463,10 +2461,7 @@ export class CompileProvider {
                 }
                 compileNode = $template[0];
 
-                if (
-                  $template.length !== 1 ||
-                  compileNode.nodeType !== Node.ELEMENT_NODE
-                ) {
+                if ($template.length !== 1 || compileNode.nodeType !== 1) {
                   throw $compileMinErr(
                     "tplrt",
                     "Template for directive '{0}' must have exactly one root element. {1}",

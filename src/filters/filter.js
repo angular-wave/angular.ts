@@ -1,6 +1,7 @@
 import {
   equals,
   hasCustomToString,
+  isArray,
   isArrayLike,
   isFunction,
   isNullOrUndefined,
@@ -148,7 +149,7 @@ function deepCompare(
     );
   }
 
-  if (Array.isArray(actual)) {
+  if (isArray(actual)) {
     // In case `actual` is an array, consider it a match
     // if ANY of it's items matches `expected`
     return actual.some((item) =>

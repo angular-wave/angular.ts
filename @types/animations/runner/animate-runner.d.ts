@@ -30,7 +30,7 @@ export class AnimateRunner {
    */
   constructor(host?: import("../interface.ts").AnimationHost);
   /** @type {import("../interface.ts").AnimationHost} */
-  host: import("../interface.ts").AnimationHost;
+  _host: import("../interface.ts").AnimationHost;
   /** @type {Array<(ok: boolean) => void>} */
   _doneCallbacks: Array<(ok: boolean) => void>;
   /** @type {RunnerState} */
@@ -92,8 +92,8 @@ export class AnimateRunner {
  */
 type RunnerState = number;
 declare namespace RunnerState {
-  let INITIAL: number;
-  let PENDING: number;
-  let DONE: number;
+  let _INITIAL: number;
+  let _PENDING: number;
+  let _DONE: number;
 }
 export {};

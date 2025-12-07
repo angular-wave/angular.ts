@@ -1,6 +1,7 @@
 import { allTrueR, filter, find, map } from "../../shared/common.js";
 import { isInjectable } from "../../shared/predicates.js";
 import {
+  isArray,
   isDefined,
   isNullOrUndefined,
   isString,
@@ -14,18 +15,18 @@ const isShorthand = (cfg) =>
   ).length === 0;
 
 /**
- * @private
+ * @internal
  * @enum {number}
  */
 export const DefType = {
-  PATH: 0,
-  SEARCH: 1,
-  CONFIG: 2,
+  _PATH: 0,
+  _SEARCH: 1,
+  _CONFIG: 2,
 };
 
 function getParamDeclaration(paramName, location, state) {
   const noReloadOnSearch =
-    (state.reloadOnSearch === false && location === DefType.SEARCH) ||
+    (state.reloadOnSearch === false && location === DefType._SEARCH) ||
     undefined;
 
   const dynamic = find([state.dynamic, noReloadOnSearch], isDefined);
@@ -66,11 +67,11 @@ function getType(cfg, urlType, location, id, paramTypes) {
 
   if (!cfg.type) {
     const type =
-      location === DefType.CONFIG
+      location === DefType._CONFIG
         ? "any"
-        : location === DefType.PATH
+        : location === DefType._PATH
           ? "path"
-          : location === DefType.SEARCH
+          : location === DefType._SEARCH
             ? "query"
             : "string";
 
@@ -100,7 +101,7 @@ function getReplace(config, arrayMode, isOptional, squash) {
     { from: null, to: isOptional || arrayMode ? undefined : "" },
   ];
 
-  const replace = Array.isArray(config.replace) ? config.replace : [];
+  const replace = isArray(config.replace) ? config.replace : [];
 
   if (isString(squash)) replace.push({ from: squash, to: undefined });
   const configuredKeys = map(replace, (x) => x.from);
@@ -127,10 +128,10 @@ export class Param {
     const arrayMode = getArrayMode();
 
     type = arrayMode
-      ? type.$asArray(arrayMode, location === DefType.SEARCH)
+      ? type.$asArray(arrayMode, location === DefType._SEARCH)
       : type;
     const isOptional =
-      config.value !== undefined || location === DefType.SEARCH;
+      config.value !== undefined || location === DefType._SEARCH;
 
     const dynamic = isDefined(config.dynamic)
       ? !!config.dynamic
@@ -153,7 +154,7 @@ export class Param {
     // array config: param name (param[]) overrides default settings.  explicit config overrides param name.
     function getArrayMode() {
       const arrayDefaults = {
-        array: location === DefType.SEARCH ? "auto" : false,
+        array: location === DefType._SEARCH ? "auto" : false,
       };
 
       const arrayParamNomenclature = id.match(/\[\]$/) ? { array: true } : {};
@@ -224,7 +225,7 @@ export class Param {
   }
 
   isSearch() {
-    return this.location === DefType.SEARCH;
+    return this.location === DefType._SEARCH;
   }
 
   validates(value) {

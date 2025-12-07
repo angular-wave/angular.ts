@@ -1,8 +1,8 @@
 export type DefType = number;
 export namespace DefType {
-  let PATH: number;
-  let SEARCH: number;
-  let CONFIG: number;
+  let _PATH: number;
+  let _SEARCH: number;
+  let _CONFIG: number;
 }
 export class Param {
   static values(params: any, values?: {}): {};

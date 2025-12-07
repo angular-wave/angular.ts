@@ -1,5 +1,5 @@
 import { isInjectable } from "./predicates.js";
-import { isDefined, isString, notNullOrUndefined } from "./utils.js";
+import { isArray, isDefined, isString, notNullOrUndefined } from "./utils.js";
 
 export const BADARG = "badarg";
 export const BADARGKEY = "badarg: key";
@@ -8,7 +8,7 @@ export const BADARGVALUE = "badarg: value";
 /** @type {Map<ng.Validator, string>} */
 const reasons = new Map([
   [notNullOrUndefined, "required"],
-  [Array.isArray, "notarray"],
+  [isArray, "notarray"],
   [isInjectable, "notinjectable"],
   [isDefined, "required"],
   [isString, "notstring"],
@@ -65,7 +65,7 @@ export function validateRequired(arg, name) {
  * @throws {TypeError} If the value does not satisfy the validator.
  */
 export function validateArray(arg, name) {
-  return validate(Array.isArray, arg, name);
+  return validate(isArray, arg, name);
 }
 
 /**

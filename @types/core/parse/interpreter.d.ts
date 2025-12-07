@@ -18,18 +18,6 @@ export class ASTInterpreter {
    */
   compile(ast: any): import("./interface.ts").CompiledExpression;
   /**
-   * Recurses the AST nodes.
-   * @param {import("./ast/ast").ASTNode} ast - The AST node.
-   * @param {Object} [context] - The context.
-   * @param {boolean|1} [create] - The create flag.
-   * @returns {import("./interface.ts").CompiledExpressionFunction} The recursive function.
-   */
-  recurse(
-    ast: any,
-    context?: any,
-    create?: boolean | 1,
-  ): import("./interface.ts").CompiledExpressionFunction;
-  /**
    * Unary plus operation.
    * @param {function} argument - The argument function.
    * @param {Object} [context] - The context.
@@ -212,20 +200,6 @@ export class ASTInterpreter {
     create?: boolean | 1,
   ): import("./interface.ts").CompiledExpressionFunction;
   /**
-   * Returns the value of a computed member expression.
-   * @param {function} left - The left operand function.
-   * @param {function} right - The right operand function.
-   * @param {Object} [context] - The context.
-   * @param {boolean|1} [create] - Whether to create the member if it does not exist.
-   * @returns {function} The function returning the computed member value.
-   */
-  computedMember(
-    left: Function,
-    right: Function,
-    context?: any,
-    create?: boolean | 1,
-  ): Function;
-  /**
    * Returns the value of a non-computed member expression.
    * @param {function} left - The left operand function.
    * @param {string} right - The right operand function.
@@ -239,6 +213,7 @@ export class ASTInterpreter {
     context?: any,
     create?: boolean | 1,
   ): Function;
+  #private;
 }
 export type DecoratedASTNode = any & {
   isPure: boolean | number;

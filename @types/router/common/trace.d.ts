@@ -1,10 +1,10 @@
 export type Category = number;
 export namespace Category {
-  let RESOLVE: number;
-  let TRANSITION: number;
-  let HOOK: number;
-  let UIVIEW: number;
-  let VIEWCONFIG: number;
+  let _RESOLVE: number;
+  let _TRANSITION: number;
+  let _HOOK: number;
+  let _UIVIEW: number;
+  let _VIEWCONFIG: number;
 }
 /**
  * Prints ng-router Transition trace information to the console.

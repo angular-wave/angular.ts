@@ -1,5 +1,5 @@
 import { defaultHttpResponseTransform } from "../http/http.js";
-import { extend, isString, minErr } from "../../shared/utils.js";
+import { extend, isArray, isString, minErr } from "../../shared/utils.js";
 
 const $templateRequestMinErr = minErr("$templateRequest");
 
@@ -93,7 +93,7 @@ export function TemplateRequestProvider() {
         let transformResponse =
           $http.defaults && $http.defaults.transformResponse;
 
-        if (Array.isArray(transformResponse)) {
+        if (isArray(transformResponse)) {
           transformResponse = transformResponse.filter(function (transformer) {
             return transformer !== defaultHttpResponseTransform;
           });

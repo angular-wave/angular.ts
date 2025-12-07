@@ -1,4 +1,9 @@
-import { assertArgFn, isFunction, minErr } from "../../shared/utils.js";
+import {
+  assertArgFn,
+  isArray,
+  isFunction,
+  minErr,
+} from "../../shared/utils.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
 /**
@@ -74,7 +79,7 @@ export function annotate(fn, strictDi, name) {
       }
       fn.$inject = $inject;
     }
-  } else if (Array.isArray(fn)) {
+  } else if (isArray(fn)) {
     last = /** @type {Array} */ (fn).length - 1;
     assertArgFn(fn[last], "fn");
     $inject = /** @type {Array} */ (fn).slice(0, last);

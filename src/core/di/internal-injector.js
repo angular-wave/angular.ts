@@ -1,4 +1,9 @@
-import { hasOwn, isArrowFunction, minErr } from "../../shared/utils.js";
+import {
+  hasOwn,
+  isArray,
+  isArrowFunction,
+  minErr,
+} from "../../shared/utils.js";
 import { annotate, isClass } from "./di.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
@@ -108,7 +113,7 @@ class AbstractInjector {
       serviceName,
     );
 
-    if (Array.isArray(fn)) {
+    if (isArray(fn)) {
       fn = fn[fn.length - 1];
     }
 
@@ -130,7 +135,7 @@ class AbstractInjector {
   instantiate(type, locals, serviceName) {
     // Check if type is annotated and use just the given function at n-1 as parameter
     // e.g. someModule.factory('greeter', ['$window', function(renamed$window) {}]);
-    const ctor = Array.isArray(type) ? type[type.length - 1] : type;
+    const ctor = isArray(type) ? type[type.length - 1] : type;
 
     const args = this.injectionArgs(type, locals, serviceName);
 

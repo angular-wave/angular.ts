@@ -4,6 +4,7 @@ import { is } from "../../shared/hof.js";
 
 /**
  * An object for Transition Rejection reasons.
+ * @internal
  * @enum {number}
  */
 export const RejectType = {
@@ -14,7 +15,7 @@ export const RejectType = {
    * This transition is cancelled because it was superseded by a new transition.
    * @type {number}
    */
-  SUPERSEDED: 2,
+  _SUPERSEDED: 2,
 
   /**
    * The transition was aborted.
@@ -22,7 +23,7 @@ export const RejectType = {
    * The transition was aborted by a hook which returned `false`.
    * @type {number}
    */
-  ABORTED: 3,
+  _ABORTED: 3,
 
   /**
    * The transition was invalid.
@@ -30,7 +31,7 @@ export const RejectType = {
    * The transition was never started because it was invalid.
    * @type {number}
    */
-  INVALID: 4,
+  _INVALID: 4,
 
   /**
    * The transition was ignored.
@@ -41,7 +42,7 @@ export const RejectType = {
    * - The transition is targeting the same state and parameter values as the currently running transition.
    * @type {number}
    */
-  IGNORED: 5,
+  _IGNORED: 5,
 
   /**
    * The transition errored.
@@ -49,7 +50,7 @@ export const RejectType = {
    * This generally means a hook threw an error or returned a rejected promise.
    * @type {number}
    */
-  ERROR: 6,
+  _ERROR: 6,
 };
 
 let id = 0;
@@ -60,7 +61,7 @@ export class Rejection {
     const message =
       "The transition has been superseded by a different transition";
 
-    const rejection = new Rejection(RejectType.SUPERSEDED, message, detail);
+    const rejection = new Rejection(RejectType._SUPERSEDED, message, detail);
 
     if (options && options.redirected) {
       rejection.redirected = true;
@@ -78,28 +79,28 @@ export class Rejection {
   static invalid(detail) {
     const message = "This transition is invalid";
 
-    return new Rejection(RejectType.INVALID, message, detail);
+    return new Rejection(RejectType._INVALID, message, detail);
   }
 
   /** Returns a Rejection due to ignored transition */
   static ignored(detail) {
     const message = "The transition was ignored";
 
-    return new Rejection(RejectType.IGNORED, message, detail);
+    return new Rejection(RejectType._IGNORED, message, detail);
   }
 
   /** Returns a Rejection due to aborted transition */
   static aborted(detail) {
     const message = "The transition has been aborted";
 
-    return new Rejection(RejectType.ABORTED, message, detail);
+    return new Rejection(RejectType._ABORTED, message, detail);
   }
 
   /** Returns a Rejection due to aborted transition */
   static errored(detail) {
     const message = "The transition errored";
 
-    return new Rejection(RejectType.ERROR, message, detail);
+    return new Rejection(RejectType._ERROR, message, detail);
   }
 
   /**

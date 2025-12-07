@@ -1,5 +1,10 @@
 import { removeFrom, tail, uniqR, unnestR } from "../../shared/common.js";
-import { isNullOrUndefined, isObject, isString } from "../../shared/utils.js";
+import {
+  isArray,
+  isNullOrUndefined,
+  isObject,
+  isString,
+} from "../../shared/utils.js";
 import { parse } from "../../shared/hof.js";
 import { getInheritedData } from "../../shared/dom.js";
 
@@ -104,7 +109,7 @@ function defaultOpts(el, $state) {
 function bindEvents(element, scope, hookFn, ngStateOpts) {
   let events = ngStateOpts ? ngStateOpts.events : undefined;
 
-  if (!Array.isArray(events)) {
+  if (!isArray(events)) {
     events = ["click"];
   }
   //const on = element.on ? "on" : "bind";
@@ -392,7 +397,7 @@ export function $StateRefActiveDirective(
               if (isString(stateOrName)) {
                 // If state is string, just add it.
                 addStateForClass(stateOrName, activeClass);
-              } else if (Array.isArray(stateOrName)) {
+              } else if (isArray(stateOrName)) {
                 // If state is an array, iterate over it and add each array item individually.
                 stateOrName.forEach((stateOrNameParam) => {
                   addStateForClass(stateOrNameParam, activeClass);

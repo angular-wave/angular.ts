@@ -1,4 +1,4 @@
-import { getCacheData } from "../../shared/dom.js";
+import { getCacheData, NodeType } from "../../shared/dom.js";
 import {
   assertNotHasOwnProperty,
   equals,
@@ -190,7 +190,7 @@ class SelectController {
    * @param {HTMLOptionElement} element
    */
   addOption(value, element) {
-    if (element.nodeType === Node.COMMENT_NODE) return;
+    if (element.nodeType === NodeType._COMMENT_NODE) return;
 
     assertNotHasOwnProperty(value, '"option value"');
 

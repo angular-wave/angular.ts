@@ -90,7 +90,7 @@ export class Transition {
     );
     this.createTransitionHookRegFns();
     const onCreateHooks = this._hookBuilder.buildHooksForPhase(
-      TransitionHookPhase.CREATE,
+      TransitionHookPhase._CREATE,
     );
 
     TransitionHook.invokeHooks(onCreateHooks, () => null);
@@ -112,7 +112,7 @@ export class Transition {
   createTransitionHookRegFns() {
     this.transitionService
       ._getEvents()
-      .filter((type) => type.hookPhase !== TransitionHookPhase.CREATE)
+      .filter((type) => type.hookPhase !== TransitionHookPhase._CREATE)
       .forEach((type) => makeEvent(this, this.transitionService, type));
   }
 
@@ -599,7 +599,7 @@ export class Transition {
       this.success = true;
       this._deferred.resolve(this.to());
       const hooks = this._hookBuilder.buildHooksForPhase(
-        TransitionHookPhase.SUCCESS,
+        TransitionHookPhase._SUCCESS,
       );
 
       hooks.forEach((hook) => {
@@ -612,7 +612,7 @@ export class Transition {
       this.success = false;
       this._deferred.reject(reason);
       this._error = reason;
-      const hooks = getHooksFor(TransitionHookPhase.ERROR);
+      const hooks = getHooksFor(TransitionHookPhase._ERROR);
 
       hooks.forEach((hook) => hook.invokeHook());
     };
@@ -620,7 +620,7 @@ export class Transition {
     const runTransition = () => {
       // Wait to build the RUN hook chain until the BEFORE hooks are done
       // This allows a BEFORE hook to dynamically add additional RUN hooks via the Transition object.
-      const allRunHooks = getHooksFor(TransitionHookPhase.RUN);
+      const allRunHooks = getHooksFor(TransitionHookPhase._RUN);
 
       const resolved = Promise.resolve();
 
@@ -638,7 +638,7 @@ export class Transition {
       return Promise.resolve();
     };
 
-    const allBeforeHooks = getHooksFor(TransitionHookPhase.BEFORE);
+    const allBeforeHooks = getHooksFor(TransitionHookPhase._BEFORE);
 
     TransitionHook.invokeHooks(allBeforeHooks, startTransition)
       .then(runTransition)

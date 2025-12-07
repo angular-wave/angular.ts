@@ -1,4 +1,5 @@
 import {
+  isArray,
   isDefined,
   isFunction,
   isNullOrUndefined,
@@ -168,7 +169,7 @@ export class TemplateFactoryProvider {
   fromProvider(provider, params, context) {
     const deps = annotate(provider);
 
-    const providerFn = Array.isArray(provider) ? tail(provider) : provider;
+    const providerFn = isArray(provider) ? tail(provider) : provider;
 
     const resolvable = new Resolvable("", providerFn, deps);
 
@@ -184,7 +185,7 @@ export class TemplateFactoryProvider {
   fromComponentProvider(provider, context) {
     const deps = annotate(provider);
 
-    const providerFn = Array.isArray(provider) ? tail(provider) : provider;
+    const providerFn = isArray(provider) ? tail(provider) : provider;
 
     const resolvable = new Resolvable("", providerFn, deps);
 
@@ -242,7 +243,7 @@ export class TemplateFactoryProvider {
         const args = (fn && annotate(fn)) || [];
 
         // account for array style injection, i.e., ['foo', function(foo) {}]
-        const arrayIdxStr = Array.isArray(fn) ? `[${fn.length - 1}]` : "";
+        const arrayIdxStr = isArray(fn) ? `[${fn.length - 1}]` : "";
 
         return `${attrName}='$resolve.${resolveName}${arrayIdxStr}(${args.join(",")})'`;
       }
@@ -288,6 +289,6 @@ const scopeBindings = (bindingsObj) =>
     // [ 'input', [ '=foo', '=', 'foo' ] ]
     .map((key) => [key, /^([=<@&])[?]?(.*)/.exec(bindingsObj[key])])
     // skip malformed values
-    .filter((tuple) => isDefined(tuple) && Array.isArray(tuple[1]))
+    .filter((tuple) => isDefined(tuple) && isArray(tuple[1]))
     // { name: ('foo' || 'input'), type: '=' }
     .map((tuple) => ({ name: tuple[1][2] || tuple[0], type: tuple[1][1] }));

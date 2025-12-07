@@ -1,3 +1,5 @@
+import { isArray } from "../../shared/utils";
+
 /**
  * A [[TransitionHookFn]] that performs lazy loading
  *
@@ -109,7 +111,7 @@ export function lazyLoadState(transition, state, stateRegistry) {
   }
   /** Register any lazy loaded state definitions */
   function updateStateRegistry(result) {
-    if (result && Array.isArray(result.states)) {
+    if (result && isArray(result.states)) {
       result.states.forEach((_state) => stateRegistry.register(_state));
     }
 

@@ -1,5 +1,6 @@
-import { extend, isString, minErr } from "../shared/utils.js";
+import { extend, isArray, isString, minErr } from "../shared/utils.js";
 import { ASTType } from "../core/parse/ast-type.js";
+import { NodeType } from "../shared/dom.js";
 
 export const ADD_CLASS_SUFFIX = "-add";
 export const REMOVE_CLASS_SUFFIX = "-remove";
@@ -51,7 +52,7 @@ if (
 }
 
 export const DURATION_KEY = "Duration";
-export const PROPERTY_KEY = ASTType.Property;
+export const PROPERTY_KEY = ASTType._Property;
 export const DELAY_KEY = "Delay";
 export const TIMING_KEY = "TimingFunction";
 export const ANIMATION_ITERATION_COUNT_KEY = "IterationCount";
@@ -91,7 +92,7 @@ export function packageStyles(options) {
 export function pendClasses(classes, fix, isPrefix) {
   let className = "";
 
-  classes = Array.isArray(classes)
+  classes = isArray(classes)
     ? classes
     : classes && isString(classes) && classes.length
       ? classes.split(/\s+/)
@@ -121,8 +122,10 @@ export function removeFromArray(arr, val) {
  */
 export function stripCommentsFromElement(element) {
   if (element instanceof NodeList) {
-    return Array.from(element).filter((x) => x.nodeType === Node.ELEMENT_NODE);
-  } else if (element.nodeType === Node.ELEMENT_NODE) {
+    return Array.from(element).filter(
+      (x) => x.nodeType === NodeType._ELEMENT_NODE,
+    );
+  } else if (element.nodeType === NodeType._ELEMENT_NODE) {
     return /** @type {Node} */ (element);
   } else {
     return undefined;
@@ -134,12 +137,12 @@ export function stripCommentsFromElement(element) {
  * @returns {Node}
  */
 export function extractElementNode(element) {
-  if (!element || !Array.isArray(element)) return /** @type {Node} */ (element);
+  if (!element || !isArray(element)) return /** @type {Node} */ (element);
 
   for (let i = 0; i < /** @type {NodeList} */ (element).length; i++) {
     const elm = element[i];
 
-    if (elm.nodeType === Node.ELEMENT_NODE) {
+    if (elm.nodeType === NodeType._ELEMENT_NODE) {
       return elm;
     }
   }

@@ -172,7 +172,7 @@ export class TransitionProvider {
 
     this._defineEvent(
       "onCreate",
-      TransitionHookPhase.CREATE,
+      TransitionHookPhase._CREATE,
       0,
       paths.to,
       NORMAL_SORT,
@@ -180,21 +180,26 @@ export class TransitionProvider {
       TH.THROW_ERROR,
       SYNCHRONOUS,
     );
-    this._defineEvent("onBefore", TransitionHookPhase.BEFORE, 0, paths.to);
-    this._defineEvent("onStart", TransitionHookPhase.RUN, 0, paths.to);
+    this._defineEvent("onBefore", TransitionHookPhase._BEFORE, 0, paths.to);
+    this._defineEvent("onStart", TransitionHookPhase._RUN, 0, paths.to);
     this._defineEvent(
       "onExit",
-      TransitionHookPhase.RUN,
+      TransitionHookPhase._RUN,
       100,
       paths.exiting,
       REVERSE_SORT,
     );
-    this._defineEvent("onRetain", TransitionHookPhase.RUN, 200, paths.retained);
-    this._defineEvent("onEnter", TransitionHookPhase.RUN, 300, paths.entering);
-    this._defineEvent("onFinish", TransitionHookPhase.RUN, 400, paths.to);
+    this._defineEvent(
+      "onRetain",
+      TransitionHookPhase._RUN,
+      200,
+      paths.retained,
+    );
+    this._defineEvent("onEnter", TransitionHookPhase._RUN, 300, paths.entering);
+    this._defineEvent("onFinish", TransitionHookPhase._RUN, 400, paths.to);
     this._defineEvent(
       "onSuccess",
-      TransitionHookPhase.SUCCESS,
+      TransitionHookPhase._SUCCESS,
       0,
       paths.to,
       NORMAL_SORT,
@@ -204,7 +209,7 @@ export class TransitionProvider {
     );
     this._defineEvent(
       "onError",
-      TransitionHookPhase.ERROR,
+      TransitionHookPhase._ERROR,
       0,
       paths.to,
       NORMAL_SORT,
@@ -215,7 +220,7 @@ export class TransitionProvider {
   }
 
   _defineCorePaths() {
-    const { STATE, TRANSITION } = TransitionHookScope;
+    const { _STATE: STATE, _TRANSITION: TRANSITION } = TransitionHookScope;
 
     this._definePathType("to", TRANSITION);
     this._definePathType("from", TRANSITION);

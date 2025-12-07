@@ -6,7 +6,13 @@ import {
   omit,
   tail,
 } from "../../shared/common.js";
-import { hasOwn, isDefined, isFunction, isString } from "../../shared/utils.js";
+import {
+  hasOwn,
+  isArray,
+  isDefined,
+  isFunction,
+  isString,
+} from "../../shared/utils.js";
 import { stringify } from "../../shared/strings.js";
 import { is, pattern, val } from "../../shared/hof.js";
 import { Resolvable } from "../resolve/resolvable.js";
@@ -193,7 +199,7 @@ export function resolvablesBuilder(state) {
     !!(
       obj &&
       obj.val &&
-      (isString(obj.val) || Array.isArray(obj.val) || isFunction(obj.val))
+      (isString(obj.val) || isArray(obj.val) || isFunction(obj.val))
     );
 
   // Given a literal resolve or provider object, returns a Resolvable
@@ -234,7 +240,7 @@ export function resolvablesBuilder(state) {
         new Resolvable(tuple.token, (x) => x, [tuple.val], tuple.policy),
     ],
     [
-      (x) => Array.isArray(x.val),
+      (x) => isArray(x.val),
       (tuple) =>
         new Resolvable(
           tuple.token,
@@ -271,7 +277,7 @@ export function resolvablesBuilder(state) {
   // Otherwise, assume it's an object and convert to an Array of tuples
   const decl = state.resolve;
 
-  const items = Array.isArray(decl)
+  const items = isArray(decl)
     ? decl
     : objects2Tuples(decl, state.resolvePolicy || {});
 

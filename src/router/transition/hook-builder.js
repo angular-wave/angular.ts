@@ -1,4 +1,5 @@
 import { assertPredicate, unnestR } from "../../shared/common.js";
+import { isArray } from "../../shared/utils.js";
 import {
   TransitionHook,
   TransitionHookPhase,
@@ -83,7 +84,7 @@ export class HookBuilder {
         );
 
         const state =
-          hookType.criteriaMatchPath.scope === TransitionHookScope.STATE
+          hookType.criteriaMatchPath.scope === TransitionHookScope._STATE
             ? node.state.self
             : null;
 
@@ -117,7 +118,7 @@ export class HookBuilder {
    * @returns an array of matched [[RegisteredHook]]s
    */
   getMatchingHooks(hookType, treeChanges, transition) {
-    const isCreate = hookType.hookPhase === TransitionHookPhase.CREATE;
+    const isCreate = hookType.hookPhase === TransitionHookPhase._CREATE;
 
     // Instance and Global hook registries
     const $transitions = this.transition.transitionService;
@@ -128,9 +129,7 @@ export class HookBuilder {
 
     return registries
       .map((reg) => reg.getHooks(hookType.name)) // Get named hooks from registries
-      .filter(
-        assertPredicate(Array.isArray, `broken event named: ${hookType.name}`),
-      ) // Sanity check
+      .filter(assertPredicate(isArray, `broken event named: ${hookType.name}`)) // Sanity check
       .reduce(unnestR, []) // Un-nest RegisteredHook[][] to RegisteredHook[] array
       .filter((hook) => hook.matches(treeChanges, transition)); // Only those satisfying matchCriteria
   }

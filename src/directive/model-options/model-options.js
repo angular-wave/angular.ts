@@ -1,4 +1,4 @@
-import { isDefined, trim } from "../../shared/utils.js";
+import { isDefined, keys, trim } from "../../shared/utils.js";
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
 
@@ -137,7 +137,7 @@ export function ngModelOptionsDirective() {
 
 // shallow copy over values from `src` that are not already specified on `dst`
 function defaults(dst, src) {
-  Object.keys(src).forEach((key) => {
+  keys(src).forEach((key) => {
     if (!isDefined(dst[key])) {
       dst[key] = src[key];
     }

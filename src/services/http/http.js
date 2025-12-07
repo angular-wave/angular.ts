@@ -6,6 +6,7 @@ import {
   encodeUriQuery,
   extend,
   fromJson,
+  isArray,
   isBlob,
   isDate,
   isDefined,
@@ -17,6 +18,7 @@ import {
   isPromiseLike,
   isString,
   isUndefined,
+  keys,
   lowercase,
   minErr,
   shallowCopy,
@@ -28,13 +30,17 @@ import { $injectTokens as $t } from "../../injection-tokens.js";
 
 const APPLICATION_JSON = "application/json";
 
-export const Http = Object.freeze({
-  OK: 200,
-  MultipleChoices: 300,
-  BadRequest: 400,
-  NotFound: 404,
-  ErrorMax: 599,
-});
+/**
+ * @internal
+ * @enum {number}
+ */
+export const Http = {
+  _OK: 200,
+  _MultipleChoices: 300,
+  _BadRequest: 400,
+  _NotFound: 404,
+  _ErrorMax: 599,
+};
 
 const CONTENT_TYPE_APPLICATION_JSON = {
   "Content-Type": `${APPLICATION_JSON};charset=utf-8`,
@@ -80,15 +86,15 @@ export function HttpParamSerializerProvider() {
       if (!params) return "";
       const parts = [];
 
-      Object.keys(params)
+      keys(params)
         .sort()
         .forEach((key) => {
           const value = params[key];
 
           if (value === null || isUndefined(value) || isFunction(value)) return;
 
-          if (Array.isArray(value)) {
-            value.forEach((v) => {
+          if (isArray(value)) {
+            /** @type {any[]} */ (value).forEach((v) => {
               parts.push(
                 `${encodeUriQuery(key)}=${encodeUriQuery(serializeValue(v))}`,
               );
@@ -229,7 +235,7 @@ function transformData(data, headers, status, fns) {
     return fns(data, headers, status);
   }
 
-  if (Array.isArray(fns)) {
+  if (isArray(fns)) {
     /** @type {Array<function(...any): any>} */ (fns).forEach((fn) => {
       data = fn(data, headers, status);
     });
@@ -239,7 +245,7 @@ function transformData(data, headers, status, fns) {
 }
 
 function isSuccess(status) {
-  return status >= Http.OK && status < Http.MultipleChoices;
+  return status >= Http._OK && status < Http._MultipleChoices;
 }
 
 /**
@@ -573,14 +579,12 @@ export function HttpProvider() {
             defHeaders[lowercase(configParam.method)],
           );
 
-          Object.keys(defHeaders).forEach((defHeaderName) => {
+          keys(defHeaders).forEach((defHeaderName) => {
             const lowercaseDefHeaderName = lowercase(defHeaderName);
 
-            const hasMatchingHeader = Object.keys(reqHeaders).some(
-              (reqHeaderName) => {
-                return lowercase(reqHeaderName) === lowercaseDefHeaderName;
-              },
-            );
+            const hasMatchingHeader = keys(reqHeaders).some((reqHeaderName) => {
+              return lowercase(reqHeaderName) === lowercaseDefHeaderName;
+            });
 
             if (!hasMatchingHeader) {
               reqHeaders[defHeaderName] = defHeaders[defHeaderName];
@@ -603,7 +607,7 @@ export function HttpProvider() {
 
           // strip content-type if data is undefined
           if (isUndefined(reqData)) {
-            Object.keys(headers).forEach((header) => {
+            keys(headers).forEach((header) => {
               if (lowercase(header) === "content-type") {
                 delete headers[header];
               }
@@ -822,7 +826,7 @@ export function HttpProvider() {
               );
             } else {
               // serving from cache
-              if (Array.isArray(cachedResp)) {
+              if (isArray(cachedResp)) {
                 resolvePromise(
                   cachedResp[1],
                   cachedResp[0],
@@ -831,7 +835,7 @@ export function HttpProvider() {
                   cachedResp[4],
                 );
               } else {
-                resolvePromise(cachedResp, Http.OK, {}, "OK", "complete");
+                resolvePromise(cachedResp, Http._OK, {}, "OK", "complete");
               }
             }
           } else {
@@ -1038,9 +1042,9 @@ export function http(
 
     if (status === 0) {
       status = xhr.response
-        ? Http.OK
+        ? Http._OK
         : new URL(url).protocol === "file:"
-          ? Http.NotFound
+          ? Http._NotFound
           : 0;
     }
 

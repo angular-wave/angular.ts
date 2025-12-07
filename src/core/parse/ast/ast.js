@@ -28,8 +28,8 @@ export class AST {
     /** @type {import('../lexer/lexer.js').Lexer} */
     this.lexer = lexer;
     this.selfReferential = {
-      this: { type: ASTType.ThisExpression },
-      $locals: { type: ASTType.LocalsExpression },
+      this: { type: ASTType._ThisExpression },
+      $locals: { type: ASTType._LocalsExpression },
     };
   }
 
@@ -68,7 +68,7 @@ export class AST {
       }
     }
 
-    return { type: ASTType.Program, body };
+    return { type: ASTType._Program, body };
   }
 
   /**
@@ -77,7 +77,7 @@ export class AST {
    */
   expressionStatement() {
     return {
-      type: ASTType.ExpressionStatement,
+      type: ASTType._ExpressionStatement,
       expression: this.filterChain(),
     };
   }
@@ -109,7 +109,7 @@ export class AST {
       }
 
       result = {
-        type: ASTType.AssignmentExpression,
+        type: ASTType._AssignmentExpression,
         left: result,
         right: this.assignment(),
         operator: "=",
@@ -137,7 +137,7 @@ export class AST {
         consequent = this.assignment();
 
         return {
-          type: ASTType.ConditionalExpression,
+          type: ASTType._ConditionalExpression,
           test,
           alternate,
           consequent,
@@ -157,7 +157,7 @@ export class AST {
 
     while (this.expect("||")) {
       left = {
-        type: ASTType.LogicalExpression,
+        type: ASTType._LogicalExpression,
         operator: "||",
         left,
         right: this.logicalAND(),
@@ -176,7 +176,7 @@ export class AST {
 
     while (this.expect("&&")) {
       left = {
-        type: ASTType.LogicalExpression,
+        type: ASTType._LogicalExpression,
         operator: "&&",
         left,
         right: this.equality(),
@@ -197,7 +197,7 @@ export class AST {
 
     while ((token = this.expect("==", "!=", "===", "!=="))) {
       left = {
-        type: ASTType.BinaryExpression,
+        type: ASTType._BinaryExpression,
         operator: /** @type {Token} */ (token).text,
         left,
         right: this.relational(),
@@ -218,7 +218,7 @@ export class AST {
 
     while ((token = this.expect("<", ">", "<=", ">="))) {
       left = {
-        type: ASTType.BinaryExpression,
+        type: ASTType._BinaryExpression,
         operator: /** @type {Token} */ (token).text,
         left,
         right: this.additive(),
@@ -239,7 +239,7 @@ export class AST {
 
     while ((token = this.expect("+", "-"))) {
       left = {
-        type: ASTType.BinaryExpression,
+        type: ASTType._BinaryExpression,
         operator: /** @type {Token} */ (token).text,
         left,
         right: this.multiplicative(),
@@ -260,7 +260,7 @@ export class AST {
 
     while ((token = this.expect("*", "/", "%"))) {
       left = {
-        type: ASTType.BinaryExpression,
+        type: ASTType._BinaryExpression,
         operator: /** @type {import("../lexer/lexer.js").Token} */ (token).text,
         left,
         right: this.unary(),
@@ -279,7 +279,7 @@ export class AST {
 
     if ((token = this.expect("+", "-", "!"))) {
       return {
-        type: ASTType.UnaryExpression,
+        type: ASTType._UnaryExpression,
         operator: /** @type {import("../lexer/lexer.js").Token} */ (token).text,
         prefix: true,
         argument: this.unary(),
@@ -316,7 +316,7 @@ export class AST {
       )
     ) {
       primary = {
-        type: ASTType.Literal,
+        type: ASTType._Literal,
         value: literals.get(this.consume().text),
       };
     } else if (
@@ -341,7 +341,7 @@ export class AST {
         /** @type {import("../lexer/lexer.js").Token} */ (next).text === "("
       ) {
         primary = {
-          type: ASTType.CallExpression,
+          type: ASTType._CallExpression,
           callee: primary,
           arguments: this.parseArguments(),
         };
@@ -350,7 +350,7 @@ export class AST {
         /** @type {import("../lexer/lexer.js").Token} */ (next).text === "["
       ) {
         primary = {
-          type: ASTType.MemberExpression,
+          type: ASTType._MemberExpression,
           object: primary,
           property: this.assignment(),
           computed: true,
@@ -360,7 +360,7 @@ export class AST {
         /** @type {import("../lexer/lexer.js").Token} */ (next).text === "."
       ) {
         primary = {
-          type: ASTType.MemberExpression,
+          type: ASTType._MemberExpression,
           object: primary,
           property: this.identifier(),
           computed: false,
@@ -383,7 +383,7 @@ export class AST {
     const args = [baseExpression];
 
     const result = {
-      type: ASTType.CallExpression,
+      type: ASTType._CallExpression,
       callee: this.identifier(),
       arguments: args,
       filter: true,
@@ -424,7 +424,7 @@ export class AST {
       this.throwError("is not a valid identifier", token);
     }
 
-    return { type: ASTType.Identifier, name: token.text };
+    return { type: ASTType._Identifier, name: token.text };
   }
 
   /**
@@ -433,7 +433,7 @@ export class AST {
    */
   constant() {
     // TODO check that it is a constant
-    return { type: ASTType.Literal, value: this.consume().value };
+    return { type: ASTType._Literal, value: this.consume().value };
   }
 
   /**
@@ -455,7 +455,7 @@ export class AST {
     }
     this.consume("]");
 
-    return { type: ASTType.ArrayExpression, elements };
+    return { type: ASTType._ArrayExpression, elements };
   }
 
   /**
@@ -475,7 +475,7 @@ export class AST {
           // Support trailing commas per ES5.1.
           break;
         }
-        property = { type: ASTType.Property, kind: "init" };
+        property = { type: ASTType._Property, kind: "init" };
 
         if (
           /** @type {import("../lexer/lexer.js").Token} */ (this.peek())
@@ -516,7 +516,7 @@ export class AST {
     }
     this.consume("}");
 
-    return { type: ASTType.ObjectExpression, properties };
+    return { type: ASTType._ObjectExpression, properties };
   }
 
   /**

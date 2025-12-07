@@ -1,4 +1,9 @@
-import { emptyElement, removeElement, startingTag } from "../../shared/dom.js";
+import {
+  emptyElement,
+  NodeType,
+  removeElement,
+  startingTag,
+} from "../../shared/dom.js";
 import {
   equals,
   hasOwn,
@@ -402,7 +407,7 @@ export function ngOptionsDirective($compile, $parse) {
       // if (ngOptions.trackBy) {
       //   scope.$watchCollection(
       //     () => {
-      //       if (Array.isArray(ngModelCtrl.$viewValue)) {
+      //       if (isArray(ngModelCtrl.$viewValue)) {
       //         return ngModelCtrl.$viewValue.map((value) =>
       //           ngOptions.getTrackByValue(value),
       //         );
@@ -422,7 +427,7 @@ export function ngOptionsDirective($compile, $parse) {
       selectElement.prepend(selectCtrl.emptyOption);
       linkFn(scope);
 
-      if (selectCtrl.emptyOption.nodeType === Node.COMMENT_NODE) {
+      if (selectCtrl.emptyOption.nodeType === NodeType._COMMENT_NODE) {
         // This means the empty option has currently no actual DOM node, probably because
         // it has been modified by a transclusion directive.
         selectCtrl.hasEmptyOption = false;

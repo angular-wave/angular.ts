@@ -1,5 +1,5 @@
 import { pick, tail } from "../../shared/common.js";
-import { isDefined, isString } from "../../shared/utils.js";
+import { isArray, isDefined, isString } from "../../shared/utils.js";
 import { isInjectable } from "../../shared/predicates.js";
 import { trace } from "../common/trace.js";
 import { ResolveContext } from "../resolve/resolve-context.js";
@@ -159,7 +159,7 @@ export class ViewConfig {
     if (!isInjectable(provider)) return this.viewDecl.controller;
     const deps = annotate(provider);
 
-    const providerFn = Array.isArray(provider) ? tail(provider) : provider;
+    const providerFn = isArray(provider) ? tail(provider) : provider;
 
     const resolvable = new Resolvable("", providerFn, deps);
 

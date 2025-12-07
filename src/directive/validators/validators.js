@@ -174,7 +174,6 @@ export const patternDirective = [
         ctrl.$validators.pattern = (_modelValue, viewValue) => {
           // HTML5 pattern constraint validates the input value, so we validate the viewValue
           return (
-            // @ts-ignore
             ctrl.$isEmpty(viewValue) ||
             isUndefined(regexp) ||
             regexp.test(viewValue)

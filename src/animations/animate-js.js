@@ -1,4 +1,4 @@
-import { isFunction, isObject } from "../shared/utils.js";
+import { isArray, isFunction, isObject } from "../shared/utils.js";
 import {
   applyAnimationClassesFactory,
   applyAnimationStyles,
@@ -436,7 +436,7 @@ export function AnimateJsProvider($animateProvider) {
       };
 
       function lookupAnimations(classes) {
-        classes = Array.isArray(classes) ? classes : classes.split(" ");
+        classes = isArray(classes) ? classes : classes.split(" ");
         const matches = [];
 
         const flagMap = {};

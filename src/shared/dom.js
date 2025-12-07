@@ -1,4 +1,4 @@
-import { concat, hasOwn, isDefined, isObject } from "./utils.js";
+import { concat, hasOwn, isArray, isDefined, isObject, keys } from "./utils.js";
 import { Cache } from "./cache.js";
 import { extractElementNode } from "../animations/shared.js";
 
@@ -24,6 +24,16 @@ const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
 const SINGLE_TAG_REGEXP = /^<([\w-]+)\s*\/?>(?:<\/\1>|)$/;
 
 const TAG_NAME_REGEXP = /<([\w:-]+)/;
+
+/** @internal */
+/** @enum {number} */
+export const NodeType = {
+  _ELEMENT_NODE: Node.ELEMENT_NODE,
+  _DOCUMENT_NODE: Node.DOCUMENT_NODE,
+  _TEXT_NODE: Node.TEXT_NODE,
+  _COMMENT_NODE: Node.COMMENT_NODE,
+  _DOCUMENT_FRAGMENT_NODE: Node.DOCUMENT_FRAGMENT_NODE,
+};
 
 // Table parts need to be wrapped with `<table>` or they're
 // stripped to their contents when put in a div.
@@ -177,9 +187,9 @@ function elementAcceptsData(node) {
   // The window object can accept data but has no nodeType
   // Otherwise we are only interested in elements (1) and documents (9)
   switch (node.nodeType) {
-    case Node.ELEMENT_NODE:
-    case Node.DOCUMENT_NODE:
-    case Node.COMMENT_NODE:
+    case NodeType._ELEMENT_NODE:
+    case NodeType._DOCUMENT_NODE:
+    case NodeType._COMMENT_NODE:
     case undefined: // window.object
       return true;
     default:
@@ -265,7 +275,8 @@ export function parseHtml(html) {
 export function dealoc(element, onlyDescendants) {
   if (!element || element instanceof Comment) return;
 
-  if (Array.isArray(element)) {
+  if (isArray(element)) {
+    /* @ts-ignore */
     element.forEach((item) => dealoc(item, onlyDescendants));
   } else {
     if (!onlyDescendants && elementAcceptsData(element)) {
@@ -290,7 +301,7 @@ function removeIfEmptyData(element) {
 
   const { data } = Cache.get(expandoId);
 
-  if (!data || !Object.keys(data).length) {
+  if (!data || !keys(data).length) {
     Cache.delete(expandoId);
     element[EXPANDO] = undefined; // don't delete DOM expandos. Chrome don't like it
   }
@@ -469,7 +480,7 @@ export function getController(element, name) {
 export function getInheritedData(element, name) {
   // if element is the document object work with the html element instead
   // this makes $(document).scope() possible
-  if (element.nodeType === Node.DOCUMENT_NODE) {
+  if (element.nodeType === NodeType._DOCUMENT_NODE) {
     element = /** @type {Document} */ (element).documentElement;
   }
 
@@ -486,7 +497,7 @@ export function getInheritedData(element, name) {
     // to lookup parent controllers.
     element =
       element.parentNode ||
-      (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE &&
+      (element.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE &&
         /** @type {ShadowRoot} */ (element).host);
   }
 
@@ -503,10 +514,11 @@ export function getInheritedData(element, name) {
 export function setInheritedData(element, name, value) {
   // if element is the document object work with the html element instead
   // this makes $(document).scope() possible
-  if (element.nodeType === Node.DOCUMENT_NODE) {
+  if (element.nodeType === NodeType._DOCUMENT_NODE) {
     element = /** @type {Document} */ (element).documentElement;
   }
-  const names = Array.isArray(name) ? name : [name];
+
+  const names = isArray(name) ? name : [name];
 
   while (element) {
     for (let i = 0, ii = names.length; i < ii; i++) {
@@ -523,7 +535,7 @@ export function setInheritedData(element, name, value) {
     // to lookup parent controllers.
     element =
       element.parentNode ||
-      (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE &&
+      (element.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE &&
         /** @type {ShadowRoot} */ (element).host);
   }
 
@@ -575,9 +587,9 @@ export function startingTag(elementOrStr) {
   const elemHtml = divWrapper.innerHTML;
 
   try {
-    if (clone.nodeType === Node.TEXT_NODE) {
+    if (clone.nodeType === NodeType._TEXT_NODE) {
       return elemHtml.toLowerCase();
-    } else if (clone.nodeType === Node.COMMENT_NODE) {
+    } else if (clone.nodeType === NodeType._COMMENT_NODE) {
       return `<!--${/** @type {Comment} **/ (clone).data.trim()}-->`;
     } else {
       const match = elemHtml.match(/^(<[^>]+>)/);
@@ -697,7 +709,7 @@ export function appendNodesToElement(element, nodes) {
     nodes = Array.from(template.content.childNodes);
   } else if (nodes instanceof Node) {
     nodes = [nodes];
-  } else if (!Array.isArray(nodes)) {
+  } else if (!isArray(nodes)) {
     throw new TypeError("Expected a Node, Node[], or HTML string");
   }
 
@@ -711,9 +723,9 @@ export function appendNodesToElement(element, nodes) {
 export function emptyElement(element) {
   dealoc(element, true);
   switch (element.nodeType) {
-    case Node.ELEMENT_NODE:
-    case Node.DOCUMENT_NODE:
-    case Node.DOCUMENT_FRAGMENT_NODE:
+    case NodeType._ELEMENT_NODE:
+    case NodeType._DOCUMENT_NODE:
+    case NodeType._DOCUMENT_FRAGMENT_NODE:
       element.replaceChildren();
       break;
   }

@@ -33,7 +33,7 @@
  * @packageDocumentation
  */
 import { parse } from "../../shared/hof.js";
-import { isNumber } from "../../shared/utils.js";
+import { isNumber, keys } from "../../shared/utils.js";
 import {
   functionToString,
   maxLength,
@@ -82,11 +82,11 @@ function normalizedCat(input) {
  * @enum {number}
  */
 export const Category = {
-  RESOLVE: 0,
-  TRANSITION: 1,
-  HOOK: 2,
-  UIVIEW: 3,
-  VIEWCONFIG: 4,
+  _RESOLVE: 0,
+  _TRANSITION: 1,
+  _HOOK: 2,
+  _UIVIEW: 3,
+  _VIEWCONFIG: 4,
 };
 
 const _tid = parse("$id");
@@ -107,7 +107,7 @@ export class Trace {
 
   _set(enabled, categories) {
     if (!categories.length) {
-      categories = Object.keys(Category)
+      categories = keys(Category)
         .map((k) => parseInt(k, 10))
         .filter((k) => !isNaN(k))
         .map((key) => Category[key]);
@@ -140,19 +140,19 @@ export class Trace {
 
   /** @internal called by ng-router code */
   traceTransitionStart(trans) {
-    if (!this.enabled(Category.TRANSITION)) return;
+    if (!this.enabled(Category._TRANSITION)) return;
     this.$logger.log(`${transLbl(trans)}: Started  -> ${stringify(trans)}`);
   }
 
   /** @internal called by ng-router code */
   traceTransitionIgnored(trans) {
-    if (!this.enabled(Category.TRANSITION)) return;
+    if (!this.enabled(Category._TRANSITION)) return;
     this.$logger.log(`${transLbl(trans)}: Ignored  <> ${stringify(trans)}`);
   }
 
   /** @internal called by ng-router code */
   traceHookInvocation(step, trans, options) {
-    if (!this.enabled(Category.HOOK)) return;
+    if (!this.enabled(Category._HOOK)) return;
     const event = parse("traceData.hookType")(options) || "internal",
       context =
         parse("traceData.context.state.name")(options) ||
@@ -167,7 +167,7 @@ export class Trace {
 
   /** @internal called by ng-router code */
   traceHookResult(hookResult, trans) {
-    if (!this.enabled(Category.HOOK)) return;
+    if (!this.enabled(Category._HOOK)) return;
     this.$logger.log(
       `${transLbl(trans)}:   <- Hook returned: ${maxLength(200, stringify(hookResult))}`,
     );
@@ -175,13 +175,13 @@ export class Trace {
 
   /** @internal called by ng-router code */
   traceResolvePath(path, when, trans) {
-    if (!this.enabled(Category.RESOLVE)) return;
+    if (!this.enabled(Category._RESOLVE)) return;
     this.$logger.log(`${transLbl(trans)}:         Resolving ${path} (${when})`);
   }
 
   /** @internal called by ng-router code */
   traceResolvableResolved(resolvable, trans) {
-    if (!this.enabled(Category.RESOLVE)) return;
+    if (!this.enabled(Category._RESOLVE)) return;
     this.$logger.log(
       `${transLbl(trans)}:               <- Resolved  ${resolvable} to: ${maxLength(200, stringify(resolvable.data))}`,
     );
@@ -189,7 +189,7 @@ export class Trace {
 
   /** @internal called by ng-router code */
   traceError(reason, trans) {
-    if (!this.enabled(Category.TRANSITION)) return;
+    if (!this.enabled(Category._TRANSITION)) return;
     this.$logger.log(
       `${transLbl(trans)}: <- Rejected ${stringify(trans)}, reason: ${reason}`,
     );
@@ -197,7 +197,7 @@ export class Trace {
 
   /** @internal called by ng-router code */
   traceSuccess(finalState, trans) {
-    if (!this.enabled(Category.TRANSITION)) return;
+    if (!this.enabled(Category._TRANSITION)) return;
     this.$logger.log(
       `${transLbl(trans)}: <- Success  ${stringify(trans)}, final state: ${finalState.name}`,
     );
@@ -205,7 +205,7 @@ export class Trace {
 
   /** @internal called by ng-router code */
   traceUIViewEvent(event, viewData, extra = "") {
-    if (!this.enabled(Category.UIVIEW)) return;
+    if (!this.enabled(Category._UIVIEW)) return;
     this.$logger.log(
       `ng-view: ${padString(MAX_PAD_LENGTH, event)} ${ngViewString(viewData)}${extra}`,
     );
@@ -213,7 +213,7 @@ export class Trace {
 
   /** @internal called by ng-router code */
   traceUIViewConfigUpdated(viewData, context) {
-    if (!this.enabled(Category.UIVIEW)) return;
+    if (!this.enabled(Category._UIVIEW)) return;
     this.traceUIViewEvent(
       "Updating",
       viewData,
@@ -223,13 +223,13 @@ export class Trace {
 
   /** @internal called by ng-router code */
   traceUIViewFill(viewData, html) {
-    if (!this.enabled(Category.UIVIEW)) return;
+    if (!this.enabled(Category._UIVIEW)) return;
     this.traceUIViewEvent("Fill", viewData, ` with: ${maxLength(200, html)}`);
   }
 
   /** @internal called by ng-router code */
   traceViewSync(pairs) {
-    if (!this.enabled(Category.VIEWCONFIG)) return;
+    if (!this.enabled(Category._VIEWCONFIG)) return;
     const uivheader = "uiview component fqn";
 
     const cfgheader = "view config state (view name)";
@@ -251,13 +251,13 @@ export class Trace {
 
   /** @internal called by ng-router code */
   traceViewServiceEvent(event, viewConfig) {
-    if (!this.enabled(Category.VIEWCONFIG)) return;
+    if (!this.enabled(Category._VIEWCONFIG)) return;
     this.$logger.log(`VIEWCONFIG: ${event} ${viewConfigString(viewConfig)}`);
   }
 
   /** @internal called by ng-router code */
   traceViewServiceUIViewEvent(event, viewData) {
-    if (!this.enabled(Category.VIEWCONFIG)) return;
+    if (!this.enabled(Category._VIEWCONFIG)) return;
     this.$logger.log(`VIEWCONFIG: ${event} ${ngViewString(viewData)}`);
   }
 }
