@@ -108,15 +108,10 @@ declare global {
     type NgModule = TNgModule;
     type PubSubProvider = TPubSubProvider;
     type CompositeLinkFn = TCompositeLinkFn;
-    type PublicLinkFn = TPublicLinkFn & {
-      pre: any;
-      post: any;
-    };
+    type PublicLinkFn = TPublicLinkFn;
     type NodeLinkFn = TNodeLinkFn;
     type NodeLinkFnCtx = TNodeLinkFnCtx;
-    type TranscludeFn = TTranscludeFn & {
-      $$slots: any;
-    };
+    type TranscludeFn = TTranscludeFn;
     type BoundTranscludeFn = TBoundTranscludeFn;
     type LinkFnMapping = TLinkFnMapping;
     type AnchorScrollProvider = TAnchorScrollProvider;
@@ -132,9 +127,7 @@ declare global {
     type CookieService = TCookieService;
     type ExceptionHandlerService = TExceptionHandler;
     type FilterFn = TFilterFn;
-    type FilterFactory = TFilterFactory & {
-      $$moduleName: string;
-    };
+    type FilterFactory = TFilterFactory;
     type FilterService = TFilterService;
     type HttpParamSerializerSerService = THttpParamSerializer;
     type HttpService = THttpService;
@@ -163,9 +156,7 @@ declare global {
       T extends
         | ((...args: any[]) => any)
         | (abstract new (...args: any[]) => any),
-    > = TInjectable<T> & {
-      $$moduleName: string;
-    };
+    > = TInjectable<T>;
     type StorageBackend = TStorageBackend;
     type StorageType = TStorageType;
     type StreamConnectionConfig = TStreamConnectionConfig;

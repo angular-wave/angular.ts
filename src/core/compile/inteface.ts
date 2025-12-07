@@ -8,10 +8,10 @@ import type { NodeRef } from "../../shared/noderef.js";
  *
  * The function returns the DOM content to be injected (transcluded) into the directive.
  */
-export type TranscludeFn = (
-  clone?: Element | Node | ChildNode | NodeList | Node[],
-  scope?: Scope,
-) => void;
+export type TranscludeFn = {
+  (clone?: Element | Node | ChildNode | NodeList | Node[], scope?: Scope): void;
+  $$slots?: any;
+};
 
 /**
  * A specialized version of `TranscludeFn` with the scope argument already bound.
@@ -30,11 +30,15 @@ export interface SimpleChange {
 /**
  * A function returned by the `$compile` service that links a compiled template to a scope.
  */
-export type PublicLinkFn = (
-  scope: Scope,
-  cloneConnectFn?: TranscludeFn,
-  options?: any,
-) => Element | Node | ChildNode | Node[];
+export type PublicLinkFn = {
+  (
+    scope: Scope,
+    cloneConnectFn?: TranscludeFn,
+    options?: any,
+  ): Element | Node | ChildNode | Node[];
+  pre?: any;
+  post?: any;
+};
 
 /**
  * Entry point for the `$compile` service.

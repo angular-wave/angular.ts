@@ -124,10 +124,10 @@ declare global {
     export type PubSubProvider = TPubSubProvider;
 
     export type CompositeLinkFn = TCompositeLinkFn;
-    export type PublicLinkFn = TPublicLinkFn & { pre: any; post: any };
+    export type PublicLinkFn = TPublicLinkFn;
     export type NodeLinkFn = TNodeLinkFn;
     export type NodeLinkFnCtx = TNodeLinkFnCtx;
-    export type TranscludeFn = TTranscludeFn & { $$slots: any };
+    export type TranscludeFn = TTranscludeFn;
     export type BoundTranscludeFn = TBoundTranscludeFn;
     export type LinkFnMapping = TLinkFnMapping;
 
@@ -147,7 +147,7 @@ declare global {
     export type CookieService = TCookieService;
     export type ExceptionHandlerService = TExceptionHandler;
     export type FilterFn = TFilterFn;
-    export type FilterFactory = TFilterFactory & { $$moduleName: string };
+    export type FilterFactory = TFilterFactory;
     export type FilterService = TFilterService;
     export type HttpParamSerializerSerService = THttpParamSerializer;
     export type HttpService = THttpService;
@@ -178,7 +178,7 @@ declare global {
       T extends
         | ((...args: any[]) => any)
         | (abstract new (...args: any[]) => any),
-    > = TInjectable<T> & { $$moduleName: string };
+    > = TInjectable<T>;
     export type StorageBackend = TStorageBackend;
     export type StorageType = TStorageType;
     export type StreamConnectionConfig = TStreamConnectionConfig;
