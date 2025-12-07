@@ -13,6 +13,7 @@ build: version
 	fi
 	@npm i
 	./node_modules/.bin/rollup -c
+	echo "Build output $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
 
 version:
 	@node utils/version.cjs	
