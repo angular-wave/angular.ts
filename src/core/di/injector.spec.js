@@ -2290,14 +2290,12 @@ describe("strict-di injector", () => {
   });
 
   it("should throw if magic annotation is used by service", () => {
-    module.provider(($provide) => {
-      $provide.service({
-        $test: () => {
-          return this;
-        },
-        $test2: function ($test) {
-          return this;
-        },
+    module.provider("test", ($provide) => {
+      $provide.service("$test", () => {
+        return this;
+      });
+      $provide.service("$test2", function ($test) {
+        return this;
       });
     });
     expect(() => {
@@ -2306,13 +2304,11 @@ describe("strict-di injector", () => {
   });
 
   it("should throw if magic annotation is used by provider", () => {
-    module.provider(($provide) => {
-      $provide.provider({
-        $test: () => {
-          this.$get = function ($rootScope) {
-            return $rootScope;
-          };
-        },
+    module.provider("test", ($provide) => {
+      $provide.provider("test", () => {
+        this.$get = function ($rootScope) {
+          return $rootScope;
+        };
       });
     });
     expect(() => {
@@ -2321,11 +2317,9 @@ describe("strict-di injector", () => {
   });
 
   it("should throw if magic annotation is used by factory", () => {
-    module.provider(($provide) => {
-      $provide.factory({
-        $test: function ($rootScope) {
-          return function () {};
-        },
+    module.provider("test", ($provide) => {
+      $provide.factory("$test", function ($rootScope) {
+        return function () {};
       });
     });
     expect(() => {
@@ -2334,7 +2328,7 @@ describe("strict-di injector", () => {
   });
 
   it("should throw if factory does not return a value", () => {
-    module.provider(($provide) => {
+    module.provider("test", ($provide) => {
       $provide.factory("$test", () => {
         /* empty */
       });

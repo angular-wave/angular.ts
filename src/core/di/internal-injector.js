@@ -1,4 +1,4 @@
-import { hasOwn, minErr } from "../../shared/utils.js";
+import { hasOwn, isArrowFunction, minErr } from "../../shared/utils.js";
 import { annotate, isClass } from "./di.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
@@ -137,7 +137,16 @@ class AbstractInjector {
     // Empty object at position 0 is ignored for invocation with `new`, but required.
     args.unshift(null);
 
-    return new (Function.prototype.bind.apply(ctor, args))();
+    try {
+      return new (Function.prototype.bind.apply(ctor, args))();
+    } catch (err) {
+      // try arrow function
+      if (isArrowFunction(ctor)) {
+        return ctor(args);
+      } else {
+        throw err;
+      }
+    }
   }
 
   /**

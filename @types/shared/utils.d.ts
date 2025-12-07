@@ -93,10 +93,7 @@ export function notNullOrUndefined(obj: any): boolean;
  */
 export function isNumber(value: any): boolean;
 /**
- * @module angular
- * @function isDate
  *
- * @description
  * Determines if a value is a date.
  *
  * @param {*} value Reference to check.
@@ -634,6 +631,11 @@ export function instantiateWasm(
   exports: WebAssembly.Exports;
   module: WebAssembly.Module;
 }>;
+/**
+ * @param {*} fn
+ * @returns {boolean}
+ */
+export function isArrowFunction(fn: any): boolean;
 export const isProxySymbol: unique symbol;
 export const BADARG: "badarg";
 export const BADARGKEY: "badarg: key";
