@@ -9,13 +9,12 @@ import { hasOwn, minErr } from "../../../shared/utils.js";
 
 const $parseMinErr = minErr("$parse");
 
-/** @type {Map<string,any>} */
-const literals = new Map([
-  ["true", true],
-  ["false", false],
-  ["null", null],
-  ["undefined", undefined],
-]);
+const literals = {
+  true: true,
+  false: false,
+  null: null,
+  undefined,
+};
 
 /**
  * @class
@@ -39,12 +38,12 @@ export class AST {
    * @returns {ASTNode} The root node of the AST.
    */
   _ast(text) {
-    this.text = text;
-    this.tokens = this._lexer._lex(text);
+    this._text = text;
+    this._tokens = this._lexer._lex(text);
     const value = this._program();
 
-    if (this.tokens.length !== 0) {
-      this._throwError("is an unexpected token", this.tokens[0]);
+    if (this._tokens.length !== 0) {
+      this._throwError("is an unexpected token", this._tokens[0]);
     }
 
     return value;
@@ -60,7 +59,7 @@ export class AST {
     let hasMore = true;
 
     while (hasMore) {
-      if (this.tokens.length > 0 && !this._peek("}", ")", ";", "]"))
+      if (this._tokens.length > 0 && !this._peek("}", ")", ";", "]"))
         body.push(this._expressionStatement());
 
       if (!this._expect(";")) {
@@ -311,13 +310,14 @@ export class AST {
     ) {
       primary = structuredClone(this._selfReferential[this._consume().text]);
     } else if (
-      literals.has(
+      hasOwn(
+        literals,
         /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).text,
       )
     ) {
       primary = {
         type: ASTType._Literal,
-        value: literals.get(this._consume().text),
+        value: literals[this._consume().text],
       };
     } else if (
       /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).identifier
@@ -531,8 +531,8 @@ export class AST {
       token.text,
       msg,
       token.index + 1,
-      this.text,
-      this.text.substring(token.index),
+      this._text,
+      this._text.substring(token.index),
     );
   }
 
@@ -542,11 +542,11 @@ export class AST {
    * @returns {import("../lexer/lexer.js").Token} The consumed token.
    */
   _consume(e1) {
-    if (this.tokens.length === 0) {
+    if (this._tokens.length === 0) {
       throw $parseMinErr(
         "ueoe",
         "Unexpected end of expression: {0}",
-        this.text,
+        this._text,
       );
     }
 
@@ -569,15 +569,15 @@ export class AST {
    * @returns {import("../lexer/lexer.js").Token} The next token.
    */
   _peekToken() {
-    if (this.tokens.length === 0) {
+    if (this._tokens.length === 0) {
       throw $parseMinErr(
         "ueoe",
         "Unexpected end of expression: {0}",
-        this.text,
+        this._text,
       );
     }
 
-    return this.tokens[0];
+    return this._tokens[0];
   }
 
   /**
@@ -596,8 +596,8 @@ export class AST {
    * @returns {import("../lexer/lexer.js").Token|boolean} The token at the specified index if it matches, otherwise false.
    */
   _peekAhead(i, ...expected) {
-    if (this.tokens.length > i) {
-      const token = this.tokens[i];
+    if (this._tokens.length > i) {
+      const token = this._tokens[i];
 
       const { text } = token;
 
@@ -621,7 +621,7 @@ export class AST {
     const token = this._peek(...expected);
 
     if (token) {
-      this.tokens.shift();
+      this._tokens.shift();
 
       return token;
     }
