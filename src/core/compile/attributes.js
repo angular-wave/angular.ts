@@ -22,25 +22,16 @@ export class Attributes {
   static $nonscope = true;
 
   /**
-   * @param {ng.RootScopeService} $rootScope
    * @param {ng.AnimateService} $animate
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    * @param {*} $sce
    * @param {import("../../shared/noderef.js").NodeRef} [nodeRef]
    * @param {Object} [attributesToCopy]
    */
-  constructor(
-    $rootScope,
-    $animate,
-    $exceptionHandler,
-    $sce,
-    nodeRef,
-    attributesToCopy,
-  ) {
-    this.$rootScope = $rootScope;
-    this.$animate = $animate;
-    this.$exceptionHandler = $exceptionHandler;
-    this.$sce = $sce;
+  constructor($animate, $exceptionHandler, $sce, nodeRef, attributesToCopy) {
+    this._$animate = $animate;
+    this._$exceptionHandler = $exceptionHandler;
+    this._$sce = $sce;
 
     if (attributesToCopy) {
       const keys = Object.keys(attributesToCopy);
@@ -84,7 +75,7 @@ export class Attributes {
   $addClass(classVal) {
     if (classVal && classVal.length > 0) {
       if (hasAnimate(this.$$element)) {
-        this.$animate.addClass(
+        this._$animate.addClass(
           /** @type {Element} */ (this.$$element),
           classVal,
         );
@@ -103,7 +94,7 @@ export class Attributes {
   $removeClass(classVal) {
     if (classVal && classVal.length > 0) {
       if (hasAnimate(this.$$element)) {
-        this.$animate.removeClass(
+        this._$animate.removeClass(
           /** @type {Element} */ (this.$$element),
           classVal,
         );
@@ -125,7 +116,7 @@ export class Attributes {
 
     if (toAdd && toAdd.length) {
       if (hasAnimate(this.$$element)) {
-        this.$animate.addClass(/** @type {Element }*/ (this.$$element), toAdd);
+        this._$animate.addClass(/** @type {Element }*/ (this.$$element), toAdd);
       } else {
         this.$nodeRef.element.classList.add(...toAdd.trim().split(/\s+/));
       }
@@ -134,7 +125,7 @@ export class Attributes {
 
     if (toRemove && toRemove.length) {
       if (hasAnimate(this.$$element)) {
-        this.$animate.removeClass(
+        this._$animate.removeClass(
           /** @type {Element }*/ (this.$$element),
           toRemove,
         );
@@ -228,7 +219,7 @@ export class Attributes {
         try {
           fn(value);
         } catch (err) {
-          this.$exceptionHandler(err);
+          this._$exceptionHandler(err);
         }
       });
     }
@@ -327,7 +318,7 @@ export class Attributes {
       const innerIdx = i * 2;
 
       // sanitize the uri
-      result += this.$sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
+      result += this._$sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
       // add the descriptor
       result += ` ${trim(rawUris[innerIdx + 1])}`;
     }
@@ -336,7 +327,7 @@ export class Attributes {
     const lastTuple = trim(rawUris[i * 2]).split(/\s/);
 
     // sanitize the last uri
-    result += this.$sce.getTrustedMediaUrl(trim(lastTuple[0]));
+    result += this._$sce.getTrustedMediaUrl(trim(lastTuple[0]));
 
     // and add the last descriptor if any
     if (lastTuple.length === 2) {

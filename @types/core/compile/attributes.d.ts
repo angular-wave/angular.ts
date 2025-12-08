@@ -1,7 +1,6 @@
 export class Attributes {
   static $nonscope: boolean;
   /**
-   * @param {ng.RootScopeService} $rootScope
    * @param {ng.AnimateService} $animate
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    * @param {*} $sce
@@ -9,17 +8,15 @@ export class Attributes {
    * @param {Object} [attributesToCopy]
    */
   constructor(
-    $rootScope: ng.RootScopeService,
     $animate: ng.AnimateService,
     $exceptionHandler: ng.ExceptionHandlerService,
     $sce: any,
     nodeRef?: import("../../shared/noderef.js").NodeRef,
     attributesToCopy?: any,
   );
-  $rootScope: ng.RootScopeService;
-  $animate: import("../../interface.ts").AnimateService;
-  $exceptionHandler: import("../../interface.ts").ExceptionHandler;
-  $sce: any;
+  _$animate: import("../../interface.ts").AnimateService;
+  _$exceptionHandler: import("../../interface.ts").ExceptionHandler;
+  _$sce: any;
   $attr: {};
   /** @type {import("../../shared/noderef.js").NodeRef} */
   $nodeRef: import("../../shared/noderef.js").NodeRef;
