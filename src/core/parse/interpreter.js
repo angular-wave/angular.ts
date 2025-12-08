@@ -1,4 +1,5 @@
 import {
+  entries,
   isDefined,
   isFunction,
   isNullOrUndefined,
@@ -44,7 +45,7 @@ export class ASTInterpreter {
     if (toWatch) {
       inputs = [];
 
-      for (const [key, watch] of Object.entries(toWatch)) {
+      for (const [key, watch] of entries(toWatch)) {
         const input =
           /** @type {import("./interface.ts").CompiledExpression} */ (
             this.#recurse(watch)

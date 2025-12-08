@@ -1,6 +1,7 @@
 import {
   assertArgFn,
   assertNotHasOwnProperty,
+  entries,
   isArray,
   isFunction,
   isObject,
@@ -62,7 +63,7 @@ export class ControllerProvider {
     assertNotHasOwnProperty(name, "controller");
 
     if (isObject(name)) {
-      Object.entries(name).forEach(([key, value]) => {
+      entries(name).forEach(([key, value]) => {
         this.controllers.set(key, value);
       });
     } else {

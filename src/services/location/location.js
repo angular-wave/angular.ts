@@ -1,6 +1,7 @@
 import { trimEmptyHash, urlResolve } from "../../shared/url-utils/url-utils.js";
 import {
   encodeUriSegment,
+  entries,
   equals,
   isDefined,
   isNull,
@@ -178,7 +179,7 @@ export class Location {
         } else if (isObject(search)) {
           search = structuredClone(search, {});
           // remove object undefined or null properties
-          Object.entries(search).forEach(([key, value]) => {
+          entries(search).forEach(([key, value]) => {
             if (isNull(value)) delete search[key];
           });
 

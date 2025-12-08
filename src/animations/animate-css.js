@@ -3,7 +3,13 @@ import {
   removeElementData,
   setCacheData,
 } from "../shared/dom.js";
-import { isArray, isDefined, isNullOrUndefined } from "../shared/utils.js";
+import {
+  entries,
+  isArray,
+  isDefined,
+  isNullOrUndefined,
+  keys,
+} from "../shared/utils.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 import {
   ACTIVE_CLASS_SUFFIX,
@@ -76,7 +82,7 @@ function computeCssStyles(element, properties) {
 
   const detectedStyles = window.getComputedStyle(element) || {};
 
-  Object.entries(properties).forEach(([actualStyleName, formalStyleName]) => {
+  entries(properties).forEach(([actualStyleName, formalStyleName]) => {
     let val = detectedStyles[formalStyleName];
 
     if (val) {
@@ -655,8 +661,8 @@ export function AnimateCssProvider() {
           applyAnimationClasses(element, options);
           applyAnimationStyles(element, options);
 
-          if (Object.keys(restoreStyles).length) {
-            Object.entries(restoreStyles).forEach(([prop, value]) => {
+          if (keys(restoreStyles).length) {
+            entries(restoreStyles).forEach(([prop, value]) => {
               if (value) {
                 node.style.setProperty(prop, value);
               } else {

@@ -1,5 +1,6 @@
 import { removeFrom, tail, uniqR, unnestR } from "../../shared/common.js";
 import {
+  entries,
   isArray,
   isNullOrUndefined,
   isObject,
@@ -378,33 +379,31 @@ export function $StateRefActiveDirective(
       function setStatesFromDefinitionObject(statesDefinition) {
         if (isObject(statesDefinition)) {
           states = [];
-          Object.entries(statesDefinition).forEach(
-            ([activeClass, stateOrName]) => {
-              // Helper function to abstract adding state.
-              const addStateForClass = function (
-                stateOrNameParam,
+          entries(statesDefinition).forEach(([activeClass, stateOrName]) => {
+            // Helper function to abstract adding state.
+            const addStateForClass = function (
+              stateOrNameParam,
+              activeClassParam,
+            ) {
+              const ref = parseStateRef(stateOrNameParam);
+
+              addState(
+                ref.state,
+                $scope.$eval(ref.paramExpr),
                 activeClassParam,
-              ) {
-                const ref = parseStateRef(stateOrNameParam);
+              );
+            };
 
-                addState(
-                  ref.state,
-                  $scope.$eval(ref.paramExpr),
-                  activeClassParam,
-                );
-              };
-
-              if (isString(stateOrName)) {
-                // If state is string, just add it.
-                addStateForClass(stateOrName, activeClass);
-              } else if (isArray(stateOrName)) {
-                // If state is an array, iterate over it and add each array item individually.
-                stateOrName.forEach((stateOrNameParam) => {
-                  addStateForClass(stateOrNameParam, activeClass);
-                });
-              }
-            },
-          );
+            if (isString(stateOrName)) {
+              // If state is string, just add it.
+              addStateForClass(stateOrName, activeClass);
+            } else if (isArray(stateOrName)) {
+              // If state is an array, iterate over it and add each array item individually.
+              stateOrName.forEach((stateOrNameParam) => {
+                addStateForClass(stateOrNameParam, activeClass);
+              });
+            }
+          });
         }
       }
       function addState(stateName, stateParams, activeClass) {

@@ -1,4 +1,5 @@
 import { $injectTokens } from "../../injection-tokens.js";
+import { entries } from "../../shared/utils.js";
 
 /**
  * SSE Provider
@@ -41,7 +42,7 @@ export class SseProvider {
      * @returns {ng.SseService}
      */
     (log) => {
-      this.$log = log;
+      this._$log = log;
 
       return (url, config = {}) => {
         const mergedConfig = { ...this.defaults, ...config };
@@ -61,7 +62,7 @@ export class SseProvider {
    */
   #buildUrl(url, params) {
     if (!params) return url;
-    const query = Object.entries(params)
+    const query = entries(params)
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join("&");
 
@@ -121,7 +122,7 @@ export class SseProvider {
           config.onReconnect?.(retryCount);
           setTimeout(connect, config.retryDelay);
         } else {
-          this.$log.warn("SSE: Max retries reached");
+          this._$log.warn("SSE: Max retries reached");
         }
       });
     };
@@ -129,7 +130,7 @@ export class SseProvider {
     const resetHeartbeat = () => {
       clearTimeout(heartbeatTimer);
       heartbeatTimer = setTimeout(() => {
-        this.$log.warn("SSE: heartbeat timeout, reconnecting...");
+        this._$log.warn("SSE: heartbeat timeout, reconnecting...");
         es.close();
         config.onReconnect?.(++retryCount);
         connect();

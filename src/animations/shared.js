@@ -1,4 +1,11 @@
-import { extend, isArray, isString, minErr } from "../shared/utils.js";
+import {
+  entries,
+  extend,
+  isArray,
+  isString,
+  keys,
+  minErr,
+} from "../shared/utils.js";
 import { ASTType } from "../core/parse/ast-type.js";
 import { NodeType } from "../shared/dom.js";
 
@@ -282,7 +289,7 @@ export function resolveElementClasses(existing, toAdd, toRemove) {
   });
 
   toRemove = splitClassesToLookup(toRemove);
-  Object.keys(toRemove).forEach((key) => {
+  keys(toRemove).forEach((key) => {
     flags[key] = flags[key] === ADD_CLASS ? null : REMOVE_CLASS;
   });
 
@@ -291,7 +298,7 @@ export function resolveElementClasses(existing, toAdd, toRemove) {
     removeClass: "",
   };
 
-  Object.entries(flags).forEach(([klass, val]) => {
+  entries(flags).forEach(([klass, val]) => {
     let prop, allow;
 
     if (val === ADD_CLASS) {

@@ -9,6 +9,7 @@ import {
   VALID_CLASS,
 } from "../../shared/constants.js";
 import {
+  entries,
   hasAnimate,
   isBoolean,
   isFunction,
@@ -660,7 +661,7 @@ export class NgModelController {
     function processSyncValidators() {
       let syncValidatorsValid = true;
 
-      Object.entries(that.$validators).forEach(([name, validator]) => {
+      entries(that.$validators).forEach(([name, validator]) => {
         const result = Boolean(validator(modelValue, viewValue));
 
         syncValidatorsValid = syncValidatorsValid && result;
@@ -683,7 +684,7 @@ export class NgModelController {
 
       let allValid = true;
 
-      Object.entries(that.$asyncValidators).forEach(([name, validator]) => {
+      entries(that.$asyncValidators).forEach(([name, validator]) => {
         const promise = validator(modelValue, viewValue);
 
         if (!isPromiseLike(promise)) {

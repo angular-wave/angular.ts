@@ -1,5 +1,5 @@
 import { BOOLEAN_ATTR } from "../../shared/dom.js";
-import { directiveNormalize } from "../../shared/utils.js";
+import { directiveNormalize, entries } from "../../shared/utils.js";
 import { ALIASED_ATTR } from "../../shared/constants.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
@@ -44,7 +44,7 @@ BOOLEAN_ATTR.forEach((i) => {
 });
 
 // aliased input attrs are evaluated
-Object.entries(ALIASED_ATTR).forEach(([ngAttr]) => {
+entries(ALIASED_ATTR).forEach(([ngAttr]) => {
   ngAttributeAliasDirectives[ngAttr] = function () {
     return {
       priority: 100,

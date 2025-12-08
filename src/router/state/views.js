@@ -1,5 +1,5 @@
 import { pick, tail } from "../../shared/common.js";
-import { isArray, isDefined, isString } from "../../shared/utils.js";
+import { entries, isArray, isDefined, isString } from "../../shared/utils.js";
 import { isInjectable } from "../../shared/predicates.js";
 import { trace } from "../common/trace.js";
 import { ResolveContext } from "../resolve/resolve-context.js";
@@ -64,7 +64,7 @@ export function ng1ViewsBuilder(state) {
   const views = {},
     viewsObject = state.views || { $default: pick(state, allViewKeys) };
 
-  Object.entries(viewsObject).forEach(([name, config]) => {
+  entries(viewsObject).forEach(([name, config]) => {
     // Account for views: { "": { template... } }
     name = name || "$default";
 

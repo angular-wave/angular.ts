@@ -1,4 +1,11 @@
-import { isArray, isDate, isFunction, isRegExp, isString } from "./utils.js";
+import {
+  entries,
+  isArray,
+  isDate,
+  isFunction,
+  isRegExp,
+  isString,
+} from "./utils.js";
 
 export function equals(o1, o2) {
   if (o1 === o2) return true;
@@ -150,7 +157,7 @@ export function filter(collection, callback) {
 
   const accept = arr ? (x) => result.push(x) : (x, key) => (result[key] = x);
 
-  Object.entries(collection).forEach(([i, item]) => {
+  entries(collection).forEach(([i, item]) => {
     if (callback(item, i)) accept(item, i);
   });
 
@@ -161,7 +168,7 @@ export function filter(collection, callback) {
 export function find(collection, callback) {
   let result;
 
-  Object.entries(collection).forEach(([i, item]) => {
+  entries(collection).forEach(([i, item]) => {
     if (result) return;
 
     if (callback(item, i)) result = item;
@@ -173,9 +180,7 @@ export function find(collection, callback) {
 /** Maps an array or object properties using a callback function */
 export function map(collection, callback, target) {
   target = target || (isArray(collection) ? [] : {});
-  Object.entries(collection).forEach(
-    ([i, item]) => (target[i] = callback(item, i)),
-  );
+  entries(collection).forEach(([i, item]) => (target[i] = callback(item, i)));
 
   return target;
 }

@@ -4,6 +4,7 @@ import {
 } from "../../shared/url-utils/url-utils.js";
 import {
   encodeUriQuery,
+  entries,
   extend,
   fromJson,
   isArray,
@@ -179,7 +180,7 @@ function parseHeaders(headers) {
       },
     );
   } else if (isObject(headers)) {
-    Object.entries(headers).forEach(([headerKey, headerVal]) => {
+    entries(headers).forEach(([headerKey, headerVal]) => {
       fillInParsed(headerKey.toLowerCase(), trim(headerVal));
     });
   }
@@ -553,7 +554,7 @@ export function HttpProvider() {
 
           const processedHeaders = {};
 
-          Object.entries(headers).forEach(([header, headerFn]) => {
+          entries(headers).forEach(([header, headerFn]) => {
             if (isFunction(headerFn)) {
               headerContent = headerFn(configParam);
 
@@ -880,7 +881,7 @@ export function HttpProvider() {
           if (eventHandlers) {
             const applyHandlers = {};
 
-            Object.entries(eventHandlers).forEach(([key, eventHandler]) => {
+            entries(eventHandlers).forEach(([key, eventHandler]) => {
               applyHandlers[key] = function (event) {
                 if (useApplyAsync) {
                   setTimeout(() => callEventHandler());
@@ -1028,7 +1029,7 @@ export function http(
   xhr.open(method, url, true);
 
   if (headers) {
-    for (const [key, value] of Object.entries(headers)) {
+    for (const [key, value] of entries(headers)) {
       if (isDefined(value)) {
         xhr.setRequestHeader(key, value);
       }
@@ -1065,13 +1066,13 @@ export function http(
   };
 
   if (eventHandlers) {
-    for (const [key, handler] of Object.entries(eventHandlers)) {
+    for (const [key, handler] of entries(eventHandlers)) {
       xhr.addEventListener(key, handler);
     }
   }
 
   if (uploadEventHandlers) {
-    for (const [key, handler] of Object.entries(uploadEventHandlers)) {
+    for (const [key, handler] of entries(uploadEventHandlers)) {
       xhr.upload.addEventListener(key, handler);
     }
   }

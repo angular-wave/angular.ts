@@ -18,6 +18,6 @@ export class SseProvider {
    */
   defaults: ng.SseConfig;
   $get: (string | ((log: ng.LogService) => ng.SseService))[];
-  $log: import("../log/interface.ts").LogService;
+  _$log: import("../log/interface.ts").LogService;
   #private;
 }
