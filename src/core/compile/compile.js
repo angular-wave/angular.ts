@@ -678,8 +678,8 @@ export class CompileProvider {
             assertArg(scope, "scope");
 
             // could be empty nodelist
-            if (nodeRef.getAny()) {
-              setScope(nodeRef.getAny(), scope);
+            if (nodeRef._getAny()) {
+              setScope(nodeRef._getAny(), scope);
             }
 
             if (
@@ -732,7 +732,7 @@ export class CompileProvider {
 
               $linkNode = new NodeRef(wrappedTemplate[0]);
             } else if (cloneConnectFn) {
-              $linkNode = nodeRef.clone();
+              $linkNode = nodeRef._clone();
             } else {
               $linkNode = nodeRef;
             }
@@ -760,7 +760,7 @@ export class CompileProvider {
               nodeRef = compositeLinkFn = null;
             }
 
-            return $linkNode.getAll();
+            return $linkNode._getAll();
           }
         }
 
@@ -815,7 +815,7 @@ export class CompileProvider {
             const attrs = new Attributes($animate, $exceptionHandler, $sce);
 
             const directives = collectDirectives(
-              /** @type Element */ (nodeRefList.getIndex(i)),
+              /** @type Element */ (nodeRefList._getIndex(i)),
               attrs,
               i === 0 ? maxPriority : undefined,
               ignoreDirective,
@@ -827,7 +827,7 @@ export class CompileProvider {
             if (directives.length) {
               nodeLinkFnCtx = applyDirectivesToNode(
                 directives,
-                nodeRefList.getIndex(i),
+                nodeRefList._getIndex(i),
                 attrs,
                 transcludeFn,
                 null,
@@ -845,7 +845,7 @@ export class CompileProvider {
 
             const nodeLinkFn = nodeLinkFnCtx?.nodeLinkFn;
 
-            const { childNodes } = nodeRefList.getIndex(i);
+            const { childNodes } = nodeRefList._getIndex(i);
 
             if (
               (nodeLinkFn && nodeLinkFnCtx.terminal) ||
@@ -908,7 +908,7 @@ export class CompileProvider {
                     ? nodeRef.nodes[idx]
                     : nodeRef.node;
                 } else {
-                  if (nodeRefList.getIndex(idx)) {
+                  if (nodeRefList._getIndex(idx)) {
                     stableNodeList[idx] = nodeRef.nodes[idx];
                   }
                 }
@@ -1771,7 +1771,7 @@ export class CompileProvider {
                 compileNode = compileNodeRef.node;
                 ctxNodeRef.node = compileNode;
                 replaceWith(
-                  new NodeRef($template.getAny()),
+                  new NodeRef($template._getAny()),
                   compileNode,
                   index,
                 );
@@ -1779,7 +1779,7 @@ export class CompileProvider {
                 // @ts-ignore
                 childTranscludeFn = compilationGenerator(
                   mightHaveMultipleTransclusionError,
-                  $template.getAny(),
+                  $template._getAny(),
                   transcludeFn,
                   terminalPriority,
                   replaceDirective && replaceDirective.name,
@@ -1950,7 +1950,10 @@ export class CompileProvider {
                 replaceWith(compileNodeRef, compileNode);
 
                 if (parentNodeRef) {
-                  parentNodeRef.setIndex(index, compileNode);
+                  /** @type {NodeRef} */ (parentNodeRef)._setIndex(
+                    index,
+                    compileNode,
+                  );
                 }
 
                 const newTemplateAttrs = { $attr: {} };
@@ -1988,7 +1991,7 @@ export class CompileProvider {
 
                 ii = directives.length;
               } else {
-                if (compileNodeRef.isElement()) {
+                if (compileNodeRef._isElement()) {
                   compileNodeRef.element.innerHTML = directiveValue;
                 }
               }
@@ -2033,7 +2036,7 @@ export class CompileProvider {
               try {
                 /** @type {ng.PublicLinkFn} */
                 const linkFn = directive.compile(
-                  compileNodeRef.getAny(),
+                  compileNodeRef._getAny(),
                   templateAttrs,
                   childTranscludeFn,
                 );
@@ -2249,7 +2252,7 @@ export class CompileProvider {
             // later, once we have the actual element.
             elementControllers[directive.name] = controllerInstance;
 
-            if ($element.isElement()) {
+            if ($element._isElement()) {
               setCacheData(
                 $element.element,
                 `$${directive.name}Controller`,
@@ -2398,7 +2401,7 @@ export class CompileProvider {
 
           let afterTemplateNodeLinkFnCtx;
 
-          const beforeTemplateCompileNode = $compileNode.getAny();
+          const beforeTemplateCompileNode = $compileNode._getAny();
 
           const origAsyncDirective = directives.shift();
 
@@ -2520,7 +2523,7 @@ export class CompileProvider {
                 });
               }
               afterTemplateChildLinkFn = compileNodes(
-                new NodeRef($compileNode.getAny().childNodes),
+                new NodeRef($compileNode._getAny().childNodes),
                 childTranscludeFn,
               );
 
@@ -2531,7 +2534,7 @@ export class CompileProvider {
 
                 const boundTranscludeFn = linkQueue.shift();
 
-                let linkNode = $compileNode.getAny();
+                let linkNode = $compileNode._getAny();
 
                 if (scope.$$destroyed) {
                   continue;
@@ -2655,7 +2658,7 @@ export class CompileProvider {
               previousDirective.name,
               directive.name,
               what,
-              startingTag(element.getAny()),
+              startingTag(/** @tupe {NodeRef} */ element._getAny()),
             );
           }
         }
@@ -3015,7 +3018,7 @@ export class CompileProvider {
          * @param {number} [index] Parent node index.
          */
         function replaceWith(elementsToRemove, newNode, index) {
-          const firstElementToRemove = elementsToRemove.getAny();
+          const firstElementToRemove = elementsToRemove._getAny();
 
           // const removeCount = elementsToRemove.length;
           const parent = firstElementToRemove.parentNode;
@@ -3039,7 +3042,7 @@ export class CompileProvider {
           // - allow a single fragment.qSA to fetch all elements being removed
           const fragment = document.createDocumentFragment();
 
-          elementsToRemove.collection().forEach((element) => {
+          elementsToRemove._collection().forEach((element) => {
             fragment.appendChild(element);
           });
 
