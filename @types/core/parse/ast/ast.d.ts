@@ -22,8 +22,8 @@ export class AST {
    * @returns {ASTNode} The root node of the AST.
    */
   _ast(text: string): ASTNode;
-  text: string;
-  tokens: import("../lexer/token.js").Token[];
+  _text: string;
+  _tokens: import("../lexer/token.js").Token[];
   /**
    * Parses a program.
    * @returns {ASTNode} The program node.
