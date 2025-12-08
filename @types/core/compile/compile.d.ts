@@ -113,7 +113,7 @@ export class CompileProvider {
    *
    * @param {string} elementName The element name or '*' to match any element.
    * @param {string} propertyName The DOM property name.
-   * @param {string} ctx The {@link $sce} security context in which this value is safe for use, e.g. `$sce.URL`
+   * @param {string} ctx The {@link _$sce} security context in which this value is safe for use, e.g. `$sce.URL`
    * @returns {object} `this` for chaining
    */
   addPropertySecurityContext: (

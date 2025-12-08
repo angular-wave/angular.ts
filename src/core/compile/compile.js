@@ -483,7 +483,7 @@ export class CompileProvider {
      *
      * @param {string} elementName The element name or '*' to match any element.
      * @param {string} propertyName The DOM property name.
-     * @param {string} ctx The {@link $sce} security context in which this value is safe for use, e.g. `$sce.URL`
+     * @param {string} ctx The {@link _$sce} security context in which this value is safe for use, e.g. `$sce.URL`
      * @returns {object} `this` for chaining
      */
     this.addPropertySecurityContext = function (
@@ -814,12 +814,7 @@ export class CompileProvider {
           let linkFnFound = false;
 
           for (let i = 0; i < nodeRefList.size; i++) {
-            const attrs = new Attributes(
-              $rootScope,
-              $animate,
-              $exceptionHandler,
-              $sce,
-            );
+            const attrs = new Attributes($animate, $exceptionHandler, $sce);
 
             const directives = collectDirectives(
               /** @type Element */ (nodeRefList.getIndex(i)),
@@ -1351,7 +1346,6 @@ export class CompileProvider {
             } else {
               $element = new NodeRef(linkNode);
               attrs = new Attributes(
-                $rootScope,
                 $animate,
                 $exceptionHandler,
                 $sce,
@@ -2347,7 +2341,7 @@ export class CompileProvider {
 
           // reapply the old attributes to the new element
           entries(dst).forEach(([key, value]) => {
-            if (key.charAt(0) !== "$") {
+            if (key[0] !== "$" && key[0] !== "_") {
               if (src[key] && src[key] !== value) {
                 if (value.length) {
                   value += (key === "style" ? ";" : " ") + src[key];
