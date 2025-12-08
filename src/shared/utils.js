@@ -1243,7 +1243,7 @@ function hasCustomOrDataAttribute(node, attr) {
 export function isObjectEmpty(obj) {
   if (!obj) return true;
 
-  return !Object.keys(obj).length;
+  return !keys(obj).length;
 }
 
 /**

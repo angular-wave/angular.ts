@@ -191,7 +191,7 @@ function baseInputType(_, element, attr, ctrl) {
     ctrl.$$hasNativeValidators &&
     type === attr.type
   ) {
-    element.addEventListener(PARTIAL_VALIDATION_EVENTS, function (ev) {
+    element.addEventListener(PARTIAL_VALIDATION_EVENTS, (ev) => {
       if (!timeout) {
         // eslint-disable-next-line no-invalid-this
         const validity = this[VALIDITY_STATE_PROPERTY];

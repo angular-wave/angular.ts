@@ -7,7 +7,6 @@ import postcss from "postcss";
 import { readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,7 +37,9 @@ function cssMinifyPlugin() {
 const basePlugins = [resolve(), commonjs(), versionInjector()];
 
 export default [
+  // ---- Minified UMD ----
   {
+    name: "min",
     input: baseInput,
     output: [
       {
@@ -67,12 +68,14 @@ export default [
         format: "umd",
       },
     ],
-    plugins: [...basePlugins, cssMinifyPlugin()],
+    plugins: [...basePlugins],
   },
   {
+    // ---- ES Module ----
+    name: "es",
     input: baseInput,
     external: ["ms"],
     output: [{ file: pkg.module, format: "es" }],
-    plugins: [versionInjector(), cssMinifyPlugin()],
+    plugins: [...basePlugins, cssMinifyPlugin()],
   },
 ];

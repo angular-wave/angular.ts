@@ -27,10 +27,11 @@ export class NgModule {
     validate(isString, name, "name");
     validate(isArray, requires, "requires");
     /**
+     * @public
      * Name of the current module.
      * @type {string}
      */
-    this._name = name;
+    this.name = name;
 
     /**
      * Array of module names that this module depends on.
