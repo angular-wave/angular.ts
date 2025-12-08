@@ -47,36 +47,36 @@ export class Lexer {
    * @param {string} text Input text to lex.
    * @returns {Array<Token>} Array of tokens.
    */
-  lex(text) {
-    this.text = text;
-    this.index = 0;
+  _lex(text) {
+    this._text = text;
+    this._index = 0;
     /** @type {Array<Token>} */
-    this.tokens = [];
+    this._tokens = [];
 
-    while (this.index < this.text.length) {
-      const ch = this.text.charAt(this.index);
+    while (this._index < this._text.length) {
+      const ch = this._text.charAt(this._index);
 
       if (ch === '"' || ch === "'") {
-        this.readString(ch);
+        this._readString(ch);
       } else if (
-        this.isNumber(ch) ||
-        (ch === "." && this.isNumber(/** @type {string} */ (this.peek())))
+        this._isNumber(ch) ||
+        (ch === "." && this._isNumber(/** @type {string} */ (this._peek())))
       ) {
-        this.readNumber();
+        this._readNumber();
       } else if (
-        this.isIdentifierStart &&
-        this.isIdentifierStart(this.peekMultichar())
+        this._isIdentifierStart &&
+        this._isIdentifierStart(this._peekMultichar())
       ) {
-        this.readIdent();
-      } else if (this.is(ch, "(){}[].,;:?")) {
-        this.tokens.push({ index: this.index, text: ch });
-        this.index++;
-      } else if (this.isWhitespace(ch)) {
-        this.index++;
+        this._readIdent();
+      } else if (this._is(ch, "(){}[].,;:?")) {
+        this._tokens.push({ index: this._index, text: ch });
+        this._index++;
+      } else if (this._isWhitespace(ch)) {
+        this._index++;
       } else {
-        const ch2 = ch + this.peek();
+        const ch2 = ch + this._peek();
 
-        const ch3 = ch2 + this.peek(2);
+        const ch3 = ch2 + this._peek(2);
 
         const op1 = OPERATORS.has(ch);
 
@@ -87,19 +87,23 @@ export class Lexer {
         if (op1 || op2 || op3) {
           const token = op3 ? ch3 : op2 ? ch2 : ch;
 
-          this.tokens.push({ index: this.index, text: token, operator: true });
-          this.index += token.length;
+          this._tokens.push({
+            index: this._index,
+            text: token,
+            operator: true,
+          });
+          this._index += token.length;
         } else {
-          this.throwError(
+          this._throwError(
             "Unexpected next character ",
-            this.index,
-            this.index + 1,
+            this._index,
+            this._index + 1,
           );
         }
       }
     }
 
-    return this.tokens;
+    return this._tokens;
   }
 
   /**
@@ -108,7 +112,7 @@ export class Lexer {
    * @param {string} chars Set of characters.
    * @returns {boolean} True if character is in the set, false otherwise.
    */
-  is(ch, chars) {
+  _is(ch, chars) {
     return chars.indexOf(ch) !== -1;
   }
 
@@ -117,11 +121,11 @@ export class Lexer {
    * @param {number} [i=1] Number of characters to peek.
    * @returns {string|false} Next character or false if end of text.
    */
-  peek(i) {
+  _peek(i) {
     const num = i || 1;
 
-    return this.index + num < this.text.length
-      ? this.text.charAt(this.index + num)
+    return this._index + num < this._text.length
+      ? this._text.charAt(this._index + num)
       : false;
   }
 
@@ -130,7 +134,7 @@ export class Lexer {
    * @param {string} ch Character to check.
    * @returns {boolean} True if character is a number, false otherwise.
    */
-  isNumber(ch) {
+  _isNumber(ch) {
     return ch >= "0" && ch <= "9" && typeof ch === "string";
   }
 
@@ -139,7 +143,7 @@ export class Lexer {
    * @param {string} ch Character to check.
    * @returns {boolean} True if character is whitespace, false otherwise.
    */
-  isWhitespace(ch) {
+  _isWhitespace(ch) {
     return (
       ch === " " || ch === "\r" || ch === "\t" || ch === "\n" || ch === "\v"
     );
@@ -150,9 +154,9 @@ export class Lexer {
    * @param {string} ch Character to check.
    * @returns {boolean} True if character is a valid identifier start, false otherwise.
    */
-  isIdentifierStart(ch) {
+  _isIdentifierStart(ch) {
     return this._options.isIdentifierStart
-      ? this._options.isIdentifierStart(ch, this.codePointAt(ch))
+      ? this._options.isIdentifierStart(ch, this._codePointAt(ch))
       : (ch >= "a" && ch <= "z") ||
           (ch >= "A" && ch <= "Z") ||
           ch === "_" ||
@@ -164,9 +168,9 @@ export class Lexer {
    * @param {string} ch Character to check.
    * @returns {boolean} True if character is a valid identifier continuation, false otherwise.
    */
-  isIdentifierContinue(ch) {
+  _isIdentifierContinue(ch) {
     return this._options.isIdentifierContinue
-      ? this._options.isIdentifierContinue(ch, this.codePointAt(ch))
+      ? this._options.isIdentifierContinue(ch, this._codePointAt(ch))
       : (ch >= "a" && ch <= "z") ||
           (ch >= "A" && ch <= "Z") ||
           ch === "_" ||
@@ -179,7 +183,7 @@ export class Lexer {
    * @param {string} ch Character to convert.
    * @returns {number} Unicode code point.
    */
-  codePointAt(ch) {
+  _codePointAt(ch) {
     if (ch.length === 1) return ch.charCodeAt(0);
 
     return (ch.charCodeAt(0) << 10) + ch.charCodeAt(1) - 0x35fdc00;
@@ -189,10 +193,10 @@ export class Lexer {
    * Peeks at the next multicharacter sequence in the text.
    * @returns {string} Next multicharacter sequence.
    */
-  peekMultichar() {
-    const ch = this.text.charAt(this.index);
+  _peekMultichar() {
+    const ch = this._text.charAt(this._index);
 
-    const peek = this.peek();
+    const peek = this._peek();
 
     if (!peek) {
       return ch;
@@ -213,8 +217,8 @@ export class Lexer {
    * @param {string} ch Character to check.
    * @returns {boolean} True if character is an exponent operator, false otherwise.
    */
-  isExpOperator(ch) {
-    return ch === "-" || ch === "+" || this.isNumber(ch);
+  _isExpOperator(ch) {
+    return ch === "-" || ch === "+" || this._isNumber(ch);
   }
 
   /**
@@ -224,15 +228,15 @@ export class Lexer {
    * @param {number} [end] End index.
    * @throws {Error} Lexer error.
    */
-  throwError(error, start, end) {
-    end = end || this.index;
+  _throwError(error, start, end) {
+    end = end || this._index;
     const colStr = isDefined(start)
-      ? `s ${start}-${this.index} [${this.text.substring(start, end)}]`
+      ? `s ${start}-${this._index} [${this._text.substring(start, end)}]`
       : ` ${end}`;
 
     throw $parseMinErr(
       "lexerr",
-      `Lexer Error: ${error} at column${colStr} in expression [${this.text}].`,
+      `Lexer Error: ${error} at column${colStr} in expression [${this._text}].`,
     );
   }
 
@@ -240,41 +244,41 @@ export class Lexer {
    * Reads and tokenizes a number from the text.
    * @return {void}
    */
-  readNumber() {
+  _readNumber() {
     let number = "";
 
-    const start = this.index;
+    const start = this._index;
 
-    while (this.index < this.text.length) {
-      const ch = this.text.charAt(this.index).toLowerCase();
+    while (this._index < this._text.length) {
+      const ch = this._text.charAt(this._index).toLowerCase();
 
-      if (ch === "." || this.isNumber(ch)) {
+      if (ch === "." || this._isNumber(ch)) {
         number += ch;
       } else {
-        const peekCh = this.peek();
+        const peekCh = this._peek();
 
-        if (ch === "e" && this.isExpOperator(/** @type {string} */ (peekCh))) {
+        if (ch === "e" && this._isExpOperator(/** @type {string} */ (peekCh))) {
           number += ch;
         } else if (
-          this.isExpOperator(ch) &&
+          this._isExpOperator(ch) &&
           peekCh &&
-          this.isNumber(peekCh) &&
+          this._isNumber(peekCh) &&
           number.charAt(number.length - 1) === "e"
         ) {
           number += ch;
         } else if (
-          this.isExpOperator(ch) &&
-          (!peekCh || !this.isNumber(peekCh)) &&
+          this._isExpOperator(ch) &&
+          (!peekCh || !this._isNumber(peekCh)) &&
           number.charAt(number.length - 1) === "e"
         ) {
-          this.throwError("Invalid exponent");
+          this._throwError("Invalid exponent");
         } else {
           break;
         }
       }
-      this.index++;
+      this._index++;
     }
-    this.tokens.push({
+    this._tokens.push({
       index: start,
       text: number,
       constant: true,
@@ -285,22 +289,22 @@ export class Lexer {
   /**
    * Reads and tokenizes an identifier from the text.
    */
-  readIdent() {
-    const start = this.index;
+  _readIdent() {
+    const start = this._index;
 
-    this.index += this.peekMultichar().length;
+    this._index += this._peekMultichar().length;
 
-    while (this.index < this.text.length) {
-      const ch = this.peekMultichar();
+    while (this._index < this._text.length) {
+      const ch = this._peekMultichar();
 
-      if (this.isIdentifierContinue && !this.isIdentifierContinue(ch)) {
+      if (this._isIdentifierContinue && !this._isIdentifierContinue(ch)) {
         break;
       }
-      this.index += ch.length;
+      this._index += ch.length;
     }
-    this.tokens.push({
+    this._tokens.push({
       index: start,
-      text: this.text.slice(start, this.index),
+      text: this._text.slice(start, this._index),
       identifier: true,
     });
   }
@@ -309,23 +313,23 @@ export class Lexer {
    * Reads and tokenizes a string from the text.
    * @param {string} quote Quote character used for the string.
    */
-  readString(quote) {
-    const start = this.index;
+  _readString(quote) {
+    const start = this._index;
 
     let string = "";
 
     let escape = false;
 
-    this.index++; // Skip opening quote
+    this._index++; // Skip opening quote
 
-    while (this.index < this.text.length) {
-      const ch = this.text[this.index];
+    while (this._index < this._text.length) {
+      const ch = this._text[this._index];
 
       if (escape) {
         if (ch === "u") {
           // Handle unicode escapes
           // Simplified for brevity
-          string += this.handleUnicodeEscape();
+          string += this._handleUnicodeEscape();
         } else {
           string += ESCAPE[ch] || ch;
         }
@@ -333,35 +337,35 @@ export class Lexer {
       } else if (ch === "\\") {
         escape = true;
       } else if (ch === quote) {
-        this.tokens.push({
+        this._tokens.push({
           index: start,
-          text: this.text.slice(start, this.index + 1),
+          text: this._text.slice(start, this._index + 1),
           constant: true,
           value: string,
         });
-        this.index++; // Skip closing quote
+        this._index++; // Skip closing quote
 
         return;
       } else {
         string += ch;
       }
 
-      this.index++;
+      this._index++;
     }
 
-    this.throwError("Unterminated quote", start);
+    this._throwError("Unterminated quote", start);
   }
 
   /**
    * @returns {string}
    */
-  handleUnicodeEscape() {
-    const hex = this.text.substring(this.index + 1, this.index + 5);
+  _handleUnicodeEscape() {
+    const hex = this._text.substring(this._index + 1, this._index + 5);
 
     if (!hex.match(/[\da-f]{4}/i)) {
-      this.throwError(`Invalid unicode escape [\\u${hex}]`);
+      this._throwError(`Invalid unicode escape [\\u${hex}]`);
     }
-    this.index += 4; // Move index past the four hexadecimal digits
+    this._index += 4; // Move index past the four hexadecimal digits
 
     return String.fromCharCode(parseInt(hex, 16));
   }

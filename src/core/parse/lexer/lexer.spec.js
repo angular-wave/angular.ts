@@ -28,19 +28,19 @@ describe("lexer", () => {
     beforeEach(() => {
       lex = function () {
         const lexer = new Lexer({});
-        return lexer.lex.apply(lexer, arguments);
+        return lexer._lex.apply(lexer, arguments);
       };
     });
 
     it("should only match number chars with isNumber", () => {
-      expect(Lexer.prototype.isNumber("0")).toBe(true);
-      expect(Lexer.prototype.isNumber("")).toBeFalsy();
-      expect(Lexer.prototype.isNumber(" ")).toBeFalsy();
-      expect(Lexer.prototype.isNumber(0)).toBeFalsy();
-      expect(Lexer.prototype.isNumber(false)).toBeFalsy();
-      expect(Lexer.prototype.isNumber(true)).toBeFalsy();
-      expect(Lexer.prototype.isNumber(undefined)).toBeFalsy();
-      expect(Lexer.prototype.isNumber(null)).toBeFalsy();
+      expect(Lexer.prototype._isNumber("0")).toBe(true);
+      expect(Lexer.prototype._isNumber("")).toBeFalsy();
+      expect(Lexer.prototype._isNumber(" ")).toBeFalsy();
+      expect(Lexer.prototype._isNumber(0)).toBeFalsy();
+      expect(Lexer.prototype._isNumber(false)).toBeFalsy();
+      expect(Lexer.prototype._isNumber(true)).toBeFalsy();
+      expect(Lexer.prototype._isNumber(undefined)).toBeFalsy();
+      expect(Lexer.prototype._isNumber(null)).toBeFalsy();
     });
 
     it("should tokenize a string", () => {
@@ -129,11 +129,11 @@ describe("lexer", () => {
       });
 
       isIdentifierContinue.and.returnValue(true);
-      let tokens = lex.lex("πΣε").map(getText);
+      let tokens = lex._lex("πΣε").map(getText);
       expect(tokens).toEqual(["πΣε"]);
 
       isIdentifierContinue.and.returnValue(false);
-      tokens = lex.lex("πΣε").map(getText);
+      tokens = lex._lex("πΣε").map(getText);
       expect(tokens).toEqual(["π", "Σ", "ε"]);
     });
 
@@ -149,7 +149,7 @@ describe("lexer", () => {
         isIdentifierStart,
         isIdentifierContinue,
       });
-      const tokens = lex.lex("\uD801\uDC37\uD852\uDF62\uDBFF\uDFFF");
+      const tokens = lex._lex("\uD801\uDC37\uD852\uDF62\uDBFF\uDFFF");
       expect(isIdentifierStart).toHaveBeenCalledTimes(1);
       expect(isIdentifierStart.calls.argsFor(0)).toEqual([
         "\uD801\uDC37",

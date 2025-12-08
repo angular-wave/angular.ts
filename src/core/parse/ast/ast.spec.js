@@ -30,7 +30,7 @@ describe("ast", () => {
     createAst = function () {
       const lexer = new Lexer({});
       const ast = new AST(lexer);
-      return ast.ast.apply(ast, arguments);
+      return ast._ast.apply(ast, arguments);
     };
   });
 

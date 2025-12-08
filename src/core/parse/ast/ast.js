@@ -38,13 +38,13 @@ export class AST {
    * @param {string} text - The input text to parse.
    * @returns {ASTNode} The root node of the AST.
    */
-  ast(text) {
+  _ast(text) {
     this.text = text;
-    this.tokens = this._lexer.lex(text);
-    const value = this.program();
+    this.tokens = this._lexer._lex(text);
+    const value = this._program();
 
     if (this.tokens.length !== 0) {
-      this.throwError("is an unexpected token", this.tokens[0]);
+      this._throwError("is an unexpected token", this.tokens[0]);
     }
 
     return value;
@@ -54,16 +54,16 @@ export class AST {
    * Parses a program.
    * @returns {ASTNode} The program node.
    */
-  program() {
+  _program() {
     const body = [];
 
     let hasMore = true;
 
     while (hasMore) {
-      if (this.tokens.length > 0 && !this.peek("}", ")", ";", "]"))
-        body.push(this.expressionStatement());
+      if (this.tokens.length > 0 && !this._peek("}", ")", ";", "]"))
+        body.push(this._expressionStatement());
 
-      if (!this.expect(";")) {
+      if (!this._expect(";")) {
         hasMore = false;
       }
     }
@@ -75,10 +75,10 @@ export class AST {
    * Parses an expression statement.
    * @returns {ASTNode} The expression statement node.
    */
-  expressionStatement() {
+  _expressionStatement() {
     return {
       type: ASTType._ExpressionStatement,
-      expression: this.filterChain(),
+      expression: this._filterChain(),
     };
   }
 
@@ -86,11 +86,11 @@ export class AST {
    * Parses a filter chain.
    * @returns {ASTNode} The filter chain node.
    */
-  filterChain() {
-    let left = this.assignment();
+  _filterChain() {
+    let left = this._assignment();
 
-    while (this.expect("|")) {
-      left = this.filter(left);
+    while (this._expect("|")) {
+      left = this._filter(left);
     }
 
     return left;
@@ -100,10 +100,10 @@ export class AST {
    * Parses an assignment expression.
    * @returns {ASTNode} The assignment expression node.
    */
-  assignment() {
-    let result = this.ternary();
+  _assignment() {
+    let result = this._ternary();
 
-    if (this.expect("=")) {
+    if (this._expect("=")) {
       if (!isAssignable(result)) {
         throw $parseMinErr("lval", "Trying to assign a value to a non l-value");
       }
@@ -111,7 +111,7 @@ export class AST {
       result = {
         type: ASTType._AssignmentExpression,
         left: result,
-        right: this.assignment(),
+        right: this._assignment(),
         operator: "=",
       };
     }
@@ -123,18 +123,18 @@ export class AST {
    * Parses a ternary expression.
    * @returns {ASTNode} The ternary expression node.
    */
-  ternary() {
-    const test = this.logicalOR();
+  _ternary() {
+    const test = this._logicalOR();
 
     let alternate;
 
     let consequent;
 
-    if (this.expect("?")) {
-      alternate = this.assignment();
+    if (this._expect("?")) {
+      alternate = this._assignment();
 
-      if (this.consume(":")) {
-        consequent = this.assignment();
+      if (this._consume(":")) {
+        consequent = this._assignment();
 
         return {
           type: ASTType._ConditionalExpression,
@@ -152,15 +152,15 @@ export class AST {
    * Parses a logical OR expression.
    * @returns {ASTNode} The logical OR expression node.
    */
-  logicalOR() {
-    let left = this.logicalAND();
+  _logicalOR() {
+    let left = this._logicalAND();
 
-    while (this.expect("||")) {
+    while (this._expect("||")) {
       left = {
         type: ASTType._LogicalExpression,
         operator: "||",
         left,
-        right: this.logicalAND(),
+        right: this._logicalAND(),
       };
     }
 
@@ -171,15 +171,15 @@ export class AST {
    * Parses a logical AND expression.
    * @returns {ASTNode} The logical AND expression node.
    */
-  logicalAND() {
-    let left = this.equality();
+  _logicalAND() {
+    let left = this._equality();
 
-    while (this.expect("&&")) {
+    while (this._expect("&&")) {
       left = {
         type: ASTType._LogicalExpression,
         operator: "&&",
         left,
-        right: this.equality(),
+        right: this._equality(),
       };
     }
 
@@ -190,17 +190,17 @@ export class AST {
    * Parses an equality expression.
    * @returns {ASTNode} The equality expression node.
    */
-  equality() {
-    let left = this.relational();
+  _equality() {
+    let left = this._relational();
 
     let token;
 
-    while ((token = this.expect("==", "!=", "===", "!=="))) {
+    while ((token = this._expect("==", "!=", "===", "!=="))) {
       left = {
         type: ASTType._BinaryExpression,
         operator: /** @type {Token} */ (token).text,
         left,
-        right: this.relational(),
+        right: this._relational(),
       };
     }
 
@@ -211,17 +211,17 @@ export class AST {
    * Parses a relational expression.
    * @returns {ASTNode} The relational expression node.
    */
-  relational() {
-    let left = this.additive();
+  _relational() {
+    let left = this._additive();
 
     let token;
 
-    while ((token = this.expect("<", ">", "<=", ">="))) {
+    while ((token = this._expect("<", ">", "<=", ">="))) {
       left = {
         type: ASTType._BinaryExpression,
         operator: /** @type {Token} */ (token).text,
         left,
-        right: this.additive(),
+        right: this._additive(),
       };
     }
 
@@ -232,17 +232,17 @@ export class AST {
    * Parses an additive expression.
    * @returns {ASTNode} The additive expression node.
    */
-  additive() {
-    let left = this.multiplicative();
+  _additive() {
+    let left = this._multiplicative();
 
     let token;
 
-    while ((token = this.expect("+", "-"))) {
+    while ((token = this._expect("+", "-"))) {
       left = {
         type: ASTType._BinaryExpression,
         operator: /** @type {Token} */ (token).text,
         left,
-        right: this.multiplicative(),
+        right: this._multiplicative(),
       };
     }
 
@@ -253,17 +253,17 @@ export class AST {
    * Parses a multiplicative expression.
    * @returns {ASTNode} The multiplicative expression node.
    */
-  multiplicative() {
-    let left = this.unary();
+  _multiplicative() {
+    let left = this._unary();
 
     let token;
 
-    while ((token = this.expect("*", "/", "%"))) {
+    while ((token = this._expect("*", "/", "%"))) {
       left = {
         type: ASTType._BinaryExpression,
         operator: /** @type {import("../lexer/lexer.js").Token} */ (token).text,
         left,
-        right: this.unary(),
+        right: this._unary(),
       };
     }
 
@@ -274,99 +274,99 @@ export class AST {
    * Parses a unary expression.
    * @returns {ASTNode} The unary expression node.
    */
-  unary() {
+  _unary() {
     let token;
 
-    if ((token = this.expect("+", "-", "!"))) {
+    if ((token = this._expect("+", "-", "!"))) {
       return {
         type: ASTType._UnaryExpression,
         operator: /** @type {import("../lexer/lexer.js").Token} */ (token).text,
         prefix: true,
-        argument: this.unary(),
+        argument: this._unary(),
       };
     }
 
-    return this.primary();
+    return this._primary();
   }
 
   /**
    * Parses a primary expression.
    * @returns {ASTNode} The primary expression node.
    */
-  primary() {
+  _primary() {
     let primary;
 
-    if (this.expect("(")) {
-      primary = this.filterChain();
-      this.consume(")");
-    } else if (this.expect("[")) {
-      primary = this.arrayDeclaration();
-    } else if (this.expect("{")) {
-      primary = this.object();
+    if (this._expect("(")) {
+      primary = this._filterChain();
+      this._consume(")");
+    } else if (this._expect("[")) {
+      primary = this._arrayDeclaration();
+    } else if (this._expect("{")) {
+      primary = this._object();
     } else if (
       hasOwn(
         this._selfReferential,
-        /** @type {import("../lexer/lexer.js").Token} */ (this.peek()).text,
+        /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).text,
       )
     ) {
-      primary = structuredClone(this._selfReferential[this.consume().text]);
+      primary = structuredClone(this._selfReferential[this._consume().text]);
     } else if (
       literals.has(
-        /** @type {import("../lexer/lexer.js").Token} */ (this.peek()).text,
+        /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).text,
       )
     ) {
       primary = {
         type: ASTType._Literal,
-        value: literals.get(this.consume().text),
+        value: literals.get(this._consume().text),
       };
     } else if (
-      /** @type {import("../lexer/lexer.js").Token} */ (this.peek()).identifier
+      /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).identifier
     ) {
-      primary = this.identifier();
+      primary = this._identifier();
     } else if (
-      /** @type {import("../lexer/lexer.js").Token} */ (this.peek()).constant
+      /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).constant
     ) {
-      primary = this.constant();
+      primary = this._constant();
     } else {
-      this.throwError(
+      this._throwError(
         "not a primary expression",
-        /** @type {import("../lexer/lexer.js").Token} */ (this.peek()),
+        /** @type {import("../lexer/lexer.js").Token} */ (this._peek()),
       );
     }
 
     let next;
 
-    while ((next = this.expect("(", "[", "."))) {
+    while ((next = this._expect("(", "[", "."))) {
       if (
         /** @type {import("../lexer/lexer.js").Token} */ (next).text === "("
       ) {
         primary = {
           type: ASTType._CallExpression,
           callee: primary,
-          arguments: this.parseArguments(),
+          arguments: this._parseArguments(),
         };
-        this.consume(")");
+        this._consume(")");
       } else if (
         /** @type {import("../lexer/lexer.js").Token} */ (next).text === "["
       ) {
         primary = {
           type: ASTType._MemberExpression,
           object: primary,
-          property: this.assignment(),
+          property: this._assignment(),
           computed: true,
         };
-        this.consume("]");
+        this._consume("]");
       } else if (
         /** @type {import("../lexer/lexer.js").Token} */ (next).text === "."
       ) {
         primary = {
           type: ASTType._MemberExpression,
           object: primary,
-          property: this.identifier(),
+          property: this._identifier(),
           computed: false,
         };
       } else {
-        this.throwError("IMPOSSIBLE");
+        this._throwError("IMPOSSIBLE");
       }
     }
 
@@ -378,19 +378,19 @@ export class AST {
    * @param {ASTNode} baseExpression - The base expression to apply the filter to.
    * @returns {ASTNode} The filter node.
    */
-  filter(baseExpression) {
+  _filter(baseExpression) {
     /** @type {ASTNode[]} */
     const args = [baseExpression];
 
     const result = {
       type: ASTType._CallExpression,
-      callee: this.identifier(),
+      callee: this._identifier(),
       arguments: args,
       filter: true,
     };
 
-    while (this.expect(":")) {
-      args.push(this.assignment());
+    while (this._expect(":")) {
+      args.push(this._assignment());
     }
 
     return result;
@@ -400,14 +400,14 @@ export class AST {
    * Parses function arguments.
    * @returns {ASTNode[]} The arguments array.
    */
-  parseArguments() {
+  _parseArguments() {
     /** @type {ASTNode[]} */
     const args = [];
 
-    if (this.peekToken().text !== ")") {
+    if (this._peekToken().text !== ")") {
       do {
-        args.push(this.filterChain());
-      } while (this.expect(","));
+        args.push(this._filterChain());
+      } while (this._expect(","));
     }
 
     return args;
@@ -417,11 +417,11 @@ export class AST {
    * Parses an identifier.
    * @returns {ASTNode} The identifier node.
    */
-  identifier() {
-    const token = this.consume();
+  _identifier() {
+    const token = this._consume();
 
     if (!token.identifier) {
-      this.throwError("is not a valid identifier", token);
+      this._throwError("is not a valid identifier", token);
     }
 
     return { type: ASTType._Identifier, name: token.text };
@@ -431,29 +431,29 @@ export class AST {
    * Parses a constant.
    * @returns {ASTNode} The constant node.
    */
-  constant() {
+  _constant() {
     // TODO check that it is a constant
-    return { type: ASTType._Literal, value: this.consume().value };
+    return { type: ASTType._Literal, value: this._consume().value };
   }
 
   /**
    * Parses an array declaration.
    * @returns {ASTNode} The array declaration node.
    */
-  arrayDeclaration() {
+  _arrayDeclaration() {
     /** @type {ASTNode[]} */
     const elements = [];
 
-    if (this.peekToken().text !== "]") {
+    if (this._peekToken().text !== "]") {
       do {
-        if (this.peek("]")) {
+        if (this._peek("]")) {
           // Support trailing commas per ES5.1.
           break;
         }
-        elements.push(this.assignment());
-      } while (this.expect(","));
+        elements.push(this._assignment());
+      } while (this._expect(","));
     }
-    this.consume("]");
+    this._consume("]");
 
     return { type: ASTType._ArrayExpression, elements };
   }
@@ -462,59 +462,59 @@ export class AST {
    * Parses an object.
    * @returns {ASTNode} The object node.
    */
-  object() {
+  _object() {
     /** @type {ASTNode[]} */
     const properties = [];
 
     /** @type {ASTNode} */
     let property;
 
-    if (this.peekToken().text !== "}") {
+    if (this._peekToken().text !== "}") {
       do {
-        if (this.peek("}")) {
+        if (this._peek("}")) {
           // Support trailing commas per ES5.1.
           break;
         }
         property = { type: ASTType._Property, kind: "init" };
 
         if (
-          /** @type {import("../lexer/lexer.js").Token} */ (this.peek())
+          /** @type {import("../lexer/lexer.js").Token} */ (this._peek())
             .constant
         ) {
-          property.key = this.constant();
+          property.key = this._constant();
           property.computed = false;
-          this.consume(":");
-          property.value = this.assignment();
+          this._consume(":");
+          property.value = this._assignment();
         } else if (
-          /** @type {import("../lexer/lexer.js").Token} */ (this.peek())
+          /** @type {import("../lexer/lexer.js").Token} */ (this._peek())
             .identifier
         ) {
-          property.key = this.identifier();
+          property.key = this._identifier();
           property.computed = false;
 
-          if (this.peek(":")) {
-            this.consume(":");
-            property.value = this.assignment();
+          if (this._peek(":")) {
+            this._consume(":");
+            property.value = this._assignment();
           } else {
             property.value = property.key;
           }
-        } else if (this.peek("[")) {
-          this.consume("[");
-          property.key = this.assignment();
-          this.consume("]");
+        } else if (this._peek("[")) {
+          this._consume("[");
+          property.key = this._assignment();
+          this._consume("]");
           property.computed = true;
-          this.consume(":");
-          property.value = this.assignment();
+          this._consume(":");
+          property.value = this._assignment();
         } else {
-          this.throwError(
+          this._throwError(
             "invalid key",
-            /** @type {import("../lexer/lexer.js").Token} */ (this.peek()),
+            /** @type {import("../lexer/lexer.js").Token} */ (this._peek()),
           );
         }
         properties.push(property);
-      } while (this.expect(","));
+      } while (this._expect(","));
     }
-    this.consume("}");
+    this._consume("}");
 
     return { type: ASTType._ObjectExpression, properties };
   }
@@ -524,7 +524,7 @@ export class AST {
    * @param {string} msg - The error message.
    * @param {import("../lexer/lexer.js").Token} [token] - The token that caused the error.
    */
-  throwError(msg, token) {
+  _throwError(msg, token) {
     throw $parseMinErr(
       "syntax",
       "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].",
@@ -541,7 +541,7 @@ export class AST {
    * @param {string} [e1] - The expected token type.
    * @returns {import("../lexer/lexer.js").Token} The consumed token.
    */
-  consume(e1) {
+  _consume(e1) {
     if (this.tokens.length === 0) {
       throw $parseMinErr(
         "ueoe",
@@ -550,12 +550,12 @@ export class AST {
       );
     }
 
-    const token = this.expect(e1);
+    const token = this._expect(e1);
 
     if (!token) {
-      this.throwError(
+      this._throwError(
         `is unexpected, expecting [${e1}]`,
-        /** @type {import("../lexer/lexer.js").Token} */ (this.peek()),
+        /** @type {import("../lexer/lexer.js").Token} */ (this._peek()),
       );
     } else {
       return /** @type  {import("../lexer/lexer.js").Token} */ (token);
@@ -568,7 +568,7 @@ export class AST {
    * Returns the next token without consuming it.
    * @returns {import("../lexer/lexer.js").Token} The next token.
    */
-  peekToken() {
+  _peekToken() {
     if (this.tokens.length === 0) {
       throw $parseMinErr(
         "ueoe",
@@ -585,8 +585,8 @@ export class AST {
    * @param {...string} [expected] - The expected token types.
    * @returns {import('../lexer/lexer.js').Token|boolean} The next token if it matches, otherwise false.
    */
-  peek(...expected) {
-    return this.peekAhead(0, ...expected);
+  _peek(...expected) {
+    return this._peekAhead(0, ...expected);
   }
 
   /**
@@ -595,7 +595,7 @@ export class AST {
    * @param {...string} [expected] - The expected token types.
    * @returns {import("../lexer/lexer.js").Token|boolean} The token at the specified index if it matches, otherwise false.
    */
-  peekAhead(i, ...expected) {
+  _peekAhead(i, ...expected) {
     if (this.tokens.length > i) {
       const token = this.tokens[i];
 
@@ -617,8 +617,8 @@ export class AST {
    * @param {...string} [expected] - The expected token types.
    * @returns {import("../lexer/lexer.js").Token|boolean} The consumed token if it matches, otherwise false.
    */
-  expect(...expected) {
-    const token = this.peek(...expected);
+  _expect(...expected) {
+    const token = this._peek(...expected);
 
     if (token) {
       this.tokens.shift();

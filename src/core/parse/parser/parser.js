@@ -47,7 +47,7 @@ export class Parser {
     exp = exp.trim();
 
     return {
-      ast: this._ast.ast(exp),
+      ast: this._ast._ast(exp),
     };
   }
 }
