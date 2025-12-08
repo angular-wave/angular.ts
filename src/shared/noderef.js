@@ -1,4 +1,4 @@
-import { assertArg, isArray, isString } from "./utils.js";
+import { isArray, isString } from "./utils.js";
 import { createElementFromHTML, NodeType } from "./dom.js";
 
 /**
@@ -12,9 +12,6 @@ export class NodeRef {
    * @throws {Error} If the argument is invalid or cannot be wrapped properly.
    */
   constructor(element) {
-    assertArg(element, "element");
-    this.initial = null;
-
     /** @private @type {Node | ChildNode | null} */
     this._node = null;
 
@@ -25,14 +22,10 @@ export class NodeRef {
     this._nodes = undefined;
 
     /** @type {boolean} */
-    this.linked = false;
-
-    /** @type {boolean} */
-    this.isList = false;
+    this._isList = false;
 
     // Handle HTML string
     if (isString(element)) {
-      this.initial = element;
       const res = createElementFromHTML(/** @type {string} */ (element));
 
       switch (true) {
@@ -47,25 +40,21 @@ export class NodeRef {
 
     // Handle NodeList
     else if (element instanceof NodeList) {
-      this.initial = Array.from(element).map((elem) => elem.cloneNode(true));
-
       if (element.length === 1) {
         this.node = element[0];
       } else {
         this._nodes = Array.from(element);
-        this.isList = true;
+        this._isList = true;
       }
     }
 
     // Handle single Element
     else if (element instanceof Element) {
-      this.initial = element.cloneNode(true);
       this.element = /** @type {Element} */ element;
     }
 
     // Handle single Node
     else if (element instanceof Node) {
-      this.initial = element.cloneNode(true);
       this._node = element;
     }
 
@@ -73,11 +62,7 @@ export class NodeRef {
     else if (isArray(element)) {
       if (element.length === 1) {
         this.node = /** @type {Node} */ (element[0]);
-        this.initial = this.node.cloneNode(true);
       } else {
-        this.initial = Array.from(/** @type {Node[]} */ (element)).map((node) =>
-          node.cloneNode(true),
-        );
         this.nodes = /** @type {Node[]} */ (element);
       }
     } else {
@@ -87,29 +72,23 @@ export class NodeRef {
 
   /** @returns {Element} */
   get element() {
-    assertArg(this._element, "element");
-
     return this._element;
   }
 
   /** @param {Element} el */
   set element(el) {
-    assertArg(el instanceof Element, "element");
     this._element = el;
     this._nodes = undefined;
-    this.isList = false;
+    this._isList = false;
   }
 
   /** @returns {Node | ChildNode} */
   get node() {
-    assertArg(this._node || this._element, "node");
-
     return this._node || this._element;
   }
 
   /** @param {Node | ChildNode} node */
   set node(node) {
-    assertArg(node instanceof Node, "node");
     this._node = node;
 
     if (node.nodeType === NodeType._ELEMENT_NODE) {
@@ -121,18 +100,12 @@ export class NodeRef {
 
   /** @param {Array<Node>} nodes */
   set nodes(nodes) {
-    assertArg(
-      isArray(nodes) && nodes.every((node) => node instanceof Node),
-      "nodes",
-    );
     this._nodes = nodes;
-    this.isList = true;
+    this._isList = true;
   }
 
   /** @returns {Array<Node>} */
   get nodes() {
-    assertArg(this._nodes, "nodes");
-
     return this._nodes;
   }
 
@@ -151,18 +124,18 @@ export class NodeRef {
 
   /** @returns {Element | Node | ChildNode | NodeList | Node[]} */
   get dom() {
-    if (this.isList) return this.nodelist;
+    if (this._isList) return this.nodelist;
     else return this.node;
   }
 
   /** @returns {number} */
   get size() {
-    return this.isList ? this._nodes.length : 1;
+    return this._isList ? this._nodes.length : 1;
   }
 
   /** @returns {Element | Node | ChildNode} */
   getAny() {
-    if (this.isList) {
+    if (this._isList) {
       return this._nodes[0];
     } else {
       return this._element || this._node;
@@ -171,7 +144,7 @@ export class NodeRef {
 
   /** @returns {Element | Array<Node> | Node | ChildNode} */
   getAll() {
-    if (this.isList) {
+    if (this._isList) {
       return this._nodes;
     } else {
       return this._element || this._node;
@@ -180,7 +153,7 @@ export class NodeRef {
 
   /** @returns {Array<Element> | Array<Node>} */
   collection() {
-    if (this.isList) {
+    if (this._isList) {
       return Array.from(this._nodes);
     } else {
       return [this._element || this._node];
@@ -192,7 +165,7 @@ export class NodeRef {
    * @returns {Element | Node | ChildNode}
    */
   getIndex(index) {
-    if (this.isList) {
+    if (this._isList) {
       return this._nodes[index];
     } else {
       return this.node;
@@ -204,10 +177,7 @@ export class NodeRef {
    * @param {Element | Node | ChildNode} node
    */
   setIndex(index, node) {
-    assertArg(index !== null, "index");
-    assertArg(node, "node");
-
-    if (this.isList) {
+    if (this._isList) {
       this._nodes[index] = node;
     } else {
       this.node = node;
@@ -218,7 +188,7 @@ export class NodeRef {
    * @returns {NodeRef}
    */
   clone() {
-    const cloned = this.isList
+    const cloned = this._isList
       ? this.nodes.map((el) => el.cloneNode(true))
       : this.node.cloneNode(true);
 
