@@ -30,7 +30,7 @@ export function AnimateJsDriverProvider($$animationProvider) {
                 animationRunners.push(toAnimation.start());
               }
 
-              AnimateRunner.all(animationRunners, done);
+              AnimateRunner._all(animationRunners, done);
 
               const runner = new AnimateRunner({
                 end: endFnFactory(),

@@ -12,14 +12,14 @@ export class RafSchedulerProvider {
      * Internal task queue, where each item is an array of functions to run.
      * @type {Array<Array<() => void>>}
      */
-    this.queue = [];
+    this._queue = [];
 
     /**
      * ID of the currently scheduled animation frame (if any).
      * Used for cancellation and tracking.
      * @type {number|null}
      */
-    this.cancelFn = null;
+    this._cancelFn = null;
   }
 
   /**
@@ -27,17 +27,17 @@ export class RafSchedulerProvider {
    * Executes the first group of functions in the queue, then
    * schedules the next frame if needed.
    */
-  nextTick() {
-    if (!this.queue.length) return;
+  _nextTick() {
+    if (!this._queue.length) return;
 
-    const items = this.queue.shift();
+    const items = this._queue.shift();
 
     items.forEach((fn) => fn());
 
-    if (!this.cancelFn) {
-      this.cancelFn = window.requestAnimationFrame(() => {
-        this.cancelFn = null;
-        this.nextTick();
+    if (!this._cancelFn) {
+      this._cancelFn = window.requestAnimationFrame(() => {
+        this._cancelFn = null;
+        this._nextTick();
       });
     }
   }
@@ -58,15 +58,15 @@ export class RafSchedulerProvider {
      */
     const scheduler = (tasks) => {
       // Clone the input array to avoid mutating the original.
-      this.queue = this.queue.concat(tasks);
-      this.nextTick();
+      this._queue = this._queue.concat(tasks);
+      this._nextTick();
     };
 
     /**
      * Exposes the internal queue to consumers (read-only use preferred).
      * This matches the type signature for RafScheduler.
      */
-    scheduler.queue = this.queue;
+    scheduler._queue = this._queue;
 
     /**
      * Cancels any pending frame and runs the given function once the frame is idle.
@@ -74,16 +74,16 @@ export class RafSchedulerProvider {
      *
      * @param {Function} fn - Function to run when the animation frame is quiet.
      */
-    scheduler.waitUntilQuiet = (fn) => {
-      if (this.cancelFn !== null) {
-        window.cancelAnimationFrame(this.cancelFn);
-        this.cancelFn = null;
+    scheduler._waitUntilQuiet = (fn) => {
+      if (this._cancelFn !== null) {
+        window.cancelAnimationFrame(this._cancelFn);
+        this._cancelFn = null;
       }
 
-      this.cancelFn = window.requestAnimationFrame(() => {
-        this.cancelFn = null;
+      this._cancelFn = window.requestAnimationFrame(() => {
+        this._cancelFn = null;
         fn();
-        this.nextTick();
+        this._nextTick();
       });
     };
 

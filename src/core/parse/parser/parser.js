@@ -18,10 +18,10 @@ export class Parser {
    */
   constructor(lexer, $filter) {
     /** @type {AST} */
-    this.ast = new AST(lexer);
+    this._ast = new AST(lexer);
 
     /** @type {ASTInterpreter} */
-    this.astCompiler = new ASTInterpreter($filter);
+    this._astCompiler = new ASTInterpreter($filter);
   }
 
   /**
@@ -31,7 +31,7 @@ export class Parser {
   _parse(exp) {
     const { ast } = this.#getAst(exp);
 
-    const fn = this.astCompiler.compile(ast);
+    const fn = this._astCompiler.compile(ast);
 
     fn.literal = isLiteral(ast);
     fn.constant = isConstant(ast);
@@ -47,7 +47,7 @@ export class Parser {
     exp = exp.trim();
 
     return {
-      ast: this.ast.ast(exp),
+      ast: this._ast.ast(exp),
     };
   }
 }

@@ -7,8 +7,8 @@ export class AST {
    */
   constructor(lexer: import("../lexer/lexer.js").Lexer);
   /** @type {import('../lexer/lexer.js').Lexer} */
-  lexer: import("../lexer/lexer.js").Lexer;
-  selfReferential: {
+  _lexer: import("../lexer/lexer.js").Lexer;
+  _selfReferential: {
     this: {
       type: number;
     };

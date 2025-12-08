@@ -237,7 +237,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
               cancel: endFn, // CSS-driven animations cannot be cancelled, only ended
             });
 
-            AnimateRunner.all(animationRunners, (status) => {
+            AnimateRunner._all(animationRunners, (status) => {
               runner.complete(status);
             });
 

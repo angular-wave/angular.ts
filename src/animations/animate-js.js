@@ -208,7 +208,7 @@ export function AnimateJsProvider($animateProvider) {
               },
             });
 
-            AnimateRunner.chain(chain, onComplete);
+            AnimateRunner._chain(chain, onComplete);
 
             return runner;
 
@@ -417,7 +417,7 @@ export function AnimateJsProvider($animateProvider) {
             }
 
             if (runners.length) {
-              AnimateRunner.all(runners, callback);
+              AnimateRunner._all(runners, callback);
             } else {
               callback();
             }

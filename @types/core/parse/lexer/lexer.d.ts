@@ -14,7 +14,7 @@ export class Lexer {
    */
   constructor(options: LexerOptions);
   /** @type {LexerOptions} */
-  options: LexerOptions;
+  _options: LexerOptions;
   /**
    * Tokenizes the input text.
    * @param {string} text Input text to lex.

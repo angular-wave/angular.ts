@@ -26,8 +26,8 @@ export class AST {
    */
   constructor(lexer) {
     /** @type {import('../lexer/lexer.js').Lexer} */
-    this.lexer = lexer;
-    this.selfReferential = {
+    this._lexer = lexer;
+    this._selfReferential = {
       this: { type: ASTType._ThisExpression },
       $locals: { type: ASTType._LocalsExpression },
     };
@@ -40,7 +40,7 @@ export class AST {
    */
   ast(text) {
     this.text = text;
-    this.tokens = this.lexer.lex(text);
+    this.tokens = this._lexer.lex(text);
     const value = this.program();
 
     if (this.tokens.length !== 0) {
@@ -305,11 +305,11 @@ export class AST {
       primary = this.object();
     } else if (
       hasOwn(
-        this.selfReferential,
+        this._selfReferential,
         /** @type {import("../lexer/lexer.js").Token} */ (this.peek()).text,
       )
     ) {
-      primary = structuredClone(this.selfReferential[this.consume().text]);
+      primary = structuredClone(this._selfReferential[this.consume().text]);
     } else if (
       literals.has(
         /** @type {import("../lexer/lexer.js").Token} */ (this.peek()).text,

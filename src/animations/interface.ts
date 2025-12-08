@@ -11,14 +11,14 @@ export type RafScheduler = {
   /**
    * Internal queue of scheduled task arrays.
    */
-  queue: Array<Array<() => void>>;
+  _queue: Array<Array<() => void>>;
 
   /**
    * Waits until the animation frame is quiet before running the provided function.
    * Cancels any previous animation frame requests.
    * @param fn - The function to run when the frame is quiet.
    */
-  waitUntilQuiet(fn: () => void): void;
+  _waitUntilQuiet(fn: () => void): void;
 };
 
 export interface AnimationHost {
