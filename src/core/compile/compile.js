@@ -760,8 +760,6 @@ export class CompileProvider {
               nodeRef = compositeLinkFn = null;
             }
 
-            $linkNode.linked = true;
-
             return $linkNode.getAll();
           }
         }
@@ -898,7 +896,7 @@ export class CompileProvider {
 
             if (nodeLinkFnFound) {
               // create a stable copy of the nodeList, only copying elements with linkFns
-              const stableLength = nodeRef.isList ? nodeRef.nodes.length : 1;
+              const stableLength = nodeRef._isList ? nodeRef.nodes.length : 1;
 
               stableNodeList = new Array(stableLength);
               // create a sparse array by only copying the elements which have a linkFn
@@ -906,7 +904,7 @@ export class CompileProvider {
                 const idx = val.index;
 
                 if (idx === 0) {
-                  stableNodeList[idx] = nodeRef.isList
+                  stableNodeList[idx] = nodeRef._isList
                     ? nodeRef.nodes[idx]
                     : nodeRef.node;
                 } else {
@@ -916,7 +914,7 @@ export class CompileProvider {
                 }
               });
             } else {
-              if (nodeRef.isList) {
+              if (nodeRef._isList) {
                 nodeRef.nodes.forEach((elem) => stableNodeList.push(elem));
               } else {
                 stableNodeList.push(nodeRef.node);

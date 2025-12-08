@@ -19,7 +19,7 @@ describe("NodeRef", () => {
       expect(ref.node).toBe(div);
       expect(ref.element).toBe(div);
       expect(ref.size).toBe(1);
-      expect(ref.isList).toBeFalse();
+      expect(ref._isList).toBeFalse();
       expect(ref.isElement()).toBeTrue();
     });
 
@@ -32,14 +32,14 @@ describe("NodeRef", () => {
     it("wraps an array of Nodes", () => {
       const ref = new NodeRef([div, span]);
       expect(ref.nodes).toEqual([div, span]);
-      expect(ref.isList).toBeTrue();
+      expect(ref._isList).toBeTrue();
       expect(ref.size).toBe(2);
     });
 
     it("wraps an array with one Node", () => {
       const ref = new NodeRef([div]);
       expect(ref.node).toBe(div);
-      expect(ref.isList).toBeFalse();
+      expect(ref._isList).toBeFalse();
       expect(ref.size).toBe(1);
     });
 
@@ -48,7 +48,7 @@ describe("NodeRef", () => {
       parent.append(div, span);
       const ref = new NodeRef(parent.childNodes);
       expect(ref.nodes).toEqual([div, span]);
-      expect(ref.isList).toBeTrue();
+      expect(ref._isList).toBeTrue();
     });
 
     it("wraps an HTML string", () => {
@@ -86,7 +86,7 @@ describe("NodeRef", () => {
       const ref = new NodeRef(div);
       ref.nodes = [div, span];
       expect(ref.nodes).toEqual([div, span]);
-      expect(ref.isList).toBeTrue();
+      expect(ref._isList).toBeTrue();
     });
 
     it("returns correct element and node", () => {
@@ -173,7 +173,7 @@ describe("NodeRef", () => {
       const frag = document.createDocumentFragment();
       frag.append(div, span);
       const ref = new NodeRef(frag.childNodes);
-      expect(ref.isList).toBeTrue();
+      expect(ref._isList).toBeTrue();
       expect(ref.nodes.length).toBe(2);
     });
 

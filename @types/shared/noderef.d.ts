@@ -9,7 +9,6 @@ export class NodeRef {
    * @throws {Error} If the argument is invalid or cannot be wrapped properly.
    */
   constructor(element: Node | Element | string | NodeList | Node[]);
-  initial: string | Node | NodeList | Node[];
   /** @private @type {Node | ChildNode | null} */
   private _node;
   /** @private @type {Element | undefined} */
@@ -17,9 +16,7 @@ export class NodeRef {
   /** @private @type {Array<Node>} a stable list on nodes */
   private _nodes;
   /** @type {boolean} */
-  linked: boolean;
-  /** @type {boolean} */
-  isList: boolean;
+  _isList: boolean;
   /** @param {Element} el */
   set element(el: Element);
   /** @returns {Element} */
