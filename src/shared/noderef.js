@@ -134,7 +134,7 @@ export class NodeRef {
   }
 
   /** @returns {Element | Node | ChildNode} */
-  getAny() {
+  _getAny() {
     if (this._isList) {
       return this._nodes[0];
     } else {
@@ -143,7 +143,7 @@ export class NodeRef {
   }
 
   /** @returns {Element | Array<Node> | Node | ChildNode} */
-  getAll() {
+  _getAll() {
     if (this._isList) {
       return this._nodes;
     } else {
@@ -152,7 +152,7 @@ export class NodeRef {
   }
 
   /** @returns {Array<Element> | Array<Node>} */
-  collection() {
+  _collection() {
     if (this._isList) {
       return Array.from(this._nodes);
     } else {
@@ -164,7 +164,7 @@ export class NodeRef {
    * @param {number} index
    * @returns {Element | Node | ChildNode}
    */
-  getIndex(index) {
+  _getIndex(index) {
     if (this._isList) {
       return this._nodes[index];
     } else {
@@ -176,7 +176,7 @@ export class NodeRef {
    * @param {number} index
    * @param {Element | Node | ChildNode} node
    */
-  setIndex(index, node) {
+  _setIndex(index, node) {
     if (this._isList) {
       this._nodes[index] = node;
     } else {
@@ -187,7 +187,7 @@ export class NodeRef {
   /**
    * @returns {NodeRef}
    */
-  clone() {
+  _clone() {
     const cloned = this._isList
       ? this.nodes.map((el) => el.cloneNode(true))
       : this.node.cloneNode(true);
@@ -195,7 +195,7 @@ export class NodeRef {
     return new NodeRef(cloned);
   }
 
-  isElement() {
+  _isElement() {
     return this._element !== undefined;
   }
 }

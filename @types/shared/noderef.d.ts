@@ -36,24 +36,24 @@ export class NodeRef {
   /** @returns {number} */
   get size(): number;
   /** @returns {Element | Node | ChildNode} */
-  getAny(): Element | Node | ChildNode;
+  _getAny(): Element | Node | ChildNode;
   /** @returns {Element | Array<Node> | Node | ChildNode} */
-  getAll(): Element | Array<Node> | Node | ChildNode;
+  _getAll(): Element | Array<Node> | Node | ChildNode;
   /** @returns {Array<Element> | Array<Node>} */
-  collection(): Array<Element> | Array<Node>;
+  _collection(): Array<Element> | Array<Node>;
   /**
    * @param {number} index
    * @returns {Element | Node | ChildNode}
    */
-  getIndex(index: number): Element | Node | ChildNode;
+  _getIndex(index: number): Element | Node | ChildNode;
   /**
    * @param {number} index
    * @param {Element | Node | ChildNode} node
    */
-  setIndex(index: number, node: Element | Node | ChildNode): void;
+  _setIndex(index: number, node: Element | Node | ChildNode): void;
   /**
    * @returns {NodeRef}
    */
-  clone(): NodeRef;
-  isElement(): boolean;
+  _clone(): NodeRef;
+  _isElement(): boolean;
 }
