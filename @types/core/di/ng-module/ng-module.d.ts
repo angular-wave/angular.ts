@@ -19,23 +19,23 @@ export class NgModule {
    * Name of the current module.
    * @type {string}
    */
-  name: string;
+  _name: string;
   /**
    * Array of module names that this module depends on.
    * @type {string[]}
    */
-  requires: string[];
+  _requires: string[];
   /**
    * Holds a collection of tasks, required to instantiate an angular component
    * @type {!Array<Array<*>>}
    */
-  invokeQueue: Array<Array<any>>;
+  _invokeQueue: Array<Array<any>>;
   /** @type {!Array<Array<*>>} */
-  configBlocks: Array<Array<any>>;
+  _configBlocks: Array<Array<any>>;
   /** @type {!Array.<ng.Injectable<any>>} */
-  runBlocks: Array<ng.Injectable<any>>;
-  services: any[];
-  restDefinitions: any[];
+  _runBlocks: Array<ng.Injectable<any>>;
+  _services: any[];
+  _restDefinitions: any[];
   /**
    * @param {string} name
    * @param {any} object - Allows undefined

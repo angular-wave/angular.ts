@@ -17,14 +17,17 @@ export class AnimateRunner {
    * @param {AnimateRunner[]} runners - Runners to execute in order.
    * @param {(ok: boolean) => void} callback - Invoked when all complete or one fails.
    */
-  static chain(runners: AnimateRunner[], callback: (ok: boolean) => void): void;
+  static _chain(
+    runners: AnimateRunner[],
+    callback: (ok: boolean) => void,
+  ): void;
   /**
    * Waits for all animation runners to complete before invoking the callback.
    *
    * @param {AnimateRunner[]} runners - Active runners to wait for.
    * @param {(ok: boolean) => void} callback - Called when all runners complete.
    */
-  static all(runners: AnimateRunner[], callback: (ok: boolean) => void): void;
+  static _all(runners: AnimateRunner[], callback: (ok: boolean) => void): void;
   /**
    * @param {import("../interface.ts").AnimationHost} [host] - Optional animation host.
    */

@@ -39,7 +39,7 @@ export class Lexer {
    */
   constructor(options) {
     /** @type {LexerOptions} */
-    this.options = options;
+    this._options = options;
   }
 
   /**
@@ -151,8 +151,8 @@ export class Lexer {
    * @returns {boolean} True if character is a valid identifier start, false otherwise.
    */
   isIdentifierStart(ch) {
-    return this.options.isIdentifierStart
-      ? this.options.isIdentifierStart(ch, this.codePointAt(ch))
+    return this._options.isIdentifierStart
+      ? this._options.isIdentifierStart(ch, this.codePointAt(ch))
       : (ch >= "a" && ch <= "z") ||
           (ch >= "A" && ch <= "Z") ||
           ch === "_" ||
@@ -165,8 +165,8 @@ export class Lexer {
    * @returns {boolean} True if character is a valid identifier continuation, false otherwise.
    */
   isIdentifierContinue(ch) {
-    return this.options.isIdentifierContinue
-      ? this.options.isIdentifierContinue(ch, this.codePointAt(ch))
+    return this._options.isIdentifierContinue
+      ? this._options.isIdentifierContinue(ch, this.codePointAt(ch))
       : (ch >= "a" && ch <= "z") ||
           (ch >= "A" && ch <= "Z") ||
           ch === "_" ||

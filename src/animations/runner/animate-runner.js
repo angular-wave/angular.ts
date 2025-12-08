@@ -66,7 +66,7 @@ export class AnimateRunner {
    * @param {AnimateRunner[]} runners - Runners to execute in order.
    * @param {(ok: boolean) => void} callback - Invoked when all complete or one fails.
    */
-  static chain(runners, callback) {
+  static _chain(runners, callback) {
     let i = 0;
 
     const next = (ok = true) => {
@@ -87,7 +87,7 @@ export class AnimateRunner {
    * @param {AnimateRunner[]} runners - Active runners to wait for.
    * @param {(ok: boolean) => void} callback - Called when all runners complete.
    */
-  static all(runners, callback) {
+  static _all(runners, callback) {
     let remaining = runners.length;
 
     let status = true;

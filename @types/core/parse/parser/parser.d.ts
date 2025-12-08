@@ -16,9 +16,9 @@ export class Parser {
     $filter: (arg0: any) => any,
   );
   /** @type {AST} */
-  ast: AST;
+  _ast: AST;
   /** @type {ASTInterpreter} */
-  astCompiler: ASTInterpreter;
+  _astCompiler: ASTInterpreter;
   /**
    * @param {string} exp - Expression to be parsed
    * @returns {import("../interface.ts").CompiledExpression}

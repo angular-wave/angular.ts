@@ -300,11 +300,11 @@ export function createInjector(modulesToLoad, strictDi = false) {
 
           instanceInjector.modules[/** @type {string } */ (module)] = moduleFn;
           moduleRunBlocks = moduleRunBlocks
-            .concat(loadModules(moduleFn.requires))
-            .concat(moduleFn.runBlocks);
+            .concat(loadModules(moduleFn._requires))
+            .concat(moduleFn._runBlocks);
 
-          const invokeQueue = moduleFn.invokeQueue.concat(
-            moduleFn.configBlocks,
+          const invokeQueue = moduleFn._invokeQueue.concat(
+            moduleFn._configBlocks,
           );
 
           invokeQueue.forEach((invokeArgs) => {

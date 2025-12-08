@@ -246,7 +246,7 @@ export function AnimateCssProvider() {
 
       function waitUntilQuiet(callback) {
         rafWaitQueue.push(callback);
-        $$rAFScheduler.waitUntilQuiet(() => {
+        $$rAFScheduler._waitUntilQuiet(() => {
           $$animateCache.flush();
 
           // DO NOT REMOVE THIS LINE OR REFACTOR OUT THE `pageWidth` variable.
