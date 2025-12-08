@@ -13,7 +13,15 @@ build: version
 	fi
 	@npm i
 	./node_modules/.bin/rollup -c
-	echo "Build output $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
+
+check-size:
+	./node_modules/.bin/rollup -c --configName min --silent
+	@echo "Minified build output:  $$(stat -c %s dist/angular-ts.umd.min.js) ~ $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
+	@echo "Expected gzip:          $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"
+	@git checkout -q $(BUILD_DIR)
+	@git checkout -q ./docs
+	@echo "Current build output:   $$(stat -c %s dist/angular-ts.umd.min.js) ~ $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
+	@echo "Current gzip:           $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"
 
 version:
 	@node utils/version.cjs	

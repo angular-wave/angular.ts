@@ -16,10 +16,11 @@ export class NgModule {
     configFn?: ng.Injectable<any>,
   );
   /**
+   * @public
    * Name of the current module.
    * @type {string}
    */
-  _name: string;
+  public name: string;
   /**
    * Array of module names that this module depends on.
    * @type {string[]}

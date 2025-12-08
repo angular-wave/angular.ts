@@ -196,7 +196,7 @@ describe("AnimateRunner", () => {
       r2.complete();
     });
 
-    AnimateRunner.chain([r1, r2], (ok) => {
+    AnimateRunner._chain([r1, r2], (ok) => {
       expect(ok).toBe(true);
       expect(order).toEqual(["r1", "r2"]);
       done();
@@ -210,7 +210,7 @@ describe("AnimateRunner", () => {
     const r1 = new AnimateRunner();
     const r2 = new AnimateRunner();
 
-    AnimateRunner.all([r1, r2], (ok) => {
+    AnimateRunner._all([r1, r2], (ok) => {
       expect(ok).toBe(true);
       done();
     });

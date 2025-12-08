@@ -339,7 +339,7 @@ describe("module loader", () => {
 
   it("attaches the requires array to the registered module", () => {
     const myModule = angular.module("myModule", ["myOtherModule"]);
-    expect(myModule.requires).toEqual(["myOtherModule"]);
+    expect(myModule._requires).toEqual(["myOtherModule"]);
   });
 
   it("replaces a module when registered with same name again", () => {
@@ -376,8 +376,8 @@ describe("module loader", () => {
         .run(run),
     ).toBe(myModule);
 
-    expect(myModule.requires).toEqual(["other"]);
-    expect(myModule.invokeQueue).toEqual([
+    expect(myModule._requires).toEqual(["other"]);
+    expect(myModule._invokeQueue).toEqual([
       ["$provide", "constant", jasmine.objectContaining(["abc", 123])],
       ["$provide", "provider", jasmine.objectContaining(["sk", "sv"])],
       ["$provide", "factory", jasmine.objectContaining(["fk", "fv"])],
@@ -396,12 +396,12 @@ describe("module loader", () => {
         jasmine.objectContaining(["ctrl", "ccc"]),
       ],
     ]);
-    expect(myModule.configBlocks).toEqual([
+    expect(myModule._configBlocks).toEqual([
       ["$injector", "invoke", jasmine.objectContaining([config])],
       ["$provide", "decorator", jasmine.objectContaining(["dk", "dv"])],
       ["$injector", "invoke", jasmine.objectContaining([init2])],
     ]);
-    expect(myModule.runBlocks).toEqual([run]);
+    expect(myModule._runBlocks).toEqual([run]);
   });
 
   it("should not throw error when `module.decorator` is declared before provider that it decorates", () => {
