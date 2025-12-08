@@ -20,65 +20,65 @@ export class Lexer {
    * @param {string} text Input text to lex.
    * @returns {Array<Token>} Array of tokens.
    */
-  lex(text: string): Array<Token>;
-  text: string;
-  index: number;
+  _lex(text: string): Array<Token>;
+  _text: string;
+  _index: number;
   /** @type {Array<Token>} */
-  tokens: Array<Token>;
+  _tokens: Array<Token>;
   /**
    * Checks if a character is contained in a set of characters.
    * @param {string} ch Character to check.
    * @param {string} chars Set of characters.
    * @returns {boolean} True if character is in the set, false otherwise.
    */
-  is(ch: string, chars: string): boolean;
+  _is(ch: string, chars: string): boolean;
   /**
    * Peeks at the next character in the text.
    * @param {number} [i=1] Number of characters to peek.
    * @returns {string|false} Next character or false if end of text.
    */
-  peek(i?: number): string | false;
+  _peek(i?: number): string | false;
   /**
    * Checks if a character is a number.
    * @param {string} ch Character to check.
    * @returns {boolean} True if character is a number, false otherwise.
    */
-  isNumber(ch: string): boolean;
+  _isNumber(ch: string): boolean;
   /**
    * Checks if a character is whitespace.
    * @param {string} ch Character to check.
    * @returns {boolean} True if character is whitespace, false otherwise.
    */
-  isWhitespace(ch: string): boolean;
+  _isWhitespace(ch: string): boolean;
   /**
    * Checks if a character is a valid identifier start.
    * @param {string} ch Character to check.
    * @returns {boolean} True if character is a valid identifier start, false otherwise.
    */
-  isIdentifierStart(ch: string): boolean;
+  _isIdentifierStart(ch: string): boolean;
   /**
    * Checks if a character is a valid identifier continuation.
    * @param {string} ch Character to check.
    * @returns {boolean} True if character is a valid identifier continuation, false otherwise.
    */
-  isIdentifierContinue(ch: string): boolean;
+  _isIdentifierContinue(ch: string): boolean;
   /**
    * Converts a character to its Unicode code point.
    * @param {string} ch Character to convert.
    * @returns {number} Unicode code point.
    */
-  codePointAt(ch: string): number;
+  _codePointAt(ch: string): number;
   /**
    * Peeks at the next multicharacter sequence in the text.
    * @returns {string} Next multicharacter sequence.
    */
-  peekMultichar(): string;
+  _peekMultichar(): string;
   /**
    * Checks if a character is an exponent operator.
    * @param {string} ch Character to check.
    * @returns {boolean} True if character is an exponent operator, false otherwise.
    */
-  isExpOperator(ch: string): boolean;
+  _isExpOperator(ch: string): boolean;
   /**
    * Throws a lexer error.
    * @param {string} error Error message.
@@ -86,25 +86,25 @@ export class Lexer {
    * @param {number} [end] End index.
    * @throws {Error} Lexer error.
    */
-  throwError(error: string, start?: number, end?: number): void;
+  _throwError(error: string, start?: number, end?: number): void;
   /**
    * Reads and tokenizes a number from the text.
    * @return {void}
    */
-  readNumber(): void;
+  _readNumber(): void;
   /**
    * Reads and tokenizes an identifier from the text.
    */
-  readIdent(): void;
+  _readIdent(): void;
   /**
    * Reads and tokenizes a string from the text.
    * @param {string} quote Quote character used for the string.
    */
-  readString(quote: string): void;
+  _readString(quote: string): void;
   /**
    * @returns {string}
    */
-  handleUnicodeEscape(): string;
+  _handleUnicodeEscape(): string;
 }
 export type Token = import("./token.ts").Token;
 export type LexerOptions = {
