@@ -2,6 +2,7 @@ import {
   assert,
   assertArgFn,
   assertNotHasOwnProperty,
+  entries,
   isArray,
   isFunction,
   isNullOrUndefined,
@@ -341,7 +342,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
 function supportObject(delegate) {
   return function (key, value) {
     if (isObject(key)) {
-      Object.entries(key).forEach(([k, v]) => {
+      entries(key).forEach(([k, v]) => {
         delegate(k, v);
       });
 

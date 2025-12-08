@@ -19,13 +19,13 @@ export class RestService<T, ID> {
     options?: any,
   );
   /** @private */
-  private $http;
+  private _$http;
   /** @private */
-  private baseUrl;
+  private _baseUrl;
   /** @private */
-  private entityClass;
+  private _entityClass;
   /** @private */
-  private options;
+  private _options;
   /**
    * Build full URL from template and parameters
    * @param {string} template
@@ -72,7 +72,7 @@ export class RestService<T, ID> {
  */
 export class RestProvider {
   /** @private @type {ng.RestDefinition<any>[]} */
-  private definitions;
+  private _definitions;
   /**
    * Register a REST resource at config phase
    * @template T

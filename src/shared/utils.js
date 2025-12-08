@@ -833,7 +833,7 @@ export function toKeyValue(obj) {
   const parts = [];
 
   obj &&
-    Object.entries(obj).forEach(([key, value]) => {
+    entries(obj).forEach(([key, value]) => {
       if (isArray(value)) {
         value.forEach((arrayValue) => {
           parts.push(
@@ -1270,6 +1270,15 @@ export function hasOwn(obj, key) {
  */
 export function keys(obj) {
   return Object.keys(obj);
+}
+
+/**
+ * @template T
+ * @param {{ [s: string]: T; } | ArrayLike<T>} obj
+ * @returns {[string, T][]}
+ */
+export function entries(obj) {
+  return Object.entries(obj);
 }
 
 /**

@@ -1,4 +1,5 @@
 import {
+  entries,
   isDefined,
   isFunction,
   isNull,
@@ -460,7 +461,7 @@ export class UrlService {
     if (!isObject(object)) return false;
     let result = true;
 
-    Object.entries(UrlMatcher.prototype).forEach(([name, val]) => {
+    entries(UrlMatcher.prototype).forEach(([name, val]) => {
       if (isFunction(val))
         result = result && isDefined(object[name]) && isFunction(object[name]);
     });

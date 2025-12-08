@@ -10,7 +10,7 @@ export class FilterProvider {
    * @param {ng.ProvideService} $provide
    */
   constructor($provide: ng.ProvideService);
-  $provide: import("../../interface.ts").Provider;
+  _$provide: import("../../interface.ts").Provider;
   /**
    * Register a filter a config phase;
    * @param {string} name

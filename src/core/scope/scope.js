@@ -1,6 +1,7 @@
 import {
   assert,
   concat,
+  entries,
   hasOwn,
   isArray,
   isDefined,
@@ -1125,10 +1126,10 @@ export class Scope {
    * @param {Object} newTarget
    */
   $merge(newTarget) {
-    const entries = Object.entries(newTarget);
+    const list = entries(newTarget);
 
-    for (let i = 0, l = entries.length; i < l; i++) {
-      const [key, value] = entries[i];
+    for (let i = 0, l = list.length; i < l; i++) {
+      const [key, value] = list[i];
 
       this.set(this.$target, key, value, this.$proxy);
     }

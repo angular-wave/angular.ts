@@ -7,7 +7,7 @@ import {
   $IncludedByStateFilter,
   $IsStateFilter,
 } from "../../router/state-filters.js";
-import { assert, isDefined, isFunction } from "../../shared/utils.js";
+import { assert, entries, isDefined, isFunction } from "../../shared/utils.js";
 import { validate, validateIsString } from "../../shared/validate.js";
 
 /* @ignore */
@@ -27,8 +27,8 @@ export class FilterProvider {
    */
   constructor($provide) {
     assert(isDefined($provide));
-    this.$provide = $provide;
-    Object.entries({
+    this._$provide = $provide;
+    entries({
       filter: filterFilter,
       json: jsonFilter,
       limitTo: limitToFilter,
@@ -49,7 +49,7 @@ export class FilterProvider {
   register(name, factory) {
     validateIsString(name, "name");
     validate(isFunction, factory, "factory");
-    this.$provide.factory(name + SUFFIX, factory);
+    this._$provide.factory(name + SUFFIX, factory);
 
     return this;
   }

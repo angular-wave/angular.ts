@@ -6,6 +6,7 @@ import {
   getCacheData,
   getInheritedData,
   isTextNode,
+  NodeType,
   setCacheData,
   setIsolateScope,
   setScope,
@@ -18,6 +19,7 @@ import {
   assertNotHasOwnProperty,
   bind,
   directiveNormalize,
+  entries,
   equals,
   extend,
   getNodeName,
@@ -87,7 +89,7 @@ export class CompileProvider {
 
       const bindings = Object.create(null);
 
-      Object.entries(scope).forEach(([scopeName, definition]) => {
+      entries(scope).forEach(([scopeName, definition]) => {
         definition = definition.trim();
 
         if (definition in bindingCache) {
@@ -174,10 +176,10 @@ export class CompileProvider {
         directive.require || (directive.controller && directive.name);
 
       if (!isArray(require) && isObject(require)) {
-        const entries = Object.entries(require);
+        const entryList = entries(require);
 
-        for (let i = 0, len = entries.length; i < len; i++) {
-          const [key, value] = entries[i];
+        for (let i = 0, len = entryList.length; i < len; i++) {
+          const [key, value] = entryList[i];
 
           const match = value.match(REQUIRE_PREFIX_REGEXP);
 
@@ -271,7 +273,7 @@ export class CompileProvider {
         }
         hasDirectives[name].push(directiveFactory);
       } else {
-        Object.entries(name).forEach(([k, v]) => registerDirective(k, v));
+        entries(name).forEach(([k, v]) => registerDirective(k, v));
       }
 
       return this;
@@ -323,7 +325,7 @@ export class CompileProvider {
      */
     this.component = function (name, options) {
       if (!isString(name)) {
-        Object.entries(name).forEach(([key, val]) => this.component(key, val));
+        entries(name).forEach(([key, val]) => this.component(key, val));
 
         return this;
       }
@@ -368,7 +370,7 @@ export class CompileProvider {
         };
 
         // Copy annotations (starting with $) over to the DDO
-        Object.entries(options).forEach(([key, val]) => {
+        entries(options).forEach(([key, val]) => {
           if (key.charAt(0) === "$") {
             ddo[key] = val;
           }
@@ -379,7 +381,7 @@ export class CompileProvider {
 
       // Copy any annotation properties (starting with $) over to the factory and controller constructor functions
       // These could be used by libraries such as the new component router
-      Object.entries(options).forEach(([key, val]) => {
+      entries(options).forEach(([key, val]) => {
         if (key.charAt(0) === "$") {
           factory[key] = val;
 
@@ -1056,7 +1058,7 @@ export class CompileProvider {
           let nodeName;
 
           switch (nodeType) {
-            case 1 /* Element */:
+            case NodeType._ELEMENT_NODE /* Element */:
               nodeName = node.nodeName.toLowerCase();
 
               if (ignoreDirective !== directiveNormalize(nodeName)) {
@@ -1174,7 +1176,7 @@ export class CompileProvider {
               }
 
               break;
-            case Node.TEXT_NODE:
+            case NodeType._TEXT_NODE:
               addTextInterpolateDirective(directives, node.nodeValue);
               break;
             default:
@@ -1438,7 +1440,7 @@ export class CompileProvider {
 
             // Bind the required controllers to the controller, if `require` is an object and `bindToController` is truthy
             if (controllerDirectives) {
-              Object.entries(controllerDirectives).forEach(
+              entries(controllerDirectives).forEach(
                 ([name, controllerDirective]) => {
                   const { require } = controllerDirective;
 
@@ -1817,7 +1819,7 @@ export class CompileProvider {
                   const filledSlots = Object.create(null);
 
                   // Parse the element selectors
-                  Object.entries(directiveValue).forEach(
+                  entries(directiveValue).forEach(
                     ([slotName, elementSelector]) => {
                       // If an element selector starts with a ? then it is optional
                       const optional = elementSelector.charAt(0) === "?";
@@ -1859,7 +1861,7 @@ export class CompileProvider {
                   });
 
                   // Check for required slots that were not filled
-                  Object.entries(filledSlots).forEach(([slotName, filled]) => {
+                  entries(filledSlots).forEach(([slotName, filled]) => {
                     if (!filled) {
                       throw $compileMinErr(
                         "reqslot",
@@ -1937,11 +1939,14 @@ export class CompileProvider {
                 if (isString($template)) {
                   $template = Array.from(
                     createNodelistFromHTML($template),
-                  ).filter((x) => x.nodeType === 1);
+                  ).filter((x) => x.nodeType === NodeType._ELEMENT_NODE);
                 }
                 compileNode = $template[0];
 
-                if ($template.length !== 1 || compileNode.nodeType !== 1) {
+                if (
+                  $template.length !== 1 ||
+                  compileNode.nodeType !== NodeType._ELEMENT_NODE
+                ) {
                   throw $compileMinErr(
                     "tplrt",
                     "Template for directive '{0}' must have exactly one root element. {1}",
@@ -2150,7 +2155,7 @@ export class CompileProvider {
               if (
                 inheritType === "^^" &&
                 $element &&
-                $element.nodeType === Node.DOCUMENT_NODE
+                $element.nodeType === NodeType._DOCUMENT_NODE
               ) {
                 // inheritedData() uses the documentElement when it finds the document, so we would
                 // require from the element itself.
@@ -2185,7 +2190,7 @@ export class CompileProvider {
             }
           } else if (isObject(require)) {
             value = {};
-            Object.entries(require).forEach(([property, controller]) => {
+            entries(require).forEach(([property, controller]) => {
               value[property] = getControllers(
                 directiveName,
                 controller,
@@ -2341,7 +2346,7 @@ export class CompileProvider {
           const dstAttr = dst.$attr;
 
           // reapply the old attributes to the new element
-          Object.entries(dst).forEach(([key, value]) => {
+          entries(dst).forEach(([key, value]) => {
             if (key.charAt(0) !== "$") {
               if (src[key] && src[key] !== value) {
                 if (value.length) {
@@ -2355,7 +2360,7 @@ export class CompileProvider {
           });
 
           // copy the new attributes on the old attrs object
-          Object.entries(src).forEach(([key, value]) => {
+          entries(src).forEach(([key, value]) => {
             // Check if we already set this attribute in the loop above.
             // `dst` will never contain hasOwnProperty as DOM parser won't let it.
             // You will get an "InvalidCharacterError: DOM Exception 5" error if you
@@ -2451,8 +2456,8 @@ export class CompileProvider {
                     createNodelistFromHTML(content),
                   ).filter(
                     (node) =>
-                      node.nodeType !== Node.COMMENT_NODE &&
-                      node.nodeType !== Node.TEXT_NODE,
+                      node.nodeType !== NodeType._COMMENT_NODE &&
+                      node.nodeType !== NodeType._TEXT_NODE,
                   );
                 } else {
                   $template = removeComments(
@@ -2461,7 +2466,10 @@ export class CompileProvider {
                 }
                 compileNode = $template[0];
 
-                if ($template.length !== 1 || compileNode.nodeType !== 1) {
+                if (
+                  $template.length !== 1 ||
+                  compileNode.nodeType !== NodeType._ELEMENT_NODE
+                ) {
                   throw $compileMinErr(
                     "tplrt",
                     "Template for directive '{0}' must have exactly one root element. {1}",
@@ -2513,7 +2521,7 @@ export class CompileProvider {
               afterTemplateNodeLinkFn = afterTemplateNodeLinkFnCtx?.nodeLinkFn;
 
               if ($rootElement) {
-                Object.entries($rootElement).forEach(([i, node]) => {
+                entries($rootElement).forEach(([i, node]) => {
                   if (node === compileNode) {
                     $rootElement[i] = $compileNode;
                   }
@@ -3091,7 +3099,7 @@ export class CompileProvider {
           let changes;
 
           if (bindings) {
-            Object.entries(bindings).forEach(([scopeName, definition]) => {
+            entries(bindings).forEach(([scopeName, definition]) => {
               const {
                 attrName,
                 optional,
@@ -3273,7 +3281,7 @@ export class CompileProvider {
                         } else {
                           // manually set the handler to avoid watch cycles
                           if (isObject(val)) {
-                            Object.entries(val).forEach(([key, value]) => {
+                            entries(val).forEach(([key, value]) => {
                               scope.$target[key] = value;
                             });
                           } else {
@@ -3424,8 +3432,8 @@ function removeComments(jqNodes) {
     const node = jqNodes[i];
 
     if (
-      node.nodeType === Node.COMMENT_NODE ||
-      (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim() === "")
+      node.nodeType === NodeType._COMMENT_NODE ||
+      (node.nodeType === NodeType._TEXT_NODE && node.nodeValue.trim() === "")
     ) {
       [].splice.call(jqNodes, i, 1);
     }

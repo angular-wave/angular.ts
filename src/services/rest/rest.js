@@ -27,13 +27,13 @@ export class RestService {
     assert(isString(baseUrl) && baseUrl.length > 0, "baseUrl required");
 
     /** @private */
-    this.$http = $http;
+    this._$http = $http;
     /** @private */
-    this.baseUrl = baseUrl;
+    this._baseUrl = baseUrl;
     /** @private */
-    this.entityClass = entityClass;
+    this._entityClass = entityClass;
     /** @private */
-    this.options = options;
+    this._options = options;
   }
 
   /**
@@ -55,7 +55,7 @@ export class RestService {
   #mapEntity(data) {
     if (!data) return data;
 
-    return this.entityClass ? new this.entityClass(data) : data;
+    return this._entityClass ? new this._entityClass(data) : data;
   }
 
   /**
@@ -64,7 +64,7 @@ export class RestService {
    * @returns {Promise<T[]>}
    */
   async list(params = {}) {
-    const url = this.buildUrl(this.baseUrl, params);
+    const url = this.buildUrl(this._baseUrl, params);
 
     const resp = await this.#request("get", url, null, params);
 
@@ -81,7 +81,7 @@ export class RestService {
    */
   async read(id, params = {}) {
     assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
-    const url = this.buildUrl(`${this.baseUrl}/${id}`, params);
+    const url = this.buildUrl(`${this._baseUrl}/${id}`, params);
 
     const resp = await this.#request("get", url, null, params);
 
@@ -95,7 +95,7 @@ export class RestService {
    */
   async create(item) {
     assert(!isNullOrUndefined(item), `${BADARG}:item ${item}`);
-    const resp = await this.#request("post", this.baseUrl, item);
+    const resp = await this.#request("post", this._baseUrl, item);
 
     return this.#mapEntity(resp.data);
   }
@@ -108,7 +108,7 @@ export class RestService {
    */
   async update(id, item) {
     assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
-    const url = `${this.baseUrl}/${id}`;
+    const url = `${this._baseUrl}/${id}`;
 
     try {
       const resp = await this.#request("put", url, item);
@@ -126,7 +126,7 @@ export class RestService {
    */
   async delete(id) {
     assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
-    const url = `${this.baseUrl}/${id}`;
+    const url = `${this._baseUrl}/${id}`;
 
     try {
       await this.#request("delete", url);
@@ -146,12 +146,12 @@ export class RestService {
    * @returns {Promise<any>}
    */
   async #request(method, url, data = null, params = {}) {
-    return await this.$http({
+    return await this._$http({
       method,
       url,
       data,
       params,
-      ...this.options,
+      ...this._options,
     });
   }
 }
@@ -162,7 +162,7 @@ export class RestService {
 export class RestProvider {
   constructor() {
     /** @private @type {ng.RestDefinition<any>[]} */
-    this.definitions = [];
+    this._definitions = [];
   }
 
   /**
@@ -174,7 +174,7 @@ export class RestProvider {
    * @param {Object=} options Optional service options
    */
   rest(name, url, entityClass, options = {}) {
-    this.definitions.push({ name, url, entityClass, options });
+    this._definitions.push({ name, url, entityClass, options });
   }
 
   /**
@@ -193,7 +193,7 @@ export class RestProvider {
       };
 
       // create services from pre-registered definitions
-      for (const def of this.definitions) {
+      for (const def of this._definitions) {
         const svc = factory(def.url, def.entityClass, def.options);
 
         services.set(def.name, svc);

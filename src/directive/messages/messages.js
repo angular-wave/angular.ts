@@ -1,4 +1,4 @@
-import { hasOwn, isArray, isString } from "../../shared/utils.js";
+import { entries, hasOwn, isArray, isString } from "../../shared/utils.js";
 
 const ACTIVE_CLASS = "ng-active";
 
@@ -63,7 +63,7 @@ class NgMessageCtrl {
       let messageUsed = false;
 
       if (!messageFound) {
-        Object.entries(collection).forEach(([key, value]) => {
+        entries(collection).forEach(([key, value]) => {
           if (truthy(value) && !messageUsed) {
             truthyKeys++;
 

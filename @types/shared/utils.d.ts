@@ -550,6 +550,18 @@ export function hasOwn(obj: object, key: string | number | symbol): boolean;
  */
 export function keys(obj: any): string[];
 /**
+ * @template T
+ * @param {{ [s: string]: T; } | ArrayLike<T>} obj
+ * @returns {[string, T][]}
+ */
+export function entries<T>(
+  obj:
+    | {
+        [s: string]: T;
+      }
+    | ArrayLike<T>,
+): [string, T][];
+/**
  * Wraps a function so it can only be called once.
  * Subsequent calls do nothing and return undefined.
  *

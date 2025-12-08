@@ -1,4 +1,4 @@
-import { isDefined, keys, trim } from "../../shared/utils.js";
+import { entries, isDefined, keys, trim } from "../../shared/utils.js";
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
 
@@ -74,7 +74,7 @@ class ModelOptions {
     options = Object.assign({}, options);
 
     // Inherit options from the parent if specified by the value `"$inherit"`
-    Object.entries(options).forEach(([key, option]) => {
+    entries(options).forEach(([key, option]) => {
       if (option === "$inherit") {
         if (key === "*") {
           inheritAll = true;
