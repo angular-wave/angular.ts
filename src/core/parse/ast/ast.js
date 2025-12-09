@@ -30,6 +30,7 @@ export class AST {
       this: { type: ASTType._ThisExpression },
       $locals: { type: ASTType._LocalsExpression },
     };
+    this._index = 0;
   }
 
   /**
@@ -40,10 +41,11 @@ export class AST {
   _ast(text) {
     this._text = text;
     this._tokens = this._lexer._lex(text);
+
     const value = this._program();
 
-    if (this._tokens.length !== 0) {
-      this._throwError("is an unexpected token", this._tokens[0]);
+    if (this._tokens.length > this._index) {
+      this._throwError("is an unexpected token", this._tokens[this._index]);
     }
 
     return value;
@@ -59,7 +61,7 @@ export class AST {
     let hasMore = true;
 
     while (hasMore) {
-      if (this._tokens.length > 0 && !this._peek("}", ")", ";", "]"))
+      if (this._tokens.length > this._index && !this._peek("}", ")", ";", "]"))
         body.push(this._expressionStatement());
 
       if (!this._expect(";")) {
@@ -542,7 +544,7 @@ export class AST {
    * @returns {import("../lexer/lexer.js").Token} The consumed token.
    */
   _consume(e1) {
-    if (this._tokens.length === 0) {
+    if (this._tokens.length === this._index) {
       throw $parseMinErr(
         "ueoe",
         "Unexpected end of expression: {0}",
@@ -569,7 +571,7 @@ export class AST {
    * @returns {import("../lexer/lexer.js").Token} The next token.
    */
   _peekToken() {
-    if (this._tokens.length === 0) {
+    if (this._tokens.length === this._index) {
       throw $parseMinErr(
         "ueoe",
         "Unexpected end of expression: {0}",
@@ -577,7 +579,7 @@ export class AST {
       );
     }
 
-    return this._tokens[0];
+    return this._tokens[this._index];
   }
 
   /**
@@ -586,18 +588,8 @@ export class AST {
    * @returns {import('../lexer/lexer.js').Token|boolean} The next token if it matches, otherwise false.
    */
   _peek(...expected) {
-    return this._peekAhead(0, ...expected);
-  }
-
-  /**
-   * Checks if the token at the specified index matches any of the expected types.
-   * @param {number} i - The index to check.
-   * @param {...string} [expected] - The expected token types.
-   * @returns {import("../lexer/lexer.js").Token|boolean} The token at the specified index if it matches, otherwise false.
-   */
-  _peekAhead(i, ...expected) {
-    if (this._tokens.length > i) {
-      const token = this._tokens[i];
+    if (this._tokens.length > this._index) {
+      const token = this._tokens[this._index];
 
       const { text } = token;
 
@@ -621,7 +613,7 @@ export class AST {
     const token = this._peek(...expected);
 
     if (token) {
-      this._tokens.shift();
+      this._index++;
 
       return token;
     }
