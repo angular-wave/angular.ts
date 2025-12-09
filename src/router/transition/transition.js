@@ -54,9 +54,10 @@ export class Transition {
     /**
      * @type {import('../router.js').Router}
      */
-    this.globals = globals;
-    this.transitionService = transitionService;
+    this._globals = globals;
+    this._transitionService = transitionService;
     this._deferred = Promise.withResolvers();
+
     /**
      * This promise is resolved or rejected based on the outcome of the Transition.
      *
@@ -69,7 +70,7 @@ export class Transition {
 
     this._hookBuilder = new HookBuilder(this);
     /** Checks if this transition is currently active/running. */
-    this.isActive = () => this.globals.transition === this;
+    this.isActive = () => this._globals._transition === this;
     this._targetState = targetState;
 
     if (!targetState.valid()) {
@@ -110,10 +111,10 @@ export class Transition {
    * (which can then be used to register hooks)
    */
   createTransitionHookRegFns() {
-    this.transitionService
+    this._transitionService
       ._getEvents()
       .filter((type) => type.hookPhase !== TransitionHookPhase._CREATE)
-      .forEach((type) => makeEvent(this, this.transitionService, type));
+      .forEach((type) => makeEvent(this, this._transitionService, type));
   }
 
   getHooks(hookName) {
@@ -124,7 +125,7 @@ export class Transition {
     const enteringStates = this._treeChanges.entering.map((node) => node.state);
 
     PathUtils.applyViewConfigs(
-      this.transitionService.$view,
+      this._transitionService.$view,
       this._treeChanges.to,
       enteringStates,
     );
@@ -444,7 +445,7 @@ export class Transition {
     );
 
     targetState = targetState.withOptions(newOptions, true);
-    const newTransition = this.transitionService.create(
+    const newTransition = this._transitionService.create(
       this._treeChanges.from,
       targetState,
     );
@@ -543,7 +544,7 @@ export class Transition {
   }
 
   _ignoredReason() {
-    const pending = this.globals.transition;
+    const pending = this._globals._transition;
 
     const { reloadState } = this._options;
 
@@ -628,11 +629,11 @@ export class Transition {
     };
 
     const startTransition = () => {
-      const { globals } = this;
+      const { _globals } = this;
 
-      globals.lastStartedTransitionId = this.$id;
-      globals.transition = this;
-      globals.transitionHistory.enqueue(this);
+      _globals._lastStartedTransitionId = this.$id;
+      _globals._transition = this;
+      _globals._transitionHistory.enqueue(this);
       trace.traceTransitionStart(this);
 
       return Promise.resolve();

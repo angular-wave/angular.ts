@@ -1,14 +1,14 @@
 export class Angular {
-  /** @public */
-  public $cache: Map<number, import("./interface.ts").ExpandoStore>;
+  _$cache: Map<number, import("./interface.ts").ExpandoStore>;
   /** @public @type {ng.PubSubService} */
   public $eventBus: ng.PubSubService;
   /**
+   * @public
    * @type {string} `version` from `package.json`
    */
-  version: string;
+  public version: string;
   /** @type {!Array<string|any>} */
-  bootsrappedModules: Array<string | any>;
+  _bootsrappedModules: Array<string | any>;
   /**
    * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
    *

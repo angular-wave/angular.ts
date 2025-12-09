@@ -56,8 +56,8 @@ export class StateRegistryProvider {
     this.registerRoot();
 
     viewService.rootViewContext(this.root());
-    globals.$current = this.root();
-    globals.current = globals.$current.self;
+    globals._$current = this.root();
+    globals._current = globals._$current.self;
   }
 
   $get = [

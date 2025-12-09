@@ -10,13 +10,15 @@ export class ASTInterpreter {
    * @param {function(any):any} $filter
    */
   constructor($filter: (arg0: any) => any);
-  $filter: (arg0: any) => any;
+  _$filter: (arg0: any) => any;
   /**
    * Compiles the AST into a function.
-   * @param {import("./ast/ast").ASTNode} ast - The AST to compile.
+   * @param {import("./ast/ast.js").ASTNode} ast - The AST to compile.
    * @returns {import("./interface.ts").CompiledExpression}
    */
-  compile(ast: any): import("./interface.ts").CompiledExpression;
+  compile(
+    ast: import("./ast/ast.js").ASTNode,
+  ): import("./interface.ts").CompiledExpression;
   /**
    * Unary plus operation.
    * @param {function} argument - The argument function.

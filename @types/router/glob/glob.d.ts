@@ -64,15 +64,11 @@ export class Glob {
   /**
    * @type {string}
    */
-  text: string;
-  /**
-   * @type {string[]}
-   */
-  glob: string[];
+  _text: string;
   /**
    * @type {RegExp}
    */
-  regexp: RegExp;
+  _regexp: RegExp;
   /**
    * @param {string} name
    * @return {boolean}

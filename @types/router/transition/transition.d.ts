@@ -28,8 +28,8 @@ export class Transition implements IHookRegistry {
   /**
    * @type {import('../router.js').Router}
    */
-  globals: import("../router.js").Router;
-  transitionService: import("../transition/transition-service.js").TransitionProvider;
+  _globals: import("../router.js").Router;
+  _transitionService: import("../transition/transition-service.js").TransitionProvider;
   _deferred: any;
   /**
    * This promise is resolved or rejected based on the outcome of the Transition.

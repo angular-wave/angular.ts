@@ -16,24 +16,24 @@ export class ASTInterpreter {
    * @param {function(any):any} $filter
    */
   constructor($filter) {
-    this.$filter = $filter;
+    this._$filter = $filter;
   }
 
   /**
    * Compiles the AST into a function.
-   * @param {import("./ast/ast").ASTNode} ast - The AST to compile.
+   * @param {import("./ast/ast.js").ASTNode} ast - The AST to compile.
    * @returns {import("./interface.ts").CompiledExpression}
    */
   compile(ast) {
-    const decoratedNode = findConstantAndWatchExpressions(ast, this.$filter);
+    const decoratedNode = findConstantAndWatchExpressions(ast, this._$filter);
 
-    /** @type {import("./ast/ast").ASTNode} */
-    let assignable;
+    /** @type {import("./ast/ast.js").ASTNode} */
+    const assignable = assignableAST(decoratedNode);
 
     /** @type {import("./interface.ts").CompiledExpression} */
     let assign;
 
-    if ((assignable = assignableAST(decoratedNode))) {
+    if (assignable) {
       assign = /** @type {import("./interface.ts").CompiledExpression} */ (
         this.#recurse(assignable)
       );
@@ -167,7 +167,7 @@ export class ASTInterpreter {
           args.push(self.#recurse(expr));
         });
 
-        if (ast.filter) right = this.$filter(ast.callee.name);
+        if (ast.filter) right = this._$filter(ast.callee.name);
 
         if (!ast.filter) right = this.#recurse(ast.callee, true);
 

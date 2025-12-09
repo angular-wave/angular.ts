@@ -17,37 +17,37 @@ export class Router {
      * The parameter values from the latest successful transition
      * @type {StateParams}
      */
-    this.params = new StateParams();
+    this._params = new StateParams();
 
     /**
      * @type {number}
      */
-    this.lastStartedTransitionId = -1;
+    this._lastStartedTransitionId = -1;
 
     /**
      * @type {Queue<import("./transition/transition.js").Transition>}
      */
-    this.transitionHistory = new Queue([], 1);
+    this._transitionHistory = new Queue([], 1);
 
     /**
      * @type {Queue<import("./transition/transition.js").Transition>}
      */
-    this.successfulTransitions = new Queue([], 1);
+    this._successfulTransitions = new Queue([], 1);
 
     /**
      * @type {import("./state/interface.ts").StateDeclaration|undefined}
      */
-    this.current = undefined;
+    this._current = undefined;
 
     /**
      * @type {import("./state/state-object.js").StateObject|undefined}
      */
-    this.$current = undefined;
+    this._$current = undefined;
 
     /**
      * @type {import("./transition/transition.js").Transition|undefined}
      */
-    this.transition = undefined;
+    this._transition = undefined;
   }
 
   $get = () => this;

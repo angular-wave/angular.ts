@@ -79,7 +79,7 @@ describe("view", () => {
 
       state = register(stateDeclaration);
       const $view = new ViewService(null);
-      $view.viewConfigFactory(getViewConfigFactory());
+      $view._viewConfigFactory(getViewConfigFactory());
 
       const _states = [root, state];
       path = _states.map((_state) => new PathNode(_state));

@@ -44,7 +44,7 @@ export class PathUtils {
         const subPath = PathUtils.subPath(path, (x) => x === node);
 
         const viewConfigs = viewDecls.map((view) => {
-          return $view.createViewConfig(subPath, view);
+          return $view._createViewConfig(subPath, view);
         });
 
         node.views = viewConfigs.reduce(unnestR, []);

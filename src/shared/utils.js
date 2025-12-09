@@ -910,24 +910,6 @@ export function encodeUriQuery(val, pctEncodeSpaces) {
 
 export const ngAttrPrefixes = ["ng-", "data-ng-"];
 
-export function getNgAttribute(element, ngAttr) {
-  let attr;
-
-  let i;
-
-  const ii = ngAttrPrefixes.length;
-
-  for (i = 0; i < ii; ++i) {
-    attr = ngAttrPrefixes[i] + ngAttr;
-
-    if (isString((attr = element.getAttribute(attr)))) {
-      return attr;
-    }
-  }
-
-  return null;
-}
-
 /**
  * Creates a shallow copy of an object, an array or a primitive.
  *
