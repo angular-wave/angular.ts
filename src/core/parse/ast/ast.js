@@ -588,17 +588,16 @@ export class AST {
    * @returns {import('../lexer/lexer.js').Token|boolean} The next token if it matches, otherwise false.
    */
   _peek(...expected) {
-    if (this._tokens.length > this._index) {
-      const token = this._tokens[this._index];
+    const token = this._tokens[this._index];
 
-      const { text } = token;
+    const j = expected.length;
 
-      if (
-        expected.includes(text) ||
-        (!expected[0] && !expected[1] && !expected[2] && !expected[3])
-      ) {
-        return token;
-      }
+    if (!token || !j) return token;
+
+    const txt = token.text;
+
+    for (let i = 0; i < j; i++) {
+      if (expected[i] === txt || !expected[i]) return token;
     }
 
     return false;
