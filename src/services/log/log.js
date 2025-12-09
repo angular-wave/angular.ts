@@ -21,7 +21,7 @@ export class LogProvider {
   }
 
   /** @private */
-  formatError(arg) {
+  _formatError(arg) {
     if (isError(arg)) {
       if (arg.stack) {
         arg =
@@ -40,7 +40,7 @@ export class LogProvider {
    * @private
    * @param {string} type
    */
-  consoleLog(type) {
+  _consoleLog(type) {
     const console = window.console || {};
 
     const logFn =
@@ -51,7 +51,7 @@ export class LogProvider {
       });
 
     return (...args) => {
-      const formattedArgs = args.map((arg) => this.formatError(arg));
+      const formattedArgs = args.map((arg) => this._formatError(arg));
 
       return logFn.apply(console, formattedArgs);
     };
@@ -66,12 +66,12 @@ export class LogProvider {
     }
 
     return {
-      log: this.consoleLog("log"),
-      info: this.consoleLog("info"),
-      warn: this.consoleLog("warn"),
-      error: this.consoleLog("error"),
+      log: this._consoleLog("log"),
+      info: this._consoleLog("info"),
+      warn: this._consoleLog("warn"),
+      error: this._consoleLog("error"),
       debug: (() => {
-        const fn = this.consoleLog("debug");
+        const fn = this._consoleLog("debug");
 
         return (...args) => {
           if (this.debug) {

@@ -12,12 +12,12 @@ export class LogProvider {
    */
   setLogger(fn: import("./interface.ts").LogServiceFactory): void;
   /** @private */
-  private formatError;
+  private _formatError;
   /**
    * @private
    * @param {string} type
    */
-  private consoleLog;
+  private _consoleLog;
   /**
    * @returns {ng.LogService}
    */
