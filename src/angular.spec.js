@@ -108,9 +108,29 @@ describe("angular", () => {
       dealoc(document);
     });
 
-    it("should bootstrap in strict mode when ng-strict-di attribute is specified", () => {
+    it("should bootstrap in strict mode when strict-di attribute is specified", () => {
       const appElement = createElementFromHTML(
-        '<div ng-app="" ng-strict-di></div>',
+        '<div ng-app="" strict-di></div>',
+      );
+      const root = createElementFromHTML("<div></div>");
+      root.append(appElement);
+
+      window.angular.init(root);
+      expect(bootstrapSpy).toHaveBeenCalled();
+      expect(bootstrapSpy.calls.mostRecent().args[2].strictDi).toBe(true);
+
+      const injector = angular.getInjector(appElement);
+      function testFactory($rootScope) {}
+      expect(() => {
+        injector.instantiate(testFactory);
+      }).toThrowError(/strictdi/);
+
+      dealoc(appElement);
+    });
+
+    it("should bootstrap in strict mode when strict-di data attribute is specified", () => {
+      const appElement = createElementFromHTML(
+        '<div data-ng-app="" data-strict-di></div>',
       );
       const root = createElementFromHTML("<div></div>");
       root.append(appElement);

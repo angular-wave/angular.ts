@@ -6,6 +6,6 @@ describe("index", () => {
   });
 
   it("initializes ng modules", async () => {
-    expect(angular.bootsrappedModules[0]).toEqual("ng");
+    expect(angular._bootsrappedModules[0]).toEqual("ng");
   });
 });
