@@ -426,7 +426,6 @@ export function encodeUriSegment(val: string): string;
  *                     / "*" / "+" / "," / ";" / "="
  */
 export function encodeUriQuery(val: any, pctEncodeSpaces: any): string;
-export function getNgAttribute(element: any, ngAttr: any): any;
 /**
  * Creates a shallow copy of an object, an array or a primitive.
  *

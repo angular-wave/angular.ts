@@ -27,7 +27,7 @@ export class ViewService {
     this._ngViews = [];
     this._viewConfigs = [];
     this._listeners = [];
-    this.viewConfigFactory(getViewConfigFactory());
+    this._viewConfigFactory(getViewConfigFactory());
   }
 
   $get = () => this;
@@ -40,8 +40,8 @@ export class ViewService {
     return (this._rootContext = context || this._rootContext);
   }
 
-  viewConfigFactory(factory) {
-    this.viewConfigFactory = factory;
+  _viewConfigFactory(factory) {
+    this._viewConfigFactory = factory;
   }
 
   /**
@@ -49,9 +49,9 @@ export class ViewService {
    * @param decl
    * @return {import("../state/views.js").ViewConfig}
    */
-  createViewConfig(path, decl) {
+  _createViewConfig(path, decl) {
     /** @type {function(any, any): any} */
-    const cfgFactory = this.viewConfigFactory;
+    const cfgFactory = this._viewConfigFactory;
 
     if (!cfgFactory)
       throw new Error(

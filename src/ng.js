@@ -299,7 +299,7 @@ export function registerNgModule(angular) {
        * @param {import('./router/router.js').Router} globals
        * @returns {import('./router/params/state-params.js').StateParams }
        */
-      (globals) => globals.params,
+      (globals) => globals._params,
     ])
     .value("$trace", trace);
 }

@@ -1,7 +1,6 @@
 import {
   assertNotHasOwnProperty,
   errorHandlingConfig,
-  getNgAttribute,
   hasOwn,
   isArray,
   minErr,
@@ -26,24 +25,27 @@ const ngMinErr = minErr("ng");
 
 const $injectorMinErr = minErr("$injector");
 
+const STRICT_DI = "strict-di";
+
 /** @type {Object.<string, NgModule>} */
 const moduleRegistry = {};
 
 export class Angular {
   constructor() {
-    /** @public */
-    this.$cache = Cache;
+    /* @ignore */
+    this._$cache = Cache;
 
     /** @public @type {ng.PubSubService} */
     this.$eventBus = EventBus;
 
     /**
+     * @public
      * @type {string} `version` from `package.json`
      */
     this.version = "[VI]{version}[/VI]"; //inserted via rollup plugin
 
     /** @type {!Array<string|any>} */
-    this.bootsrappedModules = [];
+    this._bootsrappedModules = [];
 
     /**
      * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
@@ -194,10 +196,10 @@ export class Angular {
     }
 
     if (isArray(modules)) {
-      this.bootsrappedModules = modules;
+      this._bootsrappedModules = modules;
     }
 
-    this.bootsrappedModules.unshift([
+    this._bootsrappedModules.unshift([
       "$provide",
       /**
        * @param {import('./interface.ts').Provider} $provide
@@ -207,9 +209,9 @@ export class Angular {
       },
     ]);
 
-    this.bootsrappedModules.unshift("ng");
+    this._bootsrappedModules.unshift("ng");
 
-    const injector = createInjector(this.bootsrappedModules, config.strictDi);
+    const injector = createInjector(this._bootsrappedModules, config.strictDi);
 
     injector.invoke([
       $t.$rootScope,
@@ -278,6 +280,7 @@ export class Angular {
    * @param {Element|Document} element
    */
   init(element) {
+    /** @type {Element} */
     let appElement;
 
     let module;
@@ -292,12 +295,9 @@ export class Angular {
         /** @type {Element} */ (element).hasAttribute &&
         /** @type {Element} */ (element).hasAttribute(name)
       ) {
-        appElement = element;
+        appElement = /** @type {Element} */ (element);
         module = /** @type {Element} */ (element).getAttribute(name);
       }
-    });
-    ngAttrPrefixes.forEach((prefix) => {
-      const name = `${prefix}app`;
 
       let candidate;
 
@@ -311,7 +311,9 @@ export class Angular {
     });
 
     if (appElement) {
-      config.strictDi = getNgAttribute(appElement, "strict-di") !== null;
+      config.strictDi =
+        appElement.hasAttribute(STRICT_DI) ||
+        appElement.hasAttribute(`data-${STRICT_DI}`);
       this.bootstrap(appElement, module ? [module] : [], config);
     }
   }

@@ -127,15 +127,11 @@ export class AST {
   _ternary() {
     const test = this._logicalOR();
 
-    let alternate;
-
-    let consequent;
-
     if (this._expect("?")) {
-      alternate = this._assignment();
+      const alternate = this._assignment();
 
       if (this._consume(":")) {
-        consequent = this._assignment();
+        const consequent = this._assignment();
 
         return {
           type: ASTType._ConditionalExpression,

@@ -32,7 +32,7 @@ export class HookBuilder {
    * @returns
    */
   buildHooksForPhase(phase) {
-    return this.transition.transitionService
+    return this.transition._transitionService
       ._getEvents(phase)
       .map((type) => this.buildHooks(type))
       .reduce(unnestR, [])
@@ -121,7 +121,7 @@ export class HookBuilder {
     const isCreate = hookType.hookPhase === TransitionHookPhase._CREATE;
 
     // Instance and Global hook registries
-    const $transitions = this.transition.transitionService;
+    const $transitions = this.transition._transitionService;
 
     const registries = isCreate
       ? [$transitions]

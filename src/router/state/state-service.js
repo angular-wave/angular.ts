@@ -30,7 +30,7 @@ export class StateProvider {
    * @deprecated This is a passthrough through to [[Router.params]]
    */
   get params() {
-    return this.globals.params;
+    return this.globals._params;
   }
 
   /**
@@ -39,7 +39,7 @@ export class StateProvider {
    * @deprecated This is a passthrough through to [[Router.current]]
    */
   get current() {
-    return this.globals.current;
+    return this.globals._current;
   }
 
   /**
@@ -48,7 +48,7 @@ export class StateProvider {
    * @deprecated This is a passthrough through to [[Router.$current]]
    */
   get $current() {
-    return this.globals.$current;
+    return this.globals._$current;
   }
 
   /* @ignore */ static $inject = ["$routerProvider", "$transitionsProvider"];
@@ -211,7 +211,7 @@ export class StateProvider {
 
     const { globals } = this;
 
-    const latestThing = () => globals.transitionHistory.peekTail();
+    const latestThing = () => globals._transitionHistory.peekTail();
 
     const latest = latestThing();
 
@@ -342,7 +342,7 @@ export class StateProvider {
    * @returns A promise representing the state of the new transition. See [[StateService.go]]
    */
   reload(reloadState) {
-    return this.transitionTo(this.globals.current, this.globals.params, {
+    return this.transitionTo(this.globals._current, this.globals._params, {
       reload: isDefined(reloadState) ? reloadState : true,
       inherit: false,
       notify: false,
@@ -426,7 +426,7 @@ export class StateProvider {
   getCurrentPath() {
     const { globals } = this;
 
-    const latestSuccess = globals.successfulTransitions.peekTail();
+    const latestSuccess = globals._successfulTransitions.peekTail();
 
     const rootPath = () => [new PathNode(this.stateRegistry.root())];
 
@@ -458,7 +458,7 @@ export class StateProvider {
    */
   transitionTo(to, toParams = {}, options = {}) {
     options = defaults(options, defaultTransOpts);
-    const getCurrent = () => this.globals.transition;
+    const getCurrent = () => this.globals._transition;
 
     options = Object.assign(options, { current: getCurrent });
     const ref = this.target(to, toParams, options);
@@ -485,13 +485,13 @@ export class StateProvider {
      */
     const rejectedTransitionHandler = (trans) => (error) => {
       if (error instanceof Rejection) {
-        const isLatest = this.globals.lastStartedTransitionId <= trans.$id;
+        const isLatest = this.globals._lastStartedTransitionId <= trans.$id;
 
         if (error.type === RejectType._IGNORED) {
           isLatest && this.urlService.update();
 
           // Consider ignored `Transition.run()` as a successful `transitionTo`
-          return Promise.resolve(this.globals.current);
+          return Promise.resolve(this.globals._current);
         }
         const { detail } = error;
 
@@ -580,7 +580,7 @@ export class StateProvider {
     return Param.equals(
       schema,
       Param.values(schema, params),
-      this.globals.params,
+      this.globals._params,
     );
   }
 
@@ -647,7 +647,7 @@ export class StateProvider {
     return Param.equals(
       schema,
       Param.values(schema, params),
-      this.globals.params,
+      this.globals._params,
     );
   }
 
@@ -685,7 +685,7 @@ export class StateProvider {
     if (!isDefined(state)) return null;
 
     if (options.inherit)
-      params = this.globals.params.$inherit(params, this.$current, state);
+      params = this.globals._params.$inherit(params, this.$current, state);
     const nav = state && options.lossy ? state.navigable : state;
 
     if (!nav || nav.url === undefined || nav.url === null) {

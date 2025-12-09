@@ -62,14 +62,9 @@ export class Glob {
     /**
      * @type {string}
      */
-    this.text = text;
+    this._text = text;
 
-    /**
-     * @type {string[]}
-     */
-    this.glob = text.split(".");
-
-    const regexpString = this.text
+    const regexpString = this._text
       .split(".")
       .map((seg) => {
         if (seg === "**") return "(?:|(?:\\.[^.]*)*)";
@@ -83,7 +78,7 @@ export class Glob {
     /**
      * @type {RegExp}
      */
-    this.regexp = new RegExp(`^${regexpString}$`);
+    this._regexp = new RegExp(`^${regexpString}$`);
   }
 
   /**
@@ -91,7 +86,7 @@ export class Glob {
    * @return {boolean}
    */
   matches(name) {
-    return this.regexp.test(`.${name}`);
+    return this._regexp.test(`.${name}`);
   }
 }
 

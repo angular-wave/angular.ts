@@ -350,8 +350,8 @@ export function $StateRefActiveDirective(
       }
       $scope.$on("$destroy", setupEventListeners());
 
-      if ($router.transition) {
-        updateAfterTransition($router.transition);
+      if ($router._transition) {
+        updateAfterTransition($router._transition);
       }
       function setupEventListeners() {
         const deregisterStatesChangedListener =

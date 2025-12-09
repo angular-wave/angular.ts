@@ -11,13 +11,13 @@ export class ViewService {
     context: import("../state/state-object.js").StateObject | null,
   ): import("../state/state-object.js").StateObject | null;
   _rootContext: any;
-  viewConfigFactory(factory: any): void;
+  _viewConfigFactory(factory: any): void;
   /**
    * @param path
    * @param decl
    * @return {import("../state/views.js").ViewConfig}
    */
-  createViewConfig(
+  _createViewConfig(
     path: any,
     decl: any,
   ): import("../state/views.js").ViewConfig;
