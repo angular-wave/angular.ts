@@ -1,4 +1,4 @@
-import { getOrSetCacheData, NodeType, setCacheData } from "../../shared/dom.js";
+import { getOrSetCacheData, setCacheData } from "../../shared/dom.js";
 import {
   extend,
   isArray,
@@ -20,6 +20,7 @@ import {
 } from "../shared.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 import { AnimateRunner } from "../runner/animate-runner.js";
+import { NodeType } from "../../shared/node.js";
 
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 

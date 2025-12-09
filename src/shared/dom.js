@@ -1,6 +1,7 @@
 import { concat, hasOwn, isArray, isDefined, isObject, keys } from "./utils.js";
 import { Cache } from "./cache.js";
 import { extractElementNode } from "../animations/shared.js";
+import { NodeType } from "./node.js";
 
 /** @type {number} */
 let elId = 1;
@@ -24,16 +25,6 @@ const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
 const SINGLE_TAG_REGEXP = /^<([\w-]+)\s*\/?>(?:<\/\1>|)$/;
 
 const TAG_NAME_REGEXP = /<([\w:-]+)/;
-
-/** @internal */
-/** @enum {number} */
-export const NodeType = {
-  _ELEMENT_NODE: Node.ELEMENT_NODE,
-  _DOCUMENT_NODE: Node.DOCUMENT_NODE,
-  _TEXT_NODE: Node.TEXT_NODE,
-  _COMMENT_NODE: Node.COMMENT_NODE,
-  _DOCUMENT_FRAGMENT_NODE: Node.DOCUMENT_FRAGMENT_NODE,
-};
 
 // Table parts need to be wrapped with `<table>` or they're
 // stripped to their contents when put in a div.

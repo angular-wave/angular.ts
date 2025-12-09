@@ -7,7 +7,7 @@ import {
   minErr,
 } from "../shared/utils.js";
 import { ASTType } from "../core/parse/ast-type.js";
-import { NodeType } from "../shared/dom.js";
+import { NodeType } from "../shared/node.js";
 
 export const ADD_CLASS_SUFFIX = "-add";
 export const REMOVE_CLASS_SUFFIX = "-remove";

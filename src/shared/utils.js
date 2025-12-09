@@ -1,5 +1,5 @@
 import { PREFIX_REGEXP, SPECIAL_CHARS_REGEXP } from "./constants.js";
-import { NodeType } from "./dom.js";
+import { NodeType } from "./node.js";
 
 export const isProxySymbol = Symbol("isProxy");
 

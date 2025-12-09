@@ -6,12 +6,12 @@ import {
   getCacheData,
   getInheritedData,
   isTextNode,
-  NodeType,
   setCacheData,
   setIsolateScope,
   setScope,
   startingTag,
 } from "../../shared/dom.js";
+import { NodeType } from "../../shared/node.js";
 import { NodeRef } from "../../shared/noderef.js";
 import { identifierForController } from "../controller/controller.js";
 import {

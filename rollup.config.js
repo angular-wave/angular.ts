@@ -39,13 +39,13 @@ const basePlugins = [resolve(), commonjs(), versionInjector()];
 export default [
   // ---- Minified UMD ----
   {
-    name: "min",
     input: baseInput,
     output: [
       {
         name: "angular",
         file: pkg.browser.replace(/\.js$/, ".min.js"),
         format: "umd",
+        sourcemap: true,
         plugins: [
           terser({
             compress: {
@@ -55,8 +55,8 @@ export default [
             mangle: {
               toplevel: true,
               properties: {
-                regex: /^_/, // match ALL private property names
-                keep_quoted: false, // allow mangling quoted keys
+                regex: /^_/,
+                keep_quoted: false,
               },
             },
           }),
@@ -70,9 +70,9 @@ export default [
     ],
     plugins: [...basePlugins],
   },
+
+  // ---- ES Module ----
   {
-    // ---- ES Module ----
-    name: "es",
     input: baseInput,
     external: ["ms"],
     output: [{ file: pkg.module, format: "es" }],
