@@ -1,4 +1,5 @@
-import { getCacheData, NodeType } from "../../shared/dom.js";
+import { getCacheData } from "../../shared/dom.js";
+import { NodeType } from "../../shared/node.js";
 import {
   assertNotHasOwnProperty,
   equals,

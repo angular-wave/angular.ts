@@ -1,5 +1,6 @@
 import { minErr } from "../../shared/utils.js";
-import { emptyElement, NodeType, startingTag } from "../../shared/dom.js";
+import { emptyElement, startingTag } from "../../shared/dom.js";
+import { NodeType } from "../../shared/node.js";
 
 /**
  * Directive that marks the insertion point for the transcluded DOM of the nearest parent directive that uses transclusion.

@@ -1,9 +1,5 @@
-import {
-  emptyElement,
-  NodeType,
-  removeElement,
-  startingTag,
-} from "../../shared/dom.js";
+import { emptyElement, removeElement, startingTag } from "../../shared/dom.js";
+import { NodeType } from "../../shared/node.js";
 import {
   equals,
   hasOwn,

@@ -1,5 +1,6 @@
 import { isArray, isString } from "./utils.js";
-import { createElementFromHTML, NodeType } from "./dom.js";
+import { createElementFromHTML } from "./dom.js";
+import { NodeType } from "./node.js";
 
 /**
  * A type-safe wrapper around a DOM Node, HTMLElement, HTML string, NodeList, or an array of Nodes.

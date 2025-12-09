@@ -1,6 +1,6 @@
 import { $injectTokens as $t } from "../../injection-tokens.js";
 import { Http } from "../../services/http/http.js";
-import { NodeType } from "../../shared/dom.js";
+import { NodeType } from "../../shared/node.js";
 import {
   callBackAfterFirst,
   isDefined,
