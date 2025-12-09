@@ -16,6 +16,7 @@ export class AST {
       type: number;
     };
   };
+  _index: number;
   /**
    * Parses the input text and generates an AST.
    * @param {string} text - The input text to parse.
@@ -143,16 +144,6 @@ export class AST {
    * @returns {import('../lexer/lexer.js').Token|boolean} The next token if it matches, otherwise false.
    */
   _peek(...expected: string[]): import("../lexer/lexer.js").Token | boolean;
-  /**
-   * Checks if the token at the specified index matches any of the expected types.
-   * @param {number} i - The index to check.
-   * @param {...string} [expected] - The expected token types.
-   * @returns {import("../lexer/lexer.js").Token|boolean} The token at the specified index if it matches, otherwise false.
-   */
-  _peekAhead(
-    i: number,
-    ...expected: string[]
-  ): import("../lexer/lexer.js").Token | boolean;
   /**
    * Consumes the next token if it matches any of the expected types.
    * @param {...string} [expected] - The expected token types.
