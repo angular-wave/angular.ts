@@ -91,6 +91,7 @@ import { ServiceProvider as TServiceProvider } from "./interface.ts";
 import { NgModelController as TNgModelController } from "./directive/model/model.js";
 import { RouterProvider } from "./router/router.ts";
 import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.js";
+import { AnimateProvider as TAnimateProvider } from "./animations/animate.js";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -117,6 +118,7 @@ declare global {
     type BoundTranscludeFn = TBoundTranscludeFn;
     type LinkFnMapping = TLinkFnMapping;
     type AnchorScrollProvider = TAnchorScrollProvider;
+    type AnimateProvider = TAnimateProvider;
     type InterpolateProvider = TInterpolateProvider;
     type HttpParamSerializerProvider = THttpParamSerializerProvider;
     type SceProvider = TSceProvider;
