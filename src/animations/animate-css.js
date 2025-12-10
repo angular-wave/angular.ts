@@ -15,21 +15,8 @@ import { AnimateRunner } from "./runner/animate-runner.js";
 import {
   ACTIVE_CLASS_SUFFIX,
   ADD_CLASS_SUFFIX,
-  ANIMATIONEND_EVENT,
-  ANIMATION_DELAY_PROP,
-  ANIMATION_DURATION_PROP,
-  ANIMATION_ITERATION_COUNT_KEY,
-  ANIMATION_PROP,
-  DURATION_KEY,
   EVENT_CLASS_PREFIX,
-  PROPERTY_KEY,
   REMOVE_CLASS_SUFFIX,
-  SAFE_FAST_FORWARD_DURATION_VALUE,
-  TIMING_KEY,
-  TRANSITIONEND_EVENT,
-  TRANSITION_DELAY_PROP,
-  TRANSITION_DURATION_PROP,
-  TRANSITION_PROP,
   applyAnimationClassesFactory,
   applyAnimationFromStyles,
   applyAnimationStyles,
@@ -46,34 +33,34 @@ const ANIMATE_TIMER_KEY = $injectTokens._animateCss;
 
 const ONE_SECOND = 1000;
 
+const SAFE_FAST_FORWARD_DURATION_VALUE = 9999;
+
 const ELAPSED_TIME_MAX_DECIMAL_PLACES = 3;
 
 const CLOSING_TIME_BUFFER = 1.5;
 
 const DETECT_CSS_PROPERTIES = {
-  transitionDuration: TRANSITION_DURATION_PROP,
-  transitionDelay: TRANSITION_DELAY_PROP,
-  transitionProperty: TRANSITION_PROP + PROPERTY_KEY,
-  animationDuration: ANIMATION_DURATION_PROP,
-  animationDelay: ANIMATION_DELAY_PROP,
-  animationIterationCount: ANIMATION_PROP + ANIMATION_ITERATION_COUNT_KEY,
+  transitionDuration: "transitionDuration",
+  transitionDelay: "transitionDelay",
+  transitionProperty: "transitionProperty",
+  animationDuration: "animationDuration",
+  animationDelay: "animationDelay",
+  animationIterationCount: "animationIterationCount",
 };
 
 const DETECT_STAGGER_CSS_PROPERTIES = {
-  transitionDuration: TRANSITION_DURATION_PROP,
-  transitionDelay: TRANSITION_DELAY_PROP,
-  animationDuration: ANIMATION_DURATION_PROP,
-  animationDelay: ANIMATION_DELAY_PROP,
+  transitionDuration: "transitionDuration",
+  transitionDelay: "transitionDelay",
+  animationDuration: "animationDuration",
+  animationDelay: "animationDelay",
 };
 
 function getCssKeyframeDurationStyle(duration) {
-  return [ANIMATION_DURATION_PROP, `${duration}s`];
+  return ["animationDuration", `${duration}s`];
 }
 
 function getCssDelayStyle(delay, isKeyframeAnimation) {
-  const prop = isKeyframeAnimation
-    ? ANIMATION_DELAY_PROP
-    : TRANSITION_DELAY_PROP;
+  const prop = isKeyframeAnimation ? "animationDelay" : "transitionDelay";
 
   return [prop, `${delay}s`];
 }
@@ -128,12 +115,12 @@ function truthyTimingValue(val) {
 }
 
 function getCssTransitionDurationStyle(duration, applyOnlyDuration) {
-  let style = TRANSITION_PROP;
+  let style = "transition";
 
   let value = `${duration}s`;
 
   if (applyOnlyDuration) {
-    style += DURATION_KEY;
+    style += "Duration";
   } else {
     value += " linear all";
   }
@@ -445,14 +432,14 @@ export function AnimateCssProvider() {
         let applyOnlyDuration;
 
         if (options.transitionStyle) {
-          const transitionStyle = [TRANSITION_PROP, options.transitionStyle];
+          const transitionStyle = ["transition", options.transitionStyle];
 
           applyInlineStyle(node, transitionStyle);
           temporaryStyles.push(transitionStyle);
         }
 
         if (options.duration >= 0) {
-          applyOnlyDuration = node.style[TRANSITION_PROP].length > 0;
+          applyOnlyDuration = node.style.transition.length > 0;
           const durationStyle = getCssTransitionDurationStyle(
             options.duration,
             applyOnlyDuration,
@@ -465,7 +452,7 @@ export function AnimateCssProvider() {
         }
 
         if (options.keyframeStyle) {
-          const keyframeStyle = [ANIMATION_PROP, options.keyframeStyle];
+          const keyframeStyle = ["animation", options.keyframeStyle];
 
           applyInlineStyle(node, keyframeStyle);
           temporaryStyles.push(keyframeStyle);
@@ -523,8 +510,7 @@ export function AnimateCssProvider() {
           if (flags.applyTransitionDuration) {
             flags.hasTransitions = true;
             timings.transitionDuration = maxDuration;
-            applyOnlyDuration =
-              node.style[TRANSITION_PROP + PROPERTY_KEY].length > 0;
+            applyOnlyDuration = node.style.transitionProperty.length > 0;
             temporaryStyles.push(
               getCssTransitionDurationStyle(maxDuration, applyOnlyDuration),
             );
@@ -896,24 +882,24 @@ export function AnimateCssProvider() {
               const easeVal = options.easing;
 
               if (flags.hasTransitions) {
-                easeProp = TRANSITION_PROP + TIMING_KEY;
+                easeProp = "transitionTimingFunction";
                 temporaryStyles.push([easeProp, easeVal]);
                 node.style[easeProp] = easeVal;
               }
 
               if (flags.hasAnimations) {
-                easeProp = ANIMATION_PROP + TIMING_KEY;
+                easeProp = "animationTimingFunction";
                 temporaryStyles.push([easeProp, easeVal]);
                 node.style[easeProp] = easeVal;
               }
             }
 
             if (timings.transitionDuration) {
-              events.push(TRANSITIONEND_EVENT);
+              events.push("transitionend");
             }
 
             if (timings.animationDuration) {
-              events.push(ANIMATIONEND_EVENT);
+              events.push("animationend");
             }
 
             startTime = Date.now();
@@ -993,7 +979,7 @@ function blockTransitions(node, duration) {
   // same element which makes this safe for class-based animations
   const value = duration ? `-${duration}s` : "";
 
-  applyInlineStyle(node, [TRANSITION_DELAY_PROP, value]);
+  applyInlineStyle(node, ["transitionDelay", value]);
 
-  return [TRANSITION_DELAY_PROP, value];
+  return ["transitionDelay", value];
 }

@@ -6,7 +6,6 @@ import {
   keys,
   minErr,
 } from "../shared/utils.js";
-import { ASTType } from "../core/parse/ast-type.js";
 import { NodeType } from "../shared/node.js";
 
 export const ADD_CLASS_SUFFIX = "-add";
@@ -17,25 +16,6 @@ export const PREPARE_CLASS_SUFFIX = "-prepare";
 
 export const NG_ANIMATE_CLASSNAME = "ng-animate";
 export const NG_ANIMATE_CHILDREN_DATA = "$$ngAnimateChildren";
-
-// Detect proper transitionend/animationend event names.
-export const TRANSITION_PROP = "transition";
-export const TRANSITIONEND_EVENT = "transitionend";
-export const ANIMATION_PROP = "animation";
-export const ANIMATIONEND_EVENT = "animationend";
-
-export const DURATION_KEY = "Duration";
-export const PROPERTY_KEY = ASTType._Property;
-export const DELAY_KEY = "Delay";
-export const TIMING_KEY = "TimingFunction";
-export const ANIMATION_ITERATION_COUNT_KEY = "IterationCount";
-export const ANIMATION_PLAYSTATE_KEY = "PlayState";
-export const SAFE_FAST_FORWARD_DURATION_VALUE = 9999;
-
-export const ANIMATION_DELAY_PROP = ANIMATION_PROP + DELAY_KEY;
-export const ANIMATION_DURATION_PROP = ANIMATION_PROP + DURATION_KEY;
-export const TRANSITION_DELAY_PROP = TRANSITION_PROP + DELAY_KEY;
-export const TRANSITION_DURATION_PROP = TRANSITION_PROP + DURATION_KEY;
 
 export const ngMinErr = minErr("ng");
 export function assertArg(arg, name, reason) {
@@ -352,7 +332,7 @@ export function clearGeneratedClasses(element, options) {
 export function blockKeyframeAnimations(node, applyBlock) {
   const value = applyBlock ? "paused" : "";
 
-  const key = ANIMATION_PROP + ANIMATION_PLAYSTATE_KEY;
+  const key = `animationPlayState`;
 
   applyInlineStyle(node, [key, value]);
 
