@@ -1,6 +1,12 @@
-export function AnimateJsProvider($animateProvider: any): void;
+/**
+ * @param {ng.AnimateProvider} $animateProvider
+ */
+export function AnimateJsProvider($animateProvider: ng.AnimateProvider): void;
 export class AnimateJsProvider {
-  constructor($animateProvider: any);
+  /**
+   * @param {ng.AnimateProvider} $animateProvider
+   */
+  constructor($animateProvider: ng.AnimateProvider);
   $get: (
     | string
     | (($injector: ng.InjectorService) => (

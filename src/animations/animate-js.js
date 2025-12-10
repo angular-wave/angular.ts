@@ -4,16 +4,19 @@ import {
   applyAnimationStyles,
   prepareAnimationOptions,
 } from "./shared.js";
-import { $injectTokens as $t } from "../injection-tokens.js";
+import { $injectTokens, provider } from "../injection-tokens.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 
 // TODO: use caching here to speed things up for detection
 // TODO: add documentation
 
-AnimateJsProvider.$inject = [`${$t._animate}Provider`];
+AnimateJsProvider.$inject = provider([$injectTokens._animate]);
+/**
+ * @param {ng.AnimateProvider} $animateProvider
+ */
 export function AnimateJsProvider($animateProvider) {
   this.$get = [
-    $t._injector,
+    $injectTokens._injector,
     /**
      *
      * @param {ng.InjectorService} $injector

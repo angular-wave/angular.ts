@@ -95,6 +95,7 @@ import { ServiceProvider as TServiceProvider } from "./interface.ts";
 import { NgModelController as TNgModelController } from "./directive/model/model.js";
 import { RouterProvider } from "./router/router.ts";
 import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.js";
+import { AnimateProvider as TAnimateProvider } from "./animations/animate.js";
 
 /* ────────────────────────────────────────────────
    Runtime global initialization
@@ -135,6 +136,7 @@ declare global {
 
     // Providers
     export type AnchorScrollProvider = TAnchorScrollProvider;
+    export type AnimateProvider = TAnimateProvider;
     export type InterpolateProvider = TInterpolateProvider;
     export type HttpParamSerializerProvider = THttpParamSerializerProvider;
     export type SceProvider = TSceProvider;
