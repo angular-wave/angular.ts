@@ -14,7 +14,7 @@ build: version
 	@npm i
 	./node_modules/.bin/rollup -c
 
-check-size:
+size:
 	./node_modules/.bin/rollup -c --configName min --silent
 	@echo "Minified build output:  $$(stat -c %s dist/angular-ts.umd.min.js) ~ $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
 	@echo "Expected gzip:          $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"

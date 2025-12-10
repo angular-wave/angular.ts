@@ -214,10 +214,10 @@ export class Angular {
     const injector = createInjector(this._bootsrappedModules, config.strictDi);
 
     injector.invoke([
-      $t.$rootScope,
-      $t.$rootElement,
-      $t.$compile,
-      $t.$injector,
+      $t._rootScope,
+      $t._rootElement,
+      $t._compile,
+      $t._injector,
       /**
        * @param {ng.Scope} scope
        * @param {Element} el
@@ -249,7 +249,7 @@ export class Angular {
         }
 
         $injector
-          .get($t.$stateRegistry)
+          .get($t._stateRegistry)
           .get()
           .map((x) => x.$$state().resolvables)
           .reduce(unnestR, [])

@@ -34,7 +34,7 @@ import { $injectTokens as $t } from "../../injection-tokens.js";
  *
  */
 export const requiredDirective = [
-  $t.$parse,
+  $t._parse,
   /**
    * @param {import("../../core/parse/interface.ts").ParseService} $parse
    * @returns {import("../../interface.ts").Directive}
@@ -115,7 +115,7 @@ export const requiredDirective = [
  * </div>
  */
 export const patternDirective = [
-  $t.$parse,
+  $t._parse,
   /**
    * @param {import("../../core/parse/interface.ts").ParseService} $parse
    * @returns {import("../../interface.ts").Directive}
@@ -215,7 +215,7 @@ export const patternDirective = [
  *
  */
 export const maxlengthDirective = [
-  $t.$parse,
+  $t._parse,
   /**
    * @param {ng.ParseService} $parse
    * @returns {ng.Directive}
@@ -288,7 +288,7 @@ export const maxlengthDirective = [
  *
  */
 export const minlengthDirective = [
-  $t.$parse,
+  $t._parse,
   ($parse) => ({
     restrict: "A",
     require: "?ngModel",

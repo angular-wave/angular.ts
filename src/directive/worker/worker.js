@@ -2,7 +2,7 @@ import { $injectTokens as $t } from "../../injection-tokens.js";
 import { callBackAfterFirst, isDefined, wait } from "../../shared/utils.js";
 import { getEventNameForElement } from "../http/http.js";
 
-ngWorkerDirective.$inject = [$t.$parse, $t.$log, $t.$exceptionHandler];
+ngWorkerDirective.$inject = [$t._parse, $t._log, $t._exceptionHandler];
 /**
  * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
  *

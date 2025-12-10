@@ -37,10 +37,10 @@ export function AnimationProvider() {
   }
 
   this.$get = [
-    $t.$rootScope,
-    $t.$injector,
-    $t.$$rAFScheduler,
-    $t.$$animateCache,
+    $t._rootScope,
+    $t._injector,
+    $t._rAFScheduler,
+    $t._animateCache,
     /**
      *
      * @param {ng.RootScopeService} $rootScope

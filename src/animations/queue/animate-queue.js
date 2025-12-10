@@ -18,7 +18,7 @@ import {
   prepareAnimationOptions,
   stripCommentsFromElement,
 } from "../shared.js";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+import { $injectTokens as $t, provider } from "../../injection-tokens.js";
 import { AnimateRunner } from "../runner/animate-runner.js";
 import { NodeType } from "../../shared/node.js";
 
@@ -26,7 +26,7 @@ const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 
 const NG_ANIMATE_PIN_DATA = "$ngAnimatePin";
 
-AnimateQueueProvider.$inject = ["$animateProvider"];
+AnimateQueueProvider.$inject = provider([$t._animate]);
 export function AnimateQueueProvider($animateProvider) {
   const PRE_DIGEST_STATE = 1;
 
@@ -158,9 +158,9 @@ export function AnimateQueueProvider($animateProvider) {
   });
 
   this.$get = [
-    $t.$rootScope,
-    $t.$injector,
-    $t.$$animation,
+    $t._rootScope,
+    $t._injector,
+    $t._animation,
     /**
      *
      * @param {ng.RootScopeService} $rootScope

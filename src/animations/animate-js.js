@@ -10,10 +10,10 @@ import { AnimateRunner } from "./runner/animate-runner.js";
 // TODO: use caching here to speed things up for detection
 // TODO: add documentation
 
-AnimateJsProvider.$inject = [`${$t.$animate}Provider`];
+AnimateJsProvider.$inject = [`${$t._animate}Provider`];
 export function AnimateJsProvider($animateProvider) {
   this.$get = [
-    $t.$injector,
+    $t._injector,
     /**
      *
      * @param {ng.InjectorService} $injector

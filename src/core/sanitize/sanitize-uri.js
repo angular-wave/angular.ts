@@ -60,7 +60,7 @@ export class SanitizeUriProvider {
    * @returns {import("./interface.ts").SanitizerFn}
    */
   $get = [
-    $injectTokens.$window,
+    $injectTokens._window,
     /** @param {ng.WindowService} $window */
     ($window) => {
       return /** @type {import("./interface.ts").SanitizerFn} */ (

@@ -55,7 +55,7 @@ export class StateProvider {
 
   /**
    *
-   * @param {import('../router.js').Router} globals
+   * @param {import('../router.js').RouterProvider} globals
    * @param {*} transitionService
    * @param {import('../../core/di/internal-injector.js').InjectorService} $injector
    */

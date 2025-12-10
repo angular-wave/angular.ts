@@ -16,8 +16,8 @@ export const ngEventDirectives = {};
     const directiveName = directiveNormalize(`ng-${eventName}`);
 
     ngEventDirectives[directiveName] = [
-      $t.$parse,
-      $t.$exceptionHandler,
+      $t._parse,
+      $t._exceptionHandler,
 
       /**
        * @param {ng.ParseService} $parse

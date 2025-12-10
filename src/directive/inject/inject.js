@@ -1,6 +1,6 @@
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
-ngInjectDirective.$inject = [$t.$log, $t.$injector];
+ngInjectDirective.$inject = [$t._log, $t._injector];
 
 /**
  * @param {ng.LogService} $log

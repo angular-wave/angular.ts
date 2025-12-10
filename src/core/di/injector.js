@@ -16,7 +16,7 @@ import { createPersistentProxy } from "../../services/storage/storage.js";
 import { $injectTokens } from "../../injection-tokens.js";
 import { validateArray } from "../../shared/validate.js";
 
-const $injectorMinErr = minErr($injectTokens.$injector);
+const $injectorMinErr = minErr($injectTokens._injector);
 
 const providerSuffix = "Provider";
 
@@ -60,7 +60,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
 
   const runBlocks = loadModules(modulesToLoad);
 
-  instanceInjector = protoInstanceInjector.get($injectTokens.$injector);
+  instanceInjector = protoInstanceInjector.get($injectTokens._injector);
 
   runBlocks.forEach((fn) => fn && instanceInjector.invoke(fn));
 
@@ -136,7 +136,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
    */
   function service(name, constructor) {
     return factory(name, [
-      $injectTokens.$injector,
+      $injectTokens._injector,
       ($injector) => $injector.instantiate(constructor),
     ]);
   }
@@ -210,7 +210,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
           case "cookie": {
             const instance = $injector.instantiate(ctor);
 
-            const $cookie = $injector.get($injectTokens.$cookie);
+            const $cookie = $injector.get($injectTokens._cookie);
 
             const serialize = backendOrConfig.serialize ?? JSON.stringify;
 

@@ -71,12 +71,12 @@ export class NgModelController {
   static $nonscope = true;
   /* @ignore */ static $inject = [
     "$scope",
-    $t.$exceptionHandler,
+    $t._exceptionHandler,
     "$attrs",
     "$element",
-    $t.$parse,
-    $t.$animate,
-    $t.$interpolate,
+    $t._parse,
+    $t._animate,
+    $t._interpolate,
   ];
 
   /**

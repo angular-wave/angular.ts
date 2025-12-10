@@ -424,9 +424,9 @@ export function HttpProvider() {
   const that = this;
 
   this.$get = [
-    $t.$injector,
-    $t.$sce,
-    $t.$cookie,
+    $t._injector,
+    $t._sce,
+    $t._cookie,
     /**
      *
      * @param {ng.InjectorService} $injector

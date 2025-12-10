@@ -182,7 +182,7 @@ export class RestProvider {
    * @returns {(baseUrl:string, entityClass?:Function, options?:object) => RestService & { get(name:string): RestService, listNames(): string[] }}
    */
   $get = [
-    $injectTokens.$http,
+    $injectTokens._http,
     ($http) => {
       const services = new Map();
 

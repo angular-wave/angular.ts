@@ -25,8 +25,8 @@ export class AnchorScrollProvider {
   }
 
   $get = [
-    $t.$location,
-    $t.$rootScope,
+    $t._location,
+    $t._rootScope,
     /**
      *
      * @param {import('../../services/location/location.js').Location} $location

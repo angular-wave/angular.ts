@@ -20,7 +20,7 @@ const SUFFIX = "Filter";
  * @extends {ng.ServiceProvider}
  */
 export class FilterProvider {
-  /* @ignore */ static $inject = [$t.$provide];
+  /* @ignore */ static $inject = [$t._provide];
 
   /**
    * @param {ng.ProvideService} $provide
@@ -55,7 +55,7 @@ export class FilterProvider {
   }
 
   $get = [
-    $t.$injector,
+    $t._injector,
     /**
      * @param {ng.InjectorService} $injector
      * @returns {ng.FilterService}

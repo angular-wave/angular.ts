@@ -1,3 +1,4 @@
+import { $injectTokens } from "../injection-tokens.js";
 import {
   getCacheData,
   removeElementData,
@@ -41,7 +42,7 @@ import {
   removeFromArray,
 } from "./shared.js";
 
-const ANIMATE_TIMER_KEY = "$$animateCss";
+const ANIMATE_TIMER_KEY = $injectTokens._animateCss;
 
 const ONE_SECOND = 1000;
 
@@ -161,8 +162,8 @@ export function AnimateCssProvider() {
   let activeClasses;
 
   this.$get = [
-    "$$animateCache",
-    "$$rAFScheduler",
+    $injectTokens._animateCache,
+    $injectTokens._rAFScheduler,
 
     /**
      *

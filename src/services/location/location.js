@@ -544,9 +544,9 @@ export class LocationProvider {
   }
 
   $get = [
-    $t.$rootScope,
-    $t.$rootElement,
-    $t.$exceptionHandler,
+    $t._rootScope,
+    $t._rootElement,
+    $t._exceptionHandler,
     /**
      *
      * @param {ng.Scope} $rootScope

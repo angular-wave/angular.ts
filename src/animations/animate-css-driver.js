@@ -1,3 +1,4 @@
+import { $injectTokens, provider } from "../injection-tokens.js";
 import { isString } from "../shared/utils.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 import { concatWithSpace } from "./shared.js";
@@ -10,9 +11,9 @@ const NG_OUT_ANCHOR_CLASS_NAME = "ng-anchor-out";
 
 const NG_IN_ANCHOR_CLASS_NAME = "ng-anchor-in";
 
-AnimateCssDriverProvider.$inject = ["$$animationProvider"];
+AnimateCssDriverProvider.$inject = provider([$injectTokens._animation]);
 export function AnimateCssDriverProvider($$animationProvider) {
-  $$animationProvider.drivers.push("$$animateCssDriver");
+  $$animationProvider.drivers.push($injectTokens._animateCssDriver);
 
   function isDocumentFragment(node) {
     // eslint-disable-next-line no-magic-numbers
@@ -23,8 +24,8 @@ export function AnimateCssDriverProvider($$animationProvider) {
    * @returns {Function}
    */
   this.$get = [
-    "$animateCss",
-    "$rootElement",
+    $injectTokens._animateCss,
+    $injectTokens._rootElement,
     /**
      *
      * @param {*} $animateCss

@@ -10,13 +10,13 @@ export class StateRegistryProvider {
   /**
    * @param urlService
    * @param stateService
-   * @param {import('../router.js').Router} globals
+   * @param {import('../router.js').RouterProvider} globals
    * @param viewService
    */
   constructor(
     urlService: any,
     stateService: any,
-    globals: import("../router.js").Router,
+    globals: import("../router.js").RouterProvider,
     viewService: any,
   );
   states: {};

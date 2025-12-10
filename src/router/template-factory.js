@@ -28,10 +28,10 @@ export class TemplateFactoryProvider {
   }
 
   $get = [
-    $t.$http,
-    $t.$templateCache,
-    $t.$templateRequest,
-    $t.$injector,
+    $t._http,
+    $t._templateCache,
+    $t._templateRequest,
+    $t._injector,
     /**
      * @param {ng.HttpService} $http
      * @param {ng.TemplateCacheService} $templateCache

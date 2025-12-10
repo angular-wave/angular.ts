@@ -47,7 +47,7 @@ import {
 } from "../../directive/events/events.js";
 import { Attributes } from "./attributes.js";
 import { ngObserveDirective } from "../../directive/observe/observe.js";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
 
 const $compileMinErr = minErr("$compile");
 
@@ -67,7 +67,7 @@ const valueFn = (value) => () => value;
 export const DirectiveSuffix = "Directive";
 
 export class CompileProvider {
-  /* @ignore */ static $inject = [$t.$provide, $t.$$sanitizeUriProvider];
+  /* @ignore */ static $inject = [$t._provide, $t._sanitizeUriProvider];
 
   /**
    * @param {import('../../interface.ts').Provider} $provide
@@ -231,8 +231,8 @@ export class CompileProvider {
         if (!hasOwn(hasDirectives, name)) {
           hasDirectives[name] = [];
           $provide.factory(name + DirectiveSuffix, [
-            "$injector",
-            "$exceptionHandler",
+            $injectTokens._injector,
+            $injectTokens._exceptionHandler,
             /**
              * @param {ng.InjectorService} $injector
              * @param {ng.ExceptionHandlerService} $exceptionHandler
@@ -392,7 +392,7 @@ export class CompileProvider {
         }
       });
 
-      factory.$inject = ["$injector"];
+      factory.$inject = [$injectTokens._injector];
 
       return this.directive(name, factory);
     };
@@ -573,15 +573,15 @@ export class CompileProvider {
     })();
 
     this.$get = [
-      "$injector",
-      "$interpolate",
-      "$exceptionHandler",
-      "$templateRequest",
-      "$parse",
-      "$controller",
-      "$rootScope",
-      "$sce",
-      "$animate",
+      $t._injector,
+      $t._interpolate,
+      $t._exceptionHandler,
+      $t._templateRequest,
+      $t._parse,
+      $t._controller,
+      $t._rootScope,
+      $t._sce,
+      $t._animate,
       /**
        * @param {ng.InjectorService} $injector
        * @param {*} $interpolate

@@ -19,44 +19,10 @@ export const NG_ANIMATE_CLASSNAME = "ng-animate";
 export const NG_ANIMATE_CHILDREN_DATA = "$$ngAnimateChildren";
 
 // Detect proper transitionend/animationend event names.
-export let CSS_PREFIX = "";
-export let TRANSITION_PROP;
-export let TRANSITIONEND_EVENT;
-export let ANIMATION_PROP;
-export let ANIMATIONEND_EVENT;
-
-// If unprefixed events are not supported but webkit-prefixed are, use the latter.
-// Otherwise, just use W3C names, browsers not supporting them at all will just ignore them.
-// Note: Chrome implements `window.onwebkitanimationend` and doesn't implement `window.onanimationend`
-// but at the same time dispatches the `animationend` event and not `webkitAnimationEnd`.
-// Register both events in case `window.onanimationend` is not supported because of that,
-// do the same for `transitionend` as Safari is likely to exhibit similar behavior.
-// Also, the only modern browser that uses vendor prefixes for transitions/keyframes is webkit
-// therefore there is no reason to test anymore for other vendor prefixes:
-// http://caniuse.com/#search=transition
-if (
-  window.ontransitionend === undefined &&
-  window.onwebkittransitionend !== undefined
-) {
-  CSS_PREFIX = "-webkit-";
-  TRANSITION_PROP = "WebkitTransition";
-  TRANSITIONEND_EVENT = "webkitTransitionEnd transitionend";
-} else {
-  TRANSITION_PROP = "transition";
-  TRANSITIONEND_EVENT = "transitionend";
-}
-
-if (
-  window.onanimationend === undefined &&
-  window.onwebkitanimationend !== undefined
-) {
-  CSS_PREFIX = "-webkit-";
-  ANIMATION_PROP = "WebkitAnimation";
-  ANIMATIONEND_EVENT = "webkitAnimationEnd animationend";
-} else {
-  ANIMATION_PROP = "animation";
-  ANIMATIONEND_EVENT = "animationend";
-}
+export const TRANSITION_PROP = "transition";
+export const TRANSITIONEND_EVENT = "transitionend";
+export const ANIMATION_PROP = "animation";
+export const ANIMATIONEND_EVENT = "animationend";
 
 export const DURATION_KEY = "Duration";
 export const PROPERTY_KEY = ASTType._Property;

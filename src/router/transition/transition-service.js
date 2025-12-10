@@ -63,10 +63,10 @@ export const defaultTransOpts = {
  * This API is located at `router.transitionService` ([[UIRouter.transitionService]])
  */
 export class TransitionProvider {
-  /* @ignore */ static $inject = provider([$t.$router, $t.$view]);
+  /* @ignore */ static $inject = provider([$t._router, $t._view]);
 
   /**
-   * @param {import('../router.js').Router} globals
+   * @param {import('../router.js').RouterProvider} globals
    * @param viewService
    */
   constructor(globals, viewService) {
@@ -87,10 +87,10 @@ export class TransitionProvider {
   }
 
   $get = [
-    $t.$state,
-    $t.$url,
-    $t.$stateRegistry,
-    $t.$view,
+    $t._state,
+    $t._url,
+    $t._stateRegistry,
+    $t._view,
     (stateService, urlService, stateRegistry, viewService) => {
       // Lazy load state trees
       this._deregisterHookFns.lazyLoad = registerLazyLoadHook(

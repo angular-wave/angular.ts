@@ -22,10 +22,10 @@ import { $injectTokens as $t, provider } from "../../injection-tokens.js";
  */
 export class UrlService {
   /* @ignore */ static $inject = provider([
-    $t.$location,
-    $t.$state,
-    $t.$router,
-    $t.$urlConfig,
+    $t._location,
+    $t._state,
+    $t._router,
+    $t._urlConfig,
   ]);
 
   /** @type {import("../../services/location/location").Location} */
@@ -34,7 +34,7 @@ export class UrlService {
   /**
    * @param {import("../../services/location/location").LocationProvider} $locationProvider
    * @param {import("../../router/state/state-service.js").StateProvider} stateService
-   * @param {import("../router.js").Router} globals
+   * @param {import("../router.js").RouterProvider} globals
    * @param {import("../../router/url/url-config.js").UrlConfigProvider} urlConfigProvider
    */
   constructor($locationProvider, stateService, globals, urlConfigProvider) {
@@ -96,8 +96,8 @@ export class UrlService {
   }
 
   $get = [
-    $t.$location,
-    $t.$rootScope,
+    $t._location,
+    $t._rootScope,
     /**
      *
      * @param {ng.LocationService} $location

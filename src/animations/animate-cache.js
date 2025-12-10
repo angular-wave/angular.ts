@@ -84,6 +84,8 @@ export function animateCache() {
   };
 }
 
-export function AnimateCacheProvider() {
-  this.$get = [animateCache];
+export class AnimateCacheProvider {
+  $get() {
+    return animateCache();
+  }
 }

@@ -68,7 +68,7 @@ export class NgModule {
   value(name, object) {
     validate(isString, name, "name");
 
-    this._invokeQueue.push([$t.$provide, "value", [name, object]]);
+    this._invokeQueue.push([$t._provide, "value", [name, object]]);
 
     return this;
   }
@@ -82,7 +82,7 @@ export class NgModule {
     validate(isString, name, "name");
     validate(isDefined, object, "object");
 
-    this._invokeQueue.unshift([$t.$provide, "constant", [name, object]]);
+    this._invokeQueue.unshift([$t._provide, "constant", [name, object]]);
 
     return this;
   }
@@ -95,7 +95,7 @@ export class NgModule {
   config(configFn) {
     validate(isInjectable, configFn, "configFn");
 
-    this._configBlocks.push([$t.$injector, "invoke", [configFn]]);
+    this._configBlocks.push([$t._injector, "invoke", [configFn]]);
 
     return this;
   }
@@ -121,7 +121,7 @@ export class NgModule {
     validate(isString, name, "name");
     validate(isDefined, options, "object");
 
-    this._invokeQueue.push([$t.$compileProvider, "component", [name, options]]);
+    this._invokeQueue.push([$t._compileProvider, "component", [name, options]]);
 
     return this;
   }
@@ -134,7 +134,7 @@ export class NgModule {
   factory(name, providerFunction) {
     validate(isString, name, "name");
     validateRequired(providerFunction, "providerFunction");
-    this._invokeQueue.push([$t.$provide, "factory", [name, providerFunction]]);
+    this._invokeQueue.push([$t._provide, "factory", [name, providerFunction]]);
 
     return this;
   }
@@ -148,7 +148,7 @@ export class NgModule {
     validate(isString, name, "name");
     validateRequired(serviceFunction, "serviceFunction");
     this._services.push(name);
-    this._invokeQueue.push([$t.$provide, "service", [name, serviceFunction]]);
+    this._invokeQueue.push([$t._provide, "service", [name, serviceFunction]]);
 
     return this;
   }
@@ -161,7 +161,7 @@ export class NgModule {
   provider(name, providerType) {
     validate(isString, name, "name");
     validateRequired(providerType, "providerType");
-    this._invokeQueue.push([$t.$provide, "provider", [name, providerType]]);
+    this._invokeQueue.push([$t._provide, "provider", [name, providerType]]);
 
     return this;
   }
@@ -174,7 +174,7 @@ export class NgModule {
   decorator(name, decorFn) {
     validate(isString, name, "name");
     validateRequired(decorFn, "decorFn");
-    this._configBlocks.push([$t.$provide, "decorator", [name, decorFn]]);
+    this._configBlocks.push([$t._provide, "decorator", [name, decorFn]]);
 
     return this;
   }
@@ -188,7 +188,7 @@ export class NgModule {
     validate(isString, name, "name");
     validateRequired(directiveFactory, "directiveFactory");
     this._invokeQueue.push([
-      $t.$compileProvider,
+      $t._compileProvider,
       "directive",
       [name, directiveFactory],
     ]);
@@ -205,7 +205,7 @@ export class NgModule {
     validate(isString, name, "name");
     validateRequired(animationFactory, "animationFactory");
     this._invokeQueue.push([
-      $t.$animateProvider,
+      $t._animateProvider,
       "register",
       [name, animationFactory],
     ]);
@@ -221,7 +221,7 @@ export class NgModule {
   filter(name, filterFn) {
     validate(isString, name, "name");
     validate(isFunction, filterFn, `filterFn`);
-    this._invokeQueue.push([$t.$filterProvider, "register", [name, filterFn]]);
+    this._invokeQueue.push([$t._filterProvider, "register", [name, filterFn]]);
 
     return this;
   }
@@ -237,7 +237,7 @@ export class NgModule {
   controller(name, ctlFn) {
     validate(isString, name, "name");
     validateRequired(ctlFn, `fictlFnlterFn`);
-    this._invokeQueue.push([$t.$controllerProvider, "register", [name, ctlFn]]);
+    this._invokeQueue.push([$t._controllerProvider, "register", [name, ctlFn]]);
 
     return this;
   }
@@ -269,7 +269,7 @@ export class NgModule {
     const raw = !!opts.raw;
 
     this._invokeQueue.push([
-      $t.$provide,
+      $t._provide,
       "provider",
       [
         name,
@@ -298,7 +298,7 @@ export class NgModule {
     validate(isString, name, "name");
     validate(isString, scriptPath, "scriptPath");
     this._invokeQueue.push([
-      $t.$provide,
+      $t._provide,
       "provider",
       [
         name,
@@ -322,7 +322,7 @@ export class NgModule {
     validate(isString, name, "name");
     validateRequired(ctor, "ctor");
     this._invokeQueue.push([
-      $t.$provide,
+      $t._provide,
       "store",
       [name, isObject(ctor) ? () => ctor : ctor, type, backendOrConfig],
     ]);
@@ -349,12 +349,12 @@ export class NgModule {
 
     // push provider/factory to invokeQueue
     this._invokeQueue.push([
-      $t.$provide,
+      $t._provide,
       "factory",
       [
         name,
         [
-          $t.$rest,
+          $t._rest,
           /** @param {(baseUrl:string, entityClass?:Function, options?:object) => ng.RestService<T, ID>} $rest */ (
             $rest,
           ) => $rest(url, entityClass, options),

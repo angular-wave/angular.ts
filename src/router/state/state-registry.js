@@ -17,16 +17,16 @@ import { $injectTokens as $t, provider } from "../../injection-tokens.js";
  */
 export class StateRegistryProvider {
   /* @ignore */ static $inject = provider([
-    $t.$url,
-    $t.$state,
-    $t.$router,
-    $t.$view,
+    $t._url,
+    $t._state,
+    $t._router,
+    $t._view,
   ]);
 
   /**
    * @param urlService
    * @param stateService
-   * @param {import('../router.js').Router} globals
+   * @param {import('../router.js').RouterProvider} globals
    * @param viewService
    */
   constructor(urlService, stateService, globals, viewService) {
@@ -61,7 +61,7 @@ export class StateRegistryProvider {
   }
 
   $get = [
-    $t.$injector,
+    $t._injector,
     /**
      * @param {import("../../core/di/internal-injector").InjectorService} $injector
      * @returns {StateRegistryProvider}
