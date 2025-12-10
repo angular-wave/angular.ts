@@ -1,7 +1,7 @@
 import { isObject } from "../../shared/utils.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
-ngChannelDirective.$inject = [$injectTokens.$eventBus];
+ngChannelDirective.$inject = [$injectTokens._eventBus];
 /**
  * @param {ng.PubSubService} $eventBus
  * @returns {ng.Directive}

@@ -74,7 +74,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
   const normalized = directiveNormalize(`ng-${attrName}`);
 
   ngAttributeAliasDirectives[normalized] = [
-    $injectTokens.$sce,
+    $injectTokens._sce,
     function ($sce) {
       return {
         priority: 99, // it needs to run after the attributes are interpolated

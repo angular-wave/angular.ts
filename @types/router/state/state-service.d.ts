@@ -7,12 +7,12 @@ export class StateProvider {
   static $inject: string[];
   /**
    *
-   * @param {import('../router.js').Router} globals
+   * @param {import('../router.js').RouterProvider} globals
    * @param {*} transitionService
    * @param {import('../../core/di/internal-injector.js').InjectorService} $injector
    */
   constructor(
-    globals: import("../router.js").Router,
+    globals: import("../router.js").RouterProvider,
     transitionService: any,
     $injector: import("../../core/di/internal-injector.js").InjectorService,
   );
@@ -36,7 +36,7 @@ export class StateProvider {
   get $current(): import("./state-object.js").StateObject;
   stateRegistry: any;
   urlService: any;
-  globals: import("../router.js").Router;
+  globals: import("../router.js").RouterProvider;
   transitionService: any;
   $injector: import("../../core/di/internal-injector.js").InjectorService;
   invalidCallbacks: any[];

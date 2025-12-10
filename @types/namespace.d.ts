@@ -89,6 +89,8 @@ import {
 import { RestService as TRestService } from "./services/rest/rest.js";
 import { ServiceProvider as TServiceProvider } from "./interface.ts";
 import { NgModelController as TNgModelController } from "./directive/model/model.js";
+import { RouterProvider } from "./router/router.ts";
+import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.js";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -120,6 +122,7 @@ declare global {
     type SceProvider = TSceProvider;
     type SceDelegateProvider = TSceDelegateProvider;
     type FilterProvider = TFilterProvider;
+    type TransitionProvider = TTransitionProvider;
     type AnchorScrollService = TAnchorScrollService;
     type AnimateService = TAnimateService;
     type CompileService = TCompileFn;
@@ -140,6 +143,7 @@ declare global {
     type PubSubService = TPubSub;
     type RootElementService = Element;
     type RootScopeService = TScope & Record<string, any>;
+    type RouterService = RouterProvider;
     type StateService = TStateProvider;
     type SseService = TSseService;
     type SseConfig = TSseConfig;

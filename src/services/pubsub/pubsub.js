@@ -15,7 +15,7 @@ export class PubSubProvider {
   }
 
   $get = [
-    $injectTokens.$exceptionHandler,
+    $injectTokens._exceptionHandler,
     /**
      * @param {ng.ExceptionHandlerService} $exceptionHandler
      * @returns {PubSub}

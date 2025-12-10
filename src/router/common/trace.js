@@ -102,7 +102,7 @@ export class Trace {
   constructor() {
     this._enabled = {};
     this.approximateDigests = 0;
-    this.$logger = window.angular?.$injector?.get($injectTokens.$log);
+    this.$logger = window.angular?.$injector?.get($injectTokens._log);
   }
 
   _set(enabled, categories) {

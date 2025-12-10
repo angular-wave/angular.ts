@@ -1,5 +1,6 @@
 import { defaultHttpResponseTransform } from "../http/http.js";
 import { extend, isArray, isString, minErr } from "../../shared/utils.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 
 const $templateRequestMinErr = minErr("$templateRequest");
 
@@ -56,10 +57,10 @@ export function TemplateRequestProvider() {
    * @property {number} totalPendingRequests total amount of pending template requests being downloaded.
    */
   this.$get = [
-    "$exceptionHandler",
-    "$templateCache",
-    "$http",
-    "$sce",
+    $t._exceptionHandler,
+    $t._templateCache,
+    $t._http,
+    $t._sce,
     /**
      *
      * @param {ng.ExceptionHandlerService} $exceptionHandler

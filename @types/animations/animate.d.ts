@@ -96,5 +96,5 @@ export class AnimateProvider {
   $get: any[];
 }
 export namespace AnimateProvider {
-  let $inject: string[];
+  let $inject: any[];
 }

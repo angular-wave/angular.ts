@@ -232,9 +232,9 @@ export class SceDelegateProvider {
     };
 
     this.$get = [
-      $t.$injector,
-      $t.$$sanitizeUri,
-      $t.$exceptionHandler,
+      $t._injector,
+      $t._sanitizeUri,
+      $t._exceptionHandler,
       /**
        *
        * @param {ng.InjectorService} $injector
@@ -535,8 +535,8 @@ export function SceProvider() {
   };
 
   this.$get = [
-    $t.$parse,
-    $t.$sceDelegate,
+    $t._parse,
+    $t._sceDelegate,
     /**
      *
      * @param {ng.ParseService} $parse

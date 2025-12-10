@@ -22,13 +22,13 @@ function defineDirective(method, attrOverride) {
   const directive = createHttpDirective(method, attrName);
 
   directive.$inject = [
-    $t.$http,
-    $t.$compile,
-    $t.$log,
-    $t.$parse,
-    $t.$state,
-    $t.$sse,
-    $t.$animate,
+    $t._http,
+    $t._compile,
+    $t._log,
+    $t._parse,
+    $t._state,
+    $t._sse,
+    $t._animate,
   ];
 
   return directive;

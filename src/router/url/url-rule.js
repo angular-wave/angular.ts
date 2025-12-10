@@ -25,7 +25,7 @@ export class UrlRuleFactory {
   /**
    * @param {import('../url/url-service.js').UrlService} urlService
    * @param {import('../state/state-service.js').StateProvider} stateService
-   * @param {import('../router.js').Router} routerGlobals
+   * @param {import('../router.js').RouterProvider} routerGlobals
    */
   constructor(urlService, stateService, routerGlobals) {
     this.urlService = urlService;

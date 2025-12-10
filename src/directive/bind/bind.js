@@ -49,7 +49,7 @@ export function ngBindTemplateDirective() {
   };
 }
 
-ngBindHtmlDirective.$inject = [$injectTokens.$parse];
+ngBindHtmlDirective.$inject = [$injectTokens._parse];
 /**
  * @param {import('../../core/parse/interface.ts').ParseService} $parse
  * @returns {import('../../interface.ts').Directive}

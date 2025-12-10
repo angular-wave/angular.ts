@@ -23,7 +23,7 @@ export class CookieProvider {
   }
 
   $get = [
-    $injectTokens.$exceptionHandler,
+    $injectTokens._exceptionHandler,
     /** @param {ng.ExceptionHandlerService} $exceptionHandler  */
     ($exceptionHandler) => new CookieService(this.defaults, $exceptionHandler),
   ];

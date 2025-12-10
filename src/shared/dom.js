@@ -2,6 +2,7 @@ import { concat, hasOwn, isArray, isDefined, isObject, keys } from "./utils.js";
 import { Cache } from "./cache.js";
 import { extractElementNode } from "../animations/shared.js";
 import { NodeType } from "./node.js";
+import { $injectTokens } from "../injection-tokens.js";
 
 /** @type {number} */
 let elId = 1;
@@ -658,7 +659,7 @@ export function cleanElementData(nodes) {
  * @returns {ng.InjectorService}
  */
 export function getInjector(element) {
-  return getInheritedData(element, "$injector");
+  return getInheritedData(element, $injectTokens._injector);
 }
 
 /**
@@ -728,7 +729,7 @@ export function emptyElement(element) {
  * @returns {boolean}
  */
 export function isRoot(element) {
-  return !!getCacheData(element, "$injector");
+  return !!getCacheData(element, $injectTokens._injector);
 }
 
 /**

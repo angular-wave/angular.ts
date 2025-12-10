@@ -16,10 +16,6 @@ export function createScope(target?: any, context?: Scope): Scope;
  * @returns {boolean}
  */
 export function isNonScope(target: any): boolean;
-/**
- * Decorator for excluding objects from scope observability
- */
-export const NONSCOPE: "$nonscope";
 export const $postUpdateQueue: any[];
 export let rootScope: any;
 export class RootScopeProvider {

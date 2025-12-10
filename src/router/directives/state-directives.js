@@ -293,7 +293,7 @@ $StateRefActiveDirective.$inject = [
 
 /**
  * @param {*} $state
- * @param {import('../router.js').Router} $router
+ * @param {import('../router.js').RouterProvider} $router
  * @param {*} $interpolate
  * @param {*} $stateRegistry
  * @param {*} $transitions

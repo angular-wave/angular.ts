@@ -1,6 +1,6 @@
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
-ngSetterDirective.$inject = [$t.$parse, $t.$log];
+ngSetterDirective.$inject = [$t._parse, $t._log];
 
 /**
  * @param {ng.ParseService} $parse

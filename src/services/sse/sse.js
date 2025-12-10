@@ -35,7 +35,7 @@ export class SseProvider {
   }
 
   $get = [
-    $injectTokens.$log,
+    $injectTokens._log,
     /**
      * Returns the $sse service function
      * @param {ng.LogService} log

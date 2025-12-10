@@ -6,13 +6,13 @@ export class UrlService {
   /**
    * @param {import("../../services/location/location").LocationProvider} $locationProvider
    * @param {import("../../router/state/state-service.js").StateProvider} stateService
-   * @param {import("../router.js").Router} globals
+   * @param {import("../router.js").RouterProvider} globals
    * @param {import("../../router/url/url-config.js").UrlConfigProvider} urlConfigProvider
    */
   constructor(
     $locationProvider: any,
     stateService: import("../../router/state/state-service.js").StateProvider,
-    globals: import("../router.js").Router,
+    globals: import("../router.js").RouterProvider,
     urlConfigProvider: import("../../router/url/url-config.js").UrlConfigProvider,
   );
   /** @type {import("../../services/location/location").Location} */

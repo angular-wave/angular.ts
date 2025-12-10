@@ -122,6 +122,7 @@ describe("angular", () => {
       const injector = angular.getInjector(appElement);
       function testFactory($rootScope) {}
       expect(() => {
+        debugger;
         injector.instantiate(testFactory);
       }).toThrowError(/strictdi/);
 

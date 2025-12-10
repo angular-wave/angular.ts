@@ -1,10 +1,11 @@
+import { $injectTokens, provider } from "../injection-tokens.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 
-AnimateJsDriverProvider.$inject = ["$$animationProvider"];
+AnimateJsDriverProvider.$inject = provider([$injectTokens._animation]);
 export function AnimateJsDriverProvider($$animationProvider) {
-  $$animationProvider.drivers.push("$$animateJsDriver");
+  $$animationProvider.drivers.push($injectTokens._animateJsDriver);
   this.$get = [
-    "$$animateJs",
+    $injectTokens._animateJs,
     /**
      *
      * @param {*} $$animateJs

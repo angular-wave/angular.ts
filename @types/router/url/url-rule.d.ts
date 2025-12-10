@@ -2,16 +2,16 @@ export class UrlRuleFactory {
   /**
    * @param {import('../url/url-service.js').UrlService} urlService
    * @param {import('../state/state-service.js').StateProvider} stateService
-   * @param {import('../router.js').Router} routerGlobals
+   * @param {import('../router.js').RouterProvider} routerGlobals
    */
   constructor(
     urlService: import("../url/url-service.js").UrlService,
     stateService: import("../state/state-service.js").StateProvider,
-    routerGlobals: import("../router.js").Router,
+    routerGlobals: import("../router.js").RouterProvider,
   );
   urlService: import("../url/url-service.js").UrlService;
   stateService: import("../state/state-service.js").StateProvider;
-  routerGlobals: import("../router.js").Router;
+  routerGlobals: import("../router.js").RouterProvider;
   /**
    *
    * @param {*} what

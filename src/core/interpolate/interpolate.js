@@ -55,8 +55,8 @@ export class InterpolateProvider {
   }
 
   $get = [
-    $t.$parse,
-    $t.$sce,
+    $t._parse,
+    $t._sce,
     /**
      *
      * @param {ng.ParseService} $parse

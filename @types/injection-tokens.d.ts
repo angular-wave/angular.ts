@@ -11,13 +11,14 @@ export function provider(services: string[]): string[];
  * ```js
  *
  * myDirective.$inject = [
- *   angular.$injectTokens.$animate,
- *   angular.$injectTokens.$templateRequest,
+ *   angular.$t._animate,
+ *   angular.$t._templateRequest,
  * ];
  *
  * function myDirective($animate, $templateRequest) { ... }
  *
  * ```
+ * @private
  * @type Readonly<Record<string, string>>
  */
 export const $injectTokens: Readonly<Record<string, string>>;

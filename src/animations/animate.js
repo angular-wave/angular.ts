@@ -23,7 +23,7 @@ function prepareAnimateOptions(options) {
   return isObject(options) ? options : {};
 }
 
-AnimateProvider.$inject = ["$provide"];
+AnimateProvider.$inject = [$injectTokens._provide];
 
 /** @param {ng.ProvideService} $provide */
 export function AnimateProvider($provide) {
@@ -165,7 +165,7 @@ export function AnimateProvider($provide) {
   };
 
   this.$get = [
-    $injectTokens.$$animateQueue,
+    $injectTokens._animateQueue,
     /**
      * @param {import("./queue/interface.ts").AnimateQueueService} $$animateQueue
      * @returns {ng.AnimateService}

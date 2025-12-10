@@ -5,7 +5,7 @@
  * This is where we hold the global mutable state such as current state, current
  * params, current transition, etc.
  */
-export class Router {
+export class RouterProvider {
   /**
    * Current parameter values
    *

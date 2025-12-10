@@ -10,7 +10,7 @@ import {
 } from "../shared/utils.js";
 import { $injectTokens } from "../injection-tokens.js";
 
-orderByFilter.$inject = [$injectTokens.$parse];
+orderByFilter.$inject = [$injectTokens._parse];
 
 /**
  * @returns {ng.FilterFn}

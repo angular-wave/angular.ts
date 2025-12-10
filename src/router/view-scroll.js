@@ -10,7 +10,7 @@ export class ViewScrollProvider {
   }
 
   $get = [
-    $t.$anchorScroll,
+    $t._anchorScroll,
     /**
      * @param {import('../services/anchor-scroll/anchor-scroll.js').AnchorScrollObject} $anchorScroll
      * @returns {import('../services/anchor-scroll/anchor-scroll.js').AnchorScrollObject|Function}

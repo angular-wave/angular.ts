@@ -7,7 +7,7 @@ import {
 import { annotate, isClass } from "./di.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
-const $injectorMinErr = minErr($injectTokens.$injector);
+const $injectorMinErr = minErr($injectTokens._injector);
 
 const providerSuffix = "Provider";
 

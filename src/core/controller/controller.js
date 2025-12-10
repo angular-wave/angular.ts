@@ -1,3 +1,4 @@
+import { $injectTokens } from "../../injection-tokens.js";
 import {
   assertArgFn,
   assertNotHasOwnProperty,
@@ -75,7 +76,7 @@ export class ControllerProvider {
    * $get method for dependency injection.
    */
   $get = [
-    "$injector",
+    $injectTokens._injector,
 
     /**
      * @param {ng.InjectorService} $injector

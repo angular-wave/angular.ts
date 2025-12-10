@@ -32,7 +32,7 @@ const ngRepeatMinErr = minErr("ngRepeat");
 const VAR_OR_TUPLE_REGEX =
   /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
 
-ngRepeatDirective.$inject = [$injectTokens.$animate];
+ngRepeatDirective.$inject = [$injectTokens._animate];
 
 /**
  * TODO // Add type for animate service

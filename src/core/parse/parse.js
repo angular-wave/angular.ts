@@ -1,3 +1,4 @@
+import { $injectTokens } from "../../injection-tokens";
 import { isFunction, isNullOrUndefined, isProxy } from "../../shared/utils.js";
 import { PURITY_RELATIVE } from "./interpreter.js";
 import { Lexer } from "./lexer/lexer.js";
@@ -41,7 +42,7 @@ export class ParseProvider {
     };
 
     this.$get = [
-      "$filter",
+      $injectTokens._filter,
       /**
        *
        * @param {(any) => any} $filter

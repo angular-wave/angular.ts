@@ -1,5 +1,5 @@
 import { $injectTokens } from "../injection-tokens.js";
-ngAnimateSwapDirective.$inject = [$injectTokens.$animate];
+ngAnimateSwapDirective.$inject = [$injectTokens._animate];
 /**
  * @returns {ng.Directive}
  */

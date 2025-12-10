@@ -10,7 +10,7 @@ import { $injectTokens } from "../../injection-tokens.js";
  * Shared utility functions
  */
 
-const $injectorMinErr = minErr($injectTokens.$injector);
+const $injectorMinErr = minErr($injectTokens._injector);
 
 const ARROW_ARG = /^([^(]+?)=>/;
 

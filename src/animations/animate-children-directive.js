@@ -3,7 +3,7 @@ import { NG_ANIMATE_CHILDREN_DATA } from "./shared.js";
 import { setCacheData } from "../shared/dom.js";
 import { $injectTokens as $t } from "../injection-tokens.js";
 
-$$AnimateChildrenDirective.$inject = [$t.$interpolate];
+$$AnimateChildrenDirective.$inject = [$t._interpolate];
 
 /**
  * @param {*} $interpolate

@@ -17,18 +17,18 @@ export class Transition implements IHookRegistry {
    *        encapsulates the "from state".
    * @param {import('../state/target-state.js').TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
    * @param {import('../transition/transition-service.js').TransitionProvider} transitionService The [[TransitionService]] instance
-   * @param {import('../router.js').Router} globals
+   * @param {import('../router.js').RouterProvider} globals
    */
   constructor(
     fromPath: Array<import("../path/path-node.js").PathNode>,
     targetState: import("../state/target-state.js").TargetState,
     transitionService: import("../transition/transition-service.js").TransitionProvider,
-    globals: import("../router.js").Router,
+    globals: import("../router.js").RouterProvider,
   );
   /**
-   * @type {import('../router.js').Router}
+   * @type {import('../router.js').RouterProvider}
    */
-  _globals: import("../router.js").Router;
+  _globals: import("../router.js").RouterProvider;
   _transitionService: import("../transition/transition-service.js").TransitionProvider;
   _deferred: any;
   /**

@@ -100,7 +100,7 @@ import { AnimateJsDriverProvider } from "./animations/animate-js-driver.js";
 import { ngAnimateSwapDirective } from "./animations/animate-swap.js";
 import { $$AnimateChildrenDirective } from "./animations/animate-children-directive.js";
 import { UrlConfigProvider } from "./router/url/url-config.js";
-import { Router } from "./router/router.js";
+import { RouterProvider } from "./router/router.js";
 import { ViewService } from "./router/view/view.js";
 import { TransitionProvider } from "./router/transition/transition-service.js";
 import { StateProvider } from "./router/state/state-service.js";
@@ -150,17 +150,17 @@ export function registerNgModule(angular) {
       "ng",
       [],
       [
-        $t.$provide,
+        $t._provide,
         /** @param {ng.ProvideService} $provide */
         ($provide) => {
           // $$sanitizeUriProvider needs to be before $compileProvider as it is used by it.
           $provide.provider({
             $$sanitizeUri: SanitizeUriProvider,
           });
-          $provide.value($t.$window, window);
-          $provide.value($t.$document, document);
+          $provide.value($t._window, window);
+          $provide.value($t._document, document);
           $provide
-            .provider($t.$compile, CompileProvider)
+            .provider($t._compile, CompileProvider)
             .directive({
               input: inputDirective,
               textarea: inputDirective,
@@ -274,7 +274,7 @@ export function registerNgModule(angular) {
             $$rAFScheduler: RafSchedulerProvider,
             $rest: RestProvider,
             $rootScope: RootScopeProvider,
-            $router: Router,
+            $router: RouterProvider,
             $sce: SceProvider,
             $sceDelegate: SceDelegateProvider,
             $sse: SseProvider,
@@ -294,9 +294,9 @@ export function registerNgModule(angular) {
       ],
     )
     .factory("$stateParams", [
-      $t.$router,
+      $t._router,
       /**
-       * @param {import('./router/router.js').Router} globals
+       * @param {import('./router/router.js').RouterProvider} globals
        * @returns {import('./router/params/state-params.js').StateParams }
        */
       (globals) => globals._params,

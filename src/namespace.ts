@@ -93,6 +93,8 @@ import {
 import { RestService as TRestService } from "./services/rest/rest.js";
 import { ServiceProvider as TServiceProvider } from "./interface.ts";
 import { NgModelController as TNgModelController } from "./directive/model/model.js";
+import { RouterProvider } from "./router/router.ts";
+import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.js";
 
 /* ────────────────────────────────────────────────
    Runtime global initialization
@@ -138,6 +140,7 @@ declare global {
     export type SceProvider = TSceProvider;
     export type SceDelegateProvider = TSceDelegateProvider;
     export type FilterProvider = TFilterProvider;
+    export type TransitionProvider = TTransitionProvider;
 
     // Services
     export type AnchorScrollService = TAnchorScrollService;
@@ -160,6 +163,7 @@ declare global {
     export type PubSubService = TPubSub;
     export type RootElementService = Element;
     export type RootScopeService = TScope & Record<string, any>;
+    export type RouterService = RouterProvider;
     export type StateService = TStateProvider;
     export type SseService = TSseService;
     export type SseConfig = TSseConfig;

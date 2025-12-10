@@ -18,11 +18,6 @@ import { ASTType } from "../parse/ast-type.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
 /**
- * Decorator for excluding objects from scope observability
- */
-export const NONSCOPE = "$nonscope";
-
-/**
  * @type {number}
  */
 let uid = 0;
@@ -51,8 +46,8 @@ export class RootScopeProvider {
   }
 
   $get = [
-    $t.$exceptionHandler,
-    $t.$parse,
+    $t._exceptionHandler,
+    $t._parse,
     /**
      * @param {ng.ExceptionHandlerService} exceptionHandler
      * @param {ng.ParseService} parse
@@ -114,8 +109,8 @@ const wStr = "[object Window]";
  */
 export function isNonScope(target) {
   if (
-    target[NONSCOPE] === true ||
-    (target.constructor && target.constructor[NONSCOPE]) === true ||
+    target.$nonscope === true ||
+    (target.constructor && target.constructor.$nonscope) === true ||
     target === global.window ||
     target === global.document ||
     target === global.self ||

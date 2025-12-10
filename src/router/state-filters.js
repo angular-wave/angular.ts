@@ -1,6 +1,6 @@
 import { $injectTokens as $t } from "../injection-tokens.js";
 
-$IsStateFilter.$inject = [$t.$state];
+$IsStateFilter.$inject = [$t._state];
 
 /**
  * `isState` Filter: truthy if the current state is the parameter
@@ -24,7 +24,7 @@ export function $IsStateFilter($state) {
   return isFilter;
 }
 
-$IncludedByStateFilter.$inject = [$t.$state];
+$IncludedByStateFilter.$inject = [$t._state];
 
 /**
  * `includedByState` Filter: truthy if the current state includes the parameter

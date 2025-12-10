@@ -1,7 +1,8 @@
+import { $injectTokens } from "../../injection-tokens.js";
 import { removeElement } from "../../shared/dom.js";
 import { hasAnimate } from "../../shared/utils.js";
 
-ngIfDirective.$inject = ["$animate"];
+ngIfDirective.$inject = [$injectTokens._animate];
 /**
  * @param {ng.AnimateService} $animate
  * @returns {ng.Directive}
