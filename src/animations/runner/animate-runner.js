@@ -1,8 +1,18 @@
 /**
- * @fileoverview
- * Frame-synchronized animation runner and scheduler.
- * Provides async batching of animation callbacks using requestAnimationFrame.
- * In AngularJS, this used to be implemented as `$$AnimateRunner`
+ * Hybrid AnimateRunner
+ * Supports both CSS animations (batched) and JS animations (per-Tick).
+ *
+ * The runner:
+ *   - tracks completion state
+ *   - supports done callbacks
+ *   - exposes a host API (end, cancel, pause, resume)
+ *   - can be awaited as a Promise
+ *
+ * It intentionally mirrors AngularJS 1.x $$AnimateRunner behavior.
+ */
+
+/**
+ * @typedef {import("../interface.ts").AnimationHost} AnimationHost
  */
 
 /**
@@ -11,19 +21,27 @@
  * @enum {number}
  */
 const RunnerState = {
+  /** Initial state before any completion logic started */
   _INITIAL: 0,
+
+  /** Completion has been scheduled but not finished */
   _PENDING: 1,
+
+  /** The runner is fully completed and callbacks fired */
   _DONE: 2,
 };
 
-/** @type {VoidFunction[]} */
+/**
+ * Global queue used to batch CSS animation callbacks.
+ * @type {Array<VoidFunction>}
+ */
 let queue = [];
 
 /** @type {boolean} */
 let scheduled = false;
 
 /**
- * Flush all queued callbacks.
+ * Flushes all queued callbacks in FIFO order.
  * @private
  */
 function flush() {
@@ -38,33 +56,210 @@ function flush() {
 }
 
 /**
- * Schedule a callback to run on the next animation frame.
- * Multiple calls within the same frame are batched together.
+ * Schedules a callback for next animation frame,
+ * falling back to setTimeout(0) when RAF is unavailable.
  *
- * @param {VoidFunction} fn - The callback to execute.
+ * @param {VoidFunction} fn
  */
-export function schedule(fn) {
+function schedule(fn) {
   queue.push(fn);
 
   if (!scheduled) {
     scheduled = true;
-    (typeof requestAnimationFrame === "function"
-      ? requestAnimationFrame
-      : setTimeout)(flush, 0);
+
+    requestAnimationFrame(flush);
   }
 }
 
-/**
- * Represents an asynchronous animation operation.
- * Provides both callback-based and promise-based completion APIs.
- */
 export class AnimateRunner {
   /**
-   * Run an array of animation runners in sequence.
-   * Each runner waits for the previous one to complete.
+   * @param {AnimationHost} [host] - Optional animation host callbacks.
+   * @param {boolean} [jsAnimation=false]
+   *        If true: use RAF/timer ticks.
+   *        If false: use batched CSS animation ticks.
+   */
+  constructor(host = {}, jsAnimation = false) {
+    /** @type {AnimationHost} */
+    this._host = host;
+
+    /** @type {Array<(ok: boolean) => void>} */
+    this._doneCallbacks = [];
+
+    /** @type {RunnerState} */
+    this._state = RunnerState._INITIAL;
+
+    /**
+     * Deferred promise used by .then/.catch/.finally.
+     * @type {Promise<void>|null}
+     * @private
+     */
+    this._promise = null;
+
+    /**
+     * Internal tick scheduling function.
+     * - JS animations: immediate RAF or fallback timer
+     * - CSS animations: batched global queue
+     * @type {(fn: VoidFunction) => void}
+     * @private
+     */
+    if (jsAnimation) {
+      const rafTick = (fn) => requestAnimationFrame(fn);
+
+      const timeoutTick = (fn) => setTimeout(fn, 0);
+
+      this._tick = (fn) => {
+        // When tab is hidden, requestAnimationFrame throttles heavily.
+        if (document.hidden) timeoutTick(fn);
+        else rafTick(fn);
+      };
+    } else {
+      this._tick = schedule;
+    }
+  }
+
+  /**
+   * Sets or replaces the current host.
+   * @param {AnimationHost} host
+   */
+  setHost(host) {
+    this._host = host || {};
+  }
+
+  /**
+   * Register a completion callback.
+   * Fires immediately if animation is already done.
    *
-   * @param {AnimateRunner[]} runners - Runners to execute in order.
-   * @param {(ok: boolean) => void} callback - Invoked when all complete or one fails.
+   * @param {(ok: boolean) => void} fn
+   */
+  done(fn) {
+    if (this._state === RunnerState._DONE) {
+      fn(true);
+    } else {
+      this._doneCallbacks.push(fn);
+    }
+  }
+
+  /**
+   * Reports progress to host.
+   * @param {...any} args
+   */
+  progress(...args) {
+    this._host.progress?.(...args);
+  }
+
+  /** Pause underlying animation (if supported). */
+  pause() {
+    this._host.pause?.();
+  }
+
+  /** Resume underlying animation (if supported). */
+  resume() {
+    this._host.resume?.();
+  }
+
+  /**
+   * Ends the animation successfully.
+   * Equivalent to user choosing to finish it immediately.
+   */
+  end() {
+    this._host.end?.();
+    this._finish(true);
+  }
+
+  /**
+   * Cancels the animation.
+   */
+  cancel() {
+    this._host.cancel?.();
+    this._finish(false);
+  }
+
+  /**
+   * Schedule animation completion.
+   *
+   * @param {boolean} [status=true]
+   */
+  complete(status = true) {
+    if (this._state === RunnerState._INITIAL) {
+      this._state = RunnerState._PENDING;
+      this._tick(() => this._finish(status));
+    }
+  }
+
+  /**
+   * Completes the animation and invokes all done callbacks.
+   * @param {boolean} status
+   * @private
+   */
+  _finish(status) {
+    if (this._state === RunnerState._DONE) return;
+
+    this._state = RunnerState._DONE;
+
+    const callbacks = this._doneCallbacks;
+
+    this._doneCallbacks = [];
+
+    for (let i = 0; i < callbacks.length; i++) {
+      callbacks[i](status);
+    }
+  }
+
+  /**
+   * Returns an internal promise that resolves on success,
+   * and rejects on cancel.
+   *
+   * @returns {Promise<void>}
+   */
+  getPromise() {
+    if (!this._promise) {
+      this._promise = new Promise((resolve, reject) => {
+        this.done((ok) => (ok === false ? reject() : resolve()));
+      });
+    }
+
+    return this._promise;
+  }
+
+  /**
+   * Standard "thenable" interface
+   * @template T
+   * @param {(value: void) => T|Promise<T>} onFulfilled
+   * @param {(reason: any) => any} [onRejected]
+   * @returns {Promise<T>}
+   */
+  then(onFulfilled, onRejected) {
+    return this.getPromise().then(onFulfilled, onRejected);
+  }
+
+  /**
+   * Standard promise catcher.
+   * @param {(reason: any) => any} onRejected
+   * @returns {Promise<void>}
+   */
+  catch(onRejected) {
+    return this.getPromise().catch(onRejected);
+  }
+
+  /**
+   * Standard promise finally.
+   * @param {() => any} onFinally
+   * @returns {Promise<void>}
+   */
+  finally(onFinally) {
+    return this.getPromise().finally(onFinally);
+  }
+
+  // ---------------------------------------------------------------------------
+  //  STATIC HELPERS
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Executes a list of runners sequentially.
+   * Each must complete before the next starts.
+   *
+   * @param {AnimateRunner[]} runners
+   * @param {(ok: boolean) => void} callback
    */
   static _chain(runners, callback) {
     let i = 0;
@@ -82,10 +277,10 @@ export class AnimateRunner {
   }
 
   /**
-   * Waits for all animation runners to complete before invoking the callback.
+   * Waits until all runners complete.
    *
-   * @param {AnimateRunner[]} runners - Active runners to wait for.
-   * @param {(ok: boolean) => void} callback - Called when all runners complete.
+   * @param {AnimateRunner[]} runners
+   * @param {(ok: boolean) => void} callback
    */
   static _all(runners, callback) {
     let remaining = runners.length;
@@ -94,142 +289,10 @@ export class AnimateRunner {
 
     for (const i of runners) {
       i.done((result) => {
-        status = status && result !== false;
+        if (result === false) status = false;
 
         if (--remaining === 0) callback(status);
       });
     }
-  }
-
-  /**
-   * @param {import("../interface.ts").AnimationHost} [host] - Optional animation host.
-   */
-  constructor(host) {
-    /** @type {import("../interface.ts").AnimationHost} */
-    this._host = host || {};
-
-    /** @type {Array<(ok: boolean) => void>} */
-    this._doneCallbacks = [];
-
-    /** @type {RunnerState} */
-    this._state = RunnerState._INITIAL;
-
-    /** @type {Promise<void>|null} */
-    this._promise = null;
-
-    /** @type {(fn: VoidFunction) => void} */
-    this._schedule = schedule;
-  }
-
-  /**
-   * Sets or updates the animation host.
-   * @param {import("../interface.ts").AnimationHost} host - The host object.
-   */
-  setHost(host) {
-    this._host = host || {};
-  }
-
-  /**
-   * Registers a callback to be called once the animation completes.
-   * If the animation is already complete, it's called immediately.
-   *
-   * @param {(ok: boolean) => void} fn - Completion callback.
-   */
-  done(fn) {
-    if (this._state === RunnerState._DONE) {
-      fn(true);
-    } else {
-      this._doneCallbacks.push(fn);
-    }
-  }
-
-  /**
-   * Notifies the host of animation progress.
-   * @param {...any} args - Progress arguments.
-   */
-  progress(...args) {
-    this._host.progress?.(...args);
-  }
-
-  /** Pauses the animation, if supported by the host. */
-  pause() {
-    this._host.pause?.();
-  }
-
-  /** Resumes the animation, if supported by the host. */
-  resume() {
-    this._host.resume?.();
-  }
-
-  /** Ends the animation successfully. */
-  end() {
-    this._host.end?.();
-    this._finish(true);
-  }
-
-  /** Cancels the animation. */
-  cancel() {
-    this._host.cancel?.();
-    this._finish(false);
-  }
-
-  /**
-   * Marks the animation as complete on the next animation frame.
-   * @param {boolean} [status=true] - True if successful, false if canceled.
-   */
-  complete(status = true) {
-    if (this._state === RunnerState._INITIAL) {
-      this._state = RunnerState._PENDING;
-      this._schedule(() => this._finish(status));
-    }
-  }
-
-  /**
-   * Returns a promise that resolves or rejects when the animation completes.
-   * @returns {Promise<void>} Promise resolved on success or rejected on cancel.
-   */
-  getPromise() {
-    if (!this._promise) {
-      this._promise = new Promise((resolve, reject) => {
-        this.done((success) => {
-          if (success === false) reject();
-          else resolve();
-        });
-      });
-    }
-
-    return this._promise;
-  }
-
-  /** @inheritdoc */
-  then(onFulfilled, onRejected) {
-    return this.getPromise().then(onFulfilled, onRejected);
-  }
-
-  /** @inheritdoc */
-  catch(onRejected) {
-    return this.getPromise().catch(onRejected);
-  }
-
-  /** @inheritdoc */
-  finally(onFinally) {
-    return this.getPromise().finally(onFinally);
-  }
-
-  /**
-   * Completes the animation and invokes all done callbacks.
-   * @private
-   * @param {boolean} status - True if completed successfully, false if canceled.
-   */
-  _finish(status) {
-    if (this._state === RunnerState._DONE) return;
-    this._state = RunnerState._DONE;
-
-    const callbacks = this._doneCallbacks;
-
-    for (let i = 0; i < callbacks.length; i++) {
-      callbacks[i](status);
-    }
-    callbacks.length = 0;
   }
 }

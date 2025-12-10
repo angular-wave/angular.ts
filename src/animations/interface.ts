@@ -127,4 +127,21 @@ export interface AnimationOptions {
   removeClass?: string; // space-separated CSS classes to remove from element
   to?: Record<string, string | number>; // CSS properties & values at end of animation
   tempClasses: string | string[]; // CSS classes during animation
+  /** Optional DOM operation callback executed before animation */
+  domOperation?: () => void;
+}
+
+export interface AnimateJsRunner {
+  $$willAnimate: true;
+  start: () => AnimateRunner;
+  end: () => AnimateRunner;
+}
+
+export interface AnimateJsFn {
+  (
+    element: HTMLElement,
+    event: string,
+    classes?: string | null,
+    options?: AnimationOptions,
+  ): AnimateJsRunner;
 }

@@ -1,95 +1,116 @@
-/**
- * Schedule a callback to run on the next animation frame.
- * Multiple calls within the same frame are batched together.
- *
- * @param {VoidFunction} fn - The callback to execute.
- */
-export function schedule(fn: VoidFunction): void;
-/**
- * Represents an asynchronous animation operation.
- * Provides both callback-based and promise-based completion APIs.
- */
 export class AnimateRunner {
   /**
-   * Run an array of animation runners in sequence.
-   * Each runner waits for the previous one to complete.
+   * Executes a list of runners sequentially.
+   * Each must complete before the next starts.
    *
-   * @param {AnimateRunner[]} runners - Runners to execute in order.
-   * @param {(ok: boolean) => void} callback - Invoked when all complete or one fails.
+   * @param {AnimateRunner[]} runners
+   * @param {(ok: boolean) => void} callback
    */
   static _chain(
     runners: AnimateRunner[],
     callback: (ok: boolean) => void,
   ): void;
   /**
-   * Waits for all animation runners to complete before invoking the callback.
+   * Waits until all runners complete.
    *
-   * @param {AnimateRunner[]} runners - Active runners to wait for.
-   * @param {(ok: boolean) => void} callback - Called when all runners complete.
+   * @param {AnimateRunner[]} runners
+   * @param {(ok: boolean) => void} callback
    */
   static _all(runners: AnimateRunner[], callback: (ok: boolean) => void): void;
   /**
-   * @param {import("../interface.ts").AnimationHost} [host] - Optional animation host.
+   * @param {AnimationHost} [host] - Optional animation host callbacks.
+   * @param {boolean} [jsAnimation=false]
+   *        If true: use RAF/timer ticks.
+   *        If false: use batched CSS animation ticks.
    */
-  constructor(host?: import("../interface.ts").AnimationHost);
-  /** @type {import("../interface.ts").AnimationHost} */
-  _host: import("../interface.ts").AnimationHost;
+  constructor(host?: AnimationHost, jsAnimation?: boolean);
+  /** @type {AnimationHost} */
+  _host: AnimationHost;
   /** @type {Array<(ok: boolean) => void>} */
   _doneCallbacks: Array<(ok: boolean) => void>;
   /** @type {RunnerState} */
   _state: RunnerState;
-  /** @type {Promise<void>|null} */
-  _promise: Promise<void> | null;
-  /** @type {(fn: VoidFunction) => void} */
-  _schedule: (fn: VoidFunction) => void;
   /**
-   * Sets or updates the animation host.
-   * @param {import("../interface.ts").AnimationHost} host - The host object.
+   * Deferred promise used by .then/.catch/.finally.
+   * @type {Promise<void>|null}
+   * @private
    */
-  setHost(host: import("../interface.ts").AnimationHost): void;
+  private _promise;
+  _tick: (fn: any) => void;
   /**
-   * Registers a callback to be called once the animation completes.
-   * If the animation is already complete, it's called immediately.
+   * Sets or replaces the current host.
+   * @param {AnimationHost} host
+   */
+  setHost(host: AnimationHost): void;
+  /**
+   * Register a completion callback.
+   * Fires immediately if animation is already done.
    *
-   * @param {(ok: boolean) => void} fn - Completion callback.
+   * @param {(ok: boolean) => void} fn
    */
   done(fn: (ok: boolean) => void): void;
   /**
-   * Notifies the host of animation progress.
-   * @param {...any} args - Progress arguments.
+   * Reports progress to host.
+   * @param {...any} args
    */
   progress(...args: any[]): void;
-  /** Pauses the animation, if supported by the host. */
+  /** Pause underlying animation (if supported). */
   pause(): void;
-  /** Resumes the animation, if supported by the host. */
+  /** Resume underlying animation (if supported). */
   resume(): void;
-  /** Ends the animation successfully. */
+  /**
+   * Ends the animation successfully.
+   * Equivalent to user choosing to finish it immediately.
+   */
   end(): void;
-  /** Cancels the animation. */
+  /**
+   * Cancels the animation.
+   */
   cancel(): void;
   /**
-   * Marks the animation as complete on the next animation frame.
-   * @param {boolean} [status=true] - True if successful, false if canceled.
+   * Schedule animation completion.
+   *
+   * @param {boolean} [status=true]
    */
   complete(status?: boolean): void;
   /**
-   * Returns a promise that resolves or rejects when the animation completes.
-   * @returns {Promise<void>} Promise resolved on success or rejected on cancel.
-   */
-  getPromise(): Promise<void>;
-  /** @inheritdoc */
-  then(onFulfilled: any, onRejected: any): Promise<void>;
-  /** @inheritdoc */
-  catch(onRejected: any): Promise<void>;
-  /** @inheritdoc */
-  finally(onFinally: any): Promise<void>;
-  /**
    * Completes the animation and invokes all done callbacks.
+   * @param {boolean} status
    * @private
-   * @param {boolean} status - True if completed successfully, false if canceled.
    */
   private _finish;
+  /**
+   * Returns an internal promise that resolves on success,
+   * and rejects on cancel.
+   *
+   * @returns {Promise<void>}
+   */
+  getPromise(): Promise<void>;
+  /**
+   * Standard "thenable" interface
+   * @template T
+   * @param {(value: void) => T|Promise<T>} onFulfilled
+   * @param {(reason: any) => any} [onRejected]
+   * @returns {Promise<T>}
+   */
+  then<T>(
+    onFulfilled: (value: void) => T | Promise<T>,
+    onRejected?: (reason: any) => any,
+  ): Promise<T>;
+  /**
+   * Standard promise catcher.
+   * @param {(reason: any) => any} onRejected
+   * @returns {Promise<void>}
+   */
+  catch(onRejected: (reason: any) => any): Promise<void>;
+  /**
+   * Standard promise finally.
+   * @param {() => any} onFinally
+   * @returns {Promise<void>}
+   */
+  finally(onFinally: () => any): Promise<void>;
 }
+export type AnimationHost = import("../interface.ts").AnimationHost;
 /**
  * Internal runner states.
  */

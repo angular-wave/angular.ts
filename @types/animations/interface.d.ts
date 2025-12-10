@@ -98,4 +98,19 @@ export interface AnimationOptions {
   removeClass?: string;
   to?: Record<string, string | number>;
   tempClasses: string | string[];
+  /** Optional DOM operation callback executed before animation */
+  domOperation?: () => void;
+}
+export interface AnimateJsRunner {
+  $$willAnimate: true;
+  start: () => AnimateRunner;
+  end: () => AnimateRunner;
+}
+export interface AnimateJsFn {
+  (
+    element: HTMLElement,
+    event: string,
+    classes?: string | null,
+    options?: AnimationOptions,
+  ): AnimateJsRunner;
 }
