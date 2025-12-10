@@ -6,28 +6,25 @@
 
     <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
     <script type="module" src="/src/index.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        window.angular.module("test", []).animation(".movable", [
-          function () {
-            return {
-              addClass: function (element, className, doneFn) {
-                anime({
-                  targets: element,
-                  translateX: parseInt(className),
-                });
-              },
-              removeClass: function (element, className, doneFn) {},
-              setClass: function (element, className, removedClass, doneFn) {
-                anime({
-                  targets: element,
-                  translateX: parseInt(className),
-                });
-              },
-            };
+    <script src="https://cdn.jsdelivr.net/npm/animejs/dist/bundles/anime.umd.min.js"></script>
+
+    <script type="module">
+      window.angular.module("test", []).animation(".movable", function () {
+        const { animate } = anime;
+        return {
+          addClass(element, className, doneFn) {
+            animate(element, {
+              translateX: parseInt(className),
+              onComplete: doneFn,
+            });
           },
-        ]);
+          setClass(element, className, removedClass, doneFn) {
+            animate(element, {
+              translateX: parseInt(className),
+              onComplete: doneFn,
+            });
+          },
+        };
       });
     </script>
 

@@ -7,33 +7,22 @@ import {
 import { $injectTokens, provider } from "../injection-tokens.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 
-// TODO: use caching here to speed things up for detection
-// TODO: add documentation
-
 AnimateJsProvider.$inject = provider([$injectTokens._animate]);
-/**
- * @param {ng.AnimateProvider} $animateProvider
- */
+
 export function AnimateJsProvider($animateProvider) {
   this.$get = [
     $injectTokens._injector,
     /**
-     *
      * @param {ng.InjectorService} $injector
-     * @returns
+     * @returns {import("./interface.ts").AnimateJsFn}
      */
     function ($injector) {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
-      // $animateJs(element, 'enter');
-      return function (element, event, classes, options) {
-        let animationClosed = false;
-
-        // the `classes` argument is optional and if it is not used
-        // then the classes will be resolved from the element's className
-        // property as well as options.addClass/options.removeClass.
+      return function animateJs(element, event, classes, options) {
+        // Optional arguments
         if (arguments.length === 3 && isObject(classes)) {
-          options = classes;
+          options = /** @type {Object} */ (classes);
           classes = null;
         }
 
@@ -42,61 +31,43 @@ export function AnimateJsProvider($animateProvider) {
         if (!classes) {
           classes = element.getAttribute("class") || "";
 
-          if (options.addClass) {
-            classes += ` ${options.addClass}`;
-          }
+          if (options.addClass) classes += ` ${options.addClass}`;
 
-          if (options.removeClass) {
-            classes += ` ${options.removeClass}`;
-          }
+          if (options.removeClass) classes += ` ${options.removeClass}`;
         }
 
         const classesToAdd = options.addClass;
 
         const classesToRemove = options.removeClass;
 
-        // the lookupAnimations function returns a series of animation objects that are
-        // matched up with one or more of the CSS classes. These animation objects are
-        // defined via the module.animation factory function. If nothing is detected then
-        // we don't return anything which then makes $animation query the next driver.
+        // Lookup animation objects
         const animations = lookupAnimations(classes);
 
-        let before;
-
-        let after;
+        let before, after;
 
         if (animations.length) {
-          let afterFn;
-
-          let beforeFn;
+          let beforeFn, afterFn;
 
           if (event === "leave") {
             beforeFn = "leave";
-            afterFn = "afterLeave"; // TODO(matsko): get rid of this
+            afterFn = "afterLeave";
           } else {
             beforeFn = `before${event.charAt(0).toUpperCase()}${event.substring(1)}`;
             afterFn = event;
           }
 
           if (event !== "enter" && event !== "move") {
-            before = packageAnimations(
-              element,
-              event,
-              options,
-              animations,
-              beforeFn,
-            );
+            before = packageAnimations(element, options, animations, beforeFn, {
+              add: classesToAdd,
+              remove: classesToRemove,
+            });
           }
-          after = packageAnimations(
-            element,
-            event,
-            options,
-            animations,
-            afterFn,
-          );
+          after = packageAnimations(element, options, animations, afterFn, {
+            add: classesToAdd,
+            remove: classesToRemove,
+          });
         }
 
-        // no matching animations
         if (!before && !after) return undefined;
 
         function applyOptions() {
@@ -105,7 +76,6 @@ export function AnimateJsProvider($animateProvider) {
         }
 
         function close() {
-          animationClosed = true;
           applyOptions();
           applyAnimationStyles(element, options);
         }
@@ -114,10 +84,33 @@ export function AnimateJsProvider($animateProvider) {
 
         return {
           $$willAnimate: true,
+
+          start() {
+            if (runner) return runner;
+
+            runner = new AnimateRunner({
+              end: () => onComplete(true),
+              cancel: () => onComplete(false),
+            });
+
+            // Run before animations
+            if (before) before(runner.done.bind(runner));
+            else applyOptions();
+
+            // Run after animations
+            if (after) after(runner.done.bind(runner));
+
+            function onComplete(success) {
+              close();
+              runner.complete(success);
+            }
+
+            return runner;
+          },
+
           end() {
-            if (runner) {
-              runner.end();
-            } else {
+            if (runner) runner.end();
+            else {
               close();
               runner = new AnimateRunner();
               runner.complete(true);
@@ -125,339 +118,97 @@ export function AnimateJsProvider($animateProvider) {
 
             return runner;
           },
-          start() {
-            if (runner) {
-              return runner;
-            }
-
-            runner = new AnimateRunner();
-            /** @type {(cancelled?: boolean) => void} */
-            let closeActiveAnimations;
-
-            const chain = [];
-
-            if (before) {
-              const runnerBefore = new AnimateRunner({
-                end(fn) {
-                  // call the before animation function, then mark runner done
-                  const endFn =
-                    before(fn) ||
-                    (() => {
-                      /* empty */
-                    });
-
-                  endFn();
-                },
-                cancel() {
-                  (
-                    before(true) ||
-                    (() => {
-                      /* empty */
-                    })
-                  )();
-                },
-              });
-
-              chain.push(runnerBefore);
-            }
-
-            if (chain.length) {
-              const runnerApplyOptions = new AnimateRunner({
-                end(fn) {
-                  applyOptions();
-                  fn(true);
-                },
-                cancel() {
-                  applyOptions();
-                },
-              });
-
-              chain.push(runnerApplyOptions);
-            } else {
-              applyOptions();
-            }
-
-            if (after) {
-              const runnerAfter = new AnimateRunner({
-                end(fn) {
-                  const endFn =
-                    after(fn) ||
-                    (() => {
-                      /* empty */
-                    });
-
-                  endFn();
-                },
-                cancel() {
-                  (
-                    after(true) ||
-                    (() => {
-                      /* empty */
-                    })
-                  )();
-                },
-              });
-
-              chain.push(runnerAfter);
-            }
-
-            // finally, set host for overall runner
-            runner.setHost({
-              end() {
-                endAnimations();
-              },
-              cancel() {
-                endAnimations(true);
-              },
-            });
-
-            AnimateRunner._chain(chain, onComplete);
-
-            return runner;
-
-            function onComplete(success) {
-              close();
-              runner.complete(success);
-            }
-
-            function endAnimations(cancelled) {
-              if (!animationClosed) {
-                (
-                  closeActiveAnimations ||
-                  (() => {
-                    /* empty */
-                  })
-                )(cancelled);
-                onComplete(cancelled);
-              }
-            }
-          },
         };
 
-        function executeAnimationFn(
-          fn,
-          elemParam,
-          eventParam,
-          optionsParam,
-          onDone,
-        ) {
-          let args;
+        // ---- helpers ----
+        function lookupAnimations(classList) {
+          classList = isArray(classList) ? classList : classList.split(" ");
+          const matches = [];
 
-          switch (eventParam) {
-            case "animate":
-              args = [elemParam, optionsParam.from, optionsParam.to, onDone];
-              break;
+          const flagMap = {};
 
-            case "setClass":
-              args = [elemParam, classesToAdd, classesToRemove, onDone];
-              break;
+          for (let i = 0; i < classList.length; i++) {
+            const klass = classList[i];
 
-            case "addClass":
-              args = [elemParam, classesToAdd, onDone];
-              break;
+            const animationFactory =
+              $animateProvider.$$registeredAnimations[klass];
 
-            case "removeClass":
-              args = [elemParam, classesToRemove, onDone];
-              break;
-
-            default:
-              args = [elemParam, onDone];
-              break;
-          }
-
-          args.push(optionsParam);
-
-          let value = fn.apply(fn, args);
-
-          if (value) {
-            if (isFunction(value.start)) {
-              value = value.start();
-            }
-
-            if (value instanceof AnimateRunner) {
-              value.done(onDone);
-            } else if (isFunction(value)) {
-              // optional onEnd / onCancel callback
-              return value;
+            if (animationFactory && !flagMap[klass]) {
+              matches.push($injector.get(animationFactory));
+              flagMap[klass] = true;
             }
           }
 
-          return () => {
-            /* empty */
-          };
-        }
-
-        function groupEventedAnimations(
-          elemParam,
-          eventParam,
-          optionsParam,
-          animationsParam,
-          fnName,
-        ) {
-          const operations = [];
-
-          animationsParam.forEach((ani) => {
-            const animation = ani[fnName];
-
-            if (!animation) return;
-
-            // note that all of these animations will run in parallel
-            operations.push(() => {
-              const newRunner = new AnimateRunner({
-                end() {
-                  onAnimationComplete();
-                },
-                cancel() {
-                  onAnimationComplete(true);
-                },
-              });
-
-              const endProgressCb = executeAnimationFn(
-                animation,
-                elemParam,
-                eventParam,
-                optionsParam,
-                (result) => {
-                  const cancelled = result === false;
-
-                  onAnimationComplete(cancelled);
-                },
-              );
-
-              let resolved = false;
-
-              const onAnimationComplete = function (rejected) {
-                if (!resolved) {
-                  resolved = true;
-                  (
-                    endProgressCb ||
-                    (() => {
-                      /* empty */
-                    })
-                  )(rejected);
-                  newRunner.complete(!rejected);
-                }
-              };
-
-              return newRunner;
-            });
-          });
-
-          return operations;
+          return matches;
         }
 
         function packageAnimations(
           elementParam,
-          eventParam,
           optionsParam,
           animationsParam,
           fnName,
+          classNames,
         ) {
-          let operations = groupEventedAnimations(
-            elementParam,
-            eventParam,
-            optionsParam,
-            animationsParam,
-            fnName,
-          );
+          const operations = [];
 
-          if (operations.length === 0) {
-            let a;
+          animationsParam.forEach((ani) => {
+            const animationFn = ani[fnName];
 
-            let b;
+            if (!animationFn) return;
 
-            if (fnName === "beforeSetClass") {
-              a = groupEventedAnimations(
-                elementParam,
-                "removeClass",
-                optionsParam,
-                animationsParam,
-                "beforeRemoveClass",
-              );
-              b = groupEventedAnimations(
-                elementParam,
-                "addClass",
-                optionsParam,
-                animationsParam,
-                "beforeAddClass",
-              );
-            } else if (fnName === "setClass") {
-              a = groupEventedAnimations(
-                elementParam,
-                "removeClass",
-                optionsParam,
-                animationsParam,
-                "removeClass",
-              );
-              b = groupEventedAnimations(
-                elementParam,
-                "addClass",
-                optionsParam,
-                animationsParam,
-                "addClass",
-              );
-            }
+            operations.push((done) => {
+              if (isFunction(animationFn)) {
+                let args;
 
-            if (a) {
-              operations = operations.concat(a);
-            }
-
-            if (b) {
-              operations = operations.concat(b);
-            }
-          }
-
-          if (operations.length === 0) return undefined;
-
-          // TODO(matsko): add documentation
-          return function startAnimation(callback) {
-            const runners = [];
-
-            if (operations.length) {
-              operations.forEach((animateFn) => {
-                runners.push(animateFn());
-              });
-            }
-
-            if (runners.length) {
-              AnimateRunner._all(runners, callback);
-            } else {
-              callback();
-            }
-
-            return function endFn(reject) {
-              runners.forEach((i) => {
-                if (reject) {
-                  i.cancel();
-                } else {
-                  i.end();
+                switch (fnName) {
+                  case "addClass":
+                    args = [elementParam, classNames.add, done];
+                    break;
+                  case "removeClass":
+                    args = [elementParam, classNames.remove, done];
+                    break;
+                  case "setClass":
+                    args = [
+                      elementParam,
+                      classNames.add,
+                      classNames.remove,
+                      done,
+                    ];
+                    break;
+                  case "animate":
+                    args = [
+                      elementParam,
+                      optionsParam.from,
+                      optionsParam.to,
+                      done,
+                    ];
+                    break;
+                  default:
+                    args = [elementParam, done];
                 }
+
+                const value = animationFn.apply(ani, args);
+
+                if (value instanceof AnimateRunner) value.done(done);
+              } else done();
+            });
+          });
+
+          if (!operations.length) return undefined;
+
+          return (done) => {
+            let completed = 0;
+
+            const total = operations.length;
+
+            operations.forEach((op) => {
+              op(() => {
+                if (++completed === total && isFunction(done)) done();
               });
-            };
+            });
           };
         }
       };
-
-      function lookupAnimations(classes) {
-        classes = isArray(classes) ? classes : classes.split(" ");
-        const matches = [];
-
-        const flagMap = {};
-
-        for (let i = 0; i < classes.length; i++) {
-          const klass = classes[i];
-
-          const animationFactory =
-            $animateProvider.$$registeredAnimations[klass];
-
-          if (animationFactory && !flagMap[klass]) {
-            matches.push($injector.get(animationFactory));
-            flagMap[klass] = true;
-          }
-        }
-
-        return matches;
-      }
     },
   ];
 }

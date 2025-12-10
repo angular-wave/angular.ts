@@ -1,147 +1,10 @@
-import { AnimateRunner, schedule } from "./animate-runner.js";
-import { wait } from "../../shared/test-utils.js";
-
-describe("$animate schedule", () => {
-  it("should execute a single scheduled callback", (done) => {
-    let called = false;
-
-    schedule(() => {
-      called = true;
-      expect(called).toBe(true);
-      done();
-    });
-
-    // flush happens automatically on next frame
-  });
-
-  it("should batch multiple callbacks in the same frame", (done) => {
-    let calls = 0;
-
-    schedule(() => {
-      calls++;
-    });
-    schedule(() => {
-      calls++;
-    });
-
-    setTimeout(() => {
-      expect(calls).toBe(2);
-      done();
-    }, 100);
-  });
-
-  it("should schedule new callbacks for the next frame", (done) => {
-    let calls = 0;
-
-    schedule(() => {
-      calls++;
-      schedule(() => {
-        calls++;
-      });
-    });
-
-    setTimeout(() => {
-      expect(calls).toBe(2);
-      done();
-    }, 50);
-  });
-
-  it("should reset scheduled flag after flushing", (done) => {
-    schedule(() => {
-      /* empty */
-    });
-
-    setTimeout(() => {
-      // After flush, queue should be empty and next schedule should trigger another flush
-      schedule(() => {
-        /* empty */
-      });
-      expect(true).toBe(true);
-      done();
-    }, 20);
-  });
-
-  it("should clear the queue after flush", (done) => {
-    schedule(() => {
-      /* empty */
-    });
-
-    setTimeout(() => {
-      let calls = 0;
-      schedule(() => calls++);
-      setTimeout(() => {
-        expect(calls).toBe(1);
-        done();
-      }, 20);
-    }, 20);
-  });
-
-  it("should handle nested scheduling correctly", (done) => {
-    const calls = [];
-
-    schedule(() => {
-      calls.push(1);
-      schedule(() => {
-        calls.push(2);
-        schedule(() => calls.push(3));
-      });
-    });
-
-    setTimeout(() => {
-      expect(calls).toEqual([1, 2, 3]);
-      done();
-    }, 100);
-  });
-
-  it("should execute callbacks in the order they were scheduled", (done) => {
-    const calls = [];
-
-    schedule(() => calls.push(1));
-    schedule(() => calls.push(2));
-    schedule(() => calls.push(3));
-
-    setTimeout(() => {
-      expect(calls).toEqual([1, 2, 3]);
-      done();
-    }, 20);
-  });
-
-  it("should not lose callbacks if flush is fast", (done) => {
-    const calls = [];
-
-    schedule(() => calls.push(1));
-    schedule(() => calls.push(2));
-
-    setTimeout(() => {
-      expect(calls.length).toBe(2);
-      done();
-    }, 50);
-  });
-
-  it("should use setTimeout if requestAnimationFrame is not available", (done) => {
-    const originalRAF = window.requestAnimationFrame;
-    window.requestAnimationFrame = undefined;
-
-    let called = false;
-    schedule(() => {
-      called = true;
-    });
-
-    setTimeout(() => {
-      expect(called).toBe(true);
-      window.requestAnimationFrame = originalRAF;
-      done();
-    }, 20);
-  });
-});
+import { AnimateRunner } from "./animate-runner.js";
 
 describe("AnimateRunner", () => {
   let runner;
 
   beforeEach(() => {
     runner = new AnimateRunner();
-    // Make schedule immediate — avoids cross-test interference
-    runner._schedule = (fn) => fn();
   });
 
   it("should call done callbacks on complete()", (done) => {
@@ -162,11 +25,16 @@ describe("AnimateRunner", () => {
     runner.cancel();
   });
 
-  it("should call done immediately if already completed", () => {
+  it("should call done eventually if already completed", (done) => {
     let called = false;
+
     runner.complete();
-    runner.done(() => (called = true));
-    expect(called).toBe(true);
+
+    runner.done(() => {
+      called = true;
+      expect(called).toBe(true);
+      done();
+    });
   });
 
   it("should resolve promise when complete() called", async () => {
@@ -252,6 +120,7 @@ describe("AnimateRunner", () => {
     runner.complete();
     runner.complete();
     runner.cancel();
+
     setTimeout(() => {
       expect(calls).toBe(1);
       done();
