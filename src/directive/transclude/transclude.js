@@ -1,6 +1,7 @@
 import { minErr } from "../../shared/utils.js";
 import { emptyElement, startingTag } from "../../shared/dom.js";
 import { NodeType } from "../../shared/node.js";
+import { $injectTokens } from "../../injection-tokens.js";
 
 /**
  * Directive that marks the insertion point for the transcluded DOM of the nearest parent directive that uses transclusion.
@@ -20,7 +21,7 @@ import { NodeType } from "../../shared/node.js";
  */
 const ngTranscludeMinErr = minErr("ngTransclude");
 
-ngTranscludeDirective.$inject = ["$compile"];
+ngTranscludeDirective.$inject = [$injectTokens._compile];
 /**
  * @param {ng.CompileService} $compile
  * @returns {ng.Directive}

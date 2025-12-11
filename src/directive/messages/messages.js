@@ -1,4 +1,11 @@
-import { entries, hasOwn, isArray, isString } from "../../shared/utils.js";
+import { $injectTokens } from "../../injection-tokens.js";
+import {
+  entries,
+  hasOwn,
+  isArray,
+  isIntanceOf,
+  isString,
+} from "../../shared/utils.js";
 
 const ACTIVE_CLASS = "ng-active";
 
@@ -208,7 +215,7 @@ class NgMessageCtrl {
   }
 }
 
-ngMessagesDirective.$inject = ["$animate"];
+ngMessagesDirective.$inject = [$injectTokens._animate];
 /**
  * @param {ng.AnimateService} $animate
  * @returns {ng.Directive<NgMessageCtrl>}
@@ -233,7 +240,16 @@ function truthy(val) {
   return isString(val) ? val.length : !!val;
 }
 
-ngMessagesIncludeDirective.$inject = ["$templateRequest", "$compile"];
+ngMessagesIncludeDirective.$inject = [
+  $injectTokens._templateRequest,
+  $injectTokens._compile,
+];
+
+/**
+ * @param {ng.TemplateRequestService} $templateRequest
+ * @param {ng.CompileService} $compile
+ * @returns {ng.Directive}
+ */
 export function ngMessagesIncludeDirective($templateRequest, $compile) {
   return {
     restrict: "AE",
@@ -249,7 +265,7 @@ export function ngMessagesIncludeDirective($templateRequest, $compile) {
         } else {
           // Non-empty template - compile and link
           $compile(html)($scope, (contents) => {
-            element.after(contents);
+            isIntanceOf(contents, Node) && element.after(contents);
           });
         }
       });
@@ -266,7 +282,7 @@ export const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
  * @returns {(any) => ng.Directive}
  */
 function ngMessageDirectiveFactory(isDefault) {
-  ngMessageDirectiveFn.$inject = ["$animate"];
+  ngMessageDirectiveFn.$inject = [$injectTokens._animate];
   /**
    * @param {ng.AnimateService} $animate
    * @returns {ng.Directive}

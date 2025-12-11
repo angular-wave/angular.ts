@@ -101,6 +101,7 @@ import { LocationProvider as TLocationProvider } from "./services/location/locat
 import { ViewService as TViewService } from "./router/view/view.js";
 import { StateDeclaration as TStateDeclaration } from "./router/state/interface.ts";
 import { StateObject as TStateObject } from "./router/state/state-object.js";
+import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.js";
 
 declare global {
   interface Function {
@@ -166,8 +167,10 @@ declare global {
     export type RootScopeService = TScope & Record<string, any>;
     export type RouterService = RouterProvider;
     export type StateService = TStateProvider;
+    export type StateRegistryService = TStateRegistryProvider;
     export type SseService = TSseService;
     export type SseConfig = TSseConfig;
+    export type TransitionService = TTransitionProvider;
     export type TemplateCacheService = Map<string, string>;
     export type TemplateRequestService = TTemplateRequestService;
     export type UrlService = TUrlService;

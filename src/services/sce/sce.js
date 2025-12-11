@@ -50,6 +50,12 @@ export function escapeForRegexp(str) {
   return str.replace(/([-()[\]{}+?*.$^|,:#<!\\])/g, "\\$1");
 }
 
+/**
+ * Adjusts a matcher string or RegExp into a proper RegExp.
+ *
+ * @param {string | RegExp | "self"} matcher
+ * @returns {RegExp | "self"}
+ */
 export function adjustMatcher(matcher) {
   if (matcher === "self") {
     return matcher;
@@ -168,8 +174,10 @@ export function adjustMatcher(matcher) {
 export class SceDelegateProvider {
   constructor() {
     // Resource URLs can also be trusted by policy.
+    /** @type {Array<RegExp | "self">} */
     let trustedResourceUrlList = ["self"];
 
+    /** @type {Array<RegExp | "self">} */
     let bannedResourceUrlList = [];
 
     /**

@@ -87,7 +87,13 @@ export class Attributes {
   $observe(key: string, fn: any): () => any;
   $$observers: any;
   setSpecialAttr(element: any, attrName: any, value: any): void;
-  sanitizeSrcset(value: any, invokeType: any): any;
-  srcset: any;
+  /**
+   *
+   * @param {unknown} value
+   * @param {string} invokeType
+   * @returns {unknown}
+   */
+  sanitizeSrcset(value: unknown, invokeType: string): unknown;
+  srcset: unknown;
 }
 import { directiveNormalize } from "../../shared/utils.js";

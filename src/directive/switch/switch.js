@@ -1,7 +1,8 @@
+import { $injectTokens } from "../../injection-tokens.js";
 import { domInsert, getBlockNodes } from "../../shared/dom.js";
 import { hasAnimate } from "../../shared/utils.js";
 
-ngSwitchDirective.$inject = ["$animate"];
+ngSwitchDirective.$inject = [$injectTokens._animate];
 
 /**
  * @param {ng.AnimateService} $animate

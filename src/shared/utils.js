@@ -49,28 +49,27 @@ export function uppercase(string) {
 }
 
 /**
- * @param {*} obj Reference to check.
+ * @param {unknown} obj Reference to check.
  * @return {boolean} Returns true if `obj` is an array or array-like object (NodeList, Arguments,
  *                   String ...)
  */
 export function isArrayLike(obj) {
   // `null`, `undefined` and `window` are not array-like
-  if (isNull(obj) || isWindow(obj)) return false;
+  if (isNullOrUndefined(obj) || isWindow(obj)) return false;
 
   // arrays, strings and jQuery/jqLite objects are array like
   // * we have to check the existence of JQLite first as this method is called
   //   via the forEach method when constructing the JQLite object in the first place
   if (isArray(obj) || obj instanceof Array || isString(obj)) return true;
 
-  // Support: iOS 8.2 (not reproducible in simulator)
-  // "length" in obj used to prevent JIT error (gh-11508)
-  const length = "length" in Object(obj) && obj.length;
+  const len = /** @type {Object} */ (obj).length;
 
   // NodeList objects (with `item` method) and
   // other objects with suitable length characteristics are array-like
   return (
-    isNumber(length) &&
-    ((length >= 0 && length - 1 in obj) || typeof obj.item === "function")
+    isNumber(len) &&
+    ((len >= 0 && len - 1 in /** @type {Object} */ (obj)) ||
+      typeof (/** @type {Object} */ (obj).item) === "function")
   );
 }
 
@@ -96,14 +95,22 @@ export function isDefined(value) {
 }
 
 /**
- * Wrapper for minification
- *
  * @template T
  * @param {any} array
  * @returns {array is T[]} true if array is an Array
  */
 export function isArray(array) {
   return Array.isArray(array);
+}
+
+/**
+ * @template T
+ * @param {any} val
+ * @param {new (...args: any[]) => T} type  The constructor to test against
+ * @returns {val is T}
+ */
+export function isIntanceOf(val, type) {
+  return val instanceof type;
 }
 
 /**
@@ -145,8 +152,8 @@ export function isString(value) {
 /**
  * Determines if a reference is a null.
  *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a null.
+ * @param {unknown} value Reference to check.
+ * @returns {value is null} True if `value` is a null.
  */
 export function isNull(value) {
   return value === null;
@@ -155,8 +162,8 @@ export function isNull(value) {
 /**
  * Determines if a reference is null or undefined.
  *
- * @param {*} obj Reference to check.
- * @returns {boolean} True if `value` is null or undefined.
+ * @param {unknown} obj Reference to check.
+ * @returns {obj is null | undefined} True if `value` is null or undefined.
  */
 export function isNullOrUndefined(obj) {
   return obj === null || typeof obj === "undefined";
@@ -181,8 +188,8 @@ export function notNullOrUndefined(obj) {
  * [`isFinite'](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isFinite)
  * method.
  *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `Number`.
+ * @param {unknown} value Reference to check.
+ * @returns {value is number} True if `value` is a `Number`.
  */
 export function isNumber(value) {
   return typeof value === "number";
@@ -244,11 +251,11 @@ export function isRegExp(value) {
 /**
  * Checks if `obj` is a window object.
  *
- * @param {*} obj Object to check
- * @returns {boolean} True if `obj` is a window obj.
+ * @param {unknown} obj Object to check
+ * @returns {obj is Window} True if `obj` is a window obj.
  */
 export function isWindow(obj) {
-  return obj && obj.window === obj;
+  return obj && isIntanceOf(obj, Window);
 }
 
 /**

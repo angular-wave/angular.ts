@@ -11,6 +11,7 @@ import {
   setCacheData,
 } from "../../shared/dom.js";
 import { getLocals } from "../state/state-registry.js";
+import { $injectTokens } from "../../injection-tokens.js";
 
 /**
  * `ng-view`: A viewport directive which is filled in by a view from the active state.
@@ -138,12 +139,17 @@ import { getLocals } from "../state/state-registry.js";
  * ```
  */
 
-$ViewDirective.$inject = ["$view", "$animate", "$viewScroll", "$interpolate"];
+$ViewDirective.$inject = [
+  $injectTokens._view,
+  $injectTokens._animate,
+  $injectTokens._viewScroll,
+  $injectTokens._interpolate,
+];
 
 /**
  * @param {ng.ViewService} $view
  * @param {ng.AnimateService} $animate
- * @param {*} $viewScroll
+ * @param {ng.AnchorScrollService} $viewScroll
  * @param {ng.InterpolateService} $interpolate
  * @returns {ng.Directive}
  */
@@ -322,7 +328,18 @@ export function $ViewDirective($view, $animate, $viewScroll, $interpolate) {
   return directive;
 }
 
-$ViewDirectiveFill.$inject = ["$compile", "$controller", "$transitions"];
+$ViewDirectiveFill.$inject = [
+  $injectTokens._compile,
+  $injectTokens._controller,
+  $injectTokens._transitions,
+];
+
+/**
+ * @param {ng.CompileService} $compile
+ * @param {ng.ControllerService} $controller
+ * @param {ng.TransitionService} $transitions
+ * @returns
+ */
 export function $ViewDirectiveFill($compile, $controller, $transitions) {
   const getControllerAs = parse("viewDecl.controllerAs");
 

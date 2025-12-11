@@ -1,8 +1,10 @@
-scriptDirective.$inject = ["$templateCache"];
+import { $injectTokens } from "../../injection-tokens";
+
+scriptDirective.$inject = [$injectTokens._templateCache];
 
 /**
  * @param {ng.TemplateCacheService} $templateCache
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function scriptDirective($templateCache) {
   return {

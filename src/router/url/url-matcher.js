@@ -134,14 +134,29 @@ export class UrlMatcher {
    */
   static compare(a, b) {
     /**
-     * Turn a UrlMatcher and all its parent matchers into an array
-     * of slash literals '/', string literals, and Param objects
+     * Converts a UrlMatcher and all its parent matchers into a flat array of segments.
      *
-     * This example matcher matches strings like "/foo/:param/tail":
-     * var matcher = $umf.compile("/foo").append($umf.compile("/:param")).append($umf.compile("/")).append($umf.compile("tail"));
-     * var result = segments(matcher); // [ '/', 'foo', '/', Param, '/', 'tail' ]
+     * Each segment is one of:
+     *  - A slash literal `'/'`
+     *  - A string literal (path segment)
+     *  - A `Param` object representing a URL parameter
      *
-     * Caches the result as `matcher._cache.segments`
+     * Example:
+     * ```js
+     * // Matches strings like "/foo/:param/tail"
+     * var matcher = $umf.compile("/foo")
+     *                  .append($umf.compile("/:param"))
+     *                  .append($umf.compile("/"))
+     *                  .append($umf.compile("tail"));
+     *
+     * var result = segments(matcher);
+     * // result: [ '/', 'foo', '/', Param, '/', 'tail' ]
+     * ```
+     *
+     * The computed segments are cached in `matcher._cache.segments` for faster future access.
+     *
+     * @param {UrlMatcher} matcher The matcher object to convert into segments. Must have `_cache.path`.
+     * @returns {(string | Param)[]} An array of segments representing the URL pattern.
      */
     const segments = (matcher) =>
       (matcher._cache.segments =
@@ -598,7 +613,9 @@ export class UrlMatcher {
       if (isArray(encoded)) return acc + map(encoded, encodeDashes).join("-");
 
       // If the parameter type is "raw", then do not encodeURIComponent
-      if (param.raw) return acc + encoded;
+      if (param.raw) {
+        return acc + encoded;
+      }
 
       // Encode the value
       return acc + encodeURIComponent(encoded);
