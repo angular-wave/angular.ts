@@ -1,5 +1,13 @@
 export function escapeForRegexp(str: any): any;
-export function adjustMatcher(matcher: any): any;
+/**
+ * Adjusts a matcher string or RegExp into a proper RegExp.
+ *
+ * @param {string | RegExp | "self"} matcher
+ * @returns {RegExp | "self"}
+ */
+export function adjustMatcher(
+  matcher: string | RegExp | "self",
+): RegExp | "self";
 export function SceProvider(): void;
 export class SceProvider {
   /**

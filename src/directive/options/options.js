@@ -1,3 +1,4 @@
+import { $injectTokens } from "../../injection-tokens";
 import { emptyElement, removeElement, startingTag } from "../../shared/dom.js";
 import { NodeType } from "../../shared/node.js";
 import {
@@ -31,7 +32,7 @@ const NG_OPTIONS_REGEXP =
 // 8: collection expression
 // 9: track by expression
 
-ngOptionsDirective.$inject = ["$compile", "$parse"];
+ngOptionsDirective.$inject = [$injectTokens._compile, $injectTokens._parse];
 /**
  *
  * @param {ng.CompileService} $compile

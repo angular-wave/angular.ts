@@ -1,23 +1,29 @@
 /**
  * @param {ng.ViewService} $view
  * @param {ng.AnimateService} $animate
- * @param {*} $viewScroll
+ * @param {ng.AnchorScrollService} $viewScroll
  * @param {ng.InterpolateService} $interpolate
  * @returns {ng.Directive}
  */
 export function $ViewDirective(
   $view: ng.ViewService,
   $animate: ng.AnimateService,
-  $viewScroll: any,
+  $viewScroll: ng.AnchorScrollService,
   $interpolate: ng.InterpolateService,
 ): ng.Directive;
 export namespace $ViewDirective {
   let $inject: string[];
 }
+/**
+ * @param {ng.CompileService} $compile
+ * @param {ng.ControllerService} $controller
+ * @param {ng.TransitionService} $transitions
+ * @returns
+ */
 export function $ViewDirectiveFill(
-  $compile: any,
-  $controller: any,
-  $transitions: any,
+  $compile: ng.CompileService,
+  $controller: ng.ControllerService,
+  $transitions: ng.TransitionService,
 ): {
   priority: number;
   compile(tElement: any): (scope: any, $element: any) => void;

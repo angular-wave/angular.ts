@@ -1,3 +1,4 @@
+import { $injectTokens } from "../../injection-tokens.js";
 import {
   addDateMinutes,
   convertTimezoneToLocal,
@@ -1055,7 +1056,7 @@ function checkboxInputType(scope, element, attr, ctrl, $filter, $parse) {
   ctrl.$parsers.push((value) => (value ? trueValue : falseValue));
 }
 
-inputDirective.$inject = ["$filter", "$parse"];
+inputDirective.$inject = [$injectTokens._filter, $injectTokens._parse];
 
 /**
  * @param {ng.FilterFactory} $filter

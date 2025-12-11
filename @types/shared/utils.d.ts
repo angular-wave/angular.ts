@@ -23,11 +23,11 @@ export function lowercase(string: string): string;
  */
 export function uppercase(string: string): string;
 /**
- * @param {*} obj Reference to check.
+ * @param {unknown} obj Reference to check.
  * @return {boolean} Returns true if `obj` is an array or array-like object (NodeList, Arguments,
  *                   String ...)
  */
-export function isArrayLike(obj: any): boolean;
+export function isArrayLike(obj: unknown): boolean;
 /**
  * Determines if a reference is undefined.
  *
@@ -44,13 +44,21 @@ export function isUndefined(value: any): boolean;
  */
 export function isDefined<T>(value: T | undefined): value is T;
 /**
- * Wrapper for minification
- *
  * @template T
  * @param {any} array
  * @returns {array is T[]} true if array is an Array
  */
 export function isArray<T>(array: any): array is T[];
+/**
+ * @template T
+ * @param {any} val
+ * @param {new (...args: any[]) => T} type  The constructor to test against
+ * @returns {val is T}
+ */
+export function isIntanceOf<T>(
+  val: any,
+  type: new (...args: any[]) => T,
+): val is T;
 /**
  * Determines if a reference is an `Object`. Unlike `typeof` in JavaScript, `null`s are not
  * considered to be objects. Note that JavaScript arrays are objects.
@@ -78,17 +86,17 @@ export function isString<T>(value: T): value is T & string;
 /**
  * Determines if a reference is a null.
  *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a null.
+ * @param {unknown} value Reference to check.
+ * @returns {value is null} True if `value` is a null.
  */
-export function isNull(value: any): boolean;
+export function isNull(value: unknown): value is null;
 /**
  * Determines if a reference is null or undefined.
  *
- * @param {*} obj Reference to check.
- * @returns {boolean} True if `value` is null or undefined.
+ * @param {unknown} obj Reference to check.
+ * @returns {obj is null | undefined} True if `value` is null or undefined.
  */
-export function isNullOrUndefined(obj: any): boolean;
+export function isNullOrUndefined(obj: unknown): obj is null | undefined;
 /**
  * Determines if a reference is not null or undefined.
  *
@@ -105,10 +113,10 @@ export function notNullOrUndefined(obj: any): boolean;
  * [`isFinite'](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isFinite)
  * method.
  *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `Number`.
+ * @param {unknown} value Reference to check.
+ * @returns {value is number} True if `value` is a `Number`.
  */
-export function isNumber(value: any): boolean;
+export function isNumber(value: unknown): value is number;
 /**
  *
  * Determines if a value is a date.
@@ -142,10 +150,10 @@ export function isRegExp(value: any): boolean;
 /**
  * Checks if `obj` is a window object.
  *
- * @param {*} obj Object to check
- * @returns {boolean} True if `obj` is a window obj.
+ * @param {unknown} obj Object to check
+ * @returns {obj is Window} True if `obj` is a window obj.
  */
-export function isWindow(obj: any): boolean;
+export function isWindow(obj: unknown): obj is Window;
 /**
  * @param {*} obj
  * @returns {boolean}

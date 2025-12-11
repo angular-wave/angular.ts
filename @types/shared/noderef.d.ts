@@ -11,8 +11,8 @@ export class NodeRef {
   constructor(element: Node | Element | string | NodeList | Node[]);
   /** @private @type {Node | ChildNode | null} */
   private _node;
-  /** @private @type {Element | undefined} */
-  private _element;
+  /** @type {Element | undefined} */
+  _element: Element | undefined;
   /** @private @type {Array<Node> | undefined} a stable list on nodes */
   private _nodes;
   /** @type {boolean} */

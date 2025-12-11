@@ -8,6 +8,7 @@ import {
 } from "../../shared/utils.js";
 import { parse } from "../../shared/hof.js";
 import { getInheritedData } from "../../shared/dom.js";
+import { $injectTokens } from "../../injection-tokens.js";
 
 function parseStateRef(ref) {
   const paramsOnly = ref.match(/^\s*({[^}]*})\s*$/);
@@ -128,7 +129,18 @@ function bindEvents(element, scope, hookFn, ngStateOpts) {
 
 // // TODO: SEPARATE THESE OUT
 
-$StateRefDirective.$inject = ["$state", "$stateRegistry", "$transitions"];
+$StateRefDirective.$inject = [
+  $injectTokens._state,
+  $injectTokens._stateRegistry,
+  $injectTokens._transitions,
+];
+
+/**
+ * @param {ng.StateService} $stateService
+ * @param {ng.StateRegistryService} $stateRegistry
+ * @param {ng.TransitionService} $transitions
+ * @returns {ng.Directive}
+ */
 export function $StateRefDirective(
   $stateService,
   $stateRegistry,
@@ -204,15 +216,15 @@ export function $StateRefDirective(
 }
 
 $StateRefDynamicDirective.$inject = [
-  "$state",
-  "$stateRegistry",
-  "$transitions",
+  $injectTokens._state,
+  $injectTokens._stateRegistry,
+  $injectTokens._transitions,
 ];
 
 /**
- * @param $state
- * @param $stateRegistry
- * @param $transitions
+ * @param {ng.StateService} $state
+ * @param {ng.StateRegistryService} $stateRegistry
+ * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
 export function $StateRefDynamicDirective(
@@ -284,16 +296,16 @@ export function $StateRefDynamicDirective(
 }
 
 $StateRefActiveDirective.$inject = [
-  "$state",
-  "$router",
-  "$interpolate",
-  "$stateRegistry",
-  "$transitions",
+  $injectTokens._state,
+  $injectTokens._router,
+  $injectTokens._interpolate,
+  $injectTokens._stateRegistry,
+  $injectTokens._transitions,
 ];
 
 /**
- * @param {*} $state
- * @param {import('../router.js').RouterProvider} $router
+ * @param {ng.StateService} $state
+ * @param {ng.RouterService} $router
  * @param {ng.InterpolateService} $interpolate
  * @param {*} $stateRegistry
  * @param {*} $transitions

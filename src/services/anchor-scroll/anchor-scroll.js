@@ -106,7 +106,7 @@ export class AnchorScrollProvider {
       }
 
       /** @type {AnchorScrollService} */
-      const scroll = function (hash) {
+      const scroll = function (/** @type {string | number} */ hash) {
         // Allow numeric hashes
         hash = isString(hash)
           ? hash

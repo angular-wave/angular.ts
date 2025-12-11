@@ -274,6 +274,12 @@ export class Attributes {
     element.attributes.setNamedItem(attribute);
   }
 
+  /**
+   *
+   * @param {unknown} value
+   * @param {string} invokeType
+   * @returns {unknown}
+   */
   sanitizeSrcset(value, invokeType) {
     let i;
 
@@ -286,7 +292,7 @@ export class Attributes {
         "srcset",
         'Can\'t pass trusted values to `{0}`: "{1}"',
         invokeType,
-        value.toString(),
+        /** @type {Object} */ (value).toString(),
       );
     }
 

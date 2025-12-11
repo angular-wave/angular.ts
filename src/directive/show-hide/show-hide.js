@@ -1,10 +1,11 @@
+import { $injectTokens } from "../../injection-tokens";
 import { hasAnimate } from "../../shared/utils.js";
 
 const NG_HIDE_CLASS = "ng-hide";
 
 const NG_HIDE_IN_PROGRESS_CLASS = "ng-hide-animate";
 
-ngShowDirective.$inject = ["$animate"];
+ngShowDirective.$inject = [$injectTokens._animate];
 /**
  * @param {ng.AnimateService} $animate
  * @returns {ng.Directive}
@@ -39,7 +40,7 @@ export function ngShowDirective($animate) {
   };
 }
 
-ngHideDirective.$inject = ["$animate"];
+ngHideDirective.$inject = [$injectTokens._animate];
 /**
  * @returns {import('../../interface.ts').Directive}
  */

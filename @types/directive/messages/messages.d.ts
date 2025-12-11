@@ -8,14 +8,15 @@ export function ngMessagesDirective(
 export namespace ngMessagesDirective {
   let $inject: string[];
 }
+/**
+ * @param {ng.TemplateRequestService} $templateRequest
+ * @param {ng.CompileService} $compile
+ * @returns {ng.Directive}
+ */
 export function ngMessagesIncludeDirective(
-  $templateRequest: any,
-  $compile: any,
-): {
-  restrict: string;
-  require: string;
-  link($scope: any, element: any, attrs: any): void;
-};
+  $templateRequest: ng.TemplateRequestService,
+  $compile: ng.CompileService,
+): ng.Directive;
 export namespace ngMessagesIncludeDirective {
   let $inject_1: string[];
   export { $inject_1 as $inject };

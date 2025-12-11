@@ -1,41 +1,43 @@
+/**
+ * @param {ng.StateService} $stateService
+ * @param {ng.StateRegistryService} $stateRegistry
+ * @param {ng.TransitionService} $transitions
+ * @returns {ng.Directive}
+ */
 export function $StateRefDirective(
-  $stateService: any,
-  $stateRegistry: any,
-  $transitions: any,
-): {
-  restrict: string;
-  require: string[];
-  link: (scope: any, element: any, attrs: any, ngSrefActive: any) => void;
-};
+  $stateService: ng.StateService,
+  $stateRegistry: ng.StateRegistryService,
+  $transitions: ng.TransitionService,
+): ng.Directive;
 export namespace $StateRefDirective {
   let $inject: string[];
 }
 /**
- * @param $state
- * @param $stateRegistry
- * @param $transitions
+ * @param {ng.StateService} $state
+ * @param {ng.StateRegistryService} $stateRegistry
+ * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
 export function $StateRefDynamicDirective(
-  $state: any,
-  $stateRegistry: any,
-  $transitions: any,
+  $state: ng.StateService,
+  $stateRegistry: ng.StateRegistryService,
+  $transitions: ng.TransitionService,
 ): ng.Directive;
 export namespace $StateRefDynamicDirective {
   let $inject_1: string[];
   export { $inject_1 as $inject };
 }
 /**
- * @param {*} $state
- * @param {import('../router.js').RouterProvider} $router
+ * @param {ng.StateService} $state
+ * @param {ng.RouterService} $router
  * @param {ng.InterpolateService} $interpolate
  * @param {*} $stateRegistry
  * @param {*} $transitions
  * @returns {ng.Directive}
  */
 export function $StateRefActiveDirective(
-  $state: any,
-  $router: import("../router.js").RouterProvider,
+  $state: ng.StateService,
+  $router: ng.RouterService,
   $interpolate: ng.InterpolateService,
   $stateRegistry: any,
   $transitions: any,

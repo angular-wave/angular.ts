@@ -1,3 +1,4 @@
+import { $injectTokens } from "../../injection-tokens.js";
 import { getCacheData } from "../../shared/dom.js";
 import { NodeType } from "../../shared/node.js";
 import {
@@ -29,7 +30,7 @@ class SelectController {
   /**
    * @type {Array<string>}
    */
-  /* @ignore */ static $inject = ["$element", "$scope"];
+  /* @ignore */ static $inject = [$injectTokens._element, $injectTokens._scope];
 
   /**
    * @param {HTMLSelectElement} $element
@@ -582,10 +583,12 @@ export function selectDirective() {
 // The option directive is purely designed to communicate the existence (or lack of)
 // of dynamically created (and destroyed) option elements to their containing select
 // directive via its controller.
+
+optionDirective.$inject = [$injectTokens._interpolate];
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @param {ng.InterpolateService} $interpolate
+ * @returns {ng.Directive}
  */
-optionDirective.$inject = ["$interpolate"];
 export function optionDirective($interpolate) {
   return {
     restrict: "E",

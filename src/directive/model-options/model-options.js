@@ -1,3 +1,4 @@
+import { $injectTokens } from "../../injection-tokens.js";
 import { entries, isDefined, keys, trim } from "../../shared/utils.js";
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
@@ -13,7 +14,7 @@ const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
 
 class NgModelOptionsController {
   static $nonscope = true;
-  /* @ignore */ static $inject = ["$attrs", "$scope"];
+  /* @ignore */ static $inject = [$injectTokens._attrs, $injectTokens._scope];
 
   /**
    * @param {ng.Attributes} $attrs

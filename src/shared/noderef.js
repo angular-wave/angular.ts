@@ -16,7 +16,7 @@ export class NodeRef {
     /** @private @type {Node | ChildNode | null} */
     this._node = null;
 
-    /** @private @type {Element | undefined} */
+    /** @type {Element | undefined} */
     this._element = undefined;
 
     /** @private @type {Array<Node> | undefined} a stable list on nodes */

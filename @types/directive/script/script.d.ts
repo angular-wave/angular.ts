@@ -1,10 +1,10 @@
 /**
  * @param {ng.TemplateCacheService} $templateCache
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function scriptDirective(
   $templateCache: ng.TemplateCacheService,
-): import("../../interface.ts").Directive;
+): ng.Directive;
 export namespace scriptDirective {
-  let $inject: string[];
+  let $inject: any[];
 }
