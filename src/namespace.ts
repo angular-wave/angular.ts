@@ -98,6 +98,7 @@ import { TransitionProvider as TTransitionProvider } from "./router/transition/t
 import { AnimateProvider as TAnimateProvider } from "./animations/animate.js";
 import { UrlService as TUrlService } from "./router/url/url-service.js";
 import { LocationProvider as TLocationProvider } from "./services/location/location.js";
+import { ViewService as TViewService } from "./router/view/view.js";
 
 /* ────────────────────────────────────────────────
    Runtime global initialization
@@ -120,7 +121,7 @@ declare global {
     export type Angular = TAngular;
     export type Attributes = TAttributes & Record<string, any>;
     export type Directive<TController = any> = TDirective<TController>;
-    export type DirectiveFactory = TDirectiveFactory & Function;
+    export type DirectiveFactory = TDirectiveFactory;
     export type AnnotatedDirectiveFactory = TAnnotatedDirectiveFactory;
     export type Component = TComponent & Record<string, any>;
     export type Controller = TController;
@@ -175,6 +176,7 @@ declare global {
     export type TemplateCacheService = Map<string, string>;
     export type TemplateRequestService = TTemplateRequestService;
     export type UrlService = TUrlService;
+    export type ViewService = TViewService;
 
     // Support types
     export type ErrorHandlingConfig = TErrorHandlingConfig;

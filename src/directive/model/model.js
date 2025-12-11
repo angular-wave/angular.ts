@@ -86,7 +86,7 @@ export class NgModelController {
    * @param {Element} $element
    * @param {ng.ParseService} $parse
    * @param {ng.AnimateService} $animate
-   * @param {*} $interpolate
+   * @param {ng.InterpolateService} $interpolate
    */
   constructor(
     $scope,

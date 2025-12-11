@@ -55,7 +55,7 @@ export class NgModelController {
    * @param {Element} $element
    * @param {ng.ParseService} $parse
    * @param {ng.AnimateService} $animate
-   * @param {*} $interpolate
+   * @param {ng.InterpolateService} $interpolate
    */
   constructor(
     $scope: ng.Scope,
@@ -64,7 +64,7 @@ export class NgModelController {
     $element: Element,
     $parse: ng.ParseService,
     $animate: ng.AnimateService,
-    $interpolate: any,
+    $interpolate: ng.InterpolateService,
   );
   /** @type {any} The actual value from the control's view  */
   $viewValue: any;
@@ -97,7 +97,7 @@ export class NgModelController {
   $error: {};
   $$success: {};
   $pending: any;
-  $name: any;
+  $name: string;
   $$parentForm: {
     $nonscope: boolean;
     $addControl: Function;

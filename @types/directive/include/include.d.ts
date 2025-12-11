@@ -17,11 +17,11 @@ export namespace ngIncludeDirective {
 }
 /**
  * @param {ng.CompileService} $compile
- * @returns {import("../../interface.ts").Directive}
+ * @returns {ng.Directive}
  */
 export function ngIncludeFillContentDirective(
   $compile: ng.CompileService,
-): import("../../interface.ts").Directive;
+): ng.Directive;
 export namespace ngIncludeFillContentDirective {
   let $inject_1: string[];
   export { $inject_1 as $inject };

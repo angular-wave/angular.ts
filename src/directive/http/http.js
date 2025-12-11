@@ -21,6 +21,7 @@ function defineDirective(method, attrOverride) {
 
   const directive = createHttpDirective(method, attrName);
 
+  // @ts-ignore
   directive.$inject = [
     $t._http,
     $t._compile,

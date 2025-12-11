@@ -584,7 +584,7 @@ export class CompileProvider {
       $t._animate,
       /**
        * @param {ng.InjectorService} $injector
-       * @param {*} $interpolate
+       * @param {ng.InterpolateService} $interpolate
        * @param {ng.ExceptionHandlerService} $exceptionHandler
        * @param {ng.TemplateRequestService} $templateRequest
        * @param {ng.ParseService} $parse
@@ -2372,7 +2372,7 @@ export class CompileProvider {
 
         /**
          *
-         * @param {import("../../interface.ts").Directive[]} directives
+         * @param {ng.Directive[]} directives
          * @param {NodeRef} $compileNode
          * @param {Attributes} tAttrs
          * @param {Element} $rootElement

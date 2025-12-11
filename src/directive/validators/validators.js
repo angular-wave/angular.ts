@@ -37,7 +37,7 @@ export const requiredDirective = [
   $t._parse,
   /**
    * @param {import("../../core/parse/interface.ts").ParseService} $parse
-   * @returns {import("../../interface.ts").Directive}
+   * @returns {ng.Directive}
    */
   ($parse) => ({
     restrict: "A",
@@ -118,7 +118,7 @@ export const patternDirective = [
   $t._parse,
   /**
    * @param {import("../../core/parse/interface.ts").ParseService} $parse
-   * @returns {import("../../interface.ts").Directive}
+   * @returns {ng.Directive}
    */
   ($parse) => ({
     restrict: "A",

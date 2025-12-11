@@ -6,8 +6,8 @@ import { $injectTokens as $t } from "../injection-tokens.js";
 $$AnimateChildrenDirective.$inject = [$t._interpolate];
 
 /**
- * @param {*} $interpolate
- * @returns {import("../interface.ts").Directive}
+ * @param {ng.InterpolateService} $interpolate
+ * @returns {ng.Directive}
  */
 export function $$AnimateChildrenDirective($interpolate) {
   return {

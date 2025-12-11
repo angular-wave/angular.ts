@@ -14,13 +14,13 @@ export namespace $StateRefDirective {
  * @param $state
  * @param $stateRegistry
  * @param $transitions
- * @returns {import("../../interface.ts").Directive}
+ * @returns {ng.Directive}
  */
 export function $StateRefDynamicDirective(
   $state: any,
   $stateRegistry: any,
   $transitions: any,
-): import("../../interface.ts").Directive;
+): ng.Directive;
 export namespace $StateRefDynamicDirective {
   let $inject_1: string[];
   export { $inject_1 as $inject };
@@ -28,18 +28,18 @@ export namespace $StateRefDynamicDirective {
 /**
  * @param {*} $state
  * @param {import('../router.js').RouterProvider} $router
- * @param {*} $interpolate
+ * @param {ng.InterpolateService} $interpolate
  * @param {*} $stateRegistry
  * @param {*} $transitions
- * @returns {import("../../interface.ts").Directive}
+ * @returns {ng.Directive}
  */
 export function $StateRefActiveDirective(
   $state: any,
   $router: import("../router.js").RouterProvider,
-  $interpolate: any,
+  $interpolate: ng.InterpolateService,
   $stateRegistry: any,
   $transitions: any,
-): import("../../interface.ts").Directive;
+): ng.Directive;
 export namespace $StateRefActiveDirective {
   let $inject_2: string[];
   export { $inject_2 as $inject };

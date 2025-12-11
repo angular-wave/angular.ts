@@ -124,7 +124,7 @@ export class FormController {
    * @param {ng.Attributes} $attrs
    * @param {ng.Scope} $scope
    * @param {ng.AnimateService} $animate
-   * @param {*} $interpolate
+   * @param {ng.InterpolateService} $interpolate
    */
   constructor($element, $attrs, $scope, $animate, $interpolate) {
     this.$$controls = [];

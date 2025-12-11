@@ -116,7 +116,7 @@ import {
 } from "./router/directives/state-directives.js";
 import {
   $ViewDirectiveFill,
-  ngView,
+  $ViewDirective,
 } from "./router/directives/view-directive.js";
 import { ngChannelDirective } from "./directive/channel/channel.js";
 import { ngSetterDirective } from "./directive/setter/setter.js";
@@ -243,7 +243,7 @@ export function registerNgModule(angular) {
               ngSrefActive: $StateRefActiveDirective,
               ngSrefActiveEq: $StateRefActiveDirective,
               ngState: $StateRefDynamicDirective,
-              ngView,
+              ngView: $ViewDirective,
             })
             .directive({
               ngView: $ViewDirectiveFill,

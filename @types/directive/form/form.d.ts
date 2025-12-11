@@ -78,17 +78,17 @@ export class FormController {
    * @param {ng.Attributes} $attrs
    * @param {ng.Scope} $scope
    * @param {ng.AnimateService} $animate
-   * @param {*} $interpolate
+   * @param {ng.InterpolateService} $interpolate
    */
   constructor(
     $element: Element,
     $attrs: ng.Attributes,
     $scope: ng.Scope,
     $animate: ng.AnimateService,
-    $interpolate: any,
+    $interpolate: ng.InterpolateService,
   );
   $$controls: any[];
-  $name: any;
+  $name: string;
   /**
    * @property {boolean} $dirty True if user has already interacted with the form.
    */

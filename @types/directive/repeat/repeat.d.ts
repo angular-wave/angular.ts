@@ -1,11 +1,9 @@
 /**
  * TODO // Add type for animate service
  * @param {*}  $animate
- * @returns {import("../../interface.ts").Directive}
+ * @returns {ng.Directive}
  */
-export function ngRepeatDirective(
-  $animate: any,
-): import("../../interface.ts").Directive;
+export function ngRepeatDirective($animate: any): ng.Directive;
 export namespace ngRepeatDirective {
   let $inject: string[];
 }

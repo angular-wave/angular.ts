@@ -1,10 +1,10 @@
 /**
- * @param {*} $interpolate
- * @returns {import("../interface.ts").Directive}
+ * @param {ng.InterpolateService} $interpolate
+ * @returns {ng.Directive}
  */
 export function $$AnimateChildrenDirective(
-  $interpolate: any,
-): import("../interface.ts").Directive;
+  $interpolate: ng.InterpolateService,
+): ng.Directive;
 export namespace $$AnimateChildrenDirective {
   let $inject: string[];
 }

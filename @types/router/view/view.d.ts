@@ -4,11 +4,11 @@ export class ViewService {
   _listeners: any[];
   $get: () => this;
   /**
-   * @param {?import('../state/state-object.js').StateObject} context
+   * @param {?import('../state/state-object.js').StateObject} [context]
    * @return {?import('../state/state-object.js').StateObject}
    */
   rootViewContext(
-    context: import("../state/state-object.js").StateObject | null,
+    context?: import("../state/state-object.js").StateObject | null,
   ): import("../state/state-object.js").StateObject | null;
   _rootContext: any;
   _viewConfigFactory(factory: any): void;
