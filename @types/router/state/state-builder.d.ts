@@ -38,8 +38,9 @@
  *   new Resolvable("myBarResolve", function(dep) { return dep.fetchSomethingAsPromise() }, [ "DependencyName" ]),
  *   { provide: "myBazResolve", useFactory: function(dep) { dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
  * ]
+ * @param {ng.StateObject} state
  */
-export function resolvablesBuilder(state: any): any[];
+export function resolvablesBuilder(state: ng.StateObject): any[];
 /**
  * A internal global service
  *

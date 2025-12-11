@@ -8,20 +8,21 @@
 export class StateRegistryProvider {
   static $inject: string[];
   /**
-   * @param urlService
-   * @param stateService
-   * @param {import('../router.js').RouterProvider} globals
-   * @param viewService
+   * @param {ng.UrlService} urlService
+   * @param {ng.StateService} stateService
+   * @param {ng.RouterService} globals
+   * @param {ng.ViewService} viewService
    */
   constructor(
-    urlService: any,
-    stateService: any,
-    globals: import("../router.js").RouterProvider,
-    viewService: any,
+    urlService: ng.UrlService,
+    stateService: ng.StateService,
+    globals: ng.RouterService,
+    viewService: ng.ViewService,
   );
-  states: {};
-  urlService: any;
-  urlServiceRules: any;
+  /** @type {Record<string, import("./state-object.js").StateObject>} */
+  states: Record<string, import("./state-object.js").StateObject>;
+  urlService: import("../url/url-service.js").UrlService;
+  urlServiceRules: import("../url/url-rules.js").UrlRules;
   $injector: any;
   listeners: any[];
   matcher: StateMatcher;
@@ -110,6 +111,10 @@ export class StateRegistryProvider {
    * @returns {import('./state-object').StateObject[]} a list of removed states
    */
   deregister(stateOrName: any): any[];
+  /**
+   * @return {ng.StateDeclaration[]}
+   */
+  getAll(): ng.StateDeclaration[];
   get(stateOrName: any, base: any, ...args: any[]): any;
   /**
    * Registers a [[BuilderFunction]] for a specific [[StateObject]] property (e.g., `parent`, `url`, or `path`).

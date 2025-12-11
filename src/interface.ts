@@ -378,8 +378,8 @@ export type DirectiveLinkFn<T> = (
  * A compile function used to prepare directives before linking.
  */
 export type DirectiveCompileFn = (
-  templateElement?: HTMLElement,
-  templateAttributes?: Attributes & Record<string, any>,
+  templateElement: HTMLElement,
+  templateAttributes: Attributes & Record<string, any>,
   transclude?: (...args: any[]) => any,
 ) => void | DirectiveLinkFn<any> | DirectivePrePost;
 

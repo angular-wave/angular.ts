@@ -678,8 +678,8 @@ export class CompileProvider {
             assertArg(scope, "scope");
 
             // could be empty nodelist
-            if (nodeRef._getAny()) {
-              setScope(nodeRef._getAny(), scope);
+            if (nodeRef._element) {
+              setScope(nodeRef._element, scope);
             }
 
             if (
@@ -1294,6 +1294,7 @@ export class CompileProvider {
 
           let directiveName;
 
+          /** @type {NodeRef} */
           let $template;
 
           let replaceDirective = originalReplaceDirective;
@@ -1653,7 +1654,6 @@ export class CompileProvider {
           // executes all directives on the current element
           for (let i = 0, ii = directives.length; i < ii; i++) {
             directive = directives[i];
-            $template = undefined;
 
             if (terminalPriority > directive.priority) {
               break; // prevent further processing of directives
@@ -1771,7 +1771,7 @@ export class CompileProvider {
                 compileNode = compileNodeRef.node;
                 ctxNodeRef.node = compileNode;
                 replaceWith(
-                  new NodeRef($template._getAny()),
+                  new NodeRef($template._element),
                   compileNode,
                   index,
                 );
@@ -1779,7 +1779,7 @@ export class CompileProvider {
                 // @ts-ignore
                 childTranscludeFn = compilationGenerator(
                   mightHaveMultipleTransclusionError,
-                  $template._getAny(),
+                  $template._element,
                   transcludeFn,
                   terminalPriority,
                   replaceDirective && replaceDirective.name,

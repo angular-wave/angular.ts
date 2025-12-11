@@ -95,6 +95,8 @@ import { AnimateProvider as TAnimateProvider } from "./animations/animate.js";
 import { UrlService as TUrlService } from "./router/url/url-service.js";
 import { LocationProvider as TLocationProvider } from "./services/location/location.js";
 import { ViewService as TViewService } from "./router/view/view.js";
+import { StateDeclaration as TStateDeclaration } from "./router/state/interface.ts";
+import { StateObject as TStateObject } from "./router/state/state-object.js";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -182,5 +184,7 @@ declare global {
     type Expression = TExpression;
     type NgModelController = TNgModelController;
     type Validator = TValidator;
+    type StateDeclaration = TStateDeclaration;
+    type StateObject = TStateObject;
   }
 }

@@ -62,7 +62,7 @@ export class Scope {
     }
   >;
   /** Current proxy being operated on */
-  $proxy: any;
+  $proxy: ProxyConstructor | ng.Scope;
   /** @type {Scope} The actual proxy */
   $handler: Scope;
   /** @type {*} Current target being called on */

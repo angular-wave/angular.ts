@@ -145,6 +145,10 @@ export function defaultHttpResponseTransform(data, headers) {
   return data;
 }
 
+/**
+ * @param {string} str
+ * @return {boolean}
+ */
 function isJsonLike(str) {
   const jsonStart = str.match(JSON_START);
 

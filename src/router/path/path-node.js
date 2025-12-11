@@ -25,6 +25,7 @@ export class PathNode {
       this.state = state;
       this.paramSchema = state.parameters({ inherit: false });
       this.paramValues = {};
+
       this.resolvables = state.resolvables.map((res) => res.clone());
     }
   }

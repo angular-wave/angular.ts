@@ -27,7 +27,9 @@ const $injectorMinErr = minErr("$injector");
 
 const STRICT_DI = "strict-di";
 
-/** @type {Object.<string, NgModule>} */
+/** @typedef {Object.<string, NgModule|null>} ModuleRegistry */
+
+/** @type {ModuleRegistry} */
 const moduleRegistry = {};
 
 export class Angular {
@@ -50,19 +52,19 @@ export class Angular {
     /**
      * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
      *
-     * @type {(element: Element, name: string?) => ng.Scope|undefined}
+     * @type {(element: Element, name?: string) => ng.Scope|undefined}
      */
     this.getController = getController;
 
     /**
      * Return instance of InjectorService attached to element
-     * @type {(Element) => ng.InjectorService}
+     * @type {typeof getInjector}
      */
     this.getInjector = getInjector;
 
     /**
      * Gets scope for a given element.
-     * @type {(Element) => ng.Scope}
+     *  @type {typeof getScope}
      */
     this.getScope = getScope;
 
@@ -242,18 +244,26 @@ export class Angular {
               /* empty */
             });
           } catch (error) {
-            $injector.strictDi = !!/strict mode/.exec(
-              error && error.toString(),
-            );
+            /** @type {string} */
+            const errorStr =
+              error instanceof Error ? error.toString() : String(error);
+
+            $injector.strictDi = !!/strict mode/.exec(errorStr);
           }
         }
 
-        $injector
-          .get($t._stateRegistry)
-          .get()
-          .map((x) => x.$$state().resolvables)
+        /** @type {import("./router/state/state-registry.js").StateRegistryProvider} */
+        const stateRegistry = $injector.get($t._stateRegistry);
+
+        stateRegistry
+          .getAll()
+          .map((x) => {
+            return x.$$state().resolvables;
+          })
           .reduce(unnestR, [])
-          .filter((x) => x.deps === "deferred")
+          .filter((x) => {
+            return x.deps === "deferred";
+          })
           .forEach(
             (resolvable) =>
               (resolvable.deps = annotate(
@@ -341,7 +351,7 @@ export class Angular {
 }
 
 /**
- * @param {Object.<string, NgModule>} obj
+ * @param {ModuleRegistry} obj
  * @param {string} name
  * @param {Function} factory
  * @returns {NgModule}

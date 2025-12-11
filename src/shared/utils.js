@@ -5,8 +5,8 @@ export const isProxySymbol = Symbol("isProxy");
 
 /**
  *
- * @param {*} value
- * @returns {boolean}
+ * @param {any} value
+ * @returns {value is ng.Scope}
  */
 export function isProxy(value) {
   return !!(value && value[isProxySymbol]);
@@ -85,10 +85,11 @@ export function isUndefined(value) {
 }
 
 /**
- * Determines if a reference is defined.
+ * Determines if a reference is defined (not `undefined`).
  *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is defined.
+ * @template T
+ * @param {T | undefined} value - Reference to check.
+ * @returns {value is T} True if `value` is defined.
  */
 export function isDefined(value) {
   return typeof value !== "undefined";
@@ -109,8 +110,9 @@ export function isArray(array) {
  * Determines if a reference is an `Object`. Unlike `typeof` in JavaScript, `null`s are not
  * considered to be objects. Note that JavaScript arrays are objects.
  *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is an `Object` but not `null`.
+ * @template T
+ * @param {T} value - Reference to check.
+ * @returns {value is T & object} True if `value` is an `Object` but not `null`.
  */
 export function isObject(value) {
   // http://jsperf.com/isobject4
@@ -130,9 +132,11 @@ export function isBlankObject(value) {
 }
 
 /**
- * Determines if a reference is a `String`.
+ * Determines if a reference is a `string`.
  *
- * @type {ng.Validator}
+ * @template T
+ * @param {T} value - The value to check.
+ * @returns {value is T & string} True if `value` is a string.
  */
 export function isString(value) {
   return typeof value === "string";
@@ -1063,6 +1067,13 @@ export function minErr(module) {
   };
 }
 
+/**
+ * Converts a value into a simplified debug-friendly string.
+ *
+ * @template T
+ * @param {T|ng.Scope} obj
+ * @returns {string}
+ */
 export function toDebugString(obj) {
   if (typeof obj === "function") {
     return obj.toString().replace(/ \{[\s\S]*$/, "");
@@ -1073,6 +1084,7 @@ export function toDebugString(obj) {
   }
 
   if (typeof obj !== "string") {
+    /** @type {object[]} */
     const seen = [];
 
     const copyObj = structuredClone(isProxy(obj) ? obj.$target : obj);
@@ -1267,8 +1279,9 @@ export function entries(obj) {
  * Wraps a function so it can only be called once.
  * Subsequent calls do nothing and return undefined.
  *
- * @param {Function} fn - The function to wrap.
- * @returns {Function} A new function that will call `fn` only once.
+ * @template {(...args: any[]) => any} F
+ * @param {F} fn - The function to wrap.
+ * @returns {(this: ThisParameterType<F>, ...args: Parameters<F>) => ReturnType<F> | undefined}
  */
 export function callBackOnce(fn) {
   let called = false;
@@ -1288,8 +1301,9 @@ export function callBackOnce(fn) {
  * Wraps a function so it will only be called starting from the second invocation.
  * The first call does nothing and returns undefined.
  *
- * @param {Function} fn - The function to wrap.
- * @returns {Function} A new function that will skip the first call.
+ * @template {(...args: any[]) => any} F
+ * @param {F} fn - The function to wrap.
+ * @returns {(this: ThisParameterType<F>, ...args: Parameters<F>) => ReturnType<F> | undefined}
  */
 export function callBackAfterFirst(fn) {
   let calledOnce = false;
@@ -1347,6 +1361,8 @@ export function startsWith(str, search) {
 /**
  * Loads and instantiates a WebAssembly module.
  * Tries streaming first, then falls back.
+ * @param {string} src
+ * @param {WebAssembly.Imports} imports
  */
 export async function instantiateWasm(src, imports = {}) {
   const res = await fetch(src);

@@ -1,9 +1,9 @@
 /**
  *
- * @param {*} value
- * @returns {boolean}
+ * @param {any} value
+ * @returns {value is ng.Scope}
  */
-export function isProxy(value: any): boolean;
+export function isProxy(value: any): value is ng.Scope;
 /**
  * @returns {number} an unique alpha-numeric string
  */
@@ -36,12 +36,13 @@ export function isArrayLike(obj: any): boolean;
  */
 export function isUndefined(value: any): boolean;
 /**
- * Determines if a reference is defined.
+ * Determines if a reference is defined (not `undefined`).
  *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is defined.
+ * @template T
+ * @param {T | undefined} value - Reference to check.
+ * @returns {value is T} True if `value` is defined.
  */
-export function isDefined(value: any): boolean;
+export function isDefined<T>(value: T | undefined): value is T;
 /**
  * Wrapper for minification
  *
@@ -54,10 +55,11 @@ export function isArray<T>(array: any): array is T[];
  * Determines if a reference is an `Object`. Unlike `typeof` in JavaScript, `null`s are not
  * considered to be objects. Note that JavaScript arrays are objects.
  *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is an `Object` but not `null`.
+ * @template T
+ * @param {T} value - Reference to check.
+ * @returns {value is T & object} True if `value` is an `Object` but not `null`.
  */
-export function isObject(value: any): boolean;
+export function isObject<T>(value: T): value is T & object;
 /**
  * Determines if a value is an object with a null prototype
  *
@@ -65,7 +67,14 @@ export function isObject(value: any): boolean;
  * @returns {boolean} True if `value` is an `Object` with a null prototype
  */
 export function isBlankObject(value: any): boolean;
-export function isString(value: unknown): boolean;
+/**
+ * Determines if a reference is a `string`.
+ *
+ * @template T
+ * @param {T} value - The value to check.
+ * @returns {value is T & string} True if `value` is a string.
+ */
+export function isString<T>(value: T): value is T & string;
 /**
  * Determines if a reference is a null.
  *
@@ -485,7 +494,14 @@ export function errorHandlingConfig(
  * @returns {function(string, ...*): Error} minErr instance
  */
 export function minErr(module: string): (arg0: string, ...args: any[]) => Error;
-export function toDebugString(obj: any): any;
+/**
+ * Converts a value into a simplified debug-friendly string.
+ *
+ * @template T
+ * @param {T|ng.Scope} obj
+ * @returns {string}
+ */
+export function toDebugString<T>(obj: T | ng.Scope): string;
 /**
  * Computes a hash of an 'obj'.
  * Hash of a:
@@ -564,18 +580,30 @@ export function entries<T>(
  * Wraps a function so it can only be called once.
  * Subsequent calls do nothing and return undefined.
  *
- * @param {Function} fn - The function to wrap.
- * @returns {Function} A new function that will call `fn` only once.
+ * @template {(...args: any[]) => any} F
+ * @param {F} fn - The function to wrap.
+ * @returns {(this: ThisParameterType<F>, ...args: Parameters<F>) => ReturnType<F> | undefined}
  */
-export function callBackOnce(fn: Function): Function;
+export function callBackOnce<F extends (...args: any[]) => any>(
+  fn: F,
+): (
+  this: ThisParameterType<F>,
+  ...args: Parameters<F>
+) => ReturnType<F> | undefined;
 /**
  * Wraps a function so it will only be called starting from the second invocation.
  * The first call does nothing and returns undefined.
  *
- * @param {Function} fn - The function to wrap.
- * @returns {Function} A new function that will skip the first call.
+ * @template {(...args: any[]) => any} F
+ * @param {F} fn - The function to wrap.
+ * @returns {(this: ThisParameterType<F>, ...args: Parameters<F>) => ReturnType<F> | undefined}
  */
-export function callBackAfterFirst(fn: Function): Function;
+export function callBackAfterFirst<F extends (...args: any[]) => any>(
+  fn: F,
+): (
+  this: ThisParameterType<F>,
+  ...args: Parameters<F>
+) => ReturnType<F> | undefined;
 /**
  * Delays execution for a specified number of milliseconds.
  *
@@ -613,10 +641,12 @@ export function startsWith(str: string, search: string): boolean;
 /**
  * Loads and instantiates a WebAssembly module.
  * Tries streaming first, then falls back.
+ * @param {string} src
+ * @param {WebAssembly.Imports} imports
  */
 export function instantiateWasm(
-  src: any,
-  imports?: {},
+  src: string,
+  imports?: WebAssembly.Imports,
 ): Promise<{
   instance: WebAssembly.Instance;
   exports: WebAssembly.Exports;

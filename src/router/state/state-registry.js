@@ -24,13 +24,15 @@ export class StateRegistryProvider {
   ]);
 
   /**
-   * @param urlService
-   * @param stateService
-   * @param {import('../router.js').RouterProvider} globals
-   * @param viewService
+   * @param {ng.UrlService} urlService
+   * @param {ng.StateService} stateService
+   * @param {ng.RouterService} globals
+   * @param {ng.ViewService} viewService
    */
   constructor(urlService, stateService, globals, viewService) {
+    /** @type {Record<string, import("./state-object.js").StateObject>} */
     this.states = {};
+
     stateService.stateRegistry = this; // <- circular wiring
     this.urlService = urlService;
     this.urlServiceRules = urlService.rules;
@@ -247,6 +249,13 @@ export class StateRegistryProvider {
     );
 
     return deregisteredStates;
+  }
+
+  /**
+   * @return {ng.StateDeclaration[]}
+   */
+  getAll() {
+    return keys(this.states).map((name) => this.states[name].self);
   }
 
   get(stateOrName, base) {

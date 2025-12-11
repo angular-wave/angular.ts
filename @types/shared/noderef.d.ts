@@ -13,7 +13,7 @@ export class NodeRef {
   private _node;
   /** @private @type {Element | undefined} */
   private _element;
-  /** @private @type {Array<Node>} a stable list on nodes */
+  /** @private @type {Array<Node> | undefined} a stable list on nodes */
   private _nodes;
   /** @type {boolean} */
   _isList: boolean;

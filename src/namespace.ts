@@ -99,13 +99,8 @@ import { AnimateProvider as TAnimateProvider } from "./animations/animate.js";
 import { UrlService as TUrlService } from "./router/url/url-service.js";
 import { LocationProvider as TLocationProvider } from "./services/location/location.js";
 import { ViewService as TViewService } from "./router/view/view.js";
-
-/* ────────────────────────────────────────────────
-   Runtime global initialization
-──────────────────────────────────────────────── */
-if (typeof globalThis.ng === "undefined") {
-  (globalThis as any).ng = {};
-}
+import { StateDeclaration as TStateDeclaration } from "./router/state/interface.ts";
+import { StateObject as TStateObject } from "./router/state/state-object.js";
 
 declare global {
   interface Function {
@@ -204,5 +199,7 @@ declare global {
     export type Expression = TExpression;
     export type NgModelController = TNgModelController;
     export type Validator = TValidator;
+    export type StateDeclaration = TStateDeclaration;
+    export type StateObject = TStateObject;
   }
 }
