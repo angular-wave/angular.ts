@@ -7,13 +7,14 @@ import { Rejection } from "../transition/reject-factory.js";
  *
  * If the transition should be ignored (because no parameter or states changed)
  * then the transition is ignored and not processed.
+ * @param {import("../transition/transition.js").Transition} trans
  */
 function ignoredHook(trans) {
   const ignoredReason = trans._ignoredReason();
 
   if (!ignoredReason) return undefined;
   trace.traceTransitionIgnored(trans);
-  const pending = trans.globals.transition;
+  const pending = trans._globals.transition;
 
   // The user clicked a link going back to the *current state* ('A')
   // However, there is also a pending transition in flight (to 'B')

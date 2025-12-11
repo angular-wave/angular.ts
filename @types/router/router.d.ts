@@ -12,33 +12,31 @@ export class RouterProvider {
    * The parameter values from the latest successful transition
    * @type {StateParams}
    */
-  _params: StateParams;
+  params: StateParams;
   /**
    * @type {number}
    */
-  _lastStartedTransitionId: number;
+  lastStartedTransitionId: number;
   /**
    * @type {Queue<import("./transition/transition.js").Transition>}
    */
-  _transitionHistory: Queue<import("./transition/transition.js").Transition>;
+  transitionHistory: Queue<import("./transition/transition.js").Transition>;
   /**
    * @type {Queue<import("./transition/transition.js").Transition>}
    */
-  _successfulTransitions: Queue<
-    import("./transition/transition.js").Transition
-  >;
+  successfulTransitions: Queue<import("./transition/transition.js").Transition>;
   /**
    * @type {import("./state/interface.ts").StateDeclaration|undefined}
    */
-  _current: import("./state/interface.ts").StateDeclaration | undefined;
+  current: import("./state/interface.ts").StateDeclaration | undefined;
   /**
    * @type {import("./state/state-object.js").StateObject|undefined}
    */
-  _$current: import("./state/state-object.js").StateObject | undefined;
+  $current: import("./state/state-object.js").StateObject | undefined;
   /**
    * @type {import("./transition/transition.js").Transition|undefined}
    */
-  _transition: import("./transition/transition.js").Transition | undefined;
+  transition: import("./transition/transition.js").Transition | undefined;
   $get: () => this;
 }
 /**

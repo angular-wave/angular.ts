@@ -280,7 +280,7 @@ export class Transition implements IHookRegistry {
    * @returns true if the Transition is ignored.
    */
   ignored(): boolean;
-  _ignoredReason(): "SameAsCurrent" | "SameAsPending";
+  _ignoredReason(): "SameAsPending" | "SameAsCurrent";
   /**
    * Runs the transition
    *
