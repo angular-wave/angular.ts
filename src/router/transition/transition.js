@@ -70,7 +70,7 @@ export class Transition {
 
     this._hookBuilder = new HookBuilder(this);
     /** Checks if this transition is currently active/running. */
-    this.isActive = () => this._globals._transition === this;
+    this.isActive = () => this._globals.transition === this;
     this._targetState = targetState;
 
     if (!targetState.valid()) {
@@ -544,7 +544,7 @@ export class Transition {
   }
 
   _ignoredReason() {
-    const pending = this._globals._transition;
+    const pending = this._globals.transition;
 
     const { reloadState } = this._options;
 
@@ -631,9 +631,9 @@ export class Transition {
     const startTransition = () => {
       const { _globals } = this;
 
-      _globals._lastStartedTransitionId = this.$id;
-      _globals._transition = this;
-      _globals._transitionHistory.enqueue(this);
+      _globals.lastStartedTransitionId = this.$id;
+      _globals.transition = this;
+      _globals.transitionHistory.enqueue(this);
       trace.traceTransitionStart(this);
 
       return Promise.resolve();

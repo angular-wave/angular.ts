@@ -296,10 +296,10 @@ export function registerNgModule(angular) {
     .factory("$stateParams", [
       $t._router,
       /**
-       * @param {import('./router/router.js').RouterProvider} globals
+       * @param {ng.RouterService} globals
        * @returns {import('./router/params/state-params.js').StateParams }
        */
-      (globals) => globals._params,
+      (globals) => globals.params,
     ])
     .value("$trace", trace);
 }

@@ -83,7 +83,7 @@ export class TransitionProvider {
     this._defineCorePaths();
     this._defineCoreEvents();
     this._registerCoreTransitionHooks();
-    globals._successfulTransitions.onEvict(treeChangesCleanup);
+    globals.successfulTransitions.onEvict(treeChangesCleanup);
   }
 
   $get = [
