@@ -15,6 +15,7 @@ import { Param } from "../params/param.js";
 import { Glob } from "../glob/glob.js";
 import { lazyLoadState } from "../hooks/lazy-load.js";
 import { EventBus } from "../../services/pubsub/pubsub.js";
+import { $injectTokens, provider } from "../../injection-tokens";
 
 const stdErr = minErr("$stateProvider");
 
@@ -51,20 +52,25 @@ export class StateProvider {
     return this.globals.$current;
   }
 
-  /* @ignore */ static $inject = ["$routerProvider", "$transitionsProvider"];
+  /* @ignore */ static $inject = provider([
+    $injectTokens._router,
+    $injectTokens._transitions,
+  ]);
 
   /**
    *
-   * @param {import('../router.js').RouterProvider} globals
+   * @param {ng.RouterService} globals
    * @param {*} transitionService
-   * @param {import('../../core/di/internal-injector.js').InjectorService} $injector
    */
-  constructor(globals, transitionService, $injector) {
-    this.stateRegistry = undefined;
-    this.urlService = undefined;
+  constructor(globals, transitionService) {
     this.globals = globals;
     this.transitionService = transitionService;
-    this.$injector = $injector;
+    this.stateRegistry = undefined;
+
+    /** @type {ng.UrlService} */
+    this.urlService = undefined;
+    /** @type {ng.InjectorService} */
+    this.$injector = undefined;
     this.invalidCallbacks = [];
 
     this._defaultErrorHandler = function $defaultErrorHandler($error$) {
@@ -82,7 +88,20 @@ export class StateProvider {
     );
   }
 
-  $get = () => this;
+  $get = [
+    $injectTokens._injector,
+    $injectTokens._url,
+    /**
+     * @param {ng.InjectorService} $injector
+     * @returns {StateProvider}
+     */
+    ($injector, $url) => {
+      this.urlService = $url;
+      this.$injector = $injector;
+
+      return this;
+    },
+  ];
 
   /**
    * Decorates states when they are registered

@@ -96,6 +96,8 @@ import { NgModelController as TNgModelController } from "./directive/model/model
 import { RouterProvider } from "./router/router.ts";
 import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.js";
 import { AnimateProvider as TAnimateProvider } from "./animations/animate.js";
+import { UrlService as TUrlService } from "./router/url/url-service.js";
+import { LocationProvider as TLocationProvider } from "./services/location/location.js";
 
 /* ────────────────────────────────────────────────
    Runtime global initialization
@@ -137,11 +139,12 @@ declare global {
     // Providers
     export type AnchorScrollProvider = TAnchorScrollProvider;
     export type AnimateProvider = TAnimateProvider;
+    export type FilterProvider = TFilterProvider;
     export type InterpolateProvider = TInterpolateProvider;
     export type HttpParamSerializerProvider = THttpParamSerializerProvider;
+    export type LocationProvider = TLocationProvider;
     export type SceProvider = TSceProvider;
     export type SceDelegateProvider = TSceDelegateProvider;
-    export type FilterProvider = TFilterProvider;
     export type TransitionProvider = TTransitionProvider;
 
     // Services
@@ -171,6 +174,7 @@ declare global {
     export type SseConfig = TSseConfig;
     export type TemplateCacheService = Map<string, string>;
     export type TemplateRequestService = TTemplateRequestService;
+    export type UrlService = TUrlService;
 
     // Support types
     export type ErrorHandlingConfig = TErrorHandlingConfig;

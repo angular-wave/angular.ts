@@ -92,6 +92,8 @@ import { NgModelController as TNgModelController } from "./directive/model/model
 import { RouterProvider } from "./router/router.ts";
 import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.js";
 import { AnimateProvider as TAnimateProvider } from "./animations/animate.js";
+import { UrlService as TUrlService } from "./router/url/url-service.js";
+import { LocationProvider as TLocationProvider } from "./services/location/location.js";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -119,11 +121,12 @@ declare global {
     type LinkFnMapping = TLinkFnMapping;
     type AnchorScrollProvider = TAnchorScrollProvider;
     type AnimateProvider = TAnimateProvider;
+    type FilterProvider = TFilterProvider;
     type InterpolateProvider = TInterpolateProvider;
     type HttpParamSerializerProvider = THttpParamSerializerProvider;
+    type LocationProvider = TLocationProvider;
     type SceProvider = TSceProvider;
     type SceDelegateProvider = TSceDelegateProvider;
-    type FilterProvider = TFilterProvider;
     type TransitionProvider = TTransitionProvider;
     type AnchorScrollService = TAnchorScrollService;
     type AnimateService = TAnimateService;
@@ -151,6 +154,7 @@ declare global {
     type SseConfig = TSseConfig;
     type TemplateCacheService = Map<string, string>;
     type TemplateRequestService = TTemplateRequestService;
+    type UrlService = TUrlService;
     type ErrorHandlingConfig = TErrorHandlingConfig;
     type ListenerFn = TListenerFn;
     type Listener = TListener;

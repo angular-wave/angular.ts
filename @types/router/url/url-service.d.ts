@@ -4,20 +4,21 @@
 export class UrlService {
   static $inject: string[];
   /**
-   * @param {import("../../services/location/location").LocationProvider} $locationProvider
+   * @param {ng.LocationProvider} $locationProvider
    * @param {import("../../router/state/state-service.js").StateProvider} stateService
    * @param {import("../router.js").RouterProvider} globals
    * @param {import("../../router/url/url-config.js").UrlConfigProvider} urlConfigProvider
    */
   constructor(
-    $locationProvider: any,
+    $locationProvider: ng.LocationProvider,
     stateService: import("../../router/state/state-service.js").StateProvider,
     globals: import("../router.js").RouterProvider,
     urlConfigProvider: import("../../router/url/url-config.js").UrlConfigProvider,
   );
-  /** @type {import("../../services/location/location").Location} */
-  $location: any;
-  $locationProvider: any;
+  /** @type {ng.LocationService} */
+  $location: ng.LocationService;
+  /** @private */
+  private _locationProvider;
   stateService: import("../../router/state/state-service.js").StateProvider;
   /** Provides services related to the URL */
   urlRuleFactory: UrlRuleFactory;
@@ -60,7 +61,10 @@ export class UrlService {
   getHash(): string;
   $get: (
     | string
-    | (($location: ng.LocationService, $rootScope: ng.Scope) => UrlService)
+    | ((
+        $location: ng.LocationService,
+        $rootScope: ng.RootScopeService,
+      ) => ng.UrlService)
   )[];
   /**
    * @returns {string}
@@ -118,7 +122,7 @@ export class UrlService {
    *
    * @return the url (after potentially being processed)
    */
-  url(newUrl?: string, state?: any): any;
+  url(newUrl?: string, state?: any): string;
   /**
    * @private
    *
@@ -196,7 +200,7 @@ export class UrlService {
    */
   match(url: any): any;
   update(read: any): void;
-  location: any;
+  location: string;
   /**
    * Internal API.
    *
