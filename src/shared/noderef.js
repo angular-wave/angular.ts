@@ -19,7 +19,7 @@ export class NodeRef {
     /** @private @type {Element | undefined} */
     this._element = undefined;
 
-    /** @private @type {Array<Node>} a stable list on nodes */
+    /** @private @type {Array<Node> | undefined} a stable list on nodes */
     this._nodes = undefined;
 
     /** @type {boolean} */
@@ -73,19 +73,18 @@ export class NodeRef {
 
   /** @returns {Element} */
   get element() {
-    return this._element;
+    return /** @type {Element} */ (this._element);
   }
 
   /** @param {Element} el */
   set element(el) {
     this._element = el;
-    this._nodes = undefined;
     this._isList = false;
   }
 
   /** @returns {Node | ChildNode} */
   get node() {
-    return this._node || this._element;
+    return /** @type {Node | ChildNode} */ (this._node || this._element);
   }
 
   /** @param {Node | ChildNode} node */

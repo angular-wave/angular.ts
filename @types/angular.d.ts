@@ -12,22 +12,19 @@ export class Angular {
   /**
    * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
    *
-   * @type {(element: Element, name: string?) => ng.Scope|undefined}
+   * @type {(element: Element, name?: string) => ng.Scope|undefined}
    */
-  getController: (
-    element: Element,
-    name: string | null,
-  ) => ng.Scope | undefined;
+  getController: (element: Element, name?: string) => ng.Scope | undefined;
   /**
    * Return instance of InjectorService attached to element
-   * @type {(Element) => ng.InjectorService}
+   * @type {typeof getInjector}
    */
-  getInjector: (Element: any) => ng.InjectorService;
+  getInjector: typeof getInjector;
   /**
    * Gets scope for a given element.
-   * @type {(Element) => ng.Scope}
+   *  @type {typeof getScope}
    */
-  getScope: (Element: any) => ng.Scope;
+  getScope: typeof getScope;
   errorHandlingConfig: typeof errorHandlingConfig;
   $t: Readonly<Record<string, string>>;
   /**
@@ -158,5 +155,10 @@ export class Angular {
    */
   getScopeByName(name: string): ProxyHandler<ng.Scope> | undefined;
 }
+export type ModuleRegistry = {
+  [x: string]: NgModule;
+};
+import { getInjector } from "./shared/dom.js";
+import { getScope } from "./shared/dom.js";
 import { errorHandlingConfig } from "./shared/utils.js";
 import { NgModule } from "./core/di/ng-module/ng-module.js";

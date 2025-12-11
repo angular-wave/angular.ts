@@ -148,7 +148,9 @@ export class CookieService {
       this.put(key, str, options);
     } catch (err) {
       this._$exceptionHandler(
-        new TypeError(`badserialize: "${key}" => ${err.message}`),
+        new TypeError(
+          `badserialize: "${key}" => ${/** @type {Error} */ (err).message}`,
+        ),
       );
     }
   }

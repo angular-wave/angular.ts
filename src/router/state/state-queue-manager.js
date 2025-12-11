@@ -5,7 +5,7 @@ export class StateQueueManager {
   /**
    * @param {import("./state-registry.js").StateRegistryProvider} stateRegistry
    * @param {*} urlServiceRules
-   * @param {*} states
+   * @param {Record<string, ng.StateObject>} states
    * @param {*} builder
    * @param {*} listeners
    */

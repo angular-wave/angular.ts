@@ -1,11 +1,8 @@
-export function ngRefDirective($parse: any): {
-  priority: number;
-  restrict: string;
-  compile(
-    tElement: any,
-    tAttrs: any,
-  ): (scope: any, element: any, attrs: any) => void;
-};
+/**
+ * @param {ng.ParseService} $parse
+ * @return {ng.Directive}
+ */
+export function ngRefDirective($parse: ng.ParseService): ng.Directive;
 export namespace ngRefDirective {
   let $inject: string[];
 }

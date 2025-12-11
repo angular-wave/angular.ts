@@ -5,6 +5,7 @@ import {
   minErr,
 } from "../../shared/utils.js";
 import { getCacheData } from "../../shared/dom.js";
+import { $injectTokens } from "../../injection-tokens.js";
 
 /**
  * The `ngRef` attribute tells AngularTS to assign the controller of a component (or a directive)
@@ -29,7 +30,12 @@ import { getCacheData } from "../../shared/dom.js";
 
 const ngRefMinErr = minErr("ngRef");
 
-ngRefDirective.$inject = ["$parse"];
+ngRefDirective.$inject = [$injectTokens._parse];
+
+/**
+ * @param {ng.ParseService} $parse
+ * @return {ng.Directive}
+ */
 export function ngRefDirective($parse) {
   return {
     priority: -1, // Needed for compatibility with element transclusion on the same element
