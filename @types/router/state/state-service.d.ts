@@ -4,18 +4,13 @@
  * This API is located at `router.stateService` ([[UIRouter.stateService]])
  */
 export class StateProvider {
-  static $inject: string[];
+  static $inject: any;
   /**
    *
-   * @param {import('../router.js').RouterProvider} globals
+   * @param {ng.RouterService} globals
    * @param {*} transitionService
-   * @param {import('../../core/di/internal-injector.js').InjectorService} $injector
    */
-  constructor(
-    globals: import("../router.js").RouterProvider,
-    transitionService: any,
-    $injector: import("../../core/di/internal-injector.js").InjectorService,
-  );
+  constructor(globals: ng.RouterService, transitionService: any);
   /**
    * The latest successful state parameters
    *
@@ -34,14 +29,16 @@ export class StateProvider {
    * @deprecated This is a passthrough through to [[Router.$current]]
    */
   get $current(): import("./state-object.js").StateObject;
-  stateRegistry: any;
-  urlService: any;
   globals: import("../router.js").RouterProvider;
   transitionService: any;
-  $injector: import("../../core/di/internal-injector.js").InjectorService;
+  stateRegistry: any;
+  /** @type {ng.UrlService} */
+  urlService: ng.UrlService;
+  /** @type {ng.InjectorService} */
+  $injector: ng.InjectorService;
   invalidCallbacks: any[];
   _defaultErrorHandler: ($error$: any) => never;
-  $get: () => this;
+  $get: any[];
   /**
    * Decorates states when they are registered
    *

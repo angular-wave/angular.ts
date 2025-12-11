@@ -28,19 +28,19 @@ export class UrlService {
     $t._urlConfig,
   ]);
 
-  /** @type {import("../../services/location/location").Location} */
+  /** @type {ng.LocationService} */
   $location;
 
   /**
-   * @param {import("../../services/location/location").LocationProvider} $locationProvider
+   * @param {ng.LocationProvider} $locationProvider
    * @param {import("../../router/state/state-service.js").StateProvider} stateService
    * @param {import("../router.js").RouterProvider} globals
    * @param {import("../../router/url/url-config.js").UrlConfigProvider} urlConfigProvider
    */
   constructor($locationProvider, stateService, globals, urlConfigProvider) {
-    this.$locationProvider = $locationProvider;
+    /** @private */
+    this._locationProvider = $locationProvider;
     this.stateService = stateService;
-    this.stateService.urlService = this; // circular wiring
 
     /** Provides services related to the URL */
     this.urlRuleFactory = new UrlRuleFactory(this, this.stateService, globals);
@@ -101,15 +101,15 @@ export class UrlService {
     /**
      *
      * @param {ng.LocationService} $location
-     * @param {ng.Scope} $rootScope
-     * @returns {UrlService}
+     * @param {ng.RootScopeService} $rootScope
+     * @returns {ng.UrlService}
      */
     ($location, $rootScope) => {
       this.$location = $location;
       $rootScope.$on("$locationChangeSuccess", (evt) => {
-        this._urlListeners.forEach((fn) => {
-          fn(evt);
-        });
+        for (let i = 0, j = this._urlListeners.length; i < j; i++) {
+          this._urlListeners[i](evt);
+        }
       });
       this.listen(true);
 
@@ -402,10 +402,10 @@ export class UrlService {
 
     if (isNull(url)) return null;
     options = options || { absolute: false };
-    const isHtml5 = this.$locationProvider.html5ModeConf.enabled;
+    const isHtml5 = this._locationProvider.html5ModeConf.enabled;
 
     if (!isHtml5) {
-      url = `#${this.$locationProvider.hashPrefixConf}${url}`;
+      url = `#${this._locationProvider.hashPrefixConf}${url}`;
     }
     url = appendBasePath(url, isHtml5, options.absolute, this.baseHref());
 
