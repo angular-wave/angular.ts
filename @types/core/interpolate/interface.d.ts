@@ -1,4 +1,5 @@
 export interface InterpolationFunction {
+  expressions: any[];
   (context: any): string;
 }
 export interface InterpolateService {

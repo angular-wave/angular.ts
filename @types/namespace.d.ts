@@ -94,6 +94,7 @@ import { TransitionProvider as TTransitionProvider } from "./router/transition/t
 import { AnimateProvider as TAnimateProvider } from "./animations/animate.js";
 import { UrlService as TUrlService } from "./router/url/url-service.js";
 import { LocationProvider as TLocationProvider } from "./services/location/location.js";
+import { ViewService as TViewService } from "./router/view/view.js";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -105,7 +106,7 @@ declare global {
     type Angular = TAngular;
     type Attributes = TAttributes & Record<string, any>;
     type Directive<TController = any> = TDirective<TController>;
-    type DirectiveFactory = TDirectiveFactory & Function;
+    type DirectiveFactory = TDirectiveFactory;
     type AnnotatedDirectiveFactory = TAnnotatedDirectiveFactory;
     type Component = TComponent & Record<string, any>;
     type Controller = TController;
@@ -155,6 +156,7 @@ declare global {
     type TemplateCacheService = Map<string, string>;
     type TemplateRequestService = TTemplateRequestService;
     type UrlService = TUrlService;
+    type ViewService = TViewService;
     type ErrorHandlingConfig = TErrorHandlingConfig;
     type ListenerFn = TListenerFn;
     type Listener = TListener;

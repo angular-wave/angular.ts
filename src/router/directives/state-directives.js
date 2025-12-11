@@ -213,7 +213,7 @@ $StateRefDynamicDirective.$inject = [
  * @param $state
  * @param $stateRegistry
  * @param $transitions
- * @returns {import("../../interface.ts").Directive}
+ * @returns {ng.Directive}
  */
 export function $StateRefDynamicDirective(
   $state,
@@ -294,10 +294,10 @@ $StateRefActiveDirective.$inject = [
 /**
  * @param {*} $state
  * @param {import('../router.js').RouterProvider} $router
- * @param {*} $interpolate
+ * @param {ng.InterpolateService} $interpolate
  * @param {*} $stateRegistry
  * @param {*} $transitions
- * @returns {import("../../interface.ts").Directive}
+ * @returns {ng.Directive}
  */
 export function $StateRefActiveDirective(
   $state,

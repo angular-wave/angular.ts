@@ -138,195 +138,189 @@ import { getLocals } from "../state/state-registry.js";
  * ```
  */
 
-/** @type {import("../../interface.ts").AnnotatedDirectiveFactory} */
-export const ngView = [
-  "$view",
-  "$animate",
-  "$viewScroll",
-  "$interpolate",
-  /**
-   * @param {*} $view
-   * @param {ng.AnimateService} $animate
-   * @param {*} $viewScroll
-   * @param {*} $interpolate
-   * @returns {import("../../interface.ts").Directive}
-   */
-  function $ViewDirective($view, $animate, $viewScroll, $interpolate) {
-    function getRenderer() {
-      return {
-        enter(element, target, cb) {
-          if (hasAnimate(element)) {
-            $animate.enter(element, null, target).then(cb);
-          } else {
-            target.after(element);
-            cb();
-          }
-        },
-        leave(element, cb) {
-          if (hasAnimate(element)) {
-            $animate.leave(element).then(cb);
-          } else {
-            element.parentElement.removeChild(element);
-            cb();
-          }
-        },
-      };
-    }
-    function configsEqual(config1, config2) {
-      return config1 === config2;
-    }
-    const rootData = {
-      $cfg: { viewDecl: { $context: $view.rootViewContext() } },
-      $ngView: {},
-    };
+$ViewDirective.$inject = ["$view", "$animate", "$viewScroll", "$interpolate"];
 
-    const directive = {
-      count: 0,
-      terminal: true,
-      priority: 400,
-      transclude: "element",
-      compile(_tElement, _tAttrs, $transclude) {
-        return function (scope, $element, attrs) {
-          const onloadExp = attrs.onload || "",
-            autoScrollExp = attrs.autoscroll,
-            renderer = getRenderer(),
-            inherited = getInheritedData($element, "$ngView") || rootData,
-            name =
-              $interpolate(attrs.ngView || attrs.name || "")(scope) ||
-              "$default";
-
-          let previousEl, currentEl, currentScope, viewConfig;
-
-          const activeUIView = {
-            id: directive.count++, // Global sequential ID for ng-view tags added to DOM
-            name, // ng-view name (<div ng-view="name"></div>
-            fqn: inherited.$ngView.fqn
-              ? `${inherited.$ngView.fqn}.${name}`
-              : name, // fully qualified name, describes location in DOM
-            config: null, // The ViewConfig loaded (from a state.views definition)
-            configUpdated: configUpdatedCallback, // Called when the matching ViewConfig changes
-            get creationContext() {
-              // The context in which this ng-view "tag" was created
-              const fromParentTagConfig = parse("$cfg.viewDecl.$context")(
-                inherited,
-              );
-
-              // Allow <ng-view name="foo"><ng-view name="bar"></ng-view></ng-view>
-              // See https://github.com/angular-ui/ui-router/issues/3355
-              const fromParentTag = parse("$ngView.creationContext")(inherited);
-
-              return fromParentTagConfig || fromParentTag;
-            },
-          };
-
-          trace.traceUIViewEvent("Linking", activeUIView);
-          function configUpdatedCallback(config) {
-            if (config && !(config instanceof ViewConfig)) return;
-
-            if (configsEqual(viewConfig, config)) return;
-            trace.traceUIViewConfigUpdated(
-              activeUIView,
-              config && config.viewDecl && config.viewDecl.$context,
-            );
-            viewConfig = config;
-            updateView(config);
-          }
-
-          setCacheData($element, "$ngView", { $ngView: activeUIView });
-          updateView();
-          const unregister = $view.registerUIView(activeUIView);
-
-          scope.$on("$destroy", function () {
-            trace.traceUIViewEvent("Destroying/Unregistering", activeUIView);
-            unregister();
-          });
-          function cleanupLastView() {
-            if (previousEl) {
-              trace.traceUIViewEvent(
-                "Removing (previous) el",
-                getCacheData(previousEl, "$ngView"),
-              );
-              previousEl.remove();
-              previousEl = null;
-            }
-
-            if (currentScope) {
-              trace.traceUIViewEvent("Destroying scope", activeUIView);
-              currentScope.$destroy();
-              currentScope = null;
-            }
-
-            if (currentEl) {
-              const _viewData = getCacheData(currentEl, "$ngViewAnim");
-
-              trace.traceUIViewEvent("Animate out", _viewData);
-              renderer.leave(currentEl, function () {
-                _viewData.$$animLeave.resolve();
-                previousEl = null;
-              });
-              previousEl = currentEl;
-              currentEl = null;
-            }
-          }
-          function updateView(config) {
-            const newScope = scope.$new();
-
-            const animEnter = Promise.withResolvers();
-
-            const animLeave = Promise.withResolvers();
-
-            const $ngViewData = {
-              $cfg: config,
-              $ngView: activeUIView,
-            };
-
-            const $ngViewAnim = {
-              $animEnter: animEnter.promise,
-              $animLeave: animLeave.promise,
-              $$animLeave: animLeave,
-            };
-
-            /**
-             * Fired once the view **begins loading**, *before* the DOM is rendered.
-             *
-             * @param {Object} event Event object.
-             * @param {string} viewName Name of the view.
-             */
-            newScope.$emit("$viewContentLoading", name);
-            currentEl = $transclude(newScope, function (clone) {
-              setCacheData(clone, "$ngViewAnim", $ngViewAnim);
-              setCacheData(clone, "$ngView", $ngViewData);
-              renderer.enter(clone, $element, function () {
-                animEnter.resolve();
-
-                if (currentScope)
-                  currentScope.$emit("$viewContentAnimationEnded");
-
-                if (
-                  (isDefined(autoScrollExp) && !autoScrollExp) ||
-                  scope.$eval(autoScrollExp)
-                ) {
-                  $viewScroll(clone);
-                }
-              });
-              cleanupLastView();
-            });
-            currentScope = newScope;
-            /**
-             * Fired once the view is **loaded**, *after* the DOM is rendered.
-             *
-             * @param {Object} event Event object.
-             */
-            currentScope.$emit("$viewContentLoaded", config || viewConfig);
-            currentScope.$eval(onloadExp);
-          }
-        };
+/**
+ * @param {ng.ViewService} $view
+ * @param {ng.AnimateService} $animate
+ * @param {*} $viewScroll
+ * @param {ng.InterpolateService} $interpolate
+ * @returns {ng.Directive}
+ */
+export function $ViewDirective($view, $animate, $viewScroll, $interpolate) {
+  function getRenderer() {
+    return {
+      enter(element, target, cb) {
+        if (hasAnimate(element)) {
+          $animate.enter(element, null, target).then(cb);
+        } else {
+          target.after(element);
+          cb();
+        }
+      },
+      leave(element, cb) {
+        if (hasAnimate(element)) {
+          $animate.leave(element).then(cb);
+        } else {
+          element.parentElement.removeChild(element);
+          cb();
+        }
       },
     };
+  }
+  function configsEqual(config1, config2) {
+    return config1 === config2;
+  }
+  const rootData = {
+    $cfg: { viewDecl: { $context: $view.rootViewContext() } },
+    $ngView: {},
+  };
 
-    return directive;
-  },
-];
+  const directive = {
+    count: 0,
+    terminal: true,
+    priority: 400,
+    transclude: "element",
+    compile(_tElement, _tAttrs, $transclude) {
+      return function (scope, $element, attrs) {
+        const onloadExp = attrs.onload || "",
+          autoScrollExp = attrs.autoscroll,
+          renderer = getRenderer(),
+          inherited = getInheritedData($element, "$ngView") || rootData,
+          name =
+            $interpolate(attrs.ngView || attrs.name || "")(scope) || "$default";
+
+        let previousEl, currentEl, currentScope, viewConfig;
+
+        const activeUIView = {
+          id: directive.count++, // Global sequential ID for ng-view tags added to DOM
+          name, // ng-view name (<div ng-view="name"></div>
+          fqn: inherited.$ngView.fqn
+            ? `${inherited.$ngView.fqn}.${name}`
+            : name, // fully qualified name, describes location in DOM
+          config: null, // The ViewConfig loaded (from a state.views definition)
+          configUpdated: configUpdatedCallback, // Called when the matching ViewConfig changes
+          get creationContext() {
+            // The context in which this ng-view "tag" was created
+            const fromParentTagConfig = parse("$cfg.viewDecl.$context")(
+              inherited,
+            );
+
+            // Allow <ng-view name="foo"><ng-view name="bar"></ng-view></ng-view>
+            // See https://github.com/angular-ui/ui-router/issues/3355
+            const fromParentTag = parse("$ngView.creationContext")(inherited);
+
+            return fromParentTagConfig || fromParentTag;
+          },
+        };
+
+        trace.traceUIViewEvent("Linking", activeUIView);
+        function configUpdatedCallback(config) {
+          if (config && !(config instanceof ViewConfig)) return;
+
+          if (configsEqual(viewConfig, config)) return;
+          trace.traceUIViewConfigUpdated(
+            activeUIView,
+            config && config.viewDecl && config.viewDecl.$context,
+          );
+          viewConfig = config;
+          updateView(config);
+        }
+
+        setCacheData($element, "$ngView", { $ngView: activeUIView });
+        updateView();
+        const unregister = $view.registerUIView(activeUIView);
+
+        scope.$on("$destroy", function () {
+          trace.traceUIViewEvent("Destroying/Unregistering", activeUIView);
+          unregister();
+        });
+        function cleanupLastView() {
+          if (previousEl) {
+            trace.traceUIViewEvent(
+              "Removing (previous) el",
+              getCacheData(previousEl, "$ngView"),
+            );
+            previousEl.remove();
+            previousEl = null;
+          }
+
+          if (currentScope) {
+            trace.traceUIViewEvent("Destroying scope", activeUIView);
+            currentScope.$destroy();
+            currentScope = null;
+          }
+
+          if (currentEl) {
+            const _viewData = getCacheData(currentEl, "$ngViewAnim");
+
+            trace.traceUIViewEvent("Animate out", _viewData);
+            renderer.leave(currentEl, function () {
+              _viewData.$$animLeave.resolve();
+              previousEl = null;
+            });
+            previousEl = currentEl;
+            currentEl = null;
+          }
+        }
+        function updateView(config) {
+          const newScope = scope.$new();
+
+          const animEnter = Promise.withResolvers();
+
+          const animLeave = Promise.withResolvers();
+
+          const $ngViewData = {
+            $cfg: config,
+            $ngView: activeUIView,
+          };
+
+          const $ngViewAnim = {
+            $animEnter: animEnter.promise,
+            $animLeave: animLeave.promise,
+            $$animLeave: animLeave,
+          };
+
+          /**
+           * Fired once the view **begins loading**, *before* the DOM is rendered.
+           *
+           * @param {Object} event Event object.
+           * @param {string} viewName Name of the view.
+           */
+          newScope.$emit("$viewContentLoading", name);
+          currentEl = $transclude(newScope, function (clone) {
+            setCacheData(clone, "$ngViewAnim", $ngViewAnim);
+            setCacheData(clone, "$ngView", $ngViewData);
+            renderer.enter(clone, $element, function () {
+              animEnter.resolve();
+
+              if (currentScope)
+                currentScope.$emit("$viewContentAnimationEnded");
+
+              if (
+                (isDefined(autoScrollExp) && !autoScrollExp) ||
+                scope.$eval(autoScrollExp)
+              ) {
+                $viewScroll(clone);
+              }
+            });
+            cleanupLastView();
+          });
+          currentScope = newScope;
+          /**
+           * Fired once the view is **loaded**, *after* the DOM is rendered.
+           *
+           * @param {Object} event Event object.
+           */
+          currentScope.$emit("$viewContentLoaded", config || viewConfig);
+          currentScope.$eval(onloadExp);
+        }
+      };
+    },
+  };
+
+  return directive;
+}
 
 $ViewDirectiveFill.$inject = ["$compile", "$controller", "$transitions"];
 export function $ViewDirectiveFill($compile, $controller, $transitions) {

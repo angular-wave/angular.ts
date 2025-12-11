@@ -1,3 +1,3 @@
-export const ngClassDirective: ng.DirectiveFactory;
-export const ngClassOddDirective: ng.DirectiveFactory;
-export const ngClassEvenDirective: ng.DirectiveFactory;
+export const ngClassDirective: import("../../interface.ts").DirectiveFactory;
+export const ngClassOddDirective: import("../../interface.ts").DirectiveFactory;
+export const ngClassEvenDirective: import("../../interface.ts").DirectiveFactory;

@@ -37,7 +37,7 @@ ngRepeatDirective.$inject = [$injectTokens._animate];
 /**
  * TODO // Add type for animate service
  * @param {*}  $animate
- * @returns {import("../../interface.ts").Directive}
+ * @returns {ng.Directive}
  */
 export function ngRepeatDirective($animate) {
   function updateScope(

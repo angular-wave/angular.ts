@@ -25,7 +25,7 @@ export const requiredDirective: (
   | string
   | ((
       $parse: import("../../core/parse/interface.ts").ParseService,
-    ) => import("../../interface.ts").Directive)
+    ) => ng.Directive)
 )[];
 /**
  * @param {String|RegExp} ngPattern AngularTS expression that must evaluate to a `RegExp` or a `String`
@@ -70,7 +70,7 @@ export const patternDirective: (
   | string
   | ((
       $parse: import("../../core/parse/interface.ts").ParseService,
-    ) => import("../../interface.ts").Directive)
+    ) => ng.Directive)
 )[];
 /**
  * @param {string} ngMaxlength AngularTS expression that must evaluate to a `Number` or `String`

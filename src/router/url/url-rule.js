@@ -23,13 +23,18 @@ const LOWEST = 0.000001;
 
 export class UrlRuleFactory {
   /**
-   * @param {import('../url/url-service.js').UrlService} urlService
-   * @param {import('../state/state-service.js').StateProvider} stateService
-   * @param {import('../router.js').RouterProvider} routerGlobals
+   * @param {ng.UrlService} urlService
+   * @param {ng.StateService} stateService
+   * @param {ng.RouterService} routerGlobals
    */
   constructor(urlService, stateService, routerGlobals) {
+    /** @type {ng.UrlService} */
     this.urlService = urlService;
+
+    /** @type {ng.StateService} */
     this.stateService = stateService;
+
+    /** @type {ng.RouterService} */
     this.routerGlobals = routerGlobals;
   }
 

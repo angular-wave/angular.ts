@@ -125,7 +125,7 @@ export class CompileProvider {
     | string
     | ((
         $injector: ng.InjectorService,
-        $interpolate: any,
+        $interpolate: ng.InterpolateService,
         $exceptionHandler: ng.ExceptionHandlerService,
         $templateRequest: ng.TemplateRequestService,
         $parse: ng.ParseService,
