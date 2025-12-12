@@ -112,9 +112,9 @@ export class StateRegistryProvider {
    */
   deregister(stateOrName: any): any[];
   /**
-   * @return {ng.StateDeclaration[]}
+   * @return {ng.BuiltStateDeclaration[]}
    */
-  getAll(): ng.StateDeclaration[];
+  getAll(): ng.BuiltStateDeclaration[];
   get(stateOrName: any, base: any, ...args: any[]): any;
   /**
    * Registers a [[BuilderFunction]] for a specific [[StateObject]] property (e.g., `parent`, `url`, or `path`).

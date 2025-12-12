@@ -4,12 +4,22 @@ import { NodeType } from "./node.js";
 export const isProxySymbol = Symbol("isProxy");
 
 /**
- *
  * @param {any} value
- * @returns {value is ng.Scope}
+ * @returns {value is Proxy<ng.Scope> | ng.Scope}
  */
 export function isProxy(value) {
   return !!(value && value[isProxySymbol]);
+}
+
+/**
+ * Unwraps a proxy if the value is a proxy, otherwise returns the value as-is.
+ *
+ * @template T
+ * @param {T | (T & { $target: T })} val - A value that might be a proxy.
+ * @returns {T} The unproxied value.
+ */
+export function deProxy(val) {
+  return isProxy(val) ? /** @type {ng.Scope} */ (val).$target : val;
 }
 
 const ngMinErr = minErr("ng");
@@ -1094,7 +1104,9 @@ export function toDebugString(obj) {
     /** @type {object[]} */
     const seen = [];
 
-    const copyObj = structuredClone(isProxy(obj) ? obj.$target : obj);
+    const copyObj = structuredClone(
+      isProxy(obj) ? /** @type {ng.Scope} */ (obj).$target : obj,
+    );
 
     return JSON.stringify(copyObj, (key, val) => {
       const replace = toJsonReplacer(key, val);

@@ -9,6 +9,7 @@ import {
   VALID_CLASS,
 } from "../../shared/constants.js";
 import {
+  deProxy,
   entries,
   hasAnimate,
   isBoolean,
@@ -17,7 +18,6 @@ import {
   isNumberNaN,
   isObjectEmpty,
   isPromiseLike,
-  isProxy,
   isUndefined,
   keys,
   minErr,
@@ -1210,7 +1210,7 @@ export function ngModelDirective() {
               }
             });
             const deregisterWatch = scope.$watch(attr.ngModel, (val) => {
-              modelCtrl.$$setModelValue(isProxy(val) ? val.$target : val);
+              modelCtrl.$$setModelValue(deProxy(val));
             });
 
             scope.$on("$destroy", () => {

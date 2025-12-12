@@ -404,15 +404,15 @@ export interface StateDeclaration {
    */
   parent?: string | StateDeclaration;
 
-  /**
-   * Gets the internal State object API
-   *
-   * Gets the *internal API* for a registered state.
-   *
-   * Note: the internal [[StateObject]] API is subject to change without notice
-   * @internal
-   */
-  $$state?: () => StateObject;
+  // /**
+  //  * Gets the internal State object API
+  //  *
+  //  * Gets the *internal API* for a registered state.
+  //  *
+  //  * Note: the internal [[StateObject]] API is subject to change without notice
+  //  * @internal
+  //  */
+  // $$state?: () => StateObject;
 
   /**
    * Resolve - a mechanism to asynchronously fetch data, participating in the Transition lifecycle
@@ -958,6 +958,49 @@ export interface StateDeclaration {
    * @deprecated use either [[dynamic]] or [[ParamDeclaration.dynamic]]
    */
   reloadOnSearch?: boolean;
+}
+
+/**
+ * Represents a fully built StateObject, after registration in the StateRegistry
+ * and application of all StateBuilder decorators.
+ */
+export interface BuiltStateDeclaration extends StateDeclaration {
+  /** Reference to the original StateDeclaration */
+  self: StateDeclaration;
+
+  /**
+   * Gets the internal State object API
+   *
+   * Gets the *internal API* for a registered state.
+   *
+   * Note: the internal [[StateObject]] API is subject to change without notice
+   * @internal
+   */
+  $$state?: () => BuiltStateDeclaration;
+
+  /** Array of Resolvables built from the resolve / resolvePolicy */
+  resolvables: Resolvable[];
+
+  /** Full path from root down to this state */
+  path: BuiltStateDeclaration[];
+
+  /** Fast lookup of included states for $state.includes() */
+  includes: Record<string, boolean>;
+
+  /** Closest ancestor state that has a URL (navigable) */
+  navigable?: BuiltStateDeclaration | null;
+
+  /** URL object built from url / parent / root */
+  url?: any;
+
+  /** Computed parameters of this state */
+  params?: Record<string, any>;
+
+  /** Optional parent state */
+  parent?: BuiltStateDeclaration | null;
+
+  /** Optional inherited data */
+  data?: any;
 }
 
 /**

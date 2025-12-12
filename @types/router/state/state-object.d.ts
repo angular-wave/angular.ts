@@ -24,9 +24,9 @@ export class StateObject implements StateDeclaration {
   includes: any;
   $$state: () => this;
   /**
-   * @type {ng.StateDeclaration}
+   * @type {ng.StateDeclaration|ng.BuiltStateDeclaration}
    */
-  self: ng.StateDeclaration;
+  self: ng.StateDeclaration | ng.BuiltStateDeclaration;
   __stateObjectCache: {
     nameGlob: Glob;
   };

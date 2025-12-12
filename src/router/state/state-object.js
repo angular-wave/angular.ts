@@ -34,7 +34,7 @@ export class StateObject {
       return this;
     };
     /**
-     * @type {ng.StateDeclaration}
+     * @type {ng.StateDeclaration|ng.BuiltStateDeclaration}
      */
     this.self = config;
     /**

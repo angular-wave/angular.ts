@@ -49,7 +49,7 @@ export class Scope {
   $$listeners: Map<string, Function[]>;
   /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
   foreignListeners: Map<string, Array<import("./interface.ts").Listener>>;
-  /** @type {Set<ProxyConstructor>} */
+  /** @type {Set<Proxy<ng.Scope>>} */
   foreignProxies: Set<ProxyConstructor>;
   /** @type {WeakMap<Object, Array<string>>} */
   objectListeners: WeakMap<any, Array<string>>;
@@ -61,8 +61,8 @@ export class Scope {
       fn: Function;
     }
   >;
-  /** Current proxy being operated on */
-  $proxy: ProxyConstructor | ng.Scope;
+  /** @type {Proxy<Scope>} Current proxy being operated on */
+  $proxy: ProxyConstructor;
   /** @type {Scope} The actual proxy */
   $handler: Scope;
   /** @type {*} Current target being called on */
@@ -96,7 +96,7 @@ export class Scope {
    * @param {Object} target - The target object.
    * @param {string} property - The name of the property being set.
    * @param {*} value - The new value being assigned to the property.
-   * @param {Proxy} proxy - The proxy intercepting property access
+   * @param {Proxy<Scope>} proxy - The proxy intercepting property access
    * @returns {boolean} - Returns true to indicate success of the operation.
    */
   set(
@@ -112,7 +112,7 @@ export class Scope {
    *
    * @param {Object} target - The target object.
    * @param {string|number|symbol} property - The name of the property being accessed.
-   * @param {Proxy} proxy - The proxy object being invoked
+   * @param {Proxy<Scope>} proxy - The proxy object being invoked
    * @returns {*} - The value of the property or a method if accessing `watch` or `sync`.
    */
   get(

@@ -1,7 +1,7 @@
 import {
+  deProxy,
   isDefined,
   isNull,
-  isProxy,
   isUndefined,
   stringify,
 } from "../../shared/utils.js";
@@ -21,9 +21,7 @@ export function ngBindDirective() {
       scope.$watch(
         attr.ngBind,
         (value) => {
-          element.textContent = stringify(
-            isProxy(value) ? value.$target : value,
-          );
+          element.textContent = stringify(deProxy(value));
         },
         isDefined(attr.lazy),
       );

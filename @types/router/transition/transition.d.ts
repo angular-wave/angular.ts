@@ -77,7 +77,9 @@ export class Transition implements IHookRegistry {
    *
    * @returns The state declaration object for the Transition's ("from state").
    */
-  from(): import("../state/interface.ts").StateDeclaration;
+  from():
+    | import("../state/interface.ts").StateDeclaration
+    | import("../state/interface.ts").BuiltStateDeclaration;
   /**
    * Returns the "to state"
    *
@@ -85,7 +87,9 @@ export class Transition implements IHookRegistry {
    *
    * @returns The state declaration object for the Transition's target state ("to state").
    */
-  to(): import("../state/interface.ts").StateDeclaration;
+  to():
+    | import("../state/interface.ts").StateDeclaration
+    | import("../state/interface.ts").BuiltStateDeclaration;
   /**
    * Gets the Target State
    *

@@ -252,10 +252,13 @@ export class StateRegistryProvider {
   }
 
   /**
-   * @return {ng.StateDeclaration[]}
+   * @return {ng.BuiltStateDeclaration[]}
    */
   getAll() {
-    return keys(this.states).map((name) => this.states[name].self);
+    return keys(this.states).map(
+      (name) =>
+        /** @type {ng.BuiltStateDeclaration} */ (this.states[name].self),
+    );
   }
 
   get(stateOrName, base) {

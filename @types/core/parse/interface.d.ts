@@ -41,7 +41,7 @@ export interface CompiledExpressionProps {
  * Evaluates the compiled expression.
  */
 export type CompiledExpressionFunction = (
-  context?: Scope,
+  context?: Scope | typeof Proxy<Scope>,
   locals?: object,
   assign?: any,
 ) => any;

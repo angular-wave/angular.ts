@@ -317,7 +317,7 @@ function parsePatternAttr(regex, patternExp, elm) {
   if (!regex) return undefined;
 
   if (isProxy(regex)) {
-    regex = regex.$target;
+    regex = /** @type {ng.Scope} */ (regex).$target;
   }
 
   if (isString(regex)) {
