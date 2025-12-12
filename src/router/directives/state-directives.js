@@ -393,6 +393,10 @@ export function $StateRefActiveDirective(
           states = [];
           entries(statesDefinition).forEach(([activeClass, stateOrName]) => {
             // Helper function to abstract adding state.
+            /**
+             * @param {string|string[]} stateOrNameParam
+             * @param {string} activeClassParam
+             */
             const addStateForClass = function (
               stateOrNameParam,
               activeClassParam,

@@ -164,7 +164,7 @@ export class Scope {
     /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
     this.foreignListeners = context ? context.foreignListeners : new Map();
 
-    /** @type {Set<ProxyConstructor>} */
+    /** @type {Set<Proxy<ng.Scope>>} */
     this.foreignProxies = context ? context.foreignProxies : new Set();
 
     /** @type {WeakMap<Object, Array<string>>} */
@@ -173,7 +173,7 @@ export class Scope {
     /** @type {Map<Function, {oldValue: any, fn: Function}>} */
     this.functionListeners = context ? context.functionListeners : new Map();
 
-    /** Current proxy being operated on */
+    /** @type {Proxy<Scope>} Current proxy being operated on */
     this.$proxy = null;
 
     /** @type {Scope} The actual proxy */
@@ -250,7 +250,7 @@ export class Scope {
    * @param {Object} target - The target object.
    * @param {string} property - The name of the property being set.
    * @param {*} value - The new value being assigned to the property.
-   * @param {Proxy} proxy - The proxy intercepting property access
+   * @param {Proxy<Scope>} proxy - The proxy intercepting property access
    * @returns {boolean} - Returns true to indicate success of the operation.
    */
   set(target, property, value, proxy) {
@@ -405,7 +405,7 @@ export class Scope {
       return true;
     } else {
       if (isUndefined(target[property]) && isProxy(value)) {
-        this.foreignProxies.add(value);
+        this.foreignProxies.add(/** @type {Proxy<ng.Scope>} */ (value));
         target[property] = value;
 
         if (!this.watchers.has(property)) {
@@ -545,7 +545,7 @@ export class Scope {
    *
    * @param {Object} target - The target object.
    * @param {string|number|symbol} property - The name of the property being accessed.
-   * @param {Proxy} proxy - The proxy object being invoked
+   * @param {Proxy<Scope>} proxy - The proxy object being invoked
    * @returns {*} - The value of the property or a method if accessing `watch` or `sync`.
    */
   get(target, property, proxy) {
@@ -556,7 +556,7 @@ export class Scope {
     if (property === isProxySymbol) return true;
 
     if (target[property] && isProxy(target[property])) {
-      this.$proxy = target[property];
+      this.$proxy = /** @type {Proxy<Scope>} */ (target[property]);
     } else {
       this.$proxy = proxy;
     }

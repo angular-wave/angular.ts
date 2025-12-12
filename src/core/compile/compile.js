@@ -18,6 +18,7 @@ import {
   assertArg,
   assertNotHasOwnProperty,
   bind,
+  deProxy,
   directiveNormalize,
   entries,
   equals,
@@ -31,7 +32,6 @@ import {
   isError,
   isFunction,
   isObject,
-  isProxy,
   isScope,
   isString,
   isUndefined,
@@ -1294,7 +1294,6 @@ export class CompileProvider {
 
           let directiveName;
 
-          /** @type {NodeRef} */
           let $template;
 
           let replaceDirective = originalReplaceDirective;
@@ -1797,14 +1796,16 @@ export class CompileProvider {
               } else {
                 const slots = Object.create(null);
 
+                let nodes;
+
                 if (!isObject(directiveValue)) {
                   //
                   // Clone childnodes before clearing contents on transcluded directives
-                  $template = compileNode.cloneNode(true).childNodes;
+                  nodes = compileNode.cloneNode(true).childNodes;
                 } else {
                   // We have transclusion slots,
                   // collect them up, compile them and store their transclusion functions
-                  $template = document.createDocumentFragment();
+                  nodes = document.createDocumentFragment();
 
                   const slotMap = Object.create(null);
 
@@ -1848,7 +1849,7 @@ export class CompileProvider {
                         slots[slotName] || document.createDocumentFragment();
                       slots[slotName].appendChild(node);
                     } else {
-                      $template.appendChild(node);
+                      nodes.appendChild(node);
                     }
                   });
 
@@ -1876,7 +1877,7 @@ export class CompileProvider {
                     }
                   }
 
-                  $template = $template.childNodes;
+                  nodes = nodes.childNodes;
                 }
 
                 emptyElement(/** @type {Element} */ (compileNode)); // clear contents on transcluded directives
@@ -1885,7 +1886,7 @@ export class CompileProvider {
                 // @ts-ignore
                 childTranscludeFn = compilationGenerator(
                   mightHaveMultipleTransclusionError,
-                  $template,
+                  nodes,
                   transcludeFn,
                   undefined,
                   undefined,
@@ -2107,8 +2108,8 @@ export class CompileProvider {
 
         /**
          *
-         * @param {*} directiveName
-         * @param {*} require
+         * @param {string} directiveName
+         * @param {string | Array<any> | Record<string, any>} require
          * @param {Element} $element
          * @param {*} elementControllers
          * @returns
@@ -2672,9 +2673,7 @@ export class CompileProvider {
               compile: () => (scope, node) => {
                 interpolateFn.expressions.forEach((x) => {
                   scope.$watch(x, () => {
-                    const res = interpolateFn(
-                      isProxy(scope) ? scope.$target : scope,
-                    );
+                    const res = interpolateFn(deProxy(scope));
 
                     switch (node.nodeType) {
                       case 1:
@@ -2783,7 +2782,7 @@ export class CompileProvider {
               "srcset",
               'Can\'t pass trusted values to `{0}`: "{1}"',
               invokeType,
-              value.toString(),
+              /** @type {unknown} */ (value).toString(),
             );
           }
 

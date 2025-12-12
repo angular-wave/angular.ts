@@ -4,6 +4,7 @@ import {
   directiveNormalize,
   hasAnimate,
   hasOwn,
+  isNullOrUndefined,
   isString,
   isUndefined,
   minErr,
@@ -180,15 +181,22 @@ export class Attributes {
 
     const nodeName = this.$nodeRef.node.nodeName.toLowerCase();
 
+    let maybeSanitizedValue;
+
     // Sanitize img[srcset] values.
     if (nodeName === "img" && key === "srcset") {
-      this[key] = value = this.sanitizeSrcset(value, "$set('srcset', value)");
+      this[key] = maybeSanitizedValue = this.sanitizeSrcset(
+        value,
+        "$set('srcset', value)",
+      );
+    } else {
+      maybeSanitizedValue = value;
     }
 
     if (writeAttr !== false) {
       const elem = /** @type {Element} */ (this.$$element);
 
-      if (value === null || isUndefined(value)) {
+      if (isNullOrUndefined(maybeSanitizedValue)) {
         elem.removeAttribute(attrName);
         //
       } else if (SIMPLE_ATTR_NAME.test(attrName)) {
@@ -197,17 +205,23 @@ export class Attributes {
         // `.getAttribute(attrName, false) with such attributes. To avoid issues
         // in XHTML, call `removeAttr` in such cases instead.
         // See https://github.com/jquery/jquery/issues/4249
-        if (booleanKey && value === false) {
+        if (booleanKey && maybeSanitizedValue === false) {
           elem.removeAttribute(attrName);
         } else {
           if (booleanKey) {
-            elem.toggleAttribute(attrName, /** @type {boolean} */ (value));
+            elem.toggleAttribute(
+              attrName,
+              /** @type {boolean} */ (maybeSanitizedValue),
+            );
           } else {
-            elem.setAttribute(attrName, /** @type {string} */ (value));
+            elem.setAttribute(
+              attrName,
+              /** @type {string} */ (maybeSanitizedValue),
+            );
           }
         }
       } else {
-        this.setSpecialAttr(this.$$element, attrName, value);
+        this.setSpecialAttr(this.$$element, attrName, maybeSanitizedValue);
       }
     }
 
@@ -217,7 +231,7 @@ export class Attributes {
     if ($$observers && $$observers[observer]) {
       $$observers[observer].forEach((fn) => {
         try {
-          fn(value);
+          fn(maybeSanitizedValue);
         } catch (err) {
           this._$exceptionHandler(err);
         }

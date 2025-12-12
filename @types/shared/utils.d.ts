@@ -1,9 +1,22 @@
 /**
- *
  * @param {any} value
- * @returns {value is ng.Scope}
+ * @returns {value is Proxy<ng.Scope> | ng.Scope}
  */
-export function isProxy(value: any): value is ng.Scope;
+export function isProxy(value: any): value is ProxyConstructor | ng.Scope;
+/**
+ * Unwraps a proxy if the value is a proxy, otherwise returns the value as-is.
+ *
+ * @template T
+ * @param {T | (T & { $target: T })} val - A value that might be a proxy.
+ * @returns {T} The unproxied value.
+ */
+export function deProxy<T>(
+  val:
+    | T
+    | (T & {
+        $target: T;
+      }),
+): T;
 /**
  * @returns {number} an unique alpha-numeric string
  */

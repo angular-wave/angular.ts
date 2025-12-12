@@ -1,4 +1,5 @@
 import {
+  deProxy,
   entries,
   isDefined,
   isFunction,
@@ -176,11 +177,7 @@ export class ASTInterpreter {
               const values = [];
 
               for (let i = 0; i < args.length; ++i) {
-                const res = args[i](
-                  scope && scope.$target ? scope.$target : scope,
-                  locals,
-                  assign,
-                );
+                const res = args[i](scope && deProxy(scope), locals, assign);
 
                 values.push(res);
               }
@@ -194,7 +191,9 @@ export class ASTInterpreter {
             }
           : (scope, locals, assign) => {
               const rhs = right(
-                scope.$target ? scope.$target : scope,
+                /** @type {ng.Scope} */ (scope).$target
+                  ? /** @type {ng.Scope} */ (scope).$target
+                  : scope,
                 locals,
                 assign,
               );
@@ -286,7 +285,8 @@ export class ASTInterpreter {
           return context ? { value } : value;
         };
       case ASTType._ThisExpression:
-        return (scope) => (context ? { value: scope } : scope.$proxy);
+        return (scope) =>
+          context ? { value: scope } : /** @type {ng.Scope} */ (scope).$proxy;
       case ASTType._LocalsExpression:
         return (scope, locals) => (context ? { value: locals } : locals);
       case ASTType.NGValueParameter:
@@ -617,8 +617,11 @@ export class ASTInterpreter {
    */
   identifier(name, context, create) {
     return (scope, locals) => {
+      /** @type {ng.Scope | unknown} */
       const base =
-        locals && name in locals ? locals : ((scope && scope.$proxy) ?? scope);
+        locals && name in locals
+          ? locals
+          : ((scope && /** @type {ng.Scope} */ (scope).$proxy) ?? scope);
 
       if (create && create !== 1 && base && isNullOrUndefined(base[name])) {
         base[name] = {};
@@ -626,7 +629,7 @@ export class ASTInterpreter {
       let value = undefined;
 
       if (base) {
-        value = base.$target ? base.$target[name] : base[name];
+        value = deProxy(base)[name];
       }
 
       if (context) {

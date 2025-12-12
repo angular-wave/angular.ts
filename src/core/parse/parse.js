@@ -1,5 +1,5 @@
 import { $injectTokens } from "../../injection-tokens";
-import { isFunction, isNullOrUndefined, isProxy } from "../../shared/utils.js";
+import { deProxy, isFunction, isNullOrUndefined } from "../../shared/utils.js";
 import { PURITY_RELATIVE } from "./interpreter.js";
 import { Lexer } from "./lexer/lexer.js";
 import { Parser } from "./parser/parser.js";
@@ -136,7 +136,7 @@ export class ParseProvider {
             }
             const res = isFunction(value) ? value() : value;
 
-            return interceptorFn(isProxy(res) ? res.$target : res);
+            return interceptorFn(deProxy(res));
           };
 
           // Maintain references to the interceptor/intercepted

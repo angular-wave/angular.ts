@@ -1,11 +1,11 @@
 import {
   arrayRemove,
   assertNotHasOwnProperty,
+  deProxy,
   extend,
   hasAnimate,
   isBoolean,
   isObjectEmpty,
-  isProxy,
   isUndefined,
   shallowCopy,
   snakeCase,
@@ -373,9 +373,7 @@ export class FormController {
     const list = object[property];
 
     if (!list) {
-      if (isProxy(object)) {
-        object = object.$target;
-      }
+      object = deProxy(object);
       object[property] = [controller];
     } else {
       const index = list.indexOf(controller);
