@@ -1,14 +1,14 @@
 /**
  *
  * @param {ng.TemplateRequestService} $templateRequest
- * @param {import("../../services/anchor-scroll/anchor-scroll.js").AnchorScrollFunction} $anchorScroll
+ * @param {ng.AnchorScrollService} $anchorScroll
  * @param {ng.AnimateService} $animate
  * @param {ng.ExceptionHandlerService} $exceptionHandler
  * @returns {ng.Directive}
  */
 export function ngIncludeDirective(
   $templateRequest: ng.TemplateRequestService,
-  $anchorScroll: import("../../services/anchor-scroll/anchor-scroll.js").AnchorScrollFunction,
+  $anchorScroll: ng.AnchorScrollService,
   $animate: ng.AnimateService,
   $exceptionHandler: ng.ExceptionHandlerService,
 ): ng.Directive;

@@ -10,10 +10,13 @@ import {
 import { NgModule as TNgModule } from "./core/di/ng-module/ng-module.js";
 import { InjectorService as TInjectorService } from "./core/di/internal-injector.js";
 
+import { AnchorScrollProvider as TAnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
+
 import {
-  AnchorScrollProvider as TAnchorScrollProvider,
+  AnchorScrollFunction as TAnchorScrollFunction,
   AnchorScrollService as TAnchorScrollService,
-} from "./services/anchor-scroll/anchor-scroll.js";
+  AnchorScrollObject as TAnchorScrollObject,
+} from "./services/anchor-scroll/interface.ts";
 
 import { ControllerService as TControllerService } from "./core/controller/interface.ts";
 import { ExceptionHandler as TExceptionHandler } from "./services/exception/interface.ts";
@@ -100,12 +103,12 @@ import { UrlService as TUrlService } from "./router/url/url-service.js";
 import { LocationProvider as TLocationProvider } from "./services/location/location.js";
 import { ViewService as TViewService } from "./router/view/view.js";
 import {
-  BuiltStateDeclaration,
   BuiltStateDeclaration as TBuiltStateDeclaration,
   StateDeclaration as TStateDeclaration,
 } from "./router/state/interface.ts";
 import { StateObject as TStateObject } from "./router/state/state-object.js";
 import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.js";
+import { IViewScrollService } from "./router/scroll/interface.ts";
 
 declare global {
   interface Function {
@@ -179,6 +182,7 @@ declare global {
     export type TemplateRequestService = TTemplateRequestService;
     export type UrlService = TUrlService;
     export type ViewService = TViewService;
+    export type ViewScrollService = IViewScrollService;
 
     // Support types
     export type ErrorHandlingConfig = TErrorHandlingConfig;
@@ -209,5 +213,7 @@ declare global {
     export type StateDeclaration = TStateDeclaration;
     export type BuiltStateDeclaration = TBuiltStateDeclaration;
     export type StateObject = TStateObject;
+    export type AnchorScrollFunction = TAnchorScrollFunction;
+    export type AnchorScrollObject = TAnchorScrollObject;
   }
 }

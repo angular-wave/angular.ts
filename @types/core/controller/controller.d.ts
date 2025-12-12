@@ -1,4 +1,4 @@
-export function identifierForController(controller: any, ident: any): any;
+export function identifierForController(controller: any, ident: any): string;
 /**
  * The {@link ng.$controller $controller service} is used by AngularTS to create new
  * controllers.

@@ -151,9 +151,8 @@ export function isBlankObject(value) {
 /**
  * Determines if a reference is a `string`.
  *
- * @template T
- * @param {T} value - The value to check.
- * @returns {value is T & string} True if `value` is a string.
+ * @param value - The value to check.
+ * @returns {value is string} True if `value` is a string.
  */
 export function isString(value) {
   return typeof value === "string";
