@@ -6,19 +6,6 @@ import {
 } from "../../shared/utils.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
-/**
- * @typedef {Object} AnchorScrollObject
- * @property {number|function|Element} yOffset
- */
-
-/**
- * @typedef {(string) => void} AnchorScrollFunction
- */
-
-/**
- * @typedef {AnchorScrollFunction | AnchorScrollObject} AnchorScrollService
- */
-
 export class AnchorScrollProvider {
   constructor() {
     this.autoScrollingEnabled = true;
@@ -29,7 +16,7 @@ export class AnchorScrollProvider {
     $t._rootScope,
     /**
      *
-     * @param {import('../../services/location/location.js').Location} $location
+     * @param {ng.LocationService} $location
      * @param {ng.Scope} $rootScope
      * @returns
      */
@@ -55,7 +42,7 @@ export class AnchorScrollProvider {
 
       function getYOffset() {
         // Figure out a better way to configure this other than bolting on a property onto a function
-        let offset = /** @type {AnchorScrollObject} */ (scroll).yOffset;
+        let offset = /** @type {ng.AnchorScrollObject} */ (scroll).yOffset;
 
         if (isFunction(offset)) {
           offset = /** @type {Function} */ (offset)();
@@ -105,7 +92,7 @@ export class AnchorScrollProvider {
         }
       }
 
-      /** @type {AnchorScrollService} */
+      /** @type {ng.AnchorScrollService} */
       const scroll = function (/** @type {string | number} */ hash) {
         // Allow numeric hashes
         hash = isString(hash)

@@ -8,10 +8,12 @@ import {
 } from "./core/scope/interface.ts";
 import { NgModule as TNgModule } from "./core/di/ng-module/ng-module.js";
 import { InjectorService as TInjectorService } from "./core/di/internal-injector.js";
+import { AnchorScrollProvider as TAnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
 import {
-  AnchorScrollProvider as TAnchorScrollProvider,
+  AnchorScrollFunction as TAnchorScrollFunction,
   AnchorScrollService as TAnchorScrollService,
-} from "./services/anchor-scroll/anchor-scroll.js";
+  AnchorScrollObject as TAnchorScrollObject,
+} from "./services/anchor-scroll/interface.ts";
 import { ControllerService as TControllerService } from "./core/controller/interface.ts";
 import { ExceptionHandler as TExceptionHandler } from "./services/exception/interface.ts";
 import { ParseService as TParseService } from "./core/parse/interface.ts";
@@ -101,6 +103,7 @@ import {
 } from "./router/state/interface.ts";
 import { StateObject as TStateObject } from "./router/state/state-object.js";
 import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.js";
+import { IViewScrollService } from "./router/scroll/interface.ts";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -165,6 +168,7 @@ declare global {
     type TemplateRequestService = TTemplateRequestService;
     type UrlService = TUrlService;
     type ViewService = TViewService;
+    type ViewScrollService = IViewScrollService;
     type ErrorHandlingConfig = TErrorHandlingConfig;
     type ListenerFn = TListenerFn;
     type Listener = TListener;
@@ -193,5 +197,7 @@ declare global {
     type StateDeclaration = TStateDeclaration;
     type BuiltStateDeclaration = TBuiltStateDeclaration;
     type StateObject = TStateObject;
+    type AnchorScrollFunction = TAnchorScrollFunction;
+    type AnchorScrollObject = TAnchorScrollObject;
   }
 }

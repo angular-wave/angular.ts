@@ -91,11 +91,10 @@ export function isBlankObject(value: any): boolean;
 /**
  * Determines if a reference is a `string`.
  *
- * @template T
- * @param {T} value - The value to check.
- * @returns {value is T & string} True if `value` is a string.
+ * @param value - The value to check.
+ * @returns {value is string} True if `value` is a string.
  */
-export function isString<T>(value: T): value is T & string;
+export function isString(value: any): value is string;
 /**
  * Determines if a reference is a null.
  *

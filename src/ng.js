@@ -104,7 +104,7 @@ import { RouterProvider } from "./router/router.js";
 import { ViewService } from "./router/view/view.js";
 import { TransitionProvider } from "./router/transition/transition-service.js";
 import { StateProvider } from "./router/state/state-service.js";
-import { ViewScrollProvider } from "./router/view-scroll.js";
+import { ViewScrollProvider } from "./router/scroll/view-scroll.js";
 import { TemplateFactoryProvider } from "./router/template-factory.js";
 import { UrlService } from "./router/url/url-service.js";
 import { StateRegistryProvider } from "./router/state/state-registry.js";

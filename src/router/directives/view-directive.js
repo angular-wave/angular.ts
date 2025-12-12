@@ -307,7 +307,7 @@ export function $ViewDirective($view, $animate, $viewScroll, $interpolate) {
                 (isDefined(autoScrollExp) && !autoScrollExp) ||
                 scope.$eval(autoScrollExp)
               ) {
-                $viewScroll(clone);
+                /** @type {ng.AnchorScrollFunction} */ ($viewScroll)(clone);
               }
             });
             cleanupLastView();

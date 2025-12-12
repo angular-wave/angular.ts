@@ -1,6 +1,6 @@
-import { dealoc } from "../shared/dom.js";
-import { Angular } from "../angular.js";
-import { wait } from "../shared/test-utils.js";
+import { dealoc } from "../../shared/dom.js";
+import { Angular } from "../../angular.js";
+import { wait } from "../../shared/test-utils.js";
 
 describe("ngView", () => {
   describe("scrollIntoView", () => {

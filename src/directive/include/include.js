@@ -11,7 +11,7 @@ ngIncludeDirective.$inject = [
 /**
  *
  * @param {ng.TemplateRequestService} $templateRequest
- * @param {import("../../services/anchor-scroll/anchor-scroll.js").AnchorScrollFunction} $anchorScroll
+ * @param {ng.AnchorScrollService} $anchorScroll
  * @param {ng.AnimateService} $animate
  * @param {ng.ExceptionHandlerService} $exceptionHandler
  * @returns {ng.Directive}
@@ -42,7 +42,7 @@ export function ngIncludeDirective(
             isDefined(autoScrollExp) &&
             (!autoScrollExp || scope.$eval(autoScrollExp))
           ) {
-            $anchorScroll();
+            /** @type {ng.AnchorScrollFunction} */ ($anchorScroll)();
           }
         }
 
