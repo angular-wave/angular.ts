@@ -77,3 +77,15 @@ export function validateArray(arg, name) {
 export function validateIsString(arg, name) {
   return validate(isString, arg, name);
 }
+
+/**
+ * @template T
+ * @param {unknown} arg - The value to validate.
+ * @param {new (...args: any[]) => T} type - The constructor to check against.
+ * @param {string} name - Parameter name (included in error message).
+ * @returns {T} The validated instance.
+ * @throws {TypeError} If the value is not an instance of the specified type.
+ */
+export function validateInstanceOf(arg, type, name) {
+  return validate((v) => v instanceof type, arg, name);
+}

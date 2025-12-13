@@ -1,6 +1,52 @@
 import { Attributes } from "./core/compile/attributes.js";
 import { Scope } from "./core/scope/scope.js";
 import { NgModelController } from "./directive/model/model.js";
+export declare const PublicInjectionTokens: {
+  readonly $attrs: "$attrs";
+  readonly $scope: "$scope";
+  readonly $element: "$element";
+  readonly $anchorScroll: "$anchorScroll";
+  readonly $animate: "$animate";
+  readonly $animateCss: "$animateCss";
+  readonly $aria: "$aria";
+  readonly $compile: "$compile";
+  readonly $cookie: "$cookie";
+  readonly $controller: "$controller";
+  readonly $document: "$document";
+  readonly $eventBus: "$eventBus";
+  readonly $exceptionHandler: "$exceptionHandler";
+  readonly $filter: "$filter";
+  readonly $http: "$http";
+  readonly $httpParamSerializer: "$httpParamSerializer";
+  readonly $interpolate: "$interpolate";
+  readonly $location: "$location";
+  readonly $log: "$log";
+  readonly $viewScroll: "$viewScroll";
+  readonly $parse: "$parse";
+  readonly $rest: "$rest";
+  readonly $rootScope: "$rootScope";
+  readonly $rootElement: "$rootElement";
+  readonly $router: "$router";
+  readonly $sce: "$sce";
+  readonly $sceDelegate: "$sceDelegate";
+  readonly $state: "$state";
+  readonly $stateRegistry: "$stateRegistry";
+  readonly $sse: "$sse";
+  readonly $templateCache: "$templateCache";
+  readonly $templateFactory: "$templateFactory";
+  readonly $templateRequest: "$templateRequest";
+  readonly $transitions: "$transitions";
+  readonly $urlConfig: "$urlConfig";
+  readonly $url: "$url";
+  readonly $view: "$view";
+  readonly $window: "$window";
+  readonly $provide: "$provide";
+  readonly $injector: "$injector";
+  readonly $compileProvider: "$compileProvider";
+  readonly $animateProvider: "$animateProvider";
+  readonly $filterProvider: "$filterProvider";
+  readonly $controllerProvider: "$controllerProvider";
+};
 /**
  * Configuration options for the AngularTS bootstrap process.
  *

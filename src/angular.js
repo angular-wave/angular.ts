@@ -12,7 +12,6 @@ import {
   getScope,
   setCacheData,
 } from "./shared/dom.js";
-import { Cache } from "./shared/cache.js";
 import { createInjector } from "./core/di/injector.js";
 import { NgModule } from "./core/di/ng-module/ng-module.js";
 import { registerNgModule } from "./ng.js";
@@ -34,8 +33,8 @@ const moduleRegistry = {};
 
 export class Angular {
   constructor() {
-    /* @ignore */
-    this._$cache = Cache;
+    /** @private @type {!Array<string|any>} */
+    this._bootsrappedModules = [];
 
     /** @public @type {ng.PubSubService} */
     this.$eventBus = EventBus;
@@ -46,13 +45,10 @@ export class Angular {
      */
     this.version = "[VI]{version}[/VI]"; //inserted via rollup plugin
 
-    /** @type {!Array<string|any>} */
-    this._bootsrappedModules = [];
-
     /**
      * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
      *
-     * @type {(element: Element, name?: string) => ng.Scope|undefined}
+     * @type {typeof getController}
      */
     this.getController = getController;
 
@@ -68,8 +64,14 @@ export class Angular {
      */
     this.getScope = getScope;
 
+    /** @type {typeof errorHandlingConfig} */
     this.errorHandlingConfig = errorHandlingConfig;
-    this.$t = $t;
+
+    /** @type {ng.InjectionTokens} */
+    this.$t = /** @type {ng.InjectionTokens} */ ({});
+    Object.values($t).forEach((i) => {
+      /** @type {any} */ (this.$t)[i] = i;
+    });
 
     window.angular = this;
     registerNgModule(this);

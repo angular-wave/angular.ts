@@ -1,4 +1,5 @@
 import { $injectTokens as $t } from "../../injection-tokens.js";
+import { validateInstanceOf } from "../../shared/validate.js";
 
 export class ViewScrollProvider {
   constructor() {
@@ -21,6 +22,8 @@ export class ViewScrollProvider {
       }
 
       return async function ($element) {
+        validateInstanceOf($element, Element, "$element");
+
         return setTimeout(() => {
           $element.scrollIntoView(false);
         }, 0);

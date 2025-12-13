@@ -186,4 +186,5 @@ export class PubSub {
   }
 }
 
+/** @private */
 export const EventBus = new PubSub();

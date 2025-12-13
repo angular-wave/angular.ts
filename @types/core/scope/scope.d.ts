@@ -1,5 +1,5 @@
-export function nextId(): number;
 /**
+ * @private
  * Creates a deep proxy for the target object, intercepting property changes
  * and recursively applying proxies to nested objects.
  *
@@ -16,8 +16,6 @@ export function createScope(target?: any, context?: Scope): Scope;
  * @returns {boolean}
  */
 export function isNonScope(target: any): boolean;
-export const $postUpdateQueue: any[];
-export let rootScope: any;
 export class RootScopeProvider {
   rootScope: Scope;
   $get: (
