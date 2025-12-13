@@ -15,13 +15,25 @@ export function maxLength(max: number, str: string): string;
  * If the string is already longer than the desired length, return the string.
  * Else returns the string, with extra spaces on the end, such that it reaches `length` characters.
  *
- * @param length the desired length of the string to return
- * @param str the input string
+ * @param {number} length the desired length of the string to return
+ * @param {string} str the input string
  */
-export function padString(length: any, str: any): any;
-export function kebobString(camelCase: any): any;
-export function functionToString(fn: any): any;
-export function fnToString(fn: any): any;
+export function padString(length: number, str: string): string;
+/**
+ * @param {string} camelCase
+ * @returns {string}
+ */
+export function kebobString(camelCase: string): string;
+/**
+ * @param {Function} fn
+ * @returns {string}
+ */
+export function functionToString(fn: Function): string;
+/**
+ * @param {[]|Function} fn
+ * @returns {string}
+ */
+export function fnToString(fn: [] | Function): string;
 export function stringify(value: any): any;
 /**
  * Splits on a delimiter, but returns the delimiters in the array

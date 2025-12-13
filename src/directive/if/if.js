@@ -22,12 +22,13 @@ export function ngIfDirective($animate) {
      * @param {*} $transclude
      */
     link($scope, $element, $attr, _ctrl, $transclude) {
-      /** @type {Element} */
+      /** @type {Element | null | undefined} */
       let block;
 
-      /** @type {ng.Scope} */
+      /** @type {ng.Scope | null} */
       let childScope;
 
+      /** @type {Element | null | undefined} */
       let previousElements;
 
       $scope.$watch($attr.ngIf, (value) => {
@@ -41,7 +42,11 @@ export function ngIfDirective($animate) {
               block = clone;
 
               if (hasAnimate(clone)) {
-                $animate.enter(clone, $element.parentElement, $element);
+                $animate.enter(
+                  clone,
+                  /** @type {Element} */ ($element.parentElement),
+                  $element,
+                );
               } else {
                 $element.after(clone);
               }
@@ -66,7 +71,7 @@ export function ngIfDirective($animate) {
                 if (response !== false) previousElements = null;
               });
             } else {
-              $element.nextElementSibling.remove();
+              $element.nextElementSibling?.remove();
             }
             block = null;
           }

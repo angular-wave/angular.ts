@@ -352,7 +352,7 @@ export interface StateDeclaration {
    * Note: [State] objects require unique names.
    * The name is used like an id.
    */
-  name?: string;
+  name: string;
   /**
    * Abstract state indicator
    *
@@ -807,7 +807,7 @@ export interface StateDeclaration {
  * Represents a fully built StateObject, after registration in the StateRegistry
  * and application of all StateBuilder decorators.
  */
-export interface BuiltStateDeclaration extends StateDeclaration {
+export type BuiltStateDeclaration = StateDeclaration & {
   /** Reference to the original StateDeclaration */
   self: StateDeclaration;
   /** Array of Resolvables built from the resolve / resolvePolicy */
@@ -826,7 +826,7 @@ export interface BuiltStateDeclaration extends StateDeclaration {
   parent?: BuiltStateDeclaration | null;
   /** Optional inherited data */
   data?: any;
-}
+};
 /**
  * The return type of a [[StateDeclaration.lazyLoad]] function
  *

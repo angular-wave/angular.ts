@@ -378,7 +378,7 @@ export interface DirectivePrePost {
 export type DirectiveLinkFn<T> = (
   scope: Scope,
   element: HTMLElement,
-  attrs: Attributes & Record<string, any>,
+  attrs: ng.Attributes,
   controller?: TController<T>,
   transclude?: (...args: any[]) => any,
 ) => void;

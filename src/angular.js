@@ -19,6 +19,7 @@ import { unnestR } from "./shared/common.js";
 import { EventBus } from "./services/pubsub/pubsub.js";
 import { $injectTokens as $t } from "./injection-tokens.js";
 import { annotate } from "./core/di/di.js";
+import { validateIsString } from "./shared/validate.js";
 
 const ngMinErr = minErr("ng");
 
@@ -38,6 +39,9 @@ export class Angular {
 
     /** @public @type {ng.PubSubService} */
     this.$eventBus = EventBus;
+
+    /** @public @type {ng.InjectorService} */
+    this.$injector;
 
     /**
      * @public
@@ -263,10 +267,15 @@ export class Angular {
             return x.$$state().resolvables;
           })
           .reduce(unnestR, [])
-          .filter((x) => {
-            return x.deps === "deferred";
-          })
+          .filter(
+            /** @param {import("./router/resolve/resolvable.js").Resolvable} x */ (
+              x,
+            ) => {
+              return x.deps === "deferred";
+            },
+          )
           .forEach(
+            /** @param {import("./router/resolve/resolvable.js").Resolvable} resolvable */
             (resolvable) =>
               (resolvable.deps = annotate(
                 resolvable.resolveFn,
@@ -281,18 +290,20 @@ export class Angular {
 
   /**
    * @param {any[]} modules
-   * @param {boolean?} strictDi
-   * @returns {import("./core/di/internal-injector.js").InjectorService}
+   * @param {boolean} [strictDi]
+   * @returns {ng.InjectorService}
    */
   injector(modules, strictDi) {
-    return createInjector(modules, strictDi);
+    this.$injector = createInjector(modules, strictDi);
+
+    return this.$injector;
   }
 
   /**
    * @param {Element|Document} element
    */
   init(element) {
-    /** @type {Element} */
+    /** @type {Element|undefined} */
     let appElement;
 
     let module;
@@ -339,10 +350,14 @@ export class Angular {
    * or defined on `$scope` injectable.
    *
    * @param {string} name
-   * @returns {ProxyHandler<ng.Scope>|undefined}
+   * @returns {Proxy<ng.Scope>|undefined}
    */
   getScopeByName(name) {
-    const scope = this.$rootScope.$searchByName(name);
+    validateIsString(name, "name");
+    /** @type {ng.RootScopeService} */
+    const $rootScope = this.$injector.get("$rootScope");
+
+    const scope = $rootScope.$searchByName(name);
 
     if (scope) {
       return scope.$proxy;

@@ -59,14 +59,14 @@ export class Attributes {
    * Set a normalized attribute on the element in a way such that all directives
    * can share the attribute. This function properly handles boolean attributes.
    * @param {string} key Normalized key. (ie ngAttribute)
-   * @param {string|boolean} value The value to set. If `null` attribute will be deleted.
+   * @param {string|boolean|null} value The value to set. If `null` attribute will be deleted.
    * @param {boolean=} writeAttr If false, does not write the value to DOM element attribute.
    *     Defaults to true.
    * @param {string=} attrName Optional none normalized name. Defaults to key.
    */
   $set(
     key: string,
-    value: string | boolean,
+    value: string | boolean | null,
     writeAttr?: boolean | undefined,
     attrName?: string | undefined,
   ): void;
