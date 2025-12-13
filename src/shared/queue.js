@@ -14,7 +14,10 @@ export class Queue {
     this._items = isArray(items) ? [...items] : [];
 
     /** @type {number|null} */
-    this._limit = Number.isInteger(limit) && limit > 0 ? limit : null;
+    this._limit =
+      Number.isInteger(limit) && /** @type {number} */ (limit) > 0
+        ? limit
+        : null;
 
     /** @type {Array<(item: T) => void>} */
     this._evictListeners = [];

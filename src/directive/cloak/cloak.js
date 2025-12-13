@@ -4,7 +4,7 @@
 export function ngCloakDirective() {
   return {
     compile(_, attr) {
-      attr.$set("ngCloak", undefined);
+      attr.$set("ngCloak", null);
     },
   };
 }

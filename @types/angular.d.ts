@@ -3,6 +3,8 @@ export class Angular {
   private _bootsrappedModules;
   /** @public @type {ng.PubSubService} */
   public $eventBus: ng.PubSubService;
+  /** @public @type {ng.InjectorService} */
+  public $injector: ng.InjectorService;
   /**
    * @public
    * @type {string} `version` from `package.json`
@@ -129,16 +131,12 @@ export class Angular {
     config?: import("./interface.ts").AngularBootstrapConfig,
   ): ng.InjectorService;
   $rootScope: ng.Scope;
-  $injector: import("./core/di/internal-injector.js").InjectorService;
   /**
    * @param {any[]} modules
-   * @param {boolean?} strictDi
-   * @returns {import("./core/di/internal-injector.js").InjectorService}
+   * @param {boolean} [strictDi]
+   * @returns {ng.InjectorService}
    */
-  injector(
-    modules: any[],
-    strictDi: boolean | null,
-  ): import("./core/di/internal-injector.js").InjectorService;
+  injector(modules: any[], strictDi?: boolean): ng.InjectorService;
   /**
    * @param {Element|Document} element
    */
@@ -152,9 +150,9 @@ export class Angular {
    * or defined on `$scope` injectable.
    *
    * @param {string} name
-   * @returns {ProxyHandler<ng.Scope>|undefined}
+   * @returns {Proxy<ng.Scope>|undefined}
    */
-  getScopeByName(name: string): ProxyHandler<ng.Scope> | undefined;
+  getScopeByName(name: string): ProxyConstructor | undefined;
 }
 export type ModuleRegistry = {
   [x: string]: NgModule;

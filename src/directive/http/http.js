@@ -254,7 +254,7 @@ export function createHttpDirective(method, attrName) {
                     // Animate elements
                     $animate.enter(
                       /** @type {Element} */ (x),
-                      parent,
+                      /** @type {Element} */ (parent),
                       placeholder,
                     );
                   } else {
@@ -275,7 +275,10 @@ export function createHttpDirective(method, attrName) {
               if (animationEnabled) {
                 $animate.leave(target).done(() => {
                   target.textContent = html;
-                  $animate.enter(target, target.parentNode);
+                  $animate.enter(
+                    target,
+                    /** @type {Element} */ (target.parentNode),
+                  );
                   scopeParam.$flushQueue();
                 });
 
@@ -295,7 +298,7 @@ export function createHttpDirective(method, attrName) {
                   animationEnabled &&
                   node.nodeType === NodeType._ELEMENT_NODE
                 ) {
-                  $animate.enter(node, parent, target); // insert before target
+                  $animate.enter(node, /** @type {Element} */ (parent), target); // insert before target
                 } else {
                   parent.insertBefore(node, target);
                 }
@@ -313,7 +316,11 @@ export function createHttpDirective(method, attrName) {
                   animationEnabled &&
                   node.nodeType === NodeType._ELEMENT_NODE
                 ) {
-                  $animate.enter(node, target, firstChild); // insert before first child
+                  $animate.enter(
+                    node,
+                    target,
+                    /** @type {Element} */ (firstChild),
+                  ); // insert before first child
                 } else {
                   target.insertBefore(node, firstChild);
                 }
@@ -350,7 +357,11 @@ export function createHttpDirective(method, attrName) {
                   animationEnabled &&
                   node.nodeType === NodeType._ELEMENT_NODE
                 ) {
-                  $animate.enter(node, parent, nextSibling); // insert after target
+                  $animate.enter(
+                    node,
+                    /** @type {Element} */ (parent),
+                    /** @type {Element} */ (nextSibling),
+                  ); // insert after target
                 } else {
                   parent.insertBefore(node, nextSibling);
                 }
@@ -406,7 +417,9 @@ export function createHttpDirective(method, attrName) {
           if (/** @type {HTMLButtonElement} */ (element).disabled) return;
 
           if (tag === "form") event.preventDefault();
-          const swap = attrs.swap || "innerHTML";
+          const swap =
+            /** @type {import("./interface.ts").SwapModeType} */ (attrs.swap) ||
+            "innerHTML";
 
           const url = attrs[attrName];
 

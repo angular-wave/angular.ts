@@ -1,22 +1,41 @@
 import { dealoc } from "./dom.js";
-import { isObject } from "./utils.js";
+/**
+ * @typedef {(
+ *   | ({ type: `key${string}` } & KeyboardEventInit)
+ *   | ({ type: `mouse${string}` } & MouseEventInit)
+ *   | ({ type: string } & EventInit)
+ *   | string
+ * )} BrowserTriggerOptions
+ */
 
 /**
- * Triggers a browser event on the specified element.
- * @param {HTMLElement} element - The target element.
- * @param {Object} options - The event type and properties.
+ * @param {HTMLElement} element
+ * @param {BrowserTriggerOptions} options
  */
 export function browserTrigger(element, options) {
-  const { type, ...eventProps } = options;
+  let type;
+
+  let eventProps = {};
+
+  if (typeof options === "string") {
+    type = options;
+  } else {
+    // eslint-disable-next-line prefer-destructuring
+    type = options.type;
+    eventProps = options;
+  }
 
   let event;
 
-  if (isObject(options) && type.startsWith("key")) {
-    event = new KeyboardEvent(type, eventProps);
-  } else if (isObject(options) && type.startsWith("mouse")) {
-    event = new MouseEvent(type, eventProps);
+  if (type.startsWith("key")) {
+    event = new KeyboardEvent(
+      type,
+      /** @type {KeyboardEventInit} */ (eventProps),
+    );
+  } else if (type.startsWith("mouse")) {
+    event = new MouseEvent(type, /** @type {MouseEventInit} */ (eventProps));
   } else {
-    event = new Event(type || options, { bubbles: true, cancelable: true });
+    event = new Event(type, { bubbles: true, cancelable: true });
   }
 
   element.dispatchEvent(event);
@@ -33,14 +52,22 @@ export function wait(timeout = 0) {
   return new Promise((resolve) => setTimeout(resolve, timeout));
 }
 
+/**
+ * @type {HTMLElement}
+ */
 export let ELEMENT;
 
 /**
  * Helper for bootstraping content onto default element
+ *
+ * @param {string} htmlContent,
+ * @param {string} moduleName
+ *
+ * @returns {ng.InjectorService}
  */
 export function bootstrap(htmlContent, moduleName) {
   if (!ELEMENT) {
-    ELEMENT = document.getElementById("app");
+    ELEMENT = /** @type {HTMLElement} */ (document.getElementById("app"));
   }
   dealoc(ELEMENT);
   ELEMENT.innerHTML = htmlContent;

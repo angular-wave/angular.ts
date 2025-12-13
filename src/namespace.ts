@@ -124,7 +124,7 @@ declare global {
   export namespace ng {
     // Core types (docs preserved)
     export type Angular = TAngular;
-    export type Attributes = TAttributes & Record<string, any>;
+    export type Attributes = TAttributes & Record<string, string>;
     export type Directive<TController = any> = TDirective<TController>;
     export type DirectiveFactory = TDirectiveFactory;
     export type AnnotatedDirectiveFactory = TAnnotatedDirectiveFactory;

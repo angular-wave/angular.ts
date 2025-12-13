@@ -36,7 +36,8 @@ let $parse;
 /**@type {ng.ExceptionHandlerService} */
 let $exceptionHandler;
 
-const $postUpdateQueue = [];
+/** @ignore @type {Function[]}*/
+export const $postUpdateQueue = [];
 
 export class RootScopeProvider {
   constructor() {
@@ -1406,8 +1407,17 @@ export class Scope {
     }
   }
 
+  /**
+   * @param {string} name
+   * @returns {ng.Scope|undefined}
+   */
   $searchByName(name) {
-    const getByName = (scope, nameParam) => {
+    /**
+     * @param {ng.Scope} scope
+     * @param {string} nameParam
+     * @returns {ng.Scope|undefined}
+     */
+    function getByName(scope, nameParam) {
       if (scope.$scopename === nameParam) {
         return scope;
       } else {
@@ -1424,7 +1434,7 @@ export class Scope {
 
         return res;
       }
-    };
+    }
 
     return getByName(this.$root, name);
   }

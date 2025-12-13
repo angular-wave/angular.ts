@@ -16,6 +16,8 @@ export function createScope(target?: any, context?: Scope): Scope;
  * @returns {boolean}
  */
 export function isNonScope(target: any): boolean;
+/** @ignore @type {Function[]}*/
+export const $postUpdateQueue: Function[];
 export class RootScopeProvider {
   rootScope: Scope;
   $get: (
@@ -176,6 +178,10 @@ export class Scope {
    * @returns {Scope|undefined}
    */
   $getById(id: string | number): Scope | undefined;
-  $searchByName(name: any): any;
+  /**
+   * @param {string} name
+   * @returns {ng.Scope|undefined}
+   */
+  $searchByName(name: string): ng.Scope | undefined;
   #private;
 }

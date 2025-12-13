@@ -58,7 +58,7 @@ export const requiredDirective = [
         if (!attr.ngRequired) {
           // force truthy in case we are on non input element
           // (input elements do this automatically for boolean attributes like required)
-          attr.required = true;
+          attr.required = "true";
         }
 
         ctrl.$validators.required = (_modelValue, viewValue) => {

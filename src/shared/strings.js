@@ -37,14 +37,19 @@ export function maxLength(max, str) {
  * If the string is already longer than the desired length, return the string.
  * Else returns the string, with extra spaces on the end, such that it reaches `length` characters.
  *
- * @param length the desired length of the string to return
- * @param str the input string
+ * @param {number} length the desired length of the string to return
+ * @param {string} str the input string
  */
 export function padString(length, str) {
   while (str.length < length) str += " ";
 
   return str;
 }
+
+/**
+ * @param {string} camelCase
+ * @returns {string}
+ */
 export function kebobString(camelCase) {
   return camelCase
     .replace(/^([A-Z])/, ($1) => $1.toLowerCase()) // replace first char
@@ -53,6 +58,10 @@ export function kebobString(camelCase) {
 
 const FN_LENGTH = 9;
 
+/**
+ * @param {Function} fn
+ * @returns {string}
+ */
 export function functionToString(fn) {
   const fnStr = fnToString(fn);
 
@@ -68,6 +77,11 @@ export function functionToString(fn) {
 
   return toStr;
 }
+
+/**
+ * @param {[]|Function} fn
+ * @returns {string}
+ */
 export function fnToString(fn) {
   const _fn = isArray(fn) ? fn.slice(-1)[0] : fn;
 
