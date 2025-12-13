@@ -145,9 +145,9 @@ export class NgModelController {
   $$scope: ng.Scope;
   $$attr: ng.Attributes;
   $$element: Element;
-  $$animate: import("../../interface.ts").AnimateService;
+  $$animate: import("../../animations/interface.ts").AnimateService;
   $$parse: import("../../core/parse/interface.ts").ParseService;
-  $$exceptionHandler: import("../../interface.ts").ExceptionHandler;
+  $$exceptionHandler: import("../../services/exception/interface.ts").ExceptionHandler;
   $$hasNativeValidators: boolean;
   $$classCache: {};
   $$eventRemovers: Set<any>;

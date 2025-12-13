@@ -19,9 +19,9 @@ export class TemplateFactoryProvider {
       ) => this)
   )[];
   $templateRequest: any;
-  $http: import("../interface.ts").HttpService;
+  $http: import("../services/http/interface.ts").HttpService;
   $templateCache: ng.TemplateCacheService;
-  $injector: import("../interface.ts").InjectorService;
+  $injector: import("../core/di/internal-injector.js").InjectorService;
   /**
    * Forces the provider to use $http service directly
    * @param {boolean} value

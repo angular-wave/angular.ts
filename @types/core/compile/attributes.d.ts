@@ -14,8 +14,8 @@ export class Attributes {
     nodeRef?: import("../../shared/noderef.js").NodeRef,
     attributesToCopy?: any,
   );
-  _$animate: import("../../interface.ts").AnimateService;
-  _$exceptionHandler: import("../../interface.ts").ExceptionHandler;
+  _$animate: import("../../animations/interface.ts").AnimateService;
+  _$exceptionHandler: import("../../services/exception/interface.ts").ExceptionHandler;
   _$sce: any;
   $attr: {};
   /** @type {import("../../shared/noderef.js").NodeRef} */
