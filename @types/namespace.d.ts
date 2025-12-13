@@ -103,7 +103,7 @@ import {
 } from "./router/state/interface.ts";
 import { StateObject as TStateObject } from "./router/state/state-object.js";
 import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.js";
-import { IViewScrollService } from "./router/scroll/interface.ts";
+import { ViewScroll } from "./router/scroll/interface.ts";
 import { HookRegistry } from "./router/transition/interface.ts";
 declare global {
   interface Function {
@@ -169,7 +169,7 @@ declare global {
     type TemplateRequestService = TTemplateRequestService;
     type UrlService = TUrlService;
     type ViewService = TViewService;
-    type ViewScrollService = IViewScrollService;
+    type ViewScrollService = ViewScroll;
     type ErrorHandlingConfig = TErrorHandlingConfig;
     type ListenerFn = TListenerFn;
     type Listener = TListener;
