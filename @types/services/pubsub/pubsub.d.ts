@@ -17,8 +17,8 @@ export class PubSub {
   private _topics;
   /** @private */
   private _disposed;
-  /** @ignore @type {ng.ExceptionHandlerService | undefined} */
-  _$exceptionHandler: ng.ExceptionHandlerService | undefined;
+  /** @public @type {ng.ExceptionHandlerService | undefined} */
+  public $exceptionHandler: ng.ExceptionHandlerService | undefined;
   /**
    * Set instance to initial state
    */
