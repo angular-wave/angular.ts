@@ -1,3 +1,3 @@
-export type ViewScroll =
+export type ViewScrollService =
   | ng.AnchorScrollService
   | ((el: Element) => void | Promise<void>);

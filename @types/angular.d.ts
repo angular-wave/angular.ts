@@ -128,7 +128,7 @@ export class Angular {
     config?: import("./interface.ts").AngularBootstrapConfig,
   ): ng.InjectorService;
   $rootScope: ng.Scope;
-  $injector: import("./interface.ts").InjectorService;
+  $injector: import("./core/di/internal-injector.js").InjectorService;
   /**
    * @param {any[]} modules
    * @param {boolean?} strictDi

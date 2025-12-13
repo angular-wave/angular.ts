@@ -1,5 +1,5 @@
 {
-  "entryPoints": ["src/interface.ts"],
+  "entryPoints": ["src/docs.ts"],
   "entryPointStrategy": "expand",
   "excludePrivate": true,
   "out": "./typedoc",

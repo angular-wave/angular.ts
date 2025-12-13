@@ -43,8 +43,10 @@ export class CookieService {
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    */
   constructor(defaults, $exceptionHandler) {
-    /** @type {ng.CookieOptions} */
+    /** @private @type {ng.CookieOptions} */
     this._defaults = Object.freeze({ ...defaults });
+
+    /** @private */
     this._$exceptionHandler = $exceptionHandler;
   }
 

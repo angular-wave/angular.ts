@@ -40,7 +40,7 @@ declare class NgMessageCtrl {
   $element: Element;
   $scope: ng.Scope;
   $attrs: ng.Attributes;
-  $animate: import("../../interface.ts").AnimateService;
+  $animate: import("../../animations/interface.ts").AnimateService;
   latestKey: number;
   nextAttachId: number;
   messages: {};
