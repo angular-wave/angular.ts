@@ -122,7 +122,6 @@ describe("angular", () => {
       const injector = angular.getInjector(appElement);
       function testFactory($rootScope) {}
       expect(() => {
-        debugger;
         injector.instantiate(testFactory);
       }).toThrowError(/strictdi/);
 
@@ -250,6 +249,15 @@ describe("angular", () => {
       expect(injector).toBeDefined();
       expect(angular.getInjector(element)).toBe(injector);
       // dealoc(element);
+    });
+
+    it("have a reference to inself from injector", () => {
+      const element = createElementFromHTML("<div></div>");
+      const injector = angular.bootstrap(element);
+      expect(injector).toBeDefined();
+      expect(angular.getInjector(element)).toBe(injector);
+      expect(injector.get("$angular")).toBeDefined();
+      expect(injector.get("$angular")).toBe(angular);
     });
 
     it("should complain if app module can't be found", () => {

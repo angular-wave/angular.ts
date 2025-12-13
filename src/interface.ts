@@ -3,6 +3,7 @@ import { Scope } from "./core/scope/scope.js";
 import { NgModelController } from "./directive/model/model.js";
 
 export const PublicInjectionTokens = {
+  $angular: "$angular",
   $attrs: "$attrs",
   $scope: "$scope",
   $element: "$element",

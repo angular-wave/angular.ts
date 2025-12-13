@@ -19,7 +19,7 @@ export class PubSubProvider {
      * @returns {PubSub}
      */
     ($exceptionHandler) => {
-      this.eventBus._$exceptionHandler = $exceptionHandler;
+      this.eventBus.$exceptionHandler = $exceptionHandler;
 
       return this.eventBus;
     },
@@ -34,8 +34,8 @@ export class PubSub {
     /** @private */
     this._disposed = false;
 
-    /** @ignore @type {ng.ExceptionHandlerService | undefined} */
-    this._$exceptionHandler = undefined;
+    /** @public @type {ng.ExceptionHandlerService | undefined} */
+    this.$exceptionHandler = undefined;
   }
 
   /**
@@ -175,7 +175,7 @@ export class PubSub {
         try {
           fn.apply(context, args);
         } catch (err) {
-          this._$exceptionHandler(err);
+          this.$exceptionHandler(err);
         }
       }
     });

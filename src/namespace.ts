@@ -192,6 +192,7 @@ declare global {
     export type Listener = TListener;
     export type DocumentService = Document;
     export type WindowService = Window;
+    export type AngularServie = Angular;
     export type WorkerConfig = TWorkerConfig;
     export type WorkerConnection = TWorkerConnection;
     export type Injectable<

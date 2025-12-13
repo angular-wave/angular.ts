@@ -157,6 +157,7 @@ export function registerNgModule(angular) {
           $provide.provider({
             $$sanitizeUri: SanitizeUriProvider,
           });
+          $provide.value($t._angular, angular);
           $provide.value($t._window, window);
           $provide.value($t._document, document);
           $provide

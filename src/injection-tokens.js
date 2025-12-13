@@ -17,6 +17,7 @@
  * @type Readonly<Record<string, string>>
  */
 export const $injectTokens = {
+  _angular: "$angular",
   _attrs: "$attrs",
   _scope: "$scope",
   _element: "$element",

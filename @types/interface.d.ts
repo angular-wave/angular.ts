@@ -2,6 +2,7 @@ import { Attributes } from "./core/compile/attributes.js";
 import { Scope } from "./core/scope/scope.js";
 import { NgModelController } from "./directive/model/model.js";
 export declare const PublicInjectionTokens: {
+  readonly $angular: "$angular";
   readonly $attrs: "$attrs";
   readonly $scope: "$scope";
   readonly $element: "$element";
