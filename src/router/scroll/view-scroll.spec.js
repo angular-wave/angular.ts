@@ -7,34 +7,34 @@ describe("ngView", () => {
     let elem, $anchorScroll, $viewScroll;
 
     beforeEach(() => {
-      dealoc(document.getElementById("app"));
+      dealoc(elem);
+      elem = document.getElementById("app");
       window.angular = new Angular();
       window.angular.module("defaultModule", []);
-      let $injector = window.angular.bootstrap(document.getElementById("app"), [
-        "defaultModule",
-      ]);
+      let $injector = window.angular.bootstrap(elem, ["defaultModule"]);
 
       $injector.invoke((_$viewScroll_, _$anchorScroll_) => {
         $anchorScroll = _$anchorScroll_;
         $viewScroll = _$viewScroll_;
       });
-      elem = [{ scrollIntoView: jasmine.createSpy("scrollIntoView") }];
+
+      elem.scrollIntoView = jasmine.createSpy("scrollIntoView");
     });
 
     it("should scroll element into view after timeout", async () => {
-      $viewScroll(elem[0]);
-      expect(elem[0].scrollIntoView).not.toHaveBeenCalled();
+      $viewScroll(elem);
+      expect(elem.scrollIntoView).not.toHaveBeenCalled();
 
       await wait(100);
-      expect(elem[0].scrollIntoView).toHaveBeenCalled();
+      expect(elem.scrollIntoView).toHaveBeenCalled();
     });
 
     it("should return the promise from the timeout", async () => {
       dealoc(document.getElementById("app"));
-      const promise = $viewScroll(elem[0]);
+      const promise = $viewScroll(elem);
 
       await wait(10);
-      expect(elem[0].scrollIntoView).toHaveBeenCalled();
+      expect(elem.scrollIntoView).toHaveBeenCalled();
       expect(promise).toBeDefined();
     });
   });

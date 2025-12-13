@@ -1,23 +1,24 @@
-/** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider
-
 /**
  * Configurable provider for an injectable event bus
- * @extends {ServiceProvider}
+ * @implements {ng.ServiceProvider}
  */
-export class PubSubProvider {
+export class PubSubProvider implements ng.ServiceProvider {
   /**
    * @type {PubSub}
    */
   eventBus: PubSub;
-  $get: any[];
+  $get: (
+    | string
+    | (($exceptionHandler: ng.ExceptionHandlerService) => PubSub)
+  )[];
 }
 export class PubSub {
   /** @private {Object<string, Array<{fn: Function, context: any}>>} */
   private _topics;
   /** @private */
   private _disposed;
-  /** @type {ng.ExceptionHandlerService} */
-  _$exceptionHandler: ng.ExceptionHandlerService;
+  /** @ignore @type {ng.ExceptionHandlerService | undefined} */
+  _$exceptionHandler: ng.ExceptionHandlerService | undefined;
   /**
    * Set instance to initial state
    */
@@ -74,8 +75,3 @@ export class PubSub {
 }
 /** @private */
 export const EventBus: PubSub;
-/**
- * /**
- * Configurable provider for an injectable event bus
- */
-export type ServiceProvider = import("../../interface.ts").ServiceProvider;

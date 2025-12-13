@@ -15,7 +15,7 @@ import { Param } from "../params/param.js";
 import { Glob } from "../glob/glob.js";
 import { lazyLoadState } from "../hooks/lazy-load.js";
 import { EventBus } from "../../services/pubsub/pubsub.js";
-import { $injectTokens, provider } from "../../injection-tokens";
+import { $injectTokens, provider } from "../../injection-tokens.js";
 
 const stdErr = minErr("$stateProvider");
 

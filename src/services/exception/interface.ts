@@ -1,7 +1,7 @@
 /**
  * A callback type for handling errors.
  *
- * @param {Error} exception - The exception associated with the error.
- * @throws {Error}
+ * @param {unknown} exception - The exception associated with the error.
+ * @throws {unknown}
  */
-export type ExceptionHandler = (exception: Error) => never;
+export type ExceptionHandler = (exception: unknown) => never;

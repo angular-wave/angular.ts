@@ -93,8 +93,13 @@ export class AnimateProvider {
    * @return {RegExp} The current CSS className expression value. If null then there is no expression value
    */
   classNameFilter: (expression?: RegExp | undefined, ...args: any[]) => RegExp;
-  $get: any[];
+  $get: (
+    | string
+    | ((
+        $$animateQueue: import("./queue/interface.ts").AnimateQueueService,
+      ) => ng.AnimateService)
+  )[];
 }
 export namespace AnimateProvider {
-  let $inject: any[];
+  let $inject: string[];
 }

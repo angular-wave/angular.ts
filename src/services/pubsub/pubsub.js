@@ -1,10 +1,8 @@
-import { $injectTokens } from "../../injection-tokens";
-
-/** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider
+import { $injectTokens } from "../../injection-tokens.js";
 
 /**
  * Configurable provider for an injectable event bus
- * @extends {ServiceProvider}
+ * @implements {ng.ServiceProvider}
  */
 export class PubSubProvider {
   constructor() {
@@ -36,7 +34,7 @@ export class PubSub {
     /** @private */
     this._disposed = false;
 
-    /** @type {ng.ExceptionHandlerService} */
+    /** @ignore @type {ng.ExceptionHandlerService | undefined} */
     this._$exceptionHandler = undefined;
   }
 
