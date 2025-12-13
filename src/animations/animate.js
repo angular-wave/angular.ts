@@ -8,7 +8,7 @@ import {
 } from "../shared/utils.js";
 import { animatedomInsert, removeElement } from "../shared/dom.js";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
-import { $injectTokens } from "../injection-tokens";
+import { $injectTokens } from "../injection-tokens.js";
 
 const $animateMinErr = minErr("$animate");
 

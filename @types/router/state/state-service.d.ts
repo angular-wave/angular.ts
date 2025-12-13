@@ -4,7 +4,7 @@
  * This API is located at `router.stateService` ([[UIRouter.stateService]])
  */
 export class StateProvider {
-  static $inject: any;
+  static $inject: string[];
   /**
    *
    * @param {ng.RouterService} globals
@@ -38,7 +38,10 @@ export class StateProvider {
   $injector: ng.InjectorService;
   invalidCallbacks: any[];
   _defaultErrorHandler: ($error$: any) => never;
-  $get: any[];
+  $get: (
+    | string
+    | (($injector: ng.InjectorService, $url: any) => StateProvider)
+  )[];
   /**
    * Decorates states when they are registered
    *

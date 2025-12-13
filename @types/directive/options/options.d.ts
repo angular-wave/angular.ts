@@ -9,5 +9,5 @@ export function ngOptionsDirective(
   $parse: ng.ParseService,
 ): ng.Directive;
 export namespace ngOptionsDirective {
-  let $inject: any[];
+  let $inject: string[];
 }
