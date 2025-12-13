@@ -22,7 +22,7 @@ import { $injectTokens as $t } from "../../injection-tokens.js";
  */
 let uid = 0;
 
-export function nextId() {
+function nextId() {
   uid += 1;
 
   return uid;
@@ -36,13 +36,11 @@ let $parse;
 /**@type {ng.ExceptionHandlerService} */
 let $exceptionHandler;
 
-export const $postUpdateQueue = [];
-
-export let rootScope;
+const $postUpdateQueue = [];
 
 export class RootScopeProvider {
   constructor() {
-    rootScope = this.rootScope = createScope();
+    this.rootScope = createScope();
   }
 
   $get = [
@@ -62,6 +60,7 @@ export class RootScopeProvider {
 }
 
 /**
+ * @private
  * Creates a deep proxy for the target object, intercepting property changes
  * and recursively applying proxies to nested objects.
  *

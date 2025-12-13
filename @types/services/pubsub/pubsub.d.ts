@@ -72,6 +72,7 @@ export class PubSub {
    */
   publish(topic: string, ...args: any[]): boolean;
 }
+/** @private */
 export const EventBus: PubSub;
 /**
  * /**

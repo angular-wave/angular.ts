@@ -2,6 +2,53 @@ import { Attributes } from "./core/compile/attributes.js";
 import { Scope } from "./core/scope/scope.js";
 import { NgModelController } from "./directive/model/model.js";
 
+export const PublicInjectionTokens = {
+  $attrs: "$attrs",
+  $scope: "$scope",
+  $element: "$element",
+  $anchorScroll: "$anchorScroll",
+  $animate: "$animate",
+  $animateCss: "$animateCss",
+  $aria: "$aria",
+  $compile: "$compile",
+  $cookie: "$cookie",
+  $controller: "$controller",
+  $document: "$document",
+  $eventBus: "$eventBus",
+  $exceptionHandler: "$exceptionHandler",
+  $filter: "$filter",
+  $http: "$http",
+  $httpParamSerializer: "$httpParamSerializer",
+  $interpolate: "$interpolate",
+  $location: "$location",
+  $log: "$log",
+  $viewScroll: "$viewScroll",
+  $parse: "$parse",
+  $rest: "$rest",
+  $rootScope: "$rootScope",
+  $rootElement: "$rootElement",
+  $router: "$router",
+  $sce: "$sce",
+  $sceDelegate: "$sceDelegate",
+  $state: "$state",
+  $stateRegistry: "$stateRegistry",
+  $sse: "$sse",
+  $templateCache: "$templateCache",
+  $templateFactory: "$templateFactory",
+  $templateRequest: "$templateRequest",
+  $transitions: "$transitions",
+  $urlConfig: "$urlConfig",
+  $url: "$url",
+  $view: "$view",
+  $window: "$window",
+  $provide: "$provide",
+  $injector: "$injector",
+  $compileProvider: "$compileProvider",
+  $animateProvider: "$animateProvider",
+  $filterProvider: "$filterProvider",
+  $controllerProvider: "$controllerProvider",
+} as const;
+
 /**
  * Configuration options for the AngularTS bootstrap process.
  *

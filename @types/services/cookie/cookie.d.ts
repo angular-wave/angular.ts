@@ -28,7 +28,7 @@ export class CookieService {
   );
   /** @private @type {ng.CookieOptions} */
   private _defaults;
-  /** @private */
+  /** @private @type {ng.ExceptionHandlerService} */
   private _$exceptionHandler;
   /**
    * Retrieves a raw cookie value.

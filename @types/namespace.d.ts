@@ -48,6 +48,7 @@ import {
   ControllerConstructor as TControllerConstructor,
   Injectable as TInjectable,
   Expression as TExpression,
+  PublicInjectionTokens,
 } from "./interface.ts";
 import {
   SseService as TSseService,
@@ -200,5 +201,6 @@ declare global {
     type StateObject = TStateObject;
     type AnchorScrollFunction = TAnchorScrollFunction;
     type AnchorScrollObject = TAnchorScrollObject;
+    type InjectionTokens = typeof PublicInjectionTokens;
   }
 }

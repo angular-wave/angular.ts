@@ -6,8 +6,8 @@
  * ```js
  *
  * myDirective.$inject = [
- *   angular.$t._animate,
- *   angular.$t._templateRequest,
+ *   angular.$t.$animate,
+ *   angular.$t.$templateRequest,
  * ];
  *
  * function myDirective($animate, $templateRequest) { ... }

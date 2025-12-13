@@ -1,5 +1,6 @@
 export class Angular {
-  _$cache: Map<number, import("./interface.ts").ExpandoStore>;
+  /** @private @type {!Array<string|any>} */
+  private _bootsrappedModules;
   /** @public @type {ng.PubSubService} */
   public $eventBus: ng.PubSubService;
   /**
@@ -7,14 +8,12 @@ export class Angular {
    * @type {string} `version` from `package.json`
    */
   public version: string;
-  /** @type {!Array<string|any>} */
-  _bootsrappedModules: Array<string | any>;
   /**
    * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
    *
-   * @type {(element: Element, name?: string) => ng.Scope|undefined}
+   * @type {typeof getController}
    */
-  getController: (element: Element, name?: string) => ng.Scope | undefined;
+  getController: typeof getController;
   /**
    * Return instance of InjectorService attached to element
    * @type {typeof getInjector}
@@ -25,8 +24,10 @@ export class Angular {
    *  @type {typeof getScope}
    */
   getScope: typeof getScope;
+  /** @type {typeof errorHandlingConfig} */
   errorHandlingConfig: typeof errorHandlingConfig;
-  $t: Readonly<Record<string, string>>;
+  /** @type {ng.InjectionTokens} */
+  $t: ng.InjectionTokens;
   /**
    *
    * The `angular.module` is a global place for creating, registering and retrieving AngularTS
@@ -158,6 +159,7 @@ export class Angular {
 export type ModuleRegistry = {
   [x: string]: NgModule;
 };
+import { getController } from "./shared/dom.js";
 import { getInjector } from "./shared/dom.js";
 import { getScope } from "./shared/dom.js";
 import { errorHandlingConfig } from "./shared/utils.js";
