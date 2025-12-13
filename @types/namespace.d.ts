@@ -104,6 +104,7 @@ import {
 import { StateObject as TStateObject } from "./router/state/state-object.js";
 import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.js";
 import { IViewScrollService } from "./router/scroll/interface.ts";
+import { HookRegistry } from "./router/transition/interface.ts";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -163,7 +164,7 @@ declare global {
     type StateRegistryService = TStateRegistryProvider;
     type SseService = TSseService;
     type SseConfig = TSseConfig;
-    type TransitionService = TTransitionProvider;
+    type TransitionService = TransitionProvider & HookRegistry;
     type TemplateCacheService = Map<string, string>;
     type TemplateRequestService = TTemplateRequestService;
     type UrlService = TUrlService;

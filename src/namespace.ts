@@ -109,6 +109,7 @@ import {
 import { StateObject as TStateObject } from "./router/state/state-object.js";
 import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.js";
 import { IViewScrollService } from "./router/scroll/interface.ts";
+import { HookRegistry } from "./router/transition/interface.ts";
 
 declare global {
   interface Function {
@@ -177,7 +178,7 @@ declare global {
     export type StateRegistryService = TStateRegistryProvider;
     export type SseService = TSseService;
     export type SseConfig = TSseConfig;
-    export type TransitionService = TTransitionProvider;
+    export type TransitionService = TransitionProvider & HookRegistry;
     export type TemplateCacheService = Map<string, string>;
     export type TemplateRequestService = TTemplateRequestService;
     export type UrlService = TUrlService;

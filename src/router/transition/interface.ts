@@ -194,11 +194,11 @@ export type IHookRegistration = (
  *
  * #### See:
  *
- * - [[IHookRegistry.onBefore]]
- * - [[IHookRegistry.onStart]]
- * - [[IHookRegistry.onFinish]]
- * - [[IHookRegistry.onSuccess]]
- * - [[IHookRegistry.onError]]
+ * - [[HookRegistry.onBefore]]
+ * - [[HookRegistry.onStart]]
+ * - [[HookRegistry.onFinish]]
+ * - [[HookRegistry.onSuccess]]
+ * - [[HookRegistry.onError]]
  *
  * @param transition the current [[Transition]]
  * @param injector (for ng1 or ng2 only) the injector service
@@ -223,9 +223,9 @@ export interface TransitionHookFn {
  *
  * #### See also:
  *
- * - [[IHookRegistry.onExit]]
- * - [[IHookRegistry.onRetain]]
- * - [[IHookRegistry.onEnter]]
+ * - [[HookRegistry.onExit]]
+ * - [[HookRegistry.onRetain]]
+ * - [[HookRegistry.onEnter]]
  *
  * #### Example:
  * ```js
@@ -321,7 +321,7 @@ export interface HookRegOptions {
  * [[TransitionService]] and also the [[Transition]] object itself implement this interface.
  * Note: the Transition object only allows hooks to be registered before the Transition is started.
  */
-export interface IHookRegistry {
+export interface HookRegistry {
   /** @internal place to store the hooks */
   _registeredHooks: { [key: string]: RegisteredHook[] };
 

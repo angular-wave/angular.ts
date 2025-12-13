@@ -5,9 +5,9 @@
  *
  * This object contains all contextual information about the to/from states, parameters, resolves.
  * It has information about all states being entered and exited as a result of the transition.
- * @implements {IHookRegistry}
+ * @implements {HookRegistry}
  */
-export class Transition implements IHookRegistry {
+export class Transition implements HookRegistry {
   /**
    * Creates a new Transition object.
    *
@@ -330,5 +330,5 @@ export class Transition implements IHookRegistry {
 export namespace Transition {
   export { Transition as diToken };
 }
-export type IHookRegistry = import("./interface.ts").IHookRegistry;
+export type HookRegistry = import("./interface.ts").HookRegistry;
 import { HookBuilder } from "./hook-builder.js";

@@ -185,7 +185,7 @@ export function makeEvent(registry, transitionService, eventType) {
 
   const removeHookFn = (x) => removeFrom(hooks, x);
 
-  // Create hook registration function on the IHookRegistry for the event
+  // Create hook registration function on the HookRegistry for the event
   registry[eventType.name] = hookRegistrationFn;
   function hookRegistrationFn(matchObject, callback, options = {}) {
     const registeredHook = new RegisteredHook(
