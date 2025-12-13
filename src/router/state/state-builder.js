@@ -166,7 +166,7 @@ function includesBuilder(state) {
  *   new Resolvable("myBarResolve", function(dep) { return dep.fetchSomethingAsPromise() }, [ "DependencyName" ]),
  *   { provide: "myBazResolve", useFactory: function(dep) { dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
  * ]
- * @param {ng.StateObject} state
+ * @param {ng.StateObject & ng.StateDeclaration} state
  */
 export function resolvablesBuilder(state) {
   /** convert resolve: {} and resolvePolicy: {} objects to an array of tuples */

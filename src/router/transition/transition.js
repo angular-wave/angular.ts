@@ -25,7 +25,7 @@ import { Resolvable } from "../resolve/resolvable.js";
 import { ResolveContext } from "../resolve/resolve-context.js";
 import { Rejection } from "./reject-factory.js";
 
-/** @typedef {import('./interface.ts').IHookRegistry} IHookRegistry */
+/** @typedef {import('./interface.ts').HookRegistry} HookRegistry */
 
 const REDIRECT_MAX = 20;
 
@@ -36,7 +36,7 @@ const REDIRECT_MAX = 20;
  *
  * This object contains all contextual information about the to/from states, parameters, resolves.
  * It has information about all states being entered and exited as a result of the transition.
- * @implements {IHookRegistry}
+ * @implements {HookRegistry}
  */
 export class Transition {
   /**
