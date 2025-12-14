@@ -70,7 +70,9 @@ export class RestService {
 
     if (!isArray(resp.data)) return [];
 
-    return resp.data.map((data) => this.#mapEntity(data));
+    return resp.data.map(
+      /** @param {unknown} data */ (data) => this.#mapEntity(data),
+    );
   }
 
   /**
@@ -183,9 +185,14 @@ export class RestProvider {
    */
   $get = [
     $injectTokens._http,
+    /** @param {ng.HttpService} $http */
     ($http) => {
       const services = new Map();
 
+      /**
+       * @template T, ID
+       * @type {(baseUrl: string, entityClass?: ng.EntityClass<T>, options?: object) => RestService<T, ID>}
+       */
       const factory = (baseUrl, entityClass, options = {}) => {
         const svc = new RestService($http, baseUrl, entityClass, options);
 
@@ -198,10 +205,6 @@ export class RestProvider {
 
         services.set(def.name, svc);
       }
-
-      // helpers to fetch named services
-      factory.get = (name) => services.get(name);
-      factory.listNames = () => Array.from(services.keys());
 
       return factory;
     },

@@ -60,6 +60,7 @@ export function expandExpression(expression, vars) {
   const varlist = op ? expression.slice(1) : expression;
 
   // operator configuration (separator, prefix, named, ifEmpty, allowReserved)
+  /** @type {Record<string, any>} */
   const OP = {
     "": {
       sep: ",",

@@ -9,27 +9,33 @@
       document.addEventListener("DOMContentLoaded", () => {
         class Demo {
           constructor(user) {
+            this.users = [];
             this.user = user;
           }
 
-          test() {
-            this.user.list();
+          async test() {
+            this.users = await this.user.list();
           }
         }
         class User {
-          constructor(data) {
-            Object.assign(this, data);
+          constructor({ id, name }) {
+            this.id = id;
+            this.name = name;
           }
         }
+
         window.angular
           .module("example", [])
-          .rest("user", "/users/", User)
+          .rest("user", "/mock/users/", User)
           .controller("Demo", Demo);
       });
     </script>
   </head>
   <body ng-app="example">
     <div ng-controller="Demo as $ctrl">
+      <ul>
+        <li ng-repeat="u in $ctrl.users">{{ u.name }}</li>
+      </ul>
       <button ng-click="$ctrl.test()">Test</button>
     </div>
   </body>

@@ -31,7 +31,7 @@ describe("PubSub", function () {
   });
 
   it("should provide injecables", function () {
-    expect(pubsub._$exceptionHandler).not.toBeNull();
+    expect(pubsub.$exceptionHandler).not.toBeNull();
   });
 
   it("should dispose of the PubSub instance", function () {
@@ -432,7 +432,7 @@ describe("PubSub", function () {
       let throwErro = new Error();
       let receivedErr;
 
-      pubsub._$exceptionHandler = (err) => {
+      pubsub.$exceptionHandler = (err) => {
         thrown = true;
         receivedErr = err;
       };

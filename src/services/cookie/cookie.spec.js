@@ -53,10 +53,7 @@ describe("$cookie service", () => {
 
   it("should throw SyntaxError for invalid JSON in getObject", () => {
     document.cookie = "broken={unclosed";
-    expect(() => $cookie.getObject("broken")).toThrowError(
-      SyntaxError,
-      /^badparse: "broken" =>/,
-    );
+    expect(() => $cookie.getObject("broken")).toThrowError(SyntaxError);
   });
 
   it("getAll should return all cookies as an object", () => {

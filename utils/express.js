@@ -300,3 +300,16 @@ app.post("/publish", (req, res) => {
 
   res.json({ status: "Message sent to SSE client" });
 });
+
+app.get("/users", (req, res) => {
+  res.json([
+    {
+      id: 1,
+      name: "Bob",
+    },
+    {
+      id: 2,
+      name: "Ken",
+    },
+  ]);
+});
