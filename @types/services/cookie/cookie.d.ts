@@ -3,7 +3,8 @@
  * @type {ng.ServiceProvider}
  */
 export class CookieProvider {
-  defaults: {};
+  /** @type {ng.CookieOptions} */
+  defaults: ng.CookieOptions;
   $get: (
     | string
     | (($exceptionHandler: ng.ExceptionHandlerService) => CookieService)
