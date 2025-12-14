@@ -17,6 +17,10 @@ title: AngularTS
   </a>
 </div>
 
+<h6>
+{{< size-report >}}
+</h6>
+
 <div id="npm">
 
 ```bash
@@ -24,5 +28,6 @@ title: AngularTS
 ```
 
 </div>
+
 
 {{< /blocks/cover >}}

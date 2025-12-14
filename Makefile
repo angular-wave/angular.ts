@@ -5,7 +5,13 @@ setup:
 	@npm i
 	@npx playwright install
 
-BUILD_DIR = ./dist		
+BUILD_DIR = ./dist	
+MIN_JS      := dist/angular-ts.umd.min.js
+MIN_SIZE    := $(shell stat -c %s $(MIN_JS))
+MIN_SIZE_H  := $(shell stat -c %s $(MIN_JS) | numfmt --to=iec)
+GZIP_SIZE   := $(shell gzip -c $(MIN_JS) | wc -c)
+GZIP_SIZE_H := $(shell gzip -c $(MIN_JS) | wc -c | numfmt --to=iec)
+
 build: version
 	@if [ -d "$(BUILD_DIR)" ]; then \
 		echo "Removing $(BUILD_DIR)..."; \
@@ -22,6 +28,9 @@ size:
 	@git checkout -q ./docs
 	@echo "Current build output:   $$(stat -c %s dist/angular-ts.umd.min.js) ~ $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
 	@echo "Current gzip:           $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"
+
+size-html:
+	@printf 'Bundle size: <b>%s</b> Gzip size: <b>%s</b>' "$(MIN_SIZE_H)" "$(GZIP_SIZE_H)" > docs/layouts/shortcodes/size-report.html
 
 version:
 	@node utils/version.cjs	
