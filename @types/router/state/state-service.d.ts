@@ -7,10 +7,15 @@ export class StateProvider {
   static $inject: string[];
   /**
    *
-   * @param {ng.RouterService} globals
-   * @param {*} transitionService
+   * @param {ng.RouterProvider} globals
+   * @param {ng.TransitionProvider} transitionService
+   * @param {ng.ExceptionHandlerProvider} exceptionHandlerProvider
    */
-  constructor(globals: ng.RouterService, transitionService: any);
+  constructor(
+    globals: ng.RouterProvider,
+    transitionService: ng.TransitionProvider,
+    exceptionHandlerProvider: ng.ExceptionHandlerProvider,
+  );
   /**
    * The latest successful state parameters
    *
@@ -30,14 +35,15 @@ export class StateProvider {
    */
   get $current(): import("./state-object.js").StateObject;
   globals: import("../router.js").RouterProvider;
-  transitionService: any;
+  transitionService: import("../transition/transition-service.js").TransitionProvider;
   stateRegistry: any;
   /** @type {ng.UrlService} */
   urlService: ng.UrlService;
   /** @type {ng.InjectorService} */
   $injector: ng.InjectorService;
   invalidCallbacks: any[];
-  _defaultErrorHandler: ($error$: any) => never;
+  /** @type {ng.ExceptionHandlerService} */
+  _defaultErrorHandler: ng.ExceptionHandlerService;
   $get: (
     | string
     | (($injector: ng.InjectorService, $url: any) => StateProvider)

@@ -16,7 +16,6 @@ import { createInjector } from "./core/di/injector.js";
 import { NgModule } from "./core/di/ng-module/ng-module.js";
 import { registerNgModule } from "./ng.js";
 import { unnestR } from "./shared/common.js";
-import { EventBus } from "./services/pubsub/pubsub.js";
 import { $injectTokens as $t } from "./injection-tokens.js";
 import { annotate } from "./core/di/di.js";
 import { validateIsString } from "./shared/validate.js";
@@ -38,7 +37,7 @@ export class Angular {
     this._bootsrappedModules = [];
 
     /** @public @type {ng.PubSubService} */
-    this.$eventBus = EventBus;
+    this.$eventBus;
 
     /** @public @type {ng.InjectorService} */
     this.$injector;

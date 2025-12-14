@@ -16,20 +16,20 @@ export class Transition implements HookRegistry {
    * @param {Array<import('../path/path-node.js').PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
    *        encapsulates the "from state".
    * @param {import('../state/target-state.js').TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
-   * @param {ng.TransitionService} transitionService The [[TransitionService]] instance
+   * @param {ng.TransitionProvider} transitionService The [[TransitionService]] instance
    * @param {ng.RouterService} globals
    */
   constructor(
     fromPath: Array<import("../path/path-node.js").PathNode>,
     targetState: import("../state/target-state.js").TargetState,
-    transitionService: ng.TransitionService,
+    transitionService: ng.TransitionProvider,
     globals: ng.RouterService,
   );
   /**
    * @type {import('../router.js').RouterProvider}
    */
   _globals: import("../router.js").RouterProvider;
-  _transitionService: ng.TransitionService;
+  _transitionService: import("./transition-service.js").TransitionProvider;
   _deferred: any;
   /**
    * This promise is resolved or rejected based on the outcome of the Transition.
