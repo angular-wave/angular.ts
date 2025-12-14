@@ -2,14 +2,14 @@ import { Angular } from "../../angular.js";
 import { dealoc } from "../../shared/dom.js";
 import { wait } from "../../shared/test-utils.js";
 
-describe("ngListenerDirective", () => {
-  let $compile, $scope, element, angular, app;
+describe("ngListener", () => {
+  let $compile, $scope, element, app;
 
   beforeEach(async () => {
     app = document.getElementById("app");
     dealoc(app);
 
-    angular = new Angular();
+    const angular = new Angular();
     angular.module("myModule", ["ng"]);
 
     angular.bootstrap(app, ["myModule"]).invoke((_$compile_, _$rootScope_) => {
@@ -24,66 +24,47 @@ describe("ngListenerDirective", () => {
     dealoc(app);
   });
 
-  it("registers and unregisters an event listener", async () => {
-    spyOn(angular, "addEventListener").and.callThrough();
-    spyOn(angular, "removeEventListener").and.callThrough();
-
-    element = $compile(`<div ng-listener="test:event"></div>`)($scope);
+  it("handles CustomEvent dispatched on the element", async () => {
+    element = $compile(`<div ng-listener="update"></div>`)($scope);
     await wait();
 
-    expect(angular.addEventListener).toHaveBeenCalledWith(
-      "test:event",
-      jasmine.any(Function),
+    element.dispatchEvent(
+      new CustomEvent("update", {
+        detail: "hello",
+        bubbles: true,
+      }),
     );
 
-    $scope.$destroy();
     await wait();
 
-    expect(angular.removeEventListener).toHaveBeenCalledWith(
-      "test:event",
-      jasmine.any(Function),
-    );
+    expect(element.innerHTML).toBe("hello");
   });
 
   it("merges object detail into scope when template content exists", async () => {
     $scope.foo = "initial";
 
     element = $compile(`
-      <div ng-listener="update">
+      <div ng-listener="merge">
         <span>{{ foo }}</span>
       </div>
     `)($scope);
 
     await wait();
 
-    angular.dispatchEvent(
-      new CustomEvent("update", {
-        detail: { foo: "updated", bar: 123 },
+    element.dispatchEvent(
+      new CustomEvent("merge", {
+        detail: { foo: "updated", bar: 42 },
+        bubbles: true,
       }),
     );
 
     await wait();
 
     expect($scope.foo).toBe("updated");
-    expect($scope.bar).toBe(123);
+    expect($scope.bar).toBe(42);
   });
 
-  it("updates innerHTML when detail is a string and no template content exists", async () => {
-    element = $compile(`<div ng-listener="html"></div>`)($scope);
-    await wait();
-
-    angular.dispatchEvent(
-      new CustomEvent("html", {
-        detail: "<span>Injected</span>",
-      }),
-    );
-
-    await wait();
-
-    expect(element.innerHTML).toBe("<span>Injected</span>");
-  });
-
-  it("ignores non-object detail when template content exists", async () => {
+  it("does nothing when detail is not an object and template content exists", async () => {
     $scope.foo = "unchanged";
 
     element = $compile(`
@@ -94,14 +75,34 @@ describe("ngListenerDirective", () => {
 
     await wait();
 
-    angular.dispatchEvent(
+    element.dispatchEvent(
       new CustomEvent("noop", {
-        detail: "should not apply",
+        detail: "ignored",
+        bubbles: true,
       }),
     );
 
     await wait();
 
     expect($scope.foo).toBe("unchanged");
+  });
+
+  it("removes the listener on $destroy", async () => {
+    element = $compile(`<div ng-listener="destroy"></div>`)($scope);
+    await wait();
+
+    $scope.$destroy();
+    await wait();
+
+    element.dispatchEvent(
+      new CustomEvent("destroy", {
+        detail: "should not apply",
+        bubbles: true,
+      }),
+    );
+
+    await wait();
+
+    expect(element.innerHTML).toBe("");
   });
 });

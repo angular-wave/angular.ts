@@ -1,12 +1,9 @@
 import { isObject, isString } from "../../shared/utils.js";
-import { $injectTokens } from "../../injection-tokens.js";
 
-ngListenerDirective.$inject = [$injectTokens._angular];
 /**
- * @param {ng.AngularService} $angular
  * @returns {ng.Directive}
  */
-export function ngListenerDirective($angular) {
+export function ngListenerDirective() {
   return {
     scope: false,
     link: (scope, element, attrs) => {
@@ -27,9 +24,9 @@ export function ngListenerDirective($angular) {
         }
       };
 
-      $angular.addEventListener(channel, fn);
+      element.addEventListener(channel, fn);
 
-      scope.$on("$destroy", () => $angular.removeEventListener(channel, fn));
+      scope.$on("$destroy", () => element.removeEventListener(channel, fn));
     },
   };
 }
