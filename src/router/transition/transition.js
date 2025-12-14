@@ -47,8 +47,8 @@ export class Transition {
    * @param {Array<import('../path/path-node.js').PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
    *        encapsulates the "from state".
    * @param {import('../state/target-state.js').TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
-   * @param {import('../transition/transition-service.js').TransitionProvider} transitionService The [[TransitionService]] instance
-   * @param {import('../router.js').RouterProvider} globals
+   * @param {ng.TransitionService} transitionService The [[TransitionService]] instance
+   * @param {ng.RouterService} globals
    */
   constructor(fromPath, targetState, transitionService, globals) {
     /**

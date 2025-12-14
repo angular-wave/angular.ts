@@ -53,11 +53,20 @@ export class TransitionHook {
    * Run all TransitionHooks, ignoring their return value.
    */
   static runAllHooks(hooks: any): void;
+  /**
+   *
+   * @param {*} transition
+   * @param {*} stateContext
+   * @param {*} registeredHook
+   * @param {*} options
+   * @param {ng.ExceptionHandlerService} exceptionHandler
+   */
   constructor(
     transition: any,
     stateContext: any,
     registeredHook: any,
     options: any,
+    exceptionHandler: ng.ExceptionHandlerService,
   );
   transition: any;
   stateContext: any;
@@ -65,6 +74,8 @@ export class TransitionHook {
   options: any;
   isSuperseded: () => boolean;
   type: any;
+  /** @type {ng.ExceptionHandlerService} */
+  _exceptionHandler: ng.ExceptionHandlerService;
   logError(err: any): void;
   invokeHook(): any;
   /**

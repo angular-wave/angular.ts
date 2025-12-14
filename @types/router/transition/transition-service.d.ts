@@ -23,10 +23,15 @@ export namespace defaultTransOpts {
 export class TransitionProvider {
   static $inject: string[];
   /**
-   * @param {import('../router.js').RouterProvider} globals
-   * @param viewService
+   * @param {ng.RouterService} globals
+   * @param {ng.ViewService} viewService
+   * @param {ng.ExceptionHandlerProvider} $exceptionHandler
    */
-  constructor(globals: import("../router.js").RouterProvider, viewService: any);
+  constructor(
+    globals: ng.RouterService,
+    viewService: ng.ViewService,
+    $exceptionHandler: ng.ExceptionHandlerProvider,
+  );
   _transitionCount: number;
   /** The transition hook types, such as `onEnter`, `onStart`, etc */
   _eventTypes: any[];
@@ -35,8 +40,10 @@ export class TransitionProvider {
   /** The  paths on a criteria object */
   _criteriaPaths: {};
   globals: import("../router.js").RouterProvider;
-  $view: any;
+  $view: import("../view/view.js").ViewService;
   _deregisterHookFns: {};
+  /** @type {ng.ExceptionHandlerService} */
+  _$exceptionHandler: ng.ExceptionHandlerService;
   $get: (
     | string
     | ((
