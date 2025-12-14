@@ -901,7 +901,9 @@ describe("$state", () => {
       try {
         await $state.transitionTo("home.redirect");
       } catch (e) {
-        expect(e.message).toMatch(/Rejection/);
+        expect(e.message).toMatch(
+          /The transition has been superseded by a different transition/,
+        );
         //TODO fix
         //expect($state.current.name).toBe("about");
       }
