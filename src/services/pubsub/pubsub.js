@@ -1,41 +1,44 @@
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens, provider } from "../../injection-tokens.js";
 
 /**
  * Configurable provider for an injectable event bus
  * @implements {ng.ServiceProvider}
  */
 export class PubSubProvider {
-  constructor() {
+  static $inject = provider([
+    $injectTokens._exceptionHandler,
+    $injectTokens._angular,
+  ]);
+
+  /**
+   * @param {ng.ExceptionHandlerProvider} $exceptionHandler
+   * @param {ng.ServiceProvider} angularProvider
+   */
+  constructor($exceptionHandler, angularProvider) {
     /**
      * @type {PubSub}
      */
-    this.eventBus = EventBus;
+    this.eventBus = new PubSub($exceptionHandler.handler);
+    /** @type {ng.Angular} */ (angularProvider.$get()).$eventBus =
+      this.eventBus;
   }
 
-  $get = [
-    $injectTokens._exceptionHandler,
-    /**
-     * @param {ng.ExceptionHandlerService} $exceptionHandler
-     * @returns {PubSub}
-     */
-    ($exceptionHandler) => {
-      this.eventBus.$exceptionHandler = $exceptionHandler;
-
-      return this.eventBus;
-    },
-  ];
+  $get = () => this.eventBus;
 }
 
 export class PubSub {
-  constructor() {
+  /**
+   * @param {ng.ExceptionHandlerService} $exceptionHandler
+   */
+  constructor($exceptionHandler) {
     /** @private {Object<string, Array<{fn: Function, context: any}>>} */
     this._topics = Object.create(null);
 
     /** @private */
     this._disposed = false;
 
-    /** @public @type {ng.ExceptionHandlerService | undefined} */
-    this.$exceptionHandler = undefined;
+    /** @public @type {ng.ExceptionHandlerService} */
+    this.$exceptionHandler = $exceptionHandler;
   }
 
   /**
@@ -183,6 +186,3 @@ export class PubSub {
     return true;
   }
 }
-
-/** @private */
-export const EventBus = new PubSub();

@@ -3,22 +3,32 @@
  * @implements {ng.ServiceProvider}
  */
 export class PubSubProvider implements ng.ServiceProvider {
+  static $inject: string[];
+  /**
+   * @param {ng.ExceptionHandlerProvider} $exceptionHandler
+   * @param {ng.ServiceProvider} angularProvider
+   */
+  constructor(
+    $exceptionHandler: ng.ExceptionHandlerProvider,
+    angularProvider: ng.ServiceProvider,
+  );
   /**
    * @type {PubSub}
    */
   eventBus: PubSub;
-  $get: (
-    | string
-    | (($exceptionHandler: ng.ExceptionHandlerService) => PubSub)
-  )[];
+  $get: () => PubSub;
 }
 export class PubSub {
+  /**
+   * @param {ng.ExceptionHandlerService} $exceptionHandler
+   */
+  constructor($exceptionHandler: ng.ExceptionHandlerService);
   /** @private {Object<string, Array<{fn: Function, context: any}>>} */
   private _topics;
   /** @private */
   private _disposed;
-  /** @public @type {ng.ExceptionHandlerService | undefined} */
-  public $exceptionHandler: ng.ExceptionHandlerService | undefined;
+  /** @public @type {ng.ExceptionHandlerService} */
+  public $exceptionHandler: ng.ExceptionHandlerService;
   /**
    * Set instance to initial state
    */
@@ -73,5 +83,3 @@ export class PubSub {
    */
   publish(topic: string, ...args: any[]): boolean;
 }
-/** @private */
-export const EventBus: PubSub;

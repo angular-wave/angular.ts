@@ -14,7 +14,6 @@ import { TargetState } from "./target-state.js";
 import { Param } from "../params/param.js";
 import { Glob } from "../glob/glob.js";
 import { lazyLoadState } from "../hooks/lazy-load.js";
-import { EventBus } from "../../services/pubsub/pubsub.js";
 import { $injectTokens, provider } from "../../injection-tokens.js";
 
 const stdErr = minErr("$stateProvider");
@@ -55,14 +54,16 @@ export class StateProvider {
   /* @ignore */ static $inject = provider([
     $injectTokens._router,
     $injectTokens._transitions,
+    $injectTokens._exceptionHandler,
   ]);
 
   /**
    *
-   * @param {ng.RouterService} globals
-   * @param {*} transitionService
+   * @param {ng.RouterProvider} globals
+   * @param {ng.TransitionProvider} transitionService
+   * @param {ng.ExceptionHandlerProvider} exceptionHandlerProvider
    */
-  constructor(globals, transitionService) {
+  constructor(globals, transitionService, exceptionHandlerProvider) {
     this.globals = globals;
     this.transitionService = transitionService;
     this.stateRegistry = undefined;
@@ -73,19 +74,8 @@ export class StateProvider {
     this.$injector = undefined;
     this.invalidCallbacks = [];
 
-    this._defaultErrorHandler = function $defaultErrorHandler($error$) {
-      if ($error$ instanceof Error && $error$.stack) {
-        throw $error$;
-      } else if ($error$ instanceof Rejection) {
-        throw new Error($error$.toString());
-      } else {
-        throw new Error($error$);
-      }
-    };
-
-    EventBus.subscribe("$stateService:defaultErrorHandler", (error) =>
-      this.defaultErrorHandler()(error),
-    );
+    /** @type {ng.ExceptionHandlerService} */
+    this._defaultErrorHandler = exceptionHandlerProvider.handler;
   }
 
   $get = [
