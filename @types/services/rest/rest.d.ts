@@ -97,10 +97,12 @@ export class RestProvider {
    */
   $get: (
     | string
-    | (($http: any) => {
-        (baseUrl: any, entityClass: any, options?: {}): RestService<any, any>;
-        get(name: any): any;
-        listNames(): any[];
-      })
+    | ((
+        $http: ng.HttpService,
+      ) => (
+        baseUrl: string,
+        entityClass?: ng.EntityClass<T>,
+        options?: object,
+      ) => RestService<T, ID>)
   )[];
 }

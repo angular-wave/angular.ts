@@ -20,7 +20,11 @@ export class LogProvider {
     this._override = fn;
   }
 
-  /** @private */
+  /**
+   * @private
+   * @param {unknown} arg
+   *
+   */
   _formatError(arg) {
     if (isError(arg)) {
       if (arg.stack) {

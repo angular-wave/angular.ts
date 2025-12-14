@@ -11,7 +11,11 @@ export class LogProvider {
    * @param {import("./interface.ts").LogServiceFactory} fn
    */
   setLogger(fn: import("./interface.ts").LogServiceFactory): void;
-  /** @private */
+  /**
+   * @private
+   * @param {unknown} arg
+   *
+   */
   private _formatError;
   /**
    * @private

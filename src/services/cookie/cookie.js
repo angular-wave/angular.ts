@@ -87,9 +87,9 @@ export class CookieService {
     try {
       return /** @type {T} */ (JSON.parse(raw));
     } catch (err) {
-      throw this._$exceptionHandler(
-        new SyntaxError(`badparse: "${key}" => ${err.message}`),
-      );
+      this._$exceptionHandler(err);
+
+      return null;
     }
   }
 

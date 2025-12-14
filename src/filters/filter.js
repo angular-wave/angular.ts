@@ -15,12 +15,12 @@ import {
  */
 export function filterFilter() {
   /**
-   * @param {Array} array The source array.
+   * @param {Array<any>} array The source array.
    * @param {string|Object|function(any, number, []):[]} expression The predicate to be used for selecting items from `array`.
    * @param {function(any, any):boolean|boolean} [comparator] Comparator which is used in determining if values retrieved using `expression`
    * (when it is not a function) should be considered a match based on the expected value (from the filter expression) and actual value (from the object in the array).
    * @param {string} [anyPropertyKey] The special property name that matches against any property.
-   * @return {Array} Filtered array
+   * @return {Array<any>} Filtered array
    */
   return function (array, expression, comparator, anyPropertyKey) {
     if (!isArrayLike(array)) {

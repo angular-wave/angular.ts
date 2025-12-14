@@ -220,7 +220,7 @@ export function isDate(value) {
  * Loosely based on https://www.npmjs.com/package/iserror
  *
  * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is an `Error`.
+ * @returns {value is Error} True if `value` is an `Error`.
  */
 export function isError(value) {
   const tag = toString.call(value);
