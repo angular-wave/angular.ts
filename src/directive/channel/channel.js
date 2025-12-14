@@ -1,4 +1,4 @@
-import { isObject } from "../../shared/utils.js";
+import { isObject, isString } from "../../shared/utils.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
 ngChannelDirective.$inject = [$injectTokens._eventBus];
@@ -13,15 +13,18 @@ export function ngChannelDirective($eventBus) {
 
       const hasTemplateContent = element.childNodes.length > 0;
 
-      const unsubscribe = $eventBus.subscribe(channel, (value) => {
-        if (hasTemplateContent) {
-          if (isObject(value)) {
-            scope.$merge(value);
+      const unsubscribe = $eventBus.subscribe(
+        channel,
+        (/** @type {string | Object} */ value) => {
+          if (hasTemplateContent) {
+            if (isObject(value)) {
+              scope.$merge(value);
+            }
+          } else if (isString(value)) {
+            element.innerHTML = value;
           }
-        } else {
-          element.innerHTML = value;
-        }
-      });
+        },
+      );
 
       scope.$on("$destroy", () => unsubscribe());
     },

@@ -179,7 +179,7 @@ declare global {
     type Listener = TListener;
     type DocumentService = Document;
     type WindowService = Window;
-    type AngularServie = Angular;
+    type AngularService = Angular;
     type WorkerConfig = TWorkerConfig;
     type WorkerConnection = TWorkerConnection;
     type Injectable<
