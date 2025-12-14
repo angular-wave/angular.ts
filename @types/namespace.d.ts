@@ -16,6 +16,7 @@ import {
 } from "./services/anchor-scroll/interface.ts";
 import { ControllerService as TControllerService } from "./core/controller/interface.ts";
 import { ExceptionHandler as TExceptionHandler } from "./services/exception/interface.ts";
+import { ExceptionHandlerProvider as TExceptionHandlerProvider } from "./services/exception/exception.js";
 import { ParseService as TParseService } from "./core/parse/interface.ts";
 import { TemplateRequestService as TTemplateRequestService } from "./services/template-request/interface.ts";
 import { HttpParamSerializer as THttpParamSerializer } from "./services/http/interface.ts";
@@ -134,8 +135,9 @@ declare global {
     type AnchorScrollProvider = TAnchorScrollProvider;
     type AnimateProvider = TAnimateProvider;
     type FilterProvider = TFilterProvider;
-    type InterpolateProvider = TInterpolateProvider;
+    type ExceptionHandlerProvider = TExceptionHandlerProvider;
     type HttpParamSerializerProvider = THttpParamSerializerProvider;
+    type InterpolateProvider = TInterpolateProvider;
     type LocationProvider = TLocationProvider;
     type SceProvider = TSceProvider;
     type SceDelegateProvider = TSceDelegateProvider;

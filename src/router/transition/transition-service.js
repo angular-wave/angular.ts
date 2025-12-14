@@ -63,13 +63,18 @@ export const defaultTransOpts = {
  * This API is located at `router.transitionService` ([[UIRouter.transitionService]])
  */
 export class TransitionProvider {
-  /* @ignore */ static $inject = provider([$t._router, $t._view]);
+  /* @ignore */ static $inject = provider([
+    $t._router,
+    $t._view,
+    $t._exceptionHandler,
+  ]);
 
   /**
-   * @param {import('../router.js').RouterProvider} globals
-   * @param viewService
+   * @param {ng.RouterService} globals
+   * @param {ng.ViewService} viewService
+   * @param {ng.ExceptionHandlerProvider} $exceptionHandler
    */
-  constructor(globals, viewService) {
+  constructor(globals, viewService, $exceptionHandler) {
     this._transitionCount = 0;
     /** The transition hook types, such as `onEnter`, `onStart`, etc */
     this._eventTypes = [];
@@ -83,6 +88,9 @@ export class TransitionProvider {
     this._defineCorePaths();
     this._defineCoreEvents();
     this._registerCoreTransitionHooks();
+
+    /** @type {ng.ExceptionHandlerService} */
+    this._$exceptionHandler = $exceptionHandler.handler;
     globals.successfulTransitions.onEvict(treeChangesCleanup);
   }
 

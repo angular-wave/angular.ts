@@ -5,7 +5,6 @@ import { parse } from "../../shared/hof.js";
 import { trace } from "../common/trace.js";
 import { Rejection } from "./reject-factory.js";
 import { TargetState } from "../state/target-state.js";
-import { EventBus } from "../../services/pubsub/pubsub.js";
 
 const defaultOptions = {
   current: () => {
@@ -99,7 +98,21 @@ export class TransitionHook {
     hooks.forEach((hook) => hook.invokeHook());
   }
 
-  constructor(transition, stateContext, registeredHook, options) {
+  /**
+   *
+   * @param {*} transition
+   * @param {*} stateContext
+   * @param {*} registeredHook
+   * @param {*} options
+   * @param {ng.ExceptionHandlerService} exceptionHandler
+   */
+  constructor(
+    transition,
+    stateContext,
+    registeredHook,
+    options,
+    exceptionHandler,
+  ) {
     this.transition = transition;
     this.stateContext = stateContext;
     this.registeredHook = registeredHook;
@@ -109,10 +122,13 @@ export class TransitionHook {
       !this.options.transition.isActive();
     this.options = defaults(options, defaultOptions);
     this.type = registeredHook.eventType;
+
+    /** @type {ng.ExceptionHandlerService} */
+    this._exceptionHandler = exceptionHandler;
   }
 
   logError(err) {
-    EventBus.publish("$stateService:defaultErrorHandler", err);
+    this._exceptionHandler(err);
   }
 
   invokeHook() {
