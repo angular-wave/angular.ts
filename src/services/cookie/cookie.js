@@ -19,6 +19,7 @@ import {
  */
 export class CookieProvider {
   constructor() {
+    /** @type {ng.CookieOptions} */
     this.defaults = {};
   }
 
