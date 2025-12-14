@@ -63,7 +63,7 @@ serve:
 	node --watch ./utils/express.js & \
 	wait
 
-prepare-release: test check types doc pretty build
+prepare-release: test check types doc pretty build size-html
 
 PLAYWRIGHT_TEST := npx playwright test
 
