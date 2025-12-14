@@ -1,4 +1,4 @@
-export class Angular {
+export class Angular extends EventTarget {
   /** @private @type {!Array<string|any>} */
   private _bootsrappedModules;
   /** @public @type {ng.PubSubService} */

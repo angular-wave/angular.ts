@@ -31,8 +31,10 @@ const STRICT_DI = "strict-di";
 /** @type {ModuleRegistry} */
 const moduleRegistry = {};
 
-export class Angular {
+export class Angular extends EventTarget {
   constructor() {
+    super();
+
     /** @private @type {!Array<string|any>} */
     this._bootsrappedModules = [];
 
