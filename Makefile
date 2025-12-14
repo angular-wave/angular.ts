@@ -7,27 +7,26 @@ setup:
 
 BUILD_DIR = ./dist	
 MIN_JS      := dist/angular-ts.umd.min.js
+GZ_JS  := $(MIN_JS).gz
 MIN_SIZE    := $(shell stat -c %s $(MIN_JS))
 MIN_SIZE_H  := $(shell stat -c %s $(MIN_JS) | numfmt --to=iec)
-GZIP_SIZE   := $(shell gzip -c $(MIN_JS) | wc -c)
-GZIP_SIZE_H := $(shell gzip -c $(MIN_JS) | wc -c | numfmt --to=iec)
-
-build: version
-	@if [ -d "$(BUILD_DIR)" ]; then \
-		echo "Removing $(BUILD_DIR)..."; \
-		rm -r "$(BUILD_DIR)"; \
-	fi
-	@npm i
-	./node_modules/.bin/rollup -c
+GZIP_SIZE   := $(shell gzip -9 -c $(MIN_JS) | wc -c)
+GZIP_SIZE_H := $(shell gzip -9 -c $(MIN_JS) | wc -c | numfmt --to=iec)
 
 size:
 	./node_modules/.bin/rollup -c --configName min --silent
-	@echo "Minified build output:  $$(stat -c %s dist/angular-ts.umd.min.js) ~ $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
-	@echo "Expected gzip:          $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"
+	@echo "Expected bundle:  $(MIN_SIZE) ~ $(MIN_SIZE_H)"
+	@echo "Expected gzip:    $(GZIP_SIZE) ~ $(GZIP_SIZE_H)"
 	@git checkout -q $(BUILD_DIR)
 	@git checkout -q ./docs
-	@echo "Current build output:   $$(stat -c %s dist/angular-ts.umd.min.js) ~ $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
-	@echo "Current gzip:           $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"
+	@echo "Current bundle:    $(MIN_SIZE) ~ $(MIN_SIZE_H)"
+	@echo "Current gzip:      $(GZIP_SIZE) ~ $(GZIP_SIZE_H)"
+
+$(GZ_JS): $(MIN_JS)
+	@gzip -9 -c $< > $@
+
+gzip: $(GZ_JS)
+	@echo "Created gzipped file: $(GZ_JS)"
 
 size-html:
 	@printf 'Bundle size: <b>%s</b> Gzip size: <b>%s</b>' "$(MIN_SIZE_H)" "$(GZIP_SIZE_H)" > docs/layouts/shortcodes/size-report.html
@@ -63,7 +62,7 @@ serve:
 	node --watch ./utils/express.js & \
 	wait
 
-prepare-release: test check types doc pretty build size-html
+prepare-release: test check types doc pretty build gzip size-html
 
 PLAYWRIGHT_TEST := npx playwright test
 
