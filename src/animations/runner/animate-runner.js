@@ -201,7 +201,7 @@ export class AnimateRunner {
     this._doneCallbacks = [];
 
     for (let i = 0; i < callbacks.length; i++) {
-      callbacks[i](status);
+      callbacks[i] && callbacks[i](status);
     }
   }
 
