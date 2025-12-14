@@ -13,6 +13,14 @@ MIN_SIZE_H  := $(shell stat -c %s $(MIN_JS) | numfmt --to=iec)
 GZIP_SIZE   := $(shell gzip -9 -c $(MIN_JS) | wc -c)
 GZIP_SIZE_H := $(shell gzip -9 -c $(MIN_JS) | wc -c | numfmt --to=iec)
 
+build:
+	@if [ -d "$(BUILD_DIR)" ]; then \
+		echo "Removing $(BUILD_DIR)..."; \
+		rm -r "$(BUILD_DIR)"; \
+	fi
+	@npm i
+	./node_modules/.bin/rollup -c
+
 size:
 	./node_modules/.bin/rollup -c --configName min --silent
 	@echo "Expected bundle:  $(MIN_SIZE) ~ $(MIN_SIZE_H)"
@@ -62,7 +70,7 @@ serve:
 	node --watch ./utils/express.js & \
 	wait
 
-prepare-release: test check types doc pretty build gzip size-html
+prepare-release: test check types doc pretty build gzip version size-html
 
 PLAYWRIGHT_TEST := npx playwright test
 
