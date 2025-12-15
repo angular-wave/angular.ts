@@ -19,8 +19,8 @@ export class StateRegistryProvider {
     globals: ng.RouterService,
     viewService: ng.ViewService,
   );
-  /** @type {Record<string, import("./state-object.js").StateObject>} */
-  states: Record<string, import("./state-object.js").StateObject>;
+  /** @type {import("./interface.ts").StateStore} */
+  states: import("./interface.ts").StateStore;
   urlService: import("../url/url-service.js").UrlService;
   urlServiceRules: import("../url/url-rules.js").UrlRules;
   $injector: any;
@@ -115,7 +115,16 @@ export class StateRegistryProvider {
    * @return {ng.BuiltStateDeclaration[]}
    */
   getAll(): ng.BuiltStateDeclaration[];
-  get(stateOrName: any, base: any, ...args: any[]): any;
+  get(
+    stateOrName: any,
+    base: any,
+    ...args: any[]
+  ):
+    | import("./interface.ts").StateDeclaration
+    | (
+        | import("./interface.ts").StateDeclaration
+        | import("./interface.ts").BuiltStateDeclaration
+      )[];
   /**
    * Registers a [[BuilderFunction]] for a specific [[StateObject]] property (e.g., `parent`, `url`, or `path`).
    * More than one BuilderFunction can be registered for a given property.

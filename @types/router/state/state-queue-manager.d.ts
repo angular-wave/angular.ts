@@ -2,21 +2,21 @@ export class StateQueueManager {
   /**
    * @param {import("./state-registry.js").StateRegistryProvider} stateRegistry
    * @param {import("../url/url-rules.js").UrlRules} urlServiceRules
-   * @param {Record<string, ng.StateObject>} states
+   * @param {import("./interface.js").StateStore} states
    * @param {*} builder
    * @param {*} listeners
    */
   constructor(
     stateRegistry: import("./state-registry.js").StateRegistryProvider,
     urlServiceRules: import("../url/url-rules.js").UrlRules,
-    states: Record<string, ng.StateObject>,
+    states: import("./interface.js").StateStore,
     builder: any,
     listeners: any,
   );
   stateRegistry: import("./state-registry.js").StateRegistryProvider;
   /** @type {import("../url/url-rules.js").UrlRules} */
   urlServiceRules: import("../url/url-rules.js").UrlRules;
-  states: Record<string, StateObject>;
+  states: import("./interface.js").StateStore;
   builder: any;
   listeners: any;
   /**
@@ -24,7 +24,7 @@ export class StateQueueManager {
    */
   queue: Array<StateObject>;
   register(stateDecl: any): StateObject;
-  flush(): Record<string, StateObject>;
+  flush(): import("./interface.js").StateStore;
   /**
    *
    * @param {ng.StateDeclaration} state

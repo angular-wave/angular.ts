@@ -24,16 +24,17 @@ export class UrlService {
   _urlRuleFactory: UrlRuleFactory;
   /**
    * The nested [[UrlRules]] API for managing URL rules and rewrites
+   * @ignore
    * @type {UrlRules}
    */
-  rules: UrlRules;
+  _rules: UrlRules;
   /**
    * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
    * @type {import("./url-config.js").UrlConfigProvider}
    */
-  config: import("./url-config.js").UrlConfigProvider;
-  /** Creates a new [[Param]] for a given location (DefType) */
-  paramFactory: ParamFactory;
+  _config: import("./url-config.js").UrlConfigProvider;
+  /** @type {ParamFactory} Creates a new [[Param]] for a given location (DefType) */
+  _paramFactory: ParamFactory;
   _urlListeners: any[];
   /**
    * Gets the path part of the current url

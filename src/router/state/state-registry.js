@@ -30,12 +30,12 @@ export class StateRegistryProvider {
    * @param {ng.ViewService} viewService
    */
   constructor(urlService, stateService, globals, viewService) {
-    /** @type {Record<string, import("./state-object.js").StateObject>} */
+    /** @type {import("./interface.ts").StateStore} */
     this.states = {};
 
     stateService.stateRegistry = this; // <- circular wiring
     this.urlService = urlService;
-    this.urlServiceRules = urlService.rules;
+    this.urlServiceRules = urlService._rules;
     this.$injector = undefined;
     this.listeners = [];
     this.matcher = new StateMatcher(this.states);
@@ -196,7 +196,7 @@ export class StateRegistryProvider {
   }
 
   _deregisterTree(state) {
-    const all = this.get().map((x) => x.$$state());
+    const all = this.getAll().map((x) => x.$$state());
 
     const getChildren = (states) => {
       const _children = all.filter((x) => states.indexOf(x.parent) !== -1);
@@ -235,11 +235,18 @@ export class StateRegistryProvider {
    * @returns {import('./state-object').StateObject[]} a list of removed states
    */
   deregister(stateOrName) {
-    const _state = this.get(stateOrName);
+    const state =
+      /** @type {import("./interface.ts").BuiltStateDeclaration} */ (
+        this.get(stateOrName)
+      );
 
-    if (!_state)
+    if (!state)
       throw new Error(`Can't deregister state; not found: ${stateOrName}`);
-    const deregisteredStates = this._deregisterTree(_state.$$state());
+    const deregisteredStates = this._deregisterTree(
+      /** @type {import("./interface.ts").BuiltStateDeclaration} */ (
+        state
+      ).$$state(),
+    );
 
     this.listeners.forEach((listener) =>
       listener(

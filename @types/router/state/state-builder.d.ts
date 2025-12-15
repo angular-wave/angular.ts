@@ -58,18 +58,22 @@ export function resolvablesBuilder(
 export class StateBuilder {
   /**
    * @param {import('./state-matcher.js').StateMatcher} matcher
-   * @param urlService
+   * @param {ng.UrlService} urlService
    */
   constructor(
     matcher: import("./state-matcher.js").StateMatcher,
-    urlService: any,
+    urlService: ng.UrlService,
   );
   matcher: import("./state-matcher.js").StateMatcher;
   $injector: any;
   builders: {
     name: ((state: any) => any)[];
     self: (typeof selfBuilder)[];
-    parent: ((state: any) => any)[];
+    parent: ((
+      state: any,
+    ) =>
+      | import("./state-object.js").StateObject
+      | import("./interface.ts").BuiltStateDeclaration)[];
     data: (typeof dataBuilder)[];
     url: ((stateObject: any) => any)[];
     navigable: ((state: any) => any)[];

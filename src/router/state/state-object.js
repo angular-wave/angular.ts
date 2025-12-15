@@ -40,7 +40,7 @@ export class StateObject {
      */
     const nameGlob = this.name ? Glob.fromString(this.name) : null;
 
-    this.__stateObjectCache = { nameGlob };
+    this._stateObjectCache = { nameGlob };
   }
 
   /**
@@ -122,4 +122,4 @@ export class StateObject {
 /** Predicate which returns true if the object is a [[StateDeclaration]] object */
 StateObject.isStateDeclaration = (obj) => isFunction(obj.$$state);
 /** Predicate which returns true if the object is an internal [[StateObject]] object */
-StateObject.isState = (obj) => isObject(obj.__stateObjectCache);
+StateObject.isState = (obj) => isObject(obj._stateObjectCache);

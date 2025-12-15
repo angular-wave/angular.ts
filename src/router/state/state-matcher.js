@@ -1,7 +1,9 @@
 import { isString } from "../../shared/utils.js";
 export class StateMatcher {
-  constructor(_states) {
-    this._states = _states;
+  /** @param {import("./interface.ts").StateStore} states */
+  constructor(states) {
+    /** @type {import("./interface.ts").StateStore} */
+    this._states = states;
   }
 
   isRelative(stateName) {
@@ -26,12 +28,12 @@ export class StateMatcher {
     ) {
       return state;
     } else if (isStr && matchGlob) {
-      const _states = Object.values(this._states);
+      const states = Object.values(this._states);
 
-      const matches = _states.filter(
-        (_state) =>
-          _state.__stateObjectCache.nameGlob &&
-          _state.__stateObjectCache.nameGlob.matches(name),
+      const matches = states.filter(
+        (stateObj) =>
+          stateObj._stateObjectCache.nameGlob &&
+          stateObj._stateObjectCache.nameGlob.matches(name),
       );
 
       if (matches.length > 1) {

@@ -14,7 +14,9 @@ import {
 } from "../resolve/interface.ts";
 import { Resolvable } from "../resolve/resolvable.js";
 import { TargetState } from "./target-state.js";
+import { Glob } from "../glob/glob.js";
 export type StateOrName = string | StateDeclaration | StateObject;
+export type StateStore = Record<string, StateObject | BuiltStateDeclaration>;
 export interface TransitionPromise extends Promise<StateObject> {
   transition: Transition;
 }
@@ -826,6 +828,9 @@ export type BuiltStateDeclaration = StateDeclaration & {
   parent?: BuiltStateDeclaration | null;
   /** Optional inherited data */
   data?: any;
+  _stateObjectCache?: {
+    nameGlob: Glob;
+  } | null;
 };
 /**
  * The return type of a [[StateDeclaration.lazyLoad]] function
