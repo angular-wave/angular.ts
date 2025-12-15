@@ -1413,6 +1413,8 @@ describe("parser", () => {
     });
 
     it("should mark an empty expressions as literal", () => {
+      debugger;
+      $parse("");
       expect($parse("").literal).toBe(true);
       expect($parse("   ").literal).toBe(true);
     });

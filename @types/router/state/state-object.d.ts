@@ -1,4 +1,3 @@
-/** @typedef {import('./interface.ts').StateDeclaration} StateDeclaration */
 /**
  * Internal representation of a ng-router state.
  *
@@ -8,9 +7,9 @@
  *
  * This class prototypally inherits from the corresponding [[StateDeclaration]].
  * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
- * @implements {StateDeclaration}
+ * @implements {ng.StateDeclaration}
  */
-export class StateObject implements StateDeclaration {
+export class StateObject implements ng.StateDeclaration {
   /**
    * @param {import('./interface.ts').StateDeclaration} config
    */
@@ -79,5 +78,4 @@ export namespace StateObject {
   /** Predicate which returns true if the object is an internal [[StateObject]] object */
   function isState(obj: any): boolean;
 }
-export type StateDeclaration = import("./interface.ts").StateDeclaration;
 import { Glob } from "../glob/glob.js";

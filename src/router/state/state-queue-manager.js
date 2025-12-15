@@ -109,7 +109,7 @@ export class StateQueueManager {
 
   /**
    *
-   * @param {StateObject} state
+   * @param {ng.StateDeclaration} state
    * @returns {() => void} a function that deregisters the rule
    */
   attachRoute(state) {

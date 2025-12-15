@@ -531,12 +531,12 @@ export function encodeUriQuery(
  *
  * @template T
  * @param {T} src
- * @param {T extends any[] ? T : undefined} [dst]
+ * @param {T extends any[] ? T : Record<string, unknown>} [dst]
  * @returns {T}
  */
 export function shallowCopy<T>(
   src: T,
-  dst?: T extends any[] ? T : undefined,
+  dst?: T extends any[] ? T : Record<string, unknown>,
 ): T;
 /**
  * Throw error if the argument is false

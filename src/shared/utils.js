@@ -990,13 +990,12 @@ export const ngAttrPrefixes = ["ng-", "data-ng-"];
  *
  * @template T
  * @param {T} src
- * @param {T extends any[] ? T : undefined} [dst]
+ * @param {T extends any[] ? T : Record<string, unknown>} [dst]
  * @returns {T}
  */
 export function shallowCopy(src, dst) {
   if (isArray(src)) {
-    /** @type {any[]} */
-    const out = dst || [];
+    const out = /** @type {any[]} */ dst || [];
 
     for (let i = 0, ii = src.length; i < ii; i++) {
       out[i] = src[i];
@@ -1006,11 +1005,11 @@ export function shallowCopy(src, dst) {
   }
 
   if (isObject(src)) {
-    /** @type {Record<string, unknown>} */
-    const out = {};
+    const out = /** @type {Record<string, unknown>} */ (dst) || {};
 
     for (const key in src) {
-      if (!(key.startsWith("$") && key.charAt(1) === "$")) {
+      // Copy all properties except $$-prefixed
+      if (!key.startsWith("$$")) {
         out[key] = src[key];
       }
     }

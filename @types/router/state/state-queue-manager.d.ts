@@ -27,9 +27,9 @@ export class StateQueueManager {
   flush(): Record<string, StateObject>;
   /**
    *
-   * @param {StateObject} state
+   * @param {ng.StateDeclaration} state
    * @returns {() => void} a function that deregisters the rule
    */
-  attachRoute(state: StateObject): () => void;
+  attachRoute(state: ng.StateDeclaration): () => void;
 }
 import { StateObject } from "./state-object.js";
