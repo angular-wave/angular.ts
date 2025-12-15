@@ -85,7 +85,7 @@ export class UrlRules {
     this._sortFn = defaultRuleSortFn;
     this._rules = [];
     this._id = 0;
-    this.urlRuleFactory = urlRuleFactory;
+    this._urlRuleFactory = urlRuleFactory;
   }
 
   /**
@@ -130,7 +130,7 @@ export class UrlRules {
       router.globals.transitionHistory.size() === 0 &&
       !!/^\/?$/.exec(urlParts.path);
 
-    this.rule(this.urlRuleFactory.create(matchFn, handlerFn));
+    this.rule(this._urlRuleFactory.create(matchFn, handlerFn));
   }
 
   /**
@@ -179,7 +179,7 @@ export class UrlRules {
   otherwise(handler) {
     const handlerFn = getHandlerFn(handler);
 
-    this._otherwiseFn = this.urlRuleFactory.create(val(true), handlerFn);
+    this._otherwiseFn = this._urlRuleFactory.create(val(true), handlerFn);
     this._sorted = false;
   }
 
@@ -202,7 +202,7 @@ export class UrlRules {
    * A rule should have a `match` function which returns truthy if the rule matched.
    * It should also have a `handler` function which is invoked if the rule is the best match.
    *
-   * @return a function that deregisters the rule
+   * @returns {() => void } a function that deregisters the rule
    */
   rule(rule) {
     if (!UrlRuleFactory.isUrlRule(rule)) throw new Error("invalid rule");
@@ -366,7 +366,7 @@ export class UrlRules {
    * @return the registered [[UrlRule]]
    */
   when(matcher, handler, options) {
-    const rule = this.urlRuleFactory.create(matcher, handler);
+    const rule = this._urlRuleFactory.create(matcher, handler);
 
     if (isDefined(options && options.priority))
       rule.priority = options.priority;

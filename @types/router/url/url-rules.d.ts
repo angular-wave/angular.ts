@@ -14,7 +14,7 @@ export class UrlRules {
   _sortFn: typeof defaultRuleSortFn;
   _rules: any[];
   _id: number;
-  urlRuleFactory: UrlRuleFactory;
+  _urlRuleFactory: UrlRuleFactory;
   /**
    * Defines the initial state, path, or behavior to use when the app starts.
    *
@@ -113,7 +113,7 @@ export class UrlRules {
    * A rule should have a `match` function which returns truthy if the rule matched.
    * It should also have a `handler` function which is invoked if the rule is the best match.
    *
-   * @return a function that deregisters the rule
+   * @returns {() => void } a function that deregisters the rule
    */
   rule(rule: any): () => void;
   /**
