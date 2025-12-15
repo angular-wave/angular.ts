@@ -29,8 +29,10 @@ export class Transition implements HookRegistry {
    * @type {import('../router.js').RouterProvider}
    */
   _globals: import("../router.js").RouterProvider;
-  _transitionService: import("./transition-service.js").TransitionProvider;
-  _deferred: any;
+  /** @type {ng.TransitionProvider} */
+  _transitionProvider: ng.TransitionProvider;
+  /** @type {PromiseWithResolvers<any>} */
+  _deferred: PromiseWithResolvers<any>;
   /**
    * This promise is resolved or rejected based on the outcome of the Transition.
    *

@@ -16,12 +16,22 @@ export function matchState(
   criterion: any,
   transition: any,
 ): boolean;
-/** Return a registration function of the requested type. */
+/**
+ * Return a registration function of the requested type.
+ * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
+ * @param {ng.TransitionProvider} transitionService
+ * @param {import("./transition-event-type.js").TransitionEventType} eventType
+ * @returns {( matchObject: any, callback: Function, options?: Record<string, any> ) => () => void }
+ */
 export function makeEvent(
-  registry: any,
-  transitionService: any,
-  eventType: any,
-): (matchObject: any, callback: any, options?: {}) => any;
+  hookSource: ng.TransitionProvider | import("./transition.js").Transition,
+  transitionService: ng.TransitionProvider,
+  eventType: import("./transition-event-type.js").TransitionEventType,
+): (
+  matchObject: any,
+  callback: Function,
+  options?: Record<string, any>,
+) => () => void;
 /**
  * The registration data for a registered transition hook
  */
