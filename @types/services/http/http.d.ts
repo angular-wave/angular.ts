@@ -30,9 +30,15 @@ export class HttpProvider {
       common: {
         Accept: string;
       };
-      post: any;
-      put: any;
-      patch: any;
+      post: {
+        "Content-Type": string;
+      };
+      put: {
+        "Content-Type": string;
+      };
+      patch: {
+        "Content-Type": string;
+      };
     };
     xsrfCookieName: string;
     xsrfHeaderName: string;
@@ -125,9 +131,15 @@ export class HttpProvider {
             common: {
               Accept: string;
             };
-            post: any;
-            put: any;
-            patch: any;
+            post: {
+              "Content-Type": string;
+            };
+            put: {
+              "Content-Type": string;
+            };
+            patch: {
+              "Content-Type": string;
+            };
           };
           xsrfCookieName: string;
           xsrfHeaderName: string;

@@ -1,7 +1,7 @@
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
-export function selectDirective(): import("../../interface.ts").Directive;
+export function selectDirective(): ng.Directive;
 /**
  * @param {ng.InterpolateService} $interpolate
  * @returns {ng.Directive}

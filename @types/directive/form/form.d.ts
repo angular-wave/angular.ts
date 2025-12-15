@@ -155,7 +155,7 @@ export class FormController {
    * in the shallow copy. That means you should get a fresh copy from `$getControls()` every time
    * you need access to the controls.
    */
-  $getControls(): any;
+  $getControls(): any[];
   $$renameControl(control: any, newName: any): void;
   /**
    * Deregister a control from the form.

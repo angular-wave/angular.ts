@@ -5,7 +5,7 @@ ngSetterDirective.$inject = [$t._parse, $t._log];
 /**
  * @param {ng.ParseService} $parse
  * @param {ng.LogService} $log
- * @returns {import('interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function ngSetterDirective($parse, $log) {
   return {
@@ -27,7 +27,7 @@ export function ngSetterDirective($parse, $log) {
         return;
       }
 
-      const updateModel = (value) => {
+      const updateModel = (/** @type {string} */ value) => {
         assignModel(scope, value.trim());
       };
 

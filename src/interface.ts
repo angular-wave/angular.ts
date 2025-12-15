@@ -394,7 +394,7 @@ export interface DirectivePrePost {
  * A link function executed during directive linking.
  */
 export type DirectiveLinkFn<T> = (
-  scope: Scope,
+  scope: ng.Scope,
   element: HTMLElement,
   attrs: ng.Attributes,
   controller?: TController<T>,

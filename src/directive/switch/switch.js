@@ -98,7 +98,7 @@ export function ngSwitchDirective($animate) {
 }
 
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function ngSwitchWhenDirective() {
   return {
@@ -128,7 +128,7 @@ export function ngSwitchWhenDirective() {
 }
 
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function ngSwitchDefaultDirective() {
   return {

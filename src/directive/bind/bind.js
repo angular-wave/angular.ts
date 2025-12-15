@@ -30,17 +30,17 @@ export function ngBindDirective() {
 }
 
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function ngBindTemplateDirective() {
   return {
     /**
      * @param {ng.Scope} _scope
      * @param {Element} element
-     * @param {import('../../core/compile/attributes.js').Attributes} attr
+     * @param {ng.Attributes} attr
      */
     link(_scope, element, attr) {
-      attr.$observe("ngBindTemplate", (value) => {
+      attr.$observe("ngBindTemplate", (/** @type {string | null} */ value) => {
         element.textContent = isUndefined(value) ? "" : value;
       });
     },
@@ -49,8 +49,8 @@ export function ngBindTemplateDirective() {
 
 ngBindHtmlDirective.$inject = [$injectTokens._parse];
 /**
- * @param {import('../../core/parse/interface.ts').ParseService} $parse
- * @returns {import('../../interface.ts').Directive}
+ * @param {ng.ParseService} $parse
+ * @returns {ng.Directive}
  */
 export function ngBindHtmlDirective($parse) {
   return {

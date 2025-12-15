@@ -1,5 +1,5 @@
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function ngNonBindableDirective() {
   return {
