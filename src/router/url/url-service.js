@@ -47,17 +47,18 @@ export class UrlService {
 
     /**
      * The nested [[UrlRules]] API for managing URL rules and rewrites
+     * @ignore
      * @type {UrlRules}
      */
-    this.rules = new UrlRules(this._urlRuleFactory);
+    this._rules = new UrlRules(this._urlRuleFactory);
     /**
      * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
      * @type {import("./url-config.js").UrlConfigProvider}
      */
-    this.config = urlConfigProvider;
+    this._config = urlConfigProvider;
 
-    /** Creates a new [[Param]] for a given location (DefType) */
-    this.paramFactory = new ParamFactory(this.config);
+    /** @type {ParamFactory} Creates a new [[Param]] for a given location (DefType) */
+    this._paramFactory = new ParamFactory(this._config);
 
     this._urlListeners = [];
   }
@@ -319,7 +320,7 @@ export class UrlService {
    */
   match(url) {
     url = Object.assign({ path: "", search: {}, hash: "" }, url);
-    const rules = this.rules.rules();
+    const rules = this._rules.rules();
 
     // Checks a single rule. Returns { rule: rule, match: match, weight: weight } if it matched, or undefined
     /**
@@ -430,7 +431,7 @@ export class UrlService {
    * @returns The UrlMatcher.
    */
   compile(urlPattern, config) {
-    const urlConfig = this.config;
+    const urlConfig = this._config;
 
     // backward-compatible support for config.params -> config.state.params
     const params = config && !config.state && config.params;
@@ -444,7 +445,7 @@ export class UrlService {
     return new UrlMatcher(
       urlPattern,
       urlConfig.paramTypes,
-      this.paramFactory,
+      this._paramFactory,
       Object.assign(globalConfig, config),
     );
   }

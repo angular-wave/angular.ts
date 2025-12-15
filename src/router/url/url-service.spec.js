@@ -28,16 +28,16 @@ describe("UrlMatcher", () => {
 
   describe("provider", () => {
     it("should factory matchers with correct configuration", () => {
-      $url.config.caseInsensitive(false);
+      $url._config.caseInsensitive(false);
       expect($url.compile("/hello").exec("/HELLO")).toBeNull();
 
-      $url.config.caseInsensitive(true);
+      $url._config.caseInsensitive(true);
       expect($url.compile("/hello").exec("/HELLO")).toEqual({});
 
-      $url.config.strictMode(true);
+      $url._config.strictMode(true);
       expect($url.compile("/hello").exec("/hello/")).toBeNull();
 
-      $url.config.strictMode(false);
+      $url._config.strictMode(false);
       expect($url.compile("/hello").exec("/hello/")).toEqual({});
     });
 
@@ -328,7 +328,7 @@ describe("UrlMatcher", () => {
 
     it("should respect $urlProvider.strictMode", () => {
       let m = $url.compile("/");
-      $url.config.strictMode(false);
+      $url._config.strictMode(false);
       m = m.append($url.compile("foo"));
       expect(m.exec("/foo")).toEqual({});
       expect(m.exec("/foo/")).toEqual({});
@@ -336,7 +336,7 @@ describe("UrlMatcher", () => {
 
     it("should respect $urlProvider.caseInsensitive", () => {
       let m = $url.compile("/");
-      $url.config.caseInsensitive(true);
+      $url._config.caseInsensitive(true);
       m = m.append($url.compile("foo"));
       expect(m.exec("/foo")).toEqual({});
       expect(m.exec("/FOO")).toEqual({});
@@ -344,7 +344,7 @@ describe("UrlMatcher", () => {
 
     it("should respect $urlProvider.caseInsensitive when validating regex params", () => {
       let m = $url.compile("/");
-      $url.config.caseInsensitive(true);
+      $url._config.caseInsensitive(true);
       m = m.append($url.compile("foo/{param:bar}"));
       expect(m.validates({ param: "BAR" })).toEqual(true);
     });

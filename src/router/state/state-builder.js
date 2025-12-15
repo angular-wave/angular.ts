@@ -299,7 +299,7 @@ export function resolvablesBuilder(state) {
 export class StateBuilder {
   /**
    * @param {import('./state-matcher.js').StateMatcher} matcher
-   * @param urlService
+   * @param {ng.UrlService} urlService
    */
   constructor(matcher, urlService) {
     this.matcher = matcher;
@@ -323,7 +323,7 @@ export class StateBuilder {
       // Keep track of the closest ancestor state that has a URL (i.e. is navigable)
       navigable: [getNavigableBuilder(isRoot)],
       // TODO
-      params: [getParamsBuilder(urlService.paramFactory)],
+      params: [getParamsBuilder(urlService._paramFactory)],
       // Each framework-specific ng-router implementation should define its own `views` builder
       // e.g., src/ng1/statebuilders/views.ts
       views: [],
