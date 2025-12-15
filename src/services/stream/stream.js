@@ -14,7 +14,7 @@ export class StreamConnection {
       retryDelay: 1000,
       maxRetries: Infinity,
       heartbeatTimeout: 15000,
-      transformMessage: (data) => {
+      transformMessage: (/** @type {string} */ data) => {
         try {
           return JSON.parse(data);
         } catch {
@@ -26,7 +26,7 @@ export class StreamConnection {
     this.$log = log;
     this.retryCount = 0;
     this.closed = false;
-    this.heartbeatTimer = null;
+    this.heartbeatTimer = undefined;
     /** @type {EventSource | WebSocket | null} */
     this.connection = null;
 

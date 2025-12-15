@@ -43,7 +43,8 @@ export class LogProvider {
    * @param {string} type
    */
   _consoleLog(type) {
-    const console = window.console || {};
+    const console =
+      window.console || /** @type {Partial<Record<string, Function>>} */ ({});
 
     const logFn =
       console[type] ||
@@ -52,7 +53,7 @@ export class LogProvider {
         /* empty */
       });
 
-    return (...args) => {
+    return (/** @type {any[]} */ ...args) => {
       const formattedArgs = args.map((arg) => this._formatError(arg));
 
       return logFn.apply(console, formattedArgs);
