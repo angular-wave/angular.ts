@@ -7,10 +7,10 @@ export namespace ngSwitchDirective {
   let $inject: string[];
 }
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
-export function ngSwitchWhenDirective(): import("../../interface.ts").Directive;
+export function ngSwitchWhenDirective(): ng.Directive;
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
-export function ngSwitchDefaultDirective(): import("../../interface.ts").Directive;
+export function ngSwitchDefaultDirective(): ng.Directive;

@@ -1,4 +1,4 @@
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
-export function ngInitDirective(): import("../../interface.ts").Directive;
+export function ngInitDirective(): ng.Directive;

@@ -90,11 +90,10 @@ export function isObject<T>(value: T): value is T & object;
 export function isBlankObject(value: any): boolean;
 /**
  * Determines if a reference is a `string`.
- *
- * @param value - The value to check.
+ * @param {unknown} value - The value to check.
  * @returns {value is string} True if `value` is a string.
  */
-export function isString(value: any): value is string;
+export function isString(value: unknown): value is string;
 /**
  * Determines if a reference is a null.
  *
@@ -211,13 +210,23 @@ export function isArrayBuffer(obj: any): boolean;
  * @returns {string | *}
  */
 export function trim(value: any): string | any;
-export function snakeCase(name: any, separator: any): any;
+/**
+ * @param {string} name
+ * @param {string} separator
+ */
+export function snakeCase(name: string, separator: string): string;
 /**
  * Set or clear the hashkey for an object.
- * @param obj object
- * @param hashkey the hashkey (!truthy to delete the hashkey)
+ * @param {{ [x: string]: any; $$hashKey?: any; }} obj object
+ * @param {any} hashkey the hashkey (!truthy to delete the hashkey)
  */
-export function setHashKey(obj: any, hashkey: any): void;
+export function setHashKey(
+  obj: {
+    [x: string]: any;
+    $$hashKey?: any;
+  },
+  hashkey: any,
+): void;
 /**
  * Deeply extends a destination object with one or more source objects.
  * Safely handles Dates, RegExps, DOM nodes, arrays, and nested objects.
@@ -262,7 +271,10 @@ export function isNumberNaN(num: any): boolean;
  * @returns {Object}
  */
 export function inherit(parent: any, extra: any): any;
-export function hasCustomToString(obj: any): boolean;
+/**
+ * @param {{ toString: () => string; }} obj
+ */
+export function hasCustomToString(obj: { toString: () => string }): boolean;
 /**
  * Returns a string appropriate for the type of node.
  *
@@ -272,7 +284,11 @@ export function hasCustomToString(obj: any): boolean;
  * @returns
  */
 export function getNodeName(element: Element): string;
-export function includes(array: any, obj: any): boolean;
+/**
+ * @param {any} array
+ * @param {string} obj
+ */
+export function includes(array: any, obj: string): boolean;
 /**
  * Removes the first occurrence of a specified value from an array.
  *
@@ -282,7 +298,11 @@ export function includes(array: any, obj: any): boolean;
  * @returns {number} - The index of the removed value, or -1 if the value was not found.
  */
 export function arrayRemove<T>(array: Array<T>, value: T): number;
-export function simpleCompare(val1: any, val2: any): boolean;
+/**
+ * @param {unknown} val1
+ * @param {unknown} val2
+ */
+export function simpleCompare(val1: unknown, val2: unknown): boolean;
 /**
  * Determines if two objects or two values are equivalent. Supports value types, regular
  * expressions, arrays and objects.
@@ -347,14 +367,33 @@ export function equals(o1: any, o2: any): boolean;
  * @param  {string} context the context in which the name is used, such as module or directive
  */
 export function assertNotHasOwnProperty(name: string, context: string): void;
-export function stringify(value: any): any;
+/**
+ * @param {unknown} value
+ */
+export function stringify(value: unknown): unknown;
 /**
  * @param {Number} maxDepth
  * @return {boolean}
  */
 export function isValidObjectMaxDepth(maxDepth: number): boolean;
-export function concat(array1: any, array2: any, index: any): any;
-export function sliceArgs(args: any, startIndex: any): any;
+/**
+ * @param {any[]} array1
+ * @param {IArguments | any[] | NodeListOf<ChildNode>} array2
+ * @param {number | undefined} [index]
+ */
+export function concat(
+  array1: any[],
+  array2: IArguments | any[] | NodeListOf<ChildNode>,
+  index?: number | undefined,
+): any[];
+/**
+ * @param {IArguments | [string, ...any[]]} args
+ * @param {number} startIndex
+ */
+export function sliceArgs(
+  args: IArguments | [string, ...any[]],
+  startIndex: number,
+): any;
 /**
  * Returns a function which calls function `fn` bound to `self` (`self` becomes the `this` for
  * `fn`). You can supply optional `args` that are prebound to the function. This feature is also
@@ -407,22 +446,53 @@ export function toJson(
  * @returns {Object|Array|string|number} Deserialized JSON string.
  */
 export function fromJson(json: string): any | any[] | string | number;
-export function timezoneToOffset(timezone: any, fallback: any): any;
-export function addDateMinutes(date: any, minutes: any): Date;
+/**
+ * @param {any} timezone
+ * @param {undefined} [fallback]
+ */
+export function timezoneToOffset(timezone: any, fallback?: undefined): number;
+/**
+ * @param {{ getTime: () => string | number | Date; }} date
+ * @param {number} minutes
+ */
+export function addDateMinutes(
+  date: {
+    getTime: () => string | number | Date;
+  },
+  minutes: number,
+): Date;
+/**
+ * @param {{ getTimezoneOffset: () => any; }} date
+ * @param {any} timezone
+ * @param {undefined} [reverse]
+ */
 export function convertTimezoneToLocal(
-  date: any,
+  date: {
+    getTimezoneOffset: () => any;
+  },
   timezone: any,
-  reverse: any,
+  reverse?: undefined,
 ): Date;
 /**
  * Parses an escaped url query string into key-value pairs.
  * @param {string} keyValue
- * @returns {Object.<string,boolean|Array>}
+ * @returns {Object.<string,boolean|Array<any>>}
  */
 export function parseKeyValue(keyValue: string): {
   [x: string]: boolean | any[];
 };
-export function toKeyValue(obj: any): string;
+/**
+ * @param {string | { [s: string]: any; } | ArrayLike<any> | null} obj
+ */
+export function toKeyValue(
+  obj:
+    | string
+    | {
+        [s: string]: any;
+      }
+    | ArrayLike<any>
+    | null,
+): string;
 /**
  * Tries to decode the URI component without throwing an exception.
  *
@@ -453,14 +523,27 @@ export function encodeUriSegment(val: string): string;
  *    pct-encoded   = "%" HEXDIG HEXDIG
  *    sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
  *                     / "*" / "+" / "," / ";" / "="
+ * @param {string | number | boolean} val
+ * @param {boolean | undefined} [pctEncodeSpaces]
  */
-export function encodeUriQuery(val: any, pctEncodeSpaces: any): string;
+export function encodeUriQuery(
+  val: string | number | boolean,
+  pctEncodeSpaces?: boolean | undefined,
+): string;
 /**
- * Creates a shallow copy of an object, an array or a primitive.
+ * Creates a shallow copy of an object, an array, or returns primitives as-is.
  *
- * Assumes that there are no proto properties for objects.
+ * Assumes there are no proto properties.
+ *
+ * @template T
+ * @param {T} src
+ * @param {T extends any[] ? T : undefined} [dst]
+ * @returns {T}
  */
-export function shallowCopy(src: any, dst: any): any;
+export function shallowCopy<T>(
+  src: T,
+  dst?: T extends any[] ? T : undefined,
+): T;
 /**
  * Throw error if the argument is false
  * @param {boolean} argument
@@ -469,13 +552,25 @@ export function shallowCopy(src: any, dst: any): any;
 export function assert(argument: boolean, errorMsg?: string): void;
 /**
  * Throw error if the argument is falsy.
+ * @param {string | boolean | Object} arg
+ * @param {string} name
+ * @param {string | undefined} [reason]
  */
-export function assertArg(arg: any, name: any, reason: any): any;
-export function assertArgFn(
-  arg: any,
-  name: any,
-  acceptArrayAnnotation: any,
+export function assertArg(
+  arg: string | boolean | any,
+  name: string,
+  reason?: string | undefined,
 ): any;
+/**
+ * @param {string | Function | any[]} arg
+ * @param {string} name
+ * @param {boolean | undefined} [acceptArrayAnnotation]
+ */
+export function assertArgFn(
+  arg: string | Function | any[],
+  name: string,
+  acceptArrayAnnotation?: boolean | undefined,
+): string | Function | any[];
 /**
  * Configure several aspects of error handling if used as a setter or return the
  * current configuration if used as a getter.

@@ -427,7 +427,7 @@ class SelectController {
 }
 
 /**
- * @returns {import('../../interface.ts').Directive}
+ * @returns {ng.Directive}
  */
 export function selectDirective() {
   return {

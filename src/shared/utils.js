@@ -150,8 +150,7 @@ export function isBlankObject(value) {
 
 /**
  * Determines if a reference is a `string`.
- *
- * @param value - The value to check.
+ * @param {unknown} value - The value to check.
  * @returns {value is string} True if `value` is a string.
  */
 export function isString(value) {
@@ -345,19 +344,24 @@ export function trim(value) {
   return isString(value) ? value.trim() : value;
 }
 
+/**
+ * @param {string} name
+ * @param {string} separator
+ */
 export function snakeCase(name, separator) {
   const modseparator = separator || "_";
 
   return name.replace(
     /[A-Z]/g,
-    (letter, pos) => (pos ? modseparator : "") + letter.toLowerCase(),
+    (/** @type {string} */ letter, /** @type {any} */ pos) =>
+      (pos ? modseparator : "") + letter.toLowerCase(),
   );
 }
 
 /**
  * Set or clear the hashkey for an object.
- * @param obj object
- * @param hashkey the hashkey (!truthy to delete the hashkey)
+ * @param {{ [x: string]: any; $$hashKey?: any; }} obj object
+ * @param {any} hashkey the hashkey (!truthy to delete the hashkey)
  */
 export function setHashKey(obj, hashkey) {
   if (hashkey) {
@@ -445,6 +449,9 @@ export function inherit(parent, extra) {
   return extend(Object.create(parent), extra);
 }
 
+/**
+ * @param {{ toString: () => string; }} obj
+ */
 export function hasCustomToString(obj) {
   return isFunction(obj.toString) && obj.toString !== toString;
 }
@@ -461,6 +468,10 @@ export function getNodeName(element) {
   return lowercase(element.nodeName);
 }
 
+/**
+ * @param {any} array
+ * @param {string} obj
+ */
 export function includes(array, obj) {
   return Array.prototype.indexOf.call(array, obj) !== -1;
 }
@@ -483,6 +494,10 @@ export function arrayRemove(array, value) {
   return index;
 }
 
+/**
+ * @param {unknown} val1
+ * @param {unknown} val2
+ */
 export function simpleCompare(val1, val2) {
   return val1 === val2 || (Number.isNaN(val1) && Number.isNaN(val2));
 }
@@ -637,6 +652,9 @@ export function assertNotHasOwnProperty(name, context) {
   }
 }
 
+/**
+ * @param {unknown} value
+ */
 export function stringify(value) {
   if (isNull(value) || isUndefined(value)) {
     return "";
@@ -666,10 +684,19 @@ export function isValidObjectMaxDepth(maxDepth) {
   return isNumber(maxDepth) && maxDepth > 0;
 }
 
+/**
+ * @param {any[]} array1
+ * @param {IArguments | any[] | NodeListOf<ChildNode>} array2
+ * @param {number | undefined} [index]
+ */
 export function concat(array1, array2, index) {
   return array1.concat(Array.prototype.slice.call(array2, index));
 }
 
+/**
+ * @param {IArguments | [string, ...any[]]} args
+ * @param {number} startIndex
+ */
 export function sliceArgs(args, startIndex) {
   return Array.prototype.slice.call(args, startIndex || 0);
 }
@@ -705,6 +732,10 @@ export function bind(context, fn) {
   return fn;
 }
 
+/**
+ * @param {string} key
+ * @param {unknown} value
+ */
 function toJsonReplacer(key, value) {
   let val = value;
 
@@ -777,6 +808,10 @@ export function fromJson(json) {
 
 const MS_PER_MINUTE = 60_000; // 60,000 ms in a minute
 
+/**
+ * @param {any} timezone
+ * @param {undefined} [fallback]
+ */
 export function timezoneToOffset(timezone, fallback) {
   const requestedTimezoneOffset =
     Date.parse(`Jan 01, 1970 00:00:00 ${timezone}`) / MS_PER_MINUTE;
@@ -786,6 +821,10 @@ export function timezoneToOffset(timezone, fallback) {
     : requestedTimezoneOffset;
 }
 
+/**
+ * @param {{ getTime: () => string | number | Date; }} date
+ * @param {number} minutes
+ */
 export function addDateMinutes(date, minutes) {
   const newDate = new Date(date.getTime());
 
@@ -794,6 +833,11 @@ export function addDateMinutes(date, minutes) {
   return newDate;
 }
 
+/**
+ * @param {{ getTimezoneOffset: () => any; }} date
+ * @param {any} timezone
+ * @param {undefined} [reverse]
+ */
 export function convertTimezoneToLocal(date, timezone, reverse) {
   const doReverse = reverse ? -1 : 1;
 
@@ -810,7 +854,7 @@ export function convertTimezoneToLocal(date, timezone, reverse) {
 /**
  * Parses an escaped url query string into key-value pairs.
  * @param {string} keyValue
- * @returns {Object.<string,boolean|Array>}
+ * @returns {Object.<string,boolean|Array<any>>}
  */
 export function parseKeyValue(keyValue) {
   const obj = {};
@@ -846,10 +890,16 @@ export function parseKeyValue(keyValue) {
     }
   });
 
-  return /** @type {Object.<string,boolean|Array>} */ (obj);
+  return /** @type {Object.<string,boolean|Array<any>>} */ (obj);
 }
 
+/**
+ * @param {string | { [s: string]: any; } | ArrayLike<any> | null} obj
+ */
 export function toKeyValue(obj) {
+  /**
+   * @type {string[]}
+   */
   const parts = [];
 
   obj &&
@@ -917,6 +967,8 @@ export function encodeUriSegment(val) {
  *    pct-encoded   = "%" HEXDIG HEXDIG
  *    sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
  *                     / "*" / "+" / "," / ";" / "="
+ * @param {string | number | boolean} val
+ * @param {boolean | undefined} [pctEncodeSpaces]
  */
 export function encodeUriQuery(val, pctEncodeSpaces) {
   return encodeURIComponent(val)
@@ -931,28 +983,41 @@ export function encodeUriQuery(val, pctEncodeSpaces) {
 export const ngAttrPrefixes = ["ng-", "data-ng-"];
 
 /**
- * Creates a shallow copy of an object, an array or a primitive.
+ * Creates a shallow copy of an object, an array, or returns primitives as-is.
  *
- * Assumes that there are no proto properties for objects.
+ * Assumes there are no proto properties.
+ *
+ * @template T
+ * @param {T} src
+ * @param {T extends any[] ? T : undefined} [dst]
+ * @returns {T}
  */
 export function shallowCopy(src, dst) {
   if (isArray(src)) {
-    dst = dst || [];
+    /** @type {any[]} */
+    const out = dst || [];
 
     for (let i = 0, ii = src.length; i < ii; i++) {
-      dst[i] = src[i];
+      out[i] = src[i];
     }
-  } else if (isObject(src)) {
-    dst = dst || {};
+
+    return /** @type {T} */ (out);
+  }
+
+  if (isObject(src)) {
+    /** @type {Record<string, unknown>} */
+    const out = {};
 
     for (const key in src) {
       if (!(key.startsWith("$") && key.charAt(1) === "$")) {
-        dst[key] = src[key];
+        out[key] = src[key];
       }
     }
+
+    return /** @type {T} */ (out);
   }
 
-  return dst || src;
+  return src;
 }
 
 /**
@@ -968,6 +1033,9 @@ export function assert(argument, errorMsg = "Assertion failed") {
 
 /**
  * Throw error if the argument is falsy.
+ * @param {string | boolean | Object} arg
+ * @param {string} name
+ * @param {string | undefined} [reason]
  */
 export function assertArg(arg, name, reason) {
   if (!arg) {
@@ -982,6 +1050,11 @@ export function assertArg(arg, name, reason) {
   return arg;
 }
 
+/**
+ * @param {string | Function | any[]} arg
+ * @param {string} name
+ * @param {boolean | undefined} [acceptArrayAnnotation]
+ */
 export function assertArgFn(arg, name, acceptArrayAnnotation) {
   if (acceptArrayAnnotation && isArray(arg)) {
     arg = arg[arg.length - 1];
@@ -1069,7 +1142,7 @@ export function minErr(module) {
 
     const templateArgs = sliceArgs(args, 2).map((arg) => toDebugString(arg));
 
-    message += template.replace(/\{\d+\}/g, (match) => {
+    message += template.replace(/\{\d+\}/g, (/** @type {string} */ match) => {
       const index = +match.slice(1, -1);
 
       if (index < templateArgs.length) {
