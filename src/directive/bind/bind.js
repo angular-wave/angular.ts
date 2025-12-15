@@ -21,7 +21,9 @@ export function ngBindDirective() {
       scope.$watch(
         attr.ngBind,
         (value) => {
-          element.textContent = stringify(deProxy(value));
+          element.textContent = /** @type {string} */ (
+            stringify(deProxy(value))
+          );
         },
         isDefined(attr.lazy),
       );

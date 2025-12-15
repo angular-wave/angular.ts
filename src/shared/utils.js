@@ -654,6 +654,7 @@ export function assertNotHasOwnProperty(name, context) {
 
 /**
  * @param {unknown} value
+ * @returns {string | unknown}
  */
 export function stringify(value) {
   if (isNull(value) || isUndefined(value)) {
@@ -810,7 +811,7 @@ const MS_PER_MINUTE = 60_000; // 60,000 ms in a minute
 
 /**
  * @param {any} timezone
- * @param {undefined} [fallback]
+ * @param {number} [fallback]
  */
 export function timezoneToOffset(timezone, fallback) {
   const requestedTimezoneOffset =
@@ -822,7 +823,7 @@ export function timezoneToOffset(timezone, fallback) {
 }
 
 /**
- * @param {{ getTime: () => string | number | Date; }} date
+ * @param {Date} date
  * @param {number} minutes
  */
 export function addDateMinutes(date, minutes) {
@@ -834,7 +835,7 @@ export function addDateMinutes(date, minutes) {
 }
 
 /**
- * @param {{ getTimezoneOffset: () => any; }} date
+ * @param {Date} date
  * @param {any} timezone
  * @param {undefined} [reverse]
  */
