@@ -175,18 +175,24 @@ export class RegisteredHook {
     this._deregistered = true;
   }
 }
-/** Return a registration function of the requested type. */
-export function makeEvent(registry, transitionService, eventType) {
+/**
+ * Return a registration function of the requested type.
+ * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
+ * @param {ng.TransitionProvider} transitionService
+ * @param {import("./transition-event-type.js").TransitionEventType} eventType
+ * @returns {( matchObject: any, callback: Function, options?: Record<string, any> ) => () => void }
+ */
+export function makeEvent(hookSource, transitionService, eventType) {
   // Create the object which holds the registered transition hooks.
-  const _registeredHooks = (registry._registeredHooks =
-    registry._registeredHooks || {});
+  const _registeredHooks = (hookSource._registeredHooks =
+    hookSource._registeredHooks || {});
 
   const hooks = (_registeredHooks[eventType.name] = []);
 
   const removeHookFn = (x) => removeFrom(hooks, x);
 
   // Create hook registration function on the HookRegistry for the event
-  registry[eventType.name] = hookRegistrationFn;
+  hookSource[eventType.name] = hookRegistrationFn;
   function hookRegistrationFn(matchObject, callback, options = {}) {
     const registeredHook = new RegisteredHook(
       transitionService,

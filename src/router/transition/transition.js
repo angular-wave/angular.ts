@@ -55,7 +55,11 @@ export class Transition {
      * @type {import('../router.js').RouterProvider}
      */
     this._globals = globals;
-    this._transitionService = transitionService;
+
+    /** @type {ng.TransitionProvider} */
+    this._transitionProvider = transitionService;
+
+    /** @type {PromiseWithResolvers<any>} */
     this._deferred = Promise.withResolvers();
 
     /**
@@ -111,10 +115,12 @@ export class Transition {
    * (which can then be used to register hooks)
    */
   createTransitionHookRegFns() {
-    this._transitionService
+    this._transitionProvider
       ._getEvents()
       .filter((type) => type.hookPhase !== TransitionHookPhase._CREATE)
-      .forEach((type) => makeEvent(this, this._transitionService, type));
+      .forEach((type) => {
+        return makeEvent(this, this._transitionProvider, type);
+      });
   }
 
   getHooks(hookName) {
@@ -125,7 +131,7 @@ export class Transition {
     const enteringStates = this._treeChanges.entering.map((node) => node.state);
 
     PathUtils.applyViewConfigs(
-      this._transitionService.$view,
+      this._transitionProvider.$view,
       this._treeChanges.to,
       enteringStates,
     );
@@ -445,7 +451,7 @@ export class Transition {
     );
 
     targetState = targetState.withOptions(newOptions, true);
-    const newTransition = this._transitionService.create(
+    const newTransition = this._transitionProvider.create(
       this._treeChanges.from,
       targetState,
     );
