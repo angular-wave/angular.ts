@@ -21,10 +21,10 @@ export class ViewScrollProvider {
         return $anchorScroll;
       }
 
-      return async function ($element) {
+      return (/** @type {Element} */ $element) => {
         validateInstanceOf($element, Element, "$element");
 
-        return setTimeout(() => {
+        setTimeout(() => {
           $element.scrollIntoView(false);
         }, 0);
       };

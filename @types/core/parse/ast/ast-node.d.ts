@@ -53,4 +53,6 @@ export type ASTNode = {
   filter?: boolean;
   /** Indicates in node depends on non-shallow state of objects */
   isPure?: boolean;
+  /** Indicates the expression is a contant */
+  constant?: boolean;
 };

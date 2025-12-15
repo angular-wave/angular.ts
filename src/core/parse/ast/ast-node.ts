@@ -78,4 +78,7 @@ export type ASTNode = {
 
   /** Indicates in node depends on non-shallow state of objects */
   isPure?: boolean;
+
+  /** Indicates the expression is a contant */
+  constant?: boolean;
 };

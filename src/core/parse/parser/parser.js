@@ -34,7 +34,7 @@ export class Parser {
     const fn = this._astCompiler.compile(ast);
 
     fn.literal = isLiteral(ast);
-    fn.constant = isConstant(ast);
+    fn.constant = !!ast.constant;
 
     return fn;
   }
@@ -52,16 +52,23 @@ export class Parser {
   }
 }
 
+/**
+ * @param {import("../ast/ast-node.d.ts").ASTNode} ast
+ * @returns {boolean}
+ */
 function isLiteral(ast) {
-  return (
-    ast.body.length === 0 ||
-    (ast.body.length === 1 &&
-      (ast.body[0].expression.type === ASTType._Literal ||
-        ast.body[0].expression.type === ASTType._ArrayExpression ||
-        ast.body[0].expression.type === ASTType._ObjectExpression))
-  );
-}
+  const { body } = ast;
 
-function isConstant(ast) {
-  return ast.constant;
+  if (body && body.length === 1) {
+    switch (body[0].expression?.type) {
+      case ASTType._Literal:
+      case ASTType._ArrayExpression:
+      case ASTType._ObjectExpression:
+        return true;
+      default:
+        return false;
+    }
+  } else {
+    return false;
+  }
 }

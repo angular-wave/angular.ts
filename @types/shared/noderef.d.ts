@@ -9,11 +9,11 @@ export class NodeRef {
    * @throws {Error} If the argument is invalid or cannot be wrapped properly.
    */
   constructor(element: Node | Element | string | NodeList | Node[]);
-  /** @private @type {Node | ChildNode | null} */
+  /** @private @type {Node | ChildNode | undefined} */
   private _node;
   /** @type {Element | undefined} */
   _element: Element | undefined;
-  /** @private @type {Array<Node> | undefined} a stable list on nodes */
+  /** @private @type {Array<Node>} a stable list on nodes */
   private _nodes;
   /** @type {boolean} */
   _isList: boolean;

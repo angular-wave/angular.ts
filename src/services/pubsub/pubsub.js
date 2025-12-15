@@ -104,7 +104,7 @@ export class PubSub {
 
     let called = false;
 
-    const wrapper = (...args) => {
+    const wrapper = (/** @type {any[]} */ ...args) => {
       if (called) return;
       called = true;
 

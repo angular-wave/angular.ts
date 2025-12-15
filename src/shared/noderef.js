@@ -13,14 +13,14 @@ export class NodeRef {
    * @throws {Error} If the argument is invalid or cannot be wrapped properly.
    */
   constructor(element) {
-    /** @private @type {Node | ChildNode | null} */
-    this._node = null;
+    /** @private @type {Node | ChildNode | undefined} */
+    this._node = undefined;
 
     /** @type {Element | undefined} */
     this._element = undefined;
 
-    /** @private @type {Array<Node> | undefined} a stable list on nodes */
-    this._nodes = undefined;
+    /** @private @type {Array<Node>} a stable list on nodes */
+    this._nodes = [];
 
     /** @type {boolean} */
     this._isList = false;
@@ -138,7 +138,9 @@ export class NodeRef {
     if (this._isList) {
       return this._nodes[0];
     } else {
-      return this._element || this._node;
+      return /** @type {Element | Node | ChildNode} */ (
+        this._element || this._node
+      );
     }
   }
 
@@ -147,7 +149,9 @@ export class NodeRef {
     if (this._isList) {
       return this._nodes;
     } else {
-      return this._element || this._node;
+      return /** @type {Element | Node | ChildNode} */ (
+        this._element || this._node
+      );
     }
   }
 
@@ -156,7 +160,9 @@ export class NodeRef {
     if (this._isList) {
       return Array.from(this._nodes);
     } else {
-      return [this._element || this._node];
+      return [
+        /** @type {Element | Node | ChildNode} */ (this._element || this._node),
+      ];
     }
   }
 
