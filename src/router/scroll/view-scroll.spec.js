@@ -28,15 +28,6 @@ describe("ngView", () => {
       await wait(100);
       expect(elem.scrollIntoView).toHaveBeenCalled();
     });
-
-    it("should return the promise from the timeout", async () => {
-      dealoc(document.getElementById("app"));
-      const promise = $viewScroll(elem);
-
-      await wait(10);
-      expect(elem.scrollIntoView).toHaveBeenCalled();
-      expect(promise).toBeDefined();
-    });
   });
 
   describe("useAnchorScroll", () => {

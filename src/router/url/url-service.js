@@ -33,23 +33,23 @@ export class UrlService {
 
   /**
    * @param {ng.LocationProvider} $locationProvider
-   * @param {import("../../router/state/state-service.js").StateProvider} stateService
+   * @param {import("../../router/state/state-service.js").StateProvider} stateProvider
    * @param {import("../router.js").RouterProvider} globals
    * @param {import("../../router/url/url-config.js").UrlConfigProvider} urlConfigProvider
    */
-  constructor($locationProvider, stateService, globals, urlConfigProvider) {
+  constructor($locationProvider, stateProvider, globals, urlConfigProvider) {
     /** @private */
     this._locationProvider = $locationProvider;
-    this.stateService = stateService;
+    this.stateService = stateProvider;
 
-    /** Provides services related to the URL */
-    this.urlRuleFactory = new UrlRuleFactory(this, this.stateService, globals);
+    /** @type {UrlRuleFactory} Provides services related to the URL */
+    this._urlRuleFactory = new UrlRuleFactory(this, this.stateService, globals);
 
     /**
      * The nested [[UrlRules]] API for managing URL rules and rewrites
      * @type {UrlRules}
      */
-    this.rules = new UrlRules(this.urlRuleFactory);
+    this.rules = new UrlRules(this._urlRuleFactory);
     /**
      * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
      * @type {import("./url-config.js").UrlConfigProvider}

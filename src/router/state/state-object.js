@@ -3,8 +3,6 @@ import { propEq } from "../../shared/hof.js";
 import { Glob } from "../glob/glob.js";
 import { hasOwn, isFunction, isObject } from "../../shared/utils.js";
 
-/** @typedef {import('./interface.ts').StateDeclaration} StateDeclaration */
-
 /**
  * Internal representation of a ng-router state.
  *
@@ -14,7 +12,7 @@ import { hasOwn, isFunction, isObject } from "../../shared/utils.js";
  *
  * This class prototypally inherits from the corresponding [[StateDeclaration]].
  * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
- * @implements {StateDeclaration}
+ * @implements {ng.StateDeclaration}
  */
 export class StateObject {
   name = undefined;

@@ -5,13 +5,13 @@ export class UrlService {
   static $inject: string[];
   /**
    * @param {ng.LocationProvider} $locationProvider
-   * @param {import("../../router/state/state-service.js").StateProvider} stateService
+   * @param {import("../../router/state/state-service.js").StateProvider} stateProvider
    * @param {import("../router.js").RouterProvider} globals
    * @param {import("../../router/url/url-config.js").UrlConfigProvider} urlConfigProvider
    */
   constructor(
     $locationProvider: ng.LocationProvider,
-    stateService: import("../../router/state/state-service.js").StateProvider,
+    stateProvider: import("../../router/state/state-service.js").StateProvider,
     globals: import("../router.js").RouterProvider,
     urlConfigProvider: import("../../router/url/url-config.js").UrlConfigProvider,
   );
@@ -20,8 +20,8 @@ export class UrlService {
   /** @private */
   private _locationProvider;
   stateService: import("../../router/state/state-service.js").StateProvider;
-  /** Provides services related to the URL */
-  urlRuleFactory: UrlRuleFactory;
+  /** @type {UrlRuleFactory} Provides services related to the URL */
+  _urlRuleFactory: UrlRuleFactory;
   /**
    * The nested [[UrlRules]] API for managing URL rules and rewrites
    * @type {UrlRules}
