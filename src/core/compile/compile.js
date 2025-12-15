@@ -1036,7 +1036,7 @@ export class CompileProvider {
          * @param {Attributes|any} attrs The shared attrs object which is used to populate the normalized attributes.
          * @param {number=} maxPriority Max directive priority.
          * @param {string} [ignoreDirective]
-         * @return {import('../../inte[]} An array to which the directives are added to. This array is sorted before the function returns.
+         * @return {ng.Directive[]} An array to which the directives are added to. This array is sorted before the function returns.
          */
         function collectDirectives(node, attrs, maxPriority, ignoreDirective) {
           /**

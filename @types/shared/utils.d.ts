@@ -369,8 +369,9 @@ export function equals(o1: any, o2: any): boolean;
 export function assertNotHasOwnProperty(name: string, context: string): void;
 /**
  * @param {unknown} value
+ * @returns {string | unknown}
  */
-export function stringify(value: unknown): unknown;
+export function stringify(value: unknown): string | unknown;
 /**
  * @param {Number} maxDepth
  * @return {boolean}
@@ -448,28 +449,21 @@ export function toJson(
 export function fromJson(json: string): any | any[] | string | number;
 /**
  * @param {any} timezone
- * @param {undefined} [fallback]
+ * @param {number} [fallback]
  */
-export function timezoneToOffset(timezone: any, fallback?: undefined): number;
+export function timezoneToOffset(timezone: any, fallback?: number): number;
 /**
- * @param {{ getTime: () => string | number | Date; }} date
+ * @param {Date} date
  * @param {number} minutes
  */
-export function addDateMinutes(
-  date: {
-    getTime: () => string | number | Date;
-  },
-  minutes: number,
-): Date;
+export function addDateMinutes(date: Date, minutes: number): Date;
 /**
- * @param {{ getTimezoneOffset: () => any; }} date
+ * @param {Date} date
  * @param {any} timezone
  * @param {undefined} [reverse]
  */
 export function convertTimezoneToLocal(
-  date: {
-    getTimezoneOffset: () => any;
-  },
+  date: Date,
   timezone: any,
   reverse?: undefined,
 ): Date;
