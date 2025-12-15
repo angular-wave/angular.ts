@@ -31,12 +31,19 @@ export function registerLazyLoadHook(
   stateRegistry,
 ) {
   return transitionService.onBefore(
-    { entering: (state) => !!state.lazyLoad },
-    (transition) => {
+    {
+      entering: (state) => {
+        return !!state.lazyLoad;
+      },
+    },
+    /** @param {import("../transition/transition.js").Transition} transition*/ (
+      transition,
+    ) => {
       function retryTransition() {
         if (transition.originalTransition().options().source !== "url") {
           // The original transition was not triggered via url sync
           // The lazy state should be loaded now, so re-try the original transition
+
           const orig = transition.targetState();
 
           return stateService.target(

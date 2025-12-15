@@ -4,13 +4,14 @@ import { StateObject } from "./state-object.js";
 export class StateQueueManager {
   /**
    * @param {import("./state-registry.js").StateRegistryProvider} stateRegistry
-   * @param {*} urlServiceRules
+   * @param {import("../url/url-rules.js").UrlRules} urlServiceRules
    * @param {Record<string, ng.StateObject>} states
    * @param {*} builder
    * @param {*} listeners
    */
   constructor(stateRegistry, urlServiceRules, states, builder, listeners) {
     this.stateRegistry = stateRegistry;
+    /** @type {import("../url/url-rules.js").UrlRules} */
     this.urlServiceRules = urlServiceRules;
     this.states = states;
     this.builder = builder;
@@ -106,10 +107,15 @@ export class StateQueueManager {
     return states;
   }
 
+  /**
+   *
+   * @param {StateObject} state
+   * @returns {() => void} a function that deregisters the rule
+   */
   attachRoute(state) {
     if (state.abstract || !state.url) return;
     const rulesApi = this.urlServiceRules;
 
-    rulesApi.rule(rulesApi.urlRuleFactory.create(state));
+    rulesApi.rule(rulesApi._urlRuleFactory.create(state));
   }
 }
