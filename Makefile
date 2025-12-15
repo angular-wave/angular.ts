@@ -8,9 +8,7 @@ setup:
 BUILD_DIR = ./dist	
 MIN_JS      := dist/angular-ts.umd.min.js
 GZ_JS  := $(MIN_JS).gz
-MIN_SIZE    := $(shell stat -c %s $(MIN_JS))
 MIN_SIZE_H  := $(shell stat -c %s $(MIN_JS) | numfmt --to=iec)
-GZIP_SIZE   := $(shell gzip -9 -c $(MIN_JS) | wc -c)
 GZIP_SIZE_H := $(shell gzip -9 -c $(MIN_JS) | wc -c | numfmt --to=iec)
 
 build:
@@ -23,12 +21,12 @@ build:
 
 size:
 	./node_modules/.bin/rollup -c --configName min --silent
-	@echo "Expected bundle:  $(MIN_SIZE) ~ $(MIN_SIZE_H)"
-	@echo "Expected gzip:    $(GZIP_SIZE) ~ $(GZIP_SIZE_H)"
+	@echo "Minified build output:  $$(stat -c %s dist/angular-ts.umd.min.js) ~ $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
+	@echo "Expected gzip:          $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"
 	@git checkout -q $(BUILD_DIR)
 	@git checkout -q ./docs
-	@echo "Current bundle:    $(MIN_SIZE) ~ $(MIN_SIZE_H)"
-	@echo "Current gzip:      $(GZIP_SIZE) ~ $(GZIP_SIZE_H)"
+	@echo "Current build output:   $$(stat -c %s dist/angular-ts.umd.min.js) ~ $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
+	@echo "Current gzip:           $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"
 
 $(GZ_JS): $(MIN_JS)
 	@gzip -9 -c $< > $@
