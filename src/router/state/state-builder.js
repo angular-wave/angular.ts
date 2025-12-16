@@ -302,8 +302,8 @@ export class StateBuilder {
    * @param {ng.UrlService} urlService
    */
   constructor(matcher, urlService) {
-    this.matcher = matcher;
-    this.$injector = undefined;
+    this._matcher = matcher;
+    this._$injector = undefined;
     const self = this;
 
     const root = () => matcher.find("");
@@ -313,7 +313,7 @@ export class StateBuilder {
 
       return matcher.find(self.parentName(state)) || root();
     }
-    this.builders = {
+    this._builders = {
       name: [(state) => state.name],
       self: [selfBuilder],
       parent: [parentBuilder],
@@ -336,7 +336,7 @@ export class StateBuilder {
   }
 
   builder(name, fn) {
-    const { builders } = this;
+    const { _builders: builders } = this;
 
     const array = builders[name] || [];
 
@@ -359,7 +359,7 @@ export class StateBuilder {
    * @returns the built State object
    */
   build(state) {
-    const { matcher, builders } = this;
+    const { _matcher: matcher, _builders: builders } = this;
 
     const parent = this.parentName(state);
 

@@ -64,9 +64,9 @@ export class StateBuilder {
     matcher: import("./state-matcher.js").StateMatcher,
     urlService: ng.UrlService,
   );
-  matcher: import("./state-matcher.js").StateMatcher;
-  $injector: any;
-  builders: {
+  _matcher: import("./state-matcher.js").StateMatcher;
+  _$injector: any;
+  _builders: {
     name: ((state: any) => any)[];
     self: (typeof selfBuilder)[];
     parent: ((

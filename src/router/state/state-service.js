@@ -64,8 +64,15 @@ export class StateProvider {
    * @param {ng.ExceptionHandlerProvider} exceptionHandlerProvider
    */
   constructor(globals, transitionService, exceptionHandlerProvider) {
+    /**
+     * @type {ng.RouterProvider}
+     */
     this.globals = globals;
+    /**
+     * @type {ng.TransitionProvider}
+     */
     this.transitionService = transitionService;
+
     this.stateRegistry = undefined;
 
     /** @type {ng.UrlService} */
@@ -220,7 +227,7 @@ export class StateProvider {
 
     const { globals } = this;
 
-    const latestThing = () => globals.transitionHistory.peekTail();
+    const latestThing = () => globals._transitionHistory.peekTail();
 
     const latest = latestThing();
 
@@ -435,7 +442,7 @@ export class StateProvider {
   getCurrentPath() {
     const { globals } = this;
 
-    const latestSuccess = globals.successfulTransitions.peekTail();
+    const latestSuccess = globals._successfulTransitions.peekTail();
 
     const rootPath = () => [new PathNode(this.stateRegistry.root())];
 
@@ -494,7 +501,7 @@ export class StateProvider {
      */
     const rejectedTransitionHandler = (trans) => (error) => {
       if (error instanceof Rejection) {
-        const isLatest = this.globals.lastStartedTransitionId <= trans.$id;
+        const isLatest = this.globals._lastStartedTransitionId <= trans.$id;
 
         if (error.type === RejectType._IGNORED) {
           isLatest && this.urlService.update();
