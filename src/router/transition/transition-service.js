@@ -91,7 +91,7 @@ export class TransitionProvider {
 
     /** @type {ng.ExceptionHandlerService} */
     this._$exceptionHandler = $exceptionHandler.handler;
-    globals.successfulTransitions.onEvict(treeChangesCleanup);
+    globals._successfulTransitions.onEvict(treeChangesCleanup);
   }
 
   $get = [

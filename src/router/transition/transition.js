@@ -637,9 +637,9 @@ export class Transition {
     const startTransition = () => {
       const { _globals } = this;
 
-      _globals.lastStartedTransitionId = this.$id;
+      _globals._lastStartedTransitionId = this.$id;
       _globals.transition = this;
-      _globals.transitionHistory.enqueue(this);
+      _globals._transitionHistory.enqueue(this);
       trace.traceTransitionStart(this);
 
       return Promise.resolve();

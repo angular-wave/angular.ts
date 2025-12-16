@@ -70,7 +70,7 @@ export class StateRegistryProvider {
      */
     ($injector) => {
       this.$injector = $injector;
-      this.builder.$injector = $injector;
+      this.builder._$injector = $injector;
 
       return this;
     },

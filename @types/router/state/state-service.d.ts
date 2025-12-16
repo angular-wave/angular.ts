@@ -34,8 +34,14 @@ export class StateProvider {
    * @deprecated This is a passthrough through to [[Router.$current]]
    */
   get $current(): import("./state-object.js").StateObject;
-  globals: import("../router.js").RouterProvider;
-  transitionService: import("../transition/transition-service.js").TransitionProvider;
+  /**
+   * @type {ng.RouterProvider}
+   */
+  globals: ng.RouterProvider;
+  /**
+   * @type {ng.TransitionProvider}
+   */
+  transitionService: ng.TransitionProvider;
   stateRegistry: any;
   /** @type {ng.UrlService} */
   urlService: ng.UrlService;

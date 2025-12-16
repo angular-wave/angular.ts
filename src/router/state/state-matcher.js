@@ -30,10 +30,8 @@ export class StateMatcher {
     } else if (isStr && matchGlob) {
       const states = Object.values(this._states);
 
-      const matches = states.filter(
-        (stateObj) =>
-          stateObj._stateObjectCache.nameGlob &&
-          stateObj._stateObjectCache.nameGlob.matches(name),
+      const matches = states.filter((stateObj) =>
+        stateObj._stateObjectCache.nameGlob?.matches(name),
       );
 
       if (matches.length > 1) {

@@ -16,15 +16,17 @@ export class RouterProvider {
   /**
    * @type {number}
    */
-  lastStartedTransitionId: number;
+  _lastStartedTransitionId: number;
   /**
    * @type {Queue<import("./transition/transition.js").Transition>}
    */
-  transitionHistory: Queue<import("./transition/transition.js").Transition>;
+  _transitionHistory: Queue<import("./transition/transition.js").Transition>;
   /**
    * @type {Queue<import("./transition/transition.js").Transition>}
    */
-  successfulTransitions: Queue<import("./transition/transition.js").Transition>;
+  _successfulTransitions: Queue<
+    import("./transition/transition.js").Transition
+  >;
   /**
    * @type {import("./state/interface.ts").StateDeclaration|undefined}
    */

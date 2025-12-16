@@ -18,7 +18,7 @@ const updateGlobalState = (trans) => {
   const globals = trans._globals;
 
   const transitionSuccessful = () => {
-    globals.successfulTransitions.enqueue(trans);
+    globals._successfulTransitions.enqueue(trans);
     globals.$current = trans.$to();
     globals.current = globals.$current.self;
     copy(trans.params(), globals.params);

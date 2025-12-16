@@ -22,17 +22,17 @@ export class RouterProvider {
     /**
      * @type {number}
      */
-    this.lastStartedTransitionId = -1;
+    this._lastStartedTransitionId = -1;
 
     /**
      * @type {Queue<import("./transition/transition.js").Transition>}
      */
-    this.transitionHistory = new Queue([], 1);
+    this._transitionHistory = new Queue([], 1);
 
     /**
      * @type {Queue<import("./transition/transition.js").Transition>}
      */
-    this.successfulTransitions = new Queue([], 1);
+    this._successfulTransitions = new Queue([], 1);
 
     /**
      * @type {import("./state/interface.ts").StateDeclaration|undefined}
