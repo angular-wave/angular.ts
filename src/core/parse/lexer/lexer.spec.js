@@ -1,4 +1,4 @@
-import { Lexer } from "./lexer";
+import { Lexer } from "./lexer.js";
 import { Angular } from "../../../angular.js";
 import { createInjector } from "../../di/injector.js";
 

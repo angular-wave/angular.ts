@@ -75,9 +75,9 @@ export class ASTInterpreter {
           : function (scope, locals) {
               let lastValue;
 
-              expressions.forEach((exp) => {
-                lastValue = exp(scope, locals);
-              });
+              for (let i = 0, j = expressions.length; i < j; i++) {
+                lastValue = expressions[i](scope, locals);
+              }
 
               return lastValue;
             };
@@ -724,7 +724,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
 
   let argsToWatch;
 
-  let isStatelessFilter;
+  let isFilter;
 
   const decoratedNode = /** @type  {DecoratedASTNode} */ (ast);
 
@@ -855,10 +855,8 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
 
       return decoratedNode;
     case ASTType._CallExpression:
-      isStatelessFilter = ast.filter
-        ? isStateless($filter, ast.callee.name)
-        : false;
-      allConstants = isStatelessFilter;
+      isFilter = ast.filter;
+      allConstants = isFilter;
       argsToWatch = [];
       ast.arguments.forEach((expr) => {
         decorated = findConstantAndWatchExpressions(expr, $filter, astIsPure);
@@ -866,7 +864,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
         argsToWatch.push.apply(argsToWatch, decorated.toWatch);
       });
       decoratedNode.constant = allConstants;
-      decoratedNode.toWatch = isStatelessFilter ? argsToWatch : [decoratedNode];
+      decoratedNode.toWatch = isFilter ? argsToWatch : [decoratedNode];
 
       return decoratedNode;
     case ASTType._AssignmentExpression:
@@ -1011,12 +1009,6 @@ function isPure(node, parentIsPure) {
   }
 
   return undefined === parentIsPure ? PURITY_RELATIVE : parentIsPure;
-}
-
-function isStateless($filter, filterName) {
-  const fn = $filter(filterName);
-
-  return !fn.$stateful;
 }
 
 /**

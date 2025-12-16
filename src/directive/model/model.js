@@ -14,6 +14,7 @@ import {
   hasAnimate,
   isBoolean,
   isFunction,
+  isNull,
   isNumber,
   isNumberNaN,
   isObjectEmpty,
@@ -68,7 +69,7 @@ export const ngModelMinErr = minErr("ngModel");
  */
 
 export class NgModelController {
-  static $nonscope = true;
+  /* @ignore */ static $nonscope = true;
   /* @ignore */ static $inject = [
     "$scope",
     $t._exceptionHandler,
@@ -834,6 +835,8 @@ export class NgModelController {
       // intentional loose equality
       // eslint-disable-next-line eqeqeq
       if (that.$modelValue != prevModelValue) {
+        if (isNull(that.$modelValue) && prevModelValue === "") return;
+
         that.$$writeModelToScope();
       }
     }

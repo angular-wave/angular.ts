@@ -15,13 +15,13 @@ import { hasOwn, isFunction, isObject } from "../../shared/utils.js";
  * @implements {ng.StateDeclaration}
  */
 export class StateObject {
-  name = undefined;
-  navigable = undefined;
+  name;
+  navigable;
   /** @type {?StateObject} */
-  parent = undefined;
-  params = undefined;
-  url = undefined;
-  includes = undefined;
+  parent;
+  params;
+  url;
+  includes;
 
   /**
    * @param {import('./interface.ts').StateDeclaration} config

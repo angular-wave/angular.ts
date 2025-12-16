@@ -1,6 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.js";
 import {
-  assert,
   isDefined,
   isNullOrUndefined,
   isNumber,
@@ -9,7 +7,6 @@ import {
 import {
   validateIsString,
   validateRequired,
-  BADARGVALUE,
   BADARG,
 } from "../../shared/validate.js";
 
@@ -23,11 +20,7 @@ export class CookieProvider {
     this.defaults = {};
   }
 
-  $get = [
-    $injectTokens._exceptionHandler,
-    /** @param {ng.ExceptionHandlerService} $exceptionHandler  */
-    ($exceptionHandler) => new CookieService(this.defaults, $exceptionHandler),
-  ];
+  $get = () => new CookieService(this.defaults);
 }
 
 /**
@@ -41,14 +34,10 @@ export class CookieService {
   /**
    * @param {ng.CookieOptions} defaults
    *   Default cookie attributes defined by `$cookiesProvider.defaults`.
-   * @param {ng.ExceptionHandlerService} $exceptionHandler
    */
-  constructor(defaults, $exceptionHandler) {
+  constructor(defaults) {
     /** @private @type {ng.CookieOptions} */
     this._defaults = Object.freeze({ ...defaults });
-
-    /** @private @type {ng.ExceptionHandlerService} */
-    this._$exceptionHandler = $exceptionHandler;
   }
 
   /**
@@ -60,14 +49,9 @@ export class CookieService {
    */
   get(key) {
     validateIsString(key, "key");
+    const all = parseCookies();
 
-    try {
-      const all = parseCookies();
-
-      return all[key] || null;
-    } catch (err) {
-      throw this._$exceptionHandler(err);
-    }
+    return all[key] || null;
   }
 
   /**
@@ -85,13 +69,7 @@ export class CookieService {
 
     if (!raw) return null;
 
-    try {
-      return /** @type {T} */ (JSON.parse(raw));
-    } catch (err) {
-      this._$exceptionHandler(err);
-
-      return null;
-    }
+    return /** @type {T} */ (JSON.parse(raw));
   }
 
   /**
@@ -101,11 +79,7 @@ export class CookieService {
    * @throws {URIError} – If decodeURIComponent fails
    */
   getAll() {
-    try {
-      return parseCookies();
-    } catch (err) {
-      return this._$exceptionHandler(err);
-    }
+    return parseCookies();
   }
 
   /**
@@ -114,6 +88,7 @@ export class CookieService {
    * @param {string} key
    * @param {string} value
    * @param {ng.CookieOptions} [options]
+   * @throws {URIError} if key or value cannot be encoded
    */
   put(key, value, options = {}) {
     validateIsString(key, "key");
@@ -122,14 +97,10 @@ export class CookieService {
 
     const encodedVal = encodeURIComponent(value);
 
-    try {
-      document.cookie = `${encodedKey}=${encodedVal}${buildOptions({
-        ...this._defaults,
-        ...options,
-      })}`;
-    } catch (err) {
-      this._$exceptionHandler(err);
-    }
+    document.cookie = `${encodedKey}=${encodedVal}${buildOptions({
+      ...this._defaults,
+      ...options,
+    })}`;
   }
 
   /**
@@ -143,19 +114,9 @@ export class CookieService {
   putObject(key, value, options) {
     validateIsString(key, "key");
     validateRequired(value, "value");
-    assert(!isNullOrUndefined(value), BADARGVALUE);
+    const str = JSON.stringify(value);
 
-    try {
-      const str = JSON.stringify(value);
-
-      this.put(key, str, options);
-    } catch (err) {
-      this._$exceptionHandler(
-        new TypeError(
-          `badserialize: "${key}" => ${/** @type {Error} */ (err).message}`,
-        ),
-      );
-    }
+    this.put(key, str, options);
   }
 
   /**

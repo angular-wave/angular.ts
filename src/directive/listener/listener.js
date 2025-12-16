@@ -7,9 +7,9 @@ export function ngListenerDirective() {
   return {
     scope: false,
     link: (scope, element, attrs) => {
-      const channel = attrs.ngListener;
+      const channel = attrs.ngListener || element.id;
 
-      const hasTemplateContent = element.childNodes.length > 0;
+      const hasTemplateContent = element.childNodes.length;
 
       /** @type {EventListener} */
       const fn = (event) => {

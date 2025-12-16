@@ -5,10 +5,7 @@
 export class CookieProvider {
   /** @type {ng.CookieOptions} */
   defaults: ng.CookieOptions;
-  $get: (
-    | string
-    | (($exceptionHandler: ng.ExceptionHandlerService) => CookieService)
-  )[];
+  $get: () => CookieService;
 }
 /**
  *
@@ -21,16 +18,10 @@ export class CookieService {
   /**
    * @param {ng.CookieOptions} defaults
    *   Default cookie attributes defined by `$cookiesProvider.defaults`.
-   * @param {ng.ExceptionHandlerService} $exceptionHandler
    */
-  constructor(
-    defaults: ng.CookieOptions,
-    $exceptionHandler: ng.ExceptionHandlerService,
-  );
+  constructor(defaults: ng.CookieOptions);
   /** @private @type {ng.CookieOptions} */
   private _defaults;
-  /** @private @type {ng.ExceptionHandlerService} */
-  private _$exceptionHandler;
   /**
    * Retrieves a raw cookie value.
    *
@@ -61,6 +52,7 @@ export class CookieService {
    * @param {string} key
    * @param {string} value
    * @param {ng.CookieOptions} [options]
+   * @throws {URIError} if key or value cannot be encoded
    */
   put(key: string, value: string, options?: ng.CookieOptions): void;
   /**
