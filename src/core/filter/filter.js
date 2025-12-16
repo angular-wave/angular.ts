@@ -3,10 +3,6 @@ import { filterFilter } from "../../filters/filter.js";
 import { jsonFilter } from "../../filters/filters.js";
 import { limitToFilter } from "../../filters/limit-to.js";
 import { orderByFilter } from "../../filters/order-by.js";
-import {
-  $IncludedByStateFilter,
-  $IsStateFilter,
-} from "../../router/state-filters.js";
 import { assert, entries, isDefined, isFunction } from "../../shared/utils.js";
 import { validate, validateIsString } from "../../shared/validate.js";
 
@@ -33,8 +29,6 @@ export class FilterProvider {
       json: jsonFilter,
       limitTo: limitToFilter,
       orderBy: orderByFilter,
-      isState: $IsStateFilter,
-      includedByState: $IncludedByStateFilter,
     }).forEach(([k, v]) =>
       this.register(k, /** @type {ng.FilterFactory} */ (v)),
     );
