@@ -186,14 +186,14 @@ export function createHttpDirective(method, attrName) {
          * @param {import("./interface.ts").SwapModeType} swap
          * @param {ng.Scope} scopeParam
          * @param {ng.Attributes} attrsParam
-         * @param {Element} elmenetParam
+         * @param {Element} elementParam
          */
         function handleSwapResponse(
           html,
           swap,
           scopeParam,
           attrsParam,
-          elmenetParam,
+          elementParam,
         ) {
           let animationEnabled = false;
 
@@ -216,7 +216,7 @@ export function createHttpDirective(method, attrName) {
 
           const target = targetSelector
             ? document.querySelector(targetSelector)
-            : elmenetParam;
+            : elementParam;
 
           if (!target) {
             $log.warn(`${attrName}: target "${targetSelector}" not found`);

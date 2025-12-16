@@ -17,11 +17,7 @@ const nativeAriaNodeNames = [
 ];
 
 const isNodeOneOf = function (elem, nodeTypeArray) {
-  if (nodeTypeArray.indexOf(elem.nodeName) !== -1) {
-    return true;
-  }
-
-  return false;
+  return nodeTypeArray.indexOf(elem.nodeName) !== -1;
 };
 
 /**
