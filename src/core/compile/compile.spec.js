@@ -10,7 +10,7 @@ import {
   getIsolateScope,
 } from "../../shared/dom.js";
 import { isFunction, getNodeName, extend, assert } from "../../shared/utils.js";
-import { Cache } from "../../shared/cache.js";
+import { Cache } from "../../shared/dom.js";
 import { wait } from "../../shared/test-utils.js";
 
 function isUnknownElement(el) {

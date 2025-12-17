@@ -32,6 +32,25 @@ export function createInjector(modulesToLoad, strictDi = false) {
   /** @type {Map<String|Function, boolean>} */
   const loadedModules = new Map(); // Keep track of loaded modules to avoid circular dependencies
 
+  /**
+   * @typedef {{
+   *   $provide: {
+   *     provider: Function,
+   *     factory: Function,
+   *     service: Function,
+   *     value: Function,
+   *     constant: Function,
+   *     store: Function,
+   *     decorator: Function,
+   *   },
+   *   $injectorProvider?: {
+   *     $get: () => unknown
+   *   },
+   *   $injector?: ProviderInjector
+   * }} ProviderCache
+   */
+
+  /** @type {ProviderCache} */
   const providerCache = {
     $provide: {
       provider: supportObject(provider),
@@ -188,12 +207,11 @@ export function createInjector(modulesToLoad, strictDi = false) {
    * Registers a service persisted in a storage
    *
    * @param {string} name - Service name
-   * @param {Function} ctor - Constructor for the service
+   * @param {import("../../interface.ts").Constructor} ctor - Constructor for the service
    * @param {ng.StorageType} type - Type of storage to be instantiated
-   * @param {Storage|Object} backendOrConfig - Either a Storage-like object (getItem/setItem) or a config object
-   *                                           with { backend, serialize, deserialize }
+   * @param {import("./inteface.ts").StorageLike & import("./inteface.ts").PersistentStoreConfig} [backendOrConfig]
    */
-  function store(name, ctor, type, backendOrConfig = {}) {
+  function store(name, ctor, type, backendOrConfig) {
     return provider(name, {
       $get: /** @param {ng.InjectorService} $injector */ ($injector) => {
         switch (type) {
@@ -212,11 +230,11 @@ export function createInjector(modulesToLoad, strictDi = false) {
 
             const $cookie = $injector.get($injectTokens._cookie);
 
-            const serialize = backendOrConfig.serialize ?? JSON.stringify;
+            const serialize = backendOrConfig?.serialize ?? JSON.stringify;
 
-            const deserialize = backendOrConfig.deserialize ?? JSON.parse;
+            const deserialize = backendOrConfig?.deserialize ?? JSON.parse;
 
-            const cookieOpts = backendOrConfig.cookie ?? {};
+            const cookieOpts = backendOrConfig?.cookie ?? {};
 
             return createPersistentProxy(instance, name, {
               getItem(key) {
@@ -266,10 +284,15 @@ export function createInjector(modulesToLoad, strictDi = false) {
               backend = localStorage;
             }
 
-            return createPersistentProxy(instance, name, backend, {
-              serialize,
-              deserialize,
-            });
+            return createPersistentProxy(
+              instance,
+              name,
+              /** @type {import("./inteface.ts").StorageLike} */ (backend),
+              {
+                serialize,
+                deserialize,
+              },
+            );
           }
         }
 

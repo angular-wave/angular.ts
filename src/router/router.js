@@ -27,12 +27,18 @@ export class RouterProvider {
     /**
      * @type {Queue<import("./transition/transition.js").Transition>}
      */
-    this._transitionHistory = new Queue([], 1);
+    this._transitionHistory = new Queue(
+      /** @type {Array<import("./transition/transition.js").Transition>} */ ([]),
+      1,
+    );
 
     /**
      * @type {Queue<import("./transition/transition.js").Transition>}
      */
-    this._successfulTransitions = new Queue([], 1);
+    this._successfulTransitions = new Queue(
+      /** @type {Array<import("./transition/transition.js").Transition>} */ ([]),
+      1,
+    );
 
     /**
      * @type {import("./state/interface.ts").StateDeclaration|undefined}

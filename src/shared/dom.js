@@ -1,5 +1,4 @@
 import { concat, hasOwn, isArray, isDefined, isObject, keys } from "./utils.js";
-import { Cache } from "./cache.js";
 import { extractElementNode } from "../animations/shared.js";
 import { NodeType } from "./node.js";
 import { $injectTokens } from "../injection-tokens.js";
@@ -13,6 +12,14 @@ let elId = 1;
 const ISOLATE_SCOPE_KEY = "$isolateScope";
 
 const EXPANDO = "ng";
+
+/**
+ * Expando cache for adding properties to DOM nodes with JavaScript.
+ * This used to be an Object in JQLite decorator, but swapped out for a Map
+ *
+ * @type {Map<number, import('../interface.ts').ExpandoStore>}
+ */
+export const Cache = new Map();
 
 /**
  * Key for storing scope data, attached to an element

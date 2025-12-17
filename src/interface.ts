@@ -2,6 +2,10 @@ import { Attributes } from "./core/compile/attributes.js";
 import { Scope } from "./core/scope/scope.js";
 import { NgModelController } from "./directive/model/model.js";
 
+export interface Constructor<T = any> {
+  new (...args: any[]): T;
+}
+
 export const PublicInjectionTokens = {
   $angular: "$angular",
   $attrs: "$attrs",
