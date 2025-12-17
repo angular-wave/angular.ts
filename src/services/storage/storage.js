@@ -2,11 +2,11 @@
  * Creates a proxy that automatically persists an object's state
  * into a storage backend whenever a property is set.
  *
- * @param {object} target - The object to wrap
+ * @param {Record<PropertyKey, any>} target - The object to wrap
  * @param {string} key - The storage key
- * @param {object} storage - Any storage-like object with getItem/setItem/removeItem
+ * @param {import("../../core/di/inteface").StorageLike & import("../../core/di/inteface").PersistentStoreConfig} storage - Any storage-like object with getItem/setItem/removeItem
  * @param {{serialize?: function, deserialize?: function}} [options] - Optional custom (de)serialization
- * @returns {Proxy}
+ * @returns {Record<PropertyKey, any>}
  */
 export function createPersistentProxy(target, key, storage, options = {}) {
   const serialize = options.serialize || JSON.stringify;
