@@ -6,6 +6,8 @@ export * from "./services/location/interface.ts";
 export * from "./services/location/location.js";
 export * from "./services/pubsub/pubsub.js";
 export * from "./services/template-cache/template-cache.js";
+export { SceProvider, SceDelegateProvider } from "./services/sce/sce.js"; // $sce and $sceDelegate provider
+export * from "./services/sce/interface.ts"; // $sce and $sceDelegae service
 export * from "./index.js";
 export * from "./angular.js";
 export * from "./core/di/internal-injector.js";
