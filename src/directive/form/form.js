@@ -156,6 +156,7 @@ export class FormController {
 
     this.$$classCache[VALID_CLASS] = isValid;
     this.$$classCache[INVALID_CLASS] = !isValid;
+    this.$target = {};
   }
 
   /**
@@ -225,6 +226,7 @@ export class FormController {
    * Likewise, adding a control to, or removing a control from the form is not reflected
    * in the shallow copy. That means you should get a fresh copy from `$getControls()` every time
    * you need access to the controls.
+   * @returns {ReadonlyArray<FormController>}
    */
   $getControls() {
     return shallowCopy(this.$$controls);
@@ -250,6 +252,7 @@ export class FormController {
    * form. `$dirty`, `$submitted` states will not be changed, because the expected behavior can be
    * different from case to case. For example, removing the only `$dirty` control from a form may or
    * may not mean that the form is still `$dirty`.
+   * @param {FormController } control
    */
   $removeControl(control) {
     if (control.$name && this[control.$name] === control) {

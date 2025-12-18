@@ -72,16 +72,16 @@ export class NgModelController {
   $modelValue: any;
   /** @type {any} */
   $$rawModelValue: any;
-  /** @type {any} */
-  $validators: any;
-  /** @type {any} */
-  $asyncValidators: any;
-  /** @type {Array<any>} */
-  $parsers: Array<any>;
-  /** @type {Array<any>} */
-  $formatters: Array<any>;
-  /** @type {Array<any>} */
-  $viewChangeListeners: Array<any>;
+  /** @type {import("./interface.ts").ModelValidators} */
+  $validators: import("./interface.ts").ModelValidators;
+  /** @type {import("./interface.ts").AsyncModelValidators} */
+  $asyncValidators: import("./interface.ts").AsyncModelValidators;
+  /** @type {Array<import("./interface.ts").ModelParser>} */
+  $parsers: Array<import("./interface.ts").ModelParser>;
+  /** @type {Array<import("./interface.ts").ModelFormatter>} */
+  $formatters: Array<import("./interface.ts").ModelFormatter>;
+  /** @type {Array<import("./interface.ts").ModelViewChangeListener>} */
+  $viewChangeListeners: Array<import("./interface.ts").ModelViewChangeListener>;
   /** @type {boolean} */
   $untouched: boolean;
   /** @type {boolean} */
@@ -398,10 +398,12 @@ export class NgModelController {
    * **Note:** it is not possible to override the `getterSetter` option.
    * </div>
    *
-   * @param {Object} options a hash of settings to override the previous options
+   * @param {import("../../interface.ts").NgModelOptions} options a hash of settings to override the previous options
    *
    */
-  $overrideModelOptions(options: any): void;
+  $overrideModelOptions(
+    options: import("../../interface.ts").NgModelOptions,
+  ): void;
   /**
      * Runs the model -> view pipeline on the current
      * {@link ngModel.NgModelController#$modelValue $modelValue}.

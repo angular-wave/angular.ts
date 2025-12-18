@@ -29,5 +29,8 @@ export class ParseProvider {
     identifierStart?: (arg0: any) => boolean,
     identifierContinue?: (arg0: any) => boolean,
   ) => ParseProvider;
-  $get: (string | (($filter: (any: any) => any) => any))[];
+  $get: (
+    | string
+    | (($filter: (any: any) => any) => import("./interface.ts").ParseService)
+  )[];
 }

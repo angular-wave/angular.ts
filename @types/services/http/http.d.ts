@@ -23,27 +23,7 @@ export function defaultHttpResponseTransform(data: any, headers: any): any;
  */
 export function HttpProvider(): void;
 export class HttpProvider {
-  defaults: {
-    transformResponse: (typeof defaultHttpResponseTransform)[];
-    transformRequest: ((data: any) => any)[];
-    headers: {
-      common: {
-        Accept: string;
-      };
-      post: {
-        "Content-Type": string;
-      };
-      put: {
-        "Content-Type": string;
-      };
-      patch: {
-        "Content-Type": string;
-      };
-    };
-    xsrfCookieName: string;
-    xsrfHeaderName: string;
-    paramSerializer: string;
-  };
+  defaults: import("./interface.ts").HttpProviderDefaults;
   /**
    * Configure $http service to combine processing of multiple http responses received at around
    * the same time via {@link ng.$rootScope.Scope#$applyAsync $rootScope.$applyAsync}. This can result in
@@ -68,8 +48,11 @@ export class HttpProvider {
    * array, on request, but reverse order, on response.
    *
    * {@link ng.$http#interceptors Interceptors detailed info}
+   * @type {Array<string | ng.Injectable<import("./interface.ts").HttpInterceptorFactory>>}
    */
-  interceptors: any[];
+  interceptors: Array<
+    string | ng.Injectable<import("./interface.ts").HttpInterceptorFactory>
+  >;
   /**
    * Array containing URLs whose origins are trusted to receive the XSRF token. See the
    * {@link ng.$http#security-considerations Security Considerations} sections for more details on
@@ -124,27 +107,7 @@ export class HttpProvider {
          *
          * See "Setting HTTP Headers" and "Transforming Requests and Responses" sections above.
          */
-        defaults: {
-          transformResponse: (typeof defaultHttpResponseTransform)[];
-          transformRequest: ((data: any) => any)[];
-          headers: {
-            common: {
-              Accept: string;
-            };
-            post: {
-              "Content-Type": string;
-            };
-            put: {
-              "Content-Type": string;
-            };
-            patch: {
-              "Content-Type": string;
-            };
-          };
-          xsrfCookieName: string;
-          xsrfHeaderName: string;
-          paramSerializer: string;
-        };
+        defaults: import("./interface.ts").HttpProviderDefaults;
       })
   )[];
 }

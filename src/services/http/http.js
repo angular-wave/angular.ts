@@ -300,7 +300,7 @@ export function HttpProvider() {
    *
    * - **`defaults.xsrfHeaderName`** - {string} - Name of HTTP header to populate with the
    * XSRF token. Defaults value is `'X-XSRF-TOKEN'`.
-   *
+   * @type {import("./interface.ts").HttpProviderDefaults}
    */
   const defaults = (this.defaults = {
     // transform incoming response data
@@ -369,6 +369,7 @@ export function HttpProvider() {
    * array, on request, but reverse order, on response.
    *
    * {@link ng.$http#interceptors Interceptors detailed info}
+   * @type {Array<string | ng.Injectable<import("./interface.ts").HttpInterceptorFactory>>}
    */
   this.interceptors = [];
 
@@ -411,19 +412,6 @@ export function HttpProvider() {
    * @type {string[]}
    */
   this.xsrfTrustedOrigins = [];
-
-  /**
-   * This property is deprecated. Use {@link $httpProvider#xsrfTrustedOrigins xsrfTrustedOrigins}
-   * instead.
-   */
-  Object.defineProperty(this, "xsrfWhitelistedOrigins", {
-    get() {
-      return this.xsrfTrustedOrigins;
-    },
-    set(origins) {
-      this.xsrfTrustedOrigins = origins;
-    },
-  });
 
   const that = this;
 

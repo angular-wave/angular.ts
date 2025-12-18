@@ -108,6 +108,7 @@ export class FormController {
   $$success: {};
   $pending: any;
   $$classCache: {};
+  $target: {};
   /**
    * Rollback all form controls pending updates to the `$modelValue`.
    *
@@ -154,8 +155,9 @@ export class FormController {
    * Likewise, adding a control to, or removing a control from the form is not reflected
    * in the shallow copy. That means you should get a fresh copy from `$getControls()` every time
    * you need access to the controls.
+   * @returns {ReadonlyArray<FormController>}
    */
-  $getControls(): any[];
+  $getControls(): ReadonlyArray<FormController>;
   $$renameControl(control: any, newName: any): void;
   /**
    * Deregister a control from the form.
@@ -166,8 +168,9 @@ export class FormController {
    * form. `$dirty`, `$submitted` states will not be changed, because the expected behavior can be
    * different from case to case. For example, removing the only `$dirty` control from a form may or
    * may not mean that the form is still `$dirty`.
+   * @param {FormController } control
    */
-  $removeControl(control: any): void;
+  $removeControl(control: FormController): void;
   /**
    * Sets the form to a dirty state.
    *

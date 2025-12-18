@@ -4,6 +4,14 @@ export interface HttpHeadersGetter {
   };
   (headerName: string): string;
 }
+export interface HttpPromiseCallback<T> {
+  (
+    data: T,
+    status: number,
+    headers: HttpHeadersGetter,
+    config: RequestConfig,
+  ): void;
+}
 export interface HttpRequestConfigHeaders {
   [requestType: string]: any;
   common?: any;
@@ -17,6 +25,9 @@ export interface HttpRequestTransformer {
 }
 export interface HttpResponseTransformer {
   (data: any, headersGetter: HttpHeadersGetter, status: number): any;
+}
+export interface HttpHeaderType {
+  [requestType: string]: string | ((config: RequestConfig) => string);
 }
 /**
  * Object that controls the defaults for $http provider. Not all fields of RequestShortcutConfig can be configured
@@ -228,3 +239,14 @@ export type HttpParams = Record<
  * A function that serializes an object into a URL-encoded query string.
  */
 export type HttpParamSerializer = (params?: HttpParams) => string;
+export interface HttpInterceptor {
+  request?(config: RequestConfig): RequestConfig | Promise<RequestConfig>;
+  requestError?(rejection: any): RequestConfig | Promise<RequestConfig>;
+  response?<T>(
+    response: HttpResponse<T>,
+  ): Promise<HttpResponse<T>> | HttpResponse<T>;
+  responseError?<T>(rejection: any): Promise<HttpResponse<T>> | HttpResponse<T>;
+}
+export interface HttpInterceptorFactory {
+  (...args: any[]): HttpInterceptor;
+}
