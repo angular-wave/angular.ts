@@ -1,6 +1,25 @@
+/**
+ * @extends {Record<string, any>}
+ */
 export class Attributes {
   static $nonscope: boolean;
   /**
+   * Creates an Attributes instance.
+   *
+   * There are two construction modes:
+   *
+   * 1. **Fresh instance** (no `attributesToCopy`):
+   *    - Used when compiling a DOM element for the first time.
+   *    - Initializes a new `$attr` map to track normalized → DOM attribute names.
+   *
+   * 2. **Clone instance** (`attributesToCopy` provided):
+   *    - Used when cloning attributes for directive linking / child scopes.
+   *    - Performs a shallow copy of all properties from the source Attributes object,
+   *      including `$attr`, normalized attribute values, and internal fields
+   *      (e.g. `$$observers`).
+   *    - `$attr` is intentionally **not reinitialized** in this case, because the
+   *      source object already contains the correct normalized → DOM attribute mapping.
+   *
    * @param {ng.AnimateService} $animate
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    * @param {*} $sce
@@ -17,6 +36,10 @@ export class Attributes {
   _$animate: import("../../animations/interface.ts").AnimateService;
   _$exceptionHandler: import("../../services/exception/interface.ts").ExceptionHandler;
   _$sce: any;
+  /**
+   * A map of DOM element attribute names to the normalized name. This is needed
+   * to do reverse lookup from normalized name back to actual name.
+   */
   $attr: {};
   /** @type {import("../../shared/noderef.js").NodeRef} */
   $nodeRef: import("../../shared/noderef.js").NodeRef;
@@ -71,6 +94,7 @@ export class Attributes {
     attrName?: string | undefined,
   ): void;
   /**
+     * @template T
      * Observes an interpolated attribute.
      *
      * The observer function will be invoked once during the next `$digest` following
@@ -78,13 +102,13 @@ export class Attributes {
      * changes.
      *
      * @param {string} key Normalized key. (ie ngAttribute) .
-     * @param {any} fn Function that will be called whenever
+     * @param {(value?: T) => any} fn Function that will be called whenever
               the interpolated value of the attribute changes.
     *        See the {@link guide/interpolation#how-text-and-attribute-bindings-work Interpolation
     *        guide} for more info.
-    * @returns {function()} Returns a deregistration function for this observer.
+    * @returns {Function} Returns a deregistration function for this observer.
     */
-  $observe(key: string, fn: any): () => any;
+  $observe<T>(key: string, fn: (value?: T) => any): Function;
   $$observers: any;
   setSpecialAttr(element: any, attrName: any, value: any): void;
   /**

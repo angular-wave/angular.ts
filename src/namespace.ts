@@ -6,6 +6,7 @@ import { Scope as TScope } from "./core/scope/scope.js";
 import {
   ListenerFn as TListenerFn,
   Listener as TListener,
+  ScopeEvent as TScopeEvent,
 } from "./core/scope/interface.ts";
 import { NgModule as TNgModule } from "./core/di/ng-module/ng-module.js";
 import { InjectorService as TInjectorService } from "./core/di/internal-injector.js";
@@ -112,7 +113,10 @@ import { StateObject as TStateObject } from "./router/state/state-object.js";
 import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.js";
 import { ViewScrollService as TViewScrollService } from "./router/scroll/interface.ts";
 import { HookRegistry } from "./router/transition/interface.ts";
-
+import {
+  SCEService as TSCEService,
+  SCEDelegateService as TSCEDelegateService,
+} from "./services/sce/interface.ts";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -180,6 +184,8 @@ declare global {
     export type RouterService = TRouterProvider;
     export type StateService = TStateProvider;
     export type StateRegistryService = TStateRegistryProvider;
+    export type SCEService = TSCEService;
+    export type SCEDelegateService = TSCEDelegateService;
     export type SseService = TSseService;
     export type SseConfig = TSseConfig;
     export type TransitionService = TransitionProvider & HookRegistry;
@@ -222,5 +228,6 @@ declare global {
     export type AnchorScrollFunction = TAnchorScrollFunction;
     export type AnchorScrollObject = TAnchorScrollObject;
     export type InjectionTokens = typeof PublicInjectionTokens;
+    export type ScopeEvent = TScopeEvent;
   }
 }

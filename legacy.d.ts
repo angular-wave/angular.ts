@@ -1,5 +1,5 @@
 declare namespace legacy {
-  interface IModule {
+  interface Module {
     /**
      * Use this method to register a component.
      *
@@ -121,72 +121,11 @@ declare namespace legacy {
     requires: string[];
   }
 
-  ///////////////////////////////////////////////////////////////////////////
-  // Attributes
-  // see http://docs.angularjs.org/api/ng/type/$compile.directive.Attributes
-  ///////////////////////////////////////////////////////////////////////////
-  interface IAttributes {
-    /**
-     * this is necessary to be able to access the scoped attributes. it's not very elegant
-     * because you have to use attrs['foo'] instead of attrs.foo but I don't know of a better way
-     * this should really be limited to return string but it creates this problem: http://stackoverflow.com/q/17201854/165656
-     */
-    [name: string]: any;
-
-    /**
-     * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with x- or data-) to its normalized, camelCase form.
-     *
-     * Also there is special case for Moz prefix starting with upper case letter.
-     *
-     * For further information check out the guide on @see https://docs.angularjs.org/guide/directive#matching-directives
-     */
-    $normalize(name: string): string;
-
-    /**
-     * Adds the CSS class value specified by the classVal parameter to the
-     * element. If animations are enabled then an animation will be triggered
-     * for the class addition.
-     */
-    $addClass(classVal: string): void;
-
-    /**
-     * Removes the CSS class value specified by the classVal parameter from the
-     * element. If animations are enabled then an animation will be triggered for
-     * the class removal.
-     */
-    $removeClass(classVal: string): void;
-
-    /**
-     * Adds and removes the appropriate CSS class values to the element based on the difference between
-     * the new and old CSS class values (specified as newClasses and oldClasses).
-     */
-    $updateClass(newClasses: string, oldClasses: string): void;
-
-    /**
-     * Set DOM element attribute value.
-     */
-    $set(key: string, value: any): void;
-
-    /**
-     * Observes an interpolated attribute.
-     * The observer function will be invoked once during the next $digest
-     * following compilation. The observer is then invoked whenever the
-     * interpolated value changes.
-     */
-    $observe<T>(name: string, fn: (value?: T) => any): Function;
-
-    /**
-     * A map of DOM element attribute names to the normalized name. This is needed
-     * to do reverse lookup from normalized name back to actual name.
-     */
-    $attr: Object;
-  }
-
   /**
    * form.FormController - type in module ng
    * see https://docs.angularjs.org/api/ng/type/form.FormController
    */
-  interface IFormController {
+  interface FormController {
     /**
      * Indexer which should return ng.INgModelController for most properties but cannot because of "All named properties must be assignable to string indexer type" constraint - see https://github.com/Microsoft/TypeScript/issues/272
      */
@@ -228,7 +167,7 @@ declare namespace legacy {
   // NgModelController
   // see http://docs.angularjs.org/api/ng/type/ngModel.NgModelController
   ///////////////////////////////////////////////////////////////////////////
-  interface INgModelController {
+  interface NgModelController {
     $render(): void;
     $setValidity(validationErrorKey: string, isValid: boolean): void;
     // Documentation states viewValue and modelValue to be a string but other
@@ -270,7 +209,7 @@ declare namespace legacy {
 
   // Allows tuning how model updates are done.
   // https://docs.angularjs.org/api/ng/directive/ngModelOptions
-  interface INgModelOptions {
+  interface NgModelOptions {
     updateOn?: string | undefined;
     debounce?: number | { [key: string]: number } | undefined;
     allowInvalid?: boolean | undefined;
@@ -289,98 +228,30 @@ declare namespace legacy {
     timeStripZeroSeconds?: boolean | undefined;
   }
 
-  interface IModelValidators {
+  interface ModelValidators {
     /**
      * viewValue is any because it can be an object that is called in the view like $viewValue.name:$viewValue.subName
      */
     [index: string]: (modelValue: any, viewValue: any) => boolean;
   }
 
-  interface IAsyncModelValidators {
+  interface AsyncModelValidators {
     [index: string]: (modelValue: any, viewValue: any) => IPromise<any>;
   }
 
-  interface IModelParser {
+  interface ModelParser {
     (value: any): any;
   }
 
-  interface IModelFormatter {
+  interface ModelFormatter {
     (value: any): any;
   }
 
-  interface IModelViewChangeListener {
+  interface ModelViewChangeListener {
     (): void;
   }
 
-  interface IAngularEvent {
-    /**
-     * the scope on which the event was $emit-ed or $broadcast-ed.
-     */
-    targetScope: IScope;
-    /**
-     * the scope that is currently handling the event. Once the event propagates through the scope hierarchy, this property is set to null.
-     */
-    currentScope: IScope;
-    /**
-     * name of the event.
-     */
-    name: string;
-    /**
-     * calling stopPropagation function will cancel further event propagation (available only for events that were $emit-ed).
-     */
-    stopPropagation?(): void;
-    /**
-     * calling preventDefault sets defaultPrevented flag to true.
-     */
-    preventDefault(): void;
-    /**
-     * true if preventDefault was called.
-     */
-    defaultPrevented: boolean;
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  // ParseService
-  // see http://docs.angularjs.org/api/ng/service/$parse
-  // see http://docs.angularjs.org/api/ng/provider/$parseProvider
-  ///////////////////////////////////////////////////////////////////////////
-  interface IParseService {
-    (
-      expression: string,
-      interceptorFn?: (value: any, scope: IScope, locals: any) => any,
-      expensiveChecks?: boolean,
-    ): ICompiledExpression;
-  }
-
-  interface IParseProvider {
-    logPromiseWarnings(): boolean;
-    logPromiseWarnings(value: boolean): IParseProvider;
-
-    unwrapPromises(): boolean;
-    unwrapPromises(value: boolean): IParseProvider;
-
-    /**
-     * Configure $parse service to add literal values that will be present as literal at expressions.
-     *
-     * @param literalName Token for the literal value. The literal name value must be a valid literal name.
-     * @param literalValue Value for this literal. All literal values must be primitives or `undefined`.
-     */
-    addLiteral(literalName: string, literalValue: any): void;
-
-    /**
-     * Allows defining the set of characters that are allowed in Angular expressions. The function identifierStart will get called to know if a given character is a valid character to be the first character for an identifier. The function identifierContinue will get called to know if a given character is a valid character to be a follow-up identifier character. The functions identifierStart and identifierContinue will receive as arguments the single character to be identifier and the character code point. These arguments will be string and numeric. Keep in mind that the string parameter can be two characters long depending on the character representation. It is expected for the function to return true or false, whether that character is allowed or not.
-     * Since this function will be called extensivelly, keep the implementation of these functions fast, as the performance of these functions have a direct impact on the expressions parsing speed.
-     *
-     * @param identifierStart The function that will decide whether the given character is a valid identifier start character.
-     * @param identifierContinue The function that will decide whether the given character is a valid identifier continue character.
-     */
-    setIdentifierFns(
-      identifierStart?: (character: string, codePoint: number) => boolean,
-      identifierContinue?: (character: string, codePoint: number) => boolean,
-    ): void;
-  }
-
-  interface ICompiledExpression {
+  interface CompiledExpression {
     (context: any, locals?: any): any;
 
     literal: boolean;
@@ -392,28 +263,12 @@ declare namespace legacy {
     assign(context: any, value: any): any;
   }
 
-  interface ILocationProvider extends IServiceProvider {
-    hashPrefix(): string;
-    hashPrefix(prefix: string): ILocationProvider;
-    html5Mode(): boolean;
-
-    // Documentation states that parameter is string, but
-    // implementation tests it as boolean, which makes more sense
-    // since this is a toggler
-    html5Mode(active: boolean): ILocationProvider;
-    html5Mode(mode: {
-      enabled?: boolean | undefined;
-      requireBase?: boolean | undefined;
-      rewriteLinks?: boolean | undefined;
-    }): ILocationProvider;
-  }
-
   ///////////////////////////////////////////////////////////////////////////
   // CompileService
   // see http://docs.angularjs.org/api/ng/service/$compile
   // see http://docs.angularjs.org/api/ng/provider/$compileProvider
   ///////////////////////////////////////////////////////////////////////////
-  interface ICompileService {
+  interface CompileService {
     (
       element: string | Element | JQuery,
       transclude?: ITranscludeFunction,
@@ -421,7 +276,7 @@ declare namespace legacy {
     ): ITemplateLinkingFunction;
   }
 
-  interface ICompileProvider extends IServiceProvider {
+  interface CompileProvider {
     directive<
       TScope extends IScope = IScope,
       TElement extends JQLite = JQLite,
@@ -507,13 +362,13 @@ declare namespace legacy {
     strictComponentBindingsEnabled(enabled: boolean): ICompileProvider;
   }
 
-  interface ICloneAttachFunction {
+  interface CloneAttachFunction {
     // Let's hint but not force cloneAttachFn's signature
     (clonedElement?: JQLite, scope?: IScope): any;
   }
 
   // This corresponds to the "publicLinkFn" returned by $compile.
-  interface ITemplateLinkingFunction {
+  interface TemplateLinkingFunction {
     (
       scope: IScope,
       cloneAttachFn?: ICloneAttachFunction,
@@ -521,7 +376,7 @@ declare namespace legacy {
     ): JQLite;
   }
 
-  interface ITemplateLinkingFunctionOptions {
+  interface TemplateLinkingFunctionOptions {
     parentBoundTranscludeFn?: ITranscludeFunction | undefined;
     transcludeControllers?:
       | {
@@ -536,7 +391,7 @@ declare namespace legacy {
    * https://docs.angularjs.org/api/ng/service/$compile#-controller-
    * http://teropa.info/blog/2015/06/09/transclusion.html
    */
-  interface ITranscludeFunction {
+  interface TranscludeFunction {
     // If the scope is provided, then the cloneAttachFn must be as well.
     (
       scope: IScope,
@@ -563,14 +418,14 @@ declare namespace legacy {
   // see http://docs.angularjs.org/api/ng/provider/$controllerProvider
   ///////////////////////////////////////////////////////////////////////////
 
-  interface IControllerService {
+  interface ControllerService {
     // Although the documentation doesn't state this, locals are optional
     <T>(controllerConstructor: new (...args: any[]) => T, locals?: any): T;
     <T>(controllerConstructor: (...args: any[]) => T, locals?: any): T;
     <T>(controllerName: string, locals?: any): T;
   }
 
-  interface IControllerProvider extends IServiceProvider {
+  interface ControllerProvider {
     register(name: string, controllerConstructor: Function): void;
     register(name: string, dependencyAnnotatedConstructor: any[]): void;
   }
@@ -580,7 +435,7 @@ declare namespace legacy {
    * Replace or decorate this service to create your own custom XMLHttpRequest objects.
    * see https://docs.angularjs.org/api/ng/service/$xhrFactory
    */
-  interface IXhrFactory<T> {
+  interface XhrFactory<T> {
     (method: string, url: string): T;
   }
 
@@ -588,7 +443,7 @@ declare namespace legacy {
    * HttpService
    * see http://docs.angularjs.org/api/ng/service/$http
    */
-  interface IHttpService {
+  interface HttpService {
     /**
      * Object describing the request to be made and how it should be processed.
      */
@@ -672,7 +527,7 @@ declare namespace legacy {
    * Object describing the request to be made and how it should be processed.
    * see http://docs.angularjs.org/api/ng/service/$http#usage
    */
-  interface IRequestShortcutConfig extends IHttpProviderDefaults {
+  interface RequestShortcutConfig extends IHttpProviderDefaults {
     /**
      * {Object.<string|Object>}
      * Map of strings or objects which will be turned to ?key1=value1&key2=value2 after the url. If the value is not a string, it will be JSONified.
@@ -706,7 +561,7 @@ declare namespace legacy {
    * Object describing the request to be made and how it should be processed.
    * see http://docs.angularjs.org/api/ng/service/$http#usage
    */
-  interface IRequestConfig extends IRequestShortcutConfig {
+  interface RequestConfig extends IRequestShortcutConfig {
     /**
      * HTTP method (e.g. 'GET', 'POST', etc)
      */
@@ -731,12 +586,12 @@ declare namespace legacy {
       | undefined;
   }
 
-  interface IHttpHeadersGetter {
+  interface HttpHeadersGetter {
     (): { [name: string]: string };
     (headerName: string): string;
   }
 
-  interface IHttpPromiseCallback<T> {
+  interface HttpPromiseCallback<T> {
     (
       data: T,
       status: number,
@@ -745,7 +600,7 @@ declare namespace legacy {
     ): void;
   }
 
-  interface IHttpResponse<T> {
+  interface HttpResponse<T> {
     data: T;
     status: number;
     headers: IHttpHeadersGetter;
@@ -761,12 +616,12 @@ declare namespace legacy {
   type IHttpPromise<T> = IPromise<IHttpResponse<T>>;
 
   // See the jsdoc for transformData() at https://github.com/angular/angular.js/blob/master/src/ng/http.js#L228
-  interface IHttpRequestTransformer {
+  interface HttpRequestTransformer {
     (data: any, headersGetter: IHttpHeadersGetter): any;
   }
 
   // The definition of fields are the same as IHttpResponse
-  interface IHttpResponseTransformer {
+  interface HttpResponseTransformer {
     (data: any, headersGetter: IHttpHeadersGetter, status: number): any;
   }
 
@@ -774,7 +629,7 @@ declare namespace legacy {
     [requestType: string]: string | ((config: IRequestConfig) => string);
   }
 
-  interface IHttpRequestConfigHeaders {
+  interface HttpRequestConfigHeaders {
     [requestType: string]: any;
     common?: any;
     get?: any;
@@ -790,7 +645,7 @@ declare namespace legacy {
    * https://docs.angularjs.org/api/ng/service/$http#usage
    * https://docs.angularjs.org/api/ng/provider/$httpProvider The properties section
    */
-  interface IHttpProviderDefaults {
+  interface HttpProviderDefaults {
     /**
      * {boolean|Cache}
      * If true, a default $http cache will be used to cache the GET request, otherwise if a cache instance built with $cacheFactory, this cache will be used for caching.
@@ -843,7 +698,7 @@ declare namespace legacy {
     paramSerializer?: string | ((obj: any) => string) | undefined;
   }
 
-  interface IHttpInterceptor {
+  interface HttpInterceptor {
     request?(config: IRequestConfig): IRequestConfig | IPromise<IRequestConfig>;
     requestError?(rejection: any): IRequestConfig | IPromise<IRequestConfig>;
     response?<T>(
@@ -854,11 +709,11 @@ declare namespace legacy {
     ): IPromise<IHttpResponse<T>> | IHttpResponse<T>;
   }
 
-  interface IHttpInterceptorFactory {
+  interface HttpInterceptorFactory {
     (...args: any[]): IHttpInterceptor;
   }
 
-  interface IHttpProvider extends IServiceProvider {
+  interface HttpProvider {
     defaults: IHttpProviderDefaults;
 
     /**
@@ -875,85 +730,5 @@ declare namespace legacy {
      * Array containing URLs whose origins are trusted to receive the XSRF token.
      */
     xsrfTrustedOrigins: string[];
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  // HttpBackendService
-  // see http://docs.angularjs.org/api/ng/service/$httpBackend
-  // You should never need to use this service directly.
-  ///////////////////////////////////////////////////////////////////////////
-  interface IHttpBackendService {
-    // XXX Perhaps define callback signature in the future
-    (
-      method: string,
-      url: string,
-      post?: any,
-      callback?: Function,
-      headers?: any,
-      timeout?: number,
-      withCredentials?: boolean,
-    ): void;
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  // SCEService
-  // see http://docs.angularjs.org/api/ng/service/$sce
-  ///////////////////////////////////////////////////////////////////////////
-  interface ISCEService {
-    getTrusted(type: string, mayBeTrusted: any): any;
-    getTrustedCss(value: any): any;
-    getTrustedHtml(value: any): any;
-    getTrustedJs(value: any): any;
-    getTrustedResourceUrl(value: any): any;
-    getTrustedUrl(value: any): any;
-    parse(type: string, expression: string): (context: any, locals: any) => any;
-    parseAsCss(expression: string): (context: any, locals: any) => any;
-    parseAsHtml(expression: string): (context: any, locals: any) => any;
-    parseAsJs(expression: string): (context: any, locals: any) => any;
-    parseAsResourceUrl(expression: string): (context: any, locals: any) => any;
-    parseAsUrl(expression: string): (context: any, locals: any) => any;
-    trustAs(type: string, value: any): any;
-    trustAsHtml(value: any): any;
-    trustAsJs(value: any): any;
-    trustAsResourceUrl(value: any): any;
-    trustAsUrl(value: any): any;
-    isEnabled(): boolean;
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  // SCEProvider
-  // see http://docs.angularjs.org/api/ng/provider/$sceProvider
-  ///////////////////////////////////////////////////////////////////////////
-  interface ISCEProvider extends IServiceProvider {
-    enabled(value: boolean): void;
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  // SCEDelegateService
-  // see http://docs.angularjs.org/api/ng/service/$sceDelegate
-  ///////////////////////////////////////////////////////////////////////////
-  interface ISCEDelegateService {
-    getTrusted(type: string, mayBeTrusted: any): any;
-    trustAs(type: string, value: any): any;
-    valueOf(value: any): any;
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  // SCEDelegateProvider
-  // see http://docs.angularjs.org/api/ng/provider/$sceDelegateProvider
-  ///////////////////////////////////////////////////////////////////////////
-  interface ISCEDelegateProvider extends IServiceProvider {
-    /** @deprecated since 1.8.1 */
-    resourceUrlBlacklist(): any[];
-    /** @deprecated since 1.8.1 */
-    resourceUrlBlacklist(bannedList: any[]): void;
-    bannedResourceUrlList(): any[];
-    bannedResourceUrlList(bannedList: any[]): void;
-    /** @deprecated since 1.8.1 */
-    resourceUrlWhitelist(): any[];
-    /** @deprecated since 1.8.1 */
-    resourceUrlWhitelist(trustedList: any[]): void;
-    trustedResourceUrlList(): any[];
-    trustedResourceUrlList(trustedList: any[]): void;
   }
 }
