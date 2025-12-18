@@ -402,7 +402,7 @@ export function AnimateProvider($provide) {
          *
          * @param {Element} element the element which the CSS classes will be applied to
          * @param {string} className the CSS class(es) that will be added (multiple classes are separated via spaces)
-         * @param {import("./interface").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
+         * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
          * @return {import('./runner/animate-runner.js').AnimateRunner}} animationRunner the animation runner
          */
         addClass(element, className, options) {
@@ -422,7 +422,7 @@ export function AnimateProvider($provide) {
          *
          * @param {Element} element the element which the CSS classes will be applied to
          * @param {string} className the CSS class(es) that will be removed (multiple classes are separated via spaces)
-         * @param {import("./interface").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.         *
+         * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.         *
          * @return {import('./runner/animate-runner.js').AnimateRunner} animationRunner the animation runner
          */
         removeClass(element, className, options) {

@@ -106,19 +106,19 @@ export class NgModelController {
     /** @type {any} */
     this.$$rawModelValue = undefined; // stores the parsed modelValue / model set from scope regardless of validity.
 
-    /** @type {any} */
+    /** @type {import("./interface.ts").ModelValidators} */
     this.$validators = {};
 
-    /** @type {any} */
+    /** @type {import("./interface.ts").AsyncModelValidators} */
     this.$asyncValidators = {};
 
-    /** @type {Array<any>} */
+    /** @type {Array<import("./interface.ts").ModelParser>} */
     this.$parsers = [];
 
-    /** @type {Array<any>} */
+    /** @type {Array<import("./interface.ts").ModelFormatter>} */
     this.$formatters = [];
 
-    /** @type {Array<any>} */
+    /** @type {Array<import("./interface.ts").ModelViewChangeListener>} */
     this.$viewChangeListeners = [];
 
     /** @type {boolean} */
@@ -961,7 +961,7 @@ export class NgModelController {
    * **Note:** it is not possible to override the `getterSetter` option.
    * </div>
    *
-   * @param {Object} options a hash of settings to override the previous options
+   * @param {import("../../interface.ts").NgModelOptions} options a hash of settings to override the previous options
    *
    */
   $overrideModelOptions(options) {

@@ -465,6 +465,24 @@ export type CloneAttachFunction = (
   clonedElement?: Element,
   scope?: Scope,
 ) => any;
+export interface TemplateLinkingFunction {
+  (
+    scope: ng.Scope,
+    cloneAttachFn?: CloneAttachFunction,
+    options?: TemplateLinkingFunctionOptions,
+  ): Element;
+}
+export interface TemplateLinkingFunctionOptions {
+  parentBoundTranscludeFn?: TranscludeFunctionObject | undefined;
+  transcludeControllers?:
+    | {
+        [controller: string]: {
+          instance: Controller;
+        };
+      }
+    | undefined;
+  futureParentElement?: Element | undefined;
+}
 /**
  * Configuration for ngModel behavior.
  */

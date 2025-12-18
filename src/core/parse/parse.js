@@ -46,7 +46,7 @@ export class ParseProvider {
       /**
        *
        * @param {(any) => any} $filter
-       * @returns {import('./interface').ParseService}
+       * @returns {import('./interface.ts').ParseService}
        */
       function ($filter) {
         /** @type {import("./lexer/lexer.js").LexerOptions} */
@@ -97,7 +97,7 @@ export class ParseProvider {
         /**
          * @param {Function} parsedExpression
          * @param interceptorFn
-         * @returns {import('./interface').CompiledExpression|*}
+         * @returns {import('./interface.ts').CompiledExpression|*}
          */
         function addInterceptor(parsedExpression, interceptorFn) {
           if (!interceptorFn) {
@@ -226,7 +226,7 @@ function addWatchDelegate(parsedExpression) {
  * @param {ng.Scope} scope
  * @param {Function} listener
  * @param {*} objectEquality
- * @param {import('./interface').CompiledExpression} parsedExpression
+ * @param {import('./interface.ts').CompiledExpression} parsedExpression
  * @returns {any}
  */
 function inputsWatchDelegate(
