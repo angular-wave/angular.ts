@@ -1289,7 +1289,7 @@ export class CompileProvider {
 
           const { index } = previousCompileContext;
 
-          templateAttrs.$nodeRef = compileNodeRef;
+          templateAttrs._nodeRef = compileNodeRef;
           let directive;
 
           let directiveName;
@@ -1340,7 +1340,7 @@ export class CompileProvider {
 
             if (compileNode === linkNode) {
               attrs = templateAttrs;
-              $element = templateAttrs.$nodeRef;
+              $element = templateAttrs._nodeRef;
             } else {
               $element = new NodeRef(linkNode);
               attrs = new Attributes(
@@ -1766,7 +1766,7 @@ export class CompileProvider {
                 terminalPriority = directive.priority;
                 $template = compileNodeRef;
                 compileNodeRef = new NodeRef(document.createComment(""));
-                templateAttrs.$nodeRef = compileNodeRef;
+                templateAttrs._nodeRef = compileNodeRef;
                 compileNode = compileNodeRef.node;
                 ctxNodeRef.node = compileNode;
                 replaceWith(

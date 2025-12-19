@@ -70,12 +70,12 @@ export class Attributes {
     }
 
     /** @type {import("../../shared/noderef.js").NodeRef} */
-    this.$nodeRef = nodeRef;
+    this._nodeRef = nodeRef;
   }
 
   /** @type {Node|Element} */
   get $$element() {
-    return this.$nodeRef.node;
+    return this._nodeRef.node;
   }
 
   /**
@@ -104,7 +104,7 @@ export class Attributes {
           classVal,
         );
       } else {
-        this.$nodeRef.element.classList.add(classVal);
+        this._nodeRef.element.classList.add(classVal);
       }
     }
   }
@@ -123,7 +123,7 @@ export class Attributes {
           classVal,
         );
       } else {
-        this.$nodeRef.element.classList.remove(classVal);
+        this._nodeRef.element.classList.remove(classVal);
       }
     }
   }
@@ -142,7 +142,7 @@ export class Attributes {
       if (hasAnimate(this.$$element)) {
         this._$animate.addClass(/** @type {Element }*/ (this.$$element), toAdd);
       } else {
-        this.$nodeRef.element.classList.add(...toAdd.trim().split(/\s+/));
+        this._nodeRef.element.classList.add(...toAdd.trim().split(/\s+/));
       }
     }
     const toRemove = tokenDifference(oldClasses, newClasses);
@@ -154,7 +154,7 @@ export class Attributes {
           toRemove,
         );
       } else {
-        this.$nodeRef.element.classList.remove(...toRemove.trim().split(/\s+/));
+        this._nodeRef.element.classList.remove(...toRemove.trim().split(/\s+/));
       }
     }
   }
@@ -202,7 +202,7 @@ export class Attributes {
       }
     }
 
-    const nodeName = this.$nodeRef.node.nodeName.toLowerCase();
+    const nodeName = this._nodeRef.node.nodeName.toLowerCase();
 
     let maybeSanitizedValue;
 

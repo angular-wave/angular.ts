@@ -64,6 +64,22 @@ export function hiddenInputBrowserCacheDirective(): ng.Directive;
  * @returns {ng.Directive}
  */
 export function ngValueDirective(): ng.Directive;
+/**
+ * @param {Date} date
+ * @param {any} timezone
+ * @param {undefined} [reverse]
+ */
+export function convertTimezoneToLocal(
+  date: Date,
+  timezone: any,
+  reverse?: undefined,
+): Date;
+/**
+ * @param {any} timezone
+ * @param {number} [fallback]
+ * @returns {number}
+ */
+export function timezoneToOffset(timezone: any, fallback?: number): number;
 export const ISO_DATE_REGEXP: RegExp;
 export const URL_REGEXP: RegExp;
 export const EMAIL_REGEXP: RegExp;

@@ -42,7 +42,7 @@ export class Attributes {
    */
   $attr: {};
   /** @type {import("../../shared/noderef.js").NodeRef} */
-  $nodeRef: import("../../shared/noderef.js").NodeRef;
+  _nodeRef: import("../../shared/noderef.js").NodeRef;
   /** @type {Node|Element} */
   get $$element(): Node | Element;
   /**

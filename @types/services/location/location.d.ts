@@ -182,13 +182,13 @@ export class Location {
    * Current url
    * @type {string}
    */
-  $$url: string;
+  _url: string;
   /**
    * @ignore
    * Callback to update browser url
-   * @type {Function}
+   * @type {Function | undefined}
    */
-  $$updateBrowser: Function;
+  _updateBrowser: Function | undefined;
   /**
    * Change path, search and hash, when called with parameter and return `$location`.
    *
@@ -249,7 +249,7 @@ export class Location {
    * @private
    * Compose url and update `url` and `absUrl` property
    */
-  private $$compose;
+  private _compose;
   /**
    * Change the history state object when called with one parameter and return `$location`.
    * The state object is later passed to `pushState` or `replaceState`.
@@ -285,15 +285,16 @@ export class LocationProvider {
   hashPrefixConf: string;
   /** @type {import("./interface.ts").Html5Mode} */
   html5ModeConf: import("./interface.ts").Html5Mode;
-  /** @type {Array<import("./interface.ts").UrlChangeListener>} */
-  urlChangeListeners: Array<import("./interface.ts").UrlChangeListener>;
-  urlChangeInit: boolean;
-  /** @type {History['state']} */
-  cachedState: History["state"];
-  /** @type {History['state']} */
-  lastHistoryState: History["state"];
-  /** @type {string} */
-  lastBrowserUrl: string;
+  /** @private @type {Array<import("./interface.ts").UrlChangeListener>} */
+  private _urlChangeListeners;
+  /** @private */
+  private _urlChangeInit;
+  /** @private @type {History['state']} */
+  private _cachedState;
+  /** @private @type {History['state']} */
+  private _lastHistoryState;
+  /** @private @type {string} */
+  private _lastBrowserUrl;
   /**
    * Updates the browser's current URL and history state.
    *

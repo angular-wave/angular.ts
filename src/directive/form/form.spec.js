@@ -1274,10 +1274,10 @@ describe("form", () => {
 
       const controls = formCtrl.$getControls();
 
-      expect(controls).not.toBe(formCtrl.$$controls);
+      expect(controls).not.toBe(formCtrl._controls);
 
       controls.push("something");
-      expect(formCtrl.$$controls).not.toContain("something");
+      expect(formCtrl._controls).not.toContain("something");
 
       expect(controls[0]).toBe(formInputCtrl);
       expect(controls[1]).toBe(nestedFormCtrl);

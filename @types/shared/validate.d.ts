@@ -32,6 +32,13 @@ export function validateArray(arg: any, name: string): any;
  */
 export function validateIsString(arg: any, name: string): any;
 /**
+ * @param {*} arg - The value to validate.
+ * @param {string} name - Parameter name (included in error message).
+ * @returns {number} The validated value.
+ * @throws {TypeError} If the value is not a number.
+ */
+export function validateIsNumber(arg: any, name: string): number;
+/**
  * @template T
  * @param {unknown} arg - The value to validate.
  * @param {new (...args: any[]) => T} type - The constructor to check against.

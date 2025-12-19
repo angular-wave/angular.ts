@@ -48,23 +48,23 @@ describe("utility functions", () => {
   });
 
   describe("hashKey()", () => {
-    it("should use an existing `$$hashKey`", () => {
-      const obj = { $$hashKey: "foo" };
+    it("should use an existing `_hashKey`", () => {
+      const obj = { _hashKey: "foo" };
       expect(hashKey(obj)).toBe("foo");
     });
 
-    it("should support a function as `$$hashKey` (and call it)", () => {
-      const obj = { $$hashKey: () => "foo" };
+    it("should support a function as `_hashKey` (and call it)", () => {
+      const obj = { _hashKey: () => "foo" };
       expect(hashKey(obj)).toBe("foo");
     });
 
-    it("should create a new `$$hashKey` if none exists (and return it)", () => {
+    it("should create a new `_hashKey` if none exists (and return it)", () => {
       const obj = {};
-      expect(hashKey(obj)).toBe(obj.$$hashKey);
-      expect(obj.$$hashKey).toBeDefined();
+      expect(hashKey(obj)).toBe(obj._hashKey);
+      expect(obj._hashKey).toBeDefined();
     });
 
-    it("should create appropriate `$$hashKey`s for primitive values", () => {
+    it("should create appropriate `_hashKey`s for primitive values", () => {
       expect(hashKey(undefined)).not.toBe(hashKey(undefined));
       expect(hashKey(null)).toBe(hashKey(null));
       expect(hashKey(null)).not.toBe(hashKey(undefined));
@@ -78,7 +78,7 @@ describe("utility functions", () => {
       expect(hashKey("foo")).not.toBe(hashKey("bar"));
     });
 
-    it("should create appropriate `$$hashKey`s for non-primitive values", () => {
+    it("should create appropriate `_hashKey`s for non-primitive values", () => {
       const fn = function () {};
       const arr = [];
       const obj = {};
@@ -168,25 +168,25 @@ describe("utility functions", () => {
       expect(hashKey(fn1)).not.toEqual(hashKey(fn2));
     });
 
-    it("stores the hash key in the $$hashKey attribute", () => {
+    it("stores the hash key in the _hashKey attribute", () => {
       const obj = { a: 42 };
       const hash = hashKey(obj);
-      expect(obj.$$hashKey).toEqual(hash.match(/^object:(\S+)$/)[0]);
+      expect(obj._hashKey).toEqual(hash.match(/^object:(\S+)$/)[0]);
     });
 
-    it("uses preassigned $$hashKey", () => {
-      expect(hashKey({ $$hashKey: "42" })).toEqual("42");
+    it("uses preassigned _hashKey", () => {
+      expect(hashKey({ _hashKey: "42" })).toEqual("42");
     });
 
-    it("supports a function $$hashKey", function () {
-      expect(hashKey({ $$hashKey: () => "42" })).toEqual("42");
+    it("supports a function _hashKey", function () {
+      expect(hashKey({ _hashKey: () => "42" })).toEqual("42");
     });
 
-    it("calls the function $$hashKey as a method with the correct this", () => {
+    it("calls the function _hashKey as a method with the correct this", () => {
       expect(
         hashKey({
           myKey: "42",
-          $$hashKey: function () {
+          _hashKey: function () {
             return this.myKey;
           },
         }),
@@ -268,12 +268,12 @@ describe("utility functions", () => {
       expect(dst.hasOwnProperty("__proto__")).toBe(false);
     });
 
-    it("should preserve $$hashKey", () => {
-      const dst = { $$hashKey: "abc" };
+    it("should preserve _hashKey", () => {
+      const dst = { _hashKey: "abc" };
       const src = { a: 1 };
       const result = baseExtend(dst, [src], false);
 
-      expect(result.$$hashKey).toBe("abc");
+      expect(result._hashKey).toBe("abc");
     });
   });
 
@@ -392,7 +392,7 @@ describe("utility functions", () => {
   });
 
   describe("extend", () => {
-    it("should not copy the private $$hashKey", () => {
+    it("should not copy the private _hashKey", () => {
       let src;
       let dst;
       src = {};
@@ -421,7 +421,7 @@ describe("utility functions", () => {
       expect(isDefined(destination.radius)).toBe(true);
     });
 
-    it("should retain the previous $$hashKey", () => {
+    it("should retain the previous _hashKey", () => {
       let src;
       let dst;
       let h;

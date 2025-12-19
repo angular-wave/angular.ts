@@ -98,9 +98,14 @@
     </style>
   </head>
   <body ng-app="todo">
-    <div ng-controller="TodoCtrl as $ctrl">
-      <h3>Todos</h3>
+    <div id="$ctrl" ng-controller="TodoCtrl as $ctrl">
+      <h3>{{ $ctrl.greeting }}</h3>
       <button ng-click="$ctrl.archive()">Archive</button>
+      <button
+        onclick="angular.getScope(this.parentElement).$ctrl.greeting = 'woot'"
+      >
+        test
+      </button>
       <ul>
         <li ng-repeat="todo in $ctrl.tasks">
           {{ todo.task }} {{ todo.done }}

@@ -125,16 +125,16 @@ export class NgModelController {
   };
   $$updateEvents: string;
   $$updateEventHandler(ev: any): void;
-  $$parsedNgModel: import("../../core/parse/interface.ts").CompiledExpression;
-  $$parsedNgModelAssign: (context: any, value: any) => any;
+  _parsedNgModel: import("../../core/parse/interface.ts").CompiledExpression;
+  _parsedNgModelAssign: (context: any, value: any) => any;
   /**
    * @type {import("../../core/parse/interface.ts").CompiledExpression |
    *        (function(ng.Scope): any)}
    */
-  $$ngModelGet:
+  _ngModelGet:
     | import("../../core/parse/interface.ts").CompiledExpression
     | ((arg0: ng.Scope) => any);
-  $$ngModelSet: (context: any, value: any) => any;
+  _ngModelSet: (context: any, value: any) => any;
   $$pendingDebounce: number;
   $$parserValid: boolean;
   /** @type {string} */

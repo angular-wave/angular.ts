@@ -149,15 +149,15 @@ export class NgModelController {
     // Attach the correct context to the event handler function for updateOn
     this.$$updateEventHandler = this.$$updateEventHandler.bind(this);
 
-    this.$$parsedNgModel = $parse($attr.ngModel);
-    this.$$parsedNgModelAssign = this.$$parsedNgModel.assign;
+    this._parsedNgModel = $parse($attr.ngModel);
+    this._parsedNgModelAssign = this._parsedNgModel.assign;
 
     /**
      * @type {import("../../core/parse/interface.ts").CompiledExpression |
      *        (function(ng.Scope): any)}
      */
-    this.$$ngModelGet = this.$$parsedNgModel;
-    this.$$ngModelSet = this.$$parsedNgModelAssign;
+    this._ngModelGet = this._parsedNgModel;
+    this._ngModelSet = this._parsedNgModelAssign;
     this.$$pendingDebounce = null;
     this.$$parserValid = undefined;
 
@@ -306,8 +306,8 @@ export class NgModelController {
 
       const invokeModelSetter = this.$$parse(`${this.$$attr.ngModel}($$$p)`);
 
-      this.$$ngModelGet = ($scope) => {
-        let modelValue = this.$$parsedNgModel($scope);
+      this._ngModelGet = ($scope) => {
+        let modelValue = this._parsedNgModel($scope);
 
         if (isFunction(modelValue)) {
           modelValue = invokeModelGetter($scope);
@@ -315,14 +315,14 @@ export class NgModelController {
 
         return modelValue;
       };
-      this.$$ngModelSet = ($scope, newValue) => {
-        if (isFunction(this.$$parsedNgModel($scope))) {
+      this._ngModelSet = ($scope, newValue) => {
+        if (isFunction(this._parsedNgModel($scope))) {
           invokeModelSetter($scope, { $$$p: newValue });
         } else {
-          this.$$parsedNgModelAssign($scope, newValue);
+          this._parsedNgModelAssign($scope, newValue);
         }
       };
-    } else if (!this.$$parsedNgModel.assign) {
+    } else if (!this._parsedNgModel.assign) {
       throw ngModelMinErr(
         "nonassign",
         "Expression '{0}' is non-assignable. Element: {1}",
@@ -798,7 +798,7 @@ export class NgModelController {
     if (isNumberNaN(this.$modelValue)) {
       // this.$modelValue has not been touched yet...
       // @ts-ignore
-      this.$modelValue = this.$$ngModelGet(this.$$scope);
+      this.$modelValue = this._ngModelGet(this.$$scope);
     }
     const prevModelValue = this.$modelValue;
 
@@ -843,7 +843,7 @@ export class NgModelController {
   }
 
   $$writeModelToScope() {
-    this.$$ngModelSet(this.$$scope, this.$modelValue);
+    this._ngModelSet(this.$$scope, this.$modelValue);
     Object.values(this.$viewChangeListeners).forEach((listener) => {
       try {
         listener();
@@ -1160,7 +1160,7 @@ function setupModelWatcher(ctrl) {
   //       ng-change executes in apply phase
   // 4. view should be changed back to 'a'
   ctrl.$$scope.$watch("value", () => {
-    const modelValue = ctrl.$$ngModelGet(ctrl.$$scope);
+    const modelValue = ctrl._ngModelGet(ctrl.$$scope);
 
     // if scope model value and ngModel value are out of sync
     // This cannot be moved to the action function, because it would not catch the

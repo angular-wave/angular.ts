@@ -376,7 +376,7 @@ export function applyPairs(memo, keyValTuple) {
 /**
  * Returns the last element of an array, or undefined if the array is empty.
  * @template T
- * @param {T[]} arr - The input array.
+ * @param {string} arr - The input array.
  * @returns {T | undefined} The last element or undefined.
  */
 export function tail(arr) {

@@ -32,11 +32,18 @@ export interface SseConfig {
 export interface SseConnection {
   /** Manually close the SSE connection and stop all reconnect attempts */
   close(): void;
-  /** Manually restart the SSE connection */
+  /**
+   * Manually restart the SSE connection.
+   * @remarks
+   * Any previous event listeners are preserved; reconnects use the original configuration.
+   */
   connect(): void;
 }
 /**
  * $sse service type
  * Returns a managed SSE connection that automatically reconnects when needed.
+ * @param url - The endpoint to connect to
+ * @param config - Optional configuration object
+ * @throws {URIError} If the URL is invalid
  */
 export type SseService = (url: string, config?: SseConfig) => SseConnection;

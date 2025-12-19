@@ -88,10 +88,17 @@ export function fnToString(fn) {
   return (_fn && _fn.toString()) || "undefined";
 }
 
+/**
+ * @param {any} value
+ * @returns {string|*|string}
+ */
 export function stringify(value) {
+  /**
+   * @type {any[]}
+   */
   const seen = [];
 
-  const isRejection = (obj) => {
+  const isRejection = (/** @type {Promise<any>} */ obj) => {
     return (
       obj &&
       typeof obj.then === "function" &&
@@ -99,7 +106,9 @@ export function stringify(value) {
     );
   };
 
-  const hasToString = (obj) =>
+  const hasToString = (
+    /** @type {{ constructor: ObjectConstructor; toString: any; }} */ obj,
+  ) =>
     isObject(obj) &&
     !isArray(obj) &&
     obj.constructor !== Object &&
@@ -109,12 +118,23 @@ export function stringify(value) {
     [isUndefined, val("undefined")],
     [isNull, val("null")],
     [isPromise, val("[Promise]")],
-    [isRejection, (reg) => reg._transitionRejection.toString()],
-    [hasToString, (str) => str.toString()],
+    [
+      isRejection,
+      (
+        /** @type {{ _transitionRejection: { toString: () => any; }; }} */ reg,
+      ) => reg._transitionRejection.toString(),
+    ],
+    [
+      hasToString,
+      (/** @type {{ toString: () => any; }} */ str) => str.toString(),
+    ],
     [isInjectable, functionToString],
-    [val(true), (bool) => bool],
+    [val(true), (/** @type {any} */ bool) => bool],
   ]);
 
+  /**
+   * @param {any} item
+   */
   function format(item) {
     if (isObject(item)) {
       if (seen.indexOf(item) !== -1) return "[circular ref]";
@@ -137,7 +157,9 @@ export function stringify(value) {
   );
 }
 
-export const stripLastPathElement = (str) => str.replace(/\/[^/]*$/, "");
+export const stripLastPathElement = (/** @type {string} */ str) =>
+  str.replace(/\/[^/]*$/, "");
+
 /**
  * Splits on a delimiter, but returns the delimiters in the array
  *
@@ -147,12 +169,14 @@ export const stripLastPathElement = (str) => str.replace(/\/[^/]*$/, "");
  * splitOnSlashes("/foo"); // ["/", "foo"]
  * splitOnSlashes("/foo/"); // ["/", "foo", "/"]
  * ```
+ * @param {string} delim
  */
 export function splitOnDelim(delim) {
   const re = new RegExp(`(${delim})`, "g");
 
-  return (str) => str.split(re).filter(Boolean);
+  return (/** @type {string} */ str) => str.split(re).filter(Boolean);
 }
+
 /**
  * Reduce fn that joins neighboring strings
  *
@@ -164,10 +188,12 @@ export function splitOnDelim(delim) {
  * let arr = ["foo", "bar", 1, "baz", "", "qux" ];
  * arr.reduce(joinNeighborsR, []) // ["foobar", 1, "bazqux" ]
  * ```
+ * @param {string | any[]} acc
+ * @param {unknown} str
  */
 export function joinNeighborsR(acc, str) {
-  if (isString(tail(acc)) && isString(str))
-    return acc.slice(0, -1).concat(tail(acc) + str);
+  if (isString(tail(/** @type {string} */ (acc))) && isString(str))
+    return acc.slice(0, -1).concat(tail(/** @type {string} */ (acc)) + str);
 
   return pushR(acc, str);
 }

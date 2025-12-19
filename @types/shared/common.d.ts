@@ -113,10 +113,10 @@ export function applyPairs(memo: any, keyValTuple: any): any;
 /**
  * Returns the last element of an array, or undefined if the array is empty.
  * @template T
- * @param {T[]} arr - The input array.
+ * @param {string} arr - The input array.
  * @returns {T | undefined} The last element or undefined.
  */
-export function tail<T>(arr: T[]): T | undefined;
+export function tail<T>(arr: string): T | undefined;
 /**
  * shallow copy from src to dest
  */

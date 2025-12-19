@@ -552,7 +552,7 @@ describe("ngRepeat", () => {
         scope,
       );
       scope.items = ["a", "b", "c"];
-      scope.items.$$hashKey = "xxx";
+      scope.items._hashKey = "xxx";
       scope.items.$root = "yyy";
       await wait();
       expect(element.textContent).toEqual("a|b|c|");

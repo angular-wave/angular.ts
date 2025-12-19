@@ -28,19 +28,19 @@ let urlUpdatedByLocation = false;
  * The pathname, beginning with "/"
  * @type {string}
  */
-let $$path;
+let _path;
 
 /**
- * @type {Object.<string,boolean|Array>}
+ * @type {Object.<string,boolean|Array<any>>}
  */
-let $$search;
+let _search;
 
 /**
  * @ignore
  * The hash string, minus the hash symbol
  * @type {string}
  */
-let $$hash;
+let _hash;
 
 export class Location {
   /**
@@ -77,14 +77,14 @@ export class Location {
      * Current url
      * @type {string}
      */
-    this.$$url = undefined;
+    this._url = undefined;
 
     /**
      * @ignore
      * Callback to update browser url
-     * @type {Function}
+     * @type {Function | undefined}
      */
-    this.$$updateBrowser = undefined;
+    this._updateBrowser = undefined;
   }
 
   /**
@@ -115,7 +115,7 @@ export class Location {
    * @return {string} url
    */
   getUrl() {
-    return this.$$url;
+    return this._url;
   }
 
   /**
@@ -127,8 +127,8 @@ export class Location {
   setPath(path) {
     const newPath = path !== null ? path.toString() : "";
 
-    $$path = newPath.charAt(0) === "/" ? newPath : `/${newPath}`;
-    this.$$compose();
+    _path = newPath.charAt(0) === "/" ? newPath : `/${newPath}`;
+    this._compose();
 
     return this;
   }
@@ -140,7 +140,7 @@ export class Location {
    * @return {string}
    */
   getPath() {
-    return $$path;
+    return _path;
   }
 
   /**
@@ -149,8 +149,8 @@ export class Location {
    * @return {Location} hash
    */
   setHash(hash) {
-    $$hash = hash !== null ? hash.toString() : "";
-    this.$$compose();
+    _hash = hash !== null ? hash.toString() : "";
+    this._compose();
 
     return this;
   }
@@ -160,7 +160,7 @@ export class Location {
    * @return {string} hash
    */
   getHash() {
-    return $$hash;
+    return _hash;
   }
 
   /**
@@ -175,7 +175,7 @@ export class Location {
       case 1:
         if (isString(search) || isNumber(search)) {
           search = search.toString();
-          $$search = parseKeyValue(search);
+          _search = parseKeyValue(search);
         } else if (isObject(search)) {
           search = structuredClone(search, {});
           // remove object undefined or null properties
@@ -183,7 +183,7 @@ export class Location {
             if (isNull(value)) delete search[key];
           });
 
-          $$search = search;
+          _search = search;
         } else {
           throw $locationMinErr(
             "isrcharg",
@@ -193,14 +193,14 @@ export class Location {
         break;
       default:
         if (isUndefined(paramValue) || paramValue === null) {
-          delete $$search[search];
+          delete _search[search];
         } else {
           // @ts-ignore
-          $$search[search] = paramValue;
+          _search[search] = paramValue;
         }
     }
 
-    this.$$compose();
+    this._compose();
 
     return this;
   }
@@ -211,20 +211,20 @@ export class Location {
    * @returns {Object} Search object or Location object
    */
   getSearch() {
-    return $$search;
+    return _search;
   }
 
   /**
    * @private
    * Compose url and update `url` and `absUrl` property
    */
-  $$compose() {
-    this.$$url = normalizePath($$path, $$search, $$hash);
+  _compose() {
+    this._url = normalizePath(_path, _search, _hash);
     this.absUrl = this.html5
-      ? this.appBaseNoFile + this.$$url.substring(1)
-      : this.appBase + (this.$$url ? this.hashPrefix + this.$$url : "");
+      ? this.appBaseNoFile + this._url.substring(1)
+      : this.appBase + (this._url ? this.hashPrefix + this._url : "");
     urlUpdatedByLocation = true;
-    setTimeout(() => this.$$updateBrowser && this.$$updateBrowser());
+    setTimeout(() => this._updateBrowser && this._updateBrowser());
   }
 
   /**
@@ -335,11 +335,11 @@ export class Location {
 
       parseAppUrl(pathUrl, true);
 
-      if (!$$path) {
-        $$path = "/";
+      if (!_path) {
+        _path = "/";
       }
 
-      this.$$compose();
+      this._compose();
     } else {
       const withoutBaseUrl =
         stripBaseUrl(this.appBase, url) ||
@@ -373,9 +373,9 @@ export class Location {
 
       parseAppUrl(withoutHashUrl, false);
 
-      $$path = removeWindowsDriveName($$path, withoutHashUrl, this.appBase);
+      _path = removeWindowsDriveName(_path, withoutHashUrl, this.appBase);
 
-      this.$$compose();
+      this._compose();
 
       /*
        * In Windows, on an anchor node on documents loaded from
@@ -425,16 +425,17 @@ export class LocationProvider {
       rewriteLinks: true,
     };
 
-    /** @type {Array<import("./interface.ts").UrlChangeListener>} */
-    this.urlChangeListeners = [];
-    this.urlChangeInit = false;
+    /** @private @type {Array<import("./interface.ts").UrlChangeListener>} */
+    this._urlChangeListeners = [];
+    /** @private */
+    this._urlChangeInit = false;
 
-    /** @type {History['state']} */
-    this.cachedState = null;
-    /** @type {History['state']} */
-    this.lastHistoryState = null;
-    /** @type {string} */
-    this.lastBrowserUrl = window.location.href;
+    /** @private @type {History['state']} */
+    this._cachedState = null;
+    /** @private @type {History['state']} */
+    this._lastHistoryState = null;
+    /** @private @type {string} */
+    this._lastBrowserUrl = window.location.href;
     this.cacheState();
   }
 
@@ -457,12 +458,12 @@ export class LocationProvider {
     if (url) {
       url = new URL(url).href;
 
-      if (this.lastBrowserUrl === url && this.lastHistoryState === state) {
+      if (this._lastBrowserUrl === url && this._lastHistoryState === state) {
         return this;
       }
 
-      this.lastBrowserUrl = url;
-      this.lastHistoryState = state;
+      this._lastBrowserUrl = url;
+      this._lastHistoryState = state;
       history.pushState(state, "", url);
       this.cacheState();
     }
@@ -483,7 +484,7 @@ export class LocationProvider {
    * @returns {History['state']} The cached state.
    */
   state() {
-    return this.cachedState;
+    return this._cachedState;
   }
 
   /**
@@ -495,9 +496,9 @@ export class LocationProvider {
     const currentState = history.state ?? null;
 
     if (!equals(currentState, this.lastCachedState)) {
-      this.cachedState = currentState;
+      this._cachedState = currentState;
       this.lastCachedState = currentState;
-      this.lastHistoryState = currentState;
+      this._lastHistoryState = currentState;
     }
   }
 
@@ -505,20 +506,20 @@ export class LocationProvider {
    * Fires the state or URL change event.
    */
   #fireStateOrUrlChange() {
-    const prevLastHistoryState = this.lastHistoryState;
+    const prevLastHistoryState = this._lastHistoryState;
 
     this.cacheState();
 
     if (
-      this.lastBrowserUrl === this.getBrowserUrl() &&
-      prevLastHistoryState === this.cachedState
+      this._lastBrowserUrl === this.getBrowserUrl() &&
+      prevLastHistoryState === this._cachedState
     ) {
       return;
     }
-    this.lastBrowserUrl = this.getBrowserUrl();
-    this.lastHistoryState = this.cachedState;
-    this.urlChangeListeners.forEach((listener) => {
-      listener(trimEmptyHash(window.location.href), this.cachedState);
+    this._lastBrowserUrl = this.getBrowserUrl();
+    this._lastHistoryState = this._cachedState;
+    this._urlChangeListeners.forEach((listener) => {
+      listener(trimEmptyHash(window.location.href), this._cachedState);
     });
   }
 
@@ -529,7 +530,7 @@ export class LocationProvider {
    * @returns void
    */
   #onUrlChange(callback) {
-    if (!this.urlChangeInit) {
+    if (!this._urlChangeInit) {
       window.addEventListener(
         "popstate",
         this.#fireStateOrUrlChange.bind(this),
@@ -538,9 +539,9 @@ export class LocationProvider {
         "hashchange",
         this.#fireStateOrUrlChange.bind(this),
       );
-      this.urlChangeInit = true;
+      this._urlChangeInit = true;
     }
-    this.urlChangeListeners.push(callback);
+    this._urlChangeListeners.push(callback);
   }
 
   $get = [
@@ -776,12 +777,16 @@ export class LocationProvider {
         }
       };
 
-      $location.$$updateBrowser = updateBrowser;
+      $location._updateBrowser = updateBrowser;
       updateBrowser();
       $rootScope.$on("$updateBrowser", updateBrowser);
 
       return $location;
 
+      /**
+       * @param {string} oldUrl
+       * @param {any} oldState
+       */
       function afterLocationChange(oldUrl, oldState) {
         $rootScope.$broadcast(
           "$locationChangeSuccess",
@@ -935,13 +940,13 @@ export function parseAppUrl(url, html5Mode) {
       ? match.pathname.substring(1)
       : match.pathname;
 
-  $$path = decodePath(path, html5Mode);
-  $$search = parseKeyValue(match.search);
-  $$hash = decodeURIComponent(match.hash);
+  _path = decodePath(path, html5Mode);
+  _search = parseKeyValue(match.search);
+  _hash = decodeURIComponent(match.hash);
 
   // make sure path starts with '/';
-  if ($$path && $$path.charAt(0) !== "/") {
-    $$path = `/${$$path}`;
+  if (_path && _path.charAt(0) !== "/") {
+    _path = `/${_path}`;
   }
 }
 
