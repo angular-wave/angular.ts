@@ -38,16 +38,6 @@ export function getExpando(
  */
 export function isTextNode(html: string): boolean;
 /**
- * @param {string} html
- * @returns {DocumentFragment}
- */
-export function buildFragment(html: string): DocumentFragment;
-/**
- * @param {string} html
- * @returns {NodeListOf<ChildNode> | HTMLElement[]}
- */
-export function parseHtml(html: string): NodeListOf<ChildNode> | HTMLElement[];
-/**
  * @param {Element} element
  * @param {boolean} [onlyDescendants]
  * @returns {void}
@@ -146,18 +136,6 @@ export function getController(
 export function getInheritedData(element: Node, name: string): any;
 /**
  *
- * @param {Node} element
- * @param {string|string[]} name
- * @param {any} [value]
- * @returns {any|undefined}
- */
-export function setInheritedData(
-  element: Node,
-  name: string | string[],
-  value?: any,
-): any | undefined;
-/**
- *
  * @param {Element} element
  * @param {boolean} keepData
  */
@@ -172,9 +150,9 @@ export function startingTag(elementOrStr: string | Element | Node): string;
 /**
  * Return the DOM siblings between the first and last node in the given array.
  * @param {Array<Node>} nodes An array-like object
- * @returns {Element} the inputted object or a JQLite collection containing the nodes
+ * @returns {*[]|Array<Node>} the inputted object or a JQLite collection containing the nodes
  */
-export function getBlockNodes(nodes: Array<Node>): Element;
+export function getBlockNodes(nodes: Array<Node>): any[] | Array<Node>;
 /**
  * Gets the name of a boolean attribute if it exists on a given element.
  *
@@ -211,25 +189,10 @@ export function createElementFromHTML(htmlString: string): Element;
  */
 export function createNodelistFromHTML(htmlString: string): NodeList;
 /**
- * Appends nodes or an HTML string to a given DOM element.
- * @param {Element} element - The element to append nodes to.
- * @param {Node | Node[] | string} nodes - Nodes or HTML string to append.
- */
-export function appendNodesToElement(
-  element: Element,
-  nodes: Node | Node[] | string,
-): void;
-/**
  * Remove element from the DOM and clear Cache data, associated with the node.
  * @param {Element} element
  */
 export function emptyElement(element: Element): void;
-/**
- * Checks if the element is root
- * @param {Element} element
- * @returns {boolean}
- */
-export function isRoot(element: Element): boolean;
 /**
  * Inserts a DOM element before or at the beginning of a parent element.
  *
@@ -251,7 +214,16 @@ export function domInsert(
   parentElement: HTMLElement | Element,
   afterElement?: HTMLElement | Element | null,
 ): void;
-export function animatedomInsert(element: any, parent: any, after: any): void;
+/**
+ * @param {HTMLElement} element
+ * @param {HTMLElement} parent
+ * @param {HTMLElement | null | undefined} after
+ */
+export function animatedomInsert(
+  element: HTMLElement,
+  parent: HTMLElement,
+  after: HTMLElement | null | undefined,
+): void;
 /**
  * Returns the base href of the document.
  *

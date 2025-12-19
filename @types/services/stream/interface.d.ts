@@ -2,7 +2,7 @@ export interface StreamConnectionConfig {
   /** Called when the connection opens */
   onOpen?: (event: Event) => void;
   /** Called when a message is received */
-  onMessage?: (data: any, event: Event) => void;
+  onMessage?: (data: any, event: Event | MessageEvent) => void;
   /** Called when an error occurs */
   onError?: (err: any) => void;
   /** Called when a reconnect attempt happens */

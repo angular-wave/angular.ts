@@ -30,7 +30,7 @@ export class RafSchedulerProvider {
   _nextTick() {
     if (!this._queue.length) return;
 
-    const items = this._queue.shift();
+    const items = /** @type{Array<() => void>} */ (this._queue.shift());
 
     items.forEach((fn) => fn());
 

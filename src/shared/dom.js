@@ -1,4 +1,4 @@
-import { concat, hasOwn, isArray, isDefined, isObject, keys } from "./utils.js";
+import { hasOwn, isArray, isDefined, isObject, keys } from "./utils.js";
 import { extractElementNode } from "../animations/shared.js";
 import { NodeType } from "./node.js";
 import { $injectTokens } from "../injection-tokens.js";
@@ -29,10 +29,6 @@ const SCOPE_KEY = "$scope";
 const DASH_LOWERCASE_REGEXP = /-([a-z])/g;
 
 const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
-
-const SINGLE_TAG_REGEXP = /^<([\w-]+)\s*\/?>(?:<\/\1>|)$/;
-
-const TAG_NAME_REGEXP = /<([\w:-]+)/;
 
 // Table parts need to be wrapped with `<table>` or they're
 // stripped to their contents when put in a div.
@@ -194,76 +190,6 @@ function elementAcceptsData(node) {
     default:
       return false;
   }
-}
-
-/**
- * @param {string} html
- * @returns {DocumentFragment}
- */
-export function buildFragment(html) {
-  /** @type {HTMLDivElement} */
-  let tmp;
-
-  let tag;
-
-  let wrap;
-
-  const tempFragment = document.createDocumentFragment();
-
-  let nodes = [];
-
-  let i;
-
-  if (isTextNode(html)) {
-    // Convert non-html into a text node
-    nodes.push(document.createTextNode(html));
-  } else {
-    // Convert html into DOM nodes
-
-    tmp = tempFragment.appendChild(document.createElement("div"));
-    tag = (TAG_NAME_REGEXP.exec(html) || ["", ""])[1].toLowerCase();
-
-    wrap = wrapMap[tag] || [];
-
-    // Create wrappers & descend into them
-    i = wrap.length;
-
-    while (--i > -1) {
-      tmp.appendChild(document.createElement(wrap[i]));
-      tmp = /** @type {HTMLDivElement} */ (tmp.firstChild);
-    }
-    tmp.innerHTML = html;
-
-    nodes = concat(nodes, tmp.childNodes);
-
-    tmp = /** @type {HTMLDivElement} */ (tempFragment.firstChild);
-    tmp.textContent = "";
-  }
-
-  const fragment = document.createDocumentFragment();
-
-  fragment.append(...nodes);
-
-  return fragment;
-}
-
-/**
- * @param {string} html
- * @returns {NodeListOf<ChildNode> | HTMLElement[]}
- */
-export function parseHtml(html) {
-  const regEx = SINGLE_TAG_REGEXP.exec(html);
-
-  if (regEx) {
-    return [document.createElement(regEx[1])];
-  }
-  const fragment = buildFragment(html);
-
-  if (fragment) {
-    return fragment.childNodes;
-  }
-
-  return [];
 }
 
 /**
@@ -505,44 +431,6 @@ export function getInheritedData(element, name) {
 
 /**
  *
- * @param {Node} element
- * @param {string|string[]} name
- * @param {any} [value]
- * @returns {any|undefined}
- */
-export function setInheritedData(element, name, value) {
-  // if element is the document object work with the html element instead
-  // this makes $(document).scope() possible
-  if (element.nodeType === NodeType._DOCUMENT_NODE) {
-    element = /** @type {Document} */ (element).documentElement;
-  }
-
-  const names = isArray(name) ? name : [name];
-
-  while (element) {
-    for (let i = 0, ii = names.length; i < ii; i++) {
-      if (
-        isDefined(
-          (value = setCacheData(/** @type {Element} */ (element), names[i])),
-        )
-      )
-        return value;
-    }
-
-    // If dealing with a document fragment node with a host element, and no parent, use the host
-    // element as the parent. This enables directives within a Shadow DOM or polyfilled Shadow DOM
-    // to lookup parent controllers.
-    element =
-      element.parentNode ||
-      (element.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE &&
-        /** @type {ShadowRoot} */ (element).host);
-  }
-
-  return undefined;
-}
-
-/**
- *
  * @param {Element} element
  * @param {boolean} keepData
  */
@@ -609,7 +497,7 @@ export function startingTag(elementOrStr) {
 /**
  * Return the DOM siblings between the first and last node in the given array.
  * @param {Array<Node>} nodes An array-like object
- * @returns {Element} the inputted object or a JQLite collection containing the nodes
+ * @returns {*[]|Array<Node>} the inputted object or a JQLite collection containing the nodes
  */
 export function getBlockNodes(nodes) {
   // TODO(perf): update `nodes` instead of creating a new object?
@@ -696,26 +584,6 @@ export function createNodelistFromHTML(htmlString) {
 }
 
 /**
- * Appends nodes or an HTML string to a given DOM element.
- * @param {Element} element - The element to append nodes to.
- * @param {Node | Node[] | string} nodes - Nodes or HTML string to append.
- */
-export function appendNodesToElement(element, nodes) {
-  if (typeof nodes === "string") {
-    const template = document.createElement("template");
-
-    template.innerHTML = nodes.trim();
-    nodes = Array.from(template.content.childNodes);
-  } else if (nodes instanceof Node) {
-    nodes = [nodes];
-  } else if (!isArray(nodes)) {
-    throw new TypeError("Expected a Node, Node[], or HTML string");
-  }
-
-  nodes.forEach((node) => element.appendChild(node));
-}
-
-/**
  * Remove element from the DOM and clear Cache data, associated with the node.
  * @param {Element} element
  */
@@ -728,15 +596,6 @@ export function emptyElement(element) {
       element.replaceChildren();
       break;
   }
-}
-
-/**
- * Checks if the element is root
- * @param {Element} element
- * @returns {boolean}
- */
-export function isRoot(element) {
-  return !!getCacheData(element, $injectTokens._injector);
 }
 
 /**
@@ -774,6 +633,11 @@ export function domInsert(element, parentElement, afterElement) {
   }
 }
 
+/**
+ * @param {HTMLElement} element
+ * @param {HTMLElement} parent
+ * @param {HTMLElement | null | undefined} after
+ */
 export function animatedomInsert(element, parent, after) {
   const originalVisibility = element.style.visibility;
 

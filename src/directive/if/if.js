@@ -19,7 +19,7 @@ export function ngIfDirective($animate) {
      * @param {Element} $element
      * @param {ng.Attributes} $attr
      * @param {*} _ctrl
-     * @param {*} $transclude
+     * @param {ng.TranscludeFn} $transclude
      */
     link($scope, $element, $attr, _ctrl, $transclude) {
       /** @type {Element | null | undefined} */
@@ -34,23 +34,28 @@ export function ngIfDirective($animate) {
       $scope.$watch($attr.ngIf, (value) => {
         if (value) {
           if (!childScope) {
-            $transclude((clone, newScope) => {
-              childScope = newScope;
-              // Note: We only need the first/last node of the cloned nodes.
-              // However, we need to keep the reference to the dom wrapper as it might be changed later
-              // by a directive with templateUrl when its template arrives.
-              block = clone;
+            $transclude(
+              (
+                /** @type {Element | null | undefined} */ clone,
+                /** @type {ng.Scope | null} */ newScope,
+              ) => {
+                childScope = newScope;
+                // Note: We only need the first/last node of the cloned nodes.
+                // However, we need to keep the reference to the dom wrapper as it might be changed later
+                // by a directive with templateUrl when its template arrives.
+                block = clone;
 
-              if (hasAnimate(clone)) {
-                $animate.enter(
-                  clone,
-                  /** @type {Element} */ ($element.parentElement),
-                  $element,
-                );
-              } else {
-                $element.after(clone);
-              }
-            });
+                if (hasAnimate(/** @type {Node} */ (clone))) {
+                  $animate.enter(
+                    /** @type {Element} */ (clone),
+                    /** @type {Element} */ ($element.parentElement),
+                    $element,
+                  );
+                } else {
+                  $element.after(/** @type {Node} */ (clone));
+                }
+              },
+            );
           }
         } else {
           if (previousElements) {

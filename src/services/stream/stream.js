@@ -139,11 +139,13 @@ export class StreamConnection {
    */
   resetHeartbeat() {
     if (!this.config.heartbeatTimeout) return;
+
     clearTimeout(this.heartbeatTimer);
     this.heartbeatTimer = setTimeout(() => {
       this.$log.warn("StreamConnection: heartbeat timeout, reconnecting...");
-      this.close();
+      this._closeInternal();
       this.retryCount++;
+      this.config.onReconnect?.(this.retryCount);
       this.connect();
     }, this.config.heartbeatTimeout);
   }
@@ -171,5 +173,10 @@ export class StreamConnection {
     if (this.connection && this.connection.close) {
       this.connection.close();
     }
+  }
+
+  _closeInternal() {
+    clearTimeout(this.heartbeatTimer);
+    this.connection?.close();
   }
 }

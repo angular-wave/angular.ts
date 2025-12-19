@@ -72,14 +72,14 @@ export function isArrayLike(obj) {
   //   via the forEach method when constructing the JQLite object in the first place
   if (isArray(obj) || obj instanceof Array || isString(obj)) return true;
 
-  const len = /** @type {Object} */ (obj).length;
+  const len = /** @type {ArrayLike<any>} */ (obj).length;
 
   // NodeList objects (with `item` method) and
   // other objects with suitable length characteristics are array-like
   return (
     isNumber(len) &&
     ((len >= 0 && len - 1 in /** @type {Object} */ (obj)) ||
-      typeof (/** @type {Object} */ (obj).item) === "function")
+      typeof (/** @type {NodeList} */ (obj).item) === "function")
   );
 }
 
@@ -263,7 +263,7 @@ export function isRegExp(value) {
  * @returns {obj is Window} True if `obj` is a window obj.
  */
 export function isWindow(obj) {
-  return obj && isIntanceOf(obj, Window);
+  return isIntanceOf(obj, Window);
 }
 
 /**
@@ -360,14 +360,14 @@ export function snakeCase(name, separator) {
 
 /**
  * Set or clear the hashkey for an object.
- * @param {{ [x: string]: any; $$hashKey?: any; }} obj object
+ * @param {{ [x: string]: any; _hashKey?: any; }} obj object
  * @param {any} hashkey the hashkey (!truthy to delete the hashkey)
  */
 export function setHashKey(obj, hashkey) {
   if (hashkey) {
-    obj.$$hashKey = hashkey;
+    obj._hashKey = hashkey;
   } else {
-    delete obj.$$hashKey;
+    delete obj._hashKey;
   }
 }
 
@@ -382,7 +382,7 @@ export function setHashKey(obj, hashkey) {
  * @returns {Object<string, any>} The extended destination object.
  */
 export function baseExtend(dst, objs, deep = false) {
-  const hasKey = dst.$$hashKey;
+  const hasKey = dst._hashKey;
 
   for (let i = 0, ii = objs.length; i < ii; ++i) {
     const obj = objs[i];
@@ -451,6 +451,7 @@ export function inherit(parent, extra) {
 
 /**
  * @param {{ toString: () => string; }} obj
+ * @returns {boolean}
  */
 export function hasCustomToString(obj) {
   return isFunction(obj.toString) && obj.toString !== toString;
@@ -462,7 +463,7 @@ export function hasCustomToString(obj) {
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)
  *
  * @param {Element} element
- * @returns
+ * @returns {string}
  */
 export function getNodeName(element) {
   return lowercase(element.nodeName);
@@ -667,10 +668,14 @@ export function stringify(value) {
       value = `${value}`;
       break;
     default:
-      if (hasCustomToString(value) && !isArray(value) && !isDate(value)) {
-        value = value.toString();
+      if (
+        hasCustomToString(/** @type {Object} */ (value)) &&
+        !isArray(value) &&
+        !isDate(value)
+      ) {
+        value = /** @type {Object} */ (value).toString();
       } else {
-        value = toJson(value);
+        value = toJson(/** @type {any[]} */ (value));
       }
   }
 
@@ -758,68 +763,35 @@ function toJsonReplacer(key, value) {
 }
 
 /**
- * Serializes input into a JSON-formatted string. Properties with leading $$ characters will be
- * stripped since AngularTS uses this notation internally.
+ * Serializes input into a JSON-formatted string. Properties with leading `$$` characters
+ * will be stripped since AngularTS uses this notation internally.
  *
- * @param {Object|Array|Date|string|number|boolean} obj Input to be serialized into JSON.
- * @param {boolean|number} [pretty=2] If set to true, the JSON output will contain newlines and whitespace.
- *    If set to an integer, the JSON output will contain that many spaces per indentation.
- * @returns {string|undefined} JSON-ified string representing `obj`.
- * @knownIssue
- *
- * The Safari browser throws a `RangeError` instead of returning `null` when it tries to stringify a `Date`
- * object with an invalid date value. The only reliable way to prevent this is to monkeypatch the
- * `Date.prototype.toJSON` method as follows:
- *
- * ```
- * let _DatetoJSON = Date.prototype.toJSON;
- * Date.prototype.toJSON = function() {
- *   try {
- *     return _DatetoJSON.call(this);
- *   } catch(e) {
- *     if (e instanceof RangeError) {
- *       return null;
- *     }
- *     throw e;
- *   }
- * };
- * ```
- *
- * See https://github.com/angular/angular.js/pull/14221 for more information.
+ * @param {Object|Array<any>|Date|string|number|boolean} obj
+ *   Input to be serialized into JSON.
+ * @param {boolean|number} [pretty=2]
+ *   If `true`, the JSON output will contain newlines and whitespace (2 spaces).
+ *   If a number, the JSON output will contain that many spaces per indentation.
+ * @returns {string|undefined}
+ *   JSON-ified string representing `obj`, or `undefined` if `obj` is undefined.
  */
 export function toJson(obj, pretty) {
   if (isUndefined(obj)) return undefined;
 
   if (!isNumber(pretty)) {
-    pretty = pretty ? 2 : null;
+    pretty = pretty ? 2 : undefined;
   }
 
-  return JSON.stringify(obj, toJsonReplacer, /** @type {Number} */ (pretty));
+  return JSON.stringify(obj, toJsonReplacer, /** @type {number} */ (pretty));
 }
 
 /**
  * Deserializes a JSON string.
  *
  * @param {string} json JSON string to deserialize.
- * @returns {Object|Array|string|number} Deserialized JSON string.
+ * @returns {Object|Array<any>|string|number} Deserialized JSON string.
  */
 export function fromJson(json) {
   return isString(json) ? JSON.parse(json) : json;
-}
-
-const MS_PER_MINUTE = 60_000; // 60,000 ms in a minute
-
-/**
- * @param {any} timezone
- * @param {number} [fallback]
- */
-export function timezoneToOffset(timezone, fallback) {
-  const requestedTimezoneOffset =
-    Date.parse(`Jan 01, 1970 00:00:00 ${timezone}`) / MS_PER_MINUTE;
-
-  return isNumberNaN(requestedTimezoneOffset)
-    ? fallback
-    : requestedTimezoneOffset;
 }
 
 /**
@@ -835,29 +807,12 @@ export function addDateMinutes(date, minutes) {
 }
 
 /**
- * @param {Date} date
- * @param {any} timezone
- * @param {undefined} [reverse]
- */
-export function convertTimezoneToLocal(date, timezone, reverse) {
-  const doReverse = reverse ? -1 : 1;
-
-  const dateTimezoneOffset = date.getTimezoneOffset();
-
-  const timezoneOffset = timezoneToOffset(timezone, dateTimezoneOffset);
-
-  return addDateMinutes(
-    date,
-    doReverse * (timezoneOffset - dateTimezoneOffset),
-  );
-}
-
-/**
  * Parses an escaped url query string into key-value pairs.
  * @param {string} keyValue
  * @returns {Object.<string,boolean|Array<any>>}
  */
 export function parseKeyValue(keyValue) {
+  /** @type {Record<string, boolean | string | Array<any>>} */
   const obj = {};
 
   (keyValue || "").split("&").forEach((item) => {
@@ -881,9 +836,9 @@ export function parseKeyValue(keyValue) {
         val = isDefined(val) ? tryDecodeURIComponent(val) : true;
 
         if (!hasOwn(obj, /** @type {string} */ (key))) {
-          obj[key] = val;
+          obj[key] = /** @type {string } */ (val);
         } else if (isArray(obj[key])) {
-          obj[key].push(val);
+          /** @type {Array<any>} */ (obj[key]).push(val);
         } else {
           obj[key] = [obj[key], val];
         }
@@ -995,11 +950,10 @@ export const ngAttrPrefixes = ["ng-", "data-ng-"];
  */
 export function shallowCopy(src, dst) {
   if (isArray(src)) {
-    const out = /** @type {any[]} */ dst || [];
+    /** @type {any[]} */
+    const out = /** @type {any[]} */ (dst) || [];
 
-    for (let i = 0, ii = src.length; i < ii; i++) {
-      out[i] = src[i];
-    }
+    out.push(...src);
 
     return /** @type {T} */ (out);
   }
@@ -1201,19 +1155,19 @@ export function toDebugString(obj) {
  * Hash of a:
  *  string is string
  *  number is number as string
- *  object is either result of calling $$hashKey function on the object or uniquely generated id,
- *         that is also assigned to the $$hashKey property of the object.
+ *  object is either result of calling _hashKey function on the object or uniquely generated id,
+ *         that is also assigned to the _hashKey property of the object.
  *
  * @param {*} obj
  * @returns {string} hash string such that the same input will have the same hash string.
  *         The resulting string key is in 'type:hashKey' format.
  */
 export function hashKey(obj) {
-  const key = obj && obj.$$hashKey;
+  const key = obj && obj._hashKey;
 
   if (key) {
     if (typeof key === "function") {
-      return obj.$$hashKey();
+      return obj._hashKey();
     }
 
     return key;
@@ -1222,9 +1176,9 @@ export function hashKey(obj) {
   const objType = typeof obj;
 
   if (objType === "function" || (objType === "object" && obj !== null)) {
-    obj.$$hashKey = `${objType}:${nextUid()}`;
+    obj._hashKey = `${objType}:${nextUid()}`;
 
-    return obj.$$hashKey;
+    return obj._hashKey;
   }
 
   if (objType === "undefined") {

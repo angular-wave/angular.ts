@@ -36,17 +36,10 @@
  *
  * ```
  *
- * @param fn
+ * @param {Function} fn
  * @returns {*|function(): (*|any)}
  */
-export function curry(fn: any): any | (() => any | any);
-/**
- * Given a varargs list of functions, returns a function that composes the argument functions, right-to-left
- * given: f(x), g(x), h(x)
- * let composed = compose(f,g,h)
- * then, composed is: f(g(h(x)))
- */
-export function compose(...fns: any[]): (...args: any[]) => any;
+export function curry(fn: Function): any | (() => any | any);
 /**
  * Given a class constructor, returns a predicate function that checks
  * whether a given object is an instance of that class.
@@ -69,33 +62,30 @@ export function is(ctor: new (...args: any[]) => any): (obj: any) => boolean;
  * of size 2: [ predicate, mapFn ]
  *
  * These 2-tuples should be put in an outer array.
- *
- * @example
- * ```
- *
- * // Here's a 2-tuple where the first element is the isString predicate
- * // and the second element is a function that returns a description of the input
- * let firstTuple = [ angular.isString, (input) => `Heres your string ${input}` ];
- *
- * // Second tuple: predicate "isNumber", mapfn returns a description
- * let secondTuple = [ angular.isNumber, (input) => `(${input}) That's a number!` ];
- *
- * let third = [ (input) => input === null,  (input) => `Oh, null...` ];
- *
- * let fourth = [ (input) => input === undefined,  (input) => `notdefined` ];
- *
- * let descriptionOf = pattern([ firstTuple, secondTuple, third, fourth ]);
- *
- * console.log(descriptionOf(undefined)); // 'notdefined'
- * console.log(descriptionOf(55)); // '(55) That's a number!'
- * console.log(descriptionOf("foo")); // 'Here's your string foo'
- * ```
- *
- * @param struct A 2D array.  Each element of the array should be an array, a 2-tuple,
- * with a Predicate and a mapping/output function
- * @returns {function(any): *}
+ * @example ```
+
+// Here's a 2-tuple where the first element is the isString predicate
+// and the second element is a function that returns a description of the input
+let firstTuple = [ angular.isString, (input) => `Heres your string ${input}` ];
+
+// Second tuple: predicate "isNumber", mapfn returns a description
+let secondTuple = [ angular.isNumber, (input) => `(${input}) That's a number!` ];
+
+let third = [ (input) => input === null,  (input) => `Oh, null...` ];
+
+let fourth = [ (input) => input === undefined,  (input) => `notdefined` ];
+
+let descriptionOf = pattern([ firstTuple, secondTuple, third, fourth ]);
+
+console.log(descriptionOf(undefined)); // 'notdefined'
+console.log(descriptionOf(55)); // '(55) That's a number!'
+console.log(descriptionOf("foo")); // 'Here's your string foo'
+```
+ * @param {string | any[]} struct A 2D array.  Each element of the array should be an array, a 2-tuple,
+with a Predicate and a mapping/output function
+ * @returns {function(any):*}
  */
-export function pattern(struct: any): (arg0: any) => any;
+export function pattern(struct: string | any[]): (arg0: any) => any;
 /**
  * Given a property name and a value, returns a function that returns a boolean based on whether
  * the passed object has a property that matches the value
@@ -104,5 +94,5 @@ export function pattern(struct: any): (arg0: any) => any;
  * getName(obj) === true
  */
 export const propEq: any;
-export function parse(path: any): (obj: any) => any;
-export function val(value: any): () => any;
+export function parse(path: string): (/** @type {any} */ obj: any) => any;
+export function val<T>(value: T): () => T;

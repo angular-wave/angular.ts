@@ -1829,7 +1829,7 @@ describe("select", () => {
           browserTrigger(element, "change");
           await wait();
           const arrayVal = ["a"];
-          arrayVal.$$hashKey = "object:4";
+          arrayVal._hashKey = "object:4";
           await wait();
           expect(scope.selected).toEqual([
             "string",

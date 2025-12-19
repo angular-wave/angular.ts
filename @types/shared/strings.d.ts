@@ -34,7 +34,11 @@ export function functionToString(fn: Function): string;
  * @returns {string}
  */
 export function fnToString(fn: [] | Function): string;
-export function stringify(value: any): any;
+/**
+ * @param {any} value
+ * @returns {string|*|string}
+ */
+export function stringify(value: any): string | any | string;
 /**
  * Splits on a delimiter, but returns the delimiters in the array
  *
@@ -44,8 +48,11 @@ export function stringify(value: any): any;
  * splitOnSlashes("/foo"); // ["/", "foo"]
  * splitOnSlashes("/foo/"); // ["/", "foo", "/"]
  * ```
+ * @param {string} delim
  */
-export function splitOnDelim(delim: any): (str: any) => any;
+export function splitOnDelim(
+  delim: string,
+): (/** @type {string} */ str: string) => string[];
 /**
  * Reduce fn that joins neighboring strings
  *
@@ -57,6 +64,8 @@ export function splitOnDelim(delim: any): (str: any) => any;
  * let arr = ["foo", "bar", 1, "baz", "", "qux" ];
  * arr.reduce(joinNeighborsR, []) // ["foobar", 1, "bazqux" ]
  * ```
+ * @param {string | any[]} acc
+ * @param {unknown} str
  */
-export function joinNeighborsR(acc: any, str: any): any;
-export function stripLastPathElement(str: any): any;
+export function joinNeighborsR(acc: string | any[], str: unknown): any;
+export function stripLastPathElement(str: string): string;

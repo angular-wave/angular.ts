@@ -57,7 +57,7 @@ export function ngRepeatDirective($animate) {
     if (keyIdentifier) scope[keyIdentifier] = key;
 
     if (value) {
-      scope.$target.$$hashKey = value.$$hashKey;
+      scope.$target._hashKey = value._hashKey;
     }
     scope.$index = index;
     scope.$first = index === 0;

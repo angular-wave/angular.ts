@@ -1,5 +1,11 @@
 import { isInjectable } from "./predicates.js";
-import { isArray, isDefined, isString, notNullOrUndefined } from "./utils.js";
+import {
+  isArray,
+  isDefined,
+  isNumber,
+  isString,
+  notNullOrUndefined,
+} from "./utils.js";
 
 export const BADARG = "badarg";
 export const BADARGKEY = "badarg: key";
@@ -76,6 +82,16 @@ export function validateArray(arg, name) {
  */
 export function validateIsString(arg, name) {
   return validate(isString, arg, name);
+}
+
+/**
+ * @param {*} arg - The value to validate.
+ * @param {string} name - Parameter name (included in error message).
+ * @returns {number} The validated value.
+ * @throws {TypeError} If the value is not a number.
+ */
+export function validateIsNumber(arg, name) {
+  return validate(isNumber, arg, name);
 }
 
 /**

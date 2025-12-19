@@ -127,7 +127,7 @@ export class FormController {
    * @param {ng.InterpolateService} $interpolate
    */
   constructor($element, $attrs, $scope, $animate, $interpolate) {
-    this.$$controls = [];
+    this._controls = [];
 
     this.$name = $interpolate($attrs.name || $attrs.ngForm || "")($scope);
 
@@ -167,7 +167,7 @@ export class FormController {
    * a form that uses `ng-model-options` to pend updates.
    */
   $rollbackViewValue() {
-    this.$$controls.forEach((control) => {
+    this._controls.forEach((control) => {
       control.$rollbackViewValue();
     });
   }
@@ -180,7 +180,7 @@ export class FormController {
    * usually handles calling this in response to input events.
    */
   $commitViewValue() {
-    this.$$controls.forEach((control) => {
+    this._controls.forEach((control) => {
       control.$commitViewValue();
     });
   }
@@ -204,7 +204,7 @@ export class FormController {
     // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
     // and not added to the scope.  Now we throw an error.
     assertNotHasOwnProperty(control.$name, "input");
-    this.$$controls.push(control);
+    this._controls.push(control);
 
     if (control.$name) {
       this[control.$name] = control;
@@ -229,7 +229,7 @@ export class FormController {
    * @returns {ReadonlyArray<FormController>}
    */
   $getControls() {
-    return shallowCopy(this.$$controls);
+    return shallowCopy(this._controls);
   }
 
   // Private API: rename a form control
@@ -271,7 +271,7 @@ export class FormController {
         this.$setValidity(name, null, control);
       });
 
-    arrayRemove(this.$$controls, control);
+    arrayRemove(this._controls, control);
 
     control.$target.$$parentForm = nullFormCtrl;
   }
@@ -324,7 +324,7 @@ export class FormController {
     this.$dirty = false;
     this.$pristine = true;
     this.$submitted = false;
-    this.$$controls.forEach((control) => {
+    this._controls.forEach((control) => {
       control.$setPristine();
     });
   }
@@ -339,7 +339,7 @@ export class FormController {
    * back to its pristine state.
    */
   $setUntouched() {
-    this.$$controls.forEach((control) => {
+    this._controls.forEach((control) => {
       control.$setUntouched();
     });
   }
@@ -365,7 +365,7 @@ export class FormController {
       this.$$element.classList.add(SUBMITTED_CLASS);
     }
     this.$submitted = true;
-    this.$$controls.forEach((control) => {
+    this._controls.forEach((control) => {
       if (control.$$setSubmitted) {
         control.$$setSubmitted();
       }

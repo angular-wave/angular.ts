@@ -36,41 +36,19 @@
  *
  * ```
  *
- * @param fn
+ * @param {Function} fn
  * @returns {*|function(): (*|any)}
  */
 export function curry(fn) {
-  const curried = (...args) => {
+  const curried = (/** @type {any[]} */ ...args) => {
     if (args.length >= fn.length) {
       return fn(...args);
     }
 
-    return (...nextArgs) => curried(...args, ...nextArgs);
+    return (/** @type {any} */ ...nextArgs) => curried(...args, ...nextArgs);
   };
 
   return curried;
-}
-
-/**
- * Given a varargs list of functions, returns a function that composes the argument functions, right-to-left
- * given: f(x), g(x), h(x)
- * let composed = compose(f,g,h)
- * then, composed is: f(g(h(x)))
- */
-export function compose(...fns) {
-  const start = fns.length - 1;
-
-  return (...args) => {
-    let i = start;
-
-    let result = fns[start](...args);
-
-    while (i--) {
-      result = fns[i](result);
-    }
-
-    return result;
-  };
 }
 
 /**
@@ -80,7 +58,13 @@ export function compose(...fns) {
  * let getName = propEq("name", "blarg");
  * getName(obj) === true
  */
-export const propEq = curry((name, _val, obj) => obj && obj[name] === _val);
+export const propEq = curry(
+  (
+    /** @type {string | number} */ name,
+    /** @type {any} */ _val,
+    /** @type {{ [x: string]: any; }} */ obj,
+  ) => obj && obj[name] === _val,
+);
 /**
  * Given a dotted property name, returns a function that returns a nested property from an object, or undefined
  * let obj = { id: 1, nestedObj: { foo: 1, name: "blarg" }, };
@@ -89,10 +73,11 @@ export const propEq = curry((name, _val, obj) => obj && obj[name] === _val);
  * let propNotFound = prop("this.property.doesnt.exist");
  * propNotFound(obj) === undefined
  */
-export const parse = (path) => {
+export const parse = (/** @type {string} */ path) => {
   const parts = path.split(".");
 
-  return (obj) => parts.reduce((acc, key) => acc && acc[key], obj);
+  return (/** @type {any} */ obj) =>
+    parts.reduce((acc, key) => acc && acc[key], obj);
 };
 
 /**
@@ -117,7 +102,12 @@ export function is(ctor) {
   };
 }
 
-/** Given a value, returns a function which returns the value */
+/**
+ * Given a value, returns a function which returns that value.
+ * @template T
+ * @param {T} value - The value to wrap in a function.
+ * @returns {() => T} A function that returns the given value.
+ */
 export const val = (value) => () => value;
 
 /**
@@ -134,31 +124,28 @@ export const val = (value) => () => value;
  * of size 2: [ predicate, mapFn ]
  *
  * These 2-tuples should be put in an outer array.
- *
- * @example
- * ```
- *
- * // Here's a 2-tuple where the first element is the isString predicate
- * // and the second element is a function that returns a description of the input
- * let firstTuple = [ angular.isString, (input) => `Heres your string ${input}` ];
- *
- * // Second tuple: predicate "isNumber", mapfn returns a description
- * let secondTuple = [ angular.isNumber, (input) => `(${input}) That's a number!` ];
- *
- * let third = [ (input) => input === null,  (input) => `Oh, null...` ];
- *
- * let fourth = [ (input) => input === undefined,  (input) => `notdefined` ];
- *
- * let descriptionOf = pattern([ firstTuple, secondTuple, third, fourth ]);
- *
- * console.log(descriptionOf(undefined)); // 'notdefined'
- * console.log(descriptionOf(55)); // '(55) That's a number!'
- * console.log(descriptionOf("foo")); // 'Here's your string foo'
- * ```
- *
- * @param struct A 2D array.  Each element of the array should be an array, a 2-tuple,
- * with a Predicate and a mapping/output function
- * @returns {function(any): *}
+ * @example ```
+
+// Here's a 2-tuple where the first element is the isString predicate
+// and the second element is a function that returns a description of the input
+let firstTuple = [ angular.isString, (input) => `Heres your string ${input}` ];
+
+// Second tuple: predicate "isNumber", mapfn returns a description
+let secondTuple = [ angular.isNumber, (input) => `(${input}) That's a number!` ];
+
+let third = [ (input) => input === null,  (input) => `Oh, null...` ];
+
+let fourth = [ (input) => input === undefined,  (input) => `notdefined` ];
+
+let descriptionOf = pattern([ firstTuple, secondTuple, third, fourth ]);
+
+console.log(descriptionOf(undefined)); // 'notdefined'
+console.log(descriptionOf(55)); // '(55) That's a number!'
+console.log(descriptionOf("foo")); // 'Here's your string foo'
+```
+ * @param {string | any[]} struct A 2D array.  Each element of the array should be an array, a 2-tuple,
+with a Predicate and a mapping/output function
+ * @returns {function(any):*}
  */
 export function pattern(struct) {
   return function (item) {

@@ -217,13 +217,13 @@ export function trim(value: any): string | any;
 export function snakeCase(name: string, separator: string): string;
 /**
  * Set or clear the hashkey for an object.
- * @param {{ [x: string]: any; $$hashKey?: any; }} obj object
+ * @param {{ [x: string]: any; _hashKey?: any; }} obj object
  * @param {any} hashkey the hashkey (!truthy to delete the hashkey)
  */
 export function setHashKey(
   obj: {
     [x: string]: any;
-    $$hashKey?: any;
+    _hashKey?: any;
   },
   hashkey: any,
 ): void;
@@ -273,6 +273,7 @@ export function isNumberNaN(num: any): boolean;
 export function inherit(parent: any, extra: any): any;
 /**
  * @param {{ toString: () => string; }} obj
+ * @returns {boolean}
  */
 export function hasCustomToString(obj: { toString: () => string }): boolean;
 /**
@@ -281,7 +282,7 @@ export function hasCustomToString(obj: { toString: () => string }): boolean;
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)
  *
  * @param {Element} element
- * @returns
+ * @returns {string}
  */
 export function getNodeName(element: Element): string;
 /**
@@ -407,66 +408,33 @@ export function sliceArgs(
  */
 export function bind(context: any, fn: any, ...args: any[]): Function;
 /**
- * Serializes input into a JSON-formatted string. Properties with leading $$ characters will be
- * stripped since AngularTS uses this notation internally.
+ * Serializes input into a JSON-formatted string. Properties with leading `$$` characters
+ * will be stripped since AngularTS uses this notation internally.
  *
- * @param {Object|Array|Date|string|number|boolean} obj Input to be serialized into JSON.
- * @param {boolean|number} [pretty=2] If set to true, the JSON output will contain newlines and whitespace.
- *    If set to an integer, the JSON output will contain that many spaces per indentation.
- * @returns {string|undefined} JSON-ified string representing `obj`.
- * @knownIssue
- *
- * The Safari browser throws a `RangeError` instead of returning `null` when it tries to stringify a `Date`
- * object with an invalid date value. The only reliable way to prevent this is to monkeypatch the
- * `Date.prototype.toJSON` method as follows:
- *
- * ```
- * let _DatetoJSON = Date.prototype.toJSON;
- * Date.prototype.toJSON = function() {
- *   try {
- *     return _DatetoJSON.call(this);
- *   } catch(e) {
- *     if (e instanceof RangeError) {
- *       return null;
- *     }
- *     throw e;
- *   }
- * };
- * ```
- *
- * See https://github.com/angular/angular.js/pull/14221 for more information.
+ * @param {Object|Array<any>|Date|string|number|boolean} obj
+ *   Input to be serialized into JSON.
+ * @param {boolean|number} [pretty=2]
+ *   If `true`, the JSON output will contain newlines and whitespace (2 spaces).
+ *   If a number, the JSON output will contain that many spaces per indentation.
+ * @returns {string|undefined}
+ *   JSON-ified string representing `obj`, or `undefined` if `obj` is undefined.
  */
 export function toJson(
-  obj: any | any[] | Date | string | number | boolean,
+  obj: any | Array<any> | Date | string | number | boolean,
   pretty?: boolean | number,
 ): string | undefined;
 /**
  * Deserializes a JSON string.
  *
  * @param {string} json JSON string to deserialize.
- * @returns {Object|Array|string|number} Deserialized JSON string.
+ * @returns {Object|Array<any>|string|number} Deserialized JSON string.
  */
-export function fromJson(json: string): any | any[] | string | number;
-/**
- * @param {any} timezone
- * @param {number} [fallback]
- */
-export function timezoneToOffset(timezone: any, fallback?: number): number;
+export function fromJson(json: string): any | Array<any> | string | number;
 /**
  * @param {Date} date
  * @param {number} minutes
  */
 export function addDateMinutes(date: Date, minutes: number): Date;
-/**
- * @param {Date} date
- * @param {any} timezone
- * @param {undefined} [reverse]
- */
-export function convertTimezoneToLocal(
-  date: Date,
-  timezone: any,
-  reverse?: undefined,
-): Date;
 /**
  * Parses an escaped url query string into key-value pairs.
  * @param {string} keyValue
@@ -616,8 +584,8 @@ export function toDebugString<T>(obj: T | ng.Scope): string;
  * Hash of a:
  *  string is string
  *  number is number as string
- *  object is either result of calling $$hashKey function on the object or uniquely generated id,
- *         that is also assigned to the $$hashKey property of the object.
+ *  object is either result of calling _hashKey function on the object or uniquely generated id,
+ *         that is also assigned to the _hashKey property of the object.
  *
  * @param {*} obj
  * @returns {string} hash string such that the same input will have the same hash string.

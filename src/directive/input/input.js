@@ -1,7 +1,6 @@
 import { $injectTokens } from "../../injection-tokens.js";
 import {
   addDateMinutes,
-  convertTimezoneToLocal,
   deProxy,
   equals,
   isDate,
@@ -14,7 +13,6 @@ import {
   isString,
   isUndefined,
   nextUid,
-  timezoneToOffset,
   trim,
 } from "../../shared/utils.js";
 import { ngModelMinErr } from "./../model/model.js";
@@ -1163,4 +1161,38 @@ export function ngValueDirective() {
       };
     },
   };
+}
+
+/**
+ * @param {Date} date
+ * @param {any} timezone
+ * @param {undefined} [reverse]
+ */
+export function convertTimezoneToLocal(date, timezone, reverse) {
+  const doReverse = reverse ? -1 : 1;
+
+  const dateTimezoneOffset = date.getTimezoneOffset();
+
+  const timezoneOffset = timezoneToOffset(timezone, dateTimezoneOffset);
+
+  return addDateMinutes(
+    date,
+    doReverse * (timezoneOffset - dateTimezoneOffset),
+  );
+}
+
+const MS_PER_MINUTE = 60_000; // 60,000 ms in a minute
+
+/**
+ * @param {any} timezone
+ * @param {number} [fallback]
+ * @returns {number}
+ */
+export function timezoneToOffset(timezone, fallback) {
+  const requestedTimezoneOffset =
+    Date.parse(`Jan 01, 1970 00:00:00 ${timezone}`) / MS_PER_MINUTE;
+
+  return isNumberNaN(requestedTimezoneOffset)
+    ? (fallback ?? 0)
+    : requestedTimezoneOffset;
 }

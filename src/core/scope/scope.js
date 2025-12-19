@@ -500,7 +500,7 @@ export class Scope {
           let scheduled = foreignListeners;
 
           // filter for repeaters
-          const hashKey = this.$target.$$hashKey;
+          const hashKey = this.$target._hashKey;
 
           if (hashKey) {
             scheduled = [];
@@ -508,7 +508,7 @@ export class Scope {
             for (let i = 0, l = foreignListeners.length; i < l; i++) {
               const listener = foreignListeners[i];
 
-              if (listener.originalTarget.$$hashKey === hashKey) {
+              if (listener.originalTarget._hashKey === hashKey) {
                 scheduled.push(listener);
               }
             }
