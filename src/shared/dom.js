@@ -607,7 +607,7 @@ export function emptyElement(element) {
  * @param {HTMLElement | Element} parentElement
  *   The parent element that will receive the inserted element.
  *
- * @param {HTMLElement | Element | null} [afterElement]
+ * @param {ChildNode | Element | null} [afterElement]
  *   An optional sibling element — if present and valid, `element`
  *   will be inserted after it. If omitted or invalid, `element`
  *   is prepended to `parentElement`.
@@ -636,7 +636,7 @@ export function domInsert(element, parentElement, afterElement) {
 /**
  * @param {HTMLElement} element
  * @param {HTMLElement} parent
- * @param {HTMLElement | null | undefined} after
+ * @param {ChildNode | null | undefined} after
  */
 export function animatedomInsert(element, parent, after) {
   const originalVisibility = element.style.visibility;

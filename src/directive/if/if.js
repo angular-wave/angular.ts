@@ -36,8 +36,8 @@ export function ngIfDirective($animate) {
           if (!childScope) {
             $transclude(
               (
-                /** @type {Element | null | undefined} */ clone,
-                /** @type {ng.Scope | null} */ newScope,
+                /** @type {Element} */ clone,
+                /** @type {ng.Scope} */ newScope,
               ) => {
                 childScope = newScope;
                 // Note: We only need the first/last node of the cloned nodes.

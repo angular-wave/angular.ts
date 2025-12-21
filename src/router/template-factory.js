@@ -169,7 +169,9 @@ export class TemplateFactoryProvider {
   fromProvider(provider, params, context) {
     const deps = annotate(provider);
 
-    const providerFn = isArray(provider) ? tail(provider) : provider;
+    const providerFn = isArray(provider)
+      ? /** @type {Function} */ (tail(provider))
+      : provider;
 
     const resolvable = new Resolvable("", providerFn, deps);
 
