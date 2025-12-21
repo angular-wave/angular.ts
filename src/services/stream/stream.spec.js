@@ -100,7 +100,7 @@ describe("StreamConnection", () => {
   it("closes EventSource manually", () => {
     const conn = new StreamConnection(() => new EventSourceMock(), {}, log);
     conn.close();
-    expect(conn.connection.close).toHaveBeenCalled();
+    expect(conn._connection.close).toHaveBeenCalled();
   });
 
   it("reconnects manually via connect()", () => {
@@ -114,8 +114,8 @@ describe("StreamConnection", () => {
 
     // Instantiate without auto-connect
     const conn = new StreamConnection(createFn, {}, log);
-    conn.connection = firstConn; // manually assign first connection
-    conn.closed = false; // ensure connect() will proceed
+    conn._connection = firstConn; // manually assign first connection
+    conn._closed = false; // ensure connect() will proceed
 
     // Manual reconnect
     conn.connect();
@@ -124,7 +124,7 @@ describe("StreamConnection", () => {
     expect(firstConn.close).toHaveBeenCalled();
 
     // New connection assigned
-    expect(conn.connection).toBe(secondConn);
+    expect(conn._connection).toBe(secondConn);
     //
     // // Clean up
     conn.close();

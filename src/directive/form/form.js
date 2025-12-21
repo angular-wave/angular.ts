@@ -16,6 +16,7 @@ import {
   PRISTINE_CLASS,
   VALID_CLASS,
 } from "../../shared/constants.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 
 /**
  * @type {{
@@ -112,11 +113,11 @@ const SUBMITTED_CLASS = "ng-submitted";
 export class FormController {
   static $nonscope = true;
   /* @ignore */ static $inject = [
-    "$element",
-    "$attrs",
-    "$scope",
-    "$animate",
-    "$interpolate",
+    $t._element,
+    $t._attrs,
+    $t._scope,
+    $t._animate,
+    $t._interpolate,
   ];
 
   /**

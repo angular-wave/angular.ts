@@ -71,10 +71,10 @@ export const ngModelMinErr = minErr("ngModel");
 export class NgModelController {
   /* @ignore */ static $nonscope = true;
   /* @ignore */ static $inject = [
-    "$scope",
+    $t._scope,
     $t._exceptionHandler,
-    "$attrs",
-    "$element",
+    $t._attrs,
+    $t._element,
     $t._parse,
     $t._animate,
     $t._interpolate,
