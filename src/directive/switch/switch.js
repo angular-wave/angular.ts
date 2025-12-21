@@ -1,5 +1,5 @@
 import { $injectTokens } from "../../injection-tokens.js";
-import { domInsert, getBlockNodes } from "../../shared/dom.js";
+import { domInsert } from "../../shared/dom.js";
 import { hasAnimate } from "../../shared/utils.js";
 
 ngSwitchDirective.$inject = [$injectTokens._animate];
@@ -43,19 +43,20 @@ export function ngSwitchDirective($animate) {
 
         let ii;
 
+        let runner;
+
         // Start with the last, in case the array is modified during the loop
         while (previousLeaveAnimations.length) {
           $animate.cancel(previousLeaveAnimations.pop());
         }
 
         for (i = 0, ii = selectedScopes.length; i < ii; ++i) {
-          const selected = getBlockNodes(selectedElements[i].clone);
+          const selected = selectedElements[i].clone;
 
           selectedScopes[i].$destroy();
 
           if (hasAnimate(selected)) {
-            const runner = (previousLeaveAnimations[i] =
-              $animate.leave(selected));
+            runner = previousLeaveAnimations[i] = $animate.leave(selected);
 
             runner.done(spliceFactory(previousLeaveAnimations, i));
           } else {
@@ -85,7 +86,13 @@ export function ngSwitchDirective($animate) {
               selectedElements.push(block);
 
               if (hasAnimate(caseElement)) {
-                $animate.enter(caseElement, anchor.parentElement, anchor);
+                if (runner) {
+                  requestAnimationFrame(() => {
+                    $animate.enter(caseElement, anchor.parentElement, anchor);
+                  });
+                } else {
+                  $animate.enter(caseElement, anchor.parentElement, anchor);
+                }
               } else {
                 domInsert(caseElement, anchor.parentElement, anchor);
               }
