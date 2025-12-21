@@ -14,7 +14,7 @@ export function ngSwitchDirective($animate) {
 
     // asks for $scope to fool the BC controller module
     controller: [
-      "$scope",
+      $injectTokens._scope,
       class {
         constructor() {
           this.cases = {};

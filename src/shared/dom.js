@@ -24,7 +24,7 @@ export const Cache = new Map();
 /**
  * Key for storing scope data, attached to an element
  */
-const SCOPE_KEY = "$scope";
+const SCOPE_KEY = $injectTokens._scope;
 
 const DASH_LOWERCASE_REGEXP = /-([a-z])/g;
 

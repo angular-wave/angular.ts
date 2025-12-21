@@ -23,8 +23,6 @@ class SelectController {
     "selectValueMap",
     "emptyOption",
     "optionsMap",
-    "$scope",
-    "$element",
   ];
 
   /**
@@ -52,8 +50,8 @@ class SelectController {
     /** @type {boolean} */
     this.multiple = false;
 
-    /** @type {HTMLOptionElement} */
-    this.unknownOption = document.createElement("option");
+    /** @private @type {HTMLOptionElement} */
+    this._unknownOption = document.createElement("option");
 
     /** @type {boolean} */
     this.hasEmptyOption = false;
@@ -85,10 +83,10 @@ class SelectController {
   renderUnknownOption(val) {
     const unknownVal = this.generateUnknownOptionValue(val);
 
-    this.unknownOption.value = unknownVal;
-    this.$element.prepend(this.unknownOption);
-    this.unknownOption.selected = true;
-    this.unknownOption.setAttribute("selected", "selected");
+    this._unknownOption.value = unknownVal;
+    this.$element.prepend(this._unknownOption);
+    this._unknownOption.selected = true;
+    this._unknownOption.setAttribute("selected", "selected");
     this.$element.value = unknownVal;
   }
 
@@ -99,9 +97,9 @@ class SelectController {
   updateUnknownOption(val) {
     const unknownVal = this.generateUnknownOptionValue(val);
 
-    this.unknownOption.value = unknownVal;
-    this.unknownOption.selected = true;
-    this.unknownOption.setAttribute("selected", "selected");
+    this._unknownOption.value = unknownVal;
+    this._unknownOption.selected = true;
+    this._unknownOption.setAttribute("selected", "selected");
     this.$element.value = unknownVal;
   }
 
@@ -122,7 +120,7 @@ class SelectController {
    * Remove the unknown option from the select element if it exists.
    */
   removeUnknownOption() {
-    if (this.unknownOption.parentElement) this.unknownOption.remove();
+    if (this._unknownOption.parentElement) this._unknownOption.remove();
   }
 
   /**
@@ -247,7 +245,7 @@ class SelectController {
    * @returns {boolean} Whether the unknown option is currently selected.
    */
   $isUnknownOptionSelected() {
-    return this.$element.options[0] === this.unknownOption;
+    return this.$element.options[0] === this._unknownOption;
   }
 
   /**
@@ -268,7 +266,7 @@ class SelectController {
     if (isNullOrUndefined(value) && this.emptyOption) {
       this.removeUnknownOption();
       this.selectEmptyOption();
-    } else if (this.unknownOption.parentElement) {
+    } else if (this._unknownOption.parentElement) {
       this.updateUnknownOption(value);
     } else {
       this.renderUnknownOption(value);
