@@ -119,7 +119,7 @@ export function isArray(array) {
  * @param {new (...args: any[]) => T} type  The constructor to test against
  * @returns {val is T}
  */
-export function isIntanceOf(val, type) {
+export function isInstanceOf(val, type) {
   return val instanceof type;
 }
 
@@ -263,7 +263,7 @@ export function isRegExp(value) {
  * @returns {obj is Window} True if `obj` is a window obj.
  */
 export function isWindow(obj) {
-  return isIntanceOf(obj, Window);
+  return isInstanceOf(obj, Window);
 }
 
 /**

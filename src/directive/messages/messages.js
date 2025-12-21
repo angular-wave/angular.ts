@@ -3,7 +3,7 @@ import {
   entries,
   hasOwn,
   isArray,
-  isIntanceOf,
+  isInstanceOf,
   isString,
 } from "../../shared/utils.js";
 
@@ -265,7 +265,7 @@ export function ngMessagesIncludeDirective($templateRequest, $compile) {
         } else {
           // Non-empty template - compile and link
           $compile(html)($scope, (contents) => {
-            isIntanceOf(contents, Node) && element.after(contents);
+            isInstanceOf(contents, Node) && element.after(contents);
           });
         }
       });

@@ -68,7 +68,7 @@ export function isArray<T>(array: any): array is T[];
  * @param {new (...args: any[]) => T} type  The constructor to test against
  * @returns {val is T}
  */
-export function isIntanceOf<T>(
+export function isInstanceOf<T>(
   val: any,
   type: new (...args: any[]) => T,
 ): val is T;
