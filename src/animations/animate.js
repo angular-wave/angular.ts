@@ -2,11 +2,12 @@ import {
   extend,
   hasAnimate,
   isFunction,
+  isIntanceOf,
   isObject,
   mergeClasses,
   minErr,
 } from "../shared/utils.js";
-import { animatedomInsert, removeElement } from "../shared/dom.js";
+import { animatedomInsert, domInsert, removeElement } from "../shared/dom.js";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
 import { $injectTokens } from "../injection-tokens.js";
 
@@ -334,13 +335,21 @@ export function AnimateProvider($provide) {
          *
          * @param {Element} element - the element which will be inserted into the DOM
          * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
-         * @param {Element} [after] - after the sibling element after which the element will be appended
+         * @param {ChildNode | null | undefined} [after] - after the sibling element after which the element will be appended
          * @param {import("./interface.ts").AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
          * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
          */
         enter(element, parent, after, options) {
           parent = parent || after.parentElement;
-          animatedomInsert(element, parent, after);
+
+          if (
+            isIntanceOf(element, HTMLElement) &&
+            isIntanceOf(parent, HTMLElement)
+          ) {
+            animatedomInsert(element, parent, after);
+          } else {
+            domInsert(element, parent, after);
+          }
 
           return $$animateQueue.push(
             element,
@@ -363,7 +372,15 @@ export function AnimateProvider($provide) {
          */
         move(element, parent, after, options) {
           parent = parent || after.parentElement;
-          animatedomInsert(element, parent, after);
+
+          if (
+            isIntanceOf(element, HTMLElement) &&
+            isIntanceOf(parent, HTMLElement)
+          ) {
+            animatedomInsert(element, parent, after);
+          } else {
+            domInsert(element, parent, after);
+          }
 
           return $$animateQueue.push(
             element,

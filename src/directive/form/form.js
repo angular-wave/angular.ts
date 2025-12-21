@@ -22,13 +22,13 @@ import {
  *   $nonscope: boolean,
  *   $addControl: Function,
  *   $getControls: () => any[],
- *   $$renameControl: Function,
+ *   _renameControl: Function,
  *   $removeControl: Function,
  *   $setValidity: Function | ((key: any, isValid: boolean, control: any) => any),
  *   $setDirty: Function,
  *   $setPristine: Function,
  *   $setSubmitted: Function,
- *   $$setSubmitted: Function
+ *   _setSubmitted: Function
  * }}
  */
 export const nullFormCtrl = {
@@ -37,7 +37,7 @@ export const nullFormCtrl = {
     /* empty */
   },
   $getControls: () => [],
-  $$renameControl: (control, name) => {
+  _renameControl: (control, name) => {
     control.$name = name;
   },
   $removeControl: () => {
@@ -55,7 +55,7 @@ export const nullFormCtrl = {
   $setSubmitted: () => {
     /* empty */
   },
-  $$setSubmitted: () => {
+  _setSubmitted: () => {
     /* empty */
   },
 };
@@ -233,7 +233,7 @@ export class FormController {
   }
 
   // Private API: rename a form control
-  $$renameControl(control, newName) {
+  _renameControl(control, newName) {
     const oldName = control.$name;
 
     if (this[oldName] === control) {
@@ -355,10 +355,10 @@ export class FormController {
     while (rootForm.$$parentForm && rootForm.$$parentForm !== nullFormCtrl) {
       rootForm = rootForm.$$parentForm;
     }
-    rootForm.$$setSubmitted();
+    rootForm._setSubmitted();
   }
 
-  $$setSubmitted() {
+  _setSubmitted() {
     if (hasAnimate(this.$$element)) {
       this.$$animate.addClass(this.$$element, SUBMITTED_CLASS);
     } else {
@@ -366,8 +366,8 @@ export class FormController {
     }
     this.$submitted = true;
     this._controls.forEach((control) => {
-      if (control.$$setSubmitted) {
-        control.$$setSubmitted();
+      if (control._setSubmitted) {
+        control._setSubmitted();
       }
     });
   }
@@ -685,7 +685,7 @@ const formDirectiveFactory = function (isNgForm) {
                 attrParam.$observe(nameAttr, (newValue) => {
                   if (controller.$name === newValue) return;
                   scope.$target[controller.$name] = undefined;
-                  controller.$$parentForm.$$renameControl(controller, newValue);
+                  controller.$$parentForm._renameControl(controller, newValue);
 
                   if (
                     scope.$target !== controller.$$parentForm &&

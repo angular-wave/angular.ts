@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AngularTS</title>
+    <link rel="shortcut icon" type="image/png" href="images/favicon.ico" />
+    <script type="module" src="/src/index.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        window.angular.module("app", []).controller("ExampleController", [
+          "$scope",
+          function ($scope) {
+            $scope.items = ["settings", "home", "options", "other"];
+            $scope.selection = $scope.items[0];
+          },
+        ]);
+      });
+    </script>
+
+    <style>
+      .animate-switch-container {
+        position: relative;
+        background: white;
+        border: 1px solid black;
+        height: 40px;
+        overflow: hidden;
+      }
+
+      .animate-switch {
+        padding: 10px;
+      }
+
+      .animate-switch.ng-animate {
+        transition: all cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
+
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+
+      .animate-switch.ng-leave.ng-leave-active,
+      .animate-switch.ng-enter {
+        top: -50px;
+      }
+      .animate-switch.ng-leave,
+      .animate-switch.ng-enter.ng-enter-active {
+        top: 0;
+      }
+    </style>
+  </head>
+  <body ng-app="app">
+    <div ng-controller="ExampleController">
+      <select ng-model="selection" ng-options="item for item in items"></select>
+      <code>selection={{selection}}</code>
+      <hr />
+      <div class="animate-switch-container" ng-switch on="selection">
+        <div
+          class="animate-switch"
+          animate="true"
+          ng-switch-when="settings|options"
+          ng-switch-when-separator="|"
+        >
+          Settings Div
+        </div>
+        <div class="animate-switch" animate="true" ng-switch-when="home">
+          Home Span
+        </div>
+        <div class="animate-switch" animate="true" ng-switch-default>
+          default
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

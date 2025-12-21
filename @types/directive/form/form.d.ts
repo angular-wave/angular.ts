@@ -4,26 +4,26 @@ export function setupValidity(instance: any): void;
  *   $nonscope: boolean,
  *   $addControl: Function,
  *   $getControls: () => any[],
- *   $$renameControl: Function,
+ *   _renameControl: Function,
  *   $removeControl: Function,
  *   $setValidity: Function | ((key: any, isValid: boolean, control: any) => any),
  *   $setDirty: Function,
  *   $setPristine: Function,
  *   $setSubmitted: Function,
- *   $$setSubmitted: Function
+ *   _setSubmitted: Function
  * }}
  */
 export const nullFormCtrl: {
   $nonscope: boolean;
   $addControl: Function;
   $getControls: () => any[];
-  $$renameControl: Function;
+  _renameControl: Function;
   $removeControl: Function;
   $setValidity: Function | ((key: any, isValid: boolean, control: any) => any);
   $setDirty: Function;
   $setPristine: Function;
   $setSubmitted: Function;
-  $$setSubmitted: Function;
+  _setSubmitted: Function;
 };
 export const PENDING_CLASS: "ng-pending";
 /**
@@ -158,7 +158,7 @@ export class FormController {
    * @returns {ReadonlyArray<FormController>}
    */
   $getControls(): ReadonlyArray<FormController>;
-  $$renameControl(control: any, newName: any): void;
+  _renameControl(control: any, newName: any): void;
   /**
    * Deregister a control from the form.
    *
@@ -206,7 +206,7 @@ export class FormController {
    * parent forms of the form.
    */
   $setSubmitted(): void;
-  $$setSubmitted(): void;
+  _setSubmitted(): void;
   set(object: any, property: any, controller: any): void;
   unset(object: any, property: any, controller: any): void;
   /**

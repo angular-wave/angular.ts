@@ -1209,7 +1209,7 @@ export function ngModelDirective() {
 
             attr.$observe("name", (newValue) => {
               if (modelCtrl.$name !== newValue) {
-                modelCtrl.$$parentForm.$$renameControl(modelCtrl, newValue);
+                modelCtrl.$$parentForm._renameControl(modelCtrl, newValue);
               }
             });
             const deregisterWatch = scope.$watch(attr.ngModel, (val) => {

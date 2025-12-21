@@ -1,6 +1,9 @@
 import type { Scope } from "../scope/scope.js";
 import type { NodeRef } from "../../shared/noderef.js";
 
+type TranscludedNodes = Node | Node[] | NodeList | null;
+type TranscludeFnCb = (clone?: TranscludedNodes, scope?: Scope | null) => void;
+
 /**
  * A function passed as the fifth argument to a `PublicLinkFn` link function.
  * It behaves like a linking function, with the `scope` argument automatically created
@@ -9,7 +12,8 @@ import type { NodeRef } from "../../shared/noderef.js";
  * The function returns the DOM content to be injected (transcluded) into the directive.
  */
 export type TranscludeFn = {
-  (clone?: Element | Node | ChildNode | NodeList | Node[], scope?: Scope): void;
+  (cb: TranscludeFnCb): void;
+  (scope: Scope, cb?: TranscludeFnCb): void;
   $$slots?: any;
 };
 

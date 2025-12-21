@@ -102,7 +102,7 @@ export class NgModelController {
     $nonscope: boolean;
     $addControl: Function;
     $getControls: () => any[];
-    $$renameControl: Function;
+    _renameControl: Function;
     $removeControl: Function;
     $setValidity:
       | Function
@@ -110,7 +110,7 @@ export class NgModelController {
     $setDirty: Function;
     $setPristine: Function;
     $setSubmitted: Function;
-    $$setSubmitted: Function;
+    _setSubmitted: Function;
   };
   $options: {
     $$options: import("../model-options/model-options.js").ModelOptionsConfig;
