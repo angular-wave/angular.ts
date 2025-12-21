@@ -2,7 +2,7 @@ import {
   extend,
   hasAnimate,
   isFunction,
-  isIntanceOf,
+  isInstanceOf,
   isObject,
   mergeClasses,
   minErr,
@@ -343,8 +343,8 @@ export function AnimateProvider($provide) {
           parent = parent || after.parentElement;
 
           if (
-            isIntanceOf(element, HTMLElement) &&
-            isIntanceOf(parent, HTMLElement)
+            isInstanceOf(element, HTMLElement) &&
+            isInstanceOf(parent, HTMLElement)
           ) {
             animatedomInsert(element, parent, after);
           } else {
@@ -374,8 +374,8 @@ export function AnimateProvider($provide) {
           parent = parent || after.parentElement;
 
           if (
-            isIntanceOf(element, HTMLElement) &&
-            isIntanceOf(parent, HTMLElement)
+            isInstanceOf(element, HTMLElement) &&
+            isInstanceOf(parent, HTMLElement)
           ) {
             animatedomInsert(element, parent, after);
           } else {
