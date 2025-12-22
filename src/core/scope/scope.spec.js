@@ -307,7 +307,7 @@ describe("Scope", () => {
     it("inherits the parents listeners", () => {
       const child = scope.$new();
 
-      expect(child.$$listeners).toBe(scope.$$listeners);
+      expect(child._listeners).toBe(scope._listeners);
     });
   });
 
@@ -1786,7 +1786,7 @@ describe("Scope", () => {
       it("should register a foreign proxies ", async () => {
         let scope1 = createScope();
         scope1.service = createScope({ b: 2 });
-        expect(scope1.$handler.foreignProxies.size).toEqual(1);
+        expect(scope1.$handler._foreignProxies.size).toEqual(1);
       });
 
       it("should detect changes on another proxy", async () => {
@@ -2460,10 +2460,10 @@ describe("Scope", () => {
         const child = scope.$new();
         function eventFn() {}
         child.$on("abc", eventFn);
-        expect(child.$handler.$$listeners.get("abc").length).toEqual(1);
+        expect(child.$handler._listeners.get("abc").length).toEqual(1);
 
         child.$on("abc", eventFn);
-        expect(child.$handler.$$listeners.get("abc").length).toEqual(2);
+        expect(child.$handler._listeners.get("abc").length).toEqual(2);
       });
 
       it("should return a deregistration function", () => {
@@ -2478,13 +2478,13 @@ describe("Scope", () => {
         function eventFn() {}
         let res = child.$on("abc", eventFn);
         expect(isDefined(res)).toBeDefined();
-        expect(child.$handler.$$listeners.get("abc").length).toEqual(1);
+        expect(child.$handler._listeners.get("abc").length).toEqual(1);
         let res2 = child.$on("abc", eventFn);
-        expect(child.$handler.$$listeners.get("abc").length).toEqual(2);
+        expect(child.$handler._listeners.get("abc").length).toEqual(2);
         res();
-        expect(child.$handler.$$listeners.get("abc").length).toEqual(1);
+        expect(child.$handler._listeners.get("abc").length).toEqual(1);
         res2();
-        expect(child.$handler.$$listeners.has("abc")).toBeFalse();
+        expect(child.$handler._listeners.has("abc")).toBeFalse();
       });
 
       it("should add listener for both $emit and $broadcast events", () => {
@@ -2522,14 +2522,14 @@ describe("Scope", () => {
           child.$broadcast("abc");
           expect(log).toEqual("XX");
 
-          expect(child.$handler.$$listeners.get("abc").length).toBe(1);
+          expect(child.$handler._listeners.get("abc").length).toBe(1);
 
           log = "";
           listenerRemove();
           child.$emit("abc");
           child.$broadcast("abc");
           expect(log).toEqual("");
-          expect(scope.$handler.$$listeners.get("abc")).toBeUndefined();
+          expect(scope.$handler._listeners.get("abc")).toBeUndefined();
         });
 
         it("should deallocate the listener array entry", () => {
@@ -2540,11 +2540,11 @@ describe("Scope", () => {
             /* empty */
           });
 
-          expect(scope.$handler.$$listeners.get("abc").length).toBe(2);
+          expect(scope.$handler._listeners.get("abc").length).toBe(2);
 
           remove1();
 
-          expect(scope.$handler.$$listeners.get("abc").length).toBe(1);
+          expect(scope.$handler._listeners.get("abc").length).toBe(1);
         });
 
         it("should call next listener after removing the current listener via its own handler", () => {
@@ -2730,14 +2730,14 @@ describe("Scope", () => {
 
         spy1.and.callFake(remove1);
 
-        expect(child.$handler.$$listeners.get("evt").length).toBe(3);
+        expect(child.$handler._listeners.get("evt").length).toBe(3);
 
         // should call all listeners and remove 1st
         child.$emit("evt");
         expect(spy1).toHaveBeenCalled();
         expect(spy2).toHaveBeenCalled();
         expect(spy3).toHaveBeenCalled();
-        expect(child.$handler.$$listeners.get("evt").length).toBe(2);
+        expect(child.$handler._listeners.get("evt").length).toBe(2);
 
         spy1.calls.reset();
         spy2.calls.reset();
@@ -2749,7 +2749,7 @@ describe("Scope", () => {
         expect(spy1).not.toHaveBeenCalled();
         expect(spy2).toHaveBeenCalled();
         expect(spy3).not.toHaveBeenCalled();
-        expect(child.$handler.$$listeners.get("evt").length).toBe(1);
+        expect(child.$handler._listeners.get("evt").length).toBe(1);
       });
 
       it("should allow removing event listener inside a listener on $broadcast", () => {
@@ -2763,14 +2763,14 @@ describe("Scope", () => {
 
         spy1.and.callFake(remove1);
 
-        expect(child.$handler.$$listeners.get("evt").length).toBe(3);
+        expect(child.$handler._listeners.get("evt").length).toBe(3);
 
         // should call all listeners and remove 1st
         child.$broadcast("evt");
         expect(spy1).toHaveBeenCalled();
         expect(spy2).toHaveBeenCalled();
         expect(spy3).toHaveBeenCalled();
-        expect(child.$handler.$$listeners.get("evt").length).toBe(2);
+        expect(child.$handler._listeners.get("evt").length).toBe(2);
 
         spy1.calls.reset();
         spy2.calls.reset();
@@ -2782,7 +2782,7 @@ describe("Scope", () => {
         expect(spy1).not.toHaveBeenCalled();
         expect(spy2).toHaveBeenCalled();
         expect(spy3).not.toHaveBeenCalled();
-        expect(child.$handler.$$listeners.get("evt").length).toBe(1);
+        expect(child.$handler._listeners.get("evt").length).toBe(1);
       });
 
       describe("event object", () => {
@@ -3005,10 +3005,10 @@ describe("Scope", () => {
       scope.$on("test", () => {
         /* empty */
       });
-      expect(scope.$handler.$$listeners.size).toEqual(1);
+      expect(scope.$handler._listeners.size).toEqual(1);
 
       scope.$destroy();
-      expect(scope.$handler.$$listeners.size).toEqual(0);
+      expect(scope.$handler._listeners.size).toEqual(0);
     });
 
     it("should clean up all watchers for root", () => {

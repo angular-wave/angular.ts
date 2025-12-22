@@ -2537,7 +2537,7 @@ export class CompileProvider {
 
                 let linkNode = $compileNode._getAny();
 
-                if (scope.$$destroyed) {
+                if (scope._destroyed) {
                   continue;
                 }
 
@@ -2604,7 +2604,7 @@ export class CompileProvider {
           ) {
             let childBoundTranscludeFn = boundTranscludeFn;
 
-            if (scope.$$destroyed) {
+            if (scope._destroyed) {
               return;
             }
 

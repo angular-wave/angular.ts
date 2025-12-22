@@ -45,22 +45,14 @@ export class Scope {
   context: Scope;
   /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners */
   watchers: Map<string, Array<import("./interface.ts").Listener>>;
-  /** @type {Map<String, Function[]>} Event listeners */
-  $$listeners: Map<string, Function[]>;
-  /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
-  foreignListeners: Map<string, Array<import("./interface.ts").Listener>>;
-  /** @type {Set<Proxy<ng.Scope>>} */
-  foreignProxies: Set<ProxyConstructor>;
-  /** @type {WeakMap<Object, Array<string>>} */
-  objectListeners: WeakMap<any, Array<string>>;
-  /** @type {Map<Function, {oldValue: any, fn: Function}>} */
-  functionListeners: Map<
-    Function,
-    {
-      oldValue: any;
-      fn: Function;
-    }
-  >;
+  /** @private @type {Map<String, Function[]>} Event listeners */
+  private _listeners;
+  /** @private @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
+  private _foreignListeners;
+  /** @private @type {Set<Proxy<ng.Scope>>} */
+  private _foreignProxies;
+  /** @private @type {WeakMap<Object, Array<string>>} */
+  private _objectListeners;
   /** @type {Proxy<Scope>} Current proxy being operated on */
   $proxy: ProxyConstructor;
   /** @type {Scope} The actual proxy */
@@ -82,10 +74,10 @@ export class Scope {
    */
   $root: Scope;
   $parent: Scope;
-  filters: any[];
-  /** @type {boolean} */
-  $$destroyed: boolean;
-  scheduled: any[];
+  /** @ignore @type {boolean} */
+  _destroyed: boolean;
+  /** @private @type {import("./interface.ts").Listener[]} A list of scheduled Event listeners */
+  private _scheduled;
   $scopename: any;
   /** @private */
   private propertyMap;

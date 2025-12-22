@@ -12993,7 +12993,7 @@ describe("$compile", () => {
             $rootScope.$apply("t = false");
             await wait();
             for (let i = 0; i < childScopes.length; ++i) {
-              expect(childScopes[i].$$destroyed).toBe(true);
+              expect(childScopes[i]._destroyed).toBe(true);
             }
           });
         });

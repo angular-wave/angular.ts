@@ -158,20 +158,17 @@ export class Scope {
     /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners */
     this.watchers = context ? context.watchers : new Map();
 
-    /** @type {Map<String, Function[]>} Event listeners */
-    this.$$listeners = new Map();
+    /** @private @type {Map<String, Function[]>} Event listeners */
+    this._listeners = new Map();
 
-    /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
-    this.foreignListeners = context ? context.foreignListeners : new Map();
+    /** @private @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
+    this._foreignListeners = context ? context._foreignListeners : new Map();
 
-    /** @type {Set<Proxy<ng.Scope>>} */
-    this.foreignProxies = context ? context.foreignProxies : new Set();
+    /** @private @type {Set<Proxy<ng.Scope>>} */
+    this._foreignProxies = context ? context._foreignProxies : new Set();
 
-    /** @type {WeakMap<Object, Array<string>>} */
-    this.objectListeners = context ? context.objectListeners : new WeakMap();
-
-    /** @type {Map<Function, {oldValue: any, fn: Function}>} */
-    this.functionListeners = context ? context.functionListeners : new Map();
+    /** @private @type {WeakMap<Object, Array<string>>} */
+    this._objectListeners = context ? context._objectListeners : new WeakMap();
 
     /** @type {Proxy<Scope>} Current proxy being operated on */
     this.$proxy = null;
@@ -206,40 +203,39 @@ export class Scope {
         ? null
         : context;
 
-    this.filters = [];
+    /** @ignore @type {boolean} */
+    this._destroyed = false;
 
-    /** @type {boolean} */
-    this.$$destroyed = false;
-
-    this.scheduled = [];
+    /** @private @type {import("./interface.ts").Listener[]} A list of scheduled Event listeners */
+    this._scheduled = [];
 
     this.$scopename = undefined;
 
     /** @private */
     this.propertyMap = {
-      $watch: this.$watch.bind(this),
+      $apply: this.$apply.bind(this),
+      $broadcast: this.$broadcast.bind(this),
+      $children: this.$children,
+      $destroy: this.$destroy.bind(this),
+      $emit: this.$emit.bind(this),
+      $eval: this.$eval.bind(this),
+      $flushQueue: this.$flushQueue.bind(this),
+      $getById: this.$getById.bind(this),
+      $handler: /** @type {Scope} */ (this),
+      $id: this.$id,
+      $isRoot: this.#isRoot.bind(this),
+      $merge: this.$merge.bind(this),
       $new: this.$new.bind(this),
       $newIsolate: this.$newIsolate.bind(this),
-      $destroy: this.$destroy.bind(this),
-      $flushQueue: this.$flushQueue.bind(this),
-      $eval: this.$eval.bind(this),
-      $apply: this.$apply.bind(this),
-      $postUpdate: this.$postUpdate.bind(this),
-      $isRoot: this.#isRoot.bind(this),
       $on: this.$on.bind(this),
-      $emit: this.$emit.bind(this),
-      $broadcast: this.$broadcast.bind(this),
-      $transcluded: this.$transcluded.bind(this),
-      $handler: /** @type {Scope} */ (this),
-      $merge: this.$merge.bind(this),
-      $getById: this.$getById.bind(this),
-      $searchByName: this.$searchByName.bind(this),
-      $proxy: this.$proxy,
       $parent: this.$parent,
+      $postUpdate: this.$postUpdate.bind(this),
+      $proxy: this.$proxy,
       $root: this.$root,
-      $children: this.$children,
-      $id: this.$id,
       $scopename: this.$scopename,
+      $searchByName: this.$searchByName.bind(this),
+      $transcluded: this.$transcluded.bind(this),
+      $watch: this.$watch.bind(this),
     };
   }
 
@@ -299,18 +295,18 @@ export class Scope {
             this.#scheduleListener(listeners);
           }
 
-          const foreignListeners = this.foreignListeners.get(property);
+          const _foreignListeners = this._foreignListeners.get(property);
 
-          if (foreignListeners) {
-            this.#scheduleListener(foreignListeners);
+          if (_foreignListeners) {
+            this.#scheduleListener(_foreignListeners);
           }
         }
 
-        if (this.objectListeners.get(target[property])) {
-          this.objectListeners.delete(target[property]);
+        if (this._objectListeners.get(target[property])) {
+          this._objectListeners.delete(target[property]);
         }
         target[property] = createScope(value, this);
-        this.objectListeners.set(target[property], [property]);
+        this._objectListeners.set(target[property], [property]);
 
         return true;
       }
@@ -331,10 +327,10 @@ export class Scope {
             this.#scheduleListener(listeners);
           }
 
-          const foreignListeners = this.foreignListeners.get(property);
+          const _foreignListeners = this._foreignListeners.get(property);
 
-          if (foreignListeners) {
-            this.#scheduleListener(foreignListeners);
+          if (_foreignListeners) {
+            this.#scheduleListener(_foreignListeners);
           }
 
           this.#checkeListenersForAllKeys(value);
@@ -387,8 +383,8 @@ export class Scope {
         }
 
         if (isArray(target)) {
-          if (this.objectListeners.has(proxy) && property !== "length") {
-            const keyList = this.objectListeners.get(proxy);
+          if (this._objectListeners.has(proxy) && property !== "length") {
+            const keyList = this._objectListeners.get(proxy);
 
             for (let i = 0, l = keyList.length; i < l; i++) {
               const currentListeners = this.watchers.get(keyList[i]);
@@ -405,7 +401,7 @@ export class Scope {
       return true;
     } else {
       if (isUndefined(target[property]) && isProxy(value)) {
-        this.foreignProxies.add(/** @type {Proxy<ng.Scope>} */ (value));
+        this._foreignProxies.add(/** @type {Proxy<ng.Scope>} */ (value));
         target[property] = value;
 
         if (!this.watchers.has(property)) {
@@ -426,8 +422,8 @@ export class Scope {
 
         // Handle the case where we need to start observing object after a watcher has been set
         if (isUndefined(oldValue) && isObject(target[property])) {
-          if (!this.objectListeners.has(target[property])) {
-            this.objectListeners.set(target[property], [property]);
+          if (!this._objectListeners.has(target[property])) {
+            this._objectListeners.set(target[property], [property]);
           }
           const keyList = keys(value);
 
@@ -490,14 +486,14 @@ export class Scope {
           });
         }
 
-        let foreignListeners = this.foreignListeners.get(property);
+        let _foreignListeners = this._foreignListeners.get(property);
 
-        if (!foreignListeners && this.$parent?.foreignListeners) {
-          foreignListeners = this.$parent.foreignListeners.get(property);
+        if (!_foreignListeners && this.$parent?._foreignListeners) {
+          _foreignListeners = this.$parent._foreignListeners.get(property);
         }
 
-        if (foreignListeners) {
-          let scheduled = foreignListeners;
+        if (_foreignListeners) {
+          let scheduled = _foreignListeners;
 
           // filter for repeaters
           const hashKey = this.$target._hashKey;
@@ -505,8 +501,8 @@ export class Scope {
           if (hashKey) {
             scheduled = [];
 
-            for (let i = 0, l = foreignListeners.length; i < l; i++) {
-              const listener = foreignListeners[i];
+            for (let i = 0, l = _foreignListeners.length; i < l; i++) {
+              const listener = _foreignListeners[i];
 
               if (listener.originalTarget._hashKey === hashKey) {
                 scheduled.push(listener);
@@ -520,15 +516,15 @@ export class Scope {
         }
       }
 
-      if (this.objectListeners.has(proxy) && property !== "length") {
-        const keyList = this.objectListeners.get(proxy);
+      if (this._objectListeners.has(proxy) && property !== "length") {
+        const keyList = this._objectListeners.get(proxy);
 
         for (let i = 0, l = keyList.length; i < l; i++) {
           const key = keyList[i];
 
           const listeners = this.watchers.get(key);
 
-          if (listeners && this.scheduled !== listeners) {
+          if (listeners && this._scheduled !== listeners) {
             this.#scheduleListener(listeners);
           }
         }
@@ -568,8 +564,8 @@ export class Scope {
       isArray(target) &&
       ["pop", "shift", "unshift"].includes(/** @type { string } */ (property))
     ) {
-      if (this.objectListeners.has(proxy)) {
-        const keyList = this.objectListeners.get(proxy);
+      if (this._objectListeners.has(proxy)) {
+        const keyList = this._objectListeners.get(proxy);
 
         for (let i = 0, l = keyList.length; i < l; i++) {
           const key = keyList[i];
@@ -577,13 +573,13 @@ export class Scope {
           const listeners = this.watchers.get(key);
 
           if (listeners) {
-            this.scheduled = listeners;
+            this._scheduled = listeners;
           }
         }
       }
 
       if (property === "unshift") {
-        this.#scheduleListener(this.scheduled);
+        this.#scheduleListener(this._scheduled);
       }
     }
 
@@ -608,8 +604,8 @@ export class Scope {
         this.#scheduleListener(listeners);
       }
 
-      if (this.objectListeners.has(this.$proxy)) {
-        const keyList = this.objectListeners.get(this.$proxy);
+      if (this._objectListeners.has(this.$proxy)) {
+        const keyList = this._objectListeners.get(this.$proxy);
 
         for (let i = 0, l = keyList.length; i < l; i++) {
           const key = keyList[i];
@@ -620,9 +616,9 @@ export class Scope {
         }
       }
 
-      if (this.scheduled) {
-        this.#scheduleListener(this.scheduled);
-        this.scheduled = [];
+      if (this._scheduled) {
+        this.#scheduleListener(this._scheduled);
+        this._scheduled = [];
       }
 
       return true;
@@ -630,8 +626,8 @@ export class Scope {
 
     delete target[property];
 
-    if (this.objectListeners.has(this.$proxy)) {
-      const keyList = this.objectListeners.get(this.$proxy);
+    if (this._objectListeners.has(this.$proxy)) {
+      const keyList = this._objectListeners.get(this.$proxy);
 
       for (let i = 0, l = keyList.length; i < l; i++) {
         const key = keyList[i];
@@ -873,7 +869,7 @@ export class Scope {
             watchProp.split(".").slice(0, -1).join("."),
           )(/** @type {Scope} */ (listener.originalTarget));
 
-          if (potentialProxy && this.foreignProxies.has(potentialProxy)) {
+          if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
             potentialProxy.$handler.#registerForeignKey(key, listener);
             potentialProxy.$handler.#scheduleListener([listener]);
 
@@ -956,7 +952,7 @@ export class Scope {
     const listenerObject = listener.watchFn(this.$target);
 
     if (isObject(listenerObject)) {
-      this.objectListeners.set(listenerObject, [key]);
+      this._objectListeners.set(listenerObject, [key]);
     }
 
     if (keySet.length > 0) {
@@ -1050,10 +1046,10 @@ export class Scope {
 
   /** @internal **/
   #registerForeignKey(key, listener) {
-    if (this.foreignListeners.has(key)) {
-      this.foreignListeners.get(key).push(listener);
+    if (this._foreignListeners.has(key)) {
+      this._foreignListeners.get(key).push(listener);
     } else {
-      this.foreignListeners.set(key, [listener]);
+      this._foreignListeners.set(key, [listener]);
     }
   }
 
@@ -1078,7 +1074,7 @@ export class Scope {
   }
 
   // #deregisterForeignKey(key, id) {
-  //   const listenerList = this.foreignListeners.get(key);
+  //   const listenerList = this._foreignListeners.get(key);
   //   if (!listenerList) return false;
 
   //   const index = listenerList.findIndex((x) => x.id === id);
@@ -1086,9 +1082,9 @@ export class Scope {
 
   //   listenerList.splice(index, 1);
   //   if (listenerList.length) {
-  //     this.foreignListeners.set(key, listenerList);
+  //     this._foreignListeners.set(key, listenerList);
   //   } else {
-  //     this.foreignListeners.delete(key);
+  //     this._foreignListeners.delete(key);
   //   }
   //   return true;
   // }
@@ -1148,11 +1144,11 @@ export class Scope {
    * @returns {(function(): void)|*}
    */
   $on(name, listener) {
-    let namedListeners = this.$$listeners.get(name);
+    let namedListeners = this._listeners.get(name);
 
     if (!namedListeners) {
       namedListeners = [];
-      this.$$listeners.set(name, namedListeners);
+      this._listeners.set(name, namedListeners);
     }
     namedListeners.push(listener);
 
@@ -1163,7 +1159,7 @@ export class Scope {
         namedListeners.splice(indexOfListener, 1);
 
         if (namedListeners.length === 0) {
-          this.$$listeners.delete(name);
+          this._listeners.delete(name);
         }
       }
     };
@@ -1199,7 +1195,7 @@ export class Scope {
    */
   #eventHelper({ name, event, broadcast }, ...args) {
     if (!broadcast) {
-      if (!this.$$listeners.has(name)) {
+      if (!this._listeners.has(name)) {
         if (this.$parent) {
           return this.$parent.$handler.#eventHelper(
             { name, event, broadcast },
@@ -1231,7 +1227,7 @@ export class Scope {
 
     const listenerArgs = concat([event], [event].concat(args), 1);
 
-    const listeners = this.$$listeners.get(name);
+    const listeners = this._listeners.get(name);
 
     if (listeners) {
       let { length } = listeners;
@@ -1298,7 +1294,7 @@ export class Scope {
   }
 
   $destroy() {
-    if (this.$$destroyed) return;
+    if (this._destroyed) return;
 
     this.$broadcast("$destroy");
 
@@ -1329,8 +1325,8 @@ export class Scope {
       }
     }
 
-    this.$$listeners.clear();
-    this.$$destroyed = true;
+    this._listeners.clear();
+    this._destroyed = true;
   }
 
   /**
@@ -1412,31 +1408,23 @@ export class Scope {
    * @returns {ng.Scope|undefined}
    */
   $searchByName(name) {
-    /**
-     * @param {ng.Scope} scope
-     * @param {string} nameParam
-     * @returns {ng.Scope|undefined}
-     */
-    function getByName(scope, nameParam) {
-      if (scope.$scopename === nameParam) {
+    const stack = [this.$root];
+
+    while (stack.length) {
+      const scope = stack.pop();
+
+      if (scope.$scopename === name) {
         return scope;
-      } else {
-        let res = undefined;
+      }
 
-        for (const child of scope.$children) {
-          const found = getByName(child, nameParam);
-
-          if (found) {
-            res = found;
-            break;
-          }
+      if (scope.$children?.length) {
+        for (let i = scope.$children.length - 1; i >= 0; i--) {
+          stack.push(scope.$children[i]);
         }
-
-        return res;
       }
     }
 
-    return getByName(this.$root, name);
+    return undefined;
   }
 }
 
