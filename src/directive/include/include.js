@@ -91,7 +91,7 @@ export function ngIncludeDirective(
             // contents and scope can be cleaned up.
             await $templateRequest(src, true).then(
               (response) => {
-                if (scope.$$destroyed) return;
+                if (scope._destroyed) return;
 
                 if (thisChangeId !== changeCounter) return;
                 const newScope = scope.$new();
@@ -123,7 +123,7 @@ export function ngIncludeDirective(
                 scope.$eval(onloadExp);
               },
               (err) => {
-                if (scope.$$destroyed) return;
+                if (scope._destroyed) return;
 
                 if (thisChangeId === changeCounter) {
                   cleanupLastIncludeContent();

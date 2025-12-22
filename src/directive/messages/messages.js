@@ -258,7 +258,7 @@ export function ngMessagesIncludeDirective($templateRequest, $compile) {
       const src = attrs.ngMessagesInclude || attrs.src;
 
       $templateRequest(src).then((html) => {
-        if ($scope.$$destroyed) return;
+        if ($scope._destroyed) return;
 
         if (isString(html) && !html.trim()) {
           // Empty template - nothing to compile
