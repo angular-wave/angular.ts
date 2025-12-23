@@ -206,14 +206,7 @@ function baseInputType(_, element, attr, ctrl) {
  * @returns {*}
  */
 export function createStringDateInputType(type, regexp) {
-  return function stringDateInputType(
-    scope,
-    element,
-    attr,
-    ctrl,
-    $filter,
-    $parse,
-  ) {
+  return function stringDateInputType(scope, element, attr, ctrl, $parse) {
     baseInputType(scope, element, attr, ctrl);
     ctrl.$parsers.push((value) => {
       if (ctrl.$isEmpty(value)) return null;
@@ -381,7 +374,7 @@ export function isValidForStep(viewValue, stepBase, step) {
   return (value - stepBase) % step === 0;
 }
 
-export function numberInputType(scope, element, attr, ctrl, $filter, $parse) {
+export function numberInputType(scope, element, attr, ctrl, $parse) {
   badInputChecker(scope, element, attr, ctrl, "number");
   numberFormatterParser(ctrl);
   baseInputType(scope, element, attr, ctrl);
@@ -720,7 +713,7 @@ function parseConstantExpr($parse, context, name, expression, fallback) {
   return fallback;
 }
 
-function checkboxInputType(scope, element, attr, ctrl, $filter, $parse) {
+function checkboxInputType(scope, element, attr, ctrl, $parse) {
   const trueValue = parseConstantExpr(
     $parse,
     scope,
@@ -759,14 +752,13 @@ function checkboxInputType(scope, element, attr, ctrl, $filter, $parse) {
   ctrl.$parsers.push((value) => (value ? trueValue : falseValue));
 }
 
-inputDirective.$inject = [$injectTokens._filter, $injectTokens._parse];
+inputDirective.$inject = [$injectTokens._parse];
 
 /**
- * @param {ng.FilterFactory} $filter
  * @param {ng.ParseService} $parse
  * @returns {ng.Directive}
  */
-export function inputDirective($filter, $parse) {
+export function inputDirective($parse) {
   return {
     restrict: "E",
     require: ["?ngModel"],
@@ -778,7 +770,6 @@ export function inputDirective($filter, $parse) {
             element,
             attr,
             ctrls[0],
-            $filter,
             $parse,
           );
         }

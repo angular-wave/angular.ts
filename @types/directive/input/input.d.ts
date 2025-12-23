@@ -24,7 +24,6 @@ export function numberInputType(
   element: any,
   attr: any,
   ctrl: any,
-  $filter: any,
   $parse: any,
 ): void;
 export function rangeInputType(
@@ -34,14 +33,10 @@ export function rangeInputType(
   ctrl: any,
 ): void;
 /**
- * @param {ng.FilterFactory} $filter
  * @param {ng.ParseService} $parse
  * @returns {ng.Directive}
  */
-export function inputDirective(
-  $filter: ng.FilterFactory,
-  $parse: ng.ParseService,
-): ng.Directive;
+export function inputDirective($parse: ng.ParseService): ng.Directive;
 export namespace inputDirective {
   let $inject: string[];
 }
