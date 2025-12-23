@@ -11,5 +11,50 @@
     {{selected.some}}
     <button ng-click="selected = value">Set</button>
     <button ng-click="selected =  { some: 'unset' }">Unset</button>
+
+    <form
+      name="myForm"
+      ng-init="checkboxModel = {
+        value1 : true,
+        value2 : 'YES'
+      }"
+    >
+      <label
+        >Value1:
+        <input type="checkbox" ng-model="checkboxModel.value1" /> </label
+      ><br />
+      <label
+        >Value2:
+        <input
+          type="checkbox"
+          ng-model="checkboxModel.value2"
+          ng-true-value="'YES'"
+          ng-false-value="'NO'"
+        /> </label
+      ><br />
+      <div>value1 = {{checkboxModel.value1}}</div>
+      <br />
+      <div>value2 = {{checkboxModel.value2}}</div>
+      <br />
+    </form>
+
+    <fieldset ng-init="drone = 'dewey'">
+      <legend>Select a maintenance drone:</legend>
+      {{ drone }}
+      <div>
+        <input type="radio" ng-model="drone" id="huey" value="huey" checked />
+        <label for="huey">Huey</label>
+      </div>
+
+      <div>
+        <input type="radio" ng-model="drone" id="dewey" value="dewey" />
+        <label for="dewey">Dewey</label>
+      </div>
+
+      <div>
+        <input type="radio" ng-model="drone" id="louie" value="louie" />
+        <label for="louie">Louie</label>
+      </div>
+    </fieldset>
   </body>
 </html>
