@@ -1,11 +1,8 @@
 import { $injectTokens } from "../../injection-tokens.js";
 import {
-  addDateMinutes,
   deProxy,
   equals,
-  isDate,
   isDefined,
-  isNullOrUndefined,
   isNumber,
   isNumberNaN,
   isObject,
@@ -67,35 +64,14 @@ const PARTIAL_VALIDATION_TYPES = new Map();
 
 const inputType = {
   text: textInputType,
-  date: createDateInputType(
-    "date",
-    DATE_REGEXP,
-    createDateParser(DATE_REGEXP, ["yyyy", "MM", "dd"]),
-  ),
-  "datetime-local": createDateInputType(
+  date: createStringDateInputType("date", DATE_REGEXP),
+  "datetime-local": createStringDateInputType(
     "datetimelocal",
     DATETIMELOCAL_REGEXP,
-    createDateParser(DATETIMELOCAL_REGEXP, [
-      "yyyy",
-      "MM",
-      "dd",
-      "HH",
-      "mm",
-      "ss",
-      "sss",
-    ]),
   ),
-  time: createDateInputType(
-    "time",
-    TIME_REGEXP,
-    createDateParser(TIME_REGEXP, ["HH", "mm", "ss", "sss"]),
-  ),
-  week: createDateInputType("week", WEEK_REGEXP, weekParser),
-  month: createDateInputType(
-    "month",
-    MONTH_REGEXP,
-    createDateParser(MONTH_REGEXP, ["yyyy", "MM"]),
-  ),
+  time: createStringDateInputType("time", TIME_REGEXP),
+  week: createStringDateInputType("week", WEEK_REGEXP),
+  month: createStringDateInputType("month", MONTH_REGEXP),
   number: numberInputType,
   url: urlInputType,
   email: emailInputType,
@@ -224,145 +200,13 @@ function baseInputType(_, element, attr, ctrl) {
   };
 }
 
-export function weekParser(isoWeek, existingDate) {
-  if (isDate(isoWeek)) {
-    return isoWeek;
-  }
-
-  function getFirstThursdayOfYear(year) {
-    // 0 = index of January
-    const dayOfWeekOnFirst = new Date(year, 0, 1).getDay();
-
-    // 4 = index of Thursday (+1 to account for 1st = 5)
-    // 11 = index of *next* Thursday (+1 account for 1st = 12)
-    return new Date(
-      year,
-      0,
-      // eslint-disable-next-line no-magic-numbers
-      (dayOfWeekOnFirst <= 4 ? 5 : 12) - dayOfWeekOnFirst,
-    );
-  }
-
-  if (isString(isoWeek)) {
-    WEEK_REGEXP.lastIndex = 0;
-    const parts = WEEK_REGEXP.exec(isoWeek);
-
-    if (parts) {
-      const year = +parts[1];
-
-      const week = +parts[2];
-
-      let hours = 0;
-
-      let minutes = 0;
-
-      let seconds = 0;
-
-      let milliseconds = 0;
-
-      const firstThurs = getFirstThursdayOfYear(year);
-
-      const DAYS = 7;
-
-      const addDays = (week - 1) * DAYS;
-
-      if (existingDate) {
-        hours = existingDate.getHours();
-        minutes = existingDate.getMinutes();
-        seconds = existingDate.getSeconds();
-        milliseconds = existingDate.getMilliseconds();
-      }
-
-      return new Date(
-        year,
-        0,
-        firstThurs.getDate() + addDays,
-        hours,
-        minutes,
-        seconds,
-        milliseconds,
-      );
-    }
-  }
-
-  return NaN;
-}
-
-export function createDateParser(regexp, mapping) {
-  return function (iso, previousDate) {
-    let parts;
-
-    let map;
-
-    if (isDate(iso)) {
-      return iso;
-    }
-
-    if (isString(iso)) {
-      // When a date is JSON'ified to wraps itself inside of an extra
-      // set of double quotes. This makes the date parsing code unable
-      // to match the date string and parse it as a date.
-      if (iso.charAt(0) === '"' && iso.charAt(iso.length - 1) === '"') {
-        iso = iso.substring(1, iso.length - 1);
-      }
-
-      if (ISO_DATE_REGEXP.test(iso)) {
-        return new Date(iso);
-      }
-      regexp.lastIndex = 0;
-      parts = regexp.exec(iso);
-
-      if (parts) {
-        parts.shift();
-
-        if (previousDate) {
-          map = {
-            yyyy: previousDate.getFullYear(),
-            MM: previousDate.getMonth() + 1,
-            dd: previousDate.getDate(),
-            HH: previousDate.getHours(),
-            mm: previousDate.getMinutes(),
-            ss: previousDate.getSeconds(),
-            sss: previousDate.getMilliseconds() / 1000,
-          };
-        } else {
-          map = { yyyy: 1970, MM: 1, dd: 1, HH: 0, mm: 0, ss: 0, sss: 0 };
-        }
-
-        Object.entries(parts).forEach(([index, part]) => {
-          if (index < mapping.length) {
-            map[mapping[index]] = +part;
-          }
-        });
-
-        const date = new Date(
-          map.yyyy,
-          map.MM - 1,
-          map.dd,
-          map.HH,
-          map.mm,
-          map.ss || 0,
-          map.sss * 1000 || 0,
-        );
-
-        if (map.yyyy < 100) {
-          // In the constructor, 2-digit years map to 1900-1999.
-          // Use `setFullYear()` to set the correct year.
-          date.setFullYear(map.yyyy);
-        }
-
-        return date;
-      }
-    }
-
-    return NaN;
-  };
-}
-
-const MONTH_INPUT_FORMAT = /\b\d{4}-(0[1-9]|1[0-2])\b/;
-
-export function createDateInputType(type, regexp, parseDate) {
-  return function dynamicDateInputType(
+/**
+ * @param {string} type
+ * @param {RegExp} regexp
+ * @returns {*}
+ */
+export function createStringDateInputType(type, regexp) {
+  return function stringDateInputType(
     scope,
     element,
     attr,
@@ -370,182 +214,48 @@ export function createDateInputType(type, regexp, parseDate) {
     $filter,
     $parse,
   ) {
-    badInputChecker(scope, element, attr, ctrl, type);
     baseInputType(scope, element, attr, ctrl);
-    let previousDate;
-
-    let previousTimezone;
-
     ctrl.$parsers.push((value) => {
       if (ctrl.$isEmpty(value)) return null;
 
-      if (regexp.test(value)) {
-        // Do not convert for native HTML
-        if (["month", "week", "datetimelocal", "time", "date"].includes(type)) {
-          return value;
-        }
+      if (regexp.test(value)) return value;
 
-        // Note: We cannot read ctrl.$modelValue, as there might be a different
-        // parser/formatter in the processing chain so that the model
-        // contains some different data format!
-        return parseDateAndConvertTimeZoneToLocal(value, previousDate);
-      }
       ctrl.$$parserName = type;
 
       return undefined;
     });
 
-    ctrl.$formatters.push(function (value) {
-      if (value && !isString(value)) {
-        throw ngModelMinErr("datefmt", "Expected `{0}` to be a String", value);
-      }
+    ctrl.$formatters.push((value) => {
+      if (ctrl.$isEmpty(value)) return "";
 
-      if (type === "month") {
-        if (isNullOrUndefined(value)) {
-          return "";
-        }
-
-        if (!MONTH_INPUT_FORMAT.test(value)) {
-          throw ngModelMinErr(
-            "datefmt",
-            "Expected month `{0}` to be a 'YYYY-DD'",
-            value,
-          );
-        }
-      }
-
-      if (type === "week") {
-        if (isNullOrUndefined(value)) {
-          return "";
-        }
-
-        if (!WEEK_REGEXP.test(value)) {
-          throw ngModelMinErr(
-            "datefmt",
-            "Expected week `{0}` to be a 'yyyy-Www'",
-            value,
-          );
-        }
-      }
-
-      if (type === "datetimelocal") {
-        if (isNullOrUndefined(value)) {
-          return "";
-        }
-
-        if (!DATETIMELOCAL_REGEXP.test(value)) {
-          throw ngModelMinErr(
-            "datefmt",
-            "Expected week `{0}` to be a in date time format. See: https://developer.mozilla.org/en-US/docs/Web/HTML/Date_and_time_formats#local_date_and_time_strings",
-            value,
-          );
-        }
+      if (!isString(value)) {
+        throw ngModelMinErr("datefmt", "Expected `{0}` to be a string", value);
       }
 
       return value;
-
-      // if (isValidDate(value)) {
-      //   previousDate = value;
-      //   const timezone = ctrl.$options.getOption("timezone");
-
-      //   if (timezone) {
-      //     previousTimezone = timezone;
-      //     previousDate = convertTimezoneToLocal(previousDate, timezone, true);
-      //   }
-
-      //   return value;
-      // }
-      // previousDate = null;
-      // previousTimezone = null;
-      // return "";
     });
 
+    // Optional min/max
     if (isDefined(attr.min) || attr.ngMin) {
-      let minVal = attr.min || $parse(attr.ngMin)(scope);
+      let minVal = attr.min || $parse?.(attr.ngMin)(scope);
 
-      let parsedMinVal = parseObservedDateValue(deProxy(minVal));
-
-      ctrl.$validators.min = function (value) {
-        if (type === "month") {
-          return (
-            isUndefined(parsedMinVal) ||
-            parseDate(value) >= parseDate(parsedMinVal)
-          );
-        }
-
-        return (
-          !isValidDate(value) ||
-          isUndefined(parsedMinVal) ||
-          parseDate(value) >= parsedMinVal
-        );
-      };
+      ctrl.$validators.min = (_modelValue, viewValue) =>
+        ctrl.$isEmpty(viewValue) || viewValue >= minVal;
       attr.$observe("min", (val) => {
-        if (val !== minVal) {
-          parsedMinVal = parseObservedDateValue(val);
-          minVal = val;
-          ctrl.$validate();
-        }
+        minVal = val;
+        ctrl.$validate();
       });
     }
 
     if (isDefined(attr.max) || attr.ngMax) {
-      let maxVal = attr.max || $parse(attr.ngMax)(scope);
+      let maxVal = attr.max || $parse?.(attr.ngMax)(scope);
 
-      let parsedMaxVal = parseObservedDateValue(deProxy(maxVal));
-
-      ctrl.$validators.max = function (value) {
-        if (type === "month") {
-          return (
-            isUndefined(parsedMaxVal) ||
-            parseDate(value) <= parseDate(parsedMaxVal)
-          );
-        }
-
-        return (
-          !isValidDate(value) ||
-          isUndefined(parsedMaxVal) ||
-          parseDate(value) <= parsedMaxVal
-        );
-      };
+      ctrl.$validators.max = (_modelValue, viewValue) =>
+        ctrl.$isEmpty(viewValue) || viewValue <= maxVal;
       attr.$observe("max", (val) => {
-        if (val !== maxVal) {
-          parsedMaxVal = parseObservedDateValue(val);
-          maxVal = val;
-          ctrl.$validate();
-        }
+        maxVal = val;
+        ctrl.$validate();
       });
-    }
-
-    function isValidDate(value) {
-      // Invalid Date: getTime() returns NaN
-      return value && !(value.getTime && Number.isNaN(value.getTime()));
-    }
-
-    function parseObservedDateValue(val) {
-      return isDefined(val) && !isDate(val)
-        ? parseDateAndConvertTimeZoneToLocal(val) || undefined
-        : val;
-    }
-
-    function parseDateAndConvertTimeZoneToLocal(value, previousDateParam) {
-      const timezone = ctrl.$options.getOption("timezone");
-
-      if (previousTimezone && previousTimezone !== timezone) {
-        // If the timezone has changed, adjust the previousDate to the default timezone
-        // so that the new date is converted with the correct timezone offset
-        previousDateParam = addDateMinutes(
-          previousDateParam,
-          timezoneToOffset(previousTimezone),
-        );
-      }
-
-      let parsedDate = parseDate(value, previousDateParam);
-
-      if (!Number.isNaN(parsedDate) && timezone) {
-        parsedDate = convertTimezoneToLocal(parsedDate, timezone);
-      }
-
-      return parsedDate;
     }
   };
 }
@@ -1080,47 +790,18 @@ export function inputDirective($filter, $parse) {
 /**
  * @returns {ng.Directive}
  */
-export function hiddenInputBrowserCacheDirective() {
-  const valueProperty = {
-    configurable: true,
-    enumerable: false,
-    get() {
-      return this.getAttribute("value") || "";
-    },
-    set(val) {
-      this.setAttribute("value", val);
-    },
-  };
-
+export function hiddenInputDirective() {
   return {
     restrict: "E",
-    priority: 200,
     compile(_, attr) {
-      if (attr.type?.toLowerCase() !== "hidden") {
-        return undefined;
-      }
+      if (attr.type?.toLowerCase() !== "hidden") return undefined;
 
-      const res = {
+      return {
         pre(_scope, element) {
-          const node = element;
-
-          // Support: Edge
-          // Moving the DOM around prevents autofillling
-          if (node.parentNode) {
-            node.parentNode.insertBefore(node, node.nextSibling);
-          }
-
-          // Support: FF, IE
-          // Avoiding direct assignment to .value prevents autofillling
-          if (Object.defineProperty) {
-            Object.defineProperty(node, "value", valueProperty);
-          }
-
-          return undefined;
+          /** @type {HTMLInputElement} */ (element).value =
+            element.getAttribute("value") ?? "";
         },
       };
-
-      return res;
     },
   };
 }
@@ -1161,38 +842,4 @@ export function ngValueDirective() {
       };
     },
   };
-}
-
-/**
- * @param {Date} date
- * @param {any} timezone
- * @param {undefined} [reverse]
- */
-export function convertTimezoneToLocal(date, timezone, reverse) {
-  const doReverse = reverse ? -1 : 1;
-
-  const dateTimezoneOffset = date.getTimezoneOffset();
-
-  const timezoneOffset = timezoneToOffset(timezone, dateTimezoneOffset);
-
-  return addDateMinutes(
-    date,
-    doReverse * (timezoneOffset - dateTimezoneOffset),
-  );
-}
-
-const MS_PER_MINUTE = 60_000; // 60,000 ms in a minute
-
-/**
- * @param {any} timezone
- * @param {number} [fallback]
- * @returns {number}
- */
-export function timezoneToOffset(timezone, fallback) {
-  const requestedTimezoneOffset =
-    Date.parse(`Jan 01, 1970 00:00:00 ${timezone}`) / MS_PER_MINUTE;
-
-  return isNumberNaN(requestedTimezoneOffset)
-    ? (fallback ?? 0)
-    : requestedTimezoneOffset;
 }
