@@ -8,6 +8,7 @@ ngChannelDirective.$inject = [$injectTokens._eventBus];
  */
 export function ngChannelDirective($eventBus) {
   return {
+    scope: false,
     link: (scope, element, attrs) => {
       const channel = attrs.ngChannel;
 

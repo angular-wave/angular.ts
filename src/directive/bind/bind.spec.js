@@ -95,16 +95,14 @@ describe("ng-bind", () => {
       expect(element.textContent).toEqual("[]");
     });
 
-    it("should NOT use toString on Date objects", async () => {
-      $rootScope.value = new Date(2014, 10, 10, 0, 0, 0);
+    it("should render Date objects using JSON serialization in ng-bind", async () => {
+      const date = new Date(2014, 10, 10, 0, 0, 0);
+      $rootScope.value = date;
+
       element = $compile('<div ng-bind="value"></div>')($rootScope);
       await wait();
-      expect(element.textContent).toBe(
-        JSON.stringify($rootScope.value.$target),
-      );
-      expect(element.textContent).not.toEqual(
-        $rootScope.value.$target.toString(),
-      );
+
+      expect(element.textContent).toBe(JSON.stringify(date));
     });
 
     it("should support `data-lazy` attribute", async () => {

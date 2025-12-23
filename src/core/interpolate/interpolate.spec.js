@@ -134,10 +134,10 @@ describe("$interpolate", () => {
     expect($interpolate("{{a}}")({ a: [] })).toEqual("[]");
   });
 
-  it("should NOT use toString on Date objects", () => {
+  it("should render Date objects using JSON serialization during interpolation", () => {
     const date = new Date(2014, 10, 10);
-    expect($interpolate("{{a}}")({ a: date })).toBe(JSON.stringify(date));
-    expect($interpolate("{{a}}")({ a: date })).not.toEqual(date.toString());
+    const result = $interpolate("{{a}}")({ a: date });
+    expect(result).toBe('"2014-11-09T22:00:00.000Z"');
   });
 
   it("should return interpolation function", () => {
