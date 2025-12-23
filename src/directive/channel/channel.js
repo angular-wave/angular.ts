@@ -22,6 +22,8 @@ export function ngChannelDirective($eventBus) {
             }
           } else if (isString(value)) {
             element.innerHTML = value;
+          } else {
+            element.innerHTML = value.toString();
           }
         },
       );

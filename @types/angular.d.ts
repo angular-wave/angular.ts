@@ -1,4 +1,7 @@
 export class Angular extends EventTarget {
+  constructor(submodule?: boolean);
+  /** @private @type {boolean} */
+  private _submodule;
   /** @private @type {!Array<string|any>} */
   private _bootsrappedModules;
   /** @public @type {ng.PubSubService} */

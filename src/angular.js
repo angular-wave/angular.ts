@@ -32,8 +32,11 @@ const STRICT_DI = "strict-di";
 const moduleRegistry = {};
 
 export class Angular extends EventTarget {
-  constructor() {
+  constructor(submodule = false) {
     super();
+
+    /** @private @type {boolean} */
+    this._submodule = submodule;
 
     /** @private @type {!Array<string|any>} */
     this._bootsrappedModules = [];
@@ -78,7 +81,9 @@ export class Angular extends EventTarget {
       /** @type {any} */ (this.$t)[i] = i;
     });
 
-    window.angular = this;
+    if (!submodule) {
+      window.angular = this;
+    }
     registerNgModule(this);
   }
 

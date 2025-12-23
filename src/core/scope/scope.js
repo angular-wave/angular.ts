@@ -123,7 +123,8 @@ export function isNonScope(target) {
     target instanceof Promise ||
     target instanceof HTMLCollection ||
     target instanceof NodeList ||
-    target instanceof Event
+    target instanceof Event ||
+    target instanceof Date
   ) {
     return true;
   }

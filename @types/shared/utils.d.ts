@@ -197,16 +197,6 @@ export function isBoolean(value: any): boolean;
 export function isPromiseLike(obj: any): boolean;
 /**
  * @param {*} value
- * @returns {boolean}
- */
-export function isTypedArray(value: any): boolean;
-/**
- * @param {*} obj
- * @returns {boolean}
- */
-export function isArrayBuffer(obj: any): boolean;
-/**
- * @param {*} value
  * @returns {string | *}
  */
 export function trim(value: any): string | any;

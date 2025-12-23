@@ -1,20 +1,9 @@
-export function weekParser(isoWeek: any, existingDate: any): any;
-export function createDateParser(
-  regexp: any,
-  mapping: any,
-): (iso: any, previousDate: any) => any;
-export function createDateInputType(
-  type: any,
-  regexp: any,
-  parseDate: any,
-): (
-  scope: any,
-  element: any,
-  attr: any,
-  ctrl: any,
-  $filter: any,
-  $parse: any,
-) => void;
+/**
+ * @param {string} type
+ * @param {RegExp} regexp
+ * @returns {*}
+ */
+export function createStringDateInputType(type: string, regexp: RegExp): any;
 export function badInputChecker(
   scope: any,
   element: any,
@@ -59,27 +48,11 @@ export namespace inputDirective {
 /**
  * @returns {ng.Directive}
  */
-export function hiddenInputBrowserCacheDirective(): ng.Directive;
+export function hiddenInputDirective(): ng.Directive;
 /**
  * @returns {ng.Directive}
  */
 export function ngValueDirective(): ng.Directive;
-/**
- * @param {Date} date
- * @param {any} timezone
- * @param {undefined} [reverse]
- */
-export function convertTimezoneToLocal(
-  date: Date,
-  timezone: any,
-  reverse?: undefined,
-): Date;
-/**
- * @param {any} timezone
- * @param {number} [fallback]
- * @returns {number}
- */
-export function timezoneToOffset(timezone: any, fallback?: number): number;
 export const ISO_DATE_REGEXP: RegExp;
 export const URL_REGEXP: RegExp;
 export const EMAIL_REGEXP: RegExp;

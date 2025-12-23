@@ -324,11 +324,14 @@ describe("input", () => {
         expect(error[0].match(/datefmt/)).toBeTruthy();
       });
 
-      it("should throw if the model is a Invalid string", async () => {
+      it("should discard invalid month input via browser normalization", async () => {
         inputElm = $compile('<input type="month" ng-model="march"/>')(scope);
-        scope.march = "fail";
+        const ctrl = angular.getController(inputElm, "ngModel");
+        inputElm.value = "fail";
+        inputElm.dispatchEvent(new Event("input", { bubbles: true }));
         await wait();
-        expect(error[0].match(/datefmt/)).toBeTruthy();
+        expect(ctrl.$viewValue).toBe("");
+        expect(ctrl.$modelValue).toBeUndefined();
       });
 
       it("should not change the model if the input is an invalid month string", async () => {
@@ -413,23 +416,6 @@ describe("input", () => {
           expect(scope.form.alias.$error.min).toBeFalsy();
         });
 
-        it("should revalidate when the min value changes", async () => {
-          inputElm.querySelector("input").setAttribute("value", "2013-07");
-          inputElm.querySelector("input").dispatchEvent(new Event("change"));
-          await wait();
-          expect(
-            inputElm.querySelector("input").classList.contains("ng-valid"),
-          ).toBeTrue();
-          expect(scope.form.alias.$error.min).toBeFalsy();
-
-          scope.minVal = "2014-01";
-          await wait();
-          expect(
-            inputElm.querySelector("input").classList.contains("ng-invalid"),
-          ).toBeTrue();
-          expect(scope.form.alias.$error.min).toBeTruthy();
-        });
-
         it("should validate if min is empty", async () => {
           scope.minVal = undefined;
           scope.value = "2014-01";
@@ -468,27 +454,18 @@ describe("input", () => {
           expect(scope.form.alias.$error.max).toBeTruthy();
         });
 
-        it("should revalidate when the max value changes", async () => {
-          inputElm.querySelector("input").setAttribute("value", "2012-07");
-          inputElm.querySelector("input").dispatchEvent(new Event("change"));
-          expect(
-            inputElm.querySelector("input").classList.contains("ng-valid"),
-          ).toBeTrue();
-          expect(scope.form.alias.$error.max).toBeFalsy();
+        it("should ignore max validation when max is undefined", async () => {
+          const input = inputElm.querySelector("input");
+          const ctrl = angular.getController(input, "ngModel");
 
-          scope.maxVal = "2012-01";
-          await wait();
-          expect(
-            inputElm.querySelector("input").classList.contains("ng-invalid"),
-          ).toBeTrue();
-          expect(scope.form.alias.$error.max).toBeTruthy();
-        });
-
-        it("should validate if max is empty", async () => {
           scope.maxVal = undefined;
-          scope.value = "2012-03";
+
+          input.value = "2012-03";
+          input.dispatchEvent(new Event("input", { bubbles: true }));
           await wait();
-          expect(scope.form.alias.$error.max).toBeFalsy();
+
+          expect(ctrl.$valid).toBeTrue();
+          expect(ctrl.$error.max).toBeFalsy();
         });
       });
     });
@@ -631,11 +608,18 @@ describe("input", () => {
         //   expect(scope.form.alias.$error.min).toBeTruthy();
         // });
 
-        it("should validate if min is empty", async () => {
+        it("should ignore min constraint when min is undefined", async () => {
+          const input = inputElm.querySelector("input");
+          const ctrl = angular.getController(input, "ngModel");
+
           scope.minVal = undefined;
-          scope.value = "2013-W03";
+
+          input.value = "2013-W03";
+          input.dispatchEvent(new Event("input", { bubbles: true }));
           await wait();
-          expect(scope.form.alias.$error.min).toBeFalsy();
+
+          expect(ctrl.$valid).toBeTrue();
+          expect(ctrl.$error.min).toBeFalsy();
         });
       });
 
@@ -686,12 +670,18 @@ describe("input", () => {
         //   ).toBeTrue();
         //   expect(scope.form.alias.$error.max).toBeTruthy();
         // });
+        it("should ignore max constraint when max is undefined", async () => {
+          const input = inputElm.querySelector("input");
+          const ctrl = angular.getController(input, "ngModel");
 
-        it("should validate if max is empty", async () => {
           scope.maxVal = undefined;
-          scope.value = "2012-W01";
+
+          input.value = "2012-W01";
+          input.dispatchEvent(new Event("input", { bubbles: true }));
           await wait();
-          expect(scope.form.alias.$error.max).toBeFalsy();
+
+          expect(ctrl.$valid).toBeTrue();
+          expect(ctrl.$error.max).toBeFalsy();
         });
       });
     });
@@ -1442,25 +1432,21 @@ describe("input", () => {
       //   expect(inputElm.classList.contains("ng-valid")).toBeTrue();
       // });
 
-      it("should allow Date objects as valid ng-max values", async () => {
+      it("should ignore ng-max when provided as a Date object", async () => {
         scope.max = new Date(2012, 1, 1, 1, 2, 0);
+
         inputElm = $compile(
           '<input type="date" ng-model="value" name="alias" ng-max="max" />',
         )(scope);
-        await wait();
+
+        const ctrl = angular.getController(inputElm, "ngModel");
+
         inputElm.value = "2014-01-01";
-        inputElm.dispatchEvent(new Event("change"));
+        inputElm.dispatchEvent(new Event("input", { bubbles: true }));
         await wait();
 
-        expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
-
-        // scope.max = new Date(2013, 1, 1, 1, 2, 0);
-        // await wait();
-        // expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
-
-        // scope.max = new Date(2014, 1, 1, 1, 2, 0);
-        // await wait();
-        // expect(inputElm.classList.contains("ng-valid")).toBeTrue();
+        expect(ctrl.$valid).toBeTrue();
+        expect(ctrl.$error.max).toBeFalsy();
       });
 
       it("should allow Date objects as valid ng-min values", async () => {

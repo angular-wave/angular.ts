@@ -1,6 +1,6 @@
 import { CompileProvider } from "./core/compile/compile.js";
 import {
-  hiddenInputBrowserCacheDirective,
+  hiddenInputDirective,
   inputDirective,
   ngValueDirective,
 } from "./directive/input/input.js";
@@ -226,7 +226,7 @@ export function registerNgModule(angular) {
               ngScope: ngScopeDirective,
             })
             .directive({
-              input: hiddenInputBrowserCacheDirective,
+              input: hiddenInputDirective,
               ngAnimateSwap: ngAnimateSwapDirective,
               ngAnimateChildren: $$AnimateChildrenDirective,
               // aria directives

@@ -316,28 +316,6 @@ export function isPromiseLike(obj) {
 
 /**
  * @param {*} value
- * @returns {boolean}
- */
-export function isTypedArray(value) {
-  return (
-    value &&
-    isNumber(value.length) &&
-    /^\[object (?:Uint8|Uint8Clamped|Uint16|Uint32|Int8|Int16|Int32|Float32|Float64)Array]$/.test(
-      toString.call(value),
-    )
-  );
-}
-
-/**
- * @param {*} obj
- * @returns {boolean}
- */
-export function isArrayBuffer(obj) {
-  return toString.call(obj) === "[object ArrayBuffer]";
-}
-
-/**
- * @param {*} value
  * @returns {string | *}
  */
 export function trim(value) {
