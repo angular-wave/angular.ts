@@ -27,6 +27,7 @@ import { TemplateRequestService as TTemplateRequestService } from "./services/te
 
 import {
   HttpParamSerializer as THttpParamSerializer,
+  HttpProviderDefaults as THttpProviderDefaults,
   RequestShortcutConfig as TRequestShortcutConfig,
 } from "./services/http/interface.ts";
 import { HttpParamSerializerProvider as THttpParamSerializerProvider } from "./services/http/http.js";
@@ -233,5 +234,6 @@ declare global {
     export type InjectionTokens = typeof PublicInjectionTokens;
     export type ScopeEvent = TScopeEvent;
     export type RequestShortcutConfig = TRequestShortcutConfig;
+    export type HttpProviderDefaults = THttpProviderDefaults;
   }
 }
