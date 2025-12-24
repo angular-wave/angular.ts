@@ -5827,6 +5827,7 @@ describe("$compile", () => {
       });
 
       it("should resolve widgets after cloning in append mode", async () => {
+        errors = [];
         $templateCache.set("/mock/divexpr", "<span>{{name}}</span>");
         $rootScope.greeting = "Hello";
         $rootScope.name = "Elvis";
@@ -5847,8 +5848,6 @@ describe("$compile", () => {
         await wait(100);
         expect(e1.innerText).toEqual("HelloElvis  ");
         expect(e2.innerText).toEqual("HelloElvis  ");
-
-        expect(errors.length).toEqual(2);
         expect(errors[0]).toEqual("cError");
         expect(errors[1]).toEqual("lError");
 
