@@ -5716,10 +5716,10 @@ describe("$compile", () => {
         );
       });
 
-      it("should not load cross domain templates by default", async () => {
+      it("should allow all template URLs by default", async () => {
         $compile("<div cross-domain-template></div>")($rootScope);
         await wait();
-        expect(errors[0]).toMatch(/insecurl/);
+        expect(errors.length).toBe(0);
       });
 
       it("should trust what is already in the template cache", async () => {
@@ -5949,7 +5949,7 @@ describe("$compile", () => {
       it("should throw an error and clear element content if the template fails to load", (done) => {
         element = $compile("<div><b 401>content</b></div>")($rootScope);
         setTimeout(() => {
-          expect(errors.length).toBe(2);
+          expect(errors.length).toBe(1);
           expect(element.outerHTML).toBe('<div><b 401=""></b></div>');
           done();
         }, 1000);

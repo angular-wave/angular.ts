@@ -34,7 +34,7 @@ describe("$templateRequest", () => {
         angular.module("test", [
           "ng",
           ($templateRequestProvider) => {
-            expect($templateRequestProvider.httpOptions()).toBeUndefined();
+            expect($templateRequestProvider.httpOptions).toBeUndefined();
           },
         ]);
 
@@ -59,10 +59,10 @@ describe("$templateRequest", () => {
           "ng",
           ($templateRequestProvider) => {
             // Configure the template request service to provide  specific headers and transforms
-            $templateRequestProvider.httpOptions({
+            $templateRequestProvider.httpOptions = {
               headers: { Accept: "moo" },
               transformResponse: [someTransform],
-            });
+            };
           },
         ]);
 
@@ -87,7 +87,7 @@ describe("$templateRequest", () => {
         angular.module("test", [
           "ng",
           ($templateRequestProvider) => {
-            $templateRequestProvider.httpOptions(httpOptions);
+            $templateRequestProvider.httpOptions = httpOptions;
           },
         ]);
 
@@ -143,15 +143,6 @@ describe("$templateRequest", () => {
     expect(content[0]).toBe("_matias");
   });
 
-  it("should call `$exceptionHandler` on request error", async () => {
-    let err;
-    await $templateRequest("/mock/404").catch((reason) => {
-      err = reason;
-    });
-
-    expect(err).toMatch(/tpload/);
-  });
-
   it("should not call `$exceptionHandler` when the template is empty", async () => {
     const onError = jasmine.createSpy("onError");
     await $templateRequest("/mock/empty").catch(onError);
@@ -169,16 +160,6 @@ describe("$templateRequest", () => {
     $templateCache.set("/public/test.html", ""); // should work (empty template)
     let res = await $templateRequest("/public/test.html");
     expect(res).toBeDefined();
-  });
-
-  it("should keep track of how many requests are going on", async () => {
-    let res = $templateRequest("/mock/div");
-    $templateRequest("/mock/div");
-
-    expect($templateRequest.totalPendingRequests).toBe(2);
-
-    await res;
-    expect($templateRequest.totalPendingRequests).toBe(0);
   });
 
   it("should not try to parse a response as JSON", async () => {

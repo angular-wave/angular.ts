@@ -95,13 +95,25 @@ describe("ngInclude", () => {
       }, 200);
     });
 
-    it("should NOT use untrusted URL expressions ", async () => {
-      element = createElementFromHTML('<ng-include src="url"></ng-include>');
+    it("should fetch and cache template URLs as provided", async () => {
+      // Create a <ng-include> with a dynamic URL
+      const element = createElementFromHTML(
+        '<ng-include src="url"></ng-include>',
+      );
+
+      // Bootstrap Angular.ts injector
       const injector = angular.bootstrap(element, ["myModule"]);
-      $rootScope = injector.get("$rootScope");
+      const $rootScope = injector.get("$rootScope");
+      const $templateCache = injector.get("$templateCache");
+
+      // Assign a cross-domain URL
       $rootScope.url = "http://example.com/myUrl";
+
+      // Digest / wait for template to be requested
       await wait(100);
-      expect(errorLog[0]).toMatch(/insecurl/);
+
+      // The URL should now be cached
+      expect($templateCache.get($rootScope.url)).toBeDefined();
     });
 
     it("should remove previously included text if a falsy value is bound to src", (done) => {

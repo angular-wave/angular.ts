@@ -67,7 +67,7 @@ export class RootScopeProvider {
  *
  * @param {Object} target - The object to be wrapped in a proxy.
  * @param {Scope} [context] - The context for the handler, used to track listeners.
- * @returns {Scope} - A proxy that intercepts operations on the target object,
+ * @returns {Scope|Object} - A proxy that intercepts operations on the target object,
  *                                     or the original value if the target is not an object.
  */
 export function createScope(target = {}, context) {

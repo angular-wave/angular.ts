@@ -7,16 +7,9 @@ export interface TemplateRequestService {
    * empty then a $compile error will be thrown (unless
    * {ignoreRequestError} is set to true).
    *
-   * @param tpl                  The template URL.
-   * @param ignoreRequestError   Whether or not to ignore the exception
-   *                             when the request fails or the template is
-   *                             empty.
+   * @param templateUrl The template URL.
    *
    * @return   A promise whose value is the template content.
    */
-  (tpl: string, ignoreRequestError?: boolean): Promise<string>;
-  /**
-   * total amount of pending template requests being downloaded.
-   */
-  totalPendingRequests: number;
+  (templateUrl: string): Promise<string>;
 }

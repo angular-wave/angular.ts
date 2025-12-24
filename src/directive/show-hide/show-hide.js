@@ -42,6 +42,7 @@ export function ngShowDirective($animate) {
 
 ngHideDirective.$inject = [$injectTokens._animate];
 /**
+ * @param {ng.AnimateService} $animate
  * @returns {ng.Directive}
  */
 export function ngHideDirective($animate) {
