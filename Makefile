@@ -1,16 +1,15 @@
 .PHONY: build test types
 
+BUILD_DIR 	= ./dist	
+MIN_JS      := dist/angular-ts.umd.min.js
+GZ_JS  		:= $(MIN_JS).gz
+
+
 setup:
 	@rm -r ./node_modules/
 	@npm i
 	@npx playwright install
-
-BUILD_DIR = ./dist	
-MIN_JS      := dist/angular-ts.umd.min.js
-GZ_JS  := $(MIN_JS).gz
-MIN_SIZE_H  := $(shell stat -c %s $(MIN_JS) | numfmt --to=iec)
-GZIP_SIZE_H := $(shell gzip -9 -c $(MIN_JS) | wc -c | numfmt --to=iec)
-
+	
 build:
 	@if [ -d "$(BUILD_DIR)" ]; then \
 		echo "Removing $(BUILD_DIR)..."; \
@@ -35,7 +34,10 @@ gzip: $(GZ_JS)
 	@echo "Created gzipped file: $(GZ_JS)"
 
 size-html:
-	@printf 'Bundle size: <b>%s</b> Gzip size: <b>%s</b>' "$(MIN_SIZE_H)" "$(GZIP_SIZE_H)" > docs/layouts/shortcodes/size-report.html
+	@printf 'Bundle size: <b>%s</b> Gzip size: <b>%s</b>' \
+		"$(shell stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)" \
+		"$(shell gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)" \
+	> docs/layouts/shortcodes/size-report.html
 
 version:
 	@node utils/version.cjs	
