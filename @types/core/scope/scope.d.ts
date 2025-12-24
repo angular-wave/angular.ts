@@ -5,10 +5,10 @@
  *
  * @param {Object} target - The object to be wrapped in a proxy.
  * @param {Scope} [context] - The context for the handler, used to track listeners.
- * @returns {Scope} - A proxy that intercepts operations on the target object,
+ * @returns {Scope|Object} - A proxy that intercepts operations on the target object,
  *                                     or the original value if the target is not an object.
  */
-export function createScope(target?: any, context?: Scope): Scope;
+export function createScope(target?: any, context?: Scope): Scope | any;
 /**
  * @ignore
  * Checks if a target should be excluded from scope observability
@@ -19,13 +19,13 @@ export function isNonScope(target: any): boolean;
 /** @ignore @type {Function[]}*/
 export const $postUpdateQueue: Function[];
 export class RootScopeProvider {
-  rootScope: Scope;
+  rootScope: any;
   $get: (
     | string
     | ((
         exceptionHandler: ng.ExceptionHandlerService,
         parse: ng.ParseService,
-      ) => Scope)
+      ) => any)
   )[];
 }
 /**

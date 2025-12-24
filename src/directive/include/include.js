@@ -89,7 +89,7 @@ export function ngIncludeDirective(
           if (src) {
             // set the 2nd param to true to ignore the template request error so that the inner
             // contents and scope can be cleaned up.
-            await $templateRequest(src, true).then(
+            await $templateRequest(src).then(
               (response) => {
                 if (scope._destroyed) return;
 

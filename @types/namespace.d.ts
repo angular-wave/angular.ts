@@ -20,7 +20,10 @@ import { ExceptionHandler as TExceptionHandler } from "./services/exception/inte
 import { ExceptionHandlerProvider as TExceptionHandlerProvider } from "./services/exception/exception.js";
 import { ParseService as TParseService } from "./core/parse/interface.ts";
 import { TemplateRequestService as TTemplateRequestService } from "./services/template-request/interface.ts";
-import { HttpParamSerializer as THttpParamSerializer } from "./services/http/interface.ts";
+import {
+  HttpParamSerializer as THttpParamSerializer,
+  RequestShortcutConfig as TRequestShortcutConfig,
+} from "./services/http/interface.ts";
 import { HttpParamSerializerProvider as THttpParamSerializerProvider } from "./services/http/http.js";
 import {
   FilterFactory as TFilterFactory,
@@ -214,5 +217,6 @@ declare global {
     type AnchorScrollObject = TAnchorScrollObject;
     type InjectionTokens = typeof PublicInjectionTokens;
     type ScopeEvent = TScopeEvent;
+    type RequestShortcutConfig = TRequestShortcutConfig;
   }
 }

@@ -198,14 +198,6 @@ export interface HttpService {
   head<T>(url: string, config?: RequestShortcutConfig): HttpPromise<T>;
 
   /**
-   * Shortcut method to perform JSONP request.
-   *
-   * @param url Relative or absolute URL specifying the destination of the request
-   * @param config Optional configuration object
-   */
-  jsonp<T>(url: string, config?: RequestShortcutConfig): HttpPromise<T>;
-
-  /**
    * Shortcut method to perform POST request.
    *
    * @param url Relative or absolute URL specifying the destination of the request
