@@ -1,4 +1,4 @@
-/* Version: 0.15.1 - December 21, 2025 17:06:17 */
+/* Version: 0.15.2 - December 24, 2025 03:47:35 */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -794,18 +794,6 @@
    */
   function fromJson(json) {
     return isString(json) ? JSON.parse(json) : json;
-  }
-
-  /**
-   * @param {Date} date
-   * @param {number} minutes
-   */
-  function addDateMinutes(date, minutes) {
-    const newDate = new Date(date.getTime());
-
-    newDate.setMinutes(newDate.getMinutes() + minutes);
-
-    return newDate;
   }
 
   /**
@@ -9941,7 +9929,7 @@
 
                   let linkNode = $compileNode._getAny();
 
-                  if (scope.$$destroyed) {
+                  if (scope._destroyed) {
                     continue;
                   }
 
@@ -10008,7 +9996,7 @@
             ) {
               let childBoundTranscludeFn = boundTranscludeFn;
 
-              if (scope.$$destroyed) {
+              if (scope._destroyed) {
                 return;
               }
 
@@ -12930,9 +12918,6 @@
     };
   }
 
-  // Regex code was initially obtained from SO prior to modification: https://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#answer-3143231
-  const ISO_DATE_REGEXP =
-    /^\d{4,}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+(?:[+-][0-2]\d:[0-5]\d|Z)$/;
   // See valid URLs in RFC3987 (http://tools.ietf.org/html/rfc3987)
   // Note: We are being more lenient, because browsers are too.
   //   1. Scheme
@@ -12980,35 +12965,14 @@
 
   const inputType = {
     text: textInputType,
-    date: createDateInputType(
-      "date",
-      DATE_REGEXP,
-      createDateParser(DATE_REGEXP, ["yyyy", "MM", "dd"]),
-    ),
-    "datetime-local": createDateInputType(
+    date: createStringDateInputType("date", DATE_REGEXP),
+    "datetime-local": createStringDateInputType(
       "datetimelocal",
       DATETIMELOCAL_REGEXP,
-      createDateParser(DATETIMELOCAL_REGEXP, [
-        "yyyy",
-        "MM",
-        "dd",
-        "HH",
-        "mm",
-        "ss",
-        "sss",
-      ]),
     ),
-    time: createDateInputType(
-      "time",
-      TIME_REGEXP,
-      createDateParser(TIME_REGEXP, ["HH", "mm", "ss", "sss"]),
-    ),
-    week: createDateInputType("week", WEEK_REGEXP, weekParser),
-    month: createDateInputType(
-      "month",
-      MONTH_REGEXP,
-      createDateParser(MONTH_REGEXP, ["yyyy", "MM"]),
-    ),
+    time: createStringDateInputType("time", TIME_REGEXP),
+    week: createStringDateInputType("week", WEEK_REGEXP),
+    month: createStringDateInputType("month", MONTH_REGEXP),
     number: numberInputType,
     url: urlInputType,
     email: emailInputType,
@@ -13137,317 +13101,55 @@
     };
   }
 
-  function weekParser(isoWeek, existingDate) {
-    if (isDate(isoWeek)) {
-      return isoWeek;
-    }
-
-    function getFirstThursdayOfYear(year) {
-      // 0 = index of January
-      const dayOfWeekOnFirst = new Date(year, 0, 1).getDay();
-
-      // 4 = index of Thursday (+1 to account for 1st = 5)
-      // 11 = index of *next* Thursday (+1 account for 1st = 12)
-      return new Date(
-        year,
-        0,
-        // eslint-disable-next-line no-magic-numbers
-        (dayOfWeekOnFirst <= 4 ? 5 : 12) - dayOfWeekOnFirst,
-      );
-    }
-
-    if (isString(isoWeek)) {
-      WEEK_REGEXP.lastIndex = 0;
-      const parts = WEEK_REGEXP.exec(isoWeek);
-
-      if (parts) {
-        const year = +parts[1];
-
-        const week = +parts[2];
-
-        let hours = 0;
-
-        let minutes = 0;
-
-        let seconds = 0;
-
-        let milliseconds = 0;
-
-        const firstThurs = getFirstThursdayOfYear(year);
-
-        const DAYS = 7;
-
-        const addDays = (week - 1) * DAYS;
-
-        if (existingDate) {
-          hours = existingDate.getHours();
-          minutes = existingDate.getMinutes();
-          seconds = existingDate.getSeconds();
-          milliseconds = existingDate.getMilliseconds();
-        }
-
-        return new Date(
-          year,
-          0,
-          firstThurs.getDate() + addDays,
-          hours,
-          minutes,
-          seconds,
-          milliseconds,
-        );
-      }
-    }
-
-    return NaN;
-  }
-
-  function createDateParser(regexp, mapping) {
-    return function (iso, previousDate) {
-      let parts;
-
-      let map;
-
-      if (isDate(iso)) {
-        return iso;
-      }
-
-      if (isString(iso)) {
-        // When a date is JSON'ified to wraps itself inside of an extra
-        // set of double quotes. This makes the date parsing code unable
-        // to match the date string and parse it as a date.
-        if (iso.charAt(0) === '"' && iso.charAt(iso.length - 1) === '"') {
-          iso = iso.substring(1, iso.length - 1);
-        }
-
-        if (ISO_DATE_REGEXP.test(iso)) {
-          return new Date(iso);
-        }
-        regexp.lastIndex = 0;
-        parts = regexp.exec(iso);
-
-        if (parts) {
-          parts.shift();
-
-          if (previousDate) {
-            map = {
-              yyyy: previousDate.getFullYear(),
-              MM: previousDate.getMonth() + 1,
-              dd: previousDate.getDate(),
-              HH: previousDate.getHours(),
-              mm: previousDate.getMinutes(),
-              ss: previousDate.getSeconds(),
-              sss: previousDate.getMilliseconds() / 1000,
-            };
-          } else {
-            map = { yyyy: 1970, MM: 1, dd: 1, HH: 0, mm: 0, ss: 0, sss: 0 };
-          }
-
-          Object.entries(parts).forEach(([index, part]) => {
-            if (index < mapping.length) {
-              map[mapping[index]] = +part;
-            }
-          });
-
-          const date = new Date(
-            map.yyyy,
-            map.MM - 1,
-            map.dd,
-            map.HH,
-            map.mm,
-            map.ss || 0,
-            map.sss * 1000 || 0,
-          );
-
-          if (map.yyyy < 100) {
-            // In the constructor, 2-digit years map to 1900-1999.
-            // Use `setFullYear()` to set the correct year.
-            date.setFullYear(map.yyyy);
-          }
-
-          return date;
-        }
-      }
-
-      return NaN;
-    };
-  }
-
-  const MONTH_INPUT_FORMAT = /\b\d{4}-(0[1-9]|1[0-2])\b/;
-
-  function createDateInputType(type, regexp, parseDate) {
-    return function dynamicDateInputType(
-      scope,
-      element,
-      attr,
-      ctrl,
-      $filter,
-      $parse,
-    ) {
-      badInputChecker(scope, element, attr, ctrl, type);
+  /**
+   * @param {string} type
+   * @param {RegExp} regexp
+   * @returns {*}
+   */
+  function createStringDateInputType(type, regexp) {
+    return function stringDateInputType(scope, element, attr, ctrl, $parse) {
       baseInputType(scope, element, attr, ctrl);
-      let previousDate;
-
       ctrl.$parsers.push((value) => {
         if (ctrl.$isEmpty(value)) return null;
 
-        if (regexp.test(value)) {
-          // Do not convert for native HTML
-          if (["month", "week", "datetimelocal", "time", "date"].includes(type)) {
-            return value;
-          }
+        if (regexp.test(value)) return value;
 
-          // Note: We cannot read ctrl.$modelValue, as there might be a different
-          // parser/formatter in the processing chain so that the model
-          // contains some different data format!
-          return parseDateAndConvertTimeZoneToLocal(value, previousDate);
-        }
         ctrl.$$parserName = type;
 
         return undefined;
       });
 
-      ctrl.$formatters.push(function (value) {
-        if (value && !isString(value)) {
-          throw ngModelMinErr("datefmt", "Expected `{0}` to be a String", value);
-        }
+      ctrl.$formatters.push((value) => {
+        if (ctrl.$isEmpty(value)) return "";
 
-        if (type === "month") {
-          if (isNullOrUndefined(value)) {
-            return "";
-          }
-
-          if (!MONTH_INPUT_FORMAT.test(value)) {
-            throw ngModelMinErr(
-              "datefmt",
-              "Expected month `{0}` to be a 'YYYY-DD'",
-              value,
-            );
-          }
-        }
-
-        if (type === "week") {
-          if (isNullOrUndefined(value)) {
-            return "";
-          }
-
-          if (!WEEK_REGEXP.test(value)) {
-            throw ngModelMinErr(
-              "datefmt",
-              "Expected week `{0}` to be a 'yyyy-Www'",
-              value,
-            );
-          }
-        }
-
-        if (type === "datetimelocal") {
-          if (isNullOrUndefined(value)) {
-            return "";
-          }
-
-          if (!DATETIMELOCAL_REGEXP.test(value)) {
-            throw ngModelMinErr(
-              "datefmt",
-              "Expected week `{0}` to be a in date time format. See: https://developer.mozilla.org/en-US/docs/Web/HTML/Date_and_time_formats#local_date_and_time_strings",
-              value,
-            );
-          }
+        if (!isString(value)) {
+          throw ngModelMinErr("datefmt", "Expected `{0}` to be a string", value);
         }
 
         return value;
-
-        // if (isValidDate(value)) {
-        //   previousDate = value;
-        //   const timezone = ctrl.$options.getOption("timezone");
-
-        //   if (timezone) {
-        //     previousTimezone = timezone;
-        //     previousDate = convertTimezoneToLocal(previousDate, timezone, true);
-        //   }
-
-        //   return value;
-        // }
-        // previousDate = null;
-        // previousTimezone = null;
-        // return "";
       });
 
+      // Optional min/max
       if (isDefined(attr.min) || attr.ngMin) {
-        let minVal = attr.min || $parse(attr.ngMin)(scope);
+        let minVal = attr.min || $parse?.(attr.ngMin)(scope);
 
-        let parsedMinVal = parseObservedDateValue(deProxy(minVal));
-
-        ctrl.$validators.min = function (value) {
-          if (type === "month") {
-            return (
-              isUndefined(parsedMinVal) ||
-              parseDate(value) >= parseDate(parsedMinVal)
-            );
-          }
-
-          return (
-            !isValidDate(value) ||
-            isUndefined(parsedMinVal) ||
-            parseDate(value) >= parsedMinVal
-          );
-        };
+        ctrl.$validators.min = (_modelValue, viewValue) =>
+          ctrl.$isEmpty(viewValue) || viewValue >= minVal;
         attr.$observe("min", (val) => {
-          if (val !== minVal) {
-            parsedMinVal = parseObservedDateValue(val);
-            minVal = val;
-            ctrl.$validate();
-          }
+          minVal = val;
+          ctrl.$validate();
         });
       }
 
       if (isDefined(attr.max) || attr.ngMax) {
-        let maxVal = attr.max || $parse(attr.ngMax)(scope);
+        let maxVal = attr.max || $parse?.(attr.ngMax)(scope);
 
-        let parsedMaxVal = parseObservedDateValue(deProxy(maxVal));
-
-        ctrl.$validators.max = function (value) {
-          if (type === "month") {
-            return (
-              isUndefined(parsedMaxVal) ||
-              parseDate(value) <= parseDate(parsedMaxVal)
-            );
-          }
-
-          return (
-            !isValidDate(value) ||
-            isUndefined(parsedMaxVal) ||
-            parseDate(value) <= parsedMaxVal
-          );
-        };
+        ctrl.$validators.max = (_modelValue, viewValue) =>
+          ctrl.$isEmpty(viewValue) || viewValue <= maxVal;
         attr.$observe("max", (val) => {
-          if (val !== maxVal) {
-            parsedMaxVal = parseObservedDateValue(val);
-            maxVal = val;
-            ctrl.$validate();
-          }
+          maxVal = val;
+          ctrl.$validate();
         });
-      }
-
-      function isValidDate(value) {
-        // Invalid Date: getTime() returns NaN
-        return value && !(value.getTime && Number.isNaN(value.getTime()));
-      }
-
-      function parseObservedDateValue(val) {
-        return isDefined(val) && !isDate(val)
-          ? parseDateAndConvertTimeZoneToLocal(val) || undefined
-          : val;
-      }
-
-      function parseDateAndConvertTimeZoneToLocal(value, previousDateParam) {
-        const timezone = ctrl.$options.getOption("timezone");
-
-        let parsedDate = parseDate(value, previousDateParam);
-
-        if (!Number.isNaN(parsedDate) && timezone) {
-          parsedDate = convertTimezoneToLocal(parsedDate, timezone);
-        }
-
-        return parsedDate;
       }
     };
   }
@@ -13573,7 +13275,7 @@
     return (value - stepBase) % step === 0;
   }
 
-  function numberInputType(scope, element, attr, ctrl, $filter, $parse) {
+  function numberInputType(scope, element, attr, ctrl, $parse) {
     badInputChecker(scope, element, attr, ctrl, "number");
     numberFormatterParser(ctrl);
     baseInputType(scope, element, attr, ctrl);
@@ -13912,7 +13614,7 @@
     return fallback;
   }
 
-  function checkboxInputType(scope, element, attr, ctrl, $filter, $parse) {
+  function checkboxInputType(scope, element, attr, ctrl, $parse) {
     const trueValue = parseConstantExpr(
       $parse,
       scope,
@@ -13951,14 +13653,13 @@
     ctrl.$parsers.push((value) => (value ? trueValue : falseValue));
   }
 
-  inputDirective.$inject = [$injectTokens._filter, $injectTokens._parse];
+  inputDirective.$inject = [$injectTokens._parse];
 
   /**
-   * @param {ng.FilterFactory} $filter
    * @param {ng.ParseService} $parse
    * @returns {ng.Directive}
    */
-  function inputDirective($filter, $parse) {
+  function inputDirective($parse) {
     return {
       restrict: "E",
       require: ["?ngModel"],
@@ -13970,7 +13671,6 @@
               element,
               attr,
               ctrls[0],
-              $filter,
               $parse,
             );
           }
@@ -13982,47 +13682,18 @@
   /**
    * @returns {ng.Directive}
    */
-  function hiddenInputBrowserCacheDirective() {
-    const valueProperty = {
-      configurable: true,
-      enumerable: false,
-      get() {
-        return this.getAttribute("value") || "";
-      },
-      set(val) {
-        this.setAttribute("value", val);
-      },
-    };
-
+  function hiddenInputDirective() {
     return {
       restrict: "E",
-      priority: 200,
       compile(_, attr) {
-        if (attr.type?.toLowerCase() !== "hidden") {
-          return undefined;
-        }
+        if (attr.type?.toLowerCase() !== "hidden") return undefined;
 
-        const res = {
+        return {
           pre(_scope, element) {
-            const node = element;
-
-            // Support: Edge
-            // Moving the DOM around prevents autofillling
-            if (node.parentNode) {
-              node.parentNode.insertBefore(node, node.nextSibling);
-            }
-
-            // Support: FF, IE
-            // Avoiding direct assignment to .value prevents autofillling
-            if (Object.defineProperty) {
-              Object.defineProperty(node, "value", valueProperty);
-            }
-
-            return undefined;
+            /** @type {HTMLInputElement} */ (element).value =
+              element.getAttribute("value") ?? "";
           },
         };
-
-        return res;
       },
     };
   }
@@ -14063,40 +13734,6 @@
         };
       },
     };
-  }
-
-  /**
-   * @param {Date} date
-   * @param {any} timezone
-   * @param {undefined} [reverse]
-   */
-  function convertTimezoneToLocal(date, timezone, reverse) {
-    const doReverse = 1;
-
-    const dateTimezoneOffset = date.getTimezoneOffset();
-
-    const timezoneOffset = timezoneToOffset(timezone, dateTimezoneOffset);
-
-    return addDateMinutes(
-      date,
-      doReverse * (timezoneOffset - dateTimezoneOffset),
-    );
-  }
-
-  const MS_PER_MINUTE = 60_000; // 60,000 ms in a minute
-
-  /**
-   * @param {any} timezone
-   * @param {number} [fallback]
-   * @returns {number}
-   */
-  function timezoneToOffset(timezone, fallback) {
-    const requestedTimezoneOffset =
-      Date.parse(`Jan 01, 1970 00:00:00 ${timezone}`) / MS_PER_MINUTE;
-
-    return isNumberNaN(requestedTimezoneOffset)
-      ? (fallback ?? 0)
-      : requestedTimezoneOffset;
   }
 
   scriptDirective.$inject = [$injectTokens._templateCache];
@@ -15073,6 +14710,7 @@
 
   ngHideDirective.$inject = [$injectTokens._animate];
   /**
+   * @param {ng.AnimateService} $animate
    * @returns {ng.Directive}
    */
   function ngHideDirective($animate) {
@@ -15270,9 +14908,9 @@
             if (src) {
               // set the 2nd param to true to ignore the template request error so that the inner
               // contents and scope can be cleaned up.
-              await $templateRequest(src, true).then(
+              await $templateRequest(src).then(
                 (response) => {
-                  if (scope.$$destroyed) return;
+                  if (scope._destroyed) return;
 
                   if (thisChangeId !== changeCounter) return;
                   const newScope = scope.$new();
@@ -15304,7 +14942,7 @@
                   scope.$eval(onloadExp);
                 },
                 (err) => {
-                  if (scope.$$destroyed) return;
+                  if (scope._destroyed) return;
 
                   if (thisChangeId === changeCounter) {
                     cleanupLastIncludeContent();
@@ -22442,7 +22080,7 @@
    *
    * @param {Object} target - The object to be wrapped in a proxy.
    * @param {Scope} [context] - The context for the handler, used to track listeners.
-   * @returns {Scope} - A proxy that intercepts operations on the target object,
+   * @returns {Scope|Object} - A proxy that intercepts operations on the target object,
    *                                     or the original value if the target is not an object.
    */
   function createScope(target = {}, context) {
@@ -22498,7 +22136,8 @@
       target instanceof Promise ||
       target instanceof HTMLCollection ||
       target instanceof NodeList ||
-      target instanceof Event
+      target instanceof Event ||
+      target instanceof Date
     ) {
       return true;
     }
@@ -22533,20 +22172,17 @@
       /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners */
       this.watchers = context ? context.watchers : new Map();
 
-      /** @type {Map<String, Function[]>} Event listeners */
-      this.$$listeners = new Map();
+      /** @private @type {Map<String, Function[]>} Event listeners */
+      this._listeners = new Map();
 
-      /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
-      this.foreignListeners = context ? context.foreignListeners : new Map();
+      /** @private @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
+      this._foreignListeners = context ? context._foreignListeners : new Map();
 
-      /** @type {Set<Proxy<ng.Scope>>} */
-      this.foreignProxies = context ? context.foreignProxies : new Set();
+      /** @private @type {Set<Proxy<ng.Scope>>} */
+      this._foreignProxies = context ? context._foreignProxies : new Set();
 
-      /** @type {WeakMap<Object, Array<string>>} */
-      this.objectListeners = context ? context.objectListeners : new WeakMap();
-
-      /** @type {Map<Function, {oldValue: any, fn: Function}>} */
-      this.functionListeners = context ? context.functionListeners : new Map();
+      /** @private @type {WeakMap<Object, Array<string>>} */
+      this._objectListeners = context ? context._objectListeners : new WeakMap();
 
       /** @type {Proxy<Scope>} Current proxy being operated on */
       this.$proxy = null;
@@ -22581,40 +22217,39 @@
           ? null
           : context;
 
-      this.filters = [];
+      /** @ignore @type {boolean} */
+      this._destroyed = false;
 
-      /** @type {boolean} */
-      this.$$destroyed = false;
-
-      this.scheduled = [];
+      /** @private @type {import("./interface.ts").Listener[]} A list of scheduled Event listeners */
+      this._scheduled = [];
 
       this.$scopename = undefined;
 
       /** @private */
       this.propertyMap = {
-        $watch: this.$watch.bind(this),
+        $apply: this.$apply.bind(this),
+        $broadcast: this.$broadcast.bind(this),
+        $children: this.$children,
+        $destroy: this.$destroy.bind(this),
+        $emit: this.$emit.bind(this),
+        $eval: this.$eval.bind(this),
+        $flushQueue: this.$flushQueue.bind(this),
+        $getById: this.$getById.bind(this),
+        $handler: /** @type {Scope} */ (this),
+        $id: this.$id,
+        $isRoot: this.#isRoot.bind(this),
+        $merge: this.$merge.bind(this),
         $new: this.$new.bind(this),
         $newIsolate: this.$newIsolate.bind(this),
-        $destroy: this.$destroy.bind(this),
-        $flushQueue: this.$flushQueue.bind(this),
-        $eval: this.$eval.bind(this),
-        $apply: this.$apply.bind(this),
-        $postUpdate: this.$postUpdate.bind(this),
-        $isRoot: this.#isRoot.bind(this),
         $on: this.$on.bind(this),
-        $emit: this.$emit.bind(this),
-        $broadcast: this.$broadcast.bind(this),
-        $transcluded: this.$transcluded.bind(this),
-        $handler: /** @type {Scope} */ (this),
-        $merge: this.$merge.bind(this),
-        $getById: this.$getById.bind(this),
-        $searchByName: this.$searchByName.bind(this),
-        $proxy: this.$proxy,
         $parent: this.$parent,
+        $postUpdate: this.$postUpdate.bind(this),
+        $proxy: this.$proxy,
         $root: this.$root,
-        $children: this.$children,
-        $id: this.$id,
         $scopename: this.$scopename,
+        $searchByName: this.$searchByName.bind(this),
+        $transcluded: this.$transcluded.bind(this),
+        $watch: this.$watch.bind(this),
       };
     }
 
@@ -22674,18 +22309,18 @@
               this.#scheduleListener(listeners);
             }
 
-            const foreignListeners = this.foreignListeners.get(property);
+            const _foreignListeners = this._foreignListeners.get(property);
 
-            if (foreignListeners) {
-              this.#scheduleListener(foreignListeners);
+            if (_foreignListeners) {
+              this.#scheduleListener(_foreignListeners);
             }
           }
 
-          if (this.objectListeners.get(target[property])) {
-            this.objectListeners.delete(target[property]);
+          if (this._objectListeners.get(target[property])) {
+            this._objectListeners.delete(target[property]);
           }
           target[property] = createScope(value, this);
-          this.objectListeners.set(target[property], [property]);
+          this._objectListeners.set(target[property], [property]);
 
           return true;
         }
@@ -22706,10 +22341,10 @@
               this.#scheduleListener(listeners);
             }
 
-            const foreignListeners = this.foreignListeners.get(property);
+            const _foreignListeners = this._foreignListeners.get(property);
 
-            if (foreignListeners) {
-              this.#scheduleListener(foreignListeners);
+            if (_foreignListeners) {
+              this.#scheduleListener(_foreignListeners);
             }
 
             this.#checkeListenersForAllKeys(value);
@@ -22762,8 +22397,8 @@
           }
 
           if (isArray(target)) {
-            if (this.objectListeners.has(proxy) && property !== "length") {
-              const keyList = this.objectListeners.get(proxy);
+            if (this._objectListeners.has(proxy) && property !== "length") {
+              const keyList = this._objectListeners.get(proxy);
 
               for (let i = 0, l = keyList.length; i < l; i++) {
                 const currentListeners = this.watchers.get(keyList[i]);
@@ -22779,7 +22414,7 @@
         return true;
       } else {
         if (isUndefined(target[property]) && isProxy(value)) {
-          this.foreignProxies.add(/** @type {Proxy<ng.Scope>} */ (value));
+          this._foreignProxies.add(/** @type {Proxy<ng.Scope>} */ (value));
           target[property] = value;
 
           if (!this.watchers.has(property)) {
@@ -22800,8 +22435,8 @@
 
           // Handle the case where we need to start observing object after a watcher has been set
           if (isUndefined(oldValue) && isObject(target[property])) {
-            if (!this.objectListeners.has(target[property])) {
-              this.objectListeners.set(target[property], [property]);
+            if (!this._objectListeners.has(target[property])) {
+              this._objectListeners.set(target[property], [property]);
             }
             const keyList = keys(value);
 
@@ -22864,14 +22499,14 @@
             });
           }
 
-          let foreignListeners = this.foreignListeners.get(property);
+          let _foreignListeners = this._foreignListeners.get(property);
 
-          if (!foreignListeners && this.$parent?.foreignListeners) {
-            foreignListeners = this.$parent.foreignListeners.get(property);
+          if (!_foreignListeners && this.$parent?._foreignListeners) {
+            _foreignListeners = this.$parent._foreignListeners.get(property);
           }
 
-          if (foreignListeners) {
-            let scheduled = foreignListeners;
+          if (_foreignListeners) {
+            let scheduled = _foreignListeners;
 
             // filter for repeaters
             const hashKey = this.$target._hashKey;
@@ -22879,8 +22514,8 @@
             if (hashKey) {
               scheduled = [];
 
-              for (let i = 0, l = foreignListeners.length; i < l; i++) {
-                const listener = foreignListeners[i];
+              for (let i = 0, l = _foreignListeners.length; i < l; i++) {
+                const listener = _foreignListeners[i];
 
                 if (listener.originalTarget._hashKey === hashKey) {
                   scheduled.push(listener);
@@ -22894,15 +22529,15 @@
           }
         }
 
-        if (this.objectListeners.has(proxy) && property !== "length") {
-          const keyList = this.objectListeners.get(proxy);
+        if (this._objectListeners.has(proxy) && property !== "length") {
+          const keyList = this._objectListeners.get(proxy);
 
           for (let i = 0, l = keyList.length; i < l; i++) {
             const key = keyList[i];
 
             const listeners = this.watchers.get(key);
 
-            if (listeners && this.scheduled !== listeners) {
+            if (listeners && this._scheduled !== listeners) {
               this.#scheduleListener(listeners);
             }
           }
@@ -22942,8 +22577,8 @@
         isArray(target) &&
         ["pop", "shift", "unshift"].includes(/** @type { string } */ (property))
       ) {
-        if (this.objectListeners.has(proxy)) {
-          const keyList = this.objectListeners.get(proxy);
+        if (this._objectListeners.has(proxy)) {
+          const keyList = this._objectListeners.get(proxy);
 
           for (let i = 0, l = keyList.length; i < l; i++) {
             const key = keyList[i];
@@ -22951,13 +22586,13 @@
             const listeners = this.watchers.get(key);
 
             if (listeners) {
-              this.scheduled = listeners;
+              this._scheduled = listeners;
             }
           }
         }
 
         if (property === "unshift") {
-          this.#scheduleListener(this.scheduled);
+          this.#scheduleListener(this._scheduled);
         }
       }
 
@@ -22982,8 +22617,8 @@
           this.#scheduleListener(listeners);
         }
 
-        if (this.objectListeners.has(this.$proxy)) {
-          const keyList = this.objectListeners.get(this.$proxy);
+        if (this._objectListeners.has(this.$proxy)) {
+          const keyList = this._objectListeners.get(this.$proxy);
 
           for (let i = 0, l = keyList.length; i < l; i++) {
             const key = keyList[i];
@@ -22994,9 +22629,9 @@
           }
         }
 
-        if (this.scheduled) {
-          this.#scheduleListener(this.scheduled);
-          this.scheduled = [];
+        if (this._scheduled) {
+          this.#scheduleListener(this._scheduled);
+          this._scheduled = [];
         }
 
         return true;
@@ -23004,8 +22639,8 @@
 
       delete target[property];
 
-      if (this.objectListeners.has(this.$proxy)) {
-        const keyList = this.objectListeners.get(this.$proxy);
+      if (this._objectListeners.has(this.$proxy)) {
+        const keyList = this._objectListeners.get(this.$proxy);
 
         for (let i = 0, l = keyList.length; i < l; i++) {
           const key = keyList[i];
@@ -23247,7 +22882,7 @@
               watchProp.split(".").slice(0, -1).join("."),
             )(/** @type {Scope} */ (listener.originalTarget));
 
-            if (potentialProxy && this.foreignProxies.has(potentialProxy)) {
+            if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
               potentialProxy.$handler.#registerForeignKey(key, listener);
               potentialProxy.$handler.#scheduleListener([listener]);
 
@@ -23330,7 +22965,7 @@
       const listenerObject = listener.watchFn(this.$target);
 
       if (isObject(listenerObject)) {
-        this.objectListeners.set(listenerObject, [key]);
+        this._objectListeners.set(listenerObject, [key]);
       }
 
       if (keySet.length > 0) {
@@ -23424,10 +23059,10 @@
 
     /** @internal **/
     #registerForeignKey(key, listener) {
-      if (this.foreignListeners.has(key)) {
-        this.foreignListeners.get(key).push(listener);
+      if (this._foreignListeners.has(key)) {
+        this._foreignListeners.get(key).push(listener);
       } else {
-        this.foreignListeners.set(key, [listener]);
+        this._foreignListeners.set(key, [listener]);
       }
     }
 
@@ -23452,7 +23087,7 @@
     }
 
     // #deregisterForeignKey(key, id) {
-    //   const listenerList = this.foreignListeners.get(key);
+    //   const listenerList = this._foreignListeners.get(key);
     //   if (!listenerList) return false;
 
     //   const index = listenerList.findIndex((x) => x.id === id);
@@ -23460,9 +23095,9 @@
 
     //   listenerList.splice(index, 1);
     //   if (listenerList.length) {
-    //     this.foreignListeners.set(key, listenerList);
+    //     this._foreignListeners.set(key, listenerList);
     //   } else {
-    //     this.foreignListeners.delete(key);
+    //     this._foreignListeners.delete(key);
     //   }
     //   return true;
     // }
@@ -23522,11 +23157,11 @@
      * @returns {(function(): void)|*}
      */
     $on(name, listener) {
-      let namedListeners = this.$$listeners.get(name);
+      let namedListeners = this._listeners.get(name);
 
       if (!namedListeners) {
         namedListeners = [];
-        this.$$listeners.set(name, namedListeners);
+        this._listeners.set(name, namedListeners);
       }
       namedListeners.push(listener);
 
@@ -23537,7 +23172,7 @@
           namedListeners.splice(indexOfListener, 1);
 
           if (namedListeners.length === 0) {
-            this.$$listeners.delete(name);
+            this._listeners.delete(name);
           }
         }
       };
@@ -23573,7 +23208,7 @@
      */
     #eventHelper({ name, event, broadcast }, ...args) {
       if (!broadcast) {
-        if (!this.$$listeners.has(name)) {
+        if (!this._listeners.has(name)) {
           if (this.$parent) {
             return this.$parent.$handler.#eventHelper(
               { name, event, broadcast },
@@ -23605,7 +23240,7 @@
 
       const listenerArgs = concat([event], [event].concat(args), 1);
 
-      const listeners = this.$$listeners.get(name);
+      const listeners = this._listeners.get(name);
 
       if (listeners) {
         let { length } = listeners;
@@ -23672,7 +23307,7 @@
     }
 
     $destroy() {
-      if (this.$$destroyed) return;
+      if (this._destroyed) return;
 
       this.$broadcast("$destroy");
 
@@ -23703,8 +23338,8 @@
         }
       }
 
-      this.$$listeners.clear();
-      this.$$destroyed = true;
+      this._listeners.clear();
+      this._destroyed = true;
     }
 
     /**
@@ -23786,31 +23421,23 @@
      * @returns {ng.Scope|undefined}
      */
     $searchByName(name) {
-      /**
-       * @param {ng.Scope} scope
-       * @param {string} nameParam
-       * @returns {ng.Scope|undefined}
-       */
-      function getByName(scope, nameParam) {
-        if (scope.$scopename === nameParam) {
+      const stack = [this.$root];
+
+      while (stack.length) {
+        const scope = stack.pop();
+
+        if (scope.$scopename === name) {
           return scope;
-        } else {
-          let res = undefined;
+        }
 
-          for (const child of scope.$children) {
-            const found = getByName(child, nameParam);
-
-            if (found) {
-              res = found;
-              break;
-            }
+        if (scope.$children?.length) {
+          for (let i = scope.$children.length - 1; i >= 0; i--) {
+            stack.push(scope.$children[i]);
           }
-
-          return res;
         }
       }
 
-      return getByName(this.$root, name);
+      return undefined;
     }
   }
 
@@ -23862,146 +23489,65 @@
     return ids;
   }
 
-  const $templateRequestMinErr = minErr("$templateRequest");
-
   /**
-   * Used to configure the options passed to the {@link $http} service when making a template request.
+   * Provider for the `$templateRequest` service.
    *
-   * For example, it can be used for specifying the "Accept" header that is sent to the server, when
-   * requesting a template.
+   * Fetches templates via HTTP and caches them in `$templateCache`.
+   * Templates are assumed trusted. This provider allows configuring
+   * per-request `$http` options such as headers, timeout, or transform functions.
    */
-  function TemplateRequestProvider() {
-    let httpOptions;
+  class TemplateRequestProvider {
+    /** @type {ng.RequestShortcutConfig|undefined} */
+    httpOptions;
 
-    /**
-     * The options to be passed to the {@link $http} service when making the request.
-     * You can use this to override options such as the "Accept" header for template requests.
-     * The {@link $templateRequest} will set the `cache` and the `transformResponse` properties of the
-     * options if not overridden here.
-     *
-     * @param {string=} val new value for the {@link $http} options.
-     * @returns {string|TemplateRequestProvider} Returns the {@link $http} options when used as getter and self if used as setter.
-     */
-    this.httpOptions = function (val) {
-      if (val) {
-        httpOptions = val;
-
-        return this;
-      }
-
-      return httpOptions;
-    };
-
-    /**
-     * The `$templateRequest` service runs security checks then downloads the provided template using
-     * `$http` and, upon success, stores the contents inside of `$templateCache`. If the HTTP request
-     * fails or the response data of the HTTP request is empty, a `$compile` error will be thrown (the
-     * exception can be thwarted by setting the 2nd parameter of the function to true). Note that the
-     * contents of `$templateCache` are trusted, so the call to `$sce.getTrustedUrl(tpl)` is omitted
-     * when `tpl` is of type string and `$templateCache` has the matching entry.
-     *
-     * If you want to pass custom options to the `$http` service, such as setting the Accept header you
-     * can configure this via {@link $templateRequestProvider#httpOptions}.
-     *
-     * `$templateRequest` is used internally by {@link $compile}, {@link ngRoute.$route}, and directives such
-     * as {@link ngInclude} to download and cache templates.
-     *
-     * 3rd party modules should use `$templateRequest` if their services or directives are loading
-     * templates.
-     *
-     * @param {string} tpl The HTTP request template URL
-     * @param {boolean=} ignoreRequestError Whether or not to ignore the exception when the request fails or the template is empty
-     *
-     * @return {Promise} a promise for the HTTP response data of the given URL.
-     *
-     * @property {number} totalPendingRequests total amount of pending template requests being downloaded.
-     */
-    this.$get = [
-      $injectTokens._exceptionHandler,
+    /** @returns {Array} DI tokens for Angular.ts injection */
+    $get = [
       $injectTokens._templateCache,
       $injectTokens._http,
-      $injectTokens._sce,
       /**
-       *
-       * @param {ng.ExceptionHandlerService} $exceptionHandler
        * @param {ng.TemplateCacheService} $templateCache
        * @param {ng.HttpService} $http
-       * @param {*} $sce
        * @returns {ng.TemplateRequestService}
        */
-      function ($exceptionHandler, $templateCache, $http, $sce) {
-        function handleRequestFn(tpl, ignoreRequestError) {
-          handleRequestFn.totalPendingRequests++;
-
-          // We consider the template cache holds only trusted templates, so
-          // there's no need to go through adding the template again to the trusted
-          // resources for keys that already are included in there. This also makes
-          // AngularTS accept any script directive, no matter its name. However, we
-          // still need to unwrap trusted types.
-
-          if (!isString(tpl) || !$templateCache.has(tpl)) {
-            try {
-              tpl = $sce.getTrustedResourceUrl(tpl);
-
-              if (!tpl) {
-                return Promise.reject("Template not found");
-              }
-            } catch (err) {
-              return Promise.reject(err.message);
-            }
-          }
-
-          let transformResponse =
-            $http.defaults && $http.defaults.transformResponse;
+      ($templateCache, $http) => {
+        /**
+         * Fetch a template via HTTP and cache it.
+         *
+         * @param {string} templateUrl URL of the template
+         * @returns {Promise<string>} Resolves with template content
+         */
+        const fetchTemplate = (templateUrl) => {
+          // Filter out default transformResponse for template requests
+          let transformResponse = $http.defaults?.transformResponse ?? null;
 
           if (isArray(transformResponse)) {
-            transformResponse = transformResponse.filter(function (transformer) {
-              return transformer !== defaultHttpResponseTransform;
-            });
+            transformResponse = transformResponse.filter(
+              (x) => x !== defaultHttpResponseTransform,
+            );
           } else if (transformResponse === defaultHttpResponseTransform) {
             transformResponse = null;
           }
 
-          return $http
-            .get(
-              tpl,
-              extend(
-                {
-                  cache: $templateCache,
-                  transformResponse,
-                },
-                httpOptions,
-              ),
-            )
-            .finally(function () {
-              handleRequestFn.totalPendingRequests--;
-            })
-            .then(function (response) {
-              $templateCache.set(tpl, response.data);
+          /** @type {ng.RequestShortcutConfig} */
+          const config = extend(
+            {
+              cache: $templateCache,
+              transformResponse,
+            },
+            this.httpOptions || {},
+          );
+
+          return $http.get(templateUrl, config).then(
+            (response) => {
+              $templateCache.set(templateUrl, response.data);
 
               return response.data;
-            }, handleError);
+            },
+            (resp) => Promise.reject(resp),
+          );
+        };
 
-          function handleError(resp) {
-            if (!ignoreRequestError) {
-              resp = $templateRequestMinErr(
-                "tpload",
-                "Failed to load template: {0} (HTTP status: {1} {2})",
-                tpl,
-                resp.status,
-                resp.statusText,
-              );
-
-              $exceptionHandler(resp);
-            }
-
-            return Promise.reject(resp);
-          }
-        }
-
-        handleRequestFn.totalPendingRequests = 0;
-
-        return handleRequestFn;
+        return fetchTemplate;
       },
     ];
   }
@@ -24341,7 +23887,7 @@
         const src = attrs.ngMessagesInclude || attrs.src;
 
         $templateRequest(src).then((html) => {
-          if ($scope.$$destroyed) return;
+          if ($scope._destroyed) return;
 
           if (isString(html) && !html.trim()) ; else {
             // Non-empty template - compile and link
@@ -38819,6 +38365,7 @@
    */
   function ngChannelDirective($eventBus) {
     return {
+      scope: false,
       link: (scope, element, attrs) => {
         const channel = attrs.ngChannel;
 
@@ -38833,6 +38380,8 @@
               }
             } else if (isString(value)) {
               element.innerHTML = value;
+            } else {
+              element.innerHTML = value.toString();
             }
           },
         );
@@ -40367,7 +39916,7 @@
                 ngScope: ngScopeDirective,
               })
               .directive({
-                input: hiddenInputBrowserCacheDirective,
+                input: hiddenInputDirective,
                 ngAnimateSwap: ngAnimateSwapDirective,
                 ngAnimateChildren: $$AnimateChildrenDirective,
                 // aria directives
@@ -40460,8 +40009,11 @@
   const moduleRegistry = {};
 
   class Angular extends EventTarget {
-    constructor() {
+    constructor(submodule = false) {
       super();
+
+      /** @private @type {boolean} */
+      this._submodule = submodule;
 
       /** @private @type {!Array<string|any>} */
       this._bootsrappedModules = [];
@@ -40476,7 +40028,7 @@
        * @public
        * @type {string} `version` from `package.json`
        */
-      this.version = "0.15.1"; //inserted via rollup plugin
+      this.version = "0.15.2"; //inserted via rollup plugin
 
       /**
        * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
@@ -40506,7 +40058,9 @@
         /** @type {any} */ (this.$t)[i] = i;
       });
 
-      window.angular = this;
+      if (!submodule) {
+        window.angular = this;
+      }
       registerNgModule(this);
     }
 
