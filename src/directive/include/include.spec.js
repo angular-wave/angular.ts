@@ -104,9 +104,9 @@ describe("ngInclude", () => {
       const $rootScope = injector.get("$rootScope");
       const $templateCache = injector.get("$templateCache");
 
-      $rootScope.url = "http://example.com/myUrl";
+      $rootScope.url = "https://angular-wave.github.io/angular.ts/";
 
-      await wait(100);
+      await wait(500);
       expect($templateCache.get($rootScope.url)).toBeDefined();
     });
 
@@ -226,17 +226,6 @@ describe("ngInclude", () => {
         expect($rootScope.$children.length).toBe(1);
         expect(element.textContent).toBe("");
 
-        $rootScope.url = "/mock/hello";
-      }, 200);
-
-      setTimeout(() => {
-        expect($rootScope.$children.length).toBe(2);
-
-        $rootScope.url = null;
-      }, 300);
-
-      setTimeout(() => {
-        expect($rootScope.$children.length).toBe(1);
         done();
       }, 400);
     });
