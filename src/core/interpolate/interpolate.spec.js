@@ -135,9 +135,9 @@ describe("$interpolate", () => {
   });
 
   it("should render Date objects using JSON serialization during interpolation", () => {
-    const date = new Date(2014, 10, 10);
+    const date = new Date(Date.UTC(2014, 10, 10));
     const result = $interpolate("{{a}}")({ a: date });
-    expect(result).toBe('"2014-11-09T22:00:00.000Z"');
+    expect(result).toBe('"2014-11-10T00:00:00.000Z"');
   });
 
   it("should return interpolation function", () => {
