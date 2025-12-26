@@ -14,11 +14,11 @@ export class TemplateFactoryProvider {
     | ((
         $http: ng.HttpService,
         $templateCache: ng.TemplateCacheService,
-        $templateRequest: any,
+        $templateRequest: ng.TemplateRequestService,
         $injector: import("../core/di/internal-injector.js").InjectorService,
       ) => this)
   )[];
-  $templateRequest: any;
+  $templateRequest: import("../services/template-request/interface.ts").TemplateRequestService;
   $http: import("../services/http/interface.ts").HttpService;
   $templateCache: ng.TemplateCacheService;
   $injector: import("../core/di/internal-injector.js").InjectorService;
@@ -62,10 +62,9 @@ export class TemplateFactoryProvider {
    * @param {string|Function} url url of the template to load, or a function
    * that returns a url.
    * @param {Object} params Parameters to pass to the url function.
-   * @return {string|Promise.<string>} The template html as a string, or a promise
-   * for that string.
+   * @return {Promise<string>}
    */
-  fromUrl(url: string | Function, params: any): string | Promise<string>;
+  fromUrl(url: string | Function, params: any): Promise<string>;
   /**
    * Creates a template by invoking an injectable provider function.
    *

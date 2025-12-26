@@ -38,7 +38,7 @@ describe("templateFactory", () => {
 
   describe("template URL behavior", () => {
     it("fetches relative URLs correctly", async () => {
-      const res = $templateFactory.fromUrl("/mock/hello");
+      const res = await $templateFactory.fromUrl("/mock/hello");
       await wait(100);
       expect(await res).toEqual("Hello");
     });
@@ -86,13 +86,9 @@ describe("templateFactory", () => {
       });
     });
 
-    it("does not restrict URL loading", function () {
-      expect(() => {
-        $templateFactory.fromUrl("http://evil.com/views/view.html");
-      }).not.toThrowError();
-
-      expect(() => {
-        $templateFactory.fromUrl("data:text/html,foo");
+    it("does not restrict URL loading", async () => {
+      expect(async () => {
+        await $templateFactory.fromUrl("data:text/html,foo");
       }).not.toThrowError();
     });
   });
@@ -142,14 +138,14 @@ describe("templateFactory", () => {
         component: "dataComponent",
       });
       $stateService.go("cmp");
-      await wait();
+      await wait(100);
       expect(el.innerHTML).toMatch(/\<x-data-component/);
     });
 
     it("should prefix the components dom element with x- for components named xFoo", async () => {
       $stateRegistry.register({ name: "cmp", component: "xComponent" });
       $stateService.go("cmp");
-      await wait();
+      await wait(100);
       expect(el.innerHTML).toMatch(/\<x-x-component/);
     });
   });

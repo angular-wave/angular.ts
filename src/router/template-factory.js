@@ -35,7 +35,7 @@ export class TemplateFactoryProvider {
     /**
      * @param {ng.HttpService} $http
      * @param {ng.TemplateCacheService} $templateCache
-     * @param {any} $templateRequest
+     * @param {ng.TemplateRequestService} $templateRequest
      * @param {import("../core/di/internal-injector.js").InjectorService} $injector
      * @returns
      */
@@ -135,8 +135,7 @@ export class TemplateFactoryProvider {
    * @param {string|Function} url url of the template to load, or a function
    * that returns a url.
    * @param {Object} params Parameters to pass to the url function.
-   * @return {string|Promise.<string>} The template html as a string, or a promise
-   * for that string.
+   * @return {Promise<string>}
    */
   fromUrl(url, params) {
     if (isFunction(url)) url = /** @type {Function} */ (url)(params);
@@ -154,7 +153,7 @@ export class TemplateFactoryProvider {
         });
     }
 
-    return this.$templateRequest(url);
+    return this.$templateRequest(/** @type {string} */ (url));
   }
 
   /**
