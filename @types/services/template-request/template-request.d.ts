@@ -8,7 +8,6 @@
 export class TemplateRequestProvider {
   /** @type {ng.RequestShortcutConfig|undefined} */
   httpOptions: ng.RequestShortcutConfig | undefined;
-  /** @returns {Array} DI tokens for Angular.ts injection */
   $get: (
     | string
     | ((

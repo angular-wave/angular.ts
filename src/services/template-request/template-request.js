@@ -13,7 +13,6 @@ export class TemplateRequestProvider {
   /** @type {ng.RequestShortcutConfig|undefined} */
   httpOptions;
 
-  /** @returns {Array} DI tokens for Angular.ts injection */
   $get = [
     $injectTokens._templateCache,
     $injectTokens._http,
@@ -56,7 +55,9 @@ export class TemplateRequestProvider {
 
             return response.data;
           },
-          (resp) => Promise.reject(resp),
+          (resp) => {
+            return Promise.reject(resp);
+          },
         );
       };
 
