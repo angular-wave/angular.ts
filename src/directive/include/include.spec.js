@@ -329,7 +329,7 @@ describe("ngInclude", () => {
       }));
       EL.innerHTML = "<svg><test></test></svg>";
       angular.bootstrap(EL, ["myModule"]);
-      getScope(EL).$on("$includeContentRequested", () => {
+      getScope(EL).$on("$includeContentLoaded", () => {
         const child = EL.querySelectorAll("rect");
         expect(child.length).toBe(2);
         expect(child[0] instanceof SVGRectElement).toBe(true);

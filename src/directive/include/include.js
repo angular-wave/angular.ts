@@ -87,10 +87,9 @@ export function ngIncludeDirective(
           const thisChangeId = ++changeCounter;
 
           if (src) {
-            // set the 2nd param to true to ignore the template request error so that the inner
-            // contents and scope can be cleaned up.
-            await $templateRequest(src).then(
-              (response) => {
+            scope.$emit("$includeContentRequested", src);
+            $templateRequest(src)
+              .then((response) => {
                 if (scope._destroyed) return;
 
                 if (thisChangeId !== changeCounter) return;
@@ -121,8 +120,8 @@ export function ngIncludeDirective(
                 currentElement = clone;
                 currentScope.$emit("$includeContentLoaded", src);
                 scope.$eval(onloadExp);
-              },
-              (err) => {
+              })
+              .catch((err) => {
                 if (scope._destroyed) return;
 
                 if (thisChangeId === changeCounter) {
@@ -130,9 +129,7 @@ export function ngIncludeDirective(
                   scope.$emit("$includeContentError", src);
                 }
                 $exceptionHandler(new Error(err));
-              },
-            );
-            scope.$emit("$includeContentRequested", src);
+              });
           } else {
             cleanupLastIncludeContent();
             ctrl.template = null;
