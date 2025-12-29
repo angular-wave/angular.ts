@@ -1,4 +1,8 @@
-import { getOrSetCacheData, setCacheData } from "../../shared/dom.js";
+import {
+  getOrSetCacheData,
+  extractElementNode,
+  setCacheData,
+} from "../../shared/dom.js";
 import {
   extend,
   isArray,
@@ -13,7 +17,6 @@ import {
   applyAnimationStyles,
   applyGeneratedPreparationClasses,
   clearGeneratedClasses,
-  extractElementNode,
   mergeAnimationDetails,
   prepareAnimationOptions,
   stripCommentsFromElement,

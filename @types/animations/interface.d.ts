@@ -100,6 +100,10 @@ export interface AnimationOptions {
   tempClasses: string | string[];
   /** Optional DOM operation callback executed before animation */
   domOperation?: () => void;
+  $$domOperationFired?: boolean;
+  $$prepared?: boolean;
+  preparationClasses?: string;
+  activeClasses?: string;
 }
 export interface AnimateJsRunner {
   $$willAnimate: true;

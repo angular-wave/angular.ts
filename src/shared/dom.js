@@ -1,5 +1,4 @@
 import { hasOwn, isArray, isDefined, isObject, keys } from "./utils.js";
-import { extractElementNode } from "../animations/shared.js";
 import { NodeType } from "./node.js";
 import { $injectTokens } from "../injection-tokens.js";
 
@@ -35,6 +34,10 @@ const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
 // XHTML parsers do not magically insert elements in the
 // same way that tag soup parsers do, so we cannot shorten
 // this by omitting <tbody> or other required elements.
+/**
+ * Map of HTML elements to their required wrapper elements.
+ * @type {Object.<string, string[]>}
+ */
 const wrapMap = {
   thead: ["table"],
   col: ["colgroup", "table"],
@@ -117,11 +120,8 @@ export function snakeToCamel(name) {
 }
 
 /**
- * Removes expando data from this element. If key is provided, only
- * its field is removed. If data is empty, also removes `ExpandoStore`
- * from cache.
- * @param {Element} element
- * @param {string} [name] - key of field to remove
+ * @param {Element & Record<string, any>} element
+ * @param {string} [name]
  */
 export function removeElementData(element, name) {
   const expandoId = element[EXPANDO];
@@ -144,7 +144,7 @@ export function removeElementData(element, name) {
  *
  * @see {@link https://developer.mozilla.org/en-US/docs/Glossary/Expando MDN Glossary: Expando}
  *
- * @param {Element} element
+ * @param {Element & Record<string, any> } element
  * @param {boolean} [createIfNecessary=false]
  * @returns {import("../interface.ts").ExpandoStore}
  */
@@ -193,7 +193,8 @@ function elementAcceptsData(node) {
 }
 
 /**
- * @param {Element} element
+ * @param {Element & Record<string, any>} element
+ * @param {Element & Record<string, any>} element
  * @param {boolean} [onlyDescendants]
  * @returns {void}
  */
@@ -219,12 +220,13 @@ export function dealoc(element, onlyDescendants) {
 /**
  * If expando store data is empty, then delete it and set its expando id.
  * to undefined.
- * @param {Element} element
+ * @param {Element & Record<string, any>} element
+ * @param {Element & Record<string, any>} element
  */
 function removeIfEmptyData(element) {
   const expandoId = element[EXPANDO];
 
-  const { data } = Cache.get(expandoId);
+  const data = expandoId ? Cache.get(expandoId)?.data : undefined;
 
   if (!data || !keys(data).length) {
     Cache.delete(expandoId);
@@ -236,47 +238,41 @@ function removeIfEmptyData(element) {
  * Gets or sets cache data for a given element.
  *
  * @param {Element} element - The DOM element to get or set data on.
- * @param {string|Object} key - The key (as a string) to get/set or an object for mass-setting.
+ * @param {string|Object.<string, any>} key - The key to get/set or an object for mass-setting.
  * @param {*} [value] - The value to set. If not provided, the function acts as a getter.
- * @returns {*} - The retrieved data if acting as a getter. Otherwise, returns undefined.
+ * @returns {*} - The retrieved data if acting as a getter. Otherwise, undefined.
  */
 export function getOrSetCacheData(element, key, value) {
-  if (elementAcceptsData(element)) {
-    let prop;
+  if (!elementAcceptsData(element)) return undefined;
 
-    const isSimpleSetter = isDefined(value);
+  const isSimpleSetter = isDefined(value);
 
-    const isSimpleGetter = !isSimpleSetter && key && !isObject(key);
+  const isSimpleGetter = !isSimpleSetter && key && !isObject(key);
 
-    const massGetter = !key;
+  const massGetter = !key;
 
-    const expandoStore = getExpando(element, !isSimpleGetter);
+  const expandoStore = getExpando(element, !isSimpleGetter);
 
-    const data = expandoStore && expandoStore.data;
+  const data = expandoStore && expandoStore.data;
 
-    if (isSimpleSetter) {
-      data[kebabToCamel(key)] = value;
-    } else {
-      if (massGetter) {
-        return data;
-      }
+  if (!data) return undefined;
 
-      if (isSimpleGetter) {
-        // don't force creation of expandoStore if it doesn't exist yet
-        return data && data[kebabToCamel(key)];
-      }
-
-      // mass-setter: data({key1: val1, key2: val2})
-      for (prop in key) {
+  if (isSimpleSetter && typeof key === "string") {
+    data[kebabToCamel(key)] = value;
+  } else if (massGetter) {
+    return data;
+  } else if (isSimpleGetter && typeof key === "string") {
+    return data[kebabToCamel(key)];
+  } else if (key && typeof key === "object") {
+    // key is now narrowed to object
+    for (const prop in key) {
+      if (Object.prototype.hasOwnProperty.call(key, prop)) {
         data[kebabToCamel(prop)] = key[prop];
       }
     }
-
-    return undefined;
-  } else {
-    // TODO: check should occur perhaps prior at compilation level that this is a valid element
-    return undefined;
   }
+
+  return undefined;
 }
 
 /**
@@ -397,14 +393,14 @@ export function getController(element, name) {
 }
 
 /**
+ * Walk up the DOM tree (including Shadow DOM) to get inherited data.
  *
- * @param {Node} element
- * @param {string} name
- * @returns
+ * @param {Node} element - The starting element (or document/document fragment)
+ * @param {string} name - The data key to look up
+ * @returns {any} - The found value, or undefined if not found
  */
 export function getInheritedData(element, name) {
   // if element is the document object work with the html element instead
-  // this makes $(document).scope() possible
   if (element.nodeType === NodeType._DOCUMENT_NODE) {
     element = /** @type {Document} */ (element).documentElement;
   }
@@ -412,18 +408,20 @@ export function getInheritedData(element, name) {
   let value;
 
   while (element) {
-    if (
-      isDefined((value = getCacheData(/** @type {Element} */ (element), name)))
-    )
-      return value;
+    value = getCacheData(/** @type {Element} */ (element), name);
 
-    // If dealing with a document fragment node with a host element, and no parent, use the host
-    // element as the parent. This enables directives within a Shadow DOM or polyfilled Shadow DOM
-    // to lookup parent controllers.
-    element =
-      element.parentNode ||
-      (element.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE &&
-        /** @type {ShadowRoot} */ (element).host);
+    if (isDefined(value)) return value;
+
+    let next = element.parentNode;
+
+    if (!next && element.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE) {
+      next = /** @type {ShadowRoot} */ (element).host;
+    }
+
+    // Stop the loop when next is falsy, instead of assigning null
+    if (!next) break;
+
+    element = next;
   }
 
   return undefined;
@@ -457,7 +455,11 @@ export function startingTag(elementOrStr) {
 
     const doc = parser.parseFromString(elementOrStr, "text/html");
 
-    clone = doc.body.firstChild.cloneNode(true);
+    const { firstChild } = doc.body;
+
+    if (!firstChild) return ""; // empty string for empty input
+
+    clone = firstChild.cloneNode(true);
   } else if (elementOrStr instanceof Element || elementOrStr instanceof Node) {
     clone = elementOrStr.cloneNode(true);
   } else {
@@ -496,18 +498,23 @@ export function startingTag(elementOrStr) {
 
 /**
  * Return the DOM siblings between the first and last node in the given array.
- * @param {Array<Node>} nodes An array-like object
- * @returns {*[]|Array<Node>} the inputted object or a JQLite collection containing the nodes
+ * @param {Node[]} nodes
+ * @returns {Node[]}
  */
 export function getBlockNodes(nodes) {
-  // TODO(perf): update `nodes` instead of creating a new object?
   let node = nodes[0];
 
   const endNode = nodes[nodes.length - 1];
 
   let blockNodes;
 
-  for (let i = 1; node !== endNode && (node = node.nextSibling); i++) {
+  for (let i = 1; node !== endNode; i++) {
+    const next = node.nextSibling;
+
+    if (!next) break; // stop if no next sibling
+
+    node = next;
+
     if (blockNodes || nodes[i] !== node) {
       if (!blockNodes) {
         // use element to avoid circular dependency
@@ -669,4 +676,22 @@ export function getBaseHref() {
   const href = document.querySelector("base")?.getAttribute("href");
 
   return href ? href.replace(/^(https?:)?\/\/[^/]*/, "") : "";
+}
+
+/**
+ * @param {NodeList|Node} element
+ * @returns {Node | undefined}
+ */
+export function extractElementNode(element) {
+  if (!element || !isArray(element)) return /** @type {Node} */ (element);
+
+  for (let i = 0; i < /** @type {NodeList} */ (element).length; i++) {
+    const elm = element[i];
+
+    if (elm.nodeType === NodeType._ELEMENT_NODE) {
+      return elm;
+    }
+  }
+
+  return undefined;
 }

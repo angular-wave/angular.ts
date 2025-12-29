@@ -1,10 +1,25 @@
-export function assertArg(arg: any, name: any, reason: any): any;
-export function packageStyles(options: any): {
-  to: any;
-  from: any;
-};
-export function pendClasses(classes: any, fix: any, isPrefix: any): string;
-export function removeFromArray(arr: any, val: any): void;
+/**
+ * @param {ng.AnimationOptions} options
+ */
+export function packageStyles(options: ng.AnimationOptions):
+  | {
+      to: Record<string, string | number>;
+      from: Record<string, string | number>;
+    }
+  | {
+      to?: undefined;
+      from?: undefined;
+    };
+/**
+ * @param {string | string[]} classes
+ * @param {string} fix
+ * @param {boolean | undefined} [isPrefix]
+ */
+export function pendClasses(
+  classes: string | string[],
+  fix: string,
+  isPrefix?: boolean | undefined,
+): string;
 /**
  *
  * @param {NodeList|Node} element
@@ -13,17 +28,24 @@ export function removeFromArray(arr: any, val: any): void;
 export function stripCommentsFromElement(
   element: NodeList | Node,
 ): Node[] | Node | undefined;
-/**
- * @param {NodeList|Node} element
- * @returns {Node}
- */
-export function extractElementNode(element: NodeList | Node): Node;
 export function applyAnimationClassesFactory(): (
-  element: any,
-  options: any,
+  /** @type {HTMLElement} */ element: HTMLElement,
+  /** @type {ng.AnimationOptions} */ options: ng.AnimationOptions,
 ) => void;
-export function prepareAnimationOptions(options: any): any;
-export function applyAnimationStyles(element: any, options: any): void;
+/**
+ * @param {ng.AnimationOptions | undefined} options
+ */
+export function prepareAnimationOptions(
+  options: ng.AnimationOptions | undefined,
+): import("./interface.ts").AnimationOptions;
+/**
+ * @param {HTMLElement} element
+ * @param {ng.AnimationOptions | undefined} options
+ */
+export function applyAnimationStyles(
+  element: HTMLElement,
+  options: ng.AnimationOptions | undefined,
+): void;
 /**
  * Applies initial animation styles to a DOM element.
  *
@@ -31,13 +53,11 @@ export function applyAnimationStyles(element: any, options: any): void;
  * defined in `options.from`, then clears the property to prevent reuse.
  *
  * @param {HTMLElement} element - The target DOM element to apply styles to.
- * @param {{ from?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
+ * @param {ng.AnimationOptions} [options] - options containing a `from` object with CSS property–value pairs.
  */
 export function applyAnimationFromStyles(
   element: HTMLElement,
-  options: {
-    from?: Partial<CSSStyleDeclaration> | null;
-  },
+  options?: ng.AnimationOptions,
 ): void;
 /**
  * Applies final animation styles to a DOM element.
@@ -46,36 +66,73 @@ export function applyAnimationFromStyles(
  * defined in `options.to`, then clears the property to prevent reuse.
  *
  * @param {HTMLElement} element - The target DOM element to apply styles to.
- * @param {{ to?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
+ * @param {ng.AnimationOptions} [options] - options containing a `from` object with CSS property–value pairs.
  */
 export function applyAnimationToStyles(
   element: HTMLElement,
-  options: {
-    to?: Partial<CSSStyleDeclaration> | null;
-  },
+  options?: ng.AnimationOptions,
 ): void;
+/**
+ * Merge old and new animation options for an element, computing
+ * the final addClass and removeClass values.
+ *
+ * @param {HTMLElement} element - The DOM element being animated.
+ * @param {{ options?: ng.AnimationOptions; addClass?: string; removeClass?: string }} oldAnimation
+ * @param {{ options?: ng.AnimationOptions; addClass?: string; removeClass?: string; preparationClasses?: string }} newAnimation
+ * @returns {ng.AnimationOptions} - The merged animation options.
+ */
 export function mergeAnimationDetails(
-  element: any,
-  oldAnimation: any,
-  newAnimation: any,
-): any;
-export function resolveElementClasses(
-  existing: any,
-  toAdd: any,
-  toRemove: any,
-): {
-  addClass: string;
-  removeClass: string;
-};
+  element: HTMLElement,
+  oldAnimation: {
+    options?: ng.AnimationOptions;
+    addClass?: string;
+    removeClass?: string;
+  },
+  newAnimation: {
+    options?: ng.AnimationOptions;
+    addClass?: string;
+    removeClass?: string;
+    preparationClasses?: string;
+  },
+): ng.AnimationOptions;
+/**
+ * @param {HTMLElement} element
+ * @param {string | null} event
+ * @param {ng.AnimationOptions} options
+ */
 export function applyGeneratedPreparationClasses(
-  element: any,
-  event: any,
-  options: any,
+  element: HTMLElement,
+  event: string | null,
+  options: ng.AnimationOptions,
 ): void;
-export function clearGeneratedClasses(element: any, options: any): void;
-export function blockKeyframeAnimations(node: any, applyBlock: any): string[];
-export function applyInlineStyle(node: any, styleTuple: any): void;
-export function concatWithSpace(a: any, b: any): any;
+/**
+ * @param {HTMLElement} element
+ * @param {ng.AnimationOptions} options
+ */
+export function clearGeneratedClasses(
+  element: HTMLElement,
+  options: ng.AnimationOptions,
+): void;
+/**
+ * @param {HTMLElement} node
+ * @param {boolean} applyBlock
+ * @returns {string[]}
+ */
+export function blockKeyframeAnimations(
+  node: HTMLElement,
+  applyBlock: boolean,
+): string[];
+/**
+ * @param {HTMLElement} node
+ * @param {any[]} styleTuple
+ */
+export function applyInlineStyle(node: HTMLElement, styleTuple: any[]): void;
+/**
+ * @param {string} a
+ * @param {string} b
+ * @returns {string}
+ */
+export function concatWithSpace(a: string, b: string): string;
 export const ADD_CLASS_SUFFIX: "-add";
 export const REMOVE_CLASS_SUFFIX: "-remove";
 export const EVENT_CLASS_PREFIX: "ng-";
@@ -83,4 +140,3 @@ export const ACTIVE_CLASS_SUFFIX: "-active";
 export const PREPARE_CLASS_SUFFIX: "-prepare";
 export const NG_ANIMATE_CLASSNAME: "ng-animate";
 export const NG_ANIMATE_CHILDREN_DATA: "$$ngAnimateChildren";
-export const ngMinErr: (arg0: string, ...arg1: any[]) => Error;
