@@ -26,7 +26,6 @@ import {
   packageStyles,
   pendClasses,
   prepareAnimationOptions,
-  removeFromArray,
 } from "./shared.js";
 
 const ANIMATE_TIMER_KEY = $injectTokens._animateCss;
@@ -303,6 +302,7 @@ export function AnimateCssProvider() {
           return closeAndReturnNoopAnimator();
         }
 
+        /** @type {Array<Array<string>>} */
         const temporaryStyles = [];
 
         const styles = packageStyles(options);
@@ -780,7 +780,11 @@ export function AnimateCssProvider() {
                 if (animationPaused) {
                   temporaryStyles.push(value);
                 } else {
-                  removeFromArray(temporaryStyles, value);
+                  const index = temporaryStyles.indexOf(value);
+
+                  if (index !== -1) {
+                    temporaryStyles.splice(index, 1);
+                  }
                 }
               }
             } else if (animationPaused && playAnimation) {

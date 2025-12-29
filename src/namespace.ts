@@ -85,7 +85,10 @@ import {
 } from "./directive/worker/interface.ts";
 import { Provider as TProvideService } from "./interface.ts";
 import { Location as TLocationService } from "./services/location/location.js";
-import { AnimateService as TAnimateService } from "./animations/interface.ts";
+import {
+  AnimateService as TAnimateService,
+  AnimationOptions as TAnimationOptions,
+} from "./animations/interface.ts";
 import {
   StorageBackend as TStorageBackend,
   StorageType as TStorageType,
@@ -200,6 +203,7 @@ declare global {
     export type ViewScrollService = TViewScrollService;
 
     // Support types
+    export type AnimationOptions = TAnimationOptions;
     export type ErrorHandlingConfig = TErrorHandlingConfig;
     export type ListenerFn = TListenerFn;
     export type Listener = TListener;

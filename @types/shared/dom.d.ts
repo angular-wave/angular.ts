@@ -11,24 +11,24 @@ export function kebabToCamel(name: string): string;
  */
 export function snakeToCamel(name: string): string;
 /**
- * Removes expando data from this element. If key is provided, only
- * its field is removed. If data is empty, also removes `ExpandoStore`
- * from cache.
- * @param {Element} element
- * @param {string} [name] - key of field to remove
+ * @param {Element & Record<string, any>} element
+ * @param {string} [name]
  */
-export function removeElementData(element: Element, name?: string): void;
+export function removeElementData(
+  element: Element & Record<string, any>,
+  name?: string,
+): void;
 /**
  * Stores data associated with an element inside the expando property of the DOM element.
  *
  * @see {@link https://developer.mozilla.org/en-US/docs/Glossary/Expando MDN Glossary: Expando}
  *
- * @param {Element} element
+ * @param {Element & Record<string, any> } element
  * @param {boolean} [createIfNecessary=false]
  * @returns {import("../interface.ts").ExpandoStore}
  */
 export function getExpando(
-  element: Element,
+  element: Element & Record<string, any>,
   createIfNecessary?: boolean,
 ): import("../interface.ts").ExpandoStore;
 /**
@@ -38,22 +38,30 @@ export function getExpando(
  */
 export function isTextNode(html: string): boolean;
 /**
- * @param {Element} element
+ * @param {Element & Record<string, any>} element
+ * @param {Element & Record<string, any>} element
  * @param {boolean} [onlyDescendants]
  * @returns {void}
  */
-export function dealoc(element: Element, onlyDescendants?: boolean): void;
+export function dealoc(
+  element: Element & Record<string, any>,
+  onlyDescendants?: boolean,
+): void;
 /**
  * Gets or sets cache data for a given element.
  *
  * @param {Element} element - The DOM element to get or set data on.
- * @param {string|Object} key - The key (as a string) to get/set or an object for mass-setting.
+ * @param {string|Object.<string, any>} key - The key to get/set or an object for mass-setting.
  * @param {*} [value] - The value to set. If not provided, the function acts as a getter.
- * @returns {*} - The retrieved data if acting as a getter. Otherwise, returns undefined.
+ * @returns {*} - The retrieved data if acting as a getter. Otherwise, undefined.
  */
 export function getOrSetCacheData(
   element: Element,
-  key: string | any,
+  key:
+    | string
+    | {
+        [x: string]: any;
+      },
   value?: any,
 ): any;
 /**
@@ -128,10 +136,11 @@ export function getController(
   name?: string,
 ): ng.Scope | undefined;
 /**
+ * Walk up the DOM tree (including Shadow DOM) to get inherited data.
  *
- * @param {Node} element
- * @param {string} name
- * @returns
+ * @param {Node} element - The starting element (or document/document fragment)
+ * @param {string} name - The data key to look up
+ * @returns {any} - The found value, or undefined if not found
  */
 export function getInheritedData(element: Node, name: string): any;
 /**
@@ -149,10 +158,10 @@ export function removeElement(element: Element, keepData?: boolean): void;
 export function startingTag(elementOrStr: string | Element | Node): string;
 /**
  * Return the DOM siblings between the first and last node in the given array.
- * @param {Array<Node>} nodes An array-like object
- * @returns {*[]|Array<Node>} the inputted object or a JQLite collection containing the nodes
+ * @param {Node[]} nodes
+ * @returns {Node[]}
  */
-export function getBlockNodes(nodes: Array<Node>): any[] | Array<Node>;
+export function getBlockNodes(nodes: Node[]): Node[];
 /**
  * Gets the name of a boolean attribute if it exists on a given element.
  *
@@ -230,6 +239,11 @@ export function animatedomInsert(
  * @returns {string} The base href.
  */
 export function getBaseHref(): string;
+/**
+ * @param {NodeList|Node} element
+ * @returns {Node | undefined}
+ */
+export function extractElementNode(element: NodeList | Node): Node | undefined;
 /**
  * Expando cache for adding properties to DOM nodes with JavaScript.
  * This used to be an Object in JQLite decorator, but swapped out for a Map

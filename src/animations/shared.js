@@ -1,11 +1,4 @@
-import {
-  entries,
-  extend,
-  isArray,
-  isString,
-  keys,
-  minErr,
-} from "../shared/utils.js";
+import { isArray, isString } from "../shared/utils.js";
 import { NodeType } from "../shared/node.js";
 
 export const ADD_CLASS_SUFFIX = "-add";
@@ -17,55 +10,31 @@ export const PREPARE_CLASS_SUFFIX = "-prepare";
 export const NG_ANIMATE_CLASSNAME = "ng-animate";
 export const NG_ANIMATE_CHILDREN_DATA = "$$ngAnimateChildren";
 
-export const ngMinErr = minErr("ng");
-export function assertArg(arg, name, reason) {
-  if (!arg) {
-    throw ngMinErr(
-      "areq",
-      "Argument '{0}' is {1}",
-      name || "?",
-      reason || "required",
-    );
-  }
-
-  return arg;
-}
-
+/**
+ * @param {ng.AnimationOptions} options
+ */
 export function packageStyles(options) {
-  const styles = {};
-
-  if (options && (options.to || options.from)) {
-    styles.to = options.to;
-    styles.from = options.from;
-  }
-
-  return styles;
+  return options?.to || options?.from
+    ? { to: options.to, from: options.from }
+    : {};
 }
 
+/**
+ * @param {string | string[]} classes
+ * @param {string} fix
+ * @param {boolean | undefined} [isPrefix]
+ */
 export function pendClasses(classes, fix, isPrefix) {
-  let className = "";
-
-  classes = isArray(classes)
+  const arrayClasses = isArray(classes)
     ? classes
-    : classes && isString(classes) && classes.length
-      ? classes.split(/\s+/)
+    : classes && isString(classes)
+      ? classes.trim().split(/\s+/)
       : [];
-  classes.forEach((klass, i) => {
-    if (klass && klass.length > 0) {
-      className += i > 0 ? " " : "";
-      className += isPrefix ? fix + klass : klass + fix;
-    }
-  });
 
-  return className;
-}
-
-export function removeFromArray(arr, val) {
-  const index = arr.indexOf(val);
-
-  if (val >= 0) {
-    arr.splice(index, 1);
-  }
+  return arrayClasses
+    .filter(Boolean)
+    .map((klass) => (isPrefix ? fix + klass : klass + fix))
+    .join(" ");
 }
 
 /**
@@ -85,61 +54,53 @@ export function stripCommentsFromElement(element) {
   }
 }
 
-/**
- * @param {NodeList|Node} element
- * @returns {Node}
- */
-export function extractElementNode(element) {
-  if (!element || !isArray(element)) return /** @type {Node} */ (element);
-
-  for (let i = 0; i < /** @type {NodeList} */ (element).length; i++) {
-    const elm = element[i];
-
-    if (elm.nodeType === NodeType._ELEMENT_NODE) {
-      return elm;
-    }
-  }
-
-  return undefined; // TODO mayb throw?
-}
-
 export function applyAnimationClassesFactory() {
-  return function (element, options) {
+  return function (
+    /** @type {HTMLElement} */ element,
+    /** @type {ng.AnimationOptions} */ options,
+  ) {
     if (options.addClass) {
       element.classList.add(...options.addClass.trim().split(" "));
-      options.addClass = null;
+      options.addClass = undefined;
     }
 
     if (options.removeClass) {
       element.classList.remove(...options.removeClass.trim().split(" "));
-      options.removeClass = null;
+      options.removeClass = undefined;
     }
   };
 }
 
+/**
+ * @param {ng.AnimationOptions | undefined} options
+ */
 export function prepareAnimationOptions(options) {
-  options = options || {};
+  const animateOptions = options || /** @type {ng.AnimationOptions} */ ({});
 
-  if (!options.$$prepared) {
+  if (!animateOptions.$$prepared) {
     let domOperation =
-      options.domOperation ||
+      animateOptions.domOperation ||
       (() => {
         /* empty */
       });
 
-    options.domOperation = function () {
-      options.$$domOperationFired = true;
+    animateOptions.domOperation = function () {
+      animateOptions.$$domOperationFired = true;
       domOperation();
       domOperation = () => {
         /* empty */
       };
     };
-    options.$$prepared = true;
+    animateOptions.$$prepared = true;
   }
 
-  return options;
+  return animateOptions;
 }
 
+/**
+ * @param {HTMLElement} element
+ * @param {ng.AnimationOptions | undefined} options
+ */
 export function applyAnimationStyles(element, options) {
   applyAnimationFromStyles(element, options);
   applyAnimationToStyles(element, options);
@@ -152,12 +113,12 @@ export function applyAnimationStyles(element, options) {
  * defined in `options.from`, then clears the property to prevent reuse.
  *
  * @param {HTMLElement} element - The target DOM element to apply styles to.
- * @param {{ from?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
+ * @param {ng.AnimationOptions} [options] - options containing a `from` object with CSS property–value pairs.
  */
 export function applyAnimationFromStyles(element, options) {
-  if (options.from) {
+  if (options && options.from) {
     Object.assign(element.style, options.from);
-    options.from = null;
+    options.from = undefined;
   }
 }
 
@@ -168,124 +129,96 @@ export function applyAnimationFromStyles(element, options) {
  * defined in `options.to`, then clears the property to prevent reuse.
  *
  * @param {HTMLElement} element - The target DOM element to apply styles to.
- * @param {{ to?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
+ * @param {ng.AnimationOptions} [options] - options containing a `from` object with CSS property–value pairs.
  */
 export function applyAnimationToStyles(element, options) {
-  if (options.to) {
+  if (options && options.to) {
     Object.assign(element.style, options.to);
-    options.to = null;
+    options.to = undefined;
   }
 }
 
+/**
+ * Merge old and new animation options for an element, computing
+ * the final addClass and removeClass values.
+ *
+ * @param {HTMLElement} element - The DOM element being animated.
+ * @param {{ options?: ng.AnimationOptions; addClass?: string; removeClass?: string }} oldAnimation
+ * @param {{ options?: ng.AnimationOptions; addClass?: string; removeClass?: string; preparationClasses?: string }} newAnimation
+ * @returns {ng.AnimationOptions} - The merged animation options.
+ */
 export function mergeAnimationDetails(element, oldAnimation, newAnimation) {
-  const target = oldAnimation.options || {};
+  const target =
+    oldAnimation.options || /** @type {ng.AnimationOptions} */ ({});
 
-  const newOptions = newAnimation.options || {};
+  const newOptions =
+    newAnimation.options || /** @type {ng.AnimationOptions} */ ({});
 
-  const toAdd = `${target.addClass || ""} ${newOptions.addClass || ""}`;
-
-  const toRemove = `${target.removeClass || ""} ${newOptions.removeClass || ""}`;
-
-  const classes = resolveElementClasses(
-    element.getAttribute("class"),
-    toAdd,
-    toRemove,
-  );
-
+  // Merge preparation classes if any
   if (newOptions.preparationClasses) {
-    target.preparationClasses = concatWithSpace(
+    target.preparationClasses = [
       newOptions.preparationClasses,
       target.preparationClasses,
-    );
+    ]
+      .filter(Boolean)
+      .join(" ");
     delete newOptions.preparationClasses;
   }
 
-  extend(target, newOptions);
+  // Merge other properties except addClass/removeClass
+  Object.assign(target, newOptions);
 
-  if (classes.addClass) {
-    target.addClass = classes.addClass;
-  } else {
-    target.addClass = null;
-  }
+  // Combine addClass / removeClass
+  const addList = `${target.addClass || ""} ${newOptions.addClass || ""}`
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
 
-  if (classes.removeClass) {
-    target.removeClass = classes.removeClass;
-  } else {
-    target.removeClass = null;
-  }
+  const removeList =
+    `${target.removeClass || ""} ${newOptions.removeClass || ""}`
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
 
+  // Track existing classes on the element
+  const existingSet = new Set(
+    (element.getAttribute("class") || "").split(/\s+/).filter(Boolean),
+  );
+
+  // Compute final addClass and removeClass
+  /** @type {string[]} */
+  const finalAdd = [];
+
+  /** @type {string[]} */
+  const finalRemove = [];
+
+  addList.forEach(function (cls) {
+    if (!existingSet.has(cls)) finalAdd.push(cls);
+  });
+
+  removeList.forEach(function (cls) {
+    if (existingSet.has(cls)) finalRemove.push(cls);
+  });
+
+  target.addClass = finalAdd.length
+    ? /** @type {string} */ (finalAdd.join(" "))
+    : undefined;
+  target.removeClass = finalRemove.length
+    ? /** @type {string} */ (finalRemove.join(" "))
+    : undefined;
+
+  // Update oldAnimation references
   oldAnimation.addClass = target.addClass;
   oldAnimation.removeClass = target.removeClass;
 
   return target;
 }
 
-export function resolveElementClasses(existing, toAdd, toRemove) {
-  const ADD_CLASS = 1;
-
-  const REMOVE_CLASS = -1;
-
-  const flags = {};
-
-  existing = splitClassesToLookup(existing);
-
-  toAdd = splitClassesToLookup(toAdd);
-  Object.keys(toAdd).forEach((key) => {
-    flags[key] = ADD_CLASS;
-  });
-
-  toRemove = splitClassesToLookup(toRemove);
-  keys(toRemove).forEach((key) => {
-    flags[key] = flags[key] === ADD_CLASS ? null : REMOVE_CLASS;
-  });
-
-  const classes = {
-    addClass: "",
-    removeClass: "",
-  };
-
-  entries(flags).forEach(([klass, val]) => {
-    let prop, allow;
-
-    if (val === ADD_CLASS) {
-      prop = "addClass";
-      allow = !existing[klass] || existing[klass + REMOVE_CLASS_SUFFIX];
-    } else if (val === REMOVE_CLASS) {
-      prop = "removeClass";
-      allow = existing[klass] || existing[klass + ADD_CLASS_SUFFIX];
-    }
-
-    if (allow) {
-      if (classes[prop].length) {
-        classes[prop] += " ";
-      }
-      classes[prop] += klass;
-    }
-  });
-
-  function splitClassesToLookup(cls) {
-    if (isString(cls)) {
-      cls = cls.trim().split(" ");
-    }
-
-    const obj = {};
-
-    if (cls) {
-      cls.forEach((klass) => {
-        // sometimes the split leaves empty string values
-        // incase extra spaces were applied to the options
-        if (klass.length) {
-          obj[klass] = true;
-        }
-      });
-    }
-
-    return obj;
-  }
-
-  return classes;
-}
-
+/**
+ * @param {HTMLElement} element
+ * @param {string | null} event
+ * @param {ng.AnimationOptions} options
+ */
 export function applyGeneratedPreparationClasses(element, event, options) {
   let classes = "";
 
@@ -313,22 +246,31 @@ export function applyGeneratedPreparationClasses(element, event, options) {
   }
 }
 
+/**
+ * @param {HTMLElement} element
+ * @param {ng.AnimationOptions} options
+ */
 export function clearGeneratedClasses(element, options) {
   if (options.preparationClasses) {
     options.preparationClasses
       .split(" ")
       .forEach((cls) => element.classList.remove(cls));
-    options.preparationClasses = null;
+    options.preparationClasses = undefined;
   }
 
   if (options.activeClasses) {
     options.activeClasses
       .split(" ")
       .forEach((cls) => element.classList.remove(cls));
-    options.activeClasses = null;
+    options.activeClasses = undefined;
   }
 }
 
+/**
+ * @param {HTMLElement} node
+ * @param {boolean} applyBlock
+ * @returns {string[]}
+ */
 export function blockKeyframeAnimations(node, applyBlock) {
   const value = applyBlock ? "paused" : "";
 
@@ -339,16 +281,21 @@ export function blockKeyframeAnimations(node, applyBlock) {
   return [key, value];
 }
 
+/**
+ * @param {HTMLElement} node
+ * @param {any[]} styleTuple
+ */
 export function applyInlineStyle(node, styleTuple) {
   const prop = styleTuple[0];
 
   node.style[prop] = styleTuple[1];
 }
 
+/**
+ * @param {string} a
+ * @param {string} b
+ * @returns {string}
+ */
 export function concatWithSpace(a, b) {
-  if (!a) return b;
-
-  if (!b) return a;
-
-  return `${a} ${b}`;
+  return [a, b].filter(Boolean).join(" ");
 }

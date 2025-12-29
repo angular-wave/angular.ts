@@ -129,6 +129,10 @@ export interface AnimationOptions {
   tempClasses: string | string[]; // CSS classes during animation
   /** Optional DOM operation callback executed before animation */
   domOperation?: () => void;
+  $$domOperationFired?: boolean;
+  $$prepared?: boolean;
+  preparationClasses?: string;
+  activeClasses?: string;
 }
 
 export interface AnimateJsRunner {
