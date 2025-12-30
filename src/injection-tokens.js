@@ -66,7 +66,7 @@ export const $injectTokens = {
   _url: "$url",
   _view: "$view",
   _window: "$window",
-  _ws: "$ws",
+  _websocket: "$websocket",
 
   // provide literals
   _provide: "$provide",

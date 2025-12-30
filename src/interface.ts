@@ -46,6 +46,7 @@ export const PublicInjectionTokens = {
   $url: "$url",
   $view: "$view",
   $window: "$window",
+  $websocket: "$websocket",
   $provide: "$provide",
   $injector: "$injector",
   $compileProvider: "$compileProvider",
