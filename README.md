@@ -17,7 +17,7 @@ AngularTS builds on that foundation and adds:
 - built-in enterprise-level router (`ui-router` ported as `ng-router`)
 - built-in animations (`animate`)
 - new directives, inspired by `HTMX`
-- new injectables for REST resources, persistent stores, Web Workers and WASM modules
+- new injectables for REST resources, persistent stores, Web Workers, EventSources, WebSockets and WASM modules
 
 The result is a high-performance, buildless, multi-paradigm and battle-tested JS framework that stays as close to Web standards as possible.
 

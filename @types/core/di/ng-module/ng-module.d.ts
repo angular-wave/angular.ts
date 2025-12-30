@@ -199,4 +199,28 @@ export class NgModule {
     entityClass: ng.EntityClass<T>,
     options?: any | undefined,
   ): NgModule;
+  /**
+   * Register a pre-configured SSE connection during module configuration.
+   *
+   * @param {string} name - Injectable name
+   * @param {string} url - SSE endpoint
+   * @param {ng.SseConfig} [options] - Optional SSE config
+   * @returns {NgModule}
+   */
+  sse(name: string, url: string, options?: ng.SseConfig): NgModule;
+  /**
+   * Register a pre-configured WebSocket connection during module configuration.
+   *
+   * @param {string} name - Injectable name
+   * @param {string} url - WebSocket endpoint
+   * @param {string[]} [protocols] - Optional subprotocols
+   * @param {ng.WebSocketConfig} [options] - Optional WebSocket configuration
+   * @returns {NgModule}
+   */
+  websocket(
+    name: string,
+    url: string,
+    protocols?: string[],
+    options?: ng.WebSocketConfig,
+  ): NgModule;
 }

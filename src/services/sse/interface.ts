@@ -1,39 +1,17 @@
+import { StreamConnectionConfig } from "../stream/interface.ts";
+
 /**
- * Configuration object for SSE
+ * SSE-specific configuration
  */
-export interface SseConfig {
+export interface SseConfig extends StreamConnectionConfig {
   /** Include cookies/credentials when connecting */
   withCredentials?: boolean;
-
-  /** Custom headers (Note: EventSource doesn't natively support headers; handled at app level if needed) */
-  headers?: Record<string, string>;
-
-  /** Called when the connection is successfully opened */
-  onOpen?: (event: Event) => void;
-
-  /** Called when a message event is received */
-  onMessage?: (data: any, event: MessageEvent) => void;
-
-  /** Called on connection error */
-  onError?: (err: Event) => void;
-
-  /** Transform raw SSE message data (default: JSON.parse if possible) */
-  transformMessage?: (data: string) => any;
 
   /** Optional query parameters appended to the URL */
   params?: Record<string, any>;
 
-  /** Called when the connection is being re-established */
-  onReconnect?: (attempt: number) => void;
-
-  /** Delay in milliseconds before attempting to reconnect (default: 1000ms) */
-  retryDelay?: number;
-
-  /** Maximum number of reconnect attempts (default: Infinity) */
-  maxRetries?: number;
-
-  /** Heartbeat timeout in milliseconds; reconnect if no message within this time */
-  heartbeatTimeout?: number;
+  /** Custom headers (EventSource doesn't natively support headers) */
+  headers?: Record<string, string>;
 }
 
 /**

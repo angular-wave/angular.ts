@@ -23,7 +23,7 @@ export class StreamConnection {
     retryDelay: number;
     maxRetries: number;
     heartbeatTimeout: number;
-    transformMessage: (data: string) => any;
+    transformMessage: (data: any) => any;
   };
   _log: import("../log/interface.ts").LogService;
   _retryCount: number;

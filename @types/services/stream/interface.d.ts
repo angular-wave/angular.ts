@@ -15,4 +15,5 @@ export interface StreamConnectionConfig {
   heartbeatTimeout?: number;
   /** Function to transform incoming messages */
   transformMessage?: (data: any) => any;
+  [key: string]: any;
 }
