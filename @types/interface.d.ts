@@ -44,6 +44,7 @@ export declare const PublicInjectionTokens: {
   readonly $url: "$url";
   readonly $view: "$view";
   readonly $window: "$window";
+  readonly $websocket: "$websocket";
   readonly $provide: "$provide";
   readonly $injector: "$injector";
   readonly $compileProvider: "$compileProvider";

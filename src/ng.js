@@ -293,7 +293,7 @@ export function registerNgModule(angular) {
             $url: UrlService,
             $stateRegistry: StateRegistryProvider,
             $eventBus: PubSubProvider,
-            $ws: WebSocketProvider,
+            $websocket: WebSocketProvider,
           });
         },
       ],
