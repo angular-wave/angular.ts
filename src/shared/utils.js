@@ -208,7 +208,7 @@ export function isNumber(value) {
  * Determines if a value is a date.
  *
  * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `Date`.
+ * @returns {value is Date} True if `value` is a `Date`.
  */
 export function isDate(value) {
   return toString.call(value) === "[object Date]";
@@ -250,7 +250,7 @@ export function isFunction(value) {
  * Determines if a value is a regular expression object.
  *
  * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `RegExp`.
+ * @returns {value is RegExp} True if `value` is a `RegExp`.
  */
 export function isRegExp(value) {
   return toString.call(value) === "[object RegExp]";

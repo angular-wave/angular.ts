@@ -199,7 +199,7 @@ export class ViewService {
   /**
    * Returns the list of views currently available on the page, by fully-qualified name.
    *
-   * @return {Array} Returns an array of fully-qualified view names.
+   * @return {Array<any>} Returns an array of fully-qualified view names.
    */
   available() {
     return this._ngViews.map((view) => view.fqn);
@@ -208,7 +208,7 @@ export class ViewService {
   /**
    * Returns the list of views on the page containing loaded content.
    *
-   * @return {Array} Returns an array of fully-qualified view names.
+   * @return {Array<any>} Returns an array of fully-qualified view names.
    */
   active() {
     return this._ngViews

@@ -1241,7 +1241,7 @@ export class CompileProvider {
          * is responsible for inlining directive templates as well as terminating the application
          * of the directives if the terminal directive has been reached.
          *
-         * @param {Array} directives Array of collected directives to execute their compile function.
+         * @param {Array<any>} directives Array of collected directives to execute their compile function.
          *        this needs to be pre-sorted by priority order.
          * @param {Node | Element} compileNode  DOM node to apply the compile functions to
          * @param {Attributes} templateAttrs The shared attribute function
@@ -2378,8 +2378,8 @@ export class CompileProvider {
          * @param {Attributes} tAttrs
          * @param {Element} $rootElement
          * @param {*} childTranscludeFn
-         * @param {Array} preLinkFns
-         * @param {Array} postLinkFns
+         * @param {Array<any>} preLinkFns
+         * @param {Array<any>} postLinkFns
          * @param {*} previousCompileContext
          * @returns
          */
