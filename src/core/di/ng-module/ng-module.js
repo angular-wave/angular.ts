@@ -35,28 +35,35 @@ export class NgModule {
 
     /**
      * Array of module names that this module depends on.
+     * @ignore
      * @type {string[]}
      */
     this._requires = requires;
 
     /**
      * Holds a collection of tasks, required to instantiate an angular component
+     * @ignore
      * @type {!Array<Array<*>>}
      */
     this._invokeQueue = [];
 
-    /** @type {!Array<Array<*>>} */
+    /**
+     * @ignore
+     * @type {!Array<Array<*>>}
+     */
     this._configBlocks = [];
 
-    /** @type {!Array.<ng.Injectable<any>>} */
+    /** @ignore @type {!Array.<ng.Injectable<any>>} */
     this._runBlocks = [];
 
     if (configFn) {
       this.config(configFn);
     }
 
+    /** @ignore @type {!Array.<ng.Injectable<any>>} */
     this._services = [];
 
+    /** @ignore @type {!Array.<ng.RestDefinition<any>>} */
     this._restDefinitions = [];
   }
 
@@ -343,6 +350,7 @@ export class NgModule {
     validate(isString, name, "name");
     validate(isString, url, "url");
     validate(isFunction, entityClass, "entityClass");
+    /** @type {ng.RestDefinition<T>} */
     const def = { name, url, entityClass, options };
 
     this._restDefinitions.push(def);

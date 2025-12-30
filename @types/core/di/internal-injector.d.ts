@@ -3,10 +3,11 @@
  */
 export class ProviderInjector extends AbstractInjector {
   /**
-   * @param {Object} cache
+   * @param {import('./interface.ts').ProviderCache} cache
    * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
    */
-  constructor(cache: any, strictDi: boolean);
+  constructor(cache: import("./interface.ts").ProviderCache, strictDi: boolean);
+  _cache: import("./interface.ts").ProviderCache;
   /**
    * Factory method for creating services.
    * @param {string} caller - The name of the caller requesting the service.
@@ -23,8 +24,12 @@ export class InjectorService extends AbstractInjector {
    * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
    */
   constructor(providerInjector: ProviderInjector, strictDi: boolean);
-  /** @type {ProviderInjector} */
-  providerInjector: ProviderInjector;
+  /** @type {(mods: Array<Function | string | ng.AnnotatedFactory<any>>) => void} */
+  loadNewModules: (
+    mods: Array<Function | string | ng.AnnotatedFactory<any>>,
+  ) => void;
+  /** @private @type {ProviderInjector} */
+  private _providerInjector;
   /**
    *
    * @param {string} name
@@ -40,13 +45,13 @@ declare class AbstractInjector {
   /**
    * @type {Object<String, Function>}
    */
-  cache: any;
+  _cache: any;
   /** @type {boolean} */
   strictDi: boolean;
   /** @type {string[]} */
-  path: string[];
+  _path: string[];
   /** @type {Object.<string, ng.NgModule>} */
-  modules: {
+  _modules: {
     [x: string]: import("./ng-module/ng-module.js").NgModule;
   };
   /**
@@ -59,38 +64,42 @@ declare class AbstractInjector {
   /**
    * Get the injection arguments for a function.
    *
-   * @param {Function|Array} fn
-   * @param {Object} locals
-   * @param {string} serviceName
+   * @param {Function|ng.AnnotatedFactory<any>} fn
+   * @param {Object & Record<string, any>} [locals]
+   * @param {string} [serviceName]
    * @returns
    */
-  injectionArgs(fn: Function | any[], locals: any, serviceName: string): any[];
+  _injectionArgs(
+    fn: Function | ng.AnnotatedFactory<any>,
+    locals?: any & Record<string, any>,
+    serviceName?: string,
+  ): any[];
   /**
    * Invoke a function with optional context and locals.
    *
-   * @param {Function|String|Array<any>} fn
+   * @param {Function|String|ng.AnnotatedFactory<any>} fn
    * @param {*} [self]
    * @param {Object} [locals]
    * @param {string} [serviceName]
    * @returns {*}
    */
   invoke(
-    fn: Function | string | Array<any>,
+    fn: Function | string | ng.AnnotatedFactory<any>,
     self?: any,
     locals?: any,
     serviceName?: string,
   ): any;
   /**
    * Instantiate a type constructor with optional locals.
-   * @param {Function|Array} type
+   * @param {Function|ng.AnnotatedFactory<any>} type
    * @param {*} [locals]
    * @param {string} [serviceName]
    */
-  instantiate(type: Function | any[], locals?: any, serviceName?: string): any;
-  /**
-   * @abstract
-   */
-  loadNewModules(): void;
+  instantiate(
+    type: Function | ng.AnnotatedFactory<any>,
+    locals?: any,
+    serviceName?: string,
+  ): any;
   /**
    * @abstract
    * @param {string} _serviceName

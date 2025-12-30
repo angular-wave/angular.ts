@@ -606,7 +606,7 @@ describe("ngModel", () => {
 
         it("should run the model -> view pipeline", () => {
           const log = [];
-          const input = ctrl.$$element;
+          const input = ctrl._element;
 
           ctrl.$formatters.unshift((value) => {
             log.push(value);

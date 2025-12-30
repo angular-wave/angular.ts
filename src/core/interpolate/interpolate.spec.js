@@ -170,7 +170,7 @@ describe("$interpolate", () => {
 
     it("uses a watch delegate", function () {
       const interp = $interpolate("has an {{expr}}");
-      expect(interp.$$watchDelegate).toBeDefined();
+      expect(interp._watchDelegate).toBeDefined();
     });
 
     it("correctly returns new value", async () => {

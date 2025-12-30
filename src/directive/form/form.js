@@ -147,13 +147,13 @@ export class FormController {
     /** @type {FormController|Object} */
     this.$$parentForm = nullFormCtrl;
 
-    this.$$element = $element;
+    this._element = $element;
     this.$$animate = $animate;
     this.$error = {};
     this.$$success = {};
     this.$pending = undefined;
     this.$$classCache = {};
-    const isValid = this.$$element.classList.contains(VALID_CLASS);
+    const isValid = this._element.classList.contains(VALID_CLASS);
 
     this.$$classCache[VALID_CLASS] = isValid;
     this.$$classCache[INVALID_CLASS] = !isValid;
@@ -284,13 +284,13 @@ export class FormController {
    * state (ng-dirty class). This method will also propagate to parent forms.
    */
   $setDirty() {
-    if (hasAnimate(this.$$element)) {
-      this.$$animate.removeClass(this.$$element, PRISTINE_CLASS);
-      this.$$animate.addClass(this.$$element, DIRTY_CLASS);
+    if (hasAnimate(this._element)) {
+      this.$$animate.removeClass(this._element, PRISTINE_CLASS);
+      this.$$animate.addClass(this._element, DIRTY_CLASS);
     } else {
       // Fallback for non-animated environments
-      this.$$element.classList.remove(PRISTINE_CLASS);
-      this.$$element.classList.add(DIRTY_CLASS);
+      this._element.classList.remove(PRISTINE_CLASS);
+      this._element.classList.add(DIRTY_CLASS);
     }
     this.$dirty = true;
     this.$pristine = false;
@@ -310,16 +310,16 @@ export class FormController {
    * saving or resetting it.
    */
   $setPristine() {
-    if (hasAnimate(this.$$element)) {
+    if (hasAnimate(this._element)) {
       this.$$animate.setClass(
-        this.$$element,
+        this._element,
         PRISTINE_CLASS,
         `${DIRTY_CLASS} ${SUBMITTED_CLASS}`,
       );
     } else {
       // Fallback for non-animated environments
-      this.$$element.classList.remove(DIRTY_CLASS, SUBMITTED_CLASS);
-      this.$$element.classList.add(PRISTINE_CLASS);
+      this._element.classList.remove(DIRTY_CLASS, SUBMITTED_CLASS);
+      this._element.classList.add(PRISTINE_CLASS);
     }
 
     this.$dirty = false;
@@ -360,10 +360,10 @@ export class FormController {
   }
 
   _setSubmitted() {
-    if (hasAnimate(this.$$element)) {
-      this.$$animate.addClass(this.$$element, SUBMITTED_CLASS);
+    if (hasAnimate(this._element)) {
+      this.$$animate.addClass(this._element, SUBMITTED_CLASS);
     } else {
-      this.$$element.classList.add(SUBMITTED_CLASS);
+      this._element.classList.add(SUBMITTED_CLASS);
     }
     this.$submitted = true;
     this._controls.forEach((control) => {
@@ -493,10 +493,10 @@ export class FormController {
 
     function cachedToggleClass(ctrl, className, switchValue) {
       if (switchValue && !ctrl.$$classCache[className]) {
-        ctrl.$$animate.addClass(ctrl.$$element, className);
+        ctrl.$$animate.addClass(ctrl._element, className);
         ctrl.$$classCache[className] = true;
       } else if (!switchValue && ctrl.$$classCache[className]) {
-        ctrl.$$animate.removeClass(ctrl.$$element, className);
+        ctrl.$$animate.removeClass(ctrl._element, className);
         ctrl.$$classCache[className] = false;
       }
     }
@@ -731,5 +731,5 @@ export const ngFormDirective = formDirectiveFactory("ngForm");
 export function setupValidity(instance) {
   instance.$$classCache = {};
   instance.$$classCache[INVALID_CLASS] = !(instance.$$classCache[VALID_CLASS] =
-    instance.$$element.classList.contains(VALID_CLASS));
+    instance._element.classList.contains(VALID_CLASS));
 }

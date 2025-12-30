@@ -4,7 +4,7 @@ import { $injectTokens as $t } from "../../../injection-tokens.js";
 describe("NgModule", () => {
   /** @type {NgModule} */
   let ngModule;
-  let a = new Object();
+  let a = {};
   let b = () => {
     /* empty */
   };

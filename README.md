@@ -3,12 +3,13 @@
 ![Build status](https://github.com/angular-wave/angular.ts/actions/workflows/ci.yml/badge.svg)
 [![stats](https://data.jsdelivr.com/v1/package/npm/@angular-wave/angular.ts/badge?style=rounded)](https://www.jsdelivr.com/package/npm/@angular-wave/angular.ts)
 
-This project preserves, modernises and expands the original [AngularJS](https://angularjs.org/)
+This project preserves, modernizes and expands the original [AngularJS](https://angularjs.org/)
 framework. AngularTS is "AngularJS: The Good Parts". It takes the three core pillars of the original &ndash; a string-interpolation engine,
-dependency injection, two-way data-binding &ndash; and adds a reactive change-detection model on top of modern build tooling with strong typechecking of TypeScript.
+dependency injection, two-way data-binding &ndash; and adds a reactive change-detection model on top of modern build tooling 
+with strong typechecking of TypeScript.
 
-With AngularJS, you get a decade-long optimization effort of Angular Team at Google, plus a massive testing suite, required for applications like Google Cloud and Kubernetes.
-AngularTS adds:
+With AngularJS, you get a decade-long optimization effort of Angular Team at Google, plus a massive testing suite.
+AngularTS builds on that foundation and adds:
 
 - a fully reactive change-detection model without digests or virtual DOMs, like `Vue`
 - access to native DOM APIs at component and directive level (no `JQuery`or `JQLite`)
@@ -18,8 +19,15 @@ AngularTS adds:
 - new directives, inspired by `HTMX`
 - new injectables for REST resources, persistent stores, Web Workers and WASM modules
 
-The result is a high-performance, buildless, progressive and battle-tested JS framework that stays as close to Web standards as possible.
-If you write server-rendered web applications for desktop and mobile, and do not wish to leave the comfort of your tech-stack, this is your new secret weapon.
+The result is a high-performance, buildless, multi-paradigm and battle-tested JS framework that stays as close to Web standards as possible.
+
+If you: 
+
+- Build server-rendered web applications for desktop and mobile
+- Want a tools that is easy to get started with, yet remains expert-friendly at scale
+- Make no compromises on performance (think McMaster-Carr) 
+
+then AngularTS is your new (old) secret weapon.
 
 ### Getting started
 

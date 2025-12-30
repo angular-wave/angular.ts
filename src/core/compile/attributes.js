@@ -46,7 +46,7 @@ export class Attributes {
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    * @param {*} $sce
    * @param {import("../../shared/noderef.js").NodeRef} [nodeRef]
-   * @param {Object} [attributesToCopy]
+   * @param {Object & Record<string, any>} [attributesToCopy]
    */
   constructor($animate, $exceptionHandler, $sce, nodeRef, attributesToCopy) {
     this._$animate = $animate;
@@ -56,10 +56,13 @@ export class Attributes {
     if (attributesToCopy) {
       const keys = Object.keys(attributesToCopy);
 
+      /** @type {Record<string, any>} */
+      const that = this;
+
       for (let i = 0, l = keys.length; i < l; i++) {
         const key = keys[i];
 
-        this[key] = attributesToCopy[key];
+        that[key] = attributesToCopy[key];
       }
     } else {
       /**
@@ -69,13 +72,13 @@ export class Attributes {
       this.$attr = {};
     }
 
-    /** @type {import("../../shared/noderef.js").NodeRef} */
+    /** @type {import("../../shared/noderef.js").NodeRef | undefined} */
     this._nodeRef = nodeRef;
   }
 
-  /** @type {Node|Element} */
-  get $$element() {
-    return this._nodeRef.node;
+  /** @ignore @returns {Node|Element} */
+  _element() {
+    return /** @type {Node|Element} */ (this._nodeRef?._getAny());
   }
 
   /**
@@ -98,13 +101,13 @@ export class Attributes {
    */
   $addClass(classVal) {
     if (classVal && classVal.length > 0) {
-      if (hasAnimate(this.$$element)) {
+      if (hasAnimate(this._element())) {
         this._$animate.addClass(
-          /** @type {Element} */ (this.$$element),
+          /** @type {Element} */ (this._element()),
           classVal,
         );
       } else {
-        this._nodeRef.element.classList.add(classVal);
+        this._nodeRef?.element.classList.add(classVal);
       }
     }
   }
@@ -117,13 +120,13 @@ export class Attributes {
    */
   $removeClass(classVal) {
     if (classVal && classVal.length > 0) {
-      if (hasAnimate(this.$$element)) {
+      if (hasAnimate(this._element())) {
         this._$animate.removeClass(
-          /** @type {Element} */ (this.$$element),
+          /** @type {Element} */ (this._element()),
           classVal,
         );
       } else {
-        this._nodeRef.element.classList.remove(classVal);
+        this._nodeRef?.element.classList.remove(classVal);
       }
     }
   }
@@ -139,22 +142,27 @@ export class Attributes {
     const toAdd = tokenDifference(newClasses, oldClasses);
 
     if (toAdd && toAdd.length) {
-      if (hasAnimate(this.$$element)) {
-        this._$animate.addClass(/** @type {Element }*/ (this.$$element), toAdd);
+      if (hasAnimate(this._element())) {
+        this._$animate.addClass(
+          /** @type {Element }*/ (this._element()),
+          toAdd,
+        );
       } else {
-        this._nodeRef.element.classList.add(...toAdd.trim().split(/\s+/));
+        this._nodeRef?.element.classList.add(...toAdd.trim().split(/\s+/));
       }
     }
     const toRemove = tokenDifference(oldClasses, newClasses);
 
     if (toRemove && toRemove.length) {
-      if (hasAnimate(this.$$element)) {
+      if (hasAnimate(this._element())) {
         this._$animate.removeClass(
-          /** @type {Element }*/ (this.$$element),
+          /** @type {Element} */ (this._element()),
           toRemove,
         );
       } else {
-        this._nodeRef.element.classList.remove(...toRemove.trim().split(/\s+/));
+        this._nodeRef?.element.classList.remove(
+          ...toRemove.trim().split(/\s+/),
+        );
       }
     }
   }
@@ -173,7 +181,7 @@ export class Attributes {
     // is set through this function since it may cause $updateClass to
     // become unstable.
 
-    const node = this.$$element;
+    const node = this._element();
 
     const booleanKey = getBooleanAttrName(/** @type {Element}   */ (node), key);
 
@@ -182,7 +190,7 @@ export class Attributes {
     let observer = key;
 
     if (booleanKey) {
-      this.$$element[key] = value;
+      this._element()[key] = value;
       attrName = booleanKey;
     } else if (aliasedKey) {
       this[aliasedKey] = value;
@@ -217,7 +225,7 @@ export class Attributes {
     }
 
     if (writeAttr !== false) {
-      const elem = /** @type {Element} */ (this.$$element);
+      const elem = /** @type {Element} */ (this._element());
 
       if (isNullOrUndefined(maybeSanitizedValue)) {
         elem.removeAttribute(attrName);
@@ -244,7 +252,7 @@ export class Attributes {
           }
         }
       } else {
-        this.setSpecialAttr(this.$$element, attrName, maybeSanitizedValue);
+        this.setSpecialAttr(this._element(), attrName, maybeSanitizedValue);
       }
     }
 

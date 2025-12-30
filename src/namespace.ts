@@ -3,6 +3,7 @@ export { angular } from "./index.js";
 import { Angular as TAngular } from "./angular.js";
 import { Attributes as TAttributes } from "./core/compile/attributes.js";
 import { Scope as TScope } from "./core/scope/scope.js";
+import { ProviderCache as TProviderCache } from "./core/di/interface.ts";
 import {
   ListenerFn as TListenerFn,
   Listener as TListener,
@@ -51,6 +52,7 @@ import {
   PubSub as TPubSub,
 } from "./services/pubsub/pubsub.js";
 import {
+  AnnotatedFactory as TAnnotatedFactory,
   Directive as TDirective,
   DirectiveFactory as TDirectiveFactory,
   AnnotatedDirectiveFactory as TAnnotatedDirectiveFactory,
@@ -78,7 +80,7 @@ import {
   TranscludeFn as TTranscludeFn,
   LinkFnMapping as TLinkFnMapping,
   CompositeLinkFn as TCompositeLinkFn,
-} from "./core/compile/inteface.ts";
+} from "./core/compile/interface.ts";
 import {
   WorkerConnection as TWorkerConnection,
   WorkerConfig as TWorkerConfig,
@@ -217,6 +219,8 @@ declare global {
         | ((...args: any[]) => any)
         | (abstract new (...args: any[]) => any),
     > = TInjectable<T>;
+    export type AnnotatedFactory<T extends (...args: any[]) => any> =
+      TAnnotatedFactory<T>;
     export type StorageBackend = TStorageBackend;
     export type StorageType = TStorageType;
     export type StreamConnectionConfig = TStreamConnectionConfig;
@@ -239,5 +243,6 @@ declare global {
     export type ScopeEvent = TScopeEvent;
     export type RequestShortcutConfig = TRequestShortcutConfig;
     export type HttpProviderDefaults = THttpProviderDefaults;
+    export type ProviderCache = TProviderCache;
   }
 }

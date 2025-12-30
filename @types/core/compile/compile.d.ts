@@ -135,10 +135,10 @@ export class CompileProvider {
         $animate: ng.AnimateService,
       ) => (
         compileNode: string | Element | Node | ChildNode | NodeList,
-        transcludeFn?: import("./inteface.ts").TranscludeFn,
+        transcludeFn?: import("./interface.ts").TranscludeFn,
         maxPriority?: number,
         ignoreDirective?: string,
         previousCompileContext?: any,
-      ) => import("./inteface.ts").PublicLinkFn)
+      ) => import("./interface.ts").PublicLinkFn)
   )[];
 }

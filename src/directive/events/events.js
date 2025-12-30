@@ -55,6 +55,9 @@ export function createEventDirective(
       const fn = $parse(attr[directiveName]);
 
       return (scope, element) => {
+        /**
+         * @param {Event} event
+         */
         const handler = (event) => {
           try {
             fn(scope, { $event: event });
@@ -95,6 +98,9 @@ export function createWindowEventDirective(
       const fn = $parse(attr[directiveName]);
 
       return (scope) => {
+        /**
+         * @param {Event} event
+         */
         const handler = (event) => {
           try {
             fn(scope, { $event: event });
