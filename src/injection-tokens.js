@@ -66,6 +66,8 @@ export const $injectTokens = {
   _url: "$url",
   _view: "$view",
   _window: "$window",
+  _ws: "$ws",
+
   // provide literals
   _provide: "$provide",
   _injector: "$injector",

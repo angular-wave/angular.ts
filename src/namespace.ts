@@ -126,6 +126,10 @@ import {
   SCEService as TSCEService,
   SCEDelegateService as TSCEDelegateService,
 } from "./services/sce/interface.ts";
+import {
+  WebSocketConfig as TWebSocketConfig,
+  WebSocketService as TWebSocketService,
+} from "./services/websocket/interface.ts";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -244,5 +248,7 @@ declare global {
     export type RequestShortcutConfig = TRequestShortcutConfig;
     export type HttpProviderDefaults = THttpProviderDefaults;
     export type ProviderCache = TProviderCache;
+    export type WebSocketConfig = TWebSocketConfig;
+    export type WebSocketService = TWebSocketService;
   }
 }

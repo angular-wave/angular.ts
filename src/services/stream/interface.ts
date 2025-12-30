@@ -22,4 +22,6 @@ export interface StreamConnectionConfig {
 
   /** Function to transform incoming messages */
   transformMessage?: (data: any) => any;
+
+  [key: string]: any;
 }

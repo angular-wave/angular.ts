@@ -372,4 +372,60 @@ export class NgModule {
 
     return this;
   }
+
+  /**
+   * Register a pre-configured SSE connection during module configuration.
+   *
+   * @param {string} name - Injectable name
+   * @param {string} url - SSE endpoint
+   * @param {ng.SseConfig} [options] - Optional SSE config
+   * @returns {NgModule}
+   */
+  sse(name, url, options = {}) {
+    validate(isString, name, "name");
+    validate(isString, url, "url");
+
+    this._invokeQueue.push([
+      $t._provide,
+      "factory",
+      [
+        name,
+        [
+          $t._sse,
+          /** @param {ng.SseService} $sse */ ($sse) => $sse(url, options),
+        ],
+      ],
+    ]);
+
+    return this;
+  }
+
+  /**
+   * Register a pre-configured WebSocket connection during module configuration.
+   *
+   * @param {string} name - Injectable name
+   * @param {string} url - WebSocket endpoint
+   * @param {string[]} [protocols] - Optional subprotocols
+   * @param {ng.WebSocketConfig} [options] - Optional WebSocket configuration
+   * @returns {NgModule}
+   */
+  websocket(name, url, protocols = [], options = {}) {
+    validate(isString, name, "name");
+    validate(isString, url, "url");
+
+    this._invokeQueue.push([
+      $t._provide,
+      "factory",
+      [
+        name,
+        [
+          $t._websocket,
+          /** @param {ng.WebSocketService} $ws */ ($ws) =>
+            $ws(url, protocols, options),
+        ],
+      ],
+    ]);
+
+    return this;
+  }
 }

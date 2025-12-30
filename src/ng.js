@@ -139,6 +139,7 @@ import { ngScopeDirective } from "./directive/scope/scope.js";
 import { CookieProvider } from "./services/cookie/cookie.js";
 import { RestProvider } from "./services/rest/rest.js";
 import { ngListenerDirective } from "./directive/listener/listener.js";
+import { WebSocketProvider } from "./services/websocket/websocket.js";
 
 /**
  * Initializes core `ng` module.
@@ -292,6 +293,7 @@ export function registerNgModule(angular) {
             $url: UrlService,
             $stateRegistry: StateRegistryProvider,
             $eventBus: PubSubProvider,
+            $ws: WebSocketProvider,
           });
         },
       ],
