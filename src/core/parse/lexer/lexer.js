@@ -8,6 +8,7 @@ import { isDefined, minErr } from "../../../shared/utils.js";
 
 const $parseMinErr = minErr("$parse");
 
+/** @type {Record<string, any>} */
 const ESCAPE = {
   n: "\n",
   f: "\f",
@@ -40,6 +41,8 @@ export class Lexer {
   constructor(options) {
     /** @type {LexerOptions} */
     this._options = options;
+    this._text = "";
+    this._index = 0;
   }
 
   /**
@@ -278,7 +281,7 @@ export class Lexer {
       }
       this._index++;
     }
-    this._tokens.push({
+    /** @type {Array<Token>} */ (this._tokens).push({
       index: start,
       text: number,
       constant: true,
@@ -302,7 +305,7 @@ export class Lexer {
       }
       this._index += ch.length;
     }
-    this._tokens.push({
+    /** @type {Array<Token>} */ (this._tokens).push({
       index: start,
       text: this._text.slice(start, this._index),
       identifier: true,
@@ -337,7 +340,7 @@ export class Lexer {
       } else if (ch === "\\") {
         escape = true;
       } else if (ch === quote) {
-        this._tokens.push({
+        /** @type {Array<Token>} */ (this._tokens).push({
           index: start,
           text: this._text.slice(start, this._index + 1),
           constant: true,
