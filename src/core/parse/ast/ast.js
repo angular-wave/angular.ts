@@ -1,6 +1,6 @@
 import { isAssignable } from "../interpreter.js";
 import { ASTType } from "../ast-type.js";
-import { hasOwn, minErr } from "../../../shared/utils.js";
+import { hasOwn, isDefined, minErr } from "../../../shared/utils.js";
 
 /**
  * @typedef {import("./ast-node.ts").ASTNode} ASTNode
@@ -9,6 +9,7 @@ import { hasOwn, minErr } from "../../../shared/utils.js";
 
 const $parseMinErr = minErr("$parse");
 
+/** @type {Record<string, any>} */
 const literals = {
   true: true,
   false: false,
@@ -26,6 +27,7 @@ export class AST {
   constructor(lexer) {
     /** @type {import('../lexer/lexer.js').Lexer} */
     this._lexer = lexer;
+    /** @type {Record<string, any>} */
     this._selfReferential = {
       this: { type: ASTType._ThisExpression },
       $locals: { type: ASTType._LocalsExpression },
@@ -61,7 +63,11 @@ export class AST {
     let hasMore = true;
 
     while (hasMore) {
-      if (this._tokens.length > this._index && !this._peek("}", ")", ";", "]"))
+      if (
+        this._tokens &&
+        this._tokens.length > this._index &&
+        !this._peek("}", ")", ";", "]")
+      )
         body.push(this._expressionStatement());
 
       if (!this._expect(";")) {
@@ -364,7 +370,7 @@ export class AST {
           computed: false,
         };
       } else {
-        this._throwError("IMPOSSIBLE");
+        throw new Error("IMPOSSIBLE");
       }
     }
 
@@ -475,10 +481,7 @@ export class AST {
         }
         property = { type: ASTType._Property, kind: "init" };
 
-        if (
-          /** @type {import("../lexer/lexer.js").Token} */ (this._peek())
-            .constant
-        ) {
+        if (/** @type {Token} */ (this._peek()).constant) {
           property.key = this._constant();
           property.computed = false;
           this._consume(":");
@@ -520,7 +523,7 @@ export class AST {
   /**
    * Throws a syntax error.
    * @param {string} msg - The error message.
-   * @param {import("../lexer/lexer.js").Token} [token] - The token that caused the error.
+   * @param {import("../lexer/lexer.js").Token} token - The token that caused the error.
    */
   _throwError(msg, token) {
     throw $parseMinErr(
@@ -530,7 +533,7 @@ export class AST {
       msg,
       token.index + 1,
       this._text,
-      this._text.substring(token.index),
+      this._text?.substring(token.index),
     );
   }
 
@@ -540,7 +543,7 @@ export class AST {
    * @returns {import("../lexer/lexer.js").Token} The consumed token.
    */
   _consume(e1) {
-    if (this._tokens.length === this._index) {
+    if (this._tokens && this._tokens.length === this._index) {
       throw $parseMinErr(
         "ueoe",
         "Unexpected end of expression: {0}",
@@ -548,18 +551,18 @@ export class AST {
       );
     }
 
-    const token = this._expect(e1);
+    const token = isDefined(e1) ? this._expect(e1) : this._expect();
 
     if (!token) {
       this._throwError(
         `is unexpected, expecting [${e1}]`,
         /** @type {import("../lexer/lexer.js").Token} */ (this._peek()),
       );
+
+      return /** @type {never} */ (undefined);
     } else {
       return /** @type  {import("../lexer/lexer.js").Token} */ (token);
     }
-
-    return undefined;
   }
 
   /**
@@ -567,30 +570,34 @@ export class AST {
    * @returns {import("../lexer/lexer.js").Token} The next token.
    */
   _peekToken() {
-    if (this._tokens.length === this._index) {
+    if (!this._tokens || this._tokens.length === this._index) {
       throw $parseMinErr(
         "ueoe",
         "Unexpected end of expression: {0}",
         this._text,
       );
+    } else {
+      return this._tokens[this._index];
     }
-
-    return this._tokens[this._index];
   }
 
   /**
    * Checks if the next token matches any of the expected types.
-   * @param {...string} [expected] - The expected token types.
+   * @param {...string} expected - The expected token types.
    * @returns {import('../lexer/lexer.js').Token|boolean} The next token if it matches, otherwise false.
    */
   _peek(...expected) {
-    const token = this._tokens[this._index];
+    const token = this._tokens && this._tokens[this._index];
+
+    if (!token) return false;
 
     const j = expected.length;
 
-    if (!token || !j) return token;
+    if (!j) return token;
 
     const txt = token.text;
+
+    if (expected.length === 1) return expected[0] === txt ? token : false;
 
     for (let i = 0; i < j; i++) {
       if (expected[i] === txt || !expected[i]) return token;
@@ -601,7 +608,7 @@ export class AST {
 
   /**
    * Consumes the next token if it matches any of the expected types.
-   * @param {...string} [expected] - The expected token types.
+   * @param {...string} expected - The expected token types.
    * @returns {import("../lexer/lexer.js").Token|boolean} The consumed token if it matches, otherwise false.
    */
   _expect(...expected) {

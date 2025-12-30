@@ -15,14 +15,14 @@ export class Lexer {
   constructor(options: LexerOptions);
   /** @type {LexerOptions} */
   _options: LexerOptions;
+  _text: string;
+  _index: number;
   /**
    * Tokenizes the input text.
    * @param {string} text Input text to lex.
    * @returns {Array<Token>} Array of tokens.
    */
   _lex(text: string): Array<Token>;
-  _text: string;
-  _index: number;
   /** @type {Array<Token>} */
   _tokens: Array<Token>;
   /**
