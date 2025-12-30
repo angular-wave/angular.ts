@@ -71,7 +71,7 @@ export class NgModelController {
   /** @type {any} The value in the model that the control is bound to. */
   $modelValue: any;
   /** @type {any} */
-  $$rawModelValue: any;
+  _rawModelValue: any;
   /** @type {import("./interface.ts").ModelValidators} */
   $validators: import("./interface.ts").ModelValidators;
   /** @type {import("./interface.ts").AsyncModelValidators} */
@@ -95,10 +95,10 @@ export class NgModelController {
   /** @type {boolean} */
   $invalid: boolean;
   $error: {};
-  $$success: {};
+  _success: {};
   $pending: any;
   $name: string;
-  $$parentForm: {
+  _parentForm: {
     $nonscope: boolean;
     $addControl: Function;
     $getControls: () => any[];
@@ -113,7 +113,7 @@ export class NgModelController {
     _setSubmitted: Function;
   };
   $options: {
-    $$options: import("../model-options/model-options.js").ModelOptionsConfig;
+    _options: import("../model-options/model-options.js").ModelOptionsConfig;
     getOption(name: string):
       | string
       | boolean
@@ -123,8 +123,8 @@ export class NgModelController {
         };
     createChild(options: ModelOptionsConfig): /*elided*/ any;
   };
-  $$updateEvents: string;
-  $$updateEventHandler(ev: any): void;
+  _updateEvents: string;
+  _updateEventHandler(ev: any): void;
   _parsedNgModel: import("../../core/parse/interface.ts").CompiledExpression;
   _parsedNgModelAssign: (context: any, value: any) => any;
   /**
@@ -135,26 +135,26 @@ export class NgModelController {
     | import("../../core/parse/interface.ts").CompiledExpression
     | ((arg0: ng.Scope) => any);
   _ngModelSet: (context: any, value: any) => any;
-  $$pendingDebounce: number;
-  $$parserValid: boolean;
+  _pendingDebounce: number;
+  _parserValid: boolean;
   /** @type {string} */
-  $$parserName: string;
+  _parserName: string;
   /** @type {number} */
-  $$currentValidationRunId: number;
+  _currentValidationRunId: number;
   /** @type {ng.Scope} */
-  $$scope: ng.Scope;
-  $$attr: ng.Attributes;
+  _scope: ng.Scope;
+  _attr: ng.Attributes;
   _element: Element;
-  $$animate: import("../../animations/interface.ts").AnimateService;
-  $$parse: import("../../core/parse/interface.ts").ParseService;
-  $$exceptionHandler: import("../../services/exception/interface.ts").ExceptionHandler;
-  $$hasNativeValidators: boolean;
-  $$classCache: {};
-  $$eventRemovers: Set<any>;
+  _animate: import("../../animations/interface.ts").AnimateService;
+  _parse: import("../../core/parse/interface.ts").ParseService;
+  _exceptionHandler: import("../../services/exception/interface.ts").ExceptionHandler;
+  _hasNativeValidators: boolean;
+  _classCache: {};
+  _eventRemovers: Set<any>;
   set(object: any, property: any): void;
   unset(object: any, property: any): void;
   $setValidity(validationErrorKey: any, state: any): void;
-  $$initGetterSetters(): void;
+  _initGetterSetters(): void;
   /**
    * Called when the view needs to be updated. It is expected that the user of the ng-model
    * directive will implement this method.
@@ -187,7 +187,7 @@ export class NgModelController {
    * @returns {boolean} True if `value` is "empty".
    */
   $isEmpty(value: any): boolean;
-  $$updateEmptyClasses(value: any): void;
+  _updateEmptyClasses(value: any): void;
   /**
    * Sets the control to its pristine state.
    *
@@ -316,7 +316,7 @@ export class NgModelController {
    * `$modelValue`, i.e. either the last parsed value or the last value set from the scope.
    */
   $validate(): void;
-  $$runValidators(modelValue: any, viewValue: any, doneCallback: any): void;
+  _runValidators(modelValue: any, viewValue: any, doneCallback: any): void;
   /**
    * Commit a pending update to the `$modelValue`.
    *
@@ -325,9 +325,9 @@ export class NgModelController {
    * usually handles calling this in response to input events.
    */
   $commitViewValue(): void;
-  $$lastCommittedViewValue: any;
-  $$parseAndValidate(): void;
-  $$writeModelToScope(): void;
+  _lastCommittedViewValue: any;
+  _parseAndValidate(): void;
+  _writeModelToScope(): void;
   /**
    * Update the view value.
    *
@@ -376,7 +376,7 @@ export class NgModelController {
    * @param {string} [trigger] Event that triggered the update.
    */
   $setViewValue(value: any, trigger?: string): void;
-  $$debounceViewValueCommit(trigger: any): void;
+  _debounceViewValueCommit(trigger: any): void;
   /**
    *
    * Override the current model options settings programmatically.
@@ -513,11 +513,15 @@ export class NgModelController {
   /**
    * This method is called internally to run the $formatters on the $modelValue
    */
-  $$format(): any;
+  _format(): any;
   /**
+   * @ignore
    * This method is called internally when the bound scope value changes.
    */
-  $$setModelValue(modelValue: any): void;
-  $$removeAllEventListeners(): void;
-  $$setUpdateOnEvents(): void;
+  _setModelValue(modelValue: any): void;
+  /**
+   * @ignore
+   */
+  _removeAllEventListeners(): void;
+  _setUpdateOnEvents(): void;
 }

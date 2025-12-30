@@ -37,7 +37,7 @@ declare class ModelOptions {
    */
   constructor(options: ModelOptionsConfig);
   /** @type {ModelOptionsConfig} */
-  $$options: ModelOptionsConfig;
+  _options: ModelOptionsConfig;
   /**
    * Returns the value of the given option
    * @param {string} name the name of the option to retrieve
