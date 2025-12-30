@@ -131,7 +131,7 @@ export class CompileProvider {
         $parse: ng.ParseService,
         $controller: any,
         $rootScope: ng.Scope,
-        $sce: any,
+        $sce: ng.SCEService,
         $animate: ng.AnimateService,
       ) => (
         compileNode: string | Element | Node | ChildNode | NodeList,

@@ -60,7 +60,7 @@ export class InterpolateProvider {
     /**
      *
      * @param {ng.ParseService} $parse
-     * @param {*} $sce
+     * @param {ng.SCEService} $sce
      * @returns {ng.InterpolateService}
      */
     ($parse, $sce) => {

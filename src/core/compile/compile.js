@@ -590,7 +590,7 @@ export class CompileProvider {
        * @param {ng.ParseService} $parse
        * @param {*} $controller
        * @param {ng.Scope} $rootScope
-       * @param {*} $sce
+       * @param {ng.SCEService} $sce
        * @param {ng.AnimateService} $animate
        * @returns
        */

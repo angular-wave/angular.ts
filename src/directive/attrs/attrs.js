@@ -75,6 +75,10 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
 
   ngAttributeAliasDirectives[normalized] = [
     $injectTokens._sce,
+    /**
+     * @param {ng.SCEService} $sce
+     * @returns {ng.Directive}
+     */
     function ($sce) {
       return {
         priority: 99, // it needs to run after the attributes are interpolated

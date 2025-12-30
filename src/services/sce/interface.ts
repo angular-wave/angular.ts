@@ -1,22 +1,38 @@
 export interface SCEService {
+  // Trusted value constants
+  HTML: string;
+  CSS: string;
+  JS: string;
+  URL: string;
+  RESOURCE_URL: string;
+  MEDIA_URL: string; // custom
+
+  // Core methods
   getTrusted(type: string, mayBeTrusted: any): any;
   getTrustedCss(value: any): any;
   getTrustedHtml(value: any): any;
   getTrustedJs(value: any): any;
   getTrustedResourceUrl(value: any): any;
   getTrustedUrl(value: any): any;
+  getTrustedMediaUrl?(value: any): any; // optional helper
+
   parse(type: string, expression: string): (context: any, locals: any) => any;
   parseAsCss(expression: string): (context: any, locals: any) => any;
   parseAsHtml(expression: string): (context: any, locals: any) => any;
   parseAsJs(expression: string): (context: any, locals: any) => any;
   parseAsResourceUrl(expression: string): (context: any, locals: any) => any;
   parseAsUrl(expression: string): (context: any, locals: any) => any;
+
   trustAs(type: string, value: any): any;
   trustAsHtml(value: any): any;
   trustAsJs(value: any): any;
   trustAsResourceUrl(value: any): any;
   trustAsUrl(value: any): any;
+
   isEnabled(): boolean;
+
+  // unwrap trusted value
+  valueOf(value?: any): any;
 }
 
 export interface SCEDelegateService {
