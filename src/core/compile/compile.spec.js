@@ -783,7 +783,7 @@ describe("$compile", () => {
           compile(element, templateAttr) {
             expect(typeof templateAttr.$normalize).toBe("function");
             expect(typeof templateAttr.$set).toBe("function");
-            expect(templateAttr.$$element instanceof Element).toBeTrue();
+            expect(templateAttr._element() instanceof Element).toBeTrue();
             expect(element.textContent).toEqual("unlinked");
             expect(templateAttr.exp).toEqual("abc");
             expect(templateAttr.aa).toEqual("A");
@@ -5168,7 +5168,7 @@ describe("$compile", () => {
             compile(element, attr) {
               attr.$set("compiled", "COMPILED");
               element.compiled = true;
-              expect(element).toBe(attr.$$element);
+              expect(element).toBe(attr._element());
             },
           }))
           .directive("nomerge", () => ({
@@ -5177,7 +5177,7 @@ describe("$compile", () => {
             template: '<div class="log" id="myid" high-log>No Merge!</div>',
             compile(element, attr) {
               attr.$set("compiled", "COMPILED");
-              expect(element).toBe(attr.$$element);
+              expect(element).toBe(attr._element());
             },
           }))
           .directive("append", () => ({
@@ -5186,7 +5186,7 @@ describe("$compile", () => {
               '<div class="log" style="width: 10px" high-log>Append!</div>',
             compile(element, attr) {
               attr.$set("compiled", "COMPILED");
-              expect(element).toBe(attr.$$element);
+              expect(element).toBe(attr._element());
             },
           }))
           .directive("replaceWithInterpolatedClass", () => ({
@@ -5195,7 +5195,7 @@ describe("$compile", () => {
               '<div class="class_{{1+1}}">Replace with interpolated class!</div>',
             compile(element, attr) {
               attr.$set("compiled", "COMPILED");
-              expect(element).toBe(attr.$$element);
+              expect(element).toBe(attr._element());
             },
           }))
           .directive("replaceWithInterpolatedStyle", () => ({
@@ -5204,7 +5204,7 @@ describe("$compile", () => {
               '<div style="width:{{1+1}}px">Replace with interpolated style!</div>',
             compile(element, attr) {
               attr.$set("compiled", "COMPILED");
-              expect(element).toBe(attr.$$element);
+              expect(element).toBe(attr._element());
             },
           }))
           .directive("replaceWithTr", () => ({
@@ -6993,7 +6993,7 @@ describe("$compile", () => {
           .directive("replaceSomeAttr", () => ({
             compile(element, attr) {
               attr.$set("someAttr", "bar-{{1+1}}");
-              expect(element).toBe(attr.$$element);
+              expect(element).toBe(attr._element());
             },
           }));
         dealoc(document.getElementById("app"));

@@ -1,14 +1,4 @@
 /**
- * @param {Function} fn
- * @returns {string}
- */
-export function stringifyFn(fn: Function): string;
-/**
- * @param {Function} fn
- * @returns {Array<any>}
- */
-export function extractArgs(fn: Function): Array<any>;
-/**
  * @param {Function} func
  * @returns {boolean}
  */

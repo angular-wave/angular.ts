@@ -36,7 +36,8 @@ export class AnimateRunner {
    * @private
    */
   private _promise;
-  _tick: (fn: any) => void;
+  /** @type {(fn: VoidFunction) => void} */
+  _tick: (fn: VoidFunction) => void;
   /**
    * Sets or replaces the current host.
    * @param {AnimationHost} host

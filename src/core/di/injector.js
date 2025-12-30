@@ -5,6 +5,7 @@ import {
   entries,
   isArray,
   isFunction,
+  isInstanceOf,
   isNullOrUndefined,
   isObject,
   isString,
@@ -32,25 +33,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
   /** @type {Map<String|Function, boolean>} */
   const loadedModules = new Map(); // Keep track of loaded modules to avoid circular dependencies
 
-  /**
-   * @typedef {{
-   *   $provide: {
-   *     provider: Function,
-   *     factory: Function,
-   *     service: Function,
-   *     value: Function,
-   *     constant: Function,
-   *     store: Function,
-   *     decorator: Function,
-   *   },
-   *   $injectorProvider?: {
-   *     $get: () => unknown
-   *   },
-   *   $injector?: ProviderInjector
-   * }} ProviderCache
-   */
-
-  /** @type {ProviderCache} */
+  /** @type {ng.ProviderCache} */
   const providerCache = {
     $provide: {
       provider: supportObject(provider),
@@ -83,8 +66,10 @@ export function createInjector(modulesToLoad, strictDi = false) {
 
   runBlocks.forEach((fn) => fn && instanceInjector.invoke(fn));
 
-  instanceInjector.loadNewModules = (mods) =>
-    loadModules(mods).forEach((fn) => fn && instanceInjector.invoke(fn));
+  instanceInjector.loadNewModules =
+    /** @param {Array<Function | string | ng.AnnotatedFactory<any>>} mods */ (
+      mods,
+    ) => loadModules(mods).forEach((fn) => fn && instanceInjector.invoke(fn));
 
   return instanceInjector;
 
@@ -126,7 +111,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
   /**
    * Registers a factory.
    * @param {string} name
-   * @param {(string|(function(*): *))[]} factoryFn
+   * @param {ng.AnnotatedFactory<any>} factoryFn
    * @returns {import('../../interface.ts').ServiceProvider}
    */
   function factory(name, factoryFn) {
@@ -156,7 +141,8 @@ export function createInjector(modulesToLoad, strictDi = false) {
   function service(name, constructor) {
     return factory(name, [
       $injectTokens._injector,
-      ($injector) => $injector.instantiate(constructor),
+      /** @param {ng.InjectorService} $injector */ ($injector) =>
+        $injector.instantiate(constructor),
     ]);
   }
 
@@ -179,8 +165,8 @@ export function createInjector(modulesToLoad, strictDi = false) {
   // eslint-disable-next-line no-shadow
   function constant(name, value) {
     assertNotHasOwnProperty(name, "constant");
-    providerInjector.cache[name] = value;
-    protoInstanceInjector.cache[name] = value;
+    providerInjector._cache[name] = value;
+    protoInstanceInjector._cache[name] = value;
   }
 
   /**
@@ -209,7 +195,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
    * @param {string} name - Service name
    * @param {import("../../interface.ts").Constructor} ctor - Constructor for the service
    * @param {ng.StorageType} type - Type of storage to be instantiated
-   * @param {import("./inteface.ts").StorageLike & import("./inteface.ts").PersistentStoreConfig} [backendOrConfig]
+   * @param {import("./interface.ts").StorageLike & import("./interface.ts").PersistentStoreConfig} [backendOrConfig]
    */
   function store(name, ctor, type, backendOrConfig) {
     return provider(name, {
@@ -287,7 +273,7 @@ export function createInjector(modulesToLoad, strictDi = false) {
             return createPersistentProxy(
               instance,
               name,
-              /** @type {import("./inteface.ts").StorageLike} */ (backend),
+              /** @type {import("./interface.ts").StorageLike} */ (backend),
               {
                 serialize,
                 deserialize,
@@ -302,17 +288,26 @@ export function createInjector(modulesToLoad, strictDi = false) {
   }
 
   /**
+   * Loads and instantiates AngularJS modules with proper type handling.
    *
-   * @param {Array<String|Function>} modules
-   * @returns
+   * @param {Array<string | Function | ng.AnnotatedFactory<any>>} modules - Modules to load
+   * @returns {Array<any>} - Array of run block results
    */
   function loadModules(modules) {
     validateArray(modules, "modules");
+
+    /** @type {Array<any>} */
     let moduleRunBlocks = [];
 
     modules.forEach((module) => {
-      if (loadedModules.get(module)) return;
-      loadedModules.set(module, true);
+      // Determine a key suitable for Map: string | Function
+      /** @type {string | Function} */
+      const moduleKey = Array.isArray(module)
+        ? module[module.length - 1]
+        : module;
+
+      if (loadedModules.get(moduleKey)) return;
+      loadedModules.set(moduleKey, true);
 
       try {
         if (isString(module)) {
@@ -321,7 +316,8 @@ export function createInjector(modulesToLoad, strictDi = false) {
             /** @type {string} */ (module),
           );
 
-          instanceInjector.modules[/** @type {string } */ (module)] = moduleFn;
+          instanceInjector._modules[module] = moduleFn;
+
           moduleRunBlocks = moduleRunBlocks
             .concat(loadModules(moduleFn._requires))
             .concat(moduleFn._runBlocks);
@@ -341,19 +337,23 @@ export function createInjector(modulesToLoad, strictDi = false) {
         } else if (isFunction(module)) {
           moduleRunBlocks.push(providerInjector.invoke(module));
         } else if (isArray(module)) {
-          moduleRunBlocks.push(providerInjector.invoke(module));
+          moduleRunBlocks.push(
+            providerInjector.invoke(
+              /** @type {Function | ng.AnnotatedFactory<any>} */ (module),
+            ),
+          );
         } else {
           assertArgFn(module, "module");
         }
       } catch (err) {
-        if (isArray(module)) {
-          module = module[module.length - 1];
-        }
+        // If module is array, fallback to last element for error message
+        const moduleName = isArray(module) ? module[module.length - 1] : module;
+
         throw $injectorMinErr(
           "modulerr",
           "Failed to instantiate module {0} due to:\n{1}",
-          module,
-          err.stack || err.message || err,
+          moduleName,
+          isInstanceOf(err, Error) ? err.stack || err.message : String(err),
         );
       }
     });
@@ -362,16 +362,23 @@ export function createInjector(modulesToLoad, strictDi = false) {
   }
 }
 
+/**
+ * Wraps a delegate function to support object-style arguments.
+ *
+ * @template V
+ * @param {(key: string, value: V) => any} delegate - The original function accepting (key, value)
+ * @returns {(key: string | Record<string, V>, value?: V) => any}
+ */
 function supportObject(delegate) {
   return function (key, value) {
     if (isObject(key)) {
-      entries(key).forEach(([k, v]) => {
+      entries(/** @type {Record<string, V>} */ (key)).forEach(([k, v]) => {
         delegate(k, v);
       });
 
       return undefined;
     } else {
-      return delegate(key, value);
+      return delegate(key, /** @type {any} */ (value));
     }
   };
 }

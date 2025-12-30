@@ -13,19 +13,11 @@ export function ngIfDirective($animate) {
     priority: 600,
     terminal: true,
     restrict: "A",
-    /**
-     *
-     * @param {ng.Scope} $scope
-     * @param {Element} $element
-     * @param {ng.Attributes} $attr
-     * @param {*} _ctrl
-     * @param {ng.TranscludeFn} $transclude
-     */
     link($scope, $element, $attr, _ctrl, $transclude) {
       /** @type {Element | null | undefined} */
       let block;
 
-      /** @type {ng.Scope | null} */
+      /** @type {ng.Scope | null | undefined} */
       let childScope;
 
       /** @type {Element | null | undefined} */
@@ -34,28 +26,23 @@ export function ngIfDirective($animate) {
       $scope.$watch($attr.ngIf, (value) => {
         if (value) {
           if (!childScope) {
-            $transclude(
-              (
-                /** @type {Element} */ clone,
-                /** @type {ng.Scope} */ newScope,
-              ) => {
-                childScope = newScope;
-                // Note: We only need the first/last node of the cloned nodes.
-                // However, we need to keep the reference to the dom wrapper as it might be changed later
-                // by a directive with templateUrl when its template arrives.
-                block = clone;
+            /** @type {ng.TranscludeFn} */ ($transclude)((clone, newScope) => {
+              childScope = newScope;
+              // Note: We only need the first/last node of the cloned nodes.
+              // However, we need to keep the reference to the dom wrapper as it might be changed later
+              // by a directive with templateUrl when its template arrives.
+              block = /** @type {Element} */ (clone);
 
-                if (hasAnimate(/** @type {Node} */ (clone))) {
-                  $animate.enter(
-                    /** @type {Element} */ (clone),
-                    /** @type {Element} */ ($element.parentElement),
-                    $element,
-                  );
-                } else {
-                  $element.after(/** @type {Node} */ (clone));
-                }
-              },
-            );
+              if (hasAnimate(/** @type {Node} */ (clone))) {
+                $animate.enter(
+                  /** @type {Element} */ (clone),
+                  /** @type {Element} */ ($element.parentElement),
+                  $element,
+                );
+              } else {
+                $element.after(/** @type {Node} */ (clone));
+              }
+            });
           }
         } else {
           if (previousElements) {

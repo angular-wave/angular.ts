@@ -2,6 +2,7 @@ import {
   deProxy,
   isDefined,
   isNull,
+  isNullOrUndefined,
   isUndefined,
   stringify,
 } from "../../shared/utils.js";
@@ -12,11 +13,6 @@ import { $injectTokens } from "../../injection-tokens.js";
  */
 export function ngBindDirective() {
   return {
-    /**
-     * @param {ng.Scope} scope
-     * @param {Element} element
-     * @param {ng.Attributes} attr
-     */
     link(scope, element, attr) {
       scope.$watch(
         attr.ngBind,
@@ -36,15 +32,13 @@ export function ngBindDirective() {
  */
 export function ngBindTemplateDirective() {
   return {
-    /**
-     * @param {ng.Scope} _scope
-     * @param {Element} element
-     * @param {ng.Attributes} attr
-     */
     link(_scope, element, attr) {
-      attr.$observe("ngBindTemplate", (/** @type {string | null} */ value) => {
-        element.textContent = isUndefined(value) ? "" : value;
-      });
+      attr.$observe(
+        "ngBindTemplate",
+        (/** @type {string | null | undefined} */ value) => {
+          element.textContent = isNullOrUndefined(value) ? "" : value;
+        },
+      );
     },
   };
 }

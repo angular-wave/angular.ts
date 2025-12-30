@@ -45,8 +45,8 @@ export class ParseProvider {
       $injectTokens._filter,
       /**
        *
-       * @param {(any) => any} $filter
-       * @returns {import('./interface.ts').ParseService}
+       * @param {(param: any) => any} $filter
+       * @returns {ng.ParseService}
        */
       function ($filter) {
         /** @type {import("./lexer/lexer.js").LexerOptions} */
@@ -57,11 +57,7 @@ export class ParseProvider {
 
         return $parse;
 
-        /**
-         * @param {string} exp
-         * @param interceptorFn
-         * @returns any
-         */
+        /** @type {ng.ParseService} */
         function $parse(exp, interceptorFn) {
           let parsedExpression, cacheKey;
 
@@ -213,9 +209,9 @@ export function constantWatchDelegate(
  */
 function addWatchDelegate(parsedExpression) {
   if (parsedExpression.constant) {
-    parsedExpression.$$watchDelegate = constantWatchDelegate;
+    parsedExpression._watchDelegate = constantWatchDelegate;
   } else if (parsedExpression.inputs) {
-    parsedExpression.$$watchDelegate = inputsWatchDelegate;
+    parsedExpression._watchDelegate = inputsWatchDelegate;
   }
 
   return parsedExpression;
@@ -278,7 +274,6 @@ function inputsWatchDelegate(
     // return scope.$watch(
     //   // @ts-ignore
     //   (scope) => {
-    //     debugger
     //     let changed = false;
 
     //     for (let i = 0, ii = inputExpressions.length; i < ii; i++) {

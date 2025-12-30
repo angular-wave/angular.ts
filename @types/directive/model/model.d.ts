@@ -144,7 +144,7 @@ export class NgModelController {
   /** @type {ng.Scope} */
   $$scope: ng.Scope;
   $$attr: ng.Attributes;
-  $$element: Element;
+  _element: Element;
   $$animate: import("../../animations/interface.ts").AnimateService;
   $$parse: import("../../core/parse/interface.ts").ParseService;
   $$exceptionHandler: import("../../services/exception/interface.ts").ExceptionHandler;

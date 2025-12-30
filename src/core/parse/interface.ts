@@ -22,7 +22,7 @@ export interface CompiledExpressionProps {
    * @param equalityCheck - Whether to use deep equality.
    * @param expression - The compiled expression or string.
    */
-  $$watchDelegate?: (
+  _watchDelegate?: (
     scope: Scope,
     listener: Function,
     equalityCheck: boolean,

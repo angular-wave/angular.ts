@@ -6,10 +6,6 @@ import {
 } from "../../shared/utils.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
-/**
- * Shared utility functions
- */
-
 const $injectorMinErr = minErr($injectTokens._injector);
 
 const ARROW_ARG = /^([^(]+?)=>/;
@@ -24,15 +20,15 @@ const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
  * @param {Function} fn
  * @returns {string}
  */
-export function stringifyFn(fn) {
+function stringifyFn(fn) {
   return Function.prototype.toString.call(fn);
 }
 
 /**
  * @param {Function} fn
- * @returns {Array<any>}
+ * @returns {RegExpMatchArray | null}
  */
-export function extractArgs(fn) {
+function extractArgs(fn) {
   const fnText = stringifyFn(fn).replace(STRIP_COMMENTS, "");
 
   return fnText.match(ARROW_ARG) || fnText.match(FN_ARGS);
@@ -53,14 +49,20 @@ export function isClass(func) {
  * @returns {Array<string>}
  */
 export function annotate(fn, strictDi, name) {
-  let $inject, argDecl, last;
+  /**
+   * @type {any[]}
+   */
+  let inject = [];
+
+  let argDecl;
+
+  let last;
 
   if (isFunction(fn)) {
-    // eslint-disable-next-line prefer-destructuring
-    $inject = fn.$inject;
+    inject = fn.$inject;
 
-    if (!$inject) {
-      $inject = [];
+    if (!inject) {
+      inject = [];
 
       if (fn.length) {
         if (strictDi) {
@@ -71,21 +73,24 @@ export function annotate(fn, strictDi, name) {
           );
         }
         argDecl = extractArgs(fn);
-        argDecl[1].split(/,/).forEach(function (arg) {
-          arg.replace(FN_ARG, function (_all, _underscore, injName) {
-            $inject.push(injName);
+        argDecl &&
+          argDecl[1].split(/,/).forEach((arg) => {
+            arg.replace(FN_ARG, (_all, _underscore, injName) => {
+              inject.push(injName);
+
+              return injName;
+            });
           });
-        });
       }
-      fn.$inject = $inject;
+      fn.$inject = inject;
     }
   } else if (isArray(fn)) {
-    last = /** @type {Array} */ (fn).length - 1;
+    last = /** @type {ng.AnnotatedFactory<any>} */ (fn).length - 1;
     assertArgFn(fn[last], "fn");
-    $inject = /** @type {Array} */ (fn).slice(0, last);
+    inject = /** @type {ng.AnnotatedFactory<any>} */ (fn).slice(0, last);
   } else {
     assertArgFn(fn, "fn", true);
   }
 
-  return $inject;
+  return inject;
 }

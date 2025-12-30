@@ -21,13 +21,13 @@ class AbstractInjector {
     /**
      * @type {Object<String, Function>}
      */
-    this.cache = {};
+    this._cache = {};
     /** @type {boolean} */
     this.strictDi = strictDi;
     /** @type {string[]} */
-    this.path = [];
+    this._path = [];
     /** @type {Object.<string, ng.NgModule>} */
-    this.modules = {};
+    this._modules = {};
   }
 
   /**
@@ -37,41 +37,41 @@ class AbstractInjector {
    * @returns {any}
    */
   get(serviceName) {
-    if (hasOwn(this.cache, serviceName)) {
-      if (this.cache[serviceName] === INSTANTIATING) {
+    if (hasOwn(this._cache, serviceName)) {
+      if (this._cache[serviceName] === INSTANTIATING) {
         throw $injectorMinErr(
           "cdep",
           "Circular dependency found: {0}",
-          `${serviceName} <- ${this.path.join(" <- ")}`,
+          `${serviceName} <- ${this._path.join(" <- ")}`,
         );
       }
 
-      return this.cache[serviceName];
+      return this._cache[serviceName];
     }
 
-    this.path.unshift(serviceName);
-    this.cache[serviceName] = INSTANTIATING;
+    this._path.unshift(serviceName);
+    this._cache[serviceName] = INSTANTIATING;
 
     try {
-      this.cache[serviceName] = this.factory(serviceName);
+      this._cache[serviceName] = this.factory(serviceName);
     } catch (err) {
       // this is for the error handling being thrown by the providerCache multiple times
-      delete this.cache[serviceName];
+      delete this._cache[serviceName];
       throw err;
     }
 
-    return this.cache[serviceName];
+    return this._cache[serviceName];
   }
 
   /**
    * Get the injection arguments for a function.
    *
-   * @param {Function|Array} fn
-   * @param {Object} locals
-   * @param {string} serviceName
+   * @param {Function|ng.AnnotatedFactory<any>} fn
+   * @param {Object & Record<string, any>} [locals]
+   * @param {string} [serviceName]
    * @returns
    */
-  injectionArgs(fn, locals, serviceName) {
+  _injectionArgs(fn, locals, serviceName) {
     const args = [];
 
     const $inject = annotate(fn, this.strictDi, serviceName);
@@ -95,7 +95,7 @@ class AbstractInjector {
   /**
    * Invoke a function with optional context and locals.
    *
-   * @param {Function|String|Array<any>} fn
+   * @param {Function|String|ng.AnnotatedFactory<any>} fn
    * @param {*} [self]
    * @param {Object} [locals]
    * @param {string} [serviceName]
@@ -104,10 +104,10 @@ class AbstractInjector {
   invoke(fn, self, locals, serviceName) {
     if (typeof locals === "string") {
       serviceName = locals;
-      locals = null;
+      locals = undefined;
     }
 
-    const args = this.injectionArgs(
+    const args = this._injectionArgs(
       /** @type {Function} */ (fn),
       locals,
       serviceName,
@@ -120,7 +120,10 @@ class AbstractInjector {
     if (isClass(/** @type {Function} */ (fn))) {
       args.unshift(null);
 
-      return new (Function.prototype.bind.apply(fn, args))();
+      return new (Function.prototype.bind.apply(
+        /** @type {Function} */ (fn),
+        /** @type {[any, ...any[]]} */ (args),
+      ))();
     } else {
       return /** @type {Function} */ (fn).apply(self, args);
     }
@@ -128,7 +131,7 @@ class AbstractInjector {
 
   /**
    * Instantiate a type constructor with optional locals.
-   * @param {Function|Array} type
+   * @param {Function|ng.AnnotatedFactory<any>} type
    * @param {*} [locals]
    * @param {string} [serviceName]
    */
@@ -137,13 +140,16 @@ class AbstractInjector {
     // e.g. someModule.factory('greeter', ['$window', function(renamed$window) {}]);
     const ctor = isArray(type) ? type[type.length - 1] : type;
 
-    const args = this.injectionArgs(type, locals, serviceName);
+    const args = this._injectionArgs(type, locals, serviceName);
 
     // Empty object at position 0 is ignored for invocation with `new`, but required.
     args.unshift(null);
 
     try {
-      return new (Function.prototype.bind.apply(ctor, args))();
+      return new (Function.prototype.bind.apply(
+        ctor,
+        /** @type {[any, ...any[]]} */ (args),
+      ))();
     } catch (err) {
       // try arrow function
       if (isArrowFunction(ctor)) {
@@ -152,13 +158,6 @@ class AbstractInjector {
         throw err;
       }
     }
-  }
-
-  /**
-   * @abstract
-   */
-  loadNewModules() {
-    /* empty */
   }
 
   /**
@@ -177,12 +176,12 @@ class AbstractInjector {
  */
 export class ProviderInjector extends AbstractInjector {
   /**
-   * @param {Object} cache
+   * @param {import('./interface.ts').ProviderCache} cache
    * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
    */
   constructor(cache, strictDi) {
     super(strictDi);
-    this.cache = cache;
+    this._cache = cache;
   }
 
   /**
@@ -191,17 +190,13 @@ export class ProviderInjector extends AbstractInjector {
    * @throws {Error} If the provider is unknown.
    */
   factory(caller) {
-    this.path.push(caller);
+    this._path.push(caller);
     // prevents lookups to providers through get
     throw $injectorMinErr(
       "unpr",
       "Unknown provider: {0}",
-      this.path.join(" <- "),
+      this._path.join(" <- "),
     );
-  }
-
-  loadNewModules() {
-    /* empty */
   }
 }
 
@@ -209,6 +204,11 @@ export class ProviderInjector extends AbstractInjector {
  * Injector for factories and services
  */
 export class InjectorService extends AbstractInjector {
+  /** @type {(mods: Array<Function | string | ng.AnnotatedFactory<any>>) => void} */
+  loadNewModules = () => {
+    /* empty */
+  };
+
   /**
    * @param {ProviderInjector} providerInjector
    * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
@@ -216,10 +216,10 @@ export class InjectorService extends AbstractInjector {
   constructor(providerInjector, strictDi) {
     super(strictDi);
 
-    /** @type {ProviderInjector} */
-    this.providerInjector = providerInjector;
-    /** @type {Object.<string, ng.NgModule>} */
-    this.modules = providerInjector.modules;
+    /** @private @type {ProviderInjector} */
+    this._providerInjector = providerInjector;
+    /** @private @type {Object.<string, ng.NgModule>} */
+    this._modules = providerInjector._modules;
   }
 
   /**
@@ -227,7 +227,7 @@ export class InjectorService extends AbstractInjector {
    * @returns {*}
    */
   factory(serviceName) {
-    const provider = this.providerInjector.get(serviceName + providerSuffix);
+    const provider = this._providerInjector.get(serviceName + providerSuffix);
 
     return this.invoke(provider.$get, provider, undefined, serviceName);
   }
@@ -239,16 +239,12 @@ export class InjectorService extends AbstractInjector {
    */
   has(name) {
     const hasProvider = hasOwn(
-      this.providerInjector.cache,
+      this._providerInjector._cache,
       name + providerSuffix,
     );
 
-    const hasCache = hasOwn(this.cache, name);
+    const hasCache = hasOwn(this._cache, name);
 
     return hasProvider || hasCache;
-  }
-
-  loadNewModules() {
-    /* empty */
   }
 }

@@ -2982,7 +2982,7 @@ export class CompileProvider {
                       if (name === "class") {
                         attr.$updateClass(
                           newInterpolatedValue,
-                          attr.$$element.classList.value,
+                          attr._element().classList.value,
                         );
                       } else {
                         attr.$set(
@@ -3149,7 +3149,7 @@ export class CompileProvider {
                   }
 
                   /**
-                   * @type {import("./inteface.ts").SimpleChange}
+                   * @type {import("./interface.ts").SimpleChange}
                    */
                   initialChanges[scopeName] = {
                     currentValue: destination[scopeName],
@@ -3311,7 +3311,7 @@ export class CompileProvider {
                   parentGet = $parse(attrs[attrName]);
 
                   destination.$target[scopeName] = parentGet(scope.$target);
-                  /** @type {import("./inteface.ts").SimpleChange} */
+                  /** @type {import("./interface.ts").SimpleChange} */
                   initialChanges[scopeName] = {
                     currentValue: destination.$target[scopeName],
                     firstChange,

@@ -20,7 +20,7 @@ describe("injector.modules", () => {
 
   it("should have modules property", () => {
     const $injector = createInjector([]);
-    expect($injector.modules).toEqual({});
+    expect($injector._modules).toEqual({});
   });
 
   it("should have methods", () => {
@@ -96,11 +96,11 @@ describe("injector.modules", () => {
   it("should allow new modules to be added after injector creation", () => {
     angular.module("initial", []);
     const injector = createInjector(["initial"]);
-    expect(injector.modules.initial).toBeDefined();
-    expect(injector.modules.lazy).toBeUndefined();
+    expect(injector._modules.initial).toBeDefined();
+    expect(injector._modules.lazy).toBeUndefined();
     angular.module("lazy", []);
     injector.loadNewModules(["lazy"]);
-    expect(injector.modules.lazy).toBeDefined();
+    expect(injector._modules.lazy).toBeDefined();
   });
 
   it("should execute runBlocks of new modules", () => {
@@ -170,14 +170,14 @@ describe("injector.modules", () => {
   it("should load dependent modules", () => {
     angular.module("initial", []);
     const injector = createInjector(["initial"]);
-    expect(injector.modules.initial).toBeDefined();
-    expect(injector.modules.lazy1).toBeUndefined();
-    expect(injector.modules.lazy2).toBeUndefined();
+    expect(injector._modules.initial).toBeDefined();
+    expect(injector._modules.lazy1).toBeUndefined();
+    expect(injector._modules.lazy2).toBeUndefined();
     angular.module("lazy1", ["lazy2"]);
     angular.module("lazy2", []);
     injector.loadNewModules(["lazy1"]);
-    expect(injector.modules.lazy1).toBeDefined();
-    expect(injector.modules.lazy2).toBeDefined();
+    expect(injector._modules.lazy1).toBeDefined();
+    expect(injector._modules.lazy2).toBeDefined();
   });
 
   it("should execute blocks of new modules in the correct order", () => {
@@ -276,7 +276,7 @@ describe("injector.modules", () => {
     angular.module("myModule", ["myOtherModule"]);
     angular.module("myOtherModule", ["myModule"]);
     let injector = createInjector(["myModule"]);
-    expect(Object.keys(injector.modules).length).toEqual(2);
+    expect(Object.keys(injector._modules).length).toEqual(2);
   });
 
   it("invokes an annotated function with dependency injection", () => {

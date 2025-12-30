@@ -5,6 +5,7 @@ export function ngStyleDirective() {
   return {
     restrict: "A",
     link(scope, element, attr) {
+      /** @type {Record<string, string> | null} */
       let oldStyles = null;
 
       scope.$watch(attr.ngStyle, (newStyles) => {

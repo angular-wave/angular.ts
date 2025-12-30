@@ -102,7 +102,7 @@ export class FormController {
   $submitted: boolean;
   /** @type {FormController|Object} */
   $$parentForm: FormController | any;
-  $$element: Element;
+  _element: Element;
   $$animate: import("../../animations/interface.ts").AnimateService;
   $error: {};
   $$success: {};

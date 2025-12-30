@@ -24,14 +24,14 @@ export class Attributes {
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    * @param {*} $sce
    * @param {import("../../shared/noderef.js").NodeRef} [nodeRef]
-   * @param {Object} [attributesToCopy]
+   * @param {Object & Record<string, any>} [attributesToCopy]
    */
   constructor(
     $animate: ng.AnimateService,
     $exceptionHandler: ng.ExceptionHandlerService,
     $sce: any,
     nodeRef?: import("../../shared/noderef.js").NodeRef,
-    attributesToCopy?: any,
+    attributesToCopy?: any & Record<string, any>,
   );
   _$animate: import("../../animations/interface.ts").AnimateService;
   _$exceptionHandler: import("../../services/exception/interface.ts").ExceptionHandler;
@@ -41,10 +41,10 @@ export class Attributes {
    * to do reverse lookup from normalized name back to actual name.
    */
   $attr: {};
-  /** @type {import("../../shared/noderef.js").NodeRef} */
-  _nodeRef: import("../../shared/noderef.js").NodeRef;
-  /** @type {Node|Element} */
-  get $$element(): Node | Element;
+  /** @type {import("../../shared/noderef.js").NodeRef | undefined} */
+  _nodeRef: import("../../shared/noderef.js").NodeRef | undefined;
+  /** @ignore @returns {Node|Element} */
+  _element(): Node | Element;
   /**
    * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `x-` or
    * `data-`) to its normalized, camelCase form.

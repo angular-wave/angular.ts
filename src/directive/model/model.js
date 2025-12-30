@@ -170,7 +170,7 @@ export class NgModelController {
     /** @type {ng.Scope} */
     this.$$scope = $scope; // attempt to bind to nearest controller if present
     this.$$attr = $attr;
-    this.$$element = $element;
+    this._element = $element;
     this.$$animate = $animate;
     this.$$parse = $parse;
     this.$$exceptionHandler = $exceptionHandler;
@@ -178,7 +178,7 @@ export class NgModelController {
     this.$$hasNativeValidators = false;
 
     this.$$classCache = {};
-    const isValid = this.$$element.classList.contains(VALID_CLASS);
+    const isValid = this._element.classList.contains(VALID_CLASS);
 
     this.$$classCache[VALID_CLASS] = isValid;
     this.$$classCache[INVALID_CLASS] = !isValid;
@@ -218,18 +218,18 @@ export class NgModelController {
 
     function cachedToggleClass(ctrl, className, switchValue) {
       if (switchValue && !ctrl.$$classCache[className]) {
-        if (hasAnimate(ctrl.$$element)) {
-          ctrl.$$animate.addClass(ctrl.$$element, className);
+        if (hasAnimate(ctrl._element)) {
+          ctrl.$$animate.addClass(ctrl._element, className);
         } else {
-          ctrl.$$element.classList.add(className);
+          ctrl._element.classList.add(className);
         }
 
         ctrl.$$classCache[className] = true;
       } else if (!switchValue && ctrl.$$classCache[className]) {
-        if (hasAnimate(ctrl.$$element)) {
-          ctrl.$$animate.removeClass(ctrl.$$element, className);
+        if (hasAnimate(ctrl._element)) {
+          ctrl.$$animate.removeClass(ctrl._element, className);
         } else {
-          ctrl.$$element.classList.remove(className);
+          ctrl._element.classList.remove(className);
         }
         ctrl.$$classCache[className] = false;
       }
@@ -327,7 +327,7 @@ export class NgModelController {
         "nonassign",
         "Expression '{0}' is non-assignable. Element: {1}",
         this.$$attr.ngModel,
-        startingTag(this.$$element),
+        startingTag(this._element),
       );
     }
   }
@@ -377,20 +377,20 @@ export class NgModelController {
 
   $$updateEmptyClasses(value) {
     if (this.$isEmpty(value)) {
-      if (hasAnimate(this.$$element)) {
-        this.$$animate.removeClass(this.$$element, NOT_EMPTY_CLASS);
-        this.$$animate.addClass(this.$$element, EMPTY_CLASS);
+      if (hasAnimate(this._element)) {
+        this.$$animate.removeClass(this._element, NOT_EMPTY_CLASS);
+        this.$$animate.addClass(this._element, EMPTY_CLASS);
       } else {
-        this.$$element.classList.remove(NOT_EMPTY_CLASS);
-        this.$$element.classList.add(EMPTY_CLASS);
+        this._element.classList.remove(NOT_EMPTY_CLASS);
+        this._element.classList.add(EMPTY_CLASS);
       }
     } else {
-      if (hasAnimate(this.$$element)) {
-        this.$$animate.removeClass(this.$$element, EMPTY_CLASS);
-        this.$$animate.addClass(this.$$element, NOT_EMPTY_CLASS);
+      if (hasAnimate(this._element)) {
+        this.$$animate.removeClass(this._element, EMPTY_CLASS);
+        this.$$animate.addClass(this._element, NOT_EMPTY_CLASS);
       } else {
-        this.$$element.classList.remove(EMPTY_CLASS);
-        this.$$element.classList.add(NOT_EMPTY_CLASS);
+        this._element.classList.remove(EMPTY_CLASS);
+        this._element.classList.add(NOT_EMPTY_CLASS);
       }
     }
   }
@@ -406,14 +406,14 @@ export class NgModelController {
     this.$dirty = false;
     this.$pristine = true;
 
-    if (!this.$$element) return;
+    if (!this._element) return;
 
-    if (hasAnimate(this.$$element)) {
-      this.$$animate.removeClass(this.$$element, EMPTY_CLASS);
-      this.$$animate.addClass(this.$$element, PRISTINE_CLASS);
+    if (hasAnimate(this._element)) {
+      this.$$animate.removeClass(this._element, EMPTY_CLASS);
+      this.$$animate.addClass(this._element, PRISTINE_CLASS);
     } else {
-      this.$$element.classList.remove(EMPTY_CLASS);
-      this.$$element.classList.add(PRISTINE_CLASS);
+      this._element.classList.remove(EMPTY_CLASS);
+      this._element.classList.add(PRISTINE_CLASS);
     }
   }
 
@@ -428,12 +428,12 @@ export class NgModelController {
     this.$dirty = true;
     this.$pristine = false;
 
-    if (hasAnimate(this.$$element)) {
-      this.$$animate.removeClass(this.$$element, PRISTINE_CLASS);
-      this.$$animate.addClass(this.$$element, DIRTY_CLASS);
+    if (hasAnimate(this._element)) {
+      this.$$animate.removeClass(this._element, PRISTINE_CLASS);
+      this.$$animate.addClass(this._element, DIRTY_CLASS);
     } else {
-      this.$$element.classList.remove(PRISTINE_CLASS);
-      this.$$element.classList.add(DIRTY_CLASS);
+      this._element.classList.remove(PRISTINE_CLASS);
+      this._element.classList.add(DIRTY_CLASS);
     }
     this.$$parentForm.$setDirty();
   }
@@ -450,11 +450,11 @@ export class NgModelController {
     this.$touched = false;
     this.$untouched = true;
 
-    if (hasAnimate(this.$$element)) {
-      this.$$animate.setClass(this.$$element, UNTOUCHED_CLASS, TOUCHED_CLASS);
+    if (hasAnimate(this._element)) {
+      this.$$animate.setClass(this._element, UNTOUCHED_CLASS, TOUCHED_CLASS);
     } else {
-      this.$$element.classList.remove(TOUCHED_CLASS);
-      this.$$element.classList.add(UNTOUCHED_CLASS);
+      this._element.classList.remove(TOUCHED_CLASS);
+      this._element.classList.add(UNTOUCHED_CLASS);
     }
   }
 
@@ -469,11 +469,11 @@ export class NgModelController {
     this.$touched = true;
     this.$untouched = false;
 
-    if (hasAnimate(this.$$element)) {
-      this.$$animate.setClass(this.$$element, TOUCHED_CLASS, UNTOUCHED_CLASS);
+    if (hasAnimate(this._element)) {
+      this.$$animate.setClass(this._element, TOUCHED_CLASS, UNTOUCHED_CLASS);
     } else {
-      this.$$element.classList.remove(UNTOUCHED_CLASS);
-      this.$$element.classList.add(TOUCHED_CLASS);
+      this._element.classList.remove(UNTOUCHED_CLASS);
+      this._element.classList.add(TOUCHED_CLASS);
     }
   }
 
@@ -1124,9 +1124,9 @@ export class NgModelController {
   $$setUpdateOnEvents() {
     if (this.$$updateEvents) {
       this.$$updateEvents.split(" ").forEach((ev) => {
-        this.$$element.addEventListener(ev, this.$$updateEventHandler);
+        this._element.addEventListener(ev, this.$$updateEventHandler);
         this.$$eventRemovers.add(() =>
-          this.$$element.removeEventListener(ev, this.$$updateEventHandler),
+          this._element.removeEventListener(ev, this.$$updateEventHandler),
         );
       });
     }
@@ -1137,9 +1137,9 @@ export class NgModelController {
 
     if (this.$$updateEvents) {
       this.$$updateEvents.split(" ").forEach((ev) => {
-        this.$$element.addEventListener(ev, this.$$updateEventHandler);
+        this._element.addEventListener(ev, this.$$updateEventHandler);
         this.$$eventRemovers.add(() =>
-          this.$$element.removeEventListener(ev, this.$$updateEventHandler),
+          this._element.removeEventListener(ev, this.$$updateEventHandler),
         );
       });
     }

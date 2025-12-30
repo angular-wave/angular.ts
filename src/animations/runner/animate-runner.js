@@ -103,10 +103,17 @@ export class AnimateRunner {
      * @private
      */
     if (jsAnimation) {
-      const rafTick = (fn) => requestAnimationFrame(fn);
+      /** @type {(fn: VoidFunction) => void} */
+      const rafTick = (fn) => {
+        requestAnimationFrame(fn);
+      };
 
-      const timeoutTick = (fn) => setTimeout(fn, 0);
+      /** @type {(fn: VoidFunction) => void} */
+      const timeoutTick = (fn) => {
+        setTimeout(fn, 0);
+      };
 
+      /** @type {(fn: VoidFunction) => void} */
       this._tick = (fn) => {
         // When tab is hidden, requestAnimationFrame throttles heavily.
         if (document.hidden) timeoutTick(fn);

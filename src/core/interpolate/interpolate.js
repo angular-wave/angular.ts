@@ -227,7 +227,7 @@ export class InterpolateProvider {
 
           constantInterp.exp = text;
           constantInterp.expressions = [];
-          constantInterp.$$watchDelegate = constantWatchDelegate;
+          constantInterp._watchDelegate = constantWatchDelegate;
 
           return constantInterp;
         }
@@ -364,7 +364,7 @@ export class InterpolateProvider {
               // all of these properties are undocumented for now
               exp: text, // just for compatibility with regular watchers created via $watch
               expressions,
-              $$watchDelegate(scope, listener) {
+              _watchDelegate(scope, listener) {
                 let lastValue;
 
                 return scope.$watch(
