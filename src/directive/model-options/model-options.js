@@ -21,8 +21,8 @@ class NgModelOptionsController {
    * @param {ng.Scope} $scope
    */
   constructor($attrs, $scope) {
-    this.$$attrs = $attrs;
-    this.$$scope = $scope;
+    this._attrs = $attrs;
+    this._scope = $scope;
     /** @type {NgModelOptionsController?} */
     this.parentCtrl;
   }
@@ -32,8 +32,8 @@ class NgModelOptionsController {
       ? this.parentCtrl.$options
       : defaultModelOptions;
 
-    const modelOptionsDefinition = this.$$scope.$eval(
-      this.$$attrs.ngModelOptions,
+    const modelOptionsDefinition = this._scope.$eval(
+      this._attrs.ngModelOptions,
     );
 
     this.$options = parentOptions.createChild(modelOptionsDefinition);
