@@ -52,7 +52,7 @@ class ModelOptions {
    */
   constructor(options) {
     /** @type {ModelOptionsConfig} */
-    this.$$options = options;
+    this._options = options;
   }
 
   /**
@@ -61,7 +61,7 @@ class ModelOptions {
    * @returns {string|boolean|number|Object.<string, number>} the value of the option   *
    */
   getOption(name) {
-    return this.$$options[name];
+    return this._options[name];
   }
 
   /**
@@ -80,11 +80,11 @@ class ModelOptions {
         if (key === "*") {
           inheritAll = true;
         } else {
-          options[key] = this.$$options[key];
+          options[key] = this._options[key];
 
           // `updateOn` is special so we must also inherit the `updateOnDefault` option
           if (key === "updateOn") {
-            options.updateOnDefault = this.$$options.updateOnDefault;
+            options.updateOnDefault = this._options.updateOnDefault;
           }
         }
       } else if (key === "updateOn") {
@@ -104,11 +104,11 @@ class ModelOptions {
     if (inheritAll) {
       // We have a property of the form: `"*": "$inherit"`
       delete options["*"];
-      defaults(options, this.$$options);
+      defaults(options, this._options);
     }
 
     // Finally add in any missing defaults
-    defaults(options, defaultModelOptions.$$options);
+    defaults(options, defaultModelOptions._options);
 
     return new ModelOptions(options);
   }

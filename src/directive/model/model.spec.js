@@ -34,10 +34,10 @@ describe("ngModel", () => {
     const attrs = { name: "testAlias", ngModel: "value" };
 
     parentFormCtrl = {
-      $$setPending: jasmine.createSpy("$$setPending"),
+      _setPending: jasmine.createSpy("_setPending"),
       $setValidity: jasmine.createSpy("$setValidity"),
       $setDirty: jasmine.createSpy("$setDirty"),
-      $$clearControlValidity: () => {
+      _clearControlValidity: () => {
         /* empty */
       },
     };
@@ -53,7 +53,7 @@ describe("ngModel", () => {
     });
 
     // Assign the mocked parentFormCtrl to the model controller
-    ctrl.$$parentForm = parentFormCtrl;
+    ctrl._parentForm = parentFormCtrl;
   });
 
   afterEach(() => {
@@ -81,25 +81,25 @@ describe("ngModel", () => {
     describe("setValidity", () => {
       function expectOneError() {
         expect(ctrl.$error).toEqual({ someError: true });
-        expect(ctrl.$$success).toEqual({});
+        expect(ctrl._success).toEqual({});
         expect(ctrl.$pending).toBeUndefined();
       }
 
       function expectOneSuccess() {
         expect(ctrl.$error).toEqual({});
-        expect(ctrl.$$success).toEqual({ someError: true });
+        expect(ctrl._success).toEqual({ someError: true });
         expect(ctrl.$pending).toBeUndefined();
       }
 
       function expectOnePending() {
         expect(ctrl.$error).toEqual({});
-        expect(ctrl.$$success).toEqual({});
+        expect(ctrl._success).toEqual({});
         expect(ctrl.$pending).toEqual({ someError: true });
       }
 
       function expectCleared() {
         expect(ctrl.$error).toEqual({});
-        expect(ctrl.$$success).toEqual({});
+        expect(ctrl._success).toEqual({});
         expect(ctrl.$pending).toBeUndefined();
       }
 
@@ -600,8 +600,8 @@ describe("ngModel", () => {
       describe("$processModelValue", () => {
         // Emulate setting the model on the scope
         function setModelValue(ctrl, value) {
-          ctrl.$modelValue = ctrl.$$rawModelValue = value;
-          ctrl.$$parserValid = undefined;
+          ctrl.$modelValue = ctrl._rawModelValue = value;
+          ctrl._parserValid = undefined;
         }
 
         it("should run the model -> view pipeline", () => {
@@ -1345,7 +1345,7 @@ describe("ngModel", () => {
             case "stillAllInvalid":
             case "parseInvalid-validatorsValid":
             case "stillParseInvalid-validatorsValid":
-              ctrl.$$parserName = "parserOrValidator";
+              ctrl._parserName = "parserOrValidator";
               return undefined;
             default:
               return value;
