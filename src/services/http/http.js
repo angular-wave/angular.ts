@@ -422,7 +422,7 @@ export function HttpProvider() {
     /**
      *
      * @param {ng.InjectorService} $injector
-     * @param {*} $sce
+     * @param {ng.SCEService} $sce
      * @param {ng.CookieService} $cookie
      * @returns
      */
@@ -689,8 +689,6 @@ export function HttpProvider() {
        * parameter value should go.
        * </div>
        *
-       * If you would like to customise where and how the callbacks are stored then try overriding
-       * or decorating the {@link $jsonpCallbacks} service.
        *
        * @param {string} url Absolute or relative URL of the resource that is being requested;
        *                                   or an object created by a call to `$sce.trustAsResourceUrl(url)`.

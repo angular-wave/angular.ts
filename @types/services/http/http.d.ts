@@ -96,7 +96,7 @@ export class HttpProvider {
     | string
     | ((
         $injector: ng.InjectorService,
-        $sce: any,
+        $sce: ng.SCEService,
         $cookie: ng.CookieService,
       ) => {
         (requestConfig: any): Promise<any>;

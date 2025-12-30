@@ -44,7 +44,7 @@ export class Attributes {
    *
    * @param {ng.AnimateService} $animate
    * @param {ng.ExceptionHandlerService} $exceptionHandler
-   * @param {*} $sce
+   * @param {ng.SCEService} $sce
    * @param {import("../../shared/noderef.js").NodeRef} [nodeRef]
    * @param {Object & Record<string, any>} [attributesToCopy]
    */
