@@ -133,9 +133,9 @@ export function isNumber(value: unknown): value is number;
  * Determines if a value is a date.
  *
  * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `Date`.
+ * @returns {value is Date} True if `value` is a `Date`.
  */
-export function isDate(value: any): boolean;
+export function isDate(value: any): value is Date;
 /**
  * Determines if a reference is an `Error`.
  * Loosely based on https://www.npmjs.com/package/iserror
@@ -155,9 +155,9 @@ export function isFunction(value: any): boolean;
  * Determines if a value is a regular expression object.
  *
  * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `RegExp`.
+ * @returns {value is RegExp} True if `value` is a `RegExp`.
  */
-export function isRegExp(value: any): boolean;
+export function isRegExp(value: any): value is RegExp;
 /**
  * Checks if `obj` is a window object.
  *

@@ -148,7 +148,7 @@ export class RestService {
    * @returns {Promise<any>}
    */
   async #request(method, url, data = null, params = {}) {
-    return await this._$http({
+    return this._$http({
       method,
       url,
       data,
@@ -194,9 +194,7 @@ export class RestProvider {
        * @type {(baseUrl: string, entityClass?: ng.EntityClass<T>, options?: object) => RestService<T, ID>}
        */
       const factory = (baseUrl, entityClass, options = {}) => {
-        const svc = new RestService($http, baseUrl, entityClass, options);
-
-        return svc;
+        return new RestService($http, baseUrl, entityClass, options);
       };
 
       // create services from pre-registered definitions

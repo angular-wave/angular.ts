@@ -7,6 +7,10 @@ import {
   isString,
 } from "./utils.js";
 
+/**
+ * @param {unknown} o1
+ * @param {unknown} o2
+ */
 export function equals(o1, o2) {
   if (o1 === o2) return true;
 
@@ -19,25 +23,43 @@ export function equals(o1, o2) {
   if (t1 !== t2 || t1 !== "object") return false;
   const tup = [o1, o2];
 
-  if (tup.every(isArray)) return _arraysEq(o1, o2);
+  if (tup.every(isArray))
+    return _arraysEq(
+      /** @type {Array<any>} */ (o1),
+      /** @type {Array<any>} */ (o2),
+    );
 
-  if (tup.every(isDate)) return o1.getTime() === o2.getTime();
+  if (tup.every(isDate))
+    return (
+      /** @type {Date} */ (o1).getTime() === /** @type {Date} */ (o2).getTime()
+    );
 
-  if (tup.every(isRegExp)) return o1.toString() === o2.toString();
+  if (tup.every(isRegExp))
+    return (
+      /** @type {RegExp} */ (o1).toString() ===
+      /** @type {RegExp} */ (o2).toString()
+    );
 
   if (tup.every(isFunction)) return true; // meh
 
   if ([isFunction, isArray, isDate, isRegExp].some((fn) => !!fn(tup))) {
     return false;
   }
+  /** @type {Record<string, any>} */
   const keys = {};
 
-  for (const key in o1) {
-    if (!equals(o1[key], o2[key])) return false;
+  for (const key in /** @type {Record<string, any>} */ (o1)) {
+    if (
+      !equals(
+        /** @type {Record<string, any>} */ (o1)[key],
+        /** @type {Record<string, any>} */ (o2)[key],
+      )
+    )
+      return false;
     keys[key] = true;
   }
 
-  for (const key in o2) {
+  for (const key in /** @type {Record<string, any>} */ (o2)) {
     if (!keys[key]) return false;
   }
 
@@ -70,9 +92,9 @@ export function inherit(parent, extra) {
 /**
  * Given an array, and an item, if the item is found in the array, it removes it (in-place).
  * The same array is returned
- * @param {Array} array
+ * @param {Array<any>} array
  * @param {any} obj
- * @returns {Array}
+ * @returns {Array<any>}
  */
 export function removeFrom(array, obj) {
   const i = array.indexOf(obj);
@@ -86,6 +108,8 @@ export function removeFrom(array, obj) {
  * Applies a set of defaults to an options object.  The options object is filtered
  * to only those properties of the objects in the defaultsList.
  * Earlier objects in the defaultsList take precedence when applying defaults.
+ * @param {{}} opts
+ * @param {{ current?: (() => void) | (() => null); transition?: null; traceData?: {}; bind?: null; inherit?: boolean; matchingKeys?: null; state?: { params: {}; }; strict?: boolean; caseInsensitive?: boolean; relative?: import("../router/state/state-object.js").StateObject | null | undefined; location?: boolean; notify?: boolean; reload?: boolean; supercede?: boolean; custom?: {}; source?: string; lossy?: boolean; absolute?: boolean; }[]} defaultsList
  */
 export function defaults(opts, ...defaultsList) {
   const defaultVals = Object.assign({}, ...defaultsList.reverse());
@@ -98,7 +122,7 @@ export function defaults(opts, ...defaultsList) {
  *
  * @param {Object} first The first state.
  * @param {Object} second The second state.
- * @return {Array} Returns an array of state names in descending order, not including the root.
+ * @return {Array<any>} Returns an array of state names in descending order, not including the root.
  */
 export function ancestors(first, second) {
   const path = [];
@@ -285,29 +309,19 @@ export function assertFn(predicateOrMap, errMsg = "assert failure") {
     return result;
   };
 }
-/**
- * Like _.pairs: Given an object, returns an array of key/value pairs
- *
- * @example
- * ```
- *
- * pairs({ foo: "FOO", bar: "BAR }) // [ [ "foo", "FOO" ], [ "bar": "BAR" ] ]
- * ```
- */
-export const pairs = (obj) => Object.keys(obj).map((key) => [key, obj[key]]);
+
 /**
  * Given two or more parallel arrays, returns an array of tuples where
  * each tuple is composed of [ a[i], b[i], ... z[i] ]
- *
- * @example
- * ```
- *
- * let foo = [ 0, 2, 4, 6 ];
- * let bar = [ 1, 3, 5, 7 ];
- * let baz = [ 10, 30, 50, 70 ];
- * arrayTuples(foo, bar);       // [ [0, 1], [2, 3], [4, 5], [6, 7] ]
- * arrayTuples(foo, bar, baz);  // [ [0, 1, 10], [2, 3, 30], [4, 5, 50], [6, 7, 70] ]
- * ```
+ * @example ```
+
+let foo = [ 0, 2, 4, 6 ];
+let bar = [ 1, 3, 5, 7 ];
+let baz = [ 10, 30, 50, 70 ];
+arrayTuples(foo, bar);       // [ [0, 1], [2, 3], [4, 5], [6, 7] ]
+arrayTuples(foo, bar, baz);  // [ [0, 1, 10], [2, 3, 30], [4, 5, 50], [6, 7, 70] ]
+```
+ * @param {any[][]} args
  */
 export function arrayTuples(...args) {
   if (args.length === 0) return [];
@@ -394,6 +408,10 @@ export function copy(src, dest) {
   return Object.assign(dest, src);
 }
 
+/**
+ * @param {Array<any>} a1
+ * @param {Array<any>} a2
+ */
 function _arraysEq(a1, a2) {
   if (a1.length !== a2.length) return false;
 

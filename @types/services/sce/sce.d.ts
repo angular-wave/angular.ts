@@ -115,7 +115,7 @@ export class SceDelegateProvider {
    *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
    *     allowed in this array.
    *
-   * @return {Array} The currently set trusted resource URL array.
+   * @return {Array<any>} The currently set trusted resource URL array.
    *
    * @description
    * Sets/Gets the list trusted of resource URLs.
@@ -128,7 +128,10 @@ export class SceDelegateProvider {
    * its origin with other apps! It is a good idea to limit it to only your application's directory.
    * </div>
    */
-  trustedResourceUrlList: (value?: any[] | undefined, ...args: any[]) => any[];
+  trustedResourceUrlList: (
+    value?: any[] | undefined,
+    ...args: any[]
+  ) => Array<any>;
   /**
    *
    * @param {Array=} bannedResourceUrlList When provided, replaces the `bannedResourceUrlList` with
@@ -143,7 +146,7 @@ export class SceDelegateProvider {
    *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
    *     the final say.
    *
-   * @return {Array} The currently set `bannedResourceUrlList` array.
+   * @return {Array<any>} The currently set `bannedResourceUrlList` array.
    *
    * @description
    * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
@@ -151,7 +154,7 @@ export class SceDelegateProvider {
    * The **default value** when no trusted resource URL list has been explicitly set is the empty
    * array (i.e. there is no `bannedResourceUrlList`.)
    */
-  bannedResourceUrlList: (value: any, ...args: any[]) => any[];
+  bannedResourceUrlList: (value: any, ...args: any[]) => Array<any>;
   $get: (
     | string
     | ((
