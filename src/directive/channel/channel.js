@@ -21,10 +21,8 @@ export function ngChannelDirective($eventBus) {
             if (isObject(value)) {
               scope.$merge(value);
             }
-          } else if (isString(value)) {
-            element.innerHTML = value;
           } else {
-            element.innerHTML = value.toString();
+            element.innerHTML = isString(value) ? value : value.toString();
           }
         },
       );

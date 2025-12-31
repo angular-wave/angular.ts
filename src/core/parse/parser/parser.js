@@ -4,7 +4,7 @@ import { ASTInterpreter } from "../interpreter.js";
 
 /**
  * @typedef {Object} ParsedAST
- * @property {import("../ast/ast-node.d.ts").ASTNode} ast - AST representation of expression
+ * @property {import("../ast/ast-node.ts").ASTNode} ast - AST representation of expression
  */
 
 /**
@@ -29,7 +29,8 @@ export class Parser {
    * @returns {import("../interface.ts").CompiledExpression}
    */
   _parse(exp) {
-    const { ast } = this.#getAst(exp);
+    exp = exp.trim();
+    const ast = this._ast._ast(exp);
 
     const fn = this._astCompiler.compile(ast);
 
@@ -38,22 +39,10 @@ export class Parser {
 
     return fn;
   }
-
-  /**
-   * @param {string} exp - Expression to be parsed
-   * @returns {ParsedAST}
-   */
-  #getAst(exp) {
-    exp = exp.trim();
-
-    return {
-      ast: this._ast._ast(exp),
-    };
-  }
 }
 
 /**
- * @param {import("../ast/ast-node.d.ts").ASTNode} ast
+ * @param {import("../ast/ast-node.ts").ASTNode} ast
  * @returns {boolean}
  */
 function isLiteral(ast) {

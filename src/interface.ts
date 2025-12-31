@@ -451,9 +451,9 @@ export interface Directive<TController = any> {
   templateUrl?: string | ((element: Element, attrs: Attributes) => string);
   /** Enables transclusion or configures named slots */
   transclude?: boolean | string | Record<string, string>;
-  /** Internal hook for directive compilation state */
-  $$addStateInfo?: (...args: any[]) => any;
   count?: number;
+  /** Internal hook for directive compilation state */
+  _addStateInfo?: (...args: any[]) => any;
 }
 
 export type DirectiveFactoryFn = (

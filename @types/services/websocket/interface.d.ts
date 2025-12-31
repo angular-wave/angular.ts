@@ -14,10 +14,7 @@ export interface WebSocketConfig extends StreamConnectionConfig {
  * Acts as a factory for pre-configured WebSocket connections.
  */
 export type WebSocketService = (
-  /** The WebSocket URL (already pre-configured if passed at module registration) */
   url?: string,
-  /** Optional WebSocket subprotocols */
   protocols?: string[],
-  /** Optional configuration (merges with defaults) */
   config?: WebSocketConfig,
 ) => StreamConnection;
