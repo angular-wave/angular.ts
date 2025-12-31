@@ -19,5 +19,5 @@ export const ASTType = {
   _ObjectExpression: 14,
   _ThisExpression: 15,
   _LocalsExpression: 16,
-  NGValueParameter: 17,
+  _NGValueParameter: 17,
 };

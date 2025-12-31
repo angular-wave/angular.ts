@@ -178,7 +178,7 @@ export function $StateRefDirective(
         }
 
         if (active) {
-          unlinkInfoFn = active.$$addStateInfo(def.ngState, def.ngStateParams);
+          unlinkInfoFn = active._addStateInfo(def.ngState, def.ngStateParams);
         }
 
         if (!isNullOrUndefined(def.href)) {
@@ -266,7 +266,7 @@ export function $StateRefDynamicDirective(
         }
 
         if (active) {
-          unlinkInfoFn = active.$$addStateInfo(def.ngState, def.ngStateParams);
+          unlinkInfoFn = active._addStateInfo(def.ngState, def.ngStateParams);
         }
 
         if (!isNullOrUndefined(def.href)) {
@@ -343,7 +343,7 @@ export function $StateRefActiveDirective(
         ngSrefActive || $interpolate($attrs.ngSrefActive || "", false)($scope);
       setStatesFromDefinitionObject(ngSrefActive);
       // Allow ngSref to communicate with ngSrefActive[Equals]
-      this.$$addStateInfo = function (newState, newParams) {
+      this._addStateInfo = function (newState, newParams) {
         // we already got an explicit state provided by ng-sref-active, so we
         // shadow the one that comes from ng-sref
         if (isObject(ngSrefActive) && states.length > 0) {

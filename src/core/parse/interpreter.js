@@ -289,7 +289,7 @@ export class ASTInterpreter {
           context ? { value: scope } : /** @type {ng.Scope} */ (scope).$proxy;
       case ASTType._LocalsExpression:
         return (scope, locals) => (context ? { value: locals } : locals);
-      case ASTType.NGValueParameter:
+      case ASTType._NGValueParameter:
         return (scope, locals, assign) =>
           context ? { value: assign } : assign;
     }
@@ -948,7 +948,7 @@ function assignableAST(ast) {
     return {
       type: ASTType._AssignmentExpression,
       left: ast.body[0].expression,
-      right: { type: ASTType.NGValueParameter },
+      right: { type: ASTType._NGValueParameter },
       operator: "=",
     };
   }
