@@ -190,7 +190,7 @@ export class SceDelegateProvider {
      *
      * @return {Array<any>} The currently set trusted resource URL array.
      *
-     * @description
+     *
      * Sets/Gets the list trusted of resource URLs.
      *
      * The **default value** when no `trustedResourceUrlList` has been explicitly set is `['self']`
@@ -225,7 +225,7 @@ export class SceDelegateProvider {
      *
      * @return {Array<any>} The currently set `bannedResourceUrlList` array.
      *
-     * @description
+     *
      * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
      *
      * The **default value** when no trusted resource URL list has been explicitly set is the empty
@@ -431,7 +431,7 @@ export class SceDelegateProvider {
         }
 
         /**
-         * @description
+         *
          * Given an object and a security context in which to assign it, returns a value that's safe to
          * use in this context, which was represented by the parameter. To do so, this function either
          * unwraps the safe type it has been given (for instance, a {@link ng.$sceDelegate#trustAs
@@ -531,7 +531,7 @@ export function SceProvider() {
    * @param {boolean=} value If provided, then enables/disables SCE application-wide.
    * @return {boolean} True if SCE is enabled, false otherwise.
    *
-   * @description
+   *
    * Enables/disables SCE and returns the current value.
    */
   this.enabled = function (value) {
@@ -558,7 +558,7 @@ export function SceProvider() {
        * @return {Boolean} True if SCE is enabled, false otherwise.  If you want to set the value, you
        *     have to do it at module config time on {@link ng.$sceProvider $sceProvider}.
        *
-       * @description
+       *
        * Returns a boolean indicating if SCE is enabled.
        */
       sce.isEnabled = function () {
