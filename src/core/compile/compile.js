@@ -3169,20 +3169,21 @@ export class CompileProvider {
                     break;
                   }
 
-                  parentGet = $parse(attrs[attrName]);
+                  const attr = attrs[attrName];
 
-                  if (parentGet.literal) {
+                  parentGet = attr && $parse(attr);
+
+                  if (parentGet && parentGet.literal) {
                     compare = equals;
                   } else {
                     compare = simpleCompare;
                   }
 
                   parentSet =
-                    parentGet.assign ||
+                    (parentGet && parentGet.assign) ||
                     function () {
                       // reset the change, or we will throw this exception on every $digest
-                      lastValue = destination.$target[scopeName] =
-                        parentGet(scope);
+
                       throw $compileMinErr(
                         "nonassign",
                         "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!",
@@ -3192,9 +3193,8 @@ export class CompileProvider {
                       );
                     };
                   // store the value that the parent scope had after the last check:
-                  lastValue = destination.$target[scopeName] = parentGet(
-                    scope.$target,
-                  );
+                  lastValue = destination.$target[scopeName] =
+                    parentGet && parentGet(scope.$target);
                   const parentValueWatch = function parentValueWatch(
                     parentValue,
                   ) {
@@ -3259,7 +3259,9 @@ export class CompileProvider {
                         }
 
                         if (
-                          (!!parentGet.inputs && !parentGet.literal) ||
+                          (parentGet &&
+                            !!parentGet.inputs &&
+                            !parentGet.literal) ||
                           (isUndefined(attrs[attrName]) && isDefined(val))
                         ) {
                           destination.$target[attrName] = lastValue;
@@ -3306,9 +3308,10 @@ export class CompileProvider {
                     break;
                   }
 
-                  parentGet = $parse(attrs[attrName]);
+                  parentGet = attrs[attrName] && $parse(attrs[attrName]);
 
-                  destination.$target[scopeName] = parentGet(scope.$target);
+                  destination.$target[scopeName] =
+                    parentGet && parentGet(scope.$target);
                   /** @type {import("./interface.ts").SimpleChange} */
                   initialChanges[scopeName] = {
                     currentValue: destination.$target[scopeName],

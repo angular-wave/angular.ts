@@ -705,15 +705,11 @@ describe("select", () => {
         await wait();
         expect(element.value).toBe(`? undefined:undefined ?`);
 
-        scope.$apply(() => {
-          scope.robot = "r2d2";
-        });
+        scope.robot = "r2d2";
         await wait();
         expect(element.value).toBe("r2d2");
 
-        scope.$apply(() => {
-          scope.robot = "wallee";
-        });
+        scope.robot = "wallee";
         await wait();
         expect(element.value).toBe(unknownValue("wallee"));
       });
@@ -730,21 +726,15 @@ describe("select", () => {
         expect(element.value).toBe("");
         expect(scope.robot).toBeUndefined();
 
-        scope.$apply(() => {
-          scope.robot = null;
-        });
+        scope.robot = null;
         await wait();
         expect(element.value).toBe("");
 
-        scope.$apply(() => {
-          scope.robot = "r2d2";
-        });
+        scope.robot = "r2d2";
         await wait();
         expect(element.value).toBe("r2d2");
 
-        scope.$apply(() => {
-          delete scope.robot;
-        });
+        delete scope.robot;
         await wait();
         expect(element.value).toBe("");
       });
@@ -764,9 +754,7 @@ describe("select", () => {
           await wait();
           expect(element.value).toBe(unknownValue("wallee"));
 
-          scope.$apply(() => {
-            scope.robot = "r2d2";
-          });
+          scope.robot = "r2d2";
           await wait();
           expect(element.value).toBe("r2d2");
         },
@@ -783,16 +771,12 @@ describe("select", () => {
           expect(element.value).toBe(`? undefined:undefined ?`);
           expect(scope.robot).toBeUndefined();
 
-          scope.$apply(() => {
-            scope.robot = "r2d2";
-          });
+          scope.robot = "r2d2";
           await wait();
           expect(element.value).toBe(unknownValue("r2d2"));
           expect(scope.robot).toBe("r2d2");
 
-          scope.$apply(() => {
-            scope.robots = ["c3p0", "r2d2"];
-          });
+          scope.robots = ["c3p0", "r2d2"];
           await wait();
           expect(element.value).toBe("r2d2");
           expect(scope.robot).toBe("r2d2");
@@ -809,16 +793,12 @@ describe("select", () => {
           expect(element.value).toBe("");
           expect(scope.robot).toBeUndefined();
 
-          scope.$apply(() => {
-            scope.robot = "r2d2";
-          });
+          scope.robot = "r2d2";
           await wait();
           expect(element.value).toBe(unknownValue("r2d2"));
           expect(scope.robot).toBe("r2d2");
 
-          scope.$apply(() => {
-            scope.robots = ["c3p0", "r2d2"];
-          });
+          scope.robots = ["c3p0", "r2d2"];
           await wait();
           expect(element.value).toBe("r2d2");
           expect(scope.robot).toBe("r2d2");
@@ -845,22 +825,16 @@ describe("select", () => {
           // as none of the behavior below is 'expected' when mutating the array of robots.
           // expect(scope.robot).toBe(null);
 
-          // scope.$apply(() => {
-          //   scope.robots.unshift("r2d2");
-          // });
+          // scope.robots.unshift("r2d2");
           // await wait();
           // expect(element.value).toBe("r2d2");
           // expect(scope.robot).toBe(null);
 
-          // scope.$apply(() => {
-          //   scope.robot = "r2d2";
-          // });
+          // scope.robot = "r2d2";
           // await wait();
           // expect(element.value).toBe("r2d2");
 
-          // scope.$apply(() => {
-          //   delete scope.robots;
-          // });
+          // delete scope.robots;
           // await wait();
           // expect(element.value).toBe(unknownValue(null));
           // expect(scope.robot).toBe(null);
@@ -1014,9 +988,7 @@ describe("select", () => {
 
         const selectCtrl = getController(element, "select");
 
-        scope.$apply(() => {
-          scope.robots.shift();
-        });
+        scope.robots.shift();
         await wait();
         expect(selectCtrl.hasOption("1")).toBe(false);
         expect(selectCtrl.hasOption("2")).toBe(true);
@@ -1032,9 +1004,7 @@ describe("select", () => {
         await wait();
         const selectCtrl = getController(element, "select");
 
-        scope.$apply(() => {
-          scope.robots.pop();
-        });
+        scope.robots.pop();
         await wait();
         expect(selectCtrl.hasOption("1")).toBe(true);
         expect(selectCtrl.hasOption("2")).toBe(false);
@@ -1047,9 +1017,7 @@ describe("select", () => {
 
         const selectCtrl = getController(element, "select");
 
-        scope.$apply(() => {
-          scope.robots.unshift({ value: 1, label: "c3p0" });
-        });
+        scope.robots.unshift({ value: 1, label: "c3p0" });
         await wait();
         expect(selectCtrl.hasOption("1")).toBe(true);
         expect(selectCtrl.hasOption("2")).toBe(true);
@@ -1062,9 +1030,7 @@ describe("select", () => {
 
         const selectCtrl = getController(element, "select");
 
-        scope.$apply(() => {
-          scope.mySelect = "C";
-        });
+        scope.mySelect = "C";
         await wait();
         expect(selectCtrl.hasOption("A")).toBe(true);
         expect(selectCtrl.hasOption("B")).toBe(true);
@@ -1091,11 +1057,9 @@ describe("select", () => {
 
         const selectCtrl = getController(element, "select");
 
-        scope.$apply(() => {
-          const itemD = scope.groups[0].values.pop();
-          scope.groups[1].values.unshift(itemD);
-          scope.values.shift();
-        });
+        const itemD = scope.groups[0].values.pop();
+        scope.groups[1].values.unshift(itemD);
+        scope.values.shift();
         await wait();
         expect(selectCtrl.hasOption("A")).toBe(false);
         expect(selectCtrl.hasOption("B")).toBe(true);
@@ -1126,11 +1090,9 @@ describe("select", () => {
 
         const selectCtrl = getController(element, "select");
 
-        scope.$apply(() => {
-          const itemD = scope.groups[1].values.shift();
-          scope.groups[0].values.push(itemD);
-          scope.values.shift();
-        });
+        const itemD = scope.groups[1].values.shift();
+        scope.groups[0].values.push(itemD);
+        scope.values.shift();
         await wait();
         expect(selectCtrl.hasOption("A")).toBe(false);
         expect(selectCtrl.hasOption("B")).toBe(true);
@@ -1161,11 +1123,9 @@ describe("select", () => {
 
         const selectCtrl = getController(element, "select");
 
-        scope.$apply(() => {
-          const itemD = scope.groups[0].values.pop();
-          scope.groups[1].values.unshift(itemD);
-          scope.groups[1].values.pop();
-        });
+        const itemD = scope.groups[0].values.pop();
+        scope.groups[1].values.unshift(itemD);
+        scope.groups[1].values.pop();
         await wait();
         expect(selectCtrl.hasOption("A")).toBe(true);
         expect(selectCtrl.hasOption("B")).toBe(true);
@@ -1197,11 +1157,9 @@ describe("select", () => {
 
         const selectCtrl = getController(element, "select");
 
-        scope.$apply(() => {
-          scope.groups[0].values.pop();
-          const itemD = scope.groups[1].values.shift();
-          scope.groups[0].values.push(itemD);
-        });
+        scope.groups[0].values.pop();
+        const itemD = scope.groups[1].values.shift();
+        scope.groups[0].values.push(itemD);
         await wait();
         expect(selectCtrl.hasOption("A")).toBe(true);
         expect(selectCtrl.hasOption("B")).toBe(true);
@@ -1263,9 +1221,7 @@ describe("select", () => {
 
         const selectCtrl = getController(element, "select");
 
-        scope.$apply(() => {
-          scope.groups.pop();
-        });
+        scope.groups.pop();
         await wait();
         expect(selectCtrl.hasOption("A")).toBe(true);
         expect(selectCtrl.hasOption("B")).toBe(true);
@@ -1289,9 +1245,7 @@ describe("select", () => {
           "</select>",
       );
 
-      scope.$apply(() => {
-        scope.selection = ["A"];
-      });
+      scope.selection = ["A"];
       await wait();
       let optionElements = element.querySelectorAll("option");
 
@@ -1299,9 +1253,7 @@ describe("select", () => {
       expect(optionElements[0].selected).toBeTrue();
       expect(optionElements[1].selected).toBeFalse();
 
-      scope.$apply(() => {
-        scope.selection.push("B");
-      });
+      scope.selection.push("B");
       await wait();
       optionElements = element.querySelectorAll("option");
 
@@ -1323,15 +1275,11 @@ describe("select", () => {
       expect(element.value).toBe("");
       expect(scope.selection).toBeUndefined();
 
-      scope.$apply(() => {
-        scope.selection = ["A"];
-      });
+      scope.selection = ["A"];
       await wait();
       expect(element.value).toBe("A");
 
-      scope.$apply(() => {
-        scope.selection.push("B");
-      });
+      scope.selection.push("B");
       await wait();
       expect(element.value).toBe("A");
     });
@@ -1344,17 +1292,13 @@ describe("select", () => {
           "</select>",
       );
 
-      scope.$apply(() => {
-        scope.selection = [];
-      });
+      scope.selection = [];
       await wait();
       expect(scope.form.select.$error.required).toBeTruthy();
       expect(element.classList.contains("ng-invalid")).toBeTrue();
       expect(element.classList.contains("ng-pristine")).toBeTrue();
 
-      scope.$apply(() => {
-        scope.selection = ["A"];
-      });
+      scope.selection = ["A"];
       await wait();
       expect(element.classList.contains("ng-valid")).toBeTrue();
       expect(element.classList.contains("ng-pristine")).toBeTrue();
@@ -1381,41 +1325,29 @@ describe("select", () => {
       });
 
       xit("should call $render once when the reference to the viewValue changes", async () => {
-        scope.$apply(() => {
-          scope.selection = ["A"];
-        });
+        scope.selection = ["A"];
         await wait();
         expect(ngModelCtrl.$render).toHaveBeenCalledTimes(1);
 
-        scope.$apply(() => {
-          scope.selection = ["A", "B"];
-        });
+        scope.selection = ["A", "B"];
         await wait();
         expect(ngModelCtrl.$render).toHaveBeenCalledTimes(2);
 
-        scope.$apply(() => {
-          scope.selection = [];
-        });
+        scope.selection = [];
         await wait();
         expect(ngModelCtrl.$render).toHaveBeenCalledTimes(3);
       });
 
       xit("should call $render once when the viewValue deep-changes", async () => {
-        scope.$apply(() => {
-          scope.selection = ["A"];
-        });
+        scope.selection = ["A"];
         await wait();
         expect(ngModelCtrl.$render).toHaveBeenCalledTimes(1);
 
-        scope.$apply(() => {
-          scope.selection.push("B");
-        });
+        scope.selection.push("B");
         await wait();
         expect(ngModelCtrl.$render).toHaveBeenCalledTimes(2);
 
-        scope.$apply(() => {
-          scope.selection.length = 0;
-        });
+        scope.selection.length = 0;
         await wait();
         expect(ngModelCtrl.$render).toHaveBeenCalledTimes(3);
       });
@@ -2519,10 +2451,9 @@ describe("select", () => {
         expect(optionElements[1].selected).toBeTrue();
         expect(scope.obj.value).toBe("B");
 
-        scope.$apply(() => {
-          // Only when new objects are used, ngRepeat re-creates the element from scratch
-          scope.options = [{ name: "B" }, { name: "C" }, { name: "D" }];
-        });
+        // Only when new objects are used, ngRepeat re-creates the element from scratch
+
+        scope.options = [{ name: "B" }, { name: "C" }, { name: "D" }];
         await wait();
         const previouslySelectedOptionElement = optionElements[1];
         optionElements = element.querySelectorAll("option");
@@ -2550,10 +2481,7 @@ describe("select", () => {
         expect(element.classList.contains("ng-valid")).toBeTrue();
         expect(ngModelCtrl.$error.required).toBeFalsy();
 
-        scope.$apply(() => {
-          // Only when new objects are used, ngRepeat re-creates the element from scratch
-          scope.values = ["B", "C"];
-        });
+        scope.values = ["B", "C"];
         await wait();
         expect(element.value).toBe("");
         expect(element.classList.contains("ng-invalid")).toBeTrue();

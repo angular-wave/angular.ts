@@ -72,9 +72,7 @@ describe("ngMessages", () => {
     await wait();
     expect(element.textContent).toContain("Message is set");
 
-    $rootScope.$apply(() => {
-      $rootScope.col = { three: true, two: false };
-    });
+    $rootScope.col = { three: true, two: false };
     await wait();
     expect(element.textContent).toContain("Message is set");
 
@@ -118,9 +116,7 @@ describe("ngMessages", () => {
     await wait();
     expect(element.textContent).toContain("Message is set");
 
-    $rootScope.$apply(() => {
-      $rootScope.col = { three: false };
-    });
+    $rootScope.col = { three: false };
     await wait();
     expect(element.textContent).not.toContain("Message is set");
   });
@@ -134,28 +130,20 @@ describe("ngMessages", () => {
     await wait();
     expect(element.textContent).not.toContain("Message is crazy");
 
-    $rootScope.$apply(() => {
-      $rootScope.variable = "error";
-      $rootScope.col = { error: true };
-    });
+    $rootScope.variable = "error";
+    $rootScope.col = { error: true };
     await wait();
     expect(element.textContent).toContain("Message is crazy");
 
-    $rootScope.$apply(() => {
-      $rootScope.col = { error: false, failure: true };
-    });
+    $rootScope.col = { error: false, failure: true };
     await wait();
     expect(element.textContent).not.toContain("Message is crazy");
 
-    $rootScope.$apply(() => {
-      $rootScope.variable = ["failure"];
-    });
+    $rootScope.variable = ["failure"];
     await wait();
     expect(element.textContent).toContain("Message is crazy");
 
-    $rootScope.$apply(() => {
-      $rootScope.variable = null;
-    });
+    $rootScope.variable = null;
     await wait();
     expect(element.textContent).not.toContain("Message is crazy");
   });
@@ -169,28 +157,20 @@ describe("ngMessages", () => {
     await wait();
     expect(element.textContent).not.toContain("Message is crazy");
 
-    $rootScope.$apply(() => {
-      $rootScope.variable = "error, failure";
-      $rootScope.col = { error: true };
-    });
+    $rootScope.variable = "error, failure";
+    $rootScope.col = { error: true };
     await wait();
     expect(element.textContent).toContain("Message is crazy");
 
-    $rootScope.$apply(() => {
-      $rootScope.col = { error: false, failure: true };
-    });
+    $rootScope.col = { error: false, failure: true };
     await wait();
     expect(element.textContent).toContain("Message is crazy");
 
-    $rootScope.$apply(() => {
-      $rootScope.variable = [];
-    });
+    $rootScope.variable = [];
     await wait();
     expect(element.textContent).not.toContain("Message is crazy");
 
-    $rootScope.$apply(() => {
-      $rootScope.variable = null;
-    });
+    $rootScope.variable = null;
     await wait();
     expect(element.textContent).not.toContain("Message is crazy");
   });
@@ -289,20 +269,16 @@ describe("ngMessages", () => {
         "</div>",
     )($rootScope);
     await wait();
-    $rootScope.$apply(() => {
-      $rootScope.col = {
-        three: true,
-        one: true,
-        two: true,
-      };
-    });
+    $rootScope.col = {
+      three: true,
+      one: true,
+      two: true,
+    };
     await wait();
     for (const key of ["one", "two", "three"]) {
       expect(s(element.textContent)).toEqual(`Message#${key}`);
 
-      $rootScope.$apply(() => {
-        $rootScope.col[key] = false;
-      });
+      $rootScope.col[key] = false;
       await wait();
     }
 
@@ -316,16 +292,12 @@ describe("ngMessages", () => {
         "</div>",
     )($rootScope);
     await wait();
-    $rootScope.$apply(() => {
-      $rootScope.col = {};
-    });
+    $rootScope.col = {};
     await wait();
     expect(element.classList.contains("ng-active")).toBe(false);
     expect(element.classList.contains("ng-inactive")).toBe(true);
 
-    $rootScope.$apply(() => {
-      $rootScope.col = { ready: true };
-    });
+    $rootScope.col = { ready: true };
     await wait();
     expect(element.classList.contains("ng-active")).toBe(true);
     expect(element.classList.contains("ng-inactive")).toBe(false);
@@ -610,30 +582,22 @@ describe("ngMessages", () => {
           "  <div ng-message-default>Default message is set</div>" +
           "</div>",
       )($rootScope);
-      $rootScope.$apply(() => {
-        $rootScope.col = { unexpected: false };
-      });
+      $rootScope.col = { unexpected: false };
       await wait();
       expect(element.textContent.trim()).toBe("");
       expect(element.classList.contains("ng-active")).toBeFalse();
 
-      $rootScope.$apply(() => {
-        $rootScope.col = { unexpected: true };
-      });
+      $rootScope.col = { unexpected: true };
       await wait();
       expect(element.textContent.trim()).toBe("Default message is set");
       expect(element.classList.contains("ng-active")).toBeTrue();
 
-      $rootScope.$apply(() => {
-        $rootScope.col = { unexpected: false };
-      });
+      $rootScope.col = { unexpected: false };
       await wait();
       expect(element.textContent.trim()).toBe("");
       expect(element.classList.contains("ng-active")).toBeFalse();
 
-      $rootScope.$apply(() => {
-        $rootScope.col = { val: true, unexpected: true };
-      });
+      $rootScope.col = { val: true, unexpected: true };
       await wait();
       expect(element.textContent.trim()).toBe("Message is set");
       expect(element.classList.contains("ng-active")).toBeTrue();
@@ -650,23 +614,17 @@ describe("ngMessages", () => {
       await wait();
       expect(element.textContent.trim()).toBe("");
 
-      $rootScope.$apply(() => {
-        $rootScope.col = { val: true, other: false, unexpected: false };
-      });
+      $rootScope.col = { val: true, other: false, unexpected: false };
       await wait();
       expect(element.textContent.trim()).toBe("Message is set");
 
-      $rootScope.$apply(() => {
-        $rootScope.col = { val: true, other: true, unexpected: true };
-      });
+      $rootScope.col = { val: true, other: true, unexpected: true };
       await wait();
       expect(element.textContent.trim()).toBe(
         "Message is set  Other message is set",
       );
 
-      $rootScope.$apply(() => {
-        $rootScope.col = { val: false, other: false, unexpected: true };
-      });
+      $rootScope.col = { val: false, other: false, unexpected: true };
       await wait();
       expect(element.textContent.trim()).toBe("Default message is set");
     });
@@ -691,9 +649,7 @@ describe("ngMessages", () => {
       await wait();
       expect(element.textContent.trim()).toBe("Default message is set");
 
-      $rootScope.$apply(() => {
-        $rootScope.col = { val: true };
-      });
+      $rootScope.col = { val: true };
       await wait();
       expect(element.textContent.trim()).toBe("Message is set");
     });
@@ -893,32 +849,26 @@ describe("ngMessages", () => {
           "</div>",
       )($rootScope);
       await wait();
-      $rootScope.$apply(() => {
-        $rootScope.data = {
-          a: 1,
-          b: 2,
-          c: 3,
-        };
-      });
+      $rootScope.data = {
+        a: 1,
+        b: 2,
+        c: 3,
+      };
       await wait();
       expect(messageChildren(element).length).toBe(1);
       expect(trim(element.textContent)).toEqual("AAA");
 
-      $rootScope.$apply(() => {
-        $rootScope.data = {
-          b: 2,
-          c: 3,
-        };
-      });
+      $rootScope.data = {
+        b: 2,
+        c: 3,
+      };
       await wait();
       expect(messageChildren(element).length).toBe(1);
       expect(trim(element.textContent)).toEqual("B");
 
-      $rootScope.$apply(() => {
-        $rootScope.data = {
-          c: 3,
-        };
-      });
+      $rootScope.data = {
+        c: 3,
+      };
       await wait();
       expect(messageChildren(element).length).toBe(1);
       expect(trim(element.textContent)).toEqual("C");
@@ -1012,20 +962,16 @@ describe("ngMessages", () => {
           "</div>",
       )($rootScope);
       await wait();
-      $rootScope.$apply(() => {
-        $rootScope.data = {
-          x: "a",
-          y: null,
-          z: true,
-        };
-      });
+      $rootScope.data = {
+        x: "a",
+        y: null,
+        z: true,
+      };
       await wait();
       expect(messageChildren(element).length).toBe(2);
       expect(s(element.textContent)).toEqual("XZ");
 
-      $rootScope.$apply(() => {
-        $rootScope.data.y = {};
-      });
+      $rootScope.data.y = {};
       await wait();
       expect(messageChildren(element).length).toBe(3);
       expect(s(element.textContent)).toEqual("XYZ");
@@ -1047,20 +993,16 @@ describe("ngMessages", () => {
           "</div>",
       )($rootScope);
       await wait();
-      $rootScope.$apply(() => {
-        $rootScope.data = {
-          x: "a",
-          y: null,
-          z: true,
-        };
-      });
+      $rootScope.data = {
+        x: "a",
+        y: null,
+        z: true,
+      };
       await wait();
       expect(messageChildren(element).length).toBe(2);
       expect(s(element.textContent)).toEqual("ZZZX");
 
-      $rootScope.$apply(() => {
-        $rootScope.data.y = {};
-      });
+      $rootScope.data.y = {};
       await wait();
       expect(messageChildren(element).length).toBe(3);
       expect(s(element.textContent)).toEqual("YYYZZZX");

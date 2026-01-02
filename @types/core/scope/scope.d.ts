@@ -84,7 +84,8 @@ export class Scope {
   private _scheduled;
   $scopename: any;
   /** @private */
-  private propertyMap;
+  /** @type {Record<any, any>} */
+  propertyMap: Record<any, any>;
   /**
    * Intercepts and handles property assignments on the target object. If a new value is
    * an object, it will be recursively proxied.

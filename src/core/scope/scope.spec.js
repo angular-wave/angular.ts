@@ -2118,39 +2118,12 @@ describe("Scope", () => {
     it("should eval an expression and modify the scope", () => {
       expect(scope.$eval("a=1")).toEqual(1);
       expect(scope.a).toEqual(1);
-
-      scope.$eval((self) => {
-        self.$proxy.b = 2;
-      });
+      scope.$eval("b=2");
       expect(scope.b).toEqual(2);
-    });
-
-    it("executes $eval'ed function and returns result", function () {
-      scope.aValue = 42;
-      const result = scope.$eval(function (scope) {
-        return scope.$proxy.aValue;
-      });
-      expect(result).toBe(42);
-    });
-
-    it("passes the second $eval argument straight through", function () {
-      scope.aValue = 42;
-      const result = scope.$eval(function (scope, arg) {
-        return scope.$proxy.aValue + arg;
-      }, 2);
-      expect(result).toBe(44);
     });
 
     it("should allow passing locals to the expression", () => {
       expect(scope.$eval("a+1", { a: 2 })).toBe(3);
-
-      scope.$eval(
-        (scope, locals) => {
-          scope.$proxy.c = locals.b + 4;
-        },
-        { b: 3 },
-      );
-      expect(scope.c).toBe(7);
     });
   });
 
@@ -2215,20 +2188,6 @@ describe("Scope", () => {
       expect(count).toEqual(3);
     });
 
-    it("executes $apply'ed function and starts the digest", async () => {
-      scope.aValue = "someValue";
-      scope.counter = 0;
-      scope.$watch("aValue", () => scope.counter++);
-      await wait();
-      expect(scope.counter).toBe(1);
-
-      scope.$apply(function (scope) {
-        scope.aValue = "someOtherValue";
-      });
-      await wait();
-      expect(scope.counter).toBe(2);
-    });
-
     it("should apply expression with full lifecycle", async () => {
       let log = "";
       const child = scope.$new();
@@ -2249,12 +2208,12 @@ describe("Scope", () => {
       });
       scope.a = 0;
       await wait();
-      child.$apply(() => {
-        throw new Error("MyError");
-      });
+      child.$apply("2+");
       await wait();
       expect(log).toEqual("11");
-      expect(logs[0].message).toEqual("MyError");
+      expect(logs[0].message).toEqual(
+        "[$parse:ueoe] Unexpected end of expression: 2+",
+      );
     });
   });
 

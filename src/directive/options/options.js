@@ -152,48 +152,7 @@ export function ngOptionsDirective($compile, $parse) {
     return {
       trackBy,
       getTrackByValue,
-      getWatchables: $parse(valuesFn, (optionValues) => {
-        // Create a collection of things that we would like to watch (watchedArray)
-        // so that they can all be watched using a single $watchCollection
-        // that only runs the handler once if anything changes
-        const watchedArray = [];
-
-        optionValues = optionValues || [];
-
-        const optionValuesKeys = getOptionValuesKeys(optionValues);
-
-        const optionValuesLength = optionValuesKeys.length;
-
-        for (let index = 0; index < optionValuesLength; index++) {
-          const key =
-            optionValues === optionValuesKeys ? index : optionValuesKeys[index];
-
-          const value = optionValues[key];
-
-          const updatedLocals = getLocals(value, key);
-
-          const selectValue = getTrackByValueFn(value, updatedLocals);
-
-          watchedArray.push(selectValue);
-
-          // Only need to watch the displayFn if there is a specific label expression
-          if (match[2] || match[1]) {
-            const label = displayFn(scope, updatedLocals);
-
-            watchedArray.push(label);
-          }
-
-          // Only need to watch the disableWhenFn if there is a specific disable expression
-          if (match[4]) {
-            const disableWhen = disableWhenFn(scope, updatedLocals);
-
-            watchedArray.push(disableWhen);
-          }
-        }
-
-        return watchedArray;
-      }),
-
+      getWatchables: valuesFn,
       getOptions() {
         /** @type {Option[]} */
         const optionItems = [];

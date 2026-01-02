@@ -24,23 +24,14 @@ const OPERATORS = new Set(
 );
 
 /**
- * @typedef {Object} LexerOptions
- * @property {(ch: string, codePoint: number) => boolean} [isIdentifierStart] - Custom function to determine if a character is a valid identifier start.
- * @property {(ch: string, codePoint: number) => boolean} [isIdentifierContinue] - Custom function to determine if a character is a valid identifier continuation.
- */
-
-/**
  * Represents a lexer that tokenizes input text. The Lexer takes the original expression string and returns an array of tokens parsed from that string.
  * For example, the string "a + b" would result in tokens for a, +, and b.
  */
 export class Lexer {
   /**
    * Creates an instance of Lexer.
-   * @param {LexerOptions} options - Lexer options.
    */
-  constructor(options) {
-    /** @type {LexerOptions} */
-    this._options = options;
+  constructor() {
     this._text = "";
     this._index = 0;
   }
@@ -66,10 +57,7 @@ export class Lexer {
         (ch === "." && this._isNumber(/** @type {string} */ (this._peek())))
       ) {
         this._readNumber();
-      } else if (
-        this._isIdentifierStart &&
-        this._isIdentifierStart(this._peekMultichar())
-      ) {
+      } else if (this._isIdentifierStart(this._peekMultichar())) {
         this._readIdent();
       } else if (this._is(ch, "(){}[].,;:?")) {
         this._tokens.push({ index: this._index, text: ch });
@@ -158,12 +146,12 @@ export class Lexer {
    * @returns {boolean} True if character is a valid identifier start, false otherwise.
    */
   _isIdentifierStart(ch) {
-    return this._options.isIdentifierStart
-      ? this._options.isIdentifierStart(ch, this._codePointAt(ch))
-      : (ch >= "a" && ch <= "z") ||
-          (ch >= "A" && ch <= "Z") ||
-          ch === "_" ||
-          ch === "$";
+    return (
+      (ch >= "a" && ch <= "z") ||
+      (ch >= "A" && ch <= "Z") ||
+      ch === "_" ||
+      ch === "$"
+    );
   }
 
   /**
@@ -172,24 +160,13 @@ export class Lexer {
    * @returns {boolean} True if character is a valid identifier continuation, false otherwise.
    */
   _isIdentifierContinue(ch) {
-    return this._options.isIdentifierContinue
-      ? this._options.isIdentifierContinue(ch, this._codePointAt(ch))
-      : (ch >= "a" && ch <= "z") ||
-          (ch >= "A" && ch <= "Z") ||
-          ch === "_" ||
-          ch === "$" ||
-          (ch >= "0" && ch <= "9");
-  }
-
-  /**
-   * Converts a character to its Unicode code point.
-   * @param {string} ch Character to convert.
-   * @returns {number} Unicode code point.
-   */
-  _codePointAt(ch) {
-    if (ch.length === 1) return ch.charCodeAt(0);
-
-    return (ch.charCodeAt(0) << 10) + ch.charCodeAt(1) - 0x35fdc00;
+    return (
+      (ch >= "a" && ch <= "z") ||
+      (ch >= "A" && ch <= "Z") ||
+      ch === "_" ||
+      ch === "$" ||
+      (ch >= "0" && ch <= "9")
+    );
   }
 
   /**
@@ -300,7 +277,7 @@ export class Lexer {
     while (this._index < this._text.length) {
       const ch = this._peekMultichar();
 
-      if (this._isIdentifierContinue && !this._isIdentifierContinue(ch)) {
+      if (!this._isIdentifierContinue(ch)) {
         break;
       }
       this._index += ch.length;

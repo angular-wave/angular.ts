@@ -170,7 +170,10 @@ export function $StateRefDirective(
         : {};
 
       function update() {
-        rawDef.ngStateParams = Object.assign({}, scope.$eval(ref.paramExpr));
+        rawDef.ngStateParams = Object.assign(
+          {},
+          ref.paramExpr && scope.$eval(ref.paramExpr),
+        );
         const def = getDef();
 
         if (unlinkInfoFn) {
@@ -405,7 +408,7 @@ export function $StateRefActiveDirective(
 
               addState(
                 ref.state,
-                $scope.$eval(ref.paramExpr),
+                ref.paramExpr && $scope.$eval(ref.paramExpr),
                 activeClassParam,
               );
             };

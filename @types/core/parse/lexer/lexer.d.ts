@@ -1,20 +1,8 @@
 /**
- * @typedef {Object} LexerOptions
- * @property {(ch: string, codePoint: number) => boolean} [isIdentifierStart] - Custom function to determine if a character is a valid identifier start.
- * @property {(ch: string, codePoint: number) => boolean} [isIdentifierContinue] - Custom function to determine if a character is a valid identifier continuation.
- */
-/**
  * Represents a lexer that tokenizes input text. The Lexer takes the original expression string and returns an array of tokens parsed from that string.
  * For example, the string "a + b" would result in tokens for a, +, and b.
  */
 export class Lexer {
-  /**
-   * Creates an instance of Lexer.
-   * @param {LexerOptions} options - Lexer options.
-   */
-  constructor(options: LexerOptions);
-  /** @type {LexerOptions} */
-  _options: LexerOptions;
   _text: string;
   _index: number;
   /**
@@ -63,12 +51,6 @@ export class Lexer {
    */
   _isIdentifierContinue(ch: string): boolean;
   /**
-   * Converts a character to its Unicode code point.
-   * @param {string} ch Character to convert.
-   * @returns {number} Unicode code point.
-   */
-  _codePointAt(ch: string): number;
-  /**
    * Peeks at the next multicharacter sequence in the text.
    * @returns {string} Next multicharacter sequence.
    */
@@ -107,13 +89,3 @@ export class Lexer {
   _handleUnicodeEscape(): string;
 }
 export type Token = import("./token.ts").Token;
-export type LexerOptions = {
-  /**
-   * - Custom function to determine if a character is a valid identifier start.
-   */
-  isIdentifierStart?: (ch: string, codePoint: number) => boolean;
-  /**
-   * - Custom function to determine if a character is a valid identifier continuation.
-   */
-  isIdentifierContinue?: (ch: string, codePoint: number) => boolean;
-};
