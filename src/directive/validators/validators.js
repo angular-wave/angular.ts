@@ -53,7 +53,9 @@ export const requiredDirective = [
       (scope, _elm, attr, ctrl) => {
         if (!ctrl) return;
         // For boolean attributes like required, presence means true
-        let value = hasOwn(attr, "required") || $parse(attr.ngRequired)(scope);
+        let value =
+          hasOwn(attr, "required") ||
+          (attr.ngRequired && $parse(attr.ngRequired)(scope));
 
         if (!attr.ngRequired) {
           // force truthy in case we are on non input element
@@ -142,7 +144,7 @@ export const patternDirective = [
             return tAttr.ngPattern;
           };
         } else {
-          parseFn = $parse(tAttr.ngPattern);
+          parseFn = tAttr.ngPattern && $parse(tAttr.ngPattern);
         }
       }
 
@@ -234,7 +236,9 @@ export const maxlengthDirective = [
       (scope, _elm, attr, ctrl) => {
         if (!ctrl) return;
 
-        let maxlength = attr.maxlength || $parse(attr.ngMaxlength)(scope);
+        let maxlength =
+          attr.maxlength ||
+          (attr.ngMaxlength && $parse(attr.ngMaxlength)(scope));
 
         let maxlengthParsed = parseLength(maxlength);
 
@@ -295,7 +299,8 @@ export const minlengthDirective = [
     link(scope, elm, attr, ctrl) {
       if (!ctrl) return;
 
-      let minlength = attr.minlength || $parse(attr.ngMinlength)(scope);
+      let minlength =
+        attr.minlength || (attr.ngMinlength && $parse(attr.ngMinlength)(scope));
 
       let minlengthParsed = parseLength(minlength) || -1;
 

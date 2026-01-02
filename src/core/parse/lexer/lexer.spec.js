@@ -116,56 +116,6 @@ describe("lexer", () => {
       expect(spaces).toEqual(noSpaces);
     });
 
-    it("should use callback functions to know when an identifier is valid", () => {
-      function getText(t) {
-        return t.text;
-      }
-      const isIdentifierStart = jasmine.createSpy("start");
-      const isIdentifierContinue = jasmine.createSpy("continue");
-      isIdentifierStart.and.returnValue(true);
-      const lex = new Lexer({
-        isIdentifierStart,
-        isIdentifierContinue,
-      });
-
-      isIdentifierContinue.and.returnValue(true);
-      let tokens = lex._lex("πΣε").map(getText);
-      expect(tokens).toEqual(["πΣε"]);
-
-      isIdentifierContinue.and.returnValue(false);
-      tokens = lex._lex("πΣε").map(getText);
-      expect(tokens).toEqual(["π", "Σ", "ε"]);
-    });
-
-    it("should send the unicode characters and code points", () => {
-      function getText(t) {
-        return t.text;
-      }
-      const isIdentifierStart = jasmine.createSpy("start");
-      const isIdentifierContinue = jasmine.createSpy("continue");
-      isIdentifierStart.and.returnValue(true);
-      isIdentifierContinue.and.returnValue(true);
-      const lex = new Lexer({
-        isIdentifierStart,
-        isIdentifierContinue,
-      });
-      const tokens = lex._lex("\uD801\uDC37\uD852\uDF62\uDBFF\uDFFF");
-      expect(isIdentifierStart).toHaveBeenCalledTimes(1);
-      expect(isIdentifierStart.calls.argsFor(0)).toEqual([
-        "\uD801\uDC37",
-        0x10437,
-      ]);
-      expect(isIdentifierContinue).toHaveBeenCalledTimes(2);
-      expect(isIdentifierContinue.calls.argsFor(0)).toEqual([
-        "\uD852\uDF62",
-        0x24b62,
-      ]);
-      expect(isIdentifierContinue.calls.argsFor(1)).toEqual([
-        "\uDBFF\uDFFF",
-        0x10ffff,
-      ]);
-    });
-
     it("should tokenize undefined", () => {
       const tokens = lex("undefined");
       const i = 0;

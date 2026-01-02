@@ -905,9 +905,7 @@ describe("ngOptions", () => {
         expect(options.eq(3)[0].selected).toEqual(false);
 
         // Now enable that option
-        scope.$apply(() => {
-          scope.options[1].unavailable = false;
-        });
+        scope.options[1].unavailable = false;
 
         expect(element).toEqualSelectValue(1);
         options = element.querySelectorAll("option");
@@ -1002,9 +1000,7 @@ describe("ngOptions", () => {
         expect(options.eq(3)[0].selected).toEqual(false);
 
         // Now enable that option
-        scope.$apply(() => {
-          scope.options[1].unavailable = false;
-        });
+        scope.options[1].unavailable = false;
 
         expect(element).toEqualSelectValue([1], true);
         options = element.querySelectorAll("option");
@@ -1034,9 +1030,7 @@ describe("ngOptions", () => {
         "ng-options": "item.id as item.label for item in arr",
       });
 
-      scope.$apply(() => {
-        scope.selected = 10;
-      });
+      scope.selected = 10;
       expect(element).toEqualSelectValue(10);
 
       setSelectValue(element, 1);
@@ -1050,9 +1044,7 @@ describe("ngOptions", () => {
         "ng-options": "item.id as item.label for item in arr",
       });
 
-      scope.$apply(() => {
-        scope.selected = [10, 20];
-      });
+      scope.selected = [10, 20];
       expect(element).toEqualSelectValue([10, 20], true);
       expect(scope.selected).toEqual([10, 20]);
 
@@ -1069,19 +1061,13 @@ describe("ngOptions", () => {
         "ng-options": "item.id as item.label for item in arr",
       });
 
-      scope.$apply(() => {
-        scope.selected = [10];
-      });
+      scope.selected = [10];
       expect(element).toEqualSelectValue([10], true);
 
-      scope.$apply(() => {
-        scope.selected.push(20);
-      });
+      scope.selected.push(20);
       expect(element).toEqualSelectValue([10, 20], true);
 
-      scope.$apply(() => {
-        scope.selected.shift();
-      });
+      scope.selected.shift();
       expect(element).toEqualSelectValue([20], true);
     });
 
@@ -1095,14 +1081,10 @@ describe("ngOptions", () => {
       });
       expect(element).toEqualSelectValue([scope.arr[0]], true);
 
-      scope.$apply(() => {
-        scope.selected.push(scope.arr[1]);
-      });
+      scope.selected.push(scope.arr[1]);
       expect(element).toEqualSelectValue([scope.arr[0], scope.arr[1]], true);
 
-      scope.$apply(() => {
-        scope.selected.pop();
-      });
+      scope.selected.pop();
       expect(element).toEqualSelectValue([scope.arr[0]], true);
     });
 
@@ -1112,9 +1094,7 @@ describe("ngOptions", () => {
         "ng-options": "val.score as val.label for (key, val) in obj",
       });
 
-      scope.$apply(() => {
-        scope.selected = 10;
-      });
+      scope.selected = 10;
       expect(element).toEqualSelectValue(10);
 
       setSelectValue(element, 1);
@@ -1128,9 +1108,7 @@ describe("ngOptions", () => {
         "ng-options": "val.score as val.label for (key, val) in obj",
       });
 
-      scope.$apply(() => {
-        scope.selected = [10, 20];
-      });
+      scope.selected = [10, 20];
       expect(element).toEqualSelectValue([10, 20], true);
 
       element.children()[0].selected = false;
@@ -1160,14 +1138,10 @@ describe("ngOptions", () => {
 
       expect(element.value).toEqualUnknownValue();
 
-      scope.$apply(() => {
-        scope.selected = scope.arr[0];
-      });
+      scope.selected = scope.arr[0];
       expect(element.value).toBe("10");
 
-      scope.$apply(() => {
-        scope.arr[0] = { id: 10, label: "new ten" };
-      });
+      scope.arr[0] = { id: 10, label: "new ten" };
       expect(element.value).toBe("10");
 
       element.children()[1].selected = "selected";
@@ -1194,17 +1168,13 @@ describe("ngOptions", () => {
         "ng-options": "item.label for item in arr track by item.id",
       });
 
-      scope.$apply(() => {
-        scope.selected = { id: 10, label: "ten" };
-      });
+      scope.selected = { id: 10, label: "ten" };
 
       expect(element.value).toEqual("10");
 
       // Update the properties on the selected object, rather than replacing the whole object
-      scope.$apply(() => {
-        scope.selected.id = 20;
-        scope.selected.label = "new twenty";
-      });
+      scope.selected.id = 20;
+      scope.selected.label = "new twenty";
 
       // The value of the select should change since the id property changed
       expect(element.value).toEqual("20");
@@ -1225,16 +1195,11 @@ describe("ngOptions", () => {
           "ng-options": "item.label for item in arr track by item.id",
         });
 
-        scope.$apply(() => {
-          scope.selected = [{ id: 10, label: "ten" }];
-        });
-
+        scope.selected = [{ id: 10, label: "ten" }];
         expect(element.value).toEqual(["10"]);
 
         // Update the tracked property on the object in the selected array, rather than replacing the whole object
-        scope.$apply(() => {
-          scope.selected[0].id = 20;
-        });
+        scope.selected[0].id = 20;
 
         // The value of the select should change since the id property changed
         expect(element.value).toEqual(["20"]);
@@ -1257,9 +1222,7 @@ describe("ngOptions", () => {
 
       expect(scope.selected).toEqual(scope.arr[0]);
 
-      scope.$apply(() => {
-        scope.selected.id = 20;
-      });
+      scope.selected.id = 20;
 
       expect(scope.selected).not.toEqual(scope.arr[0]);
       expect(element.value).toEqual("20");
@@ -1275,14 +1238,10 @@ describe("ngOptions", () => {
         "ng-options": "item.label for item in arr track by item.id",
       });
 
-      scope.$apply(() => {
-        scope.selected = scope.arr[0];
-      });
+      scope.selected = scope.arr[0];
       expect(element.value).toBe("10");
 
-      scope.$apply(() => {
-        scope.arr[0] = { id: 10, label: "new ten" };
-      });
+      scope.arr[0] = { id: 10, label: "new ten" };
       expect(element.value).toBe("10");
 
       element.children()[1].selected = 1;
@@ -1297,14 +1256,10 @@ describe("ngOptions", () => {
         "ng-options": "item.label for item in arr track by item.id",
       });
 
-      scope.$apply(() => {
-        scope.selected = scope.arr;
-      });
+      scope.selected = scope.arr;
       expect(element.value).toEqual(["10", "20"]);
 
-      scope.$apply(() => {
-        scope.arr[0] = { id: 10, label: "new ten" };
-      });
+      scope.arr[0] = { id: 10, label: "new ten" };
       expect(element.value).toEqual(["10", "20"]);
 
       element.children()[0].selected = false;
@@ -1318,14 +1273,10 @@ describe("ngOptions", () => {
         "ng-options": "val.label for (key, val) in obj track by val.score",
       });
 
-      scope.$apply(() => {
-        scope.selected = scope.obj["1"];
-      });
+      scope.selected = scope.obj["1"];
       expect(element.value).toBe("10");
 
-      scope.$apply(() => {
-        scope.obj["1"] = { score: 10, label: "ten" };
-      });
+      scope.obj["1"] = { score: 10, label: "ten" };
       expect(element.value).toBe("10");
 
       setSelectValue(element, 1);
@@ -1339,14 +1290,10 @@ describe("ngOptions", () => {
         "ng-options": "val.label for (key, val) in obj track by val.score",
       });
 
-      scope.$apply(() => {
-        scope.selected = [scope.obj["1"]];
-      });
+      scope.selected = [scope.obj["1"]];
       expect(element.value).toEqual(["10"]);
 
-      scope.$apply(() => {
-        scope.obj["1"] = { score: 10, label: "ten" };
-      });
+      scope.obj["1"] = { score: 10, label: "ten" };
       expect(element.value).toEqual(["10"]);
 
       element.children()[1].selected = "selected";
@@ -1378,15 +1325,10 @@ describe("ngOptions", () => {
         "ng-options": "item for item in arr track by item.id",
       });
 
-      scope.$apply(() => {
-        scope.selected = { id: 10, label: "ten" };
-      });
-
+      scope.selected = { id: 10, label: "ten" };
       spyOn(element.controller("ngModel"), "$render");
 
-      scope.$apply(() => {
-        scope.arr[0].id = 20;
-      });
+      scope.arr[0].id = 20;
 
       // update render due to equality watch
       expect(element.controller("ngModel").$render).toHaveBeenCalled();
@@ -1398,15 +1340,11 @@ describe("ngOptions", () => {
         "ng-options": "item for item in arr track by item.id",
       });
 
-      scope.$apply(() => {
-        scope.selected = { id: 10, label: "ten" };
-      });
+      scope.selected = { id: 10, label: "ten" };
 
       spyOn(element.controller("ngModel"), "$setViewValue");
 
-      scope.$apply(() => {
-        scope.arr[0] = { id: 10, label: "ten" };
-      });
+      scope.arr[0] = { id: 10, label: "ten" };
 
       expect(
         element.controller("ngModel").$setViewValue,
@@ -1419,15 +1357,11 @@ describe("ngOptions", () => {
         "ng-options": "item for item in arr",
       });
 
-      scope.$apply(() => {
-        scope.selected = scope.arr[0];
-      });
+      scope.selected = scope.arr[0];
 
       spyOn(element.controller("ngModel"), "$render");
 
-      scope.$apply(() => {
-        scope.selected.label = "changed";
-      });
+      scope.selected.label = "changed";
 
       // no render update as no equality watch
       expect(element.controller("ngModel").$render).not.toHaveBeenCalled();
@@ -1441,9 +1375,7 @@ describe("ngOptions", () => {
       });
 
       expect(() => {
-        scope.$apply(() => {
-          scope.selected = scope.arr[0];
-        });
+        scope.selected = scope.arr[0];
       }).not.toThrow();
     });
 
@@ -2454,23 +2386,17 @@ describe("ngOptions", () => {
       expect(element).toEqualSelectValue([1], true);
       expect(scope.selected).toEqual([1]);
 
-      scope.$apply(() => {
-        scope.values.pop();
-      });
+      scope.values.pop();
 
       expect(element).toEqualSelectValue([], true);
       expect(scope.selected).toEqual([]);
 
       // Check after model change
-      scope.$apply(() => {
-        scope.selected = [0];
-      });
+      scope.selected = [0];
 
       expect(element).toEqualSelectValue([0], true);
 
-      scope.$apply(() => {
-        scope.values.pop();
-      });
+      scope.values.pop();
 
       expect(element).toEqualSelectValue([], true);
       expect(scope.selected).toEqual([]);
@@ -2482,20 +2408,15 @@ describe("ngOptions", () => {
       let option;
       createSingleSelect('<option value="">blank is {{blankVal}}</option>');
 
-      scope.$apply(() => {
-        scope.blankVal = "so blank";
-        scope.values = [{ name: "A" }];
-      });
-
+      scope.blankVal = "so blank";
+      scope.values = [{ name: "A" }];
       // check blank option is first and is compiled
       expect(element.querySelectorAll("option").length).toBe(2);
       option = element.querySelectorAll("option")[0];
       expect(option.value).toBe("");
       expect(option.textContent).toBe("blank is so blank");
 
-      scope.$apply(() => {
-        scope.blankVal = "not so blank";
-      });
+      scope.blankVal = "not so blank";
 
       // check blank option is first and is compiled
       expect(element.querySelectorAll("option").length).toBe(2);
@@ -2510,11 +2431,8 @@ describe("ngOptions", () => {
         '<option value="" ng-bind-template="blank is {{blankVal}}"></option>',
       );
 
-      scope.$apply(() => {
-        scope.blankVal = "so blank";
-        scope.values = [{ name: "A" }];
-      });
-
+      scope.blankVal = "so blank";
+      scope.values = [{ name: "A" }];
       // check blank option is first and is compiled
       expect(element.querySelectorAll("option").length).toBe(2);
       option = element.querySelectorAll("option")[0];
@@ -2526,11 +2444,8 @@ describe("ngOptions", () => {
       let option;
       createSingleSelect('<option value="" ng-bind="blankVal"></option>');
 
-      scope.$apply(() => {
-        scope.blankVal = "is blank";
-        scope.values = [{ name: "A" }];
-      });
-
+      scope.blankVal = "is blank";
+      scope.values = [{ name: "A" }];
       // check blank option is first and is compiled
       expect(element.querySelectorAll("option").length).toBe(2);
       option = element.querySelectorAll("option")[0];
@@ -2542,9 +2457,7 @@ describe("ngOptions", () => {
       // The option value is set to the textContent if there's no value attribute,
       // so in that case it doesn't count as a blank option
       createSingleSelect("<option>--select--</option>");
-      scope.$apply(() => {
-        scope.values = [{ name: "A" }, { name: "B" }, { name: "C" }];
-      });
+      scope.values = [{ name: "A" }, { name: "B" }, { name: "C" }];
 
       const options = element.querySelectorAll("option");
 
@@ -2561,9 +2474,7 @@ describe("ngOptions", () => {
           'custom-attr="custom-attr">{{blankVal}}</option>',
       );
 
-      scope.$apply(() => {
-        scope.blankVal = "is blank";
-      });
+      scope.blankVal = "is blank";
 
       // check blank option is first and is compiled
       option = element.querySelectorAll("option")[0];

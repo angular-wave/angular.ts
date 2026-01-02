@@ -1239,9 +1239,11 @@ export function ngModelDirective() {
               setTouched();
             });
 
-            modelCtrl.$viewChangeListeners.push(() =>
-              scope.$eval(elementPost.dataset.change),
-            );
+            modelCtrl.$viewChangeListeners.push(() => {
+              const { change } = elementPost.dataset;
+
+              change && scope.$eval(change);
+            });
           },
         };
       },

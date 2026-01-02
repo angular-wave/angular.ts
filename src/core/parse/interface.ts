@@ -71,13 +71,11 @@ export interface CompiledExpressionHandlerMap {
 
 /**
  * Parses a string or expression function into a compiled expression.
- * @param expression - The input expression (string or function).
+ * @param expression - The input expression to evaluate.
  * @param interceptorFn - Optional value transformer.
- * @param expensiveChecks - Whether to enable expensive change detection.
  * @returns A compiled expression.
  */
 export type ParseService = (
-  expression?: CompiledExpression | string | ((scope: Scope) => any),
+  expression: string,
   interceptorFn?: (value: any, scope: Scope, locals: any) => any,
-  expensiveChecks?: boolean,
 ) => CompiledExpression;

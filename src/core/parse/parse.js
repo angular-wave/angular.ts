@@ -3,43 +3,11 @@ import { deProxy, isFunction } from "../../shared/utils.js";
 import { PURITY_RELATIVE } from "./interpreter.js";
 import { Lexer } from "./lexer/lexer.js";
 import { Parser } from "./parser/parser.js";
+import { validateRequired } from "../../shared/validate.js";
 
 export class ParseProvider {
   constructor() {
     const cache = Object.create(null);
-
-    /** @type {function(any):boolean?} */
-    let identStart;
-
-    /** @type {function(any):boolean?} */
-    let identContinue;
-
-    /**
-     * Allows defining the set of characters that are allowed in AngularTS expressions. The function
-     * `identifierStart` will get called to know if a given character is a valid character to be the
-     * first character for an identifier. The function `identifierContinue` will get called to know if
-     * a given character is a valid character to be a follow-up identifier character. The functions
-     * `identifierStart` and `identifierContinue` will receive as arguments the single character to be
-     * identifier and the character code point. These arguments will be `string` and `numeric`. Keep in
-     * mind that the `string` parameter can be two characters long depending on the character
-     * representation. It is expected for the function to return `true` or `false`, whether that
-     * character is allowed or not.
-     *
-     * Since this function will be called extensively, keep the implementation of these functions fast,
-     * as the performance of these functions have a direct impact on the expressions parsing speed.
-     *
-     * @param {function(any):boolean} [identifierStart] The function that will decide whether the given character is
-     *   a valid identifier start character.
-     * @param {function(any):boolean} [identifierContinue] The function that will decide whether the given character is
-     *   a valid identifier continue character.
-     * @returns {ParseProvider}
-     */
-    this.setIdentifierFns = function (identifierStart, identifierContinue) {
-      identStart = identifierStart;
-      identContinue = identifierContinue;
-
-      return this;
-    };
 
     this.$get = [
       $injectTokens._filter,
@@ -49,45 +17,29 @@ export class ParseProvider {
        * @returns {ng.ParseService}
        */
       function ($filter) {
-        /** @type {import("./lexer/lexer.js").LexerOptions} */
-        const $lexerOptions = {
-          isIdentifierStart: isFunction(identStart) && identStart,
-          isIdentifierContinue: isFunction(identContinue) && identContinue,
-        };
-
         return $parse;
 
         /** @type {ng.ParseService} */
         function $parse(exp, interceptorFn) {
-          let parsedExpression, cacheKey;
+          validateRequired(exp, "exp");
+          let parsedExpression;
 
-          switch (typeof exp) {
-            case "string":
-              exp = exp.trim();
-              cacheKey = exp;
+          exp = exp.trim();
+          const cacheKey = exp;
 
-              parsedExpression = cache[cacheKey];
+          parsedExpression = cache[cacheKey];
 
-              if (!parsedExpression) {
-                const lexer = new Lexer($lexerOptions);
+          if (!parsedExpression) {
+            const lexer = new Lexer();
 
-                const parser = new Parser(lexer, $filter);
+            const parser = new Parser(lexer, $filter);
 
-                parsedExpression = parser._parse(exp);
+            parsedExpression = parser._parse(exp);
 
-                cache[cacheKey] = addWatchDelegate(parsedExpression);
-              }
-
-              return addInterceptor(parsedExpression, interceptorFn);
-
-            case "function":
-              return addInterceptor(exp, interceptorFn);
-
-            default:
-              return addInterceptor(() => {
-                /* empty */
-              }, interceptorFn);
+            cache[cacheKey] = addWatchDelegate(parsedExpression);
           }
+
+          return addInterceptor(parsedExpression, interceptorFn);
         }
 
         /**

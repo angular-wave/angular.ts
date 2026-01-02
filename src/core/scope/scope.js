@@ -259,6 +259,7 @@ export class Scope {
     this.$scopename = undefined;
 
     /** @private */
+    /** @type {Record<any, any>} */
     this.propertyMap = {
       $apply: this.$apply.bind(this),
       $broadcast: this.$broadcast.bind(this),
@@ -633,7 +634,7 @@ export class Scope {
     if (hasOwn(this.propertyMap, property)) {
       this.$target = target;
 
-      return this.propertyMap[property];
+      return this.propertyMap[/** @type {string} */ (property)];
     } else {
       // we are a simple getter
       return target[property];

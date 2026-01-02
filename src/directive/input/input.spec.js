@@ -476,9 +476,7 @@ describe("input", () => {
           scope,
         );
         await wait();
-        scope.$apply(() => {
-          scope.secondWeek = new Date(2013, 0, 11);
-        });
+        scope.secondWeek = new Date(2013, 0, 11);
         await wait();
         expect(error[0]).toMatch("datefmt");
       });
@@ -488,9 +486,7 @@ describe("input", () => {
           scope,
         );
         await wait();
-        scope.$apply(() => {
-          scope.secondWeek = "2013-W02";
-        });
+        scope.secondWeek = "2013-W02";
         await wait();
         expect(inputElm.value).toBe("2013-W02");
       });
@@ -500,9 +496,7 @@ describe("input", () => {
           scope,
         );
         await wait();
-        scope.$apply(() => {
-          scope.secondWeek = "2013-W02";
-        });
+        scope.secondWeek = "2013-W02";
         await wait();
         expect(scope.secondWeek).toBe("2013-W02");
         // input type week in Chrome does not react to changes on the attribute. Value must be set directly
@@ -517,9 +511,7 @@ describe("input", () => {
           scope,
         );
         await wait();
-        scope.$apply(() => {
-          scope.secondWeek = "2013-W02";
-        });
+        scope.secondWeek = "2013-W02";
         await wait();
         expect(inputElm.value).toBe("2013-W02");
 
@@ -553,9 +545,7 @@ describe("input", () => {
       it("should parse empty string to null", async () => {
         inputElm = $compile('<input type="week" ng-model="test" />')(scope);
         await wait();
-        scope.$apply(() => {
-          scope.test = "2013-W02";
-        });
+        scope.test = "2013-W02";
         await wait();
         inputElm.value = "";
         inputElm.dispatchEvent(new Event("change"));
@@ -692,9 +682,7 @@ describe("input", () => {
           '<input type="datetime-local" ng-model="lunchtime"/>',
         )(scope);
         await wait();
-        scope.$apply(() => {
-          scope.lunchtime = new Date(2013, 11, 31, 23, 59, 59, 500);
-        });
+        scope.lunchtime = new Date(2013, 11, 31, 23, 59, 59, 500);
         await wait();
         expect(error[0]).toMatch("datefmt");
       });
@@ -704,9 +692,7 @@ describe("input", () => {
           '<input type="datetime-local" ng-model="halfSecondToNextYear"/>',
         )(scope);
         await wait();
-        scope.$apply(() => {
-          scope.halfSecondToNextYear = "2013-12-16T11:30";
-        });
+        scope.halfSecondToNextYear = "2013-12-16T11:30";
         await wait();
         expect(inputElm.value).toBe("2013-12-16T11:30");
       });
@@ -728,9 +714,7 @@ describe("input", () => {
           '<input type="datetime-local" ng-model="breakMe"/>',
         )(scope);
         await wait();
-        scope.$apply(() => {
-          scope.breakMe = "2013-12-16T11:30";
-        });
+        scope.breakMe = "2013-12-16T11:30";
         await wait();
         expect(inputElm.value).toBe("2013-12-16T11:30");
 
@@ -771,9 +755,7 @@ describe("input", () => {
           scope,
         );
         await wait();
-        scope.$apply(() => {
-          scope.test = "2013-12-16T11:30";
-        });
+        scope.test = "2013-12-16T11:30";
         await wait();
         inputElm.value = "";
         inputElm.dispatchEvent(new Event("change"));
@@ -955,9 +937,7 @@ describe("input", () => {
     describe("time", () => {
       it("should throw if model is a Date object", async () => {
         inputElm = $compile('<input type="time" ng-model="lunchtime"/>')(scope);
-        scope.$apply(() => {
-          scope.lunchtime = new Date(1970, 0, 1, 15, 41, 0, 500);
-        });
+        scope.lunchtime = new Date(1970, 0, 1, 15, 41, 0, 500);
         await wait();
         expect(error[0]).toMatch("datefmt");
       });
@@ -967,9 +947,7 @@ describe("input", () => {
           scope,
         );
 
-        scope.$apply(() => {
-          scope.threeFortyOnePm = "15:41:00.500";
-        });
+        scope.threeFortyOnePm = "15:41:00.500";
         await wait();
         expect(inputElm.value).toBe("15:41:00.500");
       });
@@ -989,9 +967,7 @@ describe("input", () => {
       it("should set the model to null if the view is invalid", async () => {
         inputElm = $compile('<input type="time" ng-model="breakMe"/>')(scope);
 
-        scope.$apply(() => {
-          scope.breakMe = "16:25:00.000";
-        });
+        scope.breakMe = "16:25:00.000";
         await wait();
         expect(inputElm.value).toBe("16:25:00.000");
 
@@ -1025,9 +1001,7 @@ describe("input", () => {
       it("should parse empty string to null", () => {
         inputElm = $compile('<input type="time" ng-model="test" />')(scope);
 
-        scope.$apply(() => {
-          scope.test = "16:25:00";
-        });
+        scope.test = "16:25:00";
 
         inputElm.value = "";
         inputElm.dispatchEvent(new Event("change"));
@@ -1058,9 +1032,7 @@ describe("input", () => {
         await wait();
         expect(scope.value).toBe("01:02:03");
 
-        scope.$apply(() => {
-          scope.value = "01:02:03.000";
-        });
+        scope.value = "01:02:03.000";
         await wait();
         expect(inputElm.value).toBe("01:02:03.000");
       });
@@ -1205,9 +1177,7 @@ describe("input", () => {
     describe("date", () => {
       it("should throw if model is a Date object", async () => {
         inputElm = $compile('<input type="date" ng-model="birthday"/>')(scope);
-        scope.$apply(() => {
-          scope.birthday = new Date("a");
-        });
+        scope.birthday = new Date("a");
         await wait();
         expect(error[0]).toMatch("datefmt");
       });
@@ -1215,9 +1185,7 @@ describe("input", () => {
       it("should set the view when the model is an valid String", async () => {
         inputElm = $compile('<input type="date" ng-model="val"/>')(scope);
 
-        scope.$apply(() => {
-          scope.val = "1977-10-22";
-        });
+        scope.val = "1977-10-22";
         await wait();
         expect(inputElm.value).toBe("1977-10-22");
       });
@@ -1234,9 +1202,7 @@ describe("input", () => {
       it("should set the model to null if the view is invalid", async () => {
         inputElm = $compile('<input type="date" ng-model="arrMatey"/>')(scope);
 
-        scope.$apply(() => {
-          scope.arrMatey = "2014-09-14";
-        });
+        scope.arrMatey = "2014-09-14";
         await wait();
         expect(inputElm.value).toBe("2014-09-14");
 
@@ -1271,9 +1237,7 @@ describe("input", () => {
       it("should parse empty string to null", () => {
         inputElm = $compile('<input type="date" ng-model="test" />')(scope);
 
-        scope.$apply(() => {
-          scope.test = "2014-09-14";
-        });
+        scope.test = "2014-09-14";
 
         inputElm.value = "";
         inputElm.dispatchEvent(new Event("change"));
@@ -2495,18 +2459,14 @@ describe("input", () => {
             '<form name="form"><input type="number" name="input" ng-model="value" maxlength="{{ max }}" /></form>',
           )(scope);
           inputElm = formElm.querySelector("input");
-          scope.$apply(() => {
-            scope.max = 1;
-          });
+          scope.max = 1;
           await wait();
           inputElm.value = "12345";
           inputElm.dispatchEvent(new Event("change"));
           expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
           expect(scope.form.input.$error.maxlength).toBe(true);
 
-          scope.$apply(() => {
-            scope.max = 6;
-          });
+          scope.max = 6;
           await wait();
           expect(inputElm.classList.contains("ng-valid")).toBeTrue();
           expect(scope.form.input.$error.maxlength).not.toBe(true);
@@ -3244,11 +3204,9 @@ describe("input", () => {
         )(scope);
         inputElm = res.querySelectorAll("input");
         await wait();
-        scope.$apply(() => {
-          scope.value = "blue";
-          scope.some = "blue";
-          scope.other = "red";
-        });
+        scope.value = "blue";
+        scope.some = "blue";
+        scope.other = "red";
         await wait();
         expect(inputElm[0].checked).toBe(true);
         expect(inputElm[1].checked).toBe(false);
@@ -3274,10 +3232,8 @@ describe("input", () => {
             '<input type="radio" ng-model="value" ng-trim="false" value="  {{some}}  " /></div>',
         )(scope);
         inputElm = res.querySelectorAll("input");
-        scope.$apply(() => {
-          scope.value = "blue";
-          scope.some = "blue";
-        });
+        scope.value = "blue";
+        scope.some = "blue";
         await wait();
         expect(inputElm[0].checked).toBe(false);
         expect(inputElm[1].checked).toBe(false);
@@ -3534,10 +3490,7 @@ describe("input", () => {
         await wait();
         expect(inputElm.value).toBe("something");
         expect(inputElm.getAttribute("value")).toBe("something");
-
-        scope.$apply(() => {
-          delete scope.value;
-        });
+        delete scope.value;
         await wait();
         expect(inputElm.value).toBe("");
         // Support: IE 9-11, Edge
@@ -3636,10 +3589,8 @@ describe("input", () => {
           '<div><input type="radio" ng-repeat="i in items" ng-model="selected" ng-value="i.id"></div>',
         )(scope);
 
-        scope.$apply(() => {
-          scope.items = [{ id: 1 }, { id: 2 }];
-          scope.selected = 1;
-        });
+        scope.items = [{ id: 1 }, { id: 2 }];
+        scope.selected = 1;
         await wait();
 
         expect(inputElm.children[0].checked).toBe(true);
