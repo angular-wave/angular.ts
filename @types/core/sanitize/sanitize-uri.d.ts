@@ -1,9 +1,9 @@
 /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider */
 /**
  * Private service to sanitize uris for links and images. Used by $compile.
- * @implements {ServiceProvider}
+ * @extends {ServiceProvider}
  */
-export class SanitizeUriProvider implements ServiceProvider {
+export class SanitizeUriProvider {
   /**
    * @private
    * @type {RegExp}

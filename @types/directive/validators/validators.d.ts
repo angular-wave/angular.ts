@@ -32,7 +32,7 @@ export const requiredDirective: (
  *                                      parsable into a `RegExp`, or a `RegExp` literal. See above for
  *                                      more details.
  *
- * @description
+ *
  *
  * ngPattern adds the pattern {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
  * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.
@@ -77,7 +77,7 @@ export const patternDirective: (
  *                                 parsable into a `Number`. Used as value for the `maxlength`
  *                                 {@link ngModel.NgModelController#$validators validator}.
  *
- * @description
+ *
  *
  * ngMaxlength adds the maxlength {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
  * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.
@@ -112,7 +112,7 @@ export const maxlengthDirective: (
  *                                 parsable into a `Number`. Used as value for the `minlength`
  *                                 {@link ngModel.NgModelController#$validators validator}.
  *
- * @description
+ *
  *
  * ngMinlength adds the minlength {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
  * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.

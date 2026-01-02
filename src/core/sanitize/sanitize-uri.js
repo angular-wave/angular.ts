@@ -5,7 +5,7 @@ import { $injectTokens } from "../../injection-tokens.js";
 
 /**
  * Private service to sanitize uris for links and images. Used by $compile.
- * @implements {ServiceProvider}
+ * @extends {ServiceProvider}
  */
 export class SanitizeUriProvider {
   constructor() {

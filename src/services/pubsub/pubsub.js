@@ -2,7 +2,7 @@ import { $injectTokens, provider } from "../../injection-tokens.js";
 
 /**
  * Configurable provider for an injectable event bus
- * @implements {ng.ServiceProvider}
+ * @extends {ng.ServiceProvider}
  */
 export class PubSubProvider {
   static $inject = provider([

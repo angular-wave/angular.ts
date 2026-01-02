@@ -100,7 +100,7 @@ const SUBMITTED_CLASS = "ng-submitted";
  *  - `week`
  *  - `month`
  *
- * @description
+ *
  * `FormController` keeps track of all its controls and nested forms as well as the state of them,
  * such as being valid/invalid or dirty/pristine.
  *

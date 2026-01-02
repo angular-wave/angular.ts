@@ -14,7 +14,7 @@ export class SceProvider {
    * @param {boolean=} value If provided, then enables/disables SCE application-wide.
    * @return {boolean} True if SCE is enabled, false otherwise.
    *
-   * @description
+   *
    * Enables/disables SCE and returns the current value.
    */
   enabled: (value?: boolean | undefined, ...args: any[]) => boolean;
@@ -117,7 +117,7 @@ export class SceDelegateProvider {
    *
    * @return {Array<any>} The currently set trusted resource URL array.
    *
-   * @description
+   *
    * Sets/Gets the list trusted of resource URLs.
    *
    * The **default value** when no `trustedResourceUrlList` has been explicitly set is `['self']`
@@ -148,7 +148,7 @@ export class SceDelegateProvider {
    *
    * @return {Array<any>} The currently set `bannedResourceUrlList` array.
    *
-   * @description
+   *
    * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
    *
    * The **default value** when no trusted resource URL list has been explicitly set is the empty

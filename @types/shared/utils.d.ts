@@ -23,14 +23,14 @@ export function deProxy<T>(
 export function nextUid(): number;
 /**
  *
- * @description Converts the specified string to lowercase.
+ *  Converts the specified string to lowercase.
  * @param {string} string String to be converted to lowercase.
  * @returns {string} Lowercased string.
  */
 export function lowercase(string: string): string;
 /**
  *
- * @description Converts the specified string to uppercase.
+ *  Converts the specified string to uppercase.
  * @param {string} string String to be converted to uppercase.
  * @returns {string} Uppercased string.
  */

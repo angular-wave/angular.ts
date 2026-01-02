@@ -1,8 +1,8 @@
 /**
  * Configurable provider for an injectable event bus
- * @implements {ng.ServiceProvider}
+ * @extends {ng.ServiceProvider}
  */
-export class PubSubProvider implements ng.ServiceProvider {
+export class PubSubProvider {
   static $inject: string[];
   /**
    * @param {ng.ExceptionHandlerProvider} $exceptionHandler

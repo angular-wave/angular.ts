@@ -36,7 +36,7 @@ const REDIRECT_MAX = 20;
  *
  * This object contains all contextual information about the to/from states, parameters, resolves.
  * It has information about all states being entered and exited as a result of the transition.
- * @implements {HookRegistry}
+ * @extends {HookRegistry}
  */
 export class Transition {
   /**

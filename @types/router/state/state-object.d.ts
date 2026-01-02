@@ -7,9 +7,9 @@
  *
  * This class prototypally inherits from the corresponding [[StateDeclaration]].
  * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
- * @implements {ng.StateDeclaration}
+ * @extends {ng.StateDeclaration}
  */
-export class StateObject implements ng.StateDeclaration {
+export class StateObject {
   /**
    * @param {import('./interface.ts').StateDeclaration} config
    */
