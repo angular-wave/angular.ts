@@ -27,7 +27,6 @@ export type ModelOptionsConfig = {
   updateOnDefault?: boolean;
 };
 /**
- *
  * A container for the options set by the {@link ngModelOptions} directive
  */
 declare class ModelOptions {

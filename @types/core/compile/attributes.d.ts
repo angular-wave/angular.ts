@@ -1,6 +1,3 @@
-/**
- * @extends {Record<string, any>}
- */
 export class Attributes {
   static $nonscope: boolean;
   /**
@@ -16,7 +13,7 @@ export class Attributes {
    *    - Used when cloning attributes for directive linking / child scopes.
    *    - Performs a shallow copy of all properties from the source Attributes object,
    *      including `$attr`, normalized attribute values, and internal fields
-   *      (e.g. `$$observers`).
+   *      (e.g. `_observers`).
    *    - `$attr` is intentionally **not reinitialized** in this case, because the
    *      source object already contains the correct normalized → DOM attribute mapping.
    *
@@ -33,14 +30,18 @@ export class Attributes {
     nodeRef?: import("../../shared/noderef.js").NodeRef,
     attributesToCopy?: any & Record<string, any>,
   );
-  _$animate: import("../../animations/interface.ts").AnimateService;
-  _$exceptionHandler: import("../../services/exception/interface.ts").ExceptionHandler;
-  _$sce: import("../../services/sce/interface.ts").SCEService;
+  /** @type {ng.AnimateService} */
+  _animate: ng.AnimateService;
+  /** @type {ng.ExceptionHandlerService} */
+  _exceptionHandler: ng.ExceptionHandlerService;
+  /** @type {ng.SCEService} */
+  _sce: ng.SCEService;
   /**
    * A map of DOM element attribute names to the normalized name. This is needed
    * to do reverse lookup from normalized name back to actual name.
+   * @type {Record<string, string>}
    */
-  $attr: {};
+  $attr: Record<string, string>;
   /** @type {import("../../shared/noderef.js").NodeRef | undefined} */
   _nodeRef: import("../../shared/noderef.js").NodeRef | undefined;
   /** @ignore @returns {Node|Element} */
@@ -109,8 +110,23 @@ export class Attributes {
     * @returns {Function} Returns a deregistration function for this observer.
     */
   $observe<T>(key: string, fn: (value?: T) => any): Function;
-  $$observers: any;
-  setSpecialAttr(element: any, attrName: any, value: any): void;
+  _observers: any;
+  /**
+   * Sets a special (non-standard) attribute on an element.
+   *
+   * Used for attribute names that cannot be set via `setAttribute`
+   * (e.g. names not starting with a letter like `(click)`).
+   *
+   * @param {Element} element
+   * @param {string} attrName
+   * @param {string | null} value
+   * @returns {void}
+   */
+  setSpecialAttr(
+    element: Element,
+    attrName: string,
+    value: string | null,
+  ): void;
   /**
    *
    * @param {unknown} value

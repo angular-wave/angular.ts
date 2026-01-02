@@ -1,7 +1,6 @@
 export function constantWatchDelegate(
   scope: any,
   listener: any,
-  objectEquality: any,
   parsedExpression: any,
 ): any;
 export class ParseProvider {

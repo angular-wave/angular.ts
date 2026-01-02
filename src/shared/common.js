@@ -118,23 +118,6 @@ export function defaults(opts, ...defaultsList) {
 }
 
 /**
- * Finds the common ancestor path between two states.
- *
- * @param {Object} first The first state.
- * @param {Object} second The second state.
- * @return {Array<any>} Returns an array of state names in descending order, not including the root.
- */
-export function ancestors(first, second) {
-  const path = [];
-
-  for (const i in first.path) {
-    if (first.path[i] !== second.path[i]) break;
-    path.push(first.path[i]);
-  }
-
-  return path;
-}
-/**
  * Return a copy of the object only containing the whitelisted properties.
  *
  * #### Example:
@@ -421,8 +404,3 @@ function _arraysEq(a1, a2) {
 
   return true;
 }
-// issue #2676
-export const silenceUncaughtInPromise = (promise) =>
-  promise.catch(() => 0) && promise;
-export const silentRejection = (error) =>
-  silenceUncaughtInPromise(Promise.reject(error));

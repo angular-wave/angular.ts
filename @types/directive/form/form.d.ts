@@ -101,13 +101,13 @@ export class FormController {
   $invalid: boolean;
   $submitted: boolean;
   /** @type {FormController|Object} */
-  $$parentForm: FormController | any;
+  _parentForm: FormController | any;
   _element: Element;
-  $$animate: import("../../animations/interface.ts").AnimateService;
+  _animate: import("../../animations/interface.ts").AnimateService;
   $error: {};
-  $$success: {};
+  _success: {};
   $pending: any;
-  $$classCache: {};
+  _classCache: {};
   $target: {};
   /**
    * Rollback all form controls pending updates to the `$modelValue`.

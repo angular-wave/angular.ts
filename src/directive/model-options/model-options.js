@@ -41,7 +41,6 @@ class NgModelOptionsController {
 }
 
 /**
- *
  * A container for the options set by the {@link ngModelOptions} directive
  */
 class ModelOptions {

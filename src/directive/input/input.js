@@ -213,7 +213,7 @@ export function createStringDateInputType(type, regexp) {
 
       if (regexp.test(value)) return value;
 
-      ctrl.$$parserName = type;
+      ctrl._parserName = type;
 
       return undefined;
     });
@@ -263,7 +263,7 @@ export function badInputChecker(scope, element, attr, ctrl, parserName) {
       const validity = element[VALIDITY_STATE_PROPERTY] || {};
 
       if (validity.badInput || validity.typeMismatch) {
-        ctrl.$$parserName = parserName;
+        ctrl._parserName = parserName;
 
         return undefined;
       }
@@ -279,7 +279,7 @@ export function numberFormatterParser(ctrl) {
 
     if (NUMBER_REGEXP.test(value)) return parseFloat(value);
 
-    ctrl.$$parserName = "number";
+    ctrl._parserName = "number";
 
     return undefined;
   });

@@ -12,12 +12,8 @@ export interface WebSocketConfig extends StreamConnectionConfig {
   onClose?: (event: CloseEvent) => void;
 }
 
-/**
- * Type of the injectable WebSocket service returned by the provider.
- * Acts as a factory for pre-configured WebSocket connections.
- */
 export type WebSocketService = (
-  url?: string,
+  url: string,
   protocols?: string[],
   config?: WebSocketConfig,
 ) => StreamConnection;

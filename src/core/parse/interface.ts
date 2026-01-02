@@ -25,7 +25,6 @@ export interface CompiledExpressionProps {
   _watchDelegate?: (
     scope: Scope,
     listener: Function,
-    equalityCheck: boolean,
     expression: CompiledExpression | string | ((scope: Scope) => any),
   ) => any;
   /** Expression inputs; may be an array or a function. */

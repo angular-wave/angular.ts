@@ -47,7 +47,7 @@ export class WebSocketProvider {
             onOpen: (event) => {
               mergedConfig.onOpen?.(event);
             },
-            onClose: (event) => {
+            onClose: /** @param {CloseEvent} event */ (event) => {
               mergedConfig.onClose?.(event);
             },
             onError: (event) => {

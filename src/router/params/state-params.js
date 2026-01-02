@@ -1,4 +1,3 @@
-import { ancestors } from "../../shared/common.js";
 import { keys } from "../../shared/utils.js";
 
 export class StateParams {
@@ -40,4 +39,22 @@ export class StateParams {
 
     return Object.assign({}, inherited, newParams);
   }
+}
+
+/**
+ * Finds the common ancestor path between two states.
+ *
+ * @param {Object} first The first state.
+ * @param {Object} second The second state.
+ * @return {Array<any>} Returns an array of state names in descending order, not including the root.
+ */
+function ancestors(first, second) {
+  const path = [];
+
+  for (const i in first.path) {
+    if (first.path[i] !== second.path[i]) break;
+    path.push(first.path[i]);
+  }
+
+  return path;
 }

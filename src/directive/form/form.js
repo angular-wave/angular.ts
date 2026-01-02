@@ -145,18 +145,18 @@ export class FormController {
     this.$invalid = false;
     this.$submitted = false;
     /** @type {FormController|Object} */
-    this.$$parentForm = nullFormCtrl;
+    this._parentForm = nullFormCtrl;
 
     this._element = $element;
-    this.$$animate = $animate;
+    this._animate = $animate;
     this.$error = {};
-    this.$$success = {};
+    this._success = {};
     this.$pending = undefined;
-    this.$$classCache = {};
+    this._classCache = {};
     const isValid = this._element.classList.contains(VALID_CLASS);
 
-    this.$$classCache[VALID_CLASS] = isValid;
-    this.$$classCache[INVALID_CLASS] = !isValid;
+    this._classCache[VALID_CLASS] = isValid;
+    this._classCache[INVALID_CLASS] = !isValid;
     this.$target = {};
   }
 
@@ -210,7 +210,7 @@ export class FormController {
     if (control.$name) {
       this[control.$name] = control;
     }
-    control.$target.$$parentForm = this;
+    control.$target._parentForm = this;
   }
 
   /**
@@ -267,14 +267,14 @@ export class FormController {
       Object.keys(this.$error).forEach((name) => {
         this.$setValidity(name, null, control);
       });
-    this.$$success &&
-      Object.keys(this.$$success).forEach((name) => {
+    this._success &&
+      Object.keys(this._success).forEach((name) => {
         this.$setValidity(name, null, control);
       });
 
     arrayRemove(this._controls, control);
 
-    control.$target.$$parentForm = nullFormCtrl;
+    control.$target._parentForm = nullFormCtrl;
   }
 
   /**
@@ -285,8 +285,8 @@ export class FormController {
    */
   $setDirty() {
     if (hasAnimate(this._element)) {
-      this.$$animate.removeClass(this._element, PRISTINE_CLASS);
-      this.$$animate.addClass(this._element, DIRTY_CLASS);
+      this._animate.removeClass(this._element, PRISTINE_CLASS);
+      this._animate.addClass(this._element, DIRTY_CLASS);
     } else {
       // Fallback for non-animated environments
       this._element.classList.remove(PRISTINE_CLASS);
@@ -294,7 +294,7 @@ export class FormController {
     }
     this.$dirty = true;
     this.$pristine = false;
-    this.$$parentForm.$setDirty();
+    this._parentForm.$setDirty();
   }
 
   /**
@@ -311,7 +311,7 @@ export class FormController {
    */
   $setPristine() {
     if (hasAnimate(this._element)) {
-      this.$$animate.setClass(
+      this._animate.setClass(
         this._element,
         PRISTINE_CLASS,
         `${DIRTY_CLASS} ${SUBMITTED_CLASS}`,
@@ -353,15 +353,15 @@ export class FormController {
     /** @type {FormController} */
     let rootForm = this;
 
-    while (rootForm.$$parentForm && rootForm.$$parentForm !== nullFormCtrl) {
-      rootForm = rootForm.$$parentForm;
+    while (rootForm._parentForm && rootForm._parentForm !== nullFormCtrl) {
+      rootForm = rootForm._parentForm;
     }
     rootForm._setSubmitted();
   }
 
   _setSubmitted() {
     if (hasAnimate(this._element)) {
-      this.$$animate.addClass(this._element, SUBMITTED_CLASS);
+      this._animate.addClass(this._element, SUBMITTED_CLASS);
     } else {
       this._element.classList.add(SUBMITTED_CLASS);
     }
@@ -436,13 +436,13 @@ export class FormController {
 
     if (!isBoolean(state)) {
       this.unset(this.$error, validationErrorKey, controller);
-      this.unset(this.$$success, validationErrorKey, controller);
+      this.unset(this._success, validationErrorKey, controller);
     } else if (state) {
       this.unset(this.$error, validationErrorKey, controller);
-      this.set(this.$$success, validationErrorKey, controller);
+      this.set(this._success, validationErrorKey, controller);
     } else {
       this.set(this.$error, validationErrorKey, controller);
-      this.unset(this.$$success, validationErrorKey, controller);
+      this.unset(this._success, validationErrorKey, controller);
     }
 
     if (this.$pending) {
@@ -466,14 +466,14 @@ export class FormController {
       combinedState = undefined;
     } else if (this.$error[validationErrorKey]) {
       combinedState = false;
-    } else if (this.$$success[validationErrorKey]) {
+    } else if (this._success[validationErrorKey]) {
       combinedState = true;
     } else {
       combinedState = null;
     }
 
     toggleValidationCss(this, validationErrorKey, combinedState);
-    this.$$parentForm.$setValidity(validationErrorKey, combinedState, this);
+    this._parentForm.$setValidity(validationErrorKey, combinedState, this);
     function createAndSet(ctrl, name, value, controllerParam) {
       if (!ctrl[name]) {
         ctrl[name] = {};
@@ -492,12 +492,12 @@ export class FormController {
     }
 
     function cachedToggleClass(ctrl, className, switchValue) {
-      if (switchValue && !ctrl.$$classCache[className]) {
-        ctrl.$$animate.addClass(ctrl._element, className);
-        ctrl.$$classCache[className] = true;
-      } else if (!switchValue && ctrl.$$classCache[className]) {
-        ctrl.$$animate.removeClass(ctrl._element, className);
-        ctrl.$$classCache[className] = false;
+      if (switchValue && !ctrl._classCache[className]) {
+        ctrl._animate.addClass(ctrl._element, className);
+        ctrl._classCache[className] = true;
+      } else if (!switchValue && ctrl._classCache[className]) {
+        ctrl._animate.removeClass(ctrl._element, className);
+        ctrl._classCache[className] = false;
       }
     }
 
@@ -671,7 +671,7 @@ const formDirectiveFactory = function (isNgForm) {
                 });
               }
 
-              const parentFormCtrl = ctrls[1] || controller.$$parentForm;
+              const parentFormCtrl = ctrls[1] || controller._parentForm;
 
               parentFormCtrl.$addControl(controller);
 
@@ -686,11 +686,11 @@ const formDirectiveFactory = function (isNgForm) {
                 attrParam.$observe(nameAttr, (newValue) => {
                   if (controller.$name === newValue) return;
                   scope.$target[controller.$name] = undefined;
-                  controller.$$parentForm._renameControl(controller, newValue);
+                  controller._parentForm._renameControl(controller, newValue);
 
                   if (
-                    scope.$target !== controller.$$parentForm &&
-                    controller.$$parentForm !== nullFormCtrl
+                    scope.$target !== controller._parentForm &&
+                    controller._parentForm !== nullFormCtrl
                   ) {
                     // form moved
                   } else {
@@ -699,7 +699,7 @@ const formDirectiveFactory = function (isNgForm) {
                 });
               }
               formElementParam.addEventListener("$destroy", () => {
-                controller.$target.$$parentForm.$removeControl(controller);
+                controller.$target._parentForm.$removeControl(controller);
                 setter(scope, undefined);
                 extend(controller, nullFormCtrl); // stop propagating child destruction handlers upwards
               });
@@ -729,7 +729,7 @@ export const ngFormDirective = formDirectiveFactory("ngForm");
 
 // helper methods
 export function setupValidity(instance) {
-  instance.$$classCache = {};
-  instance.$$classCache[INVALID_CLASS] = !(instance.$$classCache[VALID_CLASS] =
+  instance._classCache = {};
+  instance._classCache[INVALID_CLASS] = !(instance._classCache[VALID_CLASS] =
     instance._element.classList.contains(VALID_CLASS));
 }

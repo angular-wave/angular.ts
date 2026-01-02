@@ -1,3 +1,4 @@
+export function silentRejection<E = unknown>(error: E): Promise<never>;
 /**
  * Provides services related to ng-router states.
  *

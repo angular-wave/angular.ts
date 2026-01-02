@@ -483,7 +483,7 @@ export class CompileProvider {
      *
      * @param {string} elementName The element name or '*' to match any element.
      * @param {string} propertyName The DOM property name.
-     * @param {string} ctx The {@link _$sce} security context in which this value is safe for use, e.g. `$sce.URL`
+     * @param {string} ctx The {@link _sce} security context in which this value is safe for use, e.g. `$sce.URL`
      * @returns {object} `this` for chaining
      */
     this.addPropertySecurityContext = function (
@@ -2930,9 +2930,8 @@ export class CompileProvider {
             compile() {
               return {
                 pre: function attrInterpolatePreLinkFn(scope, element, attr) {
-                  const $$observers =
-                    attr.$$observers ||
-                    (attr.$$observers = Object.create(null));
+                  const _observers =
+                    attr._observers || (attr._observers = Object.create(null));
 
                   // If the attribute has changed since last $interpolate()ed
                   const newValue = attr[name];
@@ -2963,11 +2962,10 @@ export class CompileProvider {
                   // directive's linking fn during linking phase
                   attr[name] = interpolateFn(scope);
 
-                  ($$observers[name] || ($$observers[name] = [])).$$inter =
-                    true;
+                  (_observers[name] || (_observers[name] = [])).$$inter = true;
                   interpolateFn.expressions.forEach((x) => {
                     const targetScope =
-                      (attr.$$observers && attr.$$observers[name].$$scope) ||
+                      (attr._observers && attr._observers[name]._scope) ||
                       scope;
 
                     targetScope.$watch(x, () => {
@@ -3135,7 +3133,7 @@ export class CompileProvider {
                       }
                     }
                   });
-                  attrs.$$observers[attrName].$$scope = scope;
+                  attrs._observers[attrName]._scope = scope;
                   lastValue = attrs[attrName];
 
                   if (isString(lastValue)) {
