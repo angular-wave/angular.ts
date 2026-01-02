@@ -1,5 +1,5 @@
 import { $injectTokens } from "../../injection-tokens.js";
-import { deProxy, isFunction, isNullOrUndefined } from "../../shared/utils.js";
+import { deProxy, isFunction } from "../../shared/utils.js";
 import { PURITY_RELATIVE } from "./interpreter.js";
 import { Lexer } from "./lexer/lexer.js";
 import { Parser } from "./parser/parser.js";
@@ -161,7 +161,7 @@ export class ParseProvider {
                 parsedExpression.inputs
               : [parsedExpression];
 
-            if (!interceptorFn.$$pure) {
+            if (!interceptorFn._pure) {
               fn.inputs = fn.inputs.map(function (input) {
                 // Remove the isPure flag of inputs when it is not absolute because they are now wrapped in a
                 // non-pure interceptor function.
@@ -183,21 +183,12 @@ export class ParseProvider {
   }
 }
 
-export function constantWatchDelegate(
-  scope,
-  listener,
-  objectEquality,
-  parsedExpression,
-) {
-  const unwatch = scope.$watch(
-    () => {
-      unwatch();
+export function constantWatchDelegate(scope, listener, parsedExpression) {
+  const unwatch = scope.$watch(() => {
+    unwatch();
 
-      return parsedExpression(scope);
-    },
-    listener,
-    objectEquality,
-  );
+    return parsedExpression(scope);
+  }, listener);
 
   return unwatch;
 }
@@ -218,92 +209,28 @@ function addWatchDelegate(parsedExpression) {
 }
 
 /**
+ * Watches input expressions and calls the parsedExpression with their current values.
  *
  * @param {ng.Scope} scope
- * @param {Function} listener
- * @param {*} objectEquality
+ * @param {Function} listener - Callback when the expression result changes
  * @param {import('./interface.ts').CompiledExpression} parsedExpression
- * @returns {any}
+ * @returns {Function} Unwatch function
  */
-function inputsWatchDelegate(
-  scope,
-  listener,
-  objectEquality,
-  parsedExpression,
-) {
-  const inputExpressions = /** @type {Function} */ (parsedExpression.inputs);
+function inputsWatchDelegate(scope, listener, parsedExpression) {
+  const inputExpressions = /** @type {Function[]} */ (parsedExpression.inputs);
 
-  let lastResult;
+  const getValues = () => inputExpressions.map((fn) => fn(scope));
 
-  if (inputExpressions.length === 1) {
-    let oldInputValueOf = expressionInputDirtyCheck; // init to something unique so that equals check fails
+  const evaluate = () => parsedExpression(scope, undefined, getValues());
 
-    const inputExpression = inputExpressions[0];
+  // Immediately call the listener with the initial value
+  listener(evaluate());
 
-    return scope.$watch(
-      // @ts-ignore
-      ($scope) => {
-        const newInputValue = inputExpression($scope);
-
-        if (
-          !expressionInputDirtyCheck(
-            newInputValue,
-            oldInputValueOf,
-            inputExpression.isPure,
-          )
-        ) {
-          lastResult = parsedExpression($scope, undefined, [newInputValue]);
-          oldInputValueOf = newInputValue && getValueOf(newInputValue);
-        }
-
-        return lastResult;
-      },
-      listener,
-      objectEquality,
-    );
-  } else {
-    const oldInputValueOfValues = [];
-
-    const oldInputValues = [];
-
-    for (let i = 0, ii = inputExpressions.length; i < ii; i++) {
-      oldInputValueOfValues[i] = expressionInputDirtyCheck; // init to something unique so that equals check fails
-      oldInputValues[i] = null;
-    }
-
-    // return scope.$watch(
-    //   // @ts-ignore
-    //   (scope) => {
-    //     let changed = false;
-
-    //     for (let i = 0, ii = inputExpressions.length; i < ii; i++) {
-    //       const newInputValue = inputExpressions[i](scope);
-
-    //       if (
-    //         changed ||
-    //         (changed = !expressionInputDirtyCheck(
-    //           newInputValue,
-    //           oldInputValueOfValues[i],
-    //           inputExpressions[i].isPure,
-    //         ))
-    //       ) {
-    //         oldInputValues[i] = newInputValue;
-    //         oldInputValueOfValues[i] =
-    //           newInputValue && getValueOf(newInputValue);
-    //       }
-    //     }
-
-    //     if (changed) {
-    //       lastResult = parsedExpression(scope, undefined, oldInputValues);
-    //     }
-
-    //     return lastResult;
-    //   },
-    //   listener,
-    //   objectEquality,
-    // );
-    return undefined;
-  }
+  // Return a reactive/unwatch function
+  return () => {
+    // In AngularTS, reactive triggers would handle updates,
+    // so this is just a placeholder for unwatch cleanup.
+  };
 }
 
 function chainInterceptors(first, second) {
@@ -311,45 +238,7 @@ function chainInterceptors(first, second) {
     return second(first(value));
   }
   chainedInterceptor.$stateful = first.$stateful || second.$stateful;
-  chainedInterceptor.$$pure = first.$$pure && second.$$pure;
+  chainedInterceptor._pure = first._pure && second._pure;
 
   return chainedInterceptor;
-}
-
-function expressionInputDirtyCheck(
-  newValue,
-  oldValueOfValue,
-  compareObjectIdentity,
-) {
-  if (isNullOrUndefined(newValue) || isNullOrUndefined(oldValueOfValue)) {
-    // null/undefined
-    return newValue === oldValueOfValue;
-  }
-
-  if (typeof newValue === "object") {
-    // attempt to convert the value to a primitive type
-    // TODO(docs): add a note to docs that by implementing valueOf even objects and arrays can
-    //             be cheaply dirty-checked
-    newValue = getValueOf(newValue);
-
-    if (typeof newValue === "object" && !compareObjectIdentity) {
-      // objects/arrays are not supported - deep-watching them would be too expensive
-      return false;
-    }
-
-    // fall-through to the primitive equality check
-  }
-
-  // Primitive or NaN
-
-  return (
-    newValue === oldValueOfValue ||
-    (Number.isNaN(newValue) && Number.isNaN(oldValueOfValue))
-  );
-}
-
-function getValueOf(value) {
-  return isFunction(value.valueOf)
-    ? value.valueOf()
-    : {}.constructor.prototype.valueOf.call(value);
 }

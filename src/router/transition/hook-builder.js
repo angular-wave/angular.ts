@@ -93,7 +93,7 @@ export class HookBuilder {
           state,
           hook,
           _options,
-          this.transition._transitionProvider._$exceptionHandler,
+          this.transition._transitionProvider._exceptionHandler,
         );
 
         return { hook, node, transitionHook };

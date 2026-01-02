@@ -3,20 +3,24 @@
  * Creates a deep proxy for the target object, intercepting property changes
  * and recursively applying proxies to nested objects.
  *
- * @param {Object} target - The object to be wrapped in a proxy.
+ * @param {Object & {$nonscope?: import("./interface.ts").NonScope} & Record<string, any>} target - The object to be wrapped in a proxy.
  * @param {Scope} [context] - The context for the handler, used to track listeners.
  * @returns {Scope|Object} - A proxy that intercepts operations on the target object,
  *                                     or the original value if the target is not an object.
  */
-export function createScope(target?: any, context?: Scope): Scope | any;
+export function createScope(
+  target?: any & {
+    $nonscope?: import("./interface.ts").NonScope;
+  } & Record<string, any>,
+  context?: Scope,
+): Scope | any;
 /**
- * @ignore
  * Checks if a target should be excluded from scope observability
  * @param {any} target
  * @returns {boolean}
  */
 export function isNonScope(target: any): boolean;
-/** @ignore @type {Function[]}*/
+/** @ignore @type {Function[]} */
 export const $postUpdateQueue: Function[];
 export class RootScopeProvider {
   rootScope: any;

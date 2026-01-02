@@ -30,6 +30,7 @@ export function ngViewportDirective() {
       // Clean up when the element is removed from DOM
       const parent = element.parentNode;
 
+      /** @type {MutationObserver} */
       let mutationObserver;
 
       if (parent) {

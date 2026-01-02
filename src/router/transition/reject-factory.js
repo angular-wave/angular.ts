@@ -1,6 +1,6 @@
-import { silentRejection } from "../../shared/common.js";
 import { stringify } from "../../shared/strings.js";
 import { is } from "../../shared/hof.js";
+import { silentRejection } from "../state/state-service.js";
 
 /**
  * An object for Transition Rejection reasons.
@@ -56,6 +56,20 @@ export const RejectType = {
 let id = 0;
 
 export class Rejection {
+  /**
+   * @param {number} type
+   * @param {string} message
+   * @param {any} detail
+   */
+  constructor(type, message, detail) {
+    /** @type {number} */
+    this.$id = id++;
+    this.type = type;
+    this.message = message;
+    this.detail = detail;
+    this.redirected = false;
+  }
+
   /** Returns a Rejection due to transition superseded */
   static superseded(detail, options) {
     const message =
@@ -70,33 +84,44 @@ export class Rejection {
     return rejection;
   }
 
-  /** Returns a Rejection due to redirected transition */
+  /** Returns a Rejection due to redirected transition
+   * @param {any} detail @returns {Rejection}
+   */
   static redirected(detail) {
     return Rejection.superseded(detail, { redirected: true });
   }
 
-  /** Returns a Rejection due to invalid transition */
+  /** Returns a Rejection due to invalid transition
+   * @param {any} detail @returns {Rejection}
+   */
   static invalid(detail) {
     const message = "This transition is invalid";
 
     return new Rejection(RejectType._INVALID, message, detail);
   }
 
-  /** Returns a Rejection due to ignored transition */
+  /** Returns a Rejection due to ignored transition
+   * @param {any} detail @returns {Rejection}
+   */
   static ignored(detail) {
     const message = "The transition was ignored";
 
     return new Rejection(RejectType._IGNORED, message, detail);
   }
 
-  /** Returns a Rejection due to aborted transition */
+  /** Returns a Rejection due to aborted transition
+   * @param {any} detail @returns {Rejection}
+   */
   static aborted(detail) {
     const message = "The transition has been aborted";
 
     return new Rejection(RejectType._ABORTED, message, detail);
   }
 
-  /** Returns a Rejection due to aborted transition */
+  /** Returns a Rejection due to aborted transition
+   * @param detail
+   * @returns {Rejection}
+   */
   static errored(detail) {
     const message = "The transition errored";
 
@@ -116,14 +141,7 @@ export class Rejection {
     return is(Rejection)(detail) ? detail : Rejection.errored(detail);
   }
 
-  constructor(type, message, detail) {
-    this.$id = id++;
-    this.type = type;
-    this.message = message;
-    this.detail = detail;
-    this.redirected = false;
-  }
-
+  /** @returns {string} */
   toString() {
     const detailString = (data) =>
       data && data.toString !== Object.prototype.toString
@@ -137,6 +155,9 @@ export class Rejection {
     return `Transition Rejection($id: ${$id} type: ${type}, message: ${message}, detail: ${detail})`;
   }
 
+  /**
+   * @returns {Promise<any> & {_transitionRejection: Rejection}}
+   */
   toPromise() {
     return Object.assign(silentRejection(this), { _transitionRejection: this });
   }

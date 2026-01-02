@@ -92,7 +92,9 @@ export class TransitionHook {
    * Return a Rejection promise if the transition is no longer current due
    * a new transition has started and superseded this one.
    */
-  getNotCurrentRejection(): any;
+  getNotCurrentRejection(): Promise<any> & {
+    _transitionRejection: Rejection;
+  };
   toString(): string;
 }
 export namespace TransitionHook {
@@ -111,6 +113,7 @@ export namespace TransitionHook {
    * Each HookType chooses a GetErrorHandler (See: [[TransitionService._defineCoreEvents]])
    */
   function LOG_ERROR(hook: any): (error: any) => any;
-  function REJECT_ERROR(): (error: any) => any;
+  function REJECT_ERROR(): (error: any) => Promise<never>;
   function THROW_ERROR(): (error: any) => never;
 }
+import { Rejection } from "./reject-factory.js";

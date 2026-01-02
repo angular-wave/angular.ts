@@ -741,10 +741,10 @@ describe("form", () => {
       expect(child).toBeDefined();
 
       expect(parent.$error.required).toEqual([child]);
-      expect(parent.$$success.maxlength).toEqual([child]);
+      expect(parent._success.maxlength).toEqual([child]);
 
       expect(child.$error.required).toEqual([input]);
-      expect(child.$$success.maxlength).toEqual([input]);
+      expect(child._success.maxlength).toEqual([input]);
 
       expect(doc.classList.contains("ng-invalid")).toBe(true);
       expect(doc.classList.contains("ng-invalid-required")).toBe(true);
@@ -763,10 +763,10 @@ describe("form", () => {
       scope.$apply("inputPresent = false");
       await wait();
       expect(parent.$error.required).toBeFalsy();
-      expect(parent.$$success.maxlength).toBeFalsy();
+      expect(parent._success.maxlength).toBeFalsy();
 
       expect(child.$error.required).toBeFalsy();
-      expect(child.$$success.maxlength).toBeFalsy();
+      expect(child._success.maxlength).toBeFalsy();
 
       expect(doc.classList.contains("ng-valid")).toBe(true);
       expect(doc.classList.contains("ng-valid-required")).toBe(false);

@@ -1,10 +1,11 @@
-import { defaults, silentRejection } from "../../shared/common.js";
+import { defaults } from "../../shared/common.js";
 import { fnToString, maxLength } from "../../shared/strings.js";
 import { isPromise } from "../../shared/predicates.js";
 import { parse } from "../../shared/hof.js";
 import { trace } from "../common/trace.js";
 import { Rejection } from "./reject-factory.js";
 import { TargetState } from "../state/target-state.js";
+import { silentRejection } from "../state/state-service.js";
 
 const defaultOptions = {
   current: () => {

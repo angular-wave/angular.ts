@@ -11,7 +11,7 @@ export interface SCEService {
   getTrustedJs(value: any): any;
   getTrustedResourceUrl(value: any): any;
   getTrustedUrl(value: any): any;
-  getTrustedMediaUrl?(value: any): any;
+  getTrustedMediaUrl(value: any): any;
   parse(type: string, expression: string): (context: any, locals: any) => any;
   parseAsCss(expression: string): (context: any, locals: any) => any;
   parseAsHtml(expression: string): (context: any, locals: any) => any;

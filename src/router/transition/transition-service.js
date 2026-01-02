@@ -90,7 +90,7 @@ export class TransitionProvider {
     this._registerCoreTransitionHooks();
 
     /** @type {ng.ExceptionHandlerService} */
-    this._$exceptionHandler = $exceptionHandler.handler;
+    this._exceptionHandler = $exceptionHandler.handler;
     globals._successfulTransitions.onEvict(treeChangesCleanup);
   }
 

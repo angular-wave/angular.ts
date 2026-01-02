@@ -19,9 +19,6 @@ const SIMPLE_ATTR_NAME = /^\w/;
 
 const specialAttrHolder = document.createElement("div");
 
-/**
- * @extends {Record<string, any>}
- */
 export class Attributes {
   static $nonscope = true;
 
@@ -38,7 +35,7 @@ export class Attributes {
    *    - Used when cloning attributes for directive linking / child scopes.
    *    - Performs a shallow copy of all properties from the source Attributes object,
    *      including `$attr`, normalized attribute values, and internal fields
-   *      (e.g. `$$observers`).
+   *      (e.g. `_observers`).
    *    - `$attr` is intentionally **not reinitialized** in this case, because the
    *      source object already contains the correct normalized → DOM attribute mapping.
    *
@@ -49,9 +46,20 @@ export class Attributes {
    * @param {Object & Record<string, any>} [attributesToCopy]
    */
   constructor($animate, $exceptionHandler, $sce, nodeRef, attributesToCopy) {
-    this._$animate = $animate;
-    this._$exceptionHandler = $exceptionHandler;
-    this._$sce = $sce;
+    /** @type {ng.AnimateService} */
+    this._animate = $animate;
+
+    /** @type {ng.ExceptionHandlerService} */
+    this._exceptionHandler = $exceptionHandler;
+
+    /** @type {ng.SCEService} */
+    this._sce = $sce;
+    /**
+     * A map of DOM element attribute names to the normalized name. This is needed
+     * to do reverse lookup from normalized name back to actual name.
+     * @type {Record<string, string>}
+     */
+    this.$attr = {};
 
     if (attributesToCopy) {
       const keys = Object.keys(attributesToCopy);
@@ -64,12 +72,6 @@ export class Attributes {
 
         that[key] = attributesToCopy[key];
       }
-    } else {
-      /**
-       * A map of DOM element attribute names to the normalized name. This is needed
-       * to do reverse lookup from normalized name back to actual name.
-       */
-      this.$attr = {};
     }
 
     /** @type {import("../../shared/noderef.js").NodeRef | undefined} */
@@ -102,7 +104,7 @@ export class Attributes {
   $addClass(classVal) {
     if (classVal && classVal.length > 0) {
       if (hasAnimate(this._element())) {
-        this._$animate.addClass(
+        this._animate.addClass(
           /** @type {Element} */ (this._element()),
           classVal,
         );
@@ -121,7 +123,7 @@ export class Attributes {
   $removeClass(classVal) {
     if (classVal && classVal.length > 0) {
       if (hasAnimate(this._element())) {
-        this._$animate.removeClass(
+        this._animate.removeClass(
           /** @type {Element} */ (this._element()),
           classVal,
         );
@@ -143,10 +145,7 @@ export class Attributes {
 
     if (toAdd && toAdd.length) {
       if (hasAnimate(this._element())) {
-        this._$animate.addClass(
-          /** @type {Element }*/ (this._element()),
-          toAdd,
-        );
+        this._animate.addClass(/** @type {Element }*/ (this._element()), toAdd);
       } else {
         this._nodeRef?.element.classList.add(...toAdd.trim().split(/\s+/));
       }
@@ -155,7 +154,7 @@ export class Attributes {
 
     if (toRemove && toRemove.length) {
       if (hasAnimate(this._element())) {
-        this._$animate.removeClass(
+        this._animate.removeClass(
           /** @type {Element} */ (this._element()),
           toRemove,
         );
@@ -177,10 +176,6 @@ export class Attributes {
    * @param {string=} attrName Optional none normalized name. Defaults to key.
    */
   $set(key, value, writeAttr, attrName) {
-    // TODO: decide whether or not to throw an error if "class"
-    // is set through this function since it may cause $updateClass to
-    // become unstable.
-
     const node = this._element();
 
     const booleanKey = getBooleanAttrName(/** @type {Element}   */ (node), key);
@@ -190,14 +185,14 @@ export class Attributes {
     let observer = key;
 
     if (booleanKey) {
-      this._element()[key] = value;
+      /** @type {Record<string, any>} */ (this._element())[key] = value;
       attrName = booleanKey;
     } else if (aliasedKey) {
-      this[aliasedKey] = value;
+      /** @type {Record<string, any>} */ (this)[aliasedKey] = value;
       observer = aliasedKey;
     }
 
-    this[key] = value;
+    /** @type {Record<string, any>} */ (this)[key] = value;
 
     // translate normalized key to actual key
     if (attrName) {
@@ -210,7 +205,7 @@ export class Attributes {
       }
     }
 
-    const nodeName = this._nodeRef.node.nodeName.toLowerCase();
+    const nodeName = this._nodeRef?.node.nodeName.toLowerCase();
 
     let maybeSanitizedValue;
 
@@ -252,21 +247,27 @@ export class Attributes {
           }
         }
       } else {
-        this.setSpecialAttr(this._element(), attrName, maybeSanitizedValue);
+        this.setSpecialAttr(
+          /** @type {Element} */ (this._element()),
+          attrName,
+          /** @type {string} */ (maybeSanitizedValue),
+        );
       }
     }
 
     // fire observers
-    const { $$observers } = this;
+    const { _observers } = this;
 
-    if ($$observers && $$observers[observer]) {
-      $$observers[observer].forEach((fn) => {
-        try {
-          fn(maybeSanitizedValue);
-        } catch (err) {
-          this._$exceptionHandler(err);
-        }
-      });
+    if (_observers && _observers[observer]) {
+      _observers[observer].forEach(
+        (/** @type {(arg0: unknown) => void} */ fn) => {
+          try {
+            fn(maybeSanitizedValue);
+          } catch (err) {
+            this._exceptionHandler(err);
+          }
+        },
+      );
     }
   }
 
@@ -286,16 +287,20 @@ export class Attributes {
   * @returns {Function} Returns a deregistration function for this observer.
   */
   $observe(key, fn) {
-    const $$observers =
-      this.$$observers || (this.$$observers = Object.create(null));
+    const _observers =
+      this._observers || (this._observers = Object.create(null));
 
-    const listeners = $$observers[key] || ($$observers[key] = []);
+    const listeners = _observers[key] || (_observers[key] = []);
 
     listeners.push(fn);
 
-    if (!listeners.$$inter && hasOwn(this, key) && !isUndefined(this[key])) {
+    if (
+      !listeners.$$inter &&
+      hasOwn(this, key) &&
+      !isUndefined(/** @type {Record<string, any>} */ (this)[key])
+    ) {
       // no one registered attribute interpolation function, so lets call it manually
-      fn(this[key]);
+      fn(/** @type {Record<string, any>} */ (this)[key]);
     }
 
     return function () {
@@ -303,6 +308,17 @@ export class Attributes {
     };
   }
 
+  /**
+   * Sets a special (non-standard) attribute on an element.
+   *
+   * Used for attribute names that cannot be set via `setAttribute`
+   * (e.g. names not starting with a letter like `(click)`).
+   *
+   * @param {Element} element
+   * @param {string} attrName
+   * @param {string | null} value
+   * @returns {void}
+   */
   setSpecialAttr(element, attrName, value) {
     // Attributes names that do not start with letters (such as `(click)`) cannot be set using `setAttribute`
     // so we have to jump through some hoops to get such an attribute
@@ -316,7 +332,7 @@ export class Attributes {
 
     // We have to remove the attribute from its container element before we can add it to the destination element
     attributes.removeNamedItem(attribute.name);
-    attribute.value = value;
+    attribute.value = value ?? "";
     element.attributes.setNamedItem(attribute);
   }
 
@@ -370,7 +386,7 @@ export class Attributes {
       const innerIdx = i * 2;
 
       // sanitize the uri
-      result += this._$sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
+      result += this._sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
       // add the descriptor
       result += ` ${trim(rawUris[innerIdx + 1])}`;
     }
@@ -379,7 +395,7 @@ export class Attributes {
     const lastTuple = trim(rawUris[i * 2]).split(/\s/);
 
     // sanitize the last uri
-    result += this._$sce.getTrustedMediaUrl(trim(lastTuple[0]));
+    result += this._sce.getTrustedMediaUrl(trim(lastTuple[0]));
 
     // and add the last descriptor if any
     if (lastTuple.length === 2) {

@@ -1,9 +1,4 @@
-import {
-  defaults,
-  removeFrom,
-  silenceUncaughtInPromise,
-  silentRejection,
-} from "../../shared/common.js";
+import { defaults, removeFrom } from "../../shared/common.js";
 import { isDefined, isObject, isString, minErr } from "../../shared/utils.js";
 import { Queue } from "../../shared/queue.js";
 import { makeTargetState } from "../path/path-utils.js";
@@ -17,6 +12,26 @@ import { lazyLoadState } from "../hooks/lazy-load.js";
 import { $injectTokens, provider } from "../../injection-tokens.js";
 
 const stdErr = minErr("$stateProvider");
+
+/**
+ * Attaches a catch handler to silence unhandled rejection warnings,
+ * while preserving the original promise.
+ *
+ * @template T
+ * @param {Promise<T>} promise
+ * @returns {Promise<T>}
+ */
+const silenceUncaughtInPromise = (promise) => promise.catch(() => 0) && promise;
+
+/**
+ * Creates a rejected promise whose rejection is intentionally silenced.
+ *
+ * @template [E=unknown]
+ * @param {E} error
+ * @returns {Promise<never>}
+ */
+export const silentRejection = (error) =>
+  silenceUncaughtInPromise(Promise.reject(error));
 
 /**
  * Provides services related to ng-router states.

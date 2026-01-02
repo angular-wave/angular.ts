@@ -60,14 +60,6 @@ export function defaults(
   }[]
 ): any;
 /**
- * Finds the common ancestor path between two states.
- *
- * @param {Object} first The first state.
- * @param {Object} second The second state.
- * @return {Array<any>} Returns an array of state names in descending order, not including the root.
- */
-export function ancestors(first: any, second: any): Array<any>;
-/**
  * Return a copy of the object only containing the whitelisted properties.
  *
  * #### Example:
@@ -163,5 +155,3 @@ export function assertPredicate(
   predicateOrMap: any,
   errMsg?: string,
 ): (obj: any) => any;
-export function silenceUncaughtInPromise(promise: any): any;
-export function silentRejection(error: any): any;

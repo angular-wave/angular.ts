@@ -43,7 +43,7 @@ export class TransitionProvider {
   $view: import("../view/view.js").ViewService;
   _deregisterHookFns: {};
   /** @type {ng.ExceptionHandlerService} */
-  _$exceptionHandler: ng.ExceptionHandlerService;
+  _exceptionHandler: ng.ExceptionHandlerService;
   $get: (
     | string
     | ((
@@ -97,7 +97,7 @@ export class TransitionProvider {
     criteriaMatchPath: any,
     reverseSort?: boolean,
     getResultHandler?: (hook: any) => (result: any) => any,
-    getErrorHandler?: () => (error: any) => any,
+    getErrorHandler?: () => (error: any) => Promise<never>,
     synchronous?: boolean,
   ): void;
   /**

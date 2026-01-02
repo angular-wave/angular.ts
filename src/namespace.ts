@@ -133,6 +133,7 @@ import {
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
+    $nonscope?: readonly string[] | boolean | undefined;
   }
 
   interface Window {

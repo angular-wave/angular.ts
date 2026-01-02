@@ -36,7 +36,7 @@ let $parse;
 /**@type {ng.ExceptionHandlerService} */
 let $exceptionHandler;
 
-/** @ignore @type {Function[]}*/
+/** @ignore @type {Function[]} */
 export const $postUpdateQueue = [];
 
 export class RootScopeProvider {
@@ -65,7 +65,7 @@ export class RootScopeProvider {
  * Creates a deep proxy for the target object, intercepting property changes
  * and recursively applying proxies to nested objects.
  *
- * @param {Object} target - The object to be wrapped in a proxy.
+ * @param {Object & {$nonscope?: import("./interface.ts").NonScope} & Record<string, any>} target - The object to be wrapped in a proxy.
  * @param {Scope} [context] - The context for the handler, used to track listeners.
  * @returns {Scope|Object} - A proxy that intercepts operations on the target object,
  *                                     or the original value if the target is not an object.
@@ -95,42 +95,88 @@ export function createScope(target = {}, context) {
 
 const global = globalThis;
 
-const proto = Object.prototype;
-
-const { toString } = proto;
-
 const wStr = "[object Window]";
 
 /**
- * @ignore
  * Checks if a target should be excluded from scope observability
  * @param {any} target
  * @returns {boolean}
  */
 export function isNonScope(target) {
+  // 1. Null or primitive types are non-scope
   if (
-    target.$nonscope === true ||
-    (target.constructor && target.constructor.$nonscope) === true ||
-    target === global.window ||
-    target === global.document ||
-    target === global.self ||
-    target === global.frames ||
-    target instanceof Window ||
-    target instanceof Document ||
-    target instanceof Element ||
-    target instanceof Node ||
-    target instanceof EventTarget ||
-    target instanceof Promise ||
-    target instanceof HTMLCollection ||
-    target instanceof NodeList ||
-    target instanceof Event ||
-    target instanceof Date
+    target === null ||
+    typeof target === "undefined" ||
+    typeof target === "number" ||
+    typeof target === "string" ||
+    typeof target === "boolean" ||
+    typeof target === "symbol" ||
+    typeof target === "bigint"
   ) {
     return true;
   }
 
+  // 2. Explicit non-scope flags
+  if (target.$nonscope === true || target?.constructor?.$nonscope === true) {
+    return true;
+  }
+
+  // 3. Global objects
+  if (
+    target === global.window ||
+    target === global.document ||
+    target === global.self ||
+    target === global.frames
+  ) {
+    return true;
+  }
+
+  // 4. Safe instanceof checks
+  const nonScopeConstructors = [
+    Window,
+    Document,
+    Element,
+    Node,
+    EventTarget,
+    Promise,
+    HTMLCollection,
+    NodeList,
+    Event,
+    Date,
+    RegExp,
+    Map,
+    Set,
+    WeakMap,
+    WeakSet,
+    ArrayBuffer,
+    DataView,
+    Uint8Array,
+    Uint16Array,
+    Uint32Array,
+    Int8Array,
+    Int16Array,
+    Int32Array,
+    Float32Array,
+    Float64Array,
+    Function,
+    Error,
+    Blob,
+    File,
+    FormData,
+    URL,
+    URLSearchParams,
+  ];
+
+  for (const Ctor of nonScopeConstructors) {
+    try {
+      if (target instanceof /** @type {any} */ (Ctor)) return true;
+    } catch {
+      /* empty */
+    }
+  }
+
   try {
-    return toString.call(target) === wStr;
+    return Object.prototype.toString.call(target) === wStr;
   } catch {
     return false;
   }

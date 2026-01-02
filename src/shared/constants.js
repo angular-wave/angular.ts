@@ -11,6 +11,7 @@ export const NOT_EMPTY_CLASS = "ng-not-empty";
 export const PREFIX_REGEXP = /^((?:x|data)[-])/i;
 export const SPECIAL_CHARS_REGEXP = /[-]+(.)/g;
 
+/** @type {Record<string, string>} */
 export const ALIASED_ATTR = {
   ngMinlength: "minlength",
   ngMaxlength: "maxlength",
