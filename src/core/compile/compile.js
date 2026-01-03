@@ -3216,8 +3216,6 @@ export class CompileProvider {
                     return lastValue;
                   };
 
-                  parentValueWatch.$stateful = true;
-
                   if (definition.collection) {
                     removeWatch = scope.$watch(
                       attrs[attrName],

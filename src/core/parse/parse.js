@@ -1,6 +1,5 @@
 import { $injectTokens } from "../../injection-tokens.js";
 import { deProxy, isFunction } from "../../shared/utils.js";
-import { PURITY_RELATIVE } from "./interpreter.js";
 import { Lexer } from "./lexer/lexer.js";
 import { Parser } from "./parser/parser.js";
 import { validateRequired } from "../../shared/validate.js";
@@ -44,7 +43,7 @@ export class ParseProvider {
 
         /**
          * @param {Function} parsedExpression
-         * @param interceptorFn
+         * @param {(value: any) => any} [interceptorFn]
          * @returns {import('./interface.ts').CompiledExpression|*}
          */
         function addInterceptor(parsedExpression, interceptorFn) {
@@ -65,7 +64,7 @@ export class ParseProvider {
             parsedExpression = parsedExpression.$$intercepted;
           }
 
-          let useInputs = false;
+          const useInputs = false;
 
           const fn = function interceptedExpression(
             scope,
@@ -100,33 +99,6 @@ export class ParseProvider {
           fn.constant = parsedExpression.constant;
           // @ts-ignore
           fn.decoratedNode = parsedExpression.decoratedNode;
-
-          // Treat the interceptor like filters.
-          // If it is not $stateful then only watch its inputs.
-          // If the expression itself has no inputs then use the full expression as an input.
-          if (!interceptorFn.$stateful) {
-            // @ts-ignore
-            useInputs = !parsedExpression.inputs;
-            // @ts-ignore
-            fn.inputs = parsedExpression.inputs
-              ? // @ts-ignore
-                parsedExpression.inputs
-              : [parsedExpression];
-
-            if (!interceptorFn._pure) {
-              fn.inputs = fn.inputs.map(function (input) {
-                // Remove the isPure flag of inputs when it is not absolute because they are now wrapped in a
-                // non-pure interceptor function.
-                if (input.isPure === PURITY_RELATIVE) {
-                  return function depurifier(x) {
-                    return input(x);
-                  };
-                }
-
-                return input;
-              });
-            }
-          }
 
           return addWatchDelegate(fn);
         }
@@ -186,11 +158,7 @@ function inputsWatchDelegate(scope, listener, parsedExpression) {
 }
 
 function chainInterceptors(first, second) {
-  function chainedInterceptor(value) {
+  return function chainedInterceptor(value) {
     return second(first(value));
-  }
-  chainedInterceptor.$stateful = first.$stateful || second.$stateful;
-  chainedInterceptor._pure = first._pure && second._pure;
-
-  return chainedInterceptor;
+  };
 }
