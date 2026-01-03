@@ -68,9 +68,7 @@ export const requiredDirective: (
  */
 export const patternDirective: (
   | string
-  | ((
-      $parse: import("../../core/parse/interface.ts").ParseService,
-    ) => ng.Directive)
+  | (($parse: ng.ParseService) => ng.Directive)
 )[];
 /**
  * @param {string} ngMaxlength AngularTS expression that must evaluate to a `Number` or `String`
@@ -139,7 +137,7 @@ export const maxlengthDirective: (
  */
 export const minlengthDirective: (
   | string
-  | (($parse: any) => {
+  | (($parse: ng.ParseService) => {
       restrict: string;
       require: string;
       link(scope: any, elm: any, attr: any, ctrl: any): void;

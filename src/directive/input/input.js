@@ -692,6 +692,15 @@ function radioInputType(scope, element, attr, ctrl) {
   attr.$observe("value", ctrl.$render);
 }
 
+/**
+ *
+ * @param {ng.ParseService} $parse
+ * @param {*} context
+ * @param {*} name
+ * @param {*} expression
+ * @param {*} fallback
+ * @returns
+ */
 function parseConstantExpr($parse, context, name, expression, fallback) {
   let parseFn;
 
@@ -713,6 +722,14 @@ function parseConstantExpr($parse, context, name, expression, fallback) {
   return fallback;
 }
 
+/**
+ *
+ * @param {ng.Scope} scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {*} ctrl
+ * @param {ng.ParseService} $parse
+ */
 function checkboxInputType(scope, element, attr, ctrl, $parse) {
   const trueValue = parseConstantExpr(
     $parse,
