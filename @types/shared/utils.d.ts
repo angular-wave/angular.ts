@@ -148,9 +148,9 @@ export function isError(value: any): value is Error;
  * Determines if a reference is a `Function`.
  *
  * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `Function`.
+ * @returns {value is Function} True if `value` is a `Function`.
  */
-export function isFunction(value: any): boolean;
+export function isFunction(value: any): value is Function;
 /**
  * Determines if a value is a regular expression object.
  *
