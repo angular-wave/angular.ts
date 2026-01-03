@@ -7,10 +7,11 @@ export const PURITY_ABSOLUTE: 1;
 export const PURITY_RELATIVE: 2;
 export class ASTInterpreter {
   /**
-   * @param {function(any):any} $filter
+   * @param {ng.FilterService} $filter
    */
-  constructor($filter: (arg0: any) => any);
-  _$filter: (arg0: any) => any;
+  constructor($filter: ng.FilterService);
+  /** @type {ng.FilterService} */
+  _$filter: ng.FilterService;
   /**
    * Compiles the AST into a function.
    * @param {import("./ast/ast.js").ASTNode} ast - The AST to compile.
