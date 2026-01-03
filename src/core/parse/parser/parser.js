@@ -3,18 +3,13 @@ import { ASTType } from "../ast-type.js";
 import { ASTInterpreter } from "../interpreter.js";
 
 /**
- * @typedef {Object} ParsedAST
- * @property {import("../ast/ast-node.ts").ASTNode} ast - AST representation of expression
- */
-
-/**
  * @constructor
  */
 export class Parser {
   /**
    *
    * @param {import('../lexer/lexer.js').Lexer} lexer
-   * @param {function(any):any} $filter
+   * @param {ng.FilterService} $filter
    */
   constructor(lexer, $filter) {
     /** @type {AST} */
@@ -47,6 +42,11 @@ export class Parser {
  */
 function isLiteral(ast) {
   const { body } = ast;
+
+  // non-single-expression programs are literals
+  if (!body || body.length !== 1) {
+    return true;
+  }
 
   if (body && body.length === 1) {
     switch (body[0].expression?.type) {

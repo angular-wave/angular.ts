@@ -14,9 +14,10 @@ export const PURITY_RELATIVE = 2;
 
 export class ASTInterpreter {
   /**
-   * @param {function(any):any} $filter
+   * @param {ng.FilterService} $filter
    */
   constructor($filter) {
+    /** @type {ng.FilterService} */
     this._$filter = $filter;
   }
 
@@ -715,7 +716,7 @@ export class ASTInterpreter {
 /**
  * Decorates AST with constant, toWatch, and isPure properties
  * @param {import("./ast/ast").ASTNode} ast
- * @param {function(any):any} $filter
+ * @param {ng.FilterService} $filter
  * @param {boolean|1|2} [parentIsPure]
  * @returns {DecoratedASTNode}
  */
@@ -737,8 +738,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
     decoratedProperty,
     decoratedKey;
 
-  // @ts-ignore
-  const astIsPure = (decoratedNode.isPure = isPure(ast, parentIsPure));
+  const astIsPure = (decoratedNode.isPure = !!isPure(ast, parentIsPure));
 
   switch (ast.type) {
     case ASTType._Program:

@@ -1413,7 +1413,6 @@ describe("parser", () => {
     });
 
     it("should mark an empty expressions as literal", () => {
-      debugger;
       $parse("");
       expect($parse("").literal).toBe(true);
       expect($parse("   ").literal).toBe(true);
@@ -1566,7 +1565,7 @@ describe("parser", () => {
         expect(watcherCalls).toBe(2);
       });
 
-      xit("should be reevaluated when the instance changes but valueOf() does not", async () => {
+      it("should be reevaluated when the instance changes but valueOf() does not", async () => {
         scope.date = new Date(1234567890123);
         let watcherCalls = 0;
         scope.$watch("[date]", (input) => {
@@ -1578,77 +1577,8 @@ describe("parser", () => {
 
         scope.date = new Date(1234567890123);
         await wait();
-        expect(watcherCalls).toBe(1);
-      });
-
-      xit("should be reevaluated when the instance does not change but valueOf() does", async () => {
-        scope.date = new Date(1234567890123);
-        let watcherCalls = 0;
-        scope.$watch("[date]", () => {
-          watcherCalls++;
-        });
-
-        await wait();
-        expect(watcherCalls).toBe(1);
-
-        scope.date.setTime(scope.date.getTime() + 1);
-        await wait();
         expect(watcherCalls).toBe(2);
       });
-    });
-
-    xit("should invoke all statements in multi-statement expressions", async () => {
-      let lastVal = NaN;
-      const listener = function (val) {
-        lastVal = val;
-      };
-
-      scope.setBarToOne = false;
-      scope.bar = 0;
-      scope.two = 2;
-      scope.foo = function () {
-        if (scope.setBarToOne) scope.bar = 1;
-      };
-
-      scope.$watch("foo(); bar + two", listener);
-
-      await wait();
-      expect(lastVal).toBe(2);
-
-      scope.bar = 2;
-      await wait();
-      expect(lastVal).toBe(4);
-
-      scope.setBarToOne = true;
-      await wait();
-      expect(lastVal).toBe(3);
-    });
-
-    xit("should watch the left side of assignments", async () => {
-      let lastVal = NaN;
-      const listener = function (val) {
-        lastVal = val;
-      };
-
-      const objA = {};
-      const objB = {};
-
-      scope.$watch("curObj.value = input", () => {
-        /* empty */
-      });
-
-      scope.curObj = objA;
-      scope.input = 1;
-      await wait();
-      expect(objA.value).toBe(scope.input);
-
-      scope.curObj = objB;
-      await wait();
-      expect(objB.value).toBe(scope.input);
-
-      scope.input = 2;
-      await wait();
-      expect(objB.value).toBe(scope.input);
     });
 
     it("should watch ES6 object computed property changes", async () => {

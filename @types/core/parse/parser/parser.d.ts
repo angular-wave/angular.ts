@@ -1,19 +1,15 @@
 /**
- * @typedef {Object} ParsedAST
- * @property {import("../ast/ast-node.ts").ASTNode} ast - AST representation of expression
- */
-/**
  * @constructor
  */
 export class Parser {
   /**
    *
    * @param {import('../lexer/lexer.js').Lexer} lexer
-   * @param {function(any):any} $filter
+   * @param {ng.FilterService} $filter
    */
   constructor(
     lexer: import("../lexer/lexer.js").Lexer,
-    $filter: (arg0: any) => any,
+    $filter: ng.FilterService,
   );
   /** @type {AST} */
   _ast: AST;
@@ -25,11 +21,5 @@ export class Parser {
    */
   _parse(exp: string): import("../interface.ts").CompiledExpression;
 }
-export type ParsedAST = {
-  /**
-   * - AST representation of expression
-   */
-  ast: import("../ast/ast-node.ts").ASTNode;
-};
 import { AST } from "../ast/ast.js";
 import { ASTInterpreter } from "../interpreter.js";

@@ -12,7 +12,7 @@ export class ParseProvider {
       $injectTokens._filter,
       /**
        *
-       * @param {(param: any) => any} $filter
+       * @param {ng.FilterService} $filter
        * @returns {ng.ParseService}
        */
       function ($filter) {

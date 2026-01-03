@@ -4,5 +4,5 @@ export function constantWatchDelegate(
   parsedExpression: any,
 ): any;
 export class ParseProvider {
-  $get: (string | (($filter: (param: any) => any) => ng.ParseService))[];
+  $get: (string | (($filter: ng.FilterService) => ng.ParseService))[];
 }
