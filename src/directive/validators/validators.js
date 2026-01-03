@@ -119,7 +119,7 @@ export const requiredDirective = [
 export const patternDirective = [
   $t._parse,
   /**
-   * @param {import("../../core/parse/interface.ts").ParseService} $parse
+   * @param {ng.ParseService} $parse
    * @returns {ng.Directive}
    */
   ($parse) => ({
@@ -293,7 +293,7 @@ export const maxlengthDirective = [
  */
 export const minlengthDirective = [
   $t._parse,
-  ($parse) => ({
+  /** @param {ng.ParseService} $parse */ ($parse) => ({
     restrict: "A",
     require: "?ngModel",
     link(scope, elm, attr, ctrl) {

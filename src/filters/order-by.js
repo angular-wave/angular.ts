@@ -13,6 +13,7 @@ import { $injectTokens } from "../injection-tokens.js";
 orderByFilter.$inject = [$injectTokens._parse];
 
 /**
+ * @param {ng.ParseService} $parse
  * @returns {ng.FilterFn}
  */
 export function orderByFilter($parse) {

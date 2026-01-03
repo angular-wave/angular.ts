@@ -579,7 +579,6 @@ export class CompileProvider {
       $t._templateRequest,
       $t._parse,
       $t._controller,
-      $t._rootScope,
       $t._sce,
       $t._animate,
       /**
@@ -589,7 +588,6 @@ export class CompileProvider {
        * @param {ng.TemplateRequestService} $templateRequest
        * @param {ng.ParseService} $parse
        * @param {*} $controller
-       * @param {ng.Scope} $rootScope
        * @param {ng.SCEService} $sce
        * @param {ng.AnimateService} $animate
        * @returns
@@ -601,7 +599,6 @@ export class CompileProvider {
         $templateRequest,
         $parse,
         $controller,
-        $rootScope,
         $sce,
         $animate,
       ) {
