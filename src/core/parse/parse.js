@@ -86,11 +86,8 @@ export class ParseProvider {
             return interceptorFn(deProxy(res));
           };
 
-          // Maintain references to the interceptor/intercepted
-          fn.$$intercepted = parsedExpression;
           fn.$$interceptor = interceptorFn;
 
-          // Propagate the literal/constant attributes
           // @ts-ignore
           fn.literal = parsedExpression.literal;
           // @ts-ignore

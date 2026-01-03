@@ -10,7 +10,7 @@ export interface CompiledExpressionProps {
   /** Indicates if the expression is constant. */
   constant: boolean;
   /** Optional flag for pure expressions. */
-  isPure?: boolean;
+  _isPure?: boolean;
   /** AST node decorated with metadata. */
   decoratedNode: DecoratedASTNode;
   /**

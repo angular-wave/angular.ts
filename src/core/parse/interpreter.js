@@ -53,7 +53,6 @@ export class ASTInterpreter {
             this.#recurse(watch)
           );
 
-        input.isPure = watch.isPure;
         watch.input = input;
         inputs.push(input);
         watch.watchId = key;
