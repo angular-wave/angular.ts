@@ -27,7 +27,7 @@ export interface CompiledExpressionProps {
     expression: CompiledExpression | string | ((scope: Scope) => any),
   ) => any;
   /** Expression inputs; may be an array or a function. */
-  inputs: any[] | Function;
+  inputs?: any[] | Function;
   /**
    * Optional assign function for two-way binding.
    * Assigns a value to a context.
@@ -72,5 +72,5 @@ export interface CompiledExpressionHandlerMap {
  */
 export type ParseService = (
   expression: string,
-  interceptorFn?: (value: any, scope: Scope, locals: any) => any,
+  interceptorFn?: (value: any) => any,
 ) => CompiledExpression;
