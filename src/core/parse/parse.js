@@ -90,11 +90,9 @@ export class ParseProvider {
           fn.$$intercepted = parsedExpression;
           fn.$$interceptor = interceptorFn;
 
-          // Propagate the literal/oneTime/constant attributes
+          // Propagate the literal/constant attributes
           // @ts-ignore
           fn.literal = parsedExpression.literal;
-          // @ts-ignore
-          fn.oneTime = parsedExpression.oneTime;
           // @ts-ignore
           fn.constant = parsedExpression.constant;
           // @ts-ignore

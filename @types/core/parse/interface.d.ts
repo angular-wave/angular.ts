@@ -10,8 +10,6 @@ export interface CompiledExpressionProps {
   constant: boolean;
   /** Optional flag for pure expressions. */
   isPure?: boolean;
-  /** Indicates if the expression should be evaluated only once. */
-  oneTime: boolean;
   /** AST node decorated with metadata. */
   decoratedNode: DecoratedASTNode;
   /**
