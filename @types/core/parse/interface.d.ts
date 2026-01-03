@@ -50,21 +50,6 @@ export type CompiledExpressionFunction = (
 export type CompiledExpression = CompiledExpressionFunction &
   CompiledExpressionProps;
 /**
- * Map used for expressions that watch specific object keys.
- */
-export interface CompiledExpressionHandlerMap {
-  /** Indicates if the expression is a literal. */
-  literal: boolean;
-  /** Indicates if the expression is constant. */
-  constant: boolean;
-  /** Optional flag for pure expressions. */
-  isPure?: boolean;
-  /** Indicates if the expression should be evaluated only once. */
-  oneTime: boolean;
-  /** A map of property keys to observe. */
-  keyMap: Map<string, Function>;
-}
-/**
  * Parses a string or expression function into a compiled expression.
  * @param expression - The input expression to evaluate.
  * @param interceptorFn - Optional value transformer.
