@@ -240,7 +240,7 @@ export function isError(value) {
  * Determines if a reference is a `Function`.
  *
  * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is a `Function`.
+ * @returns {value is Function} True if `value` is a `Function`.
  */
 export function isFunction(value) {
   return typeof value === "function";

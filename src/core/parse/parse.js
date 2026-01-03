@@ -20,7 +20,7 @@ export class ParseProvider {
 
         /** @type {ng.ParseService} */
         function $parse(exp, interceptorFn) {
-          validateRequired(exp, "exp");
+          validateRequired(exp, "exp"); // Note: changing this to a stricter validateInstance breaks multiple tests
           let parsedExpression;
 
           exp = exp.trim();
@@ -141,9 +141,11 @@ function addWatchDelegate(parsedExpression) {
  * @returns {Function} Unwatch function
  */
 function inputsWatchDelegate(scope, listener, parsedExpression) {
-  const inputExpressions = /** @type {Function[]} */ (parsedExpression.inputs);
+  const { inputs } = parsedExpression;
 
-  const getValues = () => inputExpressions.map((fn) => fn(scope));
+  const getValues = isFunction(inputs)
+    ? () => inputs(scope)
+    : () => inputs.map((fn) => fn(scope));
 
   const evaluate = () => parsedExpression(scope, undefined, getValues());
 
@@ -153,7 +155,7 @@ function inputsWatchDelegate(scope, listener, parsedExpression) {
   // Return a reactive/unwatch function
   return () => {
     // In AngularTS, reactive triggers would handle updates,
-    // so this is just a placeholder for unwatch cleanup.
+    // so this is just a placeholder for unwatch cleanup, without any cleanup
   };
 }
 
