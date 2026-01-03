@@ -16,7 +16,7 @@ import {
   PRISTINE_CLASS,
   VALID_CLASS,
 } from "../../shared/constants.js";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
 
 /**
  * @type {{
@@ -610,7 +610,11 @@ export class FormController {
  */
 const formDirectiveFactory = function (isNgForm) {
   return [
-    "$parse",
+    $injectTokens._parse,
+    /**
+     * @param {ng.ParseService} $parse
+     * @returns {ng.Directive}
+     */
     function ($parse) {
       return {
         name: "form",
@@ -713,12 +717,7 @@ const formDirectiveFactory = function (isNgForm) {
           return $parse('this[""]').assign;
         }
 
-        return (
-          $parse(expression).assign ||
-          (() => {
-            /* empty */
-          })
-        );
+        return $parse(expression).assign;
       }
     },
   ];

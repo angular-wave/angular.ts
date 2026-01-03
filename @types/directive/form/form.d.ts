@@ -237,41 +237,9 @@ export class FormController {
 }
 export const formDirective: (
   | string
-  | (($parse: any) => {
-      name: string;
-      restrict: string;
-      require: string[];
-      controller: typeof FormController;
-      compile: (
-        formElement: any,
-        attr: any,
-      ) => {
-        pre: (
-          scope: any,
-          formElementParam: any,
-          attrParam: any,
-          ctrls: any,
-        ) => void;
-      };
-    })
+  | (($parse: ng.ParseService) => ng.Directive)
 )[];
 export const ngFormDirective: (
   | string
-  | (($parse: any) => {
-      name: string;
-      restrict: string;
-      require: string[];
-      controller: typeof FormController;
-      compile: (
-        formElement: any,
-        attr: any,
-      ) => {
-        pre: (
-          scope: any,
-          formElementParam: any,
-          attrParam: any,
-          ctrls: any,
-        ) => void;
-      };
-    })
+  | (($parse: ng.ParseService) => ng.Directive)
 )[];

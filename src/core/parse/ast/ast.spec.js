@@ -6,7 +6,6 @@ import { Angular } from "../../../angular.js";
 
 describe("ast", () => {
   let $rootScope;
-  let $parse;
   let logs = [];
 
   beforeEach(() => {
@@ -20,7 +19,6 @@ describe("ast", () => {
         };
       });
     let injector = createInjector(["myModule"]);
-    $parse = injector.get("$parse");
     $rootScope = injector.get("$rootScope");
   });
 
