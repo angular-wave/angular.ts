@@ -1414,8 +1414,8 @@ describe("parser", () => {
 
     it("should mark an empty expressions as literal", () => {
       $parse("");
-      expect($parse("").literal).toBe(true);
-      expect($parse("   ").literal).toBe(true);
+      expect($parse("")._literal).toBe(true);
+      expect($parse("   ")._literal).toBe(true);
     });
 
     it("should support watching", async () => {
@@ -1766,30 +1766,30 @@ describe("parser", () => {
 
     describe("literal", () => {
       it("should mark scalar value expressions as literal", () => {
-        expect($parse("0").literal).toBe(true);
-        expect($parse('"hello"').literal).toBe(true);
-        expect($parse("true").literal).toBe(true);
-        expect($parse("false").literal).toBe(true);
-        expect($parse("null").literal).toBe(true);
-        expect($parse("undefined").literal).toBe(true);
+        expect($parse("0")._literal).toBe(true);
+        expect($parse('"hello"')._literal).toBe(true);
+        expect($parse("true")._literal).toBe(true);
+        expect($parse("false")._literal).toBe(true);
+        expect($parse("null")._literal).toBe(true);
+        expect($parse("undefined")._literal).toBe(true);
       });
 
       it("should mark array expressions as literal", () => {
-        expect($parse("[]").literal).toBe(true);
-        expect($parse("[1, 2, 3]").literal).toBe(true);
-        expect($parse("[1, identifier]").literal).toBe(true);
+        expect($parse("[]")._literal).toBe(true);
+        expect($parse("[1, 2, 3]")._literal).toBe(true);
+        expect($parse("[1, identifier]")._literal).toBe(true);
       });
 
       it("should mark object expressions as literal", () => {
-        expect($parse("{}").literal).toBe(true);
-        expect($parse("{x: 1}").literal).toBe(true);
-        expect($parse("{foo: bar}").literal).toBe(true);
+        expect($parse("{}")._literal).toBe(true);
+        expect($parse("{x: 1}")._literal).toBe(true);
+        expect($parse("{foo: bar}")._literal).toBe(true);
       });
 
       it("should not mark function calls or operator expressions as literal", () => {
-        expect($parse("1 + 1").literal).toBe(false);
-        expect($parse("call()").literal).toBe(false);
-        expect($parse("[].length").literal).toBe(false);
+        expect($parse("1 + 1")._literal).toBe(false);
+        expect($parse("call()")._literal).toBe(false);
+        expect($parse("[].length")._literal).toBe(false);
       });
     });
 

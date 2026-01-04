@@ -29,7 +29,7 @@ export class Parser {
 
     const fn = this._astCompiler.compile(ast);
 
-    fn.literal = isLiteral(ast);
+    fn._literal = isLiteral(ast);
     fn.constant = !!ast.constant;
 
     return fn;
