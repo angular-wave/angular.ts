@@ -113,7 +113,7 @@ export namespace TransitionHook {
    * Each HookType chooses a GetErrorHandler (See: [[TransitionService._defineCoreEvents]])
    */
   function LOG_ERROR(hook: any): (error: any) => any;
-  function REJECT_ERROR(): (error: any) => Promise<number>;
+  function REJECT_ERROR(): (error: any) => Promise<never>;
   function THROW_ERROR(): (error: any) => never;
 }
 import { Rejection } from "./reject-factory.js";
