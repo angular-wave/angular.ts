@@ -48,7 +48,7 @@ export function ngRefDirective($parse) {
       const getter = $parse(tAttrs.ngRef);
 
       const setter =
-        getter.assign ||
+        getter._assign ||
         function () {
           throw ngRefMinErr(
             "nonassign",

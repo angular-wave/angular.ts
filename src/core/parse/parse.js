@@ -94,7 +94,7 @@ export class ParseProvider {
           // @ts-ignore
           fn.constant = parsedExpression.constant;
           // @ts-ignore
-          fn.decoratedNode = parsedExpression.decoratedNode;
+          fn._decoratedNode = parsedExpression._decoratedNode;
 
           return addWatchDelegate(fn);
         }
@@ -121,7 +121,7 @@ export function constantWatchDelegate(scope, listener, parsedExpression) {
 function addWatchDelegate(parsedExpression) {
   if (parsedExpression.constant) {
     parsedExpression._watchDelegate = constantWatchDelegate;
-  } else if (parsedExpression.inputs) {
+  } else if (parsedExpression._inputs) {
     parsedExpression._watchDelegate = inputsWatchDelegate;
   }
 
@@ -137,7 +137,7 @@ function addWatchDelegate(parsedExpression) {
  * @returns {Function} Unwatch function
  */
 function inputsWatchDelegate(scope, listener, parsedExpression) {
-  const { inputs } = parsedExpression;
+  const { _inputs: inputs } = parsedExpression;
 
   const getValues = isFunction(inputs)
     ? () => inputs(scope)
