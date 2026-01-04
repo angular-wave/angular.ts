@@ -259,7 +259,7 @@ TransitionHook.LOG_REJECTED_RESULT = (hook) => (result) => {
  */
 TransitionHook.LOG_ERROR = (hook) => (error) => hook.logError(error);
 TransitionHook.REJECT_ERROR = () => (error) =>
-  Promise.reject(error).catch(() => 0);
+  ((x) => (x.catch(() => 0), x))(Promise.reject(error));
 TransitionHook.THROW_ERROR = () => (error) => {
   throw error;
 };

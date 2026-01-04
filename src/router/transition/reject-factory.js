@@ -158,9 +158,8 @@ export class Rejection {
    * @returns {Promise<any> & {_transitionRejection: Rejection}}
    */
   toPromise() {
-    return Object.assign(
-      Promise.reject(this).catch(() => 0),
-      { _transitionRejection: this },
-    );
+    return Object.assign(((x) => (x.catch(() => 0), x))(Promise.reject(this)), {
+      _transitionRejection: this,
+    });
   }
 }
