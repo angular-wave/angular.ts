@@ -12,18 +12,6 @@ export interface CompiledExpressionProps {
   _isPure?: boolean;
   /** AST node decorated with metadata. */
   _decoratedNode: DecoratedASTNode;
-  /**
-   * Optional custom watch delegate function for the expression.
-   * @param scope - The current scope.
-   * @param listener - A listener function.
-   * @param equalityCheck - Whether to use deep equality.
-   * @param expression - The compiled expression or string.
-   */
-  _watchDelegate?: (
-    scope: Scope,
-    listener: Function,
-    expression: CompiledExpression | string | ((scope: Scope) => any),
-  ) => any;
   /** Expression inputs; may be an array or a function. */
   _inputs?: any[] | Function;
   /**
