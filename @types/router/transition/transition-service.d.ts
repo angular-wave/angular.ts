@@ -97,7 +97,7 @@ export class TransitionProvider {
     criteriaMatchPath: any,
     reverseSort?: boolean,
     getResultHandler?: (hook: any) => (result: any) => any,
-    getErrorHandler?: () => (error: any) => Promise<never>,
+    getErrorHandler?: () => (error: any) => Promise<number>,
     synchronous?: boolean,
   ): void;
   /**

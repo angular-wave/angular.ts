@@ -1,6 +1,5 @@
 import { stringify } from "../../shared/strings.js";
 import { is } from "../../shared/hof.js";
-import { silentRejection } from "../state/state-service.js";
 
 /**
  * An object for Transition Rejection reasons.
@@ -159,6 +158,9 @@ export class Rejection {
    * @returns {Promise<any> & {_transitionRejection: Rejection}}
    */
   toPromise() {
-    return Object.assign(silentRejection(this), { _transitionRejection: this });
+    return Object.assign(
+      Promise.reject(this).catch(() => 0),
+      { _transitionRejection: this },
+    );
   }
 }
