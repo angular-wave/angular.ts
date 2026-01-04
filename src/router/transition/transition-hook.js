@@ -5,7 +5,6 @@ import { parse } from "../../shared/hof.js";
 import { trace } from "../common/trace.js";
 import { Rejection } from "./reject-factory.js";
 import { TargetState } from "../state/target-state.js";
-import { silentRejection } from "../state/state-service.js";
 
 const defaultOptions = {
   current: () => {
@@ -259,7 +258,8 @@ TransitionHook.LOG_REJECTED_RESULT = (hook) => (result) => {
  * Each HookType chooses a GetErrorHandler (See: [[TransitionService._defineCoreEvents]])
  */
 TransitionHook.LOG_ERROR = (hook) => (error) => hook.logError(error);
-TransitionHook.REJECT_ERROR = () => (error) => silentRejection(error);
+TransitionHook.REJECT_ERROR = () => (error) =>
+  Promise.reject(error).catch(() => 0);
 TransitionHook.THROW_ERROR = () => (error) => {
   throw error;
 };

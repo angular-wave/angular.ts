@@ -10,7 +10,7 @@ export class TransitionEventType {
     criteriaMatchPath: any,
     reverseSort?: boolean,
     getResultHandler?: (hook: any) => (result: any) => any,
-    getErrorHandler?: () => (error: any) => Promise<never>,
+    getErrorHandler?: () => (error: any) => Promise<number>,
     synchronous?: boolean,
   );
   name: any;
@@ -19,6 +19,6 @@ export class TransitionEventType {
   criteriaMatchPath: any;
   reverseSort: boolean;
   getResultHandler: (hook: any) => (result: any) => any;
-  getErrorHandler: () => (error: any) => Promise<never>;
+  getErrorHandler: () => (error: any) => Promise<number>;
   synchronous: boolean;
 }
