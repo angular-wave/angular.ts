@@ -11,7 +11,7 @@ export interface CompiledExpressionProps {
   /** Optional flag for pure expressions. */
   _isPure?: boolean;
   /** AST node decorated with metadata. */
-  decoratedNode: DecoratedASTNode;
+  _decoratedNode: DecoratedASTNode;
   /**
    * Optional custom watch delegate function for the expression.
    * @param scope - The current scope.
@@ -25,13 +25,13 @@ export interface CompiledExpressionProps {
     expression: CompiledExpression | string | ((scope: Scope) => any),
   ) => any;
   /** Expression inputs; may be an array or a function. */
-  inputs?: any[] | Function;
+  _inputs?: any[] | Function;
   /**
    * Optional assign function for two-way binding.
    * Assigns a value to a context.
    * If value is not provided, may return the getter.
    */
-  assign?: (context: any, value: any) => any;
+  _assign?: (context: any, value: any) => any;
 }
 /**
  * Expression function with context and optional locals/assign.

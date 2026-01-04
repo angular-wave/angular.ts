@@ -150,7 +150,7 @@ export class NgModelController {
     this._updateEventHandler = this._updateEventHandler.bind(this);
 
     this._parsedNgModel = $parse($attr.ngModel);
-    this._parsedNgModelAssign = this._parsedNgModel.assign;
+    this._parsedNgModelAssign = this._parsedNgModel._assign;
 
     /**
      * @type {import("../../core/parse/interface.ts").CompiledExpression |
@@ -322,7 +322,7 @@ export class NgModelController {
           this._parsedNgModelAssign($scope, newValue);
         }
       };
-    } else if (!this._parsedNgModel.assign) {
+    } else if (!this._parsedNgModel._assign) {
       throw ngModelMinErr(
         "nonassign",
         "Expression '{0}' is non-assignable. Element: {1}",

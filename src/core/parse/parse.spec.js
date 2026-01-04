@@ -848,54 +848,54 @@ describe("parser", () => {
 
     it("should expose assignment function", () => {
       const fn = $parse("a");
-      expect(fn.assign).toBeTruthy();
+      expect(fn._assign).toBeTruthy();
       const scope = {};
-      fn.assign(scope, 123);
+      fn._assign(scope, 123);
       expect(scope).toEqual({ a: 123 });
     });
 
     it("should return the assigned value", () => {
       const fn = $parse("a");
       const scope = {};
-      expect(fn.assign(scope, 123)).toBe(123);
+      expect(fn._assign(scope, 123)).toBe(123);
       const someObject = {};
-      expect(fn.assign(scope, someObject)).toBe(someObject);
+      expect(fn._assign(scope, someObject)).toBe(someObject);
     });
 
     it("should expose working assignment function for expressions ending with brackets", () => {
       const fn = $parse('a.b["c"]');
-      expect(fn.assign).toBeTruthy();
+      expect(fn._assign).toBeTruthy();
       const scope = {};
-      fn.assign(scope, 123);
+      fn._assign(scope, 123);
       expect(scope.a.b.c).toEqual(123);
     });
 
     it("should expose working assignment function for expressions with brackets in the middle", () => {
       const fn = $parse('a["b"].c');
-      expect(fn.assign).toBeTruthy();
+      expect(fn._assign).toBeTruthy();
       const scope = {};
-      fn.assign(scope, 123);
+      fn._assign(scope, 123);
       expect(scope.a.b.c).toEqual(123);
     });
 
     it("should create objects when finding a null", () => {
       const fn = $parse("foo.bar");
       const scope = { foo: null };
-      fn.assign(scope, 123);
+      fn._assign(scope, 123);
       expect(scope.foo.bar).toEqual(123);
     });
 
     it("should create objects when finding a null", () => {
       const fn = $parse('foo["bar"]');
       const scope = { foo: null };
-      fn.assign(scope, 123);
+      fn._assign(scope, 123);
       expect(scope.foo.bar).toEqual(123);
     });
 
     it("should create objects when finding a null", () => {
       const fn = $parse("foo.bar.baz");
       const scope = { foo: null };
-      fn.assign(scope, 123);
+      fn._assign(scope, 123);
       expect(scope.foo.bar.baz).toEqual(123);
     });
   });

@@ -418,7 +418,7 @@ export function ngOptionsDirective($compile, $parse) {
     //   scope.$watch(i, updateOptions);
     // });
     scope.$watch(
-      ngOptions.getWatchables.decoratedNode.body[0].expression.name,
+      ngOptions.getWatchables._decoratedNode.body[0].expression.name,
       updateOptions,
     );
 

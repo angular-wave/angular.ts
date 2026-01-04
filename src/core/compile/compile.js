@@ -3178,7 +3178,7 @@ export class CompileProvider {
                   }
 
                   parentSet =
-                    (parentGet && parentGet.assign) ||
+                    (parentGet && parentGet._assign) ||
                     function () {
                       // reset the change, or we will throw this exception on every $digest
 
@@ -3248,7 +3248,7 @@ export class CompileProvider {
 
                       if (
                         (parentGet &&
-                          !!parentGet.inputs &&
+                          !!parentGet._inputs &&
                           !parentGet._literal) ||
                         (isUndefined(attrs[attrName]) && isDefined(val))
                       ) {

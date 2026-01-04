@@ -778,11 +778,11 @@ export class Scope {
     };
 
     // simplest case
-    let key = get.decoratedNode.body[0].expression.name;
+    let key = get._decoratedNode.body[0].expression.name;
 
     const keySet = [];
 
-    const { type } = get.decoratedNode.body[0].expression;
+    const { type } = get._decoratedNode.body[0].expression;
 
     switch (type) {
       // 3
@@ -797,19 +797,19 @@ export class Scope {
 
           return undefined;
         }
-        key = get.decoratedNode.body[0].expression.left.name;
+        key = get._decoratedNode.body[0].expression.left.name;
         break;
       // 4
       case ASTType._ConditionalExpression: {
-        key = get.decoratedNode.body[0].expression.toWatch[0]?.test?.name;
+        key = get._decoratedNode.body[0].expression.toWatch[0]?.test?.name;
         listener.property.push(key);
         break;
       }
       // 5
       case ASTType._LogicalExpression: {
         const keyList = [
-          get.decoratedNode.body[0].expression.left.toWatch[0]?.name,
-          get.decoratedNode.body[0].expression.right.toWatch[0]?.name,
+          get._decoratedNode.body[0].expression.left.toWatch[0]?.name,
+          get._decoratedNode.body[0].expression.right.toWatch[0]?.name,
         ];
 
         for (let i = 0, l = keyList.length; i < l; i++) {
@@ -828,8 +828,8 @@ export class Scope {
       }
       // 6
       case ASTType._BinaryExpression: {
-        if (get.decoratedNode.body[0].expression.isPure) {
-          const expr = get.decoratedNode.body[0].expression.toWatch[0];
+        if (get._decoratedNode.body[0].expression.isPure) {
+          const expr = get._decoratedNode.body[0].expression.toWatch[0];
 
           key = expr.property ? expr.property.name : expr.name;
 
@@ -839,7 +839,7 @@ export class Scope {
           listener.property.push(key);
           break;
         } else {
-          const { toWatch } = get.decoratedNode.body[0].expression;
+          const { toWatch } = get._decoratedNode.body[0].expression;
 
           for (let i = 0, l = toWatch.length; i < l; i++) {
             const x = toWatch[i];
@@ -866,7 +866,7 @@ export class Scope {
       }
       // 7
       case ASTType._UnaryExpression: {
-        const expr = get.decoratedNode.body[0].expression.toWatch[0];
+        const expr = get._decoratedNode.body[0].expression.toWatch[0];
 
         key = expr.property ? expr.property.name : expr.name;
 
@@ -878,7 +878,7 @@ export class Scope {
       }
       // 8 function
       case ASTType._CallExpression: {
-        const { toWatch } = get.decoratedNode.body[0].expression;
+        const { toWatch } = get._decoratedNode.body[0].expression;
 
         for (let i = 0, l = toWatch.length; i < l; i++) {
           const x = toWatch[i];
@@ -900,11 +900,11 @@ export class Scope {
 
       // 9
       case ASTType._MemberExpression: {
-        key = get.decoratedNode.body[0].expression.property.name;
+        key = get._decoratedNode.body[0].expression.property.name;
 
         // array watcher
         if (!key) {
-          key = get.decoratedNode.body[0].expression.object.name;
+          key = get._decoratedNode.body[0].expression.object.name;
         }
 
         listener.property.push(key);
@@ -931,13 +931,13 @@ export class Scope {
 
       // 10
       case ASTType._Identifier: {
-        listener.property.push(get.decoratedNode.body[0].expression.name);
+        listener.property.push(get._decoratedNode.body[0].expression.name);
         break;
       }
 
       // 12
       case ASTType._ArrayExpression: {
-        const { elements } = get.decoratedNode.body[0].expression;
+        const { elements } = get._decoratedNode.body[0].expression;
 
         for (let i = 0, l = elements.length; i < l; i++) {
           const x = elements[i];
@@ -967,7 +967,7 @@ export class Scope {
 
       // 14
       case ASTType._ObjectExpression: {
-        const { properties } = get.decoratedNode.body[0].expression;
+        const { properties } = get._decoratedNode.body[0].expression;
 
         for (let i = 0, l = properties.length; i < l; i++) {
           const prop = properties[i];
@@ -979,7 +979,7 @@ export class Scope {
           } else if (prop.value?.name) {
             currentKey = prop.value.name;
           } else {
-            const target = get.decoratedNode.body[0].expression.toWatch[0];
+            const target = get._decoratedNode.body[0].expression.toWatch[0];
 
             currentKey = target.property ? target.property.name : target.name;
           }

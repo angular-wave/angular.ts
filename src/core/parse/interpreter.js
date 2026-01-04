@@ -83,13 +83,13 @@ export class ASTInterpreter {
             };
 
     if (assign) {
-      fn.assign = (scope, value, locals) => assign(scope, locals, value);
+      fn._assign = (scope, value, locals) => assign(scope, locals, value);
     }
 
     if (inputs) {
-      fn.inputs = inputs;
+      fn._inputs = inputs;
     }
-    fn.decoratedNode = decoratedNode;
+    fn._decoratedNode = decoratedNode;
 
     return fn;
   }

@@ -19,7 +19,7 @@ export function ngSetterDirective($parse, $log) {
         return;
       }
 
-      const assignModel = $parse(modelExpression).assign;
+      const assignModel = $parse(modelExpression)._assign;
 
       if (!assignModel) {
         $log.warn("ng-setter: expression invalid");
