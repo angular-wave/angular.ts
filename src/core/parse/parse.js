@@ -35,8 +35,6 @@ export class ParseProvider {
             const parser = new Parser(lexer, $filter);
 
             parsedExpression = parser._parse(exp);
-
-            cache[cacheKey] = addWatchDelegate(parsedExpression);
           }
 
           return addInterceptor(parsedExpression, interceptorFn);
@@ -52,36 +50,20 @@ export class ParseProvider {
             return parsedExpression;
           }
 
-          // Extract any existing interceptors out of the parsedExpression
-          // to ensure the original parsedExpression is always the $$intercepted
-          // @ts-ignore
-          if (parsedExpression._interceptor) {
-            interceptorFn = chainInterceptors(
-              // @ts-ignore
-              parsedExpression._interceptor,
-              interceptorFn,
-            );
-            // @ts-ignore
-            parsedExpression = parsedExpression.$$intercepted;
-          }
-
-          const useInputs = false;
-
-          const fn = function interceptedExpression(
-            scope,
-            locals,
-            assign,
-            inputs,
-          ) {
-            const value =
-              useInputs && inputs
-                ? inputs[0]
-                : parsedExpression(scope, locals, assign);
-
+          /**
+           *
+           * @param {ng.Scope} scope
+           * @param {Object} [locals]
+           * @param {*} [assign]
+           * @returns
+           */
+          const fn = function interceptedExpression(scope, locals, assign) {
             // Do not invoke for getters
             if (scope?.getter) {
               return undefined;
             }
+            const value = parsedExpression(scope, locals, assign);
+
             const res = isFunction(value) ? value() : value;
 
             return interceptorFn(deProxy(res));
@@ -89,74 +71,15 @@ export class ParseProvider {
 
           fn._interceptor = interceptorFn;
 
-          // @ts-ignore
           fn._literal = parsedExpression._literal;
-          // @ts-ignore
+
           fn.constant = parsedExpression.constant;
-          // @ts-ignore
+
           fn._decoratedNode = parsedExpression._decoratedNode;
 
-          return addWatchDelegate(fn);
+          return fn;
         }
       },
     ];
   }
-}
-
-export function constantWatchDelegate(scope, listener, parsedExpression) {
-  const unwatch = scope.$watch(() => {
-    unwatch();
-
-    return parsedExpression(scope);
-  }, listener);
-
-  return unwatch;
-}
-
-/**
- *
- * @param {import('./interface.ts').CompiledExpression} parsedExpression
- * @returns {import('./interface.ts').CompiledExpression}
- */
-function addWatchDelegate(parsedExpression) {
-  if (parsedExpression.constant) {
-    parsedExpression._watchDelegate = constantWatchDelegate;
-  } else if (parsedExpression._inputs) {
-    parsedExpression._watchDelegate = inputsWatchDelegate;
-  }
-
-  return parsedExpression;
-}
-
-/**
- * Watches input expressions and calls the parsedExpression with their current values.
- *
- * @param {ng.Scope} scope
- * @param {Function} listener - Callback when the expression result changes
- * @param {import('./interface.ts').CompiledExpression} parsedExpression
- * @returns {Function} Unwatch function
- */
-function inputsWatchDelegate(scope, listener, parsedExpression) {
-  const { _inputs: inputs } = parsedExpression;
-
-  const getValues = isFunction(inputs)
-    ? () => inputs(scope)
-    : () => inputs.map((fn) => fn(scope));
-
-  const evaluate = () => parsedExpression(scope, undefined, getValues());
-
-  // Immediately call the listener with the initial value
-  listener(evaluate());
-
-  // Return a reactive/unwatch function
-  return () => {
-    // In AngularTS, reactive triggers would handle updates,
-    // so this is just a placeholder for unwatch cleanup, without any cleanup
-  };
-}
-
-function chainInterceptors(first, second) {
-  return function chainedInterceptor(value) {
-    return second(first(value));
-  };
 }

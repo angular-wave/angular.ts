@@ -187,7 +187,7 @@ export class ASTInterpreter {
 
               return context
                 ? { context: undefined, name: undefined, value }
-                : value;
+                : value();
             }
           : (scope, locals, assign) => {
               const rhs = right(

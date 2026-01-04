@@ -5,7 +5,6 @@ import {
   minErr,
   stringify,
 } from "../../shared/utils.js";
-import { constantWatchDelegate } from "../parse/parse.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
 const $interpolateMinErr = minErr("$interpolate");
@@ -227,7 +226,6 @@ export class InterpolateProvider {
 
           constantInterp.exp = text;
           constantInterp.expressions = [];
-          constantInterp._watchDelegate = constantWatchDelegate;
 
           return constantInterp;
         }
