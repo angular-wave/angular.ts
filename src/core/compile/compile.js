@@ -3097,6 +3097,7 @@ export class CompileProvider {
 
               let lastValue;
 
+              /** @type {import("../parse/interface").CompiledExpression} */
               let parentGet;
 
               let parentSet;
@@ -3170,7 +3171,7 @@ export class CompileProvider {
 
                   parentGet = attr && $parse(attr);
 
-                  if (parentGet && parentGet.literal) {
+                  if (parentGet && parentGet._literal) {
                     compare = equals;
                   } else {
                     compare = simpleCompare;
@@ -3224,7 +3225,7 @@ export class CompileProvider {
                         const res = $parse(attrs[attrName], parentValueWatch);
 
                         if (val) {
-                          if (parentGet.literal) {
+                          if (parentGet._literal) {
                             scope.$target[attrName] = val;
                           } else {
                             scope[attrName] = val;
@@ -3248,7 +3249,7 @@ export class CompileProvider {
                       if (
                         (parentGet &&
                           !!parentGet.inputs &&
-                          !parentGet.literal) ||
+                          !parentGet._literal) ||
                         (isUndefined(attrs[attrName]) && isDefined(val))
                       ) {
                         destination.$target[attrName] = lastValue;
@@ -3329,18 +3330,10 @@ export class CompileProvider {
                   // Don't assign Object.prototype method to scope
                   parentGet = hasOwn(attrs, attrName)
                     ? $parse(attrs[attrName])
-                    : () => {
-                        /* empty */
-                      };
+                    : undefined;
 
                   // Don't assign noop to destination if expression is not valid
-                  if (
-                    parentGet.toString() ===
-                      (() => {
-                        /* empty */
-                      }).toString() &&
-                    optional
-                  ) {
+                  if (!parentGet && optional) {
                     break;
                   }
 

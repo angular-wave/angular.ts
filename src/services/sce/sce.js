@@ -593,7 +593,7 @@ export function SceProvider() {
       sce.parseAs = (type, expr) => {
         const parsed = $parse(expr);
 
-        if (parsed.literal && parsed.constant) {
+        if (parsed._literal && parsed.constant) {
           return parsed;
         }
 

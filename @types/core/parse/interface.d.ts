@@ -5,7 +5,7 @@ import type { Scope } from "../scope/scope.js";
  */
 export interface CompiledExpressionProps {
   /** Indicates if the expression is a literal. */
-  literal: boolean;
+  _literal: boolean;
   /** Indicates if the expression is constant. */
   constant: boolean;
   /** Optional flag for pure expressions. */

@@ -21,6 +21,7 @@ export class ParseProvider {
         /** @type {ng.ParseService} */
         function $parse(exp, interceptorFn) {
           validateRequired(exp, "exp"); // Note: changing this to a stricter validateInstance breaks multiple tests
+          /** @type {import("./interface.ts").CompiledExpression} */
           let parsedExpression;
 
           exp = exp.trim();
@@ -42,7 +43,7 @@ export class ParseProvider {
         }
 
         /**
-         * @param {Function} parsedExpression
+         * @param {import("./interface.ts").CompiledExpression} parsedExpression
          * @param {(value: any) => any} [interceptorFn]
          * @returns {import('./interface.ts').CompiledExpression|*}
          */
@@ -54,10 +55,10 @@ export class ParseProvider {
           // Extract any existing interceptors out of the parsedExpression
           // to ensure the original parsedExpression is always the $$intercepted
           // @ts-ignore
-          if (parsedExpression.$$interceptor) {
+          if (parsedExpression._interceptor) {
             interceptorFn = chainInterceptors(
               // @ts-ignore
-              parsedExpression.$$interceptor,
+              parsedExpression._interceptor,
               interceptorFn,
             );
             // @ts-ignore
@@ -75,7 +76,7 @@ export class ParseProvider {
             const value =
               useInputs && inputs
                 ? inputs[0]
-                : parsedExpression(scope, locals, assign, inputs);
+                : parsedExpression(scope, locals, assign);
 
             // Do not invoke for getters
             if (scope?.getter) {
@@ -86,10 +87,10 @@ export class ParseProvider {
             return interceptorFn(deProxy(res));
           };
 
-          fn.$$interceptor = interceptorFn;
+          fn._interceptor = interceptorFn;
 
           // @ts-ignore
-          fn.literal = parsedExpression.literal;
+          fn._literal = parsedExpression._literal;
           // @ts-ignore
           fn.constant = parsedExpression.constant;
           // @ts-ignore
