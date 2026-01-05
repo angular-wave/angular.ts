@@ -1,4 +1,4 @@
-/* Version: 0.16.0 - January 5, 2026 02:03:42 */
+/* Version: 0.16.1 - January 5, 2026 22:44:28 */
 const VALID_CLASS = "ng-valid";
 const INVALID_CLASS = "ng-invalid";
 const PRISTINE_CLASS = "ng-pristine";
@@ -1448,11 +1448,11 @@ const $injectTokens = {
   _attrs: "$attrs",
   _scope: "$scope",
   _element: "$element",
-  _animateCache: "_animateCache",
-  _animateCssDriver: "_animateCssDriver",
-  _animateJs: "_animateJs",
-  _animateJsDriver: "_animateJsDriver",
-  _animateQueue: "_animateQueue",
+  _animateCache: "$$animateCache",
+  _animateCssDriver: "$$animateCssDriver",
+  _animateJs: "$$animateJs",
+  _animateJsDriver: "$$animateJsDriver",
+  _animateQueue: "$$animateQueue",
   _animation: "$$animation",
   _rAFScheduler: "$$rAFScheduler",
   _taskTrackerFactory: "$$taskTrackerFactory",
@@ -15790,7 +15790,11 @@ function ngOptionsDirective($compile, $parse) {
     //   scope.$watch(i, updateOptions);
     // });
     scope.$watch(
-      ngOptions.getWatchables._decoratedNode.body[0].expression.name,
+      /** @type {import('../../core/parse/ast/ast-node.ts').LiteralNode} */ (
+        /** @type {import('../../core/parse/ast/ast-node.ts').ExpressionNode} */ (
+          ngOptions.getWatchables._decoratedNode.body[0]
+        ).expression
+      ).name,
       updateOptions,
     );
 
@@ -19983,6 +19987,16 @@ const ASTType = {
   _NGValueParameter: 17,
 };
 
+/** @typedef {import("./ast/ast-node.ts").ASTNode} ASTNode */
+/** @typedef {import("./ast/ast-node.ts").BodyNode} BodyNode */
+/** @typedef {import("./ast/ast-node.ts").ExpressionNode} ExpressionNode */
+/** @typedef {import("./ast/ast-node.ts").ArrayNode} ArrayNode */
+/** @typedef {import("./ast/ast-node.ts").LiteralNode} LiteralNode */
+/** @typedef {import("./ast/ast-node.ts").ObjectNode} ObjectNode */
+/** @typedef {import("./ast/ast-node.ts").ObjectPropertyNode} ObjectPropertyNode */
+/** @typedef {import("./interface.ts").CompiledExpression} CompiledExpression */
+/** @typedef {import("./interface.ts").CompiledExpressionFunction} CompiledExpressionFunction */
+
 const PURITY_ABSOLUTE = 1;
 const PURITY_RELATIVE = 2;
 
@@ -19997,14 +20011,16 @@ class ASTInterpreter {
 
   /**
    * Compiles the AST into a function.
-   * @param {import("./ast/ast.js").ASTNode} ast - The AST to compile.
-   * @returns {import("./interface.ts").CompiledExpression}
+   * @param {ASTNode} ast - The AST to compile.
+   * @returns {CompiledExpression}
    */
   compile(ast) {
     const decoratedNode = findConstantAndWatchExpressions(ast, this._$filter);
 
-    /** @type {import("./ast/ast.js").ASTNode} */
-    const assignable = assignableAST(decoratedNode);
+    const { body } = /** @type {BodyNode} */ (decoratedNode);
+
+    /** @type {ASTNode} */
+    const assignable = assignableAST(/** @type {BodyNode} */ (decoratedNode));
 
     /** @type {import("./interface.ts").CompiledExpression} */
     let assign;
@@ -20014,7 +20030,8 @@ class ASTInterpreter {
         this.#recurse(assignable)
       );
     }
-    const toWatch = getInputs(decoratedNode.body);
+
+    const toWatch = getInputs(body);
 
     let inputs;
 
@@ -20032,20 +20049,28 @@ class ASTInterpreter {
         watch.watchId = key;
       }
     }
+    /**
+     * @type {import("./interface.ts").CompiledExpressionFunction[]}
+     */
     const expressions = [];
 
-    decoratedNode.body.forEach((expression) => {
-      expressions.push(this.#recurse(expression.expression));
-    });
+    body.forEach(
+      /** @param {ExpressionNode} expression */ (expression) => {
+        expressions.push(this.#recurse(expression.expression));
+      },
+    );
 
     /** @type {import("./interface.ts").CompiledExpression} */
+    // @ts-ignore
     const fn =
-      decoratedNode.body.length === 0
+      body.length === 0
         ? () => {
             /* empty */
           }
-        : decoratedNode.body.length === 1
-          ? expressions[0]
+        : body.length === 1
+          ? /** @type {import("./interface.ts").CompiledExpression} */ (
+              expressions[0]
+            )
           : function (scope, locals) {
               let lastValue;
 
@@ -20063,14 +20088,14 @@ class ASTInterpreter {
     if (inputs) {
       fn._inputs = inputs;
     }
-    fn._decoratedNode = decoratedNode;
+    fn._decoratedNode = /** @type {BodyNode} */ (decoratedNode);
 
     return fn;
   }
 
   /**
    * Recurses the AST nodes.
-   * @param {import("./ast/ast").ASTNode} ast - The AST node.
+   * @param {ExpressionNode & LiteralNode} ast - The AST node.
    * @param {Object} [context] - The context.
    * @param {boolean|1} [create] - The create flag.
    * @returns {import("./interface.ts").CompiledExpressionFunction} The recursive function.
@@ -20116,7 +20141,7 @@ class ASTInterpreter {
         left = this.#recurse(ast.object, false, !!create);
 
         if (!ast.computed) {
-          right = ast.property.name;
+          right = /** @type {LiteralNode} */ (ast.property).name;
         }
 
         if (ast.computed) right = this.#recurse(ast.property);
@@ -20138,13 +20163,22 @@ class ASTInterpreter {
         );
       case ASTType._CallExpression:
         args = [];
-        ast.arguments.forEach((expr) => {
+        /** @type {ExpressionNode} */ (ast).arguments.forEach((expr) => {
           args.push(self.#recurse(expr));
         });
 
-        if (ast.filter) right = this._$filter(ast.callee.name);
+        if (/** @type {ExpressionNode} */ (ast).filter)
+          right = this._$filter(
+            /** @type {LiteralNode} */ (
+              /** @type {ExpressionNode} */ (ast).callee
+            ).name,
+          );
 
-        if (!ast.filter) right = this.#recurse(ast.callee, true);
+        if (!(/** @type {ExpressionNode} */ (ast).filter))
+          right = this.#recurse(
+            /** @type {ExpressionNode} */ (ast).callee,
+            true,
+          );
 
         return ast.filter
           ? (scope, locals, assign) => {
@@ -20207,7 +20241,7 @@ class ASTInterpreter {
         };
       case ASTType._ArrayExpression:
         args = [];
-        ast.elements.forEach((expr) => {
+        /** @type {ArrayNode} */ (ast).elements.forEach((expr) => {
           args.push(self.#recurse(expr));
         });
 
@@ -20222,24 +20256,26 @@ class ASTInterpreter {
         };
       case ASTType._ObjectExpression:
         args = [];
-        ast.properties.forEach((property) => {
-          if (property.computed) {
-            args.push({
-              key: self.#recurse(property.key),
-              computed: true,
-              value: self.#recurse(property.value),
-            });
-          } else {
-            args.push({
-              key:
-                property.key.type === ASTType._Identifier
-                  ? property.key.name
-                  : `${property.key.value}`,
-              computed: false,
-              value: self.#recurse(property.value),
-            });
-          }
-        });
+        /** @type {ObjectNode} */ (ast).properties.forEach(
+          /** @param {ObjectPropertyNode} property */ (property) => {
+            if (property.computed) {
+              args.push({
+                key: self.#recurse(property.key),
+                computed: true,
+                value: self.#recurse(property.value),
+              });
+            } else {
+              args.push({
+                key:
+                  property.key.type === ASTType._Identifier
+                    ? /** @type {LiteralNode} */ (property.key).name
+                    : `${/** @type {LiteralNode} */ (property.key).value}`,
+                computed: false,
+                value: self.#recurse(property.value),
+              });
+            }
+          },
+        );
 
         return (scope, locals, assign) => {
           const value = {};
@@ -20679,19 +20715,18 @@ class ASTInterpreter {
 }
 
 /**
- * @typedef {import("./ast/ast").ASTNode & {
- *  isPure: boolean|number,
- *  constant: boolean,
- *  toWatch: Array,
- * }} DecoratedASTNode
- */
-
-/**
- * Decorates AST with constant, toWatch, and isPure properties
- * @param {import("./ast/ast").ASTNode} ast
- * @param {ng.FilterService} $filter
- * @param {boolean|1|2} [parentIsPure]
- * @returns {DecoratedASTNode}
+ * Decorates an AST node with constant, toWatch, and isPure metadata.
+ *
+ * This function recursively traverses the AST and sets:
+ * - `constant` → whether the node is a constant expression
+ * - `toWatch` → list of expressions to observe for changes
+ * - `isPure` → whether the expression is pure (Angular-specific)
+ *
+ * @param {ASTNode} ast - The AST node to decorate
+ * @param {ng.FilterService} $filter - Angular filter service
+ * @param {boolean|1|2} [parentIsPure] - Optional flag indicating purity of the parent node
+ * @returns {ASTNode} The same node, now decorated
+ * @throws {Error} If the AST type is unknown
  */
 function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
   let allConstants;
@@ -20700,7 +20735,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
 
   let isFilter;
 
-  const decoratedNode = /** @type  {DecoratedASTNode} */ (ast);
+  const decoratedNode = /** @type  {BodyNode & ExpressionNode} */ (ast);
 
   let decoratedLeft,
     decoratedRight,
@@ -20716,9 +20751,13 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
   switch (ast.type) {
     case ASTType._Program:
       allConstants = true;
-      decoratedNode.body.forEach((expr) => {
+      /** @type {import("./ast/ast-node.ts").BodyNode} */ (
+        decoratedNode
+      ).body.forEach((expr) => {
         const decorated = findConstantAndWatchExpressions(
-          expr.expression,
+          /** @type {import("./ast/ast-node.ts").ExpressionStatementNode} */ (
+            expr
+          ).expression,
           $filter,
           astIsPure,
         );
@@ -20733,21 +20772,24 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       decoratedNode.toWatch = [];
 
       return decoratedNode;
-    case ASTType._UnaryExpression:
-      // eslint-disable-next-line no-var
-      var decorated = findConstantAndWatchExpressions(
-        decoratedNode.argument,
-        $filter,
-        astIsPure,
+    case ASTType._UnaryExpression: {
+      /** @type {BodyNode} */
+      const decorated = /** @type {BodyNode} */ (
+        findConstantAndWatchExpressions(
+          decoratedNode.argument,
+          $filter,
+          astIsPure,
+        )
       );
 
       decoratedNode.constant = decorated.constant;
-      decoratedNode.toWatch = decorated.toWatch;
+      decoratedNode.toWatch = decorated.toWatch || [];
 
       return decoratedNode;
+    }
     case ASTType._BinaryExpression:
       decoratedLeft = findConstantAndWatchExpressions(
-        decoratedNode.left,
+        /** @type {ASTNode} */ (decoratedNode.left),
         $filter,
         astIsPure,
       );
@@ -20758,14 +20800,16 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       );
       decoratedNode.constant =
         decoratedLeft.constant && decoratedRight.constant;
-      decoratedNode.toWatch = decoratedLeft.toWatch.concat(
-        decoratedRight.toWatch,
+      decoratedNode.toWatch = /** @type {ASTNode[]} */ (
+        /** @type {BodyNode} */ (decoratedLeft).toWatch.concat(
+          /** @type {BodyNode} */ (decoratedRight).toWatch,
+        )
       );
 
       return decoratedNode;
     case ASTType._LogicalExpression:
       decoratedLeft = findConstantAndWatchExpressions(
-        decoratedNode.left,
+        /** @type {ASTNode} */ (decoratedNode.left),
         $filter,
         astIsPure,
       );
@@ -20781,17 +20825,17 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       return decoratedNode;
     case ASTType._ConditionalExpression:
       decoratedTest = findConstantAndWatchExpressions(
-        ast.test,
+        /** @type {ExpressionNode} */ (ast).test,
         $filter,
         astIsPure,
       );
       decoratedAlternate = findConstantAndWatchExpressions(
-        ast.alternate,
+        /** @type {ExpressionNode} */ (ast).alternate,
         $filter,
         astIsPure,
       );
       decoratedConsequent = findConstantAndWatchExpressions(
-        ast.consequent,
+        /** @type {ExpressionNode} */ (ast).consequent,
         $filter,
         astIsPure,
       );
@@ -20809,14 +20853,14 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       return decoratedNode;
     case ASTType._MemberExpression:
       decoratedObject = findConstantAndWatchExpressions(
-        ast.object,
+        /** @type {ExpressionNode} */ (ast).object,
         $filter,
         astIsPure,
       );
 
-      if (ast.computed) {
+      if (/** @type {ExpressionNode} */ (ast).computed) {
         decoratedProperty = findConstantAndWatchExpressions(
-          ast.property,
+          /** @type {ExpressionNode} */ (ast).property,
           $filter,
           astIsPure,
         );
@@ -20828,13 +20872,21 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
 
       return decoratedNode;
     case ASTType._CallExpression:
-      isFilter = ast.filter;
+      isFilter = /** @type {ExpressionNode} */ (ast).filter;
       allConstants = isFilter;
       argsToWatch = [];
-      ast.arguments.forEach((expr) => {
-        decorated = findConstantAndWatchExpressions(expr, $filter, astIsPure);
+      /** @type {ExpressionNode} */ (ast).arguments.forEach((expr) => {
+        const decorated = findConstantAndWatchExpressions(
+          expr,
+          $filter,
+          astIsPure,
+        );
+
         allConstants = allConstants && decorated.constant;
-        argsToWatch.push.apply(argsToWatch, decorated.toWatch);
+        argsToWatch.push.apply(
+          argsToWatch,
+          /** @type {BodyNode} */ (decorated).toWatch,
+        );
       });
       decoratedNode.constant = allConstants;
       decoratedNode.toWatch = isFilter ? argsToWatch : [decoratedNode];
@@ -20842,12 +20894,12 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       return decoratedNode;
     case ASTType._AssignmentExpression:
       decoratedLeft = findConstantAndWatchExpressions(
-        ast.left,
+        /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).left),
         $filter,
         astIsPure,
       );
       decoratedRight = findConstantAndWatchExpressions(
-        ast.right,
+        /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).right),
         $filter,
         astIsPure,
       );
@@ -20859,10 +20911,18 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
     case ASTType._ArrayExpression:
       allConstants = true;
       argsToWatch = [];
-      ast.elements.forEach((expr) => {
-        decorated = findConstantAndWatchExpressions(expr, $filter, astIsPure);
+      /** @type {ArrayNode} */ (ast).elements.forEach((expr) => {
+        const decorated = findConstantAndWatchExpressions(
+          expr,
+          $filter,
+          astIsPure,
+        );
+
         allConstants = allConstants && decorated.constant;
-        argsToWatch.push.apply(argsToWatch, decorated.toWatch);
+        argsToWatch.push.apply(
+          argsToWatch,
+          /** @type {BodyNode} */ (decorated).toWatch,
+        );
       });
       decoratedNode.constant = allConstants;
       decoratedNode.toWatch = argsToWatch;
@@ -20871,24 +20931,31 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
     case ASTType._ObjectExpression:
       allConstants = true;
       argsToWatch = [];
-      ast.properties.forEach((property) => {
-        decorated = findConstantAndWatchExpressions(
-          property.value,
+      /** @type {ObjectNode} */ (ast).properties.forEach((property) => {
+        const decorated = findConstantAndWatchExpressions(
+          /** @type {LiteralNode} */ (property).value,
           $filter,
           astIsPure,
         );
-        allConstants = allConstants && decorated.constant;
-        argsToWatch.push.apply(argsToWatch, decorated.toWatch);
 
-        if (property.computed) {
+        allConstants = allConstants && decorated.constant;
+        argsToWatch.push.apply(
+          argsToWatch,
+          /** @type {BodyNode} */ (decorated).toWatch,
+        );
+
+        if (/** @type {ExpressionNode} */ (property).computed) {
           // `{[key]: value}` implicitly does `key.toString()` which may be non-pure
           decoratedKey = findConstantAndWatchExpressions(
-            property.key,
+            /** @type {ObjectPropertyNode} */ (property).key,
             $filter,
             false,
           );
           allConstants = allConstants && decoratedKey.constant;
-          argsToWatch.push.apply(argsToWatch, decoratedKey.toWatch);
+          argsToWatch.push.apply(
+            argsToWatch,
+            /** @type {BodyNode} */ (decorated).toWatch,
+          );
         }
       });
       decoratedNode.constant = allConstants;
@@ -20905,23 +20972,31 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       decoratedNode.toWatch = [];
 
       return decoratedNode;
+    default:
+      throw new Error(`Unknown AST node type: ${ast.type}`);
   }
-
-  return undefined;
 }
 
 /**
  * Converts a single expression AST node into an assignment expression if the expression is assignable.
  *
- * @param {import("./ast/ast").ASTNode} ast
- * @returns {import("./ast/ast").ASTNode}
+ * @param {import("./ast/ast-node.ts").BodyNode} ast
+ * @returns {import("./ast/ast-node.ts").ExpressionNode | undefined}
  */
 function assignableAST(ast) {
-  if (ast.body.length === 1 && isAssignable(ast.body[0].expression)) {
+  const stmt = /** @type {import("./ast/ast-node.ts").ExpressionNode} */ (
+    ast.body[0]
+  );
+
+  if (
+    ast.body.length === 1 &&
+    stmt?.expression &&
+    isAssignable(stmt.expression)
+  ) {
     return {
       type: ASTType._AssignmentExpression,
-      left: ast.body[0].expression,
-      right: { type: ASTType._NGValueParameter },
+      left: stmt.expression, // left-hand side is an expression
+      right: { type: ASTType._NGValueParameter }, // right-hand side leaf expression
       operator: "=",
     };
   }
@@ -20939,14 +21014,14 @@ function plusFn(left, right) {
 
 /**
  *
- * @param {import("./ast/ast").ASTNode[]} body
+ * @param {ASTNode[]} body
  * @returns {any}
  */
 function getInputs(body) {
   if (body.length !== 1) return undefined;
-  const lastExpression = /** @type {DecoratedASTNode} */ (body[0].expression);
+  const lastExpression = /** @type {ExpressionNode} */ (body[0]).expression;
 
-  const candidate = lastExpression.toWatch;
+  const candidate = /** @type {BodyNode} */ (lastExpression).toWatch;
 
   if (candidate.length !== 1) return candidate;
 
@@ -20955,15 +21030,15 @@ function getInputs(body) {
 
 /**
  * Detect nodes which could depend on non-shallow state of objects
- * @param {import("./ast/ast").ASTNode} node
+ * @param {ASTNode} node
  * @param {boolean|PURITY_ABSOLUTE|PURITY_RELATIVE} parentIsPure
- * @returns {boolean|PURITY_ABSOLUTE|PURITY_RELATIVE}
+ * @returns {number|boolean}
  */
 function isPure(node, parentIsPure) {
   switch (node.type) {
     // Computed members might invoke a stateful toString()
     case ASTType._MemberExpression:
-      if (node.computed) {
+      if (/** @type {ExpressionNode} */ (node).computed) {
         return false;
       }
       break;
@@ -20974,7 +21049,9 @@ function isPure(node, parentIsPure) {
 
     // The binary + operator can invoke a stateful toString().
     case ASTType._BinaryExpression:
-      return node.operator !== "+" ? PURITY_ABSOLUTE : false;
+      return /** @type {ExpressionNode} */ (node).operator !== "+"
+        ? PURITY_ABSOLUTE
+        : false;
 
     // Functions / filters probably read state from within objects
     case ASTType._CallExpression:
@@ -21021,9 +21098,6 @@ const literals = {
   undefined,
 };
 
-/**
- * @class
- */
 class AST {
   /**
    * @param {import('../lexer/lexer.js').Lexer} lexer - The lexer instance for tokenizing input
@@ -21474,7 +21548,7 @@ class AST {
     /** @type {ASTNode[]} */
     const properties = [];
 
-    /** @type {ASTNode} */
+    /** @type {import("./ast-node.ts").ObjectPropertyNode} */
     let property;
 
     if (this._peekToken().text !== "}") {
@@ -21483,7 +21557,10 @@ class AST {
           // Support trailing commas per ES5.1.
           break;
         }
-        property = { type: ASTType._Property, kind: "init" };
+        property = /** @type {import("./ast-node.ts").ObjectPropertyNode} */ ({
+          type: ASTType._Property,
+          kind: "init",
+        });
 
         if (/** @type {Token} */ (this._peek()).constant) {
           property.key = this._constant();
@@ -21655,7 +21732,9 @@ class Parser {
 
     const fn = this._astCompiler.compile(ast);
 
-    fn._literal = isLiteral(ast);
+    fn._literal = isLiteral(
+      /** @type {import("../ast/ast-node.ts").BodyNode} */ (ast),
+    );
     fn.constant = !!ast.constant;
 
     return fn;
@@ -21663,7 +21742,7 @@ class Parser {
 }
 
 /**
- * @param {import("../ast/ast-node.ts").ASTNode} ast
+ * @param {import("../ast/ast-node.ts").BodyNode} ast
  * @returns {boolean}
  */
 function isLiteral(ast) {
@@ -21675,7 +21754,10 @@ function isLiteral(ast) {
   }
 
   if (body && body.length === 1) {
-    switch (body[0].expression?.type) {
+    switch (
+      /** @type {import("../ast/ast-node.ts").ExpressionNode} */ (body[0])
+        .expression?.type
+    ) {
       case ASTType._Literal:
       case ASTType._ArrayExpression:
       case ASTType._ObjectExpression:
@@ -21687,6 +21769,8 @@ function isLiteral(ast) {
     return true;
   }
 }
+
+const lexer = new Lexer();
 
 class ParseProvider {
   constructor() {
@@ -21714,8 +21798,6 @@ class ParseProvider {
           parsedExpression = cache[cacheKey];
 
           if (!parsedExpression) {
-            const lexer = new Lexer();
-
             const parser = new Parser(lexer, $filter);
 
             parsedExpression = parser._parse(exp);
@@ -21767,6 +21849,13 @@ class ParseProvider {
     ];
   }
 }
+
+/** @typedef {import("../parse/ast/ast-node.ts").ExpressionNode} ExpressionNode */
+/** @typedef {import("../parse/ast/ast-node.ts").LiteralNode} LiteralNode */
+/** @typedef {import("../parse/ast/ast-node.ts").BodyNode} BodyNode */
+/** @typedef {import("../parse/ast/ast-node.ts").ArrayNode} ArrayNode */
+/** @typedef {import("../parse/ast/ast-node.ts").ObjectNode} ObjectNode */
+/** @typedef {import("../parse/ast/ast-node.ts").ObjectPropertyNode} ObjectPropertyNode */
 
 /**
  * @type {number}
@@ -22517,6 +22606,10 @@ class Scope {
       };
     }
 
+    const expr = /** @type {ExpressionNode & BodyNode} */ (
+      get._decoratedNode.body[0]
+    ).expression;
+
     /** @type {ng.Listener} */
     const listener = {
       originalTarget: this.$target,
@@ -22528,11 +22621,11 @@ class Scope {
     };
 
     // simplest case
-    let key = get._decoratedNode.body[0].expression.name;
+    let key = /** @type {LiteralNode} */ (expr).name;
 
     const keySet = [];
 
-    const { type } = get._decoratedNode.body[0].expression;
+    const { type } = expr;
 
     switch (type) {
       // 3
@@ -22547,19 +22640,31 @@ class Scope {
 
           return undefined;
         }
-        key = get._decoratedNode.body[0].expression.left.name;
+        key = /** @type {LiteralNode} */ (
+          /** @type {ExpressionNode} */ (expr).left
+        )?.name;
         break;
       // 4
       case ASTType._ConditionalExpression: {
-        key = get._decoratedNode.body[0].expression.toWatch[0]?.test?.name;
+        key = /** @type {LiteralNode} */ (
+          /** @type {ExpressionNode} */ (
+            /** @type {BodyNode} */ (expr).toWatch[0]
+          )?.test
+        )?.name;
         listener.property.push(key);
         break;
       }
       // 5
       case ASTType._LogicalExpression: {
         const keyList = [
-          get._decoratedNode.body[0].expression.left.toWatch[0]?.name,
-          get._decoratedNode.body[0].expression.right.toWatch[0]?.name,
+          /** @type {LiteralNode} */ (
+            /** @type {BodyNode} */ (/** @type {ExpressionNode} */ (expr).left)
+              .toWatch[0]
+          )?.name,
+          /** @type {LiteralNode} */ (
+            /** @type {BodyNode} */ (/** @type {ExpressionNode} */ (expr).right)
+              .toWatch[0]
+          )?.name,
         ];
 
         for (let i = 0, l = keyList.length; i < l; i++) {
@@ -22578,10 +22683,14 @@ class Scope {
       }
       // 6
       case ASTType._BinaryExpression: {
-        if (get._decoratedNode.body[0].expression.isPure) {
-          const expr = get._decoratedNode.body[0].expression.toWatch[0];
+        if (/** @type {ExpressionNode} */ (expr).isPure) {
+          const watch = /** @type {BodyNode} */ (expr).toWatch[0];
 
-          key = expr.property ? expr.property.name : expr.name;
+          key = /** @type {ExpressionNode} */ (watch).property
+            ? /** @type {LiteralNode} */ (
+                /** @type {ExpressionNode} */ (watch).property
+              ).name
+            : /** @type {LiteralNode} */ (watch).name;
 
           if (!key) {
             throw new Error("Unable to determine key");
@@ -22589,12 +22698,16 @@ class Scope {
           listener.property.push(key);
           break;
         } else {
-          const { toWatch } = get._decoratedNode.body[0].expression;
+          const { toWatch } = /** @type {BodyNode} */ (expr);
 
           for (let i = 0, l = toWatch.length; i < l; i++) {
             const x = toWatch[i];
 
-            const registerKey = x.property ? x.property.name : x.name;
+            const registerKey = /** @type {ExpressionNode} */ (x).property
+              ? /** @type {LiteralNode} */ (
+                  /** @type {ExpressionNode} */ (x).property
+                ).name
+              : /** @type {LiteralNode} */ (x).name;
 
             if (!registerKey) throw new Error("Unable to determine key");
 
@@ -22607,7 +22720,11 @@ class Scope {
             for (let i = 0, l = toWatch.length; i < l; i++) {
               const x = toWatch[i];
 
-              const deregisterKey = x.property ? x.property.name : x.name;
+              const deregisterKey = /** @type {ExpressionNode} */ (x).property
+                ? /** @type {LiteralNode} */ (
+                    /** @type {ExpressionNode} */ (x).property
+                  ).name
+                : /** @type {LiteralNode} */ (x).name;
 
               this.#deregisterKey(deregisterKey, listener.id);
             }
@@ -22616,9 +22733,13 @@ class Scope {
       }
       // 7
       case ASTType._UnaryExpression: {
-        const expr = get._decoratedNode.body[0].expression.toWatch[0];
+        const x = /** @type {BodyNode} */ (expr).toWatch[0];
 
-        key = expr.property ? expr.property.name : expr.name;
+        key = /** @type {ExpressionNode} */ (x).property
+          ? /** @type {LiteralNode} */ (
+              /** @type {ExpressionNode} */ (x).property
+            ).name
+          : /** @type {LiteralNode} */ (x).name;
 
         if (!key) {
           throw new Error("Unable to determine key");
@@ -22628,13 +22749,15 @@ class Scope {
       }
       // 8 function
       case ASTType._CallExpression: {
-        const { toWatch } = get._decoratedNode.body[0].expression;
+        const { toWatch } = /** @type {BodyNode} */ (
+          /** @type {ExpressionNode} */ (expr)
+        );
 
         for (let i = 0, l = toWatch.length; i < l; i++) {
           const x = toWatch[i];
 
           if (!isDefined(x)) continue;
-          this.#registerKey(x.name, listener);
+          this.#registerKey(/** @type {LiteralNode} */ (x).name, listener);
           this.#scheduleListener([listener]);
         }
 
@@ -22643,18 +22766,25 @@ class Scope {
             const x = toWatch[i];
 
             if (!isDefined(x)) continue;
-            this.#deregisterKey(x.name, listener.id);
+            this.#deregisterKey(
+              /** @type {LiteralNode} */ (x).name,
+              listener.id,
+            );
           }
         };
       }
 
       // 9
       case ASTType._MemberExpression: {
-        key = get._decoratedNode.body[0].expression.property.name;
+        key = /** @type {LiteralNode} */ (
+          /** @type {ExpressionNode} */ (expr).property
+        ).name;
 
         // array watcher
         if (!key) {
-          key = get._decoratedNode.body[0].expression.object.name;
+          key = /** @type {LiteralNode} */ (
+            /** @type {ExpressionNode} */ (expr).object
+          ).name;
         }
 
         listener.property.push(key);
@@ -22681,19 +22811,23 @@ class Scope {
 
       // 10
       case ASTType._Identifier: {
-        listener.property.push(get._decoratedNode.body[0].expression.name);
+        listener.property.push(/** @type {LiteralNode} */ (expr).name);
         break;
       }
 
       // 12
       case ASTType._ArrayExpression: {
-        const { elements } = get._decoratedNode.body[0].expression;
+        const { elements } = /** @type {ArrayNode} */ (expr);
 
         for (let i = 0, l = elements.length; i < l; i++) {
           const x = elements[i];
 
           const registerKey =
-            x.type === ASTType._Literal ? x.value : x.toWatch[0]?.name;
+            x.type === ASTType._Literal
+              ? /** @type {LiteralNode} */ (x).value
+              : /** @type {LiteralNode} */ (
+                  /** @type {BodyNode} */ (x).toWatch[0]
+                )?.name;
 
           if (!registerKey) continue;
 
@@ -22706,7 +22840,11 @@ class Scope {
             const x = elements[i];
 
             const deregisterKey =
-              x.type === ASTType._Literal ? x.value : x.toWatch[0]?.name;
+              x.type === ASTType._Literal
+                ? /** @type {LiteralNode} */ (x).value
+                : /** @type {LiteralNode} */ (
+                    /** @type {BodyNode} */ (x).toWatch[0]
+                  ).name;
 
             if (!deregisterKey) continue;
 
@@ -22717,21 +22855,25 @@ class Scope {
 
       // 14
       case ASTType._ObjectExpression: {
-        const { properties } = get._decoratedNode.body[0].expression;
+        const { properties } = /** @type {ObjectNode} */ (expr);
 
         for (let i = 0, l = properties.length; i < l; i++) {
-          const prop = properties[i];
+          const prop = /** @type {ObjectPropertyNode} */ (properties[i]);
 
           let currentKey;
 
           if (prop.key.isPure === false) {
-            currentKey = prop.key.name;
-          } else if (prop.value?.name) {
-            currentKey = prop.value.name;
+            currentKey = /** @type {LiteralNode} */ (prop.key).name;
+          } else if (/** @type {LiteralNode} */ (prop.value)?.name) {
+            currentKey = /** @type {LiteralNode} */ (prop.value).name;
           } else {
-            const target = get._decoratedNode.body[0].expression.toWatch[0];
+            const target = /** @type {BodyNode} */ (expr).toWatch[0];
 
-            currentKey = target.property ? target.property.name : target.name;
+            currentKey = /** @type {ExpressionNode} */ (target).property
+              ? /** @type {LiteralNode} */ (
+                  /** @type {ExpressionNode} */ (target).property
+                ).name
+              : /** @type {LiteralNode} */ (target).name;
           }
 
           if (currentKey) {
@@ -39874,11 +40016,11 @@ function registerNgModule(angular) {
             $animate: AnimateProvider,
             $$animation: AnimationProvider,
             $animateCss: AnimateCssProvider,
-            _animateCssDriver: AnimateCssDriverProvider,
-            _animateJs: AnimateJsProvider,
-            _animateJsDriver: AnimateJsDriverProvider,
-            _animateCache: AnimateCacheProvider,
-            _animateQueue: AnimateQueueProvider,
+            $$animateCssDriver: AnimateCssDriverProvider,
+            $$animateJs: AnimateJsProvider,
+            $$animateJsDriver: AnimateJsDriverProvider,
+            $$animateCache: AnimateCacheProvider,
+            $$animateQueue: AnimateQueueProvider,
             $controller: ControllerProvider,
             $cookie: CookieProvider,
             $exceptionHandler: ExceptionHandlerProvider,
@@ -39954,7 +40096,7 @@ class Angular extends EventTarget {
      * @public
      * @type {string} `version` from `package.json`
      */
-    this.version = "0.16.0"; //inserted via rollup plugin
+    this.version = "0.16.1"; //inserted via rollup plugin
 
     /**
      * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
