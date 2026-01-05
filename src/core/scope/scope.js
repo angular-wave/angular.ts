@@ -957,6 +957,8 @@ export class Scope {
             potentialProxy.$handler.#scheduleListener([listener]);
 
             return () => {
+              potentialProxy.$handler.#deregisterForeignKey(key, listener.id);
+
               return potentialProxy.$handler.#deregisterKey(key, listener.id);
             };
           }
@@ -1165,21 +1167,25 @@ export class Scope {
     return true;
   }
 
-  // #deregisterForeignKey(key, id) {
-  //   const listenerList = this._foreignListeners.get(key);
-  //   if (!listenerList) return false;
+  #deregisterForeignKey(key, id) {
+    const listenerList = this._foreignListeners.get(key);
 
-  //   const index = listenerList.findIndex((x) => x.id === id);
-  //   if (index === -1) return false;
+    if (!listenerList) return false;
 
-  //   listenerList.splice(index, 1);
-  //   if (listenerList.length) {
-  //     this._foreignListeners.set(key, listenerList);
-  //   } else {
-  //     this._foreignListeners.delete(key);
-  //   }
-  //   return true;
-  // }
+    const index = listenerList.findIndex((x) => x.id === id);
+
+    if (index === -1) return false;
+
+    listenerList.splice(index, 1);
+
+    if (listenerList.length) {
+      this._foreignListeners.set(key, listenerList);
+    } else {
+      this._foreignListeners.delete(key);
+    }
+
+    return true;
+  }
 
   $eval(expr, locals) {
     const fn = $parse(expr);
