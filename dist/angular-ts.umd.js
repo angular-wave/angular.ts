@@ -1,4 +1,4 @@
-/* Version: 0.15.2 - December 24, 2025 03:47:35 */
+/* Version: 0.16.0 - January 5, 2026 02:03:39 */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -18,6 +18,7 @@
   const PREFIX_REGEXP = /^((?:x|data)[-])/i;
   const SPECIAL_CHARS_REGEXP = /[-]+(.)/g;
 
+  /** @type {Record<string, string>} */
   const ALIASED_ATTR = {
     ngMinlength: "minlength",
     ngMaxlength: "maxlength",
@@ -76,7 +77,7 @@
 
   /**
    *
-   * @description Converts the specified string to lowercase.
+   *  Converts the specified string to lowercase.
    * @param {string} string String to be converted to lowercase.
    * @returns {string} Lowercased string.
    */
@@ -86,7 +87,7 @@
 
   /**
    *
-   * @description Converts the specified string to uppercase.
+   *  Converts the specified string to uppercase.
    * @param {string} string String to be converted to uppercase.
    * @returns {string} Uppercased string.
    */
@@ -232,7 +233,7 @@
    * Determines if a value is a date.
    *
    * @param {*} value Reference to check.
-   * @returns {boolean} True if `value` is a `Date`.
+   * @returns {value is Date} True if `value` is a `Date`.
    */
   function isDate(value) {
     return toString.call(value) === "[object Date]";
@@ -264,7 +265,7 @@
    * Determines if a reference is a `Function`.
    *
    * @param {*} value Reference to check.
-   * @returns {boolean} True if `value` is a `Function`.
+   * @returns {value is Function} True if `value` is a `Function`.
    */
   function isFunction(value) {
     return typeof value === "function";
@@ -274,7 +275,7 @@
    * Determines if a value is a regular expression object.
    *
    * @param {*} value Reference to check.
-   * @returns {boolean} True if `value` is a `RegExp`.
+   * @returns {value is RegExp} True if `value` is a `RegExp`.
    */
   function isRegExp(value) {
     return toString.call(value) === "[object RegExp]";
@@ -1430,337 +1431,6 @@
     return typeof fn === "function" && !fn.prototype;
   }
 
-  const ADD_CLASS_SUFFIX = "-add";
-  const REMOVE_CLASS_SUFFIX = "-remove";
-  const EVENT_CLASS_PREFIX = "ng-";
-  const ACTIVE_CLASS_SUFFIX = "-active";
-  const PREPARE_CLASS_SUFFIX = "-prepare";
-
-  const NG_ANIMATE_CLASSNAME = "ng-animate";
-  const NG_ANIMATE_CHILDREN_DATA = "$$ngAnimateChildren";
-
-  function packageStyles(options) {
-    const styles = {};
-
-    if (options && (options.to || options.from)) {
-      styles.to = options.to;
-      styles.from = options.from;
-    }
-
-    return styles;
-  }
-
-  function pendClasses(classes, fix, isPrefix) {
-    let className = "";
-
-    classes = isArray(classes)
-      ? classes
-      : classes && isString(classes) && classes.length
-        ? classes.split(/\s+/)
-        : [];
-    classes.forEach((klass, i) => {
-      if (klass && klass.length > 0) {
-        className += i > 0 ? " " : "";
-        className += isPrefix ? fix + klass : klass + fix;
-      }
-    });
-
-    return className;
-  }
-
-  function removeFromArray(arr, val) {
-    const index = arr.indexOf(val);
-
-    if (val >= 0) {
-      arr.splice(index, 1);
-    }
-  }
-
-  /**
-   *
-   * @param {NodeList|Node} element
-   * @returns {Node[]|Node|undefined}
-   */
-  function stripCommentsFromElement(element) {
-    if (element instanceof NodeList) {
-      return Array.from(element).filter(
-        (x) => x.nodeType === NodeType._ELEMENT_NODE,
-      );
-    } else if (element.nodeType === NodeType._ELEMENT_NODE) {
-      return /** @type {Node} */ (element);
-    } else {
-      return undefined;
-    }
-  }
-
-  /**
-   * @param {NodeList|Node} element
-   * @returns {Node}
-   */
-  function extractElementNode(element) {
-    if (!element || !isArray(element)) return /** @type {Node} */ (element);
-
-    for (let i = 0; i < /** @type {NodeList} */ (element).length; i++) {
-      const elm = element[i];
-
-      if (elm.nodeType === NodeType._ELEMENT_NODE) {
-        return elm;
-      }
-    }
-
-    return undefined; // TODO mayb throw?
-  }
-
-  function applyAnimationClassesFactory() {
-    return function (element, options) {
-      if (options.addClass) {
-        element.classList.add(...options.addClass.trim().split(" "));
-        options.addClass = null;
-      }
-
-      if (options.removeClass) {
-        element.classList.remove(...options.removeClass.trim().split(" "));
-        options.removeClass = null;
-      }
-    };
-  }
-
-  function prepareAnimationOptions(options) {
-    options = options || {};
-
-    if (!options.$$prepared) {
-      let domOperation =
-        options.domOperation ||
-        (() => {
-          /* empty */
-        });
-
-      options.domOperation = function () {
-        options.$$domOperationFired = true;
-        domOperation();
-        domOperation = () => {
-          /* empty */
-        };
-      };
-      options.$$prepared = true;
-    }
-
-    return options;
-  }
-
-  function applyAnimationStyles(element, options) {
-    applyAnimationFromStyles(element, options);
-    applyAnimationToStyles(element, options);
-  }
-
-  /**
-   * Applies initial animation styles to a DOM element.
-   *
-   * This function sets the element's inline styles using the properties
-   * defined in `options.from`, then clears the property to prevent reuse.
-   *
-   * @param {HTMLElement} element - The target DOM element to apply styles to.
-   * @param {{ from?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
-   */
-  function applyAnimationFromStyles(element, options) {
-    if (options.from) {
-      Object.assign(element.style, options.from);
-      options.from = null;
-    }
-  }
-
-  /**
-   * Applies final animation styles to a DOM element.
-   *
-   * This function sets the element's inline styles using the properties
-   * defined in `options.to`, then clears the property to prevent reuse.
-   *
-   * @param {HTMLElement} element - The target DOM element to apply styles to.
-   * @param {{ to?: Partial<CSSStyleDeclaration> | null }} options - options containing a `from` object with CSS property–value pairs.
-   */
-  function applyAnimationToStyles(element, options) {
-    if (options.to) {
-      Object.assign(element.style, options.to);
-      options.to = null;
-    }
-  }
-
-  function mergeAnimationDetails(element, oldAnimation, newAnimation) {
-    const target = oldAnimation.options || {};
-
-    const newOptions = newAnimation.options || {};
-
-    const toAdd = `${target.addClass || ""} ${newOptions.addClass || ""}`;
-
-    const toRemove = `${target.removeClass || ""} ${newOptions.removeClass || ""}`;
-
-    const classes = resolveElementClasses(
-      element.getAttribute("class"),
-      toAdd,
-      toRemove,
-    );
-
-    if (newOptions.preparationClasses) {
-      target.preparationClasses = concatWithSpace(
-        newOptions.preparationClasses,
-        target.preparationClasses,
-      );
-      delete newOptions.preparationClasses;
-    }
-
-    extend(target, newOptions);
-
-    if (classes.addClass) {
-      target.addClass = classes.addClass;
-    } else {
-      target.addClass = null;
-    }
-
-    if (classes.removeClass) {
-      target.removeClass = classes.removeClass;
-    } else {
-      target.removeClass = null;
-    }
-
-    oldAnimation.addClass = target.addClass;
-    oldAnimation.removeClass = target.removeClass;
-
-    return target;
-  }
-
-  function resolveElementClasses(existing, toAdd, toRemove) {
-    const ADD_CLASS = 1;
-
-    const REMOVE_CLASS = -1;
-
-    const flags = {};
-
-    existing = splitClassesToLookup(existing);
-
-    toAdd = splitClassesToLookup(toAdd);
-    Object.keys(toAdd).forEach((key) => {
-      flags[key] = ADD_CLASS;
-    });
-
-    toRemove = splitClassesToLookup(toRemove);
-    keys(toRemove).forEach((key) => {
-      flags[key] = flags[key] === ADD_CLASS ? null : REMOVE_CLASS;
-    });
-
-    const classes = {
-      addClass: "",
-      removeClass: "",
-    };
-
-    entries(flags).forEach(([klass, val]) => {
-      let prop, allow;
-
-      if (val === ADD_CLASS) {
-        prop = "addClass";
-        allow = !existing[klass] || existing[klass + REMOVE_CLASS_SUFFIX];
-      } else if (val === REMOVE_CLASS) {
-        prop = "removeClass";
-        allow = existing[klass] || existing[klass + ADD_CLASS_SUFFIX];
-      }
-
-      if (allow) {
-        if (classes[prop].length) {
-          classes[prop] += " ";
-        }
-        classes[prop] += klass;
-      }
-    });
-
-    function splitClassesToLookup(cls) {
-      if (isString(cls)) {
-        cls = cls.trim().split(" ");
-      }
-
-      const obj = {};
-
-      if (cls) {
-        cls.forEach((klass) => {
-          // sometimes the split leaves empty string values
-          // incase extra spaces were applied to the options
-          if (klass.length) {
-            obj[klass] = true;
-          }
-        });
-      }
-
-      return obj;
-    }
-
-    return classes;
-  }
-
-  function applyGeneratedPreparationClasses(element, event, options) {
-    let classes = "";
-
-    if (event) {
-      classes = pendClasses(event, EVENT_CLASS_PREFIX, true);
-    }
-
-    if (options.addClass) {
-      classes = concatWithSpace(
-        classes,
-        pendClasses(options.addClass, ADD_CLASS_SUFFIX),
-      );
-    }
-
-    if (options.removeClass) {
-      classes = concatWithSpace(
-        classes,
-        pendClasses(options.removeClass, REMOVE_CLASS_SUFFIX),
-      );
-    }
-
-    if (classes.length) {
-      options.preparationClasses = classes;
-      element.className += ` ${classes}`;
-    }
-  }
-
-  function clearGeneratedClasses(element, options) {
-    if (options.preparationClasses) {
-      options.preparationClasses
-        .split(" ")
-        .forEach((cls) => element.classList.remove(cls));
-      options.preparationClasses = null;
-    }
-
-    if (options.activeClasses) {
-      options.activeClasses
-        .split(" ")
-        .forEach((cls) => element.classList.remove(cls));
-      options.activeClasses = null;
-    }
-  }
-
-  function blockKeyframeAnimations(node, applyBlock) {
-    const value = applyBlock ? "paused" : "";
-
-    const key = `animationPlayState`;
-
-    applyInlineStyle(node, [key, value]);
-
-    return [key, value];
-  }
-
-  function applyInlineStyle(node, styleTuple) {
-    const prop = styleTuple[0];
-
-    node.style[prop] = styleTuple[1];
-  }
-
-  function concatWithSpace(a, b) {
-    if (!a) return b;
-
-    if (!b) return a;
-
-    return `${a} ${b}`;
-  }
-
   /**
    * A helper list of tokens matching the standard injectables that come predefined in the core `ng` module.
    * These string tokens are commonly injected into services, directives, or components via `$inject`.
@@ -1784,11 +1454,11 @@
     _attrs: "$attrs",
     _scope: "$scope",
     _element: "$element",
-    _animateCache: "$$animateCache",
-    _animateCssDriver: "$$animateCssDriver",
-    _animateJs: "$$animateJs",
-    _animateJsDriver: "$$animateJsDriver",
-    _animateQueue: "$$animateQueue",
+    _animateCache: "_animateCache",
+    _animateCssDriver: "_animateCssDriver",
+    _animateJs: "_animateJs",
+    _animateJsDriver: "_animateJsDriver",
+    _animateQueue: "_animateQueue",
     _animation: "$$animation",
     _rAFScheduler: "$$rAFScheduler",
     _taskTrackerFactory: "$$taskTrackerFactory",
@@ -1829,6 +1499,8 @@
     _url: "$url",
     _view: "$view",
     _window: "$window",
+    _websocket: "$websocket",
+
     // provide literals
     _provide: "$provide",
     _injector: "$injector",
@@ -1941,11 +1613,8 @@
   }
 
   /**
-   * Removes expando data from this element. If key is provided, only
-   * its field is removed. If data is empty, also removes `ExpandoStore`
-   * from cache.
-   * @param {Element} element
-   * @param {string} [name] - key of field to remove
+   * @param {Element & Record<string, any>} element
+   * @param {string} [name]
    */
   function removeElementData(element, name) {
     const expandoId = element[EXPANDO];
@@ -1968,7 +1637,7 @@
    *
    * @see {@link https://developer.mozilla.org/en-US/docs/Glossary/Expando MDN Glossary: Expando}
    *
-   * @param {Element} element
+   * @param {Element & Record<string, any> } element
    * @param {boolean} [createIfNecessary=false]
    * @returns {import("../interface.ts").ExpandoStore}
    */
@@ -2017,7 +1686,8 @@
   }
 
   /**
-   * @param {Element} element
+   * @param {Element & Record<string, any>} element
+   * @param {Element & Record<string, any>} element
    * @param {boolean} [onlyDescendants]
    * @returns {void}
    */
@@ -2043,12 +1713,13 @@
   /**
    * If expando store data is empty, then delete it and set its expando id.
    * to undefined.
-   * @param {Element} element
+   * @param {Element & Record<string, any>} element
+   * @param {Element & Record<string, any>} element
    */
   function removeIfEmptyData(element) {
     const expandoId = element[EXPANDO];
 
-    const { data } = Cache.get(expandoId);
+    const data = expandoId ? Cache.get(expandoId)?.data : undefined;
 
     if (!data || !keys(data).length) {
       Cache.delete(expandoId);
@@ -2060,47 +1731,41 @@
    * Gets or sets cache data for a given element.
    *
    * @param {Element} element - The DOM element to get or set data on.
-   * @param {string|Object} key - The key (as a string) to get/set or an object for mass-setting.
+   * @param {string|Object.<string, any>} key - The key to get/set or an object for mass-setting.
    * @param {*} [value] - The value to set. If not provided, the function acts as a getter.
-   * @returns {*} - The retrieved data if acting as a getter. Otherwise, returns undefined.
+   * @returns {*} - The retrieved data if acting as a getter. Otherwise, undefined.
    */
   function getOrSetCacheData(element, key, value) {
-    if (elementAcceptsData(element)) {
-      let prop;
+    if (!elementAcceptsData(element)) return undefined;
 
-      const isSimpleSetter = isDefined(value);
+    const isSimpleSetter = isDefined(value);
 
-      const isSimpleGetter = !isSimpleSetter && key && !isObject(key);
+    const isSimpleGetter = !isSimpleSetter && key && !isObject(key);
 
-      const massGetter = !key;
+    const massGetter = !key;
 
-      const expandoStore = getExpando(element, !isSimpleGetter);
+    const expandoStore = getExpando(element, !isSimpleGetter);
 
-      const data = expandoStore && expandoStore.data;
+    const data = expandoStore && expandoStore.data;
 
-      if (isSimpleSetter) {
-        data[kebabToCamel(key)] = value;
-      } else {
-        if (massGetter) {
-          return data;
-        }
+    if (!data) return undefined;
 
-        if (isSimpleGetter) {
-          // don't force creation of expandoStore if it doesn't exist yet
-          return data && data[kebabToCamel(key)];
-        }
-
-        // mass-setter: data({key1: val1, key2: val2})
-        for (prop in key) {
+    if (isSimpleSetter && typeof key === "string") {
+      data[kebabToCamel(key)] = value;
+    } else if (massGetter) {
+      return data;
+    } else if (isSimpleGetter && typeof key === "string") {
+      return data[kebabToCamel(key)];
+    } else if (key && typeof key === "object") {
+      // key is now narrowed to object
+      for (const prop in key) {
+        if (Object.prototype.hasOwnProperty.call(key, prop)) {
           data[kebabToCamel(prop)] = key[prop];
         }
       }
-
-      return undefined;
-    } else {
-      // TODO: check should occur perhaps prior at compilation level that this is a valid element
-      return undefined;
     }
+
+    return undefined;
   }
 
   /**
@@ -2210,14 +1875,14 @@
   }
 
   /**
+   * Walk up the DOM tree (including Shadow DOM) to get inherited data.
    *
-   * @param {Node} element
-   * @param {string} name
-   * @returns
+   * @param {Node} element - The starting element (or document/document fragment)
+   * @param {string} name - The data key to look up
+   * @returns {any} - The found value, or undefined if not found
    */
   function getInheritedData(element, name) {
     // if element is the document object work with the html element instead
-    // this makes $(document).scope() possible
     if (element.nodeType === NodeType._DOCUMENT_NODE) {
       element = /** @type {Document} */ (element).documentElement;
     }
@@ -2225,18 +1890,20 @@
     let value;
 
     while (element) {
-      if (
-        isDefined((value = getCacheData(/** @type {Element} */ (element), name)))
-      )
-        return value;
+      value = getCacheData(/** @type {Element} */ (element), name);
 
-      // If dealing with a document fragment node with a host element, and no parent, use the host
-      // element as the parent. This enables directives within a Shadow DOM or polyfilled Shadow DOM
-      // to lookup parent controllers.
-      element =
-        element.parentNode ||
-        (element.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE &&
-          /** @type {ShadowRoot} */ (element).host);
+      if (isDefined(value)) return value;
+
+      let next = element.parentNode;
+
+      if (!next && element.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE) {
+        next = /** @type {ShadowRoot} */ (element).host;
+      }
+
+      // Stop the loop when next is falsy, instead of assigning null
+      if (!next) break;
+
+      element = next;
     }
 
     return undefined;
@@ -2270,7 +1937,11 @@
 
       const doc = parser.parseFromString(elementOrStr, "text/html");
 
-      clone = doc.body.firstChild.cloneNode(true);
+      const { firstChild } = doc.body;
+
+      if (!firstChild) return ""; // empty string for empty input
+
+      clone = firstChild.cloneNode(true);
     } else if (elementOrStr instanceof Element || elementOrStr instanceof Node) {
       clone = elementOrStr.cloneNode(true);
     } else {
@@ -2309,18 +1980,23 @@
 
   /**
    * Return the DOM siblings between the first and last node in the given array.
-   * @param {Array<Node>} nodes An array-like object
-   * @returns {*[]|Array<Node>} the inputted object or a JQLite collection containing the nodes
+   * @param {Node[]} nodes
+   * @returns {Node[]}
    */
   function getBlockNodes(nodes) {
-    // TODO(perf): update `nodes` instead of creating a new object?
     let node = nodes[0];
 
     const endNode = nodes[nodes.length - 1];
 
     let blockNodes;
 
-    for (let i = 1; node !== endNode && (node = node.nextSibling); i++) {
+    for (let i = 1; node !== endNode; i++) {
+      const next = node.nextSibling;
+
+      if (!next) break; // stop if no next sibling
+
+      node = next;
+
       if (blockNodes || nodes[i] !== node) {
         if (!blockNodes) {
           // use element to avoid circular dependency
@@ -2485,8 +2161,22 @@
   }
 
   /**
-   * Shared utility functions
+   * @param {NodeList|Node} element
+   * @returns {Node | undefined}
    */
+  function extractElementNode(element) {
+    if (!element || !isArray(element)) return /** @type {Node} */ (element);
+
+    for (let i = 0; i < /** @type {NodeList} */ (element).length; i++) {
+      const elm = element[i];
+
+      if (elm.nodeType === NodeType._ELEMENT_NODE) {
+        return elm;
+      }
+    }
+
+    return undefined;
+  }
 
   const $injectorMinErr$3 = minErr($injectTokens._injector);
 
@@ -2508,7 +2198,7 @@
 
   /**
    * @param {Function} fn
-   * @returns {Array<any>}
+   * @returns {RegExpMatchArray | null}
    */
   function extractArgs(fn) {
     const fnText = stringifyFn(fn).replace(STRIP_COMMENTS, "");
@@ -2531,14 +2221,20 @@
    * @returns {Array<string>}
    */
   function annotate(fn, strictDi, name) {
-    let $inject, argDecl, last;
+    /**
+     * @type {any[]}
+     */
+    let inject = [];
+
+    let argDecl;
+
+    let last;
 
     if (isFunction(fn)) {
-      // eslint-disable-next-line prefer-destructuring
-      $inject = fn.$inject;
+      inject = fn.$inject;
 
-      if (!$inject) {
-        $inject = [];
+      if (!inject) {
+        inject = [];
 
         if (fn.length) {
           if (strictDi) {
@@ -2549,23 +2245,26 @@
             );
           }
           argDecl = extractArgs(fn);
-          argDecl[1].split(/,/).forEach(function (arg) {
-            arg.replace(FN_ARG, function (_all, _underscore, injName) {
-              $inject.push(injName);
+          argDecl &&
+            argDecl[1].split(/,/).forEach((arg) => {
+              arg.replace(FN_ARG, (_all, _underscore, injName) => {
+                inject.push(injName);
+
+                return injName;
+              });
             });
-          });
         }
-        fn.$inject = $inject;
+        fn.$inject = inject;
       }
     } else if (isArray(fn)) {
-      last = /** @type {Array} */ (fn).length - 1;
+      last = /** @type {ng.AnnotatedFactory<any>} */ (fn).length - 1;
       assertArgFn(fn[last], "fn");
-      $inject = /** @type {Array} */ (fn).slice(0, last);
+      inject = /** @type {ng.AnnotatedFactory<any>} */ (fn).slice(0, last);
     } else {
       assertArgFn(fn, "fn", true);
     }
 
-    return $inject;
+    return inject;
   }
 
   const $injectorMinErr$2 = minErr($injectTokens._injector);
@@ -2582,13 +2281,13 @@
       /**
        * @type {Object<String, Function>}
        */
-      this.cache = {};
+      this._cache = {};
       /** @type {boolean} */
       this.strictDi = strictDi;
       /** @type {string[]} */
-      this.path = [];
+      this._path = [];
       /** @type {Object.<string, ng.NgModule>} */
-      this.modules = {};
+      this._modules = {};
     }
 
     /**
@@ -2598,41 +2297,41 @@
      * @returns {any}
      */
     get(serviceName) {
-      if (hasOwn(this.cache, serviceName)) {
-        if (this.cache[serviceName] === INSTANTIATING) {
+      if (hasOwn(this._cache, serviceName)) {
+        if (this._cache[serviceName] === INSTANTIATING) {
           throw $injectorMinErr$2(
             "cdep",
             "Circular dependency found: {0}",
-            `${serviceName} <- ${this.path.join(" <- ")}`,
+            `${serviceName} <- ${this._path.join(" <- ")}`,
           );
         }
 
-        return this.cache[serviceName];
+        return this._cache[serviceName];
       }
 
-      this.path.unshift(serviceName);
-      this.cache[serviceName] = INSTANTIATING;
+      this._path.unshift(serviceName);
+      this._cache[serviceName] = INSTANTIATING;
 
       try {
-        this.cache[serviceName] = this.factory(serviceName);
+        this._cache[serviceName] = this.factory(serviceName);
       } catch (err) {
         // this is for the error handling being thrown by the providerCache multiple times
-        delete this.cache[serviceName];
+        delete this._cache[serviceName];
         throw err;
       }
 
-      return this.cache[serviceName];
+      return this._cache[serviceName];
     }
 
     /**
      * Get the injection arguments for a function.
      *
-     * @param {Function|Array} fn
-     * @param {Object} locals
-     * @param {string} serviceName
+     * @param {Function|ng.AnnotatedFactory<any>} fn
+     * @param {Object & Record<string, any>} [locals]
+     * @param {string} [serviceName]
      * @returns
      */
-    injectionArgs(fn, locals, serviceName) {
+    _injectionArgs(fn, locals, serviceName) {
       const args = [];
 
       const $inject = annotate(fn, this.strictDi, serviceName);
@@ -2656,7 +2355,7 @@
     /**
      * Invoke a function with optional context and locals.
      *
-     * @param {Function|String|Array<any>} fn
+     * @param {Function|String|ng.AnnotatedFactory<any>} fn
      * @param {*} [self]
      * @param {Object} [locals]
      * @param {string} [serviceName]
@@ -2665,10 +2364,10 @@
     invoke(fn, self, locals, serviceName) {
       if (typeof locals === "string") {
         serviceName = locals;
-        locals = null;
+        locals = undefined;
       }
 
-      const args = this.injectionArgs(
+      const args = this._injectionArgs(
         /** @type {Function} */ (fn),
         locals,
         serviceName,
@@ -2681,7 +2380,10 @@
       if (isClass(/** @type {Function} */ (fn))) {
         args.unshift(null);
 
-        return new (Function.prototype.bind.apply(fn, args))();
+        return new (Function.prototype.bind.apply(
+          /** @type {Function} */ (fn),
+          /** @type {[any, ...any[]]} */ (args),
+        ))();
       } else {
         return /** @type {Function} */ (fn).apply(self, args);
       }
@@ -2689,7 +2391,7 @@
 
     /**
      * Instantiate a type constructor with optional locals.
-     * @param {Function|Array} type
+     * @param {Function|ng.AnnotatedFactory<any>} type
      * @param {*} [locals]
      * @param {string} [serviceName]
      */
@@ -2698,13 +2400,16 @@
       // e.g. someModule.factory('greeter', ['$window', function(renamed$window) {}]);
       const ctor = isArray(type) ? type[type.length - 1] : type;
 
-      const args = this.injectionArgs(type, locals, serviceName);
+      const args = this._injectionArgs(type, locals, serviceName);
 
       // Empty object at position 0 is ignored for invocation with `new`, but required.
       args.unshift(null);
 
       try {
-        return new (Function.prototype.bind.apply(ctor, args))();
+        return new (Function.prototype.bind.apply(
+          ctor,
+          /** @type {[any, ...any[]]} */ (args),
+        ))();
       } catch (err) {
         // try arrow function
         if (isArrowFunction(ctor)) {
@@ -2713,13 +2418,6 @@
           throw err;
         }
       }
-    }
-
-    /**
-     * @abstract
-     */
-    loadNewModules() {
-      /* empty */
     }
 
     /**
@@ -2738,12 +2436,12 @@
    */
   class ProviderInjector extends AbstractInjector {
     /**
-     * @param {Object} cache
+     * @param {import('./interface.ts').ProviderCache} cache
      * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
      */
     constructor(cache, strictDi) {
       super(strictDi);
-      this.cache = cache;
+      this._cache = cache;
     }
 
     /**
@@ -2752,17 +2450,13 @@
      * @throws {Error} If the provider is unknown.
      */
     factory(caller) {
-      this.path.push(caller);
+      this._path.push(caller);
       // prevents lookups to providers through get
       throw $injectorMinErr$2(
         "unpr",
         "Unknown provider: {0}",
-        this.path.join(" <- "),
+        this._path.join(" <- "),
       );
-    }
-
-    loadNewModules() {
-      /* empty */
     }
   }
 
@@ -2770,6 +2464,11 @@
    * Injector for factories and services
    */
   class InjectorService extends AbstractInjector {
+    /** @type {(mods: Array<Function | string | ng.AnnotatedFactory<any>>) => void} */
+    loadNewModules = () => {
+      /* empty */
+    };
+
     /**
      * @param {ProviderInjector} providerInjector
      * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
@@ -2777,10 +2476,10 @@
     constructor(providerInjector, strictDi) {
       super(strictDi);
 
-      /** @type {ProviderInjector} */
-      this.providerInjector = providerInjector;
-      /** @type {Object.<string, ng.NgModule>} */
-      this.modules = providerInjector.modules;
+      /** @private @type {ProviderInjector} */
+      this._providerInjector = providerInjector;
+      /** @private @type {Object.<string, ng.NgModule>} */
+      this._modules = providerInjector._modules;
     }
 
     /**
@@ -2788,7 +2487,7 @@
      * @returns {*}
      */
     factory(serviceName) {
-      const provider = this.providerInjector.get(serviceName + providerSuffix$1);
+      const provider = this._providerInjector.get(serviceName + providerSuffix$1);
 
       return this.invoke(provider.$get, provider, undefined, serviceName);
     }
@@ -2800,17 +2499,13 @@
      */
     has(name) {
       const hasProvider = hasOwn(
-        this.providerInjector.cache,
+        this._providerInjector._cache,
         name + providerSuffix$1,
       );
 
-      const hasCache = hasOwn(this.cache, name);
+      const hasCache = hasOwn(this._cache, name);
 
       return hasProvider || hasCache;
-    }
-
-    loadNewModules() {
-      /* empty */
     }
   }
 
@@ -2820,7 +2515,7 @@
    *
    * @param {Record<PropertyKey, any>} target - The object to wrap
    * @param {string} key - The storage key
-   * @param {import("../../core/di/inteface").StorageLike & import("../../core/di/inteface").PersistentStoreConfig} storage - Any storage-like object with getItem/setItem/removeItem
+   * @param {import("../../core/di/interface.ts").StorageLike & import("../../core/di/interface").PersistentStoreConfig} storage - Any storage-like object with getItem/setItem/removeItem
    * @param {{serialize?: function, deserialize?: function}} [options] - Optional custom (de)serialization
    * @returns {Record<PropertyKey, any>}
    */
@@ -2990,25 +2685,7 @@
     /** @type {Map<String|Function, boolean>} */
     const loadedModules = new Map(); // Keep track of loaded modules to avoid circular dependencies
 
-    /**
-     * @typedef {{
-     *   $provide: {
-     *     provider: Function,
-     *     factory: Function,
-     *     service: Function,
-     *     value: Function,
-     *     constant: Function,
-     *     store: Function,
-     *     decorator: Function,
-     *   },
-     *   $injectorProvider?: {
-     *     $get: () => unknown
-     *   },
-     *   $injector?: ProviderInjector
-     * }} ProviderCache
-     */
-
-    /** @type {ProviderCache} */
+    /** @type {ng.ProviderCache} */
     const providerCache = {
       $provide: {
         provider: supportObject(provider),
@@ -3041,8 +2718,10 @@
 
     runBlocks.forEach((fn) => fn && instanceInjector.invoke(fn));
 
-    instanceInjector.loadNewModules = (mods) =>
-      loadModules(mods).forEach((fn) => fn && instanceInjector.invoke(fn));
+    instanceInjector.loadNewModules =
+      /** @param {Array<Function | string | ng.AnnotatedFactory<any>>} mods */ (
+        mods,
+      ) => loadModules(mods).forEach((fn) => fn && instanceInjector.invoke(fn));
 
     return instanceInjector;
 
@@ -3084,7 +2763,7 @@
     /**
      * Registers a factory.
      * @param {string} name
-     * @param {(string|(function(*): *))[]} factoryFn
+     * @param {ng.AnnotatedFactory<any>} factoryFn
      * @returns {import('../../interface.ts').ServiceProvider}
      */
     function factory(name, factoryFn) {
@@ -3114,7 +2793,8 @@
     function service(name, constructor) {
       return factory(name, [
         $injectTokens._injector,
-        ($injector) => $injector.instantiate(constructor),
+        /** @param {ng.InjectorService} $injector */ ($injector) =>
+          $injector.instantiate(constructor),
       ]);
     }
 
@@ -3137,8 +2817,8 @@
     // eslint-disable-next-line no-shadow
     function constant(name, value) {
       assertNotHasOwnProperty(name, "constant");
-      providerInjector.cache[name] = value;
-      protoInstanceInjector.cache[name] = value;
+      providerInjector._cache[name] = value;
+      protoInstanceInjector._cache[name] = value;
     }
 
     /**
@@ -3167,7 +2847,7 @@
      * @param {string} name - Service name
      * @param {import("../../interface.ts").Constructor} ctor - Constructor for the service
      * @param {ng.StorageType} type - Type of storage to be instantiated
-     * @param {import("./inteface.ts").StorageLike & import("./inteface.ts").PersistentStoreConfig} [backendOrConfig]
+     * @param {import("./interface.ts").StorageLike & import("./interface.ts").PersistentStoreConfig} [backendOrConfig]
      */
     function store(name, ctor, type, backendOrConfig) {
       return provider(name, {
@@ -3245,7 +2925,7 @@
               return createPersistentProxy(
                 instance,
                 name,
-                /** @type {import("./inteface.ts").StorageLike} */ (backend),
+                /** @type {import("./interface.ts").StorageLike} */ (backend),
                 {
                   serialize,
                   deserialize,
@@ -3260,17 +2940,26 @@
     }
 
     /**
+     * Loads and instantiates AngularJS modules with proper type handling.
      *
-     * @param {Array<String|Function>} modules
-     * @returns
+     * @param {Array<string | Function | ng.AnnotatedFactory<any>>} modules - Modules to load
+     * @returns {Array<any>} - Array of run block results
      */
     function loadModules(modules) {
       validateArray(modules, "modules");
+
+      /** @type {Array<any>} */
       let moduleRunBlocks = [];
 
       modules.forEach((module) => {
-        if (loadedModules.get(module)) return;
-        loadedModules.set(module, true);
+        // Determine a key suitable for Map: string | Function
+        /** @type {string | Function} */
+        const moduleKey = Array.isArray(module)
+          ? module[module.length - 1]
+          : module;
+
+        if (loadedModules.get(moduleKey)) return;
+        loadedModules.set(moduleKey, true);
 
         try {
           if (isString(module)) {
@@ -3279,7 +2968,8 @@
               /** @type {string} */ (module),
             );
 
-            instanceInjector.modules[/** @type {string } */ (module)] = moduleFn;
+            instanceInjector._modules[module] = moduleFn;
+
             moduleRunBlocks = moduleRunBlocks
               .concat(loadModules(moduleFn._requires))
               .concat(moduleFn._runBlocks);
@@ -3299,19 +2989,23 @@
           } else if (isFunction(module)) {
             moduleRunBlocks.push(providerInjector.invoke(module));
           } else if (isArray(module)) {
-            moduleRunBlocks.push(providerInjector.invoke(module));
+            moduleRunBlocks.push(
+              providerInjector.invoke(
+                /** @type {Function | ng.AnnotatedFactory<any>} */ (module),
+              ),
+            );
           } else {
             assertArgFn(module, "module");
           }
         } catch (err) {
-          if (isArray(module)) {
-            module = module[module.length - 1];
-          }
+          // If module is array, fallback to last element for error message
+          const moduleName = isArray(module) ? module[module.length - 1] : module;
+
           throw $injectorMinErr$1(
             "modulerr",
             "Failed to instantiate module {0} due to:\n{1}",
-            module,
-            err.stack || err.message || err,
+            moduleName,
+            isInstanceOf(err, Error) ? err.stack || err.message : String(err),
           );
         }
       });
@@ -3320,16 +3014,23 @@
     }
   }
 
+  /**
+   * Wraps a delegate function to support object-style arguments.
+   *
+   * @template V
+   * @param {(key: string, value: V) => any} delegate - The original function accepting (key, value)
+   * @returns {(key: string | Record<string, V>, value?: V) => any}
+   */
   function supportObject(delegate) {
     return function (key, value) {
       if (isObject(key)) {
-        entries(key).forEach(([k, v]) => {
+        entries(/** @type {Record<string, V>} */ (key)).forEach(([k, v]) => {
           delegate(k, v);
         });
 
         return undefined;
       } else {
-        return delegate(key, value);
+        return delegate(key, /** @type {any} */ (value));
       }
     };
   }
@@ -3849,7 +3550,7 @@
       /**
        *
        * @param {ng.InjectorService} $injector
-       * @param {*} $sce
+       * @param {ng.SCEService} $sce
        * @param {ng.CookieService} $cookie
        * @returns
        */
@@ -4116,8 +3817,6 @@
          * parameter value should go.
          * </div>
          *
-         * If you would like to customise where and how the callbacks are stored then try overriding
-         * or decorating the {@link $jsonpCallbacks} service.
          *
          * @param {string} url Absolute or relative URL of the resource that is being requested;
          *                                   or an object created by a call to `$sce.trustAsResourceUrl(url)`.
@@ -5373,28 +5072,35 @@
 
       /**
        * Array of module names that this module depends on.
+       * @ignore
        * @type {string[]}
        */
       this._requires = requires;
 
       /**
        * Holds a collection of tasks, required to instantiate an angular component
+       * @ignore
        * @type {!Array<Array<*>>}
        */
       this._invokeQueue = [];
 
-      /** @type {!Array<Array<*>>} */
+      /**
+       * @ignore
+       * @type {!Array<Array<*>>}
+       */
       this._configBlocks = [];
 
-      /** @type {!Array.<ng.Injectable<any>>} */
+      /** @ignore @type {!Array.<ng.Injectable<any>>} */
       this._runBlocks = [];
 
       if (configFn) {
         this.config(configFn);
       }
 
+      /** @ignore @type {!Array.<ng.Injectable<any>>} */
       this._services = [];
 
+      /** @ignore @type {!Array.<ng.RestDefinition<any>>} */
       this._restDefinitions = [];
     }
 
@@ -5681,6 +5387,7 @@
       validate(isString, name, "name");
       validate(isString, url, "url");
       validate(isFunction, entityClass, "entityClass");
+      /** @type {ng.RestDefinition<T>} */
       const def = { name, url, entityClass, options };
 
       this._restDefinitions.push(def);
@@ -5696,6 +5403,62 @@
             /** @param {(baseUrl:string, entityClass?:Function, options?:object) => ng.RestService<T, ID>} $rest */ (
               $rest,
             ) => $rest(url, entityClass, options),
+          ],
+        ],
+      ]);
+
+      return this;
+    }
+
+    /**
+     * Register a pre-configured SSE connection during module configuration.
+     *
+     * @param {string} name - Injectable name
+     * @param {string} url - SSE endpoint
+     * @param {ng.SseConfig} [options] - Optional SSE config
+     * @returns {NgModule}
+     */
+    sse(name, url, options = {}) {
+      validate(isString, name, "name");
+      validate(isString, url, "url");
+
+      this._invokeQueue.push([
+        $injectTokens._provide,
+        "factory",
+        [
+          name,
+          [
+            $injectTokens._sse,
+            /** @param {ng.SseService} $sse */ ($sse) => $sse(url, options),
+          ],
+        ],
+      ]);
+
+      return this;
+    }
+
+    /**
+     * Register a pre-configured WebSocket connection during module configuration.
+     *
+     * @param {string} name - Injectable name
+     * @param {string} url - WebSocket endpoint
+     * @param {string[]} [protocols] - Optional subprotocols
+     * @param {ng.WebSocketConfig} [options] - Optional WebSocket configuration
+     * @returns {NgModule}
+     */
+    websocket(name, url, protocols = [], options = {}) {
+      validate(isString, name, "name");
+      validate(isString, url, "url");
+
+      this._invokeQueue.push([
+        $injectTokens._provide,
+        "factory",
+        [
+          name,
+          [
+            $injectTokens._websocket,
+            /** @param {ng.WebSocketService} $ws */ ($ws) =>
+              $ws(url, protocols, options),
           ],
         ],
       ]);
@@ -6279,9 +6042,9 @@
        *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
        *     allowed in this array.
        *
-       * @return {Array} The currently set trusted resource URL array.
+       * @return {Array<any>} The currently set trusted resource URL array.
        *
-       * @description
+       *
        * Sets/Gets the list trusted of resource URLs.
        *
        * The **default value** when no `trustedResourceUrlList` has been explicitly set is `['self']`
@@ -6314,9 +6077,9 @@
        *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
        *     the final say.
        *
-       * @return {Array} The currently set `bannedResourceUrlList` array.
+       * @return {Array<any>} The currently set `bannedResourceUrlList` array.
        *
-       * @description
+       *
        * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
        *
        * The **default value** when no trusted resource URL list has been explicitly set is the empty
@@ -6522,7 +6285,7 @@
           }
 
           /**
-           * @description
+           *
            * Given an object and a security context in which to assign it, returns a value that's safe to
            * use in this context, which was represented by the parameter. To do so, this function either
            * unwraps the safe type it has been given (for instance, a {@link ng.$sceDelegate#trustAs
@@ -6622,7 +6385,7 @@
      * @param {boolean=} value If provided, then enables/disables SCE application-wide.
      * @return {boolean} True if SCE is enabled, false otherwise.
      *
-     * @description
+     *
      * Enables/disables SCE and returns the current value.
      */
     this.enabled = function (value) {
@@ -6649,7 +6412,7 @@
          * @return {Boolean} True if SCE is enabled, false otherwise.  If you want to set the value, you
          *     have to do it at module config time on {@link ng.$sceProvider $sceProvider}.
          *
-         * @description
+         *
          * Returns a boolean indicating if SCE is enabled.
          */
         sce.isEnabled = function () {
@@ -6684,7 +6447,7 @@
         sce.parseAs = (type, expr) => {
           const parsed = $parse(expr);
 
-          if (parsed.literal && parsed.constant) {
+          if (parsed._literal && parsed.constant) {
             return parsed;
           }
 
@@ -6956,6 +6719,9 @@
         const fn = $parse(attr[directiveName]);
 
         return (scope, element) => {
+          /**
+           * @param {Event} event
+           */
           const handler = (event) => {
             try {
               fn(scope, { $event: event });
@@ -6996,6 +6762,9 @@
         const fn = $parse(attr[directiveName]);
 
         return (scope) => {
+          /**
+           * @param {Event} event
+           */
           const handler = (event) => {
             try {
               fn(scope, { $event: event });
@@ -7020,9 +6789,6 @@
 
   const specialAttrHolder = document.createElement("div");
 
-  /**
-   * @extends {Record<string, any>}
-   */
   class Attributes {
     static $nonscope = true;
 
@@ -7039,44 +6805,52 @@
      *    - Used when cloning attributes for directive linking / child scopes.
      *    - Performs a shallow copy of all properties from the source Attributes object,
      *      including `$attr`, normalized attribute values, and internal fields
-     *      (e.g. `$$observers`).
+     *      (e.g. `_observers`).
      *    - `$attr` is intentionally **not reinitialized** in this case, because the
      *      source object already contains the correct normalized → DOM attribute mapping.
      *
      * @param {ng.AnimateService} $animate
      * @param {ng.ExceptionHandlerService} $exceptionHandler
-     * @param {*} $sce
+     * @param {ng.SCEService} $sce
      * @param {import("../../shared/noderef.js").NodeRef} [nodeRef]
-     * @param {Object} [attributesToCopy]
+     * @param {Object & Record<string, any>} [attributesToCopy]
      */
     constructor($animate, $exceptionHandler, $sce, nodeRef, attributesToCopy) {
-      this._$animate = $animate;
-      this._$exceptionHandler = $exceptionHandler;
-      this._$sce = $sce;
+      /** @type {ng.AnimateService} */
+      this._animate = $animate;
+
+      /** @type {ng.ExceptionHandlerService} */
+      this._exceptionHandler = $exceptionHandler;
+
+      /** @type {ng.SCEService} */
+      this._sce = $sce;
+      /**
+       * A map of DOM element attribute names to the normalized name. This is needed
+       * to do reverse lookup from normalized name back to actual name.
+       * @type {Record<string, string>}
+       */
+      this.$attr = {};
 
       if (attributesToCopy) {
         const keys = Object.keys(attributesToCopy);
 
+        /** @type {Record<string, any>} */
+        const that = this;
+
         for (let i = 0, l = keys.length; i < l; i++) {
           const key = keys[i];
 
-          this[key] = attributesToCopy[key];
+          that[key] = attributesToCopy[key];
         }
-      } else {
-        /**
-         * A map of DOM element attribute names to the normalized name. This is needed
-         * to do reverse lookup from normalized name back to actual name.
-         */
-        this.$attr = {};
       }
 
-      /** @type {import("../../shared/noderef.js").NodeRef} */
+      /** @type {import("../../shared/noderef.js").NodeRef | undefined} */
       this._nodeRef = nodeRef;
     }
 
-    /** @type {Node|Element} */
-    get $$element() {
-      return this._nodeRef.node;
+    /** @ignore @returns {Node|Element} */
+    _element() {
+      return /** @type {Node|Element} */ (this._nodeRef?._getAny());
     }
 
     /**
@@ -7099,13 +6873,13 @@
      */
     $addClass(classVal) {
       if (classVal && classVal.length > 0) {
-        if (hasAnimate(this.$$element)) {
-          this._$animate.addClass(
-            /** @type {Element} */ (this.$$element),
+        if (hasAnimate(this._element())) {
+          this._animate.addClass(
+            /** @type {Element} */ (this._element()),
             classVal,
           );
         } else {
-          this._nodeRef.element.classList.add(classVal);
+          this._nodeRef?.element.classList.add(classVal);
         }
       }
     }
@@ -7118,13 +6892,13 @@
      */
     $removeClass(classVal) {
       if (classVal && classVal.length > 0) {
-        if (hasAnimate(this.$$element)) {
-          this._$animate.removeClass(
-            /** @type {Element} */ (this.$$element),
+        if (hasAnimate(this._element())) {
+          this._animate.removeClass(
+            /** @type {Element} */ (this._element()),
             classVal,
           );
         } else {
-          this._nodeRef.element.classList.remove(classVal);
+          this._nodeRef?.element.classList.remove(classVal);
         }
       }
     }
@@ -7140,22 +6914,24 @@
       const toAdd = tokenDifference(newClasses, oldClasses);
 
       if (toAdd && toAdd.length) {
-        if (hasAnimate(this.$$element)) {
-          this._$animate.addClass(/** @type {Element }*/ (this.$$element), toAdd);
+        if (hasAnimate(this._element())) {
+          this._animate.addClass(/** @type {Element }*/ (this._element()), toAdd);
         } else {
-          this._nodeRef.element.classList.add(...toAdd.trim().split(/\s+/));
+          this._nodeRef?.element.classList.add(...toAdd.trim().split(/\s+/));
         }
       }
       const toRemove = tokenDifference(oldClasses, newClasses);
 
       if (toRemove && toRemove.length) {
-        if (hasAnimate(this.$$element)) {
-          this._$animate.removeClass(
-            /** @type {Element }*/ (this.$$element),
+        if (hasAnimate(this._element())) {
+          this._animate.removeClass(
+            /** @type {Element} */ (this._element()),
             toRemove,
           );
         } else {
-          this._nodeRef.element.classList.remove(...toRemove.trim().split(/\s+/));
+          this._nodeRef?.element.classList.remove(
+            ...toRemove.trim().split(/\s+/),
+          );
         }
       }
     }
@@ -7170,11 +6946,7 @@
      * @param {string=} attrName Optional none normalized name. Defaults to key.
      */
     $set(key, value, writeAttr, attrName) {
-      // TODO: decide whether or not to throw an error if "class"
-      // is set through this function since it may cause $updateClass to
-      // become unstable.
-
-      const node = this.$$element;
+      const node = this._element();
 
       const booleanKey = getBooleanAttrName(/** @type {Element}   */ (node), key);
 
@@ -7183,14 +6955,14 @@
       let observer = key;
 
       if (booleanKey) {
-        this.$$element[key] = value;
+        /** @type {Record<string, any>} */ (this._element())[key] = value;
         attrName = booleanKey;
       } else if (aliasedKey) {
-        this[aliasedKey] = value;
+        /** @type {Record<string, any>} */ (this)[aliasedKey] = value;
         observer = aliasedKey;
       }
 
-      this[key] = value;
+      /** @type {Record<string, any>} */ (this)[key] = value;
 
       // translate normalized key to actual key
       if (attrName) {
@@ -7203,7 +6975,7 @@
         }
       }
 
-      const nodeName = this._nodeRef.node.nodeName.toLowerCase();
+      const nodeName = this._nodeRef?.node.nodeName.toLowerCase();
 
       let maybeSanitizedValue;
 
@@ -7218,7 +6990,7 @@
       }
 
       if (writeAttr !== false) {
-        const elem = /** @type {Element} */ (this.$$element);
+        const elem = /** @type {Element} */ (this._element());
 
         if (isNullOrUndefined(maybeSanitizedValue)) {
           elem.removeAttribute(attrName);
@@ -7245,21 +7017,27 @@
             }
           }
         } else {
-          this.setSpecialAttr(this.$$element, attrName, maybeSanitizedValue);
+          this.setSpecialAttr(
+            /** @type {Element} */ (this._element()),
+            attrName,
+            /** @type {string} */ (maybeSanitizedValue),
+          );
         }
       }
 
       // fire observers
-      const { $$observers } = this;
+      const { _observers } = this;
 
-      if ($$observers && $$observers[observer]) {
-        $$observers[observer].forEach((fn) => {
-          try {
-            fn(maybeSanitizedValue);
-          } catch (err) {
-            this._$exceptionHandler(err);
-          }
-        });
+      if (_observers && _observers[observer]) {
+        _observers[observer].forEach(
+          (/** @type {(arg0: unknown) => void} */ fn) => {
+            try {
+              fn(maybeSanitizedValue);
+            } catch (err) {
+              this._exceptionHandler(err);
+            }
+          },
+        );
       }
     }
 
@@ -7279,16 +7057,20 @@
     * @returns {Function} Returns a deregistration function for this observer.
     */
     $observe(key, fn) {
-      const $$observers =
-        this.$$observers || (this.$$observers = Object.create(null));
+      const _observers =
+        this._observers || (this._observers = Object.create(null));
 
-      const listeners = $$observers[key] || ($$observers[key] = []);
+      const listeners = _observers[key] || (_observers[key] = []);
 
       listeners.push(fn);
 
-      if (!listeners.$$inter && hasOwn(this, key) && !isUndefined(this[key])) {
+      if (
+        !listeners.$$inter &&
+        hasOwn(this, key) &&
+        !isUndefined(/** @type {Record<string, any>} */ (this)[key])
+      ) {
         // no one registered attribute interpolation function, so lets call it manually
-        fn(this[key]);
+        fn(/** @type {Record<string, any>} */ (this)[key]);
       }
 
       return function () {
@@ -7296,6 +7078,17 @@
       };
     }
 
+    /**
+     * Sets a special (non-standard) attribute on an element.
+     *
+     * Used for attribute names that cannot be set via `setAttribute`
+     * (e.g. names not starting with a letter like `(click)`).
+     *
+     * @param {Element} element
+     * @param {string} attrName
+     * @param {string | null} value
+     * @returns {void}
+     */
     setSpecialAttr(element, attrName, value) {
       // Attributes names that do not start with letters (such as `(click)`) cannot be set using `setAttribute`
       // so we have to jump through some hoops to get such an attribute
@@ -7309,7 +7102,7 @@
 
       // We have to remove the attribute from its container element before we can add it to the destination element
       attributes.removeNamedItem(attribute.name);
-      attribute.value = value;
+      attribute.value = value ?? "";
       element.attributes.setNamedItem(attribute);
     }
 
@@ -7363,7 +7156,7 @@
         const innerIdx = i * 2;
 
         // sanitize the uri
-        result += this._$sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
+        result += this._sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
         // add the descriptor
         result += ` ${trim(rawUris[innerIdx + 1])}`;
       }
@@ -7372,7 +7165,7 @@
       const lastTuple = trim(rawUris[i * 2]).split(/\s/);
 
       // sanitize the last uri
-      result += this._$sce.getTrustedMediaUrl(trim(lastTuple[0]));
+      result += this._sce.getTrustedMediaUrl(trim(lastTuple[0]));
 
       // and add the last descriptor if any
       if (lastTuple.length === 2) {
@@ -7877,7 +7670,7 @@
        *
        * @param {string} elementName The element name or '*' to match any element.
        * @param {string} propertyName The DOM property name.
-       * @param {string} ctx The {@link _$sce} security context in which this value is safe for use, e.g. `$sce.URL`
+       * @param {string} ctx The {@link _sce} security context in which this value is safe for use, e.g. `$sce.URL`
        * @returns {object} `this` for chaining
        */
       this.addPropertySecurityContext = function (
@@ -7973,7 +7766,6 @@
         $injectTokens._templateRequest,
         $injectTokens._parse,
         $injectTokens._controller,
-        $injectTokens._rootScope,
         $injectTokens._sce,
         $injectTokens._animate,
         /**
@@ -7983,8 +7775,7 @@
          * @param {ng.TemplateRequestService} $templateRequest
          * @param {ng.ParseService} $parse
          * @param {*} $controller
-         * @param {ng.Scope} $rootScope
-         * @param {*} $sce
+         * @param {ng.SCEService} $sce
          * @param {ng.AnimateService} $animate
          * @returns
          */
@@ -7995,7 +7786,6 @@
           $templateRequest,
           $parse,
           $controller,
-          $rootScope,
           $sce,
           $animate,
         ) {
@@ -8633,7 +8423,7 @@
            * is responsible for inlining directive templates as well as terminating the application
            * of the directives if the terminal directive has been reached.
            *
-           * @param {Array} directives Array of collected directives to execute their compile function.
+           * @param {Array<any>} directives Array of collected directives to execute their compile function.
            *        this needs to be pre-sorted by priority order.
            * @param {Node | Element} compileNode  DOM node to apply the compile functions to
            * @param {Attributes} templateAttrs The shared attribute function
@@ -9440,8 +9230,8 @@
                     addLinkFns(null, bind(context, linkFn));
                   } else if (linkFn) {
                     addLinkFns(
-                      bind(context, linkFn.pre),
-                      bind(context, linkFn.post),
+                      bind(context, /** @type {ng.PublicLinkFn} */ (linkFn).pre),
+                      bind(context, /** @type {ng.PublicLinkFn} */ (linkFn).post),
                     );
                   }
                 } catch (err) {
@@ -9770,8 +9560,8 @@
            * @param {Attributes} tAttrs
            * @param {Element} $rootElement
            * @param {*} childTranscludeFn
-           * @param {Array} preLinkFns
-           * @param {Array} postLinkFns
+           * @param {Array<any>} preLinkFns
+           * @param {Array<any>} postLinkFns
            * @param {*} previousCompileContext
            * @returns
            */
@@ -10322,9 +10112,8 @@
               compile() {
                 return {
                   pre: function attrInterpolatePreLinkFn(scope, element, attr) {
-                    const $$observers =
-                      attr.$$observers ||
-                      (attr.$$observers = Object.create(null));
+                    const _observers =
+                      attr._observers || (attr._observers = Object.create(null));
 
                     // If the attribute has changed since last $interpolate()ed
                     const newValue = attr[name];
@@ -10355,11 +10144,10 @@
                     // directive's linking fn during linking phase
                     attr[name] = interpolateFn(scope);
 
-                    ($$observers[name] || ($$observers[name] = [])).$$inter =
-                      true;
+                    (_observers[name] || (_observers[name] = [])).$$inter = true;
                     interpolateFn.expressions.forEach((x) => {
                       const targetScope =
-                        (attr.$$observers && attr.$$observers[name].$$scope) ||
+                        (attr._observers && attr._observers[name]._scope) ||
                         scope;
 
                       targetScope.$watch(x, () => {
@@ -10374,7 +10162,7 @@
                         if (name === "class") {
                           attr.$updateClass(
                             newInterpolatedValue,
-                            attr.$$element.classList.value,
+                            attr._element().classList.value,
                           );
                         } else {
                           attr.$set(
@@ -10494,6 +10282,7 @@
 
                 let lastValue;
 
+                /** @type {import("../parse/interface").CompiledExpression} */
                 let parentGet;
 
                 let parentSet;
@@ -10527,7 +10316,7 @@
                         }
                       }
                     });
-                    attrs.$$observers[attrName].$$scope = scope;
+                    attrs._observers[attrName]._scope = scope;
                     lastValue = attrs[attrName];
 
                     if (isString(lastValue)) {
@@ -10541,7 +10330,7 @@
                     }
 
                     /**
-                     * @type {import("./inteface.ts").SimpleChange}
+                     * @type {import("./interface.ts").SimpleChange}
                      */
                     initialChanges[scopeName] = {
                       currentValue: destination[scopeName],
@@ -10563,20 +10352,21 @@
                       break;
                     }
 
-                    parentGet = $parse(attrs[attrName]);
+                    const attr = attrs[attrName];
 
-                    if (parentGet.literal) {
+                    parentGet = attr && $parse(attr);
+
+                    if (parentGet && parentGet._literal) {
                       compare = equals$1;
                     } else {
                       compare = simpleCompare;
                     }
 
                     parentSet =
-                      parentGet.assign ||
+                      (parentGet && parentGet._assign) ||
                       function () {
                         // reset the change, or we will throw this exception on every $digest
-                        lastValue = destination.$target[scopeName] =
-                          parentGet(scope);
+
                         throw $compileMinErr(
                           "nonassign",
                           "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!",
@@ -10586,9 +10376,9 @@
                         );
                       };
                     // store the value that the parent scope had after the last check:
-                    lastValue = destination.$target[scopeName] = parentGet(
-                      scope.$target,
-                    );
+                    lastValue = destination.$target[scopeName] =
+                      parentGet && parentGet(scope.$target);
+
                     const parentValueWatch = function parentValueWatch(
                       parentValue,
                     ) {
@@ -10610,79 +10400,69 @@
                       return lastValue;
                     };
 
-                    parentValueWatch.$stateful = true;
+                    if (attrs[attrName]) {
+                      const expr = attrs[attrName];
 
-                    if (definition.collection) {
-                      removeWatch = scope.$watch(
-                        attrs[attrName],
-                        parentValueWatch,
-                      );
-                    } else {
-                      if (attrs[attrName]) {
-                        const expr = attrs[attrName];
-
-                        // make it lazy as we dont want to trigger the two way data binding at this point
-                        scope.$watch(
-                          expr,
-                          (val) => {
-                            const res = $parse(attrs[attrName], parentValueWatch);
-
-                            if (val) {
-                              if (parentGet.literal) {
-                                scope.$target[attrName] = val;
-                              } else {
-                                scope[attrName] = val;
-                              }
-                              res(scope);
-                            } else {
-                              scope[attrName] = scope[attrs[attrName]];
-                            }
-                          },
-                          true,
-                        );
-                      }
-
-                      removeWatch = destination.$watch(
-                        attrName,
+                      // make it lazy as we dont want to trigger the two way data binding at this point
+                      scope.$watch(
+                        expr,
                         (val) => {
-                          if (
-                            val === lastValue &&
-                            !isUndefined(attrs[attrName])
-                          ) {
-                            return;
-                          }
+                          const res = $parse(attrs[attrName], parentValueWatch);
 
-                          if (
-                            (!!parentGet.inputs && !parentGet.literal) ||
-                            (isUndefined(attrs[attrName]) && isDefined(val))
-                          ) {
-                            destination.$target[attrName] = lastValue;
-                            throw $compileMinErr(
-                              "nonassign",
-                              "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!",
-                              attrs[attrName],
-                              attrName,
-                              directive.name,
-                            );
-                          } else {
-                            // manually set the handler to avoid watch cycles
-                            if (isObject(val)) {
-                              entries(val).forEach(([key, value]) => {
-                                scope.$target[key] = value;
-                              });
+                          if (val) {
+                            if (parentGet._literal) {
+                              scope.$target[attrName] = val;
                             } else {
-                              parentSet(scope.$target, (lastValue = val));
-                              scope.$handler.watchers
-                                .get(attrs[attrName])
-                                ?.forEach((watchFn) => {
-                                  watchFn.listenerFn(val, scope.$target);
-                                });
+                              scope[attrName] = val;
                             }
+                            res(scope);
+                          } else {
+                            scope[attrName] = scope[attrs[attrName]];
                           }
                         },
                         true,
                       );
                     }
+
+                    removeWatch = destination.$watch(
+                      attrName,
+                      (val) => {
+                        if (val === lastValue && !isUndefined(attrs[attrName])) {
+                          return;
+                        }
+
+                        if (
+                          (parentGet &&
+                            !!parentGet._inputs &&
+                            !parentGet._literal) ||
+                          (isUndefined(attrs[attrName]) && isDefined(val))
+                        ) {
+                          destination.$target[attrName] = lastValue;
+                          throw $compileMinErr(
+                            "nonassign",
+                            "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!",
+                            attrs[attrName],
+                            attrName,
+                            directive.name,
+                          );
+                        } else {
+                          // manually set the handler to avoid watch cycles
+                          if (isObject(val)) {
+                            entries(val).forEach(([key, value]) => {
+                              scope.$target[key] = value;
+                            });
+                          } else {
+                            parentSet(scope.$target, (lastValue = val));
+                            scope.$handler.watchers
+                              .get(attrs[attrName])
+                              ?.forEach((watchFn) => {
+                                watchFn.listenerFn(val, scope.$target);
+                              });
+                          }
+                        }
+                      },
+                      true,
+                    );
                     removeWatchCollection.push(removeWatch);
                     break;
                   }
@@ -10700,10 +10480,11 @@
                       break;
                     }
 
-                    parentGet = $parse(attrs[attrName]);
+                    parentGet = attrs[attrName] && $parse(attrs[attrName]);
 
-                    destination.$target[scopeName] = parentGet(scope.$target);
-                    /** @type {import("./inteface.ts").SimpleChange} */
+                    destination.$target[scopeName] =
+                      parentGet && parentGet(scope.$target);
+                    /** @type {import("./interface.ts").SimpleChange} */
                     initialChanges[scopeName] = {
                       currentValue: destination.$target[scopeName],
                       firstChange,
@@ -10734,18 +10515,10 @@
                     // Don't assign Object.prototype method to scope
                     parentGet = hasOwn(attrs, attrName)
                       ? $parse(attrs[attrName])
-                      : () => {
-                          /* empty */
-                        };
+                      : undefined;
 
                     // Don't assign noop to destination if expression is not valid
-                    if (
-                      parentGet.toString() ===
-                        (() => {
-                          /* empty */
-                        }).toString() &&
-                      optional
-                    ) {
+                    if (!parentGet && optional) {
                       break;
                     }
 
@@ -10934,7 +10707,7 @@
    *  - `week`
    *  - `month`
    *
-   * @description
+   *
    * `FormController` keeps track of all its controls and nested forms as well as the state of them,
    * such as being valid/invalid or dirty/pristine.
    *
@@ -10979,18 +10752,18 @@
       this.$invalid = false;
       this.$submitted = false;
       /** @type {FormController|Object} */
-      this.$$parentForm = nullFormCtrl;
+      this._parentForm = nullFormCtrl;
 
-      this.$$element = $element;
-      this.$$animate = $animate;
+      this._element = $element;
+      this._animate = $animate;
       this.$error = {};
-      this.$$success = {};
+      this._success = {};
       this.$pending = undefined;
-      this.$$classCache = {};
-      const isValid = this.$$element.classList.contains(VALID_CLASS);
+      this._classCache = {};
+      const isValid = this._element.classList.contains(VALID_CLASS);
 
-      this.$$classCache[VALID_CLASS] = isValid;
-      this.$$classCache[INVALID_CLASS] = !isValid;
+      this._classCache[VALID_CLASS] = isValid;
+      this._classCache[INVALID_CLASS] = !isValid;
       this.$target = {};
     }
 
@@ -11044,7 +10817,7 @@
       if (control.$name) {
         this[control.$name] = control;
       }
-      control.$target.$$parentForm = this;
+      control.$target._parentForm = this;
     }
 
     /**
@@ -11101,14 +10874,14 @@
         Object.keys(this.$error).forEach((name) => {
           this.$setValidity(name, null, control);
         });
-      this.$$success &&
-        Object.keys(this.$$success).forEach((name) => {
+      this._success &&
+        Object.keys(this._success).forEach((name) => {
           this.$setValidity(name, null, control);
         });
 
       arrayRemove(this._controls, control);
 
-      control.$target.$$parentForm = nullFormCtrl;
+      control.$target._parentForm = nullFormCtrl;
     }
 
     /**
@@ -11118,17 +10891,17 @@
      * state (ng-dirty class). This method will also propagate to parent forms.
      */
     $setDirty() {
-      if (hasAnimate(this.$$element)) {
-        this.$$animate.removeClass(this.$$element, PRISTINE_CLASS);
-        this.$$animate.addClass(this.$$element, DIRTY_CLASS);
+      if (hasAnimate(this._element)) {
+        this._animate.removeClass(this._element, PRISTINE_CLASS);
+        this._animate.addClass(this._element, DIRTY_CLASS);
       } else {
         // Fallback for non-animated environments
-        this.$$element.classList.remove(PRISTINE_CLASS);
-        this.$$element.classList.add(DIRTY_CLASS);
+        this._element.classList.remove(PRISTINE_CLASS);
+        this._element.classList.add(DIRTY_CLASS);
       }
       this.$dirty = true;
       this.$pristine = false;
-      this.$$parentForm.$setDirty();
+      this._parentForm.$setDirty();
     }
 
     /**
@@ -11144,16 +10917,16 @@
      * saving or resetting it.
      */
     $setPristine() {
-      if (hasAnimate(this.$$element)) {
-        this.$$animate.setClass(
-          this.$$element,
+      if (hasAnimate(this._element)) {
+        this._animate.setClass(
+          this._element,
           PRISTINE_CLASS,
           `${DIRTY_CLASS} ${SUBMITTED_CLASS}`,
         );
       } else {
         // Fallback for non-animated environments
-        this.$$element.classList.remove(DIRTY_CLASS, SUBMITTED_CLASS);
-        this.$$element.classList.add(PRISTINE_CLASS);
+        this._element.classList.remove(DIRTY_CLASS, SUBMITTED_CLASS);
+        this._element.classList.add(PRISTINE_CLASS);
       }
 
       this.$dirty = false;
@@ -11187,17 +10960,17 @@
       /** @type {FormController} */
       let rootForm = this;
 
-      while (rootForm.$$parentForm && rootForm.$$parentForm !== nullFormCtrl) {
-        rootForm = rootForm.$$parentForm;
+      while (rootForm._parentForm && rootForm._parentForm !== nullFormCtrl) {
+        rootForm = rootForm._parentForm;
       }
       rootForm._setSubmitted();
     }
 
     _setSubmitted() {
-      if (hasAnimate(this.$$element)) {
-        this.$$animate.addClass(this.$$element, SUBMITTED_CLASS);
+      if (hasAnimate(this._element)) {
+        this._animate.addClass(this._element, SUBMITTED_CLASS);
       } else {
-        this.$$element.classList.add(SUBMITTED_CLASS);
+        this._element.classList.add(SUBMITTED_CLASS);
       }
       this.$submitted = true;
       this._controls.forEach((control) => {
@@ -11270,13 +11043,13 @@
 
       if (!isBoolean(state)) {
         this.unset(this.$error, validationErrorKey, controller);
-        this.unset(this.$$success, validationErrorKey, controller);
+        this.unset(this._success, validationErrorKey, controller);
       } else if (state) {
         this.unset(this.$error, validationErrorKey, controller);
-        this.set(this.$$success, validationErrorKey, controller);
+        this.set(this._success, validationErrorKey, controller);
       } else {
         this.set(this.$error, validationErrorKey, controller);
-        this.unset(this.$$success, validationErrorKey, controller);
+        this.unset(this._success, validationErrorKey, controller);
       }
 
       if (this.$pending) {
@@ -11300,14 +11073,14 @@
         combinedState = undefined;
       } else if (this.$error[validationErrorKey]) {
         combinedState = false;
-      } else if (this.$$success[validationErrorKey]) {
+      } else if (this._success[validationErrorKey]) {
         combinedState = true;
       } else {
         combinedState = null;
       }
 
       toggleValidationCss(this, validationErrorKey, combinedState);
-      this.$$parentForm.$setValidity(validationErrorKey, combinedState, this);
+      this._parentForm.$setValidity(validationErrorKey, combinedState, this);
       function createAndSet(ctrl, name, value, controllerParam) {
         if (!ctrl[name]) {
           ctrl[name] = {};
@@ -11326,12 +11099,12 @@
       }
 
       function cachedToggleClass(ctrl, className, switchValue) {
-        if (switchValue && !ctrl.$$classCache[className]) {
-          ctrl.$$animate.addClass(ctrl.$$element, className);
-          ctrl.$$classCache[className] = true;
-        } else if (!switchValue && ctrl.$$classCache[className]) {
-          ctrl.$$animate.removeClass(ctrl.$$element, className);
-          ctrl.$$classCache[className] = false;
+        if (switchValue && !ctrl._classCache[className]) {
+          ctrl._animate.addClass(ctrl._element, className);
+          ctrl._classCache[className] = true;
+        } else if (!switchValue && ctrl._classCache[className]) {
+          ctrl._animate.removeClass(ctrl._element, className);
+          ctrl._classCache[className] = false;
         }
       }
 
@@ -11444,7 +11217,11 @@
    */
   const formDirectiveFactory = function (isNgForm) {
     return [
-      "$parse",
+      $injectTokens._parse,
+      /**
+       * @param {ng.ParseService} $parse
+       * @returns {ng.Directive}
+       */
       function ($parse) {
         return {
           name: "form",
@@ -11505,7 +11282,7 @@
                   });
                 }
 
-                const parentFormCtrl = ctrls[1] || controller.$$parentForm;
+                const parentFormCtrl = ctrls[1] || controller._parentForm;
 
                 parentFormCtrl.$addControl(controller);
 
@@ -11520,18 +11297,18 @@
                   attrParam.$observe(nameAttr, (newValue) => {
                     if (controller.$name === newValue) return;
                     scope.$target[controller.$name] = undefined;
-                    controller.$$parentForm._renameControl(controller, newValue);
+                    controller._parentForm._renameControl(controller, newValue);
 
                     if (
-                      scope.$target !== controller.$$parentForm &&
-                      controller.$$parentForm !== nullFormCtrl
+                      scope.$target !== controller._parentForm &&
+                      controller._parentForm !== nullFormCtrl
                     ) ; else {
                       scope.$target[newValue] = controller;
                     }
                   });
                 }
                 formElementParam.addEventListener("$destroy", () => {
-                  controller.$target.$$parentForm.$removeControl(controller);
+                  controller.$target._parentForm.$removeControl(controller);
                   setter(scope, undefined);
                   extend(controller, nullFormCtrl); // stop propagating child destruction handlers upwards
                 });
@@ -11542,15 +11319,10 @@
         function getSetter(expression) {
           if (expression === "") {
             // create an assignable expression, so forms with an empty name can be renamed later
-            return $parse('this[""]').assign;
+            return $parse('this[""]')._assign;
           }
 
-          return (
-            $parse(expression).assign ||
-            (() => {
-              /* empty */
-            })
-          );
+          return $parse(expression)._assign;
         }
       },
     ];
@@ -11579,8 +11351,8 @@
      * @param {ng.Scope} $scope
      */
     constructor($attrs, $scope) {
-      this.$$attrs = $attrs;
-      this.$$scope = $scope;
+      this._attrs = $attrs;
+      this._scope = $scope;
       /** @type {NgModelOptionsController?} */
       this.parentCtrl;
     }
@@ -11590,8 +11362,8 @@
         ? this.parentCtrl.$options
         : defaultModelOptions;
 
-      const modelOptionsDefinition = this.$$scope.$eval(
-        this.$$attrs.ngModelOptions,
+      const modelOptionsDefinition = this._scope.$eval(
+        this._attrs.ngModelOptions,
       );
 
       this.$options = parentOptions.createChild(modelOptionsDefinition);
@@ -11599,7 +11371,6 @@
   }
 
   /**
-   * @description
    * A container for the options set by the {@link ngModelOptions} directive
    */
   class ModelOptions {
@@ -11610,7 +11381,7 @@
      */
     constructor(options) {
       /** @type {ModelOptionsConfig} */
-      this.$$options = options;
+      this._options = options;
     }
 
     /**
@@ -11619,7 +11390,7 @@
      * @returns {string|boolean|number|Object.<string, number>} the value of the option   *
      */
     getOption(name) {
-      return this.$$options[name];
+      return this._options[name];
     }
 
     /**
@@ -11638,11 +11409,11 @@
           if (key === "*") {
             inheritAll = true;
           } else {
-            options[key] = this.$$options[key];
+            options[key] = this._options[key];
 
             // `updateOn` is special so we must also inherit the `updateOnDefault` option
             if (key === "updateOn") {
-              options.updateOnDefault = this.$$options.updateOnDefault;
+              options.updateOnDefault = this._options.updateOnDefault;
             }
           }
         } else if (key === "updateOn") {
@@ -11662,11 +11433,11 @@
       if (inheritAll) {
         // We have a property of the form: `"*": "$inherit"`
         delete options["*"];
-        defaults$1(options, this.$$options);
+        defaults$1(options, this._options);
       }
 
       // Finally add in any missing defaults
-      defaults$1(options, defaultModelOptions.$$options);
+      defaults$1(options, defaultModelOptions._options);
 
       return new ModelOptions(options);
     }
@@ -11778,7 +11549,7 @@
       /** @type {any} The value in the model that the control is bound to. */
       this.$modelValue = Number.NaN;
       /** @type {any} */
-      this.$$rawModelValue = undefined; // stores the parsed modelValue / model set from scope regardless of validity.
+      this._rawModelValue = undefined; // stores the parsed modelValue / model set from scope regardless of validity.
 
       /** @type {import("./interface.ts").ModelValidators} */
       this.$validators = {};
@@ -11814,17 +11585,17 @@
       this.$invalid = false;
 
       this.$error = {}; // keep invalid keys here
-      this.$$success = {}; // keep valid keys here
+      this._success = {}; // keep valid keys here
       this.$pending = undefined; // keep pending keys here
       this.$name = $interpolate($attr.name || "", false)($scope);
-      this.$$parentForm = nullFormCtrl;
+      this._parentForm = nullFormCtrl;
       this.$options = defaultModelOptions;
-      this.$$updateEvents = "";
+      this._updateEvents = "";
       // Attach the correct context to the event handler function for updateOn
-      this.$$updateEventHandler = this.$$updateEventHandler.bind(this);
+      this._updateEventHandler = this._updateEventHandler.bind(this);
 
       this._parsedNgModel = $parse($attr.ngModel);
-      this._parsedNgModelAssign = this._parsedNgModel.assign;
+      this._parsedNgModelAssign = this._parsedNgModel._assign;
 
       /**
        * @type {import("../../core/parse/interface.ts").CompiledExpression |
@@ -11832,32 +11603,32 @@
        */
       this._ngModelGet = this._parsedNgModel;
       this._ngModelSet = this._parsedNgModelAssign;
-      this.$$pendingDebounce = null;
-      this.$$parserValid = undefined;
+      this._pendingDebounce = null;
+      this._parserValid = undefined;
 
       /** @type {string} */
-      this.$$parserName = "parse";
+      this._parserName = "parse";
 
       /** @type {number} */
-      this.$$currentValidationRunId = 0;
+      this._currentValidationRunId = 0;
 
       /** @type {ng.Scope} */
-      this.$$scope = $scope; // attempt to bind to nearest controller if present
-      this.$$attr = $attr;
-      this.$$element = $element;
-      this.$$animate = $animate;
-      this.$$parse = $parse;
-      this.$$exceptionHandler = $exceptionHandler;
+      this._scope = $scope; // attempt to bind to nearest controller if present
+      this._attr = $attr;
+      this._element = $element;
+      this._animate = $animate;
+      this._parse = $parse;
+      this._exceptionHandler = $exceptionHandler;
 
-      this.$$hasNativeValidators = false;
+      this._hasNativeValidators = false;
 
-      this.$$classCache = {};
-      const isValid = this.$$element.classList.contains(VALID_CLASS);
+      this._classCache = {};
+      const isValid = this._element.classList.contains(VALID_CLASS);
 
-      this.$$classCache[VALID_CLASS] = isValid;
-      this.$$classCache[INVALID_CLASS] = !isValid;
+      this._classCache[VALID_CLASS] = isValid;
+      this._classCache[INVALID_CLASS] = !isValid;
 
-      this.$$eventRemovers = new Set();
+      this._eventRemovers = new Set();
 
       setupModelWatcher(this);
     }
@@ -11891,21 +11662,21 @@
       }
 
       function cachedToggleClass(ctrl, className, switchValue) {
-        if (switchValue && !ctrl.$$classCache[className]) {
-          if (hasAnimate(ctrl.$$element)) {
-            ctrl.$$animate.addClass(ctrl.$$element, className);
+        if (switchValue && !ctrl._classCache[className]) {
+          if (hasAnimate(ctrl._element)) {
+            ctrl._animate.addClass(ctrl._element, className);
           } else {
-            ctrl.$$element.classList.add(className);
+            ctrl._element.classList.add(className);
           }
 
-          ctrl.$$classCache[className] = true;
-        } else if (!switchValue && ctrl.$$classCache[className]) {
-          if (hasAnimate(ctrl.$$element)) {
-            ctrl.$$animate.removeClass(ctrl.$$element, className);
+          ctrl._classCache[className] = true;
+        } else if (!switchValue && ctrl._classCache[className]) {
+          if (hasAnimate(ctrl._element)) {
+            ctrl._animate.removeClass(ctrl._element, className);
           } else {
-            ctrl.$$element.classList.remove(className);
+            ctrl._element.classList.remove(className);
           }
-          ctrl.$$classCache[className] = false;
+          ctrl._classCache[className] = false;
         }
       }
 
@@ -11934,13 +11705,13 @@
 
       if (!isBoolean(state)) {
         delete this.$error[validationErrorKey];
-        delete this.$$success[validationErrorKey];
+        delete this._success[validationErrorKey];
       } else if (state) {
         delete this.$error[validationErrorKey];
-        this.set(this.$$success, validationErrorKey);
+        this.set(this._success, validationErrorKey);
       } else {
         this.set(this.$error, validationErrorKey);
-        delete this.$$success[validationErrorKey];
+        delete this._success[validationErrorKey];
       }
 
       if (this.$pending) {
@@ -11964,21 +11735,21 @@
         combinedState = undefined;
       } else if (this.$error[validationErrorKey]) {
         combinedState = false;
-      } else if (this.$$success[validationErrorKey]) {
+      } else if (this._success[validationErrorKey]) {
         combinedState = true;
       } else {
         combinedState = null;
       }
 
       toggleValidationCss(this, validationErrorKey, combinedState);
-      this.$$parentForm.$setValidity(validationErrorKey, combinedState, this);
+      this._parentForm.$setValidity(validationErrorKey, combinedState, this);
     }
 
-    $$initGetterSetters() {
+    _initGetterSetters() {
       if (this.$options.getOption("getterSetter")) {
-        const invokeModelGetter = this.$$parse(`${this.$$attr.ngModel}()`);
+        const invokeModelGetter = this._parse(`${this._attr.ngModel}()`);
 
-        const invokeModelSetter = this.$$parse(`${this.$$attr.ngModel}($$$p)`);
+        const invokeModelSetter = this._parse(`${this._attr.ngModel}(_$p)`);
 
         this._ngModelGet = ($scope) => {
           let modelValue = this._parsedNgModel($scope);
@@ -11991,17 +11762,17 @@
         };
         this._ngModelSet = ($scope, newValue) => {
           if (isFunction(this._parsedNgModel($scope))) {
-            invokeModelSetter($scope, { $$$p: newValue });
+            invokeModelSetter($scope, { _$p: newValue });
           } else {
             this._parsedNgModelAssign($scope, newValue);
           }
         };
-      } else if (!this._parsedNgModel.assign) {
+      } else if (!this._parsedNgModel._assign) {
         throw ngModelMinErr(
           "nonassign",
           "Expression '{0}' is non-assignable. Element: {1}",
-          this.$$attr.ngModel,
-          startingTag(this.$$element),
+          this._attr.ngModel,
+          startingTag(this._element),
         );
       }
     }
@@ -12049,22 +11820,22 @@
       );
     }
 
-    $$updateEmptyClasses(value) {
+    _updateEmptyClasses(value) {
       if (this.$isEmpty(value)) {
-        if (hasAnimate(this.$$element)) {
-          this.$$animate.removeClass(this.$$element, NOT_EMPTY_CLASS);
-          this.$$animate.addClass(this.$$element, EMPTY_CLASS);
+        if (hasAnimate(this._element)) {
+          this._animate.removeClass(this._element, NOT_EMPTY_CLASS);
+          this._animate.addClass(this._element, EMPTY_CLASS);
         } else {
-          this.$$element.classList.remove(NOT_EMPTY_CLASS);
-          this.$$element.classList.add(EMPTY_CLASS);
+          this._element.classList.remove(NOT_EMPTY_CLASS);
+          this._element.classList.add(EMPTY_CLASS);
         }
       } else {
-        if (hasAnimate(this.$$element)) {
-          this.$$animate.removeClass(this.$$element, EMPTY_CLASS);
-          this.$$animate.addClass(this.$$element, NOT_EMPTY_CLASS);
+        if (hasAnimate(this._element)) {
+          this._animate.removeClass(this._element, EMPTY_CLASS);
+          this._animate.addClass(this._element, NOT_EMPTY_CLASS);
         } else {
-          this.$$element.classList.remove(EMPTY_CLASS);
-          this.$$element.classList.add(NOT_EMPTY_CLASS);
+          this._element.classList.remove(EMPTY_CLASS);
+          this._element.classList.add(NOT_EMPTY_CLASS);
         }
       }
     }
@@ -12080,14 +11851,14 @@
       this.$dirty = false;
       this.$pristine = true;
 
-      if (!this.$$element) return;
+      if (!this._element) return;
 
-      if (hasAnimate(this.$$element)) {
-        this.$$animate.removeClass(this.$$element, EMPTY_CLASS);
-        this.$$animate.addClass(this.$$element, PRISTINE_CLASS);
+      if (hasAnimate(this._element)) {
+        this._animate.removeClass(this._element, EMPTY_CLASS);
+        this._animate.addClass(this._element, PRISTINE_CLASS);
       } else {
-        this.$$element.classList.remove(EMPTY_CLASS);
-        this.$$element.classList.add(PRISTINE_CLASS);
+        this._element.classList.remove(EMPTY_CLASS);
+        this._element.classList.add(PRISTINE_CLASS);
       }
     }
 
@@ -12102,14 +11873,14 @@
       this.$dirty = true;
       this.$pristine = false;
 
-      if (hasAnimate(this.$$element)) {
-        this.$$animate.removeClass(this.$$element, PRISTINE_CLASS);
-        this.$$animate.addClass(this.$$element, DIRTY_CLASS);
+      if (hasAnimate(this._element)) {
+        this._animate.removeClass(this._element, PRISTINE_CLASS);
+        this._animate.addClass(this._element, DIRTY_CLASS);
       } else {
-        this.$$element.classList.remove(PRISTINE_CLASS);
-        this.$$element.classList.add(DIRTY_CLASS);
+        this._element.classList.remove(PRISTINE_CLASS);
+        this._element.classList.add(DIRTY_CLASS);
       }
-      this.$$parentForm.$setDirty();
+      this._parentForm.$setDirty();
     }
 
     /**
@@ -12124,11 +11895,11 @@
       this.$touched = false;
       this.$untouched = true;
 
-      if (hasAnimate(this.$$element)) {
-        this.$$animate.setClass(this.$$element, UNTOUCHED_CLASS, TOUCHED_CLASS);
+      if (hasAnimate(this._element)) {
+        this._animate.setClass(this._element, UNTOUCHED_CLASS, TOUCHED_CLASS);
       } else {
-        this.$$element.classList.remove(TOUCHED_CLASS);
-        this.$$element.classList.add(UNTOUCHED_CLASS);
+        this._element.classList.remove(TOUCHED_CLASS);
+        this._element.classList.add(UNTOUCHED_CLASS);
       }
     }
 
@@ -12143,11 +11914,11 @@
       this.$touched = true;
       this.$untouched = false;
 
-      if (hasAnimate(this.$$element)) {
-        this.$$animate.setClass(this.$$element, TOUCHED_CLASS, UNTOUCHED_CLASS);
+      if (hasAnimate(this._element)) {
+        this._animate.setClass(this._element, TOUCHED_CLASS, UNTOUCHED_CLASS);
       } else {
-        this.$$element.classList.remove(UNTOUCHED_CLASS);
-        this.$$element.classList.add(TOUCHED_CLASS);
+        this._element.classList.remove(UNTOUCHED_CLASS);
+        this._element.classList.add(TOUCHED_CLASS);
       }
     }
 
@@ -12237,8 +12008,8 @@
      * </example>
      */
     $rollbackViewValue() {
-      clearTimeout(this.$$pendingDebounce);
-      this.$viewValue = this.$$lastCommittedViewValue;
+      clearTimeout(this._pendingDebounce);
+      this.$viewValue = this._lastCommittedViewValue;
       this.$render();
     }
 
@@ -12256,13 +12027,13 @@
         return;
       }
 
-      const viewValue = this.$$lastCommittedViewValue;
+      const viewValue = this._lastCommittedViewValue;
 
-      // Note: we use the $$rawModelValue as $modelValue might have been
+      // Note: we use the _rawModelValue as $modelValue might have been
       // set to undefined during a view -> model update that found validation
       // errors. We can't parse the view here, since that could change
       // the model although neither viewValue nor the model on the scope changed
-      const modelValue = this.$$rawModelValue;
+      const modelValue = this._rawModelValue;
 
       const prevValid = this.$valid;
 
@@ -12272,7 +12043,7 @@
 
       const that = this;
 
-      this.$$runValidators(modelValue, viewValue, (allValid) => {
+      this._runValidators(modelValue, viewValue, (allValid) => {
         // If there was no change in validity, don't update the model
         // This prevents changing an invalid modelValue to undefined
         if (!allowInvalid && prevValid !== allValid) {
@@ -12283,15 +12054,15 @@
           that.$modelValue = allValid ? modelValue : undefined;
 
           if (that.$modelValue !== prevModelValue) {
-            that.$$writeModelToScope();
+            that._writeModelToScope();
           }
         }
       });
     }
 
-    $$runValidators(modelValue, viewValue, doneCallback) {
-      this.$$currentValidationRunId++;
-      const localValidationRunId = this.$$currentValidationRunId;
+    _runValidators(modelValue, viewValue, doneCallback) {
+      this._currentValidationRunId++;
+      const localValidationRunId = this._currentValidationRunId;
 
       const that = this;
 
@@ -12310,12 +12081,12 @@
       processAsyncValidators();
 
       function processParseErrors() {
-        const errorKey = that.$$parserName;
+        const errorKey = that._parserName;
 
-        if (isUndefined(that.$$parserValid)) {
+        if (isUndefined(that._parserValid)) {
           setValidity(errorKey, null);
         } else {
-          if (!that.$$parserValid) {
+          if (!that._parserValid) {
             keys(that.$validators).forEach((name) => {
               setValidity(name, null);
             });
@@ -12325,9 +12096,9 @@
           }
 
           // Set the parse error last, to prevent unsetting it, should a $validators key == parserName
-          setValidity(errorKey, that.$$parserValid);
+          setValidity(errorKey, that._parserValid);
 
-          return that.$$parserValid;
+          return that._parserValid;
         }
 
         return true;
@@ -12398,13 +12169,13 @@
       }
 
       function setValidity(name, isValid) {
-        if (localValidationRunId === that.$$currentValidationRunId) {
+        if (localValidationRunId === that._currentValidationRunId) {
           that.$setValidity(name, isValid);
         }
       }
 
       function validationDone(allValid) {
-        if (localValidationRunId === that.$$currentValidationRunId) {
+        if (localValidationRunId === that._currentValidationRunId) {
           doneCallback(allValid);
         }
       }
@@ -12418,52 +12189,52 @@
      * usually handles calling this in response to input events.
      */
     $commitViewValue() {
-      clearTimeout(this.$$pendingDebounce);
+      clearTimeout(this._pendingDebounce);
 
       // If the view value has not changed then we should just exit, except in the case where there is
       // a native validator on the element. In this case the validation state may have changed even though
       // the viewValue has stayed empty.
       if (
-        this.$$lastCommittedViewValue === this.$viewValue &&
-        (this.$viewValue !== "" || !this.$$hasNativeValidators)
+        this._lastCommittedViewValue === this.$viewValue &&
+        (this.$viewValue !== "" || !this._hasNativeValidators)
       ) {
         return;
       }
 
       if (
-        this.$$lastCommittedViewValue === undefined &&
+        this._lastCommittedViewValue === undefined &&
         Number.isNaN(this.$viewValue)
       ) {
         return;
       }
 
-      this.$$updateEmptyClasses(this.$viewValue);
-      this.$$lastCommittedViewValue = this.$viewValue;
+      this._updateEmptyClasses(this.$viewValue);
+      this._lastCommittedViewValue = this.$viewValue;
 
       // change to dirty
       if (this.$pristine) {
         this.$setDirty();
       }
-      this.$$parseAndValidate();
+      this._parseAndValidate();
     }
 
-    $$parseAndValidate() {
-      let modelValue = this.$$lastCommittedViewValue;
+    _parseAndValidate() {
+      let modelValue = this._lastCommittedViewValue;
 
       const that = this;
 
-      this.$$parserValid = isUndefined(modelValue) ? undefined : true;
+      this._parserValid = isUndefined(modelValue) ? undefined : true;
 
       // Reset any previous parse error
-      this.$setValidity(this.$$parserName, null);
-      this.$$parserName = "parse";
+      this.$setValidity(this._parserName, null);
+      this._parserName = "parse";
 
-      if (this.$$parserValid) {
+      if (this._parserValid) {
         for (let i = 0; i < this.$parsers.length; i++) {
           modelValue = this.$parsers[i](modelValue);
 
           if (isUndefined(modelValue)) {
-            this.$$parserValid = false;
+            this._parserValid = false;
             break;
           }
         }
@@ -12472,24 +12243,24 @@
       if (isNumberNaN(this.$modelValue)) {
         // this.$modelValue has not been touched yet...
         // @ts-ignore
-        this.$modelValue = this._ngModelGet(this.$$scope);
+        this.$modelValue = this._ngModelGet(this._scope);
       }
       const prevModelValue = this.$modelValue;
 
       const allowInvalid = this.$options.getOption("allowInvalid");
 
-      this.$$rawModelValue = modelValue;
+      this._rawModelValue = modelValue;
 
       if (allowInvalid) {
         this.$modelValue = modelValue;
         writeToModelIfNeeded();
       }
 
-      // Pass the $$lastCommittedViewValue here, because the cached viewValue might be out of date.
+      // Pass the _lastCommittedViewValue here, because the cached viewValue might be out of date.
       // This can happen if e.g. $setViewValue is called from inside a parser
-      this.$$runValidators(
+      this._runValidators(
         modelValue,
-        this.$$lastCommittedViewValue,
+        this._lastCommittedViewValue,
         (allValid) => {
           if (!allowInvalid) {
             // Note: Don't check this.$valid here, as we could have
@@ -12511,18 +12282,18 @@
         if (that.$modelValue != prevModelValue) {
           if (isNull(that.$modelValue) && prevModelValue === "") return;
 
-          that.$$writeModelToScope();
+          that._writeModelToScope();
         }
       }
     }
 
-    $$writeModelToScope() {
-      this._ngModelSet(this.$$scope, this.$modelValue);
+    _writeModelToScope() {
+      this._ngModelSet(this._scope, this.$modelValue);
       Object.values(this.$viewChangeListeners).forEach((listener) => {
         try {
           listener();
         } catch (err) {
-          this.$$exceptionHandler(err);
+          this._exceptionHandler(err);
         }
       }, this);
     }
@@ -12578,11 +12349,11 @@
       this.$viewValue = value;
 
       if (this.$options?.getOption("updateOnDefault")) {
-        this.$$debounceViewValueCommit(trigger);
+        this._debounceViewValueCommit(trigger);
       }
     }
 
-    $$debounceViewValueCommit(trigger) {
+    _debounceViewValueCommit(trigger) {
       let debounceDelay = this.$options.getOption("debounce");
 
       if (isNumber(debounceDelay[trigger])) {
@@ -12601,12 +12372,12 @@
         debounceDelay = debounceDelay["*"];
       }
 
-      clearTimeout(this.$$pendingDebounce);
+      clearTimeout(this._pendingDebounce);
       const that = this;
 
       if (/** @type {number} */ (debounceDelay) > 0) {
         // this fails if debounceDelay is an object
-        this.$$pendingDebounce = setTimeout(() => {
+        this._pendingDebounce = setTimeout(() => {
           that.$commitViewValue();
         }, /** @type {number} */ (debounceDelay));
       } else {
@@ -12639,10 +12410,10 @@
      *
      */
     $overrideModelOptions(options) {
-      this.$$removeAllEventListeners();
+      this._removeAllEventListeners();
       this.$options = this.$options.createChild(options);
-      this.$$updateEvents = this.$options.$$options.updateOn;
-      this.$$setUpdateOnEvents();
+      this._updateEvents = this.$options._options.updateOn;
+      this._setUpdateOnEvents();
     }
 
     /**
@@ -12751,14 +12522,14 @@
      *
      */
     $processModelValue() {
-      const viewValue = this.$$format();
+      const viewValue = this._format();
 
       if (this.$viewValue !== viewValue) {
-        this.$$updateEmptyClasses(viewValue);
-        this.$viewValue = this.$$lastCommittedViewValue = viewValue;
+        this._updateEmptyClasses(viewValue);
+        this.$viewValue = this._lastCommittedViewValue = viewValue;
         this.$render();
         // It is possible that model and view value have been updated during render
-        this.$$runValidators(this.$modelValue, this.$viewValue, () => {
+        this._runValidators(this.$modelValue, this.$viewValue, () => {
           /* empty */
         });
       }
@@ -12767,7 +12538,7 @@
     /**
      * This method is called internally to run the $formatters on the $modelValue
      */
-    $$format() {
+    _format() {
       const formatters = this.$formatters;
 
       let idx = formatters.length;
@@ -12782,45 +12553,49 @@
     }
 
     /**
+     * @ignore
      * This method is called internally when the bound scope value changes.
      */
-    $$setModelValue(modelValue) {
-      this.$modelValue = this.$$rawModelValue = modelValue;
-      this.$$parserValid = undefined;
+    _setModelValue(modelValue) {
+      this.$modelValue = this._rawModelValue = modelValue;
+      this._parserValid = undefined;
       this.$processModelValue();
     }
 
-    $$removeAllEventListeners() {
-      this.$$eventRemovers.forEach((removeCallback) => removeCallback());
-      this.$$eventRemovers.clear();
+    /**
+     * @ignore
+     */
+    _removeAllEventListeners() {
+      this._eventRemovers.forEach((removeCallback) => removeCallback());
+      this._eventRemovers.clear();
     }
 
-    $$setUpdateOnEvents() {
-      if (this.$$updateEvents) {
-        this.$$updateEvents.split(" ").forEach((ev) => {
-          this.$$element.addEventListener(ev, this.$$updateEventHandler);
-          this.$$eventRemovers.add(() =>
-            this.$$element.removeEventListener(ev, this.$$updateEventHandler),
+    _setUpdateOnEvents() {
+      if (this._updateEvents) {
+        this._updateEvents.split(" ").forEach((ev) => {
+          this._element.addEventListener(ev, this._updateEventHandler);
+          this._eventRemovers.add(() =>
+            this._element.removeEventListener(ev, this._updateEventHandler),
           );
         });
       }
 
-      this.$$updateEvents = /** @type {string} */ (
+      this._updateEvents = /** @type {string} */ (
         this.$options.getOption("updateOn")
       );
 
-      if (this.$$updateEvents) {
-        this.$$updateEvents.split(" ").forEach((ev) => {
-          this.$$element.addEventListener(ev, this.$$updateEventHandler);
-          this.$$eventRemovers.add(() =>
-            this.$$element.removeEventListener(ev, this.$$updateEventHandler),
+      if (this._updateEvents) {
+        this._updateEvents.split(" ").forEach((ev) => {
+          this._element.addEventListener(ev, this._updateEventHandler);
+          this._eventRemovers.add(() =>
+            this._element.removeEventListener(ev, this._updateEventHandler),
           );
         });
       }
     }
 
-    $$updateEventHandler(ev) {
-      this.$$debounceViewValueCommit(ev && ev.type);
+    _updateEventHandler(ev) {
+      this._debounceViewValueCommit(ev && ev.type);
     }
   }
 
@@ -12833,8 +12608,8 @@
     //    -> scope value did not change since the last digest as
     //       ng-change executes in apply phase
     // 4. view should be changed back to 'a'
-    ctrl.$$scope.$watch("value", () => {
-      const modelValue = ctrl._ngModelGet(ctrl.$$scope);
+    ctrl._scope.$watch("value", () => {
+      const modelValue = ctrl._ngModelGet(ctrl._scope);
 
       // if scope model value and ngModel value are out of sync
       // This cannot be moved to the action function, because it would not catch the
@@ -12845,7 +12620,7 @@
 
         (!Number.isNaN(ctrl.$modelValue) || !Number.isNaN(modelValue))
       ) {
-        ctrl.$$setModelValue(modelValue);
+        ctrl._setModelValue(modelValue);
       }
     });
   }
@@ -12869,36 +12644,36 @@
             pre: (scope, _element, attr, ctrls) => {
               const modelCtrl = ctrls[0];
 
-              const formCtrl = ctrls[1] || modelCtrl.$$parentForm;
+              const formCtrl = ctrls[1] || modelCtrl._parentForm;
 
               const optionsCtrl = ctrls[2];
 
               if (optionsCtrl) {
                 modelCtrl.$options = optionsCtrl.$options;
               }
-              modelCtrl.$$initGetterSetters();
+              modelCtrl._initGetterSetters();
 
               // notify others, especially parent forms
               formCtrl.$addControl(modelCtrl);
 
               attr.$observe("name", (newValue) => {
                 if (modelCtrl.$name !== newValue) {
-                  modelCtrl.$$parentForm._renameControl(modelCtrl, newValue);
+                  modelCtrl._parentForm._renameControl(modelCtrl, newValue);
                 }
               });
               const deregisterWatch = scope.$watch(attr.ngModel, (val) => {
-                modelCtrl.$$setModelValue(deProxy(val));
+                modelCtrl._setModelValue(deProxy(val));
               });
 
               scope.$on("$destroy", () => {
-                modelCtrl.$$parentForm.$removeControl(modelCtrl);
+                modelCtrl._parentForm.$removeControl(modelCtrl);
                 deregisterWatch();
               });
             },
             post: (scope, elementPost, _attr, ctrls) => {
               const modelCtrl = ctrls[0];
 
-              modelCtrl.$$setUpdateOnEvents();
+              modelCtrl._setUpdateOnEvents();
 
               function setTouched() {
                 modelCtrl.$setTouched();
@@ -12909,9 +12684,11 @@
                 setTouched();
               });
 
-              modelCtrl.$viewChangeListeners.push(() =>
-                scope.$eval(elementPost.dataset.change),
-              );
+              modelCtrl.$viewChangeListeners.push(() => {
+                const { change } = elementPost.dataset;
+
+                change && scope.$eval(change);
+              });
             },
           };
         },
@@ -13114,7 +12891,7 @@
 
         if (regexp.test(value)) return value;
 
-        ctrl.$$parserName = type;
+        ctrl._parserName = type;
 
         return undefined;
       });
@@ -13164,7 +12941,7 @@
         const validity = element[VALIDITY_STATE_PROPERTY] || {};
 
         if (validity.badInput || validity.typeMismatch) {
-          ctrl.$$parserName = parserName;
+          ctrl._parserName = parserName;
 
           return undefined;
         }
@@ -13180,7 +12957,7 @@
 
       if (NUMBER_REGEXP.test(value)) return parseFloat(value);
 
-      ctrl.$$parserName = "number";
+      ctrl._parserName = "number";
 
       return undefined;
     });
@@ -13593,6 +13370,15 @@
     attr.$observe("value", ctrl.$render);
   }
 
+  /**
+   *
+   * @param {ng.ParseService} $parse
+   * @param {*} context
+   * @param {*} name
+   * @param {*} expression
+   * @param {*} fallback
+   * @returns
+   */
   function parseConstantExpr($parse, context, name, expression, fallback) {
     let parseFn;
 
@@ -13614,6 +13400,14 @@
     return fallback;
   }
 
+  /**
+   *
+   * @param {ng.Scope} scope
+   * @param {HTMLInputElement} element
+   * @param {ng.Attributes} attr
+   * @param {*} ctrl
+   * @param {ng.ParseService} $parse
+   */
   function checkboxInputType(scope, element, attr, ctrl, $parse) {
     const trueValue = parseConstantExpr(
       $parse,
@@ -14381,11 +14175,6 @@
    */
   function ngBindDirective() {
     return {
-      /**
-       * @param {ng.Scope} scope
-       * @param {Element} element
-       * @param {ng.Attributes} attr
-       */
       link(scope, element, attr) {
         scope.$watch(
           attr.ngBind,
@@ -14405,15 +14194,13 @@
    */
   function ngBindTemplateDirective() {
     return {
-      /**
-       * @param {ng.Scope} _scope
-       * @param {Element} element
-       * @param {ng.Attributes} attr
-       */
       link(_scope, element, attr) {
-        attr.$observe("ngBindTemplate", (/** @type {string | null} */ value) => {
-          element.textContent = isUndefined(value) ? "" : value;
-        });
+        attr.$observe(
+          "ngBindTemplate",
+          (/** @type {string | null | undefined} */ value) => {
+            element.textContent = isNullOrUndefined(value) ? "" : value;
+          },
+        );
       },
     };
   }
@@ -14747,19 +14534,11 @@
       priority: 600,
       terminal: true,
       restrict: "A",
-      /**
-       *
-       * @param {ng.Scope} $scope
-       * @param {Element} $element
-       * @param {ng.Attributes} $attr
-       * @param {*} _ctrl
-       * @param {ng.TranscludeFn} $transclude
-       */
       link($scope, $element, $attr, _ctrl, $transclude) {
         /** @type {Element | null | undefined} */
         let block;
 
-        /** @type {ng.Scope | null} */
+        /** @type {ng.Scope | null | undefined} */
         let childScope;
 
         /** @type {Element | null | undefined} */
@@ -14768,28 +14547,23 @@
         $scope.$watch($attr.ngIf, (value) => {
           if (value) {
             if (!childScope) {
-              $transclude(
-                (
-                  /** @type {Element} */ clone,
-                  /** @type {ng.Scope} */ newScope,
-                ) => {
-                  childScope = newScope;
-                  // Note: We only need the first/last node of the cloned nodes.
-                  // However, we need to keep the reference to the dom wrapper as it might be changed later
-                  // by a directive with templateUrl when its template arrives.
-                  block = clone;
+              /** @type {ng.TranscludeFn} */ ($transclude)((clone, newScope) => {
+                childScope = newScope;
+                // Note: We only need the first/last node of the cloned nodes.
+                // However, we need to keep the reference to the dom wrapper as it might be changed later
+                // by a directive with templateUrl when its template arrives.
+                block = /** @type {Element} */ (clone);
 
-                  if (hasAnimate(/** @type {Node} */ (clone))) {
-                    $animate.enter(
-                      /** @type {Element} */ (clone),
-                      /** @type {Element} */ ($element.parentElement),
-                      $element,
-                    );
-                  } else {
-                    $element.after(/** @type {Node} */ (clone));
-                  }
-                },
-              );
+                if (hasAnimate(/** @type {Node} */ (clone))) {
+                  $animate.enter(
+                    /** @type {Element} */ (clone),
+                    /** @type {Element} */ ($element.parentElement),
+                    $element,
+                  );
+                } else {
+                  $element.after(/** @type {Node} */ (clone));
+                }
+              });
             }
           } else {
             if (previousElements) {
@@ -14906,10 +14680,9 @@
             const thisChangeId = ++changeCounter;
 
             if (src) {
-              // set the 2nd param to true to ignore the template request error so that the inner
-              // contents and scope can be cleaned up.
-              await $templateRequest(src).then(
-                (response) => {
+              scope.$emit("$includeContentRequested", src);
+              $templateRequest(src)
+                .then((response) => {
                   if (scope._destroyed) return;
 
                   if (thisChangeId !== changeCounter) return;
@@ -14940,8 +14713,8 @@
                   currentElement = clone;
                   currentScope.$emit("$includeContentLoaded", src);
                   scope.$eval(onloadExp);
-                },
-                (err) => {
+                })
+                .catch((err) => {
                   if (scope._destroyed) return;
 
                   if (thisChangeId === changeCounter) {
@@ -14949,9 +14722,7 @@
                     scope.$emit("$includeContentError", src);
                   }
                   $exceptionHandler(new Error(err));
-                },
-              );
-              scope.$emit("$includeContentRequested", src);
+                });
             } else {
               cleanupLastIncludeContent();
               ctrl.template = null;
@@ -15057,7 +14828,7 @@
         const getter = $parse(tAttrs.ngRef);
 
         const setter =
-          getter.assign ||
+          getter._assign ||
           function () {
             throw ngRefMinErr(
               "nonassign",
@@ -15441,6 +15212,7 @@
     return {
       restrict: "A",
       link(scope, element, attr) {
+        /** @type {Record<string, string> | null} */
         let oldStyles = null;
 
         scope.$watch(attr.ngStyle, (newStyles) => {
@@ -15758,48 +15530,7 @@
       return {
         trackBy,
         getTrackByValue,
-        getWatchables: $parse(valuesFn, (optionValues) => {
-          // Create a collection of things that we would like to watch (watchedArray)
-          // so that they can all be watched using a single $watchCollection
-          // that only runs the handler once if anything changes
-          const watchedArray = [];
-
-          optionValues = optionValues || [];
-
-          const optionValuesKeys = getOptionValuesKeys(optionValues);
-
-          const optionValuesLength = optionValuesKeys.length;
-
-          for (let index = 0; index < optionValuesLength; index++) {
-            const key =
-              optionValues === optionValuesKeys ? index : optionValuesKeys[index];
-
-            const value = optionValues[key];
-
-            const updatedLocals = getLocals(value, key);
-
-            const selectValue = getTrackByValueFn(value, updatedLocals);
-
-            watchedArray.push(selectValue);
-
-            // Only need to watch the displayFn if there is a specific label expression
-            if (match[2] || match[1]) {
-              const label = displayFn(scope, updatedLocals);
-
-              watchedArray.push(label);
-            }
-
-            // Only need to watch the disableWhenFn if there is a specific disable expression
-            if (match[4]) {
-              const disableWhen = disableWhenFn(scope, updatedLocals);
-
-              watchedArray.push(disableWhen);
-            }
-          }
-
-          return watchedArray;
-        }),
-
+        getWatchables: valuesFn,
         getOptions() {
           /** @type {Option[]} */
           const optionItems = [];
@@ -16065,7 +15796,7 @@
       //   scope.$watch(i, updateOptions);
       // });
       scope.$watch(
-        ngOptions.getWatchables.decoratedNode.body[0].expression.name,
+        ngOptions.getWatchables._decoratedNode.body[0].expression.name,
         updateOptions,
       );
 
@@ -16398,6 +16129,10 @@
 
     ngAttributeAliasDirectives[normalized] = [
       $injectTokens._sce,
+      /**
+       * @param {ng.SCEService} $sce
+       * @returns {ng.Directive}
+       */
       function ($sce) {
         return {
           priority: 99, // it needs to run after the attributes are interpolated
@@ -16477,7 +16212,9 @@
         (scope, _elm, attr, ctrl) => {
           if (!ctrl) return;
           // For boolean attributes like required, presence means true
-          let value = hasOwn(attr, "required") || $parse(attr.ngRequired)(scope);
+          let value =
+            hasOwn(attr, "required") ||
+            (attr.ngRequired && $parse(attr.ngRequired)(scope));
 
           if (!attr.ngRequired) {
             // force truthy in case we are on non input element
@@ -16504,7 +16241,7 @@
    *                                      parsable into a `RegExp`, or a `RegExp` literal. See above for
    *                                      more details.
    *
-   * @description
+   *
    *
    * ngPattern adds the pattern {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
    * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.
@@ -16541,7 +16278,7 @@
   const patternDirective = [
     $injectTokens._parse,
     /**
-     * @param {import("../../core/parse/interface.ts").ParseService} $parse
+     * @param {ng.ParseService} $parse
      * @returns {ng.Directive}
      */
     ($parse) => ({
@@ -16566,7 +16303,7 @@
               return tAttr.ngPattern;
             };
           } else {
-            parseFn = $parse(tAttr.ngPattern);
+            parseFn = tAttr.ngPattern && $parse(tAttr.ngPattern);
           }
         }
 
@@ -16613,7 +16350,7 @@
    *                                 parsable into a `Number`. Used as value for the `maxlength`
    *                                 {@link ngModel.NgModelController#$validators validator}.
    *
-   * @description
+   *
    *
    * ngMaxlength adds the maxlength {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
    * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.
@@ -16658,7 +16395,9 @@
         (scope, _elm, attr, ctrl) => {
           if (!ctrl) return;
 
-          let maxlength = attr.maxlength || $parse(attr.ngMaxlength)(scope);
+          let maxlength =
+            attr.maxlength ||
+            (attr.ngMaxlength && $parse(attr.ngMaxlength)(scope));
 
           let maxlengthParsed = parseLength(maxlength);
 
@@ -16686,7 +16425,7 @@
    *                                 parsable into a `Number`. Used as value for the `minlength`
    *                                 {@link ngModel.NgModelController#$validators validator}.
    *
-   * @description
+   *
    *
    * ngMinlength adds the minlength {@link ngModel.NgModelController#$validators `validator`} to {@link ngModel `ngModel`}.
    * It is most often used for text-based {@link input `input`} controls, but can also be applied to custom text-based controls.
@@ -16713,13 +16452,14 @@
    */
   const minlengthDirective = [
     $injectTokens._parse,
-    ($parse) => ({
+    /** @param {ng.ParseService} $parse */ ($parse) => ({
       restrict: "A",
       require: "?ngModel",
       link(scope, elm, attr, ctrl) {
         if (!ctrl) return;
 
-        let minlength = attr.minlength || $parse(attr.ngMinlength)(scope);
+        let minlength =
+          attr.minlength || (attr.ngMinlength && $parse(attr.ngMinlength)(scope));
 
         let minlengthParsed = parseLength(minlength) || -1;
 
@@ -16906,6 +16646,305 @@
         return scroll;
       },
     ];
+  }
+
+  const ADD_CLASS_SUFFIX = "-add";
+  const REMOVE_CLASS_SUFFIX = "-remove";
+  const EVENT_CLASS_PREFIX = "ng-";
+  const ACTIVE_CLASS_SUFFIX = "-active";
+  const PREPARE_CLASS_SUFFIX = "-prepare";
+
+  const NG_ANIMATE_CLASSNAME = "ng-animate";
+  const NG_ANIMATE_CHILDREN_DATA = "$$ngAnimateChildren";
+
+  /**
+   * @param {ng.AnimationOptions} options
+   */
+  function packageStyles(options) {
+    return options?.to || options?.from
+      ? { to: options.to, from: options.from }
+      : {};
+  }
+
+  /**
+   * @param {string | string[]} classes
+   * @param {string} fix
+   * @param {boolean | undefined} [isPrefix]
+   */
+  function pendClasses(classes, fix, isPrefix) {
+    const arrayClasses = isArray(classes)
+      ? classes
+      : classes && isString(classes)
+        ? classes.trim().split(/\s+/)
+        : [];
+
+    return arrayClasses
+      .filter(Boolean)
+      .map((klass) => (isPrefix ? fix + klass : klass + fix))
+      .join(" ");
+  }
+
+  /**
+   *
+   * @param {NodeList|Node} element
+   * @returns {Node[]|Node|undefined}
+   */
+  function stripCommentsFromElement(element) {
+    if (element instanceof NodeList) {
+      return Array.from(element).filter(
+        (x) => x.nodeType === NodeType._ELEMENT_NODE,
+      );
+    } else if (element.nodeType === NodeType._ELEMENT_NODE) {
+      return /** @type {Node} */ (element);
+    } else {
+      return undefined;
+    }
+  }
+
+  function applyAnimationClassesFactory() {
+    return function (
+      /** @type {HTMLElement} */ element,
+      /** @type {ng.AnimationOptions} */ options,
+    ) {
+      if (options.addClass) {
+        element.classList.add(...options.addClass.trim().split(" "));
+        options.addClass = undefined;
+      }
+
+      if (options.removeClass) {
+        element.classList.remove(...options.removeClass.trim().split(" "));
+        options.removeClass = undefined;
+      }
+    };
+  }
+
+  /**
+   * @param {ng.AnimationOptions | undefined} options
+   */
+  function prepareAnimationOptions(options) {
+    const animateOptions = options || /** @type {ng.AnimationOptions} */ ({});
+
+    if (!animateOptions.$$prepared) {
+      let domOperation =
+        animateOptions.domOperation ||
+        (() => {
+          /* empty */
+        });
+
+      animateOptions.domOperation = function () {
+        animateOptions.$$domOperationFired = true;
+        domOperation();
+        domOperation = () => {
+          /* empty */
+        };
+      };
+      animateOptions.$$prepared = true;
+    }
+
+    return animateOptions;
+  }
+
+  /**
+   * @param {HTMLElement} element
+   * @param {ng.AnimationOptions | undefined} options
+   */
+  function applyAnimationStyles(element, options) {
+    applyAnimationFromStyles(element, options);
+    applyAnimationToStyles(element, options);
+  }
+
+  /**
+   * Applies initial animation styles to a DOM element.
+   *
+   * This function sets the element's inline styles using the properties
+   * defined in `options.from`, then clears the property to prevent reuse.
+   *
+   * @param {HTMLElement} element - The target DOM element to apply styles to.
+   * @param {ng.AnimationOptions} [options] - options containing a `from` object with CSS property–value pairs.
+   */
+  function applyAnimationFromStyles(element, options) {
+    if (options && options.from) {
+      Object.assign(element.style, options.from);
+      options.from = undefined;
+    }
+  }
+
+  /**
+   * Applies final animation styles to a DOM element.
+   *
+   * This function sets the element's inline styles using the properties
+   * defined in `options.to`, then clears the property to prevent reuse.
+   *
+   * @param {HTMLElement} element - The target DOM element to apply styles to.
+   * @param {ng.AnimationOptions} [options] - options containing a `from` object with CSS property–value pairs.
+   */
+  function applyAnimationToStyles(element, options) {
+    if (options && options.to) {
+      Object.assign(element.style, options.to);
+      options.to = undefined;
+    }
+  }
+
+  /**
+   * Merge old and new animation options for an element, computing
+   * the final addClass and removeClass values.
+   *
+   * @param {HTMLElement} element - The DOM element being animated.
+   * @param {{ options?: ng.AnimationOptions; addClass?: string; removeClass?: string }} oldAnimation
+   * @param {{ options?: ng.AnimationOptions; addClass?: string; removeClass?: string; preparationClasses?: string }} newAnimation
+   * @returns {ng.AnimationOptions} - The merged animation options.
+   */
+  function mergeAnimationDetails(element, oldAnimation, newAnimation) {
+    const target =
+      oldAnimation.options || /** @type {ng.AnimationOptions} */ ({});
+
+    const newOptions =
+      newAnimation.options || /** @type {ng.AnimationOptions} */ ({});
+
+    // Merge preparation classes if any
+    if (newOptions.preparationClasses) {
+      target.preparationClasses = [
+        newOptions.preparationClasses,
+        target.preparationClasses,
+      ]
+        .filter(Boolean)
+        .join(" ");
+      delete newOptions.preparationClasses;
+    }
+
+    // Merge other properties except addClass/removeClass
+    Object.assign(target, newOptions);
+
+    // Combine addClass / removeClass
+    const addList = `${target.addClass || ""} ${newOptions.addClass || ""}`
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    const removeList =
+      `${target.removeClass || ""} ${newOptions.removeClass || ""}`
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+
+    // Track existing classes on the element
+    const existingSet = new Set(
+      (element.getAttribute("class") || "").split(/\s+/).filter(Boolean),
+    );
+
+    // Compute final addClass and removeClass
+    /** @type {string[]} */
+    const finalAdd = [];
+
+    /** @type {string[]} */
+    const finalRemove = [];
+
+    addList.forEach(function (cls) {
+      if (!existingSet.has(cls)) finalAdd.push(cls);
+    });
+
+    removeList.forEach(function (cls) {
+      if (existingSet.has(cls)) finalRemove.push(cls);
+    });
+
+    target.addClass = finalAdd.length
+      ? /** @type {string} */ (finalAdd.join(" "))
+      : undefined;
+    target.removeClass = finalRemove.length
+      ? /** @type {string} */ (finalRemove.join(" "))
+      : undefined;
+
+    // Update oldAnimation references
+    oldAnimation.addClass = target.addClass;
+    oldAnimation.removeClass = target.removeClass;
+
+    return target;
+  }
+
+  /**
+   * @param {HTMLElement} element
+   * @param {string | null} event
+   * @param {ng.AnimationOptions} options
+   */
+  function applyGeneratedPreparationClasses(element, event, options) {
+    let classes = "";
+
+    if (event) {
+      classes = pendClasses(event, EVENT_CLASS_PREFIX, true);
+    }
+
+    if (options.addClass) {
+      classes = concatWithSpace(
+        classes,
+        pendClasses(options.addClass, ADD_CLASS_SUFFIX),
+      );
+    }
+
+    if (options.removeClass) {
+      classes = concatWithSpace(
+        classes,
+        pendClasses(options.removeClass, REMOVE_CLASS_SUFFIX),
+      );
+    }
+
+    if (classes.length) {
+      options.preparationClasses = classes;
+      element.className += ` ${classes}`;
+    }
+  }
+
+  /**
+   * @param {HTMLElement} element
+   * @param {ng.AnimationOptions} options
+   */
+  function clearGeneratedClasses(element, options) {
+    if (options.preparationClasses) {
+      options.preparationClasses
+        .split(" ")
+        .forEach((cls) => element.classList.remove(cls));
+      options.preparationClasses = undefined;
+    }
+
+    if (options.activeClasses) {
+      options.activeClasses
+        .split(" ")
+        .forEach((cls) => element.classList.remove(cls));
+      options.activeClasses = undefined;
+    }
+  }
+
+  /**
+   * @param {HTMLElement} node
+   * @param {boolean} applyBlock
+   * @returns {string[]}
+   */
+  function blockKeyframeAnimations(node, applyBlock) {
+    const value = applyBlock ? "paused" : "";
+
+    const key = `animationPlayState`;
+
+    applyInlineStyle(node, [key, value]);
+
+    return [key, value];
+  }
+
+  /**
+   * @param {HTMLElement} node
+   * @param {any[]} styleTuple
+   */
+  function applyInlineStyle(node, styleTuple) {
+    const prop = styleTuple[0];
+
+    node.style[prop] = styleTuple[1];
+  }
+
+  /**
+   * @param {string} a
+   * @param {string} b
+   * @returns {string}
+   */
+  function concatWithSpace(a, b) {
+    return [a, b].filter(Boolean).join(" ");
   }
 
   const $animateMinErr = minErr("$animate");
@@ -17770,6 +17809,7 @@
   orderByFilter.$inject = [$injectTokens._parse];
 
   /**
+   * @param {ng.ParseService} $parse
    * @returns {ng.FilterFn}
    */
   function orderByFilter($parse) {
@@ -18014,2462 +18054,6 @@
     ];
   }
 
-  /**
-   * @readonly
-   * @enum {number}
-   */
-  const ASTType = {
-    _Program: 1,
-    _ExpressionStatement: 2,
-    _AssignmentExpression: 3,
-    _ConditionalExpression: 4,
-    _LogicalExpression: 5,
-    _BinaryExpression: 6,
-    _UnaryExpression: 7,
-    _CallExpression: 8,
-    _MemberExpression: 9,
-    _Identifier: 10,
-    _Literal: 11,
-    _ArrayExpression: 12,
-    _Property: 13,
-    _ObjectExpression: 14,
-    _ThisExpression: 15,
-    _LocalsExpression: 16,
-    NGValueParameter: 17,
-  };
-
-  const PURITY_ABSOLUTE = 1;
-  const PURITY_RELATIVE = 2;
-
-  class ASTInterpreter {
-    /**
-     * @param {function(any):any} $filter
-     */
-    constructor($filter) {
-      this._$filter = $filter;
-    }
-
-    /**
-     * Compiles the AST into a function.
-     * @param {import("./ast/ast.js").ASTNode} ast - The AST to compile.
-     * @returns {import("./interface.ts").CompiledExpression}
-     */
-    compile(ast) {
-      const decoratedNode = findConstantAndWatchExpressions(ast, this._$filter);
-
-      /** @type {import("./ast/ast.js").ASTNode} */
-      const assignable = assignableAST(decoratedNode);
-
-      /** @type {import("./interface.ts").CompiledExpression} */
-      let assign;
-
-      if (assignable) {
-        assign = /** @type {import("./interface.ts").CompiledExpression} */ (
-          this.#recurse(assignable)
-        );
-      }
-      const toWatch = getInputs(decoratedNode.body);
-
-      let inputs;
-
-      if (toWatch) {
-        inputs = [];
-
-        for (const [key, watch] of entries(toWatch)) {
-          const input =
-            /** @type {import("./interface.ts").CompiledExpression} */ (
-              this.#recurse(watch)
-            );
-
-          input.isPure = watch.isPure;
-          watch.input = input;
-          inputs.push(input);
-          watch.watchId = key;
-        }
-      }
-      const expressions = [];
-
-      decoratedNode.body.forEach((expression) => {
-        expressions.push(this.#recurse(expression.expression));
-      });
-
-      /** @type {import("./interface.ts").CompiledExpression} */
-      const fn =
-        decoratedNode.body.length === 0
-          ? () => {
-              /* empty */
-            }
-          : decoratedNode.body.length === 1
-            ? expressions[0]
-            : function (scope, locals) {
-                let lastValue;
-
-                for (let i = 0, j = expressions.length; i < j; i++) {
-                  lastValue = expressions[i](scope, locals);
-                }
-
-                return lastValue;
-              };
-
-      if (assign) {
-        fn.assign = (scope, value, locals) => assign(scope, locals, value);
-      }
-
-      if (inputs) {
-        fn.inputs = inputs;
-      }
-      fn.decoratedNode = decoratedNode;
-
-      return fn;
-    }
-
-    /**
-     * Recurses the AST nodes.
-     * @param {import("./ast/ast").ASTNode} ast - The AST node.
-     * @param {Object} [context] - The context.
-     * @param {boolean|1} [create] - The create flag.
-     * @returns {import("./interface.ts").CompiledExpressionFunction} The recursive function.
-     */
-    #recurse(ast, context, create) {
-      let left;
-
-      let right;
-
-      const self = this;
-
-      let args;
-
-      switch (ast.type) {
-        case ASTType._Literal:
-          return this.value(ast.value, context);
-        case ASTType._UnaryExpression:
-          right = this.#recurse(ast.argument);
-
-          return this[`unary${ast.operator}`](right, context);
-        case ASTType._BinaryExpression:
-          left = this.#recurse(ast.left);
-          right = this.#recurse(ast.right);
-
-          return this[`binary${ast.operator}`](left, right, context);
-        case ASTType._LogicalExpression:
-          left = this.#recurse(ast.left);
-          right = this.#recurse(ast.right);
-
-          return this[`binary${ast.operator}`](left, right, context);
-        case ASTType._ConditionalExpression:
-          return /** @type {import("./interface.ts").CompiledExpressionFunction} */ (
-            this["ternary?:"](
-              this.#recurse(ast.test),
-              this.#recurse(ast.alternate),
-              this.#recurse(ast.consequent),
-              context,
-            )
-          );
-        case ASTType._Identifier:
-          return self.identifier(ast.name, context, create);
-        case ASTType._MemberExpression:
-          left = this.#recurse(ast.object, false, !!create);
-
-          if (!ast.computed) {
-            right = ast.property.name;
-          }
-
-          if (ast.computed) right = this.#recurse(ast.property);
-
-          return /** @type {import("./interface.ts").CompiledExpressionFunction} */ (
-            ast.computed
-              ? this.#computedMember(
-                  left,
-                  /** @type {function } */ (right),
-                  context,
-                  create,
-                )
-              : this.nonComputedMember(
-                  left,
-                  /** @type {string } */ (right),
-                  context,
-                  create,
-                )
-          );
-        case ASTType._CallExpression:
-          args = [];
-          ast.arguments.forEach((expr) => {
-            args.push(self.#recurse(expr));
-          });
-
-          if (ast.filter) right = this._$filter(ast.callee.name);
-
-          if (!ast.filter) right = this.#recurse(ast.callee, true);
-
-          return ast.filter
-            ? (scope, locals, assign) => {
-                const values = [];
-
-                for (let i = 0; i < args.length; ++i) {
-                  const res = args[i](scope && deProxy(scope), locals, assign);
-
-                  values.push(res);
-                }
-                const value = () => {
-                  return right.apply(undefined, values);
-                };
-
-                return context
-                  ? { context: undefined, name: undefined, value }
-                  : value;
-              }
-            : (scope, locals, assign) => {
-                const rhs = right(
-                  /** @type {ng.Scope} */ (scope).$target
-                    ? /** @type {ng.Scope} */ (scope).$target
-                    : scope,
-                  locals,
-                  assign,
-                );
-
-                let value;
-
-                if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
-                  const values = [];
-
-                  for (let i = 0; i < args.length; ++i) {
-                    const res = args[i](scope, locals, assign);
-
-                    values.push(isFunction(res) ? res() : res);
-                  }
-                  value = rhs.value.apply(rhs.context, values);
-                }
-
-                return context ? { value } : value;
-              };
-        case ASTType._AssignmentExpression:
-          left = this.#recurse(ast.left, true, 1);
-          right = this.#recurse(ast.right);
-
-          return (scope, locals, assign) => {
-            const lhs = left(scope, locals, assign);
-
-            const rhs = right(scope, locals, assign);
-
-            // lhs.context[lhs.name] = rhs;
-            const ctx = isProxy(lhs.context)
-              ? lhs.context
-              : (lhs.context.$proxy ?? lhs.context);
-
-            ctx[lhs.name] = rhs;
-
-            return context ? { value: rhs } : rhs;
-          };
-        case ASTType._ArrayExpression:
-          args = [];
-          ast.elements.forEach((expr) => {
-            args.push(self.#recurse(expr));
-          });
-
-          return (scope, locals, assign) => {
-            const value = [];
-
-            for (let i = 0; i < args.length; ++i) {
-              value.push(args[i](scope, locals, assign));
-            }
-
-            return context ? { value } : value;
-          };
-        case ASTType._ObjectExpression:
-          args = [];
-          ast.properties.forEach((property) => {
-            if (property.computed) {
-              args.push({
-                key: self.#recurse(property.key),
-                computed: true,
-                value: self.#recurse(property.value),
-              });
-            } else {
-              args.push({
-                key:
-                  property.key.type === ASTType._Identifier
-                    ? property.key.name
-                    : `${property.key.value}`,
-                computed: false,
-                value: self.#recurse(property.value),
-              });
-            }
-          });
-
-          return (scope, locals, assign) => {
-            const value = {};
-
-            for (let i = 0; i < args.length; ++i) {
-              if (args[i].computed) {
-                value[args[i].key(scope, locals, assign)] = args[i].value(
-                  scope,
-                  locals,
-                  assign,
-                );
-              } else {
-                value[args[i].key] = args[i].value(scope, locals, assign);
-              }
-            }
-
-            return context ? { value } : value;
-          };
-        case ASTType._ThisExpression:
-          return (scope) =>
-            context ? { value: scope } : /** @type {ng.Scope} */ (scope).$proxy;
-        case ASTType._LocalsExpression:
-          return (scope, locals) => (context ? { value: locals } : locals);
-        case ASTType.NGValueParameter:
-          return (scope, locals, assign) =>
-            context ? { value: assign } : assign;
-      }
-
-      return undefined;
-    }
-
-    /**
-     * Unary plus operation.
-     * @param {function} argument - The argument function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The unary plus function.
-     */
-    "unary+"(argument, context) {
-      return (scope, locals, assign) => {
-        let arg = argument(scope, locals, assign);
-
-        if (isDefined(arg)) {
-          arg = +arg;
-        } else {
-          arg = 0;
-        }
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Unary minus operation.
-     * @param {function} argument - The argument function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The unary minus function.
-     */
-    "unary-"(argument, context) {
-      return (scope, locals, assign) => {
-        let arg = argument(scope, locals, assign);
-
-        if (isDefined(arg)) {
-          arg = -arg;
-        } else {
-          arg = -0;
-        }
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Unary negation operation.
-     * @param {function} argument - The argument function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The unary negation function.
-     */
-    "unary!"(argument, context) {
-      return (scope, locals, assign) => {
-        const arg = !argument(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary plus operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary plus function.
-     */
-    "binary+"(left, right, context) {
-      return (scope, locals, assign) => {
-        const lhs = left(scope, locals, assign);
-
-        const rhs = right(scope, locals, assign);
-
-        const arg = plusFn(lhs, rhs);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary minus operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary minus function.
-     */
-    "binary-"(left, right, context) {
-      return (scope, locals, assign) => {
-        const lhs = left(scope, locals, assign);
-
-        const rhs = right(scope, locals, assign);
-
-        const arg = (isDefined(lhs) ? lhs : 0) - (isDefined(rhs) ? rhs : 0);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary multiplication operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary multiplication function.
-     */
-    "binary*"(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) * right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    "binary/"(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) / right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary division operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary division function.
-     */
-    "binary%"(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) % right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary strict equality operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary strict equality function.
-     */
-    "binary==="(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) === right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary strict inequality operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary strict inequality function.
-     */
-    "binary!=="(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) !== right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary equality operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary equality function.
-     */
-    "binary=="(left, right, context) {
-      return (scope, locals, assign) => {
-        // eslint-disable-next-line eqeqeq
-        const arg = left(scope, locals, assign) == right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary inequality operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary inequality function.
-     */
-    "binary!="(left, right, context) {
-      return (scope, locals, assign) => {
-        // eslint-disable-next-line eqeqeq
-        const arg = left(scope, locals, assign) != right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary less-than operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary less-than function.
-     */
-    "binary<"(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) < right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary greater-than operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary greater-than function.
-     */
-    "binary>"(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) > right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary less-than-or-equal-to operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary less-than-or-equal-to function.
-     */
-    "binary<="(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) <= right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary greater-than-or-equal-to operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary greater-than-or-equal-to function.
-     */
-    "binary>="(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) >= right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary logical AND operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary logical AND function.
-     */
-    "binary&&"(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) && right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Binary logical OR operation.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The binary logical OR function.
-     */
-    "binary||"(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) || right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Ternary conditional operation.
-     * @param {function} test - The test function.
-     * @param {function} alternate - The alternate function.
-     * @param {function} consequent - The consequent function.
-     * @param {Object} [context] - The context.
-     * @returns {function} The ternary conditional function.
-     */
-    "ternary?:"(test, alternate, consequent, context) {
-      return (scope, locals, assign) => {
-        const arg = test(scope, locals, assign)
-          ? alternate(scope, locals, assign)
-          : consequent(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    /**
-     * Returns the value of a literal.
-     * @param {*} value - The literal value.
-     * @param {Object} [context] - The context.
-     * @returns {import("./interface.ts").CompiledExpressionFunction} The function returning the literal value.
-     */
-    value(value, context) {
-      return () =>
-        context ? { context: undefined, name: undefined, value } : value;
-    }
-
-    /**
-     * Returns the value of an identifier.
-     * @param {string} name - The identifier name.
-     * @param {Object} [context] - The context.
-     * @param {boolean|1} [create] - Whether to create the identifier if it does not exist.
-     * @returns {import("./interface.ts").CompiledExpressionFunction} The function returning the identifier value.
-     */
-    identifier(name, context, create) {
-      return (scope, locals) => {
-        /** @type {ng.Scope | unknown} */
-        const base =
-          locals && name in locals
-            ? locals
-            : ((scope && /** @type {ng.Scope} */ (scope).$proxy) ?? scope);
-
-        if (create && create !== 1 && base && isNullOrUndefined(base[name])) {
-          base[name] = {};
-        }
-        let value = undefined;
-
-        if (base) {
-          value = deProxy(base)[name];
-        }
-
-        if (context) {
-          return { context: base, name, value };
-        }
-
-        return value;
-      };
-    }
-
-    /**
-     * Returns the value of a computed member expression.
-     * @param {function} left - The left operand function.
-     * @param {function} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @param {boolean|1} [create] - Whether to create the member if it does not exist.
-     * @returns {function} The function returning the computed member value.
-     */
-    #computedMember(left, right, context, create) {
-      return (scope, locals, assign) => {
-        const lhs = left(scope, locals, assign);
-
-        let rhs;
-
-        let value;
-
-        if (!isNullOrUndefined(lhs)) {
-          rhs = right(scope, locals, assign);
-          rhs = getStringValue(rhs);
-
-          if (create && create !== 1) {
-            if (lhs && !lhs[rhs]) {
-              lhs[rhs] = {};
-            }
-          }
-          value = lhs[rhs];
-        }
-
-        if (context) {
-          return { context: lhs, name: rhs, value };
-        }
-
-        return value;
-      };
-    }
-
-    /**
-     * Returns the value of a non-computed member expression.
-     * @param {function} left - The left operand function.
-     * @param {string} right - The right operand function.
-     * @param {Object} [context] - The context.
-     * @param {boolean|1} [create] - Whether to create the member if it does not exist.
-     * @returns {function} The function returning the non-computed member value.
-     */
-    nonComputedMember(left, right, context, create) {
-      return (scope, locals, assign) => {
-        const lhs = left(scope, locals, assign);
-
-        if (create && create !== 1) {
-          if (lhs && isNullOrUndefined(lhs[right])) {
-            lhs[right] = {};
-          }
-        }
-        const value = !isNullOrUndefined(lhs) ? lhs[right] : undefined;
-
-        if (context) {
-          return { context: lhs, name: right, value };
-        }
-
-        return value;
-      };
-    }
-  }
-
-  /**
-   * @typedef {import("./ast/ast").ASTNode & {
-   *  isPure: boolean|number,
-   *  constant: boolean,
-   *  toWatch: Array,
-   * }} DecoratedASTNode
-   */
-
-  /**
-   * Decorates AST with constant, toWatch, and isPure properties
-   * @param {import("./ast/ast").ASTNode} ast
-   * @param {function(any):any} $filter
-   * @param {boolean|1|2} [parentIsPure]
-   * @returns {DecoratedASTNode}
-   */
-  function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
-    let allConstants;
-
-    let argsToWatch;
-
-    let isFilter;
-
-    const decoratedNode = /** @type  {DecoratedASTNode} */ (ast);
-
-    let decoratedLeft,
-      decoratedRight,
-      decoratedTest,
-      decoratedAlternate,
-      decoratedConsequent,
-      decoratedObject,
-      decoratedProperty,
-      decoratedKey;
-
-    // @ts-ignore
-    const astIsPure = (decoratedNode.isPure = isPure(ast, parentIsPure));
-
-    switch (ast.type) {
-      case ASTType._Program:
-        allConstants = true;
-        decoratedNode.body.forEach((expr) => {
-          const decorated = findConstantAndWatchExpressions(
-            expr.expression,
-            $filter,
-            astIsPure,
-          );
-
-          allConstants = allConstants && decorated.constant;
-        });
-        decoratedNode.constant = allConstants;
-
-        return decoratedNode;
-      case ASTType._Literal:
-        decoratedNode.constant = true;
-        decoratedNode.toWatch = [];
-
-        return decoratedNode;
-      case ASTType._UnaryExpression:
-        // eslint-disable-next-line no-var
-        var decorated = findConstantAndWatchExpressions(
-          decoratedNode.argument,
-          $filter,
-          astIsPure,
-        );
-
-        decoratedNode.constant = decorated.constant;
-        decoratedNode.toWatch = decorated.toWatch;
-
-        return decoratedNode;
-      case ASTType._BinaryExpression:
-        decoratedLeft = findConstantAndWatchExpressions(
-          decoratedNode.left,
-          $filter,
-          astIsPure,
-        );
-        decoratedRight = findConstantAndWatchExpressions(
-          decoratedNode.right,
-          $filter,
-          astIsPure,
-        );
-        decoratedNode.constant =
-          decoratedLeft.constant && decoratedRight.constant;
-        decoratedNode.toWatch = decoratedLeft.toWatch.concat(
-          decoratedRight.toWatch,
-        );
-
-        return decoratedNode;
-      case ASTType._LogicalExpression:
-        decoratedLeft = findConstantAndWatchExpressions(
-          decoratedNode.left,
-          $filter,
-          astIsPure,
-        );
-        decoratedRight = findConstantAndWatchExpressions(
-          decoratedNode.right,
-          $filter,
-          astIsPure,
-        );
-        decoratedNode.constant =
-          decoratedLeft.constant && decoratedRight.constant;
-        decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
-
-        return decoratedNode;
-      case ASTType._ConditionalExpression:
-        decoratedTest = findConstantAndWatchExpressions(
-          ast.test,
-          $filter,
-          astIsPure,
-        );
-        decoratedAlternate = findConstantAndWatchExpressions(
-          ast.alternate,
-          $filter,
-          astIsPure,
-        );
-        decoratedConsequent = findConstantAndWatchExpressions(
-          ast.consequent,
-          $filter,
-          astIsPure,
-        );
-        decoratedNode.constant =
-          decoratedTest.constant &&
-          decoratedAlternate.constant &&
-          decoratedConsequent.constant;
-        decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
-
-        return decoratedNode;
-      case ASTType._Identifier:
-        decoratedNode.constant = false;
-        decoratedNode.toWatch = [ast];
-
-        return decoratedNode;
-      case ASTType._MemberExpression:
-        decoratedObject = findConstantAndWatchExpressions(
-          ast.object,
-          $filter,
-          astIsPure,
-        );
-
-        if (ast.computed) {
-          decoratedProperty = findConstantAndWatchExpressions(
-            ast.property,
-            $filter,
-            astIsPure,
-          );
-        }
-        decoratedNode.constant =
-          decoratedObject.constant &&
-          (!decoratedNode.computed || decoratedProperty.constant);
-        decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
-
-        return decoratedNode;
-      case ASTType._CallExpression:
-        isFilter = ast.filter;
-        allConstants = isFilter;
-        argsToWatch = [];
-        ast.arguments.forEach((expr) => {
-          decorated = findConstantAndWatchExpressions(expr, $filter, astIsPure);
-          allConstants = allConstants && decorated.constant;
-          argsToWatch.push.apply(argsToWatch, decorated.toWatch);
-        });
-        decoratedNode.constant = allConstants;
-        decoratedNode.toWatch = isFilter ? argsToWatch : [decoratedNode];
-
-        return decoratedNode;
-      case ASTType._AssignmentExpression:
-        decoratedLeft = findConstantAndWatchExpressions(
-          ast.left,
-          $filter,
-          astIsPure,
-        );
-        decoratedRight = findConstantAndWatchExpressions(
-          ast.right,
-          $filter,
-          astIsPure,
-        );
-        decoratedNode.constant =
-          decoratedLeft.constant && decoratedRight.constant;
-        decoratedNode.toWatch = [decoratedNode];
-
-        return decoratedNode;
-      case ASTType._ArrayExpression:
-        allConstants = true;
-        argsToWatch = [];
-        ast.elements.forEach((expr) => {
-          decorated = findConstantAndWatchExpressions(expr, $filter, astIsPure);
-          allConstants = allConstants && decorated.constant;
-          argsToWatch.push.apply(argsToWatch, decorated.toWatch);
-        });
-        decoratedNode.constant = allConstants;
-        decoratedNode.toWatch = argsToWatch;
-
-        return decoratedNode;
-      case ASTType._ObjectExpression:
-        allConstants = true;
-        argsToWatch = [];
-        ast.properties.forEach((property) => {
-          decorated = findConstantAndWatchExpressions(
-            property.value,
-            $filter,
-            astIsPure,
-          );
-          allConstants = allConstants && decorated.constant;
-          argsToWatch.push.apply(argsToWatch, decorated.toWatch);
-
-          if (property.computed) {
-            // `{[key]: value}` implicitly does `key.toString()` which may be non-pure
-            decoratedKey = findConstantAndWatchExpressions(
-              property.key,
-              $filter,
-              false,
-            );
-            allConstants = allConstants && decoratedKey.constant;
-            argsToWatch.push.apply(argsToWatch, decoratedKey.toWatch);
-          }
-        });
-        decoratedNode.constant = allConstants;
-        decoratedNode.toWatch = argsToWatch;
-
-        return decoratedNode;
-      case ASTType._ThisExpression:
-        decoratedNode.constant = false;
-        decoratedNode.toWatch = [];
-
-        return decoratedNode;
-      case ASTType._LocalsExpression:
-        decoratedNode.constant = false;
-        decoratedNode.toWatch = [];
-
-        return decoratedNode;
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Converts a single expression AST node into an assignment expression if the expression is assignable.
-   *
-   * @param {import("./ast/ast").ASTNode} ast
-   * @returns {import("./ast/ast").ASTNode}
-   */
-  function assignableAST(ast) {
-    if (ast.body.length === 1 && isAssignable(ast.body[0].expression)) {
-      return {
-        type: ASTType._AssignmentExpression,
-        left: ast.body[0].expression,
-        right: { type: ASTType.NGValueParameter },
-        operator: "=",
-      };
-    }
-
-    return undefined;
-  }
-
-  function plusFn(left, right) {
-    if (typeof left === "undefined" || isObject(left)) return right;
-
-    if (typeof right === "undefined" || isObject(right)) return left;
-
-    return left + right;
-  }
-
-  /**
-   *
-   * @param {import("./ast/ast").ASTNode[]} body
-   * @returns {any}
-   */
-  function getInputs(body) {
-    if (body.length !== 1) return undefined;
-    const lastExpression = /** @type {DecoratedASTNode} */ (body[0].expression);
-
-    const candidate = lastExpression.toWatch;
-
-    if (candidate.length !== 1) return candidate;
-
-    return candidate[0] !== lastExpression ? candidate : undefined;
-  }
-
-  /**
-   * Detect nodes which could depend on non-shallow state of objects
-   * @param {import("./ast/ast").ASTNode} node
-   * @param {boolean|PURITY_ABSOLUTE|PURITY_RELATIVE} parentIsPure
-   * @returns {boolean|PURITY_ABSOLUTE|PURITY_RELATIVE}
-   */
-  function isPure(node, parentIsPure) {
-    switch (node.type) {
-      // Computed members might invoke a stateful toString()
-      case ASTType._MemberExpression:
-        if (node.computed) {
-          return false;
-        }
-        break;
-
-      // Unary always convert to primitive
-      case ASTType._UnaryExpression:
-        return PURITY_ABSOLUTE;
-
-      // The binary + operator can invoke a stateful toString().
-      case ASTType._BinaryExpression:
-        return node.operator !== "+" ? PURITY_ABSOLUTE : false;
-
-      // Functions / filters probably read state from within objects
-      case ASTType._CallExpression:
-        return false;
-    }
-
-    return undefined === parentIsPure ? PURITY_RELATIVE : parentIsPure;
-  }
-
-  /**
-   * Converts parameter to  strings property name for use  as keys in an object.
-   * Any non-string object, including a number, is typecasted into a string via the toString method.
-   * {@link https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Property_accessors#Property_names}
-   *
-   * @param {!any} name
-   * @returns {string}
-   */
-  function getStringValue(name) {
-    return `${name}`;
-  }
-
-  /**
-   * @param {import("./ast/ast").ASTNode} ast
-   * @returns {boolean}
-   */
-  function isAssignable(ast) {
-    return (
-      ast.type === ASTType._Identifier || ast.type === ASTType._MemberExpression
-    );
-  }
-
-  /* eslint-disable id-length */
-  /* eslint-disable no-magic-numbers */
-
-  /**
-   * @typedef {import("./token.ts").Token} Token
-   */
-
-  const $parseMinErr$1 = minErr("$parse");
-
-  const ESCAPE = {
-    n: "\n",
-    f: "\f",
-    r: "\r",
-    t: "\t",
-    v: "\v",
-    "'": "'",
-    '"': '"',
-  };
-
-  const OPERATORS = new Set(
-    "+ - * / % === !== == != < > <= >= && || ! = |".split(" "),
-  );
-
-  /**
-   * @typedef {Object} LexerOptions
-   * @property {(ch: string, codePoint: number) => boolean} [isIdentifierStart] - Custom function to determine if a character is a valid identifier start.
-   * @property {(ch: string, codePoint: number) => boolean} [isIdentifierContinue] - Custom function to determine if a character is a valid identifier continuation.
-   */
-
-  /**
-   * Represents a lexer that tokenizes input text. The Lexer takes the original expression string and returns an array of tokens parsed from that string.
-   * For example, the string "a + b" would result in tokens for a, +, and b.
-   */
-  class Lexer {
-    /**
-     * Creates an instance of Lexer.
-     * @param {LexerOptions} options - Lexer options.
-     */
-    constructor(options) {
-      /** @type {LexerOptions} */
-      this._options = options;
-    }
-
-    /**
-     * Tokenizes the input text.
-     * @param {string} text Input text to lex.
-     * @returns {Array<Token>} Array of tokens.
-     */
-    _lex(text) {
-      this._text = text;
-      this._index = 0;
-      /** @type {Array<Token>} */
-      this._tokens = [];
-
-      while (this._index < this._text.length) {
-        const ch = this._text.charAt(this._index);
-
-        if (ch === '"' || ch === "'") {
-          this._readString(ch);
-        } else if (
-          this._isNumber(ch) ||
-          (ch === "." && this._isNumber(/** @type {string} */ (this._peek())))
-        ) {
-          this._readNumber();
-        } else if (
-          this._isIdentifierStart &&
-          this._isIdentifierStart(this._peekMultichar())
-        ) {
-          this._readIdent();
-        } else if (this._is(ch, "(){}[].,;:?")) {
-          this._tokens.push({ index: this._index, text: ch });
-          this._index++;
-        } else if (this._isWhitespace(ch)) {
-          this._index++;
-        } else {
-          const ch2 = ch + this._peek();
-
-          const ch3 = ch2 + this._peek(2);
-
-          const op1 = OPERATORS.has(ch);
-
-          const op2 = OPERATORS.has(ch2);
-
-          const op3 = OPERATORS.has(ch3);
-
-          if (op1 || op2 || op3) {
-            const token = op3 ? ch3 : op2 ? ch2 : ch;
-
-            this._tokens.push({
-              index: this._index,
-              text: token,
-              operator: true,
-            });
-            this._index += token.length;
-          } else {
-            this._throwError(
-              "Unexpected next character ",
-              this._index,
-              this._index + 1,
-            );
-          }
-        }
-      }
-
-      return this._tokens;
-    }
-
-    /**
-     * Checks if a character is contained in a set of characters.
-     * @param {string} ch Character to check.
-     * @param {string} chars Set of characters.
-     * @returns {boolean} True if character is in the set, false otherwise.
-     */
-    _is(ch, chars) {
-      return chars.indexOf(ch) !== -1;
-    }
-
-    /**
-     * Peeks at the next character in the text.
-     * @param {number} [i=1] Number of characters to peek.
-     * @returns {string|false} Next character or false if end of text.
-     */
-    _peek(i) {
-      const num = i || 1;
-
-      return this._index + num < this._text.length
-        ? this._text.charAt(this._index + num)
-        : false;
-    }
-
-    /**
-     * Checks if a character is a number.
-     * @param {string} ch Character to check.
-     * @returns {boolean} True if character is a number, false otherwise.
-     */
-    _isNumber(ch) {
-      return ch >= "0" && ch <= "9" && typeof ch === "string";
-    }
-
-    /**
-     * Checks if a character is whitespace.
-     * @param {string} ch Character to check.
-     * @returns {boolean} True if character is whitespace, false otherwise.
-     */
-    _isWhitespace(ch) {
-      return (
-        ch === " " || ch === "\r" || ch === "\t" || ch === "\n" || ch === "\v"
-      );
-    }
-
-    /**
-     * Checks if a character is a valid identifier start.
-     * @param {string} ch Character to check.
-     * @returns {boolean} True if character is a valid identifier start, false otherwise.
-     */
-    _isIdentifierStart(ch) {
-      return this._options.isIdentifierStart
-        ? this._options.isIdentifierStart(ch, this._codePointAt(ch))
-        : (ch >= "a" && ch <= "z") ||
-            (ch >= "A" && ch <= "Z") ||
-            ch === "_" ||
-            ch === "$";
-    }
-
-    /**
-     * Checks if a character is a valid identifier continuation.
-     * @param {string} ch Character to check.
-     * @returns {boolean} True if character is a valid identifier continuation, false otherwise.
-     */
-    _isIdentifierContinue(ch) {
-      return this._options.isIdentifierContinue
-        ? this._options.isIdentifierContinue(ch, this._codePointAt(ch))
-        : (ch >= "a" && ch <= "z") ||
-            (ch >= "A" && ch <= "Z") ||
-            ch === "_" ||
-            ch === "$" ||
-            (ch >= "0" && ch <= "9");
-    }
-
-    /**
-     * Converts a character to its Unicode code point.
-     * @param {string} ch Character to convert.
-     * @returns {number} Unicode code point.
-     */
-    _codePointAt(ch) {
-      if (ch.length === 1) return ch.charCodeAt(0);
-
-      return (ch.charCodeAt(0) << 10) + ch.charCodeAt(1) - 0x35fdc00;
-    }
-
-    /**
-     * Peeks at the next multicharacter sequence in the text.
-     * @returns {string} Next multicharacter sequence.
-     */
-    _peekMultichar() {
-      const ch = this._text.charAt(this._index);
-
-      const peek = this._peek();
-
-      if (!peek) {
-        return ch;
-      }
-      const cp1 = ch.charCodeAt(0);
-
-      const cp2 = peek.charCodeAt(0);
-
-      if (cp1 >= 0xd800 && cp1 <= 0xdbff && cp2 >= 0xdc00 && cp2 <= 0xdfff) {
-        return ch + peek;
-      }
-
-      return ch;
-    }
-
-    /**
-     * Checks if a character is an exponent operator.
-     * @param {string} ch Character to check.
-     * @returns {boolean} True if character is an exponent operator, false otherwise.
-     */
-    _isExpOperator(ch) {
-      return ch === "-" || ch === "+" || this._isNumber(ch);
-    }
-
-    /**
-     * Throws a lexer error.
-     * @param {string} error Error message.
-     * @param {number} [start] Start index.
-     * @param {number} [end] End index.
-     * @throws {Error} Lexer error.
-     */
-    _throwError(error, start, end) {
-      end = end || this._index;
-      const colStr = isDefined(start)
-        ? `s ${start}-${this._index} [${this._text.substring(start, end)}]`
-        : ` ${end}`;
-
-      throw $parseMinErr$1(
-        "lexerr",
-        `Lexer Error: ${error} at column${colStr} in expression [${this._text}].`,
-      );
-    }
-
-    /**
-     * Reads and tokenizes a number from the text.
-     * @return {void}
-     */
-    _readNumber() {
-      let number = "";
-
-      const start = this._index;
-
-      while (this._index < this._text.length) {
-        const ch = this._text.charAt(this._index).toLowerCase();
-
-        if (ch === "." || this._isNumber(ch)) {
-          number += ch;
-        } else {
-          const peekCh = this._peek();
-
-          if (ch === "e" && this._isExpOperator(/** @type {string} */ (peekCh))) {
-            number += ch;
-          } else if (
-            this._isExpOperator(ch) &&
-            peekCh &&
-            this._isNumber(peekCh) &&
-            number.charAt(number.length - 1) === "e"
-          ) {
-            number += ch;
-          } else if (
-            this._isExpOperator(ch) &&
-            (!peekCh || !this._isNumber(peekCh)) &&
-            number.charAt(number.length - 1) === "e"
-          ) {
-            this._throwError("Invalid exponent");
-          } else {
-            break;
-          }
-        }
-        this._index++;
-      }
-      this._tokens.push({
-        index: start,
-        text: number,
-        constant: true,
-        value: Number(number),
-      });
-    }
-
-    /**
-     * Reads and tokenizes an identifier from the text.
-     */
-    _readIdent() {
-      const start = this._index;
-
-      this._index += this._peekMultichar().length;
-
-      while (this._index < this._text.length) {
-        const ch = this._peekMultichar();
-
-        if (this._isIdentifierContinue && !this._isIdentifierContinue(ch)) {
-          break;
-        }
-        this._index += ch.length;
-      }
-      this._tokens.push({
-        index: start,
-        text: this._text.slice(start, this._index),
-        identifier: true,
-      });
-    }
-
-    /**
-     * Reads and tokenizes a string from the text.
-     * @param {string} quote Quote character used for the string.
-     */
-    _readString(quote) {
-      const start = this._index;
-
-      let string = "";
-
-      let escape = false;
-
-      this._index++; // Skip opening quote
-
-      while (this._index < this._text.length) {
-        const ch = this._text[this._index];
-
-        if (escape) {
-          if (ch === "u") {
-            // Handle unicode escapes
-            // Simplified for brevity
-            string += this._handleUnicodeEscape();
-          } else {
-            string += ESCAPE[ch] || ch;
-          }
-          escape = false;
-        } else if (ch === "\\") {
-          escape = true;
-        } else if (ch === quote) {
-          this._tokens.push({
-            index: start,
-            text: this._text.slice(start, this._index + 1),
-            constant: true,
-            value: string,
-          });
-          this._index++; // Skip closing quote
-
-          return;
-        } else {
-          string += ch;
-        }
-
-        this._index++;
-      }
-
-      this._throwError("Unterminated quote", start);
-    }
-
-    /**
-     * @returns {string}
-     */
-    _handleUnicodeEscape() {
-      const hex = this._text.substring(this._index + 1, this._index + 5);
-
-      if (!hex.match(/[\da-f]{4}/i)) {
-        this._throwError(`Invalid unicode escape [\\u${hex}]`);
-      }
-      this._index += 4; // Move index past the four hexadecimal digits
-
-      return String.fromCharCode(parseInt(hex, 16));
-    }
-  }
-
-  /**
-   * @typedef {import("./ast-node.ts").ASTNode} ASTNode
-   * @typedef {import("../lexer/token.js").Token} Token
-   */
-
-  const $parseMinErr = minErr("$parse");
-
-  const literals = {
-    true: true,
-    false: false,
-    null: null,
-    undefined,
-  };
-
-  /**
-   * @class
-   */
-  class AST {
-    /**
-     * @param {import('../lexer/lexer.js').Lexer} lexer - The lexer instance for tokenizing input
-     */
-    constructor(lexer) {
-      /** @type {import('../lexer/lexer.js').Lexer} */
-      this._lexer = lexer;
-      this._selfReferential = {
-        this: { type: ASTType._ThisExpression },
-        $locals: { type: ASTType._LocalsExpression },
-      };
-      this._index = 0;
-    }
-
-    /**
-     * Parses the input text and generates an AST.
-     * @param {string} text - The input text to parse.
-     * @returns {ASTNode} The root node of the AST.
-     */
-    _ast(text) {
-      this._text = text;
-      this._tokens = this._lexer._lex(text);
-
-      const value = this._program();
-
-      if (this._tokens.length > this._index) {
-        this._throwError("is an unexpected token", this._tokens[this._index]);
-      }
-
-      return value;
-    }
-
-    /**
-     * Parses a program.
-     * @returns {ASTNode} The program node.
-     */
-    _program() {
-      const body = [];
-
-      let hasMore = true;
-
-      while (hasMore) {
-        if (this._tokens.length > this._index && !this._peek("}", ")", ";", "]"))
-          body.push(this._expressionStatement());
-
-        if (!this._expect(";")) {
-          hasMore = false;
-        }
-      }
-
-      return { type: ASTType._Program, body };
-    }
-
-    /**
-     * Parses an expression statement.
-     * @returns {ASTNode} The expression statement node.
-     */
-    _expressionStatement() {
-      return {
-        type: ASTType._ExpressionStatement,
-        expression: this._filterChain(),
-      };
-    }
-
-    /**
-     * Parses a filter chain.
-     * @returns {ASTNode} The filter chain node.
-     */
-    _filterChain() {
-      let left = this._assignment();
-
-      while (this._expect("|")) {
-        left = this._filter(left);
-      }
-
-      return left;
-    }
-
-    /**
-     * Parses an assignment expression.
-     * @returns {ASTNode} The assignment expression node.
-     */
-    _assignment() {
-      let result = this._ternary();
-
-      if (this._expect("=")) {
-        if (!isAssignable(result)) {
-          throw $parseMinErr("lval", "Trying to assign a value to a non l-value");
-        }
-
-        result = {
-          type: ASTType._AssignmentExpression,
-          left: result,
-          right: this._assignment(),
-          operator: "=",
-        };
-      }
-
-      return result;
-    }
-
-    /**
-     * Parses a ternary expression.
-     * @returns {ASTNode} The ternary expression node.
-     */
-    _ternary() {
-      const test = this._logicalOR();
-
-      if (this._expect("?")) {
-        const alternate = this._assignment();
-
-        if (this._consume(":")) {
-          const consequent = this._assignment();
-
-          return {
-            type: ASTType._ConditionalExpression,
-            test,
-            alternate,
-            consequent,
-          };
-        }
-      }
-
-      return test;
-    }
-
-    /**
-     * Parses a logical OR expression.
-     * @returns {ASTNode} The logical OR expression node.
-     */
-    _logicalOR() {
-      let left = this._logicalAND();
-
-      while (this._expect("||")) {
-        left = {
-          type: ASTType._LogicalExpression,
-          operator: "||",
-          left,
-          right: this._logicalAND(),
-        };
-      }
-
-      return left;
-    }
-
-    /**
-     * Parses a logical AND expression.
-     * @returns {ASTNode} The logical AND expression node.
-     */
-    _logicalAND() {
-      let left = this._equality();
-
-      while (this._expect("&&")) {
-        left = {
-          type: ASTType._LogicalExpression,
-          operator: "&&",
-          left,
-          right: this._equality(),
-        };
-      }
-
-      return left;
-    }
-
-    /**
-     * Parses an equality expression.
-     * @returns {ASTNode} The equality expression node.
-     */
-    _equality() {
-      let left = this._relational();
-
-      let token;
-
-      while ((token = this._expect("==", "!=", "===", "!=="))) {
-        left = {
-          type: ASTType._BinaryExpression,
-          operator: /** @type {Token} */ (token).text,
-          left,
-          right: this._relational(),
-        };
-      }
-
-      return left;
-    }
-
-    /**
-     * Parses a relational expression.
-     * @returns {ASTNode} The relational expression node.
-     */
-    _relational() {
-      let left = this._additive();
-
-      let token;
-
-      while ((token = this._expect("<", ">", "<=", ">="))) {
-        left = {
-          type: ASTType._BinaryExpression,
-          operator: /** @type {Token} */ (token).text,
-          left,
-          right: this._additive(),
-        };
-      }
-
-      return left;
-    }
-
-    /**
-     * Parses an additive expression.
-     * @returns {ASTNode} The additive expression node.
-     */
-    _additive() {
-      let left = this._multiplicative();
-
-      let token;
-
-      while ((token = this._expect("+", "-"))) {
-        left = {
-          type: ASTType._BinaryExpression,
-          operator: /** @type {Token} */ (token).text,
-          left,
-          right: this._multiplicative(),
-        };
-      }
-
-      return left;
-    }
-
-    /**
-     * Parses a multiplicative expression.
-     * @returns {ASTNode} The multiplicative expression node.
-     */
-    _multiplicative() {
-      let left = this._unary();
-
-      let token;
-
-      while ((token = this._expect("*", "/", "%"))) {
-        left = {
-          type: ASTType._BinaryExpression,
-          operator: /** @type {import("../lexer/lexer.js").Token} */ (token).text,
-          left,
-          right: this._unary(),
-        };
-      }
-
-      return left;
-    }
-
-    /**
-     * Parses a unary expression.
-     * @returns {ASTNode} The unary expression node.
-     */
-    _unary() {
-      let token;
-
-      if ((token = this._expect("+", "-", "!"))) {
-        return {
-          type: ASTType._UnaryExpression,
-          operator: /** @type {import("../lexer/lexer.js").Token} */ (token).text,
-          prefix: true,
-          argument: this._unary(),
-        };
-      }
-
-      return this._primary();
-    }
-
-    /**
-     * Parses a primary expression.
-     * @returns {ASTNode} The primary expression node.
-     */
-    _primary() {
-      let primary;
-
-      if (this._expect("(")) {
-        primary = this._filterChain();
-        this._consume(")");
-      } else if (this._expect("[")) {
-        primary = this._arrayDeclaration();
-      } else if (this._expect("{")) {
-        primary = this._object();
-      } else if (
-        hasOwn(
-          this._selfReferential,
-          /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).text,
-        )
-      ) {
-        primary = structuredClone(this._selfReferential[this._consume().text]);
-      } else if (
-        hasOwn(
-          literals,
-          /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).text,
-        )
-      ) {
-        primary = {
-          type: ASTType._Literal,
-          value: literals[this._consume().text],
-        };
-      } else if (
-        /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).identifier
-      ) {
-        primary = this._identifier();
-      } else if (
-        /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).constant
-      ) {
-        primary = this._constant();
-      } else {
-        this._throwError(
-          "not a primary expression",
-          /** @type {import("../lexer/lexer.js").Token} */ (this._peek()),
-        );
-      }
-
-      let next;
-
-      while ((next = this._expect("(", "[", "."))) {
-        if (
-          /** @type {import("../lexer/lexer.js").Token} */ (next).text === "("
-        ) {
-          primary = {
-            type: ASTType._CallExpression,
-            callee: primary,
-            arguments: this._parseArguments(),
-          };
-          this._consume(")");
-        } else if (
-          /** @type {import("../lexer/lexer.js").Token} */ (next).text === "["
-        ) {
-          primary = {
-            type: ASTType._MemberExpression,
-            object: primary,
-            property: this._assignment(),
-            computed: true,
-          };
-          this._consume("]");
-        } else if (
-          /** @type {import("../lexer/lexer.js").Token} */ (next).text === "."
-        ) {
-          primary = {
-            type: ASTType._MemberExpression,
-            object: primary,
-            property: this._identifier(),
-            computed: false,
-          };
-        } else {
-          this._throwError("IMPOSSIBLE");
-        }
-      }
-
-      return primary;
-    }
-
-    /**
-     * Parses a filter.
-     * @param {ASTNode} baseExpression - The base expression to apply the filter to.
-     * @returns {ASTNode} The filter node.
-     */
-    _filter(baseExpression) {
-      /** @type {ASTNode[]} */
-      const args = [baseExpression];
-
-      const result = {
-        type: ASTType._CallExpression,
-        callee: this._identifier(),
-        arguments: args,
-        filter: true,
-      };
-
-      while (this._expect(":")) {
-        args.push(this._assignment());
-      }
-
-      return result;
-    }
-
-    /**
-     * Parses function arguments.
-     * @returns {ASTNode[]} The arguments array.
-     */
-    _parseArguments() {
-      /** @type {ASTNode[]} */
-      const args = [];
-
-      if (this._peekToken().text !== ")") {
-        do {
-          args.push(this._filterChain());
-        } while (this._expect(","));
-      }
-
-      return args;
-    }
-
-    /**
-     * Parses an identifier.
-     * @returns {ASTNode} The identifier node.
-     */
-    _identifier() {
-      const token = this._consume();
-
-      if (!token.identifier) {
-        this._throwError("is not a valid identifier", token);
-      }
-
-      return { type: ASTType._Identifier, name: token.text };
-    }
-
-    /**
-     * Parses a constant.
-     * @returns {ASTNode} The constant node.
-     */
-    _constant() {
-      // TODO check that it is a constant
-      return { type: ASTType._Literal, value: this._consume().value };
-    }
-
-    /**
-     * Parses an array declaration.
-     * @returns {ASTNode} The array declaration node.
-     */
-    _arrayDeclaration() {
-      /** @type {ASTNode[]} */
-      const elements = [];
-
-      if (this._peekToken().text !== "]") {
-        do {
-          if (this._peek("]")) {
-            // Support trailing commas per ES5.1.
-            break;
-          }
-          elements.push(this._assignment());
-        } while (this._expect(","));
-      }
-      this._consume("]");
-
-      return { type: ASTType._ArrayExpression, elements };
-    }
-
-    /**
-     * Parses an object.
-     * @returns {ASTNode} The object node.
-     */
-    _object() {
-      /** @type {ASTNode[]} */
-      const properties = [];
-
-      /** @type {ASTNode} */
-      let property;
-
-      if (this._peekToken().text !== "}") {
-        do {
-          if (this._peek("}")) {
-            // Support trailing commas per ES5.1.
-            break;
-          }
-          property = { type: ASTType._Property, kind: "init" };
-
-          if (
-            /** @type {import("../lexer/lexer.js").Token} */ (this._peek())
-              .constant
-          ) {
-            property.key = this._constant();
-            property.computed = false;
-            this._consume(":");
-            property.value = this._assignment();
-          } else if (
-            /** @type {import("../lexer/lexer.js").Token} */ (this._peek())
-              .identifier
-          ) {
-            property.key = this._identifier();
-            property.computed = false;
-
-            if (this._peek(":")) {
-              this._consume(":");
-              property.value = this._assignment();
-            } else {
-              property.value = property.key;
-            }
-          } else if (this._peek("[")) {
-            this._consume("[");
-            property.key = this._assignment();
-            this._consume("]");
-            property.computed = true;
-            this._consume(":");
-            property.value = this._assignment();
-          } else {
-            this._throwError(
-              "invalid key",
-              /** @type {import("../lexer/lexer.js").Token} */ (this._peek()),
-            );
-          }
-          properties.push(property);
-        } while (this._expect(","));
-      }
-      this._consume("}");
-
-      return { type: ASTType._ObjectExpression, properties };
-    }
-
-    /**
-     * Throws a syntax error.
-     * @param {string} msg - The error message.
-     * @param {import("../lexer/lexer.js").Token} [token] - The token that caused the error.
-     */
-    _throwError(msg, token) {
-      throw $parseMinErr(
-        "syntax",
-        "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].",
-        token.text,
-        msg,
-        token.index + 1,
-        this._text,
-        this._text.substring(token.index),
-      );
-    }
-
-    /**
-     * Consumes a token if it matches the expected type.
-     * @param {string} [e1] - The expected token type.
-     * @returns {import("../lexer/lexer.js").Token} The consumed token.
-     */
-    _consume(e1) {
-      if (this._tokens.length === this._index) {
-        throw $parseMinErr(
-          "ueoe",
-          "Unexpected end of expression: {0}",
-          this._text,
-        );
-      }
-
-      const token = this._expect(e1);
-
-      if (!token) {
-        this._throwError(
-          `is unexpected, expecting [${e1}]`,
-          /** @type {import("../lexer/lexer.js").Token} */ (this._peek()),
-        );
-      } else {
-        return /** @type  {import("../lexer/lexer.js").Token} */ (token);
-      }
-
-      return undefined;
-    }
-
-    /**
-     * Returns the next token without consuming it.
-     * @returns {import("../lexer/lexer.js").Token} The next token.
-     */
-    _peekToken() {
-      if (this._tokens.length === this._index) {
-        throw $parseMinErr(
-          "ueoe",
-          "Unexpected end of expression: {0}",
-          this._text,
-        );
-      }
-
-      return this._tokens[this._index];
-    }
-
-    /**
-     * Checks if the next token matches any of the expected types.
-     * @param {...string} [expected] - The expected token types.
-     * @returns {import('../lexer/lexer.js').Token|boolean} The next token if it matches, otherwise false.
-     */
-    _peek(...expected) {
-      const token = this._tokens[this._index];
-
-      const j = expected.length;
-
-      if (!token || !j) return token;
-
-      const txt = token.text;
-
-      for (let i = 0; i < j; i++) {
-        if (expected[i] === txt || !expected[i]) return token;
-      }
-
-      return false;
-    }
-
-    /**
-     * Consumes the next token if it matches any of the expected types.
-     * @param {...string} [expected] - The expected token types.
-     * @returns {import("../lexer/lexer.js").Token|boolean} The consumed token if it matches, otherwise false.
-     */
-    _expect(...expected) {
-      const token = this._peek(...expected);
-
-      if (token) {
-        this._index++;
-
-        return token;
-      }
-
-      return false;
-    }
-  }
-
-  /**
-   * @typedef {Object} ParsedAST
-   * @property {import("../ast/ast-node.d.ts").ASTNode} ast - AST representation of expression
-   */
-
-  /**
-   * @constructor
-   */
-  class Parser {
-    /**
-     *
-     * @param {import('../lexer/lexer.js').Lexer} lexer
-     * @param {function(any):any} $filter
-     */
-    constructor(lexer, $filter) {
-      /** @type {AST} */
-      this._ast = new AST(lexer);
-
-      /** @type {ASTInterpreter} */
-      this._astCompiler = new ASTInterpreter($filter);
-    }
-
-    /**
-     * @param {string} exp - Expression to be parsed
-     * @returns {import("../interface.ts").CompiledExpression}
-     */
-    _parse(exp) {
-      const { ast } = this.#getAst(exp);
-
-      const fn = this._astCompiler.compile(ast);
-
-      fn.literal = isLiteral(ast);
-      fn.constant = !!ast.constant;
-
-      return fn;
-    }
-
-    /**
-     * @param {string} exp - Expression to be parsed
-     * @returns {ParsedAST}
-     */
-    #getAst(exp) {
-      exp = exp.trim();
-
-      return {
-        ast: this._ast._ast(exp),
-      };
-    }
-  }
-
-  /**
-   * @param {import("../ast/ast-node.d.ts").ASTNode} ast
-   * @returns {boolean}
-   */
-  function isLiteral(ast) {
-    const { body } = ast;
-
-    if (body && body.length === 1) {
-      switch (body[0].expression?.type) {
-        case ASTType._Literal:
-        case ASTType._ArrayExpression:
-        case ASTType._ObjectExpression:
-          return true;
-        default:
-          return false;
-      }
-    } else {
-      return true;
-    }
-  }
-
-  class ParseProvider {
-    constructor() {
-      const cache = Object.create(null);
-
-      /** @type {function(any):boolean?} */
-      let identStart;
-
-      /** @type {function(any):boolean?} */
-      let identContinue;
-
-      /**
-       * Allows defining the set of characters that are allowed in AngularTS expressions. The function
-       * `identifierStart` will get called to know if a given character is a valid character to be the
-       * first character for an identifier. The function `identifierContinue` will get called to know if
-       * a given character is a valid character to be a follow-up identifier character. The functions
-       * `identifierStart` and `identifierContinue` will receive as arguments the single character to be
-       * identifier and the character code point. These arguments will be `string` and `numeric`. Keep in
-       * mind that the `string` parameter can be two characters long depending on the character
-       * representation. It is expected for the function to return `true` or `false`, whether that
-       * character is allowed or not.
-       *
-       * Since this function will be called extensively, keep the implementation of these functions fast,
-       * as the performance of these functions have a direct impact on the expressions parsing speed.
-       *
-       * @param {function(any):boolean} [identifierStart] The function that will decide whether the given character is
-       *   a valid identifier start character.
-       * @param {function(any):boolean} [identifierContinue] The function that will decide whether the given character is
-       *   a valid identifier continue character.
-       * @returns {ParseProvider}
-       */
-      this.setIdentifierFns = function (identifierStart, identifierContinue) {
-        identStart = identifierStart;
-        identContinue = identifierContinue;
-
-        return this;
-      };
-
-      this.$get = [
-        $injectTokens._filter,
-        /**
-         *
-         * @param {(any) => any} $filter
-         * @returns {import('./interface.ts').ParseService}
-         */
-        function ($filter) {
-          /** @type {import("./lexer/lexer.js").LexerOptions} */
-          const $lexerOptions = {
-            isIdentifierStart: isFunction(identStart) && identStart,
-            isIdentifierContinue: isFunction(identContinue) && identContinue,
-          };
-
-          return $parse;
-
-          /**
-           * @param {string} exp
-           * @param interceptorFn
-           * @returns any
-           */
-          function $parse(exp, interceptorFn) {
-            let parsedExpression, cacheKey;
-
-            switch (typeof exp) {
-              case "string":
-                exp = exp.trim();
-                cacheKey = exp;
-
-                parsedExpression = cache[cacheKey];
-
-                if (!parsedExpression) {
-                  const lexer = new Lexer($lexerOptions);
-
-                  const parser = new Parser(lexer, $filter);
-
-                  parsedExpression = parser._parse(exp);
-
-                  cache[cacheKey] = addWatchDelegate(parsedExpression);
-                }
-
-                return addInterceptor(parsedExpression, interceptorFn);
-
-              case "function":
-                return addInterceptor(exp, interceptorFn);
-
-              default:
-                return addInterceptor(() => {
-                  /* empty */
-                }, interceptorFn);
-            }
-          }
-
-          /**
-           * @param {Function} parsedExpression
-           * @param interceptorFn
-           * @returns {import('./interface.ts').CompiledExpression|*}
-           */
-          function addInterceptor(parsedExpression, interceptorFn) {
-            if (!interceptorFn) {
-              return parsedExpression;
-            }
-
-            // Extract any existing interceptors out of the parsedExpression
-            // to ensure the original parsedExpression is always the $$intercepted
-            // @ts-ignore
-            if (parsedExpression.$$interceptor) {
-              interceptorFn = chainInterceptors(
-                // @ts-ignore
-                parsedExpression.$$interceptor,
-                interceptorFn,
-              );
-              // @ts-ignore
-              parsedExpression = parsedExpression.$$intercepted;
-            }
-
-            let useInputs = false;
-
-            const fn = function interceptedExpression(
-              scope,
-              locals,
-              assign,
-              inputs,
-            ) {
-              const value =
-                useInputs && inputs
-                  ? inputs[0]
-                  : parsedExpression(scope, locals, assign, inputs);
-
-              // Do not invoke for getters
-              if (scope?.getter) {
-                return undefined;
-              }
-              const res = isFunction(value) ? value() : value;
-
-              return interceptorFn(deProxy(res));
-            };
-
-            // Maintain references to the interceptor/intercepted
-            fn.$$intercepted = parsedExpression;
-            fn.$$interceptor = interceptorFn;
-
-            // Propagate the literal/oneTime/constant attributes
-            // @ts-ignore
-            fn.literal = parsedExpression.literal;
-            // @ts-ignore
-            fn.oneTime = parsedExpression.oneTime;
-            // @ts-ignore
-            fn.constant = parsedExpression.constant;
-            // @ts-ignore
-            fn.decoratedNode = parsedExpression.decoratedNode;
-
-            // Treat the interceptor like filters.
-            // If it is not $stateful then only watch its inputs.
-            // If the expression itself has no inputs then use the full expression as an input.
-            if (!interceptorFn.$stateful) {
-              // @ts-ignore
-              useInputs = !parsedExpression.inputs;
-              // @ts-ignore
-              fn.inputs = parsedExpression.inputs
-                ? // @ts-ignore
-                  parsedExpression.inputs
-                : [parsedExpression];
-
-              if (!interceptorFn.$$pure) {
-                fn.inputs = fn.inputs.map(function (input) {
-                  // Remove the isPure flag of inputs when it is not absolute because they are now wrapped in a
-                  // non-pure interceptor function.
-                  if (input.isPure === PURITY_RELATIVE) {
-                    return function depurifier(x) {
-                      return input(x);
-                    };
-                  }
-
-                  return input;
-                });
-              }
-            }
-
-            return addWatchDelegate(fn);
-          }
-        },
-      ];
-    }
-  }
-
-  function constantWatchDelegate(
-    scope,
-    listener,
-    objectEquality,
-    parsedExpression,
-  ) {
-    const unwatch = scope.$watch(
-      () => {
-        unwatch();
-
-        return parsedExpression(scope);
-      },
-      listener,
-      objectEquality,
-    );
-
-    return unwatch;
-  }
-
-  /**
-   *
-   * @param {import('./interface.ts').CompiledExpression} parsedExpression
-   * @returns {import('./interface.ts').CompiledExpression}
-   */
-  function addWatchDelegate(parsedExpression) {
-    if (parsedExpression.constant) {
-      parsedExpression.$$watchDelegate = constantWatchDelegate;
-    } else if (parsedExpression.inputs) {
-      parsedExpression.$$watchDelegate = inputsWatchDelegate;
-    }
-
-    return parsedExpression;
-  }
-
-  /**
-   *
-   * @param {ng.Scope} scope
-   * @param {Function} listener
-   * @param {*} objectEquality
-   * @param {import('./interface.ts').CompiledExpression} parsedExpression
-   * @returns {any}
-   */
-  function inputsWatchDelegate(
-    scope,
-    listener,
-    objectEquality,
-    parsedExpression,
-  ) {
-    const inputExpressions = /** @type {Function} */ (parsedExpression.inputs);
-
-    let lastResult;
-
-    if (inputExpressions.length === 1) {
-      let oldInputValueOf = expressionInputDirtyCheck; // init to something unique so that equals check fails
-
-      const inputExpression = inputExpressions[0];
-
-      return scope.$watch(
-        // @ts-ignore
-        ($scope) => {
-          const newInputValue = inputExpression($scope);
-
-          if (
-            !expressionInputDirtyCheck(
-              newInputValue,
-              oldInputValueOf,
-              inputExpression.isPure,
-            )
-          ) {
-            lastResult = parsedExpression($scope, undefined, [newInputValue]);
-            oldInputValueOf = newInputValue && getValueOf(newInputValue);
-          }
-
-          return lastResult;
-        },
-        listener,
-        objectEquality,
-      );
-    } else {
-
-      for (let i = 0, ii = inputExpressions.length; i < ii; i++) {
-      }
-
-      // return scope.$watch(
-      //   // @ts-ignore
-      //   (scope) => {
-      //     debugger
-      //     let changed = false;
-
-      //     for (let i = 0, ii = inputExpressions.length; i < ii; i++) {
-      //       const newInputValue = inputExpressions[i](scope);
-
-      //       if (
-      //         changed ||
-      //         (changed = !expressionInputDirtyCheck(
-      //           newInputValue,
-      //           oldInputValueOfValues[i],
-      //           inputExpressions[i].isPure,
-      //         ))
-      //       ) {
-      //         oldInputValues[i] = newInputValue;
-      //         oldInputValueOfValues[i] =
-      //           newInputValue && getValueOf(newInputValue);
-      //       }
-      //     }
-
-      //     if (changed) {
-      //       lastResult = parsedExpression(scope, undefined, oldInputValues);
-      //     }
-
-      //     return lastResult;
-      //   },
-      //   listener,
-      //   objectEquality,
-      // );
-      return undefined;
-    }
-  }
-
-  function chainInterceptors(first, second) {
-    function chainedInterceptor(value) {
-      return second(first(value));
-    }
-    chainedInterceptor.$stateful = first.$stateful || second.$stateful;
-    chainedInterceptor.$$pure = first.$$pure && second.$$pure;
-
-    return chainedInterceptor;
-  }
-
-  function expressionInputDirtyCheck(
-    newValue,
-    oldValueOfValue,
-    compareObjectIdentity,
-  ) {
-    if (isNullOrUndefined(newValue) || isNullOrUndefined(oldValueOfValue)) {
-      // null/undefined
-      return newValue === oldValueOfValue;
-    }
-
-    if (typeof newValue === "object") {
-      // attempt to convert the value to a primitive type
-      // TODO(docs): add a note to docs that by implementing valueOf even objects and arrays can
-      //             be cheaply dirty-checked
-      newValue = getValueOf(newValue);
-
-      if (typeof newValue === "object" && !compareObjectIdentity) {
-        // objects/arrays are not supported - deep-watching them would be too expensive
-        return false;
-      }
-
-      // fall-through to the primitive equality check
-    }
-
-    // Primitive or NaN
-
-    return (
-      newValue === oldValueOfValue ||
-      (Number.isNaN(newValue) && Number.isNaN(oldValueOfValue))
-    );
-  }
-
-  function getValueOf(value) {
-    return isFunction(value.valueOf)
-      ? value.valueOf()
-      : {}.constructor.prototype.valueOf.call(value);
-  }
-
   const $interpolateMinErr = minErr("$interpolate");
 
   function throwNoconcat(text) {
@@ -20522,7 +18106,7 @@
       /**
        *
        * @param {ng.ParseService} $parse
-       * @param {*} $sce
+       * @param {ng.SCEService} $sce
        * @returns {ng.InterpolateService}
        */
       ($parse, $sce) => {
@@ -20689,7 +18273,6 @@
 
             constantInterp.exp = text;
             constantInterp.expressions = [];
-            constantInterp.$$watchDelegate = constantWatchDelegate;
 
             return constantInterp;
           }
@@ -20826,7 +18409,7 @@
                 // all of these properties are undocumented for now
                 exp: text, // just for compatibility with regular watchers created via $watch
                 expressions,
-                $$watchDelegate(scope, listener) {
+                _watchDelegate(scope, listener) {
                   let lastValue;
 
                   return scope.$watch(
@@ -22030,6 +19613,2167 @@
     }
   }
 
+  /* eslint-disable id-length */
+  /* eslint-disable no-magic-numbers */
+
+  /**
+   * @typedef {import("./token.ts").Token} Token
+   */
+
+  const $parseMinErr$1 = minErr("$parse");
+
+  /** @type {Record<string, any>} */
+  const ESCAPE = {
+    n: "\n",
+    f: "\f",
+    r: "\r",
+    t: "\t",
+    v: "\v",
+    "'": "'",
+    '"': '"',
+  };
+
+  const OPERATORS = new Set(
+    "+ - * / % === !== == != < > <= >= && || ! = |".split(" "),
+  );
+
+  /**
+   * Represents a lexer that tokenizes input text. The Lexer takes the original expression string and returns an array of tokens parsed from that string.
+   * For example, the string "a + b" would result in tokens for a, +, and b.
+   */
+  class Lexer {
+    /**
+     * Creates an instance of Lexer.
+     */
+    constructor() {
+      this._text = "";
+      this._index = 0;
+    }
+
+    /**
+     * Tokenizes the input text.
+     * @param {string} text Input text to lex.
+     * @returns {Array<Token>} Array of tokens.
+     */
+    _lex(text) {
+      this._text = text;
+      this._index = 0;
+      /** @type {Array<Token>} */
+      this._tokens = [];
+
+      while (this._index < this._text.length) {
+        const ch = this._text.charAt(this._index);
+
+        if (ch === '"' || ch === "'") {
+          this._readString(ch);
+        } else if (
+          this._isNumber(ch) ||
+          (ch === "." && this._isNumber(/** @type {string} */ (this._peek())))
+        ) {
+          this._readNumber();
+        } else if (this._isIdentifierStart(this._peekMultichar())) {
+          this._readIdent();
+        } else if (this._is(ch, "(){}[].,;:?")) {
+          this._tokens.push({ index: this._index, text: ch });
+          this._index++;
+        } else if (this._isWhitespace(ch)) {
+          this._index++;
+        } else {
+          const ch2 = ch + this._peek();
+
+          const ch3 = ch2 + this._peek(2);
+
+          const op1 = OPERATORS.has(ch);
+
+          const op2 = OPERATORS.has(ch2);
+
+          const op3 = OPERATORS.has(ch3);
+
+          if (op1 || op2 || op3) {
+            const token = op3 ? ch3 : op2 ? ch2 : ch;
+
+            this._tokens.push({
+              index: this._index,
+              text: token,
+              operator: true,
+            });
+            this._index += token.length;
+          } else {
+            this._throwError(
+              "Unexpected next character ",
+              this._index,
+              this._index + 1,
+            );
+          }
+        }
+      }
+
+      return this._tokens;
+    }
+
+    /**
+     * Checks if a character is contained in a set of characters.
+     * @param {string} ch Character to check.
+     * @param {string} chars Set of characters.
+     * @returns {boolean} True if character is in the set, false otherwise.
+     */
+    _is(ch, chars) {
+      return chars.indexOf(ch) !== -1;
+    }
+
+    /**
+     * Peeks at the next character in the text.
+     * @param {number} [i=1] Number of characters to peek.
+     * @returns {string|false} Next character or false if end of text.
+     */
+    _peek(i) {
+      const num = i || 1;
+
+      return this._index + num < this._text.length
+        ? this._text.charAt(this._index + num)
+        : false;
+    }
+
+    /**
+     * Checks if a character is a number.
+     * @param {string} ch Character to check.
+     * @returns {boolean} True if character is a number, false otherwise.
+     */
+    _isNumber(ch) {
+      return ch >= "0" && ch <= "9" && typeof ch === "string";
+    }
+
+    /**
+     * Checks if a character is whitespace.
+     * @param {string} ch Character to check.
+     * @returns {boolean} True if character is whitespace, false otherwise.
+     */
+    _isWhitespace(ch) {
+      return (
+        ch === " " || ch === "\r" || ch === "\t" || ch === "\n" || ch === "\v"
+      );
+    }
+
+    /**
+     * Checks if a character is a valid identifier start.
+     * @param {string} ch Character to check.
+     * @returns {boolean} True if character is a valid identifier start, false otherwise.
+     */
+    _isIdentifierStart(ch) {
+      return (
+        (ch >= "a" && ch <= "z") ||
+        (ch >= "A" && ch <= "Z") ||
+        ch === "_" ||
+        ch === "$"
+      );
+    }
+
+    /**
+     * Checks if a character is a valid identifier continuation.
+     * @param {string} ch Character to check.
+     * @returns {boolean} True if character is a valid identifier continuation, false otherwise.
+     */
+    _isIdentifierContinue(ch) {
+      return (
+        (ch >= "a" && ch <= "z") ||
+        (ch >= "A" && ch <= "Z") ||
+        ch === "_" ||
+        ch === "$" ||
+        (ch >= "0" && ch <= "9")
+      );
+    }
+
+    /**
+     * Peeks at the next multicharacter sequence in the text.
+     * @returns {string} Next multicharacter sequence.
+     */
+    _peekMultichar() {
+      const ch = this._text.charAt(this._index);
+
+      const peek = this._peek();
+
+      if (!peek) {
+        return ch;
+      }
+      const cp1 = ch.charCodeAt(0);
+
+      const cp2 = peek.charCodeAt(0);
+
+      if (cp1 >= 0xd800 && cp1 <= 0xdbff && cp2 >= 0xdc00 && cp2 <= 0xdfff) {
+        return ch + peek;
+      }
+
+      return ch;
+    }
+
+    /**
+     * Checks if a character is an exponent operator.
+     * @param {string} ch Character to check.
+     * @returns {boolean} True if character is an exponent operator, false otherwise.
+     */
+    _isExpOperator(ch) {
+      return ch === "-" || ch === "+" || this._isNumber(ch);
+    }
+
+    /**
+     * Throws a lexer error.
+     * @param {string} error Error message.
+     * @param {number} [start] Start index.
+     * @param {number} [end] End index.
+     * @throws {Error} Lexer error.
+     */
+    _throwError(error, start, end) {
+      end = end || this._index;
+      const colStr = isDefined(start)
+        ? `s ${start}-${this._index} [${this._text.substring(start, end)}]`
+        : ` ${end}`;
+
+      throw $parseMinErr$1(
+        "lexerr",
+        `Lexer Error: ${error} at column${colStr} in expression [${this._text}].`,
+      );
+    }
+
+    /**
+     * Reads and tokenizes a number from the text.
+     * @return {void}
+     */
+    _readNumber() {
+      let number = "";
+
+      const start = this._index;
+
+      while (this._index < this._text.length) {
+        const ch = this._text.charAt(this._index).toLowerCase();
+
+        if (ch === "." || this._isNumber(ch)) {
+          number += ch;
+        } else {
+          const peekCh = this._peek();
+
+          if (ch === "e" && this._isExpOperator(/** @type {string} */ (peekCh))) {
+            number += ch;
+          } else if (
+            this._isExpOperator(ch) &&
+            peekCh &&
+            this._isNumber(peekCh) &&
+            number.charAt(number.length - 1) === "e"
+          ) {
+            number += ch;
+          } else if (
+            this._isExpOperator(ch) &&
+            (!peekCh || !this._isNumber(peekCh)) &&
+            number.charAt(number.length - 1) === "e"
+          ) {
+            this._throwError("Invalid exponent");
+          } else {
+            break;
+          }
+        }
+        this._index++;
+      }
+      /** @type {Array<Token>} */ (this._tokens).push({
+        index: start,
+        text: number,
+        constant: true,
+        value: Number(number),
+      });
+    }
+
+    /**
+     * Reads and tokenizes an identifier from the text.
+     */
+    _readIdent() {
+      const start = this._index;
+
+      this._index += this._peekMultichar().length;
+
+      while (this._index < this._text.length) {
+        const ch = this._peekMultichar();
+
+        if (!this._isIdentifierContinue(ch)) {
+          break;
+        }
+        this._index += ch.length;
+      }
+      /** @type {Array<Token>} */ (this._tokens).push({
+        index: start,
+        text: this._text.slice(start, this._index),
+        identifier: true,
+      });
+    }
+
+    /**
+     * Reads and tokenizes a string from the text.
+     * @param {string} quote Quote character used for the string.
+     */
+    _readString(quote) {
+      const start = this._index;
+
+      let string = "";
+
+      let escape = false;
+
+      this._index++; // Skip opening quote
+
+      while (this._index < this._text.length) {
+        const ch = this._text[this._index];
+
+        if (escape) {
+          if (ch === "u") {
+            // Handle unicode escapes
+            // Simplified for brevity
+            string += this._handleUnicodeEscape();
+          } else {
+            string += ESCAPE[ch] || ch;
+          }
+          escape = false;
+        } else if (ch === "\\") {
+          escape = true;
+        } else if (ch === quote) {
+          /** @type {Array<Token>} */ (this._tokens).push({
+            index: start,
+            text: this._text.slice(start, this._index + 1),
+            constant: true,
+            value: string,
+          });
+          this._index++; // Skip closing quote
+
+          return;
+        } else {
+          string += ch;
+        }
+
+        this._index++;
+      }
+
+      this._throwError("Unterminated quote", start);
+    }
+
+    /**
+     * @returns {string}
+     */
+    _handleUnicodeEscape() {
+      const hex = this._text.substring(this._index + 1, this._index + 5);
+
+      if (!hex.match(/[\da-f]{4}/i)) {
+        this._throwError(`Invalid unicode escape [\\u${hex}]`);
+      }
+      this._index += 4; // Move index past the four hexadecimal digits
+
+      return String.fromCharCode(parseInt(hex, 16));
+    }
+  }
+
+  /**
+   * @readonly
+   * @enum {number}
+   */
+  const ASTType = {
+    _Program: 1,
+    _ExpressionStatement: 2,
+    _AssignmentExpression: 3,
+    _ConditionalExpression: 4,
+    _LogicalExpression: 5,
+    _BinaryExpression: 6,
+    _UnaryExpression: 7,
+    _CallExpression: 8,
+    _MemberExpression: 9,
+    _Identifier: 10,
+    _Literal: 11,
+    _ArrayExpression: 12,
+    _Property: 13,
+    _ObjectExpression: 14,
+    _ThisExpression: 15,
+    _LocalsExpression: 16,
+    _NGValueParameter: 17,
+  };
+
+  const PURITY_ABSOLUTE = 1;
+  const PURITY_RELATIVE = 2;
+
+  class ASTInterpreter {
+    /**
+     * @param {ng.FilterService} $filter
+     */
+    constructor($filter) {
+      /** @type {ng.FilterService} */
+      this._$filter = $filter;
+    }
+
+    /**
+     * Compiles the AST into a function.
+     * @param {import("./ast/ast.js").ASTNode} ast - The AST to compile.
+     * @returns {import("./interface.ts").CompiledExpression}
+     */
+    compile(ast) {
+      const decoratedNode = findConstantAndWatchExpressions(ast, this._$filter);
+
+      /** @type {import("./ast/ast.js").ASTNode} */
+      const assignable = assignableAST(decoratedNode);
+
+      /** @type {import("./interface.ts").CompiledExpression} */
+      let assign;
+
+      if (assignable) {
+        assign = /** @type {import("./interface.ts").CompiledExpression} */ (
+          this.#recurse(assignable)
+        );
+      }
+      const toWatch = getInputs(decoratedNode.body);
+
+      let inputs;
+
+      if (toWatch) {
+        inputs = [];
+
+        for (const [key, watch] of entries(toWatch)) {
+          const input =
+            /** @type {import("./interface.ts").CompiledExpression} */ (
+              this.#recurse(watch)
+            );
+
+          watch.input = input;
+          inputs.push(input);
+          watch.watchId = key;
+        }
+      }
+      const expressions = [];
+
+      decoratedNode.body.forEach((expression) => {
+        expressions.push(this.#recurse(expression.expression));
+      });
+
+      /** @type {import("./interface.ts").CompiledExpression} */
+      const fn =
+        decoratedNode.body.length === 0
+          ? () => {
+              /* empty */
+            }
+          : decoratedNode.body.length === 1
+            ? expressions[0]
+            : function (scope, locals) {
+                let lastValue;
+
+                for (let i = 0, j = expressions.length; i < j; i++) {
+                  lastValue = expressions[i](scope, locals);
+                }
+
+                return lastValue;
+              };
+
+      if (assign) {
+        fn._assign = (scope, value, locals) => assign(scope, locals, value);
+      }
+
+      if (inputs) {
+        fn._inputs = inputs;
+      }
+      fn._decoratedNode = decoratedNode;
+
+      return fn;
+    }
+
+    /**
+     * Recurses the AST nodes.
+     * @param {import("./ast/ast").ASTNode} ast - The AST node.
+     * @param {Object} [context] - The context.
+     * @param {boolean|1} [create] - The create flag.
+     * @returns {import("./interface.ts").CompiledExpressionFunction} The recursive function.
+     */
+    #recurse(ast, context, create) {
+      let left;
+
+      let right;
+
+      const self = this;
+
+      let args;
+
+      switch (ast.type) {
+        case ASTType._Literal:
+          return this.value(ast.value, context);
+        case ASTType._UnaryExpression:
+          right = this.#recurse(ast.argument);
+
+          return this[`unary${ast.operator}`](right, context);
+        case ASTType._BinaryExpression:
+          left = this.#recurse(ast.left);
+          right = this.#recurse(ast.right);
+
+          return this[`binary${ast.operator}`](left, right, context);
+        case ASTType._LogicalExpression:
+          left = this.#recurse(ast.left);
+          right = this.#recurse(ast.right);
+
+          return this[`binary${ast.operator}`](left, right, context);
+        case ASTType._ConditionalExpression:
+          return /** @type {import("./interface.ts").CompiledExpressionFunction} */ (
+            this["ternary?:"](
+              this.#recurse(ast.test),
+              this.#recurse(ast.alternate),
+              this.#recurse(ast.consequent),
+              context,
+            )
+          );
+        case ASTType._Identifier:
+          return self.identifier(ast.name, context, create);
+        case ASTType._MemberExpression:
+          left = this.#recurse(ast.object, false, !!create);
+
+          if (!ast.computed) {
+            right = ast.property.name;
+          }
+
+          if (ast.computed) right = this.#recurse(ast.property);
+
+          return /** @type {import("./interface.ts").CompiledExpressionFunction} */ (
+            ast.computed
+              ? this.#computedMember(
+                  left,
+                  /** @type {function } */ (right),
+                  context,
+                  create,
+                )
+              : this.nonComputedMember(
+                  left,
+                  /** @type {string } */ (right),
+                  context,
+                  create,
+                )
+          );
+        case ASTType._CallExpression:
+          args = [];
+          ast.arguments.forEach((expr) => {
+            args.push(self.#recurse(expr));
+          });
+
+          if (ast.filter) right = this._$filter(ast.callee.name);
+
+          if (!ast.filter) right = this.#recurse(ast.callee, true);
+
+          return ast.filter
+            ? (scope, locals, assign) => {
+                const values = [];
+
+                for (let i = 0; i < args.length; ++i) {
+                  const res = args[i](scope && deProxy(scope), locals, assign);
+
+                  values.push(res);
+                }
+                const value = () => {
+                  return right.apply(undefined, values);
+                };
+
+                return context
+                  ? { context: undefined, name: undefined, value }
+                  : value();
+              }
+            : (scope, locals, assign) => {
+                const rhs = right(
+                  /** @type {ng.Scope} */ (scope).$target
+                    ? /** @type {ng.Scope} */ (scope).$target
+                    : scope,
+                  locals,
+                  assign,
+                );
+
+                let value;
+
+                if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
+                  const values = [];
+
+                  for (let i = 0; i < args.length; ++i) {
+                    const res = args[i](scope, locals, assign);
+
+                    values.push(isFunction(res) ? res() : res);
+                  }
+                  value = rhs.value.apply(rhs.context, values);
+                }
+
+                return context ? { value } : value;
+              };
+        case ASTType._AssignmentExpression:
+          left = this.#recurse(ast.left, true, 1);
+          right = this.#recurse(ast.right);
+
+          return (scope, locals, assign) => {
+            const lhs = left(scope, locals, assign);
+
+            const rhs = right(scope, locals, assign);
+
+            // lhs.context[lhs.name] = rhs;
+            const ctx = isProxy(lhs.context)
+              ? lhs.context
+              : (lhs.context.$proxy ?? lhs.context);
+
+            ctx[lhs.name] = rhs;
+
+            return context ? { value: rhs } : rhs;
+          };
+        case ASTType._ArrayExpression:
+          args = [];
+          ast.elements.forEach((expr) => {
+            args.push(self.#recurse(expr));
+          });
+
+          return (scope, locals, assign) => {
+            const value = [];
+
+            for (let i = 0; i < args.length; ++i) {
+              value.push(args[i](scope, locals, assign));
+            }
+
+            return context ? { value } : value;
+          };
+        case ASTType._ObjectExpression:
+          args = [];
+          ast.properties.forEach((property) => {
+            if (property.computed) {
+              args.push({
+                key: self.#recurse(property.key),
+                computed: true,
+                value: self.#recurse(property.value),
+              });
+            } else {
+              args.push({
+                key:
+                  property.key.type === ASTType._Identifier
+                    ? property.key.name
+                    : `${property.key.value}`,
+                computed: false,
+                value: self.#recurse(property.value),
+              });
+            }
+          });
+
+          return (scope, locals, assign) => {
+            const value = {};
+
+            for (let i = 0; i < args.length; ++i) {
+              if (args[i].computed) {
+                value[args[i].key(scope, locals, assign)] = args[i].value(
+                  scope,
+                  locals,
+                  assign,
+                );
+              } else {
+                value[args[i].key] = args[i].value(scope, locals, assign);
+              }
+            }
+
+            return context ? { value } : value;
+          };
+        case ASTType._ThisExpression:
+          return (scope) =>
+            context ? { value: scope } : /** @type {ng.Scope} */ (scope).$proxy;
+        case ASTType._LocalsExpression:
+          return (scope, locals) => (context ? { value: locals } : locals);
+        case ASTType._NGValueParameter:
+          return (scope, locals, assign) =>
+            context ? { value: assign } : assign;
+      }
+
+      return undefined;
+    }
+
+    /**
+     * Unary plus operation.
+     * @param {function} argument - The argument function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The unary plus function.
+     */
+    "unary+"(argument, context) {
+      return (scope, locals, assign) => {
+        let arg = argument(scope, locals, assign);
+
+        if (isDefined(arg)) {
+          arg = +arg;
+        } else {
+          arg = 0;
+        }
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Unary minus operation.
+     * @param {function} argument - The argument function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The unary minus function.
+     */
+    "unary-"(argument, context) {
+      return (scope, locals, assign) => {
+        let arg = argument(scope, locals, assign);
+
+        if (isDefined(arg)) {
+          arg = -arg;
+        } else {
+          arg = -0;
+        }
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Unary negation operation.
+     * @param {function} argument - The argument function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The unary negation function.
+     */
+    "unary!"(argument, context) {
+      return (scope, locals, assign) => {
+        const arg = !argument(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary plus operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary plus function.
+     */
+    "binary+"(left, right, context) {
+      return (scope, locals, assign) => {
+        const lhs = left(scope, locals, assign);
+
+        const rhs = right(scope, locals, assign);
+
+        const arg = plusFn(lhs, rhs);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary minus operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary minus function.
+     */
+    "binary-"(left, right, context) {
+      return (scope, locals, assign) => {
+        const lhs = left(scope, locals, assign);
+
+        const rhs = right(scope, locals, assign);
+
+        const arg = (isDefined(lhs) ? lhs : 0) - (isDefined(rhs) ? rhs : 0);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary multiplication operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary multiplication function.
+     */
+    "binary*"(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) * right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    "binary/"(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) / right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary division operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary division function.
+     */
+    "binary%"(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) % right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary strict equality operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary strict equality function.
+     */
+    "binary==="(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) === right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary strict inequality operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary strict inequality function.
+     */
+    "binary!=="(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) !== right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary equality operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary equality function.
+     */
+    "binary=="(left, right, context) {
+      return (scope, locals, assign) => {
+        // eslint-disable-next-line eqeqeq
+        const arg = left(scope, locals, assign) == right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary inequality operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary inequality function.
+     */
+    "binary!="(left, right, context) {
+      return (scope, locals, assign) => {
+        // eslint-disable-next-line eqeqeq
+        const arg = left(scope, locals, assign) != right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary less-than operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary less-than function.
+     */
+    "binary<"(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) < right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary greater-than operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary greater-than function.
+     */
+    "binary>"(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) > right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary less-than-or-equal-to operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary less-than-or-equal-to function.
+     */
+    "binary<="(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) <= right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary greater-than-or-equal-to operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary greater-than-or-equal-to function.
+     */
+    "binary>="(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) >= right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary logical AND operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary logical AND function.
+     */
+    "binary&&"(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) && right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary logical OR operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The binary logical OR function.
+     */
+    "binary||"(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) || right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Ternary conditional operation.
+     * @param {function} test - The test function.
+     * @param {function} alternate - The alternate function.
+     * @param {function} consequent - The consequent function.
+     * @param {Object} [context] - The context.
+     * @returns {function} The ternary conditional function.
+     */
+    "ternary?:"(test, alternate, consequent, context) {
+      return (scope, locals, assign) => {
+        const arg = test(scope, locals, assign)
+          ? alternate(scope, locals, assign)
+          : consequent(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Returns the value of a literal.
+     * @param {*} value - The literal value.
+     * @param {Object} [context] - The context.
+     * @returns {import("./interface.ts").CompiledExpressionFunction} The function returning the literal value.
+     */
+    value(value, context) {
+      return () =>
+        context ? { context: undefined, name: undefined, value } : value;
+    }
+
+    /**
+     * Returns the value of an identifier.
+     * @param {string} name - The identifier name.
+     * @param {Object} [context] - The context.
+     * @param {boolean|1} [create] - Whether to create the identifier if it does not exist.
+     * @returns {import("./interface.ts").CompiledExpressionFunction} The function returning the identifier value.
+     */
+    identifier(name, context, create) {
+      return (scope, locals) => {
+        /** @type {ng.Scope | unknown} */
+        const base =
+          locals && name in locals
+            ? locals
+            : ((scope && /** @type {ng.Scope} */ (scope).$proxy) ?? scope);
+
+        if (create && create !== 1 && base && isNullOrUndefined(base[name])) {
+          base[name] = {};
+        }
+        let value = undefined;
+
+        if (base) {
+          value = deProxy(base)[name];
+        }
+
+        if (context) {
+          return { context: base, name, value };
+        }
+
+        return value;
+      };
+    }
+
+    /**
+     * Returns the value of a computed member expression.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @param {boolean|1} [create] - Whether to create the member if it does not exist.
+     * @returns {function} The function returning the computed member value.
+     */
+    #computedMember(left, right, context, create) {
+      return (scope, locals, assign) => {
+        const lhs = left(scope, locals, assign);
+
+        let rhs;
+
+        let value;
+
+        if (!isNullOrUndefined(lhs)) {
+          rhs = right(scope, locals, assign);
+          rhs = getStringValue(rhs);
+
+          if (create && create !== 1) {
+            if (lhs && !lhs[rhs]) {
+              lhs[rhs] = {};
+            }
+          }
+          value = lhs[rhs];
+        }
+
+        if (context) {
+          return { context: lhs, name: rhs, value };
+        }
+
+        return value;
+      };
+    }
+
+    /**
+     * Returns the value of a non-computed member expression.
+     * @param {function} left - The left operand function.
+     * @param {string} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @param {boolean|1} [create] - Whether to create the member if it does not exist.
+     * @returns {function} The function returning the non-computed member value.
+     */
+    nonComputedMember(left, right, context, create) {
+      return (scope, locals, assign) => {
+        const lhs = left(scope, locals, assign);
+
+        if (create && create !== 1) {
+          if (lhs && isNullOrUndefined(lhs[right])) {
+            lhs[right] = {};
+          }
+        }
+        const value = !isNullOrUndefined(lhs) ? lhs[right] : undefined;
+
+        if (context) {
+          return { context: lhs, name: right, value };
+        }
+
+        return value;
+      };
+    }
+  }
+
+  /**
+   * @typedef {import("./ast/ast").ASTNode & {
+   *  isPure: boolean|number,
+   *  constant: boolean,
+   *  toWatch: Array,
+   * }} DecoratedASTNode
+   */
+
+  /**
+   * Decorates AST with constant, toWatch, and isPure properties
+   * @param {import("./ast/ast").ASTNode} ast
+   * @param {ng.FilterService} $filter
+   * @param {boolean|1|2} [parentIsPure]
+   * @returns {DecoratedASTNode}
+   */
+  function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
+    let allConstants;
+
+    let argsToWatch;
+
+    let isFilter;
+
+    const decoratedNode = /** @type  {DecoratedASTNode} */ (ast);
+
+    let decoratedLeft,
+      decoratedRight,
+      decoratedTest,
+      decoratedAlternate,
+      decoratedConsequent,
+      decoratedObject,
+      decoratedProperty,
+      decoratedKey;
+
+    const astIsPure = (decoratedNode.isPure = !!isPure(ast, parentIsPure));
+
+    switch (ast.type) {
+      case ASTType._Program:
+        allConstants = true;
+        decoratedNode.body.forEach((expr) => {
+          const decorated = findConstantAndWatchExpressions(
+            expr.expression,
+            $filter,
+            astIsPure,
+          );
+
+          allConstants = allConstants && decorated.constant;
+        });
+        decoratedNode.constant = allConstants;
+
+        return decoratedNode;
+      case ASTType._Literal:
+        decoratedNode.constant = true;
+        decoratedNode.toWatch = [];
+
+        return decoratedNode;
+      case ASTType._UnaryExpression:
+        // eslint-disable-next-line no-var
+        var decorated = findConstantAndWatchExpressions(
+          decoratedNode.argument,
+          $filter,
+          astIsPure,
+        );
+
+        decoratedNode.constant = decorated.constant;
+        decoratedNode.toWatch = decorated.toWatch;
+
+        return decoratedNode;
+      case ASTType._BinaryExpression:
+        decoratedLeft = findConstantAndWatchExpressions(
+          decoratedNode.left,
+          $filter,
+          astIsPure,
+        );
+        decoratedRight = findConstantAndWatchExpressions(
+          decoratedNode.right,
+          $filter,
+          astIsPure,
+        );
+        decoratedNode.constant =
+          decoratedLeft.constant && decoratedRight.constant;
+        decoratedNode.toWatch = decoratedLeft.toWatch.concat(
+          decoratedRight.toWatch,
+        );
+
+        return decoratedNode;
+      case ASTType._LogicalExpression:
+        decoratedLeft = findConstantAndWatchExpressions(
+          decoratedNode.left,
+          $filter,
+          astIsPure,
+        );
+        decoratedRight = findConstantAndWatchExpressions(
+          decoratedNode.right,
+          $filter,
+          astIsPure,
+        );
+        decoratedNode.constant =
+          decoratedLeft.constant && decoratedRight.constant;
+        decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
+
+        return decoratedNode;
+      case ASTType._ConditionalExpression:
+        decoratedTest = findConstantAndWatchExpressions(
+          ast.test,
+          $filter,
+          astIsPure,
+        );
+        decoratedAlternate = findConstantAndWatchExpressions(
+          ast.alternate,
+          $filter,
+          astIsPure,
+        );
+        decoratedConsequent = findConstantAndWatchExpressions(
+          ast.consequent,
+          $filter,
+          astIsPure,
+        );
+        decoratedNode.constant =
+          decoratedTest.constant &&
+          decoratedAlternate.constant &&
+          decoratedConsequent.constant;
+        decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
+
+        return decoratedNode;
+      case ASTType._Identifier:
+        decoratedNode.constant = false;
+        decoratedNode.toWatch = [ast];
+
+        return decoratedNode;
+      case ASTType._MemberExpression:
+        decoratedObject = findConstantAndWatchExpressions(
+          ast.object,
+          $filter,
+          astIsPure,
+        );
+
+        if (ast.computed) {
+          decoratedProperty = findConstantAndWatchExpressions(
+            ast.property,
+            $filter,
+            astIsPure,
+          );
+        }
+        decoratedNode.constant =
+          decoratedObject.constant &&
+          (!decoratedNode.computed || decoratedProperty.constant);
+        decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
+
+        return decoratedNode;
+      case ASTType._CallExpression:
+        isFilter = ast.filter;
+        allConstants = isFilter;
+        argsToWatch = [];
+        ast.arguments.forEach((expr) => {
+          decorated = findConstantAndWatchExpressions(expr, $filter, astIsPure);
+          allConstants = allConstants && decorated.constant;
+          argsToWatch.push.apply(argsToWatch, decorated.toWatch);
+        });
+        decoratedNode.constant = allConstants;
+        decoratedNode.toWatch = isFilter ? argsToWatch : [decoratedNode];
+
+        return decoratedNode;
+      case ASTType._AssignmentExpression:
+        decoratedLeft = findConstantAndWatchExpressions(
+          ast.left,
+          $filter,
+          astIsPure,
+        );
+        decoratedRight = findConstantAndWatchExpressions(
+          ast.right,
+          $filter,
+          astIsPure,
+        );
+        decoratedNode.constant =
+          decoratedLeft.constant && decoratedRight.constant;
+        decoratedNode.toWatch = [decoratedNode];
+
+        return decoratedNode;
+      case ASTType._ArrayExpression:
+        allConstants = true;
+        argsToWatch = [];
+        ast.elements.forEach((expr) => {
+          decorated = findConstantAndWatchExpressions(expr, $filter, astIsPure);
+          allConstants = allConstants && decorated.constant;
+          argsToWatch.push.apply(argsToWatch, decorated.toWatch);
+        });
+        decoratedNode.constant = allConstants;
+        decoratedNode.toWatch = argsToWatch;
+
+        return decoratedNode;
+      case ASTType._ObjectExpression:
+        allConstants = true;
+        argsToWatch = [];
+        ast.properties.forEach((property) => {
+          decorated = findConstantAndWatchExpressions(
+            property.value,
+            $filter,
+            astIsPure,
+          );
+          allConstants = allConstants && decorated.constant;
+          argsToWatch.push.apply(argsToWatch, decorated.toWatch);
+
+          if (property.computed) {
+            // `{[key]: value}` implicitly does `key.toString()` which may be non-pure
+            decoratedKey = findConstantAndWatchExpressions(
+              property.key,
+              $filter,
+              false,
+            );
+            allConstants = allConstants && decoratedKey.constant;
+            argsToWatch.push.apply(argsToWatch, decoratedKey.toWatch);
+          }
+        });
+        decoratedNode.constant = allConstants;
+        decoratedNode.toWatch = argsToWatch;
+
+        return decoratedNode;
+      case ASTType._ThisExpression:
+        decoratedNode.constant = false;
+        decoratedNode.toWatch = [];
+
+        return decoratedNode;
+      case ASTType._LocalsExpression:
+        decoratedNode.constant = false;
+        decoratedNode.toWatch = [];
+
+        return decoratedNode;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Converts a single expression AST node into an assignment expression if the expression is assignable.
+   *
+   * @param {import("./ast/ast").ASTNode} ast
+   * @returns {import("./ast/ast").ASTNode}
+   */
+  function assignableAST(ast) {
+    if (ast.body.length === 1 && isAssignable(ast.body[0].expression)) {
+      return {
+        type: ASTType._AssignmentExpression,
+        left: ast.body[0].expression,
+        right: { type: ASTType._NGValueParameter },
+        operator: "=",
+      };
+    }
+
+    return undefined;
+  }
+
+  function plusFn(left, right) {
+    if (typeof left === "undefined" || isObject(left)) return right;
+
+    if (typeof right === "undefined" || isObject(right)) return left;
+
+    return left + right;
+  }
+
+  /**
+   *
+   * @param {import("./ast/ast").ASTNode[]} body
+   * @returns {any}
+   */
+  function getInputs(body) {
+    if (body.length !== 1) return undefined;
+    const lastExpression = /** @type {DecoratedASTNode} */ (body[0].expression);
+
+    const candidate = lastExpression.toWatch;
+
+    if (candidate.length !== 1) return candidate;
+
+    return candidate[0] !== lastExpression ? candidate : undefined;
+  }
+
+  /**
+   * Detect nodes which could depend on non-shallow state of objects
+   * @param {import("./ast/ast").ASTNode} node
+   * @param {boolean|PURITY_ABSOLUTE|PURITY_RELATIVE} parentIsPure
+   * @returns {boolean|PURITY_ABSOLUTE|PURITY_RELATIVE}
+   */
+  function isPure(node, parentIsPure) {
+    switch (node.type) {
+      // Computed members might invoke a stateful toString()
+      case ASTType._MemberExpression:
+        if (node.computed) {
+          return false;
+        }
+        break;
+
+      // Unary always convert to primitive
+      case ASTType._UnaryExpression:
+        return PURITY_ABSOLUTE;
+
+      // The binary + operator can invoke a stateful toString().
+      case ASTType._BinaryExpression:
+        return node.operator !== "+" ? PURITY_ABSOLUTE : false;
+
+      // Functions / filters probably read state from within objects
+      case ASTType._CallExpression:
+        return false;
+    }
+
+    return undefined === parentIsPure ? PURITY_RELATIVE : parentIsPure;
+  }
+
+  /**
+   * Converts parameter to  strings property name for use  as keys in an object.
+   * Any non-string object, including a number, is typecasted into a string via the toString method.
+   * {@link https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Property_accessors#Property_names}
+   *
+   * @param {!any} name
+   * @returns {string}
+   */
+  function getStringValue(name) {
+    return `${name}`;
+  }
+
+  /**
+   * @param {import("./ast/ast").ASTNode} ast
+   * @returns {boolean}
+   */
+  function isAssignable(ast) {
+    return (
+      ast.type === ASTType._Identifier || ast.type === ASTType._MemberExpression
+    );
+  }
+
+  /**
+   * @typedef {import("./ast-node.ts").ASTNode} ASTNode
+   * @typedef {import("../lexer/token.js").Token} Token
+   */
+
+  const $parseMinErr = minErr("$parse");
+
+  /** @type {Record<string, any>} */
+  const literals = {
+    true: true,
+    false: false,
+    null: null,
+    undefined,
+  };
+
+  /**
+   * @class
+   */
+  class AST {
+    /**
+     * @param {import('../lexer/lexer.js').Lexer} lexer - The lexer instance for tokenizing input
+     */
+    constructor(lexer) {
+      /** @type {import('../lexer/lexer.js').Lexer} */
+      this._lexer = lexer;
+      /** @type {Record<string, any>} */
+      this._selfReferential = {
+        this: { type: ASTType._ThisExpression },
+        $locals: { type: ASTType._LocalsExpression },
+      };
+      this._index = 0;
+    }
+
+    /**
+     * Parses the input text and generates an AST.
+     * @param {string} text - The input text to parse.
+     * @returns {ASTNode} The root node of the AST.
+     */
+    _ast(text) {
+      this._text = text;
+      this._tokens = this._lexer._lex(text);
+
+      const value = this._program();
+
+      if (this._tokens.length > this._index) {
+        this._throwError("is an unexpected token", this._tokens[this._index]);
+      }
+
+      return value;
+    }
+
+    /**
+     * Parses a program.
+     * @returns {ASTNode} The program node.
+     */
+    _program() {
+      const body = [];
+
+      let hasMore = true;
+
+      while (hasMore) {
+        if (
+          this._tokens &&
+          this._tokens.length > this._index &&
+          !this._peek("}", ")", ";", "]")
+        )
+          body.push(this._expressionStatement());
+
+        if (!this._expect(";")) {
+          hasMore = false;
+        }
+      }
+
+      return { type: ASTType._Program, body };
+    }
+
+    /**
+     * Parses an expression statement.
+     * @returns {ASTNode} The expression statement node.
+     */
+    _expressionStatement() {
+      return {
+        type: ASTType._ExpressionStatement,
+        expression: this._filterChain(),
+      };
+    }
+
+    /**
+     * Parses a filter chain.
+     * @returns {ASTNode} The filter chain node.
+     */
+    _filterChain() {
+      let left = this._assignment();
+
+      while (this._expect("|")) {
+        left = this._filter(left);
+      }
+
+      return left;
+    }
+
+    /**
+     * Parses an assignment expression.
+     * @returns {ASTNode} The assignment expression node.
+     */
+    _assignment() {
+      let result = this._ternary();
+
+      if (this._expect("=")) {
+        if (!isAssignable(result)) {
+          throw $parseMinErr("lval", "Trying to assign a value to a non l-value");
+        }
+
+        result = {
+          type: ASTType._AssignmentExpression,
+          left: result,
+          right: this._assignment(),
+          operator: "=",
+        };
+      }
+
+      return result;
+    }
+
+    /**
+     * Parses a ternary expression.
+     * @returns {ASTNode} The ternary expression node.
+     */
+    _ternary() {
+      const test = this._logicalOR();
+
+      if (this._expect("?")) {
+        const alternate = this._assignment();
+
+        if (this._consume(":")) {
+          const consequent = this._assignment();
+
+          return {
+            type: ASTType._ConditionalExpression,
+            test,
+            alternate,
+            consequent,
+          };
+        }
+      }
+
+      return test;
+    }
+
+    /**
+     * Parses a logical OR expression.
+     * @returns {ASTNode} The logical OR expression node.
+     */
+    _logicalOR() {
+      let left = this._logicalAND();
+
+      while (this._expect("||")) {
+        left = {
+          type: ASTType._LogicalExpression,
+          operator: "||",
+          left,
+          right: this._logicalAND(),
+        };
+      }
+
+      return left;
+    }
+
+    /**
+     * Parses a logical AND expression.
+     * @returns {ASTNode} The logical AND expression node.
+     */
+    _logicalAND() {
+      let left = this._equality();
+
+      while (this._expect("&&")) {
+        left = {
+          type: ASTType._LogicalExpression,
+          operator: "&&",
+          left,
+          right: this._equality(),
+        };
+      }
+
+      return left;
+    }
+
+    /**
+     * Parses an equality expression.
+     * @returns {ASTNode} The equality expression node.
+     */
+    _equality() {
+      let left = this._relational();
+
+      let token;
+
+      while ((token = this._expect("==", "!=", "===", "!=="))) {
+        left = {
+          type: ASTType._BinaryExpression,
+          operator: /** @type {Token} */ (token).text,
+          left,
+          right: this._relational(),
+        };
+      }
+
+      return left;
+    }
+
+    /**
+     * Parses a relational expression.
+     * @returns {ASTNode} The relational expression node.
+     */
+    _relational() {
+      let left = this._additive();
+
+      let token;
+
+      while ((token = this._expect("<", ">", "<=", ">="))) {
+        left = {
+          type: ASTType._BinaryExpression,
+          operator: /** @type {Token} */ (token).text,
+          left,
+          right: this._additive(),
+        };
+      }
+
+      return left;
+    }
+
+    /**
+     * Parses an additive expression.
+     * @returns {ASTNode} The additive expression node.
+     */
+    _additive() {
+      let left = this._multiplicative();
+
+      let token;
+
+      while ((token = this._expect("+", "-"))) {
+        left = {
+          type: ASTType._BinaryExpression,
+          operator: /** @type {Token} */ (token).text,
+          left,
+          right: this._multiplicative(),
+        };
+      }
+
+      return left;
+    }
+
+    /**
+     * Parses a multiplicative expression.
+     * @returns {ASTNode} The multiplicative expression node.
+     */
+    _multiplicative() {
+      let left = this._unary();
+
+      let token;
+
+      while ((token = this._expect("*", "/", "%"))) {
+        left = {
+          type: ASTType._BinaryExpression,
+          operator: /** @type {import("../lexer/lexer.js").Token} */ (token).text,
+          left,
+          right: this._unary(),
+        };
+      }
+
+      return left;
+    }
+
+    /**
+     * Parses a unary expression.
+     * @returns {ASTNode} The unary expression node.
+     */
+    _unary() {
+      let token;
+
+      if ((token = this._expect("+", "-", "!"))) {
+        return {
+          type: ASTType._UnaryExpression,
+          operator: /** @type {import("../lexer/lexer.js").Token} */ (token).text,
+          prefix: true,
+          argument: this._unary(),
+        };
+      }
+
+      return this._primary();
+    }
+
+    /**
+     * Parses a primary expression.
+     * @returns {ASTNode} The primary expression node.
+     */
+    _primary() {
+      let primary;
+
+      if (this._expect("(")) {
+        primary = this._filterChain();
+        this._consume(")");
+      } else if (this._expect("[")) {
+        primary = this._arrayDeclaration();
+      } else if (this._expect("{")) {
+        primary = this._object();
+      } else if (
+        hasOwn(
+          this._selfReferential,
+          /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).text,
+        )
+      ) {
+        primary = structuredClone(this._selfReferential[this._consume().text]);
+      } else if (
+        hasOwn(
+          literals,
+          /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).text,
+        )
+      ) {
+        primary = {
+          type: ASTType._Literal,
+          value: literals[this._consume().text],
+        };
+      } else if (
+        /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).identifier
+      ) {
+        primary = this._identifier();
+      } else if (
+        /** @type {import("../lexer/lexer.js").Token} */ (this._peek()).constant
+      ) {
+        primary = this._constant();
+      } else {
+        this._throwError(
+          "not a primary expression",
+          /** @type {import("../lexer/lexer.js").Token} */ (this._peek()),
+        );
+      }
+
+      let next;
+
+      while ((next = this._expect("(", "[", "."))) {
+        if (
+          /** @type {import("../lexer/lexer.js").Token} */ (next).text === "("
+        ) {
+          primary = {
+            type: ASTType._CallExpression,
+            callee: primary,
+            arguments: this._parseArguments(),
+          };
+          this._consume(")");
+        } else if (
+          /** @type {import("../lexer/lexer.js").Token} */ (next).text === "["
+        ) {
+          primary = {
+            type: ASTType._MemberExpression,
+            object: primary,
+            property: this._assignment(),
+            computed: true,
+          };
+          this._consume("]");
+        } else if (
+          /** @type {import("../lexer/lexer.js").Token} */ (next).text === "."
+        ) {
+          primary = {
+            type: ASTType._MemberExpression,
+            object: primary,
+            property: this._identifier(),
+            computed: false,
+          };
+        } else {
+          throw new Error("IMPOSSIBLE");
+        }
+      }
+
+      return primary;
+    }
+
+    /**
+     * Parses a filter.
+     * @param {ASTNode} baseExpression - The base expression to apply the filter to.
+     * @returns {ASTNode} The filter node.
+     */
+    _filter(baseExpression) {
+      /** @type {ASTNode[]} */
+      const args = [baseExpression];
+
+      const result = {
+        type: ASTType._CallExpression,
+        callee: this._identifier(),
+        arguments: args,
+        filter: true,
+      };
+
+      while (this._expect(":")) {
+        args.push(this._assignment());
+      }
+
+      return result;
+    }
+
+    /**
+     * Parses function arguments.
+     * @returns {ASTNode[]} The arguments array.
+     */
+    _parseArguments() {
+      /** @type {ASTNode[]} */
+      const args = [];
+
+      if (this._peekToken().text !== ")") {
+        do {
+          args.push(this._filterChain());
+        } while (this._expect(","));
+      }
+
+      return args;
+    }
+
+    /**
+     * Parses an identifier.
+     * @returns {ASTNode} The identifier node.
+     */
+    _identifier() {
+      const token = this._consume();
+
+      if (!token.identifier) {
+        this._throwError("is not a valid identifier", token);
+      }
+
+      return { type: ASTType._Identifier, name: token.text };
+    }
+
+    /**
+     * Parses a constant.
+     * @returns {ASTNode} The constant node.
+     */
+    _constant() {
+      // TODO check that it is a constant
+      return { type: ASTType._Literal, value: this._consume().value };
+    }
+
+    /**
+     * Parses an array declaration.
+     * @returns {ASTNode} The array declaration node.
+     */
+    _arrayDeclaration() {
+      /** @type {ASTNode[]} */
+      const elements = [];
+
+      if (this._peekToken().text !== "]") {
+        do {
+          if (this._peek("]")) {
+            // Support trailing commas per ES5.1.
+            break;
+          }
+          elements.push(this._assignment());
+        } while (this._expect(","));
+      }
+      this._consume("]");
+
+      return { type: ASTType._ArrayExpression, elements };
+    }
+
+    /**
+     * Parses an object.
+     * @returns {ASTNode} The object node.
+     */
+    _object() {
+      /** @type {ASTNode[]} */
+      const properties = [];
+
+      /** @type {ASTNode} */
+      let property;
+
+      if (this._peekToken().text !== "}") {
+        do {
+          if (this._peek("}")) {
+            // Support trailing commas per ES5.1.
+            break;
+          }
+          property = { type: ASTType._Property, kind: "init" };
+
+          if (/** @type {Token} */ (this._peek()).constant) {
+            property.key = this._constant();
+            property.computed = false;
+            this._consume(":");
+            property.value = this._assignment();
+          } else if (
+            /** @type {import("../lexer/lexer.js").Token} */ (this._peek())
+              .identifier
+          ) {
+            property.key = this._identifier();
+            property.computed = false;
+
+            if (this._peek(":")) {
+              this._consume(":");
+              property.value = this._assignment();
+            } else {
+              property.value = property.key;
+            }
+          } else if (this._peek("[")) {
+            this._consume("[");
+            property.key = this._assignment();
+            this._consume("]");
+            property.computed = true;
+            this._consume(":");
+            property.value = this._assignment();
+          } else {
+            this._throwError(
+              "invalid key",
+              /** @type {import("../lexer/lexer.js").Token} */ (this._peek()),
+            );
+          }
+          properties.push(property);
+        } while (this._expect(","));
+      }
+      this._consume("}");
+
+      return { type: ASTType._ObjectExpression, properties };
+    }
+
+    /**
+     * Throws a syntax error.
+     * @param {string} msg - The error message.
+     * @param {import("../lexer/lexer.js").Token} token - The token that caused the error.
+     */
+    _throwError(msg, token) {
+      throw $parseMinErr(
+        "syntax",
+        "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].",
+        token.text,
+        msg,
+        token.index + 1,
+        this._text,
+        this._text?.substring(token.index),
+      );
+    }
+
+    /**
+     * Consumes a token if it matches the expected type.
+     * @param {string} [e1] - The expected token type.
+     * @returns {import("../lexer/lexer.js").Token} The consumed token.
+     */
+    _consume(e1) {
+      if (this._tokens && this._tokens.length === this._index) {
+        throw $parseMinErr(
+          "ueoe",
+          "Unexpected end of expression: {0}",
+          this._text,
+        );
+      }
+
+      const token = isDefined(e1) ? this._expect(e1) : this._expect();
+
+      if (!token) {
+        this._throwError(
+          `is unexpected, expecting [${e1}]`,
+          /** @type {import("../lexer/lexer.js").Token} */ (this._peek()),
+        );
+
+        return /** @type {never} */ (undefined);
+      } else {
+        return /** @type  {import("../lexer/lexer.js").Token} */ (token);
+      }
+    }
+
+    /**
+     * Returns the next token without consuming it.
+     * @returns {import("../lexer/lexer.js").Token} The next token.
+     */
+    _peekToken() {
+      if (!this._tokens || this._tokens.length === this._index) {
+        throw $parseMinErr(
+          "ueoe",
+          "Unexpected end of expression: {0}",
+          this._text,
+        );
+      } else {
+        return this._tokens[this._index];
+      }
+    }
+
+    /**
+     * Checks if the next token matches any of the expected types.
+     * @param {...string} expected - The expected token types.
+     * @returns {import('../lexer/lexer.js').Token|boolean} The next token if it matches, otherwise false.
+     */
+    _peek(...expected) {
+      const token = this._tokens && this._tokens[this._index];
+
+      if (!token) return false;
+
+      const j = expected.length;
+
+      if (!j) return token;
+
+      const txt = token.text;
+
+      if (expected.length === 1) return expected[0] === txt ? token : false;
+
+      for (let i = 0; i < j; i++) {
+        if (expected[i] === txt || !expected[i]) return token;
+      }
+
+      return false;
+    }
+
+    /**
+     * Consumes the next token if it matches any of the expected types.
+     * @param {...string} expected - The expected token types.
+     * @returns {import("../lexer/lexer.js").Token|boolean} The consumed token if it matches, otherwise false.
+     */
+    _expect(...expected) {
+      const token = this._peek(...expected);
+
+      if (token) {
+        this._index++;
+
+        return token;
+      }
+
+      return false;
+    }
+  }
+
+  /**
+   * @constructor
+   */
+  class Parser {
+    /**
+     *
+     * @param {import('../lexer/lexer.js').Lexer} lexer
+     * @param {ng.FilterService} $filter
+     */
+    constructor(lexer, $filter) {
+      /** @type {AST} */
+      this._ast = new AST(lexer);
+
+      /** @type {ASTInterpreter} */
+      this._astCompiler = new ASTInterpreter($filter);
+    }
+
+    /**
+     * @param {string} exp - Expression to be parsed
+     * @returns {import("../interface.ts").CompiledExpression}
+     */
+    _parse(exp) {
+      exp = exp.trim();
+      const ast = this._ast._ast(exp);
+
+      const fn = this._astCompiler.compile(ast);
+
+      fn._literal = isLiteral(ast);
+      fn.constant = !!ast.constant;
+
+      return fn;
+    }
+  }
+
+  /**
+   * @param {import("../ast/ast-node.ts").ASTNode} ast
+   * @returns {boolean}
+   */
+  function isLiteral(ast) {
+    const { body } = ast;
+
+    // non-single-expression programs are literals
+    if (!body || body.length !== 1) {
+      return true;
+    }
+
+    if (body && body.length === 1) {
+      switch (body[0].expression?.type) {
+        case ASTType._Literal:
+        case ASTType._ArrayExpression:
+        case ASTType._ObjectExpression:
+          return true;
+        default:
+          return false;
+      }
+    } else {
+      return true;
+    }
+  }
+
+  class ParseProvider {
+    constructor() {
+      const cache = Object.create(null);
+
+      this.$get = [
+        $injectTokens._filter,
+        /**
+         *
+         * @param {ng.FilterService} $filter
+         * @returns {ng.ParseService}
+         */
+        function ($filter) {
+          return $parse;
+
+          /** @type {ng.ParseService} */
+          function $parse(exp, interceptorFn) {
+            validateRequired(exp, "exp"); // Note: changing this to a stricter validateInstance breaks multiple tests
+            /** @type {import("./interface.ts").CompiledExpression} */
+            let parsedExpression;
+
+            exp = exp.trim();
+            const cacheKey = exp;
+
+            parsedExpression = cache[cacheKey];
+
+            if (!parsedExpression) {
+              const lexer = new Lexer();
+
+              const parser = new Parser(lexer, $filter);
+
+              parsedExpression = parser._parse(exp);
+            }
+
+            return addInterceptor(parsedExpression, interceptorFn);
+          }
+
+          /**
+           * @param {import("./interface.ts").CompiledExpression} parsedExpression
+           * @param {(value: any) => any} [interceptorFn]
+           * @returns {import('./interface.ts').CompiledExpression|*}
+           */
+          function addInterceptor(parsedExpression, interceptorFn) {
+            if (!interceptorFn) {
+              return parsedExpression;
+            }
+
+            /**
+             *
+             * @param {ng.Scope} scope
+             * @param {Object} [locals]
+             * @param {*} [assign]
+             * @returns
+             */
+            const fn = function interceptedExpression(scope, locals, assign) {
+              // Do not invoke for getters
+              if (scope?.getter) {
+                return undefined;
+              }
+              const value = parsedExpression(scope, locals, assign);
+
+              const res = isFunction(value) ? value() : value;
+
+              return interceptorFn(deProxy(res));
+            };
+
+            fn._interceptor = interceptorFn;
+
+            fn._literal = parsedExpression._literal;
+
+            fn.constant = parsedExpression.constant;
+
+            fn._decoratedNode = parsedExpression._decoratedNode;
+
+            return fn;
+          }
+        },
+      ];
+    }
+  }
+
   /**
    * @type {number}
    */
@@ -22049,7 +21793,7 @@
   /**@type {ng.ExceptionHandlerService} */
   let $exceptionHandler;
 
-  /** @ignore @type {Function[]}*/
+  /** @ignore @type {Function[]} */
   const $postUpdateQueue = [];
 
   class RootScopeProvider {
@@ -22078,7 +21822,7 @@
    * Creates a deep proxy for the target object, intercepting property changes
    * and recursively applying proxies to nested objects.
    *
-   * @param {Object} target - The object to be wrapped in a proxy.
+   * @param {Object & {$nonscope?: import("./interface.ts").NonScope} & Record<string, any>} target - The object to be wrapped in a proxy.
    * @param {Scope} [context] - The context for the handler, used to track listeners.
    * @returns {Scope|Object} - A proxy that intercepts operations on the target object,
    *                                     or the original value if the target is not an object.
@@ -22108,42 +21852,88 @@
 
   const global = globalThis;
 
-  const proto = Object.prototype;
-
-  const { toString: toString$1 } = proto;
-
   const wStr = "[object Window]";
 
   /**
-   * @ignore
    * Checks if a target should be excluded from scope observability
    * @param {any} target
    * @returns {boolean}
    */
   function isNonScope(target) {
+    // 1. Null or primitive types are non-scope
     if (
-      target.$nonscope === true ||
-      (target.constructor && target.constructor.$nonscope) === true ||
-      target === global.window ||
-      target === global.document ||
-      target === global.self ||
-      target === global.frames ||
-      target instanceof Window ||
-      target instanceof Document ||
-      target instanceof Element ||
-      target instanceof Node ||
-      target instanceof EventTarget ||
-      target instanceof Promise ||
-      target instanceof HTMLCollection ||
-      target instanceof NodeList ||
-      target instanceof Event ||
-      target instanceof Date
+      target === null ||
+      typeof target === "undefined" ||
+      typeof target === "number" ||
+      typeof target === "string" ||
+      typeof target === "boolean" ||
+      typeof target === "symbol" ||
+      typeof target === "bigint"
     ) {
       return true;
     }
 
+    // 2. Explicit non-scope flags
+    if (target.$nonscope === true || target?.constructor?.$nonscope === true) {
+      return true;
+    }
+
+    // 3. Global objects
+    if (
+      target === global.window ||
+      target === global.document ||
+      target === global.self ||
+      target === global.frames
+    ) {
+      return true;
+    }
+
+    // 4. Safe instanceof checks
+    const nonScopeConstructors = [
+      Window,
+      Document,
+      Element,
+      Node,
+      EventTarget,
+      Promise,
+      HTMLCollection,
+      NodeList,
+      Event,
+      Date,
+      RegExp,
+      Map,
+      Set,
+      WeakMap,
+      WeakSet,
+      ArrayBuffer,
+      DataView,
+      Uint8Array,
+      Uint16Array,
+      Uint32Array,
+      Int8Array,
+      Int16Array,
+      Int32Array,
+      Float32Array,
+      Float64Array,
+      Function,
+      Error,
+      Blob,
+      File,
+      FormData,
+      URL,
+      URLSearchParams,
+    ];
+
+    for (const Ctor of nonScopeConstructors) {
+      try {
+        if (target instanceof /** @type {any} */ (Ctor)) return true;
+      } catch {
+        /* empty */
+      }
+    }
+
     try {
-      return toString$1.call(target) === wStr;
+      return Object.prototype.toString.call(target) === wStr;
     } catch {
       return false;
     }
@@ -22226,6 +22016,7 @@
       this.$scopename = undefined;
 
       /** @private */
+      /** @type {Record<any, any>} */
       this.propertyMap = {
         $apply: this.$apply.bind(this),
         $broadcast: this.$broadcast.bind(this),
@@ -22599,7 +22390,7 @@
       if (hasOwn(this.propertyMap, property)) {
         this.$target = target;
 
-        return this.propertyMap[property];
+        return this.propertyMap[/** @type {string} */ (property)];
       } else {
         // we are a simple getter
         return target[property];
@@ -22743,11 +22534,11 @@
       };
 
       // simplest case
-      let key = get.decoratedNode.body[0].expression.name;
+      let key = get._decoratedNode.body[0].expression.name;
 
       const keySet = [];
 
-      const { type } = get.decoratedNode.body[0].expression;
+      const { type } = get._decoratedNode.body[0].expression;
 
       switch (type) {
         // 3
@@ -22762,19 +22553,19 @@
 
             return undefined;
           }
-          key = get.decoratedNode.body[0].expression.left.name;
+          key = get._decoratedNode.body[0].expression.left.name;
           break;
         // 4
         case ASTType._ConditionalExpression: {
-          key = get.decoratedNode.body[0].expression.toWatch[0]?.test?.name;
+          key = get._decoratedNode.body[0].expression.toWatch[0]?.test?.name;
           listener.property.push(key);
           break;
         }
         // 5
         case ASTType._LogicalExpression: {
           const keyList = [
-            get.decoratedNode.body[0].expression.left.toWatch[0]?.name,
-            get.decoratedNode.body[0].expression.right.toWatch[0]?.name,
+            get._decoratedNode.body[0].expression.left.toWatch[0]?.name,
+            get._decoratedNode.body[0].expression.right.toWatch[0]?.name,
           ];
 
           for (let i = 0, l = keyList.length; i < l; i++) {
@@ -22793,8 +22584,8 @@
         }
         // 6
         case ASTType._BinaryExpression: {
-          if (get.decoratedNode.body[0].expression.isPure) {
-            const expr = get.decoratedNode.body[0].expression.toWatch[0];
+          if (get._decoratedNode.body[0].expression.isPure) {
+            const expr = get._decoratedNode.body[0].expression.toWatch[0];
 
             key = expr.property ? expr.property.name : expr.name;
 
@@ -22804,7 +22595,7 @@
             listener.property.push(key);
             break;
           } else {
-            const { toWatch } = get.decoratedNode.body[0].expression;
+            const { toWatch } = get._decoratedNode.body[0].expression;
 
             for (let i = 0, l = toWatch.length; i < l; i++) {
               const x = toWatch[i];
@@ -22831,7 +22622,7 @@
         }
         // 7
         case ASTType._UnaryExpression: {
-          const expr = get.decoratedNode.body[0].expression.toWatch[0];
+          const expr = get._decoratedNode.body[0].expression.toWatch[0];
 
           key = expr.property ? expr.property.name : expr.name;
 
@@ -22843,7 +22634,7 @@
         }
         // 8 function
         case ASTType._CallExpression: {
-          const { toWatch } = get.decoratedNode.body[0].expression;
+          const { toWatch } = get._decoratedNode.body[0].expression;
 
           for (let i = 0, l = toWatch.length; i < l; i++) {
             const x = toWatch[i];
@@ -22865,11 +22656,11 @@
 
         // 9
         case ASTType._MemberExpression: {
-          key = get.decoratedNode.body[0].expression.property.name;
+          key = get._decoratedNode.body[0].expression.property.name;
 
           // array watcher
           if (!key) {
-            key = get.decoratedNode.body[0].expression.object.name;
+            key = get._decoratedNode.body[0].expression.object.name;
           }
 
           listener.property.push(key);
@@ -22896,13 +22687,13 @@
 
         // 10
         case ASTType._Identifier: {
-          listener.property.push(get.decoratedNode.body[0].expression.name);
+          listener.property.push(get._decoratedNode.body[0].expression.name);
           break;
         }
 
         // 12
         case ASTType._ArrayExpression: {
-          const { elements } = get.decoratedNode.body[0].expression;
+          const { elements } = get._decoratedNode.body[0].expression;
 
           for (let i = 0, l = elements.length; i < l; i++) {
             const x = elements[i];
@@ -22932,7 +22723,7 @@
 
         // 14
         case ASTType._ObjectExpression: {
-          const { properties } = get.decoratedNode.body[0].expression;
+          const { properties } = get._decoratedNode.body[0].expression;
 
           for (let i = 0, l = properties.length; i < l; i++) {
             const prop = properties[i];
@@ -22944,7 +22735,7 @@
             } else if (prop.value?.name) {
               currentKey = prop.value.name;
             } else {
-              const target = get.decoratedNode.body[0].expression.toWatch[0];
+              const target = get._decoratedNode.body[0].expression.toWatch[0];
 
               currentKey = target.property ? target.property.name : target.name;
             }
@@ -23500,7 +23291,6 @@
     /** @type {ng.RequestShortcutConfig|undefined} */
     httpOptions;
 
-    /** @returns {Array} DI tokens for Angular.ts injection */
     $get = [
       $injectTokens._templateCache,
       $injectTokens._http,
@@ -23543,7 +23333,9 @@
 
               return response.data;
             },
-            (resp) => Promise.reject(resp),
+            (resp) => {
+              return Promise.reject(resp);
+            },
           );
         };
 
@@ -23556,7 +23348,7 @@
 
   /**
    * Private service to sanitize uris for links and images. Used by $compile.
-   * @implements {ServiceProvider}
+   * @extends {ServiceProvider}
    */
   class SanitizeUriProvider {
     constructor() {
@@ -23861,7 +23653,7 @@
   function isAttrTruthy(scope, attr) {
     return (
       (isString(attr) && attr.length === 0) || // empty attribute
-      truthy(scope.$eval(attr))
+      truthy(attr && scope.$eval(attr))
     );
   }
 
@@ -24528,10 +24320,17 @@
        * @private
        */
       if (jsAnimation) {
-        const rafTick = (fn) => requestAnimationFrame(fn);
+        /** @type {(fn: VoidFunction) => void} */
+        const rafTick = (fn) => {
+          requestAnimationFrame(fn);
+        };
 
-        const timeoutTick = (fn) => setTimeout(fn, 0);
+        /** @type {(fn: VoidFunction) => void} */
+        const timeoutTick = (fn) => {
+          setTimeout(fn, 0);
+        };
 
+        /** @type {(fn: VoidFunction) => void} */
         this._tick = (fn) => {
           // When tab is hidden, requestAnimationFrame throttles heavily.
           if (document.hidden) timeoutTick(fn);
@@ -24996,6 +24795,7 @@
             return closeAndReturnNoopAnimator();
           }
 
+          /** @type {Array<Array<string>>} */
           const temporaryStyles = [];
 
           const styles = packageStyles(options);
@@ -25473,7 +25273,11 @@
                   if (animationPaused) {
                     temporaryStyles.push(value);
                   } else {
-                    removeFromArray(temporaryStyles, value);
+                    const index = temporaryStyles.indexOf(value);
+
+                    if (index !== -1) {
+                      temporaryStyles.splice(index, 1);
+                    }
                   }
                 }
               } else if (animationPaused && playAnimation) {
@@ -27871,6 +27675,10 @@
     };
   }
 
+  /**
+   * @param {unknown} o1
+   * @param {unknown} o2
+   */
   function equals(o1, o2) {
     if (o1 === o2) return true;
 
@@ -27883,25 +27691,43 @@
     if (t1 !== t2 || t1 !== "object") return false;
     const tup = [o1, o2];
 
-    if (tup.every(isArray)) return _arraysEq(o1, o2);
+    if (tup.every(isArray))
+      return _arraysEq(
+        /** @type {Array<any>} */ (o1),
+        /** @type {Array<any>} */ (o2),
+      );
 
-    if (tup.every(isDate)) return o1.getTime() === o2.getTime();
+    if (tup.every(isDate))
+      return (
+        /** @type {Date} */ (o1).getTime() === /** @type {Date} */ (o2).getTime()
+      );
 
-    if (tup.every(isRegExp)) return o1.toString() === o2.toString();
+    if (tup.every(isRegExp))
+      return (
+        /** @type {RegExp} */ (o1).toString() ===
+        /** @type {RegExp} */ (o2).toString()
+      );
 
     if (tup.every(isFunction)) return true; // meh
 
     if ([isFunction, isArray, isDate, isRegExp].some((fn) => !!fn(tup))) {
       return false;
     }
+    /** @type {Record<string, any>} */
     const keys = {};
 
-    for (const key in o1) {
-      if (!equals(o1[key], o2[key])) return false;
+    for (const key in /** @type {Record<string, any>} */ (o1)) {
+      if (
+        !equals(
+          /** @type {Record<string, any>} */ (o1)[key],
+          /** @type {Record<string, any>} */ (o2)[key],
+        )
+      )
+        return false;
       keys[key] = true;
     }
 
-    for (const key in o2) {
+    for (const key in /** @type {Record<string, any>} */ (o2)) {
       if (!keys[key]) return false;
     }
 
@@ -27934,9 +27760,9 @@
   /**
    * Given an array, and an item, if the item is found in the array, it removes it (in-place).
    * The same array is returned
-   * @param {Array} array
+   * @param {Array<any>} array
    * @param {any} obj
-   * @returns {Array}
+   * @returns {Array<any>}
    */
   function removeFrom(array, obj) {
     const i = array.indexOf(obj);
@@ -27950,6 +27776,8 @@
    * Applies a set of defaults to an options object.  The options object is filtered
    * to only those properties of the objects in the defaultsList.
    * Earlier objects in the defaultsList take precedence when applying defaults.
+   * @param {{}} opts
+   * @param {{ current?: (() => void) | (() => null); transition?: null; traceData?: {}; bind?: null; inherit?: boolean; matchingKeys?: null; state?: { params: {}; }; strict?: boolean; caseInsensitive?: boolean; relative?: import("../router/state/state-object.js").StateObject | null | undefined; location?: boolean; notify?: boolean; reload?: boolean; supercede?: boolean; custom?: {}; source?: string; lossy?: boolean; absolute?: boolean; }[]} defaultsList
    */
   function defaults(opts, ...defaultsList) {
     const defaultVals = Object.assign({}, ...defaultsList.reverse());
@@ -27957,23 +27785,6 @@
     return Object.assign(defaultVals, pick(opts || {}, Object.keys(defaultVals)));
   }
 
-  /**
-   * Finds the common ancestor path between two states.
-   *
-   * @param {Object} first The first state.
-   * @param {Object} second The second state.
-   * @return {Array} Returns an array of state names in descending order, not including the root.
-   */
-  function ancestors(first, second) {
-    const path = [];
-
-    for (const i in first.path) {
-      if (first.path[i] !== second.path[i]) break;
-      path.push(first.path[i]);
-    }
-
-    return path;
-  }
   /**
    * Return a copy of the object only containing the whitelisted properties.
    *
@@ -28137,19 +27948,19 @@
       return result;
     };
   }
+
   /**
    * Given two or more parallel arrays, returns an array of tuples where
    * each tuple is composed of [ a[i], b[i], ... z[i] ]
-   *
-   * @example
-   * ```
-   *
-   * let foo = [ 0, 2, 4, 6 ];
-   * let bar = [ 1, 3, 5, 7 ];
-   * let baz = [ 10, 30, 50, 70 ];
-   * arrayTuples(foo, bar);       // [ [0, 1], [2, 3], [4, 5], [6, 7] ]
-   * arrayTuples(foo, bar, baz);  // [ [0, 1, 10], [2, 3, 30], [4, 5, 50], [6, 7, 70] ]
-   * ```
+   * @example ```
+
+  let foo = [ 0, 2, 4, 6 ];
+  let bar = [ 1, 3, 5, 7 ];
+  let baz = [ 10, 30, 50, 70 ];
+  arrayTuples(foo, bar);       // [ [0, 1], [2, 3], [4, 5], [6, 7] ]
+  arrayTuples(foo, bar, baz);  // [ [0, 1, 10], [2, 3, 30], [4, 5, 50], [6, 7, 70] ]
+  ```
+   * @param {any[][]} args
    */
   function arrayTuples(...args) {
     if (args.length === 0) return [];
@@ -28236,6 +28047,10 @@
     return Object.assign(dest, src);
   }
 
+  /**
+   * @param {Array<any>} a1
+   * @param {Array<any>} a2
+   */
   function _arraysEq(a1, a2) {
     if (a1.length !== a2.length) return false;
 
@@ -28245,11 +28060,6 @@
 
     return true;
   }
-  // issue #2676
-  const silenceUncaughtInPromise = (promise) =>
-    promise.catch(() => 0) && promise;
-  const silentRejection = (error) =>
-    silenceUncaughtInPromise(Promise.reject(error));
 
   /**
    * Returns a new function for [Partial Application](https://en.wikipedia.org/wiki/Partial_application) of the original function.
@@ -28919,6 +28729,24 @@
 
       return Object.assign({}, inherited, newParams);
     }
+  }
+
+  /**
+   * Finds the common ancestor path between two states.
+   *
+   * @param {Object} first The first state.
+   * @param {Object} second The second state.
+   * @return {Array<any>} Returns an array of state names in descending order, not including the root.
+   */
+  function ancestors(first, second) {
+    const path = [];
+
+    for (const i in first.path) {
+      if (first.path[i] !== second.path[i]) break;
+      path.push(first.path[i]);
+    }
+
+    return path;
   }
 
   /**
@@ -31079,7 +30907,7 @@
     /**
      * Returns the list of views currently available on the page, by fully-qualified name.
      *
-     * @return {Array} Returns an array of fully-qualified view names.
+     * @return {Array<any>} Returns an array of fully-qualified view names.
      */
     available() {
       return this._ngViews.map((view) => view.fqn);
@@ -31088,7 +30916,7 @@
     /**
      * Returns the list of views on the page containing loaded content.
      *
-     * @return {Array} Returns an array of fully-qualified view names.
+     * @return {Array<any>} Returns an array of fully-qualified view names.
      */
     active() {
       return this._ngViews
@@ -31232,6 +31060,20 @@
   let id = 0;
 
   class Rejection {
+    /**
+     * @param {number} type
+     * @param {string} message
+     * @param {any} detail
+     */
+    constructor(type, message, detail) {
+      /** @type {number} */
+      this.$id = id++;
+      this.type = type;
+      this.message = message;
+      this.detail = detail;
+      this.redirected = false;
+    }
+
     /** Returns a Rejection due to transition superseded */
     static superseded(detail, options) {
       const message =
@@ -31246,33 +31088,44 @@
       return rejection;
     }
 
-    /** Returns a Rejection due to redirected transition */
+    /** Returns a Rejection due to redirected transition
+     * @param {any} detail @returns {Rejection}
+     */
     static redirected(detail) {
       return Rejection.superseded(detail, { redirected: true });
     }
 
-    /** Returns a Rejection due to invalid transition */
+    /** Returns a Rejection due to invalid transition
+     * @param {any} detail @returns {Rejection}
+     */
     static invalid(detail) {
       const message = "This transition is invalid";
 
       return new Rejection(RejectType._INVALID, message, detail);
     }
 
-    /** Returns a Rejection due to ignored transition */
+    /** Returns a Rejection due to ignored transition
+     * @param {any} detail @returns {Rejection}
+     */
     static ignored(detail) {
       const message = "The transition was ignored";
 
       return new Rejection(RejectType._IGNORED, message, detail);
     }
 
-    /** Returns a Rejection due to aborted transition */
+    /** Returns a Rejection due to aborted transition
+     * @param {any} detail @returns {Rejection}
+     */
     static aborted(detail) {
       const message = "The transition has been aborted";
 
       return new Rejection(RejectType._ABORTED, message, detail);
     }
 
-    /** Returns a Rejection due to aborted transition */
+    /** Returns a Rejection due to aborted transition
+     * @param detail
+     * @returns {Rejection}
+     */
     static errored(detail) {
       const message = "The transition errored";
 
@@ -31292,14 +31145,7 @@
       return is(Rejection)(detail) ? detail : Rejection.errored(detail);
     }
 
-    constructor(type, message, detail) {
-      this.$id = id++;
-      this.type = type;
-      this.message = message;
-      this.detail = detail;
-      this.redirected = false;
-    }
-
+    /** @returns {string} */
     toString() {
       const detailString = (data) =>
         data && data.toString !== Object.prototype.toString
@@ -31313,8 +31159,13 @@
       return `Transition Rejection($id: ${$id} type: ${type}, message: ${message}, detail: ${detail})`;
     }
 
+    /**
+     * @returns {Promise<any> & {_transitionRejection: Rejection}}
+     */
     toPromise() {
-      return Object.assign(silentRejection(this), { _transitionRejection: this });
+      return Object.assign(((x) => (x.catch(() => 0), x))(Promise.reject(this)), {
+        _transitionRejection: this,
+      });
     }
   }
 
@@ -31570,7 +31421,8 @@
    * Each HookType chooses a GetErrorHandler (See: [[TransitionService._defineCoreEvents]])
    */
   TransitionHook.LOG_ERROR = (hook) => (error) => hook.logError(error);
-  TransitionHook.REJECT_ERROR = () => (error) => silentRejection(error);
+  TransitionHook.REJECT_ERROR = () => (error) =>
+    ((x) => (x.catch(() => 0), x))(Promise.reject(error));
   TransitionHook.THROW_ERROR = () => (error) => {
     throw error;
   };
@@ -31971,7 +31823,7 @@
             state,
             hook,
             _options,
-            this.transition._transitionProvider._$exceptionHandler,
+            this.transition._transitionProvider._exceptionHandler,
           );
 
           return { hook, node, transitionHook };
@@ -32046,7 +31898,7 @@
    *
    * This object contains all contextual information about the to/from states, parameters, resolves.
    * It has information about all states being entered and exited as a result of the transition.
-   * @implements {HookRegistry}
+   * @extends {HookRegistry}
    */
   class Transition {
     /**
@@ -33349,7 +33201,7 @@
       this._registerCoreTransitionHooks();
 
       /** @type {ng.ExceptionHandlerService} */
-      this._$exceptionHandler = $exceptionHandler.handler;
+      this._exceptionHandler = $exceptionHandler.handler;
       globals._successfulTransitions.onEvict(treeChangesCleanup);
     }
 
@@ -33588,6 +33440,26 @@
   }
 
   const stdErr = minErr("$stateProvider");
+
+  /**
+   * Attaches a catch handler to silence unhandled rejection warnings,
+   * while preserving the original promise.
+   *
+   * @template T
+   * @param {Promise<T>} promise
+   * @returns {Promise<T>}
+   */
+  const silenceUncaughtInPromise = (promise) => promise.catch(() => 0) && promise;
+
+  /**
+   * Creates a rejected promise whose rejection is intentionally silenced.
+   *
+   * @template [E=unknown]
+   * @param {E} error
+   * @returns {Promise<never>}
+   */
+  const silentRejection = (error) =>
+    silenceUncaughtInPromise(Promise.reject(error));
 
   /**
    * Provides services related to ng-router states.
@@ -34402,7 +34274,7 @@
       /**
        * @param {ng.HttpService} $http
        * @param {ng.TemplateCacheService} $templateCache
-       * @param {any} $templateRequest
+       * @param {ng.TemplateRequestService} $templateRequest
        * @param {import("../core/di/internal-injector.js").InjectorService} $injector
        * @returns
        */
@@ -34502,8 +34374,7 @@
      * @param {string|Function} url url of the template to load, or a function
      * that returns a url.
      * @param {Object} params Parameters to pass to the url function.
-     * @return {string|Promise.<string>} The template html as a string, or a promise
-     * for that string.
+     * @return {Promise<string>}
      */
     fromUrl(url, params) {
       if (isFunction(url)) url = /** @type {Function} */ (url)(params);
@@ -34521,7 +34392,7 @@
           });
       }
 
-      return this.$templateRequest(url);
+      return this.$templateRequest(/** @type {string} */ (url));
     }
 
     /**
@@ -35313,7 +35184,7 @@
    *
    * This class prototypally inherits from the corresponding [[StateDeclaration]].
    * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
-   * @implements {ng.StateDeclaration}
+   * @extends {ng.StateDeclaration}
    */
   class StateObject {
     name;
@@ -37500,7 +37371,10 @@
           : {};
 
         function update() {
-          rawDef.ngStateParams = Object.assign({}, scope.$eval(ref.paramExpr));
+          rawDef.ngStateParams = Object.assign(
+            {},
+            ref.paramExpr && scope.$eval(ref.paramExpr),
+          );
           const def = getDef();
 
           if (unlinkInfoFn) {
@@ -37508,7 +37382,7 @@
           }
 
           if (active) {
-            unlinkInfoFn = active.$$addStateInfo(def.ngState, def.ngStateParams);
+            unlinkInfoFn = active._addStateInfo(def.ngState, def.ngStateParams);
           }
 
           if (!isNullOrUndefined(def.href)) {
@@ -37596,7 +37470,7 @@
           }
 
           if (active) {
-            unlinkInfoFn = active.$$addStateInfo(def.ngState, def.ngStateParams);
+            unlinkInfoFn = active._addStateInfo(def.ngState, def.ngStateParams);
           }
 
           if (!isNullOrUndefined(def.href)) {
@@ -37673,7 +37547,7 @@
           ngSrefActive || $interpolate($attrs.ngSrefActive || "", false)($scope);
         setStatesFromDefinitionObject(ngSrefActive);
         // Allow ngSref to communicate with ngSrefActive[Equals]
-        this.$$addStateInfo = function (newState, newParams) {
+        this._addStateInfo = function (newState, newParams) {
           // we already got an explicit state provided by ng-sref-active, so we
           // shadow the one that comes from ng-sref
           if (isObject(ngSrefActive) && states.length > 0) {
@@ -37735,7 +37609,7 @@
 
                 addState(
                   ref.state,
-                  $scope.$eval(ref.paramExpr),
+                  ref.paramExpr && $scope.$eval(ref.paramExpr),
                   activeClassParam,
                 );
               };
@@ -38101,7 +37975,7 @@
 
                 if (
                   (isDefined(autoScrollExp) && !autoScrollExp) ||
-                  scope.$eval(autoScrollExp)
+                  (autoScrollExp && scope.$eval(autoScrollExp))
                 ) {
                   /** @type {ng.AnchorScrollFunction} */ ($viewScroll)(clone);
                 }
@@ -38378,10 +38252,8 @@
               if (isObject(value)) {
                 scope.$merge(value);
               }
-            } else if (isString(value)) {
-              element.innerHTML = value;
             } else {
-              element.innerHTML = value.toString();
+              element.innerHTML = isString(value) ? value : value.toString();
             }
           },
         );
@@ -38410,7 +38282,7 @@
           return;
         }
 
-        const assignModel = $parse(modelExpression).assign;
+        const assignModel = $parse(modelExpression)._assign;
 
         if (!assignModel) {
           $log.warn("ng-setter: expression invalid");
@@ -38454,7 +38326,7 @@
 
   /**
    * Configurable provider for an injectable event bus
-   * @implements {ng.ServiceProvider}
+   * @extends {ng.ServiceProvider}
    */
   class PubSubProvider {
     static $inject = provider([
@@ -38994,6 +38866,7 @@
         // Clean up when the element is removed from DOM
         const parent = element.parentNode;
 
+        /** @type {MutationObserver} */
         let mutationObserver;
 
         if (parent) {
@@ -39736,7 +39609,7 @@
      * @returns {Promise<any>}
      */
     async #request(method, url, data = null, params = {}) {
-      return await this._$http({
+      return this._$http({
         method,
         url,
         data,
@@ -39782,9 +39655,7 @@
          * @type {(baseUrl: string, entityClass?: ng.EntityClass<T>, options?: object) => RestService<T, ID>}
          */
         const factory = (baseUrl, entityClass, options = {}) => {
-          const svc = new RestService($http, baseUrl, entityClass, options);
-
-          return svc;
+          return new RestService($http, baseUrl, entityClass, options);
         };
 
         // create services from pre-registered definitions
@@ -39828,6 +39699,66 @@
         scope.$on("$destroy", () => element.removeEventListener(channel, fn));
       },
     };
+  }
+
+  /**
+   * WebSocketProvider
+   * Provides a pre-configured WebSocket connection as an injectable.
+   */
+  class WebSocketProvider {
+    constructor() {
+      /** @type {ng.WebSocketConfig} */
+      this.defaults = {
+        protocols: [],
+        autoReconnect: true,
+        reconnectInterval: 1000,
+        maxRetries: Infinity,
+        heartbeatInterval: 0, // ms, 0 = disabled
+        transformMessage(data) {
+          try {
+            return JSON.parse(data);
+          } catch {
+            return data;
+          }
+        },
+      };
+    }
+
+    $get = [
+      $injectTokens._log,
+      /** @param {ng.LogService} log */ (log) => {
+        this._$log = log;
+
+        /** @type {ng.WebSocketService} */
+        return (url, protocols = [], config = {}) => {
+          const mergedConfig = { ...this.defaults, ...config };
+
+          mergedConfig.protocols = protocols.length
+            ? protocols
+            : mergedConfig.protocols;
+
+          return new StreamConnection(
+            () => new WebSocket(url, mergedConfig.protocols),
+            {
+              ...mergedConfig,
+              onMessage: (data, event) => {
+                mergedConfig.onMessage?.(data, event);
+              },
+              onOpen: (event) => {
+                mergedConfig.onOpen?.(event);
+              },
+              onClose: /** @param {CloseEvent} event */ (event) => {
+                mergedConfig.onClose?.(event);
+              },
+              onError: (event) => {
+                mergedConfig.onError?.(event);
+              },
+            },
+            this._$log,
+          );
+        };
+      },
+    ];
   }
 
   /**
@@ -39949,11 +39880,11 @@
               $animate: AnimateProvider,
               $$animation: AnimationProvider,
               $animateCss: AnimateCssProvider,
-              $$animateCssDriver: AnimateCssDriverProvider,
-              $$animateJs: AnimateJsProvider,
-              $$animateJsDriver: AnimateJsDriverProvider,
-              $$animateCache: AnimateCacheProvider,
-              $$animateQueue: AnimateQueueProvider,
+              _animateCssDriver: AnimateCssDriverProvider,
+              _animateJs: AnimateJsProvider,
+              _animateJsDriver: AnimateJsDriverProvider,
+              _animateCache: AnimateCacheProvider,
+              _animateQueue: AnimateQueueProvider,
               $controller: ControllerProvider,
               $cookie: CookieProvider,
               $exceptionHandler: ExceptionHandlerProvider,
@@ -39982,6 +39913,7 @@
               $url: UrlService,
               $stateRegistry: StateRegistryProvider,
               $eventBus: PubSubProvider,
+              $websocket: WebSocketProvider,
             });
           },
         ],
@@ -40028,7 +39960,7 @@
        * @public
        * @type {string} `version` from `package.json`
        */
-      this.version = "0.15.2"; //inserted via rollup plugin
+      this.version = "0.16.0"; //inserted via rollup plugin
 
       /**
        * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
