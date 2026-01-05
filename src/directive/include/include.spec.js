@@ -212,18 +212,18 @@ describe("ngInclude", () => {
       );
       const injector = angular.bootstrap(element, ["myModule"]);
       $rootScope = injector.get("$rootScope");
-      expect($rootScope.$children.length).toBe(1);
+      expect($rootScope._children.length).toBe(1);
 
       $rootScope.url = "/mock/hello";
       setTimeout(() => {
-        expect($rootScope.$children.length).toBe(2);
+        expect($rootScope._children.length).toBe(2);
         expect(element.textContent).toBe("Hello");
 
         $rootScope.url = "/mock/401";
       }, 100);
 
       setTimeout(() => {
-        expect($rootScope.$children.length).toBe(1);
+        expect($rootScope._children.length).toBe(1);
         expect(element.textContent).toBe("");
 
         done();

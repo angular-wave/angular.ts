@@ -1,6 +1,13 @@
 import type { CompiledExpression } from "../parse/interface.ts";
 export type ListenerFn = (newValue?: any, originalTarget?: object) => void;
 export type NonScope = string[] | boolean | undefined;
+export interface NonScopeMarked {
+  $nonscope?: NonScope;
+  [key: string]: any;
+  constructor?: {
+    $nonscope?: NonScope;
+  };
+}
 export interface Listener {
   originalTarget: any;
   listenerFn: ListenerFn;
@@ -9,7 +16,6 @@ export interface Listener {
   scopeId: number;
   property: string[];
   watchProp?: string;
-  foreignListener?: ProxyConstructor;
 }
 export interface ScopeEvent {
   /**

@@ -3268,7 +3268,7 @@ export class CompileProvider {
                           });
                         } else {
                           parentSet(scope.$target, (lastValue = val));
-                          scope.$handler.watchers
+                          scope.$handler._watchers
                             .get(attrs[attrName])
                             ?.forEach((watchFn) => {
                               watchFn.listenerFn(val, scope.$target);

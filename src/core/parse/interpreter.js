@@ -41,7 +41,6 @@ export class ASTInterpreter {
 
     const { body } = /** @type {BodyNode} */ (decoratedNode);
 
-    /** @type {ASTNode} */
     const assignable = assignableAST(/** @type {BodyNode} */ (decoratedNode));
 
     /** @type {import("./interface.ts").CompiledExpression} */

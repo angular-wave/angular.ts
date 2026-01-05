@@ -27,10 +27,10 @@ function isHTMLElement(el) {
 
 function getChildScopes(scope) {
   let children = [];
-  if (!scope.$children[0]) {
+  if (!scope._children[0]) {
     return children;
   }
-  let childScope = scope.$children[0];
+  let childScope = scope._children[0];
   do {
     children.push(childScope);
     children = children.concat(getChildScopes(childScope));
@@ -1478,7 +1478,7 @@ describe("$compile", () => {
     const el = $("<div my-directive></div>");
     $compile(el)($rootScope);
     await wait();
-    expect($rootScope.$children[0].$id).toBe(givenScope.$id);
+    expect($rootScope._children[0].$id).toBe(givenScope.$id);
   });
 
   it("creates an isolate scope when requested", () => {
@@ -1495,7 +1495,7 @@ describe("$compile", () => {
     const el = $("<div my-directive></div>");
     $compile(el)($rootScope);
     expect(givenScope.$parent.$id).toBe($rootScope.$id);
-    expect($rootScope.$children[0]).toBe(givenScope);
+    expect($rootScope._children[0]).toBe(givenScope);
     expect(Object.getPrototypeOf(givenScope)).not.toBe($rootScope);
   });
 
@@ -1756,7 +1756,7 @@ describe("$compile", () => {
       const el = $("<div my-directive></div>");
       $compile(el)($rootScope);
       await wait();
-      expect($rootScope.$handler.watchers.size).toEqual(0);
+      expect($rootScope.$handler._watchers.size).toEqual(0);
     });
 
     it("allows assigning to two-way scope expressions", async () => {
@@ -1945,7 +1945,7 @@ describe("$compile", () => {
       const el = $("<div my-directive></div>");
       $compile(el)($rootScope);
       await wait();
-      expect($rootScope.$handler.watchers.size).toEqual(0);
+      expect($rootScope.$handler._watchers.size).toEqual(0);
     });
   });
 
@@ -6729,50 +6729,50 @@ describe("$compile", () => {
         describe("with new scope directives", () => {
           it("should return the new scope at the directive element", async () => {
             element = $compile("<div scope></div>")($rootScope);
-            expect($rootScope.$children[0].$parent.$id).toBe($rootScope.$id);
+            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id);
           });
 
           it("should return the new scope for children in the original template", async () => {
             element = $compile("<div scope><a></a></div>")($rootScope);
-            expect($rootScope.$children[0].$parent.$id).toBe($rootScope.$id);
+            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id);
           });
 
           it("should return the new scope for children in the directive template", () => {
             $templateCache.set("tscope.html", "<a></a>");
             element = $compile("<div tscope></div>")($rootScope);
-            expect($rootScope.$children[0].$parent.$id).toBe($rootScope.$id);
+            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id);
           });
 
           it("should return the new scope for children in the directive sync template", async () => {
             element = $compile("<div stscope></div>")($rootScope);
-            expect($rootScope.$children[0].$parent.$id).toBe($rootScope.$id);
+            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id);
           });
         });
 
         describe("with isolate scope directives", () => {
           it("should return the non-isolate scope at the directive element", async () => {
-            expect($rootScope.$children).toEqual([]);
+            expect($rootScope._children).toEqual([]);
             $compile("<div><div iscope></div></div>")($rootScope);
             await wait();
-            expect($rootScope.$children[0].$parent.$id).toBe($rootScope.$id);
+            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id);
           });
 
           it("should return the isolate scope for children in the original template", () => {
             element = $compile("<div iscope><a></a></div>")($rootScope);
-            expect($rootScope.$children[0].$parent.$id).toBe($rootScope.$id); // xx
+            expect($rootScope._children[0].$parent.$id).toBe($rootScope.$id); // xx
           });
 
           it("should return the isolate scope for children in directive template", async () => {
             $templateCache.set("tiscope.html", "<a></a>");
             element = $compile("<div tiscope></div>")($rootScope);
             await wait();
-            expect($rootScope.$children[0]).toBeDefined(); // ??? this is the current behavior, not desired feature
-            expect($rootScope.$children[0].$id).not.toBe($rootScope.$id);
+            expect($rootScope._children[0]).toBeDefined(); // ??? this is the current behavior, not desired feature
+            expect($rootScope._children[0].$id).not.toBe($rootScope.$id);
           });
 
           it("should return the isolate scope for children in directive sync template", () => {
             element = $compile("<div stiscope></div>")($rootScope);
-            expect($rootScope.$children[0]).not.toBe($rootScope);
+            expect($rootScope._children[0]).not.toBe($rootScope);
           });
 
           it('should handle "=" bindings with same method names in Object.prototype correctly when not present', async () => {
@@ -6780,7 +6780,7 @@ describe("$compile", () => {
               $rootScope,
             );
             await wait();
-            const scope = $rootScope.$children[0];
+            const scope = $rootScope._children[0];
             expect(scope.$id).not.toBe($rootScope.$id);
             expect(scope.valueOf).toBeUndefined();
           });
@@ -6795,7 +6795,7 @@ describe("$compile", () => {
             };
 
             expect(func).not.toThrow();
-            const scope = $rootScope.$children[0];
+            const scope = $rootScope._children[0];
             expect(scope).not.toBe($rootScope);
             expect(scope.constructor).toBe("constructor");
             expect(scope.valueOf).toBe("valueOf");
@@ -6810,7 +6810,7 @@ describe("$compile", () => {
           };
 
           expect(func).not.toThrow();
-          const scope = $rootScope.$children[0];
+          const scope = $rootScope._children[0];
           expect(scope.$id).not.toBe($rootScope.$id);
         });
 
@@ -6822,7 +6822,7 @@ describe("$compile", () => {
           };
 
           expect(func).not.toThrow();
-          const scope = $rootScope.$children[0];
+          const scope = $rootScope._children[0];
           expect(scope.$id).not.toBe($rootScope.$id);
         });
 
@@ -8184,7 +8184,7 @@ describe("$compile", () => {
             }),
           });
 
-          $rootScope.$children[0].$ctrl.prop1 = 2;
+          $rootScope._children[0].$ctrl.prop1 = 2;
           $rootScope.$apply("val = 2");
           await wait();
           expect(log.pop()).toEqual({
@@ -8760,7 +8760,7 @@ describe("$compile", () => {
         );
 
         await wait();
-        const isolateScope = $rootScope.$children[0];
+        const isolateScope = $rootScope._children[0];
         expect(isolateScope.reference).toBeNaN();
         isolateScope.reference = 64;
 
@@ -8775,7 +8775,7 @@ describe("$compile", () => {
         );
 
         await wait();
-        const isolateScope = $rootScope.$children[0];
+        const isolateScope = $rootScope._children[0];
         expect(isolateScope.reference).toBeNaN();
 
         $rootScope.num = 64;
@@ -8808,7 +8808,7 @@ describe("$compile", () => {
 
           await wait();
         }).not.toThrow();
-        const isolateScope = $rootScope.$children[0];
+        const isolateScope = $rootScope._children[0];
 
         expect(typeof isolateScope.constructor).toBe("string");
         expect(Array.isArray(isolateScope.watch)).toBe(true);
@@ -8840,7 +8840,7 @@ describe("$compile", () => {
         element = $compile("<div my-component></div>")($rootScope);
 
         await wait();
-        const isolateScope = $rootScope.$children[0];
+        const isolateScope = $rootScope._children[0];
         expect(isolateScope.optExpr).toBeUndefined();
       });
 
@@ -8850,7 +8850,7 @@ describe("$compile", () => {
         )($rootScope);
 
         await wait();
-        const isolateScope = $rootScope.$children[0];
+        const isolateScope = $rootScope._children[0];
         expect(typeof isolateScope.optExpr).toBe("function");
         expect(isolateScope.optExpr()).toBe("did!");
         expect($rootScope.value).toBe("did!");
@@ -8862,7 +8862,7 @@ describe("$compile", () => {
         )($rootScope);
 
         await wait();
-        const isolateScope = $rootScope.$children[0];
+        const isolateScope = $rootScope._children[0];
         expect(typeof isolateScope.constructor).toBe("function");
         expect(isolateScope.constructor()).toBe("did!");
         expect($rootScope.value).toBe("did!");
@@ -8889,7 +8889,7 @@ describe("$compile", () => {
         element = $compile("<div test-dir></div>")($rootScope);
 
         await wait();
-        const scope = $rootScope.$children[0];
+        const scope = $rootScope._children[0];
         expect(scope.ctrl.getProp()).toBe("default");
 
         expect(scope.ctrl.getProp()).toBe("default");
@@ -8916,7 +8916,7 @@ describe("$compile", () => {
         element = $compile("<div test-dir></div>")($rootScope);
 
         await wait();
-        const scope = $rootScope.$children[0];
+        const scope = $rootScope._children[0];
         expect(scope.ctrl.getProp()).toBe("default");
         expect(scope.ctrl.getProp()).toBe("default");
         scope.prop = "foop";
@@ -9515,7 +9515,7 @@ describe("$compile", () => {
               $rootScope,
             );
 
-            const isolateScope = $rootScope.$children[0];
+            const isolateScope = $rootScope._children[0];
             expect(isolateScope.owRef).toBeNaN();
 
             $rootScope.num = 64;
@@ -10629,7 +10629,7 @@ describe("$compile", () => {
         element = $compile("<div foo-dir>")($rootScope);
         await wait();
         expect(controllerCalled).toBe(true);
-        const childScope = $rootScope.$children[0];
+        const childScope = $rootScope._children[0];
         expect(childScope).not.toEqual($rootScope);
         expect(childScope.theCtrl).toEqual(myCtrl);
       });
@@ -10681,7 +10681,7 @@ describe("$compile", () => {
         )($rootScope);
         await wait();
         expect(controllerCalled).toBe(true);
-        const childScope = $rootScope.$children[0];
+        const childScope = $rootScope._children[0];
         expect(childScope).not.toBe($rootScope);
         expect(childScope.theCtrl).not.toBe(myCtrl);
         expect(childScope.theCtrl.constructor).toBe(MyCtrl);
@@ -10738,7 +10738,7 @@ describe("$compile", () => {
         )($rootScope);
         await wait();
         expect(controllerCalled).toBe(true);
-        const childScope = $rootScope.$children[0];
+        const childScope = $rootScope._children[0];
         expect(childScope).not.toBe($rootScope);
         expect(childScope.theCtrl).not.toBe(myCtrl);
         expect(childScope.theCtrl.constructor).toBe(MyCtrl);
@@ -10766,7 +10766,7 @@ describe("$compile", () => {
           }));
           initInjector("test1");
           element = $compile("<div test-dir></div>")($rootScope);
-          const scope = $rootScope.$children[0];
+          const scope = $rootScope._children[0];
           expect(scope.ctrl.getProp()).toBe("default");
 
           expect(scope.ctrl.getProp()).toBe("default");
@@ -10792,7 +10792,7 @@ describe("$compile", () => {
           }));
           initInjector("test1");
           element = $compile("<div test-dir></div>")($rootScope);
-          const scope = $rootScope.$children[0];
+          const scope = $rootScope._children[0];
           expect(scope.ctrl.getProp()).toBe("default");
 
           expect(scope.ctrl.getProp()).toBe("default");
@@ -11388,7 +11388,7 @@ describe("$compile", () => {
         await wait();
         element = element.firstChild;
         expect(element.checked).toBe(false);
-        $rootScope.$children[0].model = true;
+        $rootScope._children[0].model = true;
         await wait();
         expect(element.checked).toBe(true);
       });
@@ -12083,8 +12083,8 @@ describe("$compile", () => {
 
           $rootScope.before = "Not-Before";
           $rootScope.after = "AfTeR";
-          $rootScope.$children[0].before = "BeFoRe";
-          $rootScope.$children[0].after = "Not-After";
+          $rootScope._children[0].before = "BeFoRe";
+          $rootScope._children[0].after = "Not-After";
           await wait();
           expect(element.textContent).toEqual(
             "This is before BeFoRe. This is after AfTeR",
@@ -12902,26 +12902,26 @@ describe("$compile", () => {
             await wait();
             expect(element.textContent).toContain("msg-1");
             // Expected scopes: $rootScope, ngIf, transclusion, ngRepeat
-            expect($rootScope.$handler.$children.length).toBe(2);
+            expect($rootScope.$handler._children.length).toBe(2);
 
             $rootScope.$apply("t = false");
             await wait();
             expect(element.textContent).not.toContain("msg-1");
             // Expected scopes: $rootScope
-            expect($rootScope.$handler.$children.length).toBe(0);
+            expect($rootScope.$handler._children.length).toBe(0);
 
             $rootScope.$apply("t = true");
             await wait();
             expect(element.textContent).toContain("msg-1");
 
             // Expected scopes: $rootScope, ngIf, transclusion, ngRepeat
-            expect($rootScope.$handler.$children.length).toBe(2);
+            expect($rootScope.$handler._children.length).toBe(2);
 
             $rootScope.$apply("t = false");
             await wait();
             expect(element.textContent).not.toContain("msg-1");
             // Expected scopes: $rootScope
-            expect($rootScope.$handler.$children.length).toBe(0);
+            expect($rootScope.$handler._children.length).toBe(0);
           });
 
           it("should not leak the transclude scope if the transcluded contains only comments", async () => {
@@ -12933,25 +12933,25 @@ describe("$compile", () => {
             await wait();
             expect(element.innerHTML).toContain("some comment");
             // Expected scopes: $rootScope, ngIf, transclusion
-            expect($rootScope.$handler.$children.length).toBe(2);
+            expect($rootScope.$handler._children.length).toBe(2);
 
             $rootScope.$apply("t = false");
             await wait();
             expect(element.innerHTML).not.toContain("some comment");
             // Expected scopes: $rootScope
-            expect($rootScope.$handler.$children.length).toBe(0);
+            expect($rootScope.$handler._children.length).toBe(0);
 
             $rootScope.$apply("t = true");
             await wait();
             expect(element.innerHTML).toContain("some comment");
             // Expected scopes: $rootScope, ngIf, transclusion
-            expect($rootScope.$handler.$children.length).toBe(2);
+            expect($rootScope.$handler._children.length).toBe(2);
 
             $rootScope.$apply("t = false");
             await wait();
             expect(element.innerHTML).not.toContain("some comment");
             // Expected scopes: $rootScope
-            expect($rootScope.$handler.$children.length).toBe(0);
+            expect($rootScope.$handler._children.length).toBe(0);
           });
 
           it("should not leak the transclude scope if the transcluded contains only text nodes", async () => {
@@ -12960,22 +12960,22 @@ describe("$compile", () => {
             $rootScope.$apply("t = true");
             expect(element.innerHTML).toContain("some text");
             // Expected scopes: $rootScope, ngIf, transclusion
-            expect($rootScope.$handler.$children.length).toBe(2);
+            expect($rootScope.$handler._children.length).toBe(2);
 
             $rootScope.$apply("t = false");
             expect(element.innerHTML).not.toContain("some text");
             // Expected scopes: $rootScope
-            expect($rootScope.$handler.$children.length).toBe(0);
+            expect($rootScope.$handler._children.length).toBe(0);
 
             $rootScope.$apply("t = true");
             expect(element.innerHTML).toContain("some text");
             // Expected scopes: $rootScope, ngIf, transclusion
-            expect($rootScope.$handler.$children.length).toBe(2);
+            expect($rootScope.$handler._children.length).toBe(2);
 
             $rootScope.$apply("t = false");
             expect(element.innerHTML).not.toContain("some text");
             // Expected scopes: $rootScope
-            expect($rootScope.$handler.$children.length).toBe(0);
+            expect($rootScope.$handler._children.length).toBe(0);
           });
 
           it("should mark as destroyed all sub scopes of the scope being destroyed", async () => {
@@ -14133,12 +14133,12 @@ describe("$compile", () => {
       element.appendChild(document.createTextNode("2{{ value }}"));
       element.appendChild(document.createTextNode("3{{ value }}"));
 
-      const initialWatcherCount = $rootScope.$handler.watchers.size;
+      const initialWatcherCount = $rootScope.$handler._watchers.size;
       $compile(element)($rootScope);
       $rootScope.$apply("value = 0");
       await wait();
       const newWatcherCount =
-        $rootScope.$handler.watchers.size - initialWatcherCount;
+        $rootScope.$handler._watchers.size - initialWatcherCount;
 
       expect(element.textContent).toBe("102030");
       expect(newWatcherCount).toBe(3);

@@ -203,43 +203,34 @@ export class Scope {
    * @param {Scope} [parent] - Custom parent.
    */
   constructor(context, parent) {
-    this.context = context
-      ? context.context
-        ? context.context
-        : context
-      : undefined;
-
-    /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners */
-    this.watchers = context ? context.watchers : new Map();
+    /** @ignore @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners */
+    this._watchers = context?._watchers ?? new Map();
 
     /** @private @type {Map<String, Function[]>} Event listeners */
     this._listeners = new Map();
 
     /** @private @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
-    this._foreignListeners = context ? context._foreignListeners : new Map();
+    this._foreignListeners = context?._foreignListeners ?? new Map();
 
     /** @private @type {Set<Proxy<ng.Scope>>} */
-    this._foreignProxies = context ? context._foreignProxies : new Set();
+    this._foreignProxies = context?._foreignProxies ?? new Set();
 
     /** @private @type {WeakMap<Object, Array<string>>} */
-    this._objectListeners = context ? context._objectListeners : new WeakMap();
+    this._objectListeners = context?._objectListeners ?? new WeakMap();
 
     /** @type {Proxy<Scope>} Current proxy being operated on */
-    this.$proxy = null;
+    this.$proxy;
 
-    /** @type {Scope} The actual proxy */
+    /** @type {Scope} This is the reference to the Scope object with acts as the actual proxy */
     this.$handler = /** @type {Scope} */ (this);
 
     /** @type {*} Current target being called on */
     this.$target = null;
 
-    /** @type {*} Value wrapped by the proxy */
-    this.$value = null;
-
     /**
-     * @type {Scope[]}
+     * @ignore @type {Scope[]}
      */
-    this.$children = [];
+    this._children = [];
 
     /**
      * @type {number} Unique model ID (monotonically increasing) useful for debugging.
@@ -249,13 +240,12 @@ export class Scope {
     /**
      * @type {Scope}
      */
-    this.$root = context ? context.$root : /** @type {Scope} */ (this);
+    this.$root = context ? context.$root : this;
 
-    this.$parent = parent
-      ? parent
-      : /** @type {Scope} */ (this).$root === /** @type {Scope} */ (this)
-        ? null
-        : context;
+    /**
+     * @type {Scope | undefined}
+     */
+    this.$parent = parent || (this.$root === this ? undefined : context);
 
     /** @ignore @type {boolean} */
     this._destroyed = false;
@@ -270,7 +260,7 @@ export class Scope {
     this.propertyMap = {
       $apply: this.$apply.bind(this),
       $broadcast: this.$broadcast.bind(this),
-      $children: this.$children,
+      _children: this._children,
       $destroy: this.$destroy.bind(this),
       $emit: this.$emit.bind(this),
       $eval: this.$eval.bind(this),
@@ -298,7 +288,7 @@ export class Scope {
    * Intercepts and handles property assignments on the target object. If a new value is
    * an object, it will be recursively proxied.
    *
-   * @param {Object} target - The target object.
+   * @param {import("./interface.ts").NonScopeMarked} target - The target object.
    * @param {string} property - The name of the property being set.
    * @param {*} value - The new value being assigned to the property.
    * @param {Proxy<Scope>} proxy - The proxy intercepting property access
@@ -344,7 +334,7 @@ export class Scope {
     if (oldValue && oldValue[isProxySymbol]) {
       if (isArray(value)) {
         if (oldValue !== value) {
-          const listeners = this.watchers.get(property);
+          const listeners = this._watchers.get(property);
 
           if (listeners) {
             this.#scheduleListener(listeners);
@@ -376,7 +366,7 @@ export class Scope {
         }
 
         if (oldValue !== value) {
-          const listeners = this.watchers.get(property);
+          const listeners = this._watchers.get(property);
 
           if (listeners) {
             this.#scheduleListener(listeners);
@@ -419,7 +409,7 @@ export class Scope {
         target[property] = undefined;
 
         if (!called) {
-          const listeners = this.watchers.get(property);
+          const listeners = this._watchers.get(property);
 
           if (listeners) {
             this.#scheduleListener(listeners);
@@ -431,7 +421,7 @@ export class Scope {
 
       if (isDefined(value)) {
         target[property] = value;
-        const listeners = this.watchers.get(property);
+        const listeners = this._watchers.get(property);
 
         if (listeners) {
           this.#scheduleListener(listeners);
@@ -439,10 +429,12 @@ export class Scope {
 
         if (isArray(target)) {
           if (this._objectListeners.has(proxy) && property !== "length") {
-            const keyList = this._objectListeners.get(proxy);
+            const keyList = /** @type {string[]} */ (
+              this._objectListeners.get(proxy)
+            );
 
             for (let i = 0, l = keyList.length; i < l; i++) {
-              const currentListeners = this.watchers.get(keyList[i]);
+              const currentListeners = this._watchers.get(keyList[i]);
 
               if (currentListeners) this.#scheduleListener(currentListeners);
             }
@@ -459,7 +451,7 @@ export class Scope {
         this._foreignProxies.add(/** @type {Proxy<ng.Scope>} */ (value));
         target[property] = value;
 
-        if (!this.watchers.has(property)) {
+        if (!this._watchers.has(property)) {
           return true;
         }
       }
@@ -485,7 +477,7 @@ export class Scope {
           for (let i = 0, l = keyList.length; i < l; i++) {
             const key = keyList[i];
 
-            const keyListeners = this.watchers.get(key);
+            const keyListeners = this._watchers.get(key);
 
             if (keyListeners) {
               for (let j = 0, jl = keyListeners.length; j < jl; j++) {
@@ -497,7 +489,7 @@ export class Scope {
         }
 
         if (isArray(target)) {
-          const lengthListeners = this.watchers.get("length");
+          const lengthListeners = this._watchers.get("length");
 
           if (lengthListeners) {
             for (let i = 0, l = lengthListeners.length; i < l; i++) {
@@ -506,7 +498,7 @@ export class Scope {
           }
         }
 
-        const propListeners = this.watchers.get(property);
+        const propListeners = this._watchers.get(property);
 
         if (propListeners) {
           for (let i = 0, l = propListeners.length; i < l; i++) {
@@ -528,9 +520,7 @@ export class Scope {
 
               const wrapperExpr = x.watchProp.split(".").slice(0, -1).join(".");
 
-              const expectedHandler = $parse(wrapperExpr)(
-                x.originalTarget,
-              )?.$handler;
+              const expectedHandler = $parse(wrapperExpr)(x.originalTarget);
 
               if (expectedTarget === expectedHandler?.$target) {
                 scheduled.push(x);
@@ -577,7 +567,7 @@ export class Scope {
         for (let i = 0, l = keyList.length; i < l; i++) {
           const key = keyList[i];
 
-          const listeners = this.watchers.get(key);
+          const listeners = this._watchers.get(key);
 
           if (listeners && this._scheduled !== listeners) {
             this.#scheduleListener(listeners);
@@ -625,7 +615,7 @@ export class Scope {
         for (let i = 0, l = keyList.length; i < l; i++) {
           const key = keyList[i];
 
-          const listeners = this.watchers.get(key);
+          const listeners = this._watchers.get(key);
 
           if (listeners) {
             this._scheduled = listeners;
@@ -653,7 +643,7 @@ export class Scope {
     if (target[property] && target[property][isProxySymbol]) {
       target[property] = undefined;
 
-      const listeners = this.watchers.get(property);
+      const listeners = this._watchers.get(property);
 
       if (listeners) {
         this.#scheduleListener(listeners);
@@ -665,7 +655,7 @@ export class Scope {
         for (let i = 0, l = keyList.length; i < l; i++) {
           const key = keyList[i];
 
-          const currentListeners = this.watchers.get(key);
+          const currentListeners = this._watchers.get(key);
 
           if (currentListeners) this.#scheduleListener(currentListeners);
         }
@@ -687,12 +677,12 @@ export class Scope {
       for (let i = 0, l = keyList.length; i < l; i++) {
         const key = keyList[i];
 
-        const listeners = this.watchers.get(key);
+        const listeners = this._watchers.get(key);
 
         if (listeners) this.#scheduleListener(listeners);
       }
     } else {
-      const listeners = this.watchers.get(property);
+      const listeners = this._watchers.get(property);
 
       if (listeners) {
         this.#scheduleListener(listeners, target[property]);
@@ -708,7 +698,7 @@ export class Scope {
       return;
     }
     keys(value).forEach((k) => {
-      const listeners = this.watchers.get(k);
+      const listeners = this._watchers.get(k);
 
       if (listeners) {
         this.#scheduleListener(listeners);
@@ -722,7 +712,7 @@ export class Scope {
 
   /**
    * @param {import('./interface.ts').Listener[]} listeners
-   * @param {Function} filter
+   * @param {(listeners: import('./interface').Listener[]) => import('./interface').Listener[]} filter
    */
   #scheduleListener(listeners, filter = (val) => val) {
     queueMicrotask(() => {
@@ -733,11 +723,8 @@ export class Scope {
       while (index < filteredListeners.length) {
         const listener = filteredListeners[index];
 
-        if (listener.foreignListener) {
-          listener.foreignListener.#notifyListener(listener, this.$target);
-        } else {
-          this.#notifyListener(listener, this.$target);
-        }
+        this.#notifyListener(listener, this.$target);
+
         index++;
       }
     });
@@ -1098,17 +1085,14 @@ export class Scope {
     let child;
 
     if (childInstance) {
-      if (Object.getPrototypeOf(childInstance) === Object.prototype) {
+      const proto = Object.getPrototypeOf(childInstance);
+
+      // If child is plain object, or already inherits from target, set prototype to target
+      if (proto === Object.prototype || proto === this.$target) {
         Object.setPrototypeOf(childInstance, this.$target);
       } else {
-        if (Object.getPrototypeOf(childInstance) === this.$target) {
-          Object.setPrototypeOf(childInstance, this.$target);
-        } else {
-          Object.setPrototypeOf(
-            Object.getPrototypeOf(childInstance) || childInstance,
-            this.$target,
-          );
-        }
+        // If child has some other prototype, preserve it but link to this.$target
+        Object.setPrototypeOf(proto || childInstance, this.$target);
       }
 
       child = childInstance;
@@ -1118,7 +1102,7 @@ export class Scope {
 
     const proxy = new Proxy(child, new Scope(this));
 
-    this.$children.push(proxy);
+    this._children.push(proxy);
 
     return proxy;
   }
@@ -1128,7 +1112,7 @@ export class Scope {
 
     const proxy = new Proxy(child, new Scope(this, this.$root));
 
-    this.$children.push(proxy);
+    this._children.push(proxy);
 
     return proxy;
   }
@@ -1138,17 +1122,17 @@ export class Scope {
 
     const proxy = new Proxy(child, new Scope(this, parentInstance));
 
-    this.$children.push(proxy);
+    this._children.push(proxy);
 
     return proxy;
   }
 
   /** @internal **/
   #registerKey(key, listener) {
-    if (this.watchers.has(key)) {
-      this.watchers.get(key).push(listener);
+    if (this._watchers.has(key)) {
+      this._watchers.get(key).push(listener);
     } else {
-      this.watchers.set(key, [listener]);
+      this._watchers.set(key, [listener]);
     }
   }
 
@@ -1162,7 +1146,7 @@ export class Scope {
   }
 
   #deregisterKey(key, id) {
-    const listenerList = this.watchers.get(key);
+    const listenerList = this._watchers.get(key);
 
     if (!listenerList) return false;
 
@@ -1173,9 +1157,9 @@ export class Scope {
     listenerList.splice(index, 1);
 
     if (listenerList.length) {
-      this.watchers.set(key, listenerList);
+      this._watchers.set(key, listenerList);
     } else {
-      this.watchers.delete(key);
+      this._watchers.delete(key);
     }
 
     return true;
@@ -1367,8 +1351,8 @@ export class Scope {
     }
 
     if (broadcast) {
-      if (this.$children.length > 0) {
-        this.$children.forEach((child) => {
+      if (this._children.length > 0) {
+        this._children.forEach((child) => {
           event = child.$handler.#eventHelper(
             { name, event, broadcast },
             ...args,
@@ -1406,7 +1390,7 @@ export class Scope {
 
     this.$broadcast("$destroy");
 
-    for (const [key, val] of this.watchers) {
+    for (const [key, val] of this._watchers) {
       for (let i = val.length - 1; i >= 0; i--) {
         if (val[i].scopeId === this.$id) {
           val.splice(i, 1);
@@ -1414,16 +1398,16 @@ export class Scope {
       }
 
       if (val.length === 0) {
-        this.watchers.delete(key);
+        this._watchers.delete(key);
       } else {
-        this.watchers.set(key, val);
+        this._watchers.set(key, val);
       }
     }
 
     if (this.#isRoot()) {
-      this.watchers.clear();
+      this._watchers.clear();
     } else {
-      const children = this.$parent.$children;
+      const children = this.$parent._children;
 
       for (let i = 0, l = children.length; i < l; i++) {
         if (children[i].$id === this.$id) {
@@ -1498,7 +1482,7 @@ export class Scope {
     } else {
       let res = undefined;
 
-      for (const child of this.$children) {
+      for (const child of this._children) {
         const found = child.$getById(id);
 
         if (found) {
@@ -1525,9 +1509,9 @@ export class Scope {
         return scope;
       }
 
-      if (scope.$children?.length) {
-        for (let i = scope.$children.length - 1; i >= 0; i--) {
-          stack.push(scope.$children[i]);
+      if (scope._children?.length) {
+        for (let i = scope._children.length - 1; i >= 0; i--) {
+          stack.push(scope._children[i]);
         }
       }
     }
@@ -1547,7 +1531,7 @@ function calculateWatcherCount(model) {
 
   let count = 0;
 
-  for (const watchers of model.watchers.values()) {
+  for (const watchers of model._watchers.values()) {
     for (let i = 0, l = watchers.length; i < l; i++) {
       if (childIds.has(watchers[i].scopeId)) {
         count++;
@@ -1573,9 +1557,9 @@ function collectChildIds(child) {
     if (!ids.has(node.$id)) {
       ids.add(node.$id);
 
-      if (node.$children) {
-        for (let i = 0, l = node.$children.length; i < l; i++) {
-          stack.push(node.$children[i]);
+      if (node._children) {
+        for (let i = 0, l = node._children.length; i < l; i++) {
+          stack.push(node._children[i]);
         }
       }
     }

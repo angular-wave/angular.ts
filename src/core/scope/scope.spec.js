@@ -359,7 +359,7 @@ describe("Scope", () => {
     it("should point to parent", () => {
       const child = scope.$new();
 
-      expect(scope.$parent).toEqual(null);
+      expect(scope.$parent).toBeUndefined();
       expect(child.$parent.$id).toEqual(scope.$id);
       expect(child.$parent).toEqual(scope.$handler);
       expect(child.$new().$parent).toEqual(child.$handler);
@@ -367,14 +367,14 @@ describe("Scope", () => {
 
     it("should keep track of its children", () => {
       const child = scope.$new();
-      expect(scope.$children).toEqual([child]);
+      expect(scope._children).toEqual([child]);
 
       const child2 = scope.$new();
-      expect(scope.$children).toEqual([child, child2]);
+      expect(scope._children).toEqual([child, child2]);
 
       const child3 = child2.$new();
-      expect(scope.$children).toEqual([child, child2]);
-      expect(child2.$children).toEqual([child3]);
+      expect(scope._children).toEqual([child, child2]);
+      expect(child2._children).toEqual([child3]);
     });
 
     it("should can get children by id", () => {
@@ -825,8 +825,8 @@ describe("Scope", () => {
           logs += "b";
         });
 
-        expect(scope.$handler.watchers.size).toEqual(2);
-        expect(scope.$$watchersCount).toEqual(scope.$handler.watchers.size);
+        expect(scope.$handler._watchers.size).toEqual(2);
+        expect(scope.$$watchersCount).toEqual(scope.$handler._watchers.size);
       });
 
       it("should fire upon $watch registration on initial registration", async () => {
@@ -974,7 +974,7 @@ describe("Scope", () => {
 
         await wait();
         expect(scope.$$watchersCount).toBe(1);
-        expect(scope.$handler.watchers.has("foo")).toBeTrue();
+        expect(scope.$handler._watchers.has("foo")).toBeTrue();
         expect(scope.foo).toBe(2);
 
         scope.$watch("boo = 3", () => {
@@ -2975,18 +2975,18 @@ describe("Scope", () => {
       scope.$watch("a", () => {
         /* empty */
       });
-      expect(scope.$handler.watchers.size).toEqual(1);
+      expect(scope.$handler._watchers.size).toEqual(1);
 
       scope.$destroy();
-      expect(scope.$handler.watchers.size).toEqual(0);
+      expect(scope.$handler._watchers.size).toEqual(0);
     });
 
     it("should remove children from parent scopes", async () => {
       const scope = createScope();
       const child = scope.$new();
-      expect(scope.$children.length).toEqual(1);
+      expect(scope._children.length).toEqual(1);
       child.$destroy();
-      expect(scope.$children.length).toEqual(0);
+      expect(scope._children.length).toEqual(0);
     });
 
     it("should clean up all watchers for child", async () => {
@@ -3000,22 +3000,22 @@ describe("Scope", () => {
         /* empty */
       });
 
-      expect(scope.$handler.watchers.size).toEqual(1);
-      expect(scope.$handler.watchers.get("test").length).toEqual(2);
-      expect(child.$handler.watchers.size).toEqual(1);
-      expect(child.$handler.watchers.get("test").length).toEqual(2);
+      expect(scope.$handler._watchers.size).toEqual(1);
+      expect(scope.$handler._watchers.get("test").length).toEqual(2);
+      expect(child.$handler._watchers.size).toEqual(1);
+      expect(child.$handler._watchers.get("test").length).toEqual(2);
 
       child.$destroy();
-      expect(scope.$handler.watchers.get("test").length).toEqual(1);
+      expect(scope.$handler._watchers.get("test").length).toEqual(1);
     });
 
     // it("should clean up all watchers for child", () => {
     //   const scope = createScope();
     //   scope.$watch("a", () => { /* empty */ });
-    //   expect(scope.$handler.watchers.size).toEqual(1);
+    //   expect(scope.$handler._watchers.size).toEqual(1);
     //
     //   scope.$destroy();
-    //   expect(scope.$handler.watchers.size).toEqual(0);
+    //   expect(scope.$handler._watchers.size).toEqual(0);
     // })
   });
 

@@ -157,7 +157,7 @@ describe("ngIf", () => {
       element.append(createElementFromHTML('<div ng-if="value"></div>'));
       $compile(element)($scope);
       await wait();
-      const childScope = $scope.$handler.$children[0];
+      const childScope = $scope.$handler._children[0];
       let destroyed = false;
 
       childScope.$on("$destroy", () => {
