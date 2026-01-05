@@ -46,9 +46,8 @@ export class Scope {
    * @param {Scope} [parent] - Custom parent.
    */
   constructor(context?: Scope, parent?: Scope);
-  context: Scope;
-  /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners */
-  watchers: Map<string, Array<import("./interface.ts").Listener>>;
+  /** @ignore @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners */
+  _watchers: Map<string, Array<import("./interface.ts").Listener>>;
   /** @private @type {Map<String, Function[]>} Event listeners */
   private _listeners;
   /** @private @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
@@ -59,16 +58,14 @@ export class Scope {
   private _objectListeners;
   /** @type {Proxy<Scope>} Current proxy being operated on */
   $proxy: ProxyConstructor;
-  /** @type {Scope} The actual proxy */
+  /** @type {Scope} This is the reference to the Scope object with acts as the actual proxy */
   $handler: Scope;
   /** @type {*} Current target being called on */
   $target: any;
-  /** @type {*} Value wrapped by the proxy */
-  $value: any;
   /**
-   * @type {Scope[]}
+   * @ignore @type {Scope[]}
    */
-  $children: Scope[];
+  _children: Scope[];
   /**
    * @type {number} Unique model ID (monotonically increasing) useful for debugging.
    */
@@ -77,7 +74,10 @@ export class Scope {
    * @type {Scope}
    */
   $root: Scope;
-  $parent: Scope;
+  /**
+   * @type {Scope | undefined}
+   */
+  $parent: Scope | undefined;
   /** @ignore @type {boolean} */
   _destroyed: boolean;
   /** @private @type {import("./interface.ts").Listener[]} A list of scheduled Event listeners */
@@ -90,14 +90,14 @@ export class Scope {
    * Intercepts and handles property assignments on the target object. If a new value is
    * an object, it will be recursively proxied.
    *
-   * @param {Object} target - The target object.
+   * @param {import("./interface.ts").NonScopeMarked} target - The target object.
    * @param {string} property - The name of the property being set.
    * @param {*} value - The new value being assigned to the property.
    * @param {Proxy<Scope>} proxy - The proxy intercepting property access
    * @returns {boolean} - Returns true to indicate success of the operation.
    */
   set(
-    target: any,
+    target: import("./interface.ts").NonScopeMarked,
     property: string,
     value: any,
     proxy: ProxyConstructor,

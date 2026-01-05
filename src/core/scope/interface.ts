@@ -4,6 +4,14 @@ export type ListenerFn = (newValue?: any, originalTarget?: object) => void;
 
 export type NonScope = string[] | boolean | undefined;
 
+export interface NonScopeMarked {
+  $nonscope?: NonScope;
+  [key: string]: any; // allow arbitrary properties
+  constructor?: {
+    $nonscope?: NonScope;
+  };
+}
+
 export interface Listener {
   originalTarget: any;
   listenerFn: ListenerFn;
@@ -12,7 +20,6 @@ export interface Listener {
   scopeId: number; // The scope id that created the Listener
   property: string[];
   watchProp?: string; // The original property to watch if different from observed key
-  foreignListener?: ProxyConstructor;
 }
 
 export interface ScopeEvent {
