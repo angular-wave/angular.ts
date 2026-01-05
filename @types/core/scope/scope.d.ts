@@ -182,3 +182,10 @@ export class Scope {
   $searchByName(name: string): ng.Scope | undefined;
   #private;
 }
+export type ExpressionNode = import("../parse/ast/ast-node.ts").ExpressionNode;
+export type LiteralNode = import("../parse/ast/ast-node.ts").LiteralNode;
+export type BodyNode = import("../parse/ast/ast-node.ts").BodyNode;
+export type ArrayNode = import("../parse/ast/ast-node.ts").ArrayNode;
+export type ObjectNode = import("../parse/ast/ast-node.ts").ObjectNode;
+export type ObjectPropertyNode =
+  import("../parse/ast/ast-node.ts").ObjectPropertyNode;

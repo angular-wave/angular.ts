@@ -17,6 +17,13 @@ import {
 import { ASTType } from "../parse/ast-type.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
+/** @typedef {import("../parse/ast/ast-node.ts").ExpressionNode} ExpressionNode */
+/** @typedef {import("../parse/ast/ast-node.ts").LiteralNode} LiteralNode */
+/** @typedef {import("../parse/ast/ast-node.ts").BodyNode} BodyNode */
+/** @typedef {import("../parse/ast/ast-node.ts").ArrayNode} ArrayNode */
+/** @typedef {import("../parse/ast/ast-node.ts").ObjectNode} ObjectNode */
+/** @typedef {import("../parse/ast/ast-node.ts").ObjectPropertyNode} ObjectPropertyNode */
+
 /**
  * @type {number}
  */
@@ -767,6 +774,10 @@ export class Scope {
       };
     }
 
+    const expr = /** @type {ExpressionNode & BodyNode} */ (
+      get._decoratedNode.body[0]
+    ).expression;
+
     /** @type {ng.Listener} */
     const listener = {
       originalTarget: this.$target,
@@ -778,11 +789,11 @@ export class Scope {
     };
 
     // simplest case
-    let key = get._decoratedNode.body[0].expression.name;
+    let key = /** @type {LiteralNode} */ (expr).name;
 
     const keySet = [];
 
-    const { type } = get._decoratedNode.body[0].expression;
+    const { type } = expr;
 
     switch (type) {
       // 3
@@ -797,19 +808,31 @@ export class Scope {
 
           return undefined;
         }
-        key = get._decoratedNode.body[0].expression.left.name;
+        key = /** @type {LiteralNode} */ (
+          /** @type {ExpressionNode} */ (expr).left
+        )?.name;
         break;
       // 4
       case ASTType._ConditionalExpression: {
-        key = get._decoratedNode.body[0].expression.toWatch[0]?.test?.name;
+        key = /** @type {LiteralNode} */ (
+          /** @type {ExpressionNode} */ (
+            /** @type {BodyNode} */ (expr).toWatch[0]
+          )?.test
+        )?.name;
         listener.property.push(key);
         break;
       }
       // 5
       case ASTType._LogicalExpression: {
         const keyList = [
-          get._decoratedNode.body[0].expression.left.toWatch[0]?.name,
-          get._decoratedNode.body[0].expression.right.toWatch[0]?.name,
+          /** @type {LiteralNode} */ (
+            /** @type {BodyNode} */ (/** @type {ExpressionNode} */ (expr).left)
+              .toWatch[0]
+          )?.name,
+          /** @type {LiteralNode} */ (
+            /** @type {BodyNode} */ (/** @type {ExpressionNode} */ (expr).right)
+              .toWatch[0]
+          )?.name,
         ];
 
         for (let i = 0, l = keyList.length; i < l; i++) {
@@ -828,10 +851,14 @@ export class Scope {
       }
       // 6
       case ASTType._BinaryExpression: {
-        if (get._decoratedNode.body[0].expression.isPure) {
-          const expr = get._decoratedNode.body[0].expression.toWatch[0];
+        if (/** @type {ExpressionNode} */ (expr).isPure) {
+          const watch = /** @type {BodyNode} */ (expr).toWatch[0];
 
-          key = expr.property ? expr.property.name : expr.name;
+          key = /** @type {ExpressionNode} */ (watch).property
+            ? /** @type {LiteralNode} */ (
+                /** @type {ExpressionNode} */ (watch).property
+              ).name
+            : /** @type {LiteralNode} */ (watch).name;
 
           if (!key) {
             throw new Error("Unable to determine key");
@@ -839,12 +866,16 @@ export class Scope {
           listener.property.push(key);
           break;
         } else {
-          const { toWatch } = get._decoratedNode.body[0].expression;
+          const { toWatch } = /** @type {BodyNode} */ (expr);
 
           for (let i = 0, l = toWatch.length; i < l; i++) {
             const x = toWatch[i];
 
-            const registerKey = x.property ? x.property.name : x.name;
+            const registerKey = /** @type {ExpressionNode} */ (x).property
+              ? /** @type {LiteralNode} */ (
+                  /** @type {ExpressionNode} */ (x).property
+                ).name
+              : /** @type {LiteralNode} */ (x).name;
 
             if (!registerKey) throw new Error("Unable to determine key");
 
@@ -857,7 +888,11 @@ export class Scope {
             for (let i = 0, l = toWatch.length; i < l; i++) {
               const x = toWatch[i];
 
-              const deregisterKey = x.property ? x.property.name : x.name;
+              const deregisterKey = /** @type {ExpressionNode} */ (x).property
+                ? /** @type {LiteralNode} */ (
+                    /** @type {ExpressionNode} */ (x).property
+                  ).name
+                : /** @type {LiteralNode} */ (x).name;
 
               this.#deregisterKey(deregisterKey, listener.id);
             }
@@ -866,9 +901,13 @@ export class Scope {
       }
       // 7
       case ASTType._UnaryExpression: {
-        const expr = get._decoratedNode.body[0].expression.toWatch[0];
+        const x = /** @type {BodyNode} */ (expr).toWatch[0];
 
-        key = expr.property ? expr.property.name : expr.name;
+        key = /** @type {ExpressionNode} */ (x).property
+          ? /** @type {LiteralNode} */ (
+              /** @type {ExpressionNode} */ (x).property
+            ).name
+          : /** @type {LiteralNode} */ (x).name;
 
         if (!key) {
           throw new Error("Unable to determine key");
@@ -878,13 +917,15 @@ export class Scope {
       }
       // 8 function
       case ASTType._CallExpression: {
-        const { toWatch } = get._decoratedNode.body[0].expression;
+        const { toWatch } = /** @type {BodyNode} */ (
+          /** @type {ExpressionNode} */ (expr)
+        );
 
         for (let i = 0, l = toWatch.length; i < l; i++) {
           const x = toWatch[i];
 
           if (!isDefined(x)) continue;
-          this.#registerKey(x.name, listener);
+          this.#registerKey(/** @type {LiteralNode} */ (x).name, listener);
           this.#scheduleListener([listener]);
         }
 
@@ -893,18 +934,25 @@ export class Scope {
             const x = toWatch[i];
 
             if (!isDefined(x)) continue;
-            this.#deregisterKey(x.name, listener.id);
+            this.#deregisterKey(
+              /** @type {LiteralNode} */ (x).name,
+              listener.id,
+            );
           }
         };
       }
 
       // 9
       case ASTType._MemberExpression: {
-        key = get._decoratedNode.body[0].expression.property.name;
+        key = /** @type {LiteralNode} */ (
+          /** @type {ExpressionNode} */ (expr).property
+        ).name;
 
         // array watcher
         if (!key) {
-          key = get._decoratedNode.body[0].expression.object.name;
+          key = /** @type {LiteralNode} */ (
+            /** @type {ExpressionNode} */ (expr).object
+          ).name;
         }
 
         listener.property.push(key);
@@ -931,19 +979,23 @@ export class Scope {
 
       // 10
       case ASTType._Identifier: {
-        listener.property.push(get._decoratedNode.body[0].expression.name);
+        listener.property.push(/** @type {LiteralNode} */ (expr).name);
         break;
       }
 
       // 12
       case ASTType._ArrayExpression: {
-        const { elements } = get._decoratedNode.body[0].expression;
+        const { elements } = /** @type {ArrayNode} */ (expr);
 
         for (let i = 0, l = elements.length; i < l; i++) {
           const x = elements[i];
 
           const registerKey =
-            x.type === ASTType._Literal ? x.value : x.toWatch[0]?.name;
+            x.type === ASTType._Literal
+              ? /** @type {LiteralNode} */ (x).value
+              : /** @type {LiteralNode} */ (
+                  /** @type {BodyNode} */ (x).toWatch[0]
+                )?.name;
 
           if (!registerKey) continue;
 
@@ -956,7 +1008,11 @@ export class Scope {
             const x = elements[i];
 
             const deregisterKey =
-              x.type === ASTType._Literal ? x.value : x.toWatch[0]?.name;
+              x.type === ASTType._Literal
+                ? /** @type {LiteralNode} */ (x).value
+                : /** @type {LiteralNode} */ (
+                    /** @type {BodyNode} */ (x).toWatch[0]
+                  ).name;
 
             if (!deregisterKey) continue;
 
@@ -967,21 +1023,25 @@ export class Scope {
 
       // 14
       case ASTType._ObjectExpression: {
-        const { properties } = get._decoratedNode.body[0].expression;
+        const { properties } = /** @type {ObjectNode} */ (expr);
 
         for (let i = 0, l = properties.length; i < l; i++) {
-          const prop = properties[i];
+          const prop = /** @type {ObjectPropertyNode} */ (properties[i]);
 
           let currentKey;
 
           if (prop.key.isPure === false) {
-            currentKey = prop.key.name;
-          } else if (prop.value?.name) {
-            currentKey = prop.value.name;
+            currentKey = /** @type {LiteralNode} */ (prop.key).name;
+          } else if (/** @type {LiteralNode} */ (prop.value)?.name) {
+            currentKey = /** @type {LiteralNode} */ (prop.value).name;
           } else {
-            const target = get._decoratedNode.body[0].expression.toWatch[0];
+            const target = /** @type {BodyNode} */ (expr).toWatch[0];
 
-            currentKey = target.property ? target.property.name : target.name;
+            currentKey = /** @type {ExpressionNode} */ (target).property
+              ? /** @type {LiteralNode} */ (
+                  /** @type {ExpressionNode} */ (target).property
+                ).name
+              : /** @type {LiteralNode} */ (target).name;
           }
 
           if (currentKey) {

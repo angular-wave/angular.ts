@@ -29,7 +29,9 @@ export class Parser {
 
     const fn = this._astCompiler.compile(ast);
 
-    fn._literal = isLiteral(ast);
+    fn._literal = isLiteral(
+      /** @type {import("../ast/ast-node.ts").BodyNode} */ (ast),
+    );
     fn.constant = !!ast.constant;
 
     return fn;
@@ -37,7 +39,7 @@ export class Parser {
 }
 
 /**
- * @param {import("../ast/ast-node.ts").ASTNode} ast
+ * @param {import("../ast/ast-node.ts").BodyNode} ast
  * @returns {boolean}
  */
 function isLiteral(ast) {
@@ -49,7 +51,10 @@ function isLiteral(ast) {
   }
 
   if (body && body.length === 1) {
-    switch (body[0].expression?.type) {
+    switch (
+      /** @type {import("../ast/ast-node.ts").ExpressionNode} */ (body[0])
+        .expression?.type
+    ) {
       case ASTType._Literal:
       case ASTType._ArrayExpression:
       case ASTType._ObjectExpression:

@@ -17,9 +17,6 @@ const literals = {
   undefined,
 };
 
-/**
- * @class
- */
 export class AST {
   /**
    * @param {import('../lexer/lexer.js').Lexer} lexer - The lexer instance for tokenizing input
@@ -470,7 +467,7 @@ export class AST {
     /** @type {ASTNode[]} */
     const properties = [];
 
-    /** @type {ASTNode} */
+    /** @type {import("./ast-node.ts").ObjectPropertyNode} */
     let property;
 
     if (this._peekToken().text !== "}") {
@@ -479,7 +476,10 @@ export class AST {
           // Support trailing commas per ES5.1.
           break;
         }
-        property = { type: ASTType._Property, kind: "init" };
+        property = /** @type {import("./ast-node.ts").ObjectPropertyNode} */ ({
+          type: ASTType._Property,
+          kind: "init",
+        });
 
         if (/** @type {Token} */ (this._peek()).constant) {
           property.key = this._constant();

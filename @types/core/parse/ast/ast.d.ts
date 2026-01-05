@@ -1,6 +1,3 @@
-/**
- * @class
- */
 export class AST {
   /**
    * @param {import('../lexer/lexer.js').Lexer} lexer - The lexer instance for tokenizing input
