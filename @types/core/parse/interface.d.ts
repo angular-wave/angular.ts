@@ -1,5 +1,5 @@
-import type { DecoratedASTNode } from "./interpreter.js";
 import type { Scope } from "../scope/scope.js";
+import { BodyNode } from "./ast/ast-node.ts";
 /**
  * Describes metadata and behavior for a compiled AngularTS expression.
  */
@@ -11,7 +11,7 @@ export interface CompiledExpressionProps {
   /** Optional flag for pure expressions. */
   _isPure?: boolean;
   /** AST node decorated with metadata. */
-  _decoratedNode: DecoratedASTNode;
+  _decoratedNode: BodyNode;
   /** Expression inputs; may be an array or a function. */
   _inputs?: any[] | Function;
   /**

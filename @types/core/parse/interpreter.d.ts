@@ -3,6 +3,15 @@
  * @returns {boolean}
  */
 export function isAssignable(ast: any): boolean;
+/** @typedef {import("./ast/ast-node.ts").ASTNode} ASTNode */
+/** @typedef {import("./ast/ast-node.ts").BodyNode} BodyNode */
+/** @typedef {import("./ast/ast-node.ts").ExpressionNode} ExpressionNode */
+/** @typedef {import("./ast/ast-node.ts").ArrayNode} ArrayNode */
+/** @typedef {import("./ast/ast-node.ts").LiteralNode} LiteralNode */
+/** @typedef {import("./ast/ast-node.ts").ObjectNode} ObjectNode */
+/** @typedef {import("./ast/ast-node.ts").ObjectPropertyNode} ObjectPropertyNode */
+/** @typedef {import("./interface.ts").CompiledExpression} CompiledExpression */
+/** @typedef {import("./interface.ts").CompiledExpressionFunction} CompiledExpressionFunction */
 export const PURITY_ABSOLUTE: 1;
 export const PURITY_RELATIVE: 2;
 export class ASTInterpreter {
@@ -14,12 +23,10 @@ export class ASTInterpreter {
   _$filter: ng.FilterService;
   /**
    * Compiles the AST into a function.
-   * @param {import("./ast/ast.js").ASTNode} ast - The AST to compile.
-   * @returns {import("./interface.ts").CompiledExpression}
+   * @param {ASTNode} ast - The AST to compile.
+   * @returns {CompiledExpression}
    */
-  compile(
-    ast: import("./ast/ast.js").ASTNode,
-  ): import("./interface.ts").CompiledExpression;
+  compile(ast: ASTNode): CompiledExpression;
   /**
    * Unary plus operation.
    * @param {function} argument - The argument function.
@@ -218,8 +225,13 @@ export class ASTInterpreter {
   ): Function;
   #private;
 }
-export type DecoratedASTNode = any & {
-  isPure: boolean | number;
-  constant: boolean;
-  toWatch: any[];
-};
+export type ASTNode = import("./ast/ast-node.ts").ASTNode;
+export type BodyNode = import("./ast/ast-node.ts").BodyNode;
+export type ExpressionNode = import("./ast/ast-node.ts").ExpressionNode;
+export type ArrayNode = import("./ast/ast-node.ts").ArrayNode;
+export type LiteralNode = import("./ast/ast-node.ts").LiteralNode;
+export type ObjectNode = import("./ast/ast-node.ts").ObjectNode;
+export type ObjectPropertyNode = import("./ast/ast-node.ts").ObjectPropertyNode;
+export type CompiledExpression = import("./interface.ts").CompiledExpression;
+export type CompiledExpressionFunction =
+  import("./interface.ts").CompiledExpressionFunction;

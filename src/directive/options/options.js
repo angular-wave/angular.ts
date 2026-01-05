@@ -418,7 +418,11 @@ export function ngOptionsDirective($compile, $parse) {
     //   scope.$watch(i, updateOptions);
     // });
     scope.$watch(
-      ngOptions.getWatchables._decoratedNode.body[0].expression.name,
+      /** @type {import('../../core/parse/ast/ast-node.ts').LiteralNode} */ (
+        /** @type {import('../../core/parse/ast/ast-node.ts').ExpressionNode} */ (
+          ngOptions.getWatchables._decoratedNode.body[0]
+        ).expression
+      ).name,
       updateOptions,
     );
 

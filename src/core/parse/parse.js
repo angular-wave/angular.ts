@@ -4,6 +4,8 @@ import { Lexer } from "./lexer/lexer.js";
 import { Parser } from "./parser/parser.js";
 import { validateRequired } from "../../shared/validate.js";
 
+const lexer = new Lexer();
+
 export class ParseProvider {
   constructor() {
     const cache = Object.create(null);
@@ -30,8 +32,6 @@ export class ParseProvider {
           parsedExpression = cache[cacheKey];
 
           if (!parsedExpression) {
-            const lexer = new Lexer();
-
             const parser = new Parser(lexer, $filter);
 
             parsedExpression = parser._parse(exp);
