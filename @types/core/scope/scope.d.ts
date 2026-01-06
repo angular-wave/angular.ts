@@ -90,14 +90,14 @@ export class Scope {
    * Intercepts and handles property assignments on the target object. If a new value is
    * an object, it will be recursively proxied.
    *
-   * @param {import("./interface.ts").NonScopeMarked} target - The target object.
+   * @param {Object & Record<string, any>} target - The target object.
    * @param {string} property - The name of the property being set.
    * @param {*} value - The new value being assigned to the property.
    * @param {Proxy<Scope>} proxy - The proxy intercepting property access
    * @returns {boolean} - Returns true to indicate success of the operation.
    */
   set(
-    target: import("./interface.ts").NonScopeMarked,
+    target: any & Record<string, any>,
     property: string,
     value: any,
     proxy: ProxyConstructor,
@@ -135,10 +135,29 @@ export class Scope {
     listenerFn?: ng.ListenerFn,
     lazy?: boolean,
   ): () => void;
-  $new(childInstance: any): any;
-  $newIsolate(instance: any): any;
-  $transcluded(parentInstance: any): any;
-  $eval(expr: any, locals: any): any;
+  /**
+   * @param {ng.Scope} [childInstance]
+   * @returns {Proxy<ng.Scope> & ng.Scope}
+   */
+  $new(childInstance?: ng.Scope): ProxyConstructor & ng.Scope;
+  /**
+   * @param {ng.Scope} [instance]
+   * @returns {Proxy<ng.Scope> & ng.Scope}
+   */
+  $newIsolate(instance?: ng.Scope): ProxyConstructor & ng.Scope;
+  /**
+   * @param {ng.Scope} parentInstance
+   * @returns {Proxy<ng.Scope> & ng.Scope}
+   */
+  $transcluded(parentInstance: ng.Scope): ProxyConstructor & ng.Scope;
+  /**
+   * Evaluates an Angular expression in the context of this scope.
+   *
+   * @param {string} expr - Angular expression to evaluate
+   * @param {Record<string, any>} [locals] - Optional local variables
+   * @returns {any}
+   */
+  $eval(expr: string, locals?: Record<string, any>): any;
   /**
    * @param {Object} newTarget
    */
@@ -157,9 +176,12 @@ export class Scope {
   /**
    * @param {string} name
    * @param  {...any} args
-   * @returns {void}
+   * @returns {import("./interface.ts").ScopeEvent | undefined}
    */
-  $emit(name: string, ...args: any[]): void;
+  $emit(
+    name: string,
+    ...args: any[]
+  ): import("./interface.ts").ScopeEvent | undefined;
   /**
    * @param {string} name
    * @param  {...any} args

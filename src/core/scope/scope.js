@@ -288,7 +288,7 @@ export class Scope {
    * Intercepts and handles property assignments on the target object. If a new value is
    * an object, it will be recursively proxied.
    *
-   * @param {import("./interface.ts").NonScopeMarked} target - The target object.
+   * @param {Object & Record<string, any>} target - The target object.
    * @param {string} property - The name of the property being set.
    * @param {*} value - The new value being assigned to the property.
    * @param {Proxy<Scope>} proxy - The proxy intercepting property access
@@ -707,8 +707,7 @@ export class Scope {
   }
 
   /**
-   * @internal *
-   * @param {Object} value
+   * @param {Object & Record<string, any>} value
    */
   #checkeListenersForAllKeys(value) {
     if (isUndefined(value)) {
@@ -778,9 +777,20 @@ export class Scope {
       };
     }
 
-    const expr = /** @type {ExpressionNode & BodyNode} */ (
-      get._decoratedNode.body[0]
-    ).expression;
+    const expr = /** @type {import("../parse/ast/ast-node.ts").ASTNode} */ (
+      /** @type {ExpressionNode & BodyNode} */ (get._decoratedNode.body[0])
+        .expression
+    );
+
+    if (!listenerFn) {
+      let res = get(this.$target);
+
+      while (isFunction(res)) {
+        res = res(this.$target);
+      }
+
+      return undefined;
+    }
 
     /** @type {ng.Listener} */
     const listener = {
@@ -806,15 +816,6 @@ export class Scope {
       // 3
       case ASTType._AssignmentExpression:
         // assignment calls without listener functions
-        if (!listenerFn) {
-          let res = get(this.$target);
-
-          while (isFunction(res)) {
-            res = res(this.$target);
-          }
-
-          return undefined;
-        }
         key = /** @type {LiteralNode} */ (
           /** @type {ExpressionNode} */ (expr).left
         )?.name;
@@ -826,7 +827,7 @@ export class Scope {
             /** @type {BodyNode} */ (expr).toWatch[0]
           )?.test
         )?.name;
-        listener.property.push(key);
+        listener.property.push(/** @type {string} */ (key));
         break;
       }
       // 5
@@ -852,7 +853,10 @@ export class Scope {
           for (let i = 0, l = keyList.length; i < l; i++) {
             const deregisterKey = keyList[i];
 
-            this.#deregisterKey(deregisterKey, listener.id);
+            this.#deregisterKey(
+              /** @type {string} */ (deregisterKey),
+              listener.id,
+            );
           }
         };
       }
@@ -901,7 +905,10 @@ export class Scope {
                   ).name
                 : /** @type {LiteralNode} */ (x).name;
 
-              this.#deregisterKey(deregisterKey, listener.id);
+              this.#deregisterKey(
+                /** @type {string} */ (deregisterKey),
+                listener.id,
+              );
             }
           };
         }
@@ -932,7 +939,10 @@ export class Scope {
           const x = toWatch[i];
 
           if (!isDefined(x)) continue;
-          this.#registerKey(/** @type {LiteralNode} */ (x).name, listener);
+          this.#registerKey(
+            /** @type {string} */ (/** @type {LiteralNode} */ (x).name),
+            listener,
+          );
           this.#scheduleListener([listener]);
         }
 
@@ -942,7 +952,7 @@ export class Scope {
 
             if (!isDefined(x)) continue;
             this.#deregisterKey(
-              /** @type {LiteralNode} */ (x).name,
+              /** @type {string} */ (/** @type {LiteralNode} */ (x).name),
               listener.id,
             );
           }
@@ -962,7 +972,7 @@ export class Scope {
           ).name;
         }
 
-        listener.property.push(key);
+        listener.property.push(/** @type {string} */ (key));
 
         if (watchProp !== key) {
           // Handle nested expression call
@@ -988,7 +998,9 @@ export class Scope {
 
       // 10
       case ASTType._Identifier: {
-        listener.property.push(/** @type {LiteralNode} */ (expr).name);
+        listener.property.push(
+          /** @type {string} */ (/** @type {LiteralNode} */ (expr).name),
+        );
         break;
       }
 
@@ -1069,7 +1081,7 @@ export class Scope {
     const listenerObject = listener.watchFn(this.$target);
 
     if (isObject(listenerObject)) {
-      this._objectListeners.set(listenerObject, [key]);
+      this._objectListeners.set(listenerObject, [/** @type {string} */ (key)]);
     }
 
     if (keySet.length > 0) {
@@ -1077,7 +1089,7 @@ export class Scope {
         this.#registerKey(keySet[i], listener);
       }
     } else {
-      this.#registerKey(key, listener);
+      this.#registerKey(/** @type {string} */ (key), listener);
     }
 
     if (!lazy) {
@@ -1098,11 +1110,15 @@ export class Scope {
 
         return res;
       } else {
-        return this.#deregisterKey(key, listener.id);
+        return this.#deregisterKey(/** @type {string} */ (key), listener.id);
       }
     };
   }
 
+  /**
+   * @param {ng.Scope} [childInstance]
+   * @returns {Proxy<ng.Scope> & ng.Scope}
+   */
   $new(childInstance) {
     let child;
 
@@ -1129,6 +1145,10 @@ export class Scope {
     return proxy;
   }
 
+  /**
+   * @param {ng.Scope} [instance]
+   * @returns {Proxy<ng.Scope> & ng.Scope}
+   */
   $newIsolate(instance) {
     const child = instance ? Object.create(instance) : Object.create(null);
 
@@ -1139,6 +1159,10 @@ export class Scope {
     return proxy;
   }
 
+  /**
+   * @param {ng.Scope} parentInstance
+   * @returns {Proxy<ng.Scope> & ng.Scope}
+   */
   $transcluded(parentInstance) {
     const child = Object.create(this.$target);
 
@@ -1149,24 +1173,38 @@ export class Scope {
     return proxy;
   }
 
-  /** @internal **/
+  /**
+   * @param {string} key
+   * @param {import("./interface.ts").Listener} listener
+   */
   #registerKey(key, listener) {
     if (this._watchers.has(key)) {
-      this._watchers.get(key).push(listener);
+      /** @type {import("./interface.ts").Listener[]} */ (
+        this._watchers.get(key)
+      ).push(listener);
     } else {
       this._watchers.set(key, [listener]);
     }
   }
 
-  /** @internal **/
+  /**
+   * @param {string} key
+   * @param {import("./interface.ts").Listener} listener
+   */
   #registerForeignKey(key, listener) {
     if (this._foreignListeners.has(key)) {
-      this._foreignListeners.get(key).push(listener);
+      /** @type {import("./interface.ts").Listener[]} */ (
+        this._foreignListeners.get(key)
+      ).push(listener);
     } else {
       this._foreignListeners.set(key, [listener]);
     }
   }
 
+  /**
+   * @param {string} key
+   * @param {number} id
+   */
   #deregisterKey(key, id) {
     const listenerList = this._watchers.get(key);
 
@@ -1187,6 +1225,10 @@ export class Scope {
     return true;
   }
 
+  /**
+   * @param {string} key
+   * @param {number} id
+   */
   #deregisterForeignKey(key, id) {
     const listenerList = this._foreignListeners.get(key);
 
@@ -1207,6 +1249,13 @@ export class Scope {
     return true;
   }
 
+  /**
+   * Evaluates an Angular expression in the context of this scope.
+   *
+   * @param {string} expr - Angular expression to evaluate
+   * @param {Record<string, any>} [locals] - Optional local variables
+   * @returns {any}
+   */
   $eval(expr, locals) {
     const fn = $parse(expr);
 
@@ -1286,7 +1335,7 @@ export class Scope {
   /**
    * @param {string} name
    * @param  {...any} args
-   * @returns {void}
+   * @returns {import("./interface.ts").ScopeEvent | undefined}
    */
   $emit(name, ...args) {
     return this.#eventHelper(
@@ -1308,8 +1357,10 @@ export class Scope {
   }
 
   /**
-   * @internal
-   * @returns {any}
+   * Internal event propagation helper
+   * @param {{ name: string, event?: import("./interface.ts").ScopeEvent, broadcast: boolean }} param0 - Event info
+   * @param {...any} args - Additional arguments passed to listeners
+   * @returns {import("./interface.ts").ScopeEvent|undefined}
    */
   #eventHelper({ name, event, broadcast }, ...args) {
     if (!broadcast) {
@@ -1334,10 +1385,13 @@ export class Scope {
         currentScope: this.$target,
         stopped: false,
         stopPropagation() {
-          event.stopped = true;
+          /** @type {import("./interface.ts").ScopeEvent} */ (event).stopped =
+            true;
         },
         preventDefault() {
-          event.defaultPrevented = true;
+          /** @type {import("./interface.ts").ScopeEvent} */ (
+            event
+          ).defaultPrevented = true;
         },
         defaultPrevented: false,
       };
@@ -1433,7 +1487,7 @@ export class Scope {
     if (this.#isRoot()) {
       this._watchers.clear();
     } else {
-      const children = this.$parent._children;
+      const children = /** @type {Scope} */ (this.$parent)._children;
 
       for (let i = 0, l = children.length; i < l; i++) {
         if (children[i].$id === this.$id) {
@@ -1450,6 +1504,7 @@ export class Scope {
   /**
    * @internal
    * @param {import('./interface.ts').Listener} listener - The property path that was changed.
+   * @param {Scope | typeof Proxy<Scope> | undefined} target
    */
   #notifyListener(listener, target) {
     const { originalTarget, listenerFn, watchFn } = listener;
@@ -1476,7 +1531,7 @@ export class Scope {
       listenerFn(newVal, originalTarget);
 
       while ($postUpdateQueue.length) {
-        const fn = $postUpdateQueue.shift();
+        const fn = /** @type {Function} */ ($postUpdateQueue.shift());
 
         fn();
       }
@@ -1488,7 +1543,7 @@ export class Scope {
   /* @ignore */
   $flushQueue() {
     while ($postUpdateQueue.length) {
-      $postUpdateQueue.shift()();
+      /** @type {Function} */ ($postUpdateQueue.shift())();
     }
   }
 
@@ -1529,7 +1584,7 @@ export class Scope {
     const stack = [this.$root];
 
     while (stack.length) {
-      const scope = stack.pop();
+      const scope = /** @type {Scope} */ (stack.pop());
 
       if (scope.$scopename === name) {
         return scope;
@@ -1578,7 +1633,7 @@ function collectChildIds(child) {
   const stack = [child];
 
   while (stack.length) {
-    const node = stack.pop();
+    const node = /** @type {Scope} */ (stack.pop());
 
     if (!ids.has(node.$id)) {
       ids.add(node.$id);
