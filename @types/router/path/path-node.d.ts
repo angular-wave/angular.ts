@@ -16,7 +16,7 @@ export class PathNode {
   /** Sets [[paramValues]] for the node, from the values of an object hash */
   applyRawParams(params: any): this;
   /** Gets a specific [[Param]] metadata that belongs to the node */
-  parameter(name: any): undefined;
+  parameter(name: any): any;
   /**
    * @returns true if the state and parameter values for another PathNode are
    * equal to the state and param values for this PathNode

@@ -1,6 +1,12 @@
 export interface InterpolationFunction {
   expressions: any[];
-  (context: any): string;
+  /**
+   * Evaluate the interpolation.
+   * @param context - The scope/context
+   * @param cb - Optional callback when expressions change
+   */
+  (context: any, cb?: (val: any) => void): any;
+  exp: string;
 }
 export interface InterpolateService {
   (

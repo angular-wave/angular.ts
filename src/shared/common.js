@@ -125,10 +125,11 @@ export function defaults(opts, ...defaultsList) {
  * var foo = { a: 1, b: 2, c: 3 };
  * var ab = pick(foo, ['a', 'b']); // { a: 1, b: 2 }
  * ```
- * @param obj the source object
- * @param propNames an Array of strings, which are the whitelisted property names
+ * @param {any} obj the source object
+ * @param {string | any[]} propNames an Array of strings, which are the whitelisted property names
  */
 export function pick(obj, propNames) {
+  /** @type {Record<string, any>} */
   const objCopy = {};
 
   for (const _prop in obj) {
@@ -139,30 +140,44 @@ export function pick(obj, propNames) {
 
   return objCopy;
 }
+
 /**
  * Return a copy of the object omitting the blacklisted properties.
- *
- * @example
- * ```
- *
- * var foo = { a: 1, b: 2, c: 3 };
- * var ab = omit(foo, ['a', 'b']); // { c: 3 }
- * ```
- * @param obj the source object
- * @param propNames an Array of strings, which are the blacklisted property names
+ * @example ```
+
+var foo = { a: 1, b: 2, c: 3 };
+var ab = omit(foo, ['a', 'b']); // { c: 3 }
+```
+ * @param {{ [x: string]: any; }} obj the source object
+ * @param {string | any[]} propNames an Array of strings, which are the blacklisted property names
  */
 export function omit(obj, propNames) {
   return Object.keys(obj)
     .filter((x) => !propNames.includes(x))
-    .reduce((acc, key) => ((acc[key] = obj[key]), acc), {});
+    .reduce(
+      /**
+       * @param {Record<string, any>} acc
+       * @param {string} key
+       * */ (acc, key) => ((acc[key] = obj[key]), acc),
+      {},
+    );
 }
 
-/** Filters an Array or an Object's properties based on a predicate */
+/**
+ * Filters an Array or an Object's properties based on a predicate
+ * @param {Record<string, any> | ArrayLike<any>} collection
+ * @param {{ (x: any): boolean; (item: any): boolean; (val: any, key: any): boolean; (arg0: any, arg1: string): any; }} callback
+ */
 export function filter(collection, callback) {
-  const arr = isArray(collection),
-    result = arr ? [] : {};
+  const arr = isArray(collection);
 
-  const accept = arr ? (x) => result.push(x) : (x, key) => (result[key] = x);
+  /** @type {Record<string, any>} */
+  const result = arr ? [] : {};
+
+  const accept = arr
+    ? (/** @type {any} */ x) => result.push(x)
+    : (/** @type {any} */ x, /** @type {string | number} */ key) =>
+        (result[key] = x);
 
   entries(collection).forEach(([i, item]) => {
     if (callback(item, i)) accept(item, i);
@@ -171,8 +186,15 @@ export function filter(collection, callback) {
   return result;
 }
 
-/** Finds an object from an array, or a property of an object, that matches a predicate */
+/**
+ * Finds an object from an array, or a property of an object, that matches a predicate
+ * @param {{ [s: string]: any; } | ArrayLike<any>} collection
+ * @param {function} callback
+ */
 export function find(collection, callback) {
+  /**
+   * @type {any}
+   */
   let result;
 
   entries(collection).forEach(([i, item]) => {
@@ -184,7 +206,17 @@ export function find(collection, callback) {
   return result;
 }
 
-/** Maps an array or object properties using a callback function */
+/**
+ * Maps over an array or object and returns a new collection
+ * with the same shape.
+ *
+ * @template T
+ * @template R
+ * @param {T[] | Record<string, T>} collection
+ * @param {(value: T, key: string | number) => R} callback
+ * @param {R[] | Record<string, R>} [target]
+ * @returns {R[] | Record<string, R>}
+ */
 export function map(collection, callback, target) {
   target = target || (isArray(collection) ? [] : {});
   entries(collection).forEach(([i, item]) => (target[i] = callback(item, i)));
@@ -205,7 +237,8 @@ export function map(collection, callback, target) {
  * vals.reduce(allTrueR, true); // false
  * ```
  */
-export const allTrueR = (memo, elem) => memo && elem;
+export const allTrueR = (/** @type {any} */ memo, /** @type {any} */ elem) =>
+  memo && elem;
 /**
  * Reduce function that returns true if any of the values are truthy.
  *
@@ -219,41 +252,56 @@ export const allTrueR = (memo, elem) => memo && elem;
  * vals.reduce(anyTrueR, true); // true
  * ```
  */
-export const anyTrueR = (memo, elem) => memo || elem;
+export const anyTrueR = (/** @type {any} */ memo, /** @type {any} */ elem) =>
+  memo || elem;
+
 /**
  * Reduce function which un-nests a single level of arrays
- * @example
- * ```
  *
+ * @template T
+ * @param {T[]} memo
+ * @param {T | T[]} elem
+ * @returns {T[]}
+ *
+ * @example
  * let input = [ [ "a", "b" ], [ "c", "d" ], [ [ "double", "nested" ] ] ];
- * input.reduce(unnestR, []) // [ "a", "b", "c", "d", [ "double, "nested" ] ]
- * ```
+ * input.reduce(unnestR, []) // [ "a", "b", "c", "d", [ "double", "nested" ] ]
  */
 export const unnestR = (memo, elem) => memo.concat(elem);
+
 /**
  * Reduce function which recursively un-nests all arrays
  *
- * @example
- * ```
+ * @template T
+ * @param {T[]} memo
+ * @param {any} elem
+ * @returns {T[]}
  *
+ * @example
  * let input = [ [ "a", "b" ], [ "c", "d" ], [ [ "double", "nested" ] ] ];
- * input.reduce(unnestR, []) // [ "a", "b", "c", "d", "double, "nested" ]
- * ```
+ * input.reduce(flattenR, []) // [ "a", "b", "c", "d", "double", "nested" ]
  */
 export const flattenR = (memo, elem) =>
-  isArray(elem) ? memo.concat(elem.reduce(flattenR, [])) : pushR(memo, elem);
+  Array.isArray(elem)
+    ? memo.concat(elem.reduce(flattenR, []))
+    : pushR(memo, elem);
+
 /**
  * Reduce function that pushes an object to an array, then returns the array.
  * Mostly just for [[flattenR]] and [[uniqR]]
+ * @param {any[]} arr
+ * @param {unknown} obj
  */
 export function pushR(arr, obj) {
   arr.push(obj);
 
   return arr;
 }
+
 /** Reduce function that filters out duplicates */
-export const uniqR = (acc, token) =>
+export const uniqR = (/** @type {any[]} */ acc, /** @type {any} */ token) =>
   acc.includes(token) ? acc : pushR(acc, token);
+
 /**
  * Return a new array with a single level of arrays unnested.
  *
@@ -264,7 +312,7 @@ export const uniqR = (acc, token) =>
  * unnest(input) // [ "a", "b", "c", "d", [ "double, "nested" ] ]
  * ```
  */
-export const unnest = (arr) => arr.reduce(unnestR, []);
+export const unnest = (/** @type {any[]} */ arr) => arr.reduce(unnestR, []);
 
 /**
  * Given a .filter Predicate, builds a .filter Predicate which throws an error if any elements do not pass.
@@ -281,6 +329,11 @@ export const unnest = (arr) => arr.reduce(unnestR, []);
  */
 export const assertPredicate = assertFn;
 
+/**
+ * @param {(arg0: any) => any} predicateOrMap
+ * @param {string} errMsg
+ * @return {(obj:any) => any}
+ */
 export function assertFn(predicateOrMap, errMsg = "assert failure") {
   return (obj) => {
     const result = predicateOrMap(obj);
@@ -339,25 +392,26 @@ export function arrayTuples(...args) {
 
   return result;
 }
+
 /**
  * Reduce function which builds an object from an array of [key, value] pairs.
  *
  * Each iteration sets the key/val pair on the memo object, then returns the memo for the next iteration.
  *
  * Each keyValueTuple should be an array with values [ key: string, value: any ]
- *
- * @example
- * ```
- *
- * var pairs = [ ["fookey", "fooval"], ["barkey", "barval"] ]
- *
- * var pairsToObj = pairs.reduce((memo, pair) => applyPairs(memo, pair), {})
- * // pairsToObj == { fookey: "fooval", barkey: "barval" }
- *
- * // Or, more simply:
- * var pairsToObj = pairs.reduce(applyPairs, {})
- * // pairsToObj == { fookey: "fooval", barkey: "barval" }
- * ```
+ * @example ```
+
+    var pairs = [ ["fookey", "fooval"], ["barkey", "barval"] ]
+
+    var pairsToObj = pairs.reduce((memo, pair) => applyPairs(memo, pair), {})
+    // pairsToObj == { fookey: "fooval", barkey: "barval" }
+
+    // Or, more simply:
+    var pairsToObj = pairs.reduce(applyPairs, {})
+    // pairsToObj == { fookey: "fooval", barkey: "barval" }
+```
+ * @param {{ [x: string]: any; }} memo
+ * @param {any[]} keyValTuple
  */
 export function applyPairs(memo, keyValTuple) {
   let key, value;
@@ -382,6 +436,8 @@ export function tail(arr) {
 
 /**
  * shallow copy from src to dest
+ * @param {any} src
+ * @param {any} dest
  */
 export function copy(src, dest) {
   if (dest) Object.keys(dest).forEach((key) => delete dest[key]);

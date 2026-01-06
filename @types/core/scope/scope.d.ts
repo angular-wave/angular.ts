@@ -107,17 +107,21 @@ export class Scope {
    * properties (`watch` and `sync`) and binds their methods. For other properties,
    * it returns the value directly.
    *
-   * @param {Object} target - The target object.
+   * @param {Object & Record<string, any>} target - The target object.
    * @param {string|number|symbol} property - The name of the property being accessed.
    * @param {Proxy<Scope>} proxy - The proxy object being invoked
    * @returns {*} - The value of the property or a method if accessing `watch` or `sync`.
    */
   get(
-    target: any,
+    target: any & Record<string, any>,
     property: string | number | symbol,
     proxy: ProxyConstructor,
   ): any;
-  deleteProperty(target: any, property: any): boolean;
+  /**
+   * @param {Object & Record<string, any>} target - The target object.
+   * @param {string} property - The name of the property being deleted
+   */
+  deleteProperty(target: any & Record<string, any>, property: string): boolean;
   /**
    * Registers a watcher for a property along with a listener function. The listener
    * function is invoked when changes to that property are detected.

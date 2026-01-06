@@ -1,5 +1,4 @@
 import {
-  extend,
   isDefined,
   isUndefined,
   minErr,
@@ -9,6 +8,9 @@ import { $injectTokens as $t } from "../../injection-tokens.js";
 
 const $interpolateMinErr = minErr("$interpolate");
 
+/**
+ * @param {string} text
+ */
 function throwNoconcat(text) {
   throw $interpolateMinErr(
     "noconcat",
@@ -19,6 +21,10 @@ function throwNoconcat(text) {
   );
 }
 
+/**
+ * @param {string} text
+ * @param {Error} err
+ */
 function interr(text, err) {
   throw $interpolateMinErr(
     "interr",
@@ -66,9 +72,9 @@ export class InterpolateProvider {
       /** @type {InterpolateProvider} */
       const provider = this;
 
-      const startSymbolLength = provider.startSymbol.length;
+      const startSymbolLength = this.startSymbol.length;
 
-      const endSymbolLength = provider.endSymbol.length;
+      const endSymbolLength = this.endSymbol.length;
 
       const escapedStartRegexp = new RegExp(
         provider.startSymbol.replace(/./g, escape),
@@ -80,10 +86,16 @@ export class InterpolateProvider {
         "g",
       );
 
+      /**
+       * @param {any} ch
+       */
       function escape(ch) {
         return `\\\\\\${ch}`;
       }
 
+      /**
+       * @param {string} text
+       */
       function unescapeText(text) {
         return text
           .replace(escapedStartRegexp, provider.startSymbol)
@@ -195,7 +207,7 @@ export class InterpolateProvider {
        *    provides Strict Contextual Escaping for details.
        * @param {boolean=} allOrNothing if `true`, then the returned function returns undefined
        *    unless all embedded expressions evaluate to a value other than `undefined`.
-       * @returns {Function} an interpolation function which is used to compute the
+       * @returns {import("./interface.js").InterpolationFunction | undefined} an interpolation function which is used to compute the
        *    interpolated string. The function has these parameters:
        *
        * - `context`: evaluation context for all expressions embedded in the interpolated text
@@ -237,14 +249,23 @@ export class InterpolateProvider {
 
         let index = 0;
 
+        /**
+         * @type {string[]}
+         */
         const expressions = [];
 
         const textLength = text.length;
 
         let exp;
 
+        /**
+         * @type {any[]}
+         */
         const concat = [];
 
+        /**
+         * @type {number[]}
+         */
         const expressionPositions = [];
 
         while (index < textLength) {
@@ -299,7 +320,7 @@ export class InterpolateProvider {
         // only used in srcdoc attributes, this would not be very useful.
 
         if (!mustHaveExpression || expressions.length) {
-          const compute = function (values) {
+          const compute = function (/** @type {any[]} */ values) {
             for (let i = 0, ii = expressions.length; i < ii; i++) {
               if (allOrNothing && isUndefined(values[i])) return undefined;
               concat[expressionPositions[i]] = values[i];
@@ -322,68 +343,54 @@ export class InterpolateProvider {
             return concat.join("");
           };
 
-          return /**@type {import("./interface.ts").InterpolationFunction}  */ extend(
-            (context, cb) => {
-              let i = 0;
+          /**
+           * @type {import("./interface.ts").InterpolationFunction}
+           */
+          const fn = (
+            /** @type {ng.Scope} */ context,
+            /** @type {(val: any) => void=} */ cb,
+          ) => {
+            const ii = expressions.length;
 
-              const ii = expressions.length;
+            const values = new Array(ii);
 
-              const values = new Array(ii);
+            try {
+              for (let i = 0; i < ii; i++) {
+                if (cb) {
+                  const watchProp = expressions[i].trim();
 
-              try {
-                for (; i < ii; i++) {
-                  if (cb) {
-                    const watchProp = expressions[i].trim();
+                  context.$watch(watchProp, () => {
+                    const vals = new Array(ii);
 
-                    context.$watch(watchProp, () => {
-                      const vals = new Array(ii);
+                    for (let j = 0; j < ii; j++) {
+                      vals[j] = parseFns[j](context);
+                    }
 
-                      let j = 0;
-
-                      for (; j < ii; j++) {
-                        const fn = parseFns[j];
-
-                        vals[j] = fn(context);
-                      }
-                      cb(compute(vals));
-                    });
-                  }
-
-                  values[i] = parseFns[i](context);
+                    cb(compute(vals));
+                  });
                 }
 
-                return compute(values);
-              } catch (err) {
-                return interr(text, err);
+                values[i] = parseFns[i](context);
               }
-            },
-            {
-              // Most likely we would need to register watches during interpolation
-              // all of these properties are undocumented for now
-              exp: text, // just for compatibility with regular watchers created via $watch
-              expressions,
-              _watchDelegate(scope, listener) {
-                let lastValue;
 
-                return scope.$watch(
-                  parseFns,
-                  function interpolateFnWatcher(values, oldValues) {
-                    const currValue = compute(values);
+              return compute(values);
+            } catch (err) {
+              return interr(text, /** @type {Error} */ (err));
+            }
+          };
 
-                    listener.call(
-                      provider,
-                      currValue,
-                      values !== oldValues ? lastValue : currValue,
-                      scope,
-                    );
-                    lastValue = currValue;
-                  },
-                );
-              },
-            },
-          );
+          // Attach required properties so TS sees them
+          /** @type {string} */
+          fn.exp = text;
+          /** @type {any[]} */
+          fn.expressions = expressions;
+
+          return fn;
         }
 
+        /**
+         * @param {string} value
+         */
         function parseStringifyInterceptor(value) {
           try {
             // In concatenable contexts, getTrusted comes at the end, to avoid sanitizing individual
@@ -397,7 +404,7 @@ export class InterpolateProvider {
 
             return allOrNothing && !isDefined(value) ? value : stringify(value);
           } catch (err) {
-            return interr(text, err);
+            return interr(text, /** @type {Error} */ (err));
           }
         }
 

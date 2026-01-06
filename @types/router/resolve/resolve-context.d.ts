@@ -80,7 +80,7 @@ export class ResolveContext {
    * @returns {Promise<any>|any}
    */
   resolvePath(when: string, trans: any): Promise<any> | any;
-  findNode(resolvable: any): undefined;
+  findNode(resolvable: any): any;
   /**
    * Gets the async dependencies of a Resolvable
    *

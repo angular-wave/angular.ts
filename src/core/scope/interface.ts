@@ -2,7 +2,7 @@ import type { CompiledExpression } from "../parse/interface.ts";
 
 export type ListenerFn = (newValue?: any, originalTarget?: object) => void;
 
-export type NonScope = string[] | boolean | undefined;
+export type NonScope = string[] | boolean;
 
 export interface NonScopeMarked {
   $nonscope?: NonScope;

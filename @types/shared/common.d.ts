@@ -67,36 +67,83 @@ export function defaults(
  * var foo = { a: 1, b: 2, c: 3 };
  * var ab = pick(foo, ['a', 'b']); // { a: 1, b: 2 }
  * ```
- * @param obj the source object
- * @param propNames an Array of strings, which are the whitelisted property names
+ * @param {any} obj the source object
+ * @param {string | any[]} propNames an Array of strings, which are the whitelisted property names
  */
-export function pick(obj: any, propNames: any): {};
+export function pick(obj: any, propNames: string | any[]): Record<string, any>;
 /**
  * Return a copy of the object omitting the blacklisted properties.
- *
- * @example
- * ```
- *
- * var foo = { a: 1, b: 2, c: 3 };
- * var ab = omit(foo, ['a', 'b']); // { c: 3 }
- * ```
- * @param obj the source object
- * @param propNames an Array of strings, which are the blacklisted property names
+ * @example ```
+
+var foo = { a: 1, b: 2, c: 3 };
+var ab = omit(foo, ['a', 'b']); // { c: 3 }
+```
+ * @param {{ [x: string]: any; }} obj the source object
+ * @param {string | any[]} propNames an Array of strings, which are the blacklisted property names
  */
-export function omit(obj: any, propNames: any): {};
-/** Filters an Array or an Object's properties based on a predicate */
-export function filter(collection: any, callback: any): {};
-/** Finds an object from an array, or a property of an object, that matches a predicate */
-export function find(collection: any, callback: any): undefined;
-/** Maps an array or object properties using a callback function */
-export function map(collection: any, callback: any, target: any): any;
+export function omit(
+  obj: {
+    [x: string]: any;
+  },
+  propNames: string | any[],
+): Record<string, any>;
+/**
+ * Filters an Array or an Object's properties based on a predicate
+ * @param {Record<string, any> | ArrayLike<any>} collection
+ * @param {{ (x: any): boolean; (item: any): boolean; (val: any, key: any): boolean; (arg0: any, arg1: string): any; }} callback
+ */
+export function filter(
+  collection: Record<string, any> | ArrayLike<any>,
+  callback: {
+    (x: any): boolean;
+    (item: any): boolean;
+    (val: any, key: any): boolean;
+    (arg0: any, arg1: string): any;
+  },
+): Record<string, any>;
+/**
+ * Finds an object from an array, or a property of an object, that matches a predicate
+ * @param {{ [s: string]: any; } | ArrayLike<any>} collection
+ * @param {function} callback
+ */
+export function find(
+  collection:
+    | {
+        [s: string]: any;
+      }
+    | ArrayLike<any>,
+  callback: Function,
+): any;
+/**
+ * Maps over an array or object and returns a new collection
+ * with the same shape.
+ *
+ * @template T
+ * @template R
+ * @param {T[] | Record<string, T>} collection
+ * @param {(value: T, key: string | number) => R} callback
+ * @param {R[] | Record<string, R>} [target]
+ * @returns {R[] | Record<string, R>}
+ */
+export function map<T, R>(
+  collection: T[] | Record<string, T>,
+  callback: (value: T, key: string | number) => R,
+  target?: R[] | Record<string, R>,
+): R[] | Record<string, R>;
 /**
  * Reduce function that pushes an object to an array, then returns the array.
  * Mostly just for [[flattenR]] and [[uniqR]]
+ * @param {any[]} arr
+ * @param {unknown} obj
  */
-export function pushR(arr: any, obj: any): any;
+export function pushR(arr: any[], obj: unknown): any[];
+/**
+ * @param {(arg0: any) => any} predicateOrMap
+ * @param {string} errMsg
+ * @return {(obj:any) => any}
+ */
 export function assertFn(
-  predicateOrMap: any,
+  predicateOrMap: (arg0: any) => any,
   errMsg?: string,
 ): (obj: any) => any;
 /**
@@ -119,21 +166,28 @@ export function arrayTuples(...args: any[][]): any[][];
  * Each iteration sets the key/val pair on the memo object, then returns the memo for the next iteration.
  *
  * Each keyValueTuple should be an array with values [ key: string, value: any ]
- *
- * @example
- * ```
- *
- * var pairs = [ ["fookey", "fooval"], ["barkey", "barval"] ]
- *
- * var pairsToObj = pairs.reduce((memo, pair) => applyPairs(memo, pair), {})
- * // pairsToObj == { fookey: "fooval", barkey: "barval" }
- *
- * // Or, more simply:
- * var pairsToObj = pairs.reduce(applyPairs, {})
- * // pairsToObj == { fookey: "fooval", barkey: "barval" }
- * ```
+ * @example ```
+
+    var pairs = [ ["fookey", "fooval"], ["barkey", "barval"] ]
+
+    var pairsToObj = pairs.reduce((memo, pair) => applyPairs(memo, pair), {})
+    // pairsToObj == { fookey: "fooval", barkey: "barval" }
+
+    // Or, more simply:
+    var pairsToObj = pairs.reduce(applyPairs, {})
+    // pairsToObj == { fookey: "fooval", barkey: "barval" }
+```
+ * @param {{ [x: string]: any; }} memo
+ * @param {any[]} keyValTuple
  */
-export function applyPairs(memo: any, keyValTuple: any): any;
+export function applyPairs(
+  memo: {
+    [x: string]: any;
+  },
+  keyValTuple: any[],
+): {
+  [x: string]: any;
+};
 /**
  * Returns the last element of an array, or undefined if the array is empty.
  * @template T
@@ -143,15 +197,22 @@ export function applyPairs(memo: any, keyValTuple: any): any;
 export function tail<T>(arr: any[] | string): T | undefined;
 /**
  * shallow copy from src to dest
+ * @param {any} src
+ * @param {any} dest
  */
 export function copy(src: any, dest: any): any;
 export function allTrueR(memo: any, elem: any): any;
 export function anyTrueR(memo: any, elem: any): any;
-export function unnestR(memo: any, elem: any): any;
-export function flattenR(memo: any, elem: any): any;
-export function uniqR(acc: any, token: any): any;
-export function unnest(arr: any): any;
+export function unnestR<T>(memo: T[], elem: T | T[]): T[];
+export function flattenR<T>(memo: T[], elem: any): T[];
+export function uniqR(acc: any[], token: any): any[];
+export function unnest(arr: any[]): any;
+/**
+ * @param {(arg0: any) => any} predicateOrMap
+ * @param {string} errMsg
+ * @return {(obj:any) => any}
+ */
 export function assertPredicate(
-  predicateOrMap: any,
+  predicateOrMap: (arg0: any) => any,
   errMsg?: string,
 ): (obj: any) => any;

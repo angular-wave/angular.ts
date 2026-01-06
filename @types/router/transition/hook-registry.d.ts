@@ -93,7 +93,7 @@ export class RegisteredHook {
    *   retained: true,
    * }
    */
-  _getDefaultMatchCriteria(): any;
+  _getDefaultMatchCriteria(): boolean[] | Record<string, boolean>;
   /**
    * Gets matching nodes as [[IMatchingNodes]]
    *

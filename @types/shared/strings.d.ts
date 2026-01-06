@@ -64,8 +64,8 @@ export function splitOnDelim(
  * let arr = ["foo", "bar", 1, "baz", "", "qux" ];
  * arr.reduce(joinNeighborsR, []) // ["foobar", 1, "bazqux" ]
  * ```
- * @param {string | any[]} acc
+ * @param {any[]} acc
  * @param {unknown} str
  */
-export function joinNeighborsR(acc: string | any[], str: unknown): any;
+export function joinNeighborsR(acc: any[], str: unknown): any[];
 export function stripLastPathElement(str: string): string;
