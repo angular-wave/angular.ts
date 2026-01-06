@@ -593,33 +593,43 @@ export class UrlMatcher {
       return { param, value, isValid, isDefaultValue, squash, encoded };
     }
     // Build up the path-portion from the list of static segments and parameters
-    const pathString = pathSegmentsAndParams.reduce((acc, x) => {
-      // The element is a static segment (a raw string); just append it
-      if (isString(x)) return acc + x;
-      // Otherwise, it's a ParamDetails.
-      const { squash, encoded, param } = x;
+    /** @type {string} */
+    const pathString = /** @type {string} */ (
+      pathSegmentsAndParams.reduce(
+        /** @param {string} acc */ (acc, x) => {
+          // The element is a static segment (a raw string); just append it
+          if (isString(x)) return acc + x;
+          // Otherwise, it's a ParamDetails.
+          const { squash, encoded, param } = x;
 
-      // If squash is === true, try to remove a slash from the path
-      if (squash === true) return acc.match(/\/$/) ? acc.slice(0, -1) : acc;
+          // If squash is === true, try to remove a slash from the path
+          if (squash === true) return acc.match(/\/$/) ? acc.slice(0, -1) : acc;
 
-      // If squash is a string, use the string for the param value
-      if (isString(squash)) return acc + squash;
+          // If squash is a string, use the string for the param value
+          if (isString(squash)) return acc + squash;
 
-      if (squash !== false) return acc; // ?
+          if (squash !== false) return acc; // ?
 
-      if (isNullOrUndefined(encoded)) return acc;
+          if (isNullOrUndefined(encoded)) return acc;
 
-      // If this parameter value is an array, encode the value using encodeDashes
-      if (isArray(encoded)) return acc + map(encoded, encodeDashes).join("-");
+          // If this parameter value is an array, encode the value using encodeDashes
+          if (isArray(encoded))
+            return (
+              acc +
+              /** @type {string[]} */ (map(encoded, encodeDashes)).join("-")
+            );
 
-      // If the parameter type is "raw", then do not encodeURIComponent
-      if (param.raw) {
-        return acc + encoded;
-      }
+          // If the parameter type is "raw", then do not encodeURIComponent
+          if (param.raw) {
+            return acc + encoded;
+          }
 
-      // Encode the value
-      return acc + encodeURIComponent(encoded);
-    }, "");
+          // Encode the value
+          return acc + encodeURIComponent(encoded);
+        },
+        "",
+      )
+    );
 
     // Build the query string by applying parameter values (array or regular)
     // then mapping to key=value, then flattening and joining using "&"

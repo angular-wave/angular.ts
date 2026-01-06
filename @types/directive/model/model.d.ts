@@ -97,7 +97,7 @@ export class NgModelController {
   $error: {};
   _success: {};
   $pending: any;
-  $name: string;
+  $name: any;
   _parentForm: {
     $nonscope: boolean;
     $addControl: Function;

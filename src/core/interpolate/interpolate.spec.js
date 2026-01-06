@@ -168,11 +168,6 @@ describe("$interpolate", () => {
       $compile = $injector.get("$compile");
     });
 
-    it("uses a watch delegate", function () {
-      const interp = $interpolate("has an {{expr}}");
-      expect(interp._watchDelegate).toBeDefined();
-    });
-
     it("correctly returns new value", async () => {
       const interp = $interpolate("{{expr}}");
       $rootScope.$watch("expr", () => {

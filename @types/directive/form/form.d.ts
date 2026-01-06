@@ -88,7 +88,7 @@ export class FormController {
     $interpolate: ng.InterpolateService,
   );
   _controls: any[];
-  $name: string;
+  $name: any;
   /**
    * @property {boolean} $dirty True if user has already interacted with the form.
    */

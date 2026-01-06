@@ -417,14 +417,15 @@ export function ngOptionsDirective($compile, $parse) {
     // watchables.forEach((i) => {
     //   scope.$watch(i, updateOptions);
     // });
-    scope.$watch(
+    const prop = /** @type {string} */ (
       /** @type {import('../../core/parse/ast/ast-node.ts').LiteralNode} */ (
         /** @type {import('../../core/parse/ast/ast-node.ts').ExpressionNode} */ (
           ngOptions.getWatchables._decoratedNode.body[0]
         ).expression
-      ).name,
-      updateOptions,
+      )?.name
     );
+
+    scope.$watch(prop, updateOptions);
 
     // ------------------------------------------------------------------ //
 

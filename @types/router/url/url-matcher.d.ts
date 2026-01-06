@@ -51,7 +51,7 @@
  */
 export class UrlMatcher {
   /** @internal Given a matcher, return an array with the matcher's path segments and path params, in order */
-  static pathSegmentsAndParams(matcher: any): any;
+  static pathSegmentsAndParams(matcher: any): any[];
   /** @internal Given a matcher, return an array with the matcher's query params */
   static queryParams(matcher: any): any;
   /**

@@ -562,7 +562,9 @@ export class Scope {
       }
 
       if (this._objectListeners.has(proxy) && property !== "length") {
-        const keyList = this._objectListeners.get(proxy);
+        const keyList = /** @type {string[]} */ (
+          this._objectListeners.get(proxy)
+        );
 
         for (let i = 0, l = keyList.length; i < l; i++) {
           const key = keyList[i];
@@ -584,7 +586,7 @@ export class Scope {
    * properties (`watch` and `sync`) and binds their methods. For other properties,
    * it returns the value directly.
    *
-   * @param {Object} target - The target object.
+   * @param {Object & Record<string, any>} target - The target object.
    * @param {string|number|symbol} property - The name of the property being accessed.
    * @param {Proxy<Scope>} proxy - The proxy object being invoked
    * @returns {*} - The value of the property or a method if accessing `watch` or `sync`.
@@ -596,8 +598,10 @@ export class Scope {
 
     if (property === isProxySymbol) return true;
 
-    if (target[property] && isProxy(target[property])) {
-      this.$proxy = /** @type {Proxy<Scope>} */ (target[property]);
+    const targetProp = target[/** @type {string} */ (property)];
+
+    if (isProxy(targetProp)) {
+      this.$proxy = /** @type {Proxy<Scope>} */ (targetProp);
     } else {
       this.$proxy = proxy;
     }
@@ -610,7 +614,9 @@ export class Scope {
       ["pop", "shift", "unshift"].includes(/** @type { string } */ (property))
     ) {
       if (this._objectListeners.has(proxy)) {
-        const keyList = this._objectListeners.get(proxy);
+        const keyList = /** @type {string []} */ (
+          this._objectListeners.get(proxy)
+        );
 
         for (let i = 0, l = keyList.length; i < l; i++) {
           const key = keyList[i];
@@ -634,10 +640,14 @@ export class Scope {
       return this.propertyMap[/** @type {string} */ (property)];
     } else {
       // we are a simple getter
-      return target[property];
+      return targetProp;
     }
   }
 
+  /**
+   * @param {Object & Record<string, any>} target - The target object.
+   * @param {string} property - The name of the property being deleted
+   */
   deleteProperty(target, property) {
     // Currently deletes $model
     if (target[property] && target[property][isProxySymbol]) {
@@ -650,7 +660,9 @@ export class Scope {
       }
 
       if (this._objectListeners.has(this.$proxy)) {
-        const keyList = this._objectListeners.get(this.$proxy);
+        const keyList = /** @type {string[]} */ (
+          this._objectListeners.get(this.$proxy)
+        );
 
         for (let i = 0, l = keyList.length; i < l; i++) {
           const key = keyList[i];
@@ -672,7 +684,9 @@ export class Scope {
     delete target[property];
 
     if (this._objectListeners.has(this.$proxy)) {
-      const keyList = this._objectListeners.get(this.$proxy);
+      const keyList = /** @type {string[]} */ (
+        this._objectListeners.get(this.$proxy)
+      );
 
       for (let i = 0, l = keyList.length; i < l; i++) {
         const key = keyList[i];
@@ -692,7 +706,10 @@ export class Scope {
     return true;
   }
 
-  /** @internal **/
+  /**
+   * @internal *
+   * @param {Object} value
+   */
   #checkeListenersForAllKeys(value) {
     if (isUndefined(value)) {
       return;
@@ -778,6 +795,9 @@ export class Scope {
     // simplest case
     let key = /** @type {LiteralNode} */ (expr).name;
 
+    /**
+     * @type {string[]}
+     */
     const keySet = [];
 
     const { type } = expr;

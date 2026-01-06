@@ -188,12 +188,12 @@ export function splitOnDelim(delim) {
  * let arr = ["foo", "bar", 1, "baz", "", "qux" ];
  * arr.reduce(joinNeighborsR, []) // ["foobar", 1, "bazqux" ]
  * ```
- * @param {string | any[]} acc
+ * @param {any[]} acc
  * @param {unknown} str
  */
 export function joinNeighborsR(acc, str) {
-  if (isString(tail(/** @type {string} */ (acc))) && isString(str))
-    return acc.slice(0, -1).concat(tail(/** @type {string} */ (acc)) + str);
+  if (isString(tail(acc)) && isString(str))
+    return acc.slice(0, -1).concat(tail(acc) + str);
 
   return pushR(acc, str);
 }
