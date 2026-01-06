@@ -30,7 +30,7 @@ export interface ScopeEvent {
   /**
    * the scope that is currently handling the event. Once the event propagates through the scope hierarchy, this property is set to null.
    */
-  currentScope: ng.Scope;
+  currentScope: ng.Scope | null;
   /**
    * name of the event.
    */
@@ -43,6 +43,10 @@ export interface ScopeEvent {
    * calling preventDefault sets defaultPrevented flag to true.
    */
   preventDefault(): void;
+  /**
+   * Whether propagation has been stopped
+   */
+  stopped: boolean;
   /**
    * true if preventDefault was called.
    */
