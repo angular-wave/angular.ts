@@ -238,7 +238,7 @@ export class Scope {
     this.$id = nextId();
 
     /**
-     * @type {Scope}
+     * @type {ng.RootScopeService}
      */
     this.$root = context ? context.$root : this;
 
@@ -305,14 +305,9 @@ export class Scope {
       return true;
     }
 
-    if (
-      (target.constructor?.$nonscope &&
-        isArray(target.constructor.$nonscope) &&
-        target.constructor.$nonscope.includes(property)) ||
-      (target.$nonscope &&
-        isArray(target.$nonscope) &&
-        target.$nonscope.includes(property))
-    ) {
+    const nonscopeProps = target.constructor?.$nonscope ?? target.$nonscope;
+
+    if (isArray(nonscopeProps) && nonscopeProps.includes(property)) {
       target[property] = value;
 
       return true;

@@ -68,7 +68,7 @@ export interface AngularBootstrapConfig {
    * This helps find bugs that would break under minified code.
    * Defaults to `false`.
    */
-  strictDi?: boolean;
+  strictDi: boolean;
 }
 
 /**

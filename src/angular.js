@@ -155,6 +155,25 @@ export class Angular extends EventTarget {
   }
 
   /**
+   * @param {CustomEvent} event
+   */
+  dispatchEvent(event) {
+    const $parse = this.$injector.get("$parse");
+
+    const injectable = event.type;
+
+    const target = this.$injector.has(injectable)
+      ? this.$injector.get(injectable)
+      : this.getScopeByName(injectable);
+
+    if (!target) return false;
+
+    $parse(event.detail)(target);
+
+    return true;
+  }
+
+  /**
    * Use this function to manually start up AngularTS application.
    *
    * AngularTS will detect if it has been loaded into the browser more than once and only allow the
