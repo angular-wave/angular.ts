@@ -347,7 +347,6 @@ export function ngOptionsDirective($compile, $parse) {
 
         const selections = [];
 
-        // @ts-ignore
         selectedValues.forEach((value) => {
           const option = options.selectValueMap[value];
 

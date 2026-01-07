@@ -954,9 +954,8 @@ export class CompileProvider {
                 if (nodeLinkFnCtx?.newScope) {
                   setScope(node, childScope);
                 }
-                // @ts-ignore
+
                 nodeLinkFnCtx.nodeLinkFn(
-                  // @ts-ignore
                   childLinkFn,
                   childScope,
                   node,
@@ -1308,7 +1307,7 @@ export class CompileProvider {
            * Links all the directives of a single node.
            * @type {ng.NodeLinkFn}
            */
-          // @ts-ignore
+
           let nodeLinkFn = function (
             childLinkFn,
             scope,
@@ -1772,7 +1771,6 @@ export class CompileProvider {
                   index,
                 );
 
-                // @ts-ignore
                 childTranscludeFn = compilationGenerator(
                   mightHaveMultipleTransclusionError,
                   $template._element,
@@ -1880,7 +1878,7 @@ export class CompileProvider {
                 emptyElement(/** @type {Element} */ (compileNode)); // clear contents on transcluded directives
 
                 // lazily compile transcluded template and generate a transcluded link function
-                // @ts-ignore
+
                 childTranscludeFn = compilationGenerator(
                   mightHaveMultipleTransclusionError,
                   nodes,
@@ -2008,7 +2006,7 @@ export class CompileProvider {
               if (directive.replace) {
                 replaceDirective = directive;
               }
-              // @ts-ignore
+
               nodeLinkFn = compileTemplateUrl(
                 directives.splice(i, directives.length - i),
                 compileNodeRef,

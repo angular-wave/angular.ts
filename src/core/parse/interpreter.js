@@ -81,26 +81,24 @@ export class ASTInterpreter {
       },
     );
 
-    /** @type {import("./interface.ts").CompiledExpression} */
-    // @ts-ignore
-    const fn =
+    const fnRaw =
       body.length === 0
         ? () => {
             /* empty */
           }
         : body.length === 1
-          ? /** @type {import("./interface.ts").CompiledExpression} */ (
-              expressions[0]
-            )
+          ? /** @type {CompiledExpression} */ (expressions[0])
           : function (scope, locals) {
               let lastValue;
 
-              for (let i = 0, j = expressions.length; i < j; i++) {
+              for (let i = 0; i < expressions.length; i++) {
                 lastValue = expressions[i](scope, locals);
               }
 
               return lastValue;
             };
+
+    const fn = /** @type {CompiledExpression} */ (fnRaw);
 
     if (assign) {
       fn._assign = (scope, value, locals) => assign(scope, locals, value);
@@ -109,6 +107,7 @@ export class ASTInterpreter {
     if (inputs) {
       fn._inputs = inputs;
     }
+
     fn._decoratedNode = /** @type {BodyNode} */ (decoratedNode);
 
     return fn;

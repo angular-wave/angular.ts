@@ -31,7 +31,7 @@ let urlUpdatedByLocation = false;
 let _path;
 
 /**
- * @type {Object.<string,boolean|Array<any>>}
+ * @type {Object.<string, string|number|boolean|Array<string|number|boolean>>}
  */
 let _search;
 
@@ -195,7 +195,6 @@ export class Location {
         if (isUndefined(paramValue) || paramValue === null) {
           delete _search[search];
         } else {
-          // @ts-ignore
           _search[search] = paramValue;
         }
     }
@@ -625,12 +624,12 @@ export class LocationProvider {
           ) {
             return;
           }
-          let elm = /** @type {HTMLAnchorElement} */ (event.target);
+          let elm = /** @type {HTMLElement} */ (event.target);
 
           // traverse the DOM up to find first A tag
           while (elm.nodeName.toLowerCase() !== "a") {
             // ignore rewriting if no A tag (reached root element, or no parent - removed from document)
-            // @ts-ignore
+
             if (elm === $rootElement || !(elm = elm.parentElement)) return;
           }
 
@@ -641,7 +640,7 @@ export class LocationProvider {
             return;
           }
 
-          let absHref = elm.href;
+          let absHref = /** @type {HTMLAnchorElement} */ (elm).href;
 
           // get the actual href attribute - see
           // http://msdn.microsoft.com/en-us/library/ie/dd347148(v=vs.85).aspx

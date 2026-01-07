@@ -307,11 +307,9 @@ export function ngRepeatDirective($animate) {
                     if (hasAnimate) {
                       $animate.enter(clone, null, previousNode);
                     } else {
-                      // @ts-ignore
                       previousNode.after(clone);
                     }
 
-                    // @ts-ignore
                     previousNode = endNode;
                     // Note: We only need the first/last node of the cloned nodes.
                     // However, we need to keep the reference to the dom wrapper as it might be changed later

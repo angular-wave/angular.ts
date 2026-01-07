@@ -343,8 +343,10 @@ export function AnimationProvider() {
               }
             }
           }
-          // @ts-ignore
-          $$rAFScheduler(finalAnimations);
+
+          const flatFinalAnimations = finalAnimations.flat();
+
+          $$rAFScheduler(flatFinalAnimations);
         });
 
         return runner;
