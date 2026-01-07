@@ -7,7 +7,7 @@ export class AnimationProvider {
         $rootScope: ng.RootScopeService,
         $injector: ng.InjectorService,
         $$rAFScheduler: import("./raf-scheduler.js").RafScheduler,
-        $$animateCache: any,
+        $$animateCache: import("./cache/animate-cache.js").AnimateCache,
       ) => (elementParam: any, event: any, options: any) => AnimateRunner)
   )[];
 }

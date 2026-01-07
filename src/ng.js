@@ -94,7 +94,7 @@ import { AnimateQueueProvider } from "./animations/queue/animate-queue.js";
 import { AnimateJsProvider } from "./animations/animate-js.js";
 import { AnimationProvider } from "./animations/animation.js";
 import { RafSchedulerProvider } from "./animations/raf-scheduler.js";
-import { AnimateCacheProvider } from "./animations/animate-cache.js";
+import { AnimateCacheProvider } from "./animations/cache/animate-cache.js";
 import { AnimateCssDriverProvider } from "./animations/animate-css-driver.js";
 import { AnimateJsDriverProvider } from "./animations/animate-js-driver.js";
 import { ngAnimateSwapDirective } from "./animations/animate-swap.js";

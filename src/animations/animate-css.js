@@ -153,8 +153,8 @@ export function AnimateCssProvider() {
 
     /**
      *
-     * @param {*} $$animateCache
-     * @param {import("./raf-scheduler").RafScheduler} $$rAFScheduler
+     * @param {import("./cache/animate-cache.js").AnimateCache} $$animateCache
+     * @param {import("./raf-scheduler.js").RafScheduler} $$rAFScheduler
      * @returns
      */
     function ($$animateCache, $$rAFScheduler) {
@@ -167,7 +167,7 @@ export function AnimateCssProvider() {
         allowNoDuration,
         properties,
       ) {
-        let timings = $$animateCache.get(cacheKey);
+        let timings = $$animateCache._get(cacheKey);
 
         if (!timings) {
           timings = computeCssStyles(node, properties);
@@ -186,7 +186,7 @@ export function AnimateCssProvider() {
 
         // we keep putting this in multiple times even though the value and the cacheKey are the same
         // because we're keeping an internal tally of how many duplicate animations are detected.
-        $$animateCache.put(cacheKey, timings, hasDuration);
+        $$animateCache._put(cacheKey, timings, hasDuration);
 
         return timings;
       }
@@ -204,8 +204,8 @@ export function AnimateCssProvider() {
         // if we have one or more existing matches of matching elements
         // containing the same parent + CSS styles (which is how cacheKey works)
         // then staggering is possible
-        if ($$animateCache.count(cacheKey) > 0) {
-          stagger = $$animateCache.get(staggerCacheKey);
+        if ($$animateCache._count(cacheKey) > 0) {
+          stagger = $$animateCache._get(staggerCacheKey);
 
           if (!stagger) {
             const staggerClassName = pendClasses(className, "-stagger");
@@ -222,7 +222,7 @@ export function AnimateCssProvider() {
 
             node.classList.remove(staggerClassName);
 
-            $$animateCache.put(staggerCacheKey, stagger, true);
+            $$animateCache._put(staggerCacheKey, stagger, true);
           }
         }
 
@@ -234,7 +234,7 @@ export function AnimateCssProvider() {
       function waitUntilQuiet(callback) {
         rafWaitQueue.push(callback);
         $$rAFScheduler._waitUntilQuiet(() => {
-          $$animateCache.flush();
+          $$animateCache._flush();
 
           // DO NOT REMOVE THIS LINE OR REFACTOR OUT THE `pageWidth` variable.
           // the line below will force the browser to perform a repaint so
@@ -392,14 +392,14 @@ export function AnimateCssProvider() {
 
         let stagger;
 
-        let cacheKey = $$animateCache.cacheKey(
+        let cacheKey = $$animateCache._cacheKey(
           node,
           method,
           options.addClass,
           options.removeClass,
         );
 
-        if ($$animateCache.containsCachedAnimationWithoutDuration(cacheKey)) {
+        if ($$animateCache._containsCachedAnimationWithoutDuration(cacheKey)) {
           preparationClasses = null;
 
           return closeAndReturnNoopAnimator();
@@ -461,7 +461,7 @@ export function AnimateCssProvider() {
         const itemIndex = stagger
           ? options.staggerIndex >= 0
             ? options.staggerIndex
-            : $$animateCache.count(cacheKey)
+            : $$animateCache._count(cacheKey)
           : 0;
 
         const isFirst = itemIndex === 0;
@@ -840,7 +840,7 @@ export function AnimateCssProvider() {
             );
 
             if (flags.recalculateTimingStyles) {
-              cacheKey = $$animateCache.cacheKey(
+              cacheKey = $$animateCache._cacheKey(
                 node,
                 method,
                 options.addClass,

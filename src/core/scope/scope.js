@@ -978,11 +978,11 @@ export class Scope {
           )(/** @type {Scope} */ (listener.originalTarget));
 
           if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
-            potentialProxy.$handler.#registerForeignKey(key, listener);
+            potentialProxy.$handler._registerForeignKey(key, listener);
             potentialProxy.$handler.#scheduleListener([listener]);
 
             return () => {
-              potentialProxy.$handler.#deregisterForeignKey(key, listener.id);
+              potentialProxy.$handler._deregisterForeignKey(key, listener.id);
 
               return potentialProxy.$handler.#deregisterKey(key, listener.id);
             };
@@ -1186,7 +1186,7 @@ export class Scope {
    * @param {string} key
    * @param {import("./interface.ts").Listener} listener
    */
-  #registerForeignKey(key, listener) {
+  _registerForeignKey(key, listener) {
     if (this._foreignListeners.has(key)) {
       /** @type {import("./interface.ts").Listener[]} */ (
         this._foreignListeners.get(key)
@@ -1224,7 +1224,7 @@ export class Scope {
    * @param {string} key
    * @param {number} id
    */
-  #deregisterForeignKey(key, id) {
+  _deregisterForeignKey(key, id) {
     const listenerList = this._foreignListeners.get(key);
 
     if (!listenerList) return false;
