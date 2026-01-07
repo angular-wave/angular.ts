@@ -86,6 +86,10 @@ export class Angular extends EventTarget {
     configFn?: ng.Injectable<any>,
   ): NgModule;
   /**
+   * @param {CustomEvent} event
+   */
+  dispatchEvent(event: CustomEvent): boolean;
+  /**
    * Use this function to manually start up AngularTS application.
    *
    * AngularTS will detect if it has been loaded into the browser more than once and only allow the

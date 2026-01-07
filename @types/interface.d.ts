@@ -65,7 +65,7 @@ export interface AngularBootstrapConfig {
    * This helps find bugs that would break under minified code.
    * Defaults to `false`.
    */
-  strictDi?: boolean;
+  strictDi: boolean;
 }
 /**
  * A JavaScript expression represented as a string, typically used in interpolation bindings.

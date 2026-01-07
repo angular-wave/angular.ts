@@ -71,9 +71,9 @@ export class Scope {
    */
   $id: number;
   /**
-   * @type {Scope}
+   * @type {ng.RootScopeService}
    */
-  $root: Scope;
+  $root: ng.RootScopeService;
   /**
    * @type {Scope | undefined}
    */
