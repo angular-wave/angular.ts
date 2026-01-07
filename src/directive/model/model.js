@@ -797,7 +797,7 @@ export class NgModelController {
 
     if (isNumberNaN(this.$modelValue)) {
       // this.$modelValue has not been touched yet...
-      // @ts-ignore
+
       this.$modelValue = this._ngModelGet(this._scope);
     }
     const prevModelValue = this.$modelValue;

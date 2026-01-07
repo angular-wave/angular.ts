@@ -435,7 +435,6 @@ export class InterpolateProvider {
         return provider.endSymbol;
       };
 
-      // @ts-ignore
       return $interpolate;
     },
   ];

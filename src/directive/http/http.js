@@ -19,9 +19,10 @@ function defineDirective(method, attrOverride) {
   const attrName =
     attrOverride || `ng${method.charAt(0).toUpperCase()}${method.slice(1)}`;
 
-  const directive = createHttpDirective(method, attrName);
+  const directive = /** @type {ng.DirectiveFactory & Function} */ (
+    createHttpDirective(method, attrName)
+  );
 
-  // @ts-ignore
   directive.$inject = [
     $t._http,
     $t._compile,

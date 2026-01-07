@@ -1179,20 +1179,15 @@ export function mergeClasses(firstClass, secondClass) {
   if (!firstClass && !secondClass) return "";
 
   if (!firstClass)
-    // @ts-ignore
     return isArray(secondClass) ? secondClass.join(" ").trim() : secondClass;
 
   if (!secondClass)
-    // @ts-ignore
     return isArray(firstClass) ? firstClass.join(" ").trim() : firstClass;
 
-  // @ts-ignore
   if (isArray(firstClass)) firstClass = normalizeStringArray(firstClass);
 
-  // @ts-ignore
   if (isArray(secondClass)) secondClass = normalizeStringArray(secondClass);
 
-  // @ts-ignore
   return `${firstClass.trim()} ${secondClass.trim()}`.trim();
 }
 

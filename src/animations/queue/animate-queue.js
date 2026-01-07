@@ -344,8 +344,7 @@ export function AnimateQueueProvider($animateProvider) {
         // strip comments
 
         let element = isArray(originalElement)
-          ? // @ts-ignore
-            originalElement.filter((x) => x.nodeName !== "#comment")[0]
+          ? originalElement.filter((x) => x.nodeName !== "#comment")[0]
           : originalElement;
 
         const node = element;

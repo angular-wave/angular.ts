@@ -101,7 +101,6 @@ export function ngTranscludeDirective($compile) {
             $scope,
 
             (clone) => {
-              // @ts-ignore
               $element.append(clone);
             },
           );
