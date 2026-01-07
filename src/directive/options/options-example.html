@@ -7,11 +7,13 @@
     <script type="module" src="/src/index.js"></script>
   </head>
   <body ng-app ng-init="values = [{ name: 0 }, { name: 1 }, { name: 2 }]">
-    <form ng-init="selected = values[0]">
+    <form>
       <select
         ng-model="selected"
         ng-options="value.name for value in values"
       ></select>
+
+      {{ selected.name }}
     </form>
   </body>
 </html>
