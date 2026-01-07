@@ -158,7 +158,7 @@ export class Angular extends EventTarget {
    * @param {CustomEvent} event
    */
   dispatchEvent(event) {
-    const $parse = this.$injector.get("$parse");
+    const $parse = this.$injector.get($t._parse);
 
     const injectable = event.type;
 
