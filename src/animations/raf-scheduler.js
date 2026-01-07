@@ -58,7 +58,7 @@ export class RafSchedulerProvider {
      */
     const scheduler = (tasks) => {
       // Clone the input array to avoid mutating the original.
-      this._queue = this._queue.concat(tasks);
+      this._queue.push(tasks);
       this._nextTick();
     };
 
