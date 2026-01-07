@@ -151,6 +151,19 @@ export class Scope {
    */
   $transcluded(parentInstance: ng.Scope): ProxyConstructor & ng.Scope;
   /**
+   * @param {string} key
+   * @param {import("./interface.ts").Listener} listener
+   */
+  _registerForeignKey(
+    key: string,
+    listener: import("./interface.ts").Listener,
+  ): void;
+  /**
+   * @param {string} key
+   * @param {number} id
+   */
+  _deregisterForeignKey(key: string, id: number): boolean;
+  /**
    * Evaluates an Angular expression in the context of this scope.
    *
    * @param {string} expr - Angular expression to evaluate

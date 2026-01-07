@@ -3,8 +3,8 @@ export class AnimateCssProvider {
   $get: (
     | string
     | ((
-        $$animateCache: any,
-        $$rAFScheduler: any,
+        $$animateCache: import("./cache/animate-cache.js").AnimateCache,
+        $$rAFScheduler: import("./raf-scheduler.js").RafScheduler,
       ) => (
         element: any,
         initialOptions: any,

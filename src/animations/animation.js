@@ -46,7 +46,7 @@ export function AnimationProvider() {
      * @param {ng.RootScopeService} $rootScope
      * @param {ng.InjectorService} $injector
      * @param {import("./raf-scheduler.js").RafScheduler} $$rAFScheduler
-     * @param {*} $$animateCache
+     * @param {import("./cache/animate-cache.js").AnimateCache} $$animateCache
      * @returns
      */
     function ($rootScope, $injector, $$rAFScheduler, $$animateCache) {
@@ -248,7 +248,7 @@ export function AnimationProvider() {
 
             extraClasses =
               (extraClasses ? `${extraClasses} ` : "") + NG_ANIMATE_CLASSNAME;
-            const cacheKey = $$animateCache.cacheKey(
+            const cacheKey = $$animateCache._cacheKey(
               fromElement,
               animationEntry.event,
               extraClasses,
@@ -267,7 +267,7 @@ export function AnimationProvider() {
                 // and it's in fact an invalid animation (something that has duration = 0)
                 // then we should skip all the heavy work from here on
                 if (
-                  $$animateCache.containsCachedAnimationWithoutDuration(
+                  $$animateCache._containsCachedAnimationWithoutDuration(
                     cacheKey,
                   )
                 ) {
