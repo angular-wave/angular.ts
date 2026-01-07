@@ -317,6 +317,58 @@ describe("angular", () => {
       expect(angular.getScopeByName("demo")).toBeDefined();
     });
   });
+
+  describe("dipatchEvent", () => {
+    let module, angular;
+
+    beforeEach(() => {
+      angular = new Angular();
+      module = angular
+        .module("default", [])
+        .service(
+          "store",
+          class Store {
+            setName(name) {
+              this.name = name;
+            }
+          },
+        )
+        .controller(
+          "demo",
+          class Demo {
+            static $scopename = "demo";
+            constructor() {}
+          },
+        );
+    });
+
+    it("should dispatch expressions to controllers", async () => {
+      const element = createElementFromHTML(
+        "<div ng-controller='demo'>{{ a }}</div>",
+      );
+      angular.bootstrap(element, ["default"]);
+
+      angular.dispatchEvent(new CustomEvent("demo", { detail: "a = 1" }));
+      await wait();
+      expect(angular.getScopeByName("demo").a).toEqual(1);
+      expect(element.innerHTML).toEqual("1");
+    });
+
+    it("should dispatch expressions to services", async () => {
+      const element = createElementFromHTML("<div ng-controller='demo'></div>");
+      angular.bootstrap(element, ["default"]);
+
+      angular.dispatchEvent(new CustomEvent("store", { detail: "a = 1" }));
+      await wait();
+      expect(angular.$injector.get("store").a).toEqual(1);
+
+      angular.dispatchEvent(
+        new CustomEvent("store", { detail: "setName('myStore')" }),
+      );
+      await wait();
+      expect(angular.$injector.get("store").name).toEqual("myStore");
+    });
+  });
 });
 
 describe("module loader", () => {
