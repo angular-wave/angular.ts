@@ -1,7 +1,7 @@
-import { RafSchedulerProvider } from "./raf-scheduler.js";
+import { RafScheduler } from "./raf-scheduler.js";
 import { wait } from "../../shared/utils.js";
 
-describe("RafSchedulerProvider", function () {
+describe("RafScheduler", function () {
   let scheduler;
   let rAFCallbacks;
   let originalRequestAnimationFrame;
@@ -9,7 +9,7 @@ describe("RafSchedulerProvider", function () {
 
   beforeEach(function () {
     rAFCallbacks = [];
-    scheduler = new RafSchedulerProvider();
+    scheduler = new RafScheduler();
 
     originalRequestAnimationFrame = window.requestAnimationFrame;
     originalCancelAnimationFrame = window.cancelAnimationFrame;
@@ -37,7 +37,7 @@ describe("RafSchedulerProvider", function () {
   }
 
   it("can be instatiated", () => {
-    const ref = new RafSchedulerProvider();
+    const ref = new RafScheduler();
     expect(ref).toBeDefined();
     expect(ref._queue.length).toEqual(0);
   });
