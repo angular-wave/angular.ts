@@ -1,8 +1,7 @@
 /**
- * Service provider that creates a requestAnimationFrame-based scheduler.
- * @type {ng.ServiceProvider}
+ * A requestAnimationFrame-based scheduler.
  */
-export class RafSchedulerProvider {
+export class RafScheduler {
   constructor() {
     /**
      * Internal task queue, where each item is an array of functions to run.
@@ -69,4 +68,4 @@ export class RafSchedulerProvider {
   }
 }
 
-export const rafScheduler = new RafSchedulerProvider();
+export const rafScheduler = new RafScheduler();
