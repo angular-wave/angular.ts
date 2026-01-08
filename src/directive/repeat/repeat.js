@@ -147,7 +147,14 @@ export function ngRepeatDirective($animate) {
         }
       });
 
-      return function ngRepeatLink($scope, $element, attr, ctrl, $transclude) {
+      /**
+       * @param {ng.Scope} $scope
+       * @param {HTMLElement} $element
+       * @param {ng.Attributes} attr
+       * @param ctrl
+       * @param $transclude
+       */
+      function ngRepeatLink($scope, $element, attr, ctrl, $transclude) {
         // Store a list of elements from previous run. This is a hash where key is the item from the
         // iterator, and the value is objects with following properties.
         //   - scope: bound scope
@@ -296,7 +303,7 @@ export function ngRepeatDirective($animate) {
                 $transclude(
                   /**
                    * Clone attach function
-                   * @param {Array<NodeList>} clone
+                   * @param {HTMLElement} clone
                    * @param {ng.Scope} scope
                    */
 
@@ -333,7 +340,9 @@ export function ngRepeatDirective($animate) {
           },
           isDefined(attr.lazy),
         );
-      };
+      }
+
+      return ngRepeatLink;
     },
   };
 }

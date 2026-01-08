@@ -9,7 +9,7 @@ export type RafScheduler = {
   /**
    * Internal queue of scheduled task arrays.
    */
-  _queue: Array<Array<() => void>>;
+  _queue: Array<() => void>;
   /**
    * Waits until the animation frame is quiet before running the provided function.
    * Cancels any previous animation frame requests.

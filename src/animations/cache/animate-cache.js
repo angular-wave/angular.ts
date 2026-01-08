@@ -141,6 +141,4 @@ export class AnimateCache {
   }
 }
 
-export class AnimateCacheProvider {
-  $get = () => new AnimateCache();
-}
+export const animateCache = new AnimateCache();

@@ -21,7 +21,6 @@ export const $injectTokens = {
   _attrs: "$attrs",
   _scope: "$scope",
   _element: "$element",
-  _animateCache: "$$animateCache",
   _animateCssDriver: "$$animateCssDriver",
   _animateJs: "$$animateJs",
   _animateJsDriver: "$$animateJsDriver",

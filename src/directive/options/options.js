@@ -343,16 +343,21 @@ export function ngOptionsDirective($compile, $parse) {
       };
 
       selectCtrl.readValue = function readNgOptionsMultiple() {
-        const selectedValues = selectElement.value || [];
-
         const selections = [];
 
-        selectedValues.forEach((value) => {
-          const option = options.selectValueMap[value];
+        const optionsEls = selectElement.options;
 
-          if (option && !option.disabled)
-            selections.push(options.getViewValueFromOption(option));
-        });
+        for (let i = 0; i < optionsEls.length; i++) {
+          const optionEl = optionsEls[i];
+
+          if (optionEl.selected) {
+            const option = options.selectValueMap[optionEl.value];
+
+            if (option && !option.disabled) {
+              selections.push(options.getViewValueFromOption(option));
+            }
+          }
+        }
 
         return selections;
       };
