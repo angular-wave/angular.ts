@@ -29,5 +29,5 @@ export interface SCEService {
 export interface SCEDelegateService {
   getTrusted(type: string, mayBeTrusted: any): any;
   trustAs(type: string, value: any): any;
-  valueOf(value: any): any;
+  valueOf(value?: any): any;
 }

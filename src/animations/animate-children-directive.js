@@ -12,7 +12,7 @@ $$AnimateChildrenDirective.$inject = [$t._interpolate];
 export function $$AnimateChildrenDirective($interpolate) {
   return {
     link(scope, element, attrs) {
-      const val = attrs.ngAnimateChildren;
+      const val = /** @type {string} */ (attrs.ngAnimateChildren);
 
       if (isString(val) && val.length === 0) {
         // empty attribute
@@ -20,13 +20,21 @@ export function $$AnimateChildrenDirective($interpolate) {
       } else {
         // Interpolate and set the value, so that it is available to
         // animations that run right after compilation
-        setData($interpolate(val)(scope));
+        setData(
+          /** @type {import("../core/interpolate/interface.js").InterpolationFunction} */ (
+            $interpolate(val)
+          )(scope),
+        );
         attrs.$observe("ngAnimateChildren", setData);
       }
 
+      /**
+       * @param {string} [value]
+       */
       function setData(value) {
-        value = value === "on" || value === "true";
-        setCacheData(element, NG_ANIMATE_CHILDREN_DATA, value);
+        const res = value === "on" || value === "true";
+
+        setCacheData(element, NG_ANIMATE_CHILDREN_DATA, res);
       }
     },
   };

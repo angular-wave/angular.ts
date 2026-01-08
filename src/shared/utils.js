@@ -1181,7 +1181,7 @@ export function mergeClasses(firstClass, secondClass) {
   if (!firstClass)
     return isArray(secondClass)
       ? secondClass.join(" ").trim()
-      : /** @typ {string} */ secondClass;
+      : /** @type {string} */ (secondClass);
 
   if (!secondClass)
     return isArray(firstClass) ? firstClass.join(" ").trim() : firstClass;

@@ -15,6 +15,11 @@ BOOLEAN_ATTR.forEach((i) => {
   // binding to multiple is not supported
   if (i === "multiple") return;
 
+  /**
+   * @param {ng.Scope} scope
+   * @param {Element} _element
+   * @param {ng.Attributes} attr
+   */
   function defaultLinkFn(scope, _element, attr) {
     scope.$watch(attr[normalized], (value) => {
       attr.$set(i, !!value);

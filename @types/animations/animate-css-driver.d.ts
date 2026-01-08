@@ -1,6 +1,14 @@
-export function AnimateCssDriverProvider($$animationProvider: any): void;
+/**
+ * @param {import("./animation.js").AnimationProvider} $$animationProvider
+ */
+export function AnimateCssDriverProvider(
+  $$animationProvider: import("./animation.js").AnimationProvider,
+): void;
 export class AnimateCssDriverProvider {
-  constructor($$animationProvider: any);
+  /**
+   * @param {import("./animation.js").AnimationProvider} $$animationProvider
+   */
+  constructor($$animationProvider: import("./animation.js").AnimationProvider);
   /**
    * @returns {Function}
    */

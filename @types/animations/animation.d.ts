@@ -1,6 +1,6 @@
 export function AnimationProvider(): void;
 export class AnimationProvider {
-  drivers: any[];
+  drivers: string[];
   $get: (
     | string
     | ((

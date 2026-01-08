@@ -6,6 +6,7 @@ import {
   isFunction,
   isNullOrUndefined,
   isObject,
+  isString,
   isUndefined,
   minErr,
 } from "../shared/utils.js";
@@ -37,8 +38,6 @@ export function filterFilter() {
     anyPropertyKey = anyPropertyKey || "$";
     let predicateFn;
 
-    let matchAgainstAnyProp = false;
-
     switch (getTypeForFilter(expression)) {
       case "function":
         predicateFn = expression;
@@ -47,38 +46,78 @@ export function filterFilter() {
       case "null":
       case "number":
       case "string":
-        matchAgainstAnyProp = true;
-      // falls through
+        predicateFn = createPredicateFn(
+          expression,
+          comparator,
+          anyPropertyKey,
+          true,
+        );
+        break;
+
       case "object":
         predicateFn = createPredicateFn(
           expression,
           comparator,
           anyPropertyKey,
-          matchAgainstAnyProp,
+          false,
         );
         break;
+
       default:
         return array;
     }
 
-    return Array.prototype.filter.call(array, predicateFn);
+    return Array.from(array).filter(
+      /** @type {(item: any) => boolean} */ (predicateFn),
+    );
   };
 }
 
 // Helper functions for `filterFilter`
+/**
+ * Creates a predicate function that can be used with `Array.prototype.filter`
+ * to match items against a given filter expression.
+ *
+ * @param {string | Object & Record<string, any> | null} expression
+ *   The filter expression to match items against. Can be:
+ *     - `string`: matched as a case-insensitive substring
+ *     - `object`: matched by property values (supports special `anyPropertyKey`)
+ *     - `null`: treated as a literal match
+ *
+ * @param {boolean | ((actual: any, expected: any) => boolean)} [comparator=false]
+ *   Comparator to determine equality between actual array values and expected values:
+ *     - `true` → uses strict equality (angular.equals)
+ *     - `false` (default) → performs case-insensitive substring match for primitives
+ *     - `function(actual, expected)` → custom comparator returning boolean
+ *
+ * @param {string} [anyPropertyKey="$"]
+ *   Special property key that allows matching against any property of an object.
+ *   Defaults to `$`.
+ *
+ * @param {boolean} [matchAgainstAnyProp=false]
+ *   If true, allows matching against any property in the object.
+ *   Typically true when filtering with primitive expressions.
+ *
+ * @returns {(item: any) => boolean}
+ *   Predicate function that returns `true` if `item` matches the expression.
+ */
 function createPredicateFn(
   expression,
   comparator,
   anyPropertyKey,
   matchAgainstAnyProp,
 ) {
+  anyPropertyKey = anyPropertyKey ?? "$";
   const shouldMatchPrimitives =
     isObject(expression) && anyPropertyKey in expression;
 
   if (comparator === true) {
     comparator = equals;
   } else if (!isFunction(comparator)) {
-    comparator = function (actual, expected) {
+    comparator = function (
+      /** @type {string | any[] | null} */ actual,
+      /** @type {string | null} */ expected,
+    ) {
       if (isUndefined(actual)) {
         // No substring matching against `undefined`
         return false;
@@ -104,7 +143,7 @@ function createPredicateFn(
     };
   }
 
-  const predicateFn = function (item) {
+  const predicateFn = function (/** @type {string | Object | null} */ item) {
     if (shouldMatchPrimitives && !isObject(item)) {
       return deepCompare(
         item,
@@ -120,13 +159,22 @@ function createPredicateFn(
       expression,
       comparator,
       anyPropertyKey,
-      matchAgainstAnyProp,
+      !!matchAgainstAnyProp, // coerce undefined → false
     );
   };
 
   return predicateFn;
 }
 
+/**
+ * @param {string | Object | null} actual
+ * @param {string | Object | null} expected
+ * @param {(arg0: any, arg1: any) => any} comparator
+ * @param {string} anyPropertyKey
+ * @param {boolean} matchAgainstAnyProp
+ * @param {boolean | undefined} [dontMatchWholeObject]
+ * @returns {boolean}
+ */
 function deepCompare(
   actual,
   expected,
@@ -139,10 +187,13 @@ function deepCompare(
 
   const expectedType = getTypeForFilter(expected);
 
-  if (expectedType === "string" && expected.charAt(0) === "!") {
+  if (
+    isString(expectedType) &&
+    /** @type {string} */ (expected).charAt(0) === "!"
+  ) {
     return !deepCompare(
       actual,
-      expected.substring(1),
+      /** @type {string} */ (expected).substring(1),
       comparator,
       anyPropertyKey,
       matchAgainstAnyProp,
@@ -166,13 +217,19 @@ function deepCompare(
   switch (actualType) {
     case "object":
       if (matchAgainstAnyProp) {
-        for (const key in actual) {
+        for (const key in /** @type {Record<string, any>} */ (actual)) {
           // Under certain, rare, circumstances, key may not be a string and `charAt` will be undefined
           // See: https://github.com/angular/angular.js/issues/15644
           if (
             key.charAt &&
             key.charAt(0) !== "$" &&
-            deepCompare(actual[key], expected, comparator, anyPropertyKey, true)
+            deepCompare(
+              /** @type {Record<string, any>} */ (actual)[key],
+              expected,
+              comparator,
+              anyPropertyKey,
+              true,
+            )
           ) {
             return true;
           }
@@ -184,8 +241,10 @@ function deepCompare(
       }
 
       if (expectedType === "object") {
-        for (const key in expected) {
-          const expectedVal = expected[key];
+        for (const key in /** @type {Record<string, any>} */ (expected)) {
+          const expectedVal = /** @type {Record<string, any>} */ (expected)[
+            key
+          ];
 
           if (isFunction(expectedVal) || isUndefined(expectedVal)) {
             continue;
@@ -222,6 +281,9 @@ function deepCompare(
 }
 
 // Used for easily differentiating between `null` and actual `object`
+/**
+ * @param {string | Object | null} val
+ */
 function getTypeForFilter(val) {
   return val === null ? "null" : typeof val;
 }
