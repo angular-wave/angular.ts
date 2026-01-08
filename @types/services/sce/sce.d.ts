@@ -18,7 +18,13 @@ export class SceProvider {
    * Enables/disables SCE and returns the current value.
    */
   enabled: (value?: boolean | undefined, ...args: any[]) => boolean;
-  $get: (string | (($parse: ng.ParseService, $sceDelegate: any) => any))[];
+  $get: (
+    | string
+    | ((
+        $parse: ng.ParseService,
+        $sceDelegate: ng.SCEDelegateService,
+      ) => ng.SCEService)
+  )[];
 }
 export namespace SCE_CONTEXTS {
   let HTML: string;

@@ -10,8 +10,13 @@ self.onmessage = async (event) => {
   let result;
 
   if (data?.action === "fib") {
-    const fib = /** @param {number} x */ (x) =>
-      x <= 1 ? x : fib(x - 1) + fib(x - 2);
+    /**
+     * @param {number} x
+     * @return {number}
+     */
+    function fib(x) {
+      return x <= 1 ? x : fib(x - 1) + fib(x - 2);
+    }
 
     result = fib(data.n);
   } else {

@@ -24,16 +24,29 @@ const PREPARE_CLASSES_KEY = "$$animatePrepareClasses";
 export function AnimationProvider() {
   const NG_ANIMATE_REF_ATTR = "ng-animate-ref";
 
+  /**
+   * @type {string[]}
+   */
   const drivers = (this.drivers = []);
 
+  /**
+   * @param {Element | Node} element
+   * @param {AnimateRunner} runner
+   */
   function setRunner(element, runner) {
     setCacheData(element, RUNNER_STORAGE_KEY, runner);
   }
 
+  /**
+   * @param {Element} element
+   */
   function removeRunner(element) {
     deleteCacheData(element, RUNNER_STORAGE_KEY);
   }
 
+  /**
+   * @param {Element} element
+   */
   function getRunner(element) {
     return getCacheData(element, RUNNER_STORAGE_KEY);
   }
@@ -48,6 +61,12 @@ export function AnimationProvider() {
      * @returns
      */
     function ($rootScope, $injector) {
+      /**
+         * @type {{
+        // this data is used by the postDigest code and passed into
+        // the driver step function
+        element: any; classes: string; event: any; structural: boolean; options: any; beforeStart: () => void; close: (rejected: any) => void; }[]}
+         */
       const animationQueue = [];
 
       const applyAnimationClasses = applyAnimationClassesFactory();
