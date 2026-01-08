@@ -9,7 +9,7 @@ describe("RafSchedulerProvider", function () {
 
   beforeEach(function () {
     rAFCallbacks = [];
-    scheduler = new RafSchedulerProvider().$get();
+    scheduler = new RafSchedulerProvider();
 
     originalRequestAnimationFrame = window.requestAnimationFrame;
     originalCancelAnimationFrame = window.cancelAnimationFrame;
@@ -46,7 +46,7 @@ describe("RafSchedulerProvider", function () {
     const task1 = jasmine.createSpy("task1");
     const task2 = jasmine.createSpy("task2");
 
-    scheduler([task1, task2]);
+    scheduler._schedule([task1, task2]);
     await wait();
     expect(task1).toHaveBeenCalled();
     expect(task2).toHaveBeenCalled();
@@ -61,7 +61,7 @@ describe("RafSchedulerProvider", function () {
       callOrder.push("task2");
     };
 
-    scheduler([task1, task2]);
+    scheduler._schedule([task1, task2]);
 
     expect(callOrder).toEqual(["task1", "task2"]);
   });
@@ -70,7 +70,7 @@ describe("RafSchedulerProvider", function () {
     const quietFn = jasmine.createSpy("quietFn");
     const task1 = jasmine.createSpy("task1");
 
-    scheduler([task1]);
+    scheduler._schedule([task1]);
     scheduler._waitUntilQuiet(quietFn);
 
     expect(quietFn).not.toHaveBeenCalled();
