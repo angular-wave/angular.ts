@@ -15,6 +15,7 @@ import {
 import { $injectTokens as $t } from "../injection-tokens.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 import { animateCache } from "./cache/animate-cache.js";
+import { rafScheduler } from "./raf/raf-scheduler.js";
 
 const RUNNER_STORAGE_KEY = "$$animationRunner";
 
@@ -40,15 +41,13 @@ export function AnimationProvider() {
   this.$get = [
     $t._rootScope,
     $t._injector,
-    $t._rAFScheduler,
     /**
      *
      * @param {ng.RootScopeService} $rootScope
      * @param {ng.InjectorService} $injector
-     * @param {import("./raf/raf-scheduler.js").RafScheduler} $$rAFScheduler
      * @returns
      */
-    function ($rootScope, $injector, $$rAFScheduler) {
+    function ($rootScope, $injector) {
       const animationQueue = [];
 
       const applyAnimationClasses = applyAnimationClassesFactory();
@@ -343,7 +342,7 @@ export function AnimationProvider() {
 
           const flatFinalAnimations = finalAnimations.flat();
 
-          $$rAFScheduler(flatFinalAnimations);
+          rafScheduler._schedule(flatFinalAnimations);
         });
 
         return runner;

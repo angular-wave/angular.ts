@@ -1,8 +1,4 @@
 /**
- * @typedef {import('../interface.ts').RafScheduler} RafScheduler
- */
-
-/**
  * Service provider that creates a requestAnimationFrame-based scheduler.
  * @type {ng.ServiceProvider}
  */
@@ -43,49 +39,34 @@ export class RafSchedulerProvider {
   }
 
   /**
-   * Returns the scheduler function.
-   * This function allows tasks to be queued for execution on future animation frames.
-   * It also has helper methods and state attached.
+   * The main scheduler function.
+   * Accepts an array of functions and schedules them to run in the next available frame(s).
    *
-   * @returns {RafScheduler} The scheduler function with `_queue` and `_waitUntilQuiet`.
+   * @param {Array<() => void>} tasks
    */
-  $get() {
-    /**
-     * The main scheduler function.
-     * Accepts an array of functions and schedules them to run in the next available frame(s).
-     *
-     * @type {RafScheduler}
-     */
-    const scheduler = (tasks) => {
-      this._queue.push(...tasks);
+  _schedule(tasks) {
+    this._queue.push(...tasks);
+    this._nextTick();
+  }
+
+  /**
+   * Cancels any pending frame and runs the given function once the frame is idle.
+   * Useful for debounced updates.
+   *
+   * @param {Function} fn - Function to run when the animation frame is quiet.
+   */
+  _waitUntilQuiet(fn) {
+    if (this._cancelFn !== null) {
+      window.cancelAnimationFrame(this._cancelFn);
+      this._cancelFn = null;
+    }
+
+    this._cancelFn = window.requestAnimationFrame(() => {
+      this._cancelFn = null;
+      fn();
       this._nextTick();
-    };
-
-    /**
-     * Exposes the internal queue to consumers (read-only use preferred).
-     * This matches the type signature for RafScheduler.
-     */
-    scheduler._queue = this._queue;
-
-    /**
-     * Cancels any pending frame and runs the given function once the frame is idle.
-     * Useful for debounced updates.
-     *
-     * @param {Function} fn - Function to run when the animation frame is quiet.
-     */
-    scheduler._waitUntilQuiet = (fn) => {
-      if (this._cancelFn !== null) {
-        window.cancelAnimationFrame(this._cancelFn);
-        this._cancelFn = null;
-      }
-
-      this._cancelFn = window.requestAnimationFrame(() => {
-        this._cancelFn = null;
-        fn();
-        this._nextTick();
-      });
-    };
-
-    return scheduler;
+    });
   }
 }
+
+export const rafScheduler = new RafSchedulerProvider();

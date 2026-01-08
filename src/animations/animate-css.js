@@ -28,6 +28,7 @@ import {
   prepareAnimationOptions,
 } from "./shared.js";
 import { animateCache } from "./cache/animate-cache.js";
+import { rafScheduler } from "./raf/raf-scheduler.js";
 
 const ANIMATE_TIMER_KEY = $injectTokens._animateCss;
 
@@ -149,14 +150,11 @@ export function AnimateCssProvider() {
   let activeClasses;
 
   this.$get = [
-    $injectTokens._rAFScheduler,
-
     /**
      *
-     * @param {import("./raf/raf-scheduler.js").RafScheduler} $$rAFScheduler
      * @returns
      */
-    function ($$rAFScheduler) {
+    function () {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
       // TODO add types
@@ -232,7 +230,7 @@ export function AnimateCssProvider() {
 
       function waitUntilQuiet(callback) {
         rafWaitQueue.push(callback);
-        $$rAFScheduler._waitUntilQuiet(() => {
+        rafScheduler._waitUntilQuiet(() => {
           animateCache._flush();
 
           // DO NOT REMOVE THIS LINE OR REFACTOR OUT THE `pageWidth` variable.

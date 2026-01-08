@@ -26,7 +26,6 @@ export const $injectTokens = {
   _animateJsDriver: "$$animateJsDriver",
   _animateQueue: "$$animateQueue",
   _animation: "$$animation",
-  _rAFScheduler: "$$rAFScheduler",
   _taskTrackerFactory: "$$taskTrackerFactory",
   _anchorScroll: "$anchorScroll",
   _animate: "$animate",

@@ -1,7 +1,4 @@
 /**
- * @typedef {import('../interface.ts').RafScheduler} RafScheduler
- */
-/**
  * Service provider that creates a requestAnimationFrame-based scheduler.
  * @type {ng.ServiceProvider}
  */
@@ -24,12 +21,18 @@ export class RafSchedulerProvider {
    */
   _nextTick(): void;
   /**
-   * Returns the scheduler function.
-   * This function allows tasks to be queued for execution on future animation frames.
-   * It also has helper methods and state attached.
+   * The main scheduler function.
+   * Accepts an array of functions and schedules them to run in the next available frame(s).
    *
-   * @returns {RafScheduler} The scheduler function with `_queue` and `_waitUntilQuiet`.
+   * @param {Array<() => void>} tasks
    */
-  $get(): RafScheduler;
+  _schedule(tasks: Array<() => void>): void;
+  /**
+   * Cancels any pending frame and runs the given function once the frame is idle.
+   * Useful for debounced updates.
+   *
+   * @param {Function} fn - Function to run when the animation frame is quiet.
+   */
+  _waitUntilQuiet(fn: Function): void;
 }
-export type RafScheduler = import("../interface.ts").RafScheduler;
+export const rafScheduler: RafSchedulerProvider;
