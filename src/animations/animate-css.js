@@ -233,22 +233,14 @@ export function AnimateCssProvider() {
         rafScheduler._waitUntilQuiet(() => {
           animateCache._flush();
 
-          // DO NOT REMOVE THIS LINE OR REFACTOR OUT THE `pageWidth` variable.
-          // the line below will force the browser to perform a repaint so
-          // that all the animated elements within the animation frame will
-          // be properly updated and drawn on screen. This is required to
-          // ensure that the preparation animation is properly flushed so that
-          // the active state picks up from there. DO NOT REMOVE THIS LINE.
-          // DO NOT OPTIMIZE THIS LINE. THE MINIFIER WILL REMOVE IT OTHERWISE WHICH
-          // WILL RESULT IN AN UNPREDICTABLE BUG THAT IS VERY HARD TO TRACK DOWN AND
-          // WILL TAKE YEARS AWAY FROM YOUR LIFE.
-
-          const pageWidth = document.body.offsetWidth + 1;
+          // Forces synchronous style & layout flush.
+          // Required to commit animation prep state before activation.
+          document.documentElement.getBoundingClientRect();
 
           // we use a for loop to ensure that if the queue is changed
           // during this looping then it will consider new requests
           for (let i = 0; i < rafWaitQueue.length; i++) {
-            rafWaitQueue[i](pageWidth);
+            rafWaitQueue[i]();
           }
           rafWaitQueue.length = 0;
         });
