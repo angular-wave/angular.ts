@@ -219,7 +219,17 @@ export function find(collection, callback) {
  */
 export function map(collection, callback, target) {
   target = target || (isArray(collection) ? [] : {});
-  entries(collection).forEach(([i, item]) => (target[i] = callback(item, i)));
+
+  entries(collection).forEach(([i, item]) => {
+    if (isArray(target)) {
+      // Convert string key to number safely
+      const index = Number(i);
+
+      target[index] = callback(item, index);
+    } else {
+      target[i] = callback(item, i);
+    }
+  });
 
   return target;
 }

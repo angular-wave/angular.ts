@@ -1,5 +1,5 @@
 /**
- * @typedef {import('./interface.ts').RafScheduler} RafScheduler
+ * @typedef {import('../interface.ts').RafScheduler} RafScheduler
  */
 
 /**
@@ -10,7 +10,7 @@ export class RafSchedulerProvider {
   constructor() {
     /**
      * Internal task queue, where each item is an array of functions to run.
-     * @type {Array<Array<() => void>>}
+     * @type {Array<() => void>}
      */
     this._queue = [];
 
@@ -30,9 +30,9 @@ export class RafSchedulerProvider {
   _nextTick() {
     if (!this._queue.length) return;
 
-    const items = /** @type{Array<() => void>} */ (this._queue.shift());
-
-    items.forEach((fn) => fn());
+    while (this._queue.length) {
+      /** @type {() => void} */ (this._queue.shift())();
+    }
 
     if (!this._cancelFn) {
       this._cancelFn = window.requestAnimationFrame(() => {
@@ -47,7 +47,7 @@ export class RafSchedulerProvider {
    * This function allows tasks to be queued for execution on future animation frames.
    * It also has helper methods and state attached.
    *
-   * @returns {RafScheduler} The scheduler function with `queue` and `waitUntilQuiet`.
+   * @returns {RafScheduler} The scheduler function with `_queue` and `_waitUntilQuiet`.
    */
   $get() {
     /**
@@ -57,8 +57,7 @@ export class RafSchedulerProvider {
      * @type {RafScheduler}
      */
     const scheduler = (tasks) => {
-      // Clone the input array to avoid mutating the original.
-      this._queue.push(tasks);
+      this._queue.push(...tasks);
       this._nextTick();
     };
 

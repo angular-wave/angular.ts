@@ -96,6 +96,4 @@ export class AnimateCache {
   _put(key: string, value: any, isValid: boolean): void;
   #private;
 }
-export class AnimateCacheProvider {
-  $get: () => AnimateCache;
-}
+export const animateCache: AnimateCache;

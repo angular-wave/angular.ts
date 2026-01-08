@@ -3,7 +3,7 @@ import type { NodeRef } from "../../shared/noderef.js";
 
 type TranscludedNodes = Node | Node[] | NodeList | null;
 type TranscludeFnCb = (clone?: TranscludedNodes, scope?: Scope | null) => void;
-
+export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
 /**
  * A function passed as the fifth argument to a `PublicLinkFn` link function.
  * It behaves like a linking function, with the `scope` argument automatically created
@@ -17,11 +17,34 @@ export type TranscludeFn = {
   $$slots?: any;
 };
 
+export type CloneAttachFn = (
+  clone: Node | Element | NodeList,
+  scope?: Scope,
+) => void;
+
 /**
  * A specialized version of `TranscludeFn` with the scope argument already bound.
  * This function requires no parameters and returns the same result as `TranscludeFn`.
  */
-export type BoundTranscludeFn = () => Element | Node;
+export interface BoundTranscludeFn {
+  (
+    scope?: Scope,
+    cloneAttachFn?: CloneAttachFn,
+    transcludeControllers?: unknown,
+    futureParentElement?: Node | Element,
+    scopeToChild?: Scope,
+  ): Node | Element | NodeList;
+
+  $$slots: Record<string, SlotTranscludeFn | null | undefined>;
+}
+
+export type SlotTranscludeFn = (
+  scope?: Scope,
+  cloneAttachFn?: CloneAttachFn,
+  transcludeControllers?: unknown,
+  futureParentElement?: Node | Element,
+  scopeToChild?: Scope,
+) => Node | Element | NodeList;
 
 /**
  * Represents a simple change in a watched value.
@@ -69,10 +92,21 @@ export interface LinkFnMapping {
  */
 export type CompileNodesFn = () => CompositeLinkFn;
 
+export type ChildLinkFn = (
+  scope: Scope,
+  nodeRef: NodeRef,
+  parentBoundTranscludeFn: BoundTranscludeFn | null,
+) => void;
+
 /**
  * A function used to link a specific node.
  */
-export type NodeLinkFn = () => Node | Element | NodeList;
+export type NodeLinkFn = (
+  childLinkFn: ChildLinkFn | null,
+  scope: Scope,
+  node: Node | Element,
+  boundTranscludeFn: BoundTranscludeFn | null,
+) => void;
 
 /**
  * Context information for a NodeLinkFn.
@@ -80,7 +114,7 @@ export type NodeLinkFn = () => Node | Element | NodeList;
 export interface NodeLinkFnCtx {
   nodeLinkFn: NodeLinkFn;
   terminal: boolean;
-  transclude: TranscludeFn;
+  transclude: ChildTranscludeOrLinkFn;
   transcludeOnThisElement: boolean;
   templateOnThisElement: boolean;
   newScope: boolean;

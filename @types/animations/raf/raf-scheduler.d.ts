@@ -1,5 +1,5 @@
 /**
- * @typedef {import('./interface.ts').RafScheduler} RafScheduler
+ * @typedef {import('../interface.ts').RafScheduler} RafScheduler
  */
 /**
  * Service provider that creates a requestAnimationFrame-based scheduler.
@@ -8,9 +8,9 @@
 export class RafSchedulerProvider {
   /**
    * Internal task queue, where each item is an array of functions to run.
-   * @type {Array<Array<() => void>>}
+   * @type {Array<() => void>}
    */
-  _queue: Array<Array<() => void>>;
+  _queue: Array<() => void>;
   /**
    * ID of the currently scheduled animation frame (if any).
    * Used for cancellation and tracking.
@@ -28,8 +28,8 @@ export class RafSchedulerProvider {
    * This function allows tasks to be queued for execution on future animation frames.
    * It also has helper methods and state attached.
    *
-   * @returns {RafScheduler} The scheduler function with `queue` and `waitUntilQuiet`.
+   * @returns {RafScheduler} The scheduler function with `_queue` and `_waitUntilQuiet`.
    */
   $get(): RafScheduler;
 }
-export type RafScheduler = import("./interface.ts").RafScheduler;
+export type RafScheduler = import("../interface.ts").RafScheduler;

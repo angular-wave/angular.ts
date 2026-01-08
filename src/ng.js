@@ -93,8 +93,7 @@ import { AnimateCssProvider } from "./animations/animate-css.js";
 import { AnimateQueueProvider } from "./animations/queue/animate-queue.js";
 import { AnimateJsProvider } from "./animations/animate-js.js";
 import { AnimationProvider } from "./animations/animation.js";
-import { RafSchedulerProvider } from "./animations/raf-scheduler.js";
-import { AnimateCacheProvider } from "./animations/cache/animate-cache.js";
+import { RafSchedulerProvider } from "./animations/raf/raf-scheduler.js";
 import { AnimateCssDriverProvider } from "./animations/animate-css-driver.js";
 import { AnimateJsDriverProvider } from "./animations/animate-js-driver.js";
 import { ngAnimateSwapDirective } from "./animations/animate-swap.js";
@@ -263,7 +262,6 @@ export function registerNgModule(angular) {
             $$animateCssDriver: AnimateCssDriverProvider,
             $$animateJs: AnimateJsProvider,
             $$animateJsDriver: AnimateJsDriverProvider,
-            $$animateCache: AnimateCacheProvider,
             $$animateQueue: AnimateQueueProvider,
             $controller: ControllerProvider,
             $cookie: CookieProvider,

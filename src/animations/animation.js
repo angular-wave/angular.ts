@@ -14,6 +14,7 @@ import {
 } from "./shared.js";
 import { $injectTokens as $t } from "../injection-tokens.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
+import { animateCache } from "./cache/animate-cache.js";
 
 const RUNNER_STORAGE_KEY = "$$animationRunner";
 
@@ -40,16 +41,14 @@ export function AnimationProvider() {
     $t._rootScope,
     $t._injector,
     $t._rAFScheduler,
-    $t._animateCache,
     /**
      *
      * @param {ng.RootScopeService} $rootScope
      * @param {ng.InjectorService} $injector
-     * @param {import("./raf-scheduler.js").RafScheduler} $$rAFScheduler
-     * @param {import("./cache/animate-cache.js").AnimateCache} $$animateCache
+     * @param {import("./raf/raf-scheduler.js").RafScheduler} $$rAFScheduler
      * @returns
      */
-    function ($rootScope, $injector, $$rAFScheduler, $$animateCache) {
+    function ($rootScope, $injector, $$rAFScheduler) {
       const animationQueue = [];
 
       const applyAnimationClasses = applyAnimationClassesFactory();
@@ -248,7 +247,7 @@ export function AnimationProvider() {
 
             extraClasses =
               (extraClasses ? `${extraClasses} ` : "") + NG_ANIMATE_CLASSNAME;
-            const cacheKey = $$animateCache._cacheKey(
+            const cacheKey = animateCache._cacheKey(
               fromElement,
               animationEntry.event,
               extraClasses,
@@ -267,9 +266,7 @@ export function AnimationProvider() {
                 // and it's in fact an invalid animation (something that has duration = 0)
                 // then we should skip all the heavy work from here on
                 if (
-                  $$animateCache._containsCachedAnimationWithoutDuration(
-                    cacheKey,
-                  )
+                  animateCache._containsCachedAnimationWithoutDuration(cacheKey)
                 ) {
                   closeFn();
 

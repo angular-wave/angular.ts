@@ -1294,7 +1294,7 @@ export class CompileProvider {
 
           let replaceDirective = originalReplaceDirective;
 
-          /** @type {ng.TranscludeFn} */
+          /** @type {import("./interface.ts").ChildTranscludeOrLinkFn} */
           let childTranscludeFn = transcludeFn;
 
           let didScanForMultipleTransclusion = false;
@@ -1890,7 +1890,9 @@ export class CompileProvider {
                       directive.$$isolateScope || directive.$$newScope,
                   },
                 );
-                childTranscludeFn.$$slots = slots;
+                /** @type {import("./interface.ts").TranscludeFn} */ (
+                  childTranscludeFn
+                ).$$slots = slots;
               }
             }
 

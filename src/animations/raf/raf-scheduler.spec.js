@@ -1,4 +1,5 @@
-import { RafSchedulerProvider } from "./raf-scheduler";
+import { RafSchedulerProvider } from "./raf-scheduler.js";
+import { wait } from "../../shared/utils.js";
 
 describe("RafSchedulerProvider", function () {
   let scheduler;
@@ -38,15 +39,15 @@ describe("RafSchedulerProvider", function () {
   it("can be instatiated", () => {
     const ref = new RafSchedulerProvider();
     expect(ref).toBeDefined();
-    expect(ref.queue.length).toEqual(0);
+    expect(ref._queue.length).toEqual(0);
   });
 
-  it("should schedule tasks and process them", function () {
+  it("should schedule tasks and process them", async () => {
     const task1 = jasmine.createSpy("task1");
     const task2 = jasmine.createSpy("task2");
 
-    scheduler([[task1, task2]]);
-
+    scheduler([task1, task2]);
+    await wait();
     expect(task1).toHaveBeenCalled();
     expect(task2).toHaveBeenCalled();
   });
@@ -60,7 +61,7 @@ describe("RafSchedulerProvider", function () {
       callOrder.push("task2");
     };
 
-    scheduler([[task1, task2]]);
+    scheduler([task1, task2]);
 
     expect(callOrder).toEqual(["task1", "task2"]);
   });
@@ -69,8 +70,8 @@ describe("RafSchedulerProvider", function () {
     const quietFn = jasmine.createSpy("quietFn");
     const task1 = jasmine.createSpy("task1");
 
-    scheduler([[task1]]);
-    scheduler.waitUntilQuiet(quietFn);
+    scheduler([task1]);
+    scheduler._waitUntilQuiet(quietFn);
 
     expect(quietFn).not.toHaveBeenCalled();
 
@@ -84,8 +85,8 @@ describe("RafSchedulerProvider", function () {
     const quietFn1 = jasmine.createSpy("quietFn1");
     const quietFn2 = jasmine.createSpy("quietFn2");
 
-    scheduler.waitUntilQuiet(quietFn1);
-    scheduler.waitUntilQuiet(quietFn2);
+    scheduler._waitUntilQuiet(quietFn1);
+    scheduler._waitUntilQuiet(quietFn2);
 
     expect(quietFn1).not.toHaveBeenCalled();
     expect(quietFn2).not.toHaveBeenCalled();
