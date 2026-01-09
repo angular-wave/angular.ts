@@ -24,7 +24,11 @@ import {
   minErr,
   snakeCase,
 } from "../../shared/utils.js";
-import { PENDING_CLASS, nullFormCtrl } from "../form/form.js";
+import {
+  PENDING_CLASS,
+  cachedToggleClass,
+  nullFormCtrl,
+} from "../form/form.js";
 import { defaultModelOptions } from "../model-options/model-options.js";
 import { startingTag } from "../../shared/dom.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
@@ -84,7 +88,7 @@ export class NgModelController {
    * @param {ng.Scope} $scope
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    * @param {ng.Attributes} $attr
-   * @param {Element} $element
+   * @param {HTMLElement} $element
    * @param {ng.ParseService} $parse
    * @param {ng.AnimateService} $animate
    * @param {ng.InterpolateService} $interpolate
@@ -98,6 +102,8 @@ export class NgModelController {
     $animate,
     $interpolate,
   ) {
+    /** @type {boolean} */
+    this._isAnimated = hasAnimate($element);
     /** @type {any} The actual value from the control's view  */
     this.$viewValue = Number.NaN;
 
@@ -213,25 +219,6 @@ export class NgModelController {
 
       if (isObjectEmpty(ctrl[name])) {
         ctrl[name] = undefined;
-      }
-    }
-
-    function cachedToggleClass(ctrl, className, switchValue) {
-      if (switchValue && !ctrl._classCache[className]) {
-        if (hasAnimate(ctrl._element)) {
-          ctrl._animate.addClass(ctrl._element, className);
-        } else {
-          ctrl._element.classList.add(className);
-        }
-
-        ctrl._classCache[className] = true;
-      } else if (!switchValue && ctrl._classCache[className]) {
-        if (hasAnimate(ctrl._element)) {
-          ctrl._animate.removeClass(ctrl._element, className);
-        } else {
-          ctrl._element.classList.remove(className);
-        }
-        ctrl._classCache[className] = false;
       }
     }
 

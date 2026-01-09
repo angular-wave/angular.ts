@@ -121,13 +121,16 @@ export class FormController {
   ];
 
   /**
-   * @param {Element} $element
+   * @param {HTMLFormElement} $element
    * @param {ng.Attributes} $attrs
    * @param {ng.Scope} $scope
    * @param {ng.AnimateService} $animate
    * @param {ng.InterpolateService} $interpolate
    */
   constructor($element, $attrs, $scope, $animate, $interpolate) {
+    /** @type {boolean} */
+    this._isAnimated = hasAnimate($element);
+
     this._controls = [];
 
     this.$name = $interpolate($attrs.name || $attrs.ngForm || "")($scope);
@@ -491,16 +494,6 @@ export class FormController {
       }
     }
 
-    function cachedToggleClass(ctrl, className, switchValue) {
-      if (switchValue && !ctrl._classCache[className]) {
-        ctrl._animate.addClass(ctrl._element, className);
-        ctrl._classCache[className] = true;
-      } else if (!switchValue && ctrl._classCache[className]) {
-        ctrl._animate.removeClass(ctrl._element, className);
-        ctrl._classCache[className] = false;
-      }
-    }
-
     function toggleValidationCss(ctrl, validationErrorKeyParam, isValid) {
       validationErrorKeyParam = validationErrorKeyParam
         ? `-${snakeCase(validationErrorKeyParam, "-")}`
@@ -731,4 +724,27 @@ export function setupValidity(instance) {
   instance._classCache = {};
   instance._classCache[INVALID_CLASS] = !(instance._classCache[VALID_CLASS] =
     instance._element.classList.contains(VALID_CLASS));
+}
+
+/**
+ * @param {FormController|ng.NgModelController} ctrl
+ * @param {string} className
+ * @param {boolean} switchValue
+ */
+export function cachedToggleClass(ctrl, className, switchValue) {
+  if (switchValue && !ctrl._classCache[className]) {
+    if (ctrl._isAnimated) {
+      ctrl._animate.addClass(ctrl._element, className);
+    } else {
+      ctrl._element.classList.add(className);
+    }
+    ctrl._classCache[className] = true;
+  } else if (!switchValue && ctrl._classCache[className]) {
+    if (ctrl._isAnimated) {
+      ctrl._animate.removeClass(ctrl._element, className);
+    } else {
+      ctrl._element.classList.remove(className);
+    }
+    ctrl._classCache[className] = false;
+  }
 }
