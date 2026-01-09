@@ -4,6 +4,7 @@ import { NodeType } from "../../shared/node.js";
 import {
   callBackAfterFirst,
   isDefined,
+  isInstanceOf,
   isObject,
   isString,
   toKeyValue,
@@ -124,9 +125,9 @@ export function createHttpDirective(method, attrName) {
           element.name.length > 0
         ) {
           if (
-            element instanceof HTMLInputElement ||
-            element instanceof HTMLTextAreaElement ||
-            element instanceof HTMLSelectElement
+            isInstanceOf(element, HTMLInputElement) ||
+            isInstanceOf(element, HTMLTextAreaElement) ||
+            isInstanceOf(element, HTMLSelectElement)
           ) {
             const key = element.name;
 

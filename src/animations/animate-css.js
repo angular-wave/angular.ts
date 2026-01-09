@@ -267,6 +267,10 @@ export function AnimateCssProvider() {
         return timings;
       }
 
+      /**
+       * @param {HTMLElement} element
+       * @param {ng.AnimationOptions} initialOptions
+       */
       return function init(element, initialOptions) {
         // all of the animation functions should create
         // a copy of the options data, however, if a
@@ -274,9 +278,11 @@ export function AnimateCssProvider() {
         let delayStyle;
 
         // we should stick to using that
-        let options = initialOptions || {
-          $$skipPreparationClasses: false,
-        };
+        let options =
+          initialOptions ||
+          /** @type {ng.AnimationOptions}}*/ ({
+            $$skipPreparationClasses: false,
+          });
 
         if (!options.$$prepared) {
           options = prepareAnimationOptions(structuredClone(options));
@@ -322,10 +328,11 @@ export function AnimateCssProvider() {
           return closeAndReturnNoopAnimator();
         }
 
-        const method =
+        const method = /** @type {string} */ (
           options.event && isArray(options.event)
             ? options.event.join(" ")
-            : options.event;
+            : options.event
+        );
 
         const isStructural = method && options.structural;
 
@@ -394,8 +401,10 @@ export function AnimateCssProvider() {
           return closeAndReturnNoopAnimator();
         }
 
-        if (options.stagger > 0) {
-          const staggerVal = parseFloat(options.stagger);
+        if (/** @type {number} */ (options.stagger) > 0) {
+          const staggerVal = parseFloat(
+            /** @type {string} */ (options.stagger),
+          );
 
           stagger = {
             transitionDelay: staggerVal,
@@ -427,7 +436,7 @@ export function AnimateCssProvider() {
           temporaryStyles.push(transitionStyle);
         }
 
-        if (options.duration >= 0) {
+        if (/** @type {number} */ (options.duration) >= 0) {
           applyOnlyDuration = node.style.transition.length > 0;
           const durationStyle = getCssTransitionDurationStyle(
             options.duration,
@@ -461,7 +470,7 @@ export function AnimateCssProvider() {
         // transition delay to allow for the transition to naturally do it's thing. The beauty here is
         // that if there is no transition defined then nothing will happen and this will also allow
         // other transitions to be stacked on top of each other without any chopping them out.
-        if (isFirst && !options.skipBlocking) {
+        if (isFirst) {
           blockTransitions(node, SAFE_FAST_FORWARD_DURATION_VALUE);
         }
 
@@ -493,7 +502,7 @@ export function AnimateCssProvider() {
 
         if (flags.applyTransitionDuration || flags.applyAnimationDuration) {
           maxDuration = options.duration
-            ? parseFloat(options.duration)
+            ? parseFloat(/** @type {string} */ (options.duration))
             : maxDuration;
 
           if (flags.applyTransitionDuration) {
@@ -548,13 +557,11 @@ export function AnimateCssProvider() {
         maxDelayTime = maxDelay * ONE_SECOND;
         maxDurationTime = maxDuration * ONE_SECOND;
 
-        if (!options.skipBlocking) {
-          flags.blockTransition = timings.transitionDuration > 0;
-          flags.blockKeyframeAnimation =
-            timings.animationDuration > 0 &&
-            stagger.animationDelay > 0 &&
-            stagger.animationDuration === 0;
-        }
+        flags.blockTransition = timings.transitionDuration > 0;
+        flags.blockKeyframeAnimation =
+          timings.animationDuration > 0 &&
+          stagger.animationDelay > 0 &&
+          stagger.animationDuration === 0;
 
         if (options.from) {
           if (options.cleanupStyles) {

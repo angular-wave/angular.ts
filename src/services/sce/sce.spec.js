@@ -33,12 +33,6 @@ describe("SCE", () => {
     it("should provide the getter for enabled", () => {
       expect($sce.isEnabled()).toBe(false);
     });
-
-    it("should not wrap/unwrap any value or throw exception on non-string values", () => {
-      const originalValue = { foo: "bar" };
-      expect($sce.trustAs($sce.JS, originalValue)).toBe(originalValue);
-      expect($sce.getTrusted($sce.JS, originalValue)).toBe(originalValue);
-    });
   });
 
   describe("when enabled", () => {
@@ -73,9 +67,6 @@ describe("SCE", () => {
       wrappedValue = $sce.trustAs($sce.URL, originalValue);
       expect(typeof wrappedValue).toBe("object");
       expect($sce.getTrusted($sce.URL, wrappedValue)).toBe("original_value");
-      wrappedValue = $sce.trustAs($sce.JS, originalValue);
-      expect(typeof wrappedValue).toBe("object");
-      expect($sce.getTrusted($sce.JS, wrappedValue)).toBe("original_value");
     });
 
     it("should NOT wrap non-string values", () => {
@@ -170,13 +161,7 @@ describe("SCE", () => {
       ]).invoke((_$sce_) => {
         $sce = _$sce_;
       });
-
-      expect($sce.trustAsJs("value")).toBe("wrapped:value");
       expect($sce.valueOf("value")).toBe("valueOf:value");
-      expect($sce.getTrustedJs("value")).toBe("unwrapped:value");
-      expect($sce.parseAsJs("name")({ name: "chirayu" })).toBe(
-        "unwrapped:chirayu",
-      );
     });
   });
 
@@ -196,34 +181,10 @@ describe("SCE", () => {
       logs = [];
     });
 
-    it("should parse constant literals as trusted", () => {
-      expect($sce.parseAsJs("1")()).toBe(1);
-      expect($sce.parseAsJs("1", $sce.ANY)()).toBe(1);
-      expect($sce.parseAsJs("1", $sce.HTML)()).toBe(1);
-      expect($sce.parseAsJs("1", "UNDEFINED")()).toBe(1);
-      expect($sce.parseAsJs("true")()).toBe(true);
-      expect($sce.parseAsJs("false")()).toBe(false);
-      expect($sce.parseAsJs("null")()).toBe(null);
-      expect($sce.parseAsJs("undefined")()).toBeUndefined();
-      expect($sce.parseAsJs('"string"')()).toBe("string");
-    });
-
-    it("should NOT parse constant non-literals", () => {
-      // Until there's a real world use case for this, we're disallowing
-      // constant non-literals.  See $SceParseProvider.
-      $sce.parseAsJs("1+1")();
-      expect(logs[0]).toBeDefined();
-    });
-
     it("should NOT return untrusted values from expression function", () => {
       const exprFn = $sce.parseAs($sce.HTML, "foo");
       exprFn({}, { foo: true });
       expect(logs[0]).toMatch(/unsafe/);
-    });
-
-    it("should NOT return trusted values of the wrong type from expression function", () => {
-      const exprFn = $sce.parseAs($sce.HTML, "foo");
-      exprFn({}, { foo: $sce.trustAs($sce.JS, "123") });
     });
 
     it("should return trusted values from expression function", () => {

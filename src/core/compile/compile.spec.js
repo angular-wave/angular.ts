@@ -9847,44 +9847,38 @@ describe("$compile", () => {
         }).toThrowError(/iscp/);
       });
 
-      it("should expose a $$isolateBindings property onto the scope", () => {
+      it("should expose a _isolateBindings property onto the scope", () => {
         $compile("<div><span my-component>")($rootScope);
 
-        expect(typeof componentScope.$$isolateBindings).toBe("object");
+        expect(typeof componentScope._isolateBindings).toBe("object");
 
-        expect(componentScope.$$isolateBindings.attr.mode).toBe("@");
-        expect(componentScope.$$isolateBindings.attr.attrName).toBe("attr");
-        expect(componentScope.$$isolateBindings.attrAlias.attrName).toBe(
-          "attr",
-        );
+        expect(componentScope._isolateBindings.attr.mode).toBe("@");
+        expect(componentScope._isolateBindings.attr.attrName).toBe("attr");
+        expect(componentScope._isolateBindings.attrAlias.attrName).toBe("attr");
 
-        expect(componentScope.$$isolateBindings.ref.mode).toBe("=");
-        expect(componentScope.$$isolateBindings.ref.attrName).toBe("ref");
-        expect(componentScope.$$isolateBindings.refAlias.attrName).toBe("ref");
-        expect(componentScope.$$isolateBindings.reference.mode).toBe("=");
-        expect(componentScope.$$isolateBindings.reference.attrName).toBe(
+        expect(componentScope._isolateBindings.ref.mode).toBe("=");
+        expect(componentScope._isolateBindings.ref.attrName).toBe("ref");
+        expect(componentScope._isolateBindings.refAlias.attrName).toBe("ref");
+        expect(componentScope._isolateBindings.reference.mode).toBe("=");
+        expect(componentScope._isolateBindings.reference.attrName).toBe(
           "reference",
         );
-        expect(componentScope.$$isolateBindings.owRef.mode).toBe("<");
-        expect(componentScope.$$isolateBindings.owRef.attrName).toBe("owRef");
-        expect(componentScope.$$isolateBindings.owRefAlias.attrName).toBe(
+        expect(componentScope._isolateBindings.owRef.mode).toBe("<");
+        expect(componentScope._isolateBindings.owRef.attrName).toBe("owRef");
+        expect(componentScope._isolateBindings.owRefAlias.attrName).toBe(
           "owRef",
         );
-        expect(componentScope.$$isolateBindings.expr.mode).toBe("&");
-        expect(componentScope.$$isolateBindings.expr.attrName).toBe("expr");
-        expect(componentScope.$$isolateBindings.exprAlias.attrName).toBe(
-          "expr",
-        );
+        expect(componentScope._isolateBindings.expr.mode).toBe("&");
+        expect(componentScope._isolateBindings.expr.attrName).toBe("expr");
+        expect(componentScope._isolateBindings.exprAlias.attrName).toBe("expr");
 
         const firstComponentScope = componentScope;
-        const first$$isolateBindings = componentScope.$$isolateBindings;
+        const first$$isolateBindings = componentScope._isolateBindings;
 
         dealoc(element);
         $compile("<div><span my-component>")($rootScope);
         expect(componentScope).not.toEqual(firstComponentScope);
-        expect(componentScope.$$isolateBindings).toEqual(
-          first$$isolateBindings,
-        );
+        expect(componentScope._isolateBindings).toEqual(first$$isolateBindings);
       });
 
       it("should expose isolate scope variables on controller with controllerAs when bindToController is true (template)", async () => {

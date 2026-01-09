@@ -6,7 +6,6 @@ import {
   isFunction,
   isNullOrUndefined,
   isObject,
-  isString,
   isUndefined,
   minErr,
 } from "../shared/utils.js";
@@ -188,7 +187,7 @@ function deepCompare(
   const expectedType = getTypeForFilter(expected);
 
   if (
-    isString(expectedType) &&
+    expectedType === "string" &&
     /** @type {string} */ (expected).charAt(0) === "!"
   ) {
     return !deepCompare(
@@ -252,7 +251,9 @@ function deepCompare(
 
           const matchAnyProperty = key === anyPropertyKey;
 
-          const actualVal = matchAnyProperty ? actual : actual[key];
+          const actualVal = matchAnyProperty
+            ? actual
+            : /** @type {Record<string, any>} */ (actual)[key];
 
           if (
             !deepCompare(
@@ -283,6 +284,7 @@ function deepCompare(
 // Used for easily differentiating between `null` and actual `object`
 /**
  * @param {string | Object | null} val
+ * @return {string}
  */
 function getTypeForFilter(val) {
   return val === null ? "null" : typeof val;

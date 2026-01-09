@@ -6,6 +6,7 @@ import {
 import {
   entries,
   hasOwn,
+  isDefined,
   isFunction,
   isRegExp,
   isString,
@@ -38,9 +39,6 @@ export const SCE_CONTEXTS = {
   // code. (e.g. ng-include, script src binding, templateUrl)
   // A value that can be trusted as a RESOURCE_URL, can also trusted as a URL and a MEDIA_URL.
   RESOURCE_URL: "resourceUrl",
-
-  // Script. Currently unused in AngularTS.
-  JS: "js",
 };
 
 // Copied from:
@@ -366,7 +364,8 @@ export class SceDelegateProvider {
          * @return {*} A trusted representation of value, that can be used in the given context.
          */
         function trustAs(type, trustedValue) {
-          const Constructor = hasOwn(byType, type) ? byType[type] : null;
+          const Constructor =
+            isDefined(type) && hasOwn(byType, type) ? byType[type] : null;
 
           if (!Constructor) {
             $exceptionHandler(

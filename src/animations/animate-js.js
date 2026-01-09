@@ -19,6 +19,9 @@ export function AnimateJsProvider($animateProvider) {
     function ($injector) {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
+      /**
+       *
+       */
       return function animateJs(element, event, classes, options) {
         // Optional arguments
         if (arguments.length === 3 && isObject(classes)) {
