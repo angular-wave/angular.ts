@@ -691,24 +691,24 @@ export class CompileProvider {
             }
 
             options = options || {};
-            let { parentBoundTranscludeFn } = options;
+            let { _parentBoundTranscludeFn } = options;
 
-            const { transcludeControllers, futureParentElement } = options;
+            const { transcludeControllers, _futureParentElement } = options;
 
-            // When `parentBoundTranscludeFn` is passed, it is a
+            // When `_parentBoundTranscludeFn` is passed, it is a
             // `controllersBoundTransclude` function (it was previously passed
             // as `transclude` to directive.link) so we must unwrap it to get
             // its `boundTranscludeFn`
             if (
-              parentBoundTranscludeFn &&
-              parentBoundTranscludeFn.$$boundTransclude
+              _parentBoundTranscludeFn &&
+              _parentBoundTranscludeFn._boundTransclude
             ) {
-              parentBoundTranscludeFn =
-                parentBoundTranscludeFn.$$boundTransclude;
+              _parentBoundTranscludeFn =
+                _parentBoundTranscludeFn._boundTransclude;
             }
 
             if (!namespace) {
-              namespace = detectNamespaceForChildElements(futureParentElement);
+              namespace = detectNamespaceForChildElements(_futureParentElement);
             }
             /** @type {NodeRef} */
             let $linkNode;
@@ -750,7 +750,7 @@ export class CompileProvider {
             }
 
             if (compositeLinkFn) {
-              compositeLinkFn(scope, $linkNode, parentBoundTranscludeFn);
+              compositeLinkFn(scope, $linkNode, _parentBoundTranscludeFn);
             }
 
             if (!cloneConnectFn) {
@@ -885,9 +885,9 @@ export class CompileProvider {
            *
            * @param {ng.Scope} scope
            * @param {NodeRef} nodeRef
-           * @param {*} [parentBoundTranscludeFn]
+           * @param {*} [_parentBoundTranscludeFn]
            */
-          function compositeLinkFn(scope, nodeRef, parentBoundTranscludeFn) {
+          function compositeLinkFn(scope, nodeRef, _parentBoundTranscludeFn) {
             assertArg(nodeRef, "nodeRef");
             let stableNodeList = [];
 
@@ -934,14 +934,14 @@ export class CompileProvider {
                   childBoundTranscludeFn = createBoundTranscludeFn(
                     scope,
                     nodeLinkFnCtx.transclude,
-                    parentBoundTranscludeFn,
+                    _parentBoundTranscludeFn,
                   );
                 } else if (
                   !nodeLinkFnCtx.templateOnThisElement &&
-                  parentBoundTranscludeFn
+                  _parentBoundTranscludeFn
                 ) {
-                  childBoundTranscludeFn = parentBoundTranscludeFn;
-                } else if (!parentBoundTranscludeFn && transcludeFn) {
+                  childBoundTranscludeFn = _parentBoundTranscludeFn;
+                } else if (!_parentBoundTranscludeFn && transcludeFn) {
                   childBoundTranscludeFn = createBoundTranscludeFn(
                     scope,
                     transcludeFn,
@@ -965,7 +965,7 @@ export class CompileProvider {
                 childLinkFn(
                   scope,
                   new NodeRef(node.childNodes),
-                  parentBoundTranscludeFn,
+                  _parentBoundTranscludeFn,
                 );
               }
             });
@@ -988,18 +988,17 @@ export class CompileProvider {
             transcludedScope,
             cloneFn,
             controllers,
-            futureParentElement,
+            _futureParentElement,
             containingScope,
           ) {
             if (!transcludedScope) {
               transcludedScope = scope.$transcluded(containingScope);
-              transcludedScope.$$transcluded = true;
             }
 
             const transcludeRes = transcludeFn(transcludedScope, cloneFn, {
-              parentBoundTranscludeFn: previousBoundTranscludeFn,
+              _parentBoundTranscludeFn: previousBoundTranscludeFn,
               transcludeControllers: controllers,
-              futureParentElement,
+              _futureParentElement,
             });
 
             return transcludeRes;
@@ -1007,13 +1006,13 @@ export class CompileProvider {
 
           // We need  to attach the transclusion slots onto the `boundTranscludeFn`
           // so that they are available inside the `controllersBoundTransclude` function
-          const boundSlots = (boundTranscludeFn.$$slots = Object.create(null));
+          const boundSlots = (boundTranscludeFn._slots = Object.create(null));
 
-          for (const slotName in transcludeFn.$$slots) {
-            if (transcludeFn.$$slots[slotName]) {
+          for (const slotName in transcludeFn._slots) {
+            if (transcludeFn._slots[slotName]) {
               boundSlots[slotName] = createBoundTranscludeFn(
                 scope,
-                transcludeFn.$$slots[slotName],
+                transcludeFn._slots[slotName],
                 previousBoundTranscludeFn,
               );
             } else {
@@ -1267,11 +1266,11 @@ export class CompileProvider {
           let terminal = false;
 
           let {
-            newScopeDirective,
-            controllerDirectives,
-            newIsolateScopeDirective,
-            templateDirective,
-            nonTlbTranscludeDirective,
+            _newScopeDirective,
+            _controllerDirectives,
+            _newIsolateScopeDirective,
+            _templateDirective,
+            _nonTlbTranscludeDirective,
             hasElementTranscludeDirective,
           } = previousCompileContext;
 
@@ -1350,49 +1349,49 @@ export class CompileProvider {
 
             controllerScope = scope;
 
-            if (newIsolateScopeDirective) {
+            if (_newIsolateScopeDirective) {
               isolateScope = scope.$newIsolate();
-            } else if (newScopeDirective) {
+            } else if (_newScopeDirective) {
               controllerScope = scope.$parent;
             }
 
             if (boundTranscludeFn) {
               // track `boundTranscludeFn` so it can be unwrapped if `transcludeFn`
-              // is later passed as `parentBoundTranscludeFn` to `publicLinkFn`
+              // is later passed as `_parentBoundTranscludeFn` to `publicLinkFn`
               /** @type {any} */
               const newTrancludeFn = /** @type {any} */ (
                 controllersBoundTransclude
               );
 
-              newTrancludeFn.$$boundTransclude = boundTranscludeFn;
+              newTrancludeFn._boundTransclude = boundTranscludeFn;
               // expose the slots on the `$transclude` function
               newTrancludeFn.isSlotFilled = function (slotName) {
-                return !!boundTranscludeFn.$$slots[slotName];
+                return !!boundTranscludeFn._slots[slotName];
               };
               transcludeFn = newTrancludeFn;
             }
 
-            if (controllerDirectives) {
+            if (_controllerDirectives) {
               elementControllers = setupControllers(
                 $element,
                 attrs,
                 transcludeFn,
-                controllerDirectives,
+                _controllerDirectives,
                 isolateScope,
                 scope,
-                newIsolateScopeDirective,
+                _newIsolateScopeDirective,
               );
             }
 
-            if (newIsolateScopeDirective) {
+            if (_newIsolateScopeDirective) {
               isolateScope.$target._isolateBindings =
-                newIsolateScopeDirective._isolateBindings;
+                _newIsolateScopeDirective._isolateBindings;
               scopeBindingInfo = initializeDirectiveBindings(
                 scope,
                 attrs,
                 isolateScope,
                 isolateScope._isolateBindings,
-                newIsolateScopeDirective,
+                _newIsolateScopeDirective,
               );
 
               if (scopeBindingInfo.removeWatches) {
@@ -1402,11 +1401,11 @@ export class CompileProvider {
 
             // Initialize bindToController bindings
             for (const name in elementControllers) {
-              const controllerDirective = controllerDirectives[name];
+              const controllerDirective = _controllerDirectives[name];
 
               const controller = elementControllers[name];
 
-              const bindings = controllerDirective.$$bindings.bindToController;
+              const bindings = controllerDirective._bindings.bindToController;
 
               // Controller instance is bound to the scope
               const controllerInstance = controller();
@@ -1427,8 +1426,8 @@ export class CompileProvider {
             }
 
             // Bind the required controllers to the controller, if `require` is an object and `bindToController` is truthy
-            if (controllerDirectives) {
-              entries(controllerDirectives).forEach(
+            if (_controllerDirectives) {
+              entries(_controllerDirectives).forEach(
                 ([name, controllerDirective]) => {
                   const { require } = controllerDirective;
 
@@ -1514,9 +1513,9 @@ export class CompileProvider {
             // otherwise the child elements do not belong to the isolate directive.
 
             if (
-              newIsolateScopeDirective &&
-              (newIsolateScopeDirective.template ||
-                newIsolateScopeDirective.templateUrl === null)
+              _newIsolateScopeDirective &&
+              (_newIsolateScopeDirective.template ||
+                _newIsolateScopeDirective.templateUrl === null)
             ) {
               scopeToChild = isolateScope;
             }
@@ -1583,15 +1582,15 @@ export class CompileProvider {
             function controllersBoundTransclude(
               scopeParam,
               cloneAttachFn,
-              futureParentElement,
+              _futureParentElement,
               slotName,
             ) {
               let transcludeControllers;
 
               // No scope passed in:
               if (!isScope(scopeParam)) {
-                slotName = futureParentElement;
-                futureParentElement = cloneAttachFn;
+                slotName = _futureParentElement;
+                _futureParentElement = cloneAttachFn;
                 cloneAttachFn = scopeParam;
                 scopeParam = undefined;
               }
@@ -1600,8 +1599,8 @@ export class CompileProvider {
                 transcludeControllers = elementControllers;
               }
 
-              if (!futureParentElement) {
-                futureParentElement = hasElementTranscludeDirective
+              if (!_futureParentElement) {
+                _futureParentElement = hasElementTranscludeDirective
                   ? $element.node.parentElement
                   : $element.node;
               }
@@ -1611,14 +1610,14 @@ export class CompileProvider {
                 //  * a transclude function - a filled slot
                 //  * `null` - an optional slot that was not filled
                 //  * `undefined` - a slot that was not declared (i.e. invalid)
-                const slotTranscludeFn = boundTranscludeFn.$$slots[slotName];
+                const slotTranscludeFn = boundTranscludeFn._slots[slotName];
 
                 if (slotTranscludeFn) {
                   return slotTranscludeFn(
                     scopeParam,
                     cloneAttachFn,
                     transcludeControllers,
-                    futureParentElement,
+                    _futureParentElement,
                     scopeToChild,
                   );
                 }
@@ -1639,7 +1638,7 @@ export class CompileProvider {
                   scopeParam,
                   cloneAttachFn,
                   transcludeControllers,
-                  futureParentElement,
+                  _futureParentElement,
                   scopeToChild,
                 );
               }
@@ -1665,24 +1664,24 @@ export class CompileProvider {
                   // Check that there is no scope of any kind already
                   assertNoDuplicate(
                     "new/isolated scope",
-                    newIsolateScopeDirective || newScopeDirective,
+                    _newIsolateScopeDirective || _newScopeDirective,
                     directive,
                     compileNodeRef,
                   );
-                  newIsolateScopeDirective = directive;
+                  _newIsolateScopeDirective = directive;
                 } else {
                   // This directive is trying to add a child scope.
                   // Check that there is no isolated scope already
                   assertNoDuplicate(
                     "new/isolated scope",
-                    newIsolateScopeDirective,
+                    _newIsolateScopeDirective,
                     directive,
                     compileNodeRef,
                   );
                 }
               }
 
-              newScopeDirective = newScopeDirective || directive;
+              _newScopeDirective = _newScopeDirective || directive;
             }
 
             directiveName = directive.name;
@@ -1728,15 +1727,15 @@ export class CompileProvider {
             }
 
             if (!directive.templateUrl && directive.controller) {
-              controllerDirectives =
-                controllerDirectives || Object.create(null);
+              _controllerDirectives =
+                _controllerDirectives || Object.create(null);
               assertNoDuplicate(
                 `'${directiveName}' controller`,
-                controllerDirectives[directiveName],
+                _controllerDirectives[directiveName],
                 directive,
                 compileNodeRef,
               );
-              controllerDirectives[directiveName] = directive;
+              _controllerDirectives[directiveName] = directive;
             }
 
             directiveValue = directive.transclude;
@@ -1750,11 +1749,11 @@ export class CompileProvider {
               if (!EXCLUDED_DIRECTIVES.includes(directive.name)) {
                 assertNoDuplicate(
                   "transclusion",
-                  nonTlbTranscludeDirective,
+                  _nonTlbTranscludeDirective,
                   directive,
                   compileNodeRef,
                 );
-                nonTlbTranscludeDirective = directive;
+                _nonTlbTranscludeDirective = directive;
               }
 
               if (directiveValue === "element") {
@@ -1779,13 +1778,13 @@ export class CompileProvider {
                   replaceDirective && replaceDirective.name,
                   {
                     // Don't pass in:
-                    // - controllerDirectives - otherwise we'll create duplicates controllers
-                    // - newIsolateScopeDirective or templateDirective - combining templates with
+                    // - _controllerDirectives - otherwise we'll create duplicates controllers
+                    // - _newIsolateScopeDirective or _templateDirective - combining templates with
                     //   element transclusion doesn't make sense.
                     //
-                    // We need only nonTlbTranscludeDirective so that we prevent putting transclusion
+                    // We need only _nonTlbTranscludeDirective so that we prevent putting transclusion
                     // on the same element more than once.
-                    nonTlbTranscludeDirective,
+                    _nonTlbTranscludeDirective,
                   },
                 );
               } else {
@@ -1892,7 +1891,7 @@ export class CompileProvider {
                 );
                 /** @type {import("./interface.ts").TranscludeFn} */ (
                   childTranscludeFn
-                ).$$slots = slots;
+                )._slots = slots;
               }
             }
 
@@ -1900,11 +1899,11 @@ export class CompileProvider {
               hasTemplate = true;
               assertNoDuplicate(
                 "template",
-                templateDirective,
+                _templateDirective,
                 directive,
                 compileNodeRef,
               );
-              templateDirective = directive;
+              _templateDirective = directive;
 
               directiveValue = isFunction(directive.template)
                 ? directive.template(compileNodeRef.node, templateAttrs)
@@ -1961,7 +1960,7 @@ export class CompileProvider {
                 // - split it into two parts, those that already applied (processed) and those that weren't (unprocessed)
                 // - collect directives from the template and sort them by priority
                 // - combine directives as: processed + template + unprocessed
-                const templateDirectives = collectDirectives(
+                const _templateDirectives = collectDirectives(
                   /** @type {Element} */ (compileNode),
                   newTemplateAttrs,
                 );
@@ -1971,18 +1970,18 @@ export class CompileProvider {
                   directives.length - (i + 1),
                 );
 
-                if (newIsolateScopeDirective || newScopeDirective) {
+                if (_newIsolateScopeDirective || _newScopeDirective) {
                   // The original directive caused the current element to be replaced but this element
                   // also needs to have a new scope, so we need to tell the template directives
                   // that they would need to get their scope from further up, if they require transclusion
                   markDirectiveScope(
-                    templateDirectives,
-                    newIsolateScopeDirective,
-                    newScopeDirective,
+                    _templateDirectives,
+                    _newIsolateScopeDirective,
+                    _newScopeDirective,
                   );
                 }
                 directives = directives
-                  .concat(templateDirectives)
+                  .concat(_templateDirectives)
                   .concat(unprocessedDirectives);
 
                 mergeTemplateAttributes(templateAttrs, newTemplateAttrs);
@@ -1999,11 +1998,11 @@ export class CompileProvider {
               hasTemplate = true;
               assertNoDuplicate(
                 "template",
-                templateDirective,
+                _templateDirective,
                 directive,
                 compileNodeRef,
               );
-              templateDirective = directive;
+              _templateDirective = directive;
 
               if (directive.replace) {
                 replaceDirective = directive;
@@ -2019,14 +2018,14 @@ export class CompileProvider {
                 postLinkFns,
                 {
                   index,
-                  controllerDirectives,
-                  newScopeDirective:
-                    newScopeDirective !== directive && newScopeDirective,
-                  newIsolateScopeDirective,
-                  templateDirective,
-                  nonTlbTranscludeDirective,
-                  futureParentElement:
-                    previousCompileContext.futureParentElement,
+                  _controllerDirectives,
+                  _newScopeDirective:
+                    _newScopeDirective !== directive && _newScopeDirective,
+                  _newIsolateScopeDirective,
+                  _templateDirective,
+                  _nonTlbTranscludeDirective,
+                  _futureParentElement:
+                    previousCompileContext._futureParentElement,
                 },
               );
               ii = directives.length;
@@ -2070,7 +2069,7 @@ export class CompileProvider {
             transclude: childTranscludeFn,
             transcludeOnThisElement: hasTranscludeDirective,
             templateOnThisElement: hasTemplate,
-            newScope: newScopeDirective && newScopeDirective.scope === true,
+            newScope: _newScopeDirective && _newScopeDirective.scope === true,
           };
 
           /// /////////////////
@@ -2080,7 +2079,7 @@ export class CompileProvider {
               pre.directiveName = directiveName;
 
               if (
-                newIsolateScopeDirective === directive ||
+                _newIsolateScopeDirective === directive ||
                 directive.$$isolateScope
               ) {
                 pre = cloneAndAnnotateFn(pre, { isolateScope: true });
@@ -2093,7 +2092,7 @@ export class CompileProvider {
               post.directiveName = directiveName;
 
               if (
-                newIsolateScopeDirective === directive ||
+                _newIsolateScopeDirective === directive ||
                 directive.$$isolateScope
               ) {
                 post = cloneAndAnnotateFn(post, { isolateScope: true });
@@ -2200,29 +2199,29 @@ export class CompileProvider {
          * @param {NodeRef} $element
          * @param attrs
          * @param transcludeFn
-         * @param controllerDirectives
+         * @param _controllerDirectives
          * @param isolateScope
          * @param scope
-         * @param newIsolateScopeDirective
+         * @param _newIsolateScopeDirective
          * @returns {any}
          */
         function setupControllers(
           $element,
           attrs,
           transcludeFn,
-          controllerDirectives,
+          _controllerDirectives,
           isolateScope,
           scope,
-          newIsolateScopeDirective,
+          _newIsolateScopeDirective,
         ) {
           const elementControllers = Object.create(null);
 
-          for (const controllerKey in controllerDirectives) {
-            const directive = controllerDirectives[controllerKey];
+          for (const controllerKey in _controllerDirectives) {
+            const directive = _controllerDirectives[controllerKey];
 
             const locals = {
               $scope:
-                directive === newIsolateScopeDirective ||
+                directive === _newIsolateScopeDirective ||
                 directive.$$isolateScope
                   ? isolateScope
                   : scope,
@@ -2308,8 +2307,8 @@ export class CompileProvider {
                   maxPriority > directive.priority) &&
                 directive.restrict.indexOf(location) !== -1
               ) {
-                if (!directive.$$bindings) {
-                  const bindings = (directive.$$bindings =
+                if (!directive._bindings) {
+                  const bindings = (directive._bindings =
                     parseDirectiveBindings(directive, directive.name));
 
                   if (isObject(bindings.isolateScope)) {
@@ -2479,7 +2478,7 @@ export class CompileProvider {
                   previousCompileContext.index,
                 );
 
-                const templateDirectives = collectDirectives(
+                const _templateDirectives = collectDirectives(
                   compileNode,
                   tempTemplateAttrs,
                 );
@@ -2487,9 +2486,9 @@ export class CompileProvider {
                 if (isObject(origAsyncDirective.scope)) {
                   // the original directive that caused the template to be loaded async required
                   // an isolate scope
-                  markDirectiveScope(templateDirectives, true);
+                  markDirectiveScope(_templateDirectives, true);
                 }
-                directives = templateDirectives.concat(directives);
+                directives = _templateDirectives.concat(directives);
 
                 mergeTemplateAttributes(tAttrs, tempTemplateAttrs);
               } else {

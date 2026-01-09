@@ -308,7 +308,7 @@ export class SceDelegateProvider {
 
         function generateHolderType(Base) {
           const holderType = function TrustedValueHolderType(trustedValue) {
-            this.$$unwrapTrustedValue = function () {
+            this._unwrapTrustedValue = function () {
               return trustedValue;
             };
           };
@@ -317,10 +317,10 @@ export class SceDelegateProvider {
             holderType.prototype = new Base();
           }
           holderType.prototype.valueOf = function sceValueOf() {
-            return this.$$unwrapTrustedValue();
+            return this._unwrapTrustedValue();
           };
           holderType.prototype.toString = function sceToString() {
-            return this.$$unwrapTrustedValue().toString();
+            return this._unwrapTrustedValue().toString();
           };
 
           return holderType;
@@ -423,7 +423,7 @@ export class SceDelegateProvider {
          */
         function valueOf(maybeTrusted) {
           if (maybeTrusted instanceof trustedValueHolderBase) {
-            return maybeTrusted.$$unwrapTrustedValue();
+            return maybeTrusted._unwrapTrustedValue();
           }
 
           return maybeTrusted;
@@ -472,13 +472,13 @@ export class SceDelegateProvider {
           // If maybeTrusted is a trusted class instance or subclass instance, then unwrap and return
           // as-is.
           if (constructor && maybeTrusted instanceof constructor) {
-            return maybeTrusted.$$unwrapTrustedValue();
+            return maybeTrusted._unwrapTrustedValue();
           }
 
           // If maybeTrusted is a trusted class instance but not of the correct trusted type
           // then unwrap it and allow it to pass through to the rest of the checks
-          if (isFunction(maybeTrusted.$$unwrapTrustedValue)) {
-            maybeTrusted = maybeTrusted.$$unwrapTrustedValue();
+          if (isFunction(maybeTrusted._unwrapTrustedValue)) {
+            maybeTrusted = maybeTrusted._unwrapTrustedValue();
           }
 
           // If we get here, then we will either sanitize the value or throw an exception.

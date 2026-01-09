@@ -268,11 +268,11 @@ export function ngOptionsDirective($compile, $parse) {
     const listFragment = document.createDocumentFragment();
 
     // Overwrite the implementation. ngOptions doesn't use hashes
-    selectCtrl.generateUnknownOptionValue = () => "?";
+    selectCtrl._generateUnknownOptionValue = () => "?";
 
     // Update the controller methods for multiple selectable options
     if (!multiple) {
-      selectCtrl.writeValue = function writeNgOptionsValue(value) {
+      selectCtrl._writeValue = function writeNgOptionsValue(value) {
         // The options might not be defined yet when ngModel tries to render
         if (!options) return;
 
@@ -292,7 +292,7 @@ export function ngOptionsDirective($compile, $parse) {
           // set always
 
           if (selectElement.value !== option.selectValue) {
-            selectCtrl.removeUnknownOption();
+            selectCtrl._removeUnknownOption();
 
             selectElement.value = option.selectValue;
             option.element.selected = true;
@@ -300,16 +300,16 @@ export function ngOptionsDirective($compile, $parse) {
 
           option.element.setAttribute("selected", "selected");
         } else {
-          selectCtrl.selectUnknownOrEmptyOption(value);
+          selectCtrl._selectUnknownOrEmptyOption(value);
         }
       };
 
-      selectCtrl.readValue = function readNgOptionsValue() {
+      selectCtrl._readValue = function readNgOptionsValue() {
         const selectedOption = options.selectValueMap[selectElement.value];
 
         if (selectedOption && !selectedOption.disabled) {
-          selectCtrl.unselectEmptyOption();
-          selectCtrl.removeUnknownOption();
+          selectCtrl._un_selectEmptyOption();
+          selectCtrl._removeUnknownOption();
 
           return options.getViewValueFromOption(selectedOption);
         }
@@ -326,7 +326,7 @@ export function ngOptionsDirective($compile, $parse) {
         });
       }
     } else {
-      selectCtrl.writeValue = function writeNgOptionsMultiple(values) {
+      selectCtrl._writeValue = function writeNgOptionsMultiple(values) {
         // The options might not be defined yet when ngModel tries to render
         if (!options) return;
 
@@ -342,7 +342,7 @@ export function ngOptionsDirective($compile, $parse) {
         });
       };
 
-      selectCtrl.readValue = function readNgOptionsMultiple() {
+      selectCtrl._readValue = function readNgOptionsMultiple() {
         const selections = [];
 
         const optionsEls = selectElement.options;
@@ -433,7 +433,7 @@ export function ngOptionsDirective($compile, $parse) {
 
     // ------------------------------------------------------------------ //
 
-    function addOptionElement(option, parent) {
+    function _addOptionElement(option, parent) {
       /**
        * @type {HTMLOptionElement}
        */
@@ -473,7 +473,7 @@ export function ngOptionsDirective($compile, $parse) {
     }
 
     function updateOptions() {
-      const previousValue = options && selectCtrl.readValue();
+      const previousValue = options && selectCtrl._readValue();
 
       // We must remove all current options, but cannot simply set innerHTML = null
       // since the providedEmptyOption might have an ngIf on it that inserts comments which we
@@ -518,10 +518,10 @@ export function ngOptionsDirective($compile, $parse) {
             groupElementMap[option.group] = groupElement;
           }
 
-          addOptionElement(option, groupElement);
+          _addOptionElement(option, groupElement);
         } else {
           // This option is not in a group
-          addOptionElement(option, listFragment);
+          _addOptionElement(option, listFragment);
         }
       });
 
@@ -531,7 +531,7 @@ export function ngOptionsDirective($compile, $parse) {
 
       // Check to see if the value has changed due to the update to the options
       if (!ngModelCtrl.$isEmpty(previousValue)) {
-        const nextValue = selectCtrl.readValue();
+        const nextValue = selectCtrl._readValue();
 
         const isNotPrimitive = ngOptions.trackBy || multiple;
 

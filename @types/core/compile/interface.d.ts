@@ -13,7 +13,7 @@ export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
 export type TranscludeFn = {
   (cb: TranscludeFnCb): void;
   (scope: Scope, cb?: TranscludeFnCb): void;
-  $$slots?: any;
+  _slots?: any;
 };
 export type CloneAttachFn = (
   clone: Node | Element | NodeList,
@@ -28,16 +28,16 @@ export interface BoundTranscludeFn {
     scope?: Scope,
     cloneAttachFn?: CloneAttachFn,
     transcludeControllers?: unknown,
-    futureParentElement?: Node | Element,
+    _futureParentElement?: Node | Element,
     scopeToChild?: Scope,
   ): Node | Element | NodeList;
-  $$slots: Record<string, SlotTranscludeFn | null | undefined>;
+  _slots: Record<string, SlotTranscludeFn | null | undefined>;
 }
 export type SlotTranscludeFn = (
   scope?: Scope,
   cloneAttachFn?: CloneAttachFn,
   transcludeControllers?: unknown,
-  futureParentElement?: Node | Element,
+  _futureParentElement?: Node | Element,
   scopeToChild?: Scope,
 ) => Node | Element | NodeList;
 /**
@@ -84,7 +84,7 @@ export type CompileNodesFn = () => CompositeLinkFn;
 export type ChildLinkFn = (
   scope: Scope,
   nodeRef: NodeRef,
-  parentBoundTranscludeFn: BoundTranscludeFn | null,
+  _parentBoundTranscludeFn: BoundTranscludeFn | null,
 ) => void;
 /**
  * A function used to link a specific node.
@@ -116,6 +116,6 @@ export type ApplyDirectivesToNodeFn = () => NodeLinkFn;
 export type CompositeLinkFn = (
   scope: Scope,
   $linkNode: NodeRef,
-  parentBoundTranscludeFn?: Function,
+  _parentBoundTranscludeFn?: Function,
 ) => void;
 export {};

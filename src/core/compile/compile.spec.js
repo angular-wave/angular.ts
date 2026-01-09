@@ -3460,7 +3460,7 @@ describe("$compile", () => {
               const customTemplate = $("<div in-custom-template></div>");
               element.append(customTemplate);
               $compile(customTemplate)(scope, undefined, {
-                parentBoundTranscludeFn: transclude,
+                _parentBoundTranscludeFn: transclude,
               });
             },
           };
@@ -3491,7 +3491,7 @@ describe("$compile", () => {
               const customTemplate = $("<div in-custom-template></div>");
               element.append(customTemplate);
               $compile(customTemplate)(scope, undefined, {
-                parentBoundTranscludeFn: transclude,
+                _parentBoundTranscludeFn: transclude,
               });
             },
           };
@@ -12273,22 +12273,6 @@ describe("$compile", () => {
         //   // clone.remove();
         // });
 
-        it("should add a $$transcluded property onto the transcluded scope", async () => {
-          module.directive("trans", () => ({
-            transclude: true,
-            replace: true,
-            scope: true,
-            template:
-              "<div><span>I:{{$$transcluded}}</span><span ng-transclude></span></div>",
-          }));
-          bootstrap("<div><div trans>T:{{$$transcluded}}</div></div>", "test1");
-          await wait();
-          expect(ELEMENT.querySelectorAll("span")[0].innerText).toEqual("I:");
-          expect(ELEMENT.querySelectorAll("span")[1].innerText).toEqual(
-            "T:true",
-          );
-        });
-
         it("should clear contents of the ng-transclude element before appending transcluded content if transcluded content exists", async () => {
           module.directive("trans", () => ({
             transclude: true,
@@ -12799,7 +12783,7 @@ describe("$compile", () => {
                   return function (scope, element, attrs, ctrls, transcludeFn) {
                     element.appendChild(content);
                     $compile(content)(scope, undefined, {
-                      parentBoundTranscludeFn: transcludeFn,
+                      _parentBoundTranscludeFn: transcludeFn,
                     });
                   };
                 },

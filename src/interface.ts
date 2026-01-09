@@ -503,13 +503,13 @@ export interface TemplateLinkingFunction {
 }
 
 export interface TemplateLinkingFunctionOptions {
-  parentBoundTranscludeFn?: TranscludeFunctionObject | undefined;
+  _parentBoundTranscludeFn?: TranscludeFunctionObject | undefined;
   transcludeControllers?:
     | {
         [controller: string]: { instance: Controller };
       }
     | undefined;
-  futureParentElement?: Element | undefined;
+  _futureParentElement?: Element | undefined;
 }
 
 /**
