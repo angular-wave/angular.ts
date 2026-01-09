@@ -52,7 +52,7 @@ export class NgModelController {
    * @param {ng.Scope} $scope
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    * @param {ng.Attributes} $attr
-   * @param {Element} $element
+   * @param {HTMLElement} $element
    * @param {ng.ParseService} $parse
    * @param {ng.AnimateService} $animate
    * @param {ng.InterpolateService} $interpolate
@@ -61,11 +61,13 @@ export class NgModelController {
     $scope: ng.Scope,
     $exceptionHandler: ng.ExceptionHandlerService,
     $attr: ng.Attributes,
-    $element: Element,
+    $element: HTMLElement,
     $parse: ng.ParseService,
     $animate: ng.AnimateService,
     $interpolate: ng.InterpolateService,
   );
+  /** @type {boolean} */
+  _isAnimated: boolean;
   /** @type {any} The actual value from the control's view  */
   $viewValue: any;
   /** @type {any} The value in the model that the control is bound to. */
@@ -144,7 +146,7 @@ export class NgModelController {
   /** @type {ng.Scope} */
   _scope: ng.Scope;
   _attr: ng.Attributes;
-  _element: Element;
+  _element: HTMLElement;
   _animate: import("../../animations/interface.ts").AnimateService;
   _parse: import("../../core/parse/interface.ts").ParseService;
   _exceptionHandler: import("../../services/exception/interface.ts").ExceptionHandler;

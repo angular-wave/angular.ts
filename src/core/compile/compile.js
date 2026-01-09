@@ -2661,6 +2661,10 @@ export class CompileProvider {
           }
         }
 
+        /**
+         * @param {ng.Directive[]} directives
+         * @param {string} text
+         */
         function addTextInterpolateDirective(directives, text) {
           const interpolateFn = $interpolate(text, true);
 

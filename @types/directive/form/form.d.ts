@@ -1,5 +1,15 @@
 export function setupValidity(instance: any): void;
 /**
+ * @param {FormController|ng.NgModelController} ctrl
+ * @param {string} className
+ * @param {boolean} switchValue
+ */
+export function cachedToggleClass(
+  ctrl: FormController | ng.NgModelController,
+  className: string,
+  switchValue: boolean,
+): void;
+/**
  * @type {{
  *   $nonscope: boolean,
  *   $addControl: Function,
@@ -74,19 +84,21 @@ export class FormController {
   static $nonscope: boolean;
   static $inject: string[];
   /**
-   * @param {Element} $element
+   * @param {HTMLFormElement} $element
    * @param {ng.Attributes} $attrs
    * @param {ng.Scope} $scope
    * @param {ng.AnimateService} $animate
    * @param {ng.InterpolateService} $interpolate
    */
   constructor(
-    $element: Element,
+    $element: HTMLFormElement,
     $attrs: ng.Attributes,
     $scope: ng.Scope,
     $animate: ng.AnimateService,
     $interpolate: ng.InterpolateService,
   );
+  /** @type {boolean} */
+  _isAnimated: boolean;
   _controls: any[];
   $name: any;
   /**
@@ -102,7 +114,7 @@ export class FormController {
   $submitted: boolean;
   /** @type {FormController|Object} */
   _parentForm: FormController | any;
-  _element: Element;
+  _element: HTMLFormElement;
   _animate: import("../../animations/interface.ts").AnimateService;
   $error: {};
   _success: {};
