@@ -1,8 +1,8 @@
 export function AnimateCssProvider(): void;
 export class AnimateCssProvider {
   $get: (() => (
-    element: any,
-    initialOptions: any,
+    element: HTMLElement,
+    initialOptions: ng.AnimationOptions,
   ) => {
     $$willAnimate: boolean;
     start(): any;

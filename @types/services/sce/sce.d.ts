@@ -32,7 +32,6 @@ export namespace SCE_CONTEXTS {
   let MEDIA_URL: string;
   let URL: string;
   let RESOURCE_URL: string;
-  let JS: string;
 }
 /**
  * `$sceDelegate` is a service that is used by the `$sce` service to provide {@link ng.$sce Strict

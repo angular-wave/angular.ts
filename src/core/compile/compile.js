@@ -1385,13 +1385,13 @@ export class CompileProvider {
             }
 
             if (newIsolateScopeDirective) {
-              isolateScope.$target.$$isolateBindings =
-                newIsolateScopeDirective.$$isolateBindings;
+              isolateScope.$target._isolateBindings =
+                newIsolateScopeDirective._isolateBindings;
               scopeBindingInfo = initializeDirectiveBindings(
                 scope,
                 attrs,
                 isolateScope,
-                isolateScope.$$isolateBindings,
+                isolateScope._isolateBindings,
                 newIsolateScopeDirective,
               );
 
@@ -2313,7 +2313,7 @@ export class CompileProvider {
                     parseDirectiveBindings(directive, directive.name));
 
                   if (isObject(bindings.isolateScope)) {
-                    directive.$$isolateBindings = bindings.isolateScope;
+                    directive._isolateBindings = bindings.isolateScope;
                   }
                 }
                 tDirectives.push(directive);

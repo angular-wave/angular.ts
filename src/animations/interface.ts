@@ -109,10 +109,24 @@ export interface AnimationOptions {
   tempClasses: string | string[]; // CSS classes during animation
   /** Optional DOM operation callback executed before animation */
   domOperation?: () => void;
+  onDone?: () => void;
   $$domOperationFired?: boolean;
   $$prepared?: boolean;
+  $$skipPreparationClasses?: boolean;
+  cleanupStyles?: boolean;
   preparationClasses?: string;
   activeClasses?: string;
+  duration?: number | string;
+  event?: string | string[];
+  easing?: string;
+  delay?: string;
+  structural?: boolean;
+  transitionStyle?: string;
+  staggerIndex?: number;
+  skipBlocking?: boolean;
+  stagger?: number | string;
+  keyframeStyle?: string;
+  applyClassesEarly?: boolean;
 }
 
 export interface AnimateJsRunner {

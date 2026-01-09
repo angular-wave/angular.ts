@@ -11,9 +11,21 @@ import {
  */
 export function limitToFilter() {
   /**
-   * @param {Array|ArrayLike|string|number|Function} input Array/array-like, string, or number to be limited.
-   * @param {string|number} limit The length of the returned array or string.
-   * @param {string|number} [begin] Index at which to begin limitation. As a negative index, `begin` indicates an offset from the end of `input`. Defaults to `0`.
+   * Limits the size of an array, array-like object, string, or number.
+   *
+   * - If `input` is a function, it will be invoked and its return value used.
+   * - If `input` is a number, it will be converted to a string.
+   * - Non–array-like values are returned unchanged.
+   *
+   * @param {Array<any>|ArrayLike<any>|string|number} input
+   *   The value to limit.
+   * @param {string|number} limit
+   *   The maximum length of the returned value. Negative values limit from the end.
+   * @param {string|number} [begin]
+   *   Index at which to begin the limitation. A negative value is an offset from the end.
+   *   Defaults to `0`.
+   * @returns {Array<any>|ArrayLike<any>|string|number}
+   *   A limited array or string, or the original input if it cannot be limited.
    */
   return function (input, limit, begin) {
     if (isFunction(input)) {
@@ -51,6 +63,21 @@ export function limitToFilter() {
   };
 }
 
+/**
+ * Returns a shallow copy of a portion of an array-like or string.
+ *
+ * - For strings, this delegates to `String.prototype.slice`
+ * - For array-like objects, this delegates to `Array.prototype.slice`
+ *
+ * @param {string|ArrayLike<any>} input
+ *   The value to slice. Must be a string or array-like object.
+ * @param {number} [begin]
+ *   Zero-based index at which to begin extraction.
+ * @param {number} [end]
+ *   Zero-based index before which to end extraction.
+ * @returns {string|Array<any>}
+ *   A sliced string if input is a string, otherwise an array.
+ */
 function sliceFn(input, begin, end) {
   if (isString(input)) return input.slice(begin, end);
 

@@ -10,6 +10,13 @@ import {
 } from "../shared/utils.js";
 import { $injectTokens } from "../injection-tokens.js";
 
+/**
+ * @typedef {Object} ComparisonObject
+ * @property {*} value
+ * @property {{ value: number, type: string, index: number }} tieBreaker
+ * @property {Array<{ value: any, type: string, index: number }>} predicateValues
+ */
+
 orderByFilter.$inject = [$injectTokens._parse];
 
 /**
@@ -17,6 +24,32 @@ orderByFilter.$inject = [$injectTokens._parse];
  * @returns {ng.FilterFn}
  */
 export function orderByFilter($parse) {
+  /**
+   * Sorts an array or array-like collection based on one or more predicates.
+   *
+   * The collection can be:
+   * - An array
+   * - An array-like object
+   * - A function returning an array
+   *
+   * Predicates can be:
+   * - Property names (strings)
+   * - Getter functions
+   * - Strings with "+" or "-" prefix to indicate ascending/descending order
+   *
+   * @param {Array<any>|ArrayLike<any>|Function} array
+   *   The collection to be sorted.
+   * @param {string|Function|Array<string|Function>} [sortPredicate]
+   *   A single predicate or array of predicates used for sorting.
+   * @param {boolean} [reverseOrder=false]
+   *   If true, reverses the sort order.
+   * @param {Function} [compareFn]
+   *   Optional comparator function. Defaults to a type-aware comparison function.
+   * @returns {Array<any>|ArrayLike<any>}
+   *   A new array containing the sorted values.
+   *
+   * @throws {Error} Throws if `array` is not array-like.
+   */
   return function (array, sortPredicate, reverseOrder, compareFn) {
     if (isNullOrUndefined(array)) return array;
 
@@ -31,7 +64,7 @@ export function orderByFilter($parse) {
     }
 
     if (!isArray(sortPredicate)) {
-      sortPredicate = [sortPredicate];
+      sortPredicate = [sortPredicate ?? "+"]; // if undefined, default to "+"
     }
 
     if (sortPredicate.length === 0) {
@@ -48,13 +81,31 @@ export function orderByFilter($parse) {
     // The next three lines are a version of a Swartzian Transform idiom from Perl
     // (sometimes called the Decorate-Sort-Undecorate idiom)
     // See https://en.wikipedia.org/wiki/Schwartzian_transform
-    const compareValues = Array.prototype.map.call(array, getComparisonObject);
+    const compareValues = /** @type {ComparisonObject[]} */ (
+      Array.prototype.map.call(array, getComparisonObject)
+    );
 
     compareValues.sort(doComparison);
     array = compareValues.map((item) => item.value);
 
     return array;
 
+    /**
+     * Creates a comparison object for a given value in the array.
+     * This object is used to perform stable sorting with multiple predicates.
+     *
+     * @param {*} value - The value from the array to wrap for comparison.
+     * @param {number} index - The index of the value in the original array.
+     * @returns {{
+     *   value: *,
+     *   tieBreaker: { value: number, type: string, index: number },
+     *   predicateValues: Array<{ value: *, type: string, index: number }>
+     * }}
+     *   An object containing:
+     *     - `value`: the original value,
+     *     - `tieBreaker`: a stable sort fallback using the original index,
+     *     - `predicateValues`: an array of values derived from each sort predicate.
+     */
     function getComparisonObject(value, index) {
       // NOTE: We are adding an extra `tieBreaker` value based on the element's index.
       // This will be used to keep the sort stable when none of the input predicates can
@@ -68,6 +119,20 @@ export function orderByFilter($parse) {
       };
     }
 
+    /**
+     * Comparator used to sort decorated collection items.
+     *
+     * Iterates over all sort predicates and compares their corresponding
+     * predicate values. The first non-zero comparison result determines
+     * the ordering.
+     *
+     * If all predicate comparisons are equal, a tie-breaker based on the
+     * original index is used to guarantee a stable sort.
+     *
+     * @param {ComparisonObject} v1 First decorated comparison object
+     * @param {ComparisonObject} v2 Second decorated comparison object
+     * @returns {number} -1 if v1 < v2, 1 if v1 > v2, 0 if equivalent
+     */
     function doComparison(v1, v2) {
       for (let i = 0, ii = predicates.length; i < ii; i++) {
         const result = compare(v1.predicateValues[i], v2.predicateValues[i]);
@@ -84,14 +149,31 @@ export function orderByFilter($parse) {
     }
   };
 
+  /**
+   * Processes an array of sort predicates into getter functions and sort directions.
+   *
+   * Each predicate can be:
+   * - A function: used directly to extract values for comparison.
+   * - A string starting with `+` or `-` to indicate ascending or descending order.
+   *   The remainder of the string is interpreted as a property path.
+   *
+   * @param {(string|Function)[]} sortPredicates - Array of predicates to process. Each predicate
+   *   can be a string (property name, optionally prefixed with "+" or "-") or a function.
+   * @return {Array<{get: Function, descending: number}>} Array of objects, each containing:
+   *   - `get`: Function to extract the value from an item.
+   *   - `descending`: `1` for ascending, `-1` for descending.
+   */
   function processPredicates(sortPredicates) {
     return sortPredicates.map((predicate) => {
       let descending = 1;
 
+      /**
+       * @type {function(*): *}
+       */
       let get = (x) => x;
 
       if (isFunction(predicate)) {
-        get = predicate;
+        get = /** @type {function(*): *} */ (predicate);
       } else if (isString(predicate)) {
         if (predicate.charAt(0) === "+" || predicate.charAt(0) === "-") {
           descending = predicate.charAt(0) === "-" ? -1 : 1;
@@ -104,7 +186,8 @@ export function orderByFilter($parse) {
           if (parsed.constant) {
             const key = parsed();
 
-            get = (value) => value[key];
+            get = /** @type {Record<string, any>} value */ (value) =>
+              value[key];
           } else {
             get = parsed;
           }
@@ -115,6 +198,10 @@ export function orderByFilter($parse) {
     });
   }
 
+  /**
+   * @param {any} value
+   * @return {boolean}
+   */
   function isPrimitive(value) {
     switch (typeof value) {
       case "number": /* falls through */
@@ -126,6 +213,16 @@ export function orderByFilter($parse) {
     }
   }
 
+  /**
+   * Converts an object to a primitive value for comparison purposes.
+   *
+   * - If the object has a valid `valueOf()` method that returns a primitive, it uses that.
+   * - Otherwise, if the object has a custom `toString()` method, it uses that.
+   * - If neither yields a primitive, returns the original object.
+   *
+   * @param {*} value - The object to convert.
+   * @returns {*} The primitive representation of the object if possible; otherwise, the original object.
+   */
   function objectValue(value) {
     // If `valueOf` is a valid function use that
     if (isFunction(value.valueOf)) {
@@ -144,6 +241,22 @@ export function orderByFilter($parse) {
     return value;
   }
 
+  /**
+   * Normalizes a value for sorting by determining its type and
+   * converting objects to primitive representations when possible.
+   *
+   * @param {*} value - The value to normalize for comparison.
+   * @param {number} index - The original index of the value in the array.
+   * @returns {{
+   *   value: *,
+   *   type: string,
+   *   index: number
+   * }}
+   *   An object containing:
+   *     - `value`: the normalized value (primitive if possible),
+   *     - `type`: a string representing the type of the value (`number`, `string`, `boolean`, `null`, etc.),
+   *     - `index`: the original index to maintain stable sorting.
+   */
   function getPredicateValue(value, index) {
     /** @type {String} */ let type = typeof value;
 
@@ -156,6 +269,23 @@ export function orderByFilter($parse) {
     return { value, type, index };
   }
 
+  /**
+   * Default comparison function used by the `orderBy` filter.
+   *
+   * Compares two wrapped predicate values and returns a sort order indicator.
+   * Comparison rules:
+   * - Values of the same type are compared directly
+   * - Strings are compared case-insensitively
+   * - Objects fall back to their original index to preserve stability
+   * - `undefined` and `null` are ordered last
+   *
+   * @param {{ value: any, type: string, index: number }} v1
+   *   First comparison object.
+   * @param {{ value: any, type: string, index: number }} v2
+   *   Second comparison object.
+   * @returns {number}
+   *   Returns `-1` if `v1 < v2`, `1` if `v1 > v2`, or `0` if equal.
+   */
   function defaultCompare(v1, v2) {
     let result = 0;
 
