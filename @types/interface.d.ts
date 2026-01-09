@@ -474,7 +474,7 @@ export interface TemplateLinkingFunction {
   ): Element;
 }
 export interface TemplateLinkingFunctionOptions {
-  parentBoundTranscludeFn?: TranscludeFunctionObject | undefined;
+  _parentBoundTranscludeFn?: TranscludeFunctionObject | undefined;
   transcludeControllers?:
     | {
         [controller: string]: {
@@ -482,7 +482,7 @@ export interface TemplateLinkingFunctionOptions {
         };
       }
     | undefined;
-  futureParentElement?: Element | undefined;
+  _futureParentElement?: Element | undefined;
 }
 /**
  * Configuration for ngModel behavior.

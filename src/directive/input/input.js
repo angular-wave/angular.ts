@@ -148,7 +148,7 @@ function baseInputType(_, element, attr, ctrl) {
     // control's value is the same empty value twice in a row.
     if (
       ctrl.$viewValue !== value ||
-      (value === "" && ctrl.$$hasNativeValidators)
+      (value === "" && ctrl._hasNativeValidators)
     ) {
       ctrl.$target.$setViewValue(value, event);
     }
@@ -164,7 +164,7 @@ function baseInputType(_, element, attr, ctrl) {
   // check for validity changes on various DOM events.
   if (
     PARTIAL_VALIDATION_TYPES[type] &&
-    ctrl.$$hasNativeValidators &&
+    ctrl._hasNativeValidators &&
     type === attr.type
   ) {
     element.addEventListener(PARTIAL_VALIDATION_EVENTS, (ev) => {
@@ -254,7 +254,7 @@ export function createStringDateInputType(type, regexp) {
 }
 
 export function badInputChecker(scope, element, attr, ctrl, parserName) {
-  const nativeValidation = (ctrl.$$hasNativeValidators = isObject(
+  const nativeValidation = (ctrl._hasNativeValidators = isObject(
     element.validity,
   ));
 
@@ -456,7 +456,7 @@ export function rangeInputType(scope, element, attr, ctrl) {
   numberFormatterParser(ctrl);
   baseInputType(scope, element, attr, ctrl);
 
-  const supportsRange = ctrl.$$hasNativeValidators && element.type === "range";
+  const supportsRange = ctrl._hasNativeValidators && element.type === "range";
 
   let minVal = supportsRange ? 0 : undefined;
 

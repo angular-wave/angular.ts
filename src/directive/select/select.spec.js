@@ -79,7 +79,7 @@ describe("select", () => {
               selectCtrl.ngModelCtrl.$render = renderSpy.and.callFake(
                 selectCtrl.ngModelCtrl.$render,
               );
-              spyOn(selectCtrl, "writeValue").and.callThrough();
+              spyOn(selectCtrl, "_writeValue").and.callThrough();
             },
           },
         }));
@@ -169,12 +169,12 @@ describe("select", () => {
 
     const selectCtrl = getController(element, "select");
 
-    expect(selectCtrl.hasOption("a")).toBe(false);
-    expect(selectCtrl.hasOption("b")).toBe(false);
-    expect(selectCtrl.hasOption("c")).toBe(false);
-    expect(selectCtrl.hasOption("d")).toBe(false);
-    expect(selectCtrl.hasOption("e")).toBe(false);
-    expect(selectCtrl.hasOption("f")).toBe(false);
+    expect(selectCtrl._hasOption("a")).toBe(false);
+    expect(selectCtrl._hasOption("b")).toBe(false);
+    expect(selectCtrl._hasOption("c")).toBe(false);
+    expect(selectCtrl._hasOption("d")).toBe(false);
+    expect(selectCtrl._hasOption("e")).toBe(false);
+    expect(selectCtrl._hasOption("f")).toBe(false);
   });
 
   describe("select-one", () => {
@@ -382,7 +382,7 @@ describe("select", () => {
       });
     });
 
-    it("should only call selectCtrl.writeValue after a digest has occurred", async () => {
+    it("should only call selectCtrl._writeValue after a digest has occurred", async () => {
       scope.mySelect = "B";
       await wait();
       const select = createElementFromHTML(
@@ -397,10 +397,10 @@ describe("select", () => {
       );
 
       $compile(select)(scope);
-      expect(selectCtrl.writeValue).not.toHaveBeenCalled();
+      expect(selectCtrl._writeValue).not.toHaveBeenCalled();
       await wait();
 
-      expect(selectCtrl.writeValue).toHaveBeenCalled();
+      expect(selectCtrl._writeValue).toHaveBeenCalled();
       dealoc(select);
     });
 
@@ -976,7 +976,7 @@ describe("select", () => {
     });
   });
 
-  describe("selectController.hasOption", () => {
+  describe("selectController._hasOption", () => {
     describe("flat options", () => {
       it("should return false for options shifted via ngRepeat", async () => {
         scope.robots = [
@@ -990,8 +990,8 @@ describe("select", () => {
 
         scope.robots.shift();
         await wait();
-        expect(selectCtrl.hasOption("1")).toBe(false);
-        expect(selectCtrl.hasOption("2")).toBe(true);
+        expect(selectCtrl._hasOption("1")).toBe(false);
+        expect(selectCtrl._hasOption("2")).toBe(true);
       });
 
       xit("should return false for options popped via ngRepeat", async () => {
@@ -1006,8 +1006,8 @@ describe("select", () => {
 
         scope.robots.pop();
         await wait();
-        expect(selectCtrl.hasOption("1")).toBe(true);
-        expect(selectCtrl.hasOption("2")).toBe(false);
+        expect(selectCtrl._hasOption("1")).toBe(true);
+        expect(selectCtrl._hasOption("2")).toBe(false);
       });
 
       it("should return true for options added via ngRepeat", async () => {
@@ -1019,8 +1019,8 @@ describe("select", () => {
 
         scope.robots.unshift({ value: 1, label: "c3p0" });
         await wait();
-        expect(selectCtrl.hasOption("1")).toBe(true);
-        expect(selectCtrl.hasOption("2")).toBe(true);
+        expect(selectCtrl._hasOption("1")).toBe(true);
+        expect(selectCtrl._hasOption("2")).toBe(true);
       });
 
       it("should keep all the options when changing the model", async () => {
@@ -1032,9 +1032,9 @@ describe("select", () => {
 
         scope.mySelect = "C";
         await wait();
-        expect(selectCtrl.hasOption("A")).toBe(true);
-        expect(selectCtrl.hasOption("B")).toBe(true);
-        expect(selectCtrl.hasOption("C")).toBe(true);
+        expect(selectCtrl._hasOption("A")).toBe(true);
+        expect(selectCtrl._hasOption("B")).toBe(true);
+        expect(selectCtrl._hasOption("C")).toBe(true);
         expect(element).toEqualSelectWithOptions({ "": ["A", "B", ["C"]] });
       });
     });
@@ -1061,11 +1061,11 @@ describe("select", () => {
         scope.groups[1].values.unshift(itemD);
         scope.values.shift();
         await wait();
-        expect(selectCtrl.hasOption("A")).toBe(false);
-        expect(selectCtrl.hasOption("B")).toBe(true);
-        expect(selectCtrl.hasOption("C")).toBe(true);
-        expect(selectCtrl.hasOption("D")).toBe(true);
-        expect(selectCtrl.hasOption("E")).toBe(true);
+        expect(selectCtrl._hasOption("A")).toBe(false);
+        expect(selectCtrl._hasOption("B")).toBe(true);
+        expect(selectCtrl._hasOption("C")).toBe(true);
+        expect(selectCtrl._hasOption("D")).toBe(true);
+        expect(selectCtrl._hasOption("E")).toBe(true);
         expect(element).toEqualSelectWithOptions({
           "": [[""]],
           first: ["B", "C"],
@@ -1094,11 +1094,11 @@ describe("select", () => {
         scope.groups[0].values.push(itemD);
         scope.values.shift();
         await wait();
-        expect(selectCtrl.hasOption("A")).toBe(false);
-        expect(selectCtrl.hasOption("B")).toBe(true);
-        expect(selectCtrl.hasOption("C")).toBe(true);
-        expect(selectCtrl.hasOption("D")).toBe(true);
-        expect(selectCtrl.hasOption("E")).toBe(true);
+        expect(selectCtrl._hasOption("A")).toBe(false);
+        expect(selectCtrl._hasOption("B")).toBe(true);
+        expect(selectCtrl._hasOption("C")).toBe(true);
+        expect(selectCtrl._hasOption("D")).toBe(true);
+        expect(selectCtrl._hasOption("E")).toBe(true);
         expect(element).toEqualSelectWithOptions({
           "": [[""]],
           first: ["B", "C", "D"],
@@ -1127,12 +1127,12 @@ describe("select", () => {
         scope.groups[1].values.unshift(itemD);
         scope.groups[1].values.pop();
         await wait();
-        expect(selectCtrl.hasOption("A")).toBe(true);
-        expect(selectCtrl.hasOption("B")).toBe(true);
-        expect(selectCtrl.hasOption("C")).toBe(true);
-        expect(selectCtrl.hasOption("D")).toBe(true);
-        expect(selectCtrl.hasOption("E")).toBe(true);
-        expect(selectCtrl.hasOption("F")).toBe(false);
+        expect(selectCtrl._hasOption("A")).toBe(true);
+        expect(selectCtrl._hasOption("B")).toBe(true);
+        expect(selectCtrl._hasOption("C")).toBe(true);
+        expect(selectCtrl._hasOption("D")).toBe(true);
+        expect(selectCtrl._hasOption("E")).toBe(true);
+        expect(selectCtrl._hasOption("F")).toBe(false);
         expect(element).toEqualSelectWithOptions({
           "": [[""], "A"],
           first: ["B", "C"],
@@ -1161,11 +1161,11 @@ describe("select", () => {
         const itemD = scope.groups[1].values.shift();
         scope.groups[0].values.push(itemD);
         await wait();
-        expect(selectCtrl.hasOption("A")).toBe(true);
-        expect(selectCtrl.hasOption("B")).toBe(true);
-        expect(selectCtrl.hasOption("C")).toBe(false);
-        expect(selectCtrl.hasOption("D")).toBe(true);
-        expect(selectCtrl.hasOption("E")).toBe(true);
+        expect(selectCtrl._hasOption("A")).toBe(true);
+        expect(selectCtrl._hasOption("B")).toBe(true);
+        expect(selectCtrl._hasOption("C")).toBe(false);
+        expect(selectCtrl._hasOption("D")).toBe(true);
+        expect(selectCtrl._hasOption("E")).toBe(true);
         expect(element).toEqualSelectWithOptions({
           "": [[""], "A"],
           first: ["B", "D"],
@@ -1192,11 +1192,11 @@ describe("select", () => {
 
         scope.groups[1].values.shift();
         await wait();
-        expect(selectCtrl.hasOption("A")).toBe(true);
-        expect(selectCtrl.hasOption("B")).toBe(true);
-        expect(selectCtrl.hasOption("C")).toBe(true);
-        expect(selectCtrl.hasOption("D")).toBe(false);
-        expect(selectCtrl.hasOption("E")).toBe(true);
+        expect(selectCtrl._hasOption("A")).toBe(true);
+        expect(selectCtrl._hasOption("B")).toBe(true);
+        expect(selectCtrl._hasOption("C")).toBe(true);
+        expect(selectCtrl._hasOption("D")).toBe(false);
+        expect(selectCtrl._hasOption("E")).toBe(true);
         expect(element).toEqualSelectWithOptions({
           "": [[""], "A"],
           first: ["B", "C"],
@@ -1223,11 +1223,11 @@ describe("select", () => {
 
         scope.groups.pop();
         await wait();
-        expect(selectCtrl.hasOption("A")).toBe(true);
-        expect(selectCtrl.hasOption("B")).toBe(true);
-        expect(selectCtrl.hasOption("C")).toBe(true);
-        expect(selectCtrl.hasOption("D")).toBe(false);
-        expect(selectCtrl.hasOption("E")).toBe(false);
+        expect(selectCtrl._hasOption("A")).toBe(true);
+        expect(selectCtrl._hasOption("B")).toBe(true);
+        expect(selectCtrl._hasOption("C")).toBe(true);
+        expect(selectCtrl._hasOption("D")).toBe(false);
+        expect(selectCtrl._hasOption("E")).toBe(false);
         expect(element).toEqualSelectWithOptions({
           "": [[""], "A"],
           first: ["B", "C"],
@@ -1415,16 +1415,16 @@ describe("select", () => {
       );
       await wait();
       const selectCtrl = getController(element, "select");
-      spyOn(selectCtrl, "removeOption").and.callThrough();
+      spyOn(selectCtrl, "_removeOption").and.callThrough();
 
       expect(scope.selected).toBeUndefined();
-      expect(selectCtrl.removeOption).not.toHaveBeenCalled();
+      expect(selectCtrl._removeOption).not.toHaveBeenCalled();
 
       // Change value of option2
       scope.option2 = "option2Changed";
       scope.selected = "option2Changed";
       await wait();
-      expect(selectCtrl.removeOption).toHaveBeenCalledWith("");
+      expect(selectCtrl._removeOption).toHaveBeenCalledWith("");
       expect(element.querySelectorAll("option")[0].selected).toBe(false);
       expect(element.querySelectorAll("option")[0].textContent).toBe(
         "Option 1",
@@ -1476,16 +1476,16 @@ describe("select", () => {
       );
       await wait();
       const selectCtrl = getController(element, "select");
-      spyOn(selectCtrl, "removeOption").and.callThrough();
+      spyOn(selectCtrl, "_removeOption").and.callThrough();
 
       expect(scope.selected).toBeUndefined();
-      expect(selectCtrl.removeOption).not.toHaveBeenCalled();
+      expect(selectCtrl._removeOption).not.toHaveBeenCalled();
 
       // Change value of option2
       scope.option2 = "Option 2 Changed";
       scope.selected = "Option 2 Changed";
       await wait();
-      expect(selectCtrl.removeOption).toHaveBeenCalledWith("");
+      expect(selectCtrl._removeOption).toHaveBeenCalledWith("");
       expect(element.querySelectorAll("option")[1].selected).toBe(true);
       expect(element.querySelectorAll("option")[1].textContent).toBe(
         "Option 2 Changed",
@@ -1588,9 +1588,9 @@ describe("select", () => {
           );
           await wait();
           const selectController = getController(element, "select");
-          spyOn(selectController, "removeOption").and.callThrough();
+          spyOn(selectController, "_removeOption").and.callThrough();
 
-          expect(selectController.removeOption).not.toHaveBeenCalled();
+          expect(selectController._removeOption).not.toHaveBeenCalled();
           expect(element.querySelectorAll("option")[0].value).toBe(
             "? string:NOMATCH ?",
           );
@@ -1604,13 +1604,15 @@ describe("select", () => {
 
           scope.option = "UPDATEDVALUE";
           await wait();
-          expect(selectController.removeOption.calls.count()).toBe(1);
+          expect(selectController._removeOption.calls.count()).toBe(1);
 
           // Updating the option value currently does not update the select model
           if (isNumberNaN(prop)) {
-            expect(selectController.removeOption.calls.argsFor(0)[0]).toBeNaN();
+            expect(
+              selectController._removeOption.calls.argsFor(0)[0],
+            ).toBeNaN();
           } else {
-            expect(selectController.removeOption.calls.argsFor(0)[0]).toBe(
+            expect(selectController._removeOption.calls.argsFor(0)[0]).toBe(
               prop,
             );
           }
