@@ -85,7 +85,7 @@ export function prepareAnimationOptions(options) {
       });
 
     animateOptions.domOperation = function () {
-      animateOptions.$$domOperationFired = true;
+      animateOptions._domOperationFired = true;
       domOperation();
       domOperation = () => {
         /* empty */

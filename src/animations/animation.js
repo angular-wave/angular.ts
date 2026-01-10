@@ -559,7 +559,7 @@ export function AnimationProvider() {
         }
 
         function handleDestroyedElement() {
-          (event !== "leave" || !options.$$domOperationFired) &&
+          (event !== "leave" || !options._domOperationFired) &&
             getRunner(elementParam)?.end();
         }
 
