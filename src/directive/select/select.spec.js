@@ -76,8 +76,8 @@ describe("select", () => {
             pre(scope, element, attrs, ctrl) {
               selectCtrl = ctrl;
               renderSpy = jasmine.createSpy("renderSpy");
-              selectCtrl.ngModelCtrl.$render = renderSpy.and.callFake(
-                selectCtrl.ngModelCtrl.$render,
+              selectCtrl._ngModelCtrl.$render = renderSpy.and.callFake(
+                selectCtrl._ngModelCtrl.$render,
               );
               spyOn(selectCtrl, "_writeValue").and.callThrough();
             },
