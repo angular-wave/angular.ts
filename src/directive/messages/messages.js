@@ -136,7 +136,7 @@ class NgMessageCtrl {
         message: messageCtrl,
       };
       this.insertMessageNode(this.$element, comment, nextKey);
-      comment.$$ngMessageNode = nextKey;
+      comment._ngMessageNode = nextKey;
       this.latestKey++;
     }
 
@@ -147,9 +147,9 @@ class NgMessageCtrl {
     if (isDefault) {
       delete this.default;
     } else {
-      const key = comment.$$ngMessageNode;
+      const key = comment._ngMessageNode;
 
-      delete comment.$$ngMessageNode;
+      delete comment._ngMessageNode;
       this.removeMessageNode(this.$element, comment, key);
       delete this.messages[key];
     }
@@ -162,7 +162,7 @@ class NgMessageCtrl {
     const parentLookup = [];
 
     while (prevNode && prevNode !== parent) {
-      const prevKey = prevNode.$$ngMessageNode;
+      const prevKey = prevNode._ngMessageNode;
 
       if (prevKey && prevKey.length) {
         return this.messages[prevKey];

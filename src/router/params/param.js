@@ -42,13 +42,13 @@ function getParamDeclaration(paramName, location, state) {
 
 function unwrapShorthand(cfg) {
   cfg = isShorthand(cfg) ? { value: cfg } : cfg;
-  getStaticDefaultValue.__cacheable = true;
+  getStaticDefaultValue._cacheable = true;
   function getStaticDefaultValue() {
     return cfg.value;
   }
-  const $$fn = isInjectable(cfg.value) ? cfg.value : getStaticDefaultValue;
+  const _fn = isInjectable(cfg.value) ? cfg.value : getStaticDefaultValue;
 
-  return Object.assign(cfg, { $$fn });
+  return Object.assign(cfg, { _fn });
 }
 
 function getType(cfg, urlType, location, id, paramTypes) {
@@ -193,7 +193,7 @@ export class Param {
         throw new Error(
           "Injectable functions cannot be called at configuration time",
         );
-      const defaultValue = window.angular.$injector.invoke(this.config.$$fn);
+      const defaultValue = window.angular.$injector.invoke(this.config._fn);
 
       if (
         defaultValue !== null &&
@@ -204,7 +204,7 @@ export class Param {
           `Default value (${defaultValue}) for parameter '${this.id}' is not an instance of ParamType (${this.type.name})`,
         );
 
-      if (this.config.$$fn.__cacheable) {
+      if (this.config._fn._cacheable) {
         this._defaultValueCache = { defaultValue };
       }
 
