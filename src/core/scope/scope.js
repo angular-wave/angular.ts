@@ -1330,7 +1330,7 @@ export class Scope {
   /**
    * @param {string} name
    * @param  {...any} args
-   * @returns {import("./interface.ts").ScopeEvent | undefined}
+   * @returns {ng.ScopeEvent | undefined}
    */
   $emit(name, ...args) {
     return this.#eventHelper(
@@ -1353,9 +1353,9 @@ export class Scope {
 
   /**
    * Internal event propagation helper
-   * @param {{ name: string, event?: import("./interface.ts").ScopeEvent, broadcast: boolean }} param0 - Event info
+   * @param {{ name: string, event?: ng.ScopeEvent, broadcast: boolean }} param0 - Event info
    * @param {...any} args - Additional arguments passed to listeners
-   * @returns {import("./interface.ts").ScopeEvent|undefined}
+   * @returns {ng.ScopeEvent|undefined}
    */
   #eventHelper({ name, event, broadcast }, ...args) {
     if (!broadcast) {
@@ -1372,21 +1372,18 @@ export class Scope {
     }
 
     if (event) {
-      event.currentScope = this.$target;
+      event.currentScope = this.$proxy;
     } else {
       event = event || {
         name,
-        targetScope: this.$target,
-        currentScope: this.$target,
+        targetScope: this.$proxy,
+        currentScope: this.$proxy,
         stopped: false,
         stopPropagation() {
-          /** @type {import("./interface.ts").ScopeEvent} */ (event).stopped =
-            true;
+          /** @type {ng.ScopeEvent} */ (event).stopped = true;
         },
         preventDefault() {
-          /** @type {import("./interface.ts").ScopeEvent} */ (
-            event
-          ).defaultPrevented = true;
+          /** @type {ng.ScopeEvent} */ (event).defaultPrevented = true;
         },
         defaultPrevented: false,
       };

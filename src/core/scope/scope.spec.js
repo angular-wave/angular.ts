@@ -2600,7 +2600,7 @@ describe("Scope", () => {
       let greatGrandChild;
 
       function logger(event) {
-        log += `${event.currentScope.$id}>`;
+        log += `${event.currentScope.$item}>`;
       }
 
       beforeEach(() => {
@@ -2610,10 +2610,10 @@ describe("Scope", () => {
         grandChild = child.$new();
         greatGrandChild = grandChild.$new();
 
-        scope.$id = 0;
-        child.$id = 1;
-        grandChild.$id = 2;
-        greatGrandChild.$id = 3;
+        scope.$item = 0;
+        child.$item = 1;
+        grandChild.$item = 2;
+        greatGrandChild.$item = 3;
 
         scope.$on("myEvent", logger);
         child.$on("myEvent", logger);
@@ -2749,8 +2749,8 @@ describe("Scope", () => {
           let eventFired = false;
 
           child.$on("myEvent", (e) => {
-            expect(e.targetScope).toBe(grandChild.$handler.$target);
-            expect(e.currentScope).toBe(child.$handler.$target);
+            expect(e.targetScope).toEqual(grandChild.$handler.$target);
+            expect(e.currentScope).toEqual(child.$handler.$target);
             expect(e.name).toBe("myEvent");
             eventFired = true;
           });
@@ -2765,9 +2765,8 @@ describe("Scope", () => {
             event = e;
           });
           grandChild.$emit("myEvent");
-
           expect(event.currentScope).toBe(null);
-          expect(event.targetScope).toBe(grandChild.$target);
+          expect(event.targetScope).toEqual(grandChild.$target);
           expect(event.name).toBe("myEvent");
         });
 
@@ -2798,7 +2797,7 @@ describe("Scope", () => {
         let greatGrandChild211;
 
         function logger(event) {
-          log += `${event.currentScope.$id}>`;
+          log += `${event.currentScope.$item}>`;
         }
 
         beforeEach(() => {
@@ -2812,15 +2811,15 @@ describe("Scope", () => {
           grandChild23 = child2.$new();
           greatGrandChild211 = grandChild21.$new();
 
-          scope.$id = 0;
-          child1.$id = 1;
-          child2.$id = 2;
-          child3.$id = 3;
-          grandChild11.$id = 11;
-          grandChild21.$id = 21;
-          grandChild22.$id = 22;
-          grandChild23.$id = 23;
-          greatGrandChild211.$id = 211;
+          scope.$item = 0;
+          child1.$item = 1;
+          child2.$item = 2;
+          child3.$item = 3;
+          grandChild11.$item = 11;
+          grandChild21.$item = 21;
+          grandChild22.$item = 22;
+          grandChild23.$item = 23;
+          greatGrandChild211.$item = 211;
 
           scope.$on("myEvent", logger);
           child1.$on("myEvent", logger);
@@ -2871,7 +2870,7 @@ describe("Scope", () => {
 
           expect(result).toBeDefined();
           expect(result.name).toBe("some");
-          expect(result.targetScope).toBe(child1.$target);
+          expect(result.targetScope).toEqual(child1.$target);
         });
       });
 
@@ -2883,8 +2882,8 @@ describe("Scope", () => {
           child.$on("fooEvent", (event) => {
             eventFired = true;
             expect(event.name).toBe("fooEvent");
-            expect(event.targetScope).toBe(scope.$target);
-            expect(event.currentScope).toBe(child.$target);
+            expect(event.targetScope).toEqual(scope.$target);
+            expect(event.currentScope).toEqual(child.$target);
           });
           scope.$broadcast("fooEvent");
 
@@ -2901,7 +2900,7 @@ describe("Scope", () => {
           scope.$broadcast("fooEvent");
 
           expect(event.name).toBe("fooEvent");
-          expect(event.targetScope).toBe(scope.$target);
+          expect(event.targetScope).toEqual(scope.$target);
           expect(event.currentScope).toBe(null);
         });
 

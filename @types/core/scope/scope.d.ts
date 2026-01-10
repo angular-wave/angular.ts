@@ -189,12 +189,9 @@ export class Scope {
   /**
    * @param {string} name
    * @param  {...any} args
-   * @returns {import("./interface.ts").ScopeEvent | undefined}
+   * @returns {ng.ScopeEvent | undefined}
    */
-  $emit(
-    name: string,
-    ...args: any[]
-  ): import("./interface.ts").ScopeEvent | undefined;
+  $emit(name: string, ...args: any[]): ng.ScopeEvent | undefined;
   /**
    * @param {string} name
    * @param  {...any} args
