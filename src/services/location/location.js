@@ -245,9 +245,9 @@ export class Location {
       );
     }
     // The user might modify `stateObject` after invoking `$location.setState(stateObject)`
-    // but we're changing the $$state reference to $browser.state() during the $digest
+    // but we're changing the _statereference to $browser.state() during the $digest
     // so the modification window is narrow.
-    this.$$state = isUndefined(state) ? null : state;
+    this._state = isUndefined(state) ? null : state;
     urlUpdatedByLocation = true;
 
     return this;
@@ -258,7 +258,7 @@ export class Location {
    * @returns {any}
    */
   getState() {
-    return this.$$state;
+    return this._state;
   }
 
   /**
@@ -583,14 +583,14 @@ export class LocationProvider {
 
       $location.parseLinkUrl(initialUrl, initialUrl);
 
-      $location.$$state = this.state();
+      $location._state = this.state();
 
       const IGNORE_URI_REGEXP = /^\s*(javascript|mailto):/i;
 
       const setBrowserUrlWithFallback = (url, state) => {
         const oldUrl = $location.getUrl();
 
-        const oldState = $location.$$state;
+        const oldState = $location._state;
 
         try {
           this.setUrl(url, state);
@@ -598,11 +598,11 @@ export class LocationProvider {
           // Make sure $location.getState() returns referentially identical (not just deeply equal)
           // state object; this makes possible quick checking if the state changed in the digest
           // loop. Checking deep equality would be too expensive.
-          $location.$$state = this.state();
+          $location._state = this.state();
         } catch (err) {
           // Restore old values if pushState fails
           $location.setUrl(/** @type {string} */ (oldUrl));
-          $location.$$state = oldState;
+          $location._state = oldState;
           $exceptionHandler(err);
         }
       };
@@ -698,10 +698,10 @@ export class LocationProvider {
         queueMicrotask(() => {
           const oldUrl = $location.absUrl;
 
-          const oldState = $location.$$state;
+          const oldState = $location._state;
 
           $location.parse(newUrl);
-          $location.$$state = newState;
+          $location._state = newState;
 
           const { defaultPrevented } = $rootScope.$broadcast(
             "$locationChangeStart",
@@ -717,7 +717,7 @@ export class LocationProvider {
 
           if (defaultPrevented) {
             $location.parse(oldUrl);
-            $location.$$state = oldState;
+            $location._state = oldState;
             setBrowserUrlWithFallback(oldUrl, oldState);
           } else {
             initializing = false;
@@ -739,7 +739,7 @@ export class LocationProvider {
 
           const urlOrStateChanged =
             !urlsEqual(oldUrl, newUrl) ||
-            ($location.html5 && oldState !== $location.$$state);
+            ($location.html5 && oldState !== $location._state);
 
           if (initializing || urlOrStateChanged) {
             initializing = false;
@@ -751,7 +751,7 @@ export class LocationProvider {
                 "$locationChangeStart",
                 $location.absUrl,
                 oldUrl,
-                $location.$$state,
+                $location._state,
                 oldState,
               );
 
@@ -761,12 +761,12 @@ export class LocationProvider {
 
               if (defaultPrevented) {
                 $location.parse(oldUrl);
-                $location.$$state = oldState;
+                $location._state = oldState;
               } else {
                 if (urlOrStateChanged) {
                   setBrowserUrlWithFallback(
                     newUrl,
-                    oldState === $location.$$state ? null : $location.$$state,
+                    oldState === $location._state ? null : $location._state,
                   );
                 }
                 afterLocationChange(oldUrl, oldState);
@@ -791,7 +791,7 @@ export class LocationProvider {
           "$locationChangeSuccess",
           $location.absUrl,
           oldUrl,
-          $location.$$state,
+          $location._state,
           oldState,
         );
       }

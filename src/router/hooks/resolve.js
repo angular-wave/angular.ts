@@ -33,7 +33,7 @@ export const registerEagerResolvePath = (transitionService) =>
  */
 const lazyResolveState = (trans, state) =>
   new ResolveContext(trans.treeChanges().to)
-    .subContext(state.$$state())
+    .subContext(state._state())
     .resolvePath("LAZY", trans)
     .then(() => {
       /* empty */

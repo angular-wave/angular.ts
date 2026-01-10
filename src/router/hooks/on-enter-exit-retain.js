@@ -6,7 +6,7 @@
  */
 function makeEnterExitRetainHook(hookName) {
   return (transition, state) => {
-    const _state = state.$$state();
+    const _state = state._state();
 
     const hookFn = _state[hookName];
 

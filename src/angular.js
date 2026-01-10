@@ -289,7 +289,7 @@ export class Angular extends EventTarget {
         stateRegistry
           .getAll()
           .map((x) => {
-            return x.$$state().resolvables;
+            return x._state().resolvables;
           })
           .reduce(unnestR, [])
           .filter(

@@ -8,7 +8,7 @@ import { hasOwn, isFunction, isObject } from "../../shared/utils.js";
  *
  * Instances of this class are created when a [[StateDeclaration]] is registered with the [[StateRegistry]].
  *
- * A registered [[StateDeclaration]] is augmented with a getter ([[StateDeclaration.$$state]]) which returns the corresponding [[StateObject]] object.
+ * A registered [[StateDeclaration]] is augmented with a getter ([[StateDeclaration._state]]) which returns the corresponding [[StateObject]] object.
  *
  * This class prototypally inherits from the corresponding [[StateDeclaration]].
  * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
@@ -28,7 +28,7 @@ export class StateObject {
    */
   constructor(config) {
     Object.assign(this, config);
-    this.$$state = () => {
+    this._state = () => {
       return this;
     };
     /**
@@ -120,6 +120,6 @@ export class StateObject {
   }
 }
 /** Predicate which returns true if the object is a [[StateDeclaration]] object */
-StateObject.isStateDeclaration = (obj) => isFunction(obj.$$state);
+StateObject.isStateDeclaration = (obj) => isFunction(obj._state);
 /** Predicate which returns true if the object is an internal [[StateObject]] object */
 StateObject.isState = (obj) => isObject(obj._stateObjectCache);

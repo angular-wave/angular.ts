@@ -145,7 +145,7 @@ export class UrlRuleFactory {
    */
   fromState(stateOrDecl, stateService, globals) {
     const state = StateObject.isStateDeclaration(stateOrDecl)
-      ? stateOrDecl.$$state()
+      ? stateOrDecl._state()
       : stateOrDecl;
 
     /**

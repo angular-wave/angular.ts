@@ -96,7 +96,7 @@ export class StateRegistryProvider {
       function decoratedNg1Hook(trans, state) {
         const resolveContext = new ResolveContext(trans.treeChanges(pathname));
 
-        const subContext = resolveContext.subContext(state.$$state());
+        const subContext = resolveContext.subContext(state._state());
 
         const locals = Object.assign(getLocals(subContext), {
           $state$: state,
@@ -196,7 +196,7 @@ export class StateRegistryProvider {
   }
 
   _deregisterTree(state) {
-    const all = this.getAll().map((x) => x.$$state());
+    const all = this.getAll().map((x) => x._state());
 
     const getChildren = (states) => {
       const _children = all.filter((x) => states.indexOf(x.parent) !== -1);
@@ -245,7 +245,7 @@ export class StateRegistryProvider {
     const deregisteredStates = this._deregisterTree(
       /** @type {import("./interface.ts").BuiltStateDeclaration} */ (
         state
-      ).$$state(),
+      )._state(),
     );
 
     this.listeners.forEach((listener) =>
