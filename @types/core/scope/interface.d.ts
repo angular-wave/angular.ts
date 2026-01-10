@@ -21,11 +21,11 @@ export interface ScopeEvent {
   /**
    * the scope on which the event was $emit-ed or $broadcast-ed.
    */
-  targetScope: ng.Scope;
+  targetScope: typeof Proxy<ng.Scope>;
   /**
    * the scope that is currently handling the event. Once the event propagates through the scope hierarchy, this property is set to null.
    */
-  currentScope: ng.Scope | null;
+  currentScope: typeof Proxy<ng.Scope> | null;
   /**
    * name of the event.
    */
