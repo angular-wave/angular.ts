@@ -2416,8 +2416,10 @@ describe("Scope", () => {
   describe("events", () => {
     describe("$on", () => {
       it("should add listener to list of listerner", () => {
-        const child = scope.$new();
         function eventFn() {}
+        scope.$on("abc", eventFn);
+        expect(scope.$handler._listeners.get("abc").length).toEqual(1);
+        const child = scope.$new();
         child.$on("abc", eventFn);
         expect(child.$handler._listeners.get("abc").length).toEqual(1);
 

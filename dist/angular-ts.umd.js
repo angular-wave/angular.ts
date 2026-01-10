@@ -1,4 +1,4 @@
-/* Version: 0.16.1 - January 5, 2026 22:44:26 */
+/* Version: 0.17.0 - January 10, 2026 13:14:59 */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -31,11 +31,11 @@
   /** @internal */
   /** @enum {number} */
   const NodeType = {
-    _ELEMENT_NODE: Node.ELEMENT_NODE,
-    _DOCUMENT_NODE: Node.DOCUMENT_NODE,
-    _TEXT_NODE: Node.TEXT_NODE,
-    _COMMENT_NODE: Node.COMMENT_NODE,
-    _DOCUMENT_FRAGMENT_NODE: Node.DOCUMENT_FRAGMENT_NODE,
+    _ELEMENT_NODE: 1, // Node.ELEMENT_NODE,
+    _DOCUMENT_NODE: 9, // Node.DOCUMENT_NODE,
+    _TEXT_NODE: 3, // Node.TEXT_NODE,
+    _COMMENT_NODE: 8, //Node.COMMENT_NODE,
+    _DOCUMENT_FRAGMENT_NODE: 11, // Node.DOCUMENT_FRAGMENT_NODE,
   };
 
   const isProxySymbol = Symbol("isProxy");
@@ -1192,20 +1192,17 @@
     if (!firstClass && !secondClass) return "";
 
     if (!firstClass)
-      // @ts-ignore
-      return isArray(secondClass) ? secondClass.join(" ").trim() : secondClass;
+      return isArray(secondClass)
+        ? secondClass.join(" ").trim()
+        : /** @type {string} */ (secondClass);
 
     if (!secondClass)
-      // @ts-ignore
       return isArray(firstClass) ? firstClass.join(" ").trim() : firstClass;
 
-    // @ts-ignore
     if (isArray(firstClass)) firstClass = normalizeStringArray(firstClass);
 
-    // @ts-ignore
     if (isArray(secondClass)) secondClass = normalizeStringArray(secondClass);
 
-    // @ts-ignore
     return `${firstClass.trim()} ${secondClass.trim()}`.trim();
   }
 
@@ -1454,13 +1451,11 @@
     _attrs: "$attrs",
     _scope: "$scope",
     _element: "$element",
-    _animateCache: "$$animateCache",
     _animateCssDriver: "$$animateCssDriver",
     _animateJs: "$$animateJs",
     _animateJsDriver: "$$animateJsDriver",
     _animateQueue: "$$animateQueue",
     _animation: "$$animation",
-    _rAFScheduler: "$$rAFScheduler",
     _taskTrackerFactory: "$$taskTrackerFactory",
     _anchorScroll: "$anchorScroll",
     _animate: "$animate",
@@ -4256,9 +4251,10 @@
     const attrName =
       attrOverride || `ng${method.charAt(0).toUpperCase()}${method.slice(1)}`;
 
-    const directive = createHttpDirective(method, attrName);
+    const directive = /** @type {ng.DirectiveFactory & Function} */ (
+      createHttpDirective(method, attrName)
+    );
 
-    // @ts-ignore
     directive.$inject = [
       $injectTokens._http,
       $injectTokens._compile,
@@ -4360,9 +4356,9 @@
             element.name.length > 0
           ) {
             if (
-              element instanceof HTMLInputElement ||
-              element instanceof HTMLTextAreaElement ||
-              element instanceof HTMLSelectElement
+              isInstanceOf(element, HTMLInputElement) ||
+              isInstanceOf(element, HTMLTextAreaElement) ||
+              isInstanceOf(element, HTMLSelectElement)
             ) {
               const key = element.name;
 
@@ -5892,9 +5888,6 @@
     // code. (e.g. ng-include, script src binding, templateUrl)
     // A value that can be trusted as a RESOURCE_URL, can also trusted as a URL and a MEDIA_URL.
     RESOURCE_URL: "resourceUrl",
-
-    // Script. Currently unused in AngularTS.
-    JS: "js",
   };
 
   // Copied from:
@@ -6164,7 +6157,7 @@
 
           function generateHolderType(Base) {
             const holderType = function TrustedValueHolderType(trustedValue) {
-              this.$$unwrapTrustedValue = function () {
+              this._unwrapTrustedValue = function () {
                 return trustedValue;
               };
             };
@@ -6173,10 +6166,10 @@
               holderType.prototype = new Base();
             }
             holderType.prototype.valueOf = function sceValueOf() {
-              return this.$$unwrapTrustedValue();
+              return this._unwrapTrustedValue();
             };
             holderType.prototype.toString = function sceToString() {
-              return this.$$unwrapTrustedValue().toString();
+              return this._unwrapTrustedValue().toString();
             };
 
             return holderType;
@@ -6220,7 +6213,8 @@
            * @return {*} A trusted representation of value, that can be used in the given context.
            */
           function trustAs(type, trustedValue) {
-            const Constructor = hasOwn(byType, type) ? byType[type] : null;
+            const Constructor =
+              isDefined(type) && hasOwn(byType, type) ? byType[type] : null;
 
             if (!Constructor) {
               $exceptionHandler(
@@ -6278,7 +6272,7 @@
            */
           function valueOf(maybeTrusted) {
             if (maybeTrusted instanceof trustedValueHolderBase) {
-              return maybeTrusted.$$unwrapTrustedValue();
+              return maybeTrusted._unwrapTrustedValue();
             }
 
             return maybeTrusted;
@@ -6327,13 +6321,13 @@
             // If maybeTrusted is a trusted class instance or subclass instance, then unwrap and return
             // as-is.
             if (constructor && maybeTrusted instanceof constructor) {
-              return maybeTrusted.$$unwrapTrustedValue();
+              return maybeTrusted._unwrapTrustedValue();
             }
 
             // If maybeTrusted is a trusted class instance but not of the correct trusted type
             // then unwrap it and allow it to pass through to the rest of the checks
-            if (isFunction(maybeTrusted.$$unwrapTrustedValue)) {
-              maybeTrusted = maybeTrusted.$$unwrapTrustedValue();
+            if (isFunction(maybeTrusted._unwrapTrustedValue)) {
+              maybeTrusted = maybeTrusted._unwrapTrustedValue();
             }
 
             // If we get here, then we will either sanitize the value or throw an exception.
@@ -6402,8 +6396,8 @@
       /**
        *
        * @param {ng.ParseService} $parse
-       * @param $sceDelegate
-       * @return {*}
+       * @param {ng.SCEDelegateService} $sceDelegate
+       * @return {ng.SCEService}
        */
       ($parse, $sceDelegate) => {
         const sce = shallowCopy(SCE_CONTEXTS);
@@ -6659,7 +6653,7 @@
           };
         });
 
-        return sce;
+        return /** @type {ng.SCEService} */ (sce);
       },
     ];
   }
@@ -7878,24 +7872,24 @@
               }
 
               options = options || {};
-              let { parentBoundTranscludeFn } = options;
+              let { _parentBoundTranscludeFn } = options;
 
-              const { transcludeControllers, futureParentElement } = options;
+              const { transcludeControllers, _futureParentElement } = options;
 
-              // When `parentBoundTranscludeFn` is passed, it is a
+              // When `_parentBoundTranscludeFn` is passed, it is a
               // `controllersBoundTransclude` function (it was previously passed
               // as `transclude` to directive.link) so we must unwrap it to get
               // its `boundTranscludeFn`
               if (
-                parentBoundTranscludeFn &&
-                parentBoundTranscludeFn.$$boundTransclude
+                _parentBoundTranscludeFn &&
+                _parentBoundTranscludeFn._boundTransclude
               ) {
-                parentBoundTranscludeFn =
-                  parentBoundTranscludeFn.$$boundTransclude;
+                _parentBoundTranscludeFn =
+                  _parentBoundTranscludeFn._boundTransclude;
               }
 
               if (!namespace) {
-                namespace = detectNamespaceForChildElements(futureParentElement);
+                namespace = detectNamespaceForChildElements(_futureParentElement);
               }
               /** @type {NodeRef} */
               let $linkNode;
@@ -7937,7 +7931,7 @@
               }
 
               if (compositeLinkFn) {
-                compositeLinkFn(scope, $linkNode, parentBoundTranscludeFn);
+                compositeLinkFn(scope, $linkNode, _parentBoundTranscludeFn);
               }
 
               if (!cloneConnectFn) {
@@ -8072,9 +8066,9 @@
              *
              * @param {ng.Scope} scope
              * @param {NodeRef} nodeRef
-             * @param {*} [parentBoundTranscludeFn]
+             * @param {*} [_parentBoundTranscludeFn]
              */
-            function compositeLinkFn(scope, nodeRef, parentBoundTranscludeFn) {
+            function compositeLinkFn(scope, nodeRef, _parentBoundTranscludeFn) {
               assertArg(nodeRef, "nodeRef");
               let stableNodeList = [];
 
@@ -8121,14 +8115,14 @@
                     childBoundTranscludeFn = createBoundTranscludeFn(
                       scope,
                       nodeLinkFnCtx.transclude,
-                      parentBoundTranscludeFn,
+                      _parentBoundTranscludeFn,
                     );
                   } else if (
                     !nodeLinkFnCtx.templateOnThisElement &&
-                    parentBoundTranscludeFn
+                    _parentBoundTranscludeFn
                   ) {
-                    childBoundTranscludeFn = parentBoundTranscludeFn;
-                  } else if (!parentBoundTranscludeFn && transcludeFn) {
+                    childBoundTranscludeFn = _parentBoundTranscludeFn;
+                  } else if (!_parentBoundTranscludeFn && transcludeFn) {
                     childBoundTranscludeFn = createBoundTranscludeFn(
                       scope,
                       transcludeFn,
@@ -8141,9 +8135,8 @@
                   if (nodeLinkFnCtx?.newScope) {
                     setScope(node, childScope);
                   }
-                  // @ts-ignore
+
                   nodeLinkFnCtx.nodeLinkFn(
-                    // @ts-ignore
                     childLinkFn,
                     childScope,
                     node,
@@ -8153,7 +8146,7 @@
                   childLinkFn(
                     scope,
                     new NodeRef(node.childNodes),
-                    parentBoundTranscludeFn,
+                    _parentBoundTranscludeFn,
                   );
                 }
               });
@@ -8176,18 +8169,17 @@
               transcludedScope,
               cloneFn,
               controllers,
-              futureParentElement,
+              _futureParentElement,
               containingScope,
             ) {
               if (!transcludedScope) {
                 transcludedScope = scope.$transcluded(containingScope);
-                transcludedScope.$$transcluded = true;
               }
 
               const transcludeRes = transcludeFn(transcludedScope, cloneFn, {
-                parentBoundTranscludeFn: previousBoundTranscludeFn,
+                _parentBoundTranscludeFn: previousBoundTranscludeFn,
                 transcludeControllers: controllers,
-                futureParentElement,
+                _futureParentElement,
               });
 
               return transcludeRes;
@@ -8195,13 +8187,13 @@
 
             // We need  to attach the transclusion slots onto the `boundTranscludeFn`
             // so that they are available inside the `controllersBoundTransclude` function
-            const boundSlots = (boundTranscludeFn.$$slots = Object.create(null));
+            const boundSlots = (boundTranscludeFn._slots = Object.create(null));
 
-            for (const slotName in transcludeFn.$$slots) {
-              if (transcludeFn.$$slots[slotName]) {
+            for (const slotName in transcludeFn._slots) {
+              if (transcludeFn._slots[slotName]) {
                 boundSlots[slotName] = createBoundTranscludeFn(
                   scope,
-                  transcludeFn.$$slots[slotName],
+                  transcludeFn._slots[slotName],
                   previousBoundTranscludeFn,
                 );
               } else {
@@ -8453,11 +8445,11 @@
             let terminal = false;
 
             let {
-              newScopeDirective,
-              controllerDirectives,
-              newIsolateScopeDirective,
-              templateDirective,
-              nonTlbTranscludeDirective,
+              _newScopeDirective,
+              _controllerDirectives,
+              _newIsolateScopeDirective,
+              _templateDirective,
+              _nonTlbTranscludeDirective,
               hasElementTranscludeDirective,
             } = previousCompileContext;
 
@@ -8480,7 +8472,7 @@
 
             let replaceDirective = originalReplaceDirective;
 
-            /** @type {ng.TranscludeFn} */
+            /** @type {import("./interface.ts").ChildTranscludeOrLinkFn} */
             let childTranscludeFn = transcludeFn;
 
             let didScanForMultipleTransclusion = false;
@@ -8493,7 +8485,7 @@
              * Links all the directives of a single node.
              * @type {ng.NodeLinkFn}
              */
-            // @ts-ignore
+
             let nodeLinkFn = function (
               childLinkFn,
               scope,
@@ -8536,49 +8528,49 @@
 
               controllerScope = scope;
 
-              if (newIsolateScopeDirective) {
+              if (_newIsolateScopeDirective) {
                 isolateScope = scope.$newIsolate();
-              } else if (newScopeDirective) {
+              } else if (_newScopeDirective) {
                 controllerScope = scope.$parent;
               }
 
               if (boundTranscludeFn) {
                 // track `boundTranscludeFn` so it can be unwrapped if `transcludeFn`
-                // is later passed as `parentBoundTranscludeFn` to `publicLinkFn`
+                // is later passed as `_parentBoundTranscludeFn` to `publicLinkFn`
                 /** @type {any} */
                 const newTrancludeFn = /** @type {any} */ (
                   controllersBoundTransclude
                 );
 
-                newTrancludeFn.$$boundTransclude = boundTranscludeFn;
+                newTrancludeFn._boundTransclude = boundTranscludeFn;
                 // expose the slots on the `$transclude` function
                 newTrancludeFn.isSlotFilled = function (slotName) {
-                  return !!boundTranscludeFn.$$slots[slotName];
+                  return !!boundTranscludeFn._slots[slotName];
                 };
                 transcludeFn = newTrancludeFn;
               }
 
-              if (controllerDirectives) {
+              if (_controllerDirectives) {
                 elementControllers = setupControllers(
                   $element,
                   attrs,
                   transcludeFn,
-                  controllerDirectives,
+                  _controllerDirectives,
                   isolateScope,
                   scope,
-                  newIsolateScopeDirective,
+                  _newIsolateScopeDirective,
                 );
               }
 
-              if (newIsolateScopeDirective) {
-                isolateScope.$target.$$isolateBindings =
-                  newIsolateScopeDirective.$$isolateBindings;
+              if (_newIsolateScopeDirective) {
+                isolateScope.$target._isolateBindings =
+                  _newIsolateScopeDirective._isolateBindings;
                 scopeBindingInfo = initializeDirectiveBindings(
                   scope,
                   attrs,
                   isolateScope,
-                  isolateScope.$$isolateBindings,
-                  newIsolateScopeDirective,
+                  isolateScope._isolateBindings,
+                  _newIsolateScopeDirective,
                 );
 
                 if (scopeBindingInfo.removeWatches) {
@@ -8588,11 +8580,11 @@
 
               // Initialize bindToController bindings
               for (const name in elementControllers) {
-                const controllerDirective = controllerDirectives[name];
+                const controllerDirective = _controllerDirectives[name];
 
                 const controller = elementControllers[name];
 
-                const bindings = controllerDirective.$$bindings.bindToController;
+                const bindings = controllerDirective._bindings.bindToController;
 
                 // Controller instance is bound to the scope
                 const controllerInstance = controller();
@@ -8613,8 +8605,8 @@
               }
 
               // Bind the required controllers to the controller, if `require` is an object and `bindToController` is truthy
-              if (controllerDirectives) {
-                entries(controllerDirectives).forEach(
+              if (_controllerDirectives) {
+                entries(_controllerDirectives).forEach(
                   ([name, controllerDirective]) => {
                     const { require } = controllerDirective;
 
@@ -8700,9 +8692,9 @@
               // otherwise the child elements do not belong to the isolate directive.
 
               if (
-                newIsolateScopeDirective &&
-                (newIsolateScopeDirective.template ||
-                  newIsolateScopeDirective.templateUrl === null)
+                _newIsolateScopeDirective &&
+                (_newIsolateScopeDirective.template ||
+                  _newIsolateScopeDirective.templateUrl === null)
               ) {
                 scopeToChild = isolateScope;
               }
@@ -8769,15 +8761,15 @@
               function controllersBoundTransclude(
                 scopeParam,
                 cloneAttachFn,
-                futureParentElement,
+                _futureParentElement,
                 slotName,
               ) {
                 let transcludeControllers;
 
                 // No scope passed in:
                 if (!isScope(scopeParam)) {
-                  slotName = futureParentElement;
-                  futureParentElement = cloneAttachFn;
+                  slotName = _futureParentElement;
+                  _futureParentElement = cloneAttachFn;
                   cloneAttachFn = scopeParam;
                   scopeParam = undefined;
                 }
@@ -8786,8 +8778,8 @@
                   transcludeControllers = elementControllers;
                 }
 
-                if (!futureParentElement) {
-                  futureParentElement = hasElementTranscludeDirective
+                if (!_futureParentElement) {
+                  _futureParentElement = hasElementTranscludeDirective
                     ? $element.node.parentElement
                     : $element.node;
                 }
@@ -8797,14 +8789,14 @@
                   //  * a transclude function - a filled slot
                   //  * `null` - an optional slot that was not filled
                   //  * `undefined` - a slot that was not declared (i.e. invalid)
-                  const slotTranscludeFn = boundTranscludeFn.$$slots[slotName];
+                  const slotTranscludeFn = boundTranscludeFn._slots[slotName];
 
                   if (slotTranscludeFn) {
                     return slotTranscludeFn(
                       scopeParam,
                       cloneAttachFn,
                       transcludeControllers,
-                      futureParentElement,
+                      _futureParentElement,
                       scopeToChild,
                     );
                   }
@@ -8825,7 +8817,7 @@
                     scopeParam,
                     cloneAttachFn,
                     transcludeControllers,
-                    futureParentElement,
+                    _futureParentElement,
                     scopeToChild,
                   );
                 }
@@ -8851,24 +8843,24 @@
                     // Check that there is no scope of any kind already
                     assertNoDuplicate(
                       "new/isolated scope",
-                      newIsolateScopeDirective || newScopeDirective,
+                      _newIsolateScopeDirective || _newScopeDirective,
                       directive,
                       compileNodeRef,
                     );
-                    newIsolateScopeDirective = directive;
+                    _newIsolateScopeDirective = directive;
                   } else {
                     // This directive is trying to add a child scope.
                     // Check that there is no isolated scope already
                     assertNoDuplicate(
                       "new/isolated scope",
-                      newIsolateScopeDirective,
+                      _newIsolateScopeDirective,
                       directive,
                       compileNodeRef,
                     );
                   }
                 }
 
-                newScopeDirective = newScopeDirective || directive;
+                _newScopeDirective = _newScopeDirective || directive;
               }
 
               directiveName = directive.name;
@@ -8914,15 +8906,15 @@
               }
 
               if (!directive.templateUrl && directive.controller) {
-                controllerDirectives =
-                  controllerDirectives || Object.create(null);
+                _controllerDirectives =
+                  _controllerDirectives || Object.create(null);
                 assertNoDuplicate(
                   `'${directiveName}' controller`,
-                  controllerDirectives[directiveName],
+                  _controllerDirectives[directiveName],
                   directive,
                   compileNodeRef,
                 );
-                controllerDirectives[directiveName] = directive;
+                _controllerDirectives[directiveName] = directive;
               }
 
               directiveValue = directive.transclude;
@@ -8936,11 +8928,11 @@
                 if (!EXCLUDED_DIRECTIVES.includes(directive.name)) {
                   assertNoDuplicate(
                     "transclusion",
-                    nonTlbTranscludeDirective,
+                    _nonTlbTranscludeDirective,
                     directive,
                     compileNodeRef,
                   );
-                  nonTlbTranscludeDirective = directive;
+                  _nonTlbTranscludeDirective = directive;
                 }
 
                 if (directiveValue === "element") {
@@ -8957,7 +8949,6 @@
                     index,
                   );
 
-                  // @ts-ignore
                   childTranscludeFn = compilationGenerator(
                     mightHaveMultipleTransclusionError,
                     $template._element,
@@ -8966,13 +8957,13 @@
                     replaceDirective && replaceDirective.name,
                     {
                       // Don't pass in:
-                      // - controllerDirectives - otherwise we'll create duplicates controllers
-                      // - newIsolateScopeDirective or templateDirective - combining templates with
+                      // - _controllerDirectives - otherwise we'll create duplicates controllers
+                      // - _newIsolateScopeDirective or _templateDirective - combining templates with
                       //   element transclusion doesn't make sense.
                       //
-                      // We need only nonTlbTranscludeDirective so that we prevent putting transclusion
+                      // We need only _nonTlbTranscludeDirective so that we prevent putting transclusion
                       // on the same element more than once.
-                      nonTlbTranscludeDirective,
+                      _nonTlbTranscludeDirective,
                     },
                   );
                 } else {
@@ -9065,7 +9056,7 @@
                   emptyElement(/** @type {Element} */ (compileNode)); // clear contents on transcluded directives
 
                   // lazily compile transcluded template and generate a transcluded link function
-                  // @ts-ignore
+
                   childTranscludeFn = compilationGenerator(
                     mightHaveMultipleTransclusionError,
                     nodes,
@@ -9077,7 +9068,9 @@
                         directive.$$isolateScope || directive.$$newScope,
                     },
                   );
-                  childTranscludeFn.$$slots = slots;
+                  /** @type {import("./interface.ts").TranscludeFn} */ (
+                    childTranscludeFn
+                  )._slots = slots;
                 }
               }
 
@@ -9085,11 +9078,11 @@
                 hasTemplate = true;
                 assertNoDuplicate(
                   "template",
-                  templateDirective,
+                  _templateDirective,
                   directive,
                   compileNodeRef,
                 );
-                templateDirective = directive;
+                _templateDirective = directive;
 
                 directiveValue = isFunction(directive.template)
                   ? directive.template(compileNodeRef.node, templateAttrs)
@@ -9146,7 +9139,7 @@
                   // - split it into two parts, those that already applied (processed) and those that weren't (unprocessed)
                   // - collect directives from the template and sort them by priority
                   // - combine directives as: processed + template + unprocessed
-                  const templateDirectives = collectDirectives(
+                  const _templateDirectives = collectDirectives(
                     /** @type {Element} */ (compileNode),
                     newTemplateAttrs,
                   );
@@ -9156,18 +9149,18 @@
                     directives.length - (i + 1),
                   );
 
-                  if (newIsolateScopeDirective || newScopeDirective) {
+                  if (_newIsolateScopeDirective || _newScopeDirective) {
                     // The original directive caused the current element to be replaced but this element
                     // also needs to have a new scope, so we need to tell the template directives
                     // that they would need to get their scope from further up, if they require transclusion
                     markDirectiveScope(
-                      templateDirectives,
-                      newIsolateScopeDirective,
-                      newScopeDirective,
+                      _templateDirectives,
+                      _newIsolateScopeDirective,
+                      _newScopeDirective,
                     );
                   }
                   directives = directives
-                    .concat(templateDirectives)
+                    .concat(_templateDirectives)
                     .concat(unprocessedDirectives);
 
                   mergeTemplateAttributes(templateAttrs, newTemplateAttrs);
@@ -9184,16 +9177,16 @@
                 hasTemplate = true;
                 assertNoDuplicate(
                   "template",
-                  templateDirective,
+                  _templateDirective,
                   directive,
                   compileNodeRef,
                 );
-                templateDirective = directive;
+                _templateDirective = directive;
 
                 if (directive.replace) {
                   replaceDirective = directive;
                 }
-                // @ts-ignore
+
                 nodeLinkFn = compileTemplateUrl(
                   directives.splice(i, directives.length - i),
                   compileNodeRef,
@@ -9204,14 +9197,14 @@
                   postLinkFns,
                   {
                     index,
-                    controllerDirectives,
-                    newScopeDirective:
-                      newScopeDirective !== directive && newScopeDirective,
-                    newIsolateScopeDirective,
-                    templateDirective,
-                    nonTlbTranscludeDirective,
-                    futureParentElement:
-                      previousCompileContext.futureParentElement,
+                    _controllerDirectives,
+                    _newScopeDirective:
+                      _newScopeDirective !== directive && _newScopeDirective,
+                    _newIsolateScopeDirective,
+                    _templateDirective,
+                    _nonTlbTranscludeDirective,
+                    _futureParentElement:
+                      previousCompileContext._futureParentElement,
                   },
                 );
                 ii = directives.length;
@@ -9255,7 +9248,7 @@
               transclude: childTranscludeFn,
               transcludeOnThisElement: hasTranscludeDirective,
               templateOnThisElement: hasTemplate,
-              newScope: newScopeDirective && newScopeDirective.scope === true,
+              newScope: _newScopeDirective && _newScopeDirective.scope === true,
             };
 
             /// /////////////////
@@ -9265,7 +9258,7 @@
                 pre.directiveName = directiveName;
 
                 if (
-                  newIsolateScopeDirective === directive ||
+                  _newIsolateScopeDirective === directive ||
                   directive.$$isolateScope
                 ) {
                   pre = cloneAndAnnotateFn(pre, { isolateScope: true });
@@ -9278,7 +9271,7 @@
                 post.directiveName = directiveName;
 
                 if (
-                  newIsolateScopeDirective === directive ||
+                  _newIsolateScopeDirective === directive ||
                   directive.$$isolateScope
                 ) {
                   post = cloneAndAnnotateFn(post, { isolateScope: true });
@@ -9385,29 +9378,29 @@
            * @param {NodeRef} $element
            * @param attrs
            * @param transcludeFn
-           * @param controllerDirectives
+           * @param _controllerDirectives
            * @param isolateScope
            * @param scope
-           * @param newIsolateScopeDirective
+           * @param _newIsolateScopeDirective
            * @returns {any}
            */
           function setupControllers(
             $element,
             attrs,
             transcludeFn,
-            controllerDirectives,
+            _controllerDirectives,
             isolateScope,
             scope,
-            newIsolateScopeDirective,
+            _newIsolateScopeDirective,
           ) {
             const elementControllers = Object.create(null);
 
-            for (const controllerKey in controllerDirectives) {
-              const directive = controllerDirectives[controllerKey];
+            for (const controllerKey in _controllerDirectives) {
+              const directive = _controllerDirectives[controllerKey];
 
               const locals = {
                 $scope:
-                  directive === newIsolateScopeDirective ||
+                  directive === _newIsolateScopeDirective ||
                   directive.$$isolateScope
                     ? isolateScope
                     : scope,
@@ -9493,12 +9486,12 @@
                     maxPriority > directive.priority) &&
                   directive.restrict.indexOf(location) !== -1
                 ) {
-                  if (!directive.$$bindings) {
-                    const bindings = (directive.$$bindings =
+                  if (!directive._bindings) {
+                    const bindings = (directive._bindings =
                       parseDirectiveBindings(directive, directive.name));
 
                     if (isObject(bindings.isolateScope)) {
-                      directive.$$isolateBindings = bindings.isolateScope;
+                      directive._isolateBindings = bindings.isolateScope;
                     }
                   }
                   tDirectives.push(directive);
@@ -9664,7 +9657,7 @@
                     previousCompileContext.index,
                   );
 
-                  const templateDirectives = collectDirectives(
+                  const _templateDirectives = collectDirectives(
                     compileNode,
                     tempTemplateAttrs,
                   );
@@ -9672,9 +9665,9 @@
                   if (isObject(origAsyncDirective.scope)) {
                     // the original directive that caused the template to be loaded async required
                     // an isolate scope
-                    markDirectiveScope(templateDirectives, true);
+                    markDirectiveScope(_templateDirectives, true);
                   }
-                  directives = templateDirectives.concat(directives);
+                  directives = _templateDirectives.concat(directives);
 
                   mergeTemplateAttributes(tAttrs, tempTemplateAttrs);
                 } else {
@@ -9846,6 +9839,10 @@
             }
           }
 
+          /**
+           * @param {ng.Directive[]} directives
+           * @param {string} text
+           */
           function addTextInterpolateDirective(directives, text) {
             const interpolateFn = $interpolate(text, true);
 
@@ -10453,7 +10450,7 @@
                             });
                           } else {
                             parentSet(scope.$target, (lastValue = val));
-                            scope.$handler.watchers
+                            scope.$handler._watchers
                               .get(attrs[attrName])
                               ?.forEach((watchFn) => {
                                 watchFn.listenerFn(val, scope.$target);
@@ -10728,13 +10725,16 @@
     ];
 
     /**
-     * @param {Element} $element
+     * @param {HTMLFormElement} $element
      * @param {ng.Attributes} $attrs
      * @param {ng.Scope} $scope
      * @param {ng.AnimateService} $animate
      * @param {ng.InterpolateService} $interpolate
      */
     constructor($element, $attrs, $scope, $animate, $interpolate) {
+      /** @type {boolean} */
+      this._isAnimated = hasAnimate($element);
+
       this._controls = [];
 
       this.$name = $interpolate($attrs.name || $attrs.ngForm || "")($scope);
@@ -11098,16 +11098,6 @@
         }
       }
 
-      function cachedToggleClass(ctrl, className, switchValue) {
-        if (switchValue && !ctrl._classCache[className]) {
-          ctrl._animate.addClass(ctrl._element, className);
-          ctrl._classCache[className] = true;
-        } else if (!switchValue && ctrl._classCache[className]) {
-          ctrl._animate.removeClass(ctrl._element, className);
-          ctrl._classCache[className] = false;
-        }
-      }
-
       function toggleValidationCss(ctrl, validationErrorKeyParam, isValid) {
         validationErrorKeyParam = validationErrorKeyParam
           ? `-${snakeCase(validationErrorKeyParam, "-")}`
@@ -11331,6 +11321,29 @@
   const formDirective = formDirectiveFactory();
   const ngFormDirective = formDirectiveFactory("ngForm");
 
+  /**
+   * @param {FormController|ng.NgModelController} ctrl
+   * @param {string} className
+   * @param {boolean} switchValue
+   */
+  function cachedToggleClass(ctrl, className, switchValue) {
+    if (switchValue && !ctrl._classCache[className]) {
+      if (ctrl._isAnimated) {
+        ctrl._animate.addClass(ctrl._element, className);
+      } else {
+        ctrl._element.classList.add(className);
+      }
+      ctrl._classCache[className] = true;
+    } else if (!switchValue && ctrl._classCache[className]) {
+      if (ctrl._isAnimated) {
+        ctrl._animate.removeClass(ctrl._element, className);
+      } else {
+        ctrl._element.classList.remove(className);
+      }
+      ctrl._classCache[className] = false;
+    }
+  }
+
   const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
 
   /**
@@ -11529,7 +11542,7 @@
      * @param {ng.Scope} $scope
      * @param {ng.ExceptionHandlerService} $exceptionHandler
      * @param {ng.Attributes} $attr
-     * @param {Element} $element
+     * @param {HTMLElement} $element
      * @param {ng.ParseService} $parse
      * @param {ng.AnimateService} $animate
      * @param {ng.InterpolateService} $interpolate
@@ -11543,6 +11556,8 @@
       $animate,
       $interpolate,
     ) {
+      /** @type {boolean} */
+      this._isAnimated = hasAnimate($element);
       /** @type {any} The actual value from the control's view  */
       this.$viewValue = Number.NaN;
 
@@ -11658,25 +11673,6 @@
 
         if (isObjectEmpty(ctrl[name])) {
           ctrl[name] = undefined;
-        }
-      }
-
-      function cachedToggleClass(ctrl, className, switchValue) {
-        if (switchValue && !ctrl._classCache[className]) {
-          if (hasAnimate(ctrl._element)) {
-            ctrl._animate.addClass(ctrl._element, className);
-          } else {
-            ctrl._element.classList.add(className);
-          }
-
-          ctrl._classCache[className] = true;
-        } else if (!switchValue && ctrl._classCache[className]) {
-          if (hasAnimate(ctrl._element)) {
-            ctrl._animate.removeClass(ctrl._element, className);
-          } else {
-            ctrl._element.classList.remove(className);
-          }
-          ctrl._classCache[className] = false;
         }
       }
 
@@ -12242,7 +12238,7 @@
 
       if (isNumberNaN(this.$modelValue)) {
         // this.$modelValue has not been touched yet...
-        // @ts-ignore
+
         this.$modelValue = this._ngModelGet(this._scope);
       }
       const prevModelValue = this.$modelValue;
@@ -12826,7 +12822,7 @@
       // control's value is the same empty value twice in a row.
       if (
         ctrl.$viewValue !== value ||
-        (value === "" && ctrl.$$hasNativeValidators)
+        (value === "" && ctrl._hasNativeValidators)
       ) {
         ctrl.$target.$setViewValue(value, event);
       }
@@ -12842,7 +12838,7 @@
     // check for validity changes on various DOM events.
     if (
       PARTIAL_VALIDATION_TYPES[type] &&
-      ctrl.$$hasNativeValidators &&
+      ctrl._hasNativeValidators &&
       type === attr.type
     ) {
       element.addEventListener(PARTIAL_VALIDATION_EVENTS, (ev) => {
@@ -12932,7 +12928,7 @@
   }
 
   function badInputChecker(scope, element, attr, ctrl, parserName) {
-    const nativeValidation = (ctrl.$$hasNativeValidators = isObject(
+    const nativeValidation = (ctrl._hasNativeValidators = isObject(
       element.validity,
     ));
 
@@ -13134,7 +13130,7 @@
     numberFormatterParser(ctrl);
     baseInputType(scope, element, attr, ctrl);
 
-    const supportsRange = ctrl.$$hasNativeValidators && element.type === "range";
+    const supportsRange = ctrl._hasNativeValidators && element.type === "range";
 
     let minVal = supportsRange ? 0 : undefined;
 
@@ -13572,41 +13568,41 @@
      */
     constructor($element, $scope) {
       /** @type {HTMLSelectElement} */
-      this.$element = $element;
+      this._element = $element;
 
       /** @type {ng.Scope} */
-      this.$scope = $scope;
+      this._scope = $scope;
 
       /** @type {Object<string, any>} */
-      this.selectValueMap = {};
+      this._selectValueMap = {};
 
       /** @type {any} */
-      this.ngModelCtrl = {};
+      this._ngModelCtrl = {};
 
       /** @type {boolean} */
-      this.multiple = false;
+      this._multiple = false;
 
       /** @private @type {HTMLOptionElement} */
       this._unknownOption = document.createElement("option");
 
       /** @type {boolean} */
-      this.hasEmptyOption = false;
+      this._hasEmptyOption = false;
 
       /** @type {HTMLOptionElement|undefined} */
-      this.emptyOption = undefined;
+      this._emptyOption = undefined;
 
       /** @type {Map<any, number>} */
-      this.optionsMap = new Map();
+      this._optionsMap = new Map();
 
       /** @type {boolean} */
-      this.renderScheduled = false;
+      this._renderScheduled = false;
 
       /** @type {boolean} */
-      this.updateScheduled = false;
+      this._updateScheduled = false;
 
       $scope.$on("$destroy", () => {
         // disable unknown option so that we don't do work when the whole select is being destroyed
-        this.renderUnknownOption = () => {
+        this._renderUnknownOption = () => {
           /* empty */
         };
       });
@@ -13616,27 +13612,27 @@
      * Render the unknown option when the viewValue doesn't match any options.
      * @param {*} val
      */
-    renderUnknownOption(val) {
-      const unknownVal = this.generateUnknownOptionValue(val);
+    _renderUnknownOption(val) {
+      const unknownVal = this._generateUnknownOptionValue(val);
 
       this._unknownOption.value = unknownVal;
-      this.$element.prepend(this._unknownOption);
+      this._element.prepend(this._unknownOption);
       this._unknownOption.selected = true;
       this._unknownOption.setAttribute("selected", "selected");
-      this.$element.value = unknownVal;
+      this._element.value = unknownVal;
     }
 
     /**
      * Update the unknown option if it's already rendered.
      * @param {*} val
      */
-    updateUnknownOption(val) {
-      const unknownVal = this.generateUnknownOptionValue(val);
+    _updateUnknownOption(val) {
+      const unknownVal = this._generateUnknownOptionValue(val);
 
       this._unknownOption.value = unknownVal;
       this._unknownOption.selected = true;
       this._unknownOption.setAttribute("selected", "selected");
-      this.$element.value = unknownVal;
+      this._element.value = unknownVal;
     }
 
     /**
@@ -13644,7 +13640,7 @@
      * @param {*} val
      * @returns {string}
      */
-    generateUnknownOptionValue(val) {
+    _generateUnknownOptionValue(val) {
       if (isUndefined(val)) {
         return `? undefined:undefined ?`;
       }
@@ -13655,27 +13651,27 @@
     /**
      * Remove the unknown option from the select element if it exists.
      */
-    removeUnknownOption() {
+    _removeUnknownOption() {
       if (this._unknownOption.parentElement) this._unknownOption.remove();
     }
 
     /**
      * Select the empty option (value="") if it exists.
      */
-    selectEmptyOption() {
-      if (this.emptyOption) {
-        this.$element.value = "";
-        this.emptyOption.selected = true;
-        this.emptyOption.setAttribute("selected", "selected");
+    _selectEmptyOption() {
+      if (this._emptyOption) {
+        this._element.value = "";
+        this._emptyOption.selected = true;
+        this._emptyOption.setAttribute("selected", "selected");
       }
     }
 
     /**
      * Unselect the empty option if present.
      */
-    unselectEmptyOption() {
-      if (this.hasEmptyOption) {
-        this.emptyOption.selected = false;
+    _un_selectEmptyOption() {
+      if (this._hasEmptyOption) {
+        this._emptyOption.selected = false;
       }
     }
 
@@ -13683,40 +13679,41 @@
      * Read the current value from the select element.
      * @returns {*|null}
      */
-    readValue() {
-      const val = this.$element.value;
+    _readValue() {
+      const val = this._element.value;
 
-      const realVal = val in this.selectValueMap ? this.selectValueMap[val] : val;
+      const realVal =
+        val in this._selectValueMap ? this._selectValueMap[val] : val;
 
-      return this.hasOption(realVal) ? realVal : null;
+      return this._hasOption(realVal) ? realVal : null;
     }
 
     /**
      * Write a value to the select control.
      * @param {*} value
      */
-    writeValue(value) {
+    _writeValue(value) {
       const currentlySelectedOption =
-        this.$element.options[this.$element.selectedIndex];
+        this._element.options[this._element.selectedIndex];
 
       if (currentlySelectedOption) currentlySelectedOption.selected = false;
 
-      if (this.hasOption(value)) {
-        this.removeUnknownOption();
+      if (this._hasOption(value)) {
+        this._removeUnknownOption();
 
         const hashedVal = hashKey(value);
 
-        this.$element.value =
-          hashedVal in this.selectValueMap ? hashedVal : value;
-        const selectedOption = this.$element.options[this.$element.selectedIndex];
+        this._element.value =
+          hashedVal in this._selectValueMap ? hashedVal : value;
+        const selectedOption = this._element.options[this._element.selectedIndex];
 
         if (!selectedOption) {
-          this.selectUnknownOrEmptyOption(value);
+          this._selectUnknownOrEmptyOption(value);
         } else {
           selectedOption.selected = true;
         }
       } else {
-        this.selectUnknownOrEmptyOption(value);
+        this._selectUnknownOrEmptyOption(value);
       }
     }
 
@@ -13725,38 +13722,38 @@
      * @param {*} value
      * @param {HTMLOptionElement} element
      */
-    addOption(value, element) {
+    _addOption(value, element) {
       if (element.nodeType === NodeType._COMMENT_NODE) return;
 
       assertNotHasOwnProperty(value, '"option value"');
 
       if (value === "") {
-        this.hasEmptyOption = true;
-        this.emptyOption = element;
+        this._hasEmptyOption = true;
+        this._emptyOption = element;
       }
-      const count = this.optionsMap.get(value) || 0;
+      const count = this._optionsMap.get(value) || 0;
 
-      this.optionsMap.set(value, count + 1);
-      this.scheduleRender();
+      this._optionsMap.set(value, count + 1);
+      this._scheduleRender();
     }
 
     /**
      * Remove an option from the controller.
      * @param {*} value
      */
-    removeOption(value) {
-      const count = this.optionsMap.get(value);
+    _removeOption(value) {
+      const count = this._optionsMap.get(value);
 
       if (count) {
         if (count === 1) {
-          this.optionsMap.delete(value);
+          this._optionsMap.delete(value);
 
           if (value === "") {
-            this.hasEmptyOption = false;
-            this.emptyOption = undefined;
+            this._hasEmptyOption = false;
+            this._emptyOption = undefined;
           }
         } else {
-          this.optionsMap.set(value, count - 1);
+          this._optionsMap.set(value, count - 1);
         }
       }
     }
@@ -13766,22 +13763,22 @@
      * @param {*} value
      * @returns {boolean}
      */
-    hasOption(value) {
-      return !!this.optionsMap.get(value);
+    _hasOption(value) {
+      return !!this._optionsMap.get(value);
     }
 
     /**
      * @returns {boolean} Whether the select element currently has an empty option.
      */
     $hasEmptyOption() {
-      return this.hasEmptyOption;
+      return this._hasEmptyOption;
     }
 
     /**
      * @returns {boolean} Whether the unknown option is currently selected.
      */
     $isUnknownOptionSelected() {
-      return this.$element.options[0] === this._unknownOption;
+      return this._element.options[0] === this._unknownOption;
     }
 
     /**
@@ -13789,8 +13786,8 @@
      */
     $isEmptyOptionSelected() {
       return (
-        this.hasEmptyOption &&
-        this.$element.options[this.$element.selectedIndex] === this.emptyOption
+        this._hasEmptyOption &&
+        this._element.options[this._element.selectedIndex] === this._emptyOption
       );
     }
 
@@ -13798,26 +13795,26 @@
      * Select unknown or empty option depending on the value.
      * @param {*} value
      */
-    selectUnknownOrEmptyOption(value) {
-      if (isNullOrUndefined(value) && this.emptyOption) {
-        this.removeUnknownOption();
-        this.selectEmptyOption();
+    _selectUnknownOrEmptyOption(value) {
+      if (isNullOrUndefined(value) && this._emptyOption) {
+        this._removeUnknownOption();
+        this._selectEmptyOption();
       } else if (this._unknownOption.parentElement) {
-        this.updateUnknownOption(value);
+        this._updateUnknownOption(value);
       } else {
-        this.renderUnknownOption(value);
+        this._renderUnknownOption(value);
       }
     }
 
     /**
      * Schedule a render at the end of the digest cycle.
      */
-    scheduleRender() {
-      if (this.renderScheduled) return;
-      this.renderScheduled = true;
-      this.$scope.$postUpdate(() => {
-        this.renderScheduled = false;
-        this.ngModelCtrl.$render();
+    _scheduleRender() {
+      if (this._renderScheduled) return;
+      this._renderScheduled = true;
+      this._scope.$postUpdate(() => {
+        this._renderScheduled = false;
+        this._ngModelCtrl.$render();
       });
     }
 
@@ -13825,18 +13822,18 @@
      * Schedule a view value update at the end of the digest cycle.
      * @param {boolean} [renderAfter=false]
      */
-    scheduleViewValueUpdate(renderAfter = false) {
-      if (this.updateScheduled) return;
+    _scheduleViewValueUpdate(renderAfter = false) {
+      if (this._updateScheduled) return;
 
-      this.updateScheduled = true;
+      this._updateScheduled = true;
 
-      this.$scope.$postUpdate(() => {
-        if (this.$scope.$$destroyed) return;
+      this._scope.$postUpdate(() => {
+        if (this._scope._destroyed) return;
 
-        this.updateScheduled = false;
-        this.ngModelCtrl.$setViewValue(this.readValue());
+        this._updateScheduled = false;
+        this._ngModelCtrl.$setViewValue(this._readValue());
 
-        if (renderAfter) this.ngModelCtrl.$render();
+        if (renderAfter) this._ngModelCtrl.$render();
       });
     }
 
@@ -13866,37 +13863,37 @@
           const previouslySelected = optionElement.selected;
 
           if (isDefined(hashedVal)) {
-            this.removeOption(oldVal);
-            delete this.selectValueMap[hashedVal];
+            this._removeOption(oldVal);
+            delete this._selectValueMap[hashedVal];
             removal = true;
           }
 
           hashedVal = hashKey(newVal);
           oldVal = newVal;
-          this.selectValueMap[hashedVal] = newVal;
-          this.addOption(newVal, optionElement);
+          this._selectValueMap[hashedVal] = newVal;
+          this._addOption(newVal, optionElement);
           optionElement.setAttribute("value", hashedVal);
 
           if (removal && previouslySelected) {
-            this.scheduleViewValueUpdate();
+            this._scheduleViewValueUpdate();
           }
         });
       } else if (interpolateValueFn) {
         optionAttrs.$observe("value", (newVal) => {
-          this.readValue();
+          this._readValue();
           let removal;
 
           const previouslySelected = optionElement.selected;
 
           if (isDefined(oldVal)) {
-            this.removeOption(oldVal);
+            this._removeOption(oldVal);
             removal = true;
           }
           oldVal = newVal;
-          this.addOption(newVal, optionElement);
+          this._addOption(newVal, optionElement);
 
           if (removal && previouslySelected) {
-            this.scheduleViewValueUpdate();
+            this._scheduleViewValueUpdate();
           }
         });
       } else if (interpolateTextFn) {
@@ -13904,7 +13901,7 @@
 
         if (!optionAttrs.value) {
           optionAttrs.$set("value", optionScope.value);
-          this.addOption(optionScope.value, optionElement);
+          this._addOption(optionScope.value, optionElement);
         }
 
         optionScope.$watch("value", () => {
@@ -13916,45 +13913,45 @@
           const previouslySelected = optionElement.selected;
 
           if (oldVal !== newVal) {
-            this.removeOption(oldVal);
+            this._removeOption(oldVal);
             oldVal = newVal;
           }
-          this.addOption(newVal, optionElement);
+          this._addOption(newVal, optionElement);
 
           if (oldVal && previouslySelected) {
-            this.scheduleViewValueUpdate();
+            this._scheduleViewValueUpdate();
           }
         });
       } else {
-        this.addOption(optionAttrs.value, optionElement);
+        this._addOption(optionAttrs.value, optionElement);
       }
 
       optionAttrs.$observe("disabled", (newVal) => {
         if (newVal === "true" || (newVal && optionElement.selected)) {
-          if (this.multiple) {
-            this.scheduleViewValueUpdate(true);
+          if (this._multiple) {
+            this._scheduleViewValueUpdate(true);
           } else {
-            this.ngModelCtrl.$setViewValue(null);
-            this.ngModelCtrl.$render();
+            this._ngModelCtrl.$setViewValue(null);
+            this._ngModelCtrl.$render();
           }
         }
       });
 
       optionElement.addEventListener("$destroy", () => {
-        const currentValue = this.readValue();
+        const currentValue = this._readValue();
 
         const removeValue = optionAttrs.value;
 
-        this.removeOption(removeValue);
-        this.scheduleRender();
+        this._removeOption(removeValue);
+        this._scheduleRender();
 
         if (
-          (this.multiple &&
+          (this._multiple &&
             currentValue &&
             currentValue.indexOf(removeValue) !== -1) ||
           currentValue === removeValue
         ) {
-          this.scheduleViewValueUpdate(true);
+          this._scheduleViewValueUpdate(true);
         }
       });
     }
@@ -13991,14 +13988,14 @@
 
         return;
       }
-      selectCtrl.ngModelCtrl = ngModelCtrl;
+      selectCtrl._ngModelCtrl = ngModelCtrl;
 
       // When the selected item(s) changes we delegate getting the value of the select control
-      // to the `readValue` method, which can be changed if the select can have multiple
+      // to the `_readValue` method, which can be changed if the select can have multiple
       // selected values or if the options are being generated by `ngOptions`
       element.addEventListener("change", () => {
-        selectCtrl.removeUnknownOption();
-        const viewValue = selectCtrl.readValue();
+        selectCtrl._removeUnknownOption();
+        const viewValue = selectCtrl._readValue();
 
         ngModelCtrl.$setViewValue(viewValue);
       });
@@ -14008,10 +14005,10 @@
       // we have to add an extra watch since ngModel doesn't work well with arrays - it
       // doesn't trigger rendering if only an item in the array changes.
       if (attr.multiple) {
-        selectCtrl.multiple = true;
+        selectCtrl._multiple = true;
 
         // Read value now needs to check each option to see if it is selected
-        selectCtrl.readValue = function () {
+        selectCtrl._readValue = function () {
           const array = [];
 
           /**
@@ -14028,8 +14025,8 @@
                 const val = option.value;
 
                 array.push(
-                  val in selectCtrl.selectValueMap
-                    ? selectCtrl.selectValueMap[val]
+                  val in selectCtrl._selectValueMap
+                    ? selectCtrl._selectValueMap[val]
                     : val,
                 );
               }
@@ -14040,7 +14037,7 @@
         };
 
         // Write value now needs to set the selected property of each matching option
-        selectCtrl.writeValue = function (value) {
+        selectCtrl._writeValue = function (value) {
           /**
            * @type {HTMLCollection}
            */
@@ -14054,7 +14051,7 @@
               const shouldBeSelected =
                 !!value &&
                 (includes(value, option.value) ||
-                  includes(value, selectCtrl.selectValueMap[option.value]));
+                  includes(value, selectCtrl._selectValueMap[option.value]));
 
               const currentlySelected = option.selected;
 
@@ -14103,13 +14100,13 @@
 
       const selectCtrl = ctrls[0];
 
-      // We delegate rendering to the `writeValue` method, which can be changed
+      // We delegate rendering to the `_writeValue` method, which can be changed
       // if the select can have multiple selected values or if the options are being
       // generated by `ngOptions`.
       // This must be done in the postLink fn to prevent $render to be called before
       // all nodes have been linked correctly.
       ngModelCtrl.$render = function () {
-        selectCtrl.writeValue(ngModelCtrl.$viewValue);
+        selectCtrl._writeValue(ngModelCtrl.$viewValue);
       };
     }
   }
@@ -15012,7 +15009,14 @@
           }
         });
 
-        return function ngRepeatLink($scope, $element, attr, ctrl, $transclude) {
+        /**
+         * @param {ng.Scope} $scope
+         * @param {HTMLElement} $element
+         * @param {ng.Attributes} attr
+         * @param ctrl
+         * @param $transclude
+         */
+        function ngRepeatLink($scope, $element, attr, ctrl, $transclude) {
           // Store a list of elements from previous run. This is a hash where key is the item from the
           // iterator, and the value is objects with following properties.
           //   - scope: bound scope
@@ -15161,7 +15165,7 @@
                   $transclude(
                     /**
                      * Clone attach function
-                     * @param {Array<NodeList>} clone
+                     * @param {HTMLElement} clone
                      * @param {ng.Scope} scope
                      */
 
@@ -15172,11 +15176,9 @@
                       if (hasAnimate) {
                         $animate.enter(clone, null, previousNode);
                       } else {
-                        // @ts-ignore
                         previousNode.after(clone);
                       }
 
-                      // @ts-ignore
                       previousNode = endNode;
                       // Note: We only need the first/last node of the cloned nodes.
                       // However, we need to keep the reference to the dom wrapper as it might be changed later
@@ -15200,7 +15202,9 @@
             },
             isDefined(attr.lazy),
           );
-        };
+        }
+
+        return ngRepeatLink;
       },
     };
   }
@@ -15646,11 +15650,11 @@
       const listFragment = document.createDocumentFragment();
 
       // Overwrite the implementation. ngOptions doesn't use hashes
-      selectCtrl.generateUnknownOptionValue = () => "?";
+      selectCtrl._generateUnknownOptionValue = () => "?";
 
       // Update the controller methods for multiple selectable options
       if (!multiple) {
-        selectCtrl.writeValue = function writeNgOptionsValue(value) {
+        selectCtrl._writeValue = function writeNgOptionsValue(value) {
           // The options might not be defined yet when ngModel tries to render
           if (!options) return;
 
@@ -15670,7 +15674,7 @@
             // set always
 
             if (selectElement.value !== option.selectValue) {
-              selectCtrl.removeUnknownOption();
+              selectCtrl._removeUnknownOption();
 
               selectElement.value = option.selectValue;
               option.element.selected = true;
@@ -15678,16 +15682,16 @@
 
             option.element.setAttribute("selected", "selected");
           } else {
-            selectCtrl.selectUnknownOrEmptyOption(value);
+            selectCtrl._selectUnknownOrEmptyOption(value);
           }
         };
 
-        selectCtrl.readValue = function readNgOptionsValue() {
+        selectCtrl._readValue = function readNgOptionsValue() {
           const selectedOption = options.selectValueMap[selectElement.value];
 
           if (selectedOption && !selectedOption.disabled) {
-            selectCtrl.unselectEmptyOption();
-            selectCtrl.removeUnknownOption();
+            selectCtrl._un_selectEmptyOption();
+            selectCtrl._removeUnknownOption();
 
             return options.getViewValueFromOption(selectedOption);
           }
@@ -15704,7 +15708,7 @@
           });
         }
       } else {
-        selectCtrl.writeValue = function writeNgOptionsMultiple(values) {
+        selectCtrl._writeValue = function writeNgOptionsMultiple(values) {
           // The options might not be defined yet when ngModel tries to render
           if (!options) return;
 
@@ -15720,18 +15724,22 @@
           });
         };
 
-        selectCtrl.readValue = function readNgOptionsMultiple() {
-          const selectedValues = selectElement.value || [];
-
+        selectCtrl._readValue = function readNgOptionsMultiple() {
           const selections = [];
 
-          // @ts-ignore
-          selectedValues.forEach((value) => {
-            const option = options.selectValueMap[value];
+          const optionsEls = selectElement.options;
 
-            if (option && !option.disabled)
-              selections.push(options.getViewValueFromOption(option));
-          });
+          for (let i = 0; i < optionsEls.length; i++) {
+            const optionEl = optionsEls[i];
+
+            if (optionEl.selected) {
+              const option = options.selectValueMap[optionEl.value];
+
+              if (option && !option.disabled) {
+                selections.push(options.getViewValueFromOption(option));
+              }
+            }
+          }
 
           return selections;
         };
@@ -15795,18 +15803,19 @@
       // watchables.forEach((i) => {
       //   scope.$watch(i, updateOptions);
       // });
-      scope.$watch(
+      const prop = /** @type {string} */ (
         /** @type {import('../../core/parse/ast/ast-node.ts').LiteralNode} */ (
           /** @type {import('../../core/parse/ast/ast-node.ts').ExpressionNode} */ (
             ngOptions.getWatchables._decoratedNode.body[0]
           ).expression
-        ).name,
-        updateOptions,
+        )?.name
       );
+
+      scope.$watch(prop, updateOptions);
 
       // ------------------------------------------------------------------ //
 
-      function addOptionElement(option, parent) {
+      function _addOptionElement(option, parent) {
         /**
          * @type {HTMLOptionElement}
          */
@@ -15846,7 +15855,7 @@
       }
 
       function updateOptions() {
-        const previousValue = options && selectCtrl.readValue();
+        const previousValue = options && selectCtrl._readValue();
 
         // We must remove all current options, but cannot simply set innerHTML = null
         // since the providedEmptyOption might have an ngIf on it that inserts comments which we
@@ -15891,10 +15900,10 @@
               groupElementMap[option.group] = groupElement;
             }
 
-            addOptionElement(option, groupElement);
+            _addOptionElement(option, groupElement);
           } else {
             // This option is not in a group
-            addOptionElement(option, listFragment);
+            _addOptionElement(option, listFragment);
           }
         });
 
@@ -15904,7 +15913,7 @@
 
         // Check to see if the value has changed due to the update to the options
         if (!ngModelCtrl.$isEmpty(previousValue)) {
-          const nextValue = selectCtrl.readValue();
+          const nextValue = selectCtrl._readValue();
 
           const isNotPrimitive = ngOptions.trackBy || multiple;
 
@@ -16036,7 +16045,6 @@
               $scope,
 
               (clone) => {
-                // @ts-ignore
                 $element.append(clone);
               },
             );
@@ -16073,6 +16081,11 @@
     // binding to multiple is not supported
     if (i === "multiple") return;
 
+    /**
+     * @param {ng.Scope} scope
+     * @param {Element} _element
+     * @param {ng.Attributes} attr
+     */
     function defaultLinkFn(scope, _element, attr) {
       scope.$watch(attr[normalized], (value) => {
         attr.$set(i, !!value);
@@ -16736,7 +16749,7 @@
         });
 
       animateOptions.domOperation = function () {
-        animateOptions.$$domOperationFired = true;
+        animateOptions._domOperationFired = true;
         domOperation();
         domOperation = () => {
           /* empty */
@@ -17557,8 +17570,6 @@
       anyPropertyKey = anyPropertyKey || "$";
       let predicateFn;
 
-      let matchAgainstAnyProp = false;
-
       switch (getTypeForFilter(expression)) {
         case "function":
           predicateFn = expression;
@@ -17567,38 +17578,78 @@
         case "null":
         case "number":
         case "string":
-          matchAgainstAnyProp = true;
-        // falls through
+          predicateFn = createPredicateFn(
+            expression,
+            comparator,
+            anyPropertyKey,
+            true,
+          );
+          break;
+
         case "object":
           predicateFn = createPredicateFn(
             expression,
             comparator,
             anyPropertyKey,
-            matchAgainstAnyProp,
+            false,
           );
           break;
+
         default:
           return array;
       }
 
-      return Array.prototype.filter.call(array, predicateFn);
+      return Array.from(array).filter(
+        /** @type {(item: any) => boolean} */ (predicateFn),
+      );
     };
   }
 
   // Helper functions for `filterFilter`
+  /**
+   * Creates a predicate function that can be used with `Array.prototype.filter`
+   * to match items against a given filter expression.
+   *
+   * @param {string | Object & Record<string, any> | null} expression
+   *   The filter expression to match items against. Can be:
+   *     - `string`: matched as a case-insensitive substring
+   *     - `object`: matched by property values (supports special `anyPropertyKey`)
+   *     - `null`: treated as a literal match
+   *
+   * @param {boolean | ((actual: any, expected: any) => boolean)} [comparator=false]
+   *   Comparator to determine equality between actual array values and expected values:
+   *     - `true` → uses strict equality (angular.equals)
+   *     - `false` (default) → performs case-insensitive substring match for primitives
+   *     - `function(actual, expected)` → custom comparator returning boolean
+   *
+   * @param {string} [anyPropertyKey="$"]
+   *   Special property key that allows matching against any property of an object.
+   *   Defaults to `$`.
+   *
+   * @param {boolean} [matchAgainstAnyProp=false]
+   *   If true, allows matching against any property in the object.
+   *   Typically true when filtering with primitive expressions.
+   *
+   * @returns {(item: any) => boolean}
+   *   Predicate function that returns `true` if `item` matches the expression.
+   */
   function createPredicateFn(
     expression,
     comparator,
     anyPropertyKey,
     matchAgainstAnyProp,
   ) {
+    anyPropertyKey = anyPropertyKey ?? "$";
     const shouldMatchPrimitives =
       isObject(expression) && anyPropertyKey in expression;
 
     if (comparator === true) {
       comparator = equals$1;
     } else if (!isFunction(comparator)) {
-      comparator = function (actual, expected) {
+      comparator = function (
+        /** @type {string | any[] | null} */ actual,
+        /** @type {string | null} */ expected,
+      ) {
         if (isUndefined(actual)) {
           // No substring matching against `undefined`
           return false;
@@ -17624,7 +17675,7 @@
       };
     }
 
-    const predicateFn = function (item) {
+    const predicateFn = function (/** @type {string | Object | null} */ item) {
       if (shouldMatchPrimitives && !isObject(item)) {
         return deepCompare(
           item,
@@ -17640,13 +17691,22 @@
         expression,
         comparator,
         anyPropertyKey,
-        matchAgainstAnyProp,
+        !!matchAgainstAnyProp, // coerce undefined → false
       );
     };
 
     return predicateFn;
   }
 
+  /**
+   * @param {string | Object | null} actual
+   * @param {string | Object | null} expected
+   * @param {(arg0: any, arg1: any) => any} comparator
+   * @param {string} anyPropertyKey
+   * @param {boolean} matchAgainstAnyProp
+   * @param {boolean | undefined} [dontMatchWholeObject]
+   * @returns {boolean}
+   */
   function deepCompare(
     actual,
     expected,
@@ -17659,10 +17719,13 @@
 
     const expectedType = getTypeForFilter(expected);
 
-    if (expectedType === "string" && expected.charAt(0) === "!") {
+    if (
+      expectedType === "string" &&
+      /** @type {string} */ (expected).charAt(0) === "!"
+    ) {
       return !deepCompare(
         actual,
-        expected.substring(1),
+        /** @type {string} */ (expected).substring(1),
         comparator,
         anyPropertyKey,
         matchAgainstAnyProp,
@@ -17686,13 +17749,19 @@
     switch (actualType) {
       case "object":
         if (matchAgainstAnyProp) {
-          for (const key in actual) {
+          for (const key in /** @type {Record<string, any>} */ (actual)) {
             // Under certain, rare, circumstances, key may not be a string and `charAt` will be undefined
             // See: https://github.com/angular/angular.js/issues/15644
             if (
               key.charAt &&
               key.charAt(0) !== "$" &&
-              deepCompare(actual[key], expected, comparator, anyPropertyKey, true)
+              deepCompare(
+                /** @type {Record<string, any>} */ (actual)[key],
+                expected,
+                comparator,
+                anyPropertyKey,
+                true,
+              )
             ) {
               return true;
             }
@@ -17704,8 +17773,10 @@
         }
 
         if (expectedType === "object") {
-          for (const key in expected) {
-            const expectedVal = expected[key];
+          for (const key in /** @type {Record<string, any>} */ (expected)) {
+            const expectedVal = /** @type {Record<string, any>} */ (expected)[
+              key
+            ];
 
             if (isFunction(expectedVal) || isUndefined(expectedVal)) {
               continue;
@@ -17713,7 +17784,9 @@
 
             const matchAnyProperty = key === anyPropertyKey;
 
-            const actualVal = matchAnyProperty ? actual : actual[key];
+            const actualVal = matchAnyProperty
+              ? actual
+              : /** @type {Record<string, any>} */ (actual)[key];
 
             if (
               !deepCompare(
@@ -17742,6 +17815,10 @@
   }
 
   // Used for easily differentiating between `null` and actual `object`
+  /**
+   * @param {string | Object | null} val
+   * @return {string}
+   */
   function getTypeForFilter(val) {
     return val === null ? "null" : typeof val;
   }
@@ -17764,9 +17841,21 @@
    */
   function limitToFilter() {
     /**
-     * @param {Array|ArrayLike|string|number|Function} input Array/array-like, string, or number to be limited.
-     * @param {string|number} limit The length of the returned array or string.
-     * @param {string|number} [begin] Index at which to begin limitation. As a negative index, `begin` indicates an offset from the end of `input`. Defaults to `0`.
+     * Limits the size of an array, array-like object, string, or number.
+     *
+     * - If `input` is a function, it will be invoked and its return value used.
+     * - If `input` is a number, it will be converted to a string.
+     * - Non–array-like values are returned unchanged.
+     *
+     * @param {Array<any>|ArrayLike<any>|string|number} input
+     *   The value to limit.
+     * @param {string|number} limit
+     *   The maximum length of the returned value. Negative values limit from the end.
+     * @param {string|number} [begin]
+     *   Index at which to begin the limitation. A negative value is an offset from the end.
+     *   Defaults to `0`.
+     * @returns {Array<any>|ArrayLike<any>|string|number}
+     *   A limited array or string, or the original input if it cannot be limited.
      */
     return function (input, limit, begin) {
       if (isFunction(input)) {
@@ -17804,11 +17893,33 @@
     };
   }
 
+  /**
+   * Returns a shallow copy of a portion of an array-like or string.
+   *
+   * - For strings, this delegates to `String.prototype.slice`
+   * - For array-like objects, this delegates to `Array.prototype.slice`
+   *
+   * @param {string|ArrayLike<any>} input
+   *   The value to slice. Must be a string or array-like object.
+   * @param {number} [begin]
+   *   Zero-based index at which to begin extraction.
+   * @param {number} [end]
+   *   Zero-based index before which to end extraction.
+   * @returns {string|Array<any>}
+   *   A sliced string if input is a string, otherwise an array.
+   */
   function sliceFn(input, begin, end) {
     if (isString(input)) return input.slice(begin, end);
 
     return [].slice.call(input, begin, end);
   }
+
+  /**
+   * @typedef {Object} ComparisonObject
+   * @property {*} value
+   * @property {{ value: number, type: string, index: number }} tieBreaker
+   * @property {Array<{ value: any, type: string, index: number }>} predicateValues
+   */
 
   orderByFilter.$inject = [$injectTokens._parse];
 
@@ -17817,6 +17928,32 @@
    * @returns {ng.FilterFn}
    */
   function orderByFilter($parse) {
+    /**
+     * Sorts an array or array-like collection based on one or more predicates.
+     *
+     * The collection can be:
+     * - An array
+     * - An array-like object
+     * - A function returning an array
+     *
+     * Predicates can be:
+     * - Property names (strings)
+     * - Getter functions
+     * - Strings with "+" or "-" prefix to indicate ascending/descending order
+     *
+     * @param {Array<any>|ArrayLike<any>|Function} array
+     *   The collection to be sorted.
+     * @param {string|Function|Array<string|Function>} [sortPredicate]
+     *   A single predicate or array of predicates used for sorting.
+     * @param {boolean} [reverseOrder=false]
+     *   If true, reverses the sort order.
+     * @param {Function} [compareFn]
+     *   Optional comparator function. Defaults to a type-aware comparison function.
+     * @returns {Array<any>|ArrayLike<any>}
+     *   A new array containing the sorted values.
+     *
+     * @throws {Error} Throws if `array` is not array-like.
+     */
     return function (array, sortPredicate, reverseOrder, compareFn) {
       if (isNullOrUndefined(array)) return array;
 
@@ -17831,7 +17968,7 @@
       }
 
       if (!isArray(sortPredicate)) {
-        sortPredicate = [sortPredicate];
+        sortPredicate = [sortPredicate ?? "+"]; // if undefined, default to "+"
       }
 
       if (sortPredicate.length === 0) {
@@ -17848,13 +17985,31 @@
       // The next three lines are a version of a Swartzian Transform idiom from Perl
       // (sometimes called the Decorate-Sort-Undecorate idiom)
       // See https://en.wikipedia.org/wiki/Schwartzian_transform
-      const compareValues = Array.prototype.map.call(array, getComparisonObject);
+      const compareValues = /** @type {ComparisonObject[]} */ (
+        Array.prototype.map.call(array, getComparisonObject)
+      );
 
       compareValues.sort(doComparison);
       array = compareValues.map((item) => item.value);
 
       return array;
 
+      /**
+       * Creates a comparison object for a given value in the array.
+       * This object is used to perform stable sorting with multiple predicates.
+       *
+       * @param {*} value - The value from the array to wrap for comparison.
+       * @param {number} index - The index of the value in the original array.
+       * @returns {{
+       *   value: *,
+       *   tieBreaker: { value: number, type: string, index: number },
+       *   predicateValues: Array<{ value: *, type: string, index: number }>
+       * }}
+       *   An object containing:
+       *     - `value`: the original value,
+       *     - `tieBreaker`: a stable sort fallback using the original index,
+       *     - `predicateValues`: an array of values derived from each sort predicate.
+       */
       function getComparisonObject(value, index) {
         // NOTE: We are adding an extra `tieBreaker` value based on the element's index.
         // This will be used to keep the sort stable when none of the input predicates can
@@ -17868,6 +18023,20 @@
         };
       }
 
+      /**
+       * Comparator used to sort decorated collection items.
+       *
+       * Iterates over all sort predicates and compares their corresponding
+       * predicate values. The first non-zero comparison result determines
+       * the ordering.
+       *
+       * If all predicate comparisons are equal, a tie-breaker based on the
+       * original index is used to guarantee a stable sort.
+       *
+       * @param {ComparisonObject} v1 First decorated comparison object
+       * @param {ComparisonObject} v2 Second decorated comparison object
+       * @returns {number} -1 if v1 < v2, 1 if v1 > v2, 0 if equivalent
+       */
       function doComparison(v1, v2) {
         for (let i = 0, ii = predicates.length; i < ii; i++) {
           const result = compare(v1.predicateValues[i], v2.predicateValues[i]);
@@ -17884,14 +18053,31 @@
       }
     };
 
+    /**
+     * Processes an array of sort predicates into getter functions and sort directions.
+     *
+     * Each predicate can be:
+     * - A function: used directly to extract values for comparison.
+     * - A string starting with `+` or `-` to indicate ascending or descending order.
+     *   The remainder of the string is interpreted as a property path.
+     *
+     * @param {(string|Function)[]} sortPredicates - Array of predicates to process. Each predicate
+     *   can be a string (property name, optionally prefixed with "+" or "-") or a function.
+     * @return {Array<{get: Function, descending: number}>} Array of objects, each containing:
+     *   - `get`: Function to extract the value from an item.
+     *   - `descending`: `1` for ascending, `-1` for descending.
+     */
     function processPredicates(sortPredicates) {
       return sortPredicates.map((predicate) => {
         let descending = 1;
 
+        /**
+         * @type {function(*): *}
+         */
         let get = (x) => x;
 
         if (isFunction(predicate)) {
-          get = predicate;
+          get = /** @type {function(*): *} */ (predicate);
         } else if (isString(predicate)) {
           if (predicate.charAt(0) === "+" || predicate.charAt(0) === "-") {
             descending = predicate.charAt(0) === "-" ? -1 : 1;
@@ -17904,7 +18090,8 @@
             if (parsed.constant) {
               const key = parsed();
 
-              get = (value) => value[key];
+              get = /** @type {Record<string, any>} value */ (value) =>
+                value[key];
             } else {
               get = parsed;
             }
@@ -17915,6 +18102,10 @@
       });
     }
 
+    /**
+     * @param {any} value
+     * @return {boolean}
+     */
     function isPrimitive(value) {
       switch (typeof value) {
         case "number": /* falls through */
@@ -17926,6 +18117,16 @@
       }
     }
 
+    /**
+     * Converts an object to a primitive value for comparison purposes.
+     *
+     * - If the object has a valid `valueOf()` method that returns a primitive, it uses that.
+     * - Otherwise, if the object has a custom `toString()` method, it uses that.
+     * - If neither yields a primitive, returns the original object.
+     *
+     * @param {*} value - The object to convert.
+     * @returns {*} The primitive representation of the object if possible; otherwise, the original object.
+     */
     function objectValue(value) {
       // If `valueOf` is a valid function use that
       if (isFunction(value.valueOf)) {
@@ -17944,6 +18145,22 @@
       return value;
     }
 
+    /**
+     * Normalizes a value for sorting by determining its type and
+     * converting objects to primitive representations when possible.
+     *
+     * @param {*} value - The value to normalize for comparison.
+     * @param {number} index - The original index of the value in the array.
+     * @returns {{
+     *   value: *,
+     *   type: string,
+     *   index: number
+     * }}
+     *   An object containing:
+     *     - `value`: the normalized value (primitive if possible),
+     *     - `type`: a string representing the type of the value (`number`, `string`, `boolean`, `null`, etc.),
+     *     - `index`: the original index to maintain stable sorting.
+     */
     function getPredicateValue(value, index) {
       /** @type {String} */ let type = typeof value;
 
@@ -17956,6 +18173,23 @@
       return { value, type, index };
     }
 
+    /**
+     * Default comparison function used by the `orderBy` filter.
+     *
+     * Compares two wrapped predicate values and returns a sort order indicator.
+     * Comparison rules:
+     * - Values of the same type are compared directly
+     * - Strings are compared case-insensitively
+     * - Objects fall back to their original index to preserve stability
+     * - `undefined` and `null` are ordered last
+     *
+     * @param {{ value: any, type: string, index: number }} v1
+     *   First comparison object.
+     * @param {{ value: any, type: string, index: number }} v2
+     *   Second comparison object.
+     * @returns {number}
+     *   Returns `-1` if `v1 < v2`, `1` if `v1 > v2`, or `0` if equal.
+     */
     function defaultCompare(v1, v2) {
       let result = 0;
 
@@ -18060,6 +18294,9 @@
 
   const $interpolateMinErr = minErr("$interpolate");
 
+  /**
+   * @param {string} text
+   */
   function throwNoconcat(text) {
     throw $interpolateMinErr(
       "noconcat",
@@ -18070,6 +18307,10 @@
     );
   }
 
+  /**
+   * @param {string} text
+   * @param {Error} err
+   */
   function interr(text, err) {
     throw $interpolateMinErr(
       "interr",
@@ -18117,9 +18358,9 @@
         /** @type {InterpolateProvider} */
         const provider = this;
 
-        const startSymbolLength = provider.startSymbol.length;
+        const startSymbolLength = this.startSymbol.length;
 
-        const endSymbolLength = provider.endSymbol.length;
+        const endSymbolLength = this.endSymbol.length;
 
         const escapedStartRegexp = new RegExp(
           provider.startSymbol.replace(/./g, escape),
@@ -18131,10 +18372,16 @@
           "g",
         );
 
+        /**
+         * @param {any} ch
+         */
         function escape(ch) {
           return `\\\\\\${ch}`;
         }
 
+        /**
+         * @param {string} text
+         */
         function unescapeText(text) {
           return text
             .replace(escapedStartRegexp, provider.startSymbol)
@@ -18246,7 +18493,7 @@
          *    provides Strict Contextual Escaping for details.
          * @param {boolean=} allOrNothing if `true`, then the returned function returns undefined
          *    unless all embedded expressions evaluate to a value other than `undefined`.
-         * @returns {Function} an interpolation function which is used to compute the
+         * @returns {import("./interface.js").InterpolationFunction | undefined} an interpolation function which is used to compute the
          *    interpolated string. The function has these parameters:
          *
          * - `context`: evaluation context for all expressions embedded in the interpolated text
@@ -18288,14 +18535,23 @@
 
           let index = 0;
 
+          /**
+           * @type {string[]}
+           */
           const expressions = [];
 
           const textLength = text.length;
 
           let exp;
 
+          /**
+           * @type {any[]}
+           */
           const concat = [];
 
+          /**
+           * @type {number[]}
+           */
           const expressionPositions = [];
 
           while (index < textLength) {
@@ -18350,7 +18606,7 @@
           // only used in srcdoc attributes, this would not be very useful.
 
           if (!mustHaveExpression || expressions.length) {
-            const compute = function (values) {
+            const compute = function (/** @type {any[]} */ values) {
               for (let i = 0, ii = expressions.length; i < ii; i++) {
                 if (allOrNothing && isUndefined(values[i])) return undefined;
                 concat[expressionPositions[i]] = values[i];
@@ -18373,68 +18629,54 @@
               return concat.join("");
             };
 
-            return /**@type {import("./interface.ts").InterpolationFunction}  */ extend(
-              (context, cb) => {
-                let i = 0;
+            /**
+             * @type {import("./interface.ts").InterpolationFunction}
+             */
+            const fn = (
+              /** @type {ng.Scope} */ context,
+              /** @type {(val: any) => void=} */ cb,
+            ) => {
+              const ii = expressions.length;
 
-                const ii = expressions.length;
+              const values = new Array(ii);
 
-                const values = new Array(ii);
+              try {
+                for (let i = 0; i < ii; i++) {
+                  if (cb) {
+                    const watchProp = expressions[i].trim();
 
-                try {
-                  for (; i < ii; i++) {
-                    if (cb) {
-                      const watchProp = expressions[i].trim();
+                    context.$watch(watchProp, () => {
+                      const vals = new Array(ii);
 
-                      context.$watch(watchProp, () => {
-                        const vals = new Array(ii);
+                      for (let j = 0; j < ii; j++) {
+                        vals[j] = parseFns[j](context);
+                      }
 
-                        let j = 0;
-
-                        for (; j < ii; j++) {
-                          const fn = parseFns[j];
-
-                          vals[j] = fn(context);
-                        }
-                        cb(compute(vals));
-                      });
-                    }
-
-                    values[i] = parseFns[i](context);
+                      cb(compute(vals));
+                    });
                   }
 
-                  return compute(values);
-                } catch (err) {
-                  return interr(text, err);
+                  values[i] = parseFns[i](context);
                 }
-              },
-              {
-                // Most likely we would need to register watches during interpolation
-                // all of these properties are undocumented for now
-                exp: text, // just for compatibility with regular watchers created via $watch
-                expressions,
-                _watchDelegate(scope, listener) {
-                  let lastValue;
 
-                  return scope.$watch(
-                    parseFns,
-                    function interpolateFnWatcher(values, oldValues) {
-                      const currValue = compute(values);
+                return compute(values);
+              } catch (err) {
+                return interr(text, /** @type {Error} */ (err));
+              }
+            };
 
-                      listener.call(
-                        provider,
-                        currValue,
-                        values !== oldValues ? lastValue : currValue,
-                        scope,
-                      );
-                      lastValue = currValue;
-                    },
-                  );
-                },
-              },
-            );
+            // Attach required properties so TS sees them
+            /** @type {string} */
+            fn.exp = text;
+            /** @type {any[]} */
+            fn.expressions = expressions;
+
+            return fn;
           }
 
+          /**
+           * @param {string} value
+           */
           function parseStringifyInterceptor(value) {
             try {
               // In concatenable contexts, getTrusted comes at the end, to avoid sanitizing individual
@@ -18448,7 +18690,7 @@
 
               return allOrNothing && !isDefined(value) ? value : stringify$1(value);
             } catch (err) {
-              return interr(text, err);
+              return interr(text, /** @type {Error} */ (err));
             }
           }
 
@@ -18479,7 +18721,6 @@
           return provider.endSymbol;
         };
 
-        // @ts-ignore
         return $interpolate;
       },
     ];
@@ -18499,7 +18740,7 @@
   let _path;
 
   /**
-   * @type {Object.<string,boolean|Array<any>>}
+   * @type {Object.<string, string|number|boolean|Array<string|number|boolean>>}
    */
   let _search;
 
@@ -18663,7 +18904,6 @@
           if (isUndefined(paramValue) || paramValue === null) {
             delete _search[search];
           } else {
-            // @ts-ignore
             _search[search] = paramValue;
           }
       }
@@ -19093,12 +19333,12 @@
             ) {
               return;
             }
-            let elm = /** @type {HTMLAnchorElement} */ (event.target);
+            let elm = /** @type {HTMLElement} */ (event.target);
 
             // traverse the DOM up to find first A tag
             while (elm.nodeName.toLowerCase() !== "a") {
               // ignore rewriting if no A tag (reached root element, or no parent - removed from document)
-              // @ts-ignore
+
               if (elm === $rootElement || !(elm = elm.parentElement)) return;
             }
 
@@ -19109,7 +19349,7 @@
               return;
             }
 
-            let absHref = elm.href;
+            let absHref = /** @type {HTMLAnchorElement} */ (elm).href;
 
             // get the actual href attribute - see
             // http://msdn.microsoft.com/en-us/library/ie/dd347148(v=vs.85).aspx
@@ -20025,7 +20265,6 @@
 
       const { body } = /** @type {BodyNode} */ (decoratedNode);
 
-      /** @type {ASTNode} */
       const assignable = assignableAST(/** @type {BodyNode} */ (decoratedNode));
 
       /** @type {import("./interface.ts").CompiledExpression} */
@@ -20066,26 +20305,24 @@
         },
       );
 
-      /** @type {import("./interface.ts").CompiledExpression} */
-      // @ts-ignore
-      const fn =
+      const fnRaw =
         body.length === 0
           ? () => {
               /* empty */
             }
           : body.length === 1
-            ? /** @type {import("./interface.ts").CompiledExpression} */ (
-                expressions[0]
-              )
+            ? /** @type {CompiledExpression} */ (expressions[0])
             : function (scope, locals) {
                 let lastValue;
 
-                for (let i = 0, j = expressions.length; i < j; i++) {
+                for (let i = 0; i < expressions.length; i++) {
                   lastValue = expressions[i](scope, locals);
                 }
 
                 return lastValue;
               };
+
+      const fn = /** @type {CompiledExpression} */ (fnRaw);
 
       if (assign) {
         fn._assign = (scope, value, locals) => assign(scope, locals, value);
@@ -20094,6 +20331,7 @@
       if (inputs) {
         fn._inputs = inputs;
       }
+
       fn._decoratedNode = /** @type {BodyNode} */ (decoratedNode);
 
       return fn;
@@ -22042,43 +22280,34 @@
      * @param {Scope} [parent] - Custom parent.
      */
     constructor(context, parent) {
-      this.context = context
-        ? context.context
-          ? context.context
-          : context
-        : undefined;
-
-      /** @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners */
-      this.watchers = context ? context.watchers : new Map();
+      /** @ignore @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners */
+      this._watchers = context?._watchers ?? new Map();
 
       /** @private @type {Map<String, Function[]>} Event listeners */
       this._listeners = new Map();
 
       /** @private @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
-      this._foreignListeners = context ? context._foreignListeners : new Map();
+      this._foreignListeners = context?._foreignListeners ?? new Map();
 
       /** @private @type {Set<Proxy<ng.Scope>>} */
-      this._foreignProxies = context ? context._foreignProxies : new Set();
+      this._foreignProxies = context?._foreignProxies ?? new Set();
 
       /** @private @type {WeakMap<Object, Array<string>>} */
-      this._objectListeners = context ? context._objectListeners : new WeakMap();
+      this._objectListeners = context?._objectListeners ?? new WeakMap();
 
       /** @type {Proxy<Scope>} Current proxy being operated on */
-      this.$proxy = null;
+      this.$proxy;
 
-      /** @type {Scope} The actual proxy */
+      /** @type {Scope} This is the reference to the Scope object with acts as the actual proxy */
       this.$handler = /** @type {Scope} */ (this);
 
       /** @type {*} Current target being called on */
       this.$target = null;
 
-      /** @type {*} Value wrapped by the proxy */
-      this.$value = null;
-
       /**
-       * @type {Scope[]}
+       * @ignore @type {Scope[]}
        */
-      this.$children = [];
+      this._children = [];
 
       /**
        * @type {number} Unique model ID (monotonically increasing) useful for debugging.
@@ -22086,15 +22315,14 @@
       this.$id = nextId();
 
       /**
-       * @type {Scope}
+       * @type {ng.RootScopeService}
        */
-      this.$root = context ? context.$root : /** @type {Scope} */ (this);
+      this.$root = context ? context.$root : this;
 
-      this.$parent = parent
-        ? parent
-        : /** @type {Scope} */ (this).$root === /** @type {Scope} */ (this)
-          ? null
-          : context;
+      /**
+       * @type {Scope | undefined}
+       */
+      this.$parent = parent || (this.$root === this ? undefined : context);
 
       /** @ignore @type {boolean} */
       this._destroyed = false;
@@ -22109,7 +22337,7 @@
       this.propertyMap = {
         $apply: this.$apply.bind(this),
         $broadcast: this.$broadcast.bind(this),
-        $children: this.$children,
+        _children: this._children,
         $destroy: this.$destroy.bind(this),
         $emit: this.$emit.bind(this),
         $eval: this.$eval.bind(this),
@@ -22137,7 +22365,7 @@
      * Intercepts and handles property assignments on the target object. If a new value is
      * an object, it will be recursively proxied.
      *
-     * @param {Object} target - The target object.
+     * @param {Object & Record<string, any>} target - The target object.
      * @param {string} property - The name of the property being set.
      * @param {*} value - The new value being assigned to the property.
      * @param {Proxy<Scope>} proxy - The proxy intercepting property access
@@ -22154,14 +22382,9 @@
         return true;
       }
 
-      if (
-        (target.constructor?.$nonscope &&
-          isArray(target.constructor.$nonscope) &&
-          target.constructor.$nonscope.includes(property)) ||
-        (target.$nonscope &&
-          isArray(target.$nonscope) &&
-          target.$nonscope.includes(property))
-      ) {
+      const nonscopeProps = target.constructor?.$nonscope ?? target.$nonscope;
+
+      if (isArray(nonscopeProps) && nonscopeProps.includes(property)) {
         target[property] = value;
 
         return true;
@@ -22183,7 +22406,7 @@
       if (oldValue && oldValue[isProxySymbol]) {
         if (isArray(value)) {
           if (oldValue !== value) {
-            const listeners = this.watchers.get(property);
+            const listeners = this._watchers.get(property);
 
             if (listeners) {
               this.#scheduleListener(listeners);
@@ -22215,7 +22438,7 @@
           }
 
           if (oldValue !== value) {
-            const listeners = this.watchers.get(property);
+            const listeners = this._watchers.get(property);
 
             if (listeners) {
               this.#scheduleListener(listeners);
@@ -22258,7 +22481,7 @@
           target[property] = undefined;
 
           if (!called) {
-            const listeners = this.watchers.get(property);
+            const listeners = this._watchers.get(property);
 
             if (listeners) {
               this.#scheduleListener(listeners);
@@ -22270,7 +22493,7 @@
 
         if (isDefined(value)) {
           target[property] = value;
-          const listeners = this.watchers.get(property);
+          const listeners = this._watchers.get(property);
 
           if (listeners) {
             this.#scheduleListener(listeners);
@@ -22278,10 +22501,12 @@
 
           if (isArray(target)) {
             if (this._objectListeners.has(proxy) && property !== "length") {
-              const keyList = this._objectListeners.get(proxy);
+              const keyList = /** @type {string[]} */ (
+                this._objectListeners.get(proxy)
+              );
 
               for (let i = 0, l = keyList.length; i < l; i++) {
-                const currentListeners = this.watchers.get(keyList[i]);
+                const currentListeners = this._watchers.get(keyList[i]);
 
                 if (currentListeners) this.#scheduleListener(currentListeners);
               }
@@ -22297,7 +22522,7 @@
           this._foreignProxies.add(/** @type {Proxy<ng.Scope>} */ (value));
           target[property] = value;
 
-          if (!this.watchers.has(property)) {
+          if (!this._watchers.has(property)) {
             return true;
           }
         }
@@ -22323,7 +22548,7 @@
             for (let i = 0, l = keyList.length; i < l; i++) {
               const key = keyList[i];
 
-              const keyListeners = this.watchers.get(key);
+              const keyListeners = this._watchers.get(key);
 
               if (keyListeners) {
                 for (let j = 0, jl = keyListeners.length; j < jl; j++) {
@@ -22335,7 +22560,7 @@
           }
 
           if (isArray(target)) {
-            const lengthListeners = this.watchers.get("length");
+            const lengthListeners = this._watchers.get("length");
 
             if (lengthListeners) {
               for (let i = 0, l = lengthListeners.length; i < l; i++) {
@@ -22344,7 +22569,7 @@
             }
           }
 
-          const propListeners = this.watchers.get(property);
+          const propListeners = this._watchers.get(property);
 
           if (propListeners) {
             for (let i = 0, l = propListeners.length; i < l; i++) {
@@ -22366,9 +22591,7 @@
 
                 const wrapperExpr = x.watchProp.split(".").slice(0, -1).join(".");
 
-                const expectedHandler = $parse(wrapperExpr)(
-                  x.originalTarget,
-                )?.$handler;
+                const expectedHandler = $parse(wrapperExpr)(x.originalTarget);
 
                 if (expectedTarget === expectedHandler?.$target) {
                   scheduled.push(x);
@@ -22410,12 +22633,14 @@
         }
 
         if (this._objectListeners.has(proxy) && property !== "length") {
-          const keyList = this._objectListeners.get(proxy);
+          const keyList = /** @type {string[]} */ (
+            this._objectListeners.get(proxy)
+          );
 
           for (let i = 0, l = keyList.length; i < l; i++) {
             const key = keyList[i];
 
-            const listeners = this.watchers.get(key);
+            const listeners = this._watchers.get(key);
 
             if (listeners && this._scheduled !== listeners) {
               this.#scheduleListener(listeners);
@@ -22432,7 +22657,7 @@
      * properties (`watch` and `sync`) and binds their methods. For other properties,
      * it returns the value directly.
      *
-     * @param {Object} target - The target object.
+     * @param {Object & Record<string, any>} target - The target object.
      * @param {string|number|symbol} property - The name of the property being accessed.
      * @param {Proxy<Scope>} proxy - The proxy object being invoked
      * @returns {*} - The value of the property or a method if accessing `watch` or `sync`.
@@ -22444,8 +22669,10 @@
 
       if (property === isProxySymbol) return true;
 
-      if (target[property] && isProxy(target[property])) {
-        this.$proxy = /** @type {Proxy<Scope>} */ (target[property]);
+      const targetProp = target[/** @type {string} */ (property)];
+
+      if (isProxy(targetProp)) {
+        this.$proxy = /** @type {Proxy<Scope>} */ (targetProp);
       } else {
         this.$proxy = proxy;
       }
@@ -22458,12 +22685,14 @@
         ["pop", "shift", "unshift"].includes(/** @type { string } */ (property))
       ) {
         if (this._objectListeners.has(proxy)) {
-          const keyList = this._objectListeners.get(proxy);
+          const keyList = /** @type {string []} */ (
+            this._objectListeners.get(proxy)
+          );
 
           for (let i = 0, l = keyList.length; i < l; i++) {
             const key = keyList[i];
 
-            const listeners = this.watchers.get(key);
+            const listeners = this._watchers.get(key);
 
             if (listeners) {
               this._scheduled = listeners;
@@ -22482,28 +22711,34 @@
         return this.propertyMap[/** @type {string} */ (property)];
       } else {
         // we are a simple getter
-        return target[property];
+        return targetProp;
       }
     }
 
+    /**
+     * @param {Object & Record<string, any>} target - The target object.
+     * @param {string} property - The name of the property being deleted
+     */
     deleteProperty(target, property) {
       // Currently deletes $model
       if (target[property] && target[property][isProxySymbol]) {
         target[property] = undefined;
 
-        const listeners = this.watchers.get(property);
+        const listeners = this._watchers.get(property);
 
         if (listeners) {
           this.#scheduleListener(listeners);
         }
 
         if (this._objectListeners.has(this.$proxy)) {
-          const keyList = this._objectListeners.get(this.$proxy);
+          const keyList = /** @type {string[]} */ (
+            this._objectListeners.get(this.$proxy)
+          );
 
           for (let i = 0, l = keyList.length; i < l; i++) {
             const key = keyList[i];
 
-            const currentListeners = this.watchers.get(key);
+            const currentListeners = this._watchers.get(key);
 
             if (currentListeners) this.#scheduleListener(currentListeners);
           }
@@ -22520,17 +22755,19 @@
       delete target[property];
 
       if (this._objectListeners.has(this.$proxy)) {
-        const keyList = this._objectListeners.get(this.$proxy);
+        const keyList = /** @type {string[]} */ (
+          this._objectListeners.get(this.$proxy)
+        );
 
         for (let i = 0, l = keyList.length; i < l; i++) {
           const key = keyList[i];
 
-          const listeners = this.watchers.get(key);
+          const listeners = this._watchers.get(key);
 
           if (listeners) this.#scheduleListener(listeners);
         }
       } else {
-        const listeners = this.watchers.get(property);
+        const listeners = this._watchers.get(property);
 
         if (listeners) {
           this.#scheduleListener(listeners, target[property]);
@@ -22540,13 +22777,15 @@
       return true;
     }
 
-    /** @internal **/
+    /**
+     * @param {Object & Record<string, any>} value
+     */
     #checkeListenersForAllKeys(value) {
       if (isUndefined(value)) {
         return;
       }
       keys(value).forEach((k) => {
-        const listeners = this.watchers.get(k);
+        const listeners = this._watchers.get(k);
 
         if (listeners) {
           this.#scheduleListener(listeners);
@@ -22560,7 +22799,7 @@
 
     /**
      * @param {import('./interface.ts').Listener[]} listeners
-     * @param {Function} filter
+     * @param {(listeners: import('./interface').Listener[]) => import('./interface').Listener[]} filter
      */
     #scheduleListener(listeners, filter = (val) => val) {
       queueMicrotask(() => {
@@ -22571,11 +22810,8 @@
         while (index < filteredListeners.length) {
           const listener = filteredListeners[index];
 
-          if (listener.foreignListener) {
-            listener.foreignListener.#notifyListener(listener, this.$target);
-          } else {
-            this.#notifyListener(listener, this.$target);
-          }
+          this.#notifyListener(listener, this.$target);
+
           index++;
         }
       });
@@ -22612,9 +22848,20 @@
         };
       }
 
-      const expr = /** @type {ExpressionNode & BodyNode} */ (
-        get._decoratedNode.body[0]
-      ).expression;
+      const expr = /** @type {import("../parse/ast/ast-node.ts").ASTNode} */ (
+        /** @type {ExpressionNode & BodyNode} */ (get._decoratedNode.body[0])
+          .expression
+      );
+
+      if (!listenerFn) {
+        let res = get(this.$target);
+
+        while (isFunction(res)) {
+          res = res(this.$target);
+        }
+
+        return undefined;
+      }
 
       /** @type {ng.Listener} */
       const listener = {
@@ -22629,6 +22876,9 @@
       // simplest case
       let key = /** @type {LiteralNode} */ (expr).name;
 
+      /**
+       * @type {string[]}
+       */
       const keySet = [];
 
       const { type } = expr;
@@ -22637,15 +22887,6 @@
         // 3
         case ASTType._AssignmentExpression:
           // assignment calls without listener functions
-          if (!listenerFn) {
-            let res = get(this.$target);
-
-            while (isFunction(res)) {
-              res = res(this.$target);
-            }
-
-            return undefined;
-          }
           key = /** @type {LiteralNode} */ (
             /** @type {ExpressionNode} */ (expr).left
           )?.name;
@@ -22657,7 +22898,7 @@
               /** @type {BodyNode} */ (expr).toWatch[0]
             )?.test
           )?.name;
-          listener.property.push(key);
+          listener.property.push(/** @type {string} */ (key));
           break;
         }
         // 5
@@ -22683,7 +22924,10 @@
             for (let i = 0, l = keyList.length; i < l; i++) {
               const deregisterKey = keyList[i];
 
-              this.#deregisterKey(deregisterKey, listener.id);
+              this.#deregisterKey(
+                /** @type {string} */ (deregisterKey),
+                listener.id,
+              );
             }
           };
         }
@@ -22732,7 +22976,10 @@
                     ).name
                   : /** @type {LiteralNode} */ (x).name;
 
-                this.#deregisterKey(deregisterKey, listener.id);
+                this.#deregisterKey(
+                  /** @type {string} */ (deregisterKey),
+                  listener.id,
+                );
               }
             };
           }
@@ -22763,7 +23010,10 @@
             const x = toWatch[i];
 
             if (!isDefined(x)) continue;
-            this.#registerKey(/** @type {LiteralNode} */ (x).name, listener);
+            this.#registerKey(
+              /** @type {string} */ (/** @type {LiteralNode} */ (x).name),
+              listener,
+            );
             this.#scheduleListener([listener]);
           }
 
@@ -22773,7 +23023,7 @@
 
               if (!isDefined(x)) continue;
               this.#deregisterKey(
-                /** @type {LiteralNode} */ (x).name,
+                /** @type {string} */ (/** @type {LiteralNode} */ (x).name),
                 listener.id,
               );
             }
@@ -22793,7 +23043,7 @@
             ).name;
           }
 
-          listener.property.push(key);
+          listener.property.push(/** @type {string} */ (key));
 
           if (watchProp !== key) {
             // Handle nested expression call
@@ -22804,10 +23054,12 @@
             )(/** @type {Scope} */ (listener.originalTarget));
 
             if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
-              potentialProxy.$handler.#registerForeignKey(key, listener);
+              potentialProxy.$handler._registerForeignKey(key, listener);
               potentialProxy.$handler.#scheduleListener([listener]);
 
               return () => {
+                potentialProxy.$handler._deregisterForeignKey(key, listener.id);
+
                 return potentialProxy.$handler.#deregisterKey(key, listener.id);
               };
             }
@@ -22817,7 +23069,9 @@
 
         // 10
         case ASTType._Identifier: {
-          listener.property.push(/** @type {LiteralNode} */ (expr).name);
+          listener.property.push(
+            /** @type {string} */ (/** @type {LiteralNode} */ (expr).name),
+          );
           break;
         }
 
@@ -22898,7 +23152,7 @@
       const listenerObject = listener.watchFn(this.$target);
 
       if (isObject(listenerObject)) {
-        this._objectListeners.set(listenerObject, [key]);
+        this._objectListeners.set(listenerObject, [/** @type {string} */ (key)]);
       }
 
       if (keySet.length > 0) {
@@ -22906,7 +23160,7 @@
           this.#registerKey(keySet[i], listener);
         }
       } else {
-        this.#registerKey(key, listener);
+        this.#registerKey(/** @type {string} */ (key), listener);
       }
 
       if (!lazy) {
@@ -22927,26 +23181,27 @@
 
           return res;
         } else {
-          return this.#deregisterKey(key, listener.id);
+          return this.#deregisterKey(/** @type {string} */ (key), listener.id);
         }
       };
     }
 
+    /**
+     * @param {ng.Scope} [childInstance]
+     * @returns {Proxy<ng.Scope> & ng.Scope}
+     */
     $new(childInstance) {
       let child;
 
       if (childInstance) {
-        if (Object.getPrototypeOf(childInstance) === Object.prototype) {
+        const proto = Object.getPrototypeOf(childInstance);
+
+        // If child is plain object, or already inherits from target, set prototype to target
+        if (proto === Object.prototype || proto === this.$target) {
           Object.setPrototypeOf(childInstance, this.$target);
         } else {
-          if (Object.getPrototypeOf(childInstance) === this.$target) {
-            Object.setPrototypeOf(childInstance, this.$target);
-          } else {
-            Object.setPrototypeOf(
-              Object.getPrototypeOf(childInstance) || childInstance,
-              this.$target,
-            );
-          }
+          // If child has some other prototype, preserve it but link to this.$target
+          Object.setPrototypeOf(proto || childInstance, this.$target);
         }
 
         child = childInstance;
@@ -22956,51 +23211,73 @@
 
       const proxy = new Proxy(child, new Scope(this));
 
-      this.$children.push(proxy);
+      this._children.push(proxy);
 
       return proxy;
     }
 
+    /**
+     * @param {ng.Scope} [instance]
+     * @returns {Proxy<ng.Scope> & ng.Scope}
+     */
     $newIsolate(instance) {
       const child = instance ? Object.create(instance) : Object.create(null);
 
       const proxy = new Proxy(child, new Scope(this, this.$root));
 
-      this.$children.push(proxy);
+      this._children.push(proxy);
 
       return proxy;
     }
 
+    /**
+     * @param {ng.Scope} parentInstance
+     * @returns {Proxy<ng.Scope> & ng.Scope}
+     */
     $transcluded(parentInstance) {
       const child = Object.create(this.$target);
 
       const proxy = new Proxy(child, new Scope(this, parentInstance));
 
-      this.$children.push(proxy);
+      this._children.push(proxy);
 
       return proxy;
     }
 
-    /** @internal **/
+    /**
+     * @param {string} key
+     * @param {import("./interface.ts").Listener} listener
+     */
     #registerKey(key, listener) {
-      if (this.watchers.has(key)) {
-        this.watchers.get(key).push(listener);
+      if (this._watchers.has(key)) {
+        /** @type {import("./interface.ts").Listener[]} */ (
+          this._watchers.get(key)
+        ).push(listener);
       } else {
-        this.watchers.set(key, [listener]);
+        this._watchers.set(key, [listener]);
       }
     }
 
-    /** @internal **/
-    #registerForeignKey(key, listener) {
+    /**
+     * @param {string} key
+     * @param {import("./interface.ts").Listener} listener
+     */
+    _registerForeignKey(key, listener) {
       if (this._foreignListeners.has(key)) {
-        this._foreignListeners.get(key).push(listener);
+        /** @type {import("./interface.ts").Listener[]} */ (
+          this._foreignListeners.get(key)
+        ).push(listener);
       } else {
         this._foreignListeners.set(key, [listener]);
       }
     }
 
+    /**
+     * @param {string} key
+     * @param {number} id
+     */
     #deregisterKey(key, id) {
-      const listenerList = this.watchers.get(key);
+      const listenerList = this._watchers.get(key);
 
       if (!listenerList) return false;
 
@@ -23011,30 +23288,45 @@
       listenerList.splice(index, 1);
 
       if (listenerList.length) {
-        this.watchers.set(key, listenerList);
+        this._watchers.set(key, listenerList);
       } else {
-        this.watchers.delete(key);
+        this._watchers.delete(key);
       }
 
       return true;
     }
 
-    // #deregisterForeignKey(key, id) {
-    //   const listenerList = this._foreignListeners.get(key);
-    //   if (!listenerList) return false;
+    /**
+     * @param {string} key
+     * @param {number} id
+     */
+    _deregisterForeignKey(key, id) {
+      const listenerList = this._foreignListeners.get(key);
 
-    //   const index = listenerList.findIndex((x) => x.id === id);
-    //   if (index === -1) return false;
+      if (!listenerList) return false;
 
-    //   listenerList.splice(index, 1);
-    //   if (listenerList.length) {
-    //     this._foreignListeners.set(key, listenerList);
-    //   } else {
-    //     this._foreignListeners.delete(key);
-    //   }
-    //   return true;
-    // }
+      const index = listenerList.findIndex((x) => x.id === id);
 
+      if (index === -1) return false;
+
+      listenerList.splice(index, 1);
+
+      if (listenerList.length) {
+        this._foreignListeners.set(key, listenerList);
+      } else {
+        this._foreignListeners.delete(key);
+      }
+
+      return true;
+    }
+
+    /**
+     * Evaluates an Angular expression in the context of this scope.
+     *
+     * @param {string} expr - Angular expression to evaluate
+     * @param {Record<string, any>} [locals] - Optional local variables
+     * @returns {any}
+     */
     $eval(expr, locals) {
       const fn = $parse(expr);
 
@@ -23114,7 +23406,7 @@
     /**
      * @param {string} name
      * @param  {...any} args
-     * @returns {void}
+     * @returns {ng.ScopeEvent | undefined}
      */
     $emit(name, ...args) {
       return this.#eventHelper(
@@ -23136,8 +23428,10 @@
     }
 
     /**
-     * @internal
-     * @returns {any}
+     * Internal event propagation helper
+     * @param {{ name: string, event?: ng.ScopeEvent, broadcast: boolean }} param0 - Event info
+     * @param {...any} args - Additional arguments passed to listeners
+     * @returns {ng.ScopeEvent|undefined}
      */
     #eventHelper({ name, event, broadcast }, ...args) {
       if (!broadcast) {
@@ -23154,18 +23448,18 @@
       }
 
       if (event) {
-        event.currentScope = this.$target;
+        event.currentScope = this.$proxy;
       } else {
         event = event || {
           name,
-          targetScope: this.$target,
-          currentScope: this.$target,
+          targetScope: this.$proxy,
+          currentScope: this.$proxy,
           stopped: false,
           stopPropagation() {
-            event.stopped = true;
+            /** @type {ng.ScopeEvent} */ (event).stopped = true;
           },
           preventDefault() {
-            event.defaultPrevented = true;
+            /** @type {ng.ScopeEvent} */ (event).defaultPrevented = true;
           },
           defaultPrevented: false,
         };
@@ -23205,8 +23499,8 @@
       }
 
       if (broadcast) {
-        if (this.$children.length > 0) {
-          this.$children.forEach((child) => {
+        if (this._children.length > 0) {
+          this._children.forEach((child) => {
             event = child.$handler.#eventHelper(
               { name, event, broadcast },
               ...args,
@@ -23244,7 +23538,7 @@
 
       this.$broadcast("$destroy");
 
-      for (const [key, val] of this.watchers) {
+      for (const [key, val] of this._watchers) {
         for (let i = val.length - 1; i >= 0; i--) {
           if (val[i].scopeId === this.$id) {
             val.splice(i, 1);
@@ -23252,16 +23546,16 @@
         }
 
         if (val.length === 0) {
-          this.watchers.delete(key);
+          this._watchers.delete(key);
         } else {
-          this.watchers.set(key, val);
+          this._watchers.set(key, val);
         }
       }
 
       if (this.#isRoot()) {
-        this.watchers.clear();
+        this._watchers.clear();
       } else {
-        const children = this.$parent.$children;
+        const children = /** @type {Scope} */ (this.$parent)._children;
 
         for (let i = 0, l = children.length; i < l; i++) {
           if (children[i].$id === this.$id) {
@@ -23278,6 +23572,7 @@
     /**
      * @internal
      * @param {import('./interface.ts').Listener} listener - The property path that was changed.
+     * @param {Scope | typeof Proxy<Scope> | undefined} target
      */
     #notifyListener(listener, target) {
       const { originalTarget, listenerFn, watchFn } = listener;
@@ -23304,7 +23599,7 @@
         listenerFn(newVal, originalTarget);
 
         while ($postUpdateQueue.length) {
-          const fn = $postUpdateQueue.shift();
+          const fn = /** @type {Function} */ ($postUpdateQueue.shift());
 
           fn();
         }
@@ -23316,7 +23611,7 @@
     /* @ignore */
     $flushQueue() {
       while ($postUpdateQueue.length) {
-        $postUpdateQueue.shift()();
+        /** @type {Function} */ ($postUpdateQueue.shift())();
       }
     }
 
@@ -23336,7 +23631,7 @@
       } else {
         let res = undefined;
 
-        for (const child of this.$children) {
+        for (const child of this._children) {
           const found = child.$getById(id);
 
           if (found) {
@@ -23357,15 +23652,15 @@
       const stack = [this.$root];
 
       while (stack.length) {
-        const scope = stack.pop();
+        const scope = /** @type {Scope} */ (stack.pop());
 
         if (scope.$scopename === name) {
           return scope;
         }
 
-        if (scope.$children?.length) {
-          for (let i = scope.$children.length - 1; i >= 0; i--) {
-            stack.push(scope.$children[i]);
+        if (scope._children?.length) {
+          for (let i = scope._children.length - 1; i >= 0; i--) {
+            stack.push(scope._children[i]);
           }
         }
       }
@@ -23385,7 +23680,7 @@
 
     let count = 0;
 
-    for (const watchers of model.watchers.values()) {
+    for (const watchers of model._watchers.values()) {
       for (let i = 0, l = watchers.length; i < l; i++) {
         if (childIds.has(watchers[i].scopeId)) {
           count++;
@@ -23406,14 +23701,14 @@
     const stack = [child];
 
     while (stack.length) {
-      const node = stack.pop();
+      const node = /** @type {Scope} */ (stack.pop());
 
       if (!ids.has(node.$id)) {
         ids.add(node.$id);
 
-        if (node.$children) {
-          for (let i = 0, l = node.$children.length; i < l; i++) {
-            stack.push(node.$children[i]);
+        if (node._children) {
+          for (let i = 0, l = node._children.length; i < l; i++) {
+            stack.push(node._children[i]);
           }
         }
       }
@@ -23699,7 +23994,7 @@
           message: messageCtrl,
         };
         this.insertMessageNode(this.$element, comment, nextKey);
-        comment.$$ngMessageNode = nextKey;
+        comment._ngMessageNode = nextKey;
         this.latestKey++;
       }
 
@@ -23710,9 +24005,9 @@
       if (isDefault) {
         delete this.default;
       } else {
-        const key = comment.$$ngMessageNode;
+        const key = comment._ngMessageNode;
 
-        delete comment.$$ngMessageNode;
+        delete comment._ngMessageNode;
         this.removeMessageNode(this.$element, comment, key);
         delete this.messages[key];
       }
@@ -23725,7 +24020,7 @@
       const parentLookup = [];
 
       while (prevNode && prevNode !== parent) {
-        const prevKey = prevNode.$$ngMessageNode;
+        const prevKey = prevNode._ngMessageNode;
 
         if (prevKey && prevKey.length) {
           return this.messages[prevKey];
@@ -24663,6 +24958,223 @@
     }
   }
 
+  const KEY = "$animId";
+
+  /**
+   * Animation cache responsible for:
+   *  - Generating stable animation cache keys
+   *  - Tracking cached animation results
+   *  - Avoiding repeated animation work
+   *
+   * Cache keys are scoped per parent node to prevent collisions between
+   * structurally identical nodes in different DOM subtrees.
+   *
+   * @internal
+   */
+  class AnimateCache {
+    /** @type {Map<string, import("./interface.ts").CacheEntry>} */
+    #cache = new Map();
+
+    /**
+     * Monotonically increasing counter used to assign synthetic parent IDs.
+     * IDs are stored directly on parent nodes under `$animId`.
+     *
+     */
+    #parentCounter = 0;
+
+    /**
+     * Generates a stable cache key for an animation invocation.
+     *
+     * The key is derived from:
+     *  - The node's parent (used as a cache namespace)
+     *  - The animation method (e.g. enter, leave, addClass)
+     *  - The node's current CSS class state
+     *  - Any classes being added or removed
+     *
+     * If the node is not attached to the DOM, the node itself is used
+     * as the parent scope to avoid key collisions.
+     *
+     * @param {HTMLElement} node
+     *   Target element being animated.
+     * @param {string} method
+     *   Animation method name.
+     * @param {string} [addClass]
+     *   CSS class scheduled to be added during the animation.
+     * @param {string} [removeClass]
+     *   CSS class scheduled to be removed during the animation.
+     *
+     * @returns {string}
+     *   A unique, deterministic cache key.
+     */
+    _cacheKey(node, method, addClass, removeClass) {
+      const parent = /** @type {HTMLElement & Record<string, number>} */ (
+        node.parentNode ?? node
+      );
+
+      const parentID = parent[KEY] ?? (parent[KEY] = ++this.#parentCounter);
+
+      const parts = [parentID, method, node.getAttribute("class")];
+
+      if (addClass) parts.push(addClass);
+
+      if (removeClass) parts.push(removeClass);
+
+      return parts.join(" ");
+    }
+
+    /**
+     * Determines whether a cache entry exists but is marked as invalid.
+     *
+     * This is typically used to detect animations that were previously
+     * cached but resolved without a duration.
+     *
+     * @param {string} key
+     *   Cache key to test.
+     * @returns {boolean}
+     *   True if an invalid cache entry exists, false otherwise.
+     */
+    _containsCachedAnimationWithoutDuration(key) {
+      const entry = this.#cache.get(key);
+
+      return !!entry && !entry.isValid;
+    }
+
+    /**
+     * Clears all cached animation entries.
+     *
+     * Does not reset parent IDs.
+     *
+     * @returns {void}
+     */
+    _flush() {
+      this.#cache.clear();
+    }
+
+    /**
+     * Returns the number of times a cache entry has been used.
+     *
+     * @param {string} key
+     *   Cache key to query.
+     * @returns {number}
+     *   Usage count, or 0 if the entry does not exist.
+     */
+    _count(key) {
+      return this.#cache.get(key)?.total ?? 0;
+    }
+
+    /**
+     * Retrieves the cached value associated with a cache key.
+     *
+     * @param {string} key
+     *   Cache key to retrieve.
+     * @returns {any}
+     *   Cached value, or undefined if not present.
+     */
+    _get(key) {
+      return this.#cache.get(key)?.value;
+    }
+
+    /**
+     * Inserts or updates a cache entry.
+     *
+     * Existing entries will have their usage count incremented
+     * and their value replaced.
+     *
+     * @param {string} key
+     *   Cache key.
+     * @param {any} value
+     *   Value to cache.
+     * @param {boolean} isValid
+     *   Whether the cached value is considered valid.
+     *
+     * @returns {void}
+     */
+    _put(key, value, isValid) {
+      const entry = this.#cache.get(key);
+
+      if (entry) {
+        entry.total++;
+        entry.value = value;
+      } else {
+        this.#cache.set(key, { total: 1, value, isValid });
+      }
+    }
+  }
+
+  const animateCache = new AnimateCache();
+
+  /**
+   * A requestAnimationFrame-based scheduler.
+   */
+  class RafScheduler {
+    constructor() {
+      /**
+       * Internal task queue, where each item is an array of functions to run.
+       * @type {Array<() => void>}
+       */
+      this._queue = [];
+
+      /**
+       * ID of the currently scheduled animation frame (if any).
+       * Used for cancellation and tracking.
+       * @type {number|null}
+       */
+      this._cancelFn = null;
+    }
+
+    /**
+     * Processes the next batch of tasks in the animation frame.
+     * Executes the first group of functions in the queue, then
+     * schedules the next frame if needed.
+     */
+    _nextTick() {
+      if (!this._queue.length) return;
+
+      while (this._queue.length) {
+        /** @type {() => void} */ (this._queue.shift())();
+      }
+
+      if (!this._cancelFn) {
+        this._cancelFn = window.requestAnimationFrame(() => {
+          this._cancelFn = null;
+          this._nextTick();
+        });
+      }
+    }
+
+    /**
+     * The main scheduler function.
+     * Accepts an array of functions and schedules them to run in the next available frame(s).
+     *
+     * @param {Array<() => void>} tasks
+     */
+    _schedule(tasks) {
+      this._queue.push(...tasks);
+      this._nextTick();
+    }
+
+    /**
+     * Cancels any pending frame and runs the given function once the frame is idle.
+     * Useful for debounced updates.
+     *
+     * @param {Function} fn - Function to run when the animation frame is quiet.
+     */
+    _waitUntilQuiet(fn) {
+      if (this._cancelFn !== null) {
+        window.cancelAnimationFrame(this._cancelFn);
+        this._cancelFn = null;
+      }
+
+      this._cancelFn = window.requestAnimationFrame(() => {
+        this._cancelFn = null;
+        fn();
+        this._nextTick();
+      });
+    }
+  }
+
+  const rafScheduler = new RafScheduler();
+
   const ANIMATE_TIMER_KEY = $injectTokens._animateCss;
 
   const ONE_SECOND = 1000;
@@ -24783,16 +25295,11 @@
     let activeClasses;
 
     this.$get = [
-      $injectTokens._animateCache,
-      $injectTokens._rAFScheduler,
-
       /**
        *
-       * @param {*} $$animateCache
-       * @param {import("./raf-scheduler").RafScheduler} $$rAFScheduler
        * @returns
        */
-      function ($$animateCache, $$rAFScheduler) {
+      function () {
         const applyAnimationClasses = applyAnimationClassesFactory();
 
         // TODO add types
@@ -24802,7 +25309,7 @@
           allowNoDuration,
           properties,
         ) {
-          let timings = $$animateCache.get(cacheKey);
+          let timings = animateCache._get(cacheKey);
 
           if (!timings) {
             timings = computeCssStyles(node, properties);
@@ -24821,7 +25328,7 @@
 
           // we keep putting this in multiple times even though the value and the cacheKey are the same
           // because we're keeping an internal tally of how many duplicate animations are detected.
-          $$animateCache.put(cacheKey, timings, hasDuration);
+          animateCache._put(cacheKey, timings, hasDuration);
 
           return timings;
         }
@@ -24839,8 +25346,8 @@
           // if we have one or more existing matches of matching elements
           // containing the same parent + CSS styles (which is how cacheKey works)
           // then staggering is possible
-          if ($$animateCache.count(cacheKey) > 0) {
-            stagger = $$animateCache.get(staggerCacheKey);
+          if (animateCache._count(cacheKey) > 0) {
+            stagger = animateCache._get(staggerCacheKey);
 
             if (!stagger) {
               const staggerClassName = pendClasses(className, "-stagger");
@@ -24857,7 +25364,7 @@
 
               node.classList.remove(staggerClassName);
 
-              $$animateCache.put(staggerCacheKey, stagger, true);
+              animateCache._put(staggerCacheKey, stagger, true);
             }
           }
 
@@ -24868,25 +25375,17 @@
 
         function waitUntilQuiet(callback) {
           rafWaitQueue.push(callback);
-          $$rAFScheduler._waitUntilQuiet(() => {
-            $$animateCache.flush();
+          rafScheduler._waitUntilQuiet(() => {
+            animateCache._flush();
 
-            // DO NOT REMOVE THIS LINE OR REFACTOR OUT THE `pageWidth` variable.
-            // the line below will force the browser to perform a repaint so
-            // that all the animated elements within the animation frame will
-            // be properly updated and drawn on screen. This is required to
-            // ensure that the preparation animation is properly flushed so that
-            // the active state picks up from there. DO NOT REMOVE THIS LINE.
-            // DO NOT OPTIMIZE THIS LINE. THE MINIFIER WILL REMOVE IT OTHERWISE WHICH
-            // WILL RESULT IN AN UNPREDICTABLE BUG THAT IS VERY HARD TO TRACK DOWN AND
-            // WILL TAKE YEARS AWAY FROM YOUR LIFE.
-
-            const pageWidth = document.body.offsetWidth + 1;
+            // Forces synchronous style & layout flush.
+            // Required to commit animation prep state before activation.
+            document.documentElement.getBoundingClientRect();
 
             // we use a for loop to ensure that if the queue is changed
             // during this looping then it will consider new requests
             for (let i = 0; i < rafWaitQueue.length; i++) {
-              rafWaitQueue[i](pageWidth);
+              rafWaitQueue[i]();
             }
             rafWaitQueue.length = 0;
           });
@@ -24913,6 +25412,10 @@
           return timings;
         }
 
+        /**
+         * @param {HTMLElement} element
+         * @param {ng.AnimationOptions} initialOptions
+         */
         return function init(element, initialOptions) {
           // all of the animation functions should create
           // a copy of the options data, however, if a
@@ -24920,9 +25423,11 @@
           let delayStyle;
 
           // we should stick to using that
-          let options = initialOptions || {
-            $$skipPreparationClasses: false,
-          };
+          let options =
+            initialOptions ||
+            /** @type {ng.AnimationOptions}}*/ ({
+              $$skipPreparationClasses: false,
+            });
 
           if (!options.$$prepared) {
             options = prepareAnimationOptions(structuredClone(options));
@@ -24968,10 +25473,11 @@
             return closeAndReturnNoopAnimator();
           }
 
-          const method =
+          const method = /** @type {string} */ (
             options.event && isArray(options.event)
               ? options.event.join(" ")
-              : options.event;
+              : options.event
+          );
 
           const isStructural = method && options.structural;
 
@@ -25027,21 +25533,23 @@
 
           let stagger;
 
-          let cacheKey = $$animateCache.cacheKey(
+          let cacheKey = animateCache._cacheKey(
             node,
             method,
             options.addClass,
             options.removeClass,
           );
 
-          if ($$animateCache.containsCachedAnimationWithoutDuration(cacheKey)) {
+          if (animateCache._containsCachedAnimationWithoutDuration(cacheKey)) {
             preparationClasses = null;
 
             return closeAndReturnNoopAnimator();
           }
 
-          if (options.stagger > 0) {
-            const staggerVal = parseFloat(options.stagger);
+          if (/** @type {number} */ (options.stagger) > 0) {
+            const staggerVal = parseFloat(
+              /** @type {string} */ (options.stagger),
+            );
 
             stagger = {
               transitionDelay: staggerVal,
@@ -25073,7 +25581,7 @@
             temporaryStyles.push(transitionStyle);
           }
 
-          if (options.duration >= 0) {
+          if (/** @type {number} */ (options.duration) >= 0) {
             applyOnlyDuration = node.style.transition.length > 0;
             const durationStyle = getCssTransitionDurationStyle(
               options.duration,
@@ -25096,7 +25604,7 @@
           const itemIndex = stagger
             ? options.staggerIndex >= 0
               ? options.staggerIndex
-              : $$animateCache.count(cacheKey)
+              : animateCache._count(cacheKey)
             : 0;
 
           const isFirst = itemIndex === 0;
@@ -25107,7 +25615,7 @@
           // transition delay to allow for the transition to naturally do it's thing. The beauty here is
           // that if there is no transition defined then nothing will happen and this will also allow
           // other transitions to be stacked on top of each other without any chopping them out.
-          if (isFirst && !options.skipBlocking) {
+          if (isFirst) {
             blockTransitions(node, SAFE_FAST_FORWARD_DURATION_VALUE);
           }
 
@@ -25139,7 +25647,7 @@
 
           if (flags.applyTransitionDuration || flags.applyAnimationDuration) {
             maxDuration = options.duration
-              ? parseFloat(options.duration)
+              ? parseFloat(/** @type {string} */ (options.duration))
               : maxDuration;
 
             if (flags.applyTransitionDuration) {
@@ -25194,13 +25702,11 @@
           maxDelayTime = maxDelay * ONE_SECOND;
           maxDurationTime = maxDuration * ONE_SECOND;
 
-          if (!options.skipBlocking) {
-            flags.blockTransition = timings.transitionDuration > 0;
-            flags.blockKeyframeAnimation =
-              timings.animationDuration > 0 &&
-              stagger.animationDelay > 0 &&
-              stagger.animationDuration === 0;
-          }
+          flags.blockTransition = timings.transitionDuration > 0;
+          flags.blockKeyframeAnimation =
+            timings.animationDuration > 0 &&
+            stagger.animationDelay > 0 &&
+            stagger.animationDuration === 0;
 
           if (options.from) {
             if (options.cleanupStyles) {
@@ -25475,7 +25981,7 @@
               );
 
               if (flags.recalculateTimingStyles) {
-                cacheKey = $$animateCache.cacheKey(
+                cacheKey = animateCache._cacheKey(
                   node,
                   method,
                   options.addClass,
@@ -25942,8 +26448,7 @@
           // strip comments
 
           let element = isArray(originalElement)
-            ? // @ts-ignore
-              originalElement.filter((x) => x.nodeName !== "#comment")[0]
+            ? originalElement.filter((x) => x.nodeName !== "#comment")[0]
             : originalElement;
 
           const node = element;
@@ -26450,6 +26955,9 @@
       function ($injector) {
         const applyAnimationClasses = applyAnimationClassesFactory();
 
+        /**
+         *
+         */
         return function animateJs(element, event, classes, options) {
           // Optional arguments
           if (arguments.length === 3 && isObject(classes)) {
@@ -26651,16 +27159,29 @@
   function AnimationProvider() {
     const NG_ANIMATE_REF_ATTR = "ng-animate-ref";
 
+    /**
+     * @type {string[]}
+     */
     const drivers = (this.drivers = []);
 
+    /**
+     * @param {Element | Node} element
+     * @param {AnimateRunner} runner
+     */
     function setRunner(element, runner) {
       setCacheData(element, RUNNER_STORAGE_KEY, runner);
     }
 
+    /**
+     * @param {Element} element
+     */
     function removeRunner(element) {
       deleteCacheData(element, RUNNER_STORAGE_KEY);
     }
 
+    /**
+     * @param {Element} element
+     */
     function getRunner(element) {
       return getCacheData(element, RUNNER_STORAGE_KEY);
     }
@@ -26668,17 +27189,19 @@
     this.$get = [
       $injectTokens._rootScope,
       $injectTokens._injector,
-      $injectTokens._rAFScheduler,
-      $injectTokens._animateCache,
       /**
        *
        * @param {ng.RootScopeService} $rootScope
        * @param {ng.InjectorService} $injector
-       * @param {import("./raf-scheduler.js").RafScheduler} $$rAFScheduler
-       * @param {*} $$animateCache
        * @returns
        */
-      function ($rootScope, $injector, $$rAFScheduler, $$animateCache) {
+      function ($rootScope, $injector) {
+        /**
+           * @type {{
+          // this data is used by the postDigest code and passed into
+          // the driver step function
+          element: any; classes: string; event: any; structural: boolean; options: any; beforeStart: () => void; close: (rejected: any) => void; }[]}
+           */
         const animationQueue = [];
 
         const applyAnimationClasses = applyAnimationClassesFactory();
@@ -26877,7 +27400,7 @@
 
               extraClasses =
                 (extraClasses ? `${extraClasses} ` : "") + NG_ANIMATE_CLASSNAME;
-              const cacheKey = $$animateCache.cacheKey(
+              const cacheKey = animateCache._cacheKey(
                 fromElement,
                 animationEntry.event,
                 extraClasses,
@@ -26896,9 +27419,7 @@
                   // and it's in fact an invalid animation (something that has duration = 0)
                   // then we should skip all the heavy work from here on
                   if (
-                    $$animateCache.containsCachedAnimationWithoutDuration(
-                      cacheKey,
-                    )
+                    animateCache._containsCachedAnimationWithoutDuration(cacheKey)
                   ) {
                     closeFn();
 
@@ -26972,8 +27493,10 @@
                 }
               }
             }
-            // @ts-ignore
-            $$rAFScheduler(finalAnimations);
+
+            const flatFinalAnimations = finalAnimations.flat();
+
+            rafScheduler._schedule(flatFinalAnimations);
           });
 
           return runner;
@@ -27171,7 +27694,7 @@
           }
 
           function handleDestroyedElement() {
-            (event !== "leave" || !options.$$domOperationFired) &&
+            (event !== "leave" || !options._domOperationFired) &&
               getRunner(elementParam)?.end();
           }
 
@@ -27195,191 +27718,6 @@
     ];
   }
 
-  /**
-   * @typedef {import('./interface.ts').RafScheduler} RafScheduler
-   */
-
-  /**
-   * Service provider that creates a requestAnimationFrame-based scheduler.
-   * @type {ng.ServiceProvider}
-   */
-  class RafSchedulerProvider {
-    constructor() {
-      /**
-       * Internal task queue, where each item is an array of functions to run.
-       * @type {Array<Array<() => void>>}
-       */
-      this._queue = [];
-
-      /**
-       * ID of the currently scheduled animation frame (if any).
-       * Used for cancellation and tracking.
-       * @type {number|null}
-       */
-      this._cancelFn = null;
-    }
-
-    /**
-     * Processes the next batch of tasks in the animation frame.
-     * Executes the first group of functions in the queue, then
-     * schedules the next frame if needed.
-     */
-    _nextTick() {
-      if (!this._queue.length) return;
-
-      const items = /** @type{Array<() => void>} */ (this._queue.shift());
-
-      items.forEach((fn) => fn());
-
-      if (!this._cancelFn) {
-        this._cancelFn = window.requestAnimationFrame(() => {
-          this._cancelFn = null;
-          this._nextTick();
-        });
-      }
-    }
-
-    /**
-     * Returns the scheduler function.
-     * This function allows tasks to be queued for execution on future animation frames.
-     * It also has helper methods and state attached.
-     *
-     * @returns {RafScheduler} The scheduler function with `queue` and `waitUntilQuiet`.
-     */
-    $get() {
-      /**
-       * The main scheduler function.
-       * Accepts an array of functions and schedules them to run in the next available frame(s).
-       *
-       * @type {RafScheduler}
-       */
-      const scheduler = (tasks) => {
-        // Clone the input array to avoid mutating the original.
-        this._queue = this._queue.concat(tasks);
-        this._nextTick();
-      };
-
-      /**
-       * Exposes the internal queue to consumers (read-only use preferred).
-       * This matches the type signature for RafScheduler.
-       */
-      scheduler._queue = this._queue;
-
-      /**
-       * Cancels any pending frame and runs the given function once the frame is idle.
-       * Useful for debounced updates.
-       *
-       * @param {Function} fn - Function to run when the animation frame is quiet.
-       */
-      scheduler._waitUntilQuiet = (fn) => {
-        if (this._cancelFn !== null) {
-          window.cancelAnimationFrame(this._cancelFn);
-          this._cancelFn = null;
-        }
-
-        this._cancelFn = window.requestAnimationFrame(() => {
-          this._cancelFn = null;
-          fn();
-          this._nextTick();
-        });
-      };
-
-      return scheduler;
-    }
-  }
-
-  const KEY = "$animId";
-
-  let parentCounter = 0;
-
-  const cache = new Map();
-
-  function animateCache() {
-    return {
-      /**
-       * Generates a unique cache key based on the node's parent and other parameters.
-       * @param {HTMLElement} node - The DOM node to generate the cache key for.
-       * @param {string} method - The animation method being applied.
-       * @param {string} [addClass] - Class to add during the animation.
-       * @param {string} [removeClass] - Class to remove during the animation.
-       * @returns {string} - The generated cache key.
-       */
-      cacheKey(node, method, addClass, removeClass) {
-        const { parentNode } = node;
-
-        const parentID = parentNode[KEY] ?? (parentNode[KEY] = ++parentCounter);
-
-        const parts = [parentID, method, node.getAttribute("class")];
-
-        if (addClass) parts.push(addClass);
-
-        if (removeClass) parts.push(removeClass);
-
-        return parts.join(" ");
-      },
-
-      /**
-       * Checks if a cached animation without a duration exists.
-       * @param {string} key - The cache key to check.
-       * @returns {boolean} - True if an invalid animation is cached, false otherwise.
-       */
-      containsCachedAnimationWithoutDuration(key) {
-        const entry = cache.get(key);
-
-        return entry ? !entry.isValid : false;
-      },
-
-      /**
-       * Clears the cache.
-       * @returns {void}
-       */
-      flush() {
-        cache.clear();
-      },
-
-      /**
-       * Gets the count of a specific cache entry.
-       * @param {string} key - The cache key to count.
-       * @returns {number} - The count of the cache entry.
-       */
-      count(key) {
-        return cache.get(key)?.total ?? 0;
-      },
-
-      /**
-       * Retrieves a value associated with a specific cache key.
-       * @param {string} key - The cache key to retrieve.
-       * @returns {any} - The value associated with the cache key.
-       */
-      get(key) {
-        return cache.get(key)?.value;
-      },
-
-      /**
-       * Adds or updates a cache entry.
-       * @param {string} key - The cache key to add or update.
-       * @param {any} value - The value to store.
-       * @param {boolean} isValid - Whether the cache entry is valid.
-       */
-      put(key, value, isValid) {
-        const entry = cache.get(key);
-
-        if (entry) {
-          entry.total++;
-          entry.value = value;
-        } else {
-          cache.set(key, { total: 1, value, isValid });
-        }
-      },
-    };
-  }
-
-  class AnimateCacheProvider {
-    $get() {
-      return animateCache();
-    }
-  }
-
   const NG_ANIMATE_SHIM_CLASS_NAME = "ng-animate-shim";
 
   const NG_ANIMATE_ANCHOR_CLASS_NAME = "ng-anchor";
@@ -27389,9 +27727,16 @@
   const NG_IN_ANCHOR_CLASS_NAME = "ng-anchor-in";
 
   AnimateCssDriverProvider.$inject = provider([$injectTokens._animation]);
+
+  /**
+   * @param {import("./animation.js").AnimationProvider} $$animationProvider
+   */
   function AnimateCssDriverProvider($$animationProvider) {
     $$animationProvider.drivers.push($injectTokens._animateCssDriver);
 
+    /**
+     * @param {Element} node
+     */
     function isDocumentFragment(node) {
       // eslint-disable-next-line no-magic-numbers
       return node.parentNode && node.parentNode.nodeType === 11;
@@ -27797,7 +28142,7 @@
   function $$AnimateChildrenDirective($interpolate) {
     return {
       link(scope, element, attrs) {
-        const val = attrs.ngAnimateChildren;
+        const val = /** @type {string} */ (attrs.ngAnimateChildren);
 
         if (isString(val) && val.length === 0) {
           // empty attribute
@@ -27805,13 +28150,21 @@
         } else {
           // Interpolate and set the value, so that it is available to
           // animations that run right after compilation
-          setData($interpolate(val)(scope));
+          setData(
+            /** @type {import("../core/interpolate/interface.js").InterpolationFunction} */ (
+              $interpolate(val)
+            )(scope),
+          );
           attrs.$observe("ngAnimateChildren", setData);
         }
 
+        /**
+         * @param {string} [value]
+         */
         function setData(value) {
-          value = value === "on" || value === "true";
-          setCacheData(element, NG_ANIMATE_CHILDREN_DATA, value);
+          const res = value === "on" || value === "true";
+
+          setCacheData(element, NG_ANIMATE_CHILDREN_DATA, res);
         }
       },
     };
@@ -27935,10 +28288,11 @@
    * var foo = { a: 1, b: 2, c: 3 };
    * var ab = pick(foo, ['a', 'b']); // { a: 1, b: 2 }
    * ```
-   * @param obj the source object
-   * @param propNames an Array of strings, which are the whitelisted property names
+   * @param {any} obj the source object
+   * @param {string | any[]} propNames an Array of strings, which are the whitelisted property names
    */
   function pick(obj, propNames) {
+    /** @type {Record<string, any>} */
     const objCopy = {};
 
     for (const _prop in obj) {
@@ -27949,30 +28303,44 @@
 
     return objCopy;
   }
+
   /**
    * Return a copy of the object omitting the blacklisted properties.
-   *
-   * @example
-   * ```
-   *
-   * var foo = { a: 1, b: 2, c: 3 };
-   * var ab = omit(foo, ['a', 'b']); // { c: 3 }
-   * ```
-   * @param obj the source object
-   * @param propNames an Array of strings, which are the blacklisted property names
+   * @example ```
+
+  var foo = { a: 1, b: 2, c: 3 };
+  var ab = omit(foo, ['a', 'b']); // { c: 3 }
+  ```
+   * @param {{ [x: string]: any; }} obj the source object
+   * @param {string | any[]} propNames an Array of strings, which are the blacklisted property names
    */
   function omit(obj, propNames) {
     return Object.keys(obj)
       .filter((x) => !propNames.includes(x))
-      .reduce((acc, key) => ((acc[key] = obj[key]), acc), {});
+      .reduce(
+        /**
+         * @param {Record<string, any>} acc
+         * @param {string} key
+         * */ (acc, key) => ((acc[key] = obj[key]), acc),
+        {},
+      );
   }
 
-  /** Filters an Array or an Object's properties based on a predicate */
+  /**
+   * Filters an Array or an Object's properties based on a predicate
+   * @param {Record<string, any> | ArrayLike<any>} collection
+   * @param {{ (x: any): boolean; (item: any): boolean; (val: any, key: any): boolean; (arg0: any, arg1: string): any; }} callback
+   */
   function filter(collection, callback) {
-    const arr = isArray(collection),
-      result = arr ? [] : {};
+    const arr = isArray(collection);
 
-    const accept = arr ? (x) => result.push(x) : (x, key) => (result[key] = x);
+    /** @type {Record<string, any>} */
+    const result = arr ? [] : {};
+
+    const accept = arr
+      ? (/** @type {any} */ x) => result.push(x)
+      : (/** @type {any} */ x, /** @type {string | number} */ key) =>
+          (result[key] = x);
 
     entries(collection).forEach(([i, item]) => {
       if (callback(item, i)) accept(item, i);
@@ -27981,8 +28349,15 @@
     return result;
   }
 
-  /** Finds an object from an array, or a property of an object, that matches a predicate */
+  /**
+   * Finds an object from an array, or a property of an object, that matches a predicate
+   * @param {{ [s: string]: any; } | ArrayLike<any>} collection
+   * @param {function} callback
+   */
   function find(collection, callback) {
+    /**
+     * @type {any}
+     */
     let result;
 
     entries(collection).forEach(([i, item]) => {
@@ -27994,10 +28369,30 @@
     return result;
   }
 
-  /** Maps an array or object properties using a callback function */
+  /**
+   * Maps over an array or object and returns a new collection
+   * with the same shape.
+   *
+   * @template T
+   * @template R
+   * @param {T[] | Record<string, T>} collection
+   * @param {(value: T, key: string | number) => R} callback
+   * @param {R[] | Record<string, R>} [target]
+   * @returns {R[] | Record<string, R>}
+   */
   function map(collection, callback, target) {
     target = target || (isArray(collection) ? [] : {});
-    entries(collection).forEach(([i, item]) => (target[i] = callback(item, i)));
+
+    entries(collection).forEach(([i, item]) => {
+      if (isArray(target)) {
+        // Convert string key to number safely
+        const index = Number(i);
+
+        target[index] = callback(item, index);
+      } else {
+        target[i] = callback(item, i);
+      }
+    });
 
     return target;
   }
@@ -28015,7 +28410,8 @@
    * vals.reduce(allTrueR, true); // false
    * ```
    */
-  const allTrueR = (memo, elem) => memo && elem;
+  const allTrueR = (/** @type {any} */ memo, /** @type {any} */ elem) =>
+    memo && elem;
   /**
    * Reduce function that returns true if any of the values are truthy.
    *
@@ -28029,29 +28425,39 @@
    * vals.reduce(anyTrueR, true); // true
    * ```
    */
-  const anyTrueR = (memo, elem) => memo || elem;
+  const anyTrueR = (/** @type {any} */ memo, /** @type {any} */ elem) =>
+    memo || elem;
+
   /**
    * Reduce function which un-nests a single level of arrays
-   * @example
-   * ```
    *
+   * @template T
+   * @param {T[]} memo
+   * @param {T | T[]} elem
+   * @returns {T[]}
+   *
+   * @example
    * let input = [ [ "a", "b" ], [ "c", "d" ], [ [ "double", "nested" ] ] ];
-   * input.reduce(unnestR, []) // [ "a", "b", "c", "d", [ "double, "nested" ] ]
-   * ```
+   * input.reduce(unnestR, []) // [ "a", "b", "c", "d", [ "double", "nested" ] ]
    */
   const unnestR = (memo, elem) => memo.concat(elem);
+
   /**
    * Reduce function that pushes an object to an array, then returns the array.
    * Mostly just for [[flattenR]] and [[uniqR]]
+   * @param {any[]} arr
+   * @param {unknown} obj
    */
   function pushR(arr, obj) {
     arr.push(obj);
 
     return arr;
   }
+
   /** Reduce function that filters out duplicates */
-  const uniqR = (acc, token) =>
+  const uniqR = (/** @type {any[]} */ acc, /** @type {any} */ token) =>
     acc.includes(token) ? acc : pushR(acc, token);
+
   /**
    * Return a new array with a single level of arrays unnested.
    *
@@ -28062,7 +28468,7 @@
    * unnest(input) // [ "a", "b", "c", "d", [ "double, "nested" ] ]
    * ```
    */
-  const unnest = (arr) => arr.reduce(unnestR, []);
+  const unnest = (/** @type {any[]} */ arr) => arr.reduce(unnestR, []);
 
   /**
    * Given a .filter Predicate, builds a .filter Predicate which throws an error if any elements do not pass.
@@ -28079,6 +28485,11 @@
    */
   const assertPredicate = assertFn;
 
+  /**
+   * @param {(arg0: any) => any} predicateOrMap
+   * @param {string} errMsg
+   * @return {(obj:any) => any}
+   */
   function assertFn(predicateOrMap, errMsg = "assert failure") {
     return (obj) => {
       const result = predicateOrMap(obj);
@@ -28137,25 +28548,26 @@
 
     return result;
   }
+
   /**
    * Reduce function which builds an object from an array of [key, value] pairs.
    *
    * Each iteration sets the key/val pair on the memo object, then returns the memo for the next iteration.
    *
    * Each keyValueTuple should be an array with values [ key: string, value: any ]
-   *
-   * @example
-   * ```
-   *
-   * var pairs = [ ["fookey", "fooval"], ["barkey", "barval"] ]
-   *
-   * var pairsToObj = pairs.reduce((memo, pair) => applyPairs(memo, pair), {})
-   * // pairsToObj == { fookey: "fooval", barkey: "barval" }
-   *
-   * // Or, more simply:
-   * var pairsToObj = pairs.reduce(applyPairs, {})
-   * // pairsToObj == { fookey: "fooval", barkey: "barval" }
-   * ```
+   * @example ```
+
+      var pairs = [ ["fookey", "fooval"], ["barkey", "barval"] ]
+
+      var pairsToObj = pairs.reduce((memo, pair) => applyPairs(memo, pair), {})
+      // pairsToObj == { fookey: "fooval", barkey: "barval" }
+
+      // Or, more simply:
+      var pairsToObj = pairs.reduce(applyPairs, {})
+      // pairsToObj == { fookey: "fooval", barkey: "barval" }
+  ```
+   * @param {{ [x: string]: any; }} memo
+   * @param {any[]} keyValTuple
    */
   function applyPairs(memo, keyValTuple) {
     let key, value;
@@ -28180,6 +28592,8 @@
 
   /**
    * shallow copy from src to dest
+   * @param {any} src
+   * @param {any} dest
    */
   function copy(src, dest) {
     if (dest) Object.keys(dest).forEach((key) => delete dest[key]);
@@ -29243,12 +29657,12 @@
    * let arr = ["foo", "bar", 1, "baz", "", "qux" ];
    * arr.reduce(joinNeighborsR, []) // ["foobar", 1, "bazqux" ]
    * ```
-   * @param {string | any[]} acc
+   * @param {any[]} acc
    * @param {unknown} str
    */
   function joinNeighborsR(acc, str) {
-    if (isString(tail(/** @type {string} */ (acc))) && isString(str))
-      return acc.slice(0, -1).concat(tail(/** @type {string} */ (acc)) + str);
+    if (isString(tail(acc)) && isString(str))
+      return acc.slice(0, -1).concat(tail(acc) + str);
 
     return pushR(acc, str);
   }
@@ -29860,13 +30274,13 @@
 
   function unwrapShorthand(cfg) {
     cfg = isShorthand(cfg) ? { value: cfg } : cfg;
-    getStaticDefaultValue.__cacheable = true;
+    getStaticDefaultValue._cacheable = true;
     function getStaticDefaultValue() {
       return cfg.value;
     }
-    const $$fn = isInjectable(cfg.value) ? cfg.value : getStaticDefaultValue;
+    const _fn = isInjectable(cfg.value) ? cfg.value : getStaticDefaultValue;
 
-    return Object.assign(cfg, { $$fn });
+    return Object.assign(cfg, { _fn });
   }
 
   function getType(cfg, urlType, location, id, paramTypes) {
@@ -30011,7 +30425,7 @@
           throw new Error(
             "Injectable functions cannot be called at configuration time",
           );
-        const defaultValue = window.angular.$injector.invoke(this.config.$$fn);
+        const defaultValue = window.angular.$injector.invoke(this.config._fn);
 
         if (
           defaultValue !== null &&
@@ -30022,7 +30436,7 @@
             `Default value (${defaultValue}) for parameter '${this.id}' is not an instance of ParamType (${this.type.name})`,
           );
 
-        if (this.config.$$fn.__cacheable) {
+        if (this.config._fn._cacheable) {
           this._defaultValueCache = { defaultValue };
         }
 
@@ -35248,33 +35662,43 @@
         return { param, value, isValid, isDefaultValue, squash, encoded };
       }
       // Build up the path-portion from the list of static segments and parameters
-      const pathString = pathSegmentsAndParams.reduce((acc, x) => {
-        // The element is a static segment (a raw string); just append it
-        if (isString(x)) return acc + x;
-        // Otherwise, it's a ParamDetails.
-        const { squash, encoded, param } = x;
+      /** @type {string} */
+      const pathString = /** @type {string} */ (
+        pathSegmentsAndParams.reduce(
+          /** @param {string} acc */ (acc, x) => {
+            // The element is a static segment (a raw string); just append it
+            if (isString(x)) return acc + x;
+            // Otherwise, it's a ParamDetails.
+            const { squash, encoded, param } = x;
 
-        // If squash is === true, try to remove a slash from the path
-        if (squash === true) return acc.match(/\/$/) ? acc.slice(0, -1) : acc;
+            // If squash is === true, try to remove a slash from the path
+            if (squash === true) return acc.match(/\/$/) ? acc.slice(0, -1) : acc;
 
-        // If squash is a string, use the string for the param value
-        if (isString(squash)) return acc + squash;
+            // If squash is a string, use the string for the param value
+            if (isString(squash)) return acc + squash;
 
-        if (squash !== false) return acc; // ?
+            if (squash !== false) return acc; // ?
 
-        if (isNullOrUndefined(encoded)) return acc;
+            if (isNullOrUndefined(encoded)) return acc;
 
-        // If this parameter value is an array, encode the value using encodeDashes
-        if (isArray(encoded)) return acc + map(encoded, encodeDashes).join("-");
+            // If this parameter value is an array, encode the value using encodeDashes
+            if (isArray(encoded))
+              return (
+                acc +
+                /** @type {string[]} */ (map(encoded, encodeDashes)).join("-")
+              );
 
-        // If the parameter type is "raw", then do not encodeURIComponent
-        if (param.raw) {
-          return acc + encoded;
-        }
+            // If the parameter type is "raw", then do not encodeURIComponent
+            if (param.raw) {
+              return acc + encoded;
+            }
 
-        // Encode the value
-        return acc + encodeURIComponent(encoded);
-      }, "");
+            // Encode the value
+            return acc + encodeURIComponent(encoded);
+          },
+          "",
+        )
+      );
 
       // Build the query string by applying parameter values (array or regular)
       // then mapping to key=value, then flattening and joining using "&"
@@ -40025,7 +40449,6 @@
               $$animateCssDriver: AnimateCssDriverProvider,
               $$animateJs: AnimateJsProvider,
               $$animateJsDriver: AnimateJsDriverProvider,
-              $$animateCache: AnimateCacheProvider,
               $$animateQueue: AnimateQueueProvider,
               $controller: ControllerProvider,
               $cookie: CookieProvider,
@@ -40037,7 +40460,6 @@
               $location: LocationProvider,
               $log: LogProvider,
               $parse: ParseProvider,
-              $$rAFScheduler: RafSchedulerProvider,
               $rest: RestProvider,
               $rootScope: RootScopeProvider,
               $router: RouterProvider,
@@ -40102,7 +40524,7 @@
        * @public
        * @type {string} `version` from `package.json`
        */
-      this.version = "0.16.1"; //inserted via rollup plugin
+      this.version = "0.17.0"; //inserted via rollup plugin
 
       /**
        * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
@@ -40203,6 +40625,25 @@
 
         return new NgModule(name, requires, configFn);
       });
+    }
+
+    /**
+     * @param {CustomEvent} event
+     */
+    dispatchEvent(event) {
+      const $parse = this.$injector.get($injectTokens._parse);
+
+      const injectable = event.type;
+
+      const target = this.$injector.has(injectable)
+        ? this.$injector.get(injectable)
+        : this.getScopeByName(injectable);
+
+      if (!target) return false;
+
+      $parse(event.detail)(target);
+
+      return true;
     }
 
     /**
