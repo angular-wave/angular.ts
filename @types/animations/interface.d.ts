@@ -84,7 +84,7 @@ export interface AnimationOptions {
   /** Optional DOM operation callback executed before animation */
   domOperation?: () => void;
   onDone?: () => void;
-  $$domOperationFired?: boolean;
+  _domOperationFired?: boolean;
   $$prepared?: boolean;
   $$skipPreparationClasses?: boolean;
   cleanupStyles?: boolean;
