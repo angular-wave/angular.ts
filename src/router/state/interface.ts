@@ -415,7 +415,7 @@ export interface StateDeclaration {
   //  * Note: the internal [[StateObject]] API is subject to change without notice
   //  * @internal
   //  */
-  // $$state?: () => StateObject;
+  // _state?: () => StateObject;
 
   /**
    * Resolve - a mechanism to asynchronously fetch data, participating in the Transition lifecycle
@@ -979,7 +979,7 @@ export type BuiltStateDeclaration = StateDeclaration & {
    * Note: the internal [[StateObject]] API is subject to change without notice
    * @internal
    */
-  $$state: () => BuiltStateDeclaration;
+  _state: () => BuiltStateDeclaration;
 
   /** Array of Resolvables built from the resolve / resolvePolicy */
   resolvables: Resolvable[];

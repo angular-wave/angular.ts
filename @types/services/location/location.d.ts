@@ -262,7 +262,7 @@ export class Location {
    * @returns {Location}
    */
   setState(state: any): Location;
-  $$state: any;
+  _state: any;
   /**
    * Return the history state object
    * @returns {any}

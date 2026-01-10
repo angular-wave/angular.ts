@@ -5,6 +5,7 @@ import {
   isString,
 } from "../../shared/utils.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
+import { urlResolve } from "../../shared/url-utils/url-utils.js";
 
 export class AnchorScrollProvider {
   constructor() {
@@ -18,7 +19,7 @@ export class AnchorScrollProvider {
      *
      * @param {ng.LocationService} $location
      * @param {ng.Scope} $rootScope
-     * @returns
+     * @returns {ng.AnchorScrollService}
      */
     ($location, $rootScope) => {
       // Helper function to get first anchor from a NodeList
@@ -118,12 +119,14 @@ export class AnchorScrollProvider {
       // does not scroll when user clicks on anchor link that is currently on
       // (no url change, no $location.getHash() change), browser native does scroll
       if (this.autoScrollingEnabled) {
-        $rootScope.$location = $location;
-        $rootScope.$watch("$location.$$hash", (newVal, oldVal) => {
-          // skip the initial scroll if $location.hash is empty
-          if (newVal === oldVal && newVal === "") return;
+        $rootScope.$on("$locationChangeSuccess", (_, newVal, oldVal) => {
+          const newUrl = urlResolve(newVal);
 
-          const action = () => scroll(newVal);
+          const ordUrl = urlResolve(oldVal);
+
+          if (newUrl.hash === ordUrl.hash && newUrl.hash === "") return;
+
+          const action = () => scroll(newUrl.hash);
 
           if (document.readyState === "complete") {
             // Force the action to be run async for consistent behavior

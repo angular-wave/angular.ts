@@ -5,6 +5,6 @@ export class AnchorScrollProvider {
     | ((
         $location: ng.LocationService,
         $rootScope: ng.Scope,
-      ) => import("./interface.ts").AnchorScrollFunction)
+      ) => ng.AnchorScrollService)
   )[];
 }

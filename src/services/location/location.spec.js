@@ -423,12 +423,12 @@ describe("$location", () => {
     });
 
     describe("state", () => {
-      it("should set $$state and return itself", () => {
+      it("should set _stateand return itself", () => {
         const locationUrl = createLocationHtml5Url();
-        expect(locationUrl.$$state).toEqual(undefined);
+        expect(locationUrl._state).toEqual(undefined);
 
         const returned = locationUrl.setState({ a: 2 });
-        expect(locationUrl.$$state).toEqual({ a: 2 });
+        expect(locationUrl._state).toEqual({ a: 2 });
         expect(returned).toBe(locationUrl);
       });
 
@@ -1856,7 +1856,7 @@ describe("$location", () => {
   //         { a: 2 },
   //       ]);
   //       expect($location.$$replace).toBe(false);
-  //       expect($location.$$state).toEqual({ a: 2 });
+  //       expect($location._state).toEqual({ a: 2 });
   //     });
   //   });
 
@@ -1884,7 +1884,7 @@ describe("$location", () => {
   //         { b: 3 },
   //       ]);
   //       expect($location.$$replace).toBe(false);
-  //       expect($location.$$state).toEqual({ b: 3 });
+  //       expect($location._state).toEqual({ b: 3 });
   //     });
   //   });
 
@@ -1907,7 +1907,7 @@ describe("$location", () => {
   //         { b: 3 },
   //       ]);
   //       expect($location.$$replace).toBe(false);
-  //       expect($location.$$state).toEqual({ b: 3 });
+  //       expect($location._state).toEqual({ b: 3 });
   //     });
   //   });
 

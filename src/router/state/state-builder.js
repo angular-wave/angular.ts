@@ -26,7 +26,7 @@ function parseUrl(url) {
 }
 
 function selfBuilder(state) {
-  state.self.$$state = () => state;
+  state.self._state = () => state;
 
   return state.self;
 }

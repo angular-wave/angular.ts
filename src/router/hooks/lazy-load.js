@@ -74,7 +74,7 @@ export function registerLazyLoadHook(
       }
       const promises = transition
         .entering()
-        .filter((state) => !!state.$$state().lazyLoad)
+        .filter((state) => !!state._state().lazyLoad)
         .map((state) => lazyLoadState(transition, state, stateRegistry));
 
       return Promise.all(promises).then(retryTransition);
@@ -90,7 +90,7 @@ export function registerLazyLoadHook(
  * @returns A promise for the lazy load result
  */
 export function lazyLoadState(transition, state, stateRegistry) {
-  const lazyLoadFn = state.$$state().lazyLoad;
+  const lazyLoadFn = state._state().lazyLoad;
 
   // Store/get the lazy load promise on/from the hookfn so it doesn't get re-invoked
   let promise = lazyLoadFn._promise;
@@ -98,7 +98,7 @@ export function lazyLoadState(transition, state, stateRegistry) {
   if (!promise) {
     const success = (result) => {
       delete state.lazyLoad;
-      delete state.$$state().lazyLoad;
+      delete state._state().lazyLoad;
       delete lazyLoadFn._promise;
 
       return result;
