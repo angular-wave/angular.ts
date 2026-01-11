@@ -271,7 +271,7 @@ export function clearGeneratedClasses(element, options) {
  * @param {boolean} applyBlock
  * @returns {string[]}
  */
-export function blockKeyframeAnimations(node, applyBlock) {
+export function _blockKeyframeAnimations(node, applyBlock) {
   const value = applyBlock ? "paused" : "";
 
   const key = `animationPlayState`;

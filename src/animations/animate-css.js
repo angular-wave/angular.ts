@@ -22,7 +22,7 @@ import {
   applyAnimationStyles,
   applyAnimationToStyles,
   applyInlineStyle,
-  blockKeyframeAnimations,
+  _blockKeyframeAnimations,
   packageStyles,
   pendClasses,
   prepareAnimationOptions,
@@ -471,7 +471,7 @@ export function AnimateCssProvider() {
         // that if there is no transition defined then nothing will happen and this will also allow
         // other transitions to be stacked on top of each other without any chopping them out.
         if (isFirst) {
-          blockTransitions(node, SAFE_FAST_FORWARD_DURATION_VALUE);
+          _blockTransitions(node, SAFE_FAST_FORWARD_DURATION_VALUE);
         }
 
         let timings = computeTimings(node, cacheKey, !isStructural);
@@ -484,29 +484,30 @@ export function AnimateCssProvider() {
 
         const flags = {};
 
-        flags.hasTransitions = timings.transitionDuration > 0;
-        flags.hasAnimations = timings.animationDuration > 0;
-        flags.hasTransitionAll =
-          flags.hasTransitions && timings.transitionProperty === "all";
-        flags.applyTransitionDuration =
+        flags._hasTransitions = timings.transitionDuration > 0;
+        flags._hasAnimations = timings.animationDuration > 0;
+        flags._hasTransitionAll =
+          flags._hasTransitions && timings.transitionProperty === "all";
+        flags._applyTransitionDuration =
           hasToStyles &&
-          ((flags.hasTransitions && !flags.hasTransitionAll) ||
-            (flags.hasAnimations && !flags.hasTransitions));
-        flags.applyAnimationDuration = options.duration && flags.hasAnimations;
-        flags.applyTransitionDelay =
+          ((flags._hasTransitions && !flags._hasTransitionAll) ||
+            (flags._hasAnimations && !flags._hasTransitions));
+        flags._applyAnimationDuration =
+          options.duration && flags._hasAnimations;
+        flags._applyTransitionDelay =
           truthyTimingValue(options.delay) &&
-          (flags.applyTransitionDuration || flags.hasTransitions);
-        flags.applyAnimationDelay =
-          truthyTimingValue(options.delay) && flags.hasAnimations;
-        flags.recalculateTimingStyles = addRemoveClassName.length > 0;
+          (flags._applyTransitionDuration || flags._hasTransitions);
+        flags._applyAnimationDelay =
+          truthyTimingValue(options.delay) && flags._hasAnimations;
+        flags._recalculateTimingStyles = addRemoveClassName.length > 0;
 
-        if (flags.applyTransitionDuration || flags.applyAnimationDuration) {
+        if (flags._applyTransitionDuration || flags._applyAnimationDuration) {
           maxDuration = options.duration
             ? parseFloat(/** @type {string} */ (options.duration))
             : maxDuration;
 
-          if (flags.applyTransitionDuration) {
-            flags.hasTransitions = true;
+          if (flags._applyTransitionDuration) {
+            flags._hasTransitions = true;
             timings.transitionDuration = maxDuration;
             applyOnlyDuration = node.style.transitionProperty.length > 0;
             temporaryStyles.push(
@@ -514,14 +515,14 @@ export function AnimateCssProvider() {
             );
           }
 
-          if (flags.applyAnimationDuration) {
-            flags.hasAnimations = true;
+          if (flags._applyAnimationDuration) {
+            flags._hasAnimations = true;
             timings.animationDuration = maxDuration;
             temporaryStyles.push(getCssKeyframeDurationStyle(maxDuration));
           }
         }
 
-        if (maxDuration === 0 && !flags.recalculateTimingStyles) {
+        if (maxDuration === 0 && !flags._recalculateTimingStyles) {
           return closeAndReturnNoopAnimator();
         }
 
@@ -534,11 +535,11 @@ export function AnimateCssProvider() {
             maxDelay = Math.max(delayStyle, 0);
           }
 
-          if (flags.applyTransitionDelay) {
+          if (flags._applyTransitionDelay) {
             temporaryStyles.push(getCssDelayStyle(delayStyle));
           }
 
-          if (flags.applyAnimationDelay) {
+          if (flags._applyAnimationDelay) {
             temporaryStyles.push(getCssDelayStyle(delayStyle, true));
           }
         }
@@ -550,15 +551,15 @@ export function AnimateCssProvider() {
           isNullOrUndefined(options.duration) &&
           timings.transitionDuration > 0
         ) {
-          flags.recalculateTimingStyles =
-            flags.recalculateTimingStyles || isFirst;
+          flags._recalculateTimingStyles =
+            flags._recalculateTimingStyles || isFirst;
         }
 
         maxDelayTime = maxDelay * ONE_SECOND;
         maxDurationTime = maxDuration * ONE_SECOND;
 
-        flags.blockTransition = timings.transitionDuration > 0;
-        flags.blockKeyframeAnimation =
+        flags._blockTransition = timings.transitionDuration > 0;
+        flags._blockKeyframeAnimation =
           timings.animationDuration > 0 &&
           stagger.animationDelay > 0 &&
           stagger.animationDuration === 0;
@@ -574,10 +575,10 @@ export function AnimateCssProvider() {
           applyAnimationFromStyles(element, options);
         }
 
-        if (flags.blockTransition || flags.blockKeyframeAnimation) {
+        if (flags._blockTransition || flags._blockKeyframeAnimation) {
           applyBlocking(maxDuration);
         } else if (!options.skipBlocking) {
-          blockTransitions(node, false);
+          _blockTransitions(node, false);
         }
 
         // TODO(matsko): for 1.5 change this code to have an animator object for better debugging
@@ -631,8 +632,8 @@ export function AnimateCssProvider() {
             element.classList.remove(...activeClasses.split(" "));
           }
 
-          blockKeyframeAnimations(node, false);
-          blockTransitions(node, false);
+          _blockKeyframeAnimations(node, false);
+          _blockTransitions(node, false);
 
           temporaryStyles.forEach((entry) => {
             // There is only one way to remove inline style properties entirely from elements.
@@ -685,12 +686,12 @@ export function AnimateCssProvider() {
         }
 
         function applyBlocking(duration) {
-          if (flags.blockTransition) {
-            blockTransitions(node, duration);
+          if (flags._blockTransition) {
+            _blockTransitions(node, duration);
           }
 
-          if (flags.blockKeyframeAnimation) {
-            blockKeyframeAnimations(node, !!duration);
+          if (flags._blockKeyframeAnimation) {
+            _blockKeyframeAnimations(node, !!duration);
           }
         }
 
@@ -771,7 +772,7 @@ export function AnimateCssProvider() {
               animationPaused = !playAnimation;
 
               if (timings.animationDuration) {
-                const value = blockKeyframeAnimations(node, animationPaused);
+                const value = _blockKeyframeAnimations(node, animationPaused);
 
                 if (animationPaused) {
                   temporaryStyles.push(value);
@@ -835,7 +836,7 @@ export function AnimateCssProvider() {
               ...activeClasses.split(" ").filter((x) => x !== ""),
             );
 
-            if (flags.recalculateTimingStyles) {
+            if (flags._recalculateTimingStyles) {
               cacheKey = animateCache._cacheKey(
                 node,
                 method,
@@ -855,11 +856,11 @@ export function AnimateCssProvider() {
                 return;
               }
 
-              flags.hasTransitions = timings.transitionDuration > 0;
-              flags.hasAnimations = timings.animationDuration > 0;
+              flags._hasTransitions = timings.transitionDuration > 0;
+              flags._hasAnimations = timings.animationDuration > 0;
             }
 
-            if (flags.applyAnimationDelay) {
+            if (flags._applyAnimationDelay) {
               relativeDelay =
                 typeof options.delay !== "boolean" &&
                 truthyTimingValue(options.delay)
@@ -881,13 +882,13 @@ export function AnimateCssProvider() {
 
               const easeVal = options.easing;
 
-              if (flags.hasTransitions) {
+              if (flags._hasTransitions) {
                 easeProp = "transitionTimingFunction";
                 temporaryStyles.push([easeProp, easeVal]);
                 node.style[easeProp] = easeVal;
               }
 
-              if (flags.hasAnimations) {
+              if (flags._hasAnimations) {
                 easeProp = "animationTimingFunction";
                 temporaryStyles.push([easeProp, easeVal]);
                 node.style[easeProp] = easeVal;
@@ -973,7 +974,7 @@ export function AnimateCssProvider() {
   ];
 }
 
-function blockTransitions(node, duration) {
+function _blockTransitions(node, duration) {
   // we use a negative delay value since it performs blocking
   // yet it doesn't kill any existing transitions running on the
   // same element which makes this safe for class-based animations

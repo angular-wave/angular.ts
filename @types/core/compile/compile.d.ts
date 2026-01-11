@@ -3,11 +3,11 @@ export class CompileProvider {
   static $inject: string[];
   /**
    * @param {import('../../interface.ts').Provider} $provide
-   * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $$sanitizeUriProvider
+   * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $sanitizeUriProvider
    */
   constructor(
     $provide: import("../../interface.ts").Provider,
-    $$sanitizeUriProvider: import("../sanitize/sanitize-uri.js").SanitizeUriProvider,
+    $sanitizeUriProvider: import("../sanitize/sanitize-uri.js").SanitizeUriProvider,
   );
   /**
    * Register a new directive with the compiler.

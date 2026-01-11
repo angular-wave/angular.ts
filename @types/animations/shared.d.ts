@@ -118,7 +118,7 @@ export function clearGeneratedClasses(
  * @param {boolean} applyBlock
  * @returns {string[]}
  */
-export function blockKeyframeAnimations(
+export function _blockKeyframeAnimations(
   node: HTMLElement,
   applyBlock: boolean,
 ): string[];
