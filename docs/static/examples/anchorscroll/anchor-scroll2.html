@@ -1,0 +1,32 @@
+<style>
+  .demo2 {
+    height: 100px;
+    overflow: auto;
+  }
+
+  .anchor {
+    border: 2px dashed DarkOrchid;
+    padding: 10px 10px 400px 10px;
+  }
+
+  .fixed-header {
+    background-color: rgba(0, 0, 0, 0.2);
+    height: 50px;
+  }
+
+  .fixed-header > a {
+    display: inline-block;
+    margin: 5px 15px;
+  }
+</style>
+
+<section id="demo2" class="demo2">
+  <div ng-controller="headerCtrl" class="fixed-header">
+    <button class="btn" ng-click="gotoAnchor(x)" ng-repeat="x in [1,2,3,4,5]">
+      Go to anchor {{x}}
+    </button>
+  </div>
+  <div id="anchor{{x}}" class="anchor" ng-repeat="x in [1,2,3,4,5]">
+    Anchor {{x}} of 5
+  </div>
+</section>

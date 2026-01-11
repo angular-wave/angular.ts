@@ -1,0 +1,17 @@
+<style>
+  #scrollArea {
+    height: 100px;
+    overflow: auto;
+  }
+
+  #bottom {
+    display: block;
+    margin-top: 2000px;
+  }
+</style>
+<section ng-app="demo">
+  <div id="scrollArea" ng-controller="ScrollController">
+    <button class="bottom" ng-click="gotoBottom()">Go to bottom</button>
+    <a id="bottom"></a> You're at the bottom!
+  </div>
+</section>
