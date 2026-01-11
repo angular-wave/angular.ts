@@ -125,6 +125,7 @@ import {
   WebSocketConfig as TWebSocketConfig,
   WebSocketService as TWebSocketService,
 } from "./services/websocket/interface.ts";
+import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.js";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -164,6 +165,7 @@ declare global {
     type RouterProvider = TRouterProvider;
     type AnchorScrollService = TAnchorScrollService;
     type AnimateService = TAnimateService;
+    type AnimateRunner = TAnimateRunner;
     type CompileService = TCompileFn;
     type ControllerService = TControllerService;
     type CookieService = TCookieService;

@@ -1,5 +1,10 @@
 import { AnimateRunner } from "./runner/animate-runner.js";
 import { QueuePhase } from "./queue/interface.ts";
+export type AnimationService = (
+  element: HTMLElement,
+  event: string,
+  options?: any,
+) => AnimateRunner;
 export interface AnimationHost {
   /** Pause animation. */
   pause?: () => void;

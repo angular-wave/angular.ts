@@ -6,7 +6,6 @@ export class AnimationProvider {
     | ((
         $rootScope: ng.RootScopeService,
         $injector: ng.InjectorService,
-      ) => (elementParam: any, event: any, options: any) => AnimateRunner)
+      ) => import("./interface.ts").AnimationService)
   )[];
 }
-import { AnimateRunner } from "./runner/animate-runner.js";
