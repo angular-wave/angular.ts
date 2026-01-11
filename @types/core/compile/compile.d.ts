@@ -130,7 +130,7 @@ export class CompileProvider {
         $templateRequest: ng.TemplateRequestService,
         $parse: ng.ParseService,
         $controller: any,
-        $sce: ng.SCEService,
+        $sce: ng.SceService,
         $animate: ng.AnimateService,
       ) => (
         compileNode: string | Element | Node | ChildNode | NodeList,

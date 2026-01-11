@@ -12,7 +12,7 @@ describe("ngView", () => {
     app,
     $injector,
     $state,
-    $viewScroll,
+    $anchorScroll,
     errorLog = [];
 
   const aState = {
@@ -135,8 +135,8 @@ describe("ngView", () => {
         };
       })
       .config(($provide, _$stateProvider_) => {
-        $provide.decorator("$viewScroll", () => {
-          return jasmine.createSpy("$viewScroll");
+        $provide.decorator("$anchorScroll", () => {
+          return jasmine.createSpy("$anchorScroll");
         });
 
         _$stateProvider_
@@ -162,11 +162,11 @@ describe("ngView", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$state_, $rootScope, _$compile_, _$viewScroll_) => {
+    $injector.invoke((_$state_, $rootScope, _$compile_, _$anchorScroll_) => {
       scope = $rootScope.$new();
       $compile = _$compile_;
       $state = _$state_;
-      $viewScroll = _$viewScroll_;
+      $anchorScroll = _$anchorScroll_;
     });
   });
 
@@ -316,7 +316,7 @@ describe("ngView", () => {
 
       $state.transitionTo(aState);
       await wait(100);
-      expect($viewScroll).not.toHaveBeenCalled();
+      expect($anchorScroll).not.toHaveBeenCalled();
     });
 
     it("should autoscroll when expression is missing", async () => {
@@ -328,7 +328,7 @@ describe("ngView", () => {
 
       // animateFlush($animate);
 
-      expect($viewScroll).toHaveBeenCalledWith(elem.querySelector("ng-view"));
+      expect($anchorScroll).toHaveBeenCalledWith(elem.querySelector("ng-view"));
     });
 
     it("should autoscroll based on expression", async () => {
@@ -340,12 +340,12 @@ describe("ngView", () => {
       $state.transitionTo(aState);
       await wait(100);
 
-      expect($viewScroll).not.toHaveBeenCalled();
+      expect($anchorScroll).not.toHaveBeenCalled();
 
       scope.doScroll = true;
       $state.transitionTo(bState);
       await wait(100);
-      expect($viewScroll).toHaveBeenCalledWith(elem.querySelector("ng-view"));
+      expect($anchorScroll).toHaveBeenCalledWith(elem.querySelector("ng-view"));
     });
   });
 
@@ -813,7 +813,7 @@ describe("ngView named", () => {
     $injector,
     $state,
     $rootScope,
-    $viewScroll;
+    $anchorScroll;
 
   beforeEach(() => {
     dealoc(document.getElementById("app"));
@@ -836,12 +836,12 @@ describe("ngView named", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$state_, _$rootScope_, _$compile_, _$viewScroll_) => {
+    $injector.invoke((_$state_, _$rootScope_, _$compile_, _$anchorScroll_) => {
       $rootScope = _$rootScope_;
       scope = $rootScope.$new();
       $compile = _$compile_;
       $state = _$state_;
-      $viewScroll = _$viewScroll_;
+      $anchorScroll = _$anchorScroll_;
     });
   });
 
@@ -908,7 +908,7 @@ describe("ngView transclusion", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$state_, _$rootScope_, _$compile_, _$viewScroll_) => {
+    $injector.invoke((_$state_, _$rootScope_, _$compile_, _$anchorScroll_) => {
       $rootScope = _$rootScope_;
       scope = $rootScope.$new();
       $compile = _$compile_;
@@ -979,7 +979,7 @@ describe("ngView controllers or onEnter handlers", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$state_, _$rootScope_, _$compile_, _$viewScroll_) => {
+    $injector.invoke((_$state_, _$rootScope_, _$compile_, _$anchorScroll_) => {
       $rootScope = _$rootScope_;
       scope = $rootScope.$new();
       $compile = _$compile_;

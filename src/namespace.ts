@@ -116,11 +116,10 @@ import {
 } from "./router/state/interface.ts";
 import { StateObject as TStateObject } from "./router/state/state-object.js";
 import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.js";
-import { ViewScrollService as TViewScrollService } from "./router/scroll/interface.ts";
 import { HookRegistry } from "./router/transition/interface.ts";
 import {
-  SCEService as TSCEService,
-  SCEDelegateService as TSCEDelegateService,
+  SceService as TSceService,
+  SceDelegateService as TSceDelegateService,
 } from "./services/sce/interface.ts";
 import {
   WebSocketConfig as TWebSocketConfig,
@@ -197,8 +196,8 @@ declare global {
     export type RouterService = TRouterProvider;
     export type StateService = TStateProvider;
     export type StateRegistryService = TStateRegistryProvider;
-    export type SCEService = TSCEService;
-    export type SCEDelegateService = TSCEDelegateService;
+    export type SceService = TSceService;
+    export type SceDelegateService = TSceDelegateService;
     export type SseService = TSseService;
     export type SseConfig = TSseConfig;
     export type TransitionService = TransitionProvider & HookRegistry;
@@ -206,7 +205,6 @@ declare global {
     export type TemplateRequestService = TTemplateRequestService;
     export type UrlService = TUrlService;
     export type ViewService = TViewService;
-    export type ViewScrollService = TViewScrollService;
 
     // Support types
     export type AnimationOptions = TAnimationOptions;

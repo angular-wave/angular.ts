@@ -547,8 +547,8 @@ export function SceProvider() {
     /**
      *
      * @param {ng.ParseService} $parse
-     * @param {ng.SCEDelegateService} $sceDelegate
-     * @return {ng.SCEService}
+     * @param {ng.SceDelegateService} $sceDelegate
+     * @return {ng.SceService}
      */
     ($parse, $sceDelegate) => {
       const sce = shallowCopy(SCE_CONTEXTS);
@@ -804,7 +804,7 @@ export function SceProvider() {
         };
       });
 
-      return /** @type {ng.SCEService} */ (sce);
+      return /** @type {ng.SceService} */ (sce);
     },
   ];
 }

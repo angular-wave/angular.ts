@@ -422,7 +422,7 @@ export function HttpProvider() {
     /**
      *
      * @param {ng.InjectorService} $injector
-     * @param {ng.SCEService} $sce
+     * @param {ng.SceService} $sce
      * @param {ng.CookieService} $cookie
      * @returns
      */

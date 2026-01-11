@@ -81,7 +81,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
   ngAttributeAliasDirectives[normalized] = [
     $injectTokens._sce,
     /**
-     * @param {ng.SCEService} $sce
+     * @param {ng.SceService} $sce
      * @returns {ng.Directive}
      */
     function ($sce) {

@@ -41,7 +41,7 @@ export class Attributes {
    *
    * @param {ng.AnimateService} $animate
    * @param {ng.ExceptionHandlerService} $exceptionHandler
-   * @param {ng.SCEService} $sce
+   * @param {ng.SceService} $sce
    * @param {import("../../shared/noderef.js").NodeRef} [nodeRef]
    * @param {Object & Record<string, any>} [attributesToCopy]
    */
@@ -52,7 +52,7 @@ export class Attributes {
     /** @type {ng.ExceptionHandlerService} */
     this._exceptionHandler = $exceptionHandler;
 
-    /** @type {ng.SCEService} */
+    /** @type {ng.SceService} */
     this._sce = $sce;
     /**
      * A map of DOM element attribute names to the normalized name. This is needed

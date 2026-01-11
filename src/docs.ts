@@ -1,4 +1,5 @@
 export * from "./animations/interface.ts";
+export { AnimateRunner } from "./animations/runner/animate-runner.js";
 export * from "./services/anchor-scroll/interface.ts";
 export * from "./services/http/interface.ts";
 export * from "./services/log/interface.ts";
@@ -7,8 +8,8 @@ export * from "./services/location/interface.ts";
 export * from "./services/location/location.js";
 export * from "./services/pubsub/pubsub.js";
 export * from "./services/template-cache/template-cache.js";
-export { SceProvider, SceDelegateProvider } from "./services/sce/sce.js"; // $sce and $sceDelegate provider
-export * from "./services/sce/interface.ts"; // $sce and $sceDelegae service
+export { SceProvider, SceDelegateProvider } from "./services/sce/sce.js";
+export { SceService, SceDelegateService } from "./services/sce/interface.ts";
 export * from "./index.js";
 export * from "./angular.js";
 export * from "./core/di/internal-injector.js";
@@ -21,6 +22,3 @@ export * from "./core/parse/interface.ts";
 
 export * from "./filters/interface.ts";
 export * from "./core/filter/filter.js";
-
-export * from "./router/scroll/interface.ts"; // $viewScoll service
-export * from "./router/scroll/view-scroll.js"; // $viewScoll provider

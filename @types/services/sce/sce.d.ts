@@ -22,8 +22,8 @@ export class SceProvider {
     | string
     | ((
         $parse: ng.ParseService,
-        $sceDelegate: ng.SCEDelegateService,
-      ) => ng.SCEService)
+        $sceDelegate: ng.SceDelegateService,
+      ) => ng.SceService)
   )[];
 }
 export namespace SCE_CONTEXTS {

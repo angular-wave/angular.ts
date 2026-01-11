@@ -588,7 +588,7 @@ export class CompileProvider {
        * @param {ng.TemplateRequestService} $templateRequest
        * @param {ng.ParseService} $parse
        * @param {*} $controller
-       * @param {ng.SCEService} $sce
+       * @param {ng.SceService} $sce
        * @param {ng.AnimateService} $animate
        * @returns
        */

@@ -25,7 +25,6 @@ export declare const PublicInjectionTokens: {
   readonly $interpolate: "$interpolate";
   readonly $location: "$location";
   readonly $log: "$log";
-  readonly $viewScroll: "$viewScroll";
   readonly $parse: "$parse";
   readonly $rest: "$rest";
   readonly $rootScope: "$rootScope";

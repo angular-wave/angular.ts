@@ -21,6 +21,6 @@ export class InterpolateProvider {
   endSymbol: string;
   $get: (
     | string
-    | (($parse: ng.ParseService, $sce: ng.SCEService) => ng.InterpolateService)
+    | (($parse: ng.ParseService, $sce: ng.SceService) => ng.InterpolateService)
   )[];
 }

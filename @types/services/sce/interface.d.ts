@@ -1,4 +1,4 @@
-export interface SCEService {
+export interface SceService {
   HTML: string;
   CSS: string;
   JS: string;
@@ -23,7 +23,7 @@ export interface SCEService {
   isEnabled(): boolean;
   valueOf(value?: any): any;
 }
-export interface SCEDelegateService {
+export interface SceDelegateService {
   getTrusted(type: string, mayBeTrusted: any): any;
   trustAs(type: string, value: any): any;
   valueOf(value?: any): any;
