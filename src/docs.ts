@@ -1,6 +1,7 @@
 export * from "./animations/interface.ts";
 export { AnimateRunner } from "./animations/runner/animate-runner.js";
-export * from "./services/anchor-scroll/interface.ts";
+export { AnchorScrollService } from "./services/anchor-scroll/interface.ts";
+export { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
 export * from "./services/http/interface.ts";
 export * from "./services/log/interface.ts";
 export * from "./services/log/log.js";
