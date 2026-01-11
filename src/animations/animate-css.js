@@ -281,10 +281,10 @@ export function AnimateCssProvider() {
         let options =
           initialOptions ||
           /** @type {ng.AnimationOptions}}*/ ({
-            $$skipPreparationClasses: false,
+            _skipPreparationClasses: false,
           });
 
-        if (!options.$$prepared) {
+        if (!options._prepared) {
           options = prepareAnimationOptions(structuredClone(options));
         }
 
@@ -421,7 +421,7 @@ export function AnimateCssProvider() {
           );
         }
 
-        if (!options.$$skipPreparationClasses) {
+        if (!options._skipPreparationClasses) {
           element.classList.add(
             ...preparationClasses.split(" ").filter((x) => x !== ""),
           );
@@ -582,7 +582,7 @@ export function AnimateCssProvider() {
 
         // TODO(matsko): for 1.5 change this code to have an animator object for better debugging
         return {
-          $$willAnimate: true,
+          _willAnimate: true,
           end: endFn,
           start() {
             if (animationClosed) return undefined;
@@ -622,7 +622,7 @@ export function AnimateCssProvider() {
           animationClosed = true;
           animationPaused = false;
 
-          if (preparationClasses && !options.$$skipPreparationClasses) {
+          if (preparationClasses && !options._skipPreparationClasses) {
             element.classList.remove(...preparationClasses.split(" "));
           }
           activeClasses = pendClasses(preparationClasses, ACTIVE_CLASS_SUFFIX);
@@ -707,7 +707,7 @@ export function AnimateCssProvider() {
           close();
 
           return {
-            $$willAnimate: false,
+            _willAnimate: false,
             start() {
               return runner;
             },

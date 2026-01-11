@@ -169,7 +169,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
           // read the comment within `prepareRegularAnimation` to understand
           // why this check is necessary
-          return animator.$$willAnimate ? animator : null;
+          return animator._willAnimate ? animator : null;
         }
 
         function getClassVal(element) {
@@ -192,7 +192,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
           // read the comment within `prepareRegularAnimation` to understand
           // why this check is necessary
-          return animator.$$willAnimate ? animator : null;
+          return animator._willAnimate ? animator : null;
         }
 
         function end() {
@@ -290,11 +290,11 @@ export function AnimateCssDriverProvider($$animationProvider) {
         const animator = $animateCss(animationDetails.element, options);
 
         // the driver lookup code inside of $$animation attempts to spawn a
-        // driver one by one until a driver returns a.$$willAnimate animator object.
+        // driver one by one until a driver returns a._willAnimate animator object.
         // $animateCss will always return an object, however, it will pass in
         // a flag as a hint as to whether an animation was detected or not
 
-        return animator.$$willAnimate ? animator : null;
+        return animator._willAnimate ? animator : null;
       }
     },
   ];

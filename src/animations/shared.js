@@ -77,7 +77,7 @@ export function applyAnimationClassesFactory() {
 export function prepareAnimationOptions(options) {
   const animateOptions = options || /** @type {ng.AnimationOptions} */ ({});
 
-  if (!animateOptions.$$prepared) {
+  if (!animateOptions._prepared) {
     let domOperation =
       animateOptions.domOperation ||
       (() => {
@@ -91,7 +91,7 @@ export function prepareAnimationOptions(options) {
         /* empty */
       };
     };
-    animateOptions.$$prepared = true;
+    animateOptions._prepared = true;
   }
 
   return animateOptions;

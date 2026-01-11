@@ -561,17 +561,17 @@ describe("ngMessages", () => {
     const ctrl = getController(element, "ngMessages");
     await wait();
     expect(messageChildren(element).length).toBe(0);
-    expect(Object.keys(ctrl.messages).length).toEqual(0);
+    expect(Object.keys(ctrl._messages).length).toEqual(0);
 
     $rootScope.$apply("show = true");
     await wait();
     expect(messageChildren(element).length).toBe(0);
-    expect(Object.keys(ctrl.messages).length).toEqual(1);
+    expect(Object.keys(ctrl._messages).length).toEqual(1);
 
     $rootScope.$apply("show = false");
     await wait();
     expect(messageChildren(element).length).toBe(0);
-    expect(Object.keys(ctrl.messages).length).toEqual(0);
+    expect(Object.keys(ctrl._messages).length).toEqual(0);
   });
 
   describe("default message", () => {

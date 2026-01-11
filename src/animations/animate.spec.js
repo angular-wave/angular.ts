@@ -151,12 +151,12 @@ describe("$animate", () => {
       ]);
       // by using hasOwnProperty we know for sure that the lookup object is an empty object
       // instead of inheriting properties from its original prototype.
-      expect(provider.$$registeredAnimations.hasOwnProperty).toBeFalsy();
+      expect(provider._registeredAnimations.hasOwnProperty).toBeFalsy();
 
       provider.register(".filter", () => {
         /* empty */
       });
-      expect(provider.$$registeredAnimations.filter).toBe(".filter-animation");
+      expect(provider._registeredAnimations.filter).toBe(".filter-animation");
     });
 
     it("should apply and retain inline styles on the element that is animated", () => {
