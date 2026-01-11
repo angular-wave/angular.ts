@@ -1,4 +1,5 @@
 export * from "./animations/interface.ts";
+export * from "./services/anchor-scroll/interface.ts";
 export * from "./services/http/interface.ts";
 export * from "./services/log/interface.ts";
 export * from "./services/log/log.js";

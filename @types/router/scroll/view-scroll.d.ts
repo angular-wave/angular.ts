@@ -3,6 +3,6 @@ export class ViewScrollProvider {
   useAnchorScroll(): void;
   $get: (
     | string
-    | (($anchorScroll: ng.AnchorScrollObject) => ng.ViewScrollService)
+    | (($anchorScroll: ng.AnchorScrollService) => ng.ViewScrollService)
   )[];
 }

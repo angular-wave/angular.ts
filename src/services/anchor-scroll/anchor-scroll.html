@@ -3,74 +3,20 @@
   <head>
     <meta charset="utf-8" />
     <title>AngularTS Test Runner</title>
+
     <link rel="shortcut icon" type="image/png" href="/images/favicon.ico" />
-    <script type="module" src="/src/index.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        window.angular
-          .module("test", [])
-          .run([
-            "$anchorScroll",
-            function ($anchorScroll) {
-              $anchorScroll.yOffset = 100; // always scroll by 50 extra pixels
-            },
-          ])
-          .controller("headerCtrl", [
-            "$anchorScroll",
-            "$location",
-            "$scope",
-            function ($anchorScroll, $location, $scope) {
-              $scope.gotoAnchor = function (x) {
-                window.$locationTest = $location;
-                const newHash = "anchor" + x;
-                if ($location.getHash() !== newHash) {
-                  // set the $location.hash to `newHash` and
-                  // $anchorScroll will automatically scroll to it
-                  $location.setHash("anchor" + x);
-                } else {
-                  // call $anchorScroll() explicitly,
-                  // since $location.hash hasn't changed
-                  $anchorScroll();
-                }
-              };
-            },
-          ]);
-      });
-    </script>
-
-    <style>
-      body {
-        padding-top: 50px;
-      }
-
-      .anchor {
-        border: 2px dashed DarkOrchid;
-        padding: 10px 10px 400px 10px;
-      }
-
-      .fixed-header {
-        background-color: rgba(0, 0, 0, 0.2);
-        height: 50px;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-      }
-
-      .fixed-header > a {
-        display: inline-block;
-        margin: 5px 15px;
-      }
-    </style>
+    <link rel="stylesheet" href="/jasmine/jasmine.css" />
+    <link rel="stylesheet" href="/public/jasmine-helper.css" />
+    <script src="/jasmine/jasmine.js"></script>
+    <script src="/jasmine/jasmine-html.js"></script>
+    <script src="/jasmine/boot0.js"></script>
+    <script src="/jasmine/boot1.js"></script>
+    <script
+      type="module"
+      src="/src/services/anchor-scroll/anchor-scroll.spec.js"
+    ></script>
   </head>
-  <body ng-app="test">
-    <div class="fixed-header" ng-controller="headerCtrl">
-      <a ng-click="gotoAnchor(x)" ng-repeat="x in [1,2,3,4,5]">
-        Go to anchor {{x}}
-      </a>
-    </div>
-    <div id="anchor{{x}}" class="anchor" ng-repeat="x in [1,2,3,4,5]">
-      Anchor {{x}} of 5
-    </div>
+  <body>
+    <div id="app"></div>
   </body>
 </html>
