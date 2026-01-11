@@ -16,7 +16,7 @@ export function AnimateJsProvider($animateProvider) {
      * @param {ng.InjectorService} $injector
      * @returns {import("./interface.ts").AnimateJsFn}
      */
-    function ($injector) {
+    ($injector) => {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
       /**

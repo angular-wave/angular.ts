@@ -71,9 +71,9 @@ export class CompileProvider {
 
   /**
    * @param {import('../../interface.ts').Provider} $provide
-   * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $$sanitizeUriProvider
+   * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $sanitizeUriProvider
    */
-  constructor($provide, $$sanitizeUriProvider) {
+  constructor($provide, $sanitizeUriProvider) {
     const hasDirectives = {};
 
     const bindingCache = Object.create(null);
@@ -414,12 +414,12 @@ export class CompileProvider {
      */
     this.aHrefSanitizationTrustedUrlList = function (regexp) {
       if (isDefined(regexp)) {
-        $$sanitizeUriProvider.aHrefSanitizationTrustedUrlList(regexp);
+        $sanitizeUriProvider.aHrefSanitizationTrustedUrlList(regexp);
 
         return undefined;
       }
 
-      return $$sanitizeUriProvider.aHrefSanitizationTrustedUrlList();
+      return $sanitizeUriProvider.aHrefSanitizationTrustedUrlList();
     };
 
     /**
@@ -439,12 +439,12 @@ export class CompileProvider {
      */
     this.imgSrcSanitizationTrustedUrlList = function (regexp) {
       if (isDefined(regexp)) {
-        $$sanitizeUriProvider.imgSrcSanitizationTrustedUrlList(regexp);
+        $sanitizeUriProvider.imgSrcSanitizationTrustedUrlList(regexp);
 
         return undefined;
       }
 
-      return $$sanitizeUriProvider.imgSrcSanitizationTrustedUrlList();
+      return $sanitizeUriProvider.imgSrcSanitizationTrustedUrlList();
     };
 
     /**
