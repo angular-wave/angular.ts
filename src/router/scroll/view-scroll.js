@@ -13,7 +13,7 @@ export class ViewScrollProvider {
   $get = [
     $t._anchorScroll,
     /**
-     * @param {ng.AnchorScrollObject} $anchorScroll
+     * @param {ng.AnchorScrollService} $anchorScroll
      * @returns {ng.ViewScrollService}
      */
     ($anchorScroll) => {

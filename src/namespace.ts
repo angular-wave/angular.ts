@@ -14,11 +14,7 @@ import { InjectorService as TInjectorService } from "./core/di/internal-injector
 
 import { AnchorScrollProvider as TAnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
 
-import {
-  AnchorScrollFunction as TAnchorScrollFunction,
-  AnchorScrollService as TAnchorScrollService,
-  AnchorScrollObject as TAnchorScrollObject,
-} from "./services/anchor-scroll/interface.ts";
+import { AnchorScrollService as TAnchorScrollService } from "./services/anchor-scroll/interface.ts";
 
 import { ControllerService as TControllerService } from "./core/controller/interface.ts";
 import { ExceptionHandler as TExceptionHandler } from "./services/exception/interface.ts";
@@ -245,8 +241,6 @@ declare global {
     export type StateDeclaration = TStateDeclaration;
     export type BuiltStateDeclaration = TBuiltStateDeclaration;
     export type StateObject = TStateObject;
-    export type AnchorScrollFunction = TAnchorScrollFunction;
-    export type AnchorScrollObject = TAnchorScrollObject;
     export type InjectionTokens = typeof PublicInjectionTokens;
     export type ScopeEvent = TScopeEvent;
     export type RequestShortcutConfig = TRequestShortcutConfig;

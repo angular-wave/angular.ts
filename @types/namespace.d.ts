@@ -11,11 +11,7 @@ import {
 import { NgModule as TNgModule } from "./core/di/ng-module/ng-module.js";
 import { InjectorService as TInjectorService } from "./core/di/internal-injector.js";
 import { AnchorScrollProvider as TAnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
-import {
-  AnchorScrollFunction as TAnchorScrollFunction,
-  AnchorScrollService as TAnchorScrollService,
-  AnchorScrollObject as TAnchorScrollObject,
-} from "./services/anchor-scroll/interface.ts";
+import { AnchorScrollService as TAnchorScrollService } from "./services/anchor-scroll/interface.ts";
 import { ControllerService as TControllerService } from "./core/controller/interface.ts";
 import { ExceptionHandler as TExceptionHandler } from "./services/exception/interface.ts";
 import { ExceptionHandlerProvider as TExceptionHandlerProvider } from "./services/exception/exception.js";
@@ -229,8 +225,6 @@ declare global {
     type StateDeclaration = TStateDeclaration;
     type BuiltStateDeclaration = TBuiltStateDeclaration;
     type StateObject = TStateObject;
-    type AnchorScrollFunction = TAnchorScrollFunction;
-    type AnchorScrollObject = TAnchorScrollObject;
     type InjectionTokens = typeof PublicInjectionTokens;
     type ScopeEvent = TScopeEvent;
     type RequestShortcutConfig = TRequestShortcutConfig;

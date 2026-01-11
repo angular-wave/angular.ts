@@ -25,37 +25,35 @@ export class AnchorScrollProvider {
       // Helper function to get first anchor from a NodeList
       // (using `Array#some()` instead of `angular#forEach()` since it's more performant
       //  and working in all supported browsers.)
+      /**
+       * @param {NodeListOf<HTMLElement>} list
+       * @returns {HTMLAnchorElement | undefined}
+       */
       function getFirstAnchor(list) {
-        let result = null;
+        for (let i = 0; i < list.length; i++) {
+          const el = list[i];
 
-        Array.prototype.some.call(list, (element) => {
-          if (getNodeName(element) === "a") {
-            result = element;
-
-            return true;
+          if (getNodeName(el) === "a") {
+            return /** @type {HTMLAnchorElement} */ (el);
           }
+        }
 
-          return false;
-        });
-
-        return result;
+        return undefined;
       }
 
       function getYOffset() {
         // Figure out a better way to configure this other than bolting on a property onto a function
-        let offset = /** @type {ng.AnchorScrollObject} */ (scroll).yOffset;
+        let offset = scroll.yOffset;
 
         if (isFunction(offset)) {
           offset = /** @type {Function} */ (offset)();
         } else if (offset instanceof Element) {
-          const elem = offset[0];
-
-          const style = window.getComputedStyle(elem);
+          const style = window.getComputedStyle(offset);
 
           if (style.position !== "fixed") {
             offset = 0;
           } else {
-            offset = elem.getBoundingClientRect().bottom;
+            offset = offset.getBoundingClientRect().bottom;
           }
         } else if (!isNumber(offset)) {
           offset = 0;
@@ -64,29 +62,24 @@ export class AnchorScrollProvider {
         return offset;
       }
 
+      /**
+       * @param {HTMLElement} [elem]
+       */
       function scrollTo(elem) {
         if (elem) {
+          const rect = elem.getBoundingClientRect();
+
           elem.scrollIntoView();
 
-          const offset = getYOffset();
+          const offset = /** @type {number} */ (getYOffset());
 
           if (offset) {
-            // `offset` is the number of pixels we should scroll UP in order to align `elem` properly.
-            // This is true ONLY if the call to `elem.scrollIntoView()` initially aligns `elem` at the
-            // top of the viewport.
+            // `offset` is how many pixels we want the element to appear below the top of the viewport.
             //
-            // IF the number of pixels from the top of `elem` to the end of the page's content is less
-            // than the height of the viewport, then `elem.scrollIntoView()` will align the `elem` some
-            // way down the page.
-            //
-            // This is often the case for elements near the bottom of the page.
-            //
-            // In such cases we do not need to scroll the whole `offset` up, just the difference between
-            // the top of the element and the offset, which is enough to align the top of `elem` at the
-            // desired position.
-            const elemTop = elem.getBoundingClientRect().top;
-
-            window.scrollBy(0, elemTop - /** @type {number} */ (offset));
+            // `scrollIntoView()` does not always align the element at the top (e.g. near the bottom
+            // of the page). Therefore, we measure the element’s actual position after scrolling and
+            // only adjust by the difference needed to reach the desired offset.
+            window.scrollBy(0, rect.top - offset);
           }
         } else {
           window.scrollTo(0, 0);
@@ -94,7 +87,7 @@ export class AnchorScrollProvider {
       }
 
       /** @type {ng.AnchorScrollService} */
-      const scroll = function (/** @type {string | number} */ hash) {
+      const scroll = (hash) => {
         // Allow numeric hashes
         hash = isString(hash)
           ? hash
@@ -105,7 +98,7 @@ export class AnchorScrollProvider {
 
         // empty hash, scroll to the top of the page
         if (!hash) {
-          scrollTo(null);
+          scrollTo();
         }
         // element with given id
         else if ((elm = document.getElementById(hash))) scrollTo(elm);
@@ -113,30 +106,37 @@ export class AnchorScrollProvider {
         else if ((elm = getFirstAnchor(document.getElementsByName(hash))))
           scrollTo(elm);
         // no element and hash === 'top', scroll to the top of the page
-        else if (hash === "top") scrollTo(null);
+        else if (hash === "top") scrollTo();
       };
 
       // does not scroll when user clicks on anchor link that is currently on
       // (no url change, no $location.getHash() change), browser native does scroll
       if (this.autoScrollingEnabled) {
-        $rootScope.$on("$locationChangeSuccess", (_, newVal, oldVal) => {
-          const newUrl = urlResolve(newVal);
+        $rootScope.$on(
+          "$locationChangeSuccess",
+          /** @param {ng.ScopeEvent} _e  @param {string} newVal @param {string} oldVal */ (
+            _e,
+            newVal,
+            oldVal,
+          ) => {
+            const newUrl = urlResolve(newVal);
 
-          const ordUrl = urlResolve(oldVal);
+            const ordUrl = urlResolve(oldVal);
 
-          if (newUrl.hash === ordUrl.hash && newUrl.hash === "") return;
+            if (newUrl.hash === ordUrl.hash && newUrl.hash === "") return;
 
-          const action = () => scroll(newUrl.hash);
+            const action = () => scroll(newUrl.hash);
 
-          if (document.readyState === "complete") {
-            // Force the action to be run async for consistent behavior
-            // from the action's point of view
-            // i.e. it will definitely not be in a $apply
-            queueMicrotask(() => action());
-          } else {
-            window.addEventListener("load", () => action());
-          }
-        });
+            if (document.readyState === "complete") {
+              // Force the action to be run async for consistent behavior
+              // from the action's point of view
+              // i.e. it will definitely not be in a $apply
+              queueMicrotask(() => action());
+            } else {
+              window.addEventListener("load", () => action());
+            }
+          },
+        );
       }
 
       return scroll;

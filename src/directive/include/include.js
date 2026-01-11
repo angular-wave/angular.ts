@@ -42,7 +42,7 @@ export function ngIncludeDirective(
             isDefined(autoScrollExp) &&
             (!autoScrollExp || scope.$eval(autoScrollExp))
           ) {
-            /** @type {ng.AnchorScrollFunction} */ ($anchorScroll)();
+            $anchorScroll();
           }
         }
 
