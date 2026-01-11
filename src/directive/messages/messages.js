@@ -19,37 +19,37 @@ class NgMessageCtrl {
    * @param {ng.AnimateService} $animate
    */
   constructor($element, $scope, $attrs, $animate) {
-    this.$element = $element;
-    this.$scope = $scope;
-    this.$attrs = $attrs;
-    this.$animate = $animate;
+    this._element = $element;
+    this._scope = $scope;
+    this._attrs = $attrs;
+    this._animate = $animate;
 
-    this.latestKey = 0;
-    this.nextAttachId = 0;
-    this.messages = {};
-    this.renderLater = false;
-    this.cachedCollection = null;
+    this._latestKey = 0;
+    this._nextAttachId = 0;
+    this._messages = {};
+    this._renderLater = false;
+    this._cachedCollection = null;
 
-    this.head = undefined;
-    this.default = undefined;
+    this._head = undefined;
+    this._default = undefined;
 
-    this.$scope.$watch(
-      this.$attrs.ngMessages || this.$attrs.for,
-      this.render.bind(this),
+    this._scope.$watch(
+      this._attrs.ngMessages || this._attrs.for,
+      this._render.bind(this),
     );
   }
 
-  getAttachId() {
-    return this.nextAttachId++;
+  _getAttachId() {
+    return this._nextAttachId++;
   }
 
-  render(collection = {}) {
-    this.renderLater = false;
-    this.cachedCollection = collection;
+  _render(collection = {}) {
+    this._renderLater = false;
+    this._cachedCollection = collection;
 
     const multiple =
-      isAttrTruthy(this.$scope, this.$attrs.ngMessagesMultiple) ||
-      isAttrTruthy(this.$scope, this.$attrs.multiple);
+      isAttrTruthy(this._scope, this._attrs.ngMessagesMultiple) ||
+      isAttrTruthy(this._scope, this._attrs.multiple);
 
     const unmatchedMessages = [];
 
@@ -57,7 +57,7 @@ class NgMessageCtrl {
 
     let truthyKeys = 0;
 
-    let messageItem = this.head;
+    let messageItem = this._head;
 
     let messageFound = false;
 
@@ -100,27 +100,27 @@ class NgMessageCtrl {
 
     const messageMatched = unmatchedMessages.length !== totalMessages;
 
-    const attachDefault = this.default && !messageMatched && truthyKeys > 0;
+    const attachDefault = this._default && !messageMatched && truthyKeys > 0;
 
     if (attachDefault) {
-      this.default.attach();
-    } else if (this.default) {
-      this.default.detach();
+      this._default.attach();
+    } else if (this._default) {
+      this._default.detach();
     }
 
     if (messageMatched || attachDefault) {
-      this.$animate.setClass(this.$element, ACTIVE_CLASS, INACTIVE_CLASS);
+      this._animate.setClass(this._element, ACTIVE_CLASS, INACTIVE_CLASS);
     } else {
-      this.$animate.setClass(this.$element, INACTIVE_CLASS, ACTIVE_CLASS);
+      this._animate.setClass(this._element, INACTIVE_CLASS, ACTIVE_CLASS);
     }
   }
 
   reRender() {
-    if (!this.renderLater) {
-      this.renderLater = true;
+    if (!this._renderLater) {
+      this._renderLater = true;
       Promise.resolve().then(() => {
-        if (this.renderLater && this.cachedCollection) {
-          this.render(this.cachedCollection);
+        if (this._renderLater && this._cachedCollection) {
+          this._render(this._cachedCollection);
         }
       });
     }
@@ -128,16 +128,16 @@ class NgMessageCtrl {
 
   register(comment, messageCtrl, isDefault) {
     if (isDefault) {
-      this.default = messageCtrl;
+      this._default = messageCtrl;
     } else {
-      const nextKey = this.latestKey.toString();
+      const nextKey = this._latestKey.toString();
 
-      this.messages[nextKey] = {
+      this._messages[nextKey] = {
         message: messageCtrl,
       };
-      this.insertMessageNode(this.$element, comment, nextKey);
+      this.insertMessageNode(this._element, comment, nextKey);
       comment._ngMessageNode = nextKey;
-      this.latestKey++;
+      this._latestKey++;
     }
 
     this.reRender();
@@ -145,13 +145,13 @@ class NgMessageCtrl {
 
   deregister(comment, isDefault) {
     if (isDefault) {
-      delete this.default;
+      delete this._default;
     } else {
       const key = comment._ngMessageNode;
 
       delete comment._ngMessageNode;
-      this.removeMessageNode(this.$element, comment, key);
-      delete this.messages[key];
+      this.removeMessageNode(this._element, comment, key);
+      delete this._messages[key];
     }
     this.reRender();
   }
@@ -165,7 +165,7 @@ class NgMessageCtrl {
       const prevKey = prevNode._ngMessageNode;
 
       if (prevKey && prevKey.length) {
-        return this.messages[prevKey];
+        return this._messages[prevKey];
       }
 
       if (prevNode.childNodes.length && parentLookup.indexOf(prevNode) === -1) {
@@ -183,10 +183,10 @@ class NgMessageCtrl {
   }
 
   insertMessageNode(parent, comment, key) {
-    const messageNode = this.messages[key];
+    const messageNode = this._messages[key];
 
-    if (!this.head) {
-      this.head = messageNode;
+    if (!this._head) {
+      this._head = messageNode;
     } else {
       const match = this.findPreviousMessage(parent, comment);
 
@@ -194,14 +194,14 @@ class NgMessageCtrl {
         messageNode.next = match.next;
         match.next = messageNode;
       } else {
-        messageNode.next = this.head;
-        this.head = messageNode;
+        messageNode.next = this._head;
+        this._head = messageNode;
       }
     }
   }
 
   removeMessageNode(parent, comment, key) {
-    const messageNode = this.messages[key];
+    const messageNode = this._messages[key];
 
     if (!messageNode) return;
 
@@ -210,7 +210,7 @@ class NgMessageCtrl {
     if (match) {
       match.next = messageNode.next;
     } else {
-      this.head = messageNode.next;
+      this._head = messageNode.next;
     }
   }
 }
@@ -343,8 +343,8 @@ function ngMessageDirectiveFactory(isDefault) {
 
                   // Each time we attach this node to a message we get a new id that we can match
                   // when we are destroying the node later.
-                  const $$attachId = (currentElement.$$attachId =
-                    ngMessagesCtrl.getAttachId());
+                  const attachId = (currentElement._attachId =
+                    ngMessagesCtrl._getAttachId());
 
                   // in the event that the element or a parent element is destroyed
                   // by another structural directive then it's time
@@ -354,7 +354,7 @@ function ngMessageDirectiveFactory(isDefault) {
                     // So this handler only handles cases where something else removed the message element.
                     if (
                       currentElement &&
-                      currentElement.$$attachId === $$attachId
+                      currentElement._attachId === attachId
                     ) {
                       ngMessagesCtrl.deregister(commentNode, isDefault);
                       messageCtrl.detach();

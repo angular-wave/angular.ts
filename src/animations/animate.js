@@ -34,7 +34,7 @@ export function AnimateProvider($provide) {
 
   let customFilter = null;
 
-  this.$$registeredAnimations = Object.create(null);
+  this._registeredAnimations = Object.create(null);
 
   /**
    * Registers a new injectable animation factory function. The factory function produces the
@@ -82,7 +82,7 @@ export function AnimateProvider($provide) {
 
     const key = `${name}-animation`;
 
-    provider.$$registeredAnimations[name.substring(1)] = key;
+    provider._registeredAnimations[name.substring(1)] = key;
     $provide.factory(key, factory);
   };
 

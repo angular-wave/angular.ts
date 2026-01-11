@@ -85,8 +85,8 @@ export interface AnimationOptions {
   domOperation?: () => void;
   onDone?: () => void;
   _domOperationFired?: boolean;
-  $$prepared?: boolean;
-  $$skipPreparationClasses?: boolean;
+  _prepared?: boolean;
+  _skipPreparationClasses?: boolean;
   cleanupStyles?: boolean;
   preparationClasses?: string;
   activeClasses?: string;
@@ -103,7 +103,7 @@ export interface AnimationOptions {
   applyClassesEarly?: boolean;
 }
 export interface AnimateJsRunner {
-  $$willAnimate: true;
+  _willAnimate: true;
   start: () => AnimateRunner;
   end: () => AnimateRunner;
 }

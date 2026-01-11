@@ -37,19 +37,19 @@ declare class NgMessageCtrl {
     $attrs: ng.Attributes,
     $animate: ng.AnimateService,
   );
-  $element: Element;
-  $scope: ng.Scope;
-  $attrs: ng.Attributes;
-  $animate: import("../../animations/interface.ts").AnimateService;
-  latestKey: number;
-  nextAttachId: number;
-  messages: {};
-  renderLater: boolean;
-  cachedCollection: {};
-  head: any;
-  default: any;
-  getAttachId(): number;
-  render(collection?: {}): void;
+  _element: Element;
+  _scope: ng.Scope;
+  _attrs: ng.Attributes;
+  _animate: import("../../animations/interface.ts").AnimateService;
+  _latestKey: number;
+  _nextAttachId: number;
+  _messages: {};
+  _renderLater: boolean;
+  _cachedCollection: {};
+  _head: any;
+  _default: any;
+  _getAttachId(): number;
+  _render(collection?: {}): void;
   reRender(): void;
   register(comment: any, messageCtrl: any, isDefault: any): void;
   deregister(comment: any, isDefault: any): void;

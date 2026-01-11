@@ -86,7 +86,7 @@ export function AnimateJsProvider($animateProvider) {
         let runner;
 
         return {
-          $$willAnimate: true,
+          _willAnimate: true,
 
           start() {
             if (runner) return runner;
@@ -134,7 +134,7 @@ export function AnimateJsProvider($animateProvider) {
             const klass = classList[i];
 
             const animationFactory =
-              $animateProvider.$$registeredAnimations[klass];
+              $animateProvider._registeredAnimations[klass];
 
             if (animationFactory && !flagMap[klass]) {
               matches.push($injector.get(animationFactory));

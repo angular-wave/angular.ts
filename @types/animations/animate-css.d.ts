@@ -4,7 +4,7 @@ export class AnimateCssProvider {
     element: HTMLElement,
     initialOptions: ng.AnimationOptions,
   ) => {
-    $$willAnimate: boolean;
+    _willAnimate: boolean;
     start(): any;
     end: () => void;
   })[];

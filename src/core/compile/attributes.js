@@ -295,7 +295,7 @@ export class Attributes {
     listeners.push(fn);
 
     if (
-      !listeners.$$inter &&
+      !listeners._inter &&
       hasOwn(this, key) &&
       !isUndefined(/** @type {Record<string, any>} */ (this)[key])
     ) {

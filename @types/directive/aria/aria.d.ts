@@ -19,7 +19,7 @@ export class AriaProvider {
   config: (newConfig: any) => void;
   $get: () => {
     config(key: any): any;
-    $$watchExpr: (
+    _watchExpr: (
       attrName: any,
       ariaAttr: any,
       nativeAriaNodeNamesParam: any,

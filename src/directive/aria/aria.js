@@ -79,14 +79,14 @@ export function AriaProvider() {
       config(key) {
         return config[key];
       },
-      $$watchExpr: watchExpr,
+      _watchExpr: watchExpr,
     };
   };
 }
 
 ngDisabledAriaDirective.$inject = [$injectTokens._aria];
 export function ngDisabledAriaDirective($aria) {
-  return $aria.$$watchExpr(
+  return $aria._watchExpr(
     "ngDisabled",
     "aria-disabled",
     nativeAriaNodeNames,
@@ -96,7 +96,7 @@ export function ngDisabledAriaDirective($aria) {
 
 ngShowAriaDirective.$inject = [$injectTokens._aria];
 export function ngShowAriaDirective($aria) {
-  return $aria.$$watchExpr("ngShow", "aria-hidden", [], true);
+  return $aria._watchExpr("ngShow", "aria-hidden", [], true);
 }
 
 /**
@@ -182,7 +182,7 @@ export function ngClickAriaDirective($aria, $parse) {
 
 ngRequiredAriaDirective.$inject = [$injectTokens._aria];
 export function ngRequiredAriaDirective($aria) {
-  return $aria.$$watchExpr(
+  return $aria._watchExpr(
     "ngRequired",
     "aria-required",
     nativeAriaNodeNames,
@@ -192,7 +192,7 @@ export function ngRequiredAriaDirective($aria) {
 
 ngCheckedAriaDirective.$inject = [$injectTokens._aria];
 export function ngCheckedAriaDirective($aria) {
-  return $aria.$$watchExpr(
+  return $aria._watchExpr(
     "ngChecked",
     "aria-checked",
     nativeAriaNodeNames,
@@ -202,7 +202,7 @@ export function ngCheckedAriaDirective($aria) {
 
 ngValueAriaDirective.$inject = [$injectTokens._aria];
 export function ngValueAriaDirective($aria) {
-  return $aria.$$watchExpr(
+  return $aria._watchExpr(
     "ngValue",
     "aria-checked",
     nativeAriaNodeNames,
@@ -212,12 +212,12 @@ export function ngValueAriaDirective($aria) {
 
 ngHideAriaDirective.$inject = [$injectTokens._aria];
 export function ngHideAriaDirective($aria) {
-  return $aria.$$watchExpr("ngHide", "aria-hidden", [], false);
+  return $aria._watchExpr("ngHide", "aria-hidden", [], false);
 }
 
 ngReadonlyAriaDirective.$inject = [$injectTokens._aria];
 export function ngReadonlyAriaDirective($aria) {
-  return $aria.$$watchExpr(
+  return $aria._watchExpr(
     "ngReadonly",
     "aria-readonly",
     nativeAriaNodeNames,

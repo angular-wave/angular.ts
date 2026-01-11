@@ -1886,7 +1886,7 @@ export class CompileProvider {
                   undefined,
                   {
                     needsNewScope:
-                      directive.$$isolateScope || directive.$$newScope,
+                      directive._isolateScope || directive._newScope,
                   },
                 );
                 /** @type {import("./interface.ts").TranscludeFn} */ (
@@ -2080,7 +2080,7 @@ export class CompileProvider {
 
               if (
                 _newIsolateScopeDirective === directive ||
-                directive.$$isolateScope
+                directive._isolateScope
               ) {
                 pre = cloneAndAnnotateFn(pre, { isolateScope: true });
               }
@@ -2093,7 +2093,7 @@ export class CompileProvider {
 
               if (
                 _newIsolateScopeDirective === directive ||
-                directive.$$isolateScope
+                directive._isolateScope
               ) {
                 post = cloneAndAnnotateFn(post, { isolateScope: true });
               }
@@ -2222,7 +2222,7 @@ export class CompileProvider {
             const locals = {
               $scope:
                 directive === _newIsolateScopeDirective ||
-                directive.$$isolateScope
+                directive._isolateScope
                   ? isolateScope
                   : scope,
               $element: $element.node,
@@ -2270,8 +2270,8 @@ export class CompileProvider {
         function markDirectiveScope(directives, isolateScope, newScope) {
           for (let j = 0, jj = directives.length; j < jj; j++) {
             directives[j] = inherit(directives[j], {
-              $$isolateScope: isolateScope,
-              $$newScope: newScope,
+              _isolateScope: isolateScope,
+              _newScope: newScope,
             });
           }
         }
@@ -2962,7 +2962,7 @@ export class CompileProvider {
                   // directive's linking fn during linking phase
                   attr[name] = interpolateFn(scope);
 
-                  (_observers[name] || (_observers[name] = [])).$$inter = true;
+                  (_observers[name] || (_observers[name] = []))._inter = true;
                   interpolateFn.expressions.forEach((x) => {
                     const targetScope =
                       (attr._observers && attr._observers[name]._scope) ||
