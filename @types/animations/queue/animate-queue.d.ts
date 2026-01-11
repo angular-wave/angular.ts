@@ -11,7 +11,7 @@ export class AnimateQueueProvider {
     | ((
         $rootScope: ng.RootScopeService,
         $injector: ng.InjectorService,
-        $$animation: any,
+        $$animation: import("../interface.ts").AnimationService,
       ) => import("../queue/interface.ts").AnimateQueueService)
   )[];
 }

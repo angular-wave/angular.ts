@@ -168,7 +168,7 @@ export function AnimateQueueProvider($animateProvider) {
      *
      * @param {ng.RootScopeService} $rootScope
      * @param {ng.InjectorService} $injector
-     * @param {*} $$animation
+     * @param {import("../interface.ts").AnimationService} $$animation
      * @returns {import("../queue/interface.ts").AnimateQueueService}
      */
     function ($rootScope, $injector, $$animation) {

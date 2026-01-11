@@ -1,6 +1,14 @@
-export function AnimateJsDriverProvider($$animationProvider: any): void;
+/**
+ * @param {import("./animation.js").AnimationProvider} $$animationProvider
+ */
+export function AnimateJsDriverProvider(
+  $$animationProvider: import("./animation.js").AnimationProvider,
+): void;
 export class AnimateJsDriverProvider {
-  constructor($$animationProvider: any);
+  /**
+   * @param {import("./animation.js").AnimationProvider} $$animationProvider
+   */
+  constructor($$animationProvider: import("./animation.js").AnimationProvider);
   $get: (string | (($$animateJs: any) => (animationDetails: any) => any))[];
 }
 export namespace AnimateJsDriverProvider {

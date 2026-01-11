@@ -130,6 +130,8 @@ import {
   WebSocketConfig as TWebSocketConfig,
   WebSocketService as TWebSocketService,
 } from "./services/websocket/interface.ts";
+import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.js";
+
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -177,6 +179,7 @@ declare global {
     // Services
     export type AnchorScrollService = TAnchorScrollService;
     export type AnimateService = TAnimateService;
+    export type AnimateRunner = TAnimateRunner;
     export type CompileService = TCompileFn;
     export type ControllerService = TControllerService;
     export type CookieService = TCookieService;

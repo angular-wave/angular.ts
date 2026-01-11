@@ -58,7 +58,7 @@ export function AnimationProvider() {
      *
      * @param {ng.RootScopeService} $rootScope
      * @param {ng.InjectorService} $injector
-     * @returns
+     * @return {import("./interface.ts").AnimationService}
      */
     function ($rootScope, $injector) {
       /**
