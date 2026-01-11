@@ -11,7 +11,7 @@ test("unit tests contain no errors", async ({ page }) => {
   );
 });
 
-const EXAMPLE_URL = "src/services/anchor-scroll/anchor-scroll-test.html";
+const EXAMPLE_URL = "src/services/anchor-scroll/anchor-scroll-example.html";
 
 test("scrolls to anchor when clicking header link", async ({ page }) => {
   await page.goto(EXAMPLE_URL);

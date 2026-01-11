@@ -43,7 +43,6 @@ export const $injectTokens = {
   _interpolate: "$interpolate",
   _location: "$location",
   _log: "$log",
-  _viewScroll: "$viewScroll",
   _parse: "$parse",
   _rest: "$rest",
   _rootScope: "$rootScope",

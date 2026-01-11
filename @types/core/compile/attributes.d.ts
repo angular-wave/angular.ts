@@ -19,14 +19,14 @@ export class Attributes {
    *
    * @param {ng.AnimateService} $animate
    * @param {ng.ExceptionHandlerService} $exceptionHandler
-   * @param {ng.SCEService} $sce
+   * @param {ng.SceService} $sce
    * @param {import("../../shared/noderef.js").NodeRef} [nodeRef]
    * @param {Object & Record<string, any>} [attributesToCopy]
    */
   constructor(
     $animate: ng.AnimateService,
     $exceptionHandler: ng.ExceptionHandlerService,
-    $sce: ng.SCEService,
+    $sce: ng.SceService,
     nodeRef?: import("../../shared/noderef.js").NodeRef,
     attributesToCopy?: any & Record<string, any>,
   );
@@ -34,8 +34,8 @@ export class Attributes {
   _animate: ng.AnimateService;
   /** @type {ng.ExceptionHandlerService} */
   _exceptionHandler: ng.ExceptionHandlerService;
-  /** @type {ng.SCEService} */
-  _sce: ng.SCEService;
+  /** @type {ng.SceService} */
+  _sce: ng.SceService;
   /**
    * A map of DOM element attribute names to the normalized name. This is needed
    * to do reverse lookup from normalized name back to actual name.

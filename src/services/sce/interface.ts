@@ -1,4 +1,4 @@
-export interface SCEService {
+export interface SceService {
   // Trusted value constants
   HTML: string;
   CSS: string;
@@ -32,7 +32,7 @@ export interface SCEService {
   valueOf(value?: any): any;
 }
 
-export interface SCEDelegateService {
+export interface SceDelegateService {
   getTrusted(type: string, mayBeTrusted: any): any;
   trustAs(type: string, value: any): any;
   valueOf(value?: any): any;

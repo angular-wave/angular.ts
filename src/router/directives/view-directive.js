@@ -24,7 +24,7 @@ import { $injectTokens } from "../../injection-tokens.js";
  *   The ng-view can be targeted in a View using the name ([[StateDeclaration.views]]).
  *
  * - `autoscroll`: an expression. When it evaluates to true, the `ng-view` will be scrolled into view when it is activated.
- *   Uses [[$viewScroll]] to do the scrolling.
+ *   Uses [[$anchorScroll]] to do the scrolling.
  *
  * - `onload`: Expression to evaluate whenever the view updates.
  *
@@ -142,18 +142,18 @@ import { $injectTokens } from "../../injection-tokens.js";
 $ViewDirective.$inject = [
   $injectTokens._view,
   $injectTokens._animate,
-  $injectTokens._viewScroll,
+  $injectTokens._anchorScroll,
   $injectTokens._interpolate,
 ];
 
 /**
  * @param {ng.ViewService} $view
  * @param {ng.AnimateService} $animate
- * @param {ng.AnchorScrollService} $viewScroll
+ * @param {ng.AnchorScrollService} $anchorScroll
  * @param {ng.InterpolateService} $interpolate
  * @returns {ng.Directive}
  */
-export function $ViewDirective($view, $animate, $viewScroll, $interpolate) {
+export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
   function getRenderer() {
     return {
       enter(element, target, cb) {
@@ -307,7 +307,7 @@ export function $ViewDirective($view, $animate, $viewScroll, $interpolate) {
                 (isDefined(autoScrollExp) && !autoScrollExp) ||
                 (autoScrollExp && scope.$eval(autoScrollExp))
               ) {
-                /** @type {ng.AnchorScrollService} */ ($viewScroll)(clone);
+                /** @type {ng.AnchorScrollService} */ ($anchorScroll)(clone);
               }
             });
             cleanupLastView();

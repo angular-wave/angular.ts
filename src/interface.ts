@@ -27,7 +27,6 @@ export const PublicInjectionTokens = {
   $interpolate: "$interpolate",
   $location: "$location",
   $log: "$log",
-  $viewScroll: "$viewScroll",
   $parse: "$parse",
   $rest: "$rest",
   $rootScope: "$rootScope",

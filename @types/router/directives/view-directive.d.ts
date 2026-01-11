@@ -1,14 +1,14 @@
 /**
  * @param {ng.ViewService} $view
  * @param {ng.AnimateService} $animate
- * @param {ng.AnchorScrollService} $viewScroll
+ * @param {ng.AnchorScrollService} $anchorScroll
  * @param {ng.InterpolateService} $interpolate
  * @returns {ng.Directive}
  */
 export function $ViewDirective(
   $view: ng.ViewService,
   $animate: ng.AnimateService,
-  $viewScroll: ng.AnchorScrollService,
+  $anchorScroll: ng.AnchorScrollService,
   $interpolate: ng.InterpolateService,
 ): ng.Directive;
 export namespace $ViewDirective {
