@@ -1,4 +1,4 @@
-/* Version: 0.17.0 - January 10, 2026 13:14:59 */
+/* Version: 0.18.0 - January 11, 2026 16:30:11 */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -1473,7 +1473,6 @@
     _interpolate: "$interpolate",
     _location: "$location",
     _log: "$log",
-    _viewScroll: "$viewScroll",
     _parse: "$parse",
     _rest: "$rest",
     _rootScope: "$rootScope",
@@ -2652,18 +2651,6 @@
     return validate(isString, arg, name);
   }
 
-  /**
-   * @template T
-   * @param {unknown} arg - The value to validate.
-   * @param {new (...args: any[]) => T} type - The constructor to check against.
-   * @param {string} name - Parameter name (included in error message).
-   * @returns {T} The validated instance.
-   * @throws {TypeError} If the value is not an instance of the specified type.
-   */
-  function validateInstanceOf(arg, type, name) {
-    return validate((v) => v instanceof type, arg, name);
-  }
-
   const $injectorMinErr$1 = minErr($injectTokens._injector);
 
   const providerSuffix = "Provider";
@@ -3545,7 +3532,7 @@
       /**
        *
        * @param {ng.InjectorService} $injector
-       * @param {ng.SCEService} $sce
+       * @param {ng.SceService} $sce
        * @param {ng.CookieService} $cookie
        * @returns
        */
@@ -6396,8 +6383,8 @@
       /**
        *
        * @param {ng.ParseService} $parse
-       * @param {ng.SCEDelegateService} $sceDelegate
-       * @return {ng.SCEService}
+       * @param {ng.SceDelegateService} $sceDelegate
+       * @return {ng.SceService}
        */
       ($parse, $sceDelegate) => {
         const sce = shallowCopy(SCE_CONTEXTS);
@@ -6653,7 +6640,7 @@
           };
         });
 
-        return /** @type {ng.SCEService} */ (sce);
+        return /** @type {ng.SceService} */ (sce);
       },
     ];
   }
@@ -6805,7 +6792,7 @@
      *
      * @param {ng.AnimateService} $animate
      * @param {ng.ExceptionHandlerService} $exceptionHandler
-     * @param {ng.SCEService} $sce
+     * @param {ng.SceService} $sce
      * @param {import("../../shared/noderef.js").NodeRef} [nodeRef]
      * @param {Object & Record<string, any>} [attributesToCopy]
      */
@@ -6816,7 +6803,7 @@
       /** @type {ng.ExceptionHandlerService} */
       this._exceptionHandler = $exceptionHandler;
 
-      /** @type {ng.SCEService} */
+      /** @type {ng.SceService} */
       this._sce = $sce;
       /**
        * A map of DOM element attribute names to the normalized name. This is needed
@@ -7059,7 +7046,7 @@
       listeners.push(fn);
 
       if (
-        !listeners.$$inter &&
+        !listeners._inter &&
         hasOwn(this, key) &&
         !isUndefined(/** @type {Record<string, any>} */ (this)[key])
       ) {
@@ -7252,9 +7239,9 @@
 
     /**
      * @param {import('../../interface.ts').Provider} $provide
-     * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $$sanitizeUriProvider
+     * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $sanitizeUriProvider
      */
-    constructor($provide, $$sanitizeUriProvider) {
+    constructor($provide, $sanitizeUriProvider) {
       const hasDirectives = {};
 
       const bindingCache = Object.create(null);
@@ -7595,12 +7582,12 @@
        */
       this.aHrefSanitizationTrustedUrlList = function (regexp) {
         if (isDefined(regexp)) {
-          $$sanitizeUriProvider.aHrefSanitizationTrustedUrlList(regexp);
+          $sanitizeUriProvider.aHrefSanitizationTrustedUrlList(regexp);
 
           return undefined;
         }
 
-        return $$sanitizeUriProvider.aHrefSanitizationTrustedUrlList();
+        return $sanitizeUriProvider.aHrefSanitizationTrustedUrlList();
       };
 
       /**
@@ -7620,12 +7607,12 @@
        */
       this.imgSrcSanitizationTrustedUrlList = function (regexp) {
         if (isDefined(regexp)) {
-          $$sanitizeUriProvider.imgSrcSanitizationTrustedUrlList(regexp);
+          $sanitizeUriProvider.imgSrcSanitizationTrustedUrlList(regexp);
 
           return undefined;
         }
 
-        return $$sanitizeUriProvider.imgSrcSanitizationTrustedUrlList();
+        return $sanitizeUriProvider.imgSrcSanitizationTrustedUrlList();
       };
 
       /**
@@ -7769,7 +7756,7 @@
          * @param {ng.TemplateRequestService} $templateRequest
          * @param {ng.ParseService} $parse
          * @param {*} $controller
-         * @param {ng.SCEService} $sce
+         * @param {ng.SceService} $sce
          * @param {ng.AnimateService} $animate
          * @returns
          */
@@ -9065,7 +9052,7 @@
                     undefined,
                     {
                       needsNewScope:
-                        directive.$$isolateScope || directive.$$newScope,
+                        directive._isolateScope || directive._newScope,
                     },
                   );
                   /** @type {import("./interface.ts").TranscludeFn} */ (
@@ -9259,7 +9246,7 @@
 
                 if (
                   _newIsolateScopeDirective === directive ||
-                  directive.$$isolateScope
+                  directive._isolateScope
                 ) {
                   pre = cloneAndAnnotateFn(pre, { isolateScope: true });
                 }
@@ -9272,7 +9259,7 @@
 
                 if (
                   _newIsolateScopeDirective === directive ||
-                  directive.$$isolateScope
+                  directive._isolateScope
                 ) {
                   post = cloneAndAnnotateFn(post, { isolateScope: true });
                 }
@@ -9401,7 +9388,7 @@
               const locals = {
                 $scope:
                   directive === _newIsolateScopeDirective ||
-                  directive.$$isolateScope
+                  directive._isolateScope
                     ? isolateScope
                     : scope,
                 $element: $element.node,
@@ -9449,8 +9436,8 @@
           function markDirectiveScope(directives, isolateScope, newScope) {
             for (let j = 0, jj = directives.length; j < jj; j++) {
               directives[j] = inherit$1(directives[j], {
-                $$isolateScope: isolateScope,
-                $$newScope: newScope,
+                _isolateScope: isolateScope,
+                _newScope: newScope,
               });
             }
           }
@@ -10141,7 +10128,7 @@
                     // directive's linking fn during linking phase
                     attr[name] = interpolateFn(scope);
 
-                    (_observers[name] || (_observers[name] = [])).$$inter = true;
+                    (_observers[name] || (_observers[name] = []))._inter = true;
                     interpolateFn.expressions.forEach((x) => {
                       const targetScope =
                         (attr._observers && attr._observers[name]._scope) ||
@@ -14632,7 +14619,7 @@
               isDefined(autoScrollExp) &&
               (!autoScrollExp || scope.$eval(autoScrollExp))
             ) {
-              /** @type {ng.AnchorScrollFunction} */ ($anchorScroll)();
+              $anchorScroll();
             }
           }
 
@@ -16147,7 +16134,7 @@
     ngAttributeAliasDirectives[normalized] = [
       $injectTokens._sce,
       /**
-       * @param {ng.SCEService} $sce
+       * @param {ng.SceService} $sce
        * @returns {ng.Directive}
        */
       function ($sce) {
@@ -16542,43 +16529,41 @@
        *
        * @param {ng.LocationService} $location
        * @param {ng.Scope} $rootScope
-       * @returns
+       * @returns {ng.AnchorScrollService}
        */
       ($location, $rootScope) => {
         // Helper function to get first anchor from a NodeList
         // (using `Array#some()` instead of `angular#forEach()` since it's more performant
         //  and working in all supported browsers.)
+        /**
+         * @param {NodeListOf<HTMLElement>} list
+         * @returns {HTMLAnchorElement | undefined}
+         */
         function getFirstAnchor(list) {
-          let result = null;
+          for (let i = 0; i < list.length; i++) {
+            const el = list[i];
 
-          Array.prototype.some.call(list, (element) => {
-            if (getNodeName(element) === "a") {
-              result = element;
-
-              return true;
+            if (getNodeName(el) === "a") {
+              return /** @type {HTMLAnchorElement} */ (el);
             }
+          }
 
-            return false;
-          });
-
-          return result;
+          return undefined;
         }
 
         function getYOffset() {
           // Figure out a better way to configure this other than bolting on a property onto a function
-          let offset = /** @type {ng.AnchorScrollObject} */ (scroll).yOffset;
+          let offset = scroll.yOffset;
 
           if (isFunction(offset)) {
             offset = /** @type {Function} */ (offset)();
           } else if (offset instanceof Element) {
-            const elem = offset[0];
-
-            const style = window.getComputedStyle(elem);
+            const style = window.getComputedStyle(offset);
 
             if (style.position !== "fixed") {
               offset = 0;
             } else {
-              offset = elem.getBoundingClientRect().bottom;
+              offset = offset.getBoundingClientRect().bottom;
             }
           } else if (!isNumber(offset)) {
             offset = 0;
@@ -16587,29 +16572,24 @@
           return offset;
         }
 
+        /**
+         * @param {HTMLElement} [elem]
+         */
         function scrollTo(elem) {
           if (elem) {
+            const rect = elem.getBoundingClientRect();
+
             elem.scrollIntoView();
 
-            const offset = getYOffset();
+            const offset = /** @type {number} */ (getYOffset());
 
             if (offset) {
-              // `offset` is the number of pixels we should scroll UP in order to align `elem` properly.
-              // This is true ONLY if the call to `elem.scrollIntoView()` initially aligns `elem` at the
-              // top of the viewport.
+              // `offset` is how many pixels we want the element to appear below the top of the viewport.
               //
-              // IF the number of pixels from the top of `elem` to the end of the page's content is less
-              // than the height of the viewport, then `elem.scrollIntoView()` will align the `elem` some
-              // way down the page.
-              //
-              // This is often the case for elements near the bottom of the page.
-              //
-              // In such cases we do not need to scroll the whole `offset` up, just the difference between
-              // the top of the element and the offset, which is enough to align the top of `elem` at the
-              // desired position.
-              const elemTop = elem.getBoundingClientRect().top;
-
-              window.scrollBy(0, elemTop - /** @type {number} */ (offset));
+              // `scrollIntoView()` does not always align the element at the top (e.g. near the bottom
+              // of the page). Therefore, we measure the element’s actual position after scrolling and
+              // only adjust by the difference needed to reach the desired offset.
+              window.scrollBy(0, rect.top - offset);
             }
           } else {
             window.scrollTo(0, 0);
@@ -16617,7 +16597,7 @@
         }
 
         /** @type {ng.AnchorScrollService} */
-        const scroll = function (/** @type {string | number} */ hash) {
+        const scroll = (hash) => {
           // Allow numeric hashes
           hash = isString(hash)
             ? hash
@@ -16628,7 +16608,7 @@
 
           // empty hash, scroll to the top of the page
           if (!hash) {
-            scrollTo(null);
+            scrollTo();
           }
           // element with given id
           else if ((elm = document.getElementById(hash))) scrollTo(elm);
@@ -16636,28 +16616,37 @@
           else if ((elm = getFirstAnchor(document.getElementsByName(hash))))
             scrollTo(elm);
           // no element and hash === 'top', scroll to the top of the page
-          else if (hash === "top") scrollTo(null);
+          else if (hash === "top") scrollTo();
         };
 
         // does not scroll when user clicks on anchor link that is currently on
         // (no url change, no $location.getHash() change), browser native does scroll
         if (this.autoScrollingEnabled) {
-          $rootScope.$location = $location;
-          $rootScope.$watch("$location.$$hash", (newVal, oldVal) => {
-            // skip the initial scroll if $location.hash is empty
-            if (newVal === oldVal && newVal === "") return;
+          $rootScope.$on(
+            "$locationChangeSuccess",
+            /** @param {ng.ScopeEvent} _e  @param {string} newVal @param {string} oldVal */ (
+              _e,
+              newVal,
+              oldVal,
+            ) => {
+              const newUrl = urlResolve(newVal);
 
-            const action = () => scroll(newVal);
+              const ordUrl = urlResolve(oldVal);
 
-            if (document.readyState === "complete") {
-              // Force the action to be run async for consistent behavior
-              // from the action's point of view
-              // i.e. it will definitely not be in a $apply
-              queueMicrotask(() => action());
-            } else {
-              window.addEventListener("load", () => action());
-            }
-          });
+              if (newUrl.hash === ordUrl.hash && newUrl.hash === "") return;
+
+              const action = () => scroll(newUrl.hash);
+
+              if (document.readyState === "complete") {
+                // Force the action to be run async for consistent behavior
+                // from the action's point of view
+                // i.e. it will definitely not be in a $apply
+                queueMicrotask(() => action());
+              } else {
+                window.addEventListener("load", () => action());
+              }
+            },
+          );
         }
 
         return scroll;
@@ -16741,7 +16730,7 @@
   function prepareAnimationOptions(options) {
     const animateOptions = options || /** @type {ng.AnimationOptions} */ ({});
 
-    if (!animateOptions.$$prepared) {
+    if (!animateOptions._prepared) {
       let domOperation =
         animateOptions.domOperation ||
         (() => {
@@ -16755,7 +16744,7 @@
           /* empty */
         };
       };
-      animateOptions.$$prepared = true;
+      animateOptions._prepared = true;
     }
 
     return animateOptions;
@@ -16935,7 +16924,7 @@
    * @param {boolean} applyBlock
    * @returns {string[]}
    */
-  function blockKeyframeAnimations(node, applyBlock) {
+  function _blockKeyframeAnimations(node, applyBlock) {
     const value = applyBlock ? "paused" : "";
 
     const key = `animationPlayState`;
@@ -16987,7 +16976,7 @@
 
     let customFilter = null;
 
-    this.$$registeredAnimations = Object.create(null);
+    this._registeredAnimations = Object.create(null);
 
     /**
      * Registers a new injectable animation factory function. The factory function produces the
@@ -17035,7 +17024,7 @@
 
       const key = `${name}-animation`;
 
-      provider.$$registeredAnimations[name.substring(1)] = key;
+      provider._registeredAnimations[name.substring(1)] = key;
       $provide.factory(key, factory);
     };
 
@@ -17272,7 +17261,7 @@
            * Note that this does not cancel the underlying operation, e.g. the setting of classes or
            * adding the element to the DOM.
            *
-           * @param {import('./runner/animate-runner.js').AnimateRunner} runner An animation runner returned by an $animate function.
+           * @param {ng.AnimateRunner} runner An animation runner returned by an $animate function.
            */
           cancel(runner) {
             if (runner.cancel) {
@@ -17290,7 +17279,7 @@
            * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
            * @param {ChildNode | null | undefined} [after] - after the sibling element after which the element will be appended
            * @param {import("./interface.ts").AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
-           * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
+           * @returns {ng.AnimateRunner} the animation runner
            */
           enter(element, parent, after, options) {
             parent = parent || after.parentElement;
@@ -17321,7 +17310,7 @@
            * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
            * @param {Element} after - after the sibling element after which the element will be appended
            * @param {import("./interface.ts").AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
-           * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
+           * @returns {ng.AnimateRunner} the animation runner
            */
           move(element, parent, after, options) {
             parent = parent || after.parentElement;
@@ -17349,7 +17338,7 @@
            *
            * @param {Element} element the element which will be removed from the DOM
            * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
-           * @returns {import('./runner/animate-runner.js').AnimateRunner} the animation runner
+           * @returns {ng.AnimateRunner} the animation runner
            */
           leave(element, options) {
             return $$animateQueue.push(
@@ -17373,7 +17362,7 @@
            * @param {Element} element the element which the CSS classes will be applied to
            * @param {string} className the CSS class(es) that will be added (multiple classes are separated via spaces)
            * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
-           * @return {import('./runner/animate-runner.js').AnimateRunner}} animationRunner the animation runner
+           * @return {ng.AnimateRunner}} animationRunner the animation runner
            */
           addClass(element, className, options) {
             options = prepareAnimateOptions(options);
@@ -17393,7 +17382,7 @@
            * @param {Element} element the element which the CSS classes will be applied to
            * @param {string} className the CSS class(es) that will be removed (multiple classes are separated via spaces)
            * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.         *
-           * @return {import('./runner/animate-runner.js').AnimateRunner} animationRunner the animation runner
+           * @return {ng.AnimateRunner} animationRunner the animation runner
            */
           removeClass(element, className, options) {
             options = prepareAnimateOptions(options);
@@ -17415,7 +17404,7 @@
            * @param {string} remove the CSS class(es) that will be removed (multiple classes are separated via spaces)
            * @param {object=} options an optional collection of options/styles that will be applied to the element.
            *
-           * @return {import('./runner/animate-runner.js').AnimateRunner} the animation runner
+           * @return {ng.AnimateRunner} the animation runner
            */
           setClass(element, add, remove, options) {
             options = prepareAnimateOptions(options);
@@ -17444,7 +17433,7 @@
            *   }
            * });
            * ```
-           *  @return {import('./runner/animate-runner.js').AnimateRunner} the animation runner
+           *  @return {ng.AnimateRunner} the animation runner
            */
           animate(element, from, to, className, options) {
             options = prepareAnimateOptions(options);
@@ -18351,7 +18340,7 @@
       /**
        *
        * @param {ng.ParseService} $parse
-       * @param {ng.SCEService} $sce
+       * @param {ng.SceService} $sce
        * @returns {ng.InterpolateService}
        */
       ($parse, $sce) => {
@@ -18954,9 +18943,9 @@
         );
       }
       // The user might modify `stateObject` after invoking `$location.setState(stateObject)`
-      // but we're changing the $$state reference to $browser.state() during the $digest
+      // but we're changing the _statereference to $browser.state() during the $digest
       // so the modification window is narrow.
-      this.$$state = isUndefined(state) ? null : state;
+      this._state = isUndefined(state) ? null : state;
       urlUpdatedByLocation = true;
 
       return this;
@@ -18967,7 +18956,7 @@
      * @returns {any}
      */
     getState() {
-      return this.$$state;
+      return this._state;
     }
 
     /**
@@ -19292,14 +19281,14 @@
 
         $location.parseLinkUrl(initialUrl, initialUrl);
 
-        $location.$$state = this.state();
+        $location._state = this.state();
 
         const IGNORE_URI_REGEXP = /^\s*(javascript|mailto):/i;
 
         const setBrowserUrlWithFallback = (url, state) => {
           const oldUrl = $location.getUrl();
 
-          const oldState = $location.$$state;
+          const oldState = $location._state;
 
           try {
             this.setUrl(url, state);
@@ -19307,11 +19296,11 @@
             // Make sure $location.getState() returns referentially identical (not just deeply equal)
             // state object; this makes possible quick checking if the state changed in the digest
             // loop. Checking deep equality would be too expensive.
-            $location.$$state = this.state();
+            $location._state = this.state();
           } catch (err) {
             // Restore old values if pushState fails
             $location.setUrl(/** @type {string} */ (oldUrl));
-            $location.$$state = oldState;
+            $location._state = oldState;
             $exceptionHandler(err);
           }
         };
@@ -19407,10 +19396,10 @@
           queueMicrotask(() => {
             const oldUrl = $location.absUrl;
 
-            const oldState = $location.$$state;
+            const oldState = $location._state;
 
             $location.parse(newUrl);
-            $location.$$state = newState;
+            $location._state = newState;
 
             const { defaultPrevented } = $rootScope.$broadcast(
               "$locationChangeStart",
@@ -19426,7 +19415,7 @@
 
             if (defaultPrevented) {
               $location.parse(oldUrl);
-              $location.$$state = oldState;
+              $location._state = oldState;
               setBrowserUrlWithFallback(oldUrl, oldState);
             } else {
               initializing = false;
@@ -19448,7 +19437,7 @@
 
             const urlOrStateChanged =
               !urlsEqual(oldUrl, newUrl) ||
-              ($location.html5 && oldState !== $location.$$state);
+              ($location.html5 && oldState !== $location._state);
 
             if (initializing || urlOrStateChanged) {
               initializing = false;
@@ -19460,7 +19449,7 @@
                   "$locationChangeStart",
                   $location.absUrl,
                   oldUrl,
-                  $location.$$state,
+                  $location._state,
                   oldState,
                 );
 
@@ -19470,12 +19459,12 @@
 
                 if (defaultPrevented) {
                   $location.parse(oldUrl);
-                  $location.$$state = oldState;
+                  $location._state = oldState;
                 } else {
                   if (urlOrStateChanged) {
                     setBrowserUrlWithFallback(
                       newUrl,
-                      oldState === $location.$$state ? null : $location.$$state,
+                      oldState === $location._state ? null : $location._state,
                     );
                   }
                   afterLocationChange(oldUrl, oldState);
@@ -19500,7 +19489,7 @@
             "$locationChangeSuccess",
             $location.absUrl,
             oldUrl,
-            $location.$$state,
+            $location._state,
             oldState,
           );
         }
@@ -23877,37 +23866,37 @@
      * @param {ng.AnimateService} $animate
      */
     constructor($element, $scope, $attrs, $animate) {
-      this.$element = $element;
-      this.$scope = $scope;
-      this.$attrs = $attrs;
-      this.$animate = $animate;
+      this._element = $element;
+      this._scope = $scope;
+      this._attrs = $attrs;
+      this._animate = $animate;
 
-      this.latestKey = 0;
-      this.nextAttachId = 0;
-      this.messages = {};
-      this.renderLater = false;
-      this.cachedCollection = null;
+      this._latestKey = 0;
+      this._nextAttachId = 0;
+      this._messages = {};
+      this._renderLater = false;
+      this._cachedCollection = null;
 
-      this.head = undefined;
-      this.default = undefined;
+      this._head = undefined;
+      this._default = undefined;
 
-      this.$scope.$watch(
-        this.$attrs.ngMessages || this.$attrs.for,
-        this.render.bind(this),
+      this._scope.$watch(
+        this._attrs.ngMessages || this._attrs.for,
+        this._render.bind(this),
       );
     }
 
-    getAttachId() {
-      return this.nextAttachId++;
+    _getAttachId() {
+      return this._nextAttachId++;
     }
 
-    render(collection = {}) {
-      this.renderLater = false;
-      this.cachedCollection = collection;
+    _render(collection = {}) {
+      this._renderLater = false;
+      this._cachedCollection = collection;
 
       const multiple =
-        isAttrTruthy(this.$scope, this.$attrs.ngMessagesMultiple) ||
-        isAttrTruthy(this.$scope, this.$attrs.multiple);
+        isAttrTruthy(this._scope, this._attrs.ngMessagesMultiple) ||
+        isAttrTruthy(this._scope, this._attrs.multiple);
 
       const unmatchedMessages = [];
 
@@ -23915,7 +23904,7 @@
 
       let truthyKeys = 0;
 
-      let messageItem = this.head;
+      let messageItem = this._head;
 
       let messageFound = false;
 
@@ -23958,27 +23947,27 @@
 
       const messageMatched = unmatchedMessages.length !== totalMessages;
 
-      const attachDefault = this.default && !messageMatched && truthyKeys > 0;
+      const attachDefault = this._default && !messageMatched && truthyKeys > 0;
 
       if (attachDefault) {
-        this.default.attach();
-      } else if (this.default) {
-        this.default.detach();
+        this._default.attach();
+      } else if (this._default) {
+        this._default.detach();
       }
 
       if (messageMatched || attachDefault) {
-        this.$animate.setClass(this.$element, ACTIVE_CLASS, INACTIVE_CLASS);
+        this._animate.setClass(this._element, ACTIVE_CLASS, INACTIVE_CLASS);
       } else {
-        this.$animate.setClass(this.$element, INACTIVE_CLASS, ACTIVE_CLASS);
+        this._animate.setClass(this._element, INACTIVE_CLASS, ACTIVE_CLASS);
       }
     }
 
     reRender() {
-      if (!this.renderLater) {
-        this.renderLater = true;
+      if (!this._renderLater) {
+        this._renderLater = true;
         Promise.resolve().then(() => {
-          if (this.renderLater && this.cachedCollection) {
-            this.render(this.cachedCollection);
+          if (this._renderLater && this._cachedCollection) {
+            this._render(this._cachedCollection);
           }
         });
       }
@@ -23986,16 +23975,16 @@
 
     register(comment, messageCtrl, isDefault) {
       if (isDefault) {
-        this.default = messageCtrl;
+        this._default = messageCtrl;
       } else {
-        const nextKey = this.latestKey.toString();
+        const nextKey = this._latestKey.toString();
 
-        this.messages[nextKey] = {
+        this._messages[nextKey] = {
           message: messageCtrl,
         };
-        this.insertMessageNode(this.$element, comment, nextKey);
+        this.insertMessageNode(this._element, comment, nextKey);
         comment._ngMessageNode = nextKey;
-        this.latestKey++;
+        this._latestKey++;
       }
 
       this.reRender();
@@ -24003,13 +23992,13 @@
 
     deregister(comment, isDefault) {
       if (isDefault) {
-        delete this.default;
+        delete this._default;
       } else {
         const key = comment._ngMessageNode;
 
         delete comment._ngMessageNode;
-        this.removeMessageNode(this.$element, comment, key);
-        delete this.messages[key];
+        this.removeMessageNode(this._element, comment, key);
+        delete this._messages[key];
       }
       this.reRender();
     }
@@ -24023,7 +24012,7 @@
         const prevKey = prevNode._ngMessageNode;
 
         if (prevKey && prevKey.length) {
-          return this.messages[prevKey];
+          return this._messages[prevKey];
         }
 
         if (prevNode.childNodes.length && parentLookup.indexOf(prevNode) === -1) {
@@ -24041,10 +24030,10 @@
     }
 
     insertMessageNode(parent, comment, key) {
-      const messageNode = this.messages[key];
+      const messageNode = this._messages[key];
 
-      if (!this.head) {
-        this.head = messageNode;
+      if (!this._head) {
+        this._head = messageNode;
       } else {
         const match = this.findPreviousMessage(parent, comment);
 
@@ -24052,14 +24041,14 @@
           messageNode.next = match.next;
           match.next = messageNode;
         } else {
-          messageNode.next = this.head;
-          this.head = messageNode;
+          messageNode.next = this._head;
+          this._head = messageNode;
         }
       }
     }
 
     removeMessageNode(parent, comment, key) {
-      const messageNode = this.messages[key];
+      const messageNode = this._messages[key];
 
       if (!messageNode) return;
 
@@ -24068,7 +24057,7 @@
       if (match) {
         match.next = messageNode.next;
       } else {
-        this.head = messageNode.next;
+        this._head = messageNode.next;
       }
     }
   }
@@ -24199,8 +24188,8 @@
 
                     // Each time we attach this node to a message we get a new id that we can match
                     // when we are destroying the node later.
-                    const $$attachId = (currentElement.$$attachId =
-                      ngMessagesCtrl.getAttachId());
+                    const attachId = (currentElement._attachId =
+                      ngMessagesCtrl._getAttachId());
 
                     // in the event that the element or a parent element is destroyed
                     // by another structural directive then it's time
@@ -24210,7 +24199,7 @@
                       // So this handler only handles cases where something else removed the message element.
                       if (
                         currentElement &&
-                        currentElement.$$attachId === $$attachId
+                        currentElement._attachId === attachId
                       ) {
                         ngMessagesCtrl.deregister(commentNode, isDefault);
                         messageCtrl.detach();
@@ -24334,14 +24323,14 @@
         config(key) {
           return config[key];
         },
-        $$watchExpr: watchExpr,
+        _watchExpr: watchExpr,
       };
     };
   }
 
   ngDisabledAriaDirective.$inject = [$injectTokens._aria];
   function ngDisabledAriaDirective($aria) {
-    return $aria.$$watchExpr(
+    return $aria._watchExpr(
       "ngDisabled",
       "aria-disabled",
       nativeAriaNodeNames,
@@ -24351,7 +24340,7 @@
 
   ngShowAriaDirective.$inject = [$injectTokens._aria];
   function ngShowAriaDirective($aria) {
-    return $aria.$$watchExpr("ngShow", "aria-hidden", [], true);
+    return $aria._watchExpr("ngShow", "aria-hidden", [], true);
   }
 
   /**
@@ -24437,7 +24426,7 @@
 
   ngRequiredAriaDirective.$inject = [$injectTokens._aria];
   function ngRequiredAriaDirective($aria) {
-    return $aria.$$watchExpr(
+    return $aria._watchExpr(
       "ngRequired",
       "aria-required",
       nativeAriaNodeNames,
@@ -24447,7 +24436,7 @@
 
   ngCheckedAriaDirective.$inject = [$injectTokens._aria];
   function ngCheckedAriaDirective($aria) {
-    return $aria.$$watchExpr(
+    return $aria._watchExpr(
       "ngChecked",
       "aria-checked",
       nativeAriaNodeNames,
@@ -24457,7 +24446,7 @@
 
   ngValueAriaDirective.$inject = [$injectTokens._aria];
   function ngValueAriaDirective($aria) {
-    return $aria.$$watchExpr(
+    return $aria._watchExpr(
       "ngValue",
       "aria-checked",
       nativeAriaNodeNames,
@@ -24467,12 +24456,12 @@
 
   ngHideAriaDirective.$inject = [$injectTokens._aria];
   function ngHideAriaDirective($aria) {
-    return $aria.$$watchExpr("ngHide", "aria-hidden", [], false);
+    return $aria._watchExpr("ngHide", "aria-hidden", [], false);
   }
 
   ngReadonlyAriaDirective.$inject = [$injectTokens._aria];
   function ngReadonlyAriaDirective($aria) {
-    return $aria.$$watchExpr(
+    return $aria._watchExpr(
       "ngReadonly",
       "aria-readonly",
       nativeAriaNodeNames,
@@ -25426,10 +25415,10 @@
           let options =
             initialOptions ||
             /** @type {ng.AnimationOptions}}*/ ({
-              $$skipPreparationClasses: false,
+              _skipPreparationClasses: false,
             });
 
-          if (!options.$$prepared) {
+          if (!options._prepared) {
             options = prepareAnimationOptions(structuredClone(options));
           }
 
@@ -25566,7 +25555,7 @@
             );
           }
 
-          if (!options.$$skipPreparationClasses) {
+          if (!options._skipPreparationClasses) {
             element.classList.add(
               ...preparationClasses.split(" ").filter((x) => x !== ""),
             );
@@ -25616,7 +25605,7 @@
           // that if there is no transition defined then nothing will happen and this will also allow
           // other transitions to be stacked on top of each other without any chopping them out.
           if (isFirst) {
-            blockTransitions(node, SAFE_FAST_FORWARD_DURATION_VALUE);
+            _blockTransitions(node, SAFE_FAST_FORWARD_DURATION_VALUE);
           }
 
           let timings = computeTimings(node, cacheKey, !isStructural);
@@ -25629,29 +25618,30 @@
 
           const flags = {};
 
-          flags.hasTransitions = timings.transitionDuration > 0;
-          flags.hasAnimations = timings.animationDuration > 0;
-          flags.hasTransitionAll =
-            flags.hasTransitions && timings.transitionProperty === "all";
-          flags.applyTransitionDuration =
+          flags._hasTransitions = timings.transitionDuration > 0;
+          flags._hasAnimations = timings.animationDuration > 0;
+          flags._hasTransitionAll =
+            flags._hasTransitions && timings.transitionProperty === "all";
+          flags._applyTransitionDuration =
             hasToStyles &&
-            ((flags.hasTransitions && !flags.hasTransitionAll) ||
-              (flags.hasAnimations && !flags.hasTransitions));
-          flags.applyAnimationDuration = options.duration && flags.hasAnimations;
-          flags.applyTransitionDelay =
+            ((flags._hasTransitions && !flags._hasTransitionAll) ||
+              (flags._hasAnimations && !flags._hasTransitions));
+          flags._applyAnimationDuration =
+            options.duration && flags._hasAnimations;
+          flags._applyTransitionDelay =
             truthyTimingValue(options.delay) &&
-            (flags.applyTransitionDuration || flags.hasTransitions);
-          flags.applyAnimationDelay =
-            truthyTimingValue(options.delay) && flags.hasAnimations;
-          flags.recalculateTimingStyles = addRemoveClassName.length > 0;
+            (flags._applyTransitionDuration || flags._hasTransitions);
+          flags._applyAnimationDelay =
+            truthyTimingValue(options.delay) && flags._hasAnimations;
+          flags._recalculateTimingStyles = addRemoveClassName.length > 0;
 
-          if (flags.applyTransitionDuration || flags.applyAnimationDuration) {
+          if (flags._applyTransitionDuration || flags._applyAnimationDuration) {
             maxDuration = options.duration
               ? parseFloat(/** @type {string} */ (options.duration))
               : maxDuration;
 
-            if (flags.applyTransitionDuration) {
-              flags.hasTransitions = true;
+            if (flags._applyTransitionDuration) {
+              flags._hasTransitions = true;
               timings.transitionDuration = maxDuration;
               applyOnlyDuration = node.style.transitionProperty.length > 0;
               temporaryStyles.push(
@@ -25659,14 +25649,14 @@
               );
             }
 
-            if (flags.applyAnimationDuration) {
-              flags.hasAnimations = true;
+            if (flags._applyAnimationDuration) {
+              flags._hasAnimations = true;
               timings.animationDuration = maxDuration;
               temporaryStyles.push(getCssKeyframeDurationStyle(maxDuration));
             }
           }
 
-          if (maxDuration === 0 && !flags.recalculateTimingStyles) {
+          if (maxDuration === 0 && !flags._recalculateTimingStyles) {
             return closeAndReturnNoopAnimator();
           }
 
@@ -25679,11 +25669,11 @@
               maxDelay = Math.max(delayStyle, 0);
             }
 
-            if (flags.applyTransitionDelay) {
+            if (flags._applyTransitionDelay) {
               temporaryStyles.push(getCssDelayStyle(delayStyle));
             }
 
-            if (flags.applyAnimationDelay) {
+            if (flags._applyAnimationDelay) {
               temporaryStyles.push(getCssDelayStyle(delayStyle, true));
             }
           }
@@ -25695,15 +25685,15 @@
             isNullOrUndefined(options.duration) &&
             timings.transitionDuration > 0
           ) {
-            flags.recalculateTimingStyles =
-              flags.recalculateTimingStyles || isFirst;
+            flags._recalculateTimingStyles =
+              flags._recalculateTimingStyles || isFirst;
           }
 
           maxDelayTime = maxDelay * ONE_SECOND;
           maxDurationTime = maxDuration * ONE_SECOND;
 
-          flags.blockTransition = timings.transitionDuration > 0;
-          flags.blockKeyframeAnimation =
+          flags._blockTransition = timings.transitionDuration > 0;
+          flags._blockKeyframeAnimation =
             timings.animationDuration > 0 &&
             stagger.animationDelay > 0 &&
             stagger.animationDuration === 0;
@@ -25719,15 +25709,15 @@
             applyAnimationFromStyles(element, options);
           }
 
-          if (flags.blockTransition || flags.blockKeyframeAnimation) {
+          if (flags._blockTransition || flags._blockKeyframeAnimation) {
             applyBlocking(maxDuration);
           } else if (!options.skipBlocking) {
-            blockTransitions(node, false);
+            _blockTransitions(node, false);
           }
 
           // TODO(matsko): for 1.5 change this code to have an animator object for better debugging
           return {
-            $$willAnimate: true,
+            _willAnimate: true,
             end: endFn,
             start() {
               if (animationClosed) return undefined;
@@ -25767,7 +25757,7 @@
             animationClosed = true;
             animationPaused = false;
 
-            if (preparationClasses && !options.$$skipPreparationClasses) {
+            if (preparationClasses && !options._skipPreparationClasses) {
               element.classList.remove(...preparationClasses.split(" "));
             }
             activeClasses = pendClasses(preparationClasses, ACTIVE_CLASS_SUFFIX);
@@ -25776,8 +25766,8 @@
               element.classList.remove(...activeClasses.split(" "));
             }
 
-            blockKeyframeAnimations(node, false);
-            blockTransitions(node, false);
+            _blockKeyframeAnimations(node, false);
+            _blockTransitions(node, false);
 
             temporaryStyles.forEach((entry) => {
               // There is only one way to remove inline style properties entirely from elements.
@@ -25830,12 +25820,12 @@
           }
 
           function applyBlocking(duration) {
-            if (flags.blockTransition) {
-              blockTransitions(node, duration);
+            if (flags._blockTransition) {
+              _blockTransitions(node, duration);
             }
 
-            if (flags.blockKeyframeAnimation) {
-              blockKeyframeAnimations(node, !!duration);
+            if (flags._blockKeyframeAnimation) {
+              _blockKeyframeAnimations(node, !!duration);
             }
           }
 
@@ -25852,7 +25842,7 @@
             close();
 
             return {
-              $$willAnimate: false,
+              _willAnimate: false,
               start() {
                 return runner;
               },
@@ -25916,7 +25906,7 @@
                 animationPaused = !playAnimation;
 
                 if (timings.animationDuration) {
-                  const value = blockKeyframeAnimations(node, animationPaused);
+                  const value = _blockKeyframeAnimations(node, animationPaused);
 
                   if (animationPaused) {
                     temporaryStyles.push(value);
@@ -25980,7 +25970,7 @@
                 ...activeClasses.split(" ").filter((x) => x !== ""),
               );
 
-              if (flags.recalculateTimingStyles) {
+              if (flags._recalculateTimingStyles) {
                 cacheKey = animateCache._cacheKey(
                   node,
                   method,
@@ -26000,11 +25990,11 @@
                   return;
                 }
 
-                flags.hasTransitions = timings.transitionDuration > 0;
-                flags.hasAnimations = timings.animationDuration > 0;
+                flags._hasTransitions = timings.transitionDuration > 0;
+                flags._hasAnimations = timings.animationDuration > 0;
               }
 
-              if (flags.applyAnimationDelay) {
+              if (flags._applyAnimationDelay) {
                 relativeDelay =
                   typeof options.delay !== "boolean" &&
                   truthyTimingValue(options.delay)
@@ -26026,13 +26016,13 @@
 
                 const easeVal = options.easing;
 
-                if (flags.hasTransitions) {
+                if (flags._hasTransitions) {
                   easeProp = "transitionTimingFunction";
                   temporaryStyles.push([easeProp, easeVal]);
                   node.style[easeProp] = easeVal;
                 }
 
-                if (flags.hasAnimations) {
+                if (flags._hasAnimations) {
                   easeProp = "animationTimingFunction";
                   temporaryStyles.push([easeProp, easeVal]);
                   node.style[easeProp] = easeVal;
@@ -26118,7 +26108,7 @@
     ];
   }
 
-  function blockTransitions(node, duration) {
+  function _blockTransitions(node, duration) {
     // we use a negative delay value since it performs blocking
     // yet it doesn't kill any existing transitions running on the
     // same element which makes this safe for class-based animations
@@ -26272,7 +26262,7 @@
        *
        * @param {ng.RootScopeService} $rootScope
        * @param {ng.InjectorService} $injector
-       * @param {*} $$animation
+       * @param {import("../interface.ts").AnimationService} $$animation
        * @returns {import("../queue/interface.ts").AnimateQueueService}
        */
       function ($rootScope, $injector, $$animation) {
@@ -26952,7 +26942,7 @@
        * @param {ng.InjectorService} $injector
        * @returns {import("./interface.ts").AnimateJsFn}
        */
-      function ($injector) {
+      ($injector) => {
         const applyAnimationClasses = applyAnimationClassesFactory();
 
         /**
@@ -27022,7 +27012,7 @@
           let runner;
 
           return {
-            $$willAnimate: true,
+            _willAnimate: true,
 
             start() {
               if (runner) return runner;
@@ -27070,7 +27060,7 @@
               const klass = classList[i];
 
               const animationFactory =
-                $animateProvider.$$registeredAnimations[klass];
+                $animateProvider._registeredAnimations[klass];
 
               if (animationFactory && !flagMap[klass]) {
                 matches.push($injector.get(animationFactory));
@@ -27193,7 +27183,7 @@
        *
        * @param {ng.RootScopeService} $rootScope
        * @param {ng.InjectorService} $injector
-       * @returns
+       * @return {import("./interface.ts").AnimationService}
        */
       function ($rootScope, $injector) {
         /**
@@ -27883,7 +27873,7 @@
 
             // read the comment within `prepareRegularAnimation` to understand
             // why this check is necessary
-            return animator.$$willAnimate ? animator : null;
+            return animator._willAnimate ? animator : null;
           }
 
           function getClassVal(element) {
@@ -27906,7 +27896,7 @@
 
             // read the comment within `prepareRegularAnimation` to understand
             // why this check is necessary
-            return animator.$$willAnimate ? animator : null;
+            return animator._willAnimate ? animator : null;
           }
 
           function end() {
@@ -28004,11 +27994,11 @@
           const animator = $animateCss(animationDetails.element, options);
 
           // the driver lookup code inside of $$animation attempts to spawn a
-          // driver one by one until a driver returns a.$$willAnimate animator object.
+          // driver one by one until a driver returns a._willAnimate animator object.
           // $animateCss will always return an object, however, it will pass in
           // a flag as a hint as to whether an animation was detected or not
 
-          return animator.$$willAnimate ? animator : null;
+          return animator._willAnimate ? animator : null;
         }
       },
     ];
@@ -28028,6 +28018,10 @@
   }
 
   AnimateJsDriverProvider.$inject = provider([$injectTokens._animation]);
+
+  /**
+   * @param {import("./animation.js").AnimationProvider} $$animationProvider
+   */
   function AnimateJsDriverProvider($$animationProvider) {
     $$animationProvider.drivers.push($injectTokens._animateJsDriver);
     this.$get = [
@@ -33213,7 +33207,7 @@
    */
   function makeEnterExitRetainHook(hookName) {
     return (transition, state) => {
-      const _state = state.$$state();
+      const _state = state._state();
 
       const hookFn = _state[hookName];
 
@@ -33298,7 +33292,7 @@
    */
   const lazyResolveState = (trans, state) =>
     new ResolveContext(trans.treeChanges().to)
-      .subContext(state.$$state())
+      .subContext(state._state())
       .resolvePath("LAZY", trans)
       .then(() => {
         /* empty */
@@ -33490,7 +33484,7 @@
         }
         const promises = transition
           .entering()
-          .filter((state) => !!state.$$state().lazyLoad)
+          .filter((state) => !!state._state().lazyLoad)
           .map((state) => lazyLoadState(transition, state, stateRegistry));
 
         return Promise.all(promises).then(retryTransition);
@@ -33506,7 +33500,7 @@
    * @returns A promise for the lazy load result
    */
   function lazyLoadState(transition, state, stateRegistry) {
-    const lazyLoadFn = state.$$state().lazyLoad;
+    const lazyLoadFn = state._state().lazyLoad;
 
     // Store/get the lazy load promise on/from the hookfn so it doesn't get re-invoked
     let promise = lazyLoadFn._promise;
@@ -33514,7 +33508,7 @@
     if (!promise) {
       const success = (result) => {
         delete state.lazyLoad;
-        delete state.$$state().lazyLoad;
+        delete state._state().lazyLoad;
         delete lazyLoadFn._promise;
 
         return result;
@@ -34776,37 +34770,6 @@
     }
   }
 
-  class ViewScrollProvider {
-    constructor() {
-      this.enabled = false;
-    }
-
-    useAnchorScroll() {
-      this.enabled = true;
-    }
-
-    $get = [
-      $injectTokens._anchorScroll,
-      /**
-       * @param {ng.AnchorScrollObject} $anchorScroll
-       * @returns {ng.ViewScrollService}
-       */
-      ($anchorScroll) => {
-        if (this.enabled) {
-          return $anchorScroll;
-        }
-
-        return (/** @type {Element} */ $element) => {
-          validateInstanceOf($element, Element, "$element");
-
-          setTimeout(() => {
-            $element.scrollIntoView(false);
-          }, 0);
-        };
-      },
-    ];
-  }
-
   /**
    * @typedef BindingTuple
    * @property {string} name
@@ -35746,7 +35709,7 @@
    *
    * Instances of this class are created when a [[StateDeclaration]] is registered with the [[StateRegistry]].
    *
-   * A registered [[StateDeclaration]] is augmented with a getter ([[StateDeclaration.$$state]]) which returns the corresponding [[StateObject]] object.
+   * A registered [[StateDeclaration]] is augmented with a getter ([[StateDeclaration._state]]) which returns the corresponding [[StateObject]] object.
    *
    * This class prototypally inherits from the corresponding [[StateDeclaration]].
    * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
@@ -35766,7 +35729,7 @@
      */
     constructor(config) {
       Object.assign(this, config);
-      this.$$state = () => {
+      this._state = () => {
         return this;
       };
       /**
@@ -35858,7 +35821,7 @@
     }
   }
   /** Predicate which returns true if the object is a [[StateDeclaration]] object */
-  StateObject.isStateDeclaration = (obj) => isFunction(obj.$$state);
+  StateObject.isStateDeclaration = (obj) => isFunction(obj._state);
   /** Predicate which returns true if the object is an internal [[StateObject]] object */
   StateObject.isState = (obj) => isObject(obj._stateObjectCache);
 
@@ -35999,7 +35962,7 @@
      */
     fromState(stateOrDecl, stateService, globals) {
       const state = StateObject.isStateDeclaration(stateOrDecl)
-        ? stateOrDecl.$$state()
+        ? stateOrDecl._state()
         : stateOrDecl;
 
       /**
@@ -36952,7 +36915,7 @@
   }
 
   function selfBuilder(state) {
-    state.self.$$state = () => state;
+    state.self._state = () => state;
 
     return state.self;
   }
@@ -37565,7 +37528,7 @@
         function decoratedNg1Hook(trans, state) {
           const resolveContext = new ResolveContext(trans.treeChanges(pathname));
 
-          const subContext = resolveContext.subContext(state.$$state());
+          const subContext = resolveContext.subContext(state._state());
 
           const locals = Object.assign(getLocals(subContext), {
             $state$: state,
@@ -37665,7 +37628,7 @@
     }
 
     _deregisterTree(state) {
-      const all = this.getAll().map((x) => x.$$state());
+      const all = this.getAll().map((x) => x._state());
 
       const getChildren = (states) => {
         const _children = all.filter((x) => states.indexOf(x.parent) !== -1);
@@ -37714,7 +37677,7 @@
       const deregisteredStates = this._deregisterTree(
         /** @type {import("./interface.ts").BuiltStateDeclaration} */ (
           state
-        ).$$state(),
+        )._state(),
       );
 
       this.listeners.forEach((listener) =>
@@ -38260,7 +38223,7 @@
    *   The ng-view can be targeted in a View using the name ([[StateDeclaration.views]]).
    *
    * - `autoscroll`: an expression. When it evaluates to true, the `ng-view` will be scrolled into view when it is activated.
-   *   Uses [[$viewScroll]] to do the scrolling.
+   *   Uses [[$anchorScroll]] to do the scrolling.
    *
    * - `onload`: Expression to evaluate whenever the view updates.
    *
@@ -38378,18 +38341,18 @@
   $ViewDirective.$inject = [
     $injectTokens._view,
     $injectTokens._animate,
-    $injectTokens._viewScroll,
+    $injectTokens._anchorScroll,
     $injectTokens._interpolate,
   ];
 
   /**
    * @param {ng.ViewService} $view
    * @param {ng.AnimateService} $animate
-   * @param {ng.AnchorScrollService} $viewScroll
+   * @param {ng.AnchorScrollService} $anchorScroll
    * @param {ng.InterpolateService} $interpolate
    * @returns {ng.Directive}
    */
-  function $ViewDirective($view, $animate, $viewScroll, $interpolate) {
+  function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
     function getRenderer() {
       return {
         enter(element, target, cb) {
@@ -38543,7 +38506,7 @@
                   (isDefined(autoScrollExp) && !autoScrollExp) ||
                   (autoScrollExp && scope.$eval(autoScrollExp))
                 ) {
-                  /** @type {ng.AnchorScrollFunction} */ ($viewScroll)(clone);
+                  /** @type {ng.AnchorScrollService} */ ($anchorScroll)(clone);
                 }
               });
               cleanupLastView();
@@ -40472,7 +40435,6 @@
               $view: ViewService,
               $transitions: TransitionProvider,
               $state: StateProvider,
-              $viewScroll: ViewScrollProvider,
               $templateFactory: TemplateFactoryProvider,
               $url: UrlService,
               $stateRegistry: StateRegistryProvider,
@@ -40524,7 +40486,7 @@
        * @public
        * @type {string} `version` from `package.json`
        */
-      this.version = "0.17.0"; //inserted via rollup plugin
+      this.version = "0.18.0"; //inserted via rollup plugin
 
       /**
        * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
@@ -40762,7 +40724,7 @@
           stateRegistry
             .getAll()
             .map((x) => {
-              return x.$$state().resolvables;
+              return x._state().resolvables;
             })
             .reduce(unnestR, [])
             .filter(
