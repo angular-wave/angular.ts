@@ -427,10 +427,10 @@ export function fromJson(json: string): any | Array<any> | string | number;
 export function addDateMinutes(date: Date, minutes: number): Date;
 /**
  * Parses an escaped url query string into key-value pairs.
- * @param {string} keyValue
+ * @param {string} value
  * @returns {Object.<string,boolean|Array<any>>}
  */
-export function parseKeyValue(keyValue: string): {
+export function parseKeyValue(value: string): {
   [x: string]: boolean | any[];
 };
 /**

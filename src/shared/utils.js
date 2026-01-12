@@ -786,27 +786,29 @@ export function addDateMinutes(date, minutes) {
 
 /**
  * Parses an escaped url query string into key-value pairs.
- * @param {string} keyValue
+ * @param {string} value
  * @returns {Object.<string,boolean|Array<any>>}
  */
-export function parseKeyValue(keyValue) {
+export function parseKeyValue(value) {
   /** @type {Record<string, boolean | string | Array<any>>} */
   const obj = {};
 
-  (keyValue || "").split("&").forEach((item) => {
+  const res = value || "";
+
+  res.split("&").forEach((keyValue) => {
     let splitPoint;
 
     let key;
 
     let val;
 
-    if (item) {
-      key = keyValue = item.replace(/\+/g, "%20");
-      splitPoint = item.indexOf("=");
+    if (keyValue) {
+      key = keyValue = keyValue.replace(/\+/g, "%20");
+      splitPoint = keyValue.indexOf("=");
 
       if (splitPoint !== -1) {
-        key = item.substring(0, splitPoint);
-        val = item.substring(splitPoint + 1);
+        key = keyValue.substring(0, splitPoint);
+        val = keyValue.substring(splitPoint + 1);
       }
       key = tryDecodeURIComponent(key);
 

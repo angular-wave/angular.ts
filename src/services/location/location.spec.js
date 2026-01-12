@@ -94,7 +94,6 @@ describe("$location", () => {
         "http://www.domain.com:9877/",
         true,
       );
-      debugger;
       locationUrl.parse(
         "http://www.domain.com:9877/path/b?search=a&b=c&d#hash",
       );
@@ -285,7 +284,6 @@ describe("$location", () => {
     it("url getter/setter should change only hash when no search and path specified", () => {
       const locationUrl = createLocationHtml5Url();
       expect(locationUrl.getUrl()).toBe("/path/b?search=a&b=c&d#hash");
-
       locationUrl.setUrl("#some-hash");
 
       expect(locationUrl.getHash()).toBe("some-hash");
@@ -435,7 +433,7 @@ describe("$location", () => {
 
       it("should allow to set both URL and state", () => {
         const locationUrl = createLocationHtml5Url();
-        locationUrl.setUrl("/foo");
+        locationUrl.setUrl("/foo").setState({ a: 2 });
         expect(locationUrl.getUrl()).toEqual("/foo");
         expect(locationUrl.getState()).toEqual({ a: 2 });
       });
