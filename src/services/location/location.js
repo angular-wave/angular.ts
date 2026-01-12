@@ -102,11 +102,11 @@ export class Location {
       throw $locationMinErr("badurl", 'Invalid url "{0}".', url);
     }
 
-    if (match[1] !== undefined || url === "") {
+    if (match[1] || url === "") {
       this.setPath(match[1] || "");
     }
 
-    if (match[2] !== undefined || match[1] !== undefined || url === "") {
+    if (match[2] || match[1] || url === "") {
       this.setSearch(match[3] || "");
     }
 
@@ -134,10 +134,7 @@ export class Location {
     validateRequired(path, "path");
     let newPath = path !== null ? path.toString() : "";
 
-    if (this.html5) {
-      // decode reserved characters except slashes
-      newPath = decodePath(newPath, false);
-    }
+    newPath = decodePath(newPath, this.html5);
 
     _path = newPath.charAt(0) === "/" ? newPath : `/${newPath}`;
     this._compose();
