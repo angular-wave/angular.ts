@@ -134,8 +134,9 @@ export class Location {
     validateRequired(path, "path");
     let newPath = path !== null ? path.toString() : "";
 
-    newPath = decodePath(newPath, this.html5);
-
+    if (this.html5) {
+      newPath = decodePath(newPath, this.html5);
+    }
     _path = newPath.charAt(0) === "/" ? newPath : `/${newPath}`;
     this._compose();
 
