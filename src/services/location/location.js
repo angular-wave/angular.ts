@@ -16,6 +16,7 @@ import {
 } from "../../shared/utils.js";
 import { getBaseHref } from "../../shared/dom.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
+import { validateRequired } from "../../shared/validate.js";
 
 const PATH_MATCH = /^([^?#]*)(\?([^#]*))?(#(.*))?$/;
 
@@ -44,6 +45,20 @@ let _hash;
 
 export class Location {
   /**
+   * @ignore
+   * Current url
+   * @type {string | undefined}
+   */
+  _url;
+
+  /**
+   * @ignore
+   * Callback to update browser url
+   * @type {Function | undefined}
+   */
+  _updateBrowser;
+
+  /**
    * @param {string} appBase application base URL
    * @param {string} appBaseNoFile application base URL stripped of any filename
    * @param {boolean} [html5] Defaults to true
@@ -71,20 +86,6 @@ export class Location {
      * @type {string}
      */
     this.absUrl = "";
-
-    /**
-     * @ignore
-     * Current url
-     * @type {string}
-     */
-    this._url = undefined;
-
-    /**
-     * @ignore
-     * Callback to update browser url
-     * @type {Function | undefined}
-     */
-    this._updateBrowser = undefined;
   }
 
   /**
@@ -94,7 +95,12 @@ export class Location {
    * @return {Location} url
    */
   setUrl(url) {
+    validateRequired(url, "url");
     const match = PATH_MATCH.exec(url);
+
+    if (!match) {
+      throw $locationMinErr("badurl", 'Invalid url "{0}".', url);
+    }
 
     if (match[1] !== undefined || url === "") {
       this.setPath(match[1] || "");
@@ -115,7 +121,7 @@ export class Location {
    * @return {string} url
    */
   getUrl() {
-    return this._url;
+    return /** @type {string} */ (this._url);
   }
 
   /**
@@ -125,7 +131,13 @@ export class Location {
    * @return {Location}
    */
   setPath(path) {
-    const newPath = path !== null ? path.toString() : "";
+    validateRequired(path, "path");
+    let newPath = path !== null ? path.toString() : "";
+
+    if (this.html5) {
+      // decode reserved characters except slashes
+      newPath = decodePath(newPath, false);
+    }
 
     _path = newPath.charAt(0) === "/" ? newPath : `/${newPath}`;
     this._compose();
@@ -149,6 +161,7 @@ export class Location {
    * @return {Location} hash
    */
   setHash(hash) {
+    validateRequired(hash, "hash");
     _hash = hash !== null ? hash.toString() : "";
     this._compose();
 
@@ -171,19 +184,21 @@ export class Location {
    * @returns {Object} Search object or Location object
    */
   setSearch(search, paramValue) {
+    validateRequired(search, "search");
     switch (arguments.length) {
       case 1:
         if (isString(search) || isNumber(search)) {
           search = search.toString();
-          _search = parseKeyValue(search);
+          _search = parseKeyValue(/** @type {string} */ (search));
         } else if (isObject(search)) {
           search = structuredClone(search, {});
           // remove object undefined or null properties
           entries(search).forEach(([key, value]) => {
-            if (isNull(value)) delete search[key];
+            if (isNull(value))
+              delete (/** @type {Record<string, any>} */ (search)[key]);
           });
 
-          _search = search;
+          _search = /** @type {Record<string, any>} */ (search);
         } else {
           throw $locationMinErr(
             "isrcharg",
@@ -193,9 +208,11 @@ export class Location {
         break;
       default:
         if (isUndefined(paramValue) || paramValue === null) {
-          delete _search[search];
+          delete _search[/** @type {string} */ (search)];
         } else {
-          _search[search] = paramValue;
+          /** @type {Record<string, any>} */ (_search)[
+            /** @type {string} */ (search)
+          ] = paramValue;
         }
     }
 
@@ -340,16 +357,19 @@ export class Location {
 
       this._compose();
     } else {
-      const withoutBaseUrl =
-        stripBaseUrl(this.appBase, url) ||
-        stripBaseUrl(this.appBaseNoFile, url);
+      const withoutBaseUrl = /** @type {string} */ (
+        stripBaseUrl(this.appBase, url) || stripBaseUrl(this.appBaseNoFile, url)
+      );
 
       let withoutHashUrl;
 
       if (!isUndefined(withoutBaseUrl) && withoutBaseUrl.charAt(0) === "#") {
         // The rest of the URL starts with a hash so we have
         // got either a hashbang path or a plain hash fragment
-        withoutHashUrl = stripBaseUrl(this.hashPrefix, withoutBaseUrl);
+        withoutHashUrl = stripBaseUrl(
+          /** @type {string} */ (this.hashPrefix),
+          withoutBaseUrl,
+        );
 
         if (isUndefined(withoutHashUrl)) {
           // There was no hashbang prefix so we just have a hash fragment
@@ -370,44 +390,8 @@ export class Location {
         }
       }
 
-      parseAppUrl(withoutHashUrl, false);
-
-      _path = removeWindowsDriveName(_path, withoutHashUrl, this.appBase);
-
+      parseAppUrl(/** @type {string} */ (withoutHashUrl), false);
       this._compose();
-
-      /*
-       * In Windows, on an anchor node on documents loaded from
-       * the filesystem, the browser will return a pathname
-       * prefixed with the drive name ('/C:/path') when a
-       * pathname without a drive is set:
-       *  * a.setAttribute('href', '/foo')
-       *   * a.pathname === '/C:/foo' //true
-       *
-       * Inside of AngularTS, we're always using pathnames that
-       * do not include drive names for routing.
-       */
-      function removeWindowsDriveName(path, urlParam, base) {
-        /*
-        Matches paths for file protocol on windows,
-        such as /C:/foo/bar, and captures only /foo/bar.
-        */
-        const windowsFilePathExp = /^\/[A-Z]:(\/.*)/;
-
-        // Get the relative path from the input URL.
-        if (startsWith(urlParam, base)) {
-          urlParam = urlParam.replace(base, "");
-        }
-
-        // The input URL intentionally contains a first path segment that ends with a colon.
-        if (windowsFilePathExp.exec(urlParam)) {
-          return path;
-        }
-
-        const firstPathSegmentMatch = windowsFilePathExp.exec(path);
-
-        return firstPathSegmentMatch ? firstPathSegmentMatch[1] : path;
-      }
     }
   }
 }
@@ -550,7 +534,7 @@ export class LocationProvider {
     /**
      *
      * @param {ng.Scope} $rootScope
-     * @param {Element} $rootElement
+     * @param {HTMLElement} $rootElement
      * @param {ng.ExceptionHandlerService} $exceptionHandler
      * @returns {Location}
      */
@@ -587,7 +571,10 @@ export class LocationProvider {
 
       const IGNORE_URI_REGEXP = /^\s*(javascript|mailto):/i;
 
-      const setBrowserUrlWithFallback = (url, state) => {
+      const setBrowserUrlWithFallback = (
+        /** @type {string | undefined} */ url,
+        /** @type {any} */ state,
+      ) => {
         const oldUrl = $location.getUrl();
 
         const oldState = $location._state;
@@ -630,7 +617,11 @@ export class LocationProvider {
           while (elm.nodeName.toLowerCase() !== "a") {
             // ignore rewriting if no A tag (reached root element, or no parent - removed from document)
 
-            if (elm === $rootElement || !(elm = elm.parentElement)) return;
+            if (
+              elm === $rootElement ||
+              !(elm = /** @type {HTMLElement} */ (elm.parentElement))
+            )
+              return;
           }
 
           if (
@@ -642,14 +633,12 @@ export class LocationProvider {
 
           let absHref = /** @type {HTMLAnchorElement} */ (elm).href;
 
-          // get the actual href attribute - see
-          // http://msdn.microsoft.com/en-us/library/ie/dd347148(v=vs.85).aspx
-          const relHref =
-            elm.getAttribute("href") || elm.getAttribute("xlink:href");
+          const relHref = elm.getAttribute("href");
 
           if (
             isObject(absHref) &&
-            absHref.toString() === "[object SVGAnimatedString]"
+            /** @type {Object} */ (absHref).toString() ===
+              "[object SVGAnimatedString]"
           ) {
             // SVGAnimatedString.animVal should be identical to SVGAnimatedString.baseVal, unless during
             // an animation.
@@ -669,7 +658,9 @@ export class LocationProvider {
             !elm.getAttribute("target") &&
             !event.defaultPrevented
           ) {
-            if ($location.parseLinkUrl(absHref, relHref)) {
+            if (
+              $location.parseLinkUrl(absHref, /** @type {string} */ (relHref))
+            ) {
               // We do a preventDefault for all urls that are part of the AngularTS application,
               // in html5mode and also without, so that we are able to abort navigation without
               // getting double entries in the location history.

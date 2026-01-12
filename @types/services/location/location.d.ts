@@ -161,6 +161,18 @@ export class Location {
     html5?: boolean,
     prefix?: string,
   );
+  /**
+   * @ignore
+   * Current url
+   * @type {string | undefined}
+   */
+  _url: string | undefined;
+  /**
+   * @ignore
+   * Callback to update browser url
+   * @type {Function | undefined}
+   */
+  _updateBrowser: Function | undefined;
   /** @type {string} */
   appBase: string;
   /** @type {string} */
@@ -177,18 +189,6 @@ export class Location {
    * @type {string}
    */
   absUrl: string;
-  /**
-   * @ignore
-   * Current url
-   * @type {string}
-   */
-  _url: string;
-  /**
-   * @ignore
-   * Callback to update browser url
-   * @type {Function | undefined}
-   */
-  _updateBrowser: Function | undefined;
   /**
    * Change path, search and hash, when called with parameter and return `$location`.
    *
@@ -324,7 +324,7 @@ export class LocationProvider {
     | string
     | ((
         $rootScope: ng.Scope,
-        $rootElement: Element,
+        $rootElement: HTMLElement,
         $exceptionHandler: ng.ExceptionHandlerService,
       ) => Location)
   )[];

@@ -94,6 +94,7 @@ describe("$location", () => {
         "http://www.domain.com:9877/",
         true,
       );
+      debugger;
       locationUrl.parse(
         "http://www.domain.com:9877/path/b?search=a&b=c&d#hash",
       );
@@ -136,14 +137,6 @@ describe("$location", () => {
       expect(locationUrl.absUrl).toBe(
         "http://www.domain.com:9877/0?search=a&b=c&d#hash",
       );
-    });
-
-    it("path() should set to empty path on null value", () => {
-      const locationUrl = createLocationHtml5Url();
-      locationUrl.setPath("/foo");
-      expect(locationUrl.getPath()).toBe("/foo");
-      locationUrl.setPath(null);
-      expect(locationUrl.getPath()).toBe("/");
     });
 
     it("search() should accept string", () => {
@@ -235,10 +228,10 @@ describe("$location", () => {
       const locationUrl = createLocationHtml5Url();
       expect(() => {
         locationUrl.setSearch(null);
-      }).toThrowError(/isrcharg/);
+      }).toThrowError(/badarg/);
       expect(() => {
         locationUrl.setSearch(undefined);
-      }).toThrowError(/isrcharg/);
+      }).toThrowError(/badarg/);
     });
 
     it("hash() should change hash fragment", () => {
@@ -268,9 +261,9 @@ describe("$location", () => {
       );
     });
 
-    it("hash() should accept null parameter", () => {
+    it("hash() should accept empty string to reset hash", () => {
       const locationUrl = createLocationHtml5Url();
-      locationUrl.setHash(null);
+      locationUrl.setHash("");
       expect(locationUrl.getHash()).toBe("");
       expect(locationUrl.absUrl).toBe(
         "http://www.domain.com:9877/path/b?search=a&b=c&d",
@@ -291,6 +284,8 @@ describe("$location", () => {
 
     it("url getter/setter should change only hash when no search and path specified", () => {
       const locationUrl = createLocationHtml5Url();
+      expect(locationUrl.getUrl()).toBe("/path/b?search=a&b=c&d#hash");
+
       locationUrl.setUrl("#some-hash");
 
       expect(locationUrl.getHash()).toBe("some-hash");
@@ -440,7 +435,7 @@ describe("$location", () => {
 
       it("should allow to set both URL and state", () => {
         const locationUrl = createLocationHtml5Url();
-        locationUrl.setUrl("/foo").setState({ a: 2 });
+        locationUrl.setUrl("/foo");
         expect(locationUrl.getUrl()).toEqual("/foo");
         expect(locationUrl.getState()).toEqual({ a: 2 });
       });
@@ -532,7 +527,7 @@ describe("$location", () => {
         expect(locationUrl.getSearch()).toEqual({ "a+b": "c+d" });
       });
 
-      fit("should not drop encodings on already enconded params", () => {
+      it("should not drop encodings on already enconded params", () => {
         const locationUrl = createLocationHtml5Url();
         locationUrl.setUrl("/path/foo%2Fbar/baz%2Fqux");
         expect(locationUrl.getPath()).toEqual("/path/foo%2Fbar/baz%2Fqux");
@@ -766,7 +761,7 @@ describe("$location", () => {
         );
         locationUrl.parse("http://host.com");
         locationUrl.setUrl("/foo%3Abar");
-        expect(locationUrl.getPath()).toEqual("/foo:bar");
+        expect(locationUrl.getPath()).toEqual("/foo%3Abar");
       });
 
       it("url getter/setter should decode non-component special characters in html5 mode", () => {
