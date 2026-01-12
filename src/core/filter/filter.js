@@ -1,6 +1,6 @@
 import { $injectTokens as $t } from "../../injection-tokens.js";
 import { filterFilter } from "../../filters/filter.js";
-import { jsonFilter } from "../../filters/filters.js";
+import { jsonFilter } from "../../filters/json.js";
 import { limitToFilter } from "../../filters/limit-to.js";
 import { orderByFilter } from "../../filters/order-by.js";
 import { assert, entries, isDefined, isFunction } from "../../shared/utils.js";
