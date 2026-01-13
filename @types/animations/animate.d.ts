@@ -3,7 +3,7 @@ export function AnimateProvider($provide: ng.ProvideService): void;
 export class AnimateProvider {
   /** @param {ng.ProvideService} $provide */
   constructor($provide: ng.ProvideService);
-  _registeredAnimations: any;
+  _registeredAnimations: Record<string, any>;
   /**
    * Registers a new injectable animation factory function. The factory function produces the
    * animation object which contains callback functions for each event that is expected to be

@@ -3,6 +3,7 @@ import {
   isNullOrUndefined,
   isNumber,
   isString,
+  nullObject,
 } from "../../shared/utils.js";
 import {
   validateIsString,
@@ -141,7 +142,7 @@ export class CookieService {
 let _lastCookieString = "";
 
 /** @type {Record<string, string>} */
-let _lastCookieMap = Object.create(null);
+let _lastCookieMap = nullObject();
 
 /**
  * @returns {Record<string,string>}
@@ -158,7 +159,7 @@ function parseCookies() {
   _lastCookieString = current;
 
   /** @type {Record<string, string>} */
-  const out = Object.create(null);
+  const out = nullObject();
 
   if (!current) {
     _lastCookieMap = out;

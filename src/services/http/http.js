@@ -22,6 +22,7 @@ import {
   keys,
   lowercase,
   minErr,
+  nullObject,
   shallowCopy,
   toJson,
   trim,
@@ -162,7 +163,7 @@ function isJsonLike(str) {
  * @returns {Object} Parsed headers as key value object
  */
 function parseHeaders(headers) {
-  const parsed = Object.create(null);
+  const parsed = nullObject();
 
   let i;
 
@@ -544,6 +545,7 @@ export function HttpProvider() {
         function executeHeaderFns(headers, configParam) {
           let headerContent;
 
+          /** @type {Record<string, string>} */
           const processedHeaders = {};
 
           entries(headers).forEach(([header, headerFn]) => {

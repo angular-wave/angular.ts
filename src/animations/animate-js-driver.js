@@ -12,10 +12,13 @@ export function AnimateJsDriverProvider($$animationProvider) {
     $injectTokens._animateJs,
     /**
      *
-     * @param {*} $$animateJs
+     * @param {import("./interface.ts").AnimateJsFn} $$animateJs
      */
     function ($$animateJs) {
-      return function initDriverFn(animationDetails) {
+      /**
+       * @param {import("./interface.ts").AnimationDetails} animationDetails
+       */
+      function initDriverFn(animationDetails) {
         if (animationDetails.from && animationDetails.to) {
           const fromAnimation = prepareAnimation(animationDetails.from);
 
@@ -25,6 +28,7 @@ export function AnimateJsDriverProvider($$animationProvider) {
 
           return {
             start() {
+              /** @type {Array<ng.AnimateRunner>} */
               const animationRunners = [];
 
               if (fromAnimation) {
@@ -53,6 +57,9 @@ export function AnimateJsDriverProvider($$animationProvider) {
                 };
               }
 
+              /**
+               * @param {boolean} status
+               */
               function done(status) {
                 runner.complete(status);
               }
@@ -61,14 +68,20 @@ export function AnimateJsDriverProvider($$animationProvider) {
         }
 
         return prepareAnimation(animationDetails);
-      };
+      }
 
+      /**
+       * @param {import("./interface.ts").AnimationDetails} animationDetails
+       * @return {import("./interface.ts").AnimateJsRunner}
+       */
       function prepareAnimation(animationDetails) {
         // TODO(matsko): make sure to check for grouped animations and delegate down to normal animations
         const { element, event, options, classes } = animationDetails;
 
         return $$animateJs(element, event, classes, options);
       }
+
+      return initDriverFn;
     },
   ];
 }

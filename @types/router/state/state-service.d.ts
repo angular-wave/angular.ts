@@ -43,9 +43,14 @@ export class StateProvider {
    * @type {ng.TransitionProvider}
    */
   transitionService: ng.TransitionProvider;
-  stateRegistry: any;
-  /** @type {ng.UrlService} */
-  urlService: ng.UrlService;
+  /**
+   * @type {import("./state-registry.js").StateRegistryProvider | undefined}
+   */
+  stateRegistry:
+    | import("./state-registry.js").StateRegistryProvider
+    | undefined;
+  /** @type {ng.UrlService | undefined } */
+  urlService: ng.UrlService | undefined;
   /** @type {ng.InjectorService} */
   $injector: ng.InjectorService;
   invalidCallbacks: any[];
@@ -419,7 +424,16 @@ export class StateProvider {
    * @returns the current global error handler
    */
   defaultErrorHandler(handler: any): any;
-  get(stateOrName: any, base: any, ...args: any[]): any;
+  get(
+    stateOrName: any,
+    base: any,
+    ...args: any[]
+  ):
+    | import("./interface.ts").StateDeclaration
+    | (
+        | import("./interface.ts").StateDeclaration
+        | import("./interface.ts").BuiltStateDeclaration
+      )[];
   /**
    * Lazy loads a state
    *

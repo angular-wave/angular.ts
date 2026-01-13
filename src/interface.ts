@@ -402,7 +402,7 @@ export type DirectiveLinkFn<T> = (
   element: HTMLElement,
   attrs: ng.Attributes,
   controller?: TController<T>,
-  transclude?: (...args: any[]) => any,
+  transclude?: ng.TranscludeFn,
 ) => void;
 
 /**

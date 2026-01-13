@@ -5,6 +5,7 @@ import {
   isObject,
   isString,
   keys,
+  nullObject,
 } from "../../shared/utils.js";
 
 /**
@@ -36,7 +37,7 @@ function classDirective(name, selector) {
         if (!classCounts) {
           // Use Object.create(null) to prevent class assumptions involving property
           // names in Object.prototype
-          classCounts = Object.create(null);
+          classCounts = nullObject();
           setCacheData(element, "$classCounts", classCounts);
         }
 

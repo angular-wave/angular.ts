@@ -6,6 +6,7 @@ import {
   isObject,
   mergeClasses,
   minErr,
+  nullObject,
 } from "../shared/utils.js";
 import { animatedomInsert, domInsert, removeElement } from "../shared/dom.js";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
@@ -30,11 +31,11 @@ AnimateProvider.$inject = [$injectTokens._provide];
 export function AnimateProvider($provide) {
   const provider = this;
 
-  let classNameFilter = null;
+  let classNameFilter;
 
-  let customFilter = null;
+  let customFilter;
 
-  this._registeredAnimations = Object.create(null);
+  this._registeredAnimations = nullObject();
 
   /**
    * Registers a new injectable animation factory function. The factory function produces the

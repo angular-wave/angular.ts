@@ -88,9 +88,12 @@ export class StateProvider {
      */
     this.transitionService = transitionService;
 
+    /**
+     * @type {import("./state-registry.js").StateRegistryProvider | undefined}
+     */
     this.stateRegistry = undefined;
 
-    /** @type {ng.UrlService} */
+    /** @type {ng.UrlService | undefined } */
     this.urlService = undefined;
     /** @type {ng.InjectorService} */
     this.$injector = undefined;
@@ -673,7 +676,10 @@ export class StateProvider {
     if (!isDefined(include[state.name])) return false;
 
     if (!params) return true;
-    const schema = state.parameters({ inherit: true, matchingKeys: params });
+    const schema = /** @type {ng.StateObject} */ (state).parameters({
+      inherit: true,
+      matchingKeys: params,
+    });
 
     return Param.equals(
       schema,
@@ -777,7 +783,7 @@ export class StateProvider {
    * @returns a promise to lazy load
    */
   lazyLoad(stateOrName, transition) {
-    const state = this.get(stateOrName);
+    const state = /** @type {ng.StateDeclaration} */ (this.get(stateOrName));
 
     if (!state || !state.lazyLoad)
       throw new Error(`Can not lazy load ${stateOrName}`);

@@ -1,4 +1,5 @@
 import { $injectTokens, provider } from "../../injection-tokens.js";
+import { nullObject } from "../../shared/utils.js";
 
 /**
  * Configurable provider for an injectable event bus
@@ -32,7 +33,7 @@ export class PubSub {
    */
   constructor($exceptionHandler) {
     /** @private {Object<string, Array<{fn: Function, context: any}>>} */
-    this._topics = Object.create(null);
+    this._topics = nullObject();
 
     /** @private */
     this._disposed = false;
@@ -46,7 +47,7 @@ export class PubSub {
    */
   reset() {
     /** @private {Object<string, Array<{fn: Function, context: any}>>} */
-    this._topics = Object.create(null);
+    this._topics = nullObject();
 
     /** @private */
     this._disposed = false;
@@ -66,7 +67,7 @@ export class PubSub {
   dispose() {
     if (this._disposed) return;
     this._disposed = true;
-    this._topics = Object.create(null);
+    this._topics = nullObject();
   }
 
   /**

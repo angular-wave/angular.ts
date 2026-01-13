@@ -593,7 +593,7 @@ export function equals(o1, o2) {
     return false;
 
   // Handle general objects
-  const keySet = Object.create(null);
+  const keySet = nullObject();
 
   for (const key in o1) {
     if (key.charAt(0) === "$" || isFunction(o1[key])) continue;
@@ -1415,4 +1415,18 @@ export async function instantiateWasm(src, imports = {}) {
  */
 export function isArrowFunction(fn) {
   return typeof fn === "function" && !fn.prototype;
+}
+
+/**
+ * Creates an object with no prototype.
+ *
+ * This is useful for use as a dictionary or map, since the returned object
+ * does not inherit from `Object.prototype` and therefore has no built-in
+ * properties such as `toString` or `hasOwnProperty`.
+ *
+ * @template T
+ * @returns {Record<string, T>} An object with a null prototype.
+ */
+export function nullObject() {
+  return Object.create(null);
 }
