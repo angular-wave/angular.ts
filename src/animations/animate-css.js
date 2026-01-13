@@ -10,6 +10,7 @@ import {
   isDefined,
   isNullOrUndefined,
   keys,
+  nullObject,
 } from "../shared/utils.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 import {
@@ -67,7 +68,7 @@ function getCssDelayStyle(delay, isKeyframeAnimation) {
 }
 
 function computeCssStyles(element, properties) {
-  const styles = Object.create(null);
+  const styles = nullObject();
 
   const detectedStyles = window.getComputedStyle(element) || {};
 

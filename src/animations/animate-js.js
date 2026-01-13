@@ -9,6 +9,9 @@ import { AnimateRunner } from "./runner/animate-runner.js";
 
 AnimateJsProvider.$inject = provider([$injectTokens._animate]);
 
+/**
+ * @param {import("./animate.js").AnimateProvider} $animateProvider
+ */
 export function AnimateJsProvider($animateProvider) {
   this.$get = [
     $injectTokens._injector,
@@ -19,9 +22,6 @@ export function AnimateJsProvider($animateProvider) {
     ($injector) => {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
-      /**
-       *
-       */
       return function animateJs(element, event, classes, options) {
         // Optional arguments
         if (arguments.length === 3 && isObject(classes)) {
@@ -83,6 +83,7 @@ export function AnimateJsProvider($animateProvider) {
           applyAnimationStyles(element, options);
         }
 
+        /** @type {ng.AnimateRunner} */
         let runner;
 
         return {

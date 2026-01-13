@@ -13,7 +13,7 @@ const INACTIVE_CLASS = "ng-inactive";
 
 class NgMessageCtrl {
   /**
-   * @param {Element} $element
+   * @param {HTMLElement} $element
    * @param {ng.Scope} $scope
    * @param {ng.Attributes} $attrs
    * @param {ng.AnimateService} $animate
@@ -26,6 +26,7 @@ class NgMessageCtrl {
 
     this._latestKey = 0;
     this._nextAttachId = 0;
+    /** @type {Record<string, any>} */
     this._messages = {};
     this._renderLater = false;
     this._cachedCollection = null;
@@ -53,6 +54,7 @@ class NgMessageCtrl {
 
     const unmatchedMessages = [];
 
+    /** @type {Record<string, boolean>} */
     const matchedKeys = {};
 
     let truthyKeys = 0;
@@ -224,11 +226,22 @@ export function ngMessagesDirective($animate) {
   return {
     require: "ngMessages",
     restrict: "AE",
-    controller: ($element, $scope, $attrs) =>
-      new NgMessageCtrl($element, $scope, $attrs, $animate),
+    controller:
+      /**
+       * @param {HTMLElement} $element
+       * @param {ng.Scope} $scope
+       * @param {ng.Attributes} $attrs
+       * @returns {NgMessageCtrl}
+       */
+      ($element, $scope, $attrs) =>
+        new NgMessageCtrl($element, $scope, $attrs, $animate),
   };
 }
 
+/**
+ * @param {ng.Scope} scope
+ * @param {string} attr
+ */
 function isAttrTruthy(scope, attr) {
   return (
     (isString(attr) && attr.length === 0) || // empty attribute
@@ -279,7 +292,7 @@ export const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
 
 /**
  * @param {boolean} isDefault
- * @returns {(any) => ng.Directive}
+ * @returns {($animate: ng.AnimateService) => ng.Directive}
  */
 function ngMessageDirectiveFactory(isDefault) {
   ngMessageDirectiveFn.$inject = [$injectTokens._animate];
@@ -295,8 +308,14 @@ function ngMessageDirectiveFactory(isDefault) {
       terminal: true,
       require: "^^ngMessages",
       link(scope, element, attrs, ngMessagesCtrl, $transclude) {
+        /**
+         * @type {HTMLElement}
+         */
         let commentNode;
 
+        /**
+         * @type {any}
+         */
         let records;
 
         let staticExp;
@@ -325,6 +344,9 @@ function ngMessageDirectiveFactory(isDefault) {
           }
         }
 
+        /**
+         * @type {HTMLElement & { _attachId?: number } | undefined}
+         */
         let currentElement;
 
         let messageCtrl;
@@ -337,31 +359,38 @@ function ngMessageDirectiveFactory(isDefault) {
             },
             attach() {
               if (!currentElement) {
-                $transclude((elm, newScope) => {
-                  $animate.enter(elm, null, element);
-                  currentElement = elm;
+                /** @type {ng.TranscludeFn} */ ($transclude)(
+                  (elm, newScope) => {
+                    $animate.enter(
+                      /** @type {HTMLElement} */ (elm),
+                      null,
+                      element,
+                    );
+                    currentElement =
+                      /** @type {HTMLElement & { _attachId?: number }} */ (elm);
 
-                  // Each time we attach this node to a message we get a new id that we can match
-                  // when we are destroying the node later.
-                  const attachId = (currentElement._attachId =
-                    ngMessagesCtrl._getAttachId());
+                    // Each time we attach this node to a message we get a new id that we can match
+                    // when we are destroying the node later.
+                    const attachId = (currentElement._attachId =
+                      ngMessagesCtrl._getAttachId());
 
-                  // in the event that the element or a parent element is destroyed
-                  // by another structural directive then it's time
-                  // to deregister the message from the controller
-                  currentElement.addEventListener("$destroy", () => {
-                    // If the message element was removed via a call to `detach` then `currentElement` will be null
-                    // So this handler only handles cases where something else removed the message element.
-                    if (
-                      currentElement &&
-                      currentElement._attachId === attachId
-                    ) {
-                      ngMessagesCtrl.deregister(commentNode, isDefault);
-                      messageCtrl.detach();
-                    }
-                    newScope.$destroy();
-                  });
-                });
+                    // in the event that the element or a parent element is destroyed
+                    // by another structural directive then it's time
+                    // to deregister the message from the controller
+                    currentElement.addEventListener("$destroy", () => {
+                      // If the message element was removed via a call to `detach` then `currentElement` will be null
+                      // So this handler only handles cases where something else removed the message element.
+                      if (
+                        currentElement &&
+                        currentElement._attachId === attachId
+                      ) {
+                        ngMessagesCtrl.deregister(commentNode, isDefault);
+                        messageCtrl.detach();
+                      }
+                      newScope.$destroy();
+                    });
+                  },
+                );
               }
             },
             detach() {
@@ -369,7 +398,7 @@ function ngMessageDirectiveFactory(isDefault) {
                 const elm = currentElement;
 
                 currentElement = null;
-                $animate.leave(elm);
+                $animate.leave(/** @type {HTMLElement} */ (elm));
               }
             },
           }),

@@ -21,29 +21,34 @@ export namespace ngMessagesIncludeDirective {
   let $inject_1: string[];
   export { $inject_1 as $inject };
 }
-export const ngMessageDirective: (any: any) => ng.Directive;
-export const ngMessageExpDirective: (any: any) => ng.Directive;
-export const ngMessageDefaultDirective: (any: any) => ng.Directive;
+export const ngMessageDirective: ($animate: ng.AnimateService) => ng.Directive;
+export const ngMessageExpDirective: (
+  $animate: ng.AnimateService,
+) => ng.Directive;
+export const ngMessageDefaultDirective: (
+  $animate: ng.AnimateService,
+) => ng.Directive;
 declare class NgMessageCtrl {
   /**
-   * @param {Element} $element
+   * @param {HTMLElement} $element
    * @param {ng.Scope} $scope
    * @param {ng.Attributes} $attrs
    * @param {ng.AnimateService} $animate
    */
   constructor(
-    $element: Element,
+    $element: HTMLElement,
     $scope: ng.Scope,
     $attrs: ng.Attributes,
     $animate: ng.AnimateService,
   );
-  _element: Element;
+  _element: HTMLElement;
   _scope: ng.Scope;
   _attrs: ng.Attributes;
   _animate: import("../../animations/interface.ts").AnimateService;
   _latestKey: number;
   _nextAttachId: number;
-  _messages: {};
+  /** @type {Record<string, any>} */
+  _messages: Record<string, any>;
   _renderLater: boolean;
   _cachedCollection: {};
   _head: any;

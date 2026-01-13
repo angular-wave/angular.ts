@@ -208,7 +208,7 @@ export class Angular extends EventTarget {
    * </html>
    * ```
    *
-   * @param {string | Element | Document} element DOM element which is the root of AngularTS application.
+   * @param {string | HTMLElement | HTMLDocument} element DOM element which is the root of AngularTS application.
    * @param {Array<String|any>} [modules] an array of modules to load into the application.
    *     Each item in the array should be the name of a predefined module or a (DI annotated)
    *     function that will be invoked by the injector as a `config` block.
@@ -253,7 +253,7 @@ export class Angular extends EventTarget {
       $t._injector,
       /**
        * @param {ng.Scope} scope
-       * @param {Element} el
+       * @param {HTMLElement} el
        * @param {ng.CompileService} compile
        * @param {ng.InjectorService} $injector
        */
@@ -325,10 +325,10 @@ export class Angular extends EventTarget {
   }
 
   /**
-   * @param {Element|Document} element
+   * @param {HTMLElement|HTMLDocument} element
    */
   init(element) {
-    /** @type {Element|undefined} */
+    /** @type {HTMLElement|undefined} */
     let appElement;
 
     let module;
@@ -340,18 +340,21 @@ export class Angular extends EventTarget {
       const name = `${prefix}app`;
 
       if (
-        /** @type {Element} */ (element).hasAttribute &&
-        /** @type {Element} */ (element).hasAttribute(name)
+        /** @type {HTMLElement} */ (element).hasAttribute &&
+        /** @type {HTMLElement} */ (element).hasAttribute(name)
       ) {
-        appElement = /** @type {Element} */ (element);
-        module = /** @type {Element} */ (element).getAttribute(name);
+        appElement = /** @type {HTMLElement} */ (element);
+        module = appElement.getAttribute(name);
       }
 
+      /** @type {HTMLElement} */
       let candidate;
 
       if (
         !appElement &&
-        (candidate = element.querySelector(`[${name.replace(":", "\\:")}]`))
+        (candidate = /** @type {HTMLElement} */ (
+          element.querySelector(`[${name.replace(":", "\\:")}]`)
+        ))
       ) {
         appElement = candidate;
         module = candidate.getAttribute(name);

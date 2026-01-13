@@ -36,6 +36,7 @@ import {
   isString,
   isUndefined,
   minErr,
+  nullObject,
   simpleCompare,
   trim,
 } from "../../shared/utils.js";
@@ -76,7 +77,7 @@ export class CompileProvider {
   constructor($provide, $sanitizeUriProvider) {
     const hasDirectives = {};
 
-    const bindingCache = Object.create(null);
+    const bindingCache = nullObject();
 
     /**
      * @param {ng.Scope} scope
@@ -87,7 +88,7 @@ export class CompileProvider {
     function parseIsolateBindings(scope, directiveName, isController) {
       const LOCAL_REGEXP = /^([@&]|[=<]())(\??)\s*([\w$]*)$/;
 
-      const bindings = Object.create(null);
+      const bindings = nullObject();
 
       entries(scope).forEach(([scopeName, definition]) => {
         definition = definition.trim();
@@ -476,7 +477,7 @@ export class CompileProvider {
     /**
      * The security context of DOM Properties.
      */
-    const PROP_CONTEXTS = Object.create(null);
+    const PROP_CONTEXTS = nullObject();
 
     /**
      * Defines the security context for DOM properties bound by ng-prop-*.
@@ -1006,7 +1007,7 @@ export class CompileProvider {
 
           // We need  to attach the transclusion slots onto the `boundTranscludeFn`
           // so that they are available inside the `controllersBoundTransclude` function
-          const boundSlots = (boundTranscludeFn._slots = Object.create(null));
+          const boundSlots = (boundTranscludeFn._slots = nullObject());
 
           for (const slotName in transcludeFn._slots) {
             if (transcludeFn._slots[slotName]) {
@@ -1727,8 +1728,7 @@ export class CompileProvider {
             }
 
             if (!directive.templateUrl && directive.controller) {
-              _controllerDirectives =
-                _controllerDirectives || Object.create(null);
+              _controllerDirectives = _controllerDirectives || nullObject();
               assertNoDuplicate(
                 `'${directiveName}' controller`,
                 _controllerDirectives[directiveName],
@@ -1788,7 +1788,7 @@ export class CompileProvider {
                   },
                 );
               } else {
-                const slots = Object.create(null);
+                const slots = nullObject();
 
                 let nodes;
 
@@ -1801,9 +1801,9 @@ export class CompileProvider {
                   // collect them up, compile them and store their transclusion functions
                   nodes = document.createDocumentFragment();
 
-                  const slotMap = Object.create(null);
+                  const slotMap = nullObject();
 
-                  const filledSlots = Object.create(null);
+                  const filledSlots = nullObject();
 
                   // Parse the element selectors
                   entries(directiveValue).forEach(
@@ -2214,7 +2214,7 @@ export class CompileProvider {
           scope,
           _newIsolateScopeDirective,
         ) {
-          const elementControllers = Object.create(null);
+          const elementControllers = nullObject();
 
           for (const controllerKey in _controllerDirectives) {
             const directive = _controllerDirectives[controllerKey];

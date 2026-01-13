@@ -9,8 +9,18 @@ export class AnimateJsDriverProvider {
    * @param {import("./animation.js").AnimationProvider} $$animationProvider
    */
   constructor($$animationProvider: import("./animation.js").AnimationProvider);
-  $get: (string | (($$animateJs: any) => (animationDetails: any) => any))[];
+  $get: (
+    | string
+    | (($$animateJs: import("./interface.ts").AnimateJsFn) => (
+        animationDetails: import("./interface.ts").AnimationDetails,
+      ) =>
+        | import("./interface.ts").AnimateJsRunner
+        | {
+            start(): AnimateRunner;
+          })
+  )[];
 }
 export namespace AnimateJsDriverProvider {
   let $inject: string[];
 }
+import { AnimateRunner } from "./runner/animate-runner.js";

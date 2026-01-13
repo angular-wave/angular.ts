@@ -1,4 +1,7 @@
-export function escapeForRegexp(str: any): any;
+/**
+ * @param {string} str
+ */
+export function escapeForRegexp(str: string): string;
 /**
  * Adjusts a matcher string or RegExp into a proper RegExp.
  *

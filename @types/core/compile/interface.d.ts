@@ -12,6 +12,7 @@ export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
  */
 export type TranscludeFn = {
   (cb: TranscludeFnCb): void;
+  (clone?: TranscludedNodes, scope?: Scope | null): void;
   (scope: Scope, cb?: TranscludeFnCb): void;
   _slots?: any;
 };

@@ -10,6 +10,7 @@ import {
   isObject,
   isString,
   isUndefined,
+  nullObject,
 } from "../../shared/utils.js";
 import {
   NG_ANIMATE_CHILDREN_DATA,
@@ -30,6 +31,11 @@ const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 const NG_ANIMATE_PIN_DATA = "$ngAnimatePin";
 
 AnimateQueueProvider.$inject = provider([$t._animate]);
+
+/**
+ * @param {import("../animate.js").AnimateProvider} $animateProvider
+ * @constructor
+ */
 export function AnimateQueueProvider($animateProvider) {
   const PRE_DIGEST_STATE = 1;
 
@@ -43,6 +49,10 @@ export function AnimateQueueProvider($animateProvider) {
     join: [],
   });
 
+  /**
+   * @param {ng.AnimationOptions} options
+   * @return {Partial<ng.AnimationOptions>}
+   */
   function getEventData(options) {
     return {
       addClass: options.addClass,
@@ -52,6 +62,10 @@ export function AnimateQueueProvider($animateProvider) {
     };
   }
 
+  /**
+   * @param {string} classString
+   * @return {Record<string, string>|null}
+   */
   function makeTruthyCssClassMap(classString) {
     if (!classString) {
       return null;
@@ -59,7 +73,7 @@ export function AnimateQueueProvider($animateProvider) {
 
     const keys = classString.split(ONE_SPACE);
 
-    const map = Object.create(null);
+    const map = nullObject();
 
     keys.forEach((key) => {
       map[key] = true;
@@ -195,7 +209,7 @@ export function AnimateQueueProvider($animateProvider) {
         };
       }
 
-      const callbackRegistry = Object.create(null);
+      const callbackRegistry = nullObject();
 
       // remember that the `customFilter`/`classNameFilter` are set during the
       // provider/config stage therefore we can optimize here and setup helper functions

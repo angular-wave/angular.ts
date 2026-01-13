@@ -5,6 +5,7 @@ import {
   isArrayLike,
   isDefined,
   minErr,
+  nullObject,
 } from "../../shared/utils.js";
 import { getBlockNodes, removeElement } from "../../shared/dom.js";
 import { $injectTokens } from "../../injection-tokens.js";
@@ -163,7 +164,7 @@ export function ngRepeatDirective($animate) {
         //
         // We are using no-proto object so that we don't need to guard against inherited props via
         // hasOwnProperty.
-        let lastBlockMap = Object.create(null);
+        let lastBlockMap = nullObject();
 
         // watch props
         $scope.$watch(
@@ -177,7 +178,7 @@ export function ngRepeatDirective($animate) {
 
             const // Same as lastBlockMap but it has the current state. It will become the
               // lastBlockMap on the next iteration.
-              nextBlockMap = Object.create(null);
+              nextBlockMap = nullObject();
 
             let key,
               value, // key/value of iteration

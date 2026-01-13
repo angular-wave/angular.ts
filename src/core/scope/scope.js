@@ -13,6 +13,7 @@ import {
   isUndefined,
   keys,
   nextUid,
+  nullObject,
 } from "../../shared/utils.js";
 import { ASTType } from "../parse/ast-type.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
@@ -1145,7 +1146,7 @@ export class Scope {
    * @returns {Proxy<ng.Scope> & ng.Scope}
    */
   $newIsolate(instance) {
-    const child = instance ? Object.create(instance) : Object.create(null);
+    const child = instance ? Object.create(instance) : nullObject();
 
     const proxy = new Proxy(child, new Scope(this, this.$root));
 

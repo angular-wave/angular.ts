@@ -724,5 +724,16 @@ export function instantiateWasm(
  * @returns {boolean}
  */
 export function isArrowFunction(fn: any): boolean;
+/**
+ * Creates an object with no prototype.
+ *
+ * This is useful for use as a dictionary or map, since the returned object
+ * does not inherit from `Object.prototype` and therefore has no built-in
+ * properties such as `toString` or `hasOwnProperty`.
+ *
+ * @template T
+ * @returns {Record<string, T>} An object with a null prototype.
+ */
+export function nullObject<T>(): Record<string, T>;
 export const isProxySymbol: unique symbol;
 export const ngAttrPrefixes: string[];

@@ -97,21 +97,20 @@ export function ngTranscludeDirective($compile) {
         function useFallbackContent() {
           // Since this is the fallback content rather than the transcluded content,
           // we link against the scope of this directive rather than the transcluded scope
-          fallbackLinkFn(
-            $scope,
-
-            (clone) => {
-              $element.append(clone);
-            },
-          );
+          fallbackLinkFn($scope, (clone) => {
+            $element.append(/** @type {Node} */ (clone));
+          });
         }
 
+        /**
+         * @param {Node | NodeList} node
+         */
         function notWhitespace(node) {
           if (node instanceof Array) {
             return false;
           } else if (
-            node.nodeType !== NodeType._TEXT_NODE ||
-            node.nodeValue.trim()
+            /** @type {Node} */ (node).nodeType !== NodeType._TEXT_NODE ||
+            /** @type {String} */ (/** @type {Node} */ (node).nodeValue).trim()
           ) {
             return true;
           }

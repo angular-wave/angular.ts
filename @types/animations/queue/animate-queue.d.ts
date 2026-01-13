@@ -1,6 +1,16 @@
-export function AnimateQueueProvider($animateProvider: any): void;
+/**
+ * @param {import("../animate.js").AnimateProvider} $animateProvider
+ * @constructor
+ */
+export function AnimateQueueProvider(
+  $animateProvider: import("../animate.js").AnimateProvider,
+): void;
 export class AnimateQueueProvider {
-  constructor($animateProvider: any);
+  /**
+   * @param {import("../animate.js").AnimateProvider} $animateProvider
+   * @constructor
+   */
+  constructor($animateProvider: import("../animate.js").AnimateProvider);
   rules: {
     skip: any[];
     cancel: any[];

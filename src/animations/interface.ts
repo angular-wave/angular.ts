@@ -29,7 +29,7 @@ export interface AnimateService {
   on(
     event: string,
     container: Element,
-    callback: (
+    callback?: (
       element: Element,
       phase: QueuePhase,
       data: {
@@ -55,7 +55,7 @@ export interface AnimateService {
   // Structural DOM operations
   enter(
     element: Element,
-    parent: Element,
+    parent?: Element | null,
     after?: Element,
     options?: AnimationOptions,
   ): AnimateRunner;
@@ -110,8 +110,8 @@ export type AnimationMethod =
 export interface AnimationOptions {
   addClass?: string; // space-separated CSS classes to add to element
   from?: Record<string, string | number>; // CSS properties & values at the beginning of animation
-  removeClass?: string; // space-separated CSS classes to remove from element
   to?: Record<string, string | number>; // CSS properties & values at end of animation
+  removeClass?: string; // space-separated CSS classes to remove from element
   tempClasses: string | string[]; // CSS classes during animation
   /** Optional DOM operation callback executed before animation */
   domOperation?: () => void;
@@ -133,6 +133,29 @@ export interface AnimationOptions {
   stagger?: number | string;
   keyframeStyle?: string;
   applyClassesEarly?: boolean;
+}
+
+export interface AnimationDetails {
+  /** CSS properties & values at the beginning of animation */
+  from?: AnimationDetails;
+
+  /** CSS properties & values at the end of animation */
+  to?: AnimationDetails;
+
+  /** Target element for the animation */
+  element: HTMLElement;
+
+  /** Animation method / event name */
+  event: AnimationMethod | string;
+
+  /** Space-delimited CSS classes involved in the animation */
+  classes?: string | null;
+
+  /** Whether the animation is structural (enter / leave / move) */
+  structural: boolean;
+
+  /** Normalized animation options */
+  options: AnimationOptions;
 }
 
 export interface AnimateJsRunner {

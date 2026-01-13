@@ -1,5 +1,5 @@
 import { $injectTokens } from "../../injection-tokens.js";
-import { deProxy, isFunction } from "../../shared/utils.js";
+import { deProxy, isFunction, nullObject } from "../../shared/utils.js";
 import { Lexer } from "./lexer/lexer.js";
 import { Parser } from "./parser/parser.js";
 import { validateRequired } from "../../shared/validate.js";
@@ -8,7 +8,7 @@ const lexer = new Lexer();
 
 export class ParseProvider {
   constructor() {
-    const cache = Object.create(null);
+    const cache = nullObject();
 
     this.$get = [
       $injectTokens._filter,

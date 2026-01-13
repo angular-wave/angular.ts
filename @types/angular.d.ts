@@ -124,7 +124,7 @@ export class Angular extends EventTarget {
    * </html>
    * ```
    *
-   * @param {string | Element | Document} element DOM element which is the root of AngularTS application.
+   * @param {string | HTMLElement | HTMLDocument} element DOM element which is the root of AngularTS application.
    * @param {Array<String|any>} [modules] an array of modules to load into the application.
    *     Each item in the array should be the name of a predefined module or a (DI annotated)
    *     function that will be invoked by the injector as a `config` block.
@@ -133,7 +133,7 @@ export class Angular extends EventTarget {
    * @returns {ng.InjectorService} The created injector instance for this application.
    */
   bootstrap(
-    element: string | Element | Document,
+    element: string | HTMLElement | HTMLDocument,
     modules?: Array<string | any>,
     config?: import("./interface.ts").AngularBootstrapConfig,
   ): ng.InjectorService;
@@ -145,9 +145,9 @@ export class Angular extends EventTarget {
    */
   injector(modules: any[], strictDi?: boolean): ng.InjectorService;
   /**
-   * @param {Element|Document} element
+   * @param {HTMLElement|HTMLDocument} element
    */
-  init(element: Element | Document): void;
+  init(element: HTMLElement | HTMLDocument): void;
   /**
    * Retrieves a scope by its registered name and returns its Proxy wrapper.
    *

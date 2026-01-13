@@ -44,6 +44,9 @@ export const SCE_CONTEXTS = {
 // Copied from:
 // http://docs.closure-library.googlecode.com/git/local_closure_goog_string_string.js.source.html#line1021
 // Prereq: s is a string.
+/**
+ * @param {string} str
+ */
 export function escapeForRegexp(str) {
   return str.replace(/([-()[\]{}+?*.$^|,:#<!\\])/g, "\\$1");
 }
