@@ -117,13 +117,13 @@ export namespace SCE_CONTEXTS {
 export class SceDelegateProvider {
   /**
    *
-   * @param {Array=} value When provided, replaces the trustedResourceUrlList with
+   * @param {(Array<RegExp | "self"> | null)=} value When provided, replaces the trustedResourceUrlList with
    *     the value provided.  This must be an array or null.  A snapshot of this array is used so
    *     further changes to the array are ignored.
    *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
    *     allowed in this array.
    *
-   * @return {Array<any>} The currently set trusted resource URL array.
+   * @return {Array<RegExp | "self">} The currently set trusted resource URL array.
    *
    *
    * Sets/Gets the list trusted of resource URLs.
@@ -137,12 +137,12 @@ export class SceDelegateProvider {
    * </div>
    */
   trustedResourceUrlList: (
-    value?: any[] | undefined,
+    value?: (Array<RegExp | "self"> | null) | undefined,
     ...args: any[]
-  ) => Array<any>;
+  ) => Array<RegExp | "self">;
   /**
    *
-   * @param {Array=} bannedResourceUrlList When provided, replaces the `bannedResourceUrlList` with
+   * @param {(Array<RegExp | "self"> | null)=} value When provided, replaces the `bannedResourceUrlList` with
    *     the value provided. This must be an array or null. A snapshot of this array is used so
    *     further changes to the array are ignored.</p><p>
    *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
@@ -154,7 +154,7 @@ export class SceDelegateProvider {
    *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
    *     the final say.
    *
-   * @return {Array<any>} The currently set `bannedResourceUrlList` array.
+   * @return {Array<RegExp | "self">} The currently set `bannedResourceUrlList` array.
    *
    *
    * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
@@ -162,7 +162,10 @@ export class SceDelegateProvider {
    * The **default value** when no trusted resource URL list has been explicitly set is the empty
    * array (i.e. there is no `bannedResourceUrlList`.)
    */
-  bannedResourceUrlList: (value: any, ...args: any[]) => Array<any>;
+  bannedResourceUrlList: (
+    value?: (Array<RegExp | "self"> | null) | undefined,
+    ...args: any[]
+  ) => Array<RegExp | "self">;
   $get: (
     | string
     | ((

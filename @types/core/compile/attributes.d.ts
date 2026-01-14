@@ -110,7 +110,7 @@ export class Attributes {
     * @returns {Function} Returns a deregistration function for this observer.
     */
   $observe<T>(key: string, fn: (value?: T) => any): Function;
-  _observers: any;
+  _observers: Record<string, any>;
   /**
    * Sets a special (non-standard) attribute on an element.
    *

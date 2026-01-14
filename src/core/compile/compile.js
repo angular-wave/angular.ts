@@ -2931,7 +2931,7 @@ export class CompileProvider {
               return {
                 pre: function attrInterpolatePreLinkFn(scope, element, attr) {
                   const _observers =
-                    attr._observers || (attr._observers = Object.create(null));
+                    attr._observers || (attr._observers = nullObject());
 
                   // If the attribute has changed since last $interpolate()ed
                   const newValue = attr[name];
@@ -2969,7 +2969,10 @@ export class CompileProvider {
                       scope;
 
                     targetScope.$watch(x, () => {
-                      const newInterpolatedValue = interpolateFn(scope);
+                      const newInterpolatedValue =
+                        /** @type {import("../interpolate/interface.ts").InterpolationFunction} */ (
+                          interpolateFn
+                        )(scope);
 
                       // special case for class attribute addition + removal
                       // so that class changes can tap into the animation
@@ -3046,6 +3049,10 @@ export class CompileProvider {
           elementsToRemove.node = newNode;
         }
 
+        /**
+         * @param {Function} fn
+         * @param {Object} annotation
+         */
         function cloneAndAnnotateFn(fn, annotation) {
           return extend(
             function () {
@@ -3056,6 +3063,10 @@ export class CompileProvider {
           );
         }
 
+        /**
+         * @param {string} attrName
+         * @param {string} directiveName
+         */
         function strictBindingsCheck(attrName, directiveName) {
           if (strictComponentBindingsEnabled) {
             throw $compileMinErr(
@@ -3084,6 +3095,9 @@ export class CompileProvider {
           bindings,
           directive,
         ) {
+          /**
+           * @type {((() => void) | undefined)[]}
+           */
           const removeWatchCollection = [];
 
           const initialChanges = {};

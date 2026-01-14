@@ -21,3 +21,8 @@ export interface ErrorHandlingConfig {
 }
 
 export type Validator = (value: unknown) => boolean;
+
+/**
+ * A dictionary of string keys and values of type T.
+ */
+export type Dict<T> = Record<string, T>;

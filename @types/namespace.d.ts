@@ -21,6 +21,9 @@ import {
   HttpParamSerializer as THttpParamSerializer,
   HttpProviderDefaults as THttpProviderDefaults,
   RequestShortcutConfig as TRequestShortcutConfig,
+  HttpResponseStatus as THttpResponseStatus,
+  HttpMethod as THttpMethod,
+  RequestConfig as TRequestConfig,
 } from "./services/http/interface.ts";
 import { HttpParamSerializerProvider as THttpParamSerializerProvider } from "./services/http/http.js";
 import {
@@ -230,5 +233,8 @@ declare global {
     type ProviderCache = TProviderCache;
     type WebSocketConfig = TWebSocketConfig;
     type WebSocketService = TWebSocketService;
+    type HttpResponseStatus = THttpResponseStatus;
+    type HttpMethod = THttpMethod;
+    type RequestConfig = TRequestConfig;
   }
 }

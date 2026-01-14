@@ -142,6 +142,9 @@ export interface AnimationDetails {
   /** CSS properties & values at the end of animation */
   to?: AnimationDetails;
 
+  /** Anchor elements for shared element transitions */
+  anchors?: Array<{ out: HTMLElement; in: HTMLElement }>;
+
   /** Target element for the animation */
   element: HTMLElement;
 

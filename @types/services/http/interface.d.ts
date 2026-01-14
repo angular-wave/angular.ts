@@ -1,3 +1,4 @@
+import { Dict } from "../../shared/interface.ts";
 export interface HttpHeadersGetter {
   (): {
     [name: string]: string;
@@ -113,7 +114,7 @@ export interface RequestConfig extends RequestShortcutConfig {
   /**
    * HTTP method (e.g. 'GET', 'POST', etc)
    */
-  method: string;
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS";
   /**
    * Absolute or relative URL of the resource that is being requested.
    */
@@ -122,20 +123,12 @@ export interface RequestConfig extends RequestShortcutConfig {
    * Event listeners to be bound to the XMLHttpRequest object.
    * To bind events to the XMLHttpRequest upload object, use uploadEventHandlers. The handler will be called in the context of a $apply block.
    */
-  eventHandlers?:
-    | {
-        [type: string]: EventListenerOrEventListenerObject;
-      }
-    | undefined;
+  eventHandlers?: Dict<EventListenerOrEventListenerObject> | undefined;
   /**
    * Event listeners to be bound to the XMLHttpRequest upload object.
    * To bind events to the XMLHttpRequest object, use eventHandlers. The handler will be called in the context of a $apply block.
    */
-  uploadEventHandlers?:
-    | {
-        [type: string]: EventListenerOrEventListenerObject;
-      }
-    | undefined;
+  uploadEventHandlers?: Dict<EventListenerOrEventListenerObject> | undefined;
 }
 export type HttpResponseStatus = "complete" | "error" | "timeout" | "abort";
 export interface HttpResponse<T> {
@@ -148,7 +141,7 @@ export interface HttpResponse<T> {
 }
 export type HttpPromise<T> = Promise<HttpResponse<T>>;
 /**
- * HttpService
+ * $http service interface
  */
 export interface HttpService {
   /**
@@ -243,3 +236,4 @@ export interface HttpInterceptor {
 export interface HttpInterceptorFactory {
   (...args: any[]): HttpInterceptor;
 }
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD";
