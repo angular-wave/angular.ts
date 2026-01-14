@@ -8,6 +8,7 @@ import {
   isString,
   isUndefined,
   minErr,
+  nullObject,
   snakeCase,
   trim,
 } from "../../shared/utils.js";
@@ -287,8 +288,7 @@ export class Attributes {
   * @returns {Function} Returns a deregistration function for this observer.
   */
   $observe(key, fn) {
-    const _observers =
-      this._observers || (this._observers = Object.create(null));
+    const _observers = this._observers || (this._observers = nullObject());
 
     const listeners = _observers[key] || (_observers[key] = []);
 

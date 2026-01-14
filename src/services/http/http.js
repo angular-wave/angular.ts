@@ -50,6 +50,7 @@ const CONTENT_TYPE_APPLICATION_JSON = {
 
 const JSON_START = /^\[|^\{(?!\{)/;
 
+/** @type {Record<string, any>} */
 const JSON_ENDS = {
   "[": /]$/,
   "{": /}$/,
@@ -59,9 +60,13 @@ const JSON_PROTECTION_PREFIX = /^\)]\}',?\n/;
 
 const $httpMinErr = minErr("$http");
 
+/**
+ * @param {string | number | boolean | Object | Date} v
+ * @returns {string | number | boolean}
+ */
 function serializeValue(v) {
   if (isObject(v)) {
-    return isDate(v) ? v.toISOString() : toJson(v);
+    return isDate(v) ? v.toISOString() : /** @type {string} */ (toJson(v));
   }
 
   return v;
@@ -86,6 +91,9 @@ export function HttpParamSerializerProvider() {
   this.$get = () => {
     return (params) => {
       if (!params) return "";
+      /**
+       * @type {string[]}
+       */
       const parts = [];
 
       keys(params)
@@ -97,13 +105,22 @@ export function HttpParamSerializerProvider() {
 
           if (isArray(value)) {
             /** @type {any[]} */ (value).forEach((v) => {
+              if (v === null || isUndefined(v) || isFunction(v)) return;
+
+              const serializedValue = serializeValue(
+                /** @type {string | number | boolean | Object | Date} */ (v),
+              );
+
               parts.push(
-                `${encodeUriQuery(key)}=${encodeUriQuery(serializeValue(v))}`,
+                `${encodeUriQuery(key)}=${encodeUriQuery(serializedValue)}`,
               );
             });
           } else {
+            const sanitizedValue =
+              /** @type {string | number | boolean | Object | Date} */ (value);
+
             parts.push(
-              `${encodeUriQuery(key)}=${encodeUriQuery(serializeValue(value))}`,
+              `${encodeUriQuery(key)}=${encodeUriQuery(serializeValue(sanitizedValue))}`,
             );
           }
         });
@@ -113,6 +130,10 @@ export function HttpParamSerializerProvider() {
   };
 }
 
+/**
+ * @param {unknown} data
+ * @param {(arg0: string) => any} headers
+ */
 export function defaultHttpResponseTransform(data, headers) {
   if (isString(data)) {
     // Strip json vulnerability protection prefix and trim whitespace
@@ -159,14 +180,19 @@ function isJsonLike(str) {
 /**
  * Parse headers into key value object
  *
- * @param {string} headers Raw headers as a string
- * @returns {Object} Parsed headers as key value object
+ * @param {string | Object} headers Raw headers as a string
+ * @returns {Record<string, string>} Parsed headers as key value object
  */
 function parseHeaders(headers) {
+  /** @type {Record<string, string>} */
   const parsed = nullObject();
 
   let i;
 
+  /**
+   * @param {string} key
+   * @param {any} val
+   */
   function fillInParsed(key, val) {
     if (key) {
       parsed[key] = parsed[key] ? `${parsed[key]}, ${val}` : val;
@@ -200,29 +226,32 @@ function parseHeaders(headers) {
  * @see parseHeaders
  *
  * @param {(string|Object)} headers Headers to provide access to.
- * @returns {function(string=)} Returns a getter function which if called with:
+ * @returns {import("./interface.ts").HttpHeadersGetter} Returns a getter function which if called with:
  *
- *   - if called with an argument returns a single header value or null
+ *   - if called with an argument returns a single header value (empty string if missing)
  *   - if called with no arguments returns an object containing all headers.
  */
 function headersGetter(headers) {
+  /**
+   * @type {Record<string, string> | undefined}
+   */
   let headersObj;
 
-  return function (name) {
-    if (!headersObj) headersObj = parseHeaders(headers);
+  const getter = /** @type {import("./interface.ts").HttpHeadersGetter} */ (
+    function (name) {
+      if (!headersObj) headersObj = parseHeaders(headers);
 
-    if (name) {
-      let value = headersObj[name.toLowerCase()];
+      if (name) {
+        const value = headersObj[name.toLowerCase()];
 
-      if (value === undefined) {
-        value = null;
+        return value ?? "";
       }
 
-      return value;
+      return headersObj;
     }
+  );
 
-    return headersObj;
-  };
+  return getter;
 }
 
 /**
@@ -231,9 +260,9 @@ function headersGetter(headers) {
  * This function is used for both request and response transforming
  *
  * @param {*} data Data to transform.
- * @param {function(string=):any} headers HTTP headers getter fn.
- * @param {number} status HTTP status code of the response.
- * @param {function(...any): any | Array<Function>} fns Function or an array of functions.
+ * @param {import("./interface.ts").HttpHeadersGetter} headers HTTP headers getter fn.
+ * @param {number=} status HTTP status code of the response.
+ * @param {((...args: any[]) => any) | Array<(...args: any[]) => any>} [fns] Function or an array of functions.
  * @returns {*} Transformed data.
  */
 function transformData(data, headers, status, fns) {
@@ -250,6 +279,9 @@ function transformData(data, headers, status, fns) {
   return data;
 }
 
+/**
+ * @param {number} status
+ */
 function isSuccess(status) {
   return status >= Http._OK && status < Http._MultipleChoices;
 }
@@ -306,7 +338,6 @@ export function HttpProvider() {
   const defaults = (this.defaults = {
     // transform incoming response data
     transformResponse: [defaultHttpResponseTransform],
-
     // transform outgoing request data
     transformRequest: [
       function (data) {
@@ -318,7 +349,6 @@ export function HttpProvider() {
           : data;
       },
     ],
-
     // default headers
     headers: {
       common: {
@@ -328,11 +358,9 @@ export function HttpProvider() {
       put: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
       patch: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
     },
-
     xsrfCookieName: "XSRF-TOKEN",
     xsrfHeaderName: "X-XSRF-TOKEN",
-
-    paramSerializer: "$httpParamSerializer",
+    paramSerializer: $t._httpParamSerializer,
   });
 
   let useApplyAsync = false;
@@ -425,7 +453,7 @@ export function HttpProvider() {
      * @param {ng.InjectorService} $injector
      * @param {ng.SceService} $sce
      * @param {ng.CookieService} $cookie
-     * @returns
+     * @returns {ng.HttpService}
      */
     function ($injector, $sce, $cookie) {
       /**
@@ -444,6 +472,7 @@ export function HttpProvider() {
        * Interceptors stored in reverse order. Inner interceptors before outer interceptors.
        * The reversal is needed so that we can build up the interception chain around the
        * server request.
+       * @type {any[]}
        */
       const reversedInterceptors = [];
 
@@ -465,270 +494,240 @@ export function HttpProvider() {
       /**
        * @property {Array.<Object>} requestConfig Array of config objects for currently pending
        * requests. This is primarily meant to be used for debugging purposes.
+       * @param {ng.RequestConfig} requestConfig
+       * @returns {import("./interface.ts").HttpPromise<any>}
        */
-      function $http(requestConfig) {
-        if (!isObject(requestConfig)) {
-          throw minErr("$http")(
-            "badreq",
-            "Http request configuration must be an object.  Received: {0}",
-            requestConfig,
-          );
-        }
-
-        if (!isString($sce.valueOf(requestConfig.url))) {
-          throw minErr("$http")(
-            "badreq",
-            "Http request configuration url must be a string or a $sce trusted object.  Received: {0}",
-            requestConfig.url,
-          );
-        }
-
-        const config = extend(
-          {
-            method: "get",
-            transformRequest: defaults.transformRequest,
-            transformResponse: defaults.transformResponse,
-            paramSerializer: defaults.paramSerializer,
-          },
-          requestConfig,
-        );
-
-        config.headers = mergeHeaders(requestConfig);
-        config.method = uppercase(config.method);
-        config.paramSerializer = isString(config.paramSerializer)
-          ? $injector.get(config.paramSerializer)
-          : config.paramSerializer;
-
-        const requestInterceptors = [];
-
-        const responseInterceptors = [];
-
-        let promise = Promise.resolve(config);
-
-        // apply interceptors
-        reversedInterceptors.forEach((interceptor) => {
-          if (interceptor.request || interceptor.requestError) {
-            requestInterceptors.unshift(
-              interceptor.request,
-              interceptor.requestError,
+      const $http = /** @type {import("./interface.ts").HttpService} */ (
+        function (requestConfig) {
+          if (!isObject(requestConfig)) {
+            throw minErr("$http")(
+              "badreq",
+              "Http request configuration must be an object.  Received: {0}",
+              requestConfig,
             );
           }
 
-          if (interceptor.response || interceptor.responseError) {
-            responseInterceptors.push(
-              interceptor.response,
-              interceptor.responseError,
+          if (!isString($sce.valueOf(requestConfig.url))) {
+            throw minErr("$http")(
+              "badreq",
+              "Http request configuration url must be a string or a $sce trusted object.  Received: {0}",
+              requestConfig.url,
             );
           }
-        });
 
-        promise = chainInterceptors(promise, requestInterceptors);
-        promise = promise.then(serverRequest);
-        promise = chainInterceptors(promise, responseInterceptors);
+          const config = /** @type {ng.RequestConfig} */ (
+            extend(
+              {
+                method: "get",
+                transformRequest: defaults.transformRequest,
+                transformResponse: defaults.transformResponse,
+                paramSerializer: defaults.paramSerializer,
+              },
+              requestConfig,
+            )
+          );
 
-        return promise;
+          config.headers = mergeHeaders(requestConfig);
+          config.method = /** @type {ng.HttpMethod} */ (
+            uppercase(config.method)
+          );
+          config.paramSerializer = isString(config.paramSerializer)
+            ? $injector.get(config.paramSerializer)
+            : config.paramSerializer;
 
-        function chainInterceptors(promiseParam, interceptors) {
-          for (let i = 0, ii = interceptors.length; i < ii; ) {
-            const thenFn = interceptors[i++];
+          /**
+           * @type {Array<import("./interface.ts").HttpInterceptor["request"] | import("./interface.ts").HttpInterceptor["requestError"]>}
+           */
+          const requestInterceptors = [];
 
-            const rejectFn = interceptors[i++];
+          /**
+           * @type {Array<import("./interface.ts").HttpInterceptor["response"] | import("./interface.ts").HttpInterceptor["responseError"]>}
+           */
+          const responseInterceptors = [];
 
-            promiseParam = promiseParam.then(thenFn, rejectFn);
-          }
+          /** @type {Promise<any>} */
+          let promise = Promise.resolve(config);
 
-          interceptors.length = 0;
+          // apply interceptors
+          reversedInterceptors.forEach((interceptor) => {
+            if (interceptor.request || interceptor.requestError) {
+              requestInterceptors.unshift(
+                interceptor.request,
+                interceptor.requestError,
+              );
+            }
 
-          return promiseParam;
-        }
-
-        function executeHeaderFns(headers, configParam) {
-          let headerContent;
-
-          /** @type {Record<string, string>} */
-          const processedHeaders = {};
-
-          entries(headers).forEach(([header, headerFn]) => {
-            if (isFunction(headerFn)) {
-              headerContent = headerFn(configParam);
-
-              if (!isNullOrUndefined(headerContent)) {
-                processedHeaders[header] = headerContent;
-              }
-            } else {
-              processedHeaders[header] = headerFn;
+            if (interceptor.response || interceptor.responseError) {
+              responseInterceptors.push(
+                interceptor.response,
+                interceptor.responseError,
+              );
             }
           });
 
-          return processedHeaders;
-        }
+          promise = chainInterceptors(promise, requestInterceptors);
+          promise = promise.then(serverRequest);
+          promise = chainInterceptors(promise, responseInterceptors);
 
-        function mergeHeaders(configParam) {
-          let defHeaders = defaults.headers;
-
-          const reqHeaders = extend({}, configParam.headers);
-
-          defHeaders = extend(
-            {},
-            defHeaders.common,
-            defHeaders[lowercase(configParam.method)],
+          return /** @type {import("./interface.ts").HttpPromise<any>} */ (
+            promise
           );
 
-          keys(defHeaders).forEach((defHeaderName) => {
-            const lowercaseDefHeaderName = lowercase(defHeaderName);
+          /**
+           * @param {Promise<any>} promiseParam
+           * @param {Array<((value: any) => any) | undefined>} interceptors
+           * @returns {Promise<any>}
+           */
+          function chainInterceptors(promiseParam, interceptors) {
+            for (let i = 0, ii = interceptors.length; i < ii; ) {
+              const thenFn = interceptors[i++];
 
-            const hasMatchingHeader = keys(reqHeaders).some((reqHeaderName) => {
-              return lowercase(reqHeaderName) === lowercaseDefHeaderName;
-            });
+              const rejectFn = interceptors[i++];
 
-            if (!hasMatchingHeader) {
-              reqHeaders[defHeaderName] = defHeaders[defHeaderName];
+              promiseParam = promiseParam.then(thenFn, rejectFn);
             }
-          });
 
-          // execute if header value is a function for merged headers
-          return executeHeaderFns(reqHeaders, shallowCopy(configParam));
-        }
+            interceptors.length = 0;
 
-        function serverRequest(configParam) {
-          const { headers } = configParam;
+            return promiseParam;
+          }
 
-          const reqData = transformData(
-            configParam.data,
-            headersGetter(headers),
-            undefined,
-            configParam.transformRequest,
-          );
+          /**
+           * @param {import("./interface.ts").HttpHeaderType} headers
+           * @param {ng.RequestConfig} configParam
+           */
+          function executeHeaderFns(headers, configParam) {
+            let headerContent;
 
-          // strip content-type if data is undefined
-          if (isUndefined(reqData)) {
-            keys(headers).forEach((header) => {
-              if (lowercase(header) === "content-type") {
-                delete headers[header];
+            /** @type {Record<string, string>} */
+            const processedHeaders = {};
+
+            entries(headers).forEach(([header, headerFn]) => {
+              if (isFunction(headerFn)) {
+                headerContent = headerFn(configParam);
+
+                if (!isNullOrUndefined(headerContent)) {
+                  processedHeaders[header] = headerContent;
+                }
+              } else {
+                processedHeaders[header] = headerFn;
               }
             });
+
+            return processedHeaders;
           }
 
-          if (
-            isUndefined(configParam.withCredentials) &&
-            !isUndefined(defaults.withCredentials)
-          ) {
-            configParam.withCredentials = defaults.withCredentials;
+          /**
+           * @param {ng.RequestConfig} configParam
+           */
+          function mergeHeaders(configParam) {
+            /** @type {import("./interface.ts").HttpRequestConfigHeaders} */
+            let defHeaders = defaults.headers || {};
+
+            const reqHeaders =
+              /** @type {import("./interface.ts").HttpHeaderType} */ (
+                extend({}, configParam.headers || {})
+              );
+
+            defHeaders = extend(
+              {},
+              defHeaders.common || {},
+              defHeaders[lowercase(configParam.method)] || {},
+            );
+
+            keys(defHeaders).forEach((defHeaderName) => {
+              const lowercaseDefHeaderName = lowercase(defHeaderName);
+
+              const hasMatchingHeader = keys(reqHeaders).some(
+                (reqHeaderName) => {
+                  return lowercase(reqHeaderName) === lowercaseDefHeaderName;
+                },
+              );
+
+              if (!hasMatchingHeader) {
+                reqHeaders[defHeaderName] = defHeaders[defHeaderName];
+              }
+            });
+
+            // execute if header value is a function for merged headers
+            return executeHeaderFns(reqHeaders, shallowCopy(configParam));
           }
 
-          // send request
-          return sendReq(configParam, reqData).then(
-            transformResponse,
-            transformResponse,
-          );
+          /**
+           * @param {ng.RequestConfig} configParam
+           */
+          function serverRequest(configParam) {
+            const headers = configParam.headers || {};
+
+            configParam.headers = headers;
+
+            const reqData = transformData(
+              configParam.data,
+              headersGetter(headers),
+              undefined,
+              /** @type {((...args: any[]) => any) | Array<(...args: any[]) => any>} */ (
+                configParam.transformRequest || []
+              ),
+            );
+
+            // strip content-type if data is undefined
+            if (isUndefined(reqData)) {
+              keys(headers).forEach((header) => {
+                if (lowercase(header) === "content-type") {
+                  delete headers[header];
+                }
+              });
+            }
+
+            if (
+              isUndefined(configParam.withCredentials) &&
+              !isUndefined(defaults.withCredentials)
+            ) {
+              configParam.withCredentials = defaults.withCredentials;
+            }
+
+            // send request
+            return sendReq(configParam, reqData).then(
+              transformResponse,
+              transformResponse,
+            );
+          }
+
+          /**
+           * @param {import("./interface.ts").HttpResponse<any>} response
+           */
+          function transformResponse(response) {
+            const httpResponse =
+              /** @type {import("./interface.ts").HttpResponse<any>} */ (
+                response
+              );
+
+            // make a copy since the response must be cacheable
+            const resp =
+              /** @type {import("./interface.ts").HttpResponse<any>} */ (
+                extend({}, httpResponse)
+              );
+
+            resp.data = transformData(
+              httpResponse.data,
+              httpResponse.headers,
+              httpResponse.status,
+              /** @type {((...args: any[]) => any) | Array<(...args: any[]) => any>} */ (
+                config.transformResponse || []
+              ),
+            );
+
+            return isSuccess(httpResponse.status) ? resp : Promise.reject(resp);
+          }
         }
+      );
 
-        function transformResponse(response) {
-          // make a copy since the response must be cacheable
-          const resp = extend({}, response);
-
-          resp.data = transformData(
-            response.data,
-            response.headers,
-            response.status,
-            config.transformResponse,
-          );
-
-          return isSuccess(response.status) ? resp : Promise.reject(resp);
-        }
-      }
-
+      /**
+       * @type {ng.RequestConfig[]}
+       */
       $http.pendingRequests = [];
 
-      /**
-       * Shortcut method to perform `GET` request.
-       *
-       * @param {string} url Absolute or relative URL of the resource that is being requested;
-       *                                   or an object created by a call to `$sce.trustAsResourceUrl(url)`.
-       * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-       * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-       * See {@link ng.$http#$http-returns `$http()` return value}.
-       */
-
-      /**
-       * Shortcut method to perform `DELETE` request.
-       *
-       * @param {string} url Absolute or relative URL of the resource that is being requested;
-       *                                   or an object created by a call to `$sce.trustAsResourceUrl(url)`.
-       * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-       * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-       * See {@link ng.$http#$http-returns `$http()` return value}.
-       */
-
-      /**
-       * Shortcut method to perform `HEAD` request.
-       *
-       * @param {string} url Absolute or relative URL of the resource that is being requested;
-       *                                   or an object created by a call to `$sce.trustAsResourceUrl(url)`.
-       * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-       * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-       * See {@link ng.$http#$http-returns `$http()` return value}.
-       */
-
-      /**
-       * Shortcut method to perform `JSONP` request.
-       *
-       * Note that, since JSONP requests are sensitive because the response is given full access to the browser,
-       * the url must be declared, via {@link $sce} as a trusted resource URL.
-       * You can trust a URL by adding it to the trusted resource URL list via
-       * {@link $sceDelegateProvider#trustedResourceUrlList  `$sceDelegateProvider.trustedResourceUrlList`} or
-       * by explicitly trusting the URL via {@link $sce#trustAsResourceUrl `$sce.trustAsResourceUrl(url)`}.
-       *
-       * You should avoid generating the URL for the JSONP request from user provided data.
-       * Provide additional query parameters via `params` property of the `config` parameter, rather than
-       * modifying the URL itself.
-       *
-       * You can also specify a default callback parameter name in `$http.defaults.jsonpCallbackParam`.
-       * Initially this is set to `'callback'`.
-       *
-       * <div class="alert alert-danger">
-       * You can no longer use the `JSON_CALLBACK` string as a placeholder for specifying where the callback
-       * parameter value should go.
-       * </div>
-       *
-       *
-       * @param {string} url Absolute or relative URL of the resource that is being requested;
-       *                                   or an object created by a call to `$sce.trustAsResourceUrl(url)`.
-       * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-       * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-       * See {@link ng.$http#$http-returns `$http()` return value}.
-       */
       createShortMethods("get", "delete", "head");
-
-      /**
-       * Shortcut method to perform `POST` request.
-       *
-       * @param {string} url Relative or absolute URL specifying the destination of the request
-       * @param {*} data Request content
-       * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-       * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-       * See {@link ng.$http#$http-returns `$http()` return value}.
-       */
-
-      /**
-       * Shortcut method to perform `PUT` request.
-       *
-       * @param {string} url Relative or absolute URL specifying the destination of the request
-       * @param {*} data Request content
-       * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-       * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-       * See {@link ng.$http#$http-returns `$http()` return value}.
-       */
-
-      /**
-       * Shortcut method to perform `PATCH` request.
-       *
-       * @param {string} url Relative or absolute URL specifying the destination of the request
-       * @param {*} data Request content
-       * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-       * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-       * See {@link ng.$http#$http-returns `$http()` return value}.
-       */
       createShortMethodsWithData("post", "put", "patch");
 
       /**
@@ -741,47 +740,67 @@ export function HttpProvider() {
 
       return $http;
 
+      /**
+       * @param {...("get" | "delete" | "head")} names
+       */
       function createShortMethods(...names) {
         names.forEach((name) => {
+          /**
+           * @param {string} url
+           * @param {import("./interface.ts").RequestShortcutConfig} [config]
+           */
           $http[name] = function (url, config) {
             return $http(
-              extend({}, config || {}, {
-                method: name,
-                url,
-              }),
-            );
-          };
-        });
-      }
-
-      function createShortMethodsWithData(...names) {
-        names.forEach((name) => {
-          $http[name] = function (url, data, config) {
-            return $http(
-              extend({}, config || {}, {
-                method: name,
-                url,
-                data,
-              }),
+              /** @type {ng.RequestConfig} */ (
+                extend({}, config || {}, {
+                  method: name,
+                  url,
+                })
+              ),
             );
           };
         });
       }
 
       /**
-       * Makes the request.
-       *
-       * !!! ACCESSES CLOSURE VARS:
-       * defaults, $log, $rootScope, defaultCache, $http.pendingRequests
+       * @param {...("post" | "put" | "patch")} names
+       */
+      function createShortMethodsWithData(...names) {
+        names.forEach((name) => {
+          /**
+           * @param {string} url
+           * @param {string|Object} data
+           * @param {import("./interface.ts").RequestShortcutConfig} [config]
+           */
+          $http[name] = function (url, data, config) {
+            return $http(
+              /** @type {ng.RequestConfig} */ (
+                extend({}, config || {}, {
+                  method: name,
+                  url,
+                  data,
+                })
+              ),
+            );
+          };
+        });
+      }
+
+      /**
+       * @param {ng.RequestConfig} config
+       * @param {any} reqData
        */
       function sendReq(config, reqData) {
         const { promise, resolve, reject } = Promise.withResolvers();
 
+        /** @type {any} */
         let cache;
 
         let cachedResp;
 
-        const reqHeaders = config.headers;
+        const reqHeaders = config.headers || {};
+
+        config.headers = reqHeaders;
 
         let { url } = config;
 
@@ -790,7 +809,12 @@ export function HttpProvider() {
           url = $sce.valueOf(url);
         }
 
-        url = buildUrl(url, config.paramSerializer(config.params));
+        url = buildUrl(
+          url,
+          /** @type {(obj: any) => string} */ (config.paramSerializer)(
+            config.params,
+          ),
+        );
 
         $http.pendingRequests.push(config);
         promise.then(removePendingReq, removePendingReq);
@@ -840,13 +864,21 @@ export function HttpProvider() {
         // if we won't have the response in cache, set the xsrf headers and
         // send the request to the backend
         if (isUndefined(cachedResp)) {
-          const xsrfValue = urlIsAllowedOrigin(config.url)
-            ? $cookie.getAll()[config.xsrfCookieName || defaults.xsrfCookieName]
-            : undefined;
+          const xsrfCookieName =
+            config.xsrfCookieName || defaults.xsrfCookieName;
+
+          const xsrfValue =
+            xsrfCookieName && urlIsAllowedOrigin(config.url)
+              ? $cookie.getAll()[xsrfCookieName]
+              : undefined;
 
           if (xsrfValue) {
-            reqHeaders[config.xsrfHeaderName || defaults.xsrfHeaderName] =
-              xsrfValue;
+            const xsrfHeaderName =
+              config.xsrfHeaderName || defaults.xsrfHeaderName;
+
+            if (xsrfHeaderName) {
+              reqHeaders[xsrfHeaderName] = xsrfValue;
+            }
           }
 
           http(
@@ -857,7 +889,9 @@ export function HttpProvider() {
             reqHeaders,
             config.timeout,
             config.withCredentials,
-            config.responseType,
+            /** @type {XMLHttpRequestResponseType | undefined} */ (
+              config.responseType
+            ),
             createApplyHandlers(config.eventHandlers),
             createApplyHandlers(config.uploadEventHandlers),
           );
@@ -869,8 +903,12 @@ export function HttpProvider() {
          * @param eventHandlers
          * @return {Record<string, EventListener>}
          */
+        /**
+         * @param {ng.RequestConfig["eventHandlers"] | ng.RequestConfig["uploadEventHandlers"]} eventHandlers
+         */
         function createApplyHandlers(eventHandlers) {
           if (eventHandlers) {
+            /** @type {Record<string, EventListener>} */
             const applyHandlers = {};
 
             entries(eventHandlers).forEach(([key, eventHandler]) => {
@@ -882,7 +920,15 @@ export function HttpProvider() {
                 }
 
                 function callEventHandler() {
-                  eventHandler(event);
+                  if (typeof eventHandler === "function") {
+                    eventHandler(event);
+                  } else if (
+                    eventHandler &&
+                    typeof eventHandler === "object" &&
+                    "handleEvent" in eventHandler
+                  ) {
+                    eventHandler.handleEvent(event);
+                  }
                 }
               };
             });
@@ -899,13 +945,20 @@ export function HttpProvider() {
          *  - resolves the raw $http promise
          *  - calls $apply
          */
+        /**
+         * @param {number} status
+         * @param {any} response
+         * @param {string | null} headersString
+         * @param {string} statusText
+         * @param {import("./interface.ts").HttpResponseStatus} xhrStatus
+         */
         function done(status, response, headersString, statusText, xhrStatus) {
           if (cache) {
             if (isSuccess(status)) {
               cache.set(url, [
                 status,
                 response,
-                parseHeaders(headersString),
+                parseHeaders(headersString || ""),
                 statusText,
                 xhrStatus,
               ]);
@@ -934,6 +987,11 @@ export function HttpProvider() {
 
         /**
          * Resolves the raw $http promise.
+         * @param {any} response
+         * @param {number} status
+         * @param {string | Record<string, string> | null} headers
+         * @param {string} statusText
+         * @param {import("./interface.ts").HttpResponseStatus} xhrStatus
          */
         function resolvePromise(
           response,
@@ -948,13 +1006,16 @@ export function HttpProvider() {
           (isSuccess(status) ? resolve : reject)({
             data: response,
             status,
-            headers: headersGetter(headers),
+            headers: headersGetter(headers ?? ""),
             config,
             statusText,
             xhrStatus,
           });
         }
 
+        /**
+         * @param {import("./interface.ts").HttpResponse<any>} result
+         */
         function resolvePromiseWithResult(result) {
           resolvePromise(
             result.data,
@@ -972,6 +1033,10 @@ export function HttpProvider() {
         }
       }
 
+      /**
+       * @param {string} url
+       * @param {string} serializedParams
+       */
       function buildUrl(url, serializedParams) {
         if (serializedParams.length > 0) {
           url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
@@ -989,13 +1054,13 @@ export function HttpProvider() {
  * @param {string} method - The HTTP method (e.g., "GET", "POST").
  * @param {string} [url] - The URL to send the request to. Defaults to the current page URL.
  * @param {*} [post] - The body to send with the request, if any.
- * @param {function(number, any, string|null, string, string): void} [callback] - Callback invoked when the request completes.
+ * @param {(status: number, response: any, headersString: string|null, statusText: string, xhrStatus: import("./interface.ts").HttpResponseStatus) => void} [callback] - Callback invoked when the request completes.
  * @param {Object<string, string|undefined>} [headers] - Headers to set on the request.
  * @param {number|Promise<any>} [timeout] - Timeout in ms or a cancellable promise.
  * @param {boolean} [withCredentials] - Whether to send credentials with the request.
  * @param {XMLHttpRequestResponseType} [responseType] - The type of data expected in the response.
- * @param {Record<string, EventListener>} [eventHandlers] - Event listeners for the XMLHttpRequest object.
- * @param {Record<string, EventListener>} [uploadEventHandlers] - Event listeners for the XMLHttpRequest.upload object.
+ * @param {ng.RequestConfig["eventHandlers"]} [eventHandlers] - Event listeners for the XMLHttpRequest object.
+ * @param {ng.RequestConfig["uploadEventHandlers"]} [uploadEventHandlers] - Event listeners for the XMLHttpRequest.upload object.
  * @returns {void}
  */
 export function http(
@@ -1016,6 +1081,9 @@ export function http(
 
   let abortedByTimeout = false;
 
+  /**
+   * @type {number | undefined}
+   */
   let timeoutId;
 
   xhr.open(method, url, true);
@@ -1086,7 +1154,7 @@ export function http(
   if (typeof timeout === "number" && timeout > 0) {
     timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
   } else if (isPromiseLike(timeout)) {
-    /** @type {Promise} */ (timeout).then(() => {
+    /** @type {Promise<any>} */ (timeout).then(() => {
       timeoutRequest("abort");
     });
   }
@@ -1105,7 +1173,7 @@ export function http(
    * @param {*} response - The parsed or raw response from the server.
    * @param {string|null} headersString - The raw response headers as a string.
    * @param {string} statusText - The status text returned by the server.
-   * @param {"complete"|"error"|"timeout"|"abort"} xhrStatus - Final status of the request.
+   * @param {ng.HttpResponseStatus} xhrStatus - Final status of the request.
    */
   function completeRequest(
     status,
@@ -1117,6 +1185,9 @@ export function http(
     if (isDefined(timeoutId)) {
       clearTimeout(timeoutId);
     }
-    callback(status, response, headersString, statusText, xhrStatus);
+
+    if (callback) {
+      callback(status, response, headersString, statusText, xhrStatus);
+    }
   }
 }

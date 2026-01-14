@@ -1,4 +1,5 @@
 import { $injectTokens, provider } from "../injection-tokens.js";
+import { NodeType } from "../shared/node.js";
 import { isString } from "../shared/utils.js";
 
 import { AnimateRunner } from "./runner/animate-runner.js";
@@ -22,10 +23,10 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
   /**
    * @param {Element} node
+   * @returns {boolean}
    */
   function isDocumentFragment(node) {
-    // eslint-disable-next-line no-magic-numbers
-    return node.parentNode && node.parentNode.nodeType === 11;
+    return node.parentNode?.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE;
   }
 
   /**
@@ -53,12 +54,14 @@ export function AnimateCssDriverProvider($$animationProvider) {
           ? rootNode
           : bodyNode;
 
-      return function initDriverFn(animationDetails) {
+      return /** @param {import("./interface.js").AnimationDetails} animationDetails */ function initDriverFn(
+        animationDetails,
+      ) {
         return animationDetails.from && animationDetails.to
           ? prepareFromToAnchorAnimation(
               animationDetails.from,
               animationDetails.to,
-              animationDetails.anchors,
+              animationDetails.anchors || [],
             )
           : prepareRegularAnimation(animationDetails);
       };

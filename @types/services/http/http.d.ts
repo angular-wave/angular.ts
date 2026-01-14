@@ -17,7 +17,14 @@ export class HttpParamSerializerProvider {
    */
   $get: () => import("./interface.ts").HttpParamSerializer;
 }
-export function defaultHttpResponseTransform(data: any, headers: any): any;
+/**
+ * @param {unknown} data
+ * @param {(arg0: string) => any} headers
+ */
+export function defaultHttpResponseTransform(
+  data: unknown,
+  headers: (arg0: string) => any,
+): unknown;
 /**
  * Use `$httpProvider` to change the default behavior of the {@link ng.$http $http} service.
  */
@@ -98,17 +105,7 @@ export class HttpProvider {
         $injector: ng.InjectorService,
         $sce: ng.SceService,
         $cookie: ng.CookieService,
-      ) => {
-        (requestConfig: any): Promise<any>;
-        pendingRequests: any[];
-        /**
-         * Runtime equivalent of the `$httpProvider.defaults` property. Allows configuration of
-         * default headers, withCredentials as well as request and response transformations.
-         *
-         * See "Setting HTTP Headers" and "Transforming Requests and Responses" sections above.
-         */
-        defaults: import("./interface.ts").HttpProviderDefaults;
-      })
+      ) => ng.HttpService)
   )[];
 }
 /**
@@ -117,13 +114,13 @@ export class HttpProvider {
  * @param {string} method - The HTTP method (e.g., "GET", "POST").
  * @param {string} [url] - The URL to send the request to. Defaults to the current page URL.
  * @param {*} [post] - The body to send with the request, if any.
- * @param {function(number, any, string|null, string, string): void} [callback] - Callback invoked when the request completes.
+ * @param {(status: number, response: any, headersString: string|null, statusText: string, xhrStatus: import("./interface.ts").HttpResponseStatus) => void} [callback] - Callback invoked when the request completes.
  * @param {Object<string, string|undefined>} [headers] - Headers to set on the request.
  * @param {number|Promise<any>} [timeout] - Timeout in ms or a cancellable promise.
  * @param {boolean} [withCredentials] - Whether to send credentials with the request.
  * @param {XMLHttpRequestResponseType} [responseType] - The type of data expected in the response.
- * @param {Record<string, EventListener>} [eventHandlers] - Event listeners for the XMLHttpRequest object.
- * @param {Record<string, EventListener>} [uploadEventHandlers] - Event listeners for the XMLHttpRequest.upload object.
+ * @param {ng.RequestConfig["eventHandlers"]} [eventHandlers] - Event listeners for the XMLHttpRequest object.
+ * @param {ng.RequestConfig["uploadEventHandlers"]} [uploadEventHandlers] - Event listeners for the XMLHttpRequest.upload object.
  * @returns {void}
  */
 export function http(
@@ -131,11 +128,11 @@ export function http(
   url?: string,
   post?: any,
   callback?: (
-    arg0: number,
-    arg1: any,
-    arg2: string | null,
-    arg3: string,
-    arg4: string,
+    status: number,
+    response: any,
+    headersString: string | null,
+    statusText: string,
+    xhrStatus: import("./interface.ts").HttpResponseStatus,
   ) => void,
   headers?: {
     [x: string]: string;
@@ -143,8 +140,8 @@ export function http(
   timeout?: number | Promise<any>,
   withCredentials?: boolean,
   responseType?: XMLHttpRequestResponseType,
-  eventHandlers?: Record<string, EventListener>,
-  uploadEventHandlers?: Record<string, EventListener>,
+  eventHandlers?: ng.RequestConfig["eventHandlers"],
+  uploadEventHandlers?: ng.RequestConfig["uploadEventHandlers"],
 ): void;
 export type Http = number;
 export namespace Http {

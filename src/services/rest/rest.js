@@ -66,7 +66,7 @@ export class RestService {
   async list(params = {}) {
     const url = this.buildUrl(this._baseUrl, params);
 
-    const resp = await this.#request("get", url, null, params);
+    const resp = await this.#request("GET", url, null, params);
 
     if (!isArray(resp.data)) return [];
 
@@ -85,7 +85,7 @@ export class RestService {
     assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
     const url = this.buildUrl(`${this._baseUrl}/${id}`, params);
 
-    const resp = await this.#request("get", url, null, params);
+    const resp = await this.#request("GET", url, null, params);
 
     return this.#mapEntity(resp.data);
   }
@@ -97,7 +97,7 @@ export class RestService {
    */
   async create(item) {
     assert(!isNullOrUndefined(item), `${BADARG}:item ${item}`);
-    const resp = await this.#request("post", this._baseUrl, item);
+    const resp = await this.#request("POST", this._baseUrl, item);
 
     return this.#mapEntity(resp.data);
   }
@@ -113,7 +113,7 @@ export class RestService {
     const url = `${this._baseUrl}/${id}`;
 
     try {
-      const resp = await this.#request("put", url, item);
+      const resp = await this.#request("PUT", url, item);
 
       return this.#mapEntity(resp.data);
     } catch {
@@ -131,7 +131,7 @@ export class RestService {
     const url = `${this._baseUrl}/${id}`;
 
     try {
-      await this.#request("delete", url);
+      await this.#request("DELETE", url);
 
       return true;
     } catch {
@@ -141,7 +141,7 @@ export class RestService {
 
   /**
    * Core HTTP request wrapper
-   * @param {"get"|"post"|"put"|"delete"} method
+   * @param {ng.HttpMethod} method
    * @param {string} url
    * @param {any=} data
    * @param {Record<string, any>=} params

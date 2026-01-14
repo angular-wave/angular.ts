@@ -183,13 +183,13 @@ export class SceDelegateProvider {
 
     /**
      *
-     * @param {Array=} value When provided, replaces the trustedResourceUrlList with
+     * @param {(Array<RegExp | "self"> | null)=} value When provided, replaces the trustedResourceUrlList with
      *     the value provided.  This must be an array or null.  A snapshot of this array is used so
      *     further changes to the array are ignored.
      *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
      *     allowed in this array.
      *
-     * @return {Array<any>} The currently set trusted resource URL array.
+     * @return {Array<RegExp | "self">} The currently set trusted resource URL array.
      *
      *
      * Sets/Gets the list trusted of resource URLs.
@@ -204,7 +204,9 @@ export class SceDelegateProvider {
      */
     this.trustedResourceUrlList = function (value) {
       if (arguments.length) {
-        trustedResourceUrlList = value.map(adjustMatcher);
+        const list = value || [];
+
+        trustedResourceUrlList = list.map(adjustMatcher);
       }
 
       return trustedResourceUrlList;
@@ -212,7 +214,7 @@ export class SceDelegateProvider {
 
     /**
      *
-     * @param {Array=} bannedResourceUrlList When provided, replaces the `bannedResourceUrlList` with
+     * @param {(Array<RegExp | "self"> | null)=} value When provided, replaces the `bannedResourceUrlList` with
      *     the value provided. This must be an array or null. A snapshot of this array is used so
      *     further changes to the array are ignored.</p><p>
      *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
@@ -224,7 +226,7 @@ export class SceDelegateProvider {
      *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
      *     the final say.
      *
-     * @return {Array<any>} The currently set `bannedResourceUrlList` array.
+     * @return {Array<RegExp | "self">} The currently set `bannedResourceUrlList` array.
      *
      *
      * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
@@ -234,7 +236,9 @@ export class SceDelegateProvider {
      */
     this.bannedResourceUrlList = function (value) {
       if (arguments.length) {
-        bannedResourceUrlList = value.map(adjustMatcher);
+        const list = value || [];
+
+        bannedResourceUrlList = list.map(adjustMatcher);
       }
 
       return bannedResourceUrlList;
@@ -281,6 +285,10 @@ export class SceDelegateProvider {
           return !!(/** @type {RegExp} */ (matcher).exec(parsedUrl.href));
         }
 
+        /**
+         * @param {string | Object} url
+         * @returns {boolean}
+         */
         function isResourceUrlAllowedByPolicy(url) {
           const parsedUrl = urlResolve(url.toString());
 
@@ -309,7 +317,12 @@ export class SceDelegateProvider {
           return allowed;
         }
 
+        /**
+         * @param {new (...args: any[]) => any=} Base
+         * @return {new (trustedValue: string) => { _unwrapTrustedValue(): string }}
+         */
         function generateHolderType(Base) {
+          /** @param {string} trustedValue */
           const holderType = function TrustedValueHolderType(trustedValue) {
             this._unwrapTrustedValue = function () {
               return trustedValue;
@@ -331,6 +344,7 @@ export class SceDelegateProvider {
 
         const trustedValueHolderBase = generateHolderType();
 
+        /** @type {Record<string, new (trustedValue: string) => { _unwrapTrustedValue(): string }>} */
         const byType = {};
 
         byType[SCE_CONTEXTS.HTML] = generateHolderType(trustedValueHolderBase);
@@ -341,7 +355,6 @@ export class SceDelegateProvider {
         byType[SCE_CONTEXTS.URL] = generateHolderType(
           byType[SCE_CONTEXTS.MEDIA_URL],
         );
-        byType[SCE_CONTEXTS.JS] = generateHolderType(trustedValueHolderBase);
         byType[SCE_CONTEXTS.RESOURCE_URL] = generateHolderType(
           byType[SCE_CONTEXTS.URL],
         );
@@ -554,7 +567,9 @@ export function SceProvider() {
      * @return {ng.SceService}
      */
     ($parse, $sceDelegate) => {
-      const sce = shallowCopy(SCE_CONTEXTS);
+      const sce = /** @type {ng.SceService & Record<string, any>} */ (
+        shallowCopy(SCE_CONTEXTS)
+      );
 
       /**
        * @return {Boolean} True if SCE is enabled, false otherwise.  If you want to set the value, you
@@ -571,9 +586,14 @@ export function SceProvider() {
       sce.valueOf = $sceDelegate.valueOf;
 
       if (!enabled) {
+        /**
+         * @param {string} type
+         * @param {*} value
+         */
         sce.trustAs = sce.getTrusted = function (type, value) {
           return value;
         };
+        /** @param {*} v */
         sce.valueOf = (v) => v;
       }
 
@@ -657,16 +677,6 @@ export function SceProvider() {
        */
 
       /**
-       * Shorthand method.  `$sce.trustAsJs(value)` →
-       *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.JS, value)`}
-       *
-       * @param {*} value The value to mark as trusted for `$sce.JS` context.
-       * @return {*} A wrapped version of value that can be used as a trusted variant of your `value`
-       *     in `$sce.JS` context. That context is currently unused, so there are almost no reasons to
-       *     use this function so far.
-       */
-
-      /**
        * Delegates to {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted`}.  As such,
        * takes any input, and either returns a value that's safe to use in the specified context,
        * or throws an exception. This function is aware of trusted values created by the `trustAs`
@@ -711,14 +721,6 @@ export function SceProvider() {
        *
        * @param {*} value The value to pass to `$sceDelegate.getTrusted`.
        * @return {*} The return value of `$sce.getTrusted($sce.RESOURCE_URL, value)`
-       */
-
-      /**
-       * Shorthand method.  `$sce.getTrustedJs(value)` →
-       *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.JS, value)`}
-       *
-       * @param {*} value The value to pass to `$sce.getTrusted`.
-       * @return {*} The return value of `$sce.getTrusted($sce.JS, value)`
        */
 
       /**
@@ -796,12 +798,15 @@ export function SceProvider() {
       entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
         const lName = name.toLowerCase();
 
+        /** @param {string} expr */
         sce[snakeToCamel(`parse_as_${lName}`)] = function (expr) {
           return parse(enumValue, expr);
         };
+        /** @param {*} value */
         sce[snakeToCamel(`get_trusted_${lName}`)] = function (value) {
           return getTrusted(enumValue, value);
         };
+        /** @param {*} value */
         sce[snakeToCamel(`trust_as_${lName}`)] = function (value) {
           return trustAs(enumValue, value);
         };
