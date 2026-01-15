@@ -86,9 +86,20 @@ export class Angular extends EventTarget {
     configFn?: ng.Injectable<any>,
   ): NgModule;
   /**
-   * @param {CustomEvent} event
+   * @param {CustomEvent<string | ng.InvocationDetail>} event
    */
-  dispatchEvent(event: CustomEvent): boolean;
+  dispatchEvent(event: CustomEvent<string | ng.InvocationDetail>): boolean;
+  /**
+   * Fire-and-forget. Accepts a single string: "<target>.<expression>"
+   * @param {string} input
+   */
+  cast(input: string): void;
+  /**
+   * Await result. Accepts a single string: "<target>.<expression>"
+   * @param {string} input
+   * @returns {Promise<any>}
+   */
+  call(input: string): Promise<any>;
   /**
    * Use this function to manually start up AngularTS application.
    *
@@ -160,6 +171,7 @@ export class Angular extends EventTarget {
    * @returns {Proxy<ng.Scope>|undefined}
    */
   getScopeByName(name: string): ProxyConstructor | undefined;
+  #private;
 }
 export type ModuleRegistry = {
   [x: string]: NgModule;

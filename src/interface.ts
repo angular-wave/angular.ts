@@ -540,3 +540,11 @@ export interface ControllerLocals {
   $scope: Scope;
   $element: Element;
 }
+
+export interface InvocationDetail {
+  expr: string;
+  _reply?: {
+    resolve: (value: any) => any;
+    reject: (reason: any) => PromiseLike<never>;
+  };
+}
