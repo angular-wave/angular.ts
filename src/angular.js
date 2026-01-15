@@ -169,10 +169,15 @@ export class Angular extends EventTarget {
       : this.getScopeByName(injectable);
 
     if (!target) {
-      const d = event.detail;
+      const { detail } = event;
 
-      if (d && typeof d === "object" && d._reply) {
-        d._reply.reject(new Error(`No target found for "${injectable}"`));
+      if (
+        isObject(detail) &&
+        /** @type {ng.InvocationDetail} */ (detail)._reply
+      ) {
+        /** @type {ng.InvocationDetail} */ (detail)._reply.reject(
+          new Error(`No target found for "${injectable}"`),
+        );
       }
 
       return false;
