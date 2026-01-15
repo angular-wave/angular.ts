@@ -5,15 +5,6 @@ export interface HttpHeadersGetter {
   (headerName: string): string;
 }
 
-export interface HttpPromiseCallback<T> {
-  (
-    data: T,
-    status: number,
-    headers: HttpHeadersGetter,
-    config: RequestConfig,
-  ): void;
-}
-
 export interface HttpRequestConfigHeaders {
   [requestType: string]: any;
   common?: any;
@@ -85,7 +76,8 @@ export interface HttpProviderDefaults {
   xsrfCookieName?: string | undefined;
 
   /**
-   * whether to to set the withCredentials flag on the XHR object. See [requests with credentials]https://developer.mozilla.org/en/http_access_control#section_5 for more information.
+   * whether to to set the withCredentials flag on the XHR object.
+   * See [requests with credentials](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS#requests_with_credentials) for more information.
    */
   withCredentials?: boolean | undefined;
 
@@ -104,7 +96,8 @@ export interface HttpProviderDefaults {
 export interface RequestShortcutConfig extends HttpProviderDefaults {
   /**
    * {Object.<string|Object>}
-   * Map of strings or objects which will be turned to ?key1=value1&key2=value2 after the url. If the value is not a string, it will be JSONified.
+   * Map of strings or objects which will be turned to ?key1=value1&key2=value2 after the url.
+   * If the value is not a string, it will be JSONified.
    */
   params?: any;
 
@@ -120,7 +113,7 @@ export interface RequestShortcutConfig extends HttpProviderDefaults {
   timeout?: number | Promise<any> | undefined;
 
   /**
-   * See [XMLHttpRequest.responseType]https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest#xmlhttprequest-responsetype
+   * See [XMLHttpRequest.responseType](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest#xmlhttprequest-responsetype)
    */
   responseType?: string | undefined;
 }
@@ -142,12 +135,12 @@ export interface RequestConfig extends RequestShortcutConfig {
    * Event listeners to be bound to the XMLHttpRequest object.
    * To bind events to the XMLHttpRequest upload object, use uploadEventHandlers. The handler will be called in the context of a $apply block.
    */
-  eventHandlers?: Dict<EventListenerOrEventListenerObject> | undefined;
+  eventHandlers?: Dict<EventListenerOrEventListenerObject>;
   /**
    * Event listeners to be bound to the XMLHttpRequest upload object.
    * To bind events to the XMLHttpRequest object, use eventHandlers. The handler will be called in the context of a $apply block.
    */
-  uploadEventHandlers?: Dict<EventListenerOrEventListenerObject> | undefined;
+  uploadEventHandlers?: Dict<EventListenerOrEventListenerObject>;
 }
 
 export type HttpResponseStatus = "complete" | "error" | "timeout" | "abort";
