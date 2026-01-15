@@ -61,6 +61,7 @@ import {
   Injectable as TInjectable,
   Expression as TExpression,
   PublicInjectionTokens,
+  InvocationDetail as TInvocationDetail,
 } from "./interface.ts";
 import {
   SseService as TSseService,
@@ -252,5 +253,6 @@ declare global {
     export type HttpResponseStatus = THttpResponseStatus;
     export type HttpMethod = THttpMethod;
     export type RequestConfig = TRequestConfig;
+    export type InvocationDetail = TInvocationDetail;
   }
 }

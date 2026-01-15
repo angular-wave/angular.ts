@@ -3,6 +3,8 @@ import {
   errorHandlingConfig,
   hasOwn,
   isArray,
+  isObject,
+  isString,
   minErr,
   ngAttrPrefixes,
 } from "./shared/utils.js";
@@ -155,7 +157,7 @@ export class Angular extends EventTarget {
   }
 
   /**
-   * @param {CustomEvent} event
+   * @param {CustomEvent<string | ng.InvocationDetail>} event
    */
   dispatchEvent(event) {
     const $parse = this.$injector.get($t._parse);
@@ -166,11 +168,104 @@ export class Angular extends EventTarget {
       ? this.$injector.get(injectable)
       : this.getScopeByName(injectable);
 
-    if (!target) return false;
+    if (!target) {
+      const d = event.detail;
 
-    $parse(event.detail)(target);
+      if (d && typeof d === "object" && d._reply) {
+        d._reply.reject(new Error(`No target found for "${injectable}"`));
+      }
+
+      return false;
+    }
+    const { detail } = event;
+
+    const expr = isString(detail)
+      ? detail
+      : isObject(detail)
+        ? detail.expr
+        : "";
+
+    try {
+      const result = $parse(expr)(target);
+
+      if (
+        isObject(detail) &&
+        /** @type {ng.InvocationDetail} */ (detail)._reply
+      ) {
+        Promise.resolve(result).then(
+          /** @type {ng.InvocationDetail} */ (detail)._reply.resolve,
+          /** @type {ng.InvocationDetail} */ (detail)._reply.reject,
+        );
+      }
+    } catch (err) {
+      if (detail && typeof detail === "object" && detail._reply) {
+        detail._reply.reject(err);
+      }
+    }
 
     return true;
+  }
+
+  /**
+   * Fire-and-forget. Accepts a single string: "<target>.<expression>"
+   * @param {string} input
+   */
+  cast(input) {
+    const { type, expr } = this.#split(input);
+
+    this.dispatchEvent(new CustomEvent(type, { detail: expr }));
+  }
+
+  /**
+   * Await result. Accepts a single string: "<target>.<expression>"
+   * @param {string} input
+   * @returns {Promise<any>}
+   */
+  call(input) {
+    const { type, expr } = this.#split(input);
+
+    return new Promise((resolve, reject) => {
+      const ok = this.dispatchEvent(
+        new CustomEvent(type, {
+          detail: { expr, __reply: { resolve, reject } },
+        }),
+      );
+
+      if (!ok) reject(new Error(`Dispatch failed for "${type}"`));
+    });
+  }
+
+  /**
+   * Split by period. First segment => target, rest => expression (re-joined by '.').
+   * @param {string} input
+   * @returns {{ type: string, expr: string }}
+   */
+  #split(input) {
+    if (typeof input !== "string") {
+      throw new TypeError("Invocation must be a string.");
+    }
+
+    const trimmed = input.trim();
+
+    const parts = trimmed.split(".");
+
+    if (parts.length < 2) {
+      throw new Error(
+        `Invalid invocation "${input}". Expected "<target>.<expression>".`,
+      );
+    }
+
+    const type = parts.shift().trim();
+
+    const expr = parts.join(".").trim();
+
+    if (!type || !expr) {
+      throw new Error(
+        `Invalid invocation "${input}". Expected "<target>.<expression>".`,
+      );
+    }
+
+    return { type, expr };
   }
 
   /**
