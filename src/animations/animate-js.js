@@ -22,31 +22,45 @@ export function AnimateJsProvider($animateProvider) {
     ($injector) => {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
+      /**
+       * @param {HTMLElement} element
+       * @param {string} event
+       * @param {string | string[] | null | undefined} classes
+       * @param {ng.AnimationOptions | undefined} options
+       * @returns {import("./interface.ts").Animator}
+       */
       return function (element, event, classes, options) {
         // Optional arguments
-        if (arguments.length === 3 && isObject(classes)) {
-          options = /** @type {Object} */ (classes);
+        if (arguments.length === 3 && !isArray(classes) && isObject(classes)) {
+          options = /** @type {ng.AnimationOptions} */ (classes);
           classes = null;
         }
 
-        options = prepareAnimationOptions(options);
+        /** @type {ng.AnimationOptions} */
+        const animationOptions = prepareAnimationOptions(options);
 
         if (!classes) {
           classes = element.getAttribute("class") || "";
 
-          if (options.addClass) classes += ` ${options.addClass}`;
+          if (animationOptions.addClass)
+            classes += ` ${animationOptions.addClass}`;
 
-          if (options.removeClass) classes += ` ${options.removeClass}`;
+          if (animationOptions.removeClass)
+            classes += ` ${animationOptions.removeClass}`;
         }
 
-        const classesToAdd = options.addClass;
+        const classesToAdd = animationOptions.addClass;
 
-        const classesToRemove = options.removeClass;
+        const classesToRemove = animationOptions.removeClass;
 
         // Lookup animation objects
         const animations = lookupAnimations(classes);
 
-        let before, after;
+        /** @type {((done: () => void) => void) | undefined} */
+        let before;
+
+        /** @type {((done: () => void) => void) | undefined} */
+        let after;
 
         if (animations.length) {
           let beforeFn, afterFn;
@@ -60,27 +74,56 @@ export function AnimateJsProvider($animateProvider) {
           }
 
           if (event !== "enter" && event !== "move") {
-            before = packageAnimations(element, options, animations, beforeFn, {
+            before = packageAnimations(
+              element,
+              animationOptions,
+              animations,
+              beforeFn,
+              {
+                add: classesToAdd,
+                remove: classesToRemove,
+              },
+            );
+          }
+          after = packageAnimations(
+            element,
+            animationOptions,
+            animations,
+            afterFn,
+            {
               add: classesToAdd,
               remove: classesToRemove,
-            });
-          }
-          after = packageAnimations(element, options, animations, afterFn, {
-            add: classesToAdd,
-            remove: classesToRemove,
-          });
+            },
+          );
         }
 
-        if (!before && !after) return undefined;
+        if (!before && !after) {
+          return {
+            _willAnimate: false,
+            start() {
+              const runner = new AnimateRunner();
+
+              animationOptions.domOperation?.();
+              applyAnimationClasses(element, animationOptions);
+              applyAnimationStyles(element, animationOptions);
+              runner.complete(true);
+
+              return runner;
+            },
+            end() {
+              /* no-op */
+            },
+          };
+        }
 
         function applyOptions() {
-          options.domOperation();
-          applyAnimationClasses(element, options);
+          animationOptions.domOperation?.();
+          applyAnimationClasses(element, animationOptions);
         }
 
         function close() {
           applyOptions();
-          applyAnimationStyles(element, options);
+          applyAnimationStyles(element, animationOptions);
         }
 
         /** @type {ng.AnimateRunner} */
@@ -97,13 +140,31 @@ export function AnimateJsProvider($animateProvider) {
               cancel: () => onComplete(false),
             });
 
+            const totalStages = (before ? 1 : 0) + (after ? 1 : 0);
+
+            let completedStages = 0;
+
+            const stageDone = () => {
+              completedStages += 1;
+
+              if (completedStages === totalStages) {
+                onComplete(true);
+              }
+            };
+
             // Run before animations
-            if (before) before(runner.done.bind(runner));
-            else applyOptions();
+            if (before) before(stageDone);
+            else {
+              applyOptions();
+              stageDone();
+            }
 
             // Run after animations
-            if (after) after(runner.done.bind(runner));
+            if (after) after(stageDone);
 
+            /**
+             * @param {boolean} success
+             */
             function onComplete(success) {
               close();
               runner.complete(success);
@@ -125,14 +186,22 @@ export function AnimateJsProvider($animateProvider) {
         });
 
         // ---- helpers ----
+        /**
+         * @param {string | string[]} classList
+         */
         function lookupAnimations(classList) {
-          classList = isArray(classList) ? classList : classList.split(" ");
+          const normalized = isArray(classList)
+            ? classList
+            : /** @type {string[]} */ (classList.split(" "));
+
+          /** @type {Array<Record<string, any>>} */
           const matches = [];
 
+          /** @type {Record<string, boolean>} */
           const flagMap = {};
 
-          for (let i = 0; i < classList.length; i++) {
-            const klass = classList[i];
+          for (let i = 0; i < normalized.length; i++) {
+            const klass = normalized[i];
 
             const animationFactory =
               $animateProvider._registeredAnimations[klass];
@@ -146,6 +215,13 @@ export function AnimateJsProvider($animateProvider) {
           return matches;
         }
 
+        /**
+         * @param {HTMLElement} elementParam
+         * @param {ng.AnimationOptions} optionsParam
+         * @param {Array<Record<string, any>>} animationsParam
+         * @param {string} fnName
+         * @param {{ add?: string; remove?: string; }} classNames
+         */
         function packageAnimations(
           elementParam,
           optionsParam,
@@ -153,6 +229,7 @@ export function AnimateJsProvider($animateProvider) {
           fnName,
           classNames,
         ) {
+          /** @type {Array<(done: () => void) => void>} */
           const operations = [];
 
           animationsParam.forEach((ani) => {
@@ -162,6 +239,7 @@ export function AnimateJsProvider($animateProvider) {
 
             operations.push((done) => {
               if (isFunction(animationFn)) {
+                /** @type {any[]} */
                 let args;
 
                 switch (fnName) {
@@ -200,6 +278,9 @@ export function AnimateJsProvider($animateProvider) {
 
           if (!operations.length) return undefined;
 
+          /**
+           * @param {() => void} done
+           */
           return (done) => {
             let completed = 0;
 

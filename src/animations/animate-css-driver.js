@@ -69,7 +69,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
       /**
        * @param {HTMLElement} outAnchor
        * @param {HTMLElement} inAnchor
-       * @returns {AnimateRunner|{start(): AnimateRunner}|void}
+       * @returns {{ start(): AnimateRunner } | null}
        */
       function prepareAnchoredAnimation(outAnchor, inAnchor) {
         const clone = /** @type {HTMLElement} */ (outAnchor.cloneNode(true));
@@ -83,10 +83,8 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
         rootBodyElement.append(clone);
 
-        /**
-         * @type {{ start: () => any; }}
-         */
-        let animatorIn;
+        /** @type {ReturnType<typeof prepareInAnimation> | null} */
+        let animatorIn = null;
 
         const animatorOut = prepareOutAnimation();
 
@@ -98,11 +96,19 @@ export function AnimateCssDriverProvider($$animationProvider) {
           animatorIn = prepareInAnimation();
 
           if (!animatorIn) {
-            return end();
+            end();
+
+            return null;
           }
         }
 
         const startingAnimator = animatorOut || animatorIn;
+
+        if (!startingAnimator) {
+          end();
+
+          return null;
+        }
 
         return {
           start() {
@@ -158,7 +164,10 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
           // we iterate directly since safari messes up and doesn't return
           // all the keys for the coords object when iterated
-          ["width", "height", "top", "left"].forEach((key) => {
+          /** @type {Array<"width" | "height" | "top" | "left">} */
+          const keys = ["width", "height", "top", "left"];
+
+          keys.forEach((key) => {
             let value = coords[key];
 
             switch (key) {
@@ -210,16 +219,22 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
         function end() {
           clone.remove();
-          outAnchor[0].classList.remove(NG_ANIMATE_SHIM_CLASS_NAME);
-          inAnchor[0].classList.remove(NG_ANIMATE_SHIM_CLASS_NAME);
+          outAnchor.classList.remove(NG_ANIMATE_SHIM_CLASS_NAME);
+          inAnchor.classList.remove(NG_ANIMATE_SHIM_CLASS_NAME);
         }
       }
 
+      /**
+       * @param {import("./interface.ts").AnimationDetails} from
+       * @param {import("./interface.ts").AnimationDetails} to
+       * @param {NonNullable<import("./interface.ts").AnimationDetails["anchors"]>} anchors
+       */
       function prepareFromToAnchorAnimation(from, to, anchors) {
         const fromAnimation = prepareRegularAnimation(from);
 
         const toAnimation = prepareRegularAnimation(to);
 
+        /** @type {Array<{ start(): ng.AnimateRunner }>} */
         const anchorAnimations = [];
 
         anchors.forEach((anchor) => {
@@ -325,7 +340,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
  */
 function filterCssClasses(classes) {
   // remove all the `ng-` stuff
-  return classes && classes.replace(/\bng-\S+\b/g, "");
+  return classes ? classes.replace(/\bng-\S+\b/g, "") : "";
 }
 
 /**

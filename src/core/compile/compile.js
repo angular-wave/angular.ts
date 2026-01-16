@@ -63,7 +63,7 @@ const REQUIRE_PREFIX_REGEXP = /^(?:(\^\^?)?(\?)?(\^\^?)?)?/;
 // 'on' and be composed of only English letters.
 const EVENT_HANDLER_ATTR_REGEXP = /^(on[a-z]+|formaction)$/;
 
-const valueFn = (value) => () => value;
+const valueFn = (/** @type {any} */ value) => () => value;
 
 export const DirectiveSuffix = "Directive";
 
@@ -129,6 +129,10 @@ export class CompileProvider {
       return bindings;
     }
 
+    /**
+     * @param {{ scope: ng.Scope; bindToController: boolean | ng.Scope; controller: any; }} directive
+     * @param {string} directiveName
+     */
     function parseDirectiveBindings(directive, directiveName) {
       const bindings = {
         isolateScope: null,
@@ -172,6 +176,9 @@ export class CompileProvider {
       return bindings;
     }
 
+    /**
+     * @param {ng.Directive} directive
+     */
     function getDirectiveRequire(directive) {
       const require =
         directive.require || (directive.controller && directive.name);
@@ -197,6 +204,10 @@ export class CompileProvider {
       return require;
     }
 
+    /**
+     * @param {unknown} restrict
+     * @param {string} name
+     */
     function getDirectiveRestrict(restrict, name) {
       if (restrict && !(isString(restrict) && /[EA]/.test(restrict))) {
         throw $compileMinErr(
@@ -435,7 +446,7 @@ export class CompileProvider {
      * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
      *
      * @param {RegExp=} regexp New regexp to trust urls with.
-     * @returns {RegExp|import('../sanitize/sanitize-uri.js').SanitizeUriProvider} Current RegExp if called without value or self for
+     * @returns {RegExp|import('../sanitize/sanitize-uri.js').SanitizeUriProvider | undefined} Current RegExp if called without value or self for
      *    chaining otherwise.
      */
     this.imgSrcSanitizationTrustedUrlList = function (regexp) {
@@ -520,6 +531,10 @@ export class CompileProvider {
      * - *|formAction, form|action URL => RESOURCE_URL (like the attribute)
      */
     (function registerNativePropertyContexts() {
+      /**
+       * @param {string} ctx
+       * @param {any[]} values
+       */
       function registerContext(ctx, values) {
         values.forEach((v) => {
           PROP_CONTEXTS[v.toLowerCase()] = ctx;
@@ -805,6 +820,9 @@ export class CompileProvider {
            */
           const linkFnsList = []; // An array to hold node indices and their linkFns
 
+          /**
+           * @type {{ (childLinkFn: import("./interface.ts").ChildLinkFn | null, scope: import("../scope/scope.js").Scope, node: Node | Element, boundTranscludeFn: import("./interface.ts").BoundTranscludeFn | null): void; (childLinkFn: import("./interface.ts").ChildLinkFn | null, scope: import("../scope/scope.js").Scope, node: Node | Element, boundTranscludeFn: import("./interface.ts").BoundTranscludeFn | null): void; }}
+           */
           let nodeLinkFnFound;
 
           let linkFnFound = false;
@@ -985,6 +1003,13 @@ export class CompileProvider {
           transcludeFn,
           previousBoundTranscludeFn,
         ) {
+          /**
+           * @param {ProxyConstructor & import("../scope/scope.js").Scope & Record<string, any>} transcludedScope
+           * @param {any} cloneFn
+           * @param {any} controllers
+           * @param {any} _futureParentElement
+           * @param {ng.Scope} containingScope
+           */
           function boundTranscludeFn(
             transcludedScope,
             cloneFn,
@@ -1180,13 +1205,13 @@ export class CompileProvider {
         /**
          * A function generator that is used to support both eager and lazy compilation
          * linking function.
-         * @param eager
-         * @param {NodeList|Node} nodes
-         * @param transcludeFn
-         * @param maxPriority
-         * @param ignoreDirective
-         * @param previousCompileContext
-         * @returns {ng.PublicLinkFn|ng.TranscludeFn}
+         * @param {boolean} eager
+         * @param {NodeList | Node} nodes
+         * @param {import("./interface.ts").TranscludeFn | null | undefined} transcludeFn
+         * @param {number | undefined} maxPriority
+         * @param {string | undefined} ignoreDirective
+         * @param {{ _nonTlbTranscludeDirective?: any; needsNewScope?: any; } | null | undefined} previousCompileContext
+         * @returns {ng.PublicLinkFn | ng.TranscludeFn}
          */
         function compilationGenerator(
           eager,
@@ -1322,6 +1347,9 @@ export class CompileProvider {
 
             let controllerScope;
 
+            /**
+             * @type {ArrayLike<any> | { [s: string]: any; }}
+             */
             let elementControllers;
 
             let scopeToChild = scope;
@@ -1580,6 +1608,12 @@ export class CompileProvider {
             // the fifth parameter to the link function.
             // Example: function link (scope, element, attrs, ctrl, transclude) {}
             // Note: all arguments are optional!
+            /**
+             * @param {import("../scope/scope.js").Scope | undefined} scopeParam
+             * @param {import("./interface.ts").CloneAttachFn | undefined} cloneAttachFn
+             * @param {Node | null | undefined} _futureParentElement
+             * @param {string | number} slotName
+             */
             function controllersBoundTransclude(
               scopeParam,
               cloneAttachFn,
@@ -1917,11 +1951,9 @@ export class CompileProvider {
                 if (isTextNode(directiveValue)) {
                   $template = [];
                 } else {
-                  $template = removeComments(
-                    wrapTemplate(
-                      directive.templateNamespace,
-                      trim(directiveValue),
-                    ),
+                  $template = wrapTemplate(
+                    directive.templateNamespace,
+                    trim(directiveValue),
                   );
                 }
 
@@ -2073,6 +2105,10 @@ export class CompileProvider {
           };
 
           /// /////////////////
+          /**
+           * @param {Object | null} pre
+           * @param {Object} post
+           */
           function addLinkFns(pre, post) {
             if (pre) {
               pre.require = directive.require;
@@ -2197,12 +2233,12 @@ export class CompileProvider {
 
         /**
          * @param {NodeRef} $element
-         * @param attrs
-         * @param transcludeFn
-         * @param _controllerDirectives
-         * @param isolateScope
-         * @param scope
-         * @param _newIsolateScopeDirective
+         * @param {Attributes} attrs
+         * @param {import("./interface.ts").TranscludeFn} transcludeFn
+         * @param {{ [x: string]: any; }} _controllerDirectives
+         * @param {(ProxyConstructor & import("../scope/scope.js").Scope & Record<string, any>) | undefined} isolateScope
+         * @param {import("../scope/scope.js").Scope} scope
+         * @param {any} _newIsolateScopeDirective
          * @returns {any}
          */
         function setupControllers(
@@ -2267,6 +2303,11 @@ export class CompileProvider {
         // asked for element transclusion
         // * if the directive itself asks for transclusion but it is at the root of a template and the original
         // element was replaced. See https://github.com/angular/angular.js/issues/12936
+        /**
+         * @param {string | any[]} directives
+         * @param {boolean} isolateScope
+         * @param {undefined} [newScope]
+         */
         function markDirectiveScope(directives, isolateScope, newScope) {
           for (let j = 0, jj = directives.length; j < jj; j++) {
             directives[j] = inherit(directives[j], {
@@ -2279,14 +2320,15 @@ export class CompileProvider {
         /**
          * looks up the directive and decorates it with exception handling and proper parameters. We
          * call this the boundDirective.
-         *
          * @param {string} name name of the directive to look up.
          * @param {string} location The directive must be found in specific format.
-         *   String containing any of these characters:
-         *
-         *   * `E`: element name
-         *   * `A': attribute
+        String containing any of these characters:
+        
+        * `E`: element name
+        * `A': attribute
          * @returns {boolean} true if directive was added.
+         * @param {any[]} tDirectives
+         * @param {number | undefined} maxPriority
          */
         function addDirective(tDirectives, name, location, maxPriority) {
           let match = false;
@@ -2389,11 +2431,17 @@ export class CompileProvider {
           postLinkFns,
           previousCompileContext,
         ) {
+          /**
+           * @type {ng.Scope[] | null}
+           */
           let linkQueue = [];
 
           /** @type {any} */
           let afterTemplateNodeLinkFn;
 
+          /**
+           * @type {import("./interface.ts").CompositeLinkFn}
+           */
           let afterTemplateChildLinkFn;
 
           let afterTemplateNodeLinkFnCtx;
@@ -2452,9 +2500,7 @@ export class CompileProvider {
                       node.nodeType !== NodeType._TEXT_NODE,
                   );
                 } else {
-                  $template = removeComments(
-                    wrapTemplate(templateNamespace, trim(content)),
-                  );
+                  $template = wrapTemplate(templateNamespace, trim(content));
                 }
                 compileNode = $template[0];
 
@@ -2592,11 +2638,11 @@ export class CompileProvider {
             });
 
           return function delayedNodeLinkFn(
-            _ignoreChildLinkFn,
-            scope,
-            node,
-            rootElement,
-            boundTranscludeFn,
+            /** @type {any} */ _ignoreChildLinkFn,
+            /** @type {ng.Scope} */ scope,
+            /** @type {any} */ node,
+            /** @type {any} */ rootElement,
+            /** @type {any} */ boundTranscludeFn,
           ) {
             let childBoundTranscludeFn = boundTranscludeFn;
 
@@ -2627,6 +2673,8 @@ export class CompileProvider {
 
         /**
          * Sorting function for bound directives.
+         * @param {{ priority: number; name: number; index: number; }} a
+         * @param {{ priority: number; name: number; index: number; }} b
          */
         function byPriority(a, b) {
           const diff = b.priority - a.priority;
@@ -2642,6 +2690,12 @@ export class CompileProvider {
           return a.index - b.index;
         }
 
+        /**
+         * @param {string} what
+         * @param {{ name: any; }} previousDirective
+         * @param {{ name: any; }} directive
+         * @param {NodeRef} element
+         */
         function assertNoDuplicate(
           what,
           previousDirective,
@@ -2711,6 +2765,11 @@ export class CompileProvider {
           }
         }
 
+        /**
+         * @param {string} nodeName
+         * @param {string} attrNormalizedName
+         * @returns {string|undefined}
+         */
         function getTrustedAttrContext(nodeName, attrNormalizedName) {
           if (attrNormalizedName === "srcdoc") {
             return $sce.HTML;
@@ -2764,6 +2823,10 @@ export class CompileProvider {
           return undefined;
         }
 
+        /**
+         * @param {string} nodeName
+         * @param {string} propNormalizedName
+         */
         function getTrustedPropContext(nodeName, propNormalizedName) {
           const prop = propNormalizedName.toLowerCase();
 
@@ -2772,6 +2835,10 @@ export class CompileProvider {
           );
         }
 
+        /**
+         * @param {unknown} value
+         * @param {string} invokeType
+         */
         function sanitizeSrcset(value, invokeType) {
           if (!value) {
             return value;
@@ -2782,7 +2849,7 @@ export class CompileProvider {
               "srcset",
               'Can\'t pass trusted values to `{0}`: "{1}"',
               invokeType,
-              /** @type {unknown} */ (value).toString(),
+              /** @type {Object} */ (value).toString(),
             );
           }
 
@@ -2833,6 +2900,12 @@ export class CompileProvider {
           return result;
         }
 
+        /**
+         * @param {Element} node
+         * @param {ng.Directive<any>[] | { priority: number; compile: (_: any, attr: any) => { pre: (scope: any, $element: any) => void; }; }[]} directives
+         * @param {string} attrName
+         * @param {string} propName
+         */
         function addPropertyDirective(node, directives, attrName, propName) {
           if (EVENT_HANDLER_ATTR_REGEXP.test(propName)) {
             throw $compileMinErr(
@@ -2845,7 +2918,7 @@ export class CompileProvider {
 
           const trustedContext = getTrustedPropContext(nodeName, propName);
 
-          let sanitizer = (x) => x;
+          let sanitizer = (/** @type {any} */ x) => x;
 
           // Sanitize img[srcset] + source[srcset] values.
           if (
@@ -2864,7 +2937,10 @@ export class CompileProvider {
               const ngPropGetter = $parse(attr[attrName]);
 
               return {
-                pre: function ngPropPreLinkFn(scope, $element) {
+                pre: function ngPropPreLinkFn(
+                  /** @type {import("../scope/scope.js").Scope} */ scope,
+                  /** @type {{ [x: string]: any; }} */ $element,
+                ) {
                   function applyPropValue() {
                     const propValue = ngPropGetter(scope);
 
@@ -2883,6 +2959,13 @@ export class CompileProvider {
           });
         }
 
+        /**
+         * @param {Element} node
+         * @param {ng.Directive<any>[] | { priority: number; compile(): { pre: (scope: any, element: any, attr: any) => void; }; }[]} directives
+         * @param {string} value
+         * @param {string} name
+         * @param {boolean} isNgAttr
+         */
         function addAttrInterpolateDirective(
           node,
           directives,
@@ -3410,27 +3493,6 @@ export class CompileProvider {
       },
     ];
   }
-}
-
-function removeComments(jqNodes) {
-  let i = jqNodes.length;
-
-  if (i <= 1) {
-    return jqNodes;
-  }
-
-  while (i--) {
-    const node = jqNodes[i];
-
-    if (
-      node.nodeType === NodeType._COMMENT_NODE ||
-      (node.nodeType === NodeType._TEXT_NODE && node.nodeValue.trim() === "")
-    ) {
-      [].splice.call(jqNodes, i, 1);
-    }
-  }
-
-  return jqNodes;
 }
 
 /**
