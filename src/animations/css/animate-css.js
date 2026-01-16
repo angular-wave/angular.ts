@@ -1,18 +1,19 @@
-import { $injectTokens } from "../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.js";
 import {
   getCacheData,
   removeElementData,
   setCacheData,
-} from "../shared/dom.js";
+} from "../../shared/dom.js";
 import {
   entries,
   isArray,
   isDefined,
   isNullOrUndefined,
+  isString,
   keys,
   nullObject,
-} from "../shared/utils.js";
-import { AnimateRunner } from "./runner/animate-runner.js";
+} from "../../shared/utils.js";
+import { AnimateRunner } from "../runner/animate-runner.js";
 import {
   ACTIVE_CLASS_SUFFIX,
   ADD_CLASS_SUFFIX,
@@ -27,9 +28,9 @@ import {
   packageStyles,
   pendClasses,
   prepareAnimationOptions,
-} from "./shared.js";
-import { animateCache } from "./cache/animate-cache.js";
-import { rafScheduler } from "./raf/raf-scheduler.js";
+} from "../shared.js";
+import { animateCache } from "../cache/animate-cache.js";
+import { rafScheduler } from "../raf/raf-scheduler.js";
 
 const ANIMATE_TIMER_KEY = $injectTokens._animateCss;
 
@@ -82,21 +83,24 @@ function getCssDelayStyle(delay, isKeyframeAnimation) {
 function computeCssStyles(element, properties) {
   const styles = nullObject();
 
-  const detectedStyles = window.getComputedStyle(element) || {};
+  const detectedStyles =
+    /** @type {CSSStyleDeclaration & import("../../shared/interface.ts").Dict<string>} */
+    (window.getComputedStyle(element) || {});
 
   entries(properties).forEach(([actualStyleName, formalStyleName]) => {
+    /** @type {string | number | null} */
     let val = detectedStyles[formalStyleName];
 
     if (val) {
-      if (/^[+-]?\d/.test(val)) {
-        val = parseMaxTime(val);
+      if (isString(val) && /^[+-]?\d/.test(val)) {
+        val = parseMaxTime(val); // number
       }
 
       if (val === 0) {
         val = null;
       }
 
-      styles[actualStyleName] = val;
+      styles[actualStyleName] = /** @type {number | null} */ (val);
     }
   });
 
@@ -104,22 +108,42 @@ function computeCssStyles(element, properties) {
 }
 
 /**
- * @param {string} str
+ * Parse a CSS time value (or comma-separated list of values) and return the maximum duration.
+ *
+ * Accepts values expressed in seconds (`s`) or milliseconds (`ms`) as returned by `getComputedStyle()`,
+ * e.g. `"0.2s"`, `"150ms"`, or `"0.2s, 150ms"`. Milliseconds are converted to seconds before comparison.
+ *
+ * Invalid tokens are ignored. If no valid numeric token is found, the result is `0`.
+ *
+ * @param {string} str A CSS time string (optionally comma-separated).
+ * @returns {number} The maximum time value, expressed in **seconds**.
  */
-function parseMaxTime(str) {
-  let maxValue = 0;
+export function parseMaxTime(str) {
+  let max = 0;
 
-  str.split(/\s*,\s*/).forEach((value) => {
-    // it's always safe to consider only second values and omit `ms` values since
-    // getComputedStyle will always handle the conversion for us
-    if (value.charAt(value.length - 1) === "s") {
-      value = value.substring(0, value.length - 1);
+  str.split(/\s*,\s*/).forEach((token) => {
+    if (!token) return;
+
+    // Computed styles usually return either "Xs" or "Yms"
+    // (but we accept plain numbers too).
+    let num;
+
+    if (token.endsWith("ms")) {
+      num = parseFloat(token.slice(0, -2));
+
+      if (!isNaN(num)) num = num / 1000;
+    } else if (token.endsWith("s")) {
+      num = parseFloat(token.slice(0, -1));
+    } else {
+      num = parseFloat(token);
     }
-    value = parseFloat(value) || 0;
-    maxValue = maxValue ? Math.max(value, maxValue) : value;
+
+    if (!isNaN(num)) {
+      max = Math.max(max, num);
+    }
   });
 
-  return maxValue;
+  return max;
 }
 
 /**s
@@ -129,6 +153,11 @@ function truthyTimingValue(val) {
   return val === 0 || !isNullOrUndefined(val);
 }
 
+/**
+ * @param {string | number | undefined} duration
+ * @param {boolean} applyOnlyDuration
+ * @return {import("../interface.ts").InlineStyleEntry}
+ */
 function getCssTransitionDurationStyle(duration, applyOnlyDuration) {
   let style = "transition";
 
@@ -152,6 +181,11 @@ function getCssTransitionDurationStyle(duration, applyOnlyDuration) {
 // value for the style (a falsy value implies that the style
 // is to be removed at the end of the animation). If we had a simple
 // "OR" statement then it would not be enough to catch that.
+/**
+ * @param {{ [x: string]: any; }} backup
+ * @param {HTMLElement} node
+ * @param {any[]} properties
+ */
 function registerRestorableStyles(backup, node, properties) {
   properties.forEach((prop) => {
     backup[prop] = isDefined(backup[prop])
@@ -170,7 +204,7 @@ export function AnimateCssProvider() {
     /**
      * @returns {ng.AnimateCssService}
      */
-    function () {
+    () => {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
       /**
@@ -209,6 +243,12 @@ export function AnimateCssProvider() {
         return timings;
       }
 
+      /**
+       * @param {Element} node
+       * @param {string | string[]} className
+       * @param {string} cacheKey
+       * @param {{ [s: string]: string; } | ArrayLike<string>} properties
+       */
       function computeCachedCssStaggerStyles(
         node,
         className,
@@ -291,6 +331,7 @@ export function AnimateCssProvider() {
       /**
        * @param {HTMLElement} element
        * @param {ng.AnimationOptions} [initialOptions]
+       * @return {{_willAnimate: boolean, start(): AnimateRunner, end: function(): void}}
        */
       function init(element, initialOptions) {
         // all of the animation functions should create
@@ -344,7 +385,7 @@ export function AnimateCssProvider() {
         let runner;
 
         /**
-         * @type {import("./interface.ts").AnimationHost | undefined}
+         * @type {import("../interface.ts").AnimationHost | undefined}
          */
         let runnerHost;
 
@@ -770,6 +811,9 @@ export function AnimateCssProvider() {
           };
         }
 
+        /**
+         * @param {{ stopPropagation: () => void; originalEvent: any; }} event
+         */
         function onAnimationProgress(event) {
           event.stopPropagation();
           const ev = event.originalEvent || event;
@@ -821,7 +865,7 @@ export function AnimateCssProvider() {
           // will still happen when transitions are used. Only the transition will
           // not be paused since that is not possible. If the animation ends when
           // paused then it will not complete until unpaused or cancelled.
-          const playPause = function (playAnimation) {
+          const playPause = function (/** @type {boolean} */ playAnimation) {
             if (!animationCompleted) {
               animationPaused = !playAnimation;
 
@@ -1033,7 +1077,7 @@ export function AnimateCssProvider() {
 /**
  * @param {HTMLElement} node
  * @param {number} duration
- * @returns {import("./interface.ts").InlineStyleEntry}
+ * @returns {import("../interface.ts").InlineStyleEntry}
  */
 function blockTransitions(node, duration) {
   // we use a negative delay value since it performs blocking

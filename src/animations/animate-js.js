@@ -22,7 +22,7 @@ export function AnimateJsProvider($animateProvider) {
     ($injector) => {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
-      return function animateJs(element, event, classes, options) {
+      return function (element, event, classes, options) {
         // Optional arguments
         if (arguments.length === 3 && isObject(classes)) {
           options = /** @type {Object} */ (classes);
@@ -86,7 +86,7 @@ export function AnimateJsProvider($animateProvider) {
         /** @type {ng.AnimateRunner} */
         let runner;
 
-        return {
+        return /** @type {import("./interface.ts").AnimateJsRunner} */ ({
           _willAnimate: true,
 
           start() {
@@ -122,7 +122,7 @@ export function AnimateJsProvider($animateProvider) {
 
             return runner;
           },
-        };
+        });
 
         // ---- helpers ----
         function lookupAnimations(classList) {

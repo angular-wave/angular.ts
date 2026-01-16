@@ -26,14 +26,26 @@ export function ngSwitchDirective($animate) {
 
       let selectedTranscludes = [];
 
+      /**
+       * @type {any[]}
+       */
       const selectedElements = [];
 
+      /**
+       * @type {import("../../docs.js").AnimateRunner[]}
+       */
       const previousLeaveAnimations = [];
 
+      /**
+       * @type {any[]}
+       */
       const selectedScopes = [];
 
-      const spliceFactory = function (array, index) {
-        return function (response) {
+      const spliceFactory = function (
+        /** @type {any[]} */ array,
+        /** @type {number} */ index,
+      ) {
+        return function (/** @type {boolean} */ response) {
           if (response !== false) array.splice(index, 1);
         };
       };
@@ -47,7 +59,11 @@ export function ngSwitchDirective($animate) {
 
         // Start with the last, in case the array is modified during the loop
         while (previousLeaveAnimations.length) {
-          $animate.cancel(previousLeaveAnimations.pop());
+          $animate.cancel(
+            /** @type {import("../../docs.js").AnimateRunner} */ (
+              previousLeaveAnimations.pop()
+            ),
+          );
         }
 
         for (i = 0, ii = selectedScopes.length; i < ii; ++i) {
@@ -73,30 +89,47 @@ export function ngSwitchDirective($animate) {
             ngSwitchController.cases["?"])
         ) {
           Object.values(selectedTranscludes).forEach((selectedTransclude) => {
-            selectedTransclude.transclude((caseElement, selectedScope) => {
-              selectedScopes.push(selectedScope);
-              const anchor = selectedTransclude.element;
+            selectedTransclude.transclude(
+              (
+                /** @type {Node} */ caseElement,
+                /** @type {any} */ selectedScope,
+              ) => {
+                selectedScopes.push(selectedScope);
+                const anchor = selectedTransclude.element;
 
-              // TODO removing this breaks repeater test
-              const block = {
-                clone: caseElement,
-                comment: document.createComment(""),
-              };
+                // TODO removing this breaks repeater test
+                const block = {
+                  clone: caseElement,
+                  comment: document.createComment(""),
+                };
 
-              selectedElements.push(block);
+                selectedElements.push(block);
 
-              if (hasAnimate(caseElement)) {
-                if (runner) {
-                  requestAnimationFrame(() => {
-                    $animate.enter(caseElement, anchor.parentElement, anchor);
-                  });
+                if (hasAnimate(caseElement)) {
+                  if (runner) {
+                    requestAnimationFrame(() => {
+                      $animate.enter(
+                        /** @type {HTMLElement} */ (caseElement),
+                        anchor.parentElement,
+                        anchor,
+                      );
+                    });
+                  } else {
+                    $animate.enter(
+                      /** @type {HTMLElement} */ (caseElement),
+                      anchor.parentElement,
+                      anchor,
+                    );
+                  }
                 } else {
-                  $animate.enter(caseElement, anchor.parentElement, anchor);
+                  domInsert(
+                    /** @type {HTMLElement} */ (caseElement),
+                    anchor.parentElement,
+                    anchor,
+                  );
                 }
-              } else {
-                domInsert(caseElement, anchor.parentElement, anchor);
-              }
-            });
+              },
+            );
           });
         }
       });

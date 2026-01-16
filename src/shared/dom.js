@@ -441,6 +441,8 @@ export function removeElement(element, keepData = false) {
   if (parent) parent.removeChild(element);
 }
 
+const parser = new DOMParser();
+
 /**
  * Extracts the starting tag from an HTML string or DOM element.
  *
@@ -451,8 +453,6 @@ export function startingTag(elementOrStr) {
   let clone;
 
   if (typeof elementOrStr === "string") {
-    const parser = new DOMParser();
-
     const doc = parser.parseFromString(elementOrStr, "text/html");
 
     const { firstChild } = doc.body;
