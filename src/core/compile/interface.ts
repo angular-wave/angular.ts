@@ -15,9 +15,9 @@ export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
  * The function returns the DOM content to be injected (transcluded) into the directive.
  */
 export type TranscludeFn = {
-  (cb: TranscludeFnCb): HTMLElement;
-  (clone?: TranscludedNodes, scope?: Scope | null): HTMLElement;
-  (scope: Scope, cb?: TranscludeFnCb): HTMLElement;
+  (cb: TranscludeFnCb): HTMLElement | void;
+  (clone?: TranscludedNodes, scope?: Scope | null): HTMLElement | void;
+  (scope: Scope, cb?: TranscludeFnCb): HTMLElement | void;
   _slots?: any;
 };
 

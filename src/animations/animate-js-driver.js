@@ -72,7 +72,7 @@ export function AnimateJsDriverProvider($$animationProvider) {
 
       /**
        * @param {import("./interface.ts").AnimationDetails} animationDetails
-       * @return {import("./interface.ts").AnimateJsRunner}
+       * @return {import("./interface.ts").Animator}
        */
       function prepareAnimation(animationDetails) {
         // TODO(matsko): make sure to check for grouped animations and delegate down to normal animations

@@ -89,7 +89,7 @@ import {
   ngShowAriaDirective,
   ngValueAriaDirective,
 } from "./directive/aria/aria.js";
-import { AnimateCssProvider } from "./animations/animate-css.js";
+import { AnimateCssProvider } from "./animations/css/animate-css.js";
 import { AnimateQueueProvider } from "./animations/queue/animate-queue.js";
 import { AnimateJsProvider } from "./animations/animate-js.js";
 import { AnimationProvider } from "./animations/animation.js";

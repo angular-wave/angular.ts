@@ -14,7 +14,7 @@ export class AnimateJsDriverProvider {
     | (($$animateJs: import("./interface.ts").AnimateJsFn) => (
         animationDetails: import("./interface.ts").AnimationDetails,
       ) =>
-        | import("./interface.ts").AnimateJsRunner
+        | import("./interface.ts").Animator
         | {
             start(): AnimateRunner;
           })
