@@ -115,11 +115,18 @@ function classDirective(name, selector) {
           }
         }
 
+        /**
+         * @param {string | any[]} classArray
+         * @param {number} count
+         */
         function digestClassCounts(classArray, count) {
+          /**
+           * @type {any[]}
+           */
           const classesToUpdate = [];
 
           if (classArray) {
-            classArray.forEach((className) => {
+            classArray.forEach((/** @type {string | number} */ className) => {
               if (count > 0 || classCounts[className]) {
                 classCounts[className] = (classCounts[className] || 0) + count;
 
@@ -133,6 +140,9 @@ function classDirective(name, selector) {
           return classesToUpdate.join(" ");
         }
 
+        /**
+         * @param {number | boolean} newModulo
+         */
         function ngClassIndexWatchAction(newModulo) {
           // This watch-action should run before the `ngClassWatchAction()`, thus it
           // adds/removes `oldClassString`. If the `ngClass` expression has changed as well, the
@@ -181,10 +191,17 @@ function arrayDifference(tokens1, tokens2) {
   return values;
 }
 
+/**
+ * @param {string} classString
+ * @return {string[] | ""}
+ */
 function split(classString) {
   return classString && classString.split(" ");
 }
 
+/**
+ * @param {unknown} classValue
+ */
 function toClassString(classValue) {
   if (!classValue) return classValue;
 

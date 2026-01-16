@@ -101,12 +101,15 @@ export class CompileProvider {
    * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
    *
    * @param {RegExp=} regexp New regexp to trust urls with.
-   * @returns {RegExp|import('../sanitize/sanitize-uri.js').SanitizeUriProvider} Current RegExp if called without value or self for
+   * @returns {RegExp|import('../sanitize/sanitize-uri.js').SanitizeUriProvider | undefined} Current RegExp if called without value or self for
    *    chaining otherwise.
    */
   imgSrcSanitizationTrustedUrlList: (
     regexp?: RegExp | undefined,
-  ) => RegExp | import("../sanitize/sanitize-uri.js").SanitizeUriProvider;
+  ) =>
+    | RegExp
+    | import("../sanitize/sanitize-uri.js").SanitizeUriProvider
+    | undefined;
   strictComponentBindingsEnabled: (enabled: any) => boolean | this;
   /**
    * Defines the security context for DOM properties bound by ng-prop-*.

@@ -16,7 +16,10 @@ const nativeAriaNodeNames = [
   "SUMMARY",
 ];
 
-const isNodeOneOf = function (elem, nodeTypeArray) {
+const isNodeOneOf = function (
+  /** @type {HTMLElement} */ elem,
+  /** @type {string | any[]} */ nodeTypeArray,
+) {
   return nodeTypeArray.indexOf(elem.nodeName) !== -1;
 };
 
