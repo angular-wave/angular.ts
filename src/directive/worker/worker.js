@@ -111,6 +111,9 @@ export function ngWorkerDirective($parse, $log, $exceptionHandler) {
 
 /**
  * Swap result into DOM based on strategy
+ * @param {string} result
+ * @param {string} swap
+ * @param {HTMLElement} element
  */
 function handleSwap(result, swap, element) {
   switch (swap) {
@@ -121,7 +124,7 @@ function handleSwap(result, swap, element) {
       const temp = document.createElement("div");
 
       temp.innerHTML = result;
-      parent.replaceChild(temp.firstChild, element);
+      parent.replaceChild(/** @type {ChildNode} */ (temp.firstChild), element);
       break;
     }
     case "textContent":
@@ -165,6 +168,9 @@ export function createWorkerConnection(scriptPath, config) {
     onError() {
       /* empty */
     },
+    /**
+     * @param {string} data
+     */
     transformMessage(data) {
       try {
         return JSON.parse(data);
@@ -174,8 +180,9 @@ export function createWorkerConnection(scriptPath, config) {
     },
   };
 
-  /** @type {ng.WorkerConfig} */
-  const cfg = Object.assign({}, defaults, config);
+  const cfg = /** @type {import("./interface.ts").DefultWorkerConfig} */ (
+    Object.assign({}, defaults, config)
+  );
 
   let worker = new Worker(scriptPath, { type: "module" });
 
@@ -189,7 +196,7 @@ export function createWorkerConnection(scriptPath, config) {
     wire(worker);
   };
 
-  const wire = (workerParam) => {
+  const wire = (/** @type {Worker} */ workerParam) => {
     workerParam.onmessage = function (event) {
       let { data } = event;
 

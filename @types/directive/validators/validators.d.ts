@@ -137,9 +137,5 @@ export const maxlengthDirective: (
  */
 export const minlengthDirective: (
   | string
-  | (($parse: ng.ParseService) => {
-      restrict: string;
-      require: string;
-      link(scope: any, elm: any, attr: any, ctrl: any): void;
-    })
+  | (($parse: ng.ParseService) => ng.Directive)
 )[];

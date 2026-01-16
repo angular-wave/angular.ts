@@ -405,7 +405,7 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param to Absolute state name, state object, or relative state path (relative to current state).
+   * @param {string} to Absolute state name, state object, or relative state path (relative to current state).
    *
    * Some examples:
    *
@@ -414,14 +414,14 @@ export class StateProvider {
    * - `$state.go('^.sibling')` - if current state is `home.child`, will go to the `home.sibling` state
    * - `$state.go('.child.grandchild')` - if current state is home, will go to the `home.child.grandchild` state
    *
-   * @param params A map of the parameters that will be sent to the state, will populate $stateParams.
+   * @param {*} [params] A map of the parameters that will be sent to the state, will populate $stateParams.
    *
    *    Any parameters that are not specified will be inherited from current parameter values (because of `inherit: true`).
    *    This allows, for example, going to a sibling state that shares parameters defined by a parent state.
    *
-   * @param options Transition options
+   * @param {*} [options] Transition options
    *
-   * @returns {promise} A promise representing the state of the new transition.
+   * @returns {Promise<any>} A promise representing the state of the new transition.
    */
   go(to, params, options) {
     const defautGoOpts = { relative: this.$current, inherit: true };

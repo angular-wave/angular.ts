@@ -1,7 +1,10 @@
 import type { Scope } from "../scope/scope.js";
 import type { NodeRef } from "../../shared/noderef.js";
-type TranscludedNodes = Node | Node[] | NodeList | null;
-type TranscludeFnCb = (clone?: TranscludedNodes, scope?: Scope | null) => void;
+export type TranscludedNodes = Node | Node[] | NodeList | null;
+export type TranscludeFnCb = (
+  clone?: TranscludedNodes,
+  scope?: Scope | null,
+) => void;
 export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
 /**
  * A function passed as the fifth argument to a `PublicLinkFn` link function.
@@ -11,9 +14,9 @@ export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
  * The function returns the DOM content to be injected (transcluded) into the directive.
  */
 export type TranscludeFn = {
-  (cb: TranscludeFnCb): void;
-  (clone?: TranscludedNodes, scope?: Scope | null): void;
-  (scope: Scope, cb?: TranscludeFnCb): void;
+  (cb: TranscludeFnCb): HTMLElement;
+  (clone?: TranscludedNodes, scope?: Scope | null): HTMLElement;
+  (scope: Scope, cb?: TranscludeFnCb): HTMLElement;
   _slots?: any;
 };
 export type CloneAttachFn = (
@@ -119,4 +122,3 @@ export type CompositeLinkFn = (
   $linkNode: NodeRef,
   _parentBoundTranscludeFn?: Function,
 ) => void;
-export {};

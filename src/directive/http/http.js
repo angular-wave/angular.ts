@@ -142,6 +142,7 @@ export function createHttpDirective(method, attrName) {
 
       const formData = new FormData(form);
 
+      /** @type {import("../../shared/interface.ts").Dict<any>} */
       const data = {};
 
       formData.forEach((value, key) => {
@@ -151,13 +152,16 @@ export function createHttpDirective(method, attrName) {
       return data;
     }
 
-    return {
+    return /** @type {ng.Directive} */ ({
       restrict: "A",
       link(scope, element, attrs) {
         const eventName = attrs.trigger || getEventNameForElement(element);
 
         const tag = element.tagName.toLowerCase();
 
+        /**
+         * @type {Element | ChildNode[] | undefined}
+         */
         let content = undefined;
 
         if (isDefined(attrs.latch)) {
@@ -184,7 +188,7 @@ export function createHttpDirective(method, attrName) {
         /**
          * Handles DOM manipulation based on a swap strategy and server-rendered HTML.
          *
-         * @param {string | Object} html - The HTML string or object returned from the server.
+         * @param {string | Object} html - The HTML string or JSON object returned from the server.
          * @param {import("./interface.ts").SwapModeType} swap
          * @param {ng.Scope} scopeParam
          * @param {ng.Attributes} attrsParam
@@ -202,11 +206,14 @@ export function createHttpDirective(method, attrName) {
           if (attrsParam.animate) {
             animationEnabled = true;
           }
+          /**
+           * @type {ChildNode[]|*[]}
+           */
           let nodes = [];
 
           if (!["textcontent", "delete", "none"].includes(swap)) {
             if (!html) return;
-            const compiled = $compile(html)(scopeParam);
+            const compiled = $compile(/** @type {string} */ (html))(scopeParam);
 
             nodes =
               compiled instanceof DocumentFragment
@@ -276,7 +283,7 @@ export function createHttpDirective(method, attrName) {
             case "textContent":
               if (animationEnabled) {
                 $animate.leave(target).done(() => {
-                  target.textContent = html;
+                  target.textContent = /** @type {string} */ (html);
                   $animate.enter(
                     target,
                     /** @type {Element} */ (target.parentNode),
@@ -286,7 +293,7 @@ export function createHttpDirective(method, attrName) {
 
                 scopeParam.$flushQueue();
               } else {
-                target.textContent = html;
+                target.textContent = /** @type {string} */ (html);
               }
               break;
 
@@ -338,7 +345,7 @@ export function createHttpDirective(method, attrName) {
                   animationEnabled &&
                   node.nodeType === NodeType._ELEMENT_NODE
                 ) {
-                  $animate.enter(node, target, null); // append at end
+                  $animate.enter(node, target); // append at end
                 } else {
                   target.appendChild(node);
                 }
@@ -391,17 +398,26 @@ export function createHttpDirective(method, attrName) {
             case "innerHTML":
             default:
               if (animationEnabled) {
-                if (content && content.nodeType !== NodeType._TEXT_NODE) {
-                  $animate.leave(content).done(() => {
-                    content = nodes[0];
-                    $animate.enter(nodes[0], target);
-                    scopeParam.$flushQueue();
-                  });
+                if (
+                  content &&
+                  /** @type {HTMLElement} */ (content).nodeType !==
+                    NodeType._TEXT_NODE
+                ) {
+                  $animate
+                    .leave(/** @type {HTMLElement} */ (content))
+                    .done(() => {
+                      content = nodes[0];
+                      $animate.enter(nodes[0], target);
+                      scopeParam.$flushQueue();
+                    });
                   scopeParam.$flushQueue();
                 } else {
                   content = nodes[0];
 
-                  if (content.nodeType === NodeType._TEXT_NODE) {
+                  if (
+                    /** @type {HTMLElement} */ (content).nodeType ===
+                    NodeType._TEXT_NODE
+                  ) {
                     target.replaceChildren(...nodes);
                   } else {
                     $animate.enter(nodes[0], target);
@@ -431,7 +447,9 @@ export function createHttpDirective(method, attrName) {
             return;
           }
 
-          const handler = (res) => {
+          const handler = /** @param {ng.HttpResponse<string|Object>} res */ (
+            res,
+          ) => {
             if (isDefined(attrs.loading)) {
               attrs.$set("loading", false);
             }
@@ -503,6 +521,7 @@ export function createHttpDirective(method, attrName) {
           if (method === "post" || method === "put") {
             let data;
 
+            /** @type {ng.RequestShortcutConfig} */
             const config = {};
 
             if (attrs.enctype) {
@@ -518,6 +537,7 @@ export function createHttpDirective(method, attrName) {
             if (method === "get" && attrs.ngSse) {
               const sseUrl = url;
 
+              /** @type {ng.SseConfig} */
               const config = {
                 withCredentials: attrs.withCredentials === "true",
                 transformMessage: (data) => {
@@ -538,13 +558,13 @@ export function createHttpDirective(method, attrName) {
                 onMessage: (data) => {
                   const res = { status: 200, data };
 
-                  handler(res);
+                  handler(/** @type {ng.HttpResponse<Object>} */ (res));
                 },
                 onError: (err) => {
                   $log.error(`${attrName}: SSE error`, err);
                   const res = { status: 500, data: err };
 
-                  handler(res);
+                  handler(/** @type {ng.HttpResponse<Object>} */ (res));
                 },
                 onReconnect: (count) => {
                   $log.info(`ngSse: reconnected ${count} time(s)`);
@@ -574,6 +594,6 @@ export function createHttpDirective(method, attrName) {
           element.dispatchEvent(new Event("load"));
         }
       },
-    };
+    });
   };
 }

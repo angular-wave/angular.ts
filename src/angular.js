@@ -260,7 +260,7 @@ export class Angular extends EventTarget {
       );
     }
 
-    const type = parts.shift().trim();
+    const type = /** @type {string} */ (parts.shift()).trim();
 
     const expr = parts.join(".").trim();
 

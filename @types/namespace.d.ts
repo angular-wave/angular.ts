@@ -24,6 +24,8 @@ import {
   HttpResponseStatus as THttpResponseStatus,
   HttpMethod as THttpMethod,
   RequestConfig as TRequestConfig,
+  HttpPromise as THttpPromise,
+  HttpResponse as THttpResponse,
 } from "./services/http/interface.ts";
 import { HttpParamSerializerProvider as THttpParamSerializerProvider } from "./services/http/http.js";
 import {
@@ -85,6 +87,7 @@ import { Location as TLocationService } from "./services/location/location.js";
 import {
   AnimateService as TAnimateService,
   AnimationOptions as TAnimationOptions,
+  AnimateCssService as TAnimateCssService,
 } from "./animations/interface.ts";
 import {
   StorageBackend as TStorageBackend,
@@ -164,6 +167,7 @@ declare global {
     type RouterProvider = TRouterProvider;
     type AnchorScrollService = TAnchorScrollService;
     type AnimateService = TAnimateService;
+    type AnimateCssService = TAnimateCssService;
     type AnimateRunner = TAnimateRunner;
     type CompileService = TCompileFn;
     type ControllerService = TControllerService;
@@ -236,6 +240,8 @@ declare global {
     type WebSocketService = TWebSocketService;
     type HttpResponseStatus = THttpResponseStatus;
     type HttpMethod = THttpMethod;
+    type HttpPromise<T> = THttpPromise<T>;
+    type HttpResponse<T> = THttpResponse<T>;
     type RequestConfig = TRequestConfig;
     type InvocationDetail = TInvocationDetail;
   }

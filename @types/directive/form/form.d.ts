@@ -115,7 +115,7 @@ export class FormController {
   /** @type {FormController|Object} */
   _parentForm: FormController | any;
   _element: HTMLFormElement;
-  _animate: import("../../animations/interface.ts").AnimateService;
+  _animate: import("../../docs.ts").AnimateService;
   $error: {};
   _success: {};
   $pending: any;

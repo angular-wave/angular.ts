@@ -139,5 +139,27 @@ export interface AnimateJsFn {
     event: string,
     classes?: string | null,
     options?: AnimationOptions,
-  ): AnimateJsRunner;
+  ): Animator;
 }
+export interface Animator {
+  /** Whether this handle is expected to perform a real animation. */
+  _willAnimate: boolean;
+  /** Start the animation and return a runner you can control/cancel. */
+  start(): AnimateRunner;
+  /** Force-finish the animation (may be sync). */
+  end(): void;
+}
+export interface AnimatorWithEndRunner extends Animator {
+  end(): AnimateRunner;
+}
+export type AnimateFn = (
+  element: HTMLElement,
+  event: string,
+  classes?: string | null,
+  options?: AnimationOptions,
+) => Animator;
+export type AnimateCssService = (
+  element: HTMLElement,
+  options?: ng.AnimationOptions,
+) => Animator;
+export type InlineStyleEntry = [string, string];
