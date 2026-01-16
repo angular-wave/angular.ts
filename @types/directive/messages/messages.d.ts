@@ -44,7 +44,7 @@ declare class NgMessageCtrl {
   _element: HTMLElement;
   _scope: ng.Scope;
   _attrs: ng.Attributes;
-  _animate: import("../../animations/interface.ts").AnimateService;
+  _animate: import("../../docs.ts").AnimateService;
   _latestKey: number;
   _nextAttachId: number;
   /** @type {Record<string, any>} */

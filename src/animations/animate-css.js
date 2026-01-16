@@ -57,16 +57,28 @@ const DETECT_STAGGER_CSS_PROPERTIES = {
   animationDelay: "animationDelay",
 };
 
+/**
+ * @param {any} duration
+ */
 function getCssKeyframeDurationStyle(duration) {
   return ["animationDuration", `${duration}s`];
 }
 
+/**
+ * @param {number | undefined} delay
+ * @param {boolean | undefined} [isKeyframeAnimation]
+ */
 function getCssDelayStyle(delay, isKeyframeAnimation) {
   const prop = isKeyframeAnimation ? "animationDelay" : "transitionDelay";
 
   return [prop, `${delay}s`];
 }
 
+/**
+ * @param {Element} element
+ * @param {{ [s: string]: string } | ArrayLike<string>} properties
+ * @returns {{ [s: string]: number | null }}
+ */
 function computeCssStyles(element, properties) {
   const styles = nullObject();
 
@@ -76,19 +88,14 @@ function computeCssStyles(element, properties) {
     let val = detectedStyles[formalStyleName];
 
     if (val) {
-      const char = val.charAt(0);
-
-      // only numerical-based values have a negative sign or digit as the first value
-      if (char === "-" || char === "+" || char >= 0) {
+      if (/^[+-]?\d/.test(val)) {
         val = parseMaxTime(val);
       }
 
-      // by setting this to null in the event that the delay is not set or is set directly as 0
-      // then we can still allow for negative values to be used later on and not mistake this
-      // value for being greater than any other negative value.
       if (val === 0) {
         val = null;
       }
+
       styles[actualStyleName] = val;
     }
   });
@@ -96,6 +103,9 @@ function computeCssStyles(element, properties) {
   return styles;
 }
 
+/**
+ * @param {string} str
+ */
 function parseMaxTime(str) {
   let maxValue = 0;
 
@@ -112,6 +122,9 @@ function parseMaxTime(str) {
   return maxValue;
 }
 
+/**s
+ * @param {unknown} val
+ */
 function truthyTimingValue(val) {
   return val === 0 || !isNullOrUndefined(val);
 }
@@ -148,17 +161,24 @@ function registerRestorableStyles(backup, node, properties) {
 }
 
 export function AnimateCssProvider() {
+  /**
+   * @type {string}
+   */
   let activeClasses;
 
   this.$get = [
     /**
-     *
-     * @returns
+     * @returns {ng.AnimateCssService}
      */
     function () {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
-      // TODO add types
+      /**
+       * @param {any} node
+       * @param {string} cacheKey
+       * @param {any} allowNoDuration
+       * @param {{ transitionDuration: string; transitionDelay: string; transitionProperty: string; animationDuration: string; animationDelay: string; animationIterationCount: string; }} properties
+       */
       function computeCachedCssStyles(
         node,
         cacheKey,
@@ -270,9 +290,9 @@ export function AnimateCssProvider() {
 
       /**
        * @param {HTMLElement} element
-       * @param {ng.AnimationOptions} initialOptions
+       * @param {ng.AnimationOptions} [initialOptions]
        */
-      return function init(element, initialOptions) {
+      function init(element, initialOptions) {
         // all of the animation functions should create
         // a copy of the options data, however, if a
         // parent service has already created a copy then
@@ -303,26 +323,56 @@ export function AnimateCssProvider() {
 
         const styles = packageStyles(options);
 
+        /**
+         * @type {boolean}
+         */
         let animationClosed;
 
+        /**
+         * @type {boolean}
+         */
         let animationPaused;
 
+        /**
+         * @type {boolean}
+         */
         let animationCompleted;
 
+        /**
+         * @type {AnimateRunner}
+         */
         let runner;
 
+        /**
+         * @type {import("./interface.ts").AnimationHost | undefined}
+         */
         let runnerHost;
 
+        /**
+         * @type {number}
+         */
         let maxDelay;
 
+        /**
+         * @type {number}
+         */
         let maxDelayTime;
 
+        /**
+         * @type {number}
+         */
         let maxDuration;
 
         let maxDurationTime;
 
+        /**
+         * @type {number}
+         */
         let startTime;
 
+        /**
+         * @type {string[]}
+         */
         const events = [];
 
         if (options.duration === 0) {
@@ -387,6 +437,9 @@ export function AnimateCssProvider() {
           return closeAndReturnNoopAnimator();
         }
 
+        /**
+         * @type {{ animationDelay: any; animationDuration: any; transitionDuration: any; transitionDelay: any; }}
+         */
         let stagger;
 
         let cacheKey = animateCache._cacheKey(
@@ -472,7 +525,7 @@ export function AnimateCssProvider() {
         // that if there is no transition defined then nothing will happen and this will also allow
         // other transitions to be stacked on top of each other without any chopping them out.
         if (isFirst) {
-          _blockTransitions(node, SAFE_FAST_FORWARD_DURATION_VALUE);
+          blockTransitions(node, SAFE_FAST_FORWARD_DURATION_VALUE);
         }
 
         let timings = computeTimings(node, cacheKey, !isStructural);
@@ -579,7 +632,7 @@ export function AnimateCssProvider() {
         if (flags._blockTransition || flags._blockKeyframeAnimation) {
           applyBlocking(maxDuration);
         } else if (!options.skipBlocking) {
-          _blockTransitions(node, false);
+          blockTransitions(node, false);
         }
 
         // TODO(matsko): for 1.5 change this code to have an animator object for better debugging
@@ -634,7 +687,7 @@ export function AnimateCssProvider() {
           }
 
           _blockKeyframeAnimations(node, false);
-          _blockTransitions(node, false);
+          blockTransitions(node, false);
 
           temporaryStyles.forEach((entry) => {
             // There is only one way to remove inline style properties entirely from elements.
@@ -688,7 +741,7 @@ export function AnimateCssProvider() {
 
         function applyBlocking(duration) {
           if (flags._blockTransition) {
-            _blockTransitions(node, duration);
+            blockTransitions(node, duration);
           }
 
           if (flags._blockKeyframeAnimation) {
@@ -970,12 +1023,19 @@ export function AnimateCssProvider() {
             }
           }
         }
-      };
+      }
+
+      return init;
     },
   ];
 }
 
-function _blockTransitions(node, duration) {
+/**
+ * @param {HTMLElement} node
+ * @param {number} duration
+ * @returns {import("./interface.ts").InlineStyleEntry}
+ */
+function blockTransitions(node, duration) {
   // we use a negative delay value since it performs blocking
   // yet it doesn't kill any existing transitions running on the
   // same element which makes this safe for class-based animations

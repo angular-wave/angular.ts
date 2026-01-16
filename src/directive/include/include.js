@@ -48,10 +48,19 @@ export function ngIncludeDirective(
 
         let changeCounter = 0;
 
+        /**
+         * @type {(ProxyConstructor & import("../../docs.js").Scope & Record<string, any>) | null}
+         */
         let currentScope;
 
+        /**
+         * @type {HTMLElement | null}
+         */
         let previousElement;
 
+        /**
+         * @type {HTMLElement | null}
+         */
         let currentElement;
 
         const cleanupLastIncludeContent = () => {
@@ -80,7 +89,7 @@ export function ngIncludeDirective(
         };
 
         scope.$watch(srcExp, async (src) => {
-          const afterAnimation = function (response) {
+          const afterAnimation = function (/** @type {boolean} */ response) {
             response !== false && maybeScroll();
           };
 
@@ -103,20 +112,28 @@ export function ngIncludeDirective(
                 // Note: We can't remove them in the cloneAttchFn of $transclude as that
                 // function is called before linking the content, which would apply child
                 // directives to non existing elements.
-                const clone = $transclude(
-                  newScope,
-                  /** @param {HTMLElement} cloneParam */ (cloneParam) => {
-                    cleanupLastIncludeContent();
+                const clone = /** @type {HTMLElement} */ (
+                  /** @type {ng.TranscludeFn} */ ($transclude)(
+                    newScope,
+                    /** @param {import("../../core/compile/interface.ts").TranscludedNodes | undefined} cloneParam */ (
+                      cloneParam,
+                    ) => {
+                      cleanupLastIncludeContent();
 
-                    if (hasAnimate(cloneParam)) {
-                      $animate
-                        .enter(cloneParam, null, $element)
-                        .done(afterAnimation);
-                    } else {
-                      $element.after(cloneParam);
-                      maybeScroll();
-                    }
-                  },
+                      if (hasAnimate(/** @type {HTMLElement} */ (cloneParam))) {
+                        $animate
+                          .enter(
+                            /** @type {HTMLElement} */ (cloneParam),
+                            null,
+                            $element,
+                          )
+                          .done(afterAnimation);
+                      } else {
+                        $element.after(/** @type {HTMLElement} */ (cloneParam));
+                        maybeScroll();
+                      }
+                    },
+                  )
                 );
 
                 currentScope = newScope;

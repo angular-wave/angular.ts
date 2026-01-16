@@ -38,7 +38,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
     /**
      *
      * @param {*} $animateCss
-     * @param {Element} $rootElement
+     * @param {HTMLElement} $rootElement
      * @returns
      */
     function ($animateCss, $rootElement) {
@@ -54,7 +54,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
           ? rootNode
           : bodyNode;
 
-      return /** @param {import("./interface.js").AnimationDetails} animationDetails */ function initDriverFn(
+      return /** @param {import("./interface.ts").AnimationDetails} animationDetails */ function initDriverFn(
         animationDetails,
       ) {
         return animationDetails.from && animationDetails.to
@@ -66,18 +66,26 @@ export function AnimateCssDriverProvider($$animationProvider) {
           : prepareRegularAnimation(animationDetails);
       };
 
+      /**
+       * @param {HTMLElement} outAnchor
+       * @param {HTMLElement} inAnchor
+       * @returns {AnimateRunner|{start(): AnimateRunner}|void}
+       */
       function prepareAnchoredAnimation(outAnchor, inAnchor) {
-        const clone = outAnchor.cloneNode(true);
+        const clone = /** @type {HTMLElement} */ (outAnchor.cloneNode(true));
 
-        const startingClasses = filterCssClasses(getClassVal(clone));
+        const startingClasses = filterCssClasses(clone.getAttribute("class"));
 
-        outAnchor[0].classList.add(NG_ANIMATE_SHIM_CLASS_NAME);
-        inAnchor[0].classList.add(NG_ANIMATE_SHIM_CLASS_NAME);
+        outAnchor.classList.add(NG_ANIMATE_SHIM_CLASS_NAME);
+        inAnchor.classList.add(NG_ANIMATE_SHIM_CLASS_NAME);
 
         clone.classList.add(NG_ANIMATE_ANCHOR_CLASS_NAME);
 
         rootBodyElement.append(clone);
 
+        /**
+         * @type {{ start: () => any; }}
+         */
         let animatorIn;
 
         const animatorOut = prepareOutAnimation();
@@ -139,7 +147,11 @@ export function AnimateCssDriverProvider($$animationProvider) {
           },
         };
 
+        /**
+         * @param {HTMLElement} anchor
+         */
         function calculateAnchorStyles(anchor) {
+          /** @type {import("../shared/interface.ts").Dict<string>} */
           const styles = {};
 
           const coords = anchor.getBoundingClientRect();
@@ -175,12 +187,10 @@ export function AnimateCssDriverProvider($$animationProvider) {
           return animator._willAnimate ? animator : null;
         }
 
-        function getClassVal(element) {
-          return element.getAttribute("class") || "";
-        }
-
         function prepareInAnimation() {
-          const endingClasses = filterCssClasses(getClassVal(inAnchor));
+          const endingClasses = filterCssClasses(
+            inAnchor.getAttribute("class"),
+          );
 
           const toAdd = getUniqueValues(endingClasses, startingClasses);
 
@@ -230,6 +240,9 @@ export function AnimateCssDriverProvider($$animationProvider) {
 
         return {
           start() {
+            /**
+             * @type {ng.AnimateRunner[]}
+             */
             const animationRunners = [];
 
             if (fromAnimation) {
@@ -264,6 +277,9 @@ export function AnimateCssDriverProvider($$animationProvider) {
         };
       }
 
+      /**
+       * @param {import("./interface.ts").AnimationDetails} animationDetails
+       */
       function prepareRegularAnimation(animationDetails) {
         const options = animationDetails.options || {};
 
@@ -285,7 +301,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
         // with `-active` to trigger the animation.
         if (options.preparationClasses) {
           options.event = concatWithSpace(
-            options.event,
+            /** @type {string} */ (options.event),
             options.preparationClasses,
           );
         }
@@ -303,15 +319,23 @@ export function AnimateCssDriverProvider($$animationProvider) {
   ];
 }
 
+/**
+ * @param {string | null} classes
+ * @return {string}
+ */
 function filterCssClasses(classes) {
   // remove all the `ng-` stuff
-  return classes.replace(/\bng-\S+\b/g, "");
+  return classes && classes.replace(/\bng-\S+\b/g, "");
 }
 
+/**
+ * @param {string | string[]} a
+ * @param {string | string[]} b
+ */
 function getUniqueValues(a, b) {
   if (isString(a)) a = a.split(" ");
 
   if (isString(b)) b = b.split(" ");
 
-  return a.filter((val) => b.indexOf(val) === -1).join(" ");
+  return a.filter((/** @type {any} */ val) => b.indexOf(val) === -1).join(" ");
 }

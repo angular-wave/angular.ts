@@ -19,7 +19,7 @@ export class TemplateFactoryProvider {
       ) => this)
   )[];
   $templateRequest: import("../services/template-request/interface.ts").TemplateRequestService;
-  $http: import("../services/http/interface.ts").HttpService;
+  $http: import("../docs.ts").HttpService;
   $templateCache: ng.TemplateCacheService;
   $injector: import("../core/di/internal-injector.js").InjectorService;
   /**

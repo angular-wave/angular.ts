@@ -126,8 +126,14 @@ export const patternDirective = [
     restrict: "A",
     require: "?ngModel",
     compile: (_Elm, tAttr) => {
+      /**
+       * @type {string}
+       */
       let patternExp;
 
+      /**
+       * @type {(() => any) | ((arg0: ng.Scope) => string)}
+       */
       let parseFn;
 
       if (tAttr.ngPattern) {
@@ -173,7 +179,10 @@ export const patternDirective = [
           }
         });
 
-        ctrl.$validators.pattern = (_modelValue, viewValue) => {
+        ctrl.$validators.pattern = (
+          /** @type {any} */ _modelValue,
+          /** @type {any} */ viewValue,
+        ) => {
           // HTML5 pattern constraint validates the input value, so we validate the viewValue
           return (
             ctrl.$isEmpty(viewValue) ||
@@ -293,10 +302,10 @@ export const maxlengthDirective = [
  */
 export const minlengthDirective = [
   $t._parse,
-  /** @param {ng.ParseService} $parse */ ($parse) => ({
+  /** @param {ng.ParseService} $parse @return {ng.Directive} */ ($parse) => ({
     restrict: "A",
     require: "?ngModel",
-    link(scope, elm, attr, ctrl) {
+    link(scope, _elm, attr, ctrl) {
       if (!ctrl) return;
 
       let minlength =
@@ -311,13 +320,21 @@ export const minlengthDirective = [
           ctrl.$validate();
         }
       });
-      ctrl.$validators.minlength = function (modelValue, viewValue) {
+      ctrl.$validators.minlength = function (
+        /** @type {any} */ modelValue,
+        /** @type {string | any[]} */ viewValue,
+      ) {
         return ctrl.$isEmpty(viewValue) || viewValue.length >= minlengthParsed;
       };
     },
   }),
 ];
 
+/**
+ * @param {unknown} regex
+ * @param {any} patternExp
+ * @param {string | Node} elm
+ */
 function parsePatternAttr(regex, patternExp, elm) {
   if (!regex) return undefined;
 
@@ -348,6 +365,9 @@ function parsePatternAttr(regex, patternExp, elm) {
   return regex;
 }
 
+/**
+ * @param {string} val
+ */
 function parseLength(val) {
   const intVal = parseInt(val, 10);
 

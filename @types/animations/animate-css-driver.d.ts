@@ -16,8 +16,8 @@ export class AnimateCssDriverProvider {
     | string
     | ((
         $animateCss: any,
-        $rootElement: Element,
-      ) => (animationDetails: import("./interface.js").AnimationDetails) => any)
+        $rootElement: HTMLElement,
+      ) => (animationDetails: import("./interface.ts").AnimationDetails) => any)
   )[];
 }
 export namespace AnimateCssDriverProvider {

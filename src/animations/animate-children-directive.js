@@ -21,7 +21,7 @@ export function $$AnimateChildrenDirective($interpolate) {
         // Interpolate and set the value, so that it is available to
         // animations that run right after compilation
         setData(
-          /** @type {import("../core/interpolate/interface.js").InterpolationFunction} */ (
+          /** @type {import("../core/interpolate/interface.ts").InterpolationFunction} */ (
             $interpolate(val)
           )(scope),
         );
