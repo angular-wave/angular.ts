@@ -565,29 +565,39 @@ export function getInjector(element) {
 }
 
 /**
- * Creates a DOM element from an HTML string.
- * @param {string} htmlString - A string representing the HTML to parse. Must have only one root element.
- * @returns {Element} - The parsed DOM element.
+ * Parses an HTML string into a DocumentFragment.
+ * @param {string} htmlString
+ * @returns {DocumentFragment}
  */
-export function createElementFromHTML(htmlString) {
+function parseHTML(htmlString) {
   const template = document.createElement("template");
 
   template.innerHTML = htmlString.trim();
 
-  return /** @type {Element} */ (template.content.firstChild);
+  return template.content;
 }
 
 /**
  * Creates a DOM element from an HTML string.
+ * Must have exactly one root node.
+ *
  * @param {string} htmlString - A string representing the HTML to parse.
- * @returns {NodeList} - The parsed DOM element.
+ * @returns {Element}
+ */
+export function createElementFromHTML(htmlString) {
+  const content = parseHTML(htmlString);
+
+  return /** @type {Element} */ (content.firstChild);
+}
+
+/**
+ * Creates a NodeList from an HTML string.
+ *
+ * @param {string} htmlString - A string representing the HTML to parse.
+ * @returns {NodeListOf<ChildNode>}
  */
 export function createNodelistFromHTML(htmlString) {
-  const template = document.createElement("template");
-
-  template.innerHTML = htmlString.trim();
-
-  return template.content.childNodes;
+  return parseHTML(htmlString).childNodes;
 }
 
 /**

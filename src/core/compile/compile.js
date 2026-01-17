@@ -620,7 +620,10 @@ export class CompileProvider {
       ) {
         // The onChanges hooks should all be run together in a single digest
         // When changes occur, the call to trigger their hooks will be added to this queue
-        let onChangesQueue;
+        /**
+         * @type {(() => void)[]}
+         */
+        const onChangesQueue = [];
 
         // This function is called in a $postUpdate to trigger all the onChanges hooks in a single digest
         function flushOnChangesQueue() {
@@ -632,14 +635,14 @@ export class CompileProvider {
             }
           }
           // Reset the queue to trigger a new schedule next time there is a change
-          onChangesQueue = undefined;
+          onChangesQueue.length = 0;
         }
 
         const startSymbol = $interpolate.startSymbol();
 
         const endSymbol = $interpolate.endSymbol();
 
-        /** @type {(string) => string} */
+        /** @type {(x: string) => string} */
         const denormalizeTemplate =
           startSymbol === "{{" && endSymbol === "}}"
             ? (x) => x
@@ -659,7 +662,7 @@ export class CompileProvider {
           ignoreDirective,
           previousCompileContext,
         ) {
-          /** @type {NodeRef | null } */
+          /** @type {NodeRef | null} */
           let nodeRef = new NodeRef(element);
 
           /**
@@ -675,12 +678,13 @@ export class CompileProvider {
             previousCompileContext,
           );
 
+          /**
+           * @type {string | null}
+           */
           let namespace = null;
 
-          return publicLinkFn;
-
           /** @type {ng.PublicLinkFn} */
-          function publicLinkFn(scope, cloneConnectFn, options) {
+          const publicLinkFn = function (scope, cloneConnectFn, options) {
             if (!nodeRef) {
               throw $compileMinErr(
                 "multilink",
@@ -703,7 +707,7 @@ export class CompileProvider {
               // for transclusion, which caused us to lose a layer of element on which
               // we could hold the new transclusion scope, so we will create it manually
               // here.
-              scope = scope.$parent.$new();
+              scope = scope.$parent?.$new() || scope.$new();
             }
 
             options = options || {};
@@ -774,7 +778,9 @@ export class CompileProvider {
             }
 
             return $linkNode._getAll();
-          }
+          };
+
+          return publicLinkFn;
         }
 
         function detectNamespaceForChildElements(parentElement) {
@@ -1191,7 +1197,10 @@ export class CompileProvider {
 
               break;
             case NodeType._TEXT_NODE:
-              addTextInterpolateDirective(directives, node.nodeValue);
+              addTextInterpolateDirective(
+                directives,
+                /** @type {string} */ (node.nodeValue),
+              );
               break;
             default:
               break;
@@ -1364,7 +1373,7 @@ export class CompileProvider {
 
             if (compileNode === linkNode) {
               attrs = templateAttrs;
-              $element = templateAttrs._nodeRef;
+              $element = /** @type {NodeRef} */ (templateAttrs._nodeRef);
             } else {
               $element = new NodeRef(linkNode);
               attrs = new Attributes(
@@ -1394,7 +1403,9 @@ export class CompileProvider {
 
               newTrancludeFn._boundTransclude = boundTranscludeFn;
               // expose the slots on the `$transclude` function
-              newTrancludeFn.isSlotFilled = function (slotName) {
+              newTrancludeFn.isSlotFilled = function (
+                /** @type {string | number} */ slotName,
+              ) {
                 return !!boundTranscludeFn._slots[slotName];
               };
               transcludeFn = newTrancludeFn;
@@ -1412,7 +1423,7 @@ export class CompileProvider {
               );
             }
 
-            if (_newIsolateScopeDirective) {
+            if (_newIsolateScopeDirective && isolateScope) {
               isolateScope.$target._isolateBindings =
                 _newIsolateScopeDirective._isolateBindings;
               scopeBindingInfo = initializeDirectiveBindings(
@@ -2961,7 +2972,7 @@ export class CompileProvider {
 
         /**
          * @param {Element} node
-         * @param {ng.Directive<any>[] | { priority: number; compile(): { pre: (scope: any, element: any, attr: any) => void; }; }[]} directives
+         * @param {ng.Directive<any>[]} directives
          * @param {string} value
          * @param {string} name
          * @param {boolean} isNgAttr
@@ -3066,7 +3077,8 @@ export class CompileProvider {
                       if (name === "class") {
                         attr.$updateClass(
                           newInterpolatedValue,
-                          attr._element().classList.value,
+                          /** @type {Element} */ (attr._element()).classList
+                            .value,
                         );
                       } else {
                         attr.$set(
@@ -3446,12 +3458,17 @@ export class CompileProvider {
             });
           }
 
+          /**
+           * @param {string} key
+           * @param {any} currentValue
+           * @param {boolean} initial
+           */
           function recordChanges(key, currentValue, initial) {
             if (isFunction(destination.$onChanges)) {
               // If we have not already scheduled the top level onChangesQueue handler then do so now
-              if (!onChangesQueue) {
+              if (!onChangesQueue.length) {
                 scope.$postUpdate(flushOnChangesQueue);
-                onChangesQueue = [];
+                onChangesQueue.length = 0;
               }
 
               // If we have not already queued a trigger of onChanges for this controller then do so now
