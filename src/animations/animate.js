@@ -22,10 +22,13 @@ const $animateMinErr = minErr("$animate");
 // that can be changed. This helper function ensures that the options
 // are wiped clean incase a callback function is provided.
 /**
- * @param {object | undefined} options
+ * @param {import("./interface.ts").AnimationOptions | undefined} options
+ * @returns {import("./interface.ts").AnimationOptions}
  */
 function prepareAnimateOptions(options) {
-  return isObject(options) ? options : {};
+  return isObject(options)
+    ? options
+    : /** @type {import("./interface.ts").AnimationOptions} */ ({});
 }
 
 AnimateProvider.$inject = [$injectTokens._provide];
@@ -473,7 +476,7 @@ export function AnimateProvider($provide) {
          * @param {Element} element the element which the CSS classes will be applied to
          * @param {string} add the CSS class(es) that will be added (multiple classes are separated via spaces)
          * @param {string} remove the CSS class(es) that will be removed (multiple classes are separated via spaces)
-         * @param {object=} options an optional collection of options/styles that will be applied to the element.
+         * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
          *
          * @return {ng.AnimateRunner} the animation runner
          */
@@ -504,12 +507,26 @@ export function AnimateProvider($provide) {
          *   }
          * });
          * ```
-         *  @return {ng.AnimateRunner} the animation runner
+         *
+         * @param {Element} element the element which will be animated
+         * @param {Record<string, string | number>} from the initial CSS styles for the animation
+         * @param {Record<string, string | number>} to the final CSS styles for the animation
+         * @param {string=} className an optional CSS class name to apply for the animation
+         * @param {import("./interface.ts").AnimationOptions=} options an optional collection of options/styles that will be applied to the element.
+         * @return {ng.AnimateRunner} the animation runner
          */
         animate(element, from, to, className, options) {
           options = prepareAnimateOptions(options);
-          options.from = options.from ? extend(options.from, from) : from;
-          options.to = options.to ? extend(options.to, to) : to;
+          options.from = options.from
+            ? /** @type {Record<string, string | number>} */ (
+                extend(options.from, from)
+              )
+            : from;
+          options.to = options.to
+            ? /** @type {Record<string, string | number>} */ (
+                extend(options.to, to)
+              )
+            : to;
 
           className = className || "ng-inline-animate";
           options.tempClasses = mergeClasses(options.tempClasses, className);

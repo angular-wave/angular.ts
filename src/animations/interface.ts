@@ -92,8 +92,8 @@ export interface AnimateService {
   // Inline style animation
   animate(
     element: Element,
-    from: Record<string, any>,
-    to: Record<string, any>,
+    from: Record<string, string | number>,
+    to: Record<string, string | number>,
     className?: string,
     options?: AnimationOptions,
   ): AnimateRunner;
@@ -112,7 +112,7 @@ export interface AnimationOptions {
   from?: Record<string, string | number>; // CSS properties & values at the beginning of animation
   to?: Record<string, string | number>; // CSS properties & values at end of animation
   removeClass?: string; // space-separated CSS classes to remove from element
-  tempClasses: string | string[]; // CSS classes during animation
+  tempClasses?: string | string[]; // CSS classes during animation
   /** Optional DOM operation callback executed before animation */
   domOperation?: () => void;
   onDone?: () => void;
