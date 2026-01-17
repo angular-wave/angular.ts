@@ -17,6 +17,8 @@ import { AnimateRunner } from "./runner/animate-runner.js";
 import { animateCache } from "./cache/animate-cache.js";
 import { rafScheduler } from "./raf/raf-scheduler.js";
 
+/** @typedef {import("./interface.ts").SortedAnimationEntry} SortedAnimationEntry */
+
 const RUNNER_STORAGE_KEY = "$$animationRunner";
 
 const PREPARE_CLASSES_KEY = "$$animatePrepareClasses";
@@ -67,10 +69,12 @@ export function AnimationProvider() {
       const applyAnimationClasses = applyAnimationClassesFactory();
 
       /**
-       * @param {string | any[]} animations
+       * @param {SortedAnimationEntry[]} animations
        */
       function sortAnimations(animations) {
-        const tree = { children: [] };
+        const tree = /** @type {Partial<SortedAnimationEntry>} */ ({
+          children: [],
+        });
 
         let i;
 
@@ -97,8 +101,13 @@ export function AnimationProvider() {
           processNode(animations[i]);
         }
 
-        return flatten(tree);
+        return flatten(/** @type {SortedAnimationEntry} */ (tree));
 
+        /**
+         *
+         * @param {SortedAnimationEntry} entry
+         * @returns
+         */
         function processNode(entry) {
           if (entry.processed) return entry;
           entry.processed = true;
@@ -129,6 +138,10 @@ export function AnimationProvider() {
           return entry;
         }
 
+        /**
+         * @param {SortedAnimationEntry} theeParam
+         * @returns
+         */
         function flatten(theeParam) {
           const result = [];
 
@@ -201,7 +214,7 @@ export function AnimationProvider() {
 
         if (tempClasses) {
           classes += ` ${tempClasses}`;
-          options.tempClasses = null;
+          options.tempClasses = undefined;
         }
 
         if (isStructural) {
@@ -233,16 +246,19 @@ export function AnimationProvider() {
         // were apart of the same postDigest flush call.
         if (animationQueue.length > 1) return runner;
         $rootScope.$postUpdate(() => {
+          /** @type {import("./interface.ts").AnimationOptions[]} */
           const animations = [];
 
           animationQueue.forEach((entry) => {
             // the element was destroyed early on which removed the runner
             // form its storage. This means we can't animate this element
             // at all and it already has been closed due to destruction.
-            if (getRunner(entry.element)) {
+            if (getRunner(/** @type {HTMLElement} */ (entry.element))) {
               animations.push(entry);
             } else {
-              entry.close();
+              /** @type {(reject?: boolean | undefined) => void} */ (
+                entry.close
+              )();
             }
           });
 
@@ -251,6 +267,7 @@ export function AnimationProvider() {
 
           const groupedAnimations = groupAnimations(animations);
 
+          /** @type {SortedAnimationEntry[]} */
           const toBeSortedAnimations = [];
 
           groupedAnimations.forEach((animationEntry) => {
@@ -318,6 +335,7 @@ export function AnimationProvider() {
                   updateAnimationRunners(animationEntry, animationRunner);
                 }
               },
+              children: [],
             });
           });
 
@@ -363,7 +381,10 @@ export function AnimationProvider() {
 
         return runner;
 
-        // TODO(matsko): change to reference nodes
+        /**
+         * @param {HTMLElement} node
+         * @returns
+         */
         function getAnchorNodes(node) {
           const SELECTOR = `[${NG_ANIMATE_REF_ATTR}]`;
 
@@ -371,6 +392,9 @@ export function AnimationProvider() {
             ? [node]
             : node.querySelectorAll(SELECTOR);
 
+          /**
+           * @type {(Element | HTMLElement)[]}
+           */
           const anchors = [];
 
           items.forEach((nodeItem) => {
@@ -384,6 +408,11 @@ export function AnimationProvider() {
           return anchors;
         }
 
+        /**
+         *
+         * @param {import("./interface.ts").AnimationOptions} animations
+         * @returns
+         */
         function groupAnimations(animations) {
           const preparedAnimations = [];
 

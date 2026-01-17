@@ -9,3 +9,5 @@ export class AnimationProvider {
       ) => import("./interface.ts").AnimationService)
   )[];
 }
+export type SortedAnimationEntry =
+  import("./interface.ts").SortedAnimationEntry;

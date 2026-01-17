@@ -308,6 +308,7 @@ export function AnimateQueueProvider($animateProvider) {
               matches.push(entry.callback);
             } else if (
               event === "leave" &&
+              targetParentNode &&
               entry.node.contains(targetParentNode)
             ) {
               matches.push(entry.callback);
@@ -320,11 +321,13 @@ export function AnimateQueueProvider($animateProvider) {
 
       /**
        * @param {any[]} list
-       * @param {Node | NodeList} matchContainer
-       * @param {undefined} [matchCallback]
+       * @param {Node | NodeList | undefined} matchContainer
+       * @param {Function | undefined} [matchCallback]
        */
       function filterFromRegistry(list, matchContainer, matchCallback) {
-        const containerNode = extractElementNode(matchContainer);
+        const containerNode = matchContainer
+          ? extractElementNode(matchContainer)
+          : undefined;
 
         return list.filter((entry) => {
           const isMatch =
@@ -337,7 +340,7 @@ export function AnimateQueueProvider($animateProvider) {
 
       /**
        * @param {string} phase
-       * @param {Node} node
+       * @param {Element} node
        */
       function cleanupEventListeners(phase, node) {
         if (phase === "close" && !node.parentNode) {
@@ -347,10 +350,12 @@ export function AnimateQueueProvider($animateProvider) {
         }
       }
 
-      /** @type {import("../interface.ts").AnimateService} */
+      /** @type {import("../queue/interface.ts").AnimateQueueService} */
       const $animate = {
         on(event, container, callback) {
           const node = extractElementNode(container);
+
+          if (!node || !(node instanceof Element) || !callback) return;
 
           callbackRegistry[event] = callbackRegistry[event] || [];
           callbackRegistry[event].push({
@@ -377,13 +382,15 @@ export function AnimateQueueProvider($animateProvider) {
 
             for (const eventType in callbackRegistry) {
               callbackRegistry[eventType] = filterFromRegistry(
-                callbackRegistry[eventType],
+                callbackRegistry[eventType] || [],
                 container,
               );
             }
 
             return;
           }
+
+          if (!isString(event)) return;
 
           const entries = callbackRegistry[event];
 
@@ -413,7 +420,7 @@ export function AnimateQueueProvider($animateProvider) {
        * @param {Element} originalElement
        * @param {string} event
        * @param {*} initialOptions
-       * @returns void
+       * @returns {AnimateRunner}
        */
       function queueAnimation(originalElement, event, initialOptions) {
         // we always make a copy of the options since
@@ -617,7 +624,7 @@ export function AnimateQueueProvider($animateProvider) {
           // animate (from/to) can be quickly checked first, otherwise we check if any classes are present
           isValidAnimation =
             (newAnimation.event === "animate" &&
-              Object.keys(newAnimation.options.to || {}).length > 0) ||
+              Object.keys(newAnimation.options?.to || {}).length > 0) ||
             hasAnimationClasses(newAnimation);
         }
 
@@ -653,7 +660,7 @@ export function AnimateQueueProvider($animateProvider) {
           // if addClass/removeClass is called before something like enter then the
           // registered parent element may not be present. The code below will ensure
           // that a final value for parent element is obtained
-          const parentElement = element.parentElement || [];
+          const parentElement = element.parentElement || null;
 
           // animate/structural/class-based animations all have requirements. Otherwise there
           // is no point in performing an animation. The parent node must also be set.
@@ -794,7 +801,8 @@ export function AnimateQueueProvider($animateProvider) {
             switch (state) {
               case RUNNING_STATE:
                 animationDetails.runner.end();
-              /* falls through */
+                activeAnimationsLookup.delete(child);
+                break;
               case PRE_DIGEST_STATE:
                 activeAnimationsLookup.delete(child);
                 break;
