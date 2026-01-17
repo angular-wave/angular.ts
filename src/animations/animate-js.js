@@ -27,7 +27,7 @@ export function AnimateJsProvider($animateProvider) {
        * @param {string} event
        * @param {string | string[] | null | undefined} classes
        * @param {ng.AnimationOptions | undefined} options
-       * @returns {import("./interface.ts").Animator}
+       * @returns {import("./interface.ts").Animator | undefined}
        */
       return function (element, event, classes, options) {
         // Optional arguments
@@ -56,10 +56,14 @@ export function AnimateJsProvider($animateProvider) {
         // Lookup animation objects
         const animations = lookupAnimations(classes);
 
-        /** @type {((done: () => void) => void) | undefined} */
+        /**
+         * @type {((done: () => void) => void) | undefined}
+         */
         let before;
 
-        /** @type {((done: () => void) => void) | undefined} */
+        /**
+         * @type {((done: () => void) => void) | undefined}
+         */
         let after;
 
         if (animations.length) {
@@ -97,24 +101,7 @@ export function AnimateJsProvider($animateProvider) {
           );
         }
 
-        if (!before && !after) {
-          return {
-            _willAnimate: false,
-            start() {
-              const runner = new AnimateRunner();
-
-              animationOptions.domOperation?.();
-              applyAnimationClasses(element, animationOptions);
-              applyAnimationStyles(element, animationOptions);
-              runner.complete(true);
-
-              return runner;
-            },
-            end() {
-              /* no-op */
-            },
-          };
-        }
+        if (!before && !after) return undefined;
 
         function applyOptions() {
           animationOptions.domOperation?.();
@@ -136,39 +123,39 @@ export function AnimateJsProvider($animateProvider) {
             if (runner) return runner;
 
             runner = new AnimateRunner({
-              end: () => onComplete(true),
-              cancel: () => onComplete(false),
+              end: () => finish(true),
+              cancel: () => finish(false),
             });
 
-            const totalStages = (before ? 1 : 0) + (after ? 1 : 0);
+            let finished = false;
 
-            let completedStages = 0;
+            let remaining = (before ? 1 : 0) + (after ? 1 : 0);
 
-            const stageDone = () => {
-              completedStages += 1;
+            function partDone() {
+              if (finished) return;
 
-              if (completedStages === totalStages) {
-                onComplete(true);
-              }
-            };
-
-            // Run before animations
-            if (before) before(stageDone);
-            else {
-              applyOptions();
-              stageDone();
+              if (--remaining === 0) finish(true);
             }
 
-            // Run after animations
-            if (after) after(stageDone);
-
             /**
-             * @param {boolean} success
+             * @param {boolean | undefined} success
              */
-            function onComplete(success) {
+            function finish(success) {
+              if (finished) return;
+              finished = true;
               close();
               runner.complete(success);
             }
+
+            // Run before animations
+            if (before) before(partDone);
+            else applyOptions();
+
+            // Run after animations
+            if (after) after(partDone);
+
+            // If neither before nor after exist, nothing will call partDone()
+            if (remaining === 0) finish(true);
 
             return runner;
           },

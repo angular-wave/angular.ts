@@ -56,10 +56,56 @@ declare class NgMessageCtrl {
   _getAttachId(): number;
   _render(collection?: {}): void;
   reRender(): void;
-  register(comment: any, messageCtrl: any, isDefault: any): void;
-  deregister(comment: any, isDefault: any): void;
+  /**
+   * @param {{ _ngMessageNode: string; }} comment
+   * @param {any} messageCtrl
+   * @param {any} isDefault
+   */
+  register(
+    comment: {
+      _ngMessageNode: string;
+    },
+    messageCtrl: any,
+    isDefault: any,
+  ): void;
+  /**
+   * @param {{ _ngMessageNode: any; }} comment
+   * @param {any} isDefault
+   */
+  deregister(
+    comment: {
+      _ngMessageNode: any;
+    },
+    isDefault: any,
+  ): void;
+  /**
+   * @param {any} parent
+   * @param {any} comment
+   */
   findPreviousMessage(parent: any, comment: any): any;
-  insertMessageNode(parent: any, comment: any, key: any): void;
-  removeMessageNode(parent: any, comment: any, key: any): void;
+  /**
+   * @param {HTMLElement} parent
+   * @param {{ _ngMessageNode: string; }} comment
+   * @param {string} key
+   */
+  insertMessageNode(
+    parent: HTMLElement,
+    comment: {
+      _ngMessageNode: string;
+    },
+    key: string,
+  ): void;
+  /**
+   * @param {HTMLElement} parent
+   * @param {{ _ngMessageNode: any; }} comment
+   * @param {string | number} key
+   */
+  removeMessageNode(
+    parent: HTMLElement,
+    comment: {
+      _ngMessageNode: any;
+    },
+    key: string | number,
+  ): void;
 }
 export {};

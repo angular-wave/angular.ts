@@ -128,6 +128,11 @@ class NgMessageCtrl {
     }
   }
 
+  /**
+   * @param {{ _ngMessageNode: string; }} comment
+   * @param {any} messageCtrl
+   * @param {any} isDefault
+   */
   register(comment, messageCtrl, isDefault) {
     if (isDefault) {
       this._default = messageCtrl;
@@ -145,6 +150,10 @@ class NgMessageCtrl {
     this.reRender();
   }
 
+  /**
+   * @param {{ _ngMessageNode: any; }} comment
+   * @param {any} isDefault
+   */
   deregister(comment, isDefault) {
     if (isDefault) {
       delete this._default;
@@ -158,6 +167,10 @@ class NgMessageCtrl {
     this.reRender();
   }
 
+  /**
+   * @param {any} parent
+   * @param {any} comment
+   */
   findPreviousMessage(parent, comment) {
     let prevNode = comment;
 
@@ -184,6 +197,11 @@ class NgMessageCtrl {
     return undefined;
   }
 
+  /**
+   * @param {HTMLElement} parent
+   * @param {{ _ngMessageNode: string; }} comment
+   * @param {string} key
+   */
   insertMessageNode(parent, comment, key) {
     const messageNode = this._messages[key];
 
@@ -202,6 +220,11 @@ class NgMessageCtrl {
     }
   }
 
+  /**
+   * @param {HTMLElement} parent
+   * @param {{ _ngMessageNode: any; }} comment
+   * @param {string | number} key
+   */
   removeMessageNode(parent, comment, key) {
     const messageNode = this._messages[key];
 
@@ -249,6 +272,9 @@ function isAttrTruthy(scope, attr) {
   );
 }
 
+/**
+ * @param {unknown} val
+ */
 function truthy(val) {
   return isString(val) ? val.length : !!val;
 }
@@ -311,7 +337,7 @@ function ngMessageDirectiveFactory(isDefault) {
         /**
          * @type {HTMLElement}
          */
-        let commentNode;
+        let commentNode = element;
 
         /**
          * @type {any}
@@ -327,7 +353,7 @@ function ngMessageDirectiveFactory(isDefault) {
           staticExp = attrs.ngMessage || attrs.when;
           dynamicExp = attrs.ngMessageExp || attrs.whenExp;
 
-          const assignRecords = function (items) {
+          const assignRecords = function (/** @type {string} */ items) {
             records = items
               ? isArray(items)
                 ? items
@@ -345,10 +371,13 @@ function ngMessageDirectiveFactory(isDefault) {
         }
 
         /**
-         * @type {HTMLElement & { _attachId?: number } | undefined}
+         * @type {HTMLElement & { _attachId?: number } | undefined | null}
          */
         let currentElement;
 
+        /**
+         * @type {{ detach: any; test?: (name: any) => boolean | undefined; attach?: () => void; }}
+         */
         let messageCtrl;
 
         ngMessagesCtrl.register(
@@ -387,7 +416,7 @@ function ngMessageDirectiveFactory(isDefault) {
                         ngMessagesCtrl.deregister(commentNode, isDefault);
                         messageCtrl.detach();
                       }
-                      newScope.$destroy();
+                      /** @type {ng.Scope} */ (newScope).$destroy();
                     });
                   },
                 );
@@ -419,11 +448,15 @@ function ngMessageDirectiveFactory(isDefault) {
   return ngMessageDirectiveFn;
 }
 
+/**
+ * @param {string | object | Array<any>} collection
+ * @param {string | number | symbol} key
+ */
 function contains(collection, key) {
   if (collection) {
     return isArray(collection)
       ? collection.indexOf(key) >= 0
-      : hasOwn(collection, key);
+      : hasOwn(/** @type {object} */ (collection), key);
   }
 
   return undefined;

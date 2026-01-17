@@ -139,7 +139,7 @@ export interface AnimateJsFn {
     event: string,
     classes?: string | null,
     options?: AnimationOptions,
-  ): Animator;
+  ): Animator | undefined;
 }
 export interface Animator {
   /** Whether this handle is expected to perform a real animation. */

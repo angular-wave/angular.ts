@@ -74,9 +74,12 @@ export class AnimateProvider {
    *   - **event** `{String}` - The name of the animation event (e.g. `enter`, `leave`, `addClass`
    *     etc).
    *   - **options** `{Object}` - A collection of options/styles used for the animation.
-   * @return {Function} The current filter function or `null` if there is none set.
+   * @return {Function | null} The current filter function or `null` if there is none set.
    */
-  customFilter: (filterFn?: Function | undefined, ...args: any[]) => Function;
+  customFilter: (
+    filterFn?: Function | undefined,
+    ...args: any[]
+  ) => Function | null;
   /**
    * Sets and/or returns the CSS class regular expression that is checked when performing
    * an animation. Upon bootstrap the classNameFilter value is not set at all and will
@@ -90,9 +93,12 @@ export class AnimateProvider {
    * false, `classNameFilter` will not be checked.
    *
    * @param {RegExp=} expression The className expression which will be checked against all animations
-   * @return {RegExp} The current CSS className expression value. If null then there is no expression value
+   * @return {RegExp | null} The current CSS className expression value. If null then there is no expression value
    */
-  classNameFilter: (expression?: RegExp | undefined, ...args: any[]) => RegExp;
+  classNameFilter: (
+    expression?: RegExp | undefined,
+    ...args: any[]
+  ) => RegExp | null;
   $get: (
     | string
     | ((
