@@ -67,8 +67,8 @@ export interface AnimateService {
   ): AnimateRunner;
   animate(
     element: Element,
-    from: Record<string, any>,
-    to: Record<string, any>,
+    from: Record<string, string | number>,
+    to: Record<string, string | number>,
     className?: string,
     options?: AnimationOptions,
   ): AnimateRunner;
@@ -85,7 +85,7 @@ export interface AnimationOptions {
   from?: Record<string, string | number>;
   to?: Record<string, string | number>;
   removeClass?: string;
-  tempClasses: string | string[];
+  tempClasses?: string | string[];
   /** Optional DOM operation callback executed before animation */
   domOperation?: () => void;
   onDone?: () => void;
