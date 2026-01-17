@@ -1,8 +1,6 @@
 import {
   hasOwn,
   isNumberNaN,
-  isProxy,
-  isString,
   isUndefined,
   minErr,
 } from "../../shared/utils.js";
@@ -163,13 +161,12 @@ export const patternDirective = [
         } else {
           patternExp = attr.pattern;
         }
-
-        let regexp = parsePatternAttr(attrVal, patternExp, elm);
+        let regexp = attrVal && parsePatternAttr(attrVal, patternExp, elm);
 
         attr.$observe("pattern", (newVal) => {
           const oldRegexp = regexp;
 
-          regexp = parsePatternAttr(newVal, patternExp, elm);
+          regexp = newVal && parsePatternAttr(newVal, patternExp, elm);
 
           if (
             (oldRegexp && oldRegexp.toString()) !==
@@ -187,7 +184,7 @@ export const patternDirective = [
           return (
             ctrl.$isEmpty(viewValue) ||
             isUndefined(regexp) ||
-            regexp.test(viewValue)
+            /** @type {RegExp} */ (regexp).test(viewValue)
           );
         };
       };
@@ -331,28 +328,22 @@ export const minlengthDirective = [
 ];
 
 /**
- * @param {unknown} regex
- * @param {any} patternExp
- * @param {string | Node} elm
+ * @param {string | RegExp} input
+ * @param {string} patternExp
+ * @param {Element | Node} elm
+ * @returns {RegExp}
  */
-function parsePatternAttr(regex, patternExp, elm) {
-  if (!regex) return undefined;
+function parsePatternAttr(input, patternExp, elm) {
+  /** @type {RegExp | string} */
+  let regex = input;
 
-  if (isProxy(regex)) {
-    regex = /** @type {ng.Scope} */ (regex).$target;
-  }
-
-  if (isString(regex)) {
+  if (typeof regex === "string") {
     const match = regex.match(/^\/(.*)\/([gimsuy]*)$/);
 
-    if (match) {
-      regex = new RegExp(match[1], match[2]);
-    } else {
-      regex = new RegExp(`^${regex}$`);
-    }
+    regex = match ? new RegExp(match[1], match[2]) : new RegExp(`^${regex}$`);
   }
 
-  if (!regex.test) {
+  if (typeof regex.test !== "function") {
     throw minErr("ngPattern")(
       "noregexp",
       "Expected {0} to be a RegExp but was {1}. Element: {2}",

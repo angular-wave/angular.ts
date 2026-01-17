@@ -187,16 +187,21 @@ export function cleanElementData(nodes: NodeListOf<Element> | Element[]): void;
 export function getInjector(element: Element): ng.InjectorService;
 /**
  * Creates a DOM element from an HTML string.
- * @param {string} htmlString - A string representing the HTML to parse. Must have only one root element.
- * @returns {Element} - The parsed DOM element.
+ * Must have exactly one root node.
+ *
+ * @param {string} htmlString - A string representing the HTML to parse.
+ * @returns {Element}
  */
 export function createElementFromHTML(htmlString: string): Element;
 /**
- * Creates a DOM element from an HTML string.
+ * Creates a NodeList from an HTML string.
+ *
  * @param {string} htmlString - A string representing the HTML to parse.
- * @returns {NodeList} - The parsed DOM element.
+ * @returns {NodeListOf<ChildNode>}
  */
-export function createNodelistFromHTML(htmlString: string): NodeList;
+export function createNodelistFromHTML(
+  htmlString: string,
+): NodeListOf<ChildNode>;
 /**
  * Remove element from the DOM and clear Cache data, associated with the node.
  * @param {Element} element
