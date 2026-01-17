@@ -1,4 +1,5 @@
 import { AnimateRunner } from "../runner/animate-runner.js";
+import { AnimationEventData } from "../interface.ts";
 
 export type QueuePhase =
   | "start"
@@ -8,14 +9,9 @@ export type QueuePhase =
   | "dom"
   | string; // fallback for future internal phases
 
-export interface QueueAnimationData {
-  addClass: string | undefined;
-  removeClass: string | undefined;
-  from: Record<string, any> | undefined;
-  to: Record<string, any> | undefined;
-
+export type QueueAnimationData = AnimationEventData & {
   [key: string]: any; // extra internals allowed
-}
+};
 
 export interface AnimateQueueService {
   on(
@@ -29,7 +25,7 @@ export interface AnimateQueueService {
   ): void;
 
   off(
-    event: string,
+    event: string | Element,
     container?: Element,
     callback?: (
       el: Element,
@@ -67,4 +63,4 @@ export interface CallbackRegistryEntry {
   callback: AnimateEventCallback;
 }
 
-export type CallbackRegistry = Record<string, CallbackRegistryEntry[]>;
+export type CallbackRegistry = Record<string, CallbackRegistryEntry[] | null>;

@@ -32,12 +32,7 @@ export interface AnimateService {
     callback?: (
       element: Element,
       phase: QueuePhase,
-      data: {
-        addClass?: string | null;
-        removeClass?: string | null;
-        from?: Record<string, any> | null;
-        to?: Record<string, any> | null;
-      },
+      data: AnimationEventData,
     ) => void,
   ): void;
 
@@ -99,6 +94,13 @@ export interface AnimateService {
   ): AnimateRunner;
 }
 
+export interface AnimationEventData {
+  addClass?: string | null;
+  removeClass?: string | null;
+  from?: Record<string, any> | null;
+  to?: Record<string, any> | null;
+}
+
 export type AnimationMethod =
   | "enter"
   | "leave"
@@ -139,9 +141,11 @@ export interface AnimationOptions {
   keyframeStyle?: string;
   applyClassesEarly?: boolean;
   state?: number | number;
+  counter?: number;
   close?: (reject?: boolean | undefined) => void;
   options?: AnimationOptions;
   runner?: AnimateRunner;
+  beforeStart?: () => void;
 }
 
 /**
@@ -216,3 +220,11 @@ export type AnimateCssService = (
 ) => Animator;
 
 export type InlineStyleEntry = [string, string];
+
+export interface SortedAnimationEntry {
+  domNode: Node;
+  element: Element;
+  fn: () => void;
+  children: SortedAnimationEntry[];
+  processed?: boolean;
+}
