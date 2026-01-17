@@ -21,6 +21,9 @@ const $animateMinErr = minErr("$animate");
 // $animate to either call the callback (< 1.2) or return a promise
 // that can be changed. This helper function ensures that the options
 // are wiped clean incase a callback function is provided.
+/**
+ * @param {object | undefined} options
+ */
 function prepareAnimateOptions(options) {
   return isObject(options) ? options : {};
 }
@@ -31,8 +34,14 @@ AnimateProvider.$inject = [$injectTokens._provide];
 export function AnimateProvider($provide) {
   const provider = this;
 
+  /**
+   * @type {RegExp | null}
+   */
   let classNameFilter;
 
+  /**
+   * @type {Function | null}
+   */
   let customFilter;
 
   this._registeredAnimations = nullObject();
@@ -118,7 +127,7 @@ export function AnimateProvider($provide) {
    *   - **event** `{String}` - The name of the animation event (e.g. `enter`, `leave`, `addClass`
    *     etc).
    *   - **options** `{Object}` - A collection of options/styles used for the animation.
-   * @return {Function} The current filter function or `null` if there is none set.
+   * @return {Function | null} The current filter function or `null` if there is none set.
    */
   this.customFilter = function (filterFn) {
     if (arguments.length === 1) {
@@ -141,7 +150,7 @@ export function AnimateProvider($provide) {
    * false, `classNameFilter` will not be checked.
    *
    * @param {RegExp=} expression The className expression which will be checked against all animations
-   * @return {RegExp} The current CSS className expression value. If null then there is no expression value
+   * @return {RegExp | null} The current CSS className expression value. If null then there is no expression value
    */
   this.classNameFilter = function (expression) {
     if (arguments.length === 1) {
@@ -307,9 +316,12 @@ export function AnimateProvider($provide) {
          */
         enabled: (element, enabled) => {
           if (enabled !== undefined) {
-            return hasAnimate(element);
+            return hasAnimate(/** @type {Element} */ (element));
           } else {
-            element.setAttribute("animate", `${enabled}`);
+            /** @type {Element} */ (element).setAttribute(
+              "animate",
+              `${enabled}`,
+            );
           }
 
           return true;
@@ -341,7 +353,7 @@ export function AnimateProvider($provide) {
          * @returns {ng.AnimateRunner} the animation runner
          */
         enter(element, parent, after, options) {
-          parent = parent || after.parentElement;
+          parent = parent || (after && after.parentElement);
 
           if (
             isInstanceOf(element, HTMLElement) &&
