@@ -61,16 +61,14 @@ export function AnimationProvider() {
      * @return {import("./interface.ts").AnimationService}
      */
     function ($rootScope, $injector) {
-      /**
-         * @type {{
-        // this data is used by the postDigest code and passed into
-        // the driver step function
-        element: any; classes: string; event: any; structural: boolean; options: any; beforeStart: () => void; close: (rejected: any) => void; }[]}
-         */
+      /** @type {import("./interface.ts").AnimationOptions[]} */
       const animationQueue = [];
 
       const applyAnimationClasses = applyAnimationClassesFactory();
 
+      /**
+       * @param {string | any[]} animations
+       */
       function sortAnimations(animations) {
         const tree = { children: [] };
 
@@ -171,7 +169,6 @@ export function AnimationProvider() {
         }
       }
 
-      // TODO(matsko): document the signature in a better way
       return function (elementParam, event, options) {
         options = prepareAnimationOptions(options);
         const isStructural = ["enter", "move", "leave"].indexOf(event) >= 0;
@@ -217,9 +214,9 @@ export function AnimationProvider() {
 
         setRunner(elementParam, runner);
 
+        // this data is used by the postDigest code and passed into
+        // the driver step function
         animationQueue.push({
-          // this data is used by the postDigest code and passed into
-          // the driver step function
           element: elementParam,
           classes,
           event,
@@ -315,7 +312,7 @@ export function AnimationProvider() {
                 } else {
                   const animationRunner = startAnimationFn();
 
-                  animationRunner.done((status) => {
+                  animationRunner.done((/** @type {any} */ status) => {
                     closeFn(!status);
                   });
                   updateAnimationRunners(animationEntry, animationRunner);
@@ -512,6 +509,9 @@ export function AnimationProvider() {
           return matches.join(" ");
         }
 
+        /**
+         * @param {import("./interface.ts").AnimationDetails} animationDetails
+         */
         function invokeFirstDriver(animationDetails) {
           // we loop in reverse order since the more general drivers (like CSS and JS)
           // may attempt more elements, but custom drivers are more particular
@@ -545,6 +545,11 @@ export function AnimationProvider() {
           }
         }
 
+        /**
+         *
+         * @param {*} animation
+         * @param {*} newRunner
+         */
         function updateAnimationRunners(animation, newRunner) {
           if (animation.from && animation.to) {
             update(animation.from.element);
@@ -553,6 +558,9 @@ export function AnimationProvider() {
             update(animation.element);
           }
 
+          /**
+           * @param {Element} el
+           */
           function update(el) {
             getRunner(el).setHost(newRunner);
           }
@@ -563,6 +571,9 @@ export function AnimationProvider() {
             getRunner(elementParam)?.end();
         }
 
+        /**
+         * @param {boolean | undefined} [rejected]
+         */
         function close(rejected) {
           removeRunner(elementParam);
 
@@ -573,7 +584,9 @@ export function AnimationProvider() {
           if (tempClasses) {
             tempClasses
               .split(" ")
-              .forEach((cls) => elementParam.classList.remove(cls));
+              .forEach((/** @type {string} */ cls) =>
+                elementParam.classList.remove(cls),
+              );
           }
 
           runner.complete(!rejected);
