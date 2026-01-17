@@ -3,7 +3,7 @@ import { QueuePhase } from "./queue/interface.ts";
 export type AnimationService = (
   element: HTMLElement,
   event: string,
-  options?: any,
+  options?: AnimationOptions,
 ) => AnimateRunner;
 export interface AnimationHost {
   /** Pause animation. */
@@ -80,7 +80,12 @@ export type AnimationMethod =
   | "addClass"
   | "setClass"
   | "removeClass";
+/**
+ * Represents a normalized, internal description of a concrete animation instance.
+ */
 export interface AnimationOptions {
+  element?: HTMLElement;
+  classes?: string | string[];
   addClass?: string;
   from?: Record<string, string | number>;
   to?: Record<string, string | number>;
@@ -106,7 +111,14 @@ export interface AnimationOptions {
   stagger?: number | string;
   keyframeStyle?: string;
   applyClassesEarly?: boolean;
+  state?: number | number;
+  close?: (reject?: boolean | undefined) => void;
+  options?: AnimationOptions;
+  runner?: AnimateRunner;
 }
+/**
+ * Represents a normalized, internal description of a concrete animation instance.
+ */
 export interface AnimationDetails {
   /** CSS properties & values at the beginning of animation */
   from?: AnimationDetails;
