@@ -202,9 +202,9 @@ export function arrayDifference(tokens1, tokens2) {
   const out = [];
 
   for (let i = 0; i < tokens1.length; i++) {
-    const t = tokens1[i];
+    const x = tokens1[i];
 
-    if (!set2.has(t)) out.push(t);
+    if (!set2.has(x)) out.push(x);
   }
 
   return out;
