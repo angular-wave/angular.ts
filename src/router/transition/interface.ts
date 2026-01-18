@@ -8,6 +8,9 @@ import { RegisteredHook } from "./hook-registry.js";
 import { TransitionHookPhase, TransitionHookScope } from "./transition-hook.js";
 import { TransitionEventType } from "./transition-event-type.js";
 
+/** Deregistration function returned by hook registrations */
+export type DeregisterFn = () => void;
+
 /**
  * The TransitionOptions object can be used to change the behavior of a transition.
  *
@@ -69,10 +72,12 @@ export interface TransitionOptions {
    * @default `false`
    */
   reload?: boolean | string | StateDeclaration | StateObject;
+
   /**
    * You can define your own Transition Options inside this property and use them, e.g., from a Transition Hook
    */
-  custom?: any;
+  custom?: unknown;
+
   /**
    * This option may be used to cancel the active transition (if one is active) in favour of the this one.
    * This is the default behaviour or ui-router.
@@ -85,14 +90,18 @@ export interface TransitionOptions {
    * @default `true`
    */
   supercede?: boolean;
+
   /** @internal */
   reloadState?: StateObject;
+
   /** @internal
    * If this transition is a redirect, this property should be the original Transition (which was redirected to this one)
    */
   redirectedFrom?: Transition;
+
   /** @internal */
   current?: () => Transition | null;
+
   /** @internal */
   source?: "sref" | "url" | "redirect" | "otherwise" | "unknown";
 }
@@ -101,9 +110,9 @@ export interface TransitionHookOptions {
   current?: () => Transition; // path?
   transition?: Transition;
   hookType?: string;
-  target?: any;
-  traceData?: any;
-  bind?: any;
+  target?: unknown;
+  traceData?: unknown;
+  bind?: unknown;
   stateHook?: boolean;
 }
 
@@ -178,12 +187,6 @@ export interface TreeChanges {
   entering: PathNode[];
 }
 
-export type IHookRegistration = (
-  matchCriteria: HookMatchCriteria,
-  callback: HookFn,
-  options?: HookRegOptions,
-) => Function;
-
 /**
  * The signature for Transition Hooks.
  *
@@ -251,7 +254,7 @@ export interface TransitionHookFn {
  * @returns an optional [[HookResult]] which may alter the transition
  */
 export interface TransitionStateHookFn {
-  (...injectables: any[]): HookResult;
+  (...injectables: unknown[]): HookResult;
 }
 
 /**
@@ -299,7 +302,7 @@ export interface HookRegOptions {
    * Sets the priority of the registered hook
    *
    * Hooks of the same type (onBefore, onStart, etc) are invoked in priority order.  A hook with a higher priority
-   * is invoked before a hook with a lower priority.
+   * is invoked before the hook with a lower priority.
    *
    * The default hook priority is 0
    */
@@ -308,13 +311,138 @@ export interface HookRegOptions {
   /**
    * Specifies what `this` is bound to during hook invocation.
    */
-  bind?: any;
+  bind?: unknown;
 
   /**
    * Limits the number of times that the hook will be invoked.
    * Once the hook has been invoked this many times, it is automatically deregistered.
    */
   invokeLimit?: number;
+}
+
+/** A predicate type which tests if a [[StateObject]] and [[Transition]] passes some test. Returns a boolean. */
+export type IStateMatch = PredicateBinary<StateObject, Transition>;
+
+/**
+ * Hook Criterion used to match a transition.
+ *
+ * A [[Glob]] string that matches the name of a state.
+ *
+ * Or, a function with the signature `function(state, transition) { return matches; }`
+ * which should return a boolean to indicate if a state matches.
+ *
+ * Or, `true` to always match
+ */
+export type HookMatchCriterion = string | IStateMatch | boolean;
+
+/**
+ * This object is used to configure whether or not a Transition Hook is invoked for a particular transition,
+ * based on the Transition's "to state" and "from state".
+ *
+ * Each property (`to`, `from`, `exiting`, `retained`, and `entering`) can be a state [[Glob]] string,
+ * a boolean, or a function that takes a state and returns a boolean (see [[HookMatchCriterion]])
+ *
+ * All properties are optional.  If any property is omitted, it is replaced with the value `true`, and always matches.
+ * To match any transition, use an empty criteria object `{}`.
+ *
+ * #### Example:
+ * ```js
+ * // This matches a transition coming from the `parent` state and going to the `parent.child` state.
+ * var match = {
+ *   to: 'parent',
+ *   from: 'parent.child'
+ * }
+ * ```
+ *
+ * #### Example:
+ * ```js
+ * // This matches a transition coming from any substate of `parent` and going directly to the `parent` state.
+ * var match = {
+ *   to: 'parent',
+ *   from: 'parent.**'
+ * }
+ * ```
+ *
+ * #### Example:
+ * ```js
+ * // This matches a transition coming from any state and going to any substate of `mymodule`
+ * var match = {
+ *   to: 'mymodule.**'
+ * }
+ * ```
+ *
+ * #### Example:
+ * ```js
+ * // This matches a transition coming from any state and going to any state that has `data.authRequired`
+ * // set to a truthy value.
+ * var match = {
+ *   to: function(state) {
+ *     return state.data != null && state.data.authRequired === true;
+ *   }
+ * }
+ * ```
+ * #### Example:
+ * ```js
+ * // This will match when route is just entered (initial load) or when the state is hard-refreshed
+ * // by specifying `{refresh: true}` as transition options.
+ * var match = {
+ *   from: (state, transition) => state.self.name === '' || transition.options().reload
+ * }
+ * ```
+ *
+ * #### Example:
+ * ```js
+ * // This matches a transition that is exiting `parent.child`
+ * var match = {
+ *   exiting: 'parent.child'
+ * }
+ * ```
+ */
+export interface HookMatchCriteria {
+  [key: string]: HookMatchCriterion | undefined;
+
+  /** A [[HookMatchCriterion]] to match the destination state */
+  to?: HookMatchCriterion;
+  /** A [[HookMatchCriterion]] to match the original (from) state */
+  from?: HookMatchCriterion;
+  /** A [[HookMatchCriterion]] to match any state that would be exiting */
+  exiting?: HookMatchCriterion;
+  /** A [[HookMatchCriterion]] to match any state that would be retained */
+  retained?: HookMatchCriterion;
+  /** A [[HookMatchCriterion]] to match any state that would be entering */
+  entering?: HookMatchCriterion;
+}
+
+export interface IMatchingNodes {
+  [key: string]: PathNode[];
+
+  to: PathNode[];
+  from: PathNode[];
+  exiting: PathNode[];
+  retained: PathNode[];
+  entering: PathNode[];
+}
+
+/** @internal */
+export interface RegisteredHooks {
+  [key: string]: RegisteredHook[];
+}
+
+/** @internal */
+export interface PathType {
+  name: string;
+  scope: TransitionHookScope;
+}
+
+/** @internal */
+export interface PathTypes {
+  [key: string]: PathType;
+
+  to: PathType;
+  from: PathType;
+  exiting: PathType;
+  retained: PathType;
+  entering: PathType;
 }
 
 /**
@@ -324,7 +452,36 @@ export interface HookRegOptions {
  */
 export interface HookRegistry {
   /** @internal place to store the hooks */
-  _registeredHooks: { [key: string]: RegisteredHook[] };
+  _registeredHooks: RegisteredHooks;
+
+  /**
+   * Registers a [[TransitionCreateHookFn]], called *while a transition is being constructed*.
+   *
+   * Registers a transition lifecycle hook, which is invoked during transition construction.
+   *
+   * This low level hook should only be used by plugins.
+   * This can be a useful time for plugins to add resolves or mutate the transition as needed.
+   * The Sticky States plugin uses this hook to modify the treechanges.
+   *
+   * ### Lifecycle
+   *
+   * `onCreate` hooks are invoked *while a transition is being constructed*.
+   *
+   * ### Return value
+   *
+   * The hook's return value is ignored
+   *
+   * @internal
+   * @param matchCriteria defines which Transitions the Hook should be invoked for.
+   * @param callback the hook function which will be invoked.
+   * @param options the registration options
+   * @returns a function which deregisters the hook.
+   */
+  onCreate(
+    matchCriteria: HookMatchCriteria,
+    callback: TransitionCreateHookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
 
   /**
    * Registers a [[TransitionHookFn]], called *before a transition starts*.
@@ -426,7 +583,7 @@ export interface HookRegistry {
     matchCriteria: HookMatchCriteria,
     callback: TransitionHookFn,
     options?: HookRegOptions,
-  ): Function;
+  ): DeregisterFn;
 
   /**
    * Registers a [[TransitionHookFn]], called when a transition starts.
@@ -499,7 +656,7 @@ export interface HookRegistry {
     matchCriteria: HookMatchCriteria,
     callback: TransitionHookFn,
     options?: HookRegOptions,
-  ): Function;
+  ): DeregisterFn;
 
   /**
    * Registers a [[TransitionStateHookFn]], called when a specific state is entered.
@@ -575,7 +732,7 @@ export interface HookRegistry {
     matchCriteria: HookMatchCriteria,
     callback: TransitionStateHookFn,
     options?: HookRegOptions,
-  ): Function;
+  ): DeregisterFn;
 
   /**
    * Registers a [[TransitionStateHookFn]], called when a specific state is retained/kept.
@@ -617,7 +774,7 @@ export interface HookRegistry {
     matchCriteria: HookMatchCriteria,
     callback: TransitionStateHookFn,
     options?: HookRegOptions,
-  ): Function;
+  ): DeregisterFn;
 
   /**
    * Registers a [[TransitionStateHookFn]], called when a specific state is exited.
@@ -661,7 +818,7 @@ export interface HookRegistry {
     matchCriteria: HookMatchCriteria,
     callback: TransitionStateHookFn,
     options?: HookRegOptions,
-  ): Function;
+  ): DeregisterFn;
 
   /**
    * Registers a [[TransitionHookFn]], called *just before a transition finishes*.
@@ -693,7 +850,7 @@ export interface HookRegistry {
     matchCriteria: HookMatchCriteria,
     callback: TransitionHookFn,
     options?: HookRegOptions,
-  ): Function;
+  ): DeregisterFn;
 
   /**
    * Registers a [[TransitionHookFn]], called after a successful transition completed.
@@ -724,7 +881,7 @@ export interface HookRegistry {
     matchCriteria: HookMatchCriteria,
     callback: TransitionHookFn,
     options?: HookRegOptions,
-  ): Function;
+  ): DeregisterFn;
 
   /**
    * Registers a [[TransitionHookFn]], called after a transition has errored.
@@ -771,7 +928,7 @@ export interface HookRegistry {
     matchCriteria: HookMatchCriteria,
     callback: TransitionHookFn,
     options?: HookRegOptions,
-  ): Function;
+  ): DeregisterFn;
 
   /**
    * Returns all the registered hooks of a given `hookName` type
@@ -784,131 +941,6 @@ export interface HookRegistry {
   getHooks(hookName: string): RegisteredHook[];
 }
 
-/** A predicate type which tests if a [[StateObject]] and [[Transition]] passes some test. Returns a boolean. */
-export type IStateMatch = PredicateBinary<StateObject, Transition>;
-
-/**
- * This object is used to configure whether or not a Transition Hook is invoked for a particular transition,
- * based on the Transition's "to state" and "from state".
- *
- * Each property (`to`, `from`, `exiting`, `retained`, and `entering`) can be a state [[Glob]] string,
- * a boolean, or a function that takes a state and returns a boolean (see [[HookMatchCriterion]])
- *
- * All properties are optional.  If any property is omitted, it is replaced with the value `true`, and always matches.
- * To match any transition, use an empty criteria object `{}`.
- *
- * #### Example:
- * ```js
- * // This matches a transition coming from the `parent` state and going to the `parent.child` state.
- * var match = {
- *   to: 'parent',
- *   from: 'parent.child'
- * }
- * ```
- *
- * #### Example:
- * ```js
- * // This matches a transition coming from any substate of `parent` and going directly to the `parent` state.
- * var match = {
- *   to: 'parent',
- *   from: 'parent.**'
- * }
- * ```
- *
- * #### Example:
- * ```js
- * // This matches a transition coming from any state and going to any substate of `mymodule`
- * var match = {
- *   to: 'mymodule.**'
- * }
- * ```
- *
- * #### Example:
- * ```js
- * // This matches a transition coming from any state and going to any state that has `data.authRequired`
- * // set to a truthy value.
- * var match = {
- *   to: function(state) {
- *     return state.data != null && state.data.authRequired === true;
- *   }
- * }
- * ```
- * #### Example:
- * ```js
- * // This will match when route is just entered (initial load) or when the state is hard-refreshed
- * // by specifying `{refresh: true}` as transition options.
- * var match = {
- *   from: (state, transition) => state.self.name === '' || transition.options().reload
- * }
- * ```
- *
- * #### Example:
- * ```js
- * // This matches a transition that is exiting `parent.child`
- * var match = {
- *   exiting: 'parent.child'
- * }
- * ```
- */
-export interface HookMatchCriteria {
-  [key: string]: HookMatchCriterion | undefined;
-
-  /** A [[HookMatchCriterion]] to match the destination state */
-  to?: HookMatchCriterion;
-  /** A [[HookMatchCriterion]] to match the original (from) state */
-  from?: HookMatchCriterion;
-  /** A [[HookMatchCriterion]] to match any state that would be exiting */
-  exiting?: HookMatchCriterion;
-  /** A [[HookMatchCriterion]] to match any state that would be retained */
-  retained?: HookMatchCriterion;
-  /** A [[HookMatchCriterion]] to match any state that would be entering */
-  entering?: HookMatchCriterion;
-}
-
-export interface IMatchingNodes {
-  [key: string]: PathNode[];
-
-  to: PathNode[];
-  from: PathNode[];
-  exiting: PathNode[];
-  retained: PathNode[];
-  entering: PathNode[];
-}
-
-/** @internal */
-export interface RegisteredHooks {
-  [key: string]: RegisteredHook[];
-}
-
-/** @internal */
-export interface PathTypes {
-  [key: string]: PathType;
-
-  to: PathType;
-  from: PathType;
-  exiting: PathType;
-  retained: PathType;
-  entering: PathType;
-}
-
-/** @internal */
-export interface PathType {
-  name: string;
-  scope: TransitionHookScope;
-}
-
-/**
- * Hook Criterion used to match a transition.
- *
- * A [[Glob]] string that matches the name of a state.
- *
- * Or, a function with the signature `function(state, transition) { return matches; }`
- * which should return a boolean to indicate if a state matches.
- *
- * Or, `true` to always match
- */
-export type HookMatchCriterion = string | IStateMatch | boolean;
-
 /**
  * The runtime service instance returned from `TransitionProvider.$get`.
  *
@@ -916,63 +948,7 @@ export type HookMatchCriterion = string | IStateMatch | boolean;
  * so the "service" surface includes both the public HookRegistry API and
  * a set of internal fields/methods used by built-in hook registrations/plugins.
  */
-export interface TransitionProviderService {
-  /* -------------------- Public HookRegistry API -------------------- */
-
-  onBefore(
-    matchCriteria: HookMatchCriteria,
-    callback: (transition: Transition) => any,
-    options?: HookRegOptions,
-  ): Function;
-
-  onStart(
-    matchCriteria: HookMatchCriteria,
-    callback: (transition: Transition) => any,
-    options?: HookRegOptions,
-  ): Function;
-
-  onFinish(
-    matchCriteria: HookMatchCriteria,
-    callback: (transition: Transition) => any,
-    options?: HookRegOptions,
-  ): Function;
-
-  onSuccess(
-    matchCriteria: HookMatchCriteria,
-    callback: (transition: Transition) => any,
-    options?: HookRegOptions,
-  ): Function;
-
-  onError(
-    matchCriteria: HookMatchCriteria,
-    callback: (transition: Transition) => any,
-    options?: HookRegOptions,
-  ): Function;
-
-  onEnter(
-    matchCriteria: HookMatchCriteria,
-    callback: (...injectables: any[]) => any,
-    options?: HookRegOptions,
-  ): Function;
-
-  onRetain(
-    matchCriteria: HookMatchCriteria,
-    callback: (...injectables: any[]) => any,
-    options?: HookRegOptions,
-  ): Function;
-
-  onExit(
-    matchCriteria: HookMatchCriteria,
-    callback: (...injectables: any[]) => any,
-    options?: HookRegOptions,
-  ): Function;
-
-  /**
-   * Returns the registered hooks for a hook name.
-   * (This is also part of the HookRegistry interface in your types.)
-   */
-  getHooks(hookName: string): RegisteredHook[];
-
+export interface TransitionProviderService extends HookRegistry {
   /* -------------------- Transition factory -------------------- */
 
   /**
@@ -988,19 +964,11 @@ export interface TransitionProviderService {
   /** @internal hook event types (onBefore/onStart/...) */
   _eventTypes: TransitionEventType[];
 
-  /** @internal registered hooks by hook name */
-  _registeredHooks: RegisteredHooks;
-
   /** @internal path type metadata used for matching */
   _criteriaPaths: PathTypes;
 
   /** @internal stores deregistration fns for core hooks */
-  _deregisterHookFns: Record<string, Function | undefined>;
-
-  /** @internal transition options defaults (if you expose them here) */
-  _defaultTransOpts?:
-    | Required<TransitionOptions>
-    | (typeof import("./transition-service.js"))["defaultTransOpts"];
+  _deregisterHookFns: Record<string, DeregisterFn | undefined>;
 
   /**
    * @internal Return event types, optionally filtered by phase, sorted by phase/order.

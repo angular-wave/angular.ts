@@ -18,8 +18,6 @@ import {
   registerActivateViews,
   registerLoadEnteringViews,
 } from "../hooks/views.js";
-import { registerUpdateGlobalState } from "../hooks/update-globals.js";
-
 import { registerLazyLoadHook } from "../hooks/lazy-load.js";
 import { TransitionEventType } from "./transition-event-type.js";
 import {
@@ -32,6 +30,7 @@ import { registerIgnoredTransitionHook } from "../hooks/ignored-transition.js";
 import { registerInvalidTransitionHook } from "../hooks/invalid-transition.js";
 import { registerRedirectToHook } from "../hooks/redirect-to.js";
 import { $injectTokens as $t, provider } from "../../injection-tokens.js";
+import { copy } from "../../shared/common.js";
 /**
  * The default [[Transition]] options.
  *
@@ -379,4 +378,35 @@ function registerUpdateUrl(transitionService, stateService, urlService) {
   };
 
   transitionService.onSuccess({}, updateUrl, { priority: 9999 });
+}
+
+/**
+ * Registers a hook that keeps global router state in sync with transitions.
+ *
+ * - Sets the current transition before it runs
+ * - Updates current state and params on success
+ * - Clears the current transition when finished
+ * @param {ng.TransitionProviderService} transitionService
+ */
+function registerUpdateGlobalState(transitionService) {
+  return transitionService.onCreate({}, (trans) => {
+    const globals = trans._globals;
+
+    const transitionSuccessful = () => {
+      globals._successfulTransitions.enqueue(trans);
+      globals.$current = trans.$to();
+      globals.current = globals.$current.self;
+      copy(trans.params(), globals.params);
+    };
+
+    const clearCurrentTransition = () => {
+      // Only clear if this transition is still the active one
+      if (globals.transition === trans) {
+        globals.transition = undefined;
+      }
+    };
+
+    trans.onSuccess({}, transitionSuccessful, { priority: 10000 });
+    trans.promise.then(clearCurrentTransition, clearCurrentTransition);
+  });
 }
