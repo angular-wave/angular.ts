@@ -4,7 +4,7 @@ import { entries, isDefined, keys, trim } from "../../shared/utils.js";
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
 
 /**
- * @typedef {Object} ModelOptionsConfig
+ * @typedef {Object & Record<string, any>} ModelOptionsConfig
  * @property {string} [updateOn] - A string specifying which events the input should be bound to. Multiple events can be set using a space-delimited list. The special event 'default' matches the default events belonging to the control.
  * @property {number|Object.<string, number>} [debounce] - An integer specifying the debounce time in milliseconds. A value of 0 triggers an immediate update. If an object is supplied, custom debounce values can be set for each event.
  * @property {boolean} [allowInvalid] - Indicates whether the model can be set with values that did not validate correctly. Defaults to false, which sets the model to undefined on validation failure.
@@ -13,7 +13,7 @@ const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
  */
 
 class NgModelOptionsController {
-  static $nonscope = true;
+  /* @ignore */ static $nonscope = true;
   /* @ignore */ static $inject = [$injectTokens._attrs, $injectTokens._scope];
 
   /**
@@ -23,8 +23,11 @@ class NgModelOptionsController {
   constructor($attrs, $scope) {
     this._attrs = $attrs;
     this._scope = $scope;
-    /** @type {NgModelOptionsController?} */
-    this.parentCtrl;
+    /** @type {NgModelOptionsController | null} */
+    this.parentCtrl = null;
+
+    /** @type {ModelOptions} */
+    this.$options = defaultModelOptions;
   }
 
   $onInit() {
@@ -136,6 +139,10 @@ export function ngModelOptionsDirective() {
 }
 
 // shallow copy over values from `src` that are not already specified on `dst`
+/**
+ * @param {ModelOptionsConfig} dst
+ * @param {Object & Record<string, any>} src
+ */
 function defaults(dst, src) {
   keys(src).forEach((key) => {
     if (!isDefined(dst[key])) {

@@ -18,10 +18,10 @@ export class ControllerProvider {
    */
   register(name: string | Record<string, unknown>, constructor?: unknown): void;
   /**
-   * @type {import("../../interface.ts").AnnotatedFactory<(injector: ng.InjectorService) => ControllerService>}
+   * @type {import("../../interface.ts").Injectable<($injector: ng.InjectorService) => ControllerService>}
    */
-  $get: import("../../interface.ts").AnnotatedFactory<
-    (injector: ng.InjectorService) => ControllerService
+  $get: import("../../interface.ts").Injectable<
+    ($injector: ng.InjectorService) => ControllerService
   >;
   /**
    * @param {ControllerLocals | undefined} locals

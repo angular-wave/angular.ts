@@ -113,7 +113,7 @@ export class ControllerProvider {
   }
 
   /**
-   * @type {import("../../interface.ts").AnnotatedFactory<(injector: ng.InjectorService) => ControllerService>}
+   * @type {import("../../interface.ts").Injectable<($injector: ng.InjectorService) => ControllerService>}
    */
   $get = [
     $injectTokens._injector,
