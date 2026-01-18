@@ -1,54 +1,46 @@
-export function identifierForController(controller: any, ident: any): string;
 /**
- * The {@link ng.$controller $controller service} is used by AngularTS to create new
- * controllers.
- *
- * This provider allows controller registration via the
- * {@link ng.$controllerProvider#register register} method.
+ * @param {string | InjectableController | undefined} controller
+ * @param {string} [ident]
+ * @returns {string|undefined}
  */
+export function identifierForController(
+  controller: string | InjectableController | undefined,
+  ident?: string,
+): string | undefined;
 export class ControllerProvider {
-  /**
-   * @type {Map<string, Function|Object>}
-   * @private
-   */
+  /** @type {Map<string, InjectableController>} @private */
   private controllers;
-  /**
-   * Check if a controller with a given name exists.
-   *
-   * @param {string} name Controller name to check.
-   * @returns {boolean} True if the controller exists, false otherwise.
-   */
+  /** @param {string} name @returns {boolean} */
   has(name: string): boolean;
   /**
-   * Register a controller.
-   *
-   * @param {string|Object} name Controller name, or an object map of controllers where the keys are
-   *    the names and the values are the constructors.
-   * @param {Function|Array} constructor Controller constructor function (optionally decorated with DI
-   *    annotations in the array notation).
+   * @param {string | Record<string, unknown>} name
+   * @param {unknown} [constructor]
    */
-  register(name: string | any, constructor: Function | any[]): void;
+  register(name: string | Record<string, unknown>, constructor?: unknown): void;
   /**
-   * $get method for dependency injection.
+   * @type {import("../../interface.ts").AnnotatedFactory<(injector: ng.InjectorService) => ControllerService>}
    */
-  $get: (
-    | string
-    | ((
-        $injector: ng.InjectorService,
-      ) => import("./interface.ts").ControllerService)
-  )[];
+  $get: import("../../interface.ts").AnnotatedFactory<
+    (injector: ng.InjectorService) => ControllerService
+  >;
   /**
-   * Adds an identifier to the controller instance in the given locals' scope.
-   *
-   * @param {Object} locals The locals object containing the scope.
-   * @param {string} identifier The identifier to assign.
-   * @param {Object} instance The controller instance.
-   * @param {string} name The name of the controller.
+   * @param {ControllerLocals | undefined} locals
+   * @param {string} identifier
+   * @param {object} instance
+   * @param {string} name
    */
   addIdentifier(
-    locals: any,
+    locals: ControllerLocals | undefined,
     identifier: string,
-    instance: any,
+    instance: object,
     name: string,
   ): void;
 }
+export type ControllerConstructor =
+  import("../../interface.ts").ControllerConstructor;
+export type InjectableController =
+  import("../../interface.ts").Injectable<ControllerConstructor>;
+export type ControllerService = import("./interface.ts").ControllerService;
+export type ControllerLocals = import("./interface.ts").ControllerLocals;
+export type ControllerExpression =
+  import("./interface.ts").ControllerExpression;
