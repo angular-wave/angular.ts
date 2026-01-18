@@ -26,7 +26,7 @@ export interface RawParams {
  * #### Example:
  * ```js
  * var mystate = {
- *   template: '<div ui-view/>',
+ *   template: '<div ng-view/>',
  *   controller: function() {}
  *   url: '/mystate/:start?{count:int}',
  *   params: {

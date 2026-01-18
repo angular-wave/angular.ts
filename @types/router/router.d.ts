@@ -18,27 +18,25 @@ export class RouterProvider {
    */
   _lastStartedTransitionId: number;
   /**
-   * @type {Queue<import("./transition/transition.js").Transition>}
+   * @type {Queue<ng.Transition>}
    */
-  _transitionHistory: Queue<import("./transition/transition.js").Transition>;
+  _transitionHistory: Queue<ng.Transition>;
   /**
-   * @type {Queue<import("./transition/transition.js").Transition>}
+   * @type {Queue<ng.Transition>}
    */
-  _successfulTransitions: Queue<
-    import("./transition/transition.js").Transition
-  >;
+  _successfulTransitions: Queue<ng.Transition>;
   /**
-   * @type {import("./state/interface.ts").StateDeclaration|undefined}
+   * @type {ng.StateDeclaration|undefined}
    */
-  current: import("./state/interface.ts").StateDeclaration | undefined;
+  current: ng.StateDeclaration | undefined;
   /**
-   * @type {import("./state/state-object.js").StateObject|undefined}
+   * @type {ng.StateObject|undefined}
    */
-  $current: import("./state/state-object.js").StateObject | undefined;
+  $current: ng.StateObject | undefined;
   /**
-   * @type {import("./transition/transition.js").Transition|undefined}
+   * @type {ng.Transition|undefined}
    */
-  transition: import("./transition/transition.js").Transition | undefined;
+  transition: ng.Transition | undefined;
   $get: () => this;
 }
 /**

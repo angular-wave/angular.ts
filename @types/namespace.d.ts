@@ -128,6 +128,8 @@ import {
   WebSocketService as TWebSocketService,
 } from "./services/websocket/interface.ts";
 import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.js";
+import { Transition as TTransition } from "./router/transition/transition.js";
+import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.js";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -165,6 +167,7 @@ declare global {
     type SceDelegateProvider = TSceDelegateProvider;
     type TransitionProvider = TTransitionProvider;
     type RouterProvider = TRouterProvider;
+    type TemplateFactoryProvider = TTemplateFactoryProvider;
     type AnchorScrollService = TAnchorScrollService;
     type AnimateService = TAnimateService;
     type AnimateCssService = TAnimateCssService;
@@ -244,5 +247,6 @@ declare global {
     type HttpResponse<T> = THttpResponse<T>;
     type RequestConfig = TRequestConfig;
     type InvocationDetail = TInvocationDetail;
+    type Transition = TTransition;
   }
 }

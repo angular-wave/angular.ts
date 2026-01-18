@@ -22,11 +22,6 @@ import { $injectTokens as $t } from "../injection-tokens.js";
  * Service which manages loading of templates from a ViewConfig.
  */
 export class TemplateFactoryProvider {
-  constructor() {
-    /** @type {boolean} */
-    this._useHttp = false;
-  }
-
   $get = [
     $t._http,
     $t._templateCache,
@@ -37,7 +32,7 @@ export class TemplateFactoryProvider {
      * @param {ng.TemplateCacheService} $templateCache
      * @param {ng.TemplateRequestService} $templateRequest
      * @param {import("../core/di/internal-injector.js").InjectorService} $injector
-     * @returns
+     * @returns {TemplateFactoryProvider}
      */
     ($http, $templateCache, $templateRequest, $injector) => {
       this.$templateRequest = $templateRequest;
@@ -48,14 +43,6 @@ export class TemplateFactoryProvider {
       return this;
     },
   ];
-
-  /**
-   * Forces the provider to use $http service directly
-   * @param {boolean} value
-   */
-  useHttpService(value) {
-    this._useHttp = value;
-  }
 
   /**
    * Creates a template from a configuration object.
@@ -74,12 +61,24 @@ export class TemplateFactoryProvider {
   fromConfig(config, params, context) {
     const defaultTemplate = "<ng-view></ng-view>";
 
+    /**
+     * @param {string | Promise<string>} result
+     * @returns {Promise<{ template: string }>}
+     */
     const asTemplate = (result) =>
       Promise.resolve(result).then((str) => ({ template: str }));
 
+    /**
+     * @param {string | Promise<string>} result
+     * @returns {Promise<{ component: string }>}
+     */
     const asComponent = (result) =>
       Promise.resolve(result).then((str) => ({ component: str }));
 
+    /**
+     * @param {any} configParam
+     * @returns {"template"|"templateUrl"|"templateProvider"|"component"|"componentProvider"|"default"}
+     */
     const getConfigType = (configParam) => {
       if (isDefined(configParam.template)) return "template";
 
@@ -142,18 +141,9 @@ export class TemplateFactoryProvider {
 
     if (isNullOrUndefined(url)) return null;
 
-    if (this._useHttp) {
-      return this.$http
-        .get(/** @type {string} */ (url), {
-          cache: this.$templateCache,
-          headers: { Accept: "text/html" },
-        })
-        .then(function (response) {
-          return response.data;
-        });
-    }
-
-    return this.$templateRequest(/** @type {string} */ (url));
+    return /** @type {ng.TemplateRequestService} */ (this.$templateRequest)(
+      /** @type {string} */ (url),
+    );
   }
 
   /**

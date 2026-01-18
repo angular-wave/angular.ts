@@ -155,6 +155,7 @@ export class FormController {
     this.$error = {};
     this._success = {};
     this.$pending = undefined;
+    /** @type {Record<string, any>} */
     this._classCache = {};
     const isValid = this._element.classList.contains(VALID_CLASS);
 

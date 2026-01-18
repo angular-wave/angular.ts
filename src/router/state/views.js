@@ -28,7 +28,7 @@ const hasAnyKey = (keys, obj) =>
  *
  * If no `views: {}` property exists on the [[StateDeclaration]], then it creates the `views` object
  * and applies the state-level configuration to a view named `$default`.
- *
+ * @param {ng.StateObject} state
  */
 export function ng1ViewsBuilder(state) {
   // Do not process root state

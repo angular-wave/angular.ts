@@ -8,15 +8,15 @@ export interface ViewContext {
 export interface ActiveUIView {
   /** An auto-incremented id */
   id: number;
-  /** The ui-view short name */
+  /** The ng-view short name */
   name: string;
-  /** The ui-view's fully qualified name */
+  /** The ng-view's fully qualified name */
   fqn: string;
-  /** The ViewConfig that is currently loaded into the ui-view */
+  /** The ViewConfig that is currently loaded into the ng-view */
   config: ViewConfig;
-  /** The state context in which the ui-view tag was created. */
+  /** The state context in which the ng-view tag was created. */
   creationContext: ViewContext;
-  /** A callback that should apply a ViewConfig (or clear the ui-view, if config is undefined) */
+  /** A callback that should apply a ViewConfig (or clear the ng-view, if config is undefined) */
   configUpdated: (config: ViewConfig) => void;
 }
 /**
@@ -25,12 +25,12 @@ export interface ActiveUIView {
  * A `ViewConfig` is the runtime definition of a single view.
  *
  * During a transition, `ViewConfig`s are created for each [[_ViewDeclaration]] defined on each "entering" [[StateObject]].
- * Then, the [[ViewService]] finds any matching `ui-view`(s) in the DOM, and supplies the ui-view
- * with the `ViewConfig`.  The `ui-view` then loads itself using the information found in the `ViewConfig`.
+ * Then, the [[ViewService]] finds any matching `ng-view`(s) in the DOM, and supplies the ng-view
+ * with the `ViewConfig`.  The `ng-view` then loads itself using the information found in the `ViewConfig`.
  *
- * A `ViewConfig` if matched with a `ui-view` by finding all `ui-view`s which were created in the
- * context named by the `uiViewContextAnchor`, and finding the `ui-view` or child `ui-view` that matches
- * the `uiViewName` address.
+ * A `ViewConfig` if matched with a `ng-view` by finding all `ng-view`s which were created in the
+ * context named by the `ngVIewContextAnchor`, and finding the `ng-view` or child `ng-view` that matches
+ * the `ngVIewName` address.
  */
 export interface ViewConfig {
   $id: number;

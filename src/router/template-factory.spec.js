@@ -69,30 +69,6 @@ describe("templateFactory", () => {
     });
   });
 
-  describe("templateFactory with forced use of $http service", () => {
-    beforeEach(() => {
-      dealoc(document.getElementById("app"));
-      let module = window.angular.module("defaultModule", []);
-      module.config(function ($templateFactoryProvider) {
-        $templateFactoryProvider.useHttpService(true);
-      });
-      $injector = window.angular.bootstrap(document.getElementById("app"), [
-        "defaultModule",
-      ]);
-      $injector.invoke((_$templateFactory_, _$sce_, $rootScope) => {
-        $templateFactory = _$templateFactory_;
-        $sce = _$sce_;
-        $scope = $rootScope;
-      });
-    });
-
-    it("does not restrict URL loading", async () => {
-      expect(async () => {
-        await $templateFactory.fromUrl("data:text/html,foo");
-      }).not.toThrowError();
-    });
-  });
-
   describe("component template builder", () => {
     let el;
 
