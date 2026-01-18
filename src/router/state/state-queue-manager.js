@@ -22,6 +22,10 @@ export class StateQueueManager {
     this.queue = [];
   }
 
+  /**
+   * @param {ng.StateDeclaration} stateDecl
+   * @returns {StateObject}
+   */
   register(stateDecl) {
     const state = new StateObject(stateDecl);
 
@@ -113,9 +117,10 @@ export class StateQueueManager {
    * @returns {() => void} a function that deregisters the rule
    */
   attachRoute(state) {
-    if (state.abstract || !state.url) return;
-    const rulesApi = this.urlServiceRules;
+    if (!state.abstract && state.url) {
+      const rulesApi = this.urlServiceRules;
 
-    rulesApi.rule(rulesApi._urlRuleFactory.create(state));
+      rulesApi.rule(rulesApi._urlRuleFactory.create(state));
+    }
   }
 }

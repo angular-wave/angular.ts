@@ -52,10 +52,7 @@ export interface UrlParts {
    * The parsed query string as an object.
    * Mirrors AngularJS’s `$location.setSearch()` format.
    */
-  search: Record<
-    string,
-    string | number | boolean | (string | number | boolean)[]
-  >;
+  search: Object;
   /**
    * The fragment identifier (everything after `#`, not including the `#` itself).
    */

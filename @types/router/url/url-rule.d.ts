@@ -17,11 +17,11 @@ export class UrlRuleFactory {
   routerGlobals: ng.RouterService;
   /**
    *
-   * @param {*} what
-   * @param {*} handler
+   * @param {StateObject} what
+   * @param {*} [handler]
    * @returns {BaseUrlRule}
    */
-  create(what: any, handler: any): BaseUrlRule;
+  create(what: StateObject, handler?: any): BaseUrlRule;
   /**
    * A UrlRule which matches based on a UrlMatcher
    *
@@ -152,3 +152,4 @@ export class BaseUrlRule {
    */
   matchPriority(params?: any): number;
 }
+import { StateObject } from "../state/state-object.js";

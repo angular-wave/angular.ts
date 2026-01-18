@@ -130,6 +130,7 @@ import {
 import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.js";
 import { Transition as TTransition } from "./router/transition/transition.js";
 import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.js";
+import { TransitionProviderService as TTransitionProviderService } from "./router/transition/interface.ts";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -166,6 +167,7 @@ declare global {
     type SceProvider = TSceProvider;
     type SceDelegateProvider = TSceDelegateProvider;
     type TransitionProvider = TTransitionProvider;
+    type TransitionProviderService = TTransitionProviderService;
     type RouterProvider = TRouterProvider;
     type TemplateFactoryProvider = TTemplateFactoryProvider;
     type AnchorScrollService = TAnchorScrollService;

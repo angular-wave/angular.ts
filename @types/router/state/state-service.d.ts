@@ -25,14 +25,10 @@ export class StateProvider {
   get params(): import("../params/state-params.js").StateParams;
   /**
    * The current [[StateDeclaration]]
-   *
-   * @deprecated This is a passthrough through to [[Router.current]]
    */
   get current(): import("./interface.ts").StateDeclaration;
   /**
    * The current [[StateObject]] (an internal API)
-   *
-   * @deprecated This is a passthrough through to [[Router.$current]]
    */
   get $current(): import("./state-object.js").StateObject;
   /**

@@ -834,3 +834,61 @@ export interface IMatchingNodes {
  * Or, `true` to always match
  */
 export type HookMatchCriterion = string | IStateMatch | boolean;
+/**
+ * The runtime service instance returned from `TransitionProvider.$get`.
+ *
+ * Note: In this codebase, `$get` returns the provider instance (`return this;`),
+ * so the "service" surface includes both the public HookRegistry API and
+ * a set of internal fields/methods used by built-in hook registrations/plugins.
+ */
+export interface TransitionProviderService {
+  onBefore(
+    matchCriteria: HookMatchCriteria,
+    callback: (transition: Transition) => any,
+    options?: HookRegOptions,
+  ): Function;
+  onStart(
+    matchCriteria: HookMatchCriteria,
+    callback: (transition: Transition) => any,
+    options?: HookRegOptions,
+  ): Function;
+  onFinish(
+    matchCriteria: HookMatchCriteria,
+    callback: (transition: Transition) => any,
+    options?: HookRegOptions,
+  ): Function;
+  onSuccess(
+    matchCriteria: HookMatchCriteria,
+    callback: (transition: Transition) => any,
+    options?: HookRegOptions,
+  ): Function;
+  onError(
+    matchCriteria: HookMatchCriteria,
+    callback: (transition: Transition) => any,
+    options?: HookRegOptions,
+  ): Function;
+  onEnter(
+    matchCriteria: HookMatchCriteria,
+    callback: (...injectables: any[]) => any,
+    options?: HookRegOptions,
+  ): Function;
+  onRetain(
+    matchCriteria: HookMatchCriteria,
+    callback: (...injectables: any[]) => any,
+    options?: HookRegOptions,
+  ): Function;
+  onExit(
+    matchCriteria: HookMatchCriteria,
+    callback: (...injectables: any[]) => any,
+    options?: HookRegOptions,
+  ): Function;
+  /**
+   * Returns the registered hooks for a hook name.
+   * (This is also part of the HookRegistry interface in your types.)
+   */
+  getHooks(hookName: string): RegisteredHook[];
+  /**
+   * Internal factory used by StateService.
+   */
+  create(fromPath: PathNode[], targetState: TargetState): Transition;
+}

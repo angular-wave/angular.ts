@@ -23,7 +23,11 @@ export class StateQueueManager {
    * @type {Array<StateObject>}
    */
   queue: Array<StateObject>;
-  register(stateDecl: any): StateObject;
+  /**
+   * @param {ng.StateDeclaration} stateDecl
+   * @returns {StateObject}
+   */
+  register(stateDecl: ng.StateDeclaration): StateObject;
   flush(): import("./interface.ts").StateStore;
   /**
    *

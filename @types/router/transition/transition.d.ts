@@ -49,14 +49,6 @@ export class Transition {
   _options: any;
   $id: number;
   _treeChanges: import("./interface.ts").TreeChanges;
-  onStart: any;
-  onBefore: any;
-  onSuccess: any;
-  onEnter: any;
-  onRetain: any;
-  onExit: any;
-  onFinish: any;
-  onError: any;
   /**
    * Creates the transition-level hook registration functions
    * (which can then be used to register hooks)

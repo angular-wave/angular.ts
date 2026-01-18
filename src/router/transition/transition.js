@@ -100,14 +100,6 @@ export class Transition {
 
     TransitionHook.invokeHooks(onCreateHooks, () => null);
     this.applyViewConfigs();
-    this.onStart = undefined;
-    this.onBefore = undefined;
-    this.onSuccess = undefined;
-    this.onEnter = undefined;
-    this.onRetain = undefined;
-    this.onExit = undefined;
-    this.onFinish = undefined;
-    this.onError = undefined;
   }
 
   /**

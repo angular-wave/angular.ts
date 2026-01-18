@@ -50,8 +50,6 @@ export class StateProvider {
 
   /**
    * The current [[StateDeclaration]]
-   *
-   * @deprecated This is a passthrough through to [[Router.current]]
    */
   get current() {
     return this.globals.current;
@@ -59,8 +57,6 @@ export class StateProvider {
 
   /**
    * The current [[StateObject]] (an internal API)
-   *
-   * @deprecated This is a passthrough through to [[Router.$current]]
    */
   get $current() {
     return this.globals.$current;

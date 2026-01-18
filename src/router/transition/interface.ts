@@ -5,7 +5,8 @@ import { StateObject } from "../state/state-object.js";
 import { PathNode } from "../path/path-node.js";
 import { TargetState } from "../state/target-state.js";
 import { RegisteredHook } from "./hook-registry.js";
-import { TransitionHookScope } from "./transition-hook.js";
+import { TransitionHookPhase, TransitionHookScope } from "./transition-hook.js";
+import { TransitionEventType } from "./transition-event-type.js";
 
 /**
  * The TransitionOptions object can be used to change the behavior of a transition.
@@ -91,7 +92,7 @@ export interface TransitionOptions {
    */
   redirectedFrom?: Transition;
   /** @internal */
-  current?: () => Transition;
+  current?: () => Transition | null;
   /** @internal */
   source?: "sref" | "url" | "redirect" | "otherwise" | "unknown";
 }
@@ -907,3 +908,111 @@ export interface PathType {
  * Or, `true` to always match
  */
 export type HookMatchCriterion = string | IStateMatch | boolean;
+
+/**
+ * The runtime service instance returned from `TransitionProvider.$get`.
+ *
+ * Note: In this codebase, `$get` returns the provider instance (`return this;`),
+ * so the "service" surface includes both the public HookRegistry API and
+ * a set of internal fields/methods used by built-in hook registrations/plugins.
+ */
+export interface TransitionProviderService {
+  /* -------------------- Public HookRegistry API -------------------- */
+
+  onBefore(
+    matchCriteria: HookMatchCriteria,
+    callback: (transition: Transition) => any,
+    options?: HookRegOptions,
+  ): Function;
+
+  onStart(
+    matchCriteria: HookMatchCriteria,
+    callback: (transition: Transition) => any,
+    options?: HookRegOptions,
+  ): Function;
+
+  onFinish(
+    matchCriteria: HookMatchCriteria,
+    callback: (transition: Transition) => any,
+    options?: HookRegOptions,
+  ): Function;
+
+  onSuccess(
+    matchCriteria: HookMatchCriteria,
+    callback: (transition: Transition) => any,
+    options?: HookRegOptions,
+  ): Function;
+
+  onError(
+    matchCriteria: HookMatchCriteria,
+    callback: (transition: Transition) => any,
+    options?: HookRegOptions,
+  ): Function;
+
+  onEnter(
+    matchCriteria: HookMatchCriteria,
+    callback: (...injectables: any[]) => any,
+    options?: HookRegOptions,
+  ): Function;
+
+  onRetain(
+    matchCriteria: HookMatchCriteria,
+    callback: (...injectables: any[]) => any,
+    options?: HookRegOptions,
+  ): Function;
+
+  onExit(
+    matchCriteria: HookMatchCriteria,
+    callback: (...injectables: any[]) => any,
+    options?: HookRegOptions,
+  ): Function;
+
+  /**
+   * Returns the registered hooks for a hook name.
+   * (This is also part of the HookRegistry interface in your types.)
+   */
+  getHooks(hookName: string): RegisteredHook[];
+
+  /* -------------------- Transition factory -------------------- */
+
+  /**
+   * Internal factory used by StateService.
+   */
+  create(fromPath: PathNode[], targetState: TargetState): Transition;
+
+  /* -------------------- Internal surface used by built-in hooks/plugins -------------------- */
+
+  /** @internal incremented for each created Transition */
+  _transitionCount: number;
+
+  /** @internal hook event types (onBefore/onStart/...) */
+  _eventTypes: TransitionEventType[];
+
+  /** @internal registered hooks by hook name */
+  _registeredHooks: RegisteredHooks;
+
+  /** @internal path type metadata used for matching */
+  _criteriaPaths: PathTypes;
+
+  /** @internal stores deregistration fns for core hooks */
+  _deregisterHookFns: Record<string, Function | undefined>;
+
+  /** @internal transition options defaults (if you expose them here) */
+  _defaultTransOpts?:
+    | Required<TransitionOptions>
+    | (typeof import("./transition-service.js"))["defaultTransOpts"];
+
+  /**
+   * @internal Return event types, optionally filtered by phase, sorted by phase/order.
+   */
+  _getEvents(phase?: TransitionHookPhase): TransitionEventType[];
+
+  /** @internal Return the defined path types */
+  _getPathTypes(): PathTypes;
+
+  /** @internal router globals */
+  globals: ng.RouterService;
+
+  /** @internal view service */
+  $view: ng.ViewService;
+}

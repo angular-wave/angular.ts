@@ -31,7 +31,6 @@ import { isDefined } from "../../shared/utils.js";
 import { registerIgnoredTransitionHook } from "../hooks/ignored-transition.js";
 import { registerInvalidTransitionHook } from "../hooks/invalid-transition.js";
 import { registerRedirectToHook } from "../hooks/redirect-to.js";
-import { registerUpdateUrl } from "../hooks/url.js";
 import { $injectTokens as $t, provider } from "../../injection-tokens.js";
 /**
  * The default [[Transition]] options.
@@ -39,10 +38,11 @@ import { $injectTokens as $t, provider } from "../../injection-tokens.js";
  * Include this object when applying custom defaults:
  * let reloadOpts = { reload: true, notify: true }
  * let options = defaults(theirOpts, customDefaults, defaultOptions);
+ * @type {import("./interface.js").TransitionOptions}
  */
 export const defaultTransOpts = {
   location: true,
-  relative: null,
+  relative: undefined,
   inherit: false,
   notify: true,
   reload: false,
@@ -99,6 +99,13 @@ export class TransitionProvider {
     $t._url,
     $t._stateRegistry,
     $t._view,
+    /**
+     * @param {ng.StateService} stateService
+     * @param {ng.UrlService} urlService
+     * @param {ng.StateRegistryService} stateRegistry
+     * @param {ng.ViewService} viewService
+     * @returns {ng.TransitionProviderService}
+     */
     (stateService, urlService, stateRegistry, viewService) => {
       // Lazy load state trees
       this._deregisterHookFns.lazyLoad = registerLazyLoadHook(
@@ -237,6 +244,12 @@ export class TransitionProvider {
     this._definePathType("entering", STATE);
   }
 
+  /**
+   * @param {string} name
+   * @param {number} hookPhase
+   * @param {number} hookOrder
+   * @param {any} criteriaMatchPath
+   */
   _defineEvent(
     name,
     hookPhase,
@@ -288,8 +301,9 @@ export class TransitionProvider {
    * Another example: the `to` path in [[HookMatchCriteria]] is a TRANSITION scoped path.
    * It was defined by calling `defineTreeChangesCriterion('to', TransitionHookScope.TRANSITION)`
    * Only the tail of the `to` path is checked against the criteria and returned as part of the match.
-   *
    * @internal
+   * @param {string} name
+   * @param {number} hookScope
    */
   _definePathType(name, hookScope) {
     this._criteriaPaths[name] = { name, scope: hookScope };
@@ -326,4 +340,43 @@ export class TransitionProvider {
     // Lazy load state trees
     fns.lazyLoad = registerLazyLoadHook(this);
   }
+}
+
+/**
+ * @param {ng.TransitionProviderService} transitionService
+ * @param {ng.StateService} stateService
+ * @param {ng.UrlService} urlService
+ */
+function registerUpdateUrl(transitionService, stateService, urlService) {
+  /**
+   * A [[TransitionHookFn]] which updates the URL after a successful transition
+   *
+   * Registered using `transitionService.onSuccess({}, updateUrl);`
+   */
+  const updateUrl = (/** @type {ng.Transition}} */ transition) => {
+    const options = transition.options();
+
+    const $state = stateService;
+
+    // Dont update the url in these situations:
+    // The transition was triggered by a URL sync (options.source === 'url')
+    // The user doesn't want the url to update (options.location === false)
+    // The destination state, and all parents have no navigable url
+    if (
+      options.source !== "url" &&
+      options.location &&
+      $state.$current?.navigable
+    ) {
+      const urlOptions = { replace: options.location === "replace" };
+
+      urlService.push(
+        $state.$current.navigable.url,
+        $state.globals.params,
+        urlOptions,
+      );
+    }
+    urlService.update(true);
+  };
+
+  transitionService.onSuccess({}, updateUrl, { priority: 9999 });
 }

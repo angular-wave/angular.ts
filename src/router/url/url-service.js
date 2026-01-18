@@ -28,7 +28,7 @@ export class UrlService {
     $t._urlConfig,
   ]);
 
-  /** @type {ng.LocationService} */
+  /** @type {ng.LocationService | undefined} */
   $location;
 
   /**
@@ -39,11 +39,15 @@ export class UrlService {
    */
   constructor($locationProvider, stateProvider, globals, urlConfigProvider) {
     /** @private */
+
     this._locationProvider = $locationProvider;
     this.stateService = stateProvider;
 
-    /** @type {UrlRuleFactory} Provides services related to the URL */
-    this._urlRuleFactory = new UrlRuleFactory(this, this.stateService, globals);
+    /**
+     * @type {UrlRuleFactory} Provides services related to the URL
+     * @ignore
+     */
+    this._urlRuleFactory = new UrlRuleFactory(this, stateProvider, globals);
 
     /**
      * The nested [[UrlRules]] API for managing URL rules and rewrites
@@ -53,13 +57,21 @@ export class UrlService {
     this._rules = new UrlRules(this._urlRuleFactory);
     /**
      * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
+     * @ignore
      * @type {import("./url-config.js").UrlConfigProvider}
      */
     this._config = urlConfigProvider;
 
-    /** @type {ParamFactory} Creates a new [[Param]] for a given location (DefType) */
+    /**
+     * @type {ParamFactory} Creates a new [[Param]] for a given location (DefType)
+     * @ignore
+     */
     this._paramFactory = new ParamFactory(this._config);
 
+    /**
+     * @type {((evt: ng.ScopeEvent) => void)[]}
+     * @ignore
+     */
     this._urlListeners = [];
   }
 
@@ -71,7 +83,7 @@ export class UrlService {
    * @return {string} the path portion of the url
    */
   getPath() {
-    return this.$location.getPath();
+    return /** @type {ng.LocationService} */ (this.$location).getPath();
   }
 
   /**
@@ -82,7 +94,7 @@ export class UrlService {
    * @return {Object} the search (query) portion of the url, as an object
    */
   getSearch() {
-    return this.$location.getSearch();
+    return /** @type {ng.LocationService} */ (this.$location).getSearch();
   }
 
   /**
@@ -93,7 +105,7 @@ export class UrlService {
    * @return {string} the hash (anchor) portion of the url
    */
   getHash() {
-    return this.$location.getHash();
+    return /** @type {ng.LocationService} */ (this.$location).getHash();
   }
 
   $get = [
@@ -107,11 +119,14 @@ export class UrlService {
      */
     ($location, $rootScope) => {
       this.$location = $location;
-      $rootScope.$on("$locationChangeSuccess", (evt) => {
-        for (let i = 0, j = this._urlListeners.length; i < j; i++) {
-          this._urlListeners[i](evt);
-        }
-      });
+      $rootScope.$on(
+        "$locationChangeSuccess",
+        /** @param {ng.ScopeEvent} evt */ (evt) => {
+          for (let i = 0, j = this._urlListeners.length; i < j; i++) {
+            this._urlListeners[i](evt);
+          }
+        },
+      );
       this.listen(true);
 
       return this;
@@ -183,12 +198,13 @@ export class UrlService {
     if (isDefined(newUrl)) {
       const decodeUri = decodeURIComponent(newUrl);
 
-      this.$location.setUrl(decodeUri);
+      /** @type {ng.LocationService} */ (this.$location).setUrl(decodeUri);
     }
 
-    if (state) this.$location.setState(state);
+    if (state)
+      /** @type {ng.LocationService} */ (this.$location).setState(state);
 
-    return this.$location.getUrl();
+    return /** @type {ng.LocationService} */ (this.$location).getUrl();
   }
 
   /**
@@ -203,8 +219,8 @@ export class UrlService {
    * let deregisterFn = locationServices.onChange((evt) => console.log("url change", evt));
    * ```
    *
-   * @param {Function} callback a function that will be called when the url is changing
-   * @return {Function} a function that de-registers the callback
+   * @param {(evt: ng.ScopeEvent) => void} callback a function that will be called when the url is changing
+   * @return {() => void} a function that de-registers the callback
    */
   onChange(callback) {
     this._urlListeners.push(callback);
@@ -222,9 +238,9 @@ export class UrlService {
    */
   parts() {
     return {
-      path: this.$location.getPath(),
-      search: this.$location.getSearch(),
-      hash: this.$location.getHash(),
+      path: /** @type {ng.LocationService} */ (this.$location).getPath(),
+      search: /** @type {ng.LocationService} */ (this.$location).getSearch(),
+      hash: /** @type {ng.LocationService} */ (this.$location).getHash(),
     };
   }
 
@@ -426,8 +442,8 @@ export class UrlService {
   /**
    * Creates a [[UrlMatcher]] for the specified pattern.
    *
-   * @param urlPattern  The URL pattern.
-   * @param config  The config object hash.
+   * @param {string} urlPattern  The URL pattern.
+   * @param {*} [config]  The config object hash.
    * @returns The UrlMatcher.
    */
   compile(urlPattern, config) {
@@ -453,12 +469,11 @@ export class UrlService {
   /**
    * Returns true if the specified object is a [[UrlMatcher]], or false otherwise.
    *
-   * @param object  The object to perform the type check against.
+   * @param {UrlMatcher & Record<string, any>} object  The object to perform the type check against.
    * @returns `true` if the object matches the `UrlMatcher` interface, by
    *          implementing all the same methods.
    */
   isMatcher(object) {
-    // TODO: typeof?
     if (!isObject(object)) return false;
     let result = true;
 
@@ -471,6 +486,12 @@ export class UrlService {
   }
 }
 
+/**
+ * @param {string} url
+ * @param {boolean} isHtml5
+ * @param {any} absolute
+ * @param {string} baseHref
+ */
 function appendBasePath(url, isHtml5, absolute, baseHref) {
   if (baseHref === "/") return url;
 
