@@ -40,15 +40,13 @@ export class StateProvider {
    */
   transitionService: ng.TransitionProvider;
   /**
-   * @type {import("./state-registry.js").StateRegistryProvider | undefined}
+   * @type {StateRegistryProvider | undefined}
    */
-  stateRegistry:
-    | import("./state-registry.js").StateRegistryProvider
-    | undefined;
+  stateRegistry: StateRegistryProvider | undefined;
   /** @type {ng.UrlService | undefined } */
   urlService: ng.UrlService | undefined;
-  /** @type {ng.InjectorService} */
-  $injector: ng.InjectorService;
+  /** @type {ng.InjectorService | undefined } */
+  $injector: ng.InjectorService | undefined;
   invalidCallbacks: any[];
   /** @type {ng.ExceptionHandlerService} */
   _defaultErrorHandler: ng.ExceptionHandlerService;
@@ -187,7 +185,7 @@ export class StateProvider {
    *
    * @returns a function which deregisters the callback
    */
-  onInvalid(callback: Function): any;
+  onInvalid(callback: Function): () => void;
   /**
    * Reloads the current state
    *
@@ -213,7 +211,7 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param reloadState A state name or a state object.
+   * @param {string | StateDeclaration | StateObject;} [reloadState] A state name or a state object.
    *    If present, this state and all its children will be reloaded, but ancestors will not reload.
    *
    * #### Example:
@@ -299,14 +297,18 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param to State name or state object.
+   * @param {string | StateDeclaration | StateObject} to State name or state object.
    * @param toParams A map of the parameters that will be sent to the state,
    *      will populate $stateParams.
    * @param options Transition options
    *
    * @returns A promise representing the state of the new transition. See [[go]]
    */
-  transitionTo(to: any, toParams?: {}, options?: {}): any;
+  transitionTo(
+    to: string | StateDeclaration | StateObject,
+    toParams?: {},
+    options?: {},
+  ): any;
   /**
    * Checks if the current state *is* the provided state
    *
@@ -444,5 +446,9 @@ export class StateProvider {
    */
   lazyLoad(stateOrName: any, transition: any): any;
 }
+export type StateRegistryProvider =
+  import("./state-registry.js").StateRegistryProvider;
+export type StateDeclaration = import("./interface.ts").StateDeclaration;
+export type StateObject = import("./state-object.js").StateObject;
 import { TargetState } from "./target-state.js";
 import { PathNode } from "../path/path-node.js";

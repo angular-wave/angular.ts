@@ -28,37 +28,10 @@ export function removeFrom(array: Array<any>, obj: any): Array<any>;
  * Applies a set of defaults to an options object.  The options object is filtered
  * to only those properties of the objects in the defaultsList.
  * Earlier objects in the defaultsList take precedence when applying defaults.
- * @param {{}} opts
- * @param {{ current?: (() => void) | (() => null); transition?: null; traceData?: {}; bind?: null; inherit?: boolean; matchingKeys?: null; state?: { params: {}; }; strict?: boolean; caseInsensitive?: boolean; relative?: import("../router/state/state-object.js").StateObject | null | undefined; location?: boolean; notify?: boolean; reload?: boolean; supercede?: boolean; custom?: {}; source?: string; lossy?: boolean; absolute?: boolean; }[]} defaultsList
+ * @param {any} opts
+ * @param {any} defaultsList
  */
-export function defaults(
-  opts: {},
-  ...defaultsList: {
-    current?: (() => void) | (() => null);
-    transition?: null;
-    traceData?: {};
-    bind?: null;
-    inherit?: boolean;
-    matchingKeys?: null;
-    state?: {
-      params: {};
-    };
-    strict?: boolean;
-    caseInsensitive?: boolean;
-    relative?:
-      | import("../router/state/state-object.js").StateObject
-      | null
-      | undefined;
-    location?: boolean;
-    notify?: boolean;
-    reload?: boolean;
-    supercede?: boolean;
-    custom?: {};
-    source?: string;
-    lossy?: boolean;
-    absolute?: boolean;
-  }[]
-): any;
+export function defaults(opts: any, ...defaultsList: any): any;
 /**
  * Return a copy of the object only containing the whitelisted properties.
  *

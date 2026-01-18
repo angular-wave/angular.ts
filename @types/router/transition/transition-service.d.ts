@@ -100,7 +100,9 @@ export class TransitionProvider {
     hookOrder: number,
     criteriaMatchPath: any,
     reverseSort?: boolean,
-    getResultHandler?: (hook: any) => (result: any) => any,
+    getResultHandler?: (
+      hook: TransitionHook,
+    ) => (result: import("./transition-hook.js").HookResult) => Promise<any>,
     getErrorHandler?: () => (error: any) => Promise<never>,
     synchronous?: boolean,
   ): void;
@@ -129,4 +131,5 @@ export class TransitionProvider {
   _registerCoreTransitionHooks(): void;
 }
 import { Transition } from "./transition.js";
+import { TransitionHook } from "./transition-hook.js";
 import { TransitionHookPhase } from "./transition-hook.js";

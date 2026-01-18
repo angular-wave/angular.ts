@@ -107,11 +107,14 @@ export interface TransitionOptions {
 }
 
 export interface TransitionHookOptions {
-  current?: () => Transition; // path?
-  transition?: Transition;
+  current: () => Transition | void; // path?
+  transition?: Transition | null;
   hookType?: string;
   target?: unknown;
-  traceData?: unknown;
+  traceData?: {
+    hookType?: string;
+    context?: any;
+  };
   bind?: unknown;
   stateHook?: boolean;
 }

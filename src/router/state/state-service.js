@@ -11,6 +11,10 @@ import { Glob } from "../glob/glob.js";
 import { lazyLoadState } from "../hooks/lazy-load.js";
 import { $injectTokens, provider } from "../../injection-tokens.js";
 
+/** @typedef {import("./state-registry.js").StateRegistryProvider} StateRegistryProvider */
+/** @typedef {import("./interface.ts").StateDeclaration} StateDeclaration */
+/** @typedef {import("./state-object.js").StateObject} StateObject */
+
 const stdErr = minErr("$stateProvider");
 
 /**
@@ -85,14 +89,15 @@ export class StateProvider {
     this.transitionService = transitionService;
 
     /**
-     * @type {import("./state-registry.js").StateRegistryProvider | undefined}
+     * @type {StateRegistryProvider | undefined}
      */
     this.stateRegistry = undefined;
 
     /** @type {ng.UrlService | undefined } */
     this.urlService = undefined;
-    /** @type {ng.InjectorService} */
+    /** @type {ng.InjectorService | undefined } */
     this.$injector = undefined;
+
     this.invalidCallbacks = [];
 
     /** @type {ng.ExceptionHandlerService} */
@@ -204,7 +209,12 @@ export class StateProvider {
    * @return {object} $stateProvider - $stateProvider instance
    */
   decorator(name, func) {
-    return this.stateRegistry.decorator(name, func) || this;
+    return (
+      /** @type {StateRegistryProvider} */ (this.stateRegistry).decorator(
+        name,
+        func,
+      ) || this
+    );
   }
 
   /**
@@ -217,7 +227,9 @@ export class StateProvider {
     }
 
     try {
-      this.stateRegistry.register(definition);
+      /** @type {StateRegistryProvider} */ (this.stateRegistry).register(
+        definition,
+      );
     } catch (err) {
       throw stdErr("stateinvalid", err.message);
     }
@@ -237,7 +249,10 @@ export class StateProvider {
    * @internal
    */
   _handleInvalidTargetState(fromPath, toState) {
-    const fromState = makeTargetState(this.stateRegistry, fromPath);
+    const fromState = makeTargetState(
+      /** @type {StateRegistryProvider} */ (this.stateRegistry),
+      fromPath,
+    );
 
     const { globals } = this;
 
@@ -322,9 +337,9 @@ export class StateProvider {
   onInvalid(callback) {
     this.invalidCallbacks.push(callback);
 
-    return function deregisterListener() {
+    return () => {
       removeFrom(this.invalidCallbacks, callback);
-    }.bind(this);
+    };
   }
 
   /**
@@ -352,7 +367,7 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param reloadState A state name or a state object.
+   * @param {string | StateDeclaration | StateObject;} [reloadState] A state name or a state object.
    *    If present, this state and all its children will be reloaded, but ancestors will not reload.
    *
    * #### Example:
@@ -479,7 +494,7 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param to State name or state object.
+   * @param {string | StateDeclaration | StateObject} to State name or state object.
    * @param toParams A map of the parameters that will be sent to the state,
    *      will populate $stateParams.
    * @param options Transition options

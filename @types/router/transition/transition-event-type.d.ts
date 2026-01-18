@@ -9,7 +9,9 @@ export class TransitionEventType {
     hookOrder: any,
     criteriaMatchPath: any,
     reverseSort?: boolean,
-    getResultHandler?: (hook: any) => (result: any) => any,
+    getResultHandler?: (
+      hook: TransitionHook,
+    ) => (result: import("./transition-hook.js").HookResult) => Promise<any>,
     getErrorHandler?: () => (error: any) => Promise<never>,
     synchronous?: boolean,
   );
@@ -18,7 +20,10 @@ export class TransitionEventType {
   hookOrder: any;
   criteriaMatchPath: any;
   reverseSort: boolean;
-  getResultHandler: (hook: any) => (result: any) => any;
+  getResultHandler: (
+    hook: TransitionHook,
+  ) => (result: import("./transition-hook.js").HookResult) => Promise<any>;
   getErrorHandler: () => (error: any) => Promise<never>;
   synchronous: boolean;
 }
+import { TransitionHook } from "./transition-hook.js";
