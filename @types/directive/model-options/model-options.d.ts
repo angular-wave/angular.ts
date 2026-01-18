@@ -3,29 +3,7 @@
  */
 export function ngModelOptionsDirective(): ng.Directive;
 export const defaultModelOptions: ModelOptions;
-export type ModelOptionsConfig = {
-  /**
-   * - A string specifying which events the input should be bound to. Multiple events can be set using a space-delimited list. The special event 'default' matches the default events belonging to the control.
-   */
-  updateOn?: string;
-  /**
-   * - An integer specifying the debounce time in milliseconds. A value of 0 triggers an immediate update. If an object is supplied, custom debounce values can be set for each event.
-   */
-  debounce?:
-    | number
-    | {
-        [x: string]: number;
-      };
-  /**
-   * - Indicates whether the model can be set with values that did not validate correctly. Defaults to false, which sets the model to undefined on validation failure.
-   */
-  allowInvalid?: boolean;
-  /**
-   * - Determines whether to treat functions bound to `ngModel` as getters/setters. Defaults to false.
-   */
-  getterSetter?: boolean;
-  updateOnDefault?: boolean;
-};
+export type ModelOptionsConfig = any & Record<string, any>;
 /**
  * A container for the options set by the {@link ngModelOptions} directive
  */

@@ -20,7 +20,6 @@ describe("ngModelOptions", () => {
       expect(defaultModelOptions.getOption("debounce")).toBe(0);
       expect(defaultModelOptions.getOption("getterSetter")).toBe(false);
       expect(defaultModelOptions.getOption("allowInvalid")).toBe(false);
-      //expect(defaultModelOptions.getOption("timezone")).toBe(null);
     });
   });
 
