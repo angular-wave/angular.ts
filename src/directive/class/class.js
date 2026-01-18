@@ -27,25 +27,31 @@ function classDirective(name, selector) {
        * @param {ng.Attributes} attr
        */
       link(scope, element, attr) {
+        /** @type {Record<string, number>} */
         let classCounts = getCacheData(element, "$classCounts");
 
+        // `ngClassOdd/ngClassEven` use `$index & 1` values (0/1). Plain `ngClass` uses `true`.
+        /** @type {number | boolean} */
         let oldModulo = true;
 
-        /** @type {string|undefined} */
-        let oldClassString;
+        /** @type {string} */
+        let oldClassString = "";
 
         if (!classCounts) {
-          // Use Object.create(null) to prevent class assumptions involving property
-          // names in Object.prototype
-          classCounts = nullObject();
+          // Use Object.create(null) to prevent assumptions involving Object.prototype keys.
+          classCounts = /** @type {Record<string, number>} */ (nullObject());
           setCacheData(element, "$classCounts", classCounts);
         }
+
+        // Cache once; `hasAnimate(element)` should be stable for this directive instance.
+        const animate = hasAnimate(element);
 
         if (name !== "ngClass") {
           scope.$watch("$index", () => {
             ngClassIndexWatchAction(scope.$index & 1);
           });
         }
+
         scope.$watch(attr[name], (val) => {
           ngClassWatchAction(toClassString(val));
         });
@@ -54,15 +60,15 @@ function classDirective(name, selector) {
          * @param {string} classString
          */
         function addClasses(classString) {
-          classString = digestClassCounts(split(classString), 1);
+          const toAdd = digestClassCounts(split(classString), 1);
 
-          if (hasAnimate(element)) {
-            attr.$addClass(classString);
+          if (!toAdd.length) return;
+
+          if (animate) {
+            attr.$addClass(toAdd.join(" "));
           } else {
             scope.$postUpdate(() => {
-              if (classString !== "") {
-                element.classList.add(...classString.trim().split(" "));
-              }
+              element.classList.add(...toAdd);
             });
           }
         }
@@ -71,15 +77,15 @@ function classDirective(name, selector) {
          * @param {string} classString
          */
         function removeClasses(classString) {
-          classString = digestClassCounts(split(classString), -1);
+          const toRemove = digestClassCounts(split(classString), -1);
 
-          if (hasAnimate(element)) {
-            attr.$removeClass(classString);
+          if (!toRemove.length) return;
+
+          if (animate) {
+            attr.$removeClass(toRemove.join(" "));
           } else {
             scope.$postUpdate(() => {
-              if (classString !== "") {
-                element.classList.remove(...classString.trim().split(" "));
-              }
+              element.classList.remove(...toRemove);
             });
           }
         }
@@ -97,56 +103,61 @@ function classDirective(name, selector) {
 
           const toAddArray = arrayDifference(newClassArray, oldClassArray);
 
-          const toRemoveString = digestClassCounts(toRemoveArray, -1);
+          const toRemove = digestClassCounts(toRemoveArray, -1);
 
-          const toAddString = digestClassCounts(toAddArray, 1);
+          const toAdd = digestClassCounts(toAddArray, 1);
 
-          if (hasAnimate(element)) {
-            attr.$addClass(toAddString);
-            attr.$removeClass(toRemoveString);
+          if (animate) {
+            if (toAdd.length) attr.$addClass(toAdd.join(" "));
+
+            if (toRemove.length) attr.$removeClass(toRemove.join(" "));
           } else {
-            if (toAddString !== "") {
-              element.classList.add(...toAddString.trim().split(" "));
-            }
+            if (toAdd.length) element.classList.add(...toAdd);
 
-            if (toRemoveString !== "") {
-              element.classList.remove(...toRemoveString.trim().split(" "));
-            }
+            if (toRemove.length) element.classList.remove(...toRemove);
           }
         }
 
         /**
-         * @param {string | any[]} classArray
+         * Updates reference-counts for classes and returns the classes that should be
+         * applied/removed for this operation.
+         *
+         * @param {string[]} classArray
          * @param {number} count
+         * @returns {string[]}
          */
         function digestClassCounts(classArray, count) {
-          /**
-           * @type {any[]}
-           */
+          /** @type {string[]} */
           const classesToUpdate = [];
 
-          if (classArray) {
-            classArray.forEach((/** @type {string | number} */ className) => {
-              if (count > 0 || classCounts[className]) {
-                classCounts[className] = (classCounts[className] || 0) + count;
+          for (let i = 0; i < classArray.length; i++) {
+            const className = classArray[i];
 
-                if (classCounts[className] === +(count > 0)) {
-                  classesToUpdate.push(className);
-                }
+            if (!className) continue;
+
+            // Only decrement if we have a count, otherwise we can go negative and
+            // remove classes that were never added.
+            if (count > 0 || classCounts[className]) {
+              const next = (classCounts[className] || 0) + count;
+
+              classCounts[className] = next;
+
+              // When adding: push when transitioning 0 -> 1.
+              // When removing: push when transitioning 1 -> 0.
+              if (next === (count > 0 ? 1 : 0)) {
+                classesToUpdate.push(className);
               }
-            });
+            }
           }
 
-          return classesToUpdate.join(" ");
+          return classesToUpdate;
         }
 
         /**
          * @param {number | boolean} newModulo
          */
         function ngClassIndexWatchAction(newModulo) {
-          // This watch-action should run before the `ngClassWatchAction()`, thus it
-          // adds/removes `oldClassString`. If the `ngClass` expression has changed as well, the
-          // `ngClassWatchAction()` will update the classes.
+          // Runs before `ngClassWatchAction()`: it adds/removes `oldClassString`.
           if (newModulo === selector) {
             addClasses(oldClassString);
           } else {
@@ -172,52 +183,90 @@ function classDirective(name, selector) {
 }
 
 // Helpers
-function arrayDifference(tokens1, tokens2) {
+
+/**
+ * Returns all items from `tokens1` that are not present in `tokens2`.
+ *
+ * @param {string[]} tokens1
+ * @param {string[]} tokens2
+ * @returns {string[]}
+ */
+export function arrayDifference(tokens1, tokens2) {
   if (!tokens1 || !tokens1.length) return [];
 
   if (!tokens2 || !tokens2.length) return tokens1;
 
-  const values = [];
+  const set2 = new Set(tokens2);
 
-  outer: for (let i = 0; i < tokens1.length; i++) {
-    const token = tokens1[i];
+  /** @type {string[]} */
+  const out = [];
 
-    for (let j = 0; j < tokens2.length; j++) {
-      if (token === tokens2[j]) continue outer;
-    }
-    values.push(token);
+  for (let i = 0; i < tokens1.length; i++) {
+    const t = tokens1[i];
+
+    if (!set2.has(t)) out.push(t);
   }
 
-  return values;
+  return out;
 }
 
 /**
+ * Split a class string into tokens.
+ *
+ * - Trims leading/trailing whitespace
+ * - Collapses any whitespace runs (space/tab/newline) into token boundaries
+ *
  * @param {string} classString
- * @return {string[] | ""}
+ * @return {string[]}
  */
-function split(classString) {
-  return classString && classString.split(" ");
+export function split(classString) {
+  if (!classString) return [];
+  const trimmed = classString.trim();
+
+  return trimmed ? trimmed.split(/\s+/) : [];
 }
 
 /**
+ * Convert an `ngClass` expression value into a space-delimited class string.
+ *
+ * Supports:
+ * - string: returned as-is
+ * - array: flattened and joined with spaces (falsy items are ignored)
+ * - object: keys with truthy values are included
+ * - other primitives: stringified
+ *
  * @param {unknown} classValue
+ * @returns {string}
  */
-function toClassString(classValue) {
-  if (!classValue) return classValue;
-
-  let classString = classValue;
+export function toClassString(classValue) {
+  if (!classValue) return "";
 
   if (isArray(classValue)) {
-    classString = classValue.map(toClassString).join(" ");
-  } else if (isObject(classValue)) {
-    classString = keys(classValue)
-      .filter((key) => classValue[key])
-      .join(" ");
-  } else if (!isString(classValue)) {
-    classString = `${classValue}`;
+    // Recursively stringify and omit empty results.
+    return classValue.map(toClassString).filter(Boolean).join(" ");
   }
 
-  return classString;
+  if (isObject(classValue)) {
+    const valueMap = /** @type {Record<string, any>} */ (classValue);
+
+    const ks = keys(valueMap);
+
+    let out = "";
+
+    for (let i = 0; i < ks.length; i++) {
+      const k = ks[i];
+
+      if (valueMap[k]) out += (out ? " " : "") + k;
+    }
+
+    return out;
+  }
+
+  if (isString(classValue)) {
+    return classValue;
+  }
+
+  return String(classValue);
 }
 
 export const ngClassDirective = classDirective("", true);

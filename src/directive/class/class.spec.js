@@ -1,6 +1,7 @@
 import { Angular } from "../../angular.js";
 import { dealoc } from "../../shared/dom.js";
 import { wait } from "../../shared/test-utils.js";
+import { arrayDifference, split, toClassString } from "./class.js";
 
 describe("ngClass", () => {
   let element;
@@ -564,6 +565,160 @@ describe("ngClass", () => {
       await wait();
       expect(element).toHaveClass("foo");
     });
+  });
+});
+
+// --------------------------------------------------- HELPER FUNCTIONS TESTS  --------------------------------------------------
+
+describe("arrayDifference", () => {
+  it("returns [] when tokens1 is undefined", () => {
+    expect(arrayDifference(undefined, ["a"])).toEqual([]);
+  });
+
+  it("returns [] when tokens1 is null", () => {
+    expect(arrayDifference(null, ["a"])).toEqual([]);
+  });
+
+  it("returns [] when tokens1 is empty", () => {
+    expect(arrayDifference([], ["a"])).toEqual([]);
+  });
+
+  it("returns tokens1 when tokens2 is undefined", () => {
+    const tokens1 = ["a", "b"];
+    expect(arrayDifference(tokens1, undefined)).toBe(tokens1); // same reference
+    expect(arrayDifference(tokens1, undefined)).toEqual(["a", "b"]);
+  });
+
+  it("returns tokens1 when tokens2 is null", () => {
+    const tokens1 = ["a", "b"];
+    expect(arrayDifference(tokens1, null)).toBe(tokens1); // same reference
+    expect(arrayDifference(tokens1, null)).toEqual(["a", "b"]);
+  });
+
+  it("returns tokens1 when tokens2 is empty", () => {
+    const tokens1 = ["a", "b"];
+    expect(arrayDifference(tokens1, [])).toBe(tokens1); // same reference
+    expect(arrayDifference(tokens1, [])).toEqual(["a", "b"]);
+  });
+
+  it("returns tokens from tokens1 that are not present in tokens2", () => {
+    expect(arrayDifference(["a", "b", "c"], ["b"])).toEqual(["a", "c"]);
+  });
+
+  it("returns [] when all tokens1 are present in tokens2", () => {
+    expect(arrayDifference(["a", "b"], ["a", "b", "c"])).toEqual([]);
+  });
+
+  it("preserves order of tokens from tokens1", () => {
+    expect(arrayDifference(["c", "a", "b", "a"], ["a"])).toEqual(["c", "b"]);
+  });
+
+  it("keeps duplicates from tokens1 if they are not removed", () => {
+    expect(arrayDifference(["a", "a", "b"], ["c"])).toEqual(["a", "a", "b"]);
+  });
+
+  it("removes duplicates from tokens1 when the token exists in tokens2", () => {
+    expect(arrayDifference(["a", "a", "b"], ["a"])).toEqual(["b"]);
+  });
+
+  it("treats comparison as strict equality for strings", () => {
+    // This is mostly a sanity check; with strings it's always strict anyway.
+    expect(arrayDifference(["1", "2"], ["1"])).toEqual(["2"]);
+  });
+
+  it("does not mutate the input arrays", () => {
+    const tokens1 = ["a", "b", "c"];
+    const tokens2 = ["b"];
+    const tokens1Copy = tokens1.slice();
+    const tokens2Copy = tokens2.slice();
+
+    arrayDifference(tokens1, tokens2);
+
+    expect(tokens1).toEqual(tokens1Copy);
+    expect(tokens2).toEqual(tokens2Copy);
+  });
+});
+
+describe("split", () => {
+  it("returns [] for empty string", () => {
+    expect(split("")).toEqual([]);
+  });
+
+  it("returns [] for null/undefined", () => {
+    expect(split(null)).toEqual([]);
+    expect(split(undefined)).toEqual([]);
+  });
+
+  it("splits on a single space character", () => {
+    expect(split("a b c")).toEqual(["a", "b", "c"]);
+  });
+  it("collapses multiple spaces into single separators", () => {
+    expect(split("a  b")).toEqual(["a", "b"]);
+  });
+
+  it("trims leading and trailing whitespace", () => {
+    expect(split(" a")).toEqual(["a"]);
+    expect(split("a ")).toEqual(["a"]);
+  });
+
+  it("splits on any whitespace (tabs/newlines)", () => {
+    expect(split("a\tb\nc")).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("toClassString", () => {
+  it("returns empty string for falsy values", () => {
+    expect(toClassString(null)).toBe("");
+    expect(toClassString(undefined)).toBe("");
+    expect(toClassString(false)).toBe("");
+    expect(toClassString(0)).toBe("");
+    expect(toClassString("")).toBe("");
+  });
+
+  it("returns the input when passed a string", () => {
+    expect(toClassString("a b")).toBe("a b");
+  });
+
+  it("stringifies non-string primitives", () => {
+    expect(toClassString(123)).toBe("123");
+    expect(toClassString(true)).toBe("true");
+  });
+
+  it("converts an array into a space-delimited string", () => {
+    expect(toClassString(["a", "b", "c"])).toBe("a b c");
+  });
+
+  it("recursively converts nested arrays", () => {
+    expect(toClassString(["a", ["b", "c"], "d"])).toBe("a b c d");
+  });
+
+  it("filters out empty results when mapping arrays", () => {
+    // 0/false/null/"" become "" and are filtered out by Boolean
+    expect(toClassString(["a", "", 0, false, null, "b"])).toBe("a b");
+  });
+
+  it("converts an object map into a space-delimited string of truthy keys", () => {
+    expect(toClassString({ a: true, b: 1, c: "x", d: false, e: 0 })).toBe(
+      "a b c",
+    );
+  });
+
+  it("returns empty string for an object with no truthy keys", () => {
+    expect(toClassString({ a: false, b: 0, c: "" })).toBe("");
+  });
+
+  it("does not include inherited properties when used with a null-proto map", () => {
+    const map = Object.create(null);
+    map.a = true;
+    map.b = false;
+
+    expect(toClassString(map)).toBe("a");
+  });
+
+  it("stringifies symbols (if supported)", () => {
+    if (typeof Symbol === "function") {
+      expect(toClassString(Symbol("x"))).toBe("Symbol(x)");
+    }
   });
 });
 
