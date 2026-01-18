@@ -51,7 +51,6 @@
     "prettier": "latest",
     "rollup": "latest",
     "rollup-plugin-version-injector": "latest",
-    "sinon": "^21.0.1",
     "typedoc": "latest",
     "typescript": "latest",
     "vite": "latest"

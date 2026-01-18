@@ -205,7 +205,7 @@ export interface TreeChanges {
  * - [[HookRegistry.onError]]
  *
  * @param transition the current [[Transition]]
- * @param injector (for ng1 or ng2 only) the injector service
+ * @param injector the injector service
  *
  * @returns a [[HookResult]] which may alter the transition
  *
@@ -524,7 +524,6 @@ export interface HookRegistry {
    *
    * @example
    * ```js
-   * // ng2
    * transitionService.onBefore({ to: 'home' }, (trans: Transition) =>
    *     trans.router.stateService.target("home.dashboard"));
    * ```

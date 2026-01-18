@@ -30,11 +30,13 @@ describe("$templateRequest", () => {
 
   describe("provider", () => {
     describe("httpOptions", () => {
-      it("should default to undefined and fallback to default $http options", () => {
+      it("should default to { headers: { Accept: 'text/html' } } and fallback to default $http options", () => {
         angular.module("test", [
           "ng",
           ($templateRequestProvider) => {
-            expect($templateRequestProvider.httpOptions).toBeUndefined();
+            expect($templateRequestProvider.httpOptions).toEqual({
+              headers: { Accept: "text/html" },
+            });
           },
         ]);
 
@@ -46,6 +48,7 @@ describe("$templateRequest", () => {
             expect($http.get).toHaveBeenCalledOnceWith("/public/test.html", {
               cache: $templateCache,
               transformResponse: [],
+              headers: { Accept: "text/html" },
             });
             await wait();
           },

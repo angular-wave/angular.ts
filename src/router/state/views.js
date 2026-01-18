@@ -169,7 +169,7 @@ export class ViewConfig {
   /**
    * Normalizes a view's name from a state.views configuration block.
    *
-   * This should be used by a framework implementation to calculate the values for
+   * This calculates the values for
    * [[_ViewDeclaration.$ngViewName]] and [[_ViewDeclaration.$ngViewContextAnchor]].
    *
    * @param context the context object (state declaration) that the view belongs to

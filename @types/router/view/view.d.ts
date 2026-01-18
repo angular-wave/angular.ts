@@ -2,6 +2,10 @@ export class ViewService {
   _ngViews: any[];
   _viewConfigs: any[];
   _listeners: any[];
+  _viewConfigFactory: (
+    path: any,
+    view: any,
+  ) => import("../state/views.js").ViewConfig;
   $get: () => this;
   /**
    * @param {?import('../state/state-object.js').StateObject} [context]
@@ -11,7 +15,6 @@ export class ViewService {
     context?: import("../state/state-object.js").StateObject | null,
   ): import("../state/state-object.js").StateObject | null;
   _rootContext: any;
-  _viewConfigFactory(factory: any): void;
   /**
    * @param path
    * @param decl
@@ -70,8 +73,6 @@ export namespace ViewService {
    *
    * A ViewConfig has a target ng-view name and a context anchor.  The ng-view name can be a simple name, or
    * can be a segmented ng-view path, describing a portion of a ng-view fqn.
-   *
-   * In order for a ng-view to match ViewConfig, ng-view's $type must match the ViewConfig's $type
    *
    * If the ViewConfig's target ng-view name is a simple name (no dots), then a ng-view matches if:
    * - the ng-view's name matches the ViewConfig's target name

@@ -4,7 +4,6 @@ import { StateQueueManager } from "./state-queue-manager.js";
 import { applyPairs, removeFrom } from "../../shared/common.js";
 import { propEq } from "../../shared/hof.js";
 import { ResolveContext } from "../resolve/resolve-context.js";
-import { ng1ViewsBuilder } from "./views.js";
 import { isString, keys } from "../../shared/utils.js";
 import { $injectTokens as $t, provider } from "../../injection-tokens.js";
 
@@ -40,9 +39,7 @@ export class StateRegistryProvider {
     this.listeners = [];
     this.matcher = new StateMatcher(this.states);
     this.builder = new StateBuilder(this.matcher, urlService);
-    // Apply ng1 specific StateBuilder code for `views`, `resolve`, and `onExit/Retain/Enter` properties
-    // TODO we can probably move this inside buildr
-    this.builder.builder("views", ng1ViewsBuilder);
+    // Apply ng1 specific StateBuilder code for `onExit/Retain/Enter` properties
     this.builder.builder("onExit", this.getStateHookBuilder("onExit"));
     this.builder.builder("onRetain", this.getStateHookBuilder("onRetain"));
     this.builder.builder("onEnter", this.getStateHookBuilder("onEnter"));
