@@ -119,7 +119,8 @@ export class FormController {
   $error: {};
   _success: {};
   $pending: any;
-  _classCache: {};
+  /** @type {Record<string, any>} */
+  _classCache: Record<string, any>;
   $target: {};
   /**
    * Rollback all form controls pending updates to the `$modelValue`.

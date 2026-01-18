@@ -7,8 +7,6 @@
  * Service which manages loading of templates from a ViewConfig.
  */
 export class TemplateFactoryProvider {
-  /** @type {boolean} */
-  _useHttp: boolean;
   $get: (
     | string
     | ((
@@ -16,17 +14,12 @@ export class TemplateFactoryProvider {
         $templateCache: ng.TemplateCacheService,
         $templateRequest: ng.TemplateRequestService,
         $injector: import("../core/di/internal-injector.js").InjectorService,
-      ) => this)
+      ) => TemplateFactoryProvider)
   )[];
   $templateRequest: import("../services/template-request/interface.ts").TemplateRequestService;
   $http: import("../docs.ts").HttpService;
   $templateCache: ng.TemplateCacheService;
   $injector: import("../core/di/internal-injector.js").InjectorService;
-  /**
-   * Forces the provider to use $http service directly
-   * @param {boolean} value
-   */
-  useHttpService(value: boolean): void;
   /**
    * Creates a template from a configuration object.
    *

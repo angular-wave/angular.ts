@@ -61,10 +61,10 @@ export class UrlConfigProvider {
    * urlService.config.strictMode(false);
    * ```
    *
-   * @param value `false` to match trailing slashes in URLs, otherwise `true`.
-   * @returns the current value of strictMode
+   * @param {boolean} value `false` to match trailing slashes in URLs, otherwise `true`.
+   * @returns {boolean} the current value of strictMode
    */
-  strictMode(value: any): any;
+  strictMode(value: boolean): boolean;
   /**
    * Creates and registers a custom [[ParamType]] object
    *

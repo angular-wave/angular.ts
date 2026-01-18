@@ -26,6 +26,7 @@ export interface TargetStateDef {
   options?: TransitionOptions;
 }
 export type ResolveTypes = Resolvable | ResolvableLiteral | ProviderLike;
+export type RawViewConfig = ViewDeclaration | string;
 /**
  * Interface for declaring a view
  *
@@ -38,22 +39,22 @@ export interface ViewDeclaration {
    */
   $name?: string;
   /**
-   * The normalized address for the `ui-view` which this ViewConfig targets.
+   * The normalized address for the `ng-view` which this ViewConfig targets.
    *
-   * A ViewConfig targets a `ui-view` in the DOM (relative to the `uiViewContextAnchor`) which has
+   * A ViewConfig targets a `ng-view` in the DOM (relative to the `ngVIewContextAnchor`) which has
    * a specific name.
    * @example `header` or `$default`
    *
-   * The `uiViewName` can also target a _nested view_ by providing a dot-notation address
+   * The `ngVIewName` can also target a _nested view_ by providing a dot-notation address
    * @example `foo.bar` or `foo.$default.bar`
    */
-  $uiViewName?: string;
+  $ngViewName?: string;
   /**
-   * The normalized context anchor (state name) for the `uiViewName`
+   * The normalized context anchor (state name) for the `ngVIewName`
    *
-   * When targeting a `ui-view`, the `uiViewName` address is anchored to a context name (state name).
+   * When targeting a `ng-view`, the `ngVIewName` address is anchored to a context name (state name).
    */
-  $uiViewContextAnchor?: string;
+  $ngViewContextAnchor?: string;
   /**
    * A type identifier for the View
    *
@@ -188,7 +189,7 @@ export interface ViewDeclaration {
    * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
    *
    * The controller function, or the name of a registered controller.  The controller function will be used
-   * to control the contents of the [[directives.uiView]] directive.
+   * to control the contents of the [[directives.ngVIew]] directive.
    *
    * If specified as a string, controllerAs can be declared here, i.e., "FooController as foo" instead of in
    * a separate [[controllerAs]] property.
@@ -247,7 +248,7 @@ export interface ViewDeclaration {
    * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
    *
    * HTML template as a string, or a function which returns an html template as a string.
-   * This template will be used to render the corresponding [[directives.uiView]] directive.
+   * This template will be used to render the corresponding [[directives.ngVIew]] directive.
    *
    * This property takes precedence over templateUrl.
    *
@@ -255,7 +256,7 @@ export interface ViewDeclaration {
    *
    * #### Example:
    * ```js
-   * template: "<h1>inline template definition</h1><div ui-view></div>"
+   * template: "<h1>inline template definition</h1><div ng-view></div>"
    * ```
    *
    * #### Example:
@@ -272,7 +273,7 @@ export interface ViewDeclaration {
    * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
    *
    * A path or a function that returns a path to an html template.
-   * The template will be fetched and used to render the corresponding [[directives.uiView]] directive.
+   * The template will be fetched and used to render the corresponding [[directives.ngVIew]] directive.
    *
    * If `templateUrl` is a function, it will be called with the Transition parameters as the first argument.
    *
@@ -295,7 +296,7 @@ export interface ViewDeclaration {
    * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
    *
    * Injected function which returns the HTML template.
-   * The template will be used to render the corresponding [[directives.uiView]] directive.
+   * The template will be used to render the corresponding [[directives.ngVIew]] directive.
    *
    * #### Example:
    * ```js
@@ -455,16 +456,16 @@ export interface StateDeclaration {
   /**
    * Named views
    *
-   * An optional object which defines multiple views, or explicitly targets specific named ui-views.
+   * An optional object which defines multiple views, or explicitly targets specific named ng-views.
    *
    * - What is a view urlConfig
-   * - What is a ui-view
+   * - What is a ng-view
    * - Shorthand controller/template
    * - Incompatible with ^
    *
    *  Examples:
    *
-   *  Targets three named ui-views in the parent state's template
+   *  Targets three named ng-views in the parent state's template
    *
    * #### Example:
    * ```js
@@ -484,8 +485,8 @@ export interface StateDeclaration {
    *
    * @example
    * ```js
-   * // Targets named ui-view="header" from ancestor state 'top''s template, and
-   * // named `ui-view="body" from parent state's template.
+   * // Targets named ng-view="header" from ancestor state 'top''s template, and
+   * // named `ng-view="body" from parent state's template.
    * views: {
    *   'header@top': {
    *     controller: "msgHeaderCtrl",
@@ -497,9 +498,7 @@ export interface StateDeclaration {
    * }
    * ```
    */
-  views?: {
-    [key: string]: ViewDeclaration;
-  };
+  views?: Record<string, RawViewConfig>;
   /**
    * An inherited property to store state data
    *

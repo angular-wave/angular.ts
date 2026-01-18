@@ -26,7 +26,7 @@ const updateGlobalState = (trans) => {
 
   const clearCurrentTransition = () => {
     // Do not clear globals.transition if a different transition has started in the meantime
-    if (globals.transition === trans) globals.transition = null;
+    if (globals.transition === trans) globals.transition = undefined;
   };
 
   trans.onSuccess({}, transitionSuccessful, { priority: 10000 });

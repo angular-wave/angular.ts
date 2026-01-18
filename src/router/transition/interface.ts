@@ -383,7 +383,7 @@ export interface HookRegistry {
    * // state declaration
    * {
    *   name: 'home',
-   *   template: '<div ui-view/>',
+   *   template: '<div ng-view/>',
    *   defaultSubstate: 'home.dashboard'
    * }
    *

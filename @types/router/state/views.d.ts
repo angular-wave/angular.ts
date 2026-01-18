@@ -7,9 +7,9 @@ export function getViewConfigFactory(): (path: any, view: any) => ViewConfig;
  *
  * If no `views: {}` property exists on the [[StateDeclaration]], then it creates the `views` object
  * and applies the state-level configuration to a view named `$default`.
- *
+ * @param {ng.StateObject} state
  */
-export function ng1ViewsBuilder(state: any): {};
+export function ng1ViewsBuilder(state: ng.StateObject): {};
 export class ViewConfig {
   /**
    * Normalizes a view's name from a state.views configuration block.
