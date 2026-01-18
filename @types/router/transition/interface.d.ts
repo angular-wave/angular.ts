@@ -82,11 +82,14 @@ export interface TransitionOptions {
   supercede?: boolean;
 }
 export interface TransitionHookOptions {
-  current?: () => Transition;
-  transition?: Transition;
+  current: () => Transition | void;
+  transition?: Transition | null;
   hookType?: string;
   target?: unknown;
-  traceData?: unknown;
+  traceData?: {
+    hookType?: string;
+    context?: any;
+  };
   bind?: unknown;
   stateHook?: boolean;
 }

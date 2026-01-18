@@ -32,51 +32,59 @@ export class TransitionHook {
    * promise.then(handleSuccess, handleError);
    * ```
    *
-   * @param hooks the list of hooks to chain together
-   * @param waitFor if provided, the chain is `.then()`'ed off this promise
+   * @param {TransitionHook[]} hooks the list of hooks to chain together
+   * @param {Promise<any>} waitFor if provided, the chain is `.then()`'ed off this promise
    * @returns a `Promise` for sequentially invoking the hooks (in order)
    */
-  static chain(hooks: any, waitFor: any): any;
+  static chain(hooks: TransitionHook[], waitFor: Promise<any>): Promise<any>;
   /**
    * Invokes all the provided TransitionHooks, in order.
    * Each hook's return value is checked.
    * If any hook returns a promise, then the rest of the hooks are chained off that promise, and the promise is returned.
    * If no hook returns a promise, then all hooks are processed synchronously.
    *
-   * @param hooks the list of TransitionHooks to invoke
-   * @param doneCallback a callback that is invoked after all the hooks have successfully completed
+   * @param {TransitionHook[]} hooks the list of TransitionHooks to invoke
+   * @param {() => Promise<any>} doneCallback a callback that is invoked after all the hooks have successfully completed
    *
-   * @returns a promise for the async result, or the result of the callback
+   * @returns {Promise<any>} a promise for the async result, or the result of the callback
    */
-  static invokeHooks(hooks: any, doneCallback: any): any;
+  static invokeHooks(
+    hooks: TransitionHook[],
+    doneCallback: () => Promise<any>,
+  ): Promise<any>;
   /**
    * Run all TransitionHooks, ignoring their return value.
+   * @param {TransitionHook[]} hooks
    */
-  static runAllHooks(hooks: any): void;
+  static runAllHooks(hooks: TransitionHook[]): void;
   /**
    *
-   * @param {*} transition
-   * @param {*} stateContext
-   * @param {*} registeredHook
-   * @param {*} options
+   * @param {Transition} transition
+   * @param {import("../state/interface.js").StateDeclaration | null} stateContext
+   * @param {RegisteredHook} registeredHook
+   * @param {TransitionHookOptions} options
    * @param {ng.ExceptionHandlerService} exceptionHandler
    */
   constructor(
-    transition: any,
-    stateContext: any,
-    registeredHook: any,
-    options: any,
+    transition: Transition,
+    stateContext: import("../state/interface.js").StateDeclaration | null,
+    registeredHook: RegisteredHook,
+    options: TransitionHookOptions,
     exceptionHandler: ng.ExceptionHandlerService,
   );
-  transition: any;
-  stateContext: any;
-  registeredHook: any;
-  options: any;
-  isSuperseded: () => boolean;
+  transition: import("./transition.js").Transition;
+  stateContext: import("../state/interface.js").StateDeclaration;
+  registeredHook: import("./hook-registry.js").RegisteredHook;
+  /** @type {TransitionHookOptions} */
+  options: TransitionHookOptions;
   type: any;
+  isSuperseded: () => boolean;
   /** @type {ng.ExceptionHandlerService} */
   _exceptionHandler: ng.ExceptionHandlerService;
-  logError(err: any): void;
+  /**
+   * @param {unknown} err
+   */
+  logError(err: unknown): void;
   invokeHook(): any;
   /**
    * This method handles the return value of a Transition Hook.
@@ -86,8 +94,10 @@ export class TransitionHook {
    *
    * This also handles "transition superseded" -- when a new transition
    * was started while the hook was still running
+   * @param {HookResult} result
+   * @returns {Promise<any> | undefined}
    */
-  handleHookResult(result: any): any;
+  handleHookResult(result: HookResult): Promise<any> | undefined;
   /**
    * Return a Rejection promise if the transition is no longer current due
    * a new transition has started and superseded this one.
@@ -102,18 +112,29 @@ export namespace TransitionHook {
    * These GetResultHandler(s) are used by [[invokeHook]] below
    * Each HookType chooses a GetResultHandler (See: [[TransitionService._defineCoreEvents]])
    */
-  function HANDLE_RESULT(hook: any): (result: any) => any;
+  function HANDLE_RESULT(
+    hook: TransitionHook,
+  ): (/** @type {HookResult} */ result: HookResult) => Promise<any>;
   /**
    * If the result is a promise rejection, log it.
    * Otherwise, ignore the result.
    */
-  function LOG_REJECTED_RESULT(hook: any): (result: any) => any;
+  function LOG_REJECTED_RESULT(hook: {
+    logError: (arg0: Rejection) => any;
+  }): (/** @type {Promise<any>} */ result: Promise<any>) => any;
   /**
    * These GetErrorHandler(s) are used by [[invokeHook]] below
    * Each HookType chooses a GetErrorHandler (See: [[TransitionService._defineCoreEvents]])
    */
-  function LOG_ERROR(hook: any): (error: any) => any;
-  function REJECT_ERROR(): (error: any) => Promise<never>;
-  function THROW_ERROR(): (error: any) => never;
+  function LOG_ERROR(hook: {
+    logError: (arg0: any) => any;
+  }): (/** @type {any} */ error: any) => any;
+  function REJECT_ERROR(): (/** @type {any} */ error: any) => Promise<never>;
+  function THROW_ERROR(): (/** @type {any} */ error: any) => never;
 }
+export type TransitionHookOptions =
+  import("./interface.js").TransitionHookOptions;
+export type HookResult = import("./interface.js").HookResult;
+export type Transition = import("./transition.js").Transition;
+export type RegisteredHook = import("./hook-registry.js").RegisteredHook;
 import { Rejection } from "./reject-factory.js";

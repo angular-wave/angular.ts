@@ -83,6 +83,7 @@ export class HookBuilder {
           baseHookOptions,
         );
 
+        /** @type {import("../state/interface.js").StateDeclaration | null} */
         const state =
           hookType.criteriaMatchPath.scope === TransitionHookScope._STATE
             ? node.state.self

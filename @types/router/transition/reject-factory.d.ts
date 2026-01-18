@@ -10,29 +10,56 @@ export namespace RejectType {
   let _ERROR: number;
 }
 export class Rejection {
-  /** Returns a Rejection due to transition superseded */
-  static superseded(detail: any, options: any): Rejection;
-  /** Returns a Rejection due to redirected transition
-   * @param {any} detail @returns {Rejection}
-   */
-  static redirected(detail: any): Rejection;
-  /** Returns a Rejection due to invalid transition
-   * @param {any} detail @returns {Rejection}
-   */
-  static invalid(detail: any): Rejection;
-  /** Returns a Rejection due to ignored transition
-   * @param {any} detail @returns {Rejection}
-   */
-  static ignored(detail: any): Rejection;
-  /** Returns a Rejection due to aborted transition
-   * @param {any} detail @returns {Rejection}
-   */
-  static aborted(detail: any): Rejection;
-  /** Returns a Rejection due to aborted transition
-   * @param detail
+  /**
+   * Returns a Rejection due to transition superseded
+   *
+   * @param {any} [detail]
+   * @param {{ redirected?: boolean } | undefined} [options]
    * @returns {Rejection}
    */
-  static errored(detail: any): Rejection;
+  static superseded(
+    detail?: any,
+    options?:
+      | {
+          redirected?: boolean;
+        }
+      | undefined,
+  ): Rejection;
+  /**
+   * Returns a Rejection due to redirected transition
+   *
+   * @param {any} [detail]
+   * @returns {Rejection}
+   */
+  static redirected(detail?: any): Rejection;
+  /**
+   * Returns a Rejection due to invalid transition
+   *
+   * @param {any} detail
+   * @returns {Rejection}
+   */
+  static invalid(detail: any): Rejection;
+  /**
+   * Returns a Rejection due to ignored transition
+   *
+   * @param {any} detail
+   * @returns {Rejection}
+   */
+  static ignored(detail: any): Rejection;
+  /**
+   * Returns a Rejection due to aborted transition
+   *
+   * @param {any} [detail]
+   * @returns {Rejection}
+   */
+  static aborted(detail?: any): Rejection;
+  /**
+   * Returns a Rejection due to errored transition
+   *
+   * @param {any} [detail]
+   * @returns {Rejection}
+   */
+  static errored(detail?: any): Rejection;
   /**
    * Returns a Rejection
    *
@@ -40,9 +67,10 @@ export class Rejection {
    * If the value is already a Rejection, returns it.
    * Otherwise, wraps and returns the value as a Rejection (Rejection type: ERROR).
    *
-   * @returns `detail` if it is already a `Rejection`, else returns an ERROR Rejection.
+   * @param {any} detail
+   * @returns {Rejection} `detail` if it is already a `Rejection`, else returns an ERROR Rejection.
    */
-  static normalize(detail: any): any;
+  static normalize(detail: any): Rejection;
   /**
    * @param {number} type
    * @param {string} message
@@ -51,14 +79,22 @@ export class Rejection {
   constructor(type: number, message: string, detail: any);
   /** @type {number} */
   $id: number;
+  /** @type {number} */
   type: number;
+  /** @type {string} */
   message: string;
+  /** @type {any} */
   detail: any;
+  /** @type {boolean} */
   redirected: boolean;
-  /** @returns {string} */
+  /**
+   * @returns {string}
+   */
   toString(): string;
   /**
-   * @returns {Promise<any> & {_transitionRejection: Rejection}}
+   * Returns a rejected Promise annotated with `_transitionRejection` for identification.
+   *
+   * @returns {Promise<any> & { _transitionRejection: Rejection }}
    */
   toPromise(): Promise<any> & {
     _transitionRejection: Rejection;

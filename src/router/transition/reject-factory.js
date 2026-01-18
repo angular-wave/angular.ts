@@ -63,13 +63,23 @@ export class Rejection {
   constructor(type, message, detail) {
     /** @type {number} */
     this.$id = id++;
+    /** @type {number} */
     this.type = type;
+    /** @type {string} */
     this.message = message;
+    /** @type {any} */
     this.detail = detail;
+    /** @type {boolean} */
     this.redirected = false;
   }
 
-  /** Returns a Rejection due to transition superseded */
+  /**
+   * Returns a Rejection due to transition superseded
+   *
+   * @param {any} [detail]
+   * @param {{ redirected?: boolean } | undefined} [options]
+   * @returns {Rejection}
+   */
   static superseded(detail, options) {
     const message =
       "The transition has been superseded by a different transition";
@@ -83,15 +93,21 @@ export class Rejection {
     return rejection;
   }
 
-  /** Returns a Rejection due to redirected transition
-   * @param {any} detail @returns {Rejection}
+  /**
+   * Returns a Rejection due to redirected transition
+   *
+   * @param {any} [detail]
+   * @returns {Rejection}
    */
   static redirected(detail) {
     return Rejection.superseded(detail, { redirected: true });
   }
 
-  /** Returns a Rejection due to invalid transition
-   * @param {any} detail @returns {Rejection}
+  /**
+   * Returns a Rejection due to invalid transition
+   *
+   * @param {any} detail
+   * @returns {Rejection}
    */
   static invalid(detail) {
     const message = "This transition is invalid";
@@ -99,8 +115,11 @@ export class Rejection {
     return new Rejection(RejectType._INVALID, message, detail);
   }
 
-  /** Returns a Rejection due to ignored transition
-   * @param {any} detail @returns {Rejection}
+  /**
+   * Returns a Rejection due to ignored transition
+   *
+   * @param {any} detail
+   * @returns {Rejection}
    */
   static ignored(detail) {
     const message = "The transition was ignored";
@@ -108,8 +127,11 @@ export class Rejection {
     return new Rejection(RejectType._IGNORED, message, detail);
   }
 
-  /** Returns a Rejection due to aborted transition
-   * @param {any} detail @returns {Rejection}
+  /**
+   * Returns a Rejection due to aborted transition
+   *
+   * @param {any} [detail]
+   * @returns {Rejection}
    */
   static aborted(detail) {
     const message = "The transition has been aborted";
@@ -117,8 +139,10 @@ export class Rejection {
     return new Rejection(RejectType._ABORTED, message, detail);
   }
 
-  /** Returns a Rejection due to aborted transition
-   * @param detail
+  /**
+   * Returns a Rejection due to errored transition
+   *
+   * @param {any} [detail]
    * @returns {Rejection}
    */
   static errored(detail) {
@@ -134,14 +158,21 @@ export class Rejection {
    * If the value is already a Rejection, returns it.
    * Otherwise, wraps and returns the value as a Rejection (Rejection type: ERROR).
    *
-   * @returns `detail` if it is already a `Rejection`, else returns an ERROR Rejection.
+   * @param {any} detail
+   * @returns {Rejection} `detail` if it is already a `Rejection`, else returns an ERROR Rejection.
    */
   static normalize(detail) {
     return is(Rejection)(detail) ? detail : Rejection.errored(detail);
   }
 
-  /** @returns {string} */
+  /**
+   * @returns {string}
+   */
   toString() {
+    /**
+     * @param {any} data
+     * @returns {string}
+     */
     const detailString = (data) =>
       data && data.toString !== Object.prototype.toString
         ? data.toString()
@@ -155,7 +186,9 @@ export class Rejection {
   }
 
   /**
-   * @returns {Promise<any> & {_transitionRejection: Rejection}}
+   * Returns a rejected Promise annotated with `_transitionRejection` for identification.
+   *
+   * @returns {Promise<any> & { _transitionRejection: Rejection }}
    */
   toPromise() {
     return Object.assign(((x) => (x.catch(() => 0), x))(Promise.reject(this)), {
