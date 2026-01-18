@@ -103,7 +103,11 @@ export class StateRegistryProvider {
           $transition$: trans,
         });
 
-        return that.$injector.invoke(hook, that, locals);
+        return /** @type {ng.InjectorService} */ (that.$injector).invoke(
+          hook,
+          that,
+          locals,
+        );
       }
 
       return hook ? decoratedNg1Hook : undefined;
@@ -119,7 +123,7 @@ export class StateRegistryProvider {
       name: "",
       url: "^",
       params: {
-        "#": { value: undefined, type: "hash", dynamic: true }, // note that value has to be presetn
+        "#": { value: null, type: "hash", dynamic: true },
       },
       abstract: true,
     };
