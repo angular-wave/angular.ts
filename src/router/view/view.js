@@ -27,7 +27,7 @@ export class ViewService {
     this._ngViews = [];
     this._viewConfigs = [];
     this._listeners = [];
-    this._viewConfigFactory(getViewConfigFactory());
+    this._viewConfigFactory = getViewConfigFactory();
   }
 
   $get = () => this;
@@ -40,10 +40,6 @@ export class ViewService {
     return (this._rootContext = context || this._rootContext);
   }
 
-  _viewConfigFactory(factory) {
-    this._viewConfigFactory = factory;
-  }
-
   /**
    * @param path
    * @param decl
@@ -54,9 +50,7 @@ export class ViewService {
     const cfgFactory = this._viewConfigFactory;
 
     if (!cfgFactory)
-      throw new Error(
-        `ViewService: No view config factory registered for type ${decl.$type}`,
-      );
+      throw new Error("ViewService: No view config factory registered");
 
     return cfgFactory(path, decl);
   }
@@ -225,8 +219,6 @@ export class ViewService {
  * A ViewConfig has a target ng-view name and a context anchor.  The ng-view name can be a simple name, or
  * can be a segmented ng-view path, describing a portion of a ng-view fqn.
  *
- * In order for a ng-view to match ViewConfig, ng-view's $type must match the ViewConfig's $type
- *
  * If the ViewConfig's target ng-view name is a simple name (no dots), then a ng-view matches if:
  * - the ng-view's name matches the ViewConfig's target name
  * - the ng-view's context matches the ViewConfig's anchor
@@ -274,8 +266,6 @@ export class ViewService {
  * @internal
  */
 ViewService.matches = (ngViewsByFqn, ngView) => (viewConfig) => {
-  // Don't supply an ng1 ng-view with an ng2 ViewConfig, etc
-  if (ngView.$type !== viewConfig.viewDecl.$type) return false;
   // Split names apart from both viewConfig and ngView into segments
   const vc = viewConfig.viewDecl;
 

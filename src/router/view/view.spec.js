@@ -5,7 +5,6 @@ import { StateMatcher } from "../state/state-matcher.js";
 import { StateBuilder } from "../state/state-builder.js";
 import { StateObject } from "../state/state-object.js";
 import { ViewService } from "./view.js";
-import { ng1ViewsBuilder, getViewConfigFactory } from "../state/views.js";
 import { PathNode } from "../path/path-node.js";
 import { PathUtils } from "../path/path-utils.js";
 import { tail } from "../../shared/common.js";
@@ -45,7 +44,6 @@ describe("view", () => {
       states = {};
       const matcher = new StateMatcher(states);
       const stateBuilder = new StateBuilder(matcher, $urlProvider);
-      stateBuilder.builder("views", ng1ViewsBuilder);
       register = registerState(states, stateBuilder);
       root = register({ name: "" });
       $view = _$view_;
@@ -79,7 +77,6 @@ describe("view", () => {
 
       state = register(stateDeclaration);
       const $view = new ViewService(null);
-      $view._viewConfigFactory(getViewConfigFactory());
 
       const _states = [root, state];
       path = _states.map((_state) => new PathNode(_state));

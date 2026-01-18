@@ -38,7 +38,6 @@ export type RawViewConfig = ViewDeclaration | string;
  * Interface for declaring a view
  *
  * This interface defines the basic data that a normalized view declaration will have on it.
- * Add any additional fields that the framework requires to that interface.
  */
 export interface ViewDeclaration {
   /**
@@ -64,14 +63,6 @@ export interface ViewDeclaration {
    * When targeting a `ng-view`, the `ngVIewName` address is anchored to a context name (state name).
    */
   $ngViewContextAnchor?: string;
-
-  /**
-   * A type identifier for the View
-   *
-   * This is used when loading prerequisites for the view, before it enters the DOM.  Different types of views
-   * may load differently (e.g., templateProvider+controllerProvider vs component class)
-   */
-  $type?: string;
 
   /**
    * The context that this view is declared within.
@@ -343,8 +334,6 @@ export type RedirectToResult =
 /**
  * The StateDeclaration object is used to define a state or nested state.
  *
- * Note: Each implementation of UI-Router (for a specific framework)
- * extends this interface as necessary.
  *
  * #### Example:
  * ```js

@@ -16,6 +16,7 @@ import {
 import { stringify } from "../../shared/strings.js";
 import { is, pattern, val } from "../../shared/hof.js";
 import { Resolvable } from "../resolve/resolvable.js";
+import { ng1ViewsBuilder } from "./views.js";
 import { annotate } from "../../core/di/di.js";
 
 /**
@@ -171,7 +172,7 @@ function includesBuilder(state) {
  * ]
  * @param {ng.StateObject & ng.StateDeclaration} state
  */
-export function resolvablesBuilder(state) {
+export function resolvablesBuilder(state, strictDi) {
   /** convert resolve: {} and resolvePolicy: {} objects to an array of tuples */
   const objects2Tuples = (resolveObj, resolvePolicies) =>
     Object.keys(resolveObj || {}).map((token) => ({
@@ -182,18 +183,7 @@ export function resolvablesBuilder(state) {
     }));
 
   /** fetch DI annotations from a function or ng1-style array */
-  const annotateFn = (fn) => {
-    const { $injector } = window.angular;
-
-    // ng1 doesn't have an $injector until runtime.
-    // If the $injector doesn't exist, use "deferred" literal as a
-    // marker indicating they should be annotated when runtime starts
-    return (
-      fn.$inject ||
-      ($injector && annotate(fn, $injector.strictDi)) ||
-      "deferred"
-    );
-  };
+  const annotateFn = (fn) => annotate(fn, strictDi);
 
   /** true if the object has both `token` and `resolveFn`, and is probably a [[ResolveLiteral]] */
   const isResolveLiteral = (obj) => !!(obj.token && obj.resolveFn);
@@ -327,14 +317,18 @@ export class StateBuilder {
       navigable: [getNavigableBuilder(isRoot)],
       // TODO
       params: [getParamsBuilder(urlService._paramFactory)],
-      // Each framework-specific ng-router implementation should define its own `views` builder
-      // e.g., src/ng1/statebuilders/views.ts
-      views: [],
+      views: [ng1ViewsBuilder],
       // Keep a full path from the root down to this state as this is needed for state activation.
       path: [pathBuilder],
       // Speed up $state.includes() as it's used a lot
       includes: [includesBuilder],
-      resolvables: [resolvablesBuilder],
+      resolvables: [
+        (state) =>
+          resolvablesBuilder(
+            state,
+            this._$injector && this._$injector.strictDi,
+          ),
+      ],
     };
   }
 

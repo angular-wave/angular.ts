@@ -42,6 +42,7 @@
  */
 export function resolvablesBuilder(
   state: ng.StateObject & ng.StateDeclaration,
+  strictDi: any,
 ): any[];
 /**
  * A internal global service
@@ -78,10 +79,10 @@ export class StateBuilder {
     url: ((stateObject: any) => any)[];
     navigable: ((state: any) => any)[];
     params: ((state: any) => any)[];
-    views: any[];
+    views: (typeof ng1ViewsBuilder)[];
     path: (typeof pathBuilder)[];
     includes: (typeof includesBuilder)[];
-    resolvables: (typeof resolvablesBuilder)[];
+    resolvables: ((state: any) => any[])[];
   };
   builder(name: any, fn: any): any;
   /**
@@ -97,6 +98,7 @@ export class StateBuilder {
 }
 declare function selfBuilder(state: any): any;
 declare function dataBuilder(state: any): any;
+import { ng1ViewsBuilder } from "./views.js";
 declare function pathBuilder(state: any): any;
 declare function includesBuilder(state: any): any;
 export {};
