@@ -1,14 +1,12 @@
-export namespace defaultTransOpts {
-  let location: boolean;
-  let relative: any;
-  let inherit: boolean;
-  let notify: boolean;
-  let reload: boolean;
-  let supercede: boolean;
-  let custom: {};
-  function current(): any;
-  let source: string;
-}
+/**
+ * The default [[Transition]] options.
+ *
+ * Include this object when applying custom defaults:
+ * let reloadOpts = { reload: true, notify: true }
+ * let options = defaults(theirOpts, customDefaults, defaultOptions);
+ * @type {import("./interface.js").TransitionOptions}
+ */
+export const defaultTransOpts: import("./interface.js").TransitionOptions;
 /**
  * This class provides services related to Transitions.
  *
@@ -47,11 +45,11 @@ export class TransitionProvider {
   $get: (
     | string
     | ((
-        stateService: any,
-        urlService: any,
-        stateRegistry: any,
-        viewService: any,
-      ) => this)
+        stateService: ng.StateService,
+        urlService: ng.UrlService,
+        stateRegistry: ng.StateRegistryService,
+        viewService: ng.ViewService,
+      ) => ng.TransitionProviderService)
   )[];
   /**
    * Registers a [[TransitionHookFn]], called *while a transition is being constructed*.
@@ -90,10 +88,16 @@ export class TransitionProvider {
   create(fromPath: any, targetState: any): Transition;
   _defineCoreEvents(): void;
   _defineCorePaths(): void;
+  /**
+   * @param {string} name
+   * @param {number} hookPhase
+   * @param {number} hookOrder
+   * @param {any} criteriaMatchPath
+   */
   _defineEvent(
-    name: any,
-    hookPhase: any,
-    hookOrder: any,
+    name: string,
+    hookPhase: number,
+    hookOrder: number,
     criteriaMatchPath: any,
     reverseSort?: boolean,
     getResultHandler?: (hook: any) => (result: any) => any,
@@ -115,10 +119,11 @@ export class TransitionProvider {
    * Another example: the `to` path in [[HookMatchCriteria]] is a TRANSITION scoped path.
    * It was defined by calling `defineTreeChangesCriterion('to', TransitionHookScope.TRANSITION)`
    * Only the tail of the `to` path is checked against the criteria and returned as part of the match.
-   *
    * @internal
+   * @param {string} name
+   * @param {number} hookScope
    */
-  _definePathType(name: any, hookScope: any): void;
+  _definePathType(name: string, hookScope: number): void;
   _getPathTypes(): {};
   getHooks(hookName: any): any;
   _registerCoreTransitionHooks(): void;

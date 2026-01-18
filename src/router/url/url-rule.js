@@ -40,8 +40,8 @@ export class UrlRuleFactory {
 
   /**
    *
-   * @param {*} what
-   * @param {*} handler
+   * @param {StateObject} what
+   * @param {*} [handler]
    * @returns {BaseUrlRule}
    */
   create(what, handler) {

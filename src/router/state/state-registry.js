@@ -114,12 +114,12 @@ export class StateRegistryProvider {
    * @private
    */
   registerRoot() {
+    /** @type {ng.StateDeclaration} */
     const rootStateDef = {
       name: "",
       url: "^",
-      views: null,
       params: {
-        "#": { value: null, type: "hash", dynamic: true },
+        "#": { value: undefined, type: "hash", dynamic: true }, // note that value has to be presetn
       },
       abstract: true,
     };

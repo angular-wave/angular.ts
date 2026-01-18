@@ -15,12 +15,15 @@ export class UrlService {
     globals: import("../router.js").RouterProvider,
     urlConfigProvider: import("../../router/url/url-config.js").UrlConfigProvider,
   );
-  /** @type {ng.LocationService} */
-  $location: ng.LocationService;
+  /** @type {ng.LocationService | undefined} */
+  $location: ng.LocationService | undefined;
   /** @private */
   private _locationProvider;
   stateService: import("../../router/state/state-service.js").StateProvider;
-  /** @type {UrlRuleFactory} Provides services related to the URL */
+  /**
+   * @type {UrlRuleFactory} Provides services related to the URL
+   * @ignore
+   */
   _urlRuleFactory: UrlRuleFactory;
   /**
    * The nested [[UrlRules]] API for managing URL rules and rewrites
@@ -30,12 +33,20 @@ export class UrlService {
   _rules: UrlRules;
   /**
    * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
+   * @ignore
    * @type {import("./url-config.js").UrlConfigProvider}
    */
   _config: import("./url-config.js").UrlConfigProvider;
-  /** @type {ParamFactory} Creates a new [[Param]] for a given location (DefType) */
+  /**
+   * @type {ParamFactory} Creates a new [[Param]] for a given location (DefType)
+   * @ignore
+   */
   _paramFactory: ParamFactory;
-  _urlListeners: any[];
+  /**
+   * @type {((evt: ng.ScopeEvent) => void)[]}
+   * @ignore
+   */
+  _urlListeners: ((evt: ng.ScopeEvent) => void)[];
   /**
    * Gets the path part of the current url
    *
@@ -136,8 +147,8 @@ export class UrlService {
    * let deregisterFn = locationServices.onChange((evt) => console.log("url change", evt));
    * ```
    *
-   * @param {Function} callback a function that will be called when the url is changing
-   * @return {Function} a function that de-registers the callback
+   * @param {(evt: ng.ScopeEvent) => void} callback a function that will be called when the url is changing
+   * @return {() => void} a function that de-registers the callback
    */
   private onChange;
   /**
@@ -236,19 +247,19 @@ export class UrlService {
   /**
    * Creates a [[UrlMatcher]] for the specified pattern.
    *
-   * @param urlPattern  The URL pattern.
-   * @param config  The config object hash.
+   * @param {string} urlPattern  The URL pattern.
+   * @param {*} [config]  The config object hash.
    * @returns The UrlMatcher.
    */
-  compile(urlPattern: any, config: any): UrlMatcher;
+  compile(urlPattern: string, config?: any): UrlMatcher;
   /**
    * Returns true if the specified object is a [[UrlMatcher]], or false otherwise.
    *
-   * @param object  The object to perform the type check against.
+   * @param {UrlMatcher & Record<string, any>} object  The object to perform the type check against.
    * @returns `true` if the object matches the `UrlMatcher` interface, by
    *          implementing all the same methods.
    */
-  isMatcher(object: any): boolean;
+  isMatcher(object: UrlMatcher & Record<string, any>): boolean;
 }
 import { UrlRuleFactory } from "./url-rule.js";
 import { UrlRules } from "./url-rules.js";

@@ -18,6 +18,9 @@ import { is, pattern, val } from "../../shared/hof.js";
 import { Resolvable } from "../resolve/resolvable.js";
 import { annotate } from "../../core/di/di.js";
 
+/**
+ * @param {unknown} url
+ */
 function parseUrl(url) {
   if (!isString(url)) return false;
   const root = url.charAt(0) === "^";
