@@ -18,6 +18,11 @@ import { animateCache } from "./cache/animate-cache.js";
 import { rafScheduler } from "./raf/raf-scheduler.js";
 
 /** @typedef {import("./interface.ts").SortedAnimationEntry} SortedAnimationEntry */
+/** @typedef {import("./interface.ts").AnimationOptions} AnimationOptions */
+/** @typedef {import("./interface.ts").AnimationDetails} AnimationDetails */
+/** @typedef {import("./interface.ts").AnimationEntry} AnimationEntry */
+/** @typedef {import("./interface.ts").AnchorRef} AnchorRef */
+/** @typedef {import("./interface.ts").AnchorRefEntry} AnchorRefEntry */
 
 const RUNNER_STORAGE_KEY = "$$animationRunner";
 
@@ -63,7 +68,7 @@ export function AnimationProvider() {
      * @return {import("./interface.ts").AnimationService}
      */
     function ($rootScope, $injector) {
-      /** @type {import("./interface.ts").AnimationOptions[]} */
+      /** @type {AnimationEntry[]} */
       const animationQueue = [];
 
       const applyAnimationClasses = applyAnimationClassesFactory();
@@ -182,8 +187,19 @@ export function AnimationProvider() {
         }
       }
 
-      return function (elementParam, event, options) {
-        options = prepareAnimationOptions(options);
+      /**
+       * @param {HTMLElement} elementParam
+       * @param {string} event
+       * @param {AnimationOptions | undefined} optionsParam
+       * @returns {AnimateRunner}
+       */
+      return function (elementParam, event, optionsParam) {
+        /** @type {AnimationOptions & { domOperation: () => void }} */
+        const options =
+          /** @type {AnimationOptions & { domOperation: () => void }} */ (
+            prepareAnimationOptions(optionsParam)
+          );
+
         const isStructural = ["enter", "move", "leave"].indexOf(event) >= 0;
 
         // there is no animation at the current moment, however
@@ -246,7 +262,7 @@ export function AnimationProvider() {
         // were apart of the same postDigest flush call.
         if (animationQueue.length > 1) return runner;
         $rootScope.$postUpdate(() => {
-          /** @type {import("./interface.ts").AnimationOptions[]} */
+          /** @type {AnimationEntry[]} */
           const animations = [];
 
           animationQueue.forEach((entry) => {
@@ -312,9 +328,12 @@ export function AnimationProvider() {
 
                 // in the event that the element was removed before the digest runs or
                 // during the RAF sequencing then we should not trigger the animation.
-                const targetElement = animationEntry.anchors
-                  ? animationEntry.from.element || animationEntry.to.element
-                  : animationEntry.element;
+                const targetElement =
+                  animationEntry.anchors &&
+                  animationEntry.from &&
+                  animationEntry.to
+                    ? animationEntry.from.element || animationEntry.to.element
+                    : animationEntry.element;
 
                 if (getRunner(targetElement)) {
                   const operation = invokeFirstDriver(animationEntry);
@@ -344,6 +363,9 @@ export function AnimationProvider() {
           // right time.
           const finalAnimations = sortAnimations(toBeSortedAnimations);
 
+          /** @type {Array<() => void>} */
+          const flatFinalAnimations = [];
+
           for (let i = 0; i < finalAnimations.length; i++) {
             const innerArray = finalAnimations[i];
 
@@ -353,7 +375,7 @@ export function AnimationProvider() {
               const { element } = entry;
 
               // the RAFScheduler code only uses functions
-              finalAnimations[i][j] = entry.fn;
+              flatFinalAnimations.push(entry.fn);
 
               // the first row of elements shouldn't have a prepare-class added to them
               // since the elements are at the top of the animation hierarchy and they
@@ -373,8 +395,6 @@ export function AnimationProvider() {
               }
             }
           }
-
-          const flatFinalAnimations = finalAnimations.flat();
 
           rafScheduler._schedule(flatFinalAnimations);
         });
@@ -409,13 +429,14 @@ export function AnimationProvider() {
         }
 
         /**
-         *
-         * @param {import("./interface.ts").AnimationOptions} animations
-         * @returns
+         * @param {AnimationEntry[]} animations
+         * @returns {AnimationEntry[]}
          */
         function groupAnimations(animations) {
+          /** @type {AnimationEntry[]} */
           const preparedAnimations = [];
 
+          /** @type {Record<string, AnchorRefEntry>} */
           const refLookup = {};
 
           animations.forEach((animation, index) => {
@@ -436,6 +457,8 @@ export function AnimationProvider() {
               anchorNodes.forEach((anchor) => {
                 const key = anchor.getAttribute(NG_ANIMATE_REF_ATTR);
 
+                if (!key) return;
+
                 refLookup[key] = refLookup[key] || {};
                 refLookup[key][direction] = {
                   animationID: index,
@@ -447,19 +470,25 @@ export function AnimationProvider() {
             }
           });
 
+          /** @type {Record<string, boolean>} */
           const usedIndicesLookup = {};
 
+          /** @type {Record<string, AnimationEntry>} */
           const anchorGroups = {};
 
           Object.values(refLookup).forEach((operations) => {
-            const { from } = operations;
-
-            const { to } = operations;
+            const { from, to } = operations;
 
             if (!from || !to) {
               // only one of these is set therefore we can't have an
               // anchor animation since all three pieces are required
-              const index = from ? from.animationID : to.animationID;
+              const index = from
+                ? from.animationID
+                : to
+                  ? to.animationID
+                  : undefined;
+
+              if (index === undefined) return;
 
               const indexKey = index.toString();
 
@@ -480,6 +509,9 @@ export function AnimationProvider() {
             if (!anchorGroups[lookupKey]) {
               const group = (anchorGroups[lookupKey] = {
                 structural: true,
+                element: /** @type {HTMLElement} */ (from.element),
+                event: fromAnimation.event,
+                options: fromAnimation.options,
                 beforeStart() {
                   fromAnimation.beforeStart();
                   toAnimation.beforeStart();
@@ -508,18 +540,37 @@ export function AnimationProvider() {
               }
             }
 
-            anchorGroups[lookupKey].anchors.push({
-              out: from.element,
-              in: to.element,
-            });
+            const group = anchorGroups[lookupKey];
+
+            if (group?.anchors) {
+              group.anchors.push({
+                out: /** @type {HTMLElement} */ (from.element),
+                in: /** @type {HTMLElement} */ (to.element),
+              });
+            }
           });
 
           return preparedAnimations;
         }
 
+        /**
+         * @param {string | string[] | null | undefined} value
+         * @returns {string}
+         */
+        function normalizeClassValue(value) {
+          if (Array.isArray(value)) return value.join(" ");
+
+          return value || "";
+        }
+
+        /**
+         * @param {string | string[] | null | undefined} a
+         * @param {string | string[] | null | undefined} b
+         * @returns {string}
+         */
         function cssClassesIntersection(a, b) {
-          a = a.split(" ");
-          b = b.split(" ");
+          a = normalizeClassValue(a).split(" ");
+          b = normalizeClassValue(b).split(" ");
           const matches = [];
 
           for (let i = 0; i < a.length; i++) {
@@ -611,11 +662,13 @@ export function AnimationProvider() {
           options.domOperation();
 
           if (tempClasses) {
-            tempClasses
-              .split(" ")
-              .forEach((/** @type {string} */ cls) =>
-                elementParam.classList.remove(cls),
-              );
+            const classList = Array.isArray(tempClasses)
+              ? tempClasses
+              : tempClasses.split(" ");
+
+            classList.forEach((/** @type {string} */ cls) =>
+              elementParam.classList.remove(cls),
+            );
           }
 
           runner.complete(!rejected);
