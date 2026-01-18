@@ -347,4 +347,193 @@ describe("$controller", () => {
       expect(scope.$foo.mark).toBe("foo");
     });
   });
+
+  // Add these tests to the existing file (e.g. near the end, before the final closing `});`).
+
+  describe("additional coverage", () => {
+    describe("later mode", () => {
+      it("should defer controller instantiation until the returned function is invoked", () => {
+        let invoked = false;
+
+        function MyController() {
+          invoked = true;
+        }
+
+        const init = $controller(MyController, {}, true);
+        expect(typeof init).toBe("function");
+        expect(invoked).toBe(false);
+
+        init();
+        expect(invoked).toBe(true);
+      });
+
+      it("should create the instance with the controller prototype in later mode", () => {
+        function MyController() {}
+        MyController.prototype.p = 1;
+
+        const init = $controller(MyController, {}, true);
+        const ctrl = init();
+
+        expect(ctrl.p).toBe(1);
+      });
+
+      it("should use the controller return value if it returns an object in later mode", () => {
+        const scope = {};
+
+        function MyController() {
+          return { mark: "returned" };
+        }
+
+        $controllerProvider.register("MyController", MyController);
+
+        const init = $controller("MyController as vm", { $scope: scope }, true);
+        const pre = scope.vm;
+
+        expect(pre).toBeDefined();
+        expect(pre.mark).toBeUndefined();
+
+        const ctrl = init();
+
+        expect(ctrl).toBe(scope.vm);
+        expect(scope.vm).not.toBe(pre);
+        expect(scope.vm.mark).toBe("returned");
+      });
+
+      it("should ignore primitive return values in later mode", () => {
+        const scope = {};
+
+        function MyController() {
+          this.mark = "instance";
+          return 123;
+        }
+
+        $controllerProvider.register("MyController", MyController);
+
+        const init = $controller("MyController as vm", { $scope: scope }, true);
+        const ctrl = init();
+
+        expect(ctrl).toBe(scope.vm);
+        expect(scope.vm.mark).toBe("instance");
+      });
+
+      it("should propagate $scopename to locals.$scope in later mode", () => {
+        const scope = {};
+
+        function MyController() {}
+        MyController.$scopename = "my-scope-name";
+
+        const init = $controller(MyController, { $scope: scope }, true);
+        expect(typeof init).toBe("function");
+        expect(scope.$scopename).toBe("my-scope-name");
+      });
+    });
+
+    describe("return value behavior (non-later)", () => {
+      it("should return the object returned by a controller constructor", () => {
+        function MyController() {
+          this.instanceProp = true;
+          return { returned: true };
+        }
+
+        const ctrl = $controller(MyController);
+
+        expect(ctrl).toBeDefined();
+        expect(ctrl.returned).toBe(true);
+        expect(ctrl.instanceProp).toBeUndefined();
+        expect(ctrl instanceof MyController).toBe(false);
+      });
+
+      it("should ignore primitive return values from controller constructors", () => {
+        function MyController() {
+          this.instanceProp = true;
+          return 123;
+        }
+
+        const ctrl = $controller(MyController);
+
+        expect(ctrl).toBeDefined();
+        expect(ctrl.instanceProp).toBe(true);
+        expect(ctrl instanceof MyController).toBe(true);
+      });
+    });
+
+    describe("identifier behavior", () => {
+      it('should let `ident` override "as" identifier in the controller string', () => {
+        const scope = {};
+
+        function FooCtrl() {
+          this.mark = "foo";
+        }
+
+        $controllerProvider.register("FooCtrl", FooCtrl);
+
+        const ctrl = $controller(
+          "FooCtrl as foo",
+          { $scope: scope },
+          false,
+          "bar",
+        );
+
+        expect(scope.bar).toBe(ctrl);
+        expect(scope.bar.mark).toBe("foo");
+        expect(scope.foo).toBeUndefined();
+        expect(scope.$controllerIdentifier).toBe("bar");
+      });
+
+      it("should publish identifier to scope when expression is a function and ident is provided", () => {
+        const scope = {};
+
+        function FooCtrl() {
+          this.mark = "foo";
+        }
+
+        const ctrl = $controller(FooCtrl, { $scope: scope }, false, "foo");
+
+        expect(scope.foo).toBe(ctrl);
+        expect(scope.foo.mark).toBe("foo");
+        expect(scope.$controllerIdentifier).toBe("foo");
+      });
+    });
+
+    describe("locals", () => {
+      it("should allow creating a controller without $scope when not exporting an identifier", () => {
+        function FooCtrl() {
+          this.ok = true;
+        }
+
+        $controllerProvider.register("FooCtrl", FooCtrl);
+
+        expect(() => {
+          const ctrl = $controller("FooCtrl");
+          expect(ctrl.ok).toBe(true);
+        }).not.toThrow();
+      });
+
+      it("should allow locals to override injectable dependencies", () => {
+        const injector = createInjector([
+          "ng",
+          function ($provide) {
+            $provide.constant("aDep", 1);
+          },
+        ]);
+
+        const $controller = injector.get("$controller");
+
+        function MyController(aDep) {
+          this.theDep = aDep;
+        }
+
+        const ctrl = $controller(MyController, { aDep: 2 });
+        expect(ctrl.theDep).toBe(2);
+      });
+    });
+
+    describe("registration constraints", () => {
+      it("should throw when registering a non-callable controller definition", () => {
+        expect(() => {
+          $controllerProvider.register("BadCtrl", {});
+        }).toThrowError(/ctrlreg/);
+      });
+    });
+  });
 });

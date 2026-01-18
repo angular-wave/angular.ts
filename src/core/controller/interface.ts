@@ -1,6 +1,11 @@
+import { ControllerConstructor, Injectable } from "../../interface.ts";
+
 export type ControllerService = (
-  expression: string | Function | ng.AnnotatedFactory<any>,
-  locals?: Record<string, any>,
+  expression: ControllerExpression,
+  locals?: ControllerLocals,
   later?: boolean,
   ident?: string,
 ) => object | (() => object);
+
+export type ControllerExpression = string | Injectable<ControllerConstructor>;
+export type ControllerLocals = Record<string, any> & { $scope?: ng.Scope };
