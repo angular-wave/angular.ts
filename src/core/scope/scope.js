@@ -434,7 +434,6 @@ export class Scope {
 
               if (currentListeners) this.#scheduleListener(currentListeners);
             }
-            decodeURI;
           }
         }
 

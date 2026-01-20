@@ -3,8 +3,8 @@ export class ViewService {
   _viewConfigs: any[];
   _listeners: any[];
   _viewConfigFactory: (
-    path: any,
-    view: any,
+    path: import("../path/path-node.js").PathNode[],
+    view: import("../state/interface.ts").ViewDeclaration,
   ) => import("../state/views.js").ViewConfig;
   $get: () => this;
   /**

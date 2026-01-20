@@ -49,6 +49,11 @@ export class StateObject {
   path;
 
   /**
+   * @type {any}
+   */
+  views;
+
+  /**
    * @param {import('./interface.ts').StateDeclaration} config
    */
   constructor(config) {

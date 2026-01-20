@@ -54,6 +54,10 @@ export class StateObject {
       }
     | undefined;
   /**
+   * @type {any}
+   */
+  views: any;
+  /**
    * @type {ng.StateDeclaration|ng.BuiltStateDeclaration}
    */
   self: ng.StateDeclaration | ng.BuiltStateDeclaration;

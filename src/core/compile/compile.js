@@ -80,7 +80,7 @@ export class CompileProvider {
     const bindingCache = nullObject();
 
     /**
-     * @param {ng.Scope} scope
+     * @param {boolean} scope
      * @param {string} directiveName
      * @param {boolean} isController
      * @returns {Object} a configuration object for attribute bindings
@@ -130,7 +130,7 @@ export class CompileProvider {
     }
 
     /**
-     * @param {{ scope: ng.Scope; bindToController: boolean | ng.Scope; controller: any; }} directive
+     * @param {ng.Directive} directive
      * @param {string} directiveName
      */
     function parseDirectiveBindings(directive, directiveName) {
@@ -1755,6 +1755,7 @@ export class CompileProvider {
               for (
                 let scanningIndex = i + 1;
                 (candidateDirective = directives[scanningIndex++]);
+
               ) {
                 if (
                   (candidateDirective.transclude &&
@@ -3248,7 +3249,10 @@ export class CompileProvider {
                   if (isString(lastValue)) {
                     // If the attribute has been provided then we trigger an interpolation to ensure
                     // the value is there for use in the link fn
-                    destination[scopeName] = $interpolate(lastValue)(scope);
+                    destination[scopeName] =
+                      /** @type {import("../interpolate/interface.ts").InterpolationFunction} */ (
+                        $interpolate(lastValue)
+                      )(scope);
                   } else if (isBoolean(lastValue)) {
                     // If the attributes is one of the BOOLEAN_ATTR then AngularTS will have converted
                     // the value to boolean rather than a string, so we special case this situation
