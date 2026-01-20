@@ -3,6 +3,8 @@ import { propEq } from "../../shared/hof.js";
 import { Glob } from "../glob/glob.js";
 import { hasOwn, isFunction, isObject } from "../../shared/utils.js";
 
+/** @typedef {import("../params/param.js").Param} Param */
+
 /**
  * Internal representation of a ng-router state.
  *
@@ -15,32 +17,61 @@ import { hasOwn, isFunction, isObject } from "../../shared/utils.js";
  * @extends {ng.StateDeclaration}
  */
 export class StateObject {
+  /**
+   * @type {string}
+   */
   name;
+  /**
+   * @type {{ url: any; } | undefined}
+   */
   navigable;
-  /** @type {?StateObject} */
+
+  /** @type {StateObject | undefined} */
   parent;
+
+  /**
+   * @type {ArrayLike<Param> | undefined}
+   */
   params;
+
+  /**
+   * @type {{ parameter: (arg0: any, arg1: {}) => any; } | undefined}
+   */
   url;
+
+  /**
+   * @type {any}
+   */
   includes;
+  /**
+   * @type {{ [x: string]: StateObject; } | undefined}
+   */
+  path;
 
   /**
    * @param {import('./interface.ts').StateDeclaration} config
    */
   constructor(config) {
     Object.assign(this, config);
-    this._state = () => {
-      return this;
-    };
+
     /**
      * @type {ng.StateDeclaration|ng.BuiltStateDeclaration}
      */
     this.self = config;
+
+    this.name = config.name;
+
     /**
      * @type {?Glob}
      */
     const nameGlob = this.name ? Glob.fromString(this.name) : null;
 
     this._stateObjectCache = { nameGlob };
+  }
+
+  /** @returns {StateObject} */
+  _state() {
+    return this;
   }
 
   /**
@@ -50,7 +81,7 @@ export class StateObject {
    * reference to the actual `State` instance, the original definition object passed to
    * `$stateProvider.state()`, or the fully-qualified name.
    *
-   * @param ref Can be one of (a) a `State` instance, (b) an object that was passed
+   * @param {StateObject | string} ref Can be one of (a) a `State` instance, (b) an object that was passed
    *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
    * @returns Returns `true` if `ref` matches the current `State` instance.
    */
@@ -60,7 +91,7 @@ export class StateObject {
 
   /**
    * @deprecated this does not properly handle dot notation
-   * @returns Returns a dot-separated name of the state.
+   * @returns {string} Returns a dot-separated name of the state.
    */
   fqn() {
     if (!this.parent || !(this.parent instanceof this.constructor))
@@ -73,7 +104,7 @@ export class StateObject {
   /**
    * Returns the root node of this state's tree.
    *
-   * @returns The root of this state's tree.
+   * @returns {StateObject} The root of this state's tree.
    */
   root() {
     return (this.parent && this.parent.root()) || this;
@@ -86,17 +117,22 @@ export class StateObject {
    * If `opts.inherit` is true, it also includes the ancestor states' [[Param]] objects.
    * If `opts.matchingKeys` exists, returns only `Param`s whose `id` is a key on the `matchingKeys` object
    *
-   * @param opts options
+   * @param {Param} [opts] options
+   * @returns {Param[]} the list of [[Param]] objects
    */
   parameters(opts) {
-    opts = defaults(opts, { inherit: true, matchingKeys: null });
+    const params = /** @type {Param} */ (
+      defaults(opts, { inherit: true, matchingKeys: null })
+    );
+
     const inherited =
-      (opts.inherit && this.parent && this.parent.parameters()) || [];
+      (params.inherit && this.parent && this.parent.parameters()) || [];
 
     return inherited
-      .concat(Object.values(this.params))
+      .concat(Object.values(/** @type {ArrayLike<Param>} */ (this.params)))
       .filter(
-        (param) => !opts.matchingKeys || hasOwn(opts.matchingKeys, param.id),
+        (param) =>
+          !params.matchingKeys || hasOwn(params.matchingKeys, param.id),
       );
   }
 
@@ -104,13 +140,17 @@ export class StateObject {
    * Returns a single [[Param]] that is owned by the state
    *
    * If `opts.inherit` is true, it also searches the ancestor states` [[Param]]s.
-   * @param id the name of the [[Param]] to return
-   * @param opts options
+   * @param {string} id the name of the [[Param]] to return
+   * @param {Param} [opts] options
+   * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
    */
-  parameter(id, opts = {}) {
+  parameter(id, opts = /** @type {Param} */ ({})) {
     return (
       (this.url && this.url.parameter(id, opts)) ||
-      find(Object.values(this.params), propEq("id", id)) ||
+      find(
+        Object.values(/** @type {ArrayLike<Param>} */ (this.params)),
+        propEq("id", id),
+      ) ||
       (opts.inherit && this.parent && this.parent.parameter(id))
     );
   }
@@ -120,6 +160,9 @@ export class StateObject {
   }
 }
 /** Predicate which returns true if the object is a [[StateDeclaration]] object */
-StateObject.isStateDeclaration = (obj) => isFunction(obj._state);
+StateObject.isStateDeclaration = (/** @type {{ _state: any; }} */ obj) =>
+  isFunction(obj._state);
+
 /** Predicate which returns true if the object is an internal [[StateObject]] object */
-StateObject.isState = (obj) => isObject(obj._stateObjectCache);
+StateObject.isState = (/** @type {{ _stateObjectCache: any; }} */ obj) =>
+  isObject(obj._stateObjectCache);

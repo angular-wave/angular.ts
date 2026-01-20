@@ -39,7 +39,9 @@ const lazyResolveState = (trans, state) =>
       /* empty */
     });
 
-export const registerLazyResolveState = (transitionService) =>
+export const registerLazyResolveState = (
+  /** @type {ng.TransitionService} */ transitionService,
+) =>
   transitionService.onEnter({ entering: val(true) }, lazyResolveState, {
     priority: RESOLVE_HOOK_PRIORITY,
   });

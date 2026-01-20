@@ -56,6 +56,7 @@ export class Param {
   inherit: boolean;
   array: any;
   config: any;
+  matchingKeys: any;
   isDefaultValue(value: any): any;
   /**
    * [Internal] Gets the decoded representation of a value if the value is defined, otherwise, returns the
