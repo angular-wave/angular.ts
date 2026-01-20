@@ -1,5 +1,7 @@
 import { keys } from "../../shared/utils.js";
 
+/** @typedef {import("../state/state-object.js").StateObject} StateObject */
+
 export class StateParams {
   constructor(params = {}) {
     Object.assign(this, params);
@@ -10,30 +12,38 @@ export class StateParams {
    * current state and a given destination state.
    *
    * @param {Object} newParams The set of parameters which will be composited with inherited params.
-   * @param {Object} $current Internal definition of object representing the current state.
-   * @param {Object} $to Internal definition of object representing state to transition to.
+   * @param {StateObject} $current Internal definition of object representing the current state.
+   * @param {StateObject} $to Internal definition of object representing state to transition to.
    */
   $inherit(newParams, $current, $to) {
-    const parents = ancestors($current, $to),
-      inherited = {},
-      inheritList = [];
+    const parents = ancestors($current, $to);
 
-    for (const i in parents) {
-      if (!parents[i] || !parents[i].params) continue;
-      const parentParams = parents[i].params;
+    /** @type {Record<string, any>} */
+    const inherited = {};
 
+    /** @type {string[]} */
+    const inheritList = [];
+
+    for (const parent of parents) {
+      if (!parent || !parent.params) continue;
+      /** @type {Record<string, any>} */
+      const parentParams = parent.params;
+
+      /** @type {string[]} */
       const parentParamsKeys = keys(parentParams);
 
       if (!parentParamsKeys.length) continue;
 
-      for (const j in parentParamsKeys) {
+      for (const key of parentParamsKeys) {
         if (
-          parentParams[parentParamsKeys[j]].inherit === false ||
-          inheritList.indexOf(parentParamsKeys[j]) >= 0
-        )
+          parentParams[key].inherit === false ||
+          inheritList.indexOf(key) >= 0
+        ) {
           continue;
-        inheritList.push(parentParamsKeys[j]);
-        inherited[parentParamsKeys[j]] = this[parentParamsKeys[j]];
+        }
+
+        inheritList.push(key);
+        inherited[key] = /** @type {Record<string, any>} */ (this)[key];
       }
     }
 
@@ -44,15 +54,16 @@ export class StateParams {
 /**
  * Finds the common ancestor path between two states.
  *
- * @param {Object} first The first state.
- * @param {Object} second The second state.
- * @return {Array<any>} Returns an array of state names in descending order, not including the root.
+ * @param {StateObject} first The first state.
+ * @param {StateObject} second The second state.
+ * @return {Array<StateObject>} Returns an array of state names in descending order, not including the root.
  */
 function ancestors(first, second) {
+  /** @type {Array<StateObject>} */
   const path = [];
 
   for (const i in first.path) {
-    if (first.path[i] !== second.path[i]) break;
+    if (second.path && first.path[i] !== second.path[i]) break;
     path.push(first.path[i]);
   }
 

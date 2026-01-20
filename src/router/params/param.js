@@ -172,6 +172,7 @@ export class Param {
     this.inherit = inherit;
     this.array = arrayMode;
     this.config = config;
+    this.matchingKeys = undefined;
   }
 
   isDefaultValue(value) {
