@@ -7,18 +7,32 @@ import { Resolvable } from "../resolve/resolvable.js";
 import { annotate } from "../../core/di/di.js";
 
 export function getViewConfigFactory() {
+  /**
+   * @type {import("../template-factory.js").TemplateFactoryProvider | null}
+   */
   let templateFactory = null;
 
-  return (path, view) => {
+  return (
+    /** @type {import("../path/path-node.js").PathNode[]} */ path,
+    /** @type {import("./interface.ts").ViewDeclaration} */ view,
+  ) => {
     templateFactory =
       templateFactory || window.angular.$injector.get("$templateFactory"); // TODO: remove static injector
 
-    return new ViewConfig(path, view, templateFactory);
+    return new ViewConfig(
+      path,
+      view,
+      /** @type {import("../template-factory.js").TemplateFactoryProvider} */ (
+        templateFactory
+      ),
+    );
   };
 }
 
-const hasAnyKey = (keys, obj) =>
-  keys.reduce((acc, key) => acc || isDefined(obj[key]), false);
+const hasAnyKey = (
+  /** @type {any[]} */ keys,
+  /** @type {import("./state-object.js").StateObject & Record<string, any>} */ obj,
+) => keys.reduce((acc, key) => acc || isDefined(obj[key]), false);
 
 /**
  * This is a [[StateBuilder.builder]] function for angular1 `views`.
@@ -28,7 +42,7 @@ const hasAnyKey = (keys, obj) =>
  *
  * If no `views: {}` property exists on the [[StateDeclaration]], then it creates the `views` object
  * and applies the state-level configuration to a view named `$default`.
- * @param {ng.StateObject} state
+ * @param {ng.StateObject & Record<string, any>} state
  */
 export function ng1ViewsBuilder(state) {
   // Do not process root state
@@ -61,8 +75,9 @@ export function ng1ViewsBuilder(state) {
         ` ${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`,
     );
   }
-  const views = {},
-    viewsObject = state.views || { $default: pick(state, allViewKeys) };
+  const views = /** @type {Record<string, any>} */ ({});
+
+  const viewsObject = state.views || { $default: pick(state, allViewKeys) };
 
   entries(viewsObject).forEach(([name, config]) => {
     // Account for views: { "": { template... } }
@@ -103,19 +118,38 @@ let id = 0;
 export class ViewConfig {
   /**
    * @param {Array<import('../path/path-node.js').PathNode>} path
-   * @param viewDecl
+   * @param {import("./interface.ts").ViewDeclaration} viewDecl
    * @param {import('../template-factory.js').TemplateFactoryProvider} factory
    */
   constructor(path, viewDecl, factory) {
+    /**
+     * @type {Array<import('../path/path-node.js').PathNode>}
+     */
     this.path = path;
+
+    /**
+     * @type {import("./interface.ts").ViewDeclaration}
+     */
     this.viewDecl = viewDecl;
+    /**
+     * @type {import('../template-factory.js').TemplateFactoryProvider}
+     */
     this.factory = factory;
+    /**
+     * @type {string | undefined}
+     */
     this.component = undefined;
+    /**
+     * @type {string | undefined}
+     */
     this.template = undefined;
 
     /** @type {Number} */ this.$id = id++;
     this.loaded = false;
-    this.getTemplate = (ngView, context) =>
+    this.getTemplate = (
+      /** @type {any} */ ngView,
+      /** @type {ResolveContext} */ context,
+    ) =>
       this.component
         ? this.factory.makeComponentTemplate(
             ngView,
@@ -126,7 +160,7 @@ export class ViewConfig {
         : this.template;
   }
 
-  load() {
+  async load() {
     const context = new ResolveContext(this.path);
 
     const params = this.path.reduce(
@@ -139,19 +173,19 @@ export class ViewConfig {
       Promise.resolve(this.getController(context)),
     ];
 
-    return Promise.all(promises).then((results) => {
-      trace.traceViewServiceEvent("Loaded", this);
-      this.controller = results[1];
-      Object.assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
+    const results = await Promise.all(promises);
 
-      return this;
-    });
+    trace.traceViewServiceEvent("Loaded", this);
+    this.controller = results[1];
+    Object.assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
+
+    return this;
   }
 
   /**
    * Gets the controller for a view configuration.
-   *
-   * @returns {Function|Promise.<Function>} Returns a controller, or a promise that resolves to a controller.
+   * @returns {Function | Promise<Function>} Returns a controller, or a promise that resolves to a controller.
+   * @param {ResolveContext} context
    */
   getController(context) {
     const provider = this.viewDecl.controllerProvider;
@@ -172,8 +206,8 @@ export class ViewConfig {
    * This calculates the values for
    * [[_ViewDeclaration.$ngViewName]] and [[_ViewDeclaration.$ngViewContextAnchor]].
    *
-   * @param context the context object (state declaration) that the view belongs to
-   * @param rawViewName the name of the view, as declared in the [[StateDeclaration.views]]
+   * @param {import("./state-service.js").StateObject} context the context object (state declaration) that the view belongs to
+   * @param {string} rawViewName the name of the view, as declared in the [[StateDeclaration.views]]
    *
    * @returns the normalized ngViewName and ngViewContextAnchor that the view targets
    */
@@ -207,9 +241,23 @@ export class ViewConfig {
     const relativeMatch = /^(\^(?:\.\^)*)$/;
 
     if (relativeMatch.exec(ngViewContextAnchor)) {
-      const anchorState = ngViewContextAnchor
-        .split(".")
-        .reduce((anchor) => anchor.parent, context);
+      /** @type {import("./state-service.js").StateObject | undefined} */
+      let anchorState = context;
+
+      // "^.^.^" -> ["^", "^", "^"] (count how many times we go up)
+      const hops = ngViewContextAnchor.split(".").filter(Boolean).length;
+
+      for (let i = 0; i < hops; i++) {
+        anchorState = anchorState && anchorState.parent;
+      }
+
+      // If the anchor goes past the root, fall back to the root-most known state
+      // (or keep `context` if you prefer different behavior).
+      if (!anchorState) {
+        anchorState = context;
+
+        while (anchorState.parent) anchorState = anchorState.parent;
+      }
 
       ngViewContextAnchor = anchorState.name;
     } else if (ngViewContextAnchor === ".") {

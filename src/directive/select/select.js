@@ -139,7 +139,7 @@ class SelectController {
    */
   _un_selectEmptyOption() {
     if (this._hasEmptyOption) {
-      this._emptyOption.selected = false;
+      /** @type {HTMLOptionElement} */ (this._emptyOption).selected = false;
     }
   }
 
@@ -320,12 +320,18 @@ class SelectController {
     interpolateValueFn,
     interpolateTextFn,
   ) {
+    /**
+     * @type {any}
+     */
     let oldVal;
 
+    /**
+     * @type {string}
+     */
     let hashedVal;
 
     if (optionAttrs.$attr.ngValue) {
-      optionAttrs.$observe("value", (newVal) => {
+      optionAttrs.$observe("value", (/** @type {any} */ newVal) => {
         let removal;
 
         const previouslySelected = optionElement.selected;
@@ -347,7 +353,7 @@ class SelectController {
         }
       });
     } else if (interpolateValueFn) {
-      optionAttrs.$observe("value", (newVal) => {
+      optionAttrs.$observe("value", (/** @type {any} */ newVal) => {
         this._readValue();
         let removal;
 
@@ -394,7 +400,7 @@ class SelectController {
       this._addOption(optionAttrs.value, optionElement);
     }
 
-    optionAttrs.$observe("disabled", (newVal) => {
+    optionAttrs.$observe("disabled", (/** @type {string} */ newVal) => {
       if (newVal === "true" || (newVal && optionElement.selected)) {
         if (this._multiple) {
           this._scheduleViewValueUpdate(true);
@@ -440,9 +446,15 @@ export function selectDirective() {
     },
   };
 
+  /**
+   * @param {ng.Scope} _scope
+   * @param {{ addEventListener: (arg0: string, arg1: () => void) => void; getElementsByTagName: (arg0: string) => HTMLCollection; }} element
+   * @param {ng.Attributes} attr
+   * @param {any[]} ctrls
+   */
   function selectPreLink(_scope, element, attr, ctrls) {
     /** @type {SelectController} */
-    const selectCtrl = ctrls[0];
+    const selectCtrl = /** @type {SelectController} */ (ctrls[0]);
 
     /** @type {import("../model/model.js").NgModelController} */
     const ngModelCtrl = ctrls[1];
@@ -477,6 +489,9 @@ export function selectDirective() {
 
       // Read value now needs to check each option to see if it is selected
       selectCtrl._readValue = function () {
+        /**
+         * @type {any[]}
+         */
         const array = [];
 
         /**
@@ -484,22 +499,20 @@ export function selectDirective() {
          */
         const options = element.getElementsByTagName("option");
 
-        Array.from(options).forEach(
-          /**
-           * @param {HTMLOptionElement} option
-           */
-          (option) => {
-            if (option.selected && !option.disabled) {
-              const val = option.value;
+        Array.from(options).forEach((option) => {
+          if (
+            /** @type {HTMLOptionElement} */ (option).selected &&
+            !(/** @type {HTMLOptionElement} */ (option).disabled)
+          ) {
+            const val = /** @type {HTMLOptionElement} */ (option).value;
 
-              array.push(
-                val in selectCtrl._selectValueMap
-                  ? selectCtrl._selectValueMap[val]
-                  : val,
-              );
-            }
-          },
-        );
+            array.push(
+              val in selectCtrl._selectValueMap
+                ? selectCtrl._selectValueMap[val]
+                : val,
+            );
+          }
+        });
 
         return array;
       };
@@ -511,30 +524,32 @@ export function selectDirective() {
          */
         const options = element.getElementsByTagName("option");
 
-        Array.from(options).forEach(
-          /**
-           * @param {HTMLOptionElement} option
-           */
-          (option) => {
-            const shouldBeSelected =
-              !!value &&
-              (includes(value, option.value) ||
-                includes(value, selectCtrl._selectValueMap[option.value]));
+        Array.from(options).forEach((option) => {
+          const shouldBeSelected =
+            !!value &&
+            (includes(value, /** @type {HTMLOptionElement} */ (option).value) ||
+              includes(
+                value,
+                selectCtrl._selectValueMap[
+                  /** @type {HTMLOptionElement} */ (option).value
+                ],
+              ));
 
-            const currentlySelected = option.selected;
+          const currentlySelected = /** @type {HTMLOptionElement} */ (option)
+            .selected;
 
-            // Support: IE 9-11 only, Edge 12-15+
-            // In IE and Edge adding options to the selection via shift+click/UP/DOWN
-            // will de-select already selected options if "selected" on those options was set
-            // more than once (i.e. when the options were already selected)
-            // So we only modify the selected property if necessary.
-            // Note: this behavior cannot be replicated via unit tests because it only shows in the
-            // actual user interface.
-            if (shouldBeSelected !== currentlySelected) {
-              option.selected = shouldBeSelected;
-            }
-          },
-        );
+          // Support: IE 9-11 only, Edge 12-15+
+          // In IE and Edge adding options to the selection via shift+click/UP/DOWN
+          // will de-select already selected options if "selected" on those options was set
+          // more than once (i.e. when the options were already selected)
+          // So we only modify the selected property if necessary.
+          // Note: this behavior cannot be replicated via unit tests because it only shows in the
+          // actual user interface.
+          if (shouldBeSelected !== currentlySelected) {
+            /** @type {HTMLOptionElement} */ (option).selected =
+              shouldBeSelected;
+          }
+        });
       };
 
       // we have to do it on each watch since ngModel watches reference, but
@@ -560,13 +575,19 @@ export function selectDirective() {
     }
   }
 
+  /**
+   * @param {ng.Scope} _scope
+   * @param {HTMLElement} _element
+   * @param {ng.Attributes} _attrs
+   * @param {any[]} ctrls
+   */
   function selectPostLink(_scope, _element, _attrs, ctrls) {
     // if ngModel is not defined, we don't need to do anything
     const ngModelCtrl = ctrls[1];
 
     if (!ngModelCtrl) return;
 
-    const selectCtrl = ctrls[0];
+    const selectCtrl = /** @type {SelectController} */ (ctrls[0]);
 
     // We delegate rendering to the `_writeValue` method, which can be changed
     // if the select can have multiple selected values or if the options are being
@@ -593,8 +614,14 @@ export function optionDirective($interpolate) {
     restrict: "E",
     priority: 100,
     compile(element, attr) {
+      /**
+       * @type {import("../../core/interpolate/interface.js").InterpolationFunction | undefined}
+       */
       let interpolateValueFn;
 
+      /**
+       * @type {import("../../core/interpolate/interface.js").InterpolationFunction | undefined}
+       */
       let interpolateTextFn;
 
       if (isDefined(attr.ngValue)) {
@@ -620,8 +647,13 @@ export function optionDirective($interpolate) {
         const parent = elemParam.parentElement;
 
         const selectCtrl =
-          getCacheData(parent, selectCtrlName) ||
-          getCacheData(parent.parentElement, selectCtrlName); // in case we are in optgroup
+          getCacheData(/** @type {HTMLElement} */ (parent), selectCtrlName) ||
+          getCacheData(
+            /** @type {HTMLElement} */ (
+              /** @type {HTMLElement} */ (parent).parentElement
+            ),
+            selectCtrlName,
+          ); // in case we are in optgroup
 
         if (selectCtrl) {
           selectCtrl.registerOption(

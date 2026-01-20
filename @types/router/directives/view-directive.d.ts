@@ -18,16 +18,13 @@ export namespace $ViewDirective {
  * @param {ng.CompileService} $compile
  * @param {ng.ControllerService} $controller
  * @param {ng.TransitionService} $transitions
- * @returns
+ * @return {ng.Directive}
  */
 export function $ViewDirectiveFill(
   $compile: ng.CompileService,
   $controller: ng.ControllerService,
   $transitions: ng.TransitionService,
-): {
-  priority: number;
-  compile(tElement: any): (scope: any, $element: any) => void;
-};
+): ng.Directive;
 export namespace $ViewDirectiveFill {
   let $inject_1: string[];
   export { $inject_1 as $inject };

@@ -3,10 +3,16 @@
  * Plugins can define custom hook types, such as sticky states does for `onInactive`.
  */
 export class TransitionEventType {
+  /**
+   * @param {string} name
+   * @param {number} hookPhase
+   * @param {number} hookOrder
+   * @param {any} criteriaMatchPath
+   */
   constructor(
-    name: any,
-    hookPhase: any,
-    hookOrder: any,
+    name: string,
+    hookPhase: number,
+    hookOrder: number,
     criteriaMatchPath: any,
     reverseSort?: boolean,
     getResultHandler?: (
@@ -15,9 +21,9 @@ export class TransitionEventType {
     getErrorHandler?: () => (error: any) => Promise<never>,
     synchronous?: boolean,
   );
-  name: any;
-  hookPhase: any;
-  hookOrder: any;
+  name: string;
+  hookPhase: number;
+  hookOrder: number;
   criteriaMatchPath: any;
   reverseSort: boolean;
   getResultHandler: (

@@ -429,6 +429,7 @@ export interface Directive<TController = any> {
   templateUrl?: string | ((element: Element, attrs: Attributes) => string);
   /** Enables transclusion or configures named slots */
   transclude?: boolean | string | Record<string, string>;
+  /** Currently only used by view directive */
   count?: number;
   /** Internal hook for directive compilation state */
   _addStateInfo?: (...args: any[]) => any;

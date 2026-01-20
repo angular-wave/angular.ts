@@ -4,6 +4,12 @@ import { TransitionHook } from "./transition-hook.js";
  * Plugins can define custom hook types, such as sticky states does for `onInactive`.
  */
 export class TransitionEventType {
+  /**
+   * @param {string} name
+   * @param {number} hookPhase
+   * @param {number} hookOrder
+   * @param {any} criteriaMatchPath
+   */
   constructor(
     name,
     hookPhase,

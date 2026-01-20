@@ -156,6 +156,11 @@ $ViewDirective.$inject = [
 export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
   function getRenderer() {
     return {
+      /**
+       * @param {HTMLElement} element
+       * @param {HTMLElement} target
+       * @param {() => void} cb
+       */
       enter(element, target, cb) {
         if (hasAnimate(element)) {
           $animate.enter(element, null, target).then(cb);
@@ -164,24 +169,30 @@ export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
           cb();
         }
       },
+
+      /**
+       * @param {HTMLElement} element
+       * @param {() => void} cb
+       */
       leave(element, cb) {
         if (hasAnimate(element)) {
           $animate.leave(element).then(cb);
         } else {
-          element.parentElement.removeChild(element);
+          /** @type {HTMLElement} */ (element.parentElement).removeChild(
+            element,
+          );
           cb();
         }
       },
     };
   }
-  function configsEqual(config1, config2) {
-    return config1 === config2;
-  }
+
   const rootData = {
     $cfg: { viewDecl: { $context: $view.rootViewContext() } },
     $ngView: {},
   };
 
+  /** @type {ng.Directive} */
   const directive = {
     count: 0,
     terminal: true,
@@ -194,12 +205,32 @@ export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
           renderer = getRenderer(),
           inherited = getInheritedData($element, "$ngView") || rootData,
           name =
-            $interpolate(attrs.ngView || attrs.name || "")(scope) || "$default";
+            /** @type {import("../../core/interpolate/interface.js").InterpolationFunction} */ (
+              $interpolate(attrs.ngView || attrs.name || "")
+            )(scope) || "$default";
 
-        let previousEl, currentEl, currentScope, viewConfig;
+        /**
+         * @type {HTMLElement}
+         */
+        let previousEl;
+
+        /**
+         * @type {HTMLElement}
+         */
+        let currentEl;
+
+        /**
+         * @type {ng.Scope | null}
+         */
+        let currentScope;
+
+        /**
+         * @type {any}
+         */
+        let viewConfig;
 
         const activeUIView = {
-          id: directive.count++, // Global sequential ID for ng-view tags added to DOM
+          id: /** @type {number} */ (directive.count)++, // Global sequential ID for ng-view tags added to DOM
           name, // ng-view name (<div ng-view="name"></div>
           fqn: inherited.$ngView.fqn
             ? `${inherited.$ngView.fqn}.${name}`
@@ -221,10 +252,14 @@ export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
         };
 
         trace.traceUIViewEvent("Linking", activeUIView);
+
+        /**
+         * @param {ViewConfig} config
+         */
         function configUpdatedCallback(config) {
           if (config && !(config instanceof ViewConfig)) return;
 
-          if (configsEqual(viewConfig, config)) return;
+          if (viewConfig === config) return;
           trace.traceUIViewConfigUpdated(
             activeUIView,
             config && config.viewDecl && config.viewDecl.$context,
@@ -338,7 +373,7 @@ $ViewDirectiveFill.$inject = [
  * @param {ng.CompileService} $compile
  * @param {ng.ControllerService} $controller
  * @param {ng.TransitionService} $transitions
- * @returns
+ * @return {ng.Directive}
  */
 export function $ViewDirectiveFill($compile, $controller, $transitions) {
   const getControllerAs = parse("viewDecl.controllerAs");
@@ -357,7 +392,11 @@ export function $ViewDirectiveFill($compile, $controller, $transitions) {
 
         if (!data) {
           $element.innerHTML = initial;
-          $compile($element.contentDocument || $element.childNodes)(scope);
+
+          $compile(
+            /** @type {HTMLIFrameElement} */ ($element).contentDocument ||
+              $element.childNodes,
+          )(scope);
 
           return;
         }
@@ -372,7 +411,10 @@ export function $ViewDirectiveFill($compile, $controller, $transitions) {
 
         $element.innerHTML = cfg.getTemplate($element, resolveCtx) || initial;
         trace.traceUIViewFill(data.$ngView, $element.innerHTML);
-        const link = $compile($element.contentDocument || $element.childNodes);
+        const link = $compile(
+          /** @type {HTMLIFrameElement} */ ($element).contentDocument ||
+            $element.childNodes,
+        );
 
         const { controller } = cfg;
 
