@@ -814,7 +814,7 @@ export type BuiltStateDeclaration = StateDeclaration & {
   /** Computed parameters of this state */
   params?: Record<string, any>;
   /** Optional parent state */
-  parent?: BuiltStateDeclaration | null;
+  parent?: StateDeclaration | null;
   /** Optional inherited data */
   data?: any;
   _stateObjectCache?: {
@@ -865,3 +865,29 @@ export type _StateDeclaration =
   | {
       new (): StateDeclaration;
     };
+/**
+ * The signature for the callback function provided to [[StateRegistry.onStatesChanged]].
+ *
+ * This callback receives two parameters:
+ *
+ * @param event a string; either "registered" or "deregistered"
+ * @param states the list of [[StateDeclaration]]s that were registered (or deregistered).
+ */
+export type StateRegistryListener = (
+  event: "registered" | "deregistered",
+  states: StateDeclaration[],
+) => void;
+/**
+ * A function that builds the final value for a specific field on a [[StateObject]].
+ *
+ * A series of builder functions for a given field are chained together.
+ * The final value returned from the chain of builders is applied to the built [[StateObject]].
+ * Builder functions should call the [[parent]] function either first or last depending on the desired composition behavior.
+ *
+ * @param state the _partially built_ [[StateObject]]. The [[StateDeclaration]] can be inspected via [[StateObject.self]]
+ * @param parent the previous builder function in the series.
+ */
+export type BuilderFunction = (
+  state: StateObject,
+  parent?: BuilderFunction,
+) => any;

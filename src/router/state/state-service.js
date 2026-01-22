@@ -109,6 +109,7 @@ export class StateProvider {
     $injectTokens._url,
     /**
      * @param {ng.InjectorService} $injector
+     * @param {ng.UrlService} $url
      * @returns {StateProvider}
      */
     ($injector, $url) => {
@@ -533,7 +534,7 @@ export class StateProvider {
         const isLatest = this.globals._lastStartedTransitionId <= trans.$id;
 
         if (error.type === RejectType._IGNORED) {
-          isLatest && this.urlService.update();
+          isLatest && /** @type {ng.UrlService} */ (this.urlService).update();
 
           // Consider ignored `Transition.run()` as a successful `transitionTo`
           return Promise.resolve(this.globals.current);
@@ -553,7 +554,7 @@ export class StateProvider {
         }
 
         if (error.type === RejectType._ABORTED) {
-          isLatest && this.urlService.update();
+          isLatest && /** @type {ng.UrlService} */ (this.urlService).update();
 
           return Promise.reject(error);
         }
@@ -740,9 +741,13 @@ export class StateProvider {
       return null;
     }
 
-    return this.urlService.href(nav.url, params, {
-      absolute: options.absolute,
-    });
+    return /** @type {ng.UrlService} */ (this.urlService).href(
+      nav.url,
+      params,
+      {
+        absolute: options.absolute,
+      },
+    );
   }
 
   /**

@@ -84,7 +84,12 @@ export class StateBuilder {
     includes: (typeof includesBuilder)[];
     resolvables: ((state: any) => any[])[];
   };
-  builder(name: any, fn: any): any;
+  /**
+   * @param {string} name
+   * @param {*} fn
+   * @returns {() => void | null | undefined}
+   */
+  builder(name: string, fn: any): () => void | null | undefined;
   /**
    * Builds all of the properties on an essentially blank State object, returning a State object which has all its
    * properties and API built.

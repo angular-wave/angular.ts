@@ -1,3 +1,4 @@
+/** @typedef {import("./state-object.js").StateObject} StateObject */
 /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider } */
 /**
  * A registry for all of the application's [[StateDeclaration]]s
@@ -21,11 +22,29 @@ export class StateRegistryProvider {
   );
   /** @type {import("./interface.ts").StateStore} */
   states: import("./interface.ts").StateStore;
-  urlService: import("../url/url-service.js").UrlService;
+  /**
+   * @type {ng.UrlService}
+   */
+  urlService: ng.UrlService;
+  /**
+   * @type {import("../url/url-rules.js").UrlRules}
+   */
   urlServiceRules: import("../url/url-rules.js").UrlRules;
-  $injector: any;
-  listeners: any[];
+  /**
+   * @type {ng.InjectorService|undefined}
+   */
+  $injector: ng.InjectorService | undefined;
+  /**
+   * @type {import("./interface.ts").StateRegistryListener[]}
+   */
+  listeners: import("./interface.ts").StateRegistryListener[];
+  /**
+   *@type {StateMatcher}
+   */
   matcher: StateMatcher;
+  /**
+   * @type {StateBuilder}
+   */
   builder: StateBuilder;
   stateQueue: StateQueueManager;
   $get: (string | (($injector: any) => StateRegistryProvider))[];
@@ -33,14 +52,15 @@ export class StateRegistryProvider {
    * This is a [[StateBuilder.builder]] function for angular1 `onEnter`, `onExit`,
    * `onRetain` callback hooks on a [[StateDeclaration]].
    *
-   * When the [[StateBuilder]] builds a [[StateObject]] object from a raw [[StateDeclaration]], this builder
-   * ensures that those hooks are injectable for @uirouter/angularjs (ng1).
-   *
-   * @internalapi
+   * @param {string} hookName
    */
   getStateHookBuilder(
-    hookName: any,
-  ): (stateObject: any) => (trans: any, state: any) => any;
+    hookName: string,
+  ): (
+    stateObject: any & Record<string, any>,
+  ) =>
+    | ((trans: ng.Transition, state: ng.BuiltStateDeclaration) => any)
+    | undefined;
   /**
    * @private
    */
@@ -71,12 +91,14 @@ export class StateRegistryProvider {
    * });
    * ```
    *
-   * @param listener a callback function invoked when the registered states changes.
+   * @param {import("./interface.ts").StateRegistryListener} listener a callback function invoked when the registered states changes.
    *        The function receives two parameters, `event` and `state`.
    *        See [[StateRegistryListener]]
    * @return a function that deregisters the listener
    */
-  onStatesChanged(listener: any): any;
+  onStatesChanged(
+    listener: import("./interface.ts").StateRegistryListener,
+  ): () => void;
   /**
    * Gets the implicit root state
    *
@@ -94,50 +116,69 @@ export class StateRegistryProvider {
    *
    * Note: a state will be queued if the state's parent isn't yet registered.
    *
-   * @param stateDefinition the definition of the state to register.
+   * @param {import("./interface.ts")._StateDeclaration} stateDefinition the definition of the state to register.
    * @returns the internal [[StateObject]] object.
    *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
    *          If the state was only queued, then the object is not fully built.
    */
-  register(stateDefinition: any): import("./state-object.js").StateObject;
-  _deregisterTree(state: any): any[];
+  register(
+    stateDefinition: import("./interface.ts")._StateDeclaration,
+  ): import("./state-object.js").StateObject;
+  /**
+   *
+   * @param {StateObject} state
+   * @returns
+   */
+  _deregisterTree(
+    state: StateObject,
+  ): import("./state-object.js").StateObject[];
   /**
    * Removes a state from the registry
    *
    * This removes a state from the registry.
    * If the state has children, they are are also removed from the registry.
    *
-   * @param stateOrName the state's name or object representation
+   * @param {import("./interface.ts").StateOrName} stateOrName the state's name or object representation
    * @returns {import('./state-object').StateObject[]} a list of removed states
    */
-  deregister(stateOrName: any): any[];
+  deregister(stateOrName: import("./interface.ts").StateOrName): any[];
   /**
    * @return {ng.BuiltStateDeclaration[]}
    */
   getAll(): ng.BuiltStateDeclaration[];
+  /**
+   *
+   * @param {import("./interface.ts").StateOrName} stateOrName
+   * @param {import("./interface.ts").StateOrName} [base]
+   * @returns {import("./state-service.js").StateDeclaration | import("./state-service.js").StateDeclaration[] | null}
+   */
   get(
-    stateOrName: any,
-    base: any,
+    stateOrName: import("./interface.ts").StateOrName,
+    base?: import("./interface.ts").StateOrName,
     ...args: any[]
   ):
-    | import("./interface.ts").StateDeclaration
-    | (
-        | import("./interface.ts").StateDeclaration
-        | import("./interface.ts").BuiltStateDeclaration
-      )[];
+    | import("./state-service.js").StateDeclaration
+    | import("./state-service.js").StateDeclaration[]
+    | null;
   /**
    * Registers a [[BuilderFunction]] for a specific [[StateObject]] property (e.g., `parent`, `url`, or `path`).
    * More than one BuilderFunction can be registered for a given property.
    *
    * The BuilderFunction(s) will be used to define the property on any subsequently built [[StateObject]] objects.
    *
-   * @param property The name of the State property being registered for.
-   * @param builderFunction The BuilderFunction which will be used to build the State property
+   * @param {string} property The name of the State property being registered for.
+   * @param {import("./interface.ts").BuilderFunction} builderFunction The BuilderFunction which will be used to build the State property
    * @returns a function which deregisters the BuilderFunction
    */
-  decorator(property: any, builderFunction: any): any;
+  decorator(
+    property: string,
+    builderFunction: import("./interface.ts").BuilderFunction,
+  ): () => void | null | undefined;
 }
-export function getLocals(ctx: any): any;
+export function getLocals(ctx: ResolveContext): {
+  [x: string]: any;
+};
+export type StateObject = import("./state-object.js").StateObject;
 /**
  * }
  */
@@ -145,3 +186,4 @@ export type ServiceProvider = import("../../interface.ts").ServiceProvider;
 import { StateMatcher } from "./state-matcher.js";
 import { StateBuilder } from "./state-builder.js";
 import { StateQueueManager } from "./state-queue-manager.js";
+import { ResolveContext } from "../resolve/resolve-context.js";

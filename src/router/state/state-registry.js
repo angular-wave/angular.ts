@@ -7,7 +7,9 @@ import { ResolveContext } from "../resolve/resolve-context.js";
 import { isString, keys } from "../../shared/utils.js";
 import { $injectTokens as $t, provider } from "../../injection-tokens.js";
 
+/** @typedef {import("./state-object.js").StateObject} StateObject */
 /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider } */
+
 /**
  * A registry for all of the application's [[StateDeclaration]]s
  *
@@ -33,11 +35,35 @@ export class StateRegistryProvider {
     this.states = {};
 
     stateService.stateRegistry = this; // <- circular wiring
+
+    /**
+     * @type {ng.UrlService}
+     */
     this.urlService = urlService;
+
+    /**
+     * @type {import("../url/url-rules.js").UrlRules}
+     */
     this.urlServiceRules = urlService._rules;
+
+    /**
+     * @type {ng.InjectorService|undefined}
+     */
     this.$injector = undefined;
+
+    /**
+     * @type {import("./interface.ts").StateRegistryListener[]}
+     */
     this.listeners = [];
+
+    /**
+     *@type {StateMatcher}
+     */
     this.matcher = new StateMatcher(this.states);
+
+    /**
+     * @type {StateBuilder}
+     */
     this.builder = new StateBuilder(this.matcher, urlService);
     // Apply ng1 specific StateBuilder code for `onExit/Retain/Enter` properties
     this.builder.builder("onExit", this.getStateHookBuilder("onExit"));
@@ -56,7 +82,9 @@ export class StateRegistryProvider {
 
     viewService.rootViewContext(this.root());
     globals.$current = this.root();
-    globals.current = globals.$current.self;
+    globals.current = /** @type {import("./state-service.js").StateObject} */ (
+      globals.$current
+    ).self;
   }
 
   $get = [
@@ -77,19 +105,25 @@ export class StateRegistryProvider {
    * This is a [[StateBuilder.builder]] function for angular1 `onEnter`, `onExit`,
    * `onRetain` callback hooks on a [[StateDeclaration]].
    *
-   * When the [[StateBuilder]] builds a [[StateObject]] object from a raw [[StateDeclaration]], this builder
-   * ensures that those hooks are injectable for @uirouter/angularjs (ng1).
-   *
-   * @internalapi
+   * @param {string} hookName
    */
   getStateHookBuilder(hookName) {
     const that = this;
 
+    /**
+     * @param {import("./state-object").StateObject & Record<string, any>} stateObject
+     * @returns {((trans: ng.Transition, state: ng.BuiltStateDeclaration) => any) | undefined}
+     */
     return function stateHookBuilder(stateObject) {
       const hook = stateObject[hookName];
 
       const pathname = hookName === "onExit" ? "from" : "to";
 
+      /**
+       * @param {ng.Transition} trans
+       * @param {ng.BuiltStateDeclaration} state
+       * @returns {any}
+       */
       function decoratedNg1Hook(trans, state) {
         const resolveContext = new ResolveContext(trans.treeChanges(pathname));
 
@@ -154,17 +188,20 @@ export class StateRegistryProvider {
    * });
    * ```
    *
-   * @param listener a callback function invoked when the registered states changes.
+   * @param {import("./interface.ts").StateRegistryListener} listener a callback function invoked when the registered states changes.
    *        The function receives two parameters, `event` and `state`.
    *        See [[StateRegistryListener]]
    * @return a function that deregisters the listener
    */
   onStatesChanged(listener) {
+    /** @type {StateRegistryProvider} */
+    const registryProvider = this;
+
     this.listeners.push(listener);
 
-    return function deregisterListener() {
-      removeFrom(this.listeners, listener);
-    }.bind(this);
+    return () => {
+      removeFrom(registryProvider.listeners, listener);
+    };
   }
 
   /**
@@ -187,7 +224,7 @@ export class StateRegistryProvider {
    *
    * Note: a state will be queued if the state's parent isn't yet registered.
    *
-   * @param stateDefinition the definition of the state to register.
+   * @param {import("./interface.ts")._StateDeclaration} stateDefinition the definition of the state to register.
    * @returns the internal [[StateObject]] object.
    *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
    *          If the state was only queued, then the object is not fully built.
@@ -196,11 +233,20 @@ export class StateRegistryProvider {
     return this.stateQueue.register(stateDefinition);
   }
 
+  /**
+   *
+   * @param {StateObject} state
+   * @returns
+   */
   _deregisterTree(state) {
+    /** @type {StateObject[]} */
     const all = this.getAll().map((x) => x._state());
 
-    const getChildren = (states) => {
-      const _children = all.filter((x) => states.indexOf(x.parent) !== -1);
+    /** @type {(states: StateObject[]) => StateObject[]} */
+    const getChildren = /** @param {StateObject[]} states */ (states) => {
+      const _children = all.filter(
+        (x) => states.indexOf(/** @type {StateObject} */ (x.parent)) !== -1,
+      );
 
       return _children.length === 0
         ? _children
@@ -232,7 +278,7 @@ export class StateRegistryProvider {
    * This removes a state from the registry.
    * If the state has children, they are are also removed from the registry.
    *
-   * @param stateOrName the state's name or object representation
+   * @param {import("./interface.ts").StateOrName} stateOrName the state's name or object representation
    * @returns {import('./state-object').StateObject[]} a list of removed states
    */
   deregister(stateOrName) {
@@ -269,6 +315,12 @@ export class StateRegistryProvider {
     );
   }
 
+  /**
+   *
+   * @param {import("./interface.ts").StateOrName} stateOrName
+   * @param {import("./interface.ts").StateOrName} [base]
+   * @returns {import("./state-service.js").StateDeclaration | import("./state-service.js").StateDeclaration[] | null}
+   */
   get(stateOrName, base) {
     if (arguments.length === 0)
       return keys(this.states).map((name) => this.states[name].self);
@@ -283,8 +335,8 @@ export class StateRegistryProvider {
    *
    * The BuilderFunction(s) will be used to define the property on any subsequently built [[StateObject]] objects.
    *
-   * @param property The name of the State property being registered for.
-   * @param builderFunction The BuilderFunction which will be used to build the State property
+   * @param {string} property The name of the State property being registered for.
+   * @param {import("./interface.ts").BuilderFunction} builderFunction The BuilderFunction which will be used to build the State property
    * @returns a function which deregisters the BuilderFunction
    */
   decorator(property, builderFunction) {
@@ -292,7 +344,8 @@ export class StateRegistryProvider {
   }
 }
 
-export const getLocals = (ctx) => {
+export const getLocals = /** @param {ResolveContext} ctx */ (ctx) => {
+  /** @type {string[]} */
   const tokens = ctx.getTokens().filter(isString);
 
   const tuples = tokens.map((key) => {

@@ -20,13 +20,14 @@ export class StateObject {
    */
   name: string;
   /**
-   * @type {{ url: any; } | undefined}
+   * @type {{ url: any; } | undefined | null}
    */
   navigable:
     | {
         url: any;
       }
-    | undefined;
+    | undefined
+    | null;
   /** @type {StateObject | undefined} */
   parent: StateObject | undefined;
   /**
@@ -58,9 +59,9 @@ export class StateObject {
    */
   views: any;
   /**
-   * @type {ng.StateDeclaration|ng.BuiltStateDeclaration}
+   * @type {ng.StateDeclaration}
    */
-  self: ng.StateDeclaration | ng.BuiltStateDeclaration;
+  self: ng.StateDeclaration;
   _stateObjectCache: {
     nameGlob: Glob;
   };
