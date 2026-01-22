@@ -970,7 +970,7 @@ export type BuiltStateDeclaration = StateDeclaration & {
    * Note: the internal [[StateObject]] API is subject to change without notice
    * @internal
    */
-  _state: () => StateObject;
+  _state: () => BuiltStateDeclaration;
 
   /** Array of Resolvables built from the resolve / resolvePolicy */
   resolvables: Resolvable[];
