@@ -1,4 +1,5 @@
 /** @typedef {import("./state-object.js").StateObject} StateObject */
+/** @typedef {import("./interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
 /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider } */
 /**
  * A registry for all of the application's [[StateDeclaration]]s
@@ -126,12 +127,10 @@ export class StateRegistryProvider {
   ): import("./state-object.js").StateObject;
   /**
    *
-   * @param {StateObject} state
-   * @returns
+   * @param {BuiltStateDeclaration} state
+   * @returns {BuiltStateDeclaration[]}
    */
-  _deregisterTree(
-    state: StateObject,
-  ): import("./state-object.js").StateObject[];
+  _deregisterTree(state: BuiltStateDeclaration): BuiltStateDeclaration[];
   /**
    * Removes a state from the registry
    *
@@ -139,9 +138,11 @@ export class StateRegistryProvider {
    * If the state has children, they are are also removed from the registry.
    *
    * @param {import("./interface.ts").StateOrName} stateOrName the state's name or object representation
-   * @returns {import('./state-object').StateObject[]} a list of removed states
+   * @returns {BuiltStateDeclaration[]} a list of removed states
    */
-  deregister(stateOrName: import("./interface.ts").StateOrName): any[];
+  deregister(
+    stateOrName: import("./interface.ts").StateOrName,
+  ): BuiltStateDeclaration[];
   /**
    * @return {ng.BuiltStateDeclaration[]}
    */
@@ -179,6 +180,8 @@ export function getLocals(ctx: ResolveContext): {
   [x: string]: any;
 };
 export type StateObject = import("./state-object.js").StateObject;
+export type BuiltStateDeclaration =
+  import("./interface.ts").BuiltStateDeclaration;
 /**
  * }
  */

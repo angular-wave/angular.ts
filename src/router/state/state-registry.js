@@ -8,6 +8,7 @@ import { isString, keys } from "../../shared/utils.js";
 import { $injectTokens as $t, provider } from "../../injection-tokens.js";
 
 /** @typedef {import("./state-object.js").StateObject} StateObject */
+/** @typedef {import("./interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
 /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider } */
 
 /**
@@ -235,17 +236,21 @@ export class StateRegistryProvider {
 
   /**
    *
-   * @param {StateObject} state
-   * @returns
+   * @param {BuiltStateDeclaration} state
+   * @returns {BuiltStateDeclaration[]}
    */
   _deregisterTree(state) {
-    /** @type {StateObject[]} */
+    /** @type {BuiltStateDeclaration[]} */
     const all = this.getAll().map((x) => x._state());
 
-    /** @type {(states: StateObject[]) => StateObject[]} */
-    const getChildren = /** @param {StateObject[]} states */ (states) => {
+    /** @type {(states: BuiltStateDeclaration[]) => BuiltStateDeclaration[]} */
+    const getChildren = /** @param {BuiltStateDeclaration[]} states */ (
+      states,
+    ) => {
       const _children = all.filter(
-        (x) => states.indexOf(/** @type {StateObject} */ (x.parent)) !== -1,
+        (x) =>
+          states.indexOf(/** @type {BuiltStateDeclaration} */ (x.parent)) !==
+          -1,
       );
 
       return _children.length === 0
@@ -279,21 +284,14 @@ export class StateRegistryProvider {
    * If the state has children, they are are also removed from the registry.
    *
    * @param {import("./interface.ts").StateOrName} stateOrName the state's name or object representation
-   * @returns {import('./state-object').StateObject[]} a list of removed states
+   * @returns {BuiltStateDeclaration[]} a list of removed states
    */
   deregister(stateOrName) {
-    const state =
-      /** @type {import("./interface.ts").BuiltStateDeclaration} */ (
-        this.get(stateOrName)
-      );
+    const state = /** @type {BuiltStateDeclaration} */ (this.get(stateOrName));
 
     if (!state)
       throw new Error(`Can't deregister state; not found: ${stateOrName}`);
-    const deregisteredStates = this._deregisterTree(
-      /** @type {import("./interface.ts").BuiltStateDeclaration} */ (
-        state
-      )._state(),
-    );
+    const deregisteredStates = this._deregisterTree(state._state());
 
     this.listeners.forEach((listener) =>
       listener(
