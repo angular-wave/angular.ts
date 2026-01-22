@@ -22,7 +22,7 @@ export class StateObject {
    */
   name;
   /**
-   * @type {{ url: any; } | undefined}
+   * @type {{ url: any; } | undefined | null}
    */
   navigable;
 
@@ -60,7 +60,7 @@ export class StateObject {
     Object.assign(this, config);
 
     /**
-     * @type {ng.StateDeclaration|ng.BuiltStateDeclaration}
+     * @type {ng.StateDeclaration}
      */
     this.self = config;
 

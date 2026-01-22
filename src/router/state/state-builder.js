@@ -332,6 +332,11 @@ export class StateBuilder {
     };
   }
 
+  /**
+   * @param {string} name
+   * @param {*} fn
+   * @returns {() => void | null | undefined}
+   */
   builder(name, fn) {
     const { _builders: builders } = this;
 

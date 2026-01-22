@@ -52,7 +52,7 @@ export class StateProvider {
   _defaultErrorHandler: ng.ExceptionHandlerService;
   $get: (
     | string
-    | (($injector: ng.InjectorService, $url: any) => StateProvider)
+    | (($injector: ng.InjectorService, $url: ng.UrlService) => StateProvider)
   )[];
   /**
    * Decorates states when they are registered
@@ -428,10 +428,7 @@ export class StateProvider {
     ...args: any[]
   ):
     | import("./interface.ts").StateDeclaration
-    | (
-        | import("./interface.ts").StateDeclaration
-        | import("./interface.ts").BuiltStateDeclaration
-      )[];
+    | import("./interface.ts").StateDeclaration[];
   /**
    * Lazy loads a state
    *

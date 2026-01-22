@@ -71,9 +71,7 @@ export class Transition {
    *
    * @returns The state declaration object for the Transition's ("from state").
    */
-  from():
-    | import("../state/interface.ts").StateDeclaration
-    | import("../state/interface.ts").BuiltStateDeclaration;
+  from(): import("../state/interface.ts").StateDeclaration;
   /**
    * Returns the "to state"
    *
@@ -81,9 +79,7 @@ export class Transition {
    *
    * @returns The state declaration object for the Transition's target state ("to state").
    */
-  to():
-    | import("../state/interface.ts").StateDeclaration
-    | import("../state/interface.ts").BuiltStateDeclaration;
+  to(): import("../state/interface.ts").StateDeclaration;
   /**
    * Gets the Target State
    *
