@@ -43,7 +43,7 @@ export class UrlConfigProvider {
 
     pathType.decode = (/** @type {unknown} */ x) =>
       !isNullOrUndefined(x)
-        ? x.toString().replace(/(~~|~2F)/g, (m) => (m === "~~" ? "~" : "/"))
+        ? x.toString().replace(/(~~|~2F)/g, (i) => (i === "~~" ? "~" : "/"))
         : x;
     this.paramTypes.enqueue = false;
     this.paramTypes._flushTypeQueue();
