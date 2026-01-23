@@ -1,6 +1,9 @@
+/**
+ * @return {(path: import("../path/path-node.js").PathNode[], view: import("./interface.ts").ViewDeclaration) => ViewConfig}
+ */
 export function getViewConfigFactory(): (
-  /** @type {import("../path/path-node.js").PathNode[]} */ path: import("../path/path-node.js").PathNode[],
-  /** @type {import("./interface.ts").ViewDeclaration} */ view: import("./interface.ts").ViewDeclaration,
+  path: import("../path/path-node.js").PathNode[],
+  view: import("./interface.ts").ViewDeclaration,
 ) => ViewConfig;
 /**
  * This is a [[StateBuilder.builder]] function for angular1 `views`.

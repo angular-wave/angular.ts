@@ -49,3 +49,9 @@ export interface ViewConfig {
   /** Fetches templates, runs dynamic (controller|template)Provider code, lazy loads Components, etc */
   load(): Promise<ViewConfig>;
 }
+
+// A uiView and its matching viewConfig
+export interface ViewTuple {
+  ngView: ActiveUIView | undefined;
+  viewConfig: ViewConfig;
+}

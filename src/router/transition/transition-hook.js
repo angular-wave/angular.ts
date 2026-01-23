@@ -6,8 +6,8 @@ import { trace } from "../common/trace.js";
 import { Rejection } from "./reject-factory.js";
 import { TargetState } from "../state/target-state.js";
 
-/** @typedef {import("./interface.js").TransitionHookOptions} TransitionHookOptions */
-/** @typedef {import("./interface.js").HookResult} HookResult */
+/** @typedef {import("./interface.ts").TransitionHookOptions} TransitionHookOptions */
+/** @typedef {import("./interface.ts").HookResult} HookResult */
 /** @typedef {import("./transition.js").Transition} Transition */
 /** @typedef {import("./hook-registry.js").RegisteredHook} RegisteredHook */
 
@@ -113,7 +113,7 @@ export class TransitionHook {
   /**
    *
    * @param {Transition} transition
-   * @param {import("../state/interface.js").StateDeclaration | null} stateContext
+   * @param {import("../state/interface.ts").StateDeclaration | null} stateContext
    * @param {RegisteredHook} registeredHook
    * @param {TransitionHookOptions} options
    * @param {ng.ExceptionHandlerService} exceptionHandler

@@ -615,12 +615,12 @@ export function optionDirective($interpolate) {
     priority: 100,
     compile(element, attr) {
       /**
-       * @type {import("../../core/interpolate/interface.js").InterpolationFunction | undefined}
+       * @type {import("../../core/interpolate/interface.ts").InterpolationFunction | undefined}
        */
       let interpolateValueFn;
 
       /**
-       * @type {import("../../core/interpolate/interface.js").InterpolationFunction | undefined}
+       * @type {import("../../core/interpolate/interface.ts").InterpolationFunction | undefined}
        */
       let interpolateTextFn;
 

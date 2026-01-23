@@ -21,7 +21,7 @@ export class UrlConfigProvider {
     this._isCaseInsensitive = false;
     /** @type {boolean} */
     this._isStrictMode = true;
-    /** @type {boolean} */
+    /** @type {boolean | string} */
     this._defaultSquashPolicy = false;
     /**
      * Applys ng1-specific path parameter encoding
@@ -36,17 +36,14 @@ export class UrlConfigProvider {
      */
     const pathType = this.type("path");
 
-    pathType.encode = (x) =>
+    pathType.encode = (/** @type {unknown} */ x) =>
       !isNullOrUndefined(x)
-        ? x
-            .toString()
-            .replace(/([~/])/g, (match) => ({ "~": "~~", "/": "~2F" })[match])
+        ? x.toString().replace(/([~/])/g, (m) => (m === "~" ? "~~" : "~2F"))
         : x;
-    pathType.decode = (x) =>
+
+    pathType.decode = (/** @type {unknown} */ x) =>
       !isNullOrUndefined(x)
-        ? x
-            .toString()
-            .replace(/(~~|~2F)/g, (match) => ({ "~~": "~", "~2F": "/" })[match])
+        ? x.toString().replace(/(~~|~2F)/g, (m) => (m === "~~" ? "~" : "/"))
         : x;
     this.paramTypes.enqueue = false;
     this.paramTypes._flushTypeQueue();
@@ -62,9 +59,8 @@ export class UrlConfigProvider {
    * // Allow case insensitive url matches
    * urlService.config.caseInsensitive(true);
    * ```
-   *
-   * @param value `false` to match URL in a case sensitive manner; otherwise `true`;
-   * @returns the current value of caseInsensitive
+   * @param {boolean} [value] `false` to match URL in a case sensitive manner; otherwise `true`;
+   * @returns {boolean} the current value of caseInsensitive
    */
   caseInsensitive(value) {
     return (this._isCaseInsensitive = isDefined(value)
@@ -81,13 +77,13 @@ export class UrlConfigProvider {
    * urlService.config.defaultSquashPolicy(true);
    * ```
    *
-   * @param value A string that defines the default parameter URL squashing behavior.
+   * @param {boolean | string} [value] A string that defines the default parameter URL squashing behavior.
    *    - `nosquash`: When generating an href with a default parameter value, do not squash the parameter value from the URL
    *    - `slash`: When generating an href with a default parameter value, squash (remove) the parameter value, and, if the
    *      parameter is surrounded by slashes, squash (remove) one slash from the URL
    *    - any other string, e.g. "~": When generating an href with a default parameter value, squash (remove)
    *      the parameter value from the URL and replace it with this string.
-   * @returns the current value of defaultSquashPolicy
+   * @returns {boolean | string} the current value of defaultSquashPolicy
    */
   defaultSquashPolicy(value) {
     if (
@@ -142,9 +138,9 @@ export class UrlConfigProvider {
    *
    * See [[ParamTypeDefinition]] for more examples
    *
-   * @param name The type name.
-   * @param definition The type definition. See [[ParamTypeDefinition]] for information on the values accepted.
-   * @param definitionFn A function that is injected before the app runtime starts.
+   * @param {string} name The type name.
+   * @param {import("../params/interface.ts").ParamTypeDefinition} [definition] The type definition. See [[ParamTypeDefinition]] for information on the values accepted.
+   * @param {() => import("../params/interface.ts").ParamTypeDefinition} [definitionFn] A function that is injected before the app runtime starts.
    *        The result of this function should be a [[ParamTypeDefinition]].
    *        The result is merged into the existing `definition`.
    *        See [[ParamType]] for information on the values accepted.

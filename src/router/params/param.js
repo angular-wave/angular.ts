@@ -9,13 +9,14 @@ import {
 } from "../../shared/utils.js";
 import { ParamType } from "./param-type.js";
 
-const isShorthand = (cfg) =>
+/** @typedef {import("./interface.ts").ParamDeclaration} ParamDeclaration */
+
+const isShorthand = /** @param {ParamDeclaration} cfg */ (cfg) =>
   ["value", "type", "squash", "array", "dynamic"].filter(
     Object.prototype.hasOwnProperty.bind(cfg || {}),
   ).length === 0;
 
 /**
- * @internal
  * @enum {number}
  */
 export const DefType = {
@@ -24,6 +25,12 @@ export const DefType = {
   _CONFIG: 2,
 };
 
+/**
+ * @param {string} paramName
+ * @param {DefType} location
+ * @param {ng.StateDeclaration} state
+ * @return {import("./interface.ts").ParamDeclaration}
+ */
 function getParamDeclaration(paramName, location, state) {
   const noReloadOnSearch =
     (state.reloadOnSearch === false && location === DefType._SEARCH) ||
@@ -40,6 +47,10 @@ function getParamDeclaration(paramName, location, state) {
   return Object.assign(defaultConfig, paramConfig);
 }
 
+/**
+ * @param {ParamDeclaration} cfg
+ * @return {ParamDeclaration}
+ */
 function unwrapShorthand(cfg) {
   cfg = isShorthand(cfg) ? { value: cfg } : cfg;
   getStaticDefaultValue._cacheable = true;
@@ -51,6 +62,13 @@ function unwrapShorthand(cfg) {
   return Object.assign(cfg, { _fn });
 }
 
+/**
+ * @param {ParamDeclaration} cfg
+ * @param {ParamType} urlType
+ * @param {DefType} location
+ * @param {string} id
+ * @param {import("./param-types.js").ParamTypes} paramTypes
+ */
 function getType(cfg, urlType, location, id, paramTypes) {
   if (cfg.type && urlType && urlType.name !== "string")
     throw new Error(`Param '${id}' has two type configurations.`);
@@ -59,9 +77,9 @@ function getType(cfg, urlType, location, id, paramTypes) {
     cfg.type &&
     urlType &&
     urlType.name === "string" &&
-    paramTypes.type(cfg.type)
+    paramTypes.type(/** @type {string} */ (cfg.type))
   )
-    return paramTypes.type(cfg.type);
+    return paramTypes.type(/** @type {string} */ (cfg.type));
 
   if (urlType) return urlType;
 
@@ -81,7 +99,12 @@ function getType(cfg, urlType, location, id, paramTypes) {
   return cfg.type instanceof ParamType ? cfg.type : paramTypes.type(cfg.type);
 }
 
-/** returns false, true, or the squash value to indicate the "default parameter url squash policy". */
+/**
+ * returns false, true, or the squash value to indicate the "default parameter url squash policy".
+ * @param {ParamDeclaration} config
+ * @param {boolean} isOptional
+ * @param {boolean | string} defaultPolicy
+ */
 function getSquashPolicy(config, isOptional, defaultPolicy) {
   const { squash } = config;
 
@@ -95,6 +118,12 @@ function getSquashPolicy(config, isOptional, defaultPolicy) {
   );
 }
 
+/**
+ * @param {ParamDeclaration} config
+ * @param {boolean} arrayMode
+ * @param {boolean} isOptional
+ * @param {string | boolean} squash
+ */
 function getReplace(config, arrayMode, isOptional, squash) {
   const defaultPolicy = [
     { from: "", to: isOptional || arrayMode ? undefined : "" },
@@ -104,22 +133,23 @@ function getReplace(config, arrayMode, isOptional, squash) {
   const replace = isArray(config.replace) ? config.replace : [];
 
   if (isString(squash)) replace.push({ from: squash, to: undefined });
-  const configuredKeys = map(replace, (x) => x.from);
+
+  const configuredKeys = /** @type {string[]} */ (map(replace, (x) => x.from));
 
   return filter(
     defaultPolicy,
-    (item) => configuredKeys.indexOf(item.from) === -1,
+    (item) => configuredKeys.indexOf(/** @type {string} */ (item.from)) === -1,
   ).concat(replace);
 }
 
 export class Param {
   /**
    *
-   * @param {*} id
-   * @param {*} type
+   * @param {string} id
+   * @param {ParamType} type
    * @param {DefType} location
    * @param {import("../url/url-config.js").UrlConfigProvider} urlConfig
-   * @param {*} state
+   * @param {ng.StateDeclaration} state
    */
   constructor(id, type, location, urlConfig, state) {
     const config = getParamDeclaration(id, location, state);
@@ -127,17 +157,15 @@ export class Param {
     type = getType(config, type, location, id, urlConfig.paramTypes);
     const arrayMode = getArrayMode();
 
-    type = arrayMode
-      ? type.$asArray(arrayMode, location === DefType._SEARCH)
-      : type;
+    type = /** @type {ParamType} */ (
+      arrayMode ? type.$asArray(arrayMode, location === DefType._SEARCH) : type
+    );
     const isOptional =
       config.value !== undefined || location === DefType._SEARCH;
 
-    const dynamic = isDefined(config.dynamic)
-      ? !!config.dynamic
-      : !!type.dynamic;
+    const dynamic = !!config.dynamic;
 
-    const raw = isDefined(config.raw) ? !!config.raw : !!type.raw;
+    const raw = !!config.raw;
 
     const squash = getSquashPolicy(
       config,
@@ -175,6 +203,9 @@ export class Param {
     this.matchingKeys = undefined;
   }
 
+  /**
+   * @param {any} value
+   */
   isDefaultValue(value) {
     return this.isOptional && this.type.equals(this.value(), value);
   }
@@ -182,6 +213,7 @@ export class Param {
   /**
    * [Internal] Gets the decoded representation of a value if the value is defined, otherwise, returns the
    * default value, which may be the result of an injectable function.
+   * @param {undefined} [value]
    */
   value(value) {
     /**
@@ -212,7 +244,7 @@ export class Param {
       return defaultValue;
     };
 
-    const replaceSpecialValues = (val) => {
+    const replaceSpecialValues = (/** @type {any} */ val) => {
       for (const tuple of this.replace) {
         if (tuple.from === val) return tuple.to;
       }
@@ -229,6 +261,9 @@ export class Param {
     return this.location === DefType._SEARCH;
   }
 
+  /**
+   * @param {null} value
+   */
   validates(value) {
     // There was no parameter value, but the param is optional
     if ((isUndefined(value) || value === null) && this.isOptional) return true;
@@ -246,7 +281,13 @@ export class Param {
     return `{Param:${this.id} ${this.type} squash: '${this.squash}' optional: ${this.isOptional}}`;
   }
 
+  /**
+   * @param {Param[]} params
+   * @param {Record<string, any>} values
+   * @return {import("./interface.ts").RawParams}
+   */
   static values(params, values = {}) {
+    /** @type {import("./interface.ts").RawParams} */
     const paramValues = {};
 
     for (const param of params) {
@@ -260,12 +301,10 @@ export class Param {
    * Finds [[Param]] objects which have different param values
    *
    * Filters a list of [[Param]] objects to only those whose parameter values differ in two param value objects
-   *
-   * @param params: The list of Param objects to filter
-   * @param values1: The first set of parameter values
-   * @param values2: the second set of parameter values
-   *
-   * @returns any Param objects whose values were different between values1 and values2
+   * @param {Param[]} params : The list of Param objects to filter
+   * @param {Record<string, any>} values1 : The first set of parameter values
+   * @param {Record<string, any>} values2 : the second set of parameter values
+   * @returns {Param[]} any Param objects whose values were different between values1 and values2
    */
   static changed(params, values1 = {}, values2 = {}) {
     return params.filter(
@@ -275,18 +314,21 @@ export class Param {
 
   /**
    * Checks if two param value objects are equal (for a set of [[Param]] objects)
-   *
-   * @param params The list of [[Param]] objects to check
+   * @param {any[]} params The list of [[Param]] objects to check
    * @param values1 The first set of param values
    * @param values2 The second set of param values
-   *
    * @returns true if the param values in values1 and values2 are equal
    */
   static equals(params, values1 = {}, values2 = {}) {
     return Param.changed(params, values1, values2).length === 0;
   }
 
-  /** Returns true if a the parameter values are valid, according to the Param definitions */
+  /**
+   * Returns true if a the parameter values are valid, according to the Param definitions
+   * @param {any[]} params
+   * @param {Record<string, any>} values
+   * @return {boolean}
+   */
   static validates(params, values = {}) {
     return params
       .map((param) => param.validates(values[param.id]))

@@ -205,7 +205,7 @@ export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
           renderer = getRenderer(),
           inherited = getInheritedData($element, "$ngView") || rootData,
           name =
-            /** @type {import("../../core/interpolate/interface.js").InterpolationFunction} */ (
+            /** @type {import("../../core/interpolate/interface.ts").InterpolationFunction} */ (
               $interpolate(attrs.ngView || attrs.name || "")
             )(scope) || "$default";
 
@@ -304,6 +304,10 @@ export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
             currentEl = null;
           }
         }
+
+        /**
+         * @param {ViewConfig | undefined} [config]
+         */
         function updateView(config) {
           const newScope = scope.$new();
 
@@ -490,7 +494,13 @@ export function $ViewDirectiveFill($compile, $controller, $transitions) {
 /** @ignore incrementing id */
 let _uiCanExitId = 0;
 
-/** @ignore TODO: move these callbacks to $view and/or `/hooks/components.ts` or something */
+/**
+ * @ignore TODO: move these callbacks to $view and/or `/hooks/components.ts` or something
+ * @param {ng.TransitionService} $transitions
+ * @param {object | (() => object)} controllerInstance
+ * @param {ng.Scope} $scope
+ * @param {{ viewDecl: { component: any; componentProvider: any; }; path: string | any[]; }} cfg
+ */
 function registerControllerCallbacks(
   $transitions,
   controllerInstance,

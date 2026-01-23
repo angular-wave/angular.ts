@@ -25,9 +25,9 @@ import { isArray, isDefined } from "../../shared/utils.js";
  */
 export class ParamType {
   /**
-   * @param def  A configuration object which contains the custom type definition.  The object's
-   *        properties will override the default methods and/or pattern in `ParamType`'s public interface.
-   */
+     * @param {any} def A configuration object which contains the custom type definition.  The object's
+    properties will override the default methods and/or pattern in `ParamType`'s public interface.
+     */
   constructor(def) {
     this.pattern = /.*/;
     this.inherit = true;
@@ -36,33 +36,43 @@ export class ParamType {
   }
   // consider these four methods to be "abstract methods" that should be overridden
 
+  /**
+   * @param {any} val
+   */
   is(val) {
     return !!val;
   }
 
+  /**
+   * @param {any} val
+   */
   encode(val) {
     return val;
   }
 
+  /**
+   * @param {any} val
+   */
   decode(val) {
     return val;
   }
 
+  /**
+   * @param {any} a
+   * @param {any} b
+   */
   equals(a, b) {
     return a === b;
-  }
-
-  $subPattern() {
-    const sub = this.pattern.toString();
-
-    return sub.substring(1, sub.length - 2);
   }
 
   toString() {
     return `{ParamType:${this.name}}`;
   }
 
-  /** Given an encoded string, or a decoded object, returns a decoded object */
+  /**
+   * Given an encoded string, or a decoded object, returns a decoded object
+   * @param {any} val
+   */
   $normalize(val) {
     return this.is(val) ? val : this.decode(val);
   }
@@ -76,6 +86,8 @@ export class ParamType {
    * if `mode` is "auto", then
    * - url: "/path?queryParam=1 will create $stateParams.queryParam: 1
    * - url: "/path?queryParam=1&queryParam=2 will create $stateParams.queryParam: [1, 2]
+   * @param {boolean |'auto'} mode
+   * @param {any} isSearch
    */
   $asArray(mode, isSearch) {
     if (!mode) return this;
@@ -83,10 +95,15 @@ export class ParamType {
     if (mode === "auto" && !isSearch)
       throw new Error("'auto' array mode is for query parameters only");
 
-    return new ArrayType(this, mode);
+    return new ArrayType(this, /** @type {string} */ (mode));
   }
 }
-/** Wraps up a `ParamType` object to handle array values. */
+
+/**
+ * Wraps up a `ParamType` object to handle array values.
+ * @param {this} type
+ * @param {string} mode
+ */
 function ArrayType(type, mode) {
   // Wrap non-array value as array
   function arrayWrap(val) {
@@ -104,6 +121,10 @@ function ArrayType(type, mode) {
     }
   }
   // Wraps type (.is/.encode/.decode) functions to operate on each value of an array
+  /**
+   * @param {(value: any, key: string | number) => any} callback
+   * @param {boolean} allTruthyMode
+   */
   function arrayHandler(callback, allTruthyMode) {
     return function handleArray(val) {
       if (isArray(val) && val.length === 0) return val;
@@ -117,6 +138,9 @@ function ArrayType(type, mode) {
     };
   }
   // Wraps type (.equals) functions to operate on each value of an array
+  /**
+   * @param {(arg0: any, arg1: any) => any} callback
+   */
   function arrayEqualsHandler(callback) {
     return function handleArray(val1, val2) {
       const left = arrayWrap(val1),
@@ -138,6 +162,7 @@ function ArrayType(type, mode) {
 
     this[name] = wrapperFn(paramTypeFn);
   });
+
   Object.assign(this, {
     dynamic: type.dynamic,
     name: type.name,

@@ -4,9 +4,9 @@
  * Include this object when applying custom defaults:
  * let reloadOpts = { reload: true, notify: true }
  * let options = defaults(theirOpts, customDefaults, defaultOptions);
- * @type {import("./interface.js").TransitionOptions}
+ * @type {import("./interface.ts").TransitionOptions}
  */
-export const defaultTransOpts: import("./interface.js").TransitionOptions;
+export const defaultTransOpts: import("./interface.ts").TransitionOptions;
 /**
  * This class provides services related to Transitions.
  *
@@ -31,8 +31,11 @@ export class TransitionProvider {
     $exceptionHandler: ng.ExceptionHandlerProvider,
   );
   _transitionCount: number;
-  /** The transition hook types, such as `onEnter`, `onStart`, etc */
-  _eventTypes: any[];
+  /**
+   * The transition hook types, such as `onEnter`, `onStart`, etc
+   * @type {TransitionEventType[]}
+   */
+  _eventTypes: TransitionEventType[];
   /** @internal The registered transition hooks */
   _registeredHooks: {};
   /** The  paths on a criteria object */
@@ -130,6 +133,7 @@ export class TransitionProvider {
   getHooks(hookName: any): any;
   _registerCoreTransitionHooks(): void;
 }
+import { TransitionEventType } from "./transition-event-type.js";
 import { Transition } from "./transition.js";
 import { TransitionHook } from "./transition-hook.js";
 import { TransitionHookPhase } from "./transition-hook.js";

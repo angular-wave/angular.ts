@@ -60,20 +60,20 @@ export class TransitionHook {
   /**
    *
    * @param {Transition} transition
-   * @param {import("../state/interface.js").StateDeclaration | null} stateContext
+   * @param {import("../state/interface.ts").StateDeclaration | null} stateContext
    * @param {RegisteredHook} registeredHook
    * @param {TransitionHookOptions} options
    * @param {ng.ExceptionHandlerService} exceptionHandler
    */
   constructor(
     transition: Transition,
-    stateContext: import("../state/interface.js").StateDeclaration | null,
+    stateContext: import("../state/interface.ts").StateDeclaration | null,
     registeredHook: RegisteredHook,
     options: TransitionHookOptions,
     exceptionHandler: ng.ExceptionHandlerService,
   );
   transition: import("./transition.js").Transition;
-  stateContext: import("../state/interface.js").StateDeclaration;
+  stateContext: import("../state/interface.ts").StateDeclaration;
   registeredHook: import("./hook-registry.js").RegisteredHook;
   /** @type {TransitionHookOptions} */
   options: TransitionHookOptions;
@@ -133,8 +133,8 @@ export namespace TransitionHook {
   function THROW_ERROR(): (/** @type {any} */ error: any) => never;
 }
 export type TransitionHookOptions =
-  import("./interface.js").TransitionHookOptions;
-export type HookResult = import("./interface.js").HookResult;
+  import("./interface.ts").TransitionHookOptions;
+export type HookResult = import("./interface.ts").HookResult;
 export type Transition = import("./transition.js").Transition;
 export type RegisteredHook = import("./hook-registry.js").RegisteredHook;
 import { Rejection } from "./reject-factory.js";
