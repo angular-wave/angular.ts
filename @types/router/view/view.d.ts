@@ -1,11 +1,20 @@
 export class ViewService {
+  /**
+   * @type {any[]}
+   */
   _ngViews: any[];
+  /**
+   * @type {any[]}
+   */
   _viewConfigs: any[];
+  /**
+   * @type {any[]}
+   */
   _listeners: any[];
   _viewConfigFactory: (
     path: import("../path/path-node.js").PathNode[],
     view: import("../state/interface.ts").ViewDeclaration,
-  ) => import("../state/views.js").ViewConfig;
+  ) => ViewConfig;
   $get: () => this;
   /**
    * @param {?import('../state/state-object.js').StateObject} [context]
@@ -16,13 +25,13 @@ export class ViewService {
   ): import("../state/state-object.js").StateObject | null;
   _rootContext: any;
   /**
-   * @param path
-   * @param decl
+   * @param {import("../path/path-node.js").PathNode[]} path
+   * @param {import("../state/interface.ts").ViewDeclaration} decl
    * @return {import("../state/views.js").ViewConfig}
    */
   _createViewConfig(
-    path: any,
-    decl: any,
+    path: import("../path/path-node.js").PathNode[],
+    decl: import("../state/interface.ts").ViewDeclaration,
   ): import("../state/views.js").ViewConfig;
   /**
    * Deactivates a ViewConfig.
@@ -30,10 +39,13 @@ export class ViewService {
    * This function deactivates a `ViewConfig`.
    * After calling [[sync]], it will un-pair from any `ng-view` with which it is currently paired.
    *
-   * @param viewConfig The ViewConfig view to deregister.
+   * @param {import("./interface.ts").ViewConfig} viewConfig The ViewConfig view to deregister.
    */
-  deactivateViewConfig(viewConfig: any): void;
-  activateViewConfig(viewConfig: any): void;
+  deactivateViewConfig(viewConfig: import("./interface.ts").ViewConfig): void;
+  /**
+   * @param {import("./interface.ts").ViewConfig} viewConfig
+   */
+  activateViewConfig(viewConfig: import("./interface.ts").ViewConfig): void;
   sync(): void;
   /**
    * Registers a `ng-view` component
@@ -46,23 +58,22 @@ export class ViewService {
    *
    * Note: There is no corresponding `deregisterUIView`.
    *       A `ng-view` should hang on to the return value of `registerUIView` and invoke it to deregister itself.
-   *
-   * @param ngView The metadata for a UIView
-   * @return a de-registration function used when the view is destroyed.
+   * @param {import("./interface.ts").ActiveUIView} ngView The metadata for a UIView
+   * @return {() => void} a de-registration function used when the view is destroyed.
    */
-  registerUIView(ngView: any): () => void;
+  registerUIView(ngView: import("./interface.ts").ActiveUIView): () => void;
   /**
    * Returns the list of views currently available on the page, by fully-qualified name.
    *
-   * @return {Array<any>} Returns an array of fully-qualified view names.
+   * @return {Array<string>} Returns an array of fully-qualified view names.
    */
-  available(): Array<any>;
+  available(): Array<string>;
   /**
    * Returns the list of views on the page containing loaded content.
    *
-   * @return {Array<any>} Returns an array of fully-qualified view names.
+   * @return {Array<string>} Returns an array of fully-qualified view names.
    */
-  active(): Array<any>;
+  active(): Array<string>;
 }
 export namespace ViewService {
   /**
@@ -121,7 +132,10 @@ export namespace ViewService {
    * @internal
    */
   function matches(
-    ngViewsByFqn: any,
-    ngView: any,
-  ): (viewConfig: any) => boolean;
+    ngViewsByFqn: import("../../shared/interface.ts").Dict<ActiveUIView>,
+    ngView: ActiveUIView,
+  ): (
+    /** @type {import("./interface.ts").ViewConfig} */ viewConfig: import("./interface.ts").ViewConfig,
+  ) => boolean;
 }
+export type ActiveUIView = import("./interface.ts").ActiveUIView;

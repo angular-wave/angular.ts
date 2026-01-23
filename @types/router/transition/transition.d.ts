@@ -257,7 +257,7 @@ export class Transition {
    */
   redirect(targetState: any): Transition;
   /** @internal If a transition doesn't exit/enter any states, returns any [[Param]] whose value changed */
-  _changedParams(): any;
+  _changedParams(): Param[];
   /**
    * Returns true if the transition is dynamic.
    *
@@ -322,3 +322,4 @@ export namespace Transition {
 }
 export type HookRegistry = import("./interface.ts").HookRegistry;
 import { HookBuilder } from "./hook-builder.js";
+import { Param } from "../params/param.js";

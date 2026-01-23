@@ -341,6 +341,8 @@ export interface ParamDeclaration {
    * Default: `true`
    */
   inherit?: boolean;
+
+  _fn?: any;
 }
 
 /**
@@ -365,7 +367,7 @@ export interface Replace {
    *
    * Used instead of the [[from]] value.
    */
-  to: string;
+  to: string | undefined;
 }
 
 /**

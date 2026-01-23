@@ -19,8 +19,11 @@ export namespace resolvePolicies {
  * The ResolveContext closes over the [[PathNode]]s, and provides DI for the last node in the path.
  */
 export class ResolveContext {
-  constructor(_path: any);
-  _path: any;
+  /**
+   * @param {PathNode[]} _path
+   */
+  constructor(_path: PathNode[]);
+  _path: import("../path/path-node.js").PathNode[];
   /** Gets all the tokens found in the resolve context, de-duplicated */
   getTokens(): any;
   /**
@@ -28,34 +31,39 @@ export class ResolveContext {
    *
    * Gets the last Resolvable that matches the token in this context, or undefined.
    * Throws an error if it doesn't exist in the ResolveContext
+   * @param {string} token
+   * @return {Resolvable}
    */
-  getResolvable(token: any): any;
-  /** Returns the [[ResolvePolicy]] for the given [[Resolvable]] */
-  getPolicy(resolvable: any): any;
+  getResolvable(token: string): Resolvable;
   /**
-   * Returns a ResolveContext that includes a portion of this one
-   *
-   * Given a state, this method creates a new ResolveContext from this one.
-   * The new context starts at the first node (root) and stops at the node for the `state` parameter.
-   *
-   * #### Why
-   *
-   * When a transition is created, the nodes in the "To Path" are injected from a ResolveContext.
-   * A ResolveContext closes over a path of [[PathNode]]s and processes the resolvables.
-   * The "To State" can inject values from its own resolvables, as well as those from all its ancestor state's (node's).
-   * This method is used to create a narrower context when injecting ancestor nodes.
-   *
-   * @example
-   * `let ABCD = new ResolveContext([A, B, C, D]);`
-   *
-   * Given a path `[A, B, C, D]`, where `A`, `B`, `C` and `D` are nodes for states `a`, `b`, `c`, `d`:
-   * When injecting `D`, `D` should have access to all resolvables from `A`, `B`, `C`, `D`.
-   * However, `B` should only be able to access resolvables from `A`, `B`.
-   *
-   * When resolving for the `B` node, first take the full "To Path" Context `[A,B,C,D]` and limit to the subpath `[A,B]`.
-   * `let AB = ABCD.subcontext(a)`
+   * Returns the [[ResolvePolicy]] for the given [[Resolvable]]
+   * @param {Resolvable} resolvable
+   * @return {import("./interface.ts").ResolvePolicy}
    */
-  subContext(state: any): ResolveContext;
+  getPolicy(resolvable: Resolvable): import("./interface.ts").ResolvePolicy;
+  /**
+       * Returns a ResolveContext that includes a portion of this one
+       *
+       * Given a state, this method creates a new ResolveContext from this one.
+       * The new context starts at the first node (root) and stops at the node for the `state` parameter.
+       *
+       * #### Why
+       *
+       * When a transition is created, the nodes in the "To Path" are injected from a ResolveContext.
+       * A ResolveContext closes over a path of [[PathNode]]s and processes the resolvables.
+       * The "To State" can inject values from its own resolvables, as well as those from all its ancestor state's (node's).
+       * This method is used to create a narrower context when injecting ancestor nodes.
+       * @example `let ABCD = new ResolveContext([A, B, C, D]);`
+  
+      Given a path `[A, B, C, D]`, where `A`, `B`, `C` and `D` are nodes for states `a`, `b`, `c`, `d`:
+      When injecting `D`, `D` should have access to all resolvables from `A`, `B`, `C`, `D`.
+      However, `B` should only be able to access resolvables from `A`, `B`.
+  
+      When resolving for the `B` node, first take the full "To Path" Context `[A,B,C,D]` and limit to the subpath `[A,B]`.
+      `let AB = ABCD.subcontext(a)`
+       * @param {ng.StateObject} state
+       */
+  subContext(state: ng.StateObject): ResolveContext;
   /**
    * Adds Resolvables to the node that matches the state
    *
@@ -69,18 +77,24 @@ export class ResolveContext {
    * Note: each resolvable's [[ResolvePolicy]] is merged with the state's policy, and the global default.
    *
    * @param {Resolvable[]} newResolvables the new Resolvables
-   * @param state Used to find the node to put the resolvable on
+   * @param {ng.StateObject} state Used to find the node to put the resolvable on
    */
-  addResolvables(newResolvables: Resolvable[], state: any): void;
+  addResolvables(newResolvables: Resolvable[], state: ng.StateObject): void;
   /**
    * Returns a promise for an array of resolved path Element promises
    *
-   * @param {string} when
-   * @param trans
+   * @param {import("./interface.ts").PolicyWhen} when
+   * @param {ng.Transition} trans
    * @returns {Promise<any>|any}
    */
-  resolvePath(when: string, trans: any): Promise<any> | any;
-  findNode(resolvable: any): any;
+  resolvePath(
+    when: import("./interface.ts").PolicyWhen,
+    trans: ng.Transition,
+  ): Promise<any> | any;
+  /**
+   * @param {Resolvable} resolvable
+   */
+  findNode(resolvable: Resolvable): any;
   /**
    * Gets the async dependencies of a Resolvable
    *
@@ -90,4 +104,5 @@ export class ResolveContext {
    */
   getDependencies(resolvable: Resolvable): Resolvable[];
 }
+export type PathNode = import("../path/path-node.js").PathNode;
 import { Resolvable } from "./resolvable.js";

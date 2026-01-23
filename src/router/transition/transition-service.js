@@ -37,7 +37,7 @@ import { copy } from "../../shared/common.js";
  * Include this object when applying custom defaults:
  * let reloadOpts = { reload: true, notify: true }
  * let options = defaults(theirOpts, customDefaults, defaultOptions);
- * @type {import("./interface.js").TransitionOptions}
+ * @type {import("./interface.ts").TransitionOptions}
  */
 export const defaultTransOpts = {
   location: true,
@@ -75,7 +75,10 @@ export class TransitionProvider {
    */
   constructor(globals, viewService, $exceptionHandler) {
     this._transitionCount = 0;
-    /** The transition hook types, such as `onEnter`, `onStart`, etc */
+    /**
+     * The transition hook types, such as `onEnter`, `onStart`, etc
+     * @type {TransitionEventType[]}
+     */
     this._eventTypes = [];
     /** @internal The registered transition hooks */
     this._registeredHooks = {};

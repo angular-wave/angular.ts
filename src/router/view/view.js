@@ -3,6 +3,8 @@ import { curry } from "../../shared/hof.js";
 import { trace } from "../common/trace.js";
 import { getViewConfigFactory } from "../state/views.js";
 
+/** @typedef {import("./interface.ts").ActiveUIView} ActiveUIView */
+
 /**
  * The View service
  *
@@ -24,8 +26,17 @@ const FQN_MULTIPLIER = 10_000;
 
 export class ViewService {
   constructor() {
+    /**
+     * @type {any[]}
+     */
     this._ngViews = [];
+    /**
+     * @type {any[]}
+     */
     this._viewConfigs = [];
+    /**
+     * @type {any[]}
+     */
     this._listeners = [];
     this._viewConfigFactory = getViewConfigFactory();
   }
@@ -41,8 +52,8 @@ export class ViewService {
   }
 
   /**
-   * @param path
-   * @param decl
+   * @param {import("../path/path-node.js").PathNode[]} path
+   * @param {import("../state/interface.ts").ViewDeclaration} decl
    * @return {import("../state/views.js").ViewConfig}
    */
   _createViewConfig(path, decl) {
@@ -61,19 +72,23 @@ export class ViewService {
    * This function deactivates a `ViewConfig`.
    * After calling [[sync]], it will un-pair from any `ng-view` with which it is currently paired.
    *
-   * @param viewConfig The ViewConfig view to deregister.
+   * @param {import("./interface.ts").ViewConfig} viewConfig The ViewConfig view to deregister.
    */
   deactivateViewConfig(viewConfig) {
     trace.traceViewServiceEvent("<- Removing", viewConfig);
     removeFrom(this._viewConfigs, viewConfig);
   }
 
+  /**
+   * @param {import("./interface.ts").ViewConfig} viewConfig
+   */
   activateViewConfig(viewConfig) {
     trace.traceViewServiceEvent("-> Registering", viewConfig);
     this._viewConfigs.push(viewConfig);
   }
 
   sync() {
+    /** @type {import("../../shared/interface.ts").Dict<import("./interface.ts").ActiveUIView>} */
     const ngViewsByFqn = this._ngViews
       .map((uiv) => [uiv.fqn, uiv])
       .reduce(applyPairs, {});
@@ -81,9 +96,15 @@ export class ViewService {
     // Return a weighted depth value for a ngView.
     // The depth is the nesting depth of ng-views (based on FQN; times 10,000)
     // plus the depth of the state that is populating the ngView
+    /**
+     * @param {import("./interface.ts").ActiveUIView} ngView
+     */
     function ngViewDepth(ngView) {
-      const stateDepth = (context) =>
-        context && context.parent ? stateDepth(context.parent) + 1 : 1;
+      /** @type {(context: import("./interface.ts").ViewContext) => number} */
+      const stateDepth =
+        /** @param {import("./interface.ts").ViewContext} context */ (
+          context,
+        ) => (context && context.parent ? stateDepth(context.parent) + 1 : 1);
 
       return (
         ngView.fqn.split(".").length * FQN_MULTIPLIER +
@@ -91,8 +112,13 @@ export class ViewService {
       );
     }
     // Return the ViewConfig's context's depth in the context tree.
+    /**
+     * @param {import("./interface.ts").ViewConfig} config
+     */
     function viewConfigDepth(config) {
-      let context = config.viewDecl.$context,
+      let context = /** @type {import("./interface.ts").ViewContext} */ (
+          config.viewDecl.$context
+        ),
         count = 0;
 
       while (++count && context.parent) context = context.parent;
@@ -101,11 +127,17 @@ export class ViewService {
     }
     // Given a depth function, returns a compare function which can return either ascending or descending order
     const depthCompare = curry(
-      (depthFn, posNeg, left, right) =>
-        posNeg * (depthFn(left) - depthFn(right)),
+      (
+        /** @type {(arg0: any) => number} */ depthFn,
+        /** @type {number} */ posNeg,
+        /** @type {any} */ left,
+        /** @type {any} */ right,
+      ) => posNeg * (depthFn(left) - depthFn(right)),
     );
 
-    const matchingConfigPair = (ngView) => {
+    const matchingConfigPair = (
+      /** @type {import("./interface.ts").ActiveUIView} */ ngView,
+    ) => {
       const matchingConfigs = this._viewConfigs.filter(
         ViewService.matches(ngViewsByFqn, ngView),
       );
@@ -120,21 +152,26 @@ export class ViewService {
       return { ngView, viewConfig: matchingConfigs[0] };
     };
 
-    const configureUIView = (tuple) => {
+    const configureUIView = (
+      /** @type {import("./interface.ts").ViewTuple} */ tuple,
+    ) => {
       // If a parent ng-view is reconfigured, it could destroy child ng-views.
       // Before configuring a child ng-view, make sure it's still in the active ngViews array.
       if (this._ngViews.indexOf(tuple.ngView) !== -1) {
-        tuple.ngView.configUpdated(tuple.viewConfig);
+        tuple.ngView?.configUpdated(tuple.viewConfig);
       }
     };
 
     // Sort views by FQN and state depth. Process uiviews nearest the root first.
+    /** @type {import("./interface.ts").ViewTuple[]} */
     const ngViewTuples = this._ngViews
       .sort(depthCompare(ngViewDepth, 1))
       .map(matchingConfigPair);
 
+    /** @type {import("./interface.ts").ViewConfig[]} */
     const matchedViewConfigs = ngViewTuples.map((tuple) => tuple.viewConfig);
 
+    /** @type {import("./interface.ts").ViewTuple[]} */
     const unmatchedConfigTuples = this._viewConfigs
       .filter((config) => !matchedViewConfigs.includes(config))
       .map((viewConfig) => ({ ngView: undefined, viewConfig }));
@@ -142,6 +179,7 @@ export class ViewService {
     ngViewTuples.forEach((tuple) => {
       configureUIView(tuple);
     });
+    /** @type {import("./interface.ts").ViewTuple[]} */
     const allTuples = ngViewTuples.concat(unmatchedConfigTuples);
 
     this._listeners.forEach((cb) => cb(allTuples));
@@ -159,15 +197,15 @@ export class ViewService {
    *
    * Note: There is no corresponding `deregisterUIView`.
    *       A `ng-view` should hang on to the return value of `registerUIView` and invoke it to deregister itself.
-   *
-   * @param ngView The metadata for a UIView
-   * @return a de-registration function used when the view is destroyed.
+   * @param {import("./interface.ts").ActiveUIView} ngView The metadata for a UIView
+   * @return {() => void} a de-registration function used when the view is destroyed.
    */
   registerUIView(ngView) {
     trace.traceViewServiceUIViewEvent("-> Registering", ngView);
     const ngViews = this._ngViews;
 
-    const fqnAndTypeMatches = (uiv) => uiv.fqn === ngView.fqn;
+    const fqnAndTypeMatches = /** @param {ActiveUIView} uiv */ (uiv) =>
+      uiv.fqn === ngView.fqn;
 
     if (ngViews.filter(fqnAndTypeMatches).length)
       trace.traceViewServiceUIViewEvent("!!!! duplicate ngView named:", ngView);
@@ -193,7 +231,7 @@ export class ViewService {
   /**
    * Returns the list of views currently available on the page, by fully-qualified name.
    *
-   * @return {Array<any>} Returns an array of fully-qualified view names.
+   * @return {Array<string>} Returns an array of fully-qualified view names.
    */
   available() {
     return this._ngViews.map((view) => view.fqn);
@@ -202,7 +240,7 @@ export class ViewService {
   /**
    * Returns the list of views on the page containing loaded content.
    *
-   * @return {Array<any>} Returns an array of fully-qualified view names.
+   * @return {Array<string>} Returns an array of fully-qualified view names.
    */
   active() {
     return this._ngViews
@@ -265,25 +303,30 @@ export class ViewService {
  *
  * @internal
  */
-ViewService.matches = (ngViewsByFqn, ngView) => (viewConfig) => {
-  // Split names apart from both viewConfig and ngView into segments
-  const vc = viewConfig.viewDecl;
+ViewService.matches =
+  (
+    /** @type {import("../../shared/interface.ts").Dict<ActiveUIView>} */ ngViewsByFqn,
+    /** @type {ActiveUIView} */ ngView,
+  ) =>
+  (/** @type {import("./interface.ts").ViewConfig} */ viewConfig) => {
+    // Split names apart from both viewConfig and ngView into segments
+    const vc = viewConfig.viewDecl;
 
-  const vcSegments = vc.$ngViewName.split(".");
+    const vcSegments = /** @type {string[]} */ (vc.$ngViewName?.split("."));
 
-  const uivSegments = ngView.fqn.split(".");
+    const uivSegments = ngView.fqn.split(".");
 
-  // Check if the tails of the segment arrays match. ex, these arrays' tails match:
-  // vc: ["foo", "bar"], uiv fqn: ["$default", "foo", "bar"]
-  if (!equals(vcSegments, uivSegments.slice(0 - vcSegments.length)))
-    return false;
-  // Now check if the fqn ending at the first segment of the viewConfig matches the context:
-  // ["$default", "foo"].join(".") == "$default.foo", does the ng-view $default.foo context match?
-  const negOffset = 1 - vcSegments.length || undefined;
+    // Check if the tails of the segment arrays match. ex, these arrays' tails match:
+    // vc: ["foo", "bar"], uiv fqn: ["$default", "foo", "bar"]
+    if (!equals(vcSegments, uivSegments.slice(0 - vcSegments.length)))
+      return false;
+    // Now check if the fqn ending at the first segment of the viewConfig matches the context:
+    // ["$default", "foo"].join(".") == "$default.foo", does the ng-view $default.foo context match?
+    const negOffset = 1 - vcSegments.length || undefined;
 
-  const fqnToFirstSegment = uivSegments.slice(0, negOffset).join(".");
+    const fqnToFirstSegment = uivSegments.slice(0, negOffset).join(".");
 
-  const ngViewContext = ngViewsByFqn[fqnToFirstSegment].creationContext;
+    const ngViewContext = ngViewsByFqn[fqnToFirstSegment].creationContext;
 
-  return vc.$ngViewContextAnchor === (ngViewContext && ngViewContext.name);
-};
+    return vc.$ngViewContextAnchor === (ngViewContext && ngViewContext.name);
+  };

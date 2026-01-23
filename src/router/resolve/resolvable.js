@@ -26,6 +26,13 @@ export const defaultResolvePolicy = {
  * parameter to those fns.
  */
 export class Resolvable {
+  /**
+   * @param {any} arg1
+   * @param {Function | undefined} [resolveFn]
+   * @param {any[]} [deps]
+   * @param {import("./interface.ts").ResolvePolicy | undefined} [policy]
+   * @param {any} [data]
+   */
   constructor(arg1, resolveFn, deps, policy, data) {
     this.resolved = false;
     this.promise = undefined;
@@ -54,6 +61,10 @@ export class Resolvable {
     }
   }
 
+  /**
+   * @param {ng.BuiltStateDeclaration} state
+   * @returns {import("./interface.ts").ResolvePolicy}
+   */
   getPolicy(state) {
     const thisPolicy = this.policy || {};
 
@@ -72,18 +83,21 @@ export class Resolvable {
    * Given a ResolveContext that this Resolvable is found in:
    * Wait for this Resolvable's dependencies, then invoke this Resolvable's function
    * and update the Resolvable's state
+   * @param {import("./resolve-context.js").ResolveContext} resolveContext
+   * @param {import("../transition/transition.js").Transition} [trans]
    */
   resolve(resolveContext, trans) {
     // Gets all dependencies from ResolveContext and wait for them to be resolved
+    /** @type {() => Promise<any[]>} */
     const getResolvableDependencies = () =>
       Promise.all(
-        resolveContext
-          .getDependencies(this)
-          .map((resolvable) => resolvable.get(resolveContext, trans)),
+        resolveContext.getDependencies(this).map((resolvable) => {
+          return resolvable.get(resolveContext, trans);
+        }),
       );
 
     // Invokes the resolve function passing the resolved dependencies as arguments
-    const invokeResolveFn = (resolvedDeps) =>
+    const invokeResolveFn = (/** @type {any[]} */ resolvedDeps) =>
       this.resolveFn.apply(null, resolvedDeps);
 
     const node = resolveContext.findNode(this);
@@ -92,14 +106,16 @@ export class Resolvable {
 
     const asyncPolicy = this.getPolicy(state).async;
 
-    const customAsyncPolicy = isFunction(asyncPolicy) ? asyncPolicy : (x) => x;
+    const customAsyncPolicy = isFunction(asyncPolicy)
+      ? asyncPolicy
+      : (/** @type {any} */ x) => x;
 
     // After the final value has been resolved, update the state of the Resolvable
-    const applyResolvedValue = (resolvedValue) => {
+    const applyResolvedValue = (/** @type {any} */ resolvedValue) => {
       this.data = resolvedValue;
       this.resolved = true;
       this.resolveFn = null;
-      trace.traceResolvableResolved(this, trans);
+      trace.traceResolvableResolved(this, /** @type {ng.Transition} */ (trans));
 
       return this.data;
     };
@@ -119,6 +135,9 @@ export class Resolvable {
    *
    * Fetches the data and returns a promise.
    * Returns the existing promise if it has already been fetched once.
+   * @param {import("./resolve-context.js").ResolveContext} resolveContext
+   * @param {import("../transition/transition.js").Transition | undefined} [trans]
+   * @return {Promise<any>}
    */
   get(resolveContext, trans) {
     return this.promise || this.resolve(resolveContext, trans);
@@ -132,5 +151,5 @@ export class Resolvable {
     return new Resolvable(this);
   }
 }
-Resolvable.fromData = (token, data) =>
-  new Resolvable(token, () => data, null, null, data);
+Resolvable.fromData = (/** @type {any} */ token, /** @type {any} */ data) =>
+  new Resolvable(token, () => data, undefined, undefined, data);

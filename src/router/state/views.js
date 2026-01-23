@@ -6,6 +6,9 @@ import { ResolveContext } from "../resolve/resolve-context.js";
 import { Resolvable } from "../resolve/resolvable.js";
 import { annotate } from "../../core/di/di.js";
 
+/**
+ * @return {(path: import("../path/path-node.js").PathNode[], view: import("./interface.ts").ViewDeclaration) => ViewConfig}
+ */
 export function getViewConfigFactory() {
   /**
    * @type {import("../template-factory.js").TemplateFactoryProvider | null}

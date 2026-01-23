@@ -15,7 +15,20 @@ export namespace defaultResolvePolicy {
  * parameter to those fns.
  */
 export class Resolvable {
-  constructor(arg1: any, resolveFn: any, deps: any, policy: any, data: any);
+  /**
+   * @param {any} arg1
+   * @param {Function | undefined} [resolveFn]
+   * @param {any[]} [deps]
+   * @param {import("./interface.ts").ResolvePolicy | undefined} [policy]
+   * @param {any} [data]
+   */
+  constructor(
+    arg1: any,
+    resolveFn?: Function | undefined,
+    deps?: any[],
+    policy?: import("./interface.ts").ResolvePolicy | undefined,
+    data?: any,
+  );
   resolved: boolean;
   promise: Promise<any>;
   token: any;
@@ -23,25 +36,39 @@ export class Resolvable {
   resolveFn: any;
   deps: any;
   data: any;
-  getPolicy(state: any): {
-    when: any;
-    async: any;
-  };
+  /**
+   * @param {ng.BuiltStateDeclaration} state
+   * @returns {import("./interface.ts").ResolvePolicy}
+   */
+  getPolicy(
+    state: ng.BuiltStateDeclaration,
+  ): import("./interface.ts").ResolvePolicy;
   /**
    * Asynchronously resolve this Resolvable's data
    *
    * Given a ResolveContext that this Resolvable is found in:
    * Wait for this Resolvable's dependencies, then invoke this Resolvable's function
    * and update the Resolvable's state
+   * @param {import("./resolve-context.js").ResolveContext} resolveContext
+   * @param {import("../transition/transition.js").Transition} [trans]
    */
-  resolve(resolveContext: any, trans: any): Promise<any>;
+  resolve(
+    resolveContext: import("./resolve-context.js").ResolveContext,
+    trans?: import("../transition/transition.js").Transition,
+  ): Promise<any>;
   /**
    * Gets a promise for this Resolvable's data.
    *
    * Fetches the data and returns a promise.
    * Returns the existing promise if it has already been fetched once.
+   * @param {import("./resolve-context.js").ResolveContext} resolveContext
+   * @param {import("../transition/transition.js").Transition | undefined} [trans]
+   * @return {Promise<any>}
    */
-  get(resolveContext: any, trans: any): Promise<any>;
+  get(
+    resolveContext: import("./resolve-context.js").ResolveContext,
+    trans?: import("../transition/transition.js").Transition | undefined,
+  ): Promise<any>;
   toString(): string;
   clone(): Resolvable;
 }

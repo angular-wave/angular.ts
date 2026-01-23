@@ -10,6 +10,9 @@ import { parse } from "../../shared/hof.js";
 import { getInheritedData } from "../../shared/dom.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
+/**
+ * @param {string | string[]} ref
+ */
 function parseStateRef(ref) {
   const paramsOnly = ref.match(/^\s*({[^}]*})\s*$/);
 
@@ -45,6 +48,9 @@ function processedDef($state, $element, def) {
   return { ngState, ngStateParams: def.ngStateParams, ngStateOpts, href };
 }
 
+/**
+ * @param {HTMLElement} el
+ */
 function getTypeInfo(el) {
   // SVGAElement does not use the href attribute, but rather the 'xlinkHref' attribute.
   const isSvg =
@@ -60,6 +66,13 @@ function getTypeInfo(el) {
   };
 }
 
+/**
+ * @param {HTMLElement} el
+ * @param {import("../state/state-service.js").StateProvider} $state
+ * @param {{ attr?: string; isAnchor: any; clickable?: boolean; }} type
+ * @param {{ (): { ngState: any; ngStateParams: any; ngStateOpts: any; href: any; }; (): { ngState: any; ngStateParams: any; ngStateOpts: any; href: any; }; (): any; }} getDef
+ * @param {ng.Scope} scope
+ */
 function clickHook(el, $state, type, getDef, scope) {
   return function (event) {
     const button = event.which || event.button,
@@ -100,6 +113,10 @@ function clickHook(el, $state, type, getDef, scope) {
   };
 }
 
+/**
+ * @param {any} el
+ * @param {{ $current: any; }} $state
+ */
 function defaultOpts(el, $state) {
   return {
     relative: stateContext(el) || $state.$current,
@@ -108,6 +125,12 @@ function defaultOpts(el, $state) {
   };
 }
 
+/**
+ * @param {HTMLElement} element
+ * @param {ng.Scope} scope
+ * @param {{ (event: any): void; (event: any): void; }} hookFn
+ * @param {{ events: any; }} ngStateOpts
+ */
 function bindEvents(element, scope, hookFn, ngStateOpts) {
   let events = ngStateOpts ? ngStateOpts.events : undefined;
 
@@ -156,6 +179,9 @@ export function $StateRefDirective(
 
       const active = ngSrefActive[1] || ngSrefActive[0];
 
+      /**
+       * @type {(() => void) | null}
+       */
       let unlinkInfoFn = null;
 
       const rawDef = {};
@@ -243,6 +269,9 @@ export function $StateRefDynamicDirective(
 
       const active = ngSrefActive[1] || ngSrefActive[0];
 
+      /**
+       * @type {(() => void) | null}
+       */
       let unlinkInfoFn = null;
 
       const rawDef = {};

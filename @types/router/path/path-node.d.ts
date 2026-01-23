@@ -34,5 +34,6 @@ export class PathNode {
    * @param paramsFn A function that returns which parameters should be compared.
    * @returns The [[Param]]s which differ, or null if the two nodes are for different states
    */
-  diff(node: any, paramsFn: any): any;
+  diff(node: any, paramsFn: any): false | Param[];
 }
+import { Param } from "../params/param.js";

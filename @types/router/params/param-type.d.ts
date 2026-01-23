@@ -23,20 +23,35 @@
  */
 export class ParamType {
   /**
-   * @param def  A configuration object which contains the custom type definition.  The object's
-   *        properties will override the default methods and/or pattern in `ParamType`'s public interface.
-   */
+       * @param {any} def A configuration object which contains the custom type definition.  The object's
+      properties will override the default methods and/or pattern in `ParamType`'s public interface.
+       */
   constructor(def: any);
   pattern: RegExp;
   inherit: boolean;
   name: any;
+  /**
+   * @param {any} val
+   */
   is(val: any): boolean;
+  /**
+   * @param {any} val
+   */
   encode(val: any): any;
+  /**
+   * @param {any} val
+   */
   decode(val: any): any;
+  /**
+   * @param {any} a
+   * @param {any} b
+   */
   equals(a: any, b: any): boolean;
-  $subPattern(): string;
   toString(): string;
-  /** Given an encoded string, or a decoded object, returns a decoded object */
+  /**
+   * Given an encoded string, or a decoded object, returns a decoded object
+   * @param {any} val
+   */
   $normalize(val: any): any;
   /**
    * Wraps an existing custom ParamType as an array of ParamType, depending on 'mode'.
@@ -47,13 +62,23 @@ export class ParamType {
    * if `mode` is "auto", then
    * - url: "/path?queryParam=1 will create $stateParams.queryParam: 1
    * - url: "/path?queryParam=1&queryParam=2 will create $stateParams.queryParam: [1, 2]
+   * @param {boolean |'auto'} mode
+   * @param {any} isSearch
    */
-  $asArray(mode: any, isSearch: any): ArrayType;
+  $asArray(mode: boolean | "auto", isSearch: any): ArrayType;
 }
-/** Wraps up a `ParamType` object to handle array values. */
-declare function ArrayType(type: any, mode: any): void;
+/**
+ * Wraps up a `ParamType` object to handle array values.
+ * @param {this} type
+ * @param {string} mode
+ */
+declare function ArrayType(type: this, mode: string): void;
 declare class ArrayType {
-  /** Wraps up a `ParamType` object to handle array values. */
-  constructor(type: any, mode: any);
+  /**
+   * Wraps up a `ParamType` object to handle array values.
+   * @param {this} type
+   * @param {string} mode
+   */
+  constructor(type: this, mode: string);
 }
 export {};

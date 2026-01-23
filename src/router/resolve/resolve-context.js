@@ -6,6 +6,8 @@ import { PathUtils } from "../path/path-utils.js";
 import { stringify } from "../../shared/strings.js";
 import { isUndefined } from "../../shared/utils.js";
 
+/** @typedef {import("../path/path-node.js").PathNode} PathNode */
+
 export const resolvePolicies = {
   when: {
     LAZY: "LAZY",
@@ -32,6 +34,9 @@ const EAGER_WHENS = [resolvePolicies.when.EAGER];
  * The ResolveContext closes over the [[PathNode]]s, and provides DI for the last node in the path.
  */
 export class ResolveContext {
+  /**
+   * @param {PathNode[]} _path
+   */
   constructor(_path) {
     this._path = _path;
   }
@@ -41,7 +46,11 @@ export class ResolveContext {
     return this._path
       .reduce(
         (acc, node) =>
-          acc.concat(node.resolvables.map((resolve) => resolve.token)),
+          acc.concat(
+            node.resolvables.map(
+              (/** @type {Resolvable} */ resolve) => resolve.token,
+            ),
+          ),
         [],
       )
       .reduce(uniqR, []);
@@ -52,17 +61,23 @@ export class ResolveContext {
    *
    * Gets the last Resolvable that matches the token in this context, or undefined.
    * Throws an error if it doesn't exist in the ResolveContext
+   * @param {string} token
+   * @return {Resolvable}
    */
   getResolvable(token) {
     const matching = this._path
       .map((node) => node.resolvables)
       .reduce(unnestR, [])
-      .filter((resolve) => resolve.token === token);
+      .filter((/** @type {Resolvable} */ resolve) => resolve.token === token);
 
-    return tail(matching);
+    return /** @type {Resolvable} */ (tail(matching));
   }
 
-  /** Returns the [[ResolvePolicy]] for the given [[Resolvable]] */
+  /**
+   * Returns the [[ResolvePolicy]] for the given [[Resolvable]]
+   * @param {Resolvable} resolvable
+   * @return {import("./interface.ts").ResolvePolicy}
+   */
   getPolicy(resolvable) {
     const node = this.findNode(resolvable);
 
@@ -70,31 +85,33 @@ export class ResolveContext {
   }
 
   /**
-   * Returns a ResolveContext that includes a portion of this one
-   *
-   * Given a state, this method creates a new ResolveContext from this one.
-   * The new context starts at the first node (root) and stops at the node for the `state` parameter.
-   *
-   * #### Why
-   *
-   * When a transition is created, the nodes in the "To Path" are injected from a ResolveContext.
-   * A ResolveContext closes over a path of [[PathNode]]s and processes the resolvables.
-   * The "To State" can inject values from its own resolvables, as well as those from all its ancestor state's (node's).
-   * This method is used to create a narrower context when injecting ancestor nodes.
-   *
-   * @example
-   * `let ABCD = new ResolveContext([A, B, C, D]);`
-   *
-   * Given a path `[A, B, C, D]`, where `A`, `B`, `C` and `D` are nodes for states `a`, `b`, `c`, `d`:
-   * When injecting `D`, `D` should have access to all resolvables from `A`, `B`, `C`, `D`.
-   * However, `B` should only be able to access resolvables from `A`, `B`.
-   *
-   * When resolving for the `B` node, first take the full "To Path" Context `[A,B,C,D]` and limit to the subpath `[A,B]`.
-   * `let AB = ABCD.subcontext(a)`
-   */
+     * Returns a ResolveContext that includes a portion of this one
+     *
+     * Given a state, this method creates a new ResolveContext from this one.
+     * The new context starts at the first node (root) and stops at the node for the `state` parameter.
+     *
+     * #### Why
+     *
+     * When a transition is created, the nodes in the "To Path" are injected from a ResolveContext.
+     * A ResolveContext closes over a path of [[PathNode]]s and processes the resolvables.
+     * The "To State" can inject values from its own resolvables, as well as those from all its ancestor state's (node's).
+     * This method is used to create a narrower context when injecting ancestor nodes.
+     * @example `let ABCD = new ResolveContext([A, B, C, D]);`
+
+    Given a path `[A, B, C, D]`, where `A`, `B`, `C` and `D` are nodes for states `a`, `b`, `c`, `d`:
+    When injecting `D`, `D` should have access to all resolvables from `A`, `B`, `C`, `D`.
+    However, `B` should only be able to access resolvables from `A`, `B`.
+
+    When resolving for the `B` node, first take the full "To Path" Context `[A,B,C,D]` and limit to the subpath `[A,B]`.
+    `let AB = ABCD.subcontext(a)`
+     * @param {ng.StateObject} state
+     */
   subContext(state) {
     return new ResolveContext(
-      PathUtils.subPath(this._path, (node) => node.state === state),
+      PathUtils.subPath(
+        this._path,
+        (/** @type {PathNode} */ node) => node.state === state,
+      ),
     );
   }
 
@@ -111,7 +128,7 @@ export class ResolveContext {
    * Note: each resolvable's [[ResolvePolicy]] is merged with the state's policy, and the global default.
    *
    * @param {Resolvable[]} newResolvables the new Resolvables
-   * @param state Used to find the node to put the resolvable on
+   * @param {ng.StateObject} state Used to find the node to put the resolvable on
    */
   addResolvables(newResolvables, state) {
     /** @type {import('../path/path-node').PathNode} */
@@ -120,15 +137,18 @@ export class ResolveContext {
     const keys = newResolvables.map((resolve) => resolve.token);
 
     node.resolvables = node.resolvables
-      .filter((resolve) => keys.indexOf(resolve.token) === -1)
+      .filter(
+        (/** @type {Resolvable} */ resolve) =>
+          keys.indexOf(resolve.token) === -1,
+      )
       .concat(newResolvables);
   }
 
   /**
    * Returns a promise for an array of resolved path Element promises
    *
-   * @param {string} when
-   * @param trans
+   * @param {import("./interface.ts").PolicyWhen} when
+   * @param {ng.Transition} trans
    * @returns {Promise<any>|any}
    */
   resolvePath(when = "LAZY", trans) {
@@ -142,11 +162,23 @@ export class ResolveContext {
 
     // get the subpath to the state argument, if provided
     trace.traceResolvePath(this._path, when, trans);
-    const matchesPolicy = (acceptedVals, whenOrAsync) => (resolvable) =>
-      acceptedVals.includes(this.getPolicy(resolvable)[whenOrAsync]);
+    const matchesPolicy =
+      (
+        /** @type {string | any[]} */ acceptedVals,
+        /** @type {string} */ whenOrAsync,
+      ) =>
+      (/** @type {Resolvable} */ resolvable) =>
+        acceptedVals.includes(
+          /** @type {Record<string, any>} */ (this.getPolicy(resolvable))[
+            whenOrAsync
+          ],
+        );
 
     // Trigger all the (matching) Resolvables in the path
     // Reduce all the "WAIT" Resolvables into an array
+    /**
+     * @type {any[]}
+     */
     const promises = this._path.reduce((acc, node) => {
       const nodeResolvables = node.resolvables.filter(
         matchesPolicy(matchedWhens, "when"),
@@ -155,13 +187,15 @@ export class ResolveContext {
       const nowait = nodeResolvables.filter(matchesPolicy(["NOWAIT"], "async"));
 
       const wait = nodeResolvables.filter(
-        (x) => !matchesPolicy(["NOWAIT"], "async")(x),
+        (/** @type {Resolvable} */ x) => !matchesPolicy(["NOWAIT"], "async")(x),
       );
 
       // For the matching Resolvables, start their async fetch process.
       const subContext = this.subContext(node.state);
 
-      const getResult = (resolve) =>
+      const getResult = (
+        /** @type {{ get: (arg0: ResolveContext, arg1: import("../transition/transition.js").Transition) => Promise<any>; token: any; }} */ resolve,
+      ) =>
         resolve
           .get(subContext, trans)
           // Return a tuple that includes the Resolvable's token
@@ -176,8 +210,13 @@ export class ResolveContext {
     return Promise.all(promises);
   }
 
+  /**
+   * @param {Resolvable} resolvable
+   */
   findNode(resolvable) {
-    return find(this._path, (node) => node.resolvables.includes(resolvable));
+    return find(this._path, (/** @type {PathNode} */ node) =>
+      node.resolvables.includes(resolvable),
+    );
   }
 
   /**
@@ -193,15 +232,22 @@ export class ResolveContext {
     // Find which other resolvables are "visible" to the `resolvable` argument
     // subpath stopping at resolvable's node, or the whole path (if the resolvable isn't in the path)
     const subPath =
-      PathUtils.subPath(this._path, (x) => x === node) || this._path;
+      PathUtils.subPath(this._path, (/** @type {any} */ x) => x === node) ||
+      this._path;
 
     const availableResolvables = subPath
-      .reduce((acc, _node) => acc.concat(_node.resolvables), []) // all of subpath's resolvables
-      .filter((res) => res !== resolvable); // filter out the `resolvable` argument
+      .reduce(
+        (
+          /** @type {string | any[]} */ acc,
+          /** @type {{ resolvables: any; }} */ _node,
+        ) => acc.concat(_node.resolvables),
+        [],
+      ) // all of subpath's resolvables
+      .filter((/** @type {Resolvable} */ res) => res !== resolvable); // filter out the `resolvable` argument
 
-    return resolvable.deps.map((token) => {
+    return resolvable.deps.map((/** @type {string} */ token) => {
       const matching = availableResolvables.filter(
-        (resolve) => resolve.token === token,
+        (/** @type {{ token: string; }} */ resolve) => resolve.token === token,
       );
 
       if (matching.length) return tail(matching);

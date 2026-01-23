@@ -136,6 +136,7 @@ import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-run
 import { Transition as TTransition } from "./router/transition/transition.js";
 import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.js";
 import { TransitionProviderService as TTransitionProviderService } from "./router/transition/interface.ts";
+import { UrlConfigProvider as TUrlConfigProvider } from "./router/url/url-config.js";
 
 declare global {
   interface Function {
@@ -182,6 +183,7 @@ declare global {
     export type TransitionProviderService = TTransitionProviderService;
     export type RouterProvider = TRouterProvider;
     export type TemplateFactoryProvider = TTemplateFactoryProvider;
+    export type UrlConfigProvider = TUrlConfigProvider;
 
     // Services
     export type AnchorScrollService = TAnchorScrollService;

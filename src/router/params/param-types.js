@@ -28,6 +28,9 @@ import { ParamType } from "./param-type.js";
 export class ParamTypes {
   constructor() {
     this.enqueue = true;
+    /**
+     * @type {{ name: any; def: any; }[]}
+     */
     this.typeQueue = [];
     this.defaultTypes = pick(ParamTypes.prototype, [
       "hash",
@@ -41,7 +44,7 @@ export class ParamTypes {
       "any",
     ]);
     // Register default types. Store them in the prototype of this.types.
-    const makeType = (definition, name) =>
+    const makeType = (/** @type {any} */ definition, /** @type {any} */ name) =>
       new ParamType(Object.assign({ name }, definition));
 
     this.types = inherit(map(this.defaultTypes, makeType), {});
@@ -51,6 +54,9 @@ export class ParamTypes {
    * Registers a parameter type
    *
    * End users should call [[UrlMatcherFactory.type]], which delegates to this method.
+   * @param {string | number | symbol} name
+   * @param {import("./interface.ts").ParamTypeDefinition} [definition]
+   * @param {() => import("../params/interface.ts").ParamTypeDefinition} [definitionFn]
    */
   type(name, definition, definitionFn) {
     if (!isDefined(definition)) return this.types[name];
