@@ -38,7 +38,7 @@ export class UrlConfigProvider {
 
     pathType.encode = (/** @type {unknown} */ x) =>
       !isNullOrUndefined(x)
-        ? x.toString().replace(/([~/])/g, (m) => (m === "~" ? "~~" : "~2F"))
+        ? x.toString().replace(/([~/])/g, (i) => (i === "~" ? "~~" : "~2F"))
         : x;
 
     pathType.decode = (/** @type {unknown} */ x) =>

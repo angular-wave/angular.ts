@@ -126,7 +126,11 @@ export class StateRegistryProvider {
        * @returns {any}
        */
       function decoratedNg1Hook(trans, state) {
-        const resolveContext = new ResolveContext(trans.treeChanges(pathname));
+        const resolveContext = new ResolveContext(
+          /** @type {import("../resolve/resolve-context.js").PathNode[]} */ (
+            trans.treeChanges(pathname)
+          ),
+        );
 
         const subContext = resolveContext.subContext(state._state());
 

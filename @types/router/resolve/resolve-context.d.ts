@@ -20,9 +20,9 @@ export namespace resolvePolicies {
  */
 export class ResolveContext {
   /**
-   * @param {PathNode[]} _path
+   * @param {import("../resolve/resolve-context.js").PathNode[]} _path
    */
-  constructor(_path: PathNode[]);
+  constructor(_path: import("../resolve/resolve-context.js").PathNode[]);
   _path: import("../path/path-node.js").PathNode[];
   /** Gets all the tokens found in the resolve context, de-duplicated */
   getTokens(): any;
@@ -61,9 +61,9 @@ export class ResolveContext {
   
       When resolving for the `B` node, first take the full "To Path" Context `[A,B,C,D]` and limit to the subpath `[A,B]`.
       `let AB = ABCD.subcontext(a)`
-       * @param {ng.StateObject} state
+       * @param {ng.BuiltStateDeclaration} state
        */
-  subContext(state: ng.StateObject): ResolveContext;
+  subContext(state: ng.BuiltStateDeclaration): ResolveContext;
   /**
    * Adds Resolvables to the node that matches the state
    *

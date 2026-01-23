@@ -73,8 +73,8 @@ export class StateBuilder {
     parent: ((
       state: any,
     ) =>
-      | import("./state-object.js").StateObject
-      | import("./interface.ts").BuiltStateDeclaration)[];
+      | import("./interface.ts").BuiltStateDeclaration
+      | import("./state-object.js").StateObject)[];
     data: (typeof dataBuilder)[];
     url: ((stateObject: any) => any)[];
     navigable: ((state: any) => any)[];

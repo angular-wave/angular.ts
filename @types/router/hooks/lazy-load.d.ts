@@ -21,22 +21,35 @@
  * ```
  *
  * See [[StateDeclaration.lazyLoad]]
+ * @param {import("../transition/transition-service.js").TransitionProvider} transitionService
+ * @param {ng.StateService} stateService
+ * @param {ng.UrlService} urlService
+ * @param {{ register: (arg0: any) => any; } | import("../state/state-registry.js").StateRegistryProvider | undefined} [stateRegistry]
  */
 export function registerLazyLoadHook(
-  transitionService: any,
-  stateService: any,
-  urlService: any,
-  stateRegistry: any,
+  transitionService: import("../transition/transition-service.js").TransitionProvider,
+  stateService: ng.StateService,
+  urlService: ng.UrlService,
+  stateRegistry?:
+    | {
+        register: (arg0: any) => any;
+      }
+    | import("../state/state-registry.js").StateRegistryProvider
+    | undefined,
 ): any;
 /**
  * Invokes a state's lazy load function
- *
- * @param transition a Transition context
- * @param state the state to lazy load
- * @returns A promise for the lazy load result
+ * @param {import("../transition/transition.js").Transition} transition a Transition context
+ * @param {import("../state/interface.js").StateDeclaration} state the state to lazy load
+ * @param {{ register: (arg0: any) => any; } | undefined} [stateRegistry]
+ * @return {Promise<import("../state/interface.ts").LazyLoadResult | undefined>} a promise for the lazy load result
  */
 export function lazyLoadState(
-  transition: any,
-  state: any,
-  stateRegistry: any,
-): any;
+  transition: import("../transition/transition.js").Transition,
+  state: import("../state/interface.js").StateDeclaration,
+  stateRegistry?:
+    | {
+        register: (arg0: any) => any;
+      }
+    | undefined,
+): Promise<import("../state/interface.ts").LazyLoadResult | undefined>;

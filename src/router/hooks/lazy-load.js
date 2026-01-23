@@ -23,6 +23,10 @@ import { isArray } from "../../shared/utils";
  * ```
  *
  * See [[StateDeclaration.lazyLoad]]
+ * @param {import("../transition/transition-service.js").TransitionProvider} transitionService
+ * @param {ng.StateService} stateService
+ * @param {ng.UrlService} urlService
+ * @param {{ register: (arg0: any) => any; } | import("../state/state-registry.js").StateRegistryProvider | undefined} [stateRegistry]
  */
 export function registerLazyLoadHook(
   transitionService,
@@ -32,13 +36,11 @@ export function registerLazyLoadHook(
 ) {
   return transitionService.onBefore(
     {
-      entering: (state) => {
+      entering: (/** @type {{ lazyLoad: any; }} */ state) => {
         return !!state.lazyLoad;
       },
     },
-    /** @param {import("../transition/transition.js").Transition} transition*/ (
-      transition,
-    ) => {
+    /** @param {ng.Transition} transition*/ (transition) => {
       function retryTransition() {
         if (transition.originalTransition().options().source !== "url") {
           // The original transition was not triggered via url sync
@@ -74,8 +76,16 @@ export function registerLazyLoadHook(
       }
       const promises = transition
         .entering()
-        .filter((state) => !!state._state().lazyLoad)
-        .map((state) => lazyLoadState(transition, state, stateRegistry));
+        .filter(
+          (
+            /** @type {{ _state: () => { (): any; new (): any; lazyLoad: any; }; }} */ state,
+          ) => !!state._state().lazyLoad,
+        )
+        .map(
+          (
+            /** @type {import("../state/interface.js").StateDeclaration} */ state,
+          ) => lazyLoadState(transition, state, stateRegistry),
+        );
 
       return Promise.all(promises).then(retryTransition);
     },
@@ -84,10 +94,10 @@ export function registerLazyLoadHook(
 
 /**
  * Invokes a state's lazy load function
- *
- * @param transition a Transition context
- * @param state the state to lazy load
- * @returns A promise for the lazy load result
+ * @param {import("../transition/transition.js").Transition} transition a Transition context
+ * @param {import("../state/interface.js").StateDeclaration} state the state to lazy load
+ * @param {{ register: (arg0: any) => any; } | undefined} [stateRegistry]
+ * @return {Promise<import("../state/interface.ts").LazyLoadResult | undefined>} a promise for the lazy load result
  */
 export function lazyLoadState(transition, state, stateRegistry) {
   const lazyLoadFn = state._state().lazyLoad;
@@ -116,7 +126,11 @@ export function lazyLoadState(transition, state, stateRegistry) {
       .then(updateStateRegistry)
       .then(success, error);
   }
-  /** Register any lazy loaded state definitions */
+
+  /**
+   * Register any lazy loaded state definitions
+   * @param {{ states: any[]; }} result
+   */
   function updateStateRegistry(result) {
     if (result && isArray(result.states)) {
       result.states.forEach((_state) => stateRegistry.register(_state));

@@ -69,7 +69,8 @@ export class Param {
   inherit: boolean;
   array: boolean;
   config: import("./interface.ts").ParamDeclaration;
-  matchingKeys: any;
+  /** @type {import("./interface.ts").RawParams | undefined} */
+  matchingKeys: import("./interface.ts").RawParams | undefined;
   /**
    * @param {any} value
    */

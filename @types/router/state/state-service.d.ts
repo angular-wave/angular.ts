@@ -47,7 +47,10 @@ export class StateProvider {
   urlService: ng.UrlService | undefined;
   /** @type {ng.InjectorService | undefined } */
   $injector: ng.InjectorService | undefined;
-  invalidCallbacks: any[];
+  /**
+   * @type {import("./interface.ts").OnInvalidCallback[]}
+   */
+  invalidCallbacks: import("./interface.ts").OnInvalidCallback[];
   /** @type {ng.ExceptionHandlerService} */
   _defaultErrorHandler: ng.ExceptionHandlerService;
   $get: (
@@ -135,7 +138,7 @@ export class StateProvider {
    * ```
    *
    * @param {string} name The name of the builder function to decorate.
-   * @param {object} func A function that is responsible for decorating the original
+   * @param {import("./interface.ts").BuilderFunction} func A function that is responsible for decorating the original
    * builder function. The function receives two parameters:
    *
    *   - `{object}` - state - The state urlConfig object.
@@ -143,7 +146,10 @@ export class StateProvider {
    *
    * @return {object} $stateProvider - $stateProvider instance
    */
-  decorator(name: string, func: object): object;
+  decorator(
+    name: string,
+    func: import("./interface.ts").BuilderFunction,
+  ): object;
   /**
    *
    * @param {import("./interface.ts").StateDeclaration} definition
@@ -157,10 +163,11 @@ export class StateProvider {
    * The results of the callbacks are wrapped in Promise.resolve(), so the callbacks may return promises.
    *
    * If a callback returns an TargetState, then it is used as arguments to $state.transitionTo() and the result returned.
-   *
    * @internal
+   * @param {PathNode[]} fromPath
+   * @param {TargetState} toState
    */
-  _handleInvalidTargetState(fromPath: any, toState: any): any;
+  _handleInvalidTargetState(fromPath: PathNode[], toState: TargetState): any;
   /**
    * Registers an Invalid State handler
    *
@@ -178,14 +185,14 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param {function} callback invoked when the toState is invalid
+   * @param {import("./interface.ts").OnInvalidCallback} callback invoked when the toState is invalid
    *   This function receives the (invalid) toState, the fromState, and an injector.
    *   The function may optionally return a [[TargetState]] or a Promise for a TargetState.
    *   If one is returned, it is treated as a redirect.
    *
    * @returns a function which deregisters the callback
    */
-  onInvalid(callback: Function): () => void;
+  onInvalid(callback: import("./interface.ts").OnInvalidCallback): () => void;
   /**
    * Reloads the current state
    *
@@ -211,7 +218,7 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param {string | StateDeclaration | StateObject;} [reloadState] A state name or a state object.
+   * @param {string | StateDeclaration | StateObject} [reloadState] A state name or a state object.
    *    If present, this state and all its children will be reloaded, but ancestors will not reload.
    *
    * #### Example:
@@ -230,7 +237,7 @@ export class StateProvider {
    *
    * @returns A promise representing the state of the new transition. See [[StateService.go]]
    */
-  reload(reloadState: any): any;
+  reload(reloadState?: string | StateDeclaration | StateObject): any;
   /**
    * Transition to a different state and/or parameters
    *
@@ -278,8 +285,17 @@ export class StateProvider {
    * This is a factory method for creating a TargetState
    *
    * This may be returned from a Transition Hook to redirect a transition, for example.
+   * @param {string | import("./interface.ts").StateDeclaration | import("./state-object.js").StateObject} identifier
+   * @param {{}} params
    */
-  target(identifier: any, params: any, options?: {}): TargetState;
+  target(
+    identifier:
+      | string
+      | import("./interface.ts").StateDeclaration
+      | import("./state-object.js").StateObject,
+    params: {},
+    options?: {},
+  ): TargetState;
   getCurrentPath(): PathNode[];
   /**
    * Low-level method for transitioning to a new state.
@@ -310,76 +326,88 @@ export class StateProvider {
     options?: {},
   ): any;
   /**
-   * Checks if the current state *is* the provided state
-   *
-   * Similar to [[includes]] but only checks for the full state name.
-   * If params is supplied then it will be tested for strict equality against the current
-   * active params object, so all params must match with none missing and no extras.
-   *
-   * #### Example:
-   * ```js
-   * $state.$current.name = 'contacts.details.item';
-   *
-   * // absolute name
-   * $state.is('contact.details.item'); // returns true
-   * $state.is(contactDetailItemStateObject); // returns true
-   * ```
-   *
-   * // relative name (. and ^), typically from a template
-   * // E.g. from the 'contacts.details' template
-   * ```html
-   * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
-   * ```
-   *
-   * @param stateOrName The state name (absolute or relative) or state object you'd like to check.
-   * @param params A param object, e.g. `{sectionId: section.id}`, that you'd like
-   * to test against the current active state.
-   * @param options An options object. The options are:
-   *   - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
-   *     test relative to `options.relative` state (or name).
-   *
-   * @returns Returns true if it is the state.
-   */
-  is(stateOrName: any, params: any, options: any): boolean;
+       * Checks if the current state *is* the provided state
+       *
+       * Similar to [[includes]] but only checks for the full state name.
+       * If params is supplied then it will be tested for strict equality against the current
+       * active params object, so all params must match with none missing and no extras.
+       *
+       * #### Example:
+       * ```js
+       * $state.$current.name = 'contacts.details.item';
+       *
+       * // absolute name
+       * $state.is('contact.details.item'); // returns true
+       * $state.is(contactDetailItemStateObject); // returns true
+       * ```
+       *
+       * // relative name (. and ^), typically from a template
+       * // E.g. from the 'contacts.details' template
+       * ```html
+       * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
+       * ```
+       * @param {any} stateOrName The state name (absolute or relative) or state object you'd like to check.
+       * @param {Record<string, any> | undefined} params A param object, e.g. `{sectionId: section.id}`, that you'd like
+      to test against the current active state.
+       * @param {{ relative: any; } | undefined} options An options object. The options are:
+      - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
+      test relative to `options.relative` state (or name).
+       * @returns Returns true if it is the state.
+       */
+  is(
+    stateOrName: any,
+    params: Record<string, any> | undefined,
+    options:
+      | {
+          relative: any;
+        }
+      | undefined,
+  ): boolean;
   /**
-   * Checks if the current state *includes* the provided state
-   *
-   * A method to determine if the current active state is equal to or is the child of the
-   * state stateName. If any params are passed then they will be tested for a match as well.
-   * Not all the parameters need to be passed, just the ones you'd like to test for equality.
-   *
-   * #### Example when `$state.$current.name === 'contacts.details.item'`
-   * ```js
-   * // Using partial names
-   * $state.includes("contacts"); // returns true
-   * $state.includes("contacts.details"); // returns true
-   * $state.includes("contacts.details.item"); // returns true
-   * $state.includes("contacts.list"); // returns false
-   * $state.includes("about"); // returns false
-   * ```
-   *
-   * #### Glob Examples when `* $state.$current.name === 'contacts.details.item.url'`:
-   * ```js
-   * $state.includes("*.details.*.*"); // returns true
-   * $state.includes("*.details.**"); // returns true
-   * $state.includes("**.item.**"); // returns true
-   * $state.includes("*.details.item.url"); // returns true
-   * $state.includes("*.details.*.url"); // returns true
-   * $state.includes("*.details.*"); // returns false
-   * $state.includes("item.**"); // returns false
-   * ```
-   *
-   * @param stateOrName A partial name, relative name, glob pattern,
-   *   or state object to be searched for within the current state name.
-   * @param params A param object, e.g. `{sectionId: section.id}`,
-   *   that you'd like to test against the current active state.
-   * @param options An options object. The options are:
-   *   - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
-   *     test relative to `options.relative` state (or name).
-   *
-   * @returns {boolean} Returns true if it does include the state
-   */
-  includes(stateOrName: any, params: any, options: any): boolean;
+       * Checks if the current state *includes* the provided state
+       *
+       * A method to determine if the current active state is equal to or is the child of the
+       * state stateName. If any params are passed then they will be tested for a match as well.
+       * Not all the parameters need to be passed, just the ones you'd like to test for equality.
+       *
+       * #### Example when `$state.$current.name === 'contacts.details.item'`
+       * ```js
+       * // Using partial names
+       * $state.includes("contacts"); // returns true
+       * $state.includes("contacts.details"); // returns true
+       * $state.includes("contacts.details.item"); // returns true
+       * $state.includes("contacts.list"); // returns false
+       * $state.includes("about"); // returns false
+       * ```
+       *
+       * #### Glob Examples when `* $state.$current.name === 'contacts.details.item.url'`:
+       * ```js
+       * $state.includes("*.details.*.*"); // returns true
+       * $state.includes("*.details.**"); // returns true
+       * $state.includes("**.item.**"); // returns true
+       * $state.includes("*.details.item.url"); // returns true
+       * $state.includes("*.details.*.url"); // returns true
+       * $state.includes("*.details.*"); // returns false
+       * $state.includes("item.**"); // returns false
+       * ```
+       * @param {unknown} stateOrName A partial name, relative name, glob pattern,
+      or state object to be searched for within the current state name.
+       * @param {Record<string, any> | undefined} params A param object, e.g. `{sectionId: section.id}`,
+      that you'd like to test against the current active state.
+       * @param {{ relative: any; } | undefined} options An options object. The options are:
+      - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
+      test relative to `options.relative` state (or name).
+       * @returns {boolean} Returns true if it does include the state
+       */
+  includes(
+    stateOrName: unknown,
+    params: Record<string, any> | undefined,
+    options:
+      | {
+          relative: any;
+        }
+      | undefined,
+  ): boolean;
   /**
    * Generates a URL for a state and parameters
    *
@@ -389,14 +417,21 @@ export class StateProvider {
    * ```js
    * expect($state.href("about.person", { person: "bob" })).toEqual("/about/bob");
    * ```
-   *
-   * @param stateOrName The state name or state object you'd like to generate a url from.
-   * @param params An object of parameter values to fill the state's required parameters.
-   * @param options Options object. The options are:
-   *
+   * @param {any} stateOrName The state name or state object you'd like to generate a url from.
+   * @param {Object} params An object of parameter values to fill the state's required parameters.
+   * @param {{ relative: any; inherit: any; lossy: any; absolute: any; }} options Options object. The options are:
    * @returns {string} compiled state url
    */
-  href(stateOrName: any, params: any, options: any): string;
+  href(
+    stateOrName: any,
+    params: any,
+    options: {
+      relative: any;
+      inherit: any;
+      lossy: any;
+      absolute: any;
+    },
+  ): string;
   /**
    * Sets or gets the default [[transitionTo]] error handler.
    *
@@ -417,35 +452,41 @@ export class StateProvider {
    *   // Do not log transitionTo errors
    * });
    * ```
-   *
-   * @param handler a global error handler function
+   * @param {import("../../docs.ts").ExceptionHandler | undefined} handler a global error handler function
    * @returns the current global error handler
    */
-  defaultErrorHandler(handler: any): any;
+  defaultErrorHandler(
+    handler: import("../../docs.ts").ExceptionHandler | undefined,
+  ): import("../../docs.ts").ExceptionHandler;
+  /**
+   * @param {import("./interface.ts").StateOrName} stateOrName
+   * @param {undefined} [base]
+   */
   get(
-    stateOrName: any,
-    base: any,
+    stateOrName: import("./interface.ts").StateOrName,
+    base?: undefined,
     ...args: any[]
   ):
     | import("./interface.ts").StateDeclaration
     | import("./interface.ts").StateDeclaration[];
   /**
-   * Lazy loads a state
-   *
-   * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
-   *
-   * @param stateOrName the state that should be lazy loaded
-   * @param transition the optional Transition context to use (if the lazyLoad function requires an injector, etc)
-   * Note: If no transition is provided, a noop transition is created using the from the current state to the current state.
-   * This noop transition is not actually run.
-   *
-   * @returns a promise to lazy load
-   */
-  lazyLoad(stateOrName: any, transition: any): any;
+       * Lazy loads a state
+       *
+       * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
+       * @param {import("./interface.ts").StateOrName} stateOrName the state that should be lazy loaded
+       * @param {import("../transition/transition.js").Transition} transition the optional Transition context to use (if the lazyLoad function requires an injector, etc)
+      Note: If no transition is provided, a noop transition is created using the from the current state to the current state.
+      This noop transition is not actually run.
+       * @returns a promise to lazy load
+       */
+  lazyLoad(
+    stateOrName: import("./interface.ts").StateOrName,
+    transition: import("../transition/transition.js").Transition,
+  ): Promise<import("./interface.ts").LazyLoadResult>;
 }
 export type StateRegistryProvider =
   import("./state-registry.js").StateRegistryProvider;
 export type StateDeclaration = import("./interface.ts").StateDeclaration;
 export type StateObject = import("./state-object.js").StateObject;
-import { TargetState } from "./target-state.js";
 import { PathNode } from "../path/path-node.js";
+import { TargetState } from "./target-state.js";

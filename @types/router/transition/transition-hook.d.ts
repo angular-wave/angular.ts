@@ -77,7 +77,7 @@ export class TransitionHook {
   registeredHook: import("./hook-registry.js").RegisteredHook;
   /** @type {TransitionHookOptions} */
   options: TransitionHookOptions;
-  type: any;
+  type: import("./transition-event-type.js").TransitionEventType;
   isSuperseded: () => boolean;
   /** @type {ng.ExceptionHandlerService} */
   _exceptionHandler: ng.ExceptionHandlerService;
