@@ -35,7 +35,7 @@ const EAGER_WHENS = [resolvePolicies.when.EAGER];
  */
 export class ResolveContext {
   /**
-   * @param {PathNode[]} _path
+   * @param {import("../resolve/resolve-context.js").PathNode[]} _path
    */
   constructor(_path) {
     this._path = _path;
@@ -104,7 +104,7 @@ export class ResolveContext {
 
     When resolving for the `B` node, first take the full "To Path" Context `[A,B,C,D]` and limit to the subpath `[A,B]`.
     `let AB = ABCD.subcontext(a)`
-     * @param {ng.StateObject} state
+     * @param {ng.BuiltStateDeclaration} state
      */
   subContext(state) {
     return new ResolveContext(

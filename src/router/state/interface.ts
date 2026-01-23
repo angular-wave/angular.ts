@@ -6,6 +6,7 @@ import { Transition } from "../transition/transition.js";
 import {
   TransitionStateHookFn,
   TransitionOptions,
+  HookResult,
 } from "../transition/interface.ts";
 import {
   ResolvePolicy,
@@ -1072,3 +1073,9 @@ export type BuilderFunction = (
   state: StateObject,
   parent?: BuilderFunction,
 ) => any;
+
+export type OnInvalidCallback = (
+  toState?: TargetState,
+  fromState?: TargetState,
+  injector?: ng.InjectorService,
+) => HookResult;

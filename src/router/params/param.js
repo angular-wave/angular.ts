@@ -200,6 +200,7 @@ export class Param {
     this.inherit = inherit;
     this.array = arrayMode;
     this.config = config;
+    /** @type {import("./interface.ts").RawParams | undefined} */
     this.matchingKeys = undefined;
   }
 

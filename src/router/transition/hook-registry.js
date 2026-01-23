@@ -2,24 +2,26 @@ import { map, removeFrom, tail } from "../../shared/common.js";
 import { isFunction, isString } from "../../shared/utils.js";
 import { Glob } from "../glob/glob.js";
 import { TransitionHookScope } from "./transition-hook.js";
+
 /**
  * Determines if the given state matches the matchCriteria
- *
  * @internal
- *
- * @param state a State Object to test against
- * @param criterion
- * - If a string, matchState uses the string as a glob-matcher against the state name
- * - If an array (of strings), matchState uses each string in the array as a glob-matchers against the state name
- *   and returns a positive match if any of the globs match.
- * - If a function, matchState calls the function with the state and returns true if the function's result is truthy.
+ * @param {import("../state/state-object.js").StateObject} state a State Object to test against
+ * @param {import("./interface.js").HookMatchCriterion} criterion - If a string, matchState uses the string as a glob-matcher against the state name
+- If an array (of strings), matchState uses each string in the array as a glob-matchers against the state name
+  and returns a positive match if any of the globs match.
+- If a function, matchState calls the function with the state and returns true if the function's result is truthy.
+ * @param {ng.Transition} transition
  * @returns {boolean}
  */
 export function matchState(state, criterion, transition) {
   const toMatch = isString(criterion) ? [criterion] : criterion;
 
+  /**
+   * @param {{ name: string; }} _state
+   */
   function matchGlobs(_state) {
-    const globStrings = toMatch;
+    const globStrings = /** @type {string[]}*/ (toMatch);
 
     for (let i = 0; i < globStrings.length; i++) {
       const glob = new Glob(globStrings[i]);
@@ -43,12 +45,12 @@ export function matchState(state, criterion, transition) {
  */
 export class RegisteredHook {
   /**
-   * @param {import("./transition-service.js").TransitionProvider} tranSvc
-   * @param eventType
-   * @param callback
-   * @param matchCriteria
-   * @param removeHookFromRegistry
-   * @param options
+   * @param {ng.TransitionProviderService} tranSvc
+   * @param {import("./transition-event-type.js").TransitionEventType} eventType
+   * @param {import("./interface.js").HookFn} callback
+   * @param {import("./interface.js").HookMatchCriteria} matchCriteria
+   * @param {(hook: RegisteredHook) => void} removeHookFromRegistry
+   * @param {import("./interface.js").HookRegOptions} options
    */
   constructor(
     tranSvc,
@@ -58,7 +60,6 @@ export class RegisteredHook {
     removeHookFromRegistry,
     options = {},
   ) {
-    /** @type {import("./transition-service.js").TransitionProvider} */
     this.tranSvc = tranSvc;
     this.eventType = eventType;
     this.callback = callback;
@@ -85,6 +86,10 @@ export class RegisteredHook {
    * to still match a transition, even when `entering === []`.  Contrast that
    * with `entering: (state) => true` which only matches when a state is actually
    * being entered.
+   * @param {import("../resolve/resolve-context.js").PathNode[]} nodes
+   * @param {import("./interface.js").HookMatchCriterion} criterion
+   * @param {ng.Transition} transition
+   * @return {import("../resolve/resolve-context.js").PathNode[] | null}
    */
   _matchingNodes(nodes, criterion, transition) {
     if (criterion === true) return nodes;
@@ -108,9 +113,12 @@ export class RegisteredHook {
    *   exiting: true,
    *   retained: true,
    * }
+   * @returns {import("./interface.ts").HookMatchCriteria}
    */
   _getDefaultMatchCriteria() {
-    return map(this.tranSvc._getPathTypes(), () => true);
+    return /** @type {import("./interface.ts").HookMatchCriteria} */ (
+      map(this.tranSvc._getPathTypes(), () => true)
+    );
   }
 
   /**
@@ -127,6 +135,9 @@ export class RegisteredHook {
    *   entering: _matchingNodes(treeChanges.entering,     mc.entering),
    * };
    * ```
+   * @param {import("./interface.js").TreeChanges} treeChanges
+   * @param {ng.Transition} transition
+   * @returns {{}}
    */
   _getMatchingNodes(treeChanges, transition) {
     const criteria = Object.assign(
@@ -145,11 +156,14 @@ export class RegisteredHook {
 
       const nodes = isStateHook ? path : [tail(path)];
 
-      mn[pathtype.name] = this._matchingNodes(
-        nodes,
-        criteria[pathtype.name],
-        transition,
-      );
+      /** @type {Record<string, any>} */ (mn)[pathtype.name] =
+        this._matchingNodes(
+          nodes,
+          /** @type {import("./interface.js").HookMatchCriterion} */ (
+            criteria[pathtype.name]
+          ),
+          transition,
+        );
 
       return mn;
     }, {});
@@ -157,9 +171,10 @@ export class RegisteredHook {
 
   /**
    * Determines if this hook's [[matchCriteria]] match the given [[TreeChanges]]
-   *
-   * @returns an IMatchingNodes object, or null. If an IMatchingNodes object is returned, its values
-   * are the matching [[PathNode]]s for each [[HookMatchCriterion]] (to, from, exiting, retained, entering)
+   * @param {import("./interface.js").TreeChanges} treeChanges
+   * @param {ng.Transition} transition
+   * @returns {import("./interface.js").IMatchingNodes | null} an IMatchingNodes object, or null. If an IMatchingNodes object is returned,
+   * its values are the matching [[PathNode]]s for each [[HookMatchCriterion]] (to, from, exiting, retained, entering)
    */
   matches(treeChanges, transition) {
     const matches = this._getMatchingNodes(treeChanges, transition);
@@ -167,7 +182,9 @@ export class RegisteredHook {
     // Check if all the criteria matched the TreeChanges object
     const allMatched = Object.values(matches).every((x) => x);
 
-    return allMatched ? matches : null;
+    return allMatched
+      ? /** @type {import("./interface.js").IMatchingNodes } */ (matches)
+      : null;
   }
 
   deregister() {
@@ -178,21 +195,31 @@ export class RegisteredHook {
 /**
  * Return a registration function of the requested type.
  * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
- * @param {ng.TransitionProvider} transitionService
+ * @param {ng.TransitionProviderService} transitionService
  * @param {import("./transition-event-type.js").TransitionEventType} eventType
- * @returns {( matchObject: any, callback: Function, options?: Record<string, any> ) => () => void }
+ * @returns {function(import("./interface.js").HookMatchCriteria, import("./interface.js").HookFn, {}=): (function(): void)|*}
  */
 export function makeEvent(hookSource, transitionService, eventType) {
   // Create the object which holds the registered transition hooks.
+  /** @type {{ [x: string]: RegisteredHook[] } & Record<string, any>} */
   const _registeredHooks = (hookSource._registeredHooks =
     hookSource._registeredHooks || {});
 
+  /**
+   * @type {any[]}
+   */
   const hooks = (_registeredHooks[eventType.name] = []);
 
-  const removeHookFn = (x) => removeFrom(hooks, x);
+  const removeHookFn = (/** @type {any} */ x) => removeFrom(hooks, x);
 
   // Create hook registration function on the HookRegistry for the event
-  hookSource[eventType.name] = hookRegistrationFn;
+  /** @type Record<string, any> */ (hookSource)[eventType.name] =
+    hookRegistrationFn;
+
+  /**
+   * @param {import("./interface.js").HookMatchCriteria} matchObject
+   * @param {import("./interface.js").HookFn} callback
+   */
   function hookRegistrationFn(matchObject, callback, options = {}) {
     const registeredHook = new RegisteredHook(
       transitionService,
