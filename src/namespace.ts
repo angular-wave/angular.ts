@@ -123,7 +123,6 @@ import {
 } from "./router/state/interface.ts";
 import { StateObject as TStateObject } from "./router/state/state-object.js";
 import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.js";
-import { HookRegistry } from "./router/transition/interface.ts";
 import {
   SceService as TSceService,
   SceDelegateService as TSceDelegateService,
@@ -151,23 +150,22 @@ declare global {
   export namespace ng {
     // Core types (docs preserved)
     export type Angular = TAngular;
+    export type AnnotatedDirectiveFactory = TAnnotatedDirectiveFactory;
     export type Attributes = TAttributes & Record<string, string>;
+    export type BoundTranscludeFn = TBoundTranscludeFn;
+    export type Component = TComponent & Record<string, any>;
+    export type CompositeLinkFn = TCompositeLinkFn;
+    export type Controller = TController;
     export type Directive<TController = any> = TDirective<TController>;
     export type DirectiveFactory = TDirectiveFactory;
-    export type AnnotatedDirectiveFactory = TAnnotatedDirectiveFactory;
-    export type Component = TComponent & Record<string, any>;
-    export type Controller = TController;
-    export type Scope = TScope & Record<string, any>;
+    export type LinkFnMapping = TLinkFnMapping;
     export type NgModule = TNgModule;
-    export type PubSubProvider = TPubSubProvider;
-
-    export type CompositeLinkFn = TCompositeLinkFn;
-    export type PublicLinkFn = TPublicLinkFn;
     export type NodeLinkFn = TNodeLinkFn;
     export type NodeLinkFnCtx = TNodeLinkFnCtx;
+    export type PublicLinkFn = TPublicLinkFn;
+    export type PubSubProvider = TPubSubProvider;
+    export type Scope = TScope & Record<string, any>;
     export type TranscludeFn = TTranscludeFn;
-    export type BoundTranscludeFn = TBoundTranscludeFn;
-    export type LinkFnMapping = TLinkFnMapping;
 
     // Providers
     export type AnchorScrollProvider = TAnchorScrollProvider;
@@ -177,8 +175,8 @@ declare global {
     export type HttpParamSerializerProvider = THttpParamSerializerProvider;
     export type InterpolateProvider = TInterpolateProvider;
     export type LocationProvider = TLocationProvider;
-    export type SceProvider = TSceProvider;
     export type SceDelegateProvider = TSceDelegateProvider;
+    export type SceProvider = TSceProvider;
     export type TransitionProvider = TTransitionProvider;
     export type TransitionService = TTransitionService;
     export type RouterProvider = TRouterProvider;
@@ -199,8 +197,8 @@ declare global {
     export type FilterService = TFilterService;
     export type HttpParamSerializerSerService = THttpParamSerializer;
     export type HttpService = THttpService;
-    export type InterpolateService = TInterpolateService;
     export type InjectorService = TInjectorService;
+    export type InterpolateService = TInterpolateService;
     export type LocationService = TLocationService;
     export type LogService = TLogService;
     export type ParseService = TParseService;
@@ -221,51 +219,51 @@ declare global {
     export type ViewService = TViewService;
 
     // Support types
-    export type AnimationOptions = TAnimationOptions;
-    export type ErrorHandlingConfig = TErrorHandlingConfig;
-    export type ListenerFn = TListenerFn;
-    export type Listener = TListener;
-    export type DocumentService = Document;
-    export type WindowService = Window;
     export type AngularService = Angular;
-    export type WorkerConfig = TWorkerConfig;
-    export type WorkerConnection = TWorkerConnection;
+    export type AnnotatedFactory<T extends (...args: any[]) => any> =
+      TAnnotatedFactory<T>;
+    export type AnimationOptions = TAnimationOptions;
+    export type BuiltStateDeclaration = TBuiltStateDeclaration;
+    export type ControllerConstructor = TControllerConstructor;
+    export type CookieOptions = TCookieOptions;
+    export type CookieStoreOptions = TCookieStoreOptions;
+    export type DocumentService = Document;
+    export type EntityClass<T> = TEntityClass<T>;
+    export type ErrorHandlingConfig = TErrorHandlingConfig;
+    export type Expression = TExpression;
+    export type HttpMethod = THttpMethod;
+    export type HttpPromise<T> = THttpPromise<T>;
+    export type HttpProviderDefaults = THttpProviderDefaults;
+    export type HttpResponse<T> = THttpResponse<T>;
+    export type HttpResponseStatus = THttpResponseStatus;
     export type Injectable<
       T extends
         | ((...args: any[]) => any)
         | (abstract new (...args: any[]) => any),
     > = TInjectable<T>;
-    export type AnnotatedFactory<T extends (...args: any[]) => any> =
-      TAnnotatedFactory<T>;
+    export type InjectionTokens = typeof PublicInjectionTokens;
+    export type InvocationDetail = TInvocationDetail;
+    export type Listener = TListener;
+    export type ListenerFn = TListenerFn;
+    export type NgModelController = TNgModelController;
+    export type ProviderCache = TProviderCache;
+    export type RequestConfig = TRequestConfig;
+    export type RequestShortcutConfig = TRequestShortcutConfig;
+    export type RestDefinition<T> = TRestDefinition<T>;
+    export type RestService<T, ID> = TRestService<T, ID>;
+    export type ScopeEvent = TScopeEvent;
+    export type ServiceProvider = TServiceProvider;
+    export type StateDeclaration = TStateDeclaration;
+    export type StateObject = TStateObject;
     export type StorageBackend = TStorageBackend;
     export type StorageType = TStorageType;
     export type StreamConnectionConfig = TStreamConnectionConfig;
-    export type CookieOptions = TCookieOptions;
-    export type ControllerConstructor = TControllerConstructor;
-    export type CookieStoreOptions = TCookieStoreOptions;
-    export type RestService<T, ID> = TRestService<T, ID>;
-    export type RestDefinition<T> = TRestDefinition<T>;
-    export type EntityClass<T> = TEntityClass<T>;
-    export type ServiceProvider = TServiceProvider;
-    export type Expression = TExpression;
-    export type NgModelController = TNgModelController;
+    export type Transition = TTransition;
     export type Validator = TValidator;
-    export type StateDeclaration = TStateDeclaration;
-    export type BuiltStateDeclaration = TBuiltStateDeclaration;
-    export type StateObject = TStateObject;
-    export type InjectionTokens = typeof PublicInjectionTokens;
-    export type ScopeEvent = TScopeEvent;
-    export type RequestShortcutConfig = TRequestShortcutConfig;
-    export type HttpProviderDefaults = THttpProviderDefaults;
-    export type ProviderCache = TProviderCache;
     export type WebSocketConfig = TWebSocketConfig;
     export type WebSocketService = TWebSocketService;
-    export type HttpResponseStatus = THttpResponseStatus;
-    export type HttpMethod = THttpMethod;
-    export type HttpPromise<T> = THttpPromise<T>;
-    export type HttpResponse<T> = THttpResponse<T>;
-    export type RequestConfig = TRequestConfig;
-    export type InvocationDetail = TInvocationDetail;
-    export type Transition = TTransition;
+    export type WindowService = Window;
+    export type WorkerConfig = TWorkerConfig;
+    export type WorkerConnection = TWorkerConnection;
   }
 }
