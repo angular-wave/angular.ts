@@ -118,7 +118,6 @@ import {
 } from "./router/state/interface.ts";
 import { StateObject as TStateObject } from "./router/state/state-object.js";
 import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.js";
-import { HookRegistry } from "./router/transition/interface.ts";
 import {
   SceService as TSceService,
   SceDelegateService as TSceDelegateService,
@@ -130,7 +129,7 @@ import {
 import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.js";
 import { Transition as TTransition } from "./router/transition/transition.js";
 import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.js";
-import { TransitionProviderService as TTransitionProviderService } from "./router/transition/interface.ts";
+import { TransitionService as TTransitionService } from "./router/transition/interface.ts";
 import { UrlConfigProvider as TUrlConfigProvider } from "./router/url/url-config.js";
 declare global {
   interface Function {
@@ -168,7 +167,7 @@ declare global {
     type SceProvider = TSceProvider;
     type SceDelegateProvider = TSceDelegateProvider;
     type TransitionProvider = TTransitionProvider;
-    type TransitionProviderService = TTransitionProviderService;
+    type TransitionService = TTransitionService;
     type RouterProvider = TRouterProvider;
     type TemplateFactoryProvider = TTemplateFactoryProvider;
     type UrlConfigProvider = TUrlConfigProvider;
@@ -201,7 +200,6 @@ declare global {
     type SceDelegateService = TSceDelegateService;
     type SseService = TSseService;
     type SseConfig = TSseConfig;
-    type TransitionService = TransitionProvider & HookRegistry;
     type TemplateCacheService = Map<string, string>;
     type TemplateRequestService = TTemplateRequestService;
     type UrlService = TUrlService;

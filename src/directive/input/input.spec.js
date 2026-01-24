@@ -590,7 +590,6 @@ describe("input", () => {
         //   expect(scope.form.alias.$error.min).toBeFalsy();
 
         //   scope.minVal = "2014-W01";
-        //   debugger
         //   await wait();
         //   expect(
         //     inputElm.querySelector("input").classList.contains("ng-invalid"),

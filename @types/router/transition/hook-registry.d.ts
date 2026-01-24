@@ -17,13 +17,13 @@ export function matchState(
 /**
  * Return a registration function of the requested type.
  * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
- * @param {ng.TransitionProviderService} transitionService
+ * @param {ng.TransitionService} transitionService
  * @param {import("./transition-event-type.js").TransitionEventType} eventType
  * @returns {function(import("./interface.js").HookMatchCriteria, import("./interface.js").HookFn, {}=): (function(): void)|*}
  */
 export function makeEvent(
   hookSource: ng.TransitionProvider | import("./transition.js").Transition,
-  transitionService: ng.TransitionProviderService,
+  transitionService: ng.TransitionService,
   eventType: import("./transition-event-type.js").TransitionEventType,
 ): (
   arg0: import("./interface.js").HookMatchCriteria,
@@ -35,7 +35,7 @@ export function makeEvent(
  */
 export class RegisteredHook {
   /**
-   * @param {ng.TransitionProviderService} tranSvc
+   * @param {ng.TransitionService} tranSvc
    * @param {import("./transition-event-type.js").TransitionEventType} eventType
    * @param {import("./interface.js").HookFn} callback
    * @param {import("./interface.js").HookMatchCriteria} matchCriteria
@@ -43,14 +43,14 @@ export class RegisteredHook {
    * @param {import("./interface.js").HookRegOptions} options
    */
   constructor(
-    tranSvc: ng.TransitionProviderService,
+    tranSvc: ng.TransitionService,
     eventType: import("./transition-event-type.js").TransitionEventType,
     callback: import("./interface.js").HookFn,
     matchCriteria: import("./interface.js").HookMatchCriteria,
     removeHookFromRegistry: (hook: RegisteredHook) => void,
     options?: import("./interface.js").HookRegOptions,
   );
-  tranSvc: import("./interface.js").TransitionProviderService;
+  tranSvc: import("./interface.js").TransitionService;
   eventType: import("./transition-event-type.js").TransitionEventType;
   callback: import("./interface.js").HookFn;
   matchCriteria: import("./interface.js").HookMatchCriteria;

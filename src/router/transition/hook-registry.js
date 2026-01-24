@@ -45,7 +45,7 @@ export function matchState(state, criterion, transition) {
  */
 export class RegisteredHook {
   /**
-   * @param {ng.TransitionProviderService} tranSvc
+   * @param {ng.TransitionService} tranSvc
    * @param {import("./transition-event-type.js").TransitionEventType} eventType
    * @param {import("./interface.js").HookFn} callback
    * @param {import("./interface.js").HookMatchCriteria} matchCriteria
@@ -195,7 +195,7 @@ export class RegisteredHook {
 /**
  * Return a registration function of the requested type.
  * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
- * @param {ng.TransitionProviderService} transitionService
+ * @param {ng.TransitionService} transitionService
  * @param {import("./transition-event-type.js").TransitionEventType} eventType
  * @returns {function(import("./interface.js").HookMatchCriteria, import("./interface.js").HookFn, {}=): (function(): void)|*}
  */

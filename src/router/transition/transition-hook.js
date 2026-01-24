@@ -82,7 +82,7 @@ export class TransitionHook {
    * If no hook returns a promise, then all hooks are processed synchronously.
    *
    * @param {TransitionHook[]} hooks the list of TransitionHooks to invoke
-   * @param {() => Promise<any>} doneCallback a callback that is invoked after all the hooks have successfully completed
+   * @param {() => Promise<any> | null} doneCallback a callback that is invoked after all the hooks have successfully completed
    *
    * @returns {Promise<any>} a promise for the async result, or the result of the callback
    */
