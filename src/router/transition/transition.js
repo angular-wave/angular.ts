@@ -17,7 +17,7 @@ import {
 } from "../../shared/utils.js";
 import { is, propEq, val } from "../../shared/hof.js";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.js";
-import { makeEvent, matchState } from "./hook-registry.js";
+import { makeEvent } from "./hook-registry.js";
 import { HookBuilder } from "./hook-builder.js";
 import { PathUtils } from "../path/path-utils.js";
 import { Param } from "../params/param.js";
@@ -26,6 +26,12 @@ import { ResolveContext } from "../resolve/resolve-context.js";
 import { Rejection } from "./reject-factory.js";
 
 /** @typedef {import('./interface.ts').HookRegistry} HookRegistry */
+/** @typedef {import("../state/interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
+/** @typedef {import("./interface.ts").RegisteredHooks} RegisteredHooks */
+/** @typedef {import("./hook-registry.js").RegisteredHook} RegisteredHook */
+/** @typedef {import('../state/target-state.js').TargetState} TargetState */
+/** @typedef {import("../transition/interface.ts").TreeChanges} TreeChanges */
+/** @typedef {import("../resolve/resolve-context.js").PathNode} PathNode*/
 
 const REDIRECT_MAX = 20;
 
@@ -44,10 +50,10 @@ export class Transition {
    *
    * If the target state is not valid, an error is thrown.
    *
-   * @param {Array<import('../path/path-node.js').PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
+   * @param {Array<PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
    *        encapsulates the "from state".
-   * @param {import('../state/target-state.js').TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
-   * @param {ng.TransitionProvider} transitionService The [[TransitionService]] instance
+   * @param {TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
+   * @param {ng.TransitionService} transitionService
    * @param {ng.RouterService} globals
    */
   constructor(fromPath, targetState, transitionService, globals) {
@@ -56,8 +62,7 @@ export class Transition {
      */
     this._globals = globals;
 
-    /** @type {ng.TransitionProvider} */
-    this._transitionProvider = transitionService;
+    this._transitionService = transitionService;
 
     /** @type {PromiseWithResolvers<any>} */
     this._deferred = Promise.withResolvers();
@@ -69,12 +74,16 @@ export class Transition {
      * When the transition is unsuccessful, the promise is rejected with the [[Rejection]] or javascript error
      */
     this.promise = this._deferred.promise;
-    /** @internal Holds the hook registration functions such as those passed to Transition.onStart() */
+    /** @type {RegisteredHooks} Holds the hook registration functions such as those passed to Transition.onStart() */
     this._registeredHooks = {};
 
+    /** @type {HookBuilder} */
     this._hookBuilder = new HookBuilder(this);
+
     /** Checks if this transition is currently active/running. */
+    /** @type {() => boolean} */
     this.isActive = () => this._globals.transition === this;
+
     this._targetState = targetState;
 
     if (!targetState.valid()) {
@@ -107,14 +116,18 @@ export class Transition {
    * (which can then be used to register hooks)
    */
   createTransitionHookRegFns() {
-    this._transitionProvider
+    this._transitionService
       ._getEvents()
       .filter((type) => type.hookPhase !== TransitionHookPhase._CREATE)
       .forEach((type) => {
-        return makeEvent(this, this._transitionProvider, type);
+        return makeEvent(this, this._transitionService, type);
       });
   }
 
+  /**
+   * @param {string} hookName
+   * @returns {RegisteredHook[]}
+   */
   getHooks(hookName) {
     return this._registeredHooks[hookName];
   }
@@ -123,7 +136,7 @@ export class Transition {
     const enteringStates = this._treeChanges.entering.map((node) => node.state);
 
     PathUtils.applyViewConfigs(
-      this._transitionProvider.$view,
+      this._transitionService.$view,
       this._treeChanges.to,
       enteringStates,
     );
@@ -170,26 +183,10 @@ export class Transition {
    *
    * A transition's [[TargetState]] encapsulates the [[to]] state, the [[params]], and the [[options]] as a single object.
    *
-   * @returns the [[TargetState]] of this Transition
+   * @returns {TargetState} the [[TargetState]] of this Transition
    */
   targetState() {
     return this._targetState;
-  }
-
-  /**
-   * Determines whether two transitions are equivalent.
-   * @deprecated
-   */
-  is(compare) {
-    if (compare instanceof Transition) {
-      // TODO: Also compare parameters
-      return this.is({ to: compare.$to().name, from: compare.$from().name });
-    }
-
-    return !(
-      (compare.to && !matchState(this.$to(), compare.to, this)) ||
-      (compare.from && !matchState(this.$from(), compare.from, this))
-    );
   }
 
   params(pathname = "to") {
@@ -363,11 +360,15 @@ export class Transition {
   /**
    * Gets the states being exited.
    *
-   * @returns an array of states that will be exited during this transition.
+   * @returns {import("../state/interface.ts").BuiltStateDeclaration[]} an array of states that will be exited during this transition.
    */
   exiting() {
     return map(this._treeChanges.exiting, (x) => x.state)
-      .map((x) => x.self)
+      .map(
+        (
+          /** @type {import("../state/interface.ts").BuiltStateDeclaration} */ x,
+        ) => x.self,
+      )
       .reverse();
   }
 
@@ -389,20 +390,43 @@ export class Transition {
    *
    * @param pathname the name of the path to fetch views for:
    *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
-   * @param state If provided, only returns the `ViewConfig`s for a single state in the path
+   * @param {ng.StateObject} [state] If provided, only returns the `ViewConfig`s for a single state in the path
    *
-   * @returns a list of ViewConfig objects for the given path.
+   * @returns {import("../state/views.js").ViewConfig[]} a list of ViewConfig objects for the given path.
    */
   views(pathname = "entering", state) {
     let path = this._treeChanges[pathname];
 
-    path = !state ? path : path.filter(propEq("state", state));
+    path = !state
+      ? path
+      : /** @type {import('../path/path-node.js').PathNode[]} */ (path).filter(
+          propEq("state", state),
+        );
 
-    return path.map((x) => x.views).reduce(unnestR, []);
+    return /** @type {import('../path/path-node.js').PathNode[]} */ (path)
+      .map((x) => x.views)
+      .reduce(unnestR, []);
   }
 
+  /**
+   * Return the transition's tree changes
+   *
+   * A transition goes from one state/parameters to another state/parameters.
+   * During a transition, states are entered and/or exited.
+   *
+   * This function returns various branches (paths) which represent the changes to the
+   * active state tree that are caused by the transition.
+   *
+   * @param {string} [pathname] The name of the tree changes path to get:
+   *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
+   * @returns {import('../path/path-node.js').PathNode[] | import("./interface.ts").TreeChanges}
+   */
   treeChanges(pathname) {
-    return pathname ? this._treeChanges[pathname] : this._treeChanges;
+    return pathname
+      ? /** @type {import('../path/path-node.js').PathNode[]} */ (
+          this._treeChanges[pathname]
+        )
+      : this._treeChanges;
   }
 
   /**
@@ -443,7 +467,7 @@ export class Transition {
     );
 
     targetState = targetState.withOptions(newOptions, true);
-    const newTransition = this._transitionProvider.create(
+    const newTransition = this._transitionService.create(
       this._treeChanges.from,
       targetState,
     );

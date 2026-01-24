@@ -43,6 +43,10 @@ export class HookBuilder {
    *
    * @returns an array of matched [[RegisteredHook]]s
    */
-  getMatchingHooks(hookType: any, treeChanges: any, transition: any): any;
+  getMatchingHooks(
+    hookType: any,
+    treeChanges: any,
+    transition: any,
+  ): import("./hook-registry.js").RegisteredHook[];
 }
 import { TransitionHookPhase } from "./transition-hook.js";

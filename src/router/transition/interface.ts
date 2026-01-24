@@ -950,7 +950,7 @@ export interface HookRegistry {
  * so the "service" surface includes both the public HookRegistry API and
  * a set of internal fields/methods used by built-in hook registrations/plugins.
  */
-export interface TransitionProviderService extends HookRegistry {
+export interface TransitionService extends HookRegistry {
   /* -------------------- Transition factory -------------------- */
 
   /**

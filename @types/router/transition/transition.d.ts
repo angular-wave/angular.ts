@@ -13,24 +13,23 @@ export class Transition {
    *
    * If the target state is not valid, an error is thrown.
    *
-   * @param {Array<import('../path/path-node.js').PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
+   * @param {Array<PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
    *        encapsulates the "from state".
-   * @param {import('../state/target-state.js').TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
-   * @param {ng.TransitionProvider} transitionService The [[TransitionService]] instance
+   * @param {TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
+   * @param {ng.TransitionService} transitionService
    * @param {ng.RouterService} globals
    */
   constructor(
-    fromPath: Array<import("../path/path-node.js").PathNode>,
-    targetState: import("../state/target-state.js").TargetState,
-    transitionService: ng.TransitionProvider,
+    fromPath: Array<PathNode>,
+    targetState: TargetState,
+    transitionService: ng.TransitionService,
     globals: ng.RouterService,
   );
   /**
    * @type {import('../router.js').RouterProvider}
    */
   _globals: import("../router.js").RouterProvider;
-  /** @type {ng.TransitionProvider} */
-  _transitionProvider: ng.TransitionProvider;
+  _transitionService: import("./interface.ts").TransitionService;
   /** @type {PromiseWithResolvers<any>} */
   _deferred: PromiseWithResolvers<any>;
   /**
@@ -40,10 +39,12 @@ export class Transition {
    * When the transition is unsuccessful, the promise is rejected with the [[Rejection]] or javascript error
    */
   promise: any;
-  /** @internal Holds the hook registration functions such as those passed to Transition.onStart() */
-  _registeredHooks: {};
+  /** @type {RegisteredHooks} Holds the hook registration functions such as those passed to Transition.onStart() */
+  _registeredHooks: RegisteredHooks;
+  /** @type {HookBuilder} */
   _hookBuilder: HookBuilder;
   /** Checks if this transition is currently active/running. */
+  /** @type {() => boolean} */
   isActive: () => boolean;
   _targetState: import("../state/target-state.js").TargetState;
   _options: any;
@@ -54,7 +55,11 @@ export class Transition {
    * (which can then be used to register hooks)
    */
   createTransitionHookRegFns(): void;
-  getHooks(hookName: any): any;
+  /**
+   * @param {string} hookName
+   * @returns {RegisteredHook[]}
+   */
+  getHooks(hookName: string): RegisteredHook[];
   applyViewConfigs(): void;
   /**
    * @returns {import('../state/state-object.js').StateObject} the internal from [State] object
@@ -85,14 +90,9 @@ export class Transition {
    *
    * A transition's [[TargetState]] encapsulates the [[to]] state, the [[params]], and the [[options]] as a single object.
    *
-   * @returns the [[TargetState]] of this Transition
+   * @returns {TargetState} the [[TargetState]] of this Transition
    */
-  targetState(): import("../state/target-state.js").TargetState;
-  /**
-   * Determines whether two transitions are equivalent.
-   * @deprecated
-   */
-  is(compare: any): any;
+  targetState(): TargetState;
   params(pathname?: string): any;
   /**
    * Gets all available resolve tokens (keys)
@@ -217,9 +217,9 @@ export class Transition {
   /**
    * Gets the states being exited.
    *
-   * @returns an array of states that will be exited during this transition.
+   * @returns {import("../state/interface.ts").BuiltStateDeclaration[]} an array of states that will be exited during this transition.
    */
-  exiting(): any;
+  exiting(): import("../state/interface.ts").BuiltStateDeclaration[];
   /**
    * Gets the states being retained.
    *
@@ -235,13 +235,29 @@ export class Transition {
    *
    * @param pathname the name of the path to fetch views for:
    *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
-   * @param state If provided, only returns the `ViewConfig`s for a single state in the path
+   * @param {ng.StateObject} [state] If provided, only returns the `ViewConfig`s for a single state in the path
    *
-   * @returns a list of ViewConfig objects for the given path.
+   * @returns {import("../state/views.js").ViewConfig[]} a list of ViewConfig objects for the given path.
    */
-  views(pathname: string, state: any): any;
+  views(
+    pathname?: string,
+    state?: ng.StateObject,
+  ): import("../state/views.js").ViewConfig[];
+  /**
+   * Return the transition's tree changes
+   *
+   * A transition goes from one state/parameters to another state/parameters.
+   * During a transition, states are entered and/or exited.
+   *
+   * This function returns various branches (paths) which represent the changes to the
+   * active state tree that are caused by the transition.
+   *
+   * @param {string} [pathname] The name of the tree changes path to get:
+   *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
+   * @returns {import('../path/path-node.js').PathNode[] | import("./interface.ts").TreeChanges}
+   */
   treeChanges(
-    pathname: any,
+    pathname?: string,
   ):
     | import("../path/path-node.js").PathNode[]
     | import("./interface.ts").TreeChanges;
@@ -321,5 +337,12 @@ export namespace Transition {
   export { Transition as diToken };
 }
 export type HookRegistry = import("./interface.ts").HookRegistry;
+export type BuiltStateDeclaration =
+  import("../state/interface.ts").BuiltStateDeclaration;
+export type RegisteredHooks = import("./interface.ts").RegisteredHooks;
+export type RegisteredHook = import("./hook-registry.js").RegisteredHook;
+export type TargetState = import("../state/target-state.js").TargetState;
+export type TreeChanges = import("../transition/interface.ts").TreeChanges;
+export type PathNode = import("../resolve/resolve-context.js").PathNode;
 import { HookBuilder } from "./hook-builder.js";
 import { Param } from "../params/param.js";

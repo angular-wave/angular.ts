@@ -2,6 +2,9 @@ import { Transition } from "../transition/transition.js";
 import { Resolvable } from "../resolve/resolvable.js";
 import { uniqR, unnestR } from "../../shared/common.js";
 
+/**
+ * @param {ng.TransitionService} transitionService
+ */
 export function registerAddCoreResolvables(transitionService) {
   transitionService.onCreate({}, function addCoreResolvables(trans) {
     trans.addResolvable(Resolvable.fromData(Transition, trans), "");
@@ -10,9 +13,11 @@ export function registerAddCoreResolvables(transitionService) {
       Resolvable.fromData("$stateParams", trans.params()),
       "",
     );
-    trans.entering().forEach((state) => {
-      trans.addResolvable(Resolvable.fromData("$state$", state), state);
-    });
+    trans
+      .entering()
+      .forEach((/** @type {ng.BuiltStateDeclaration} */ state) => {
+        trans.addResolvable(Resolvable.fromData("$state$", state), state);
+      });
   });
 }
 
@@ -22,6 +27,10 @@ const TRANSITION_TOKENS = ["$transition$", Transition];
 // previous Transitions reachable in memory, causing a memory leak
 // This function removes resolves for '$transition$' and `Transition` from the treeChanges.
 // Do not use this on current transitions, only on old ones.
+/**
+ *
+ * @param {ng.Transition} trans
+ */
 export function treeChangesCleanup(trans) {
   const nodes = Object.values(trans.treeChanges())
     .reduce(unnestR, [])

@@ -106,7 +106,7 @@ export class TransitionProvider {
      * @param {ng.UrlService} urlService
      * @param {ng.StateRegistryService} stateRegistry
      * @param {ng.ViewService} viewService
-     * @returns {ng.TransitionProviderService}
+     * @returns {ng.TransitionService}
      */
     (stateService, urlService, stateRegistry, viewService) => {
       // Lazy load state trees
@@ -345,7 +345,7 @@ export class TransitionProvider {
 }
 
 /**
- * @param {ng.TransitionProviderService} transitionService
+ * @param {ng.TransitionService} transitionService
  * @param {ng.StateService} stateService
  * @param {ng.UrlService} urlService
  */
@@ -389,7 +389,7 @@ function registerUpdateUrl(transitionService, stateService, urlService) {
  * - Sets the current transition before it runs
  * - Updates current state and params on success
  * - Clears the current transition when finished
- * @param {ng.TransitionProviderService} transitionService
+ * @param {ng.TransitionService} transitionService
  */
 function registerUpdateGlobalState(transitionService) {
   return transitionService.onCreate({}, (trans) => {

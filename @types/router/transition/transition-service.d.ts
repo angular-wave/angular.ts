@@ -52,7 +52,7 @@ export class TransitionProvider {
         urlService: ng.UrlService,
         stateRegistry: ng.StateRegistryService,
         viewService: ng.ViewService,
-      ) => ng.TransitionProviderService)
+      ) => ng.TransitionService)
   )[];
   /**
    * Registers a [[TransitionHookFn]], called *while a transition is being constructed*.

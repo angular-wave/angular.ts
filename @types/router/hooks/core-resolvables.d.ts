@@ -1,2 +1,11 @@
-export function registerAddCoreResolvables(transitionService: any): void;
-export function treeChangesCleanup(trans: any): void;
+/**
+ * @param {ng.TransitionService} transitionService
+ */
+export function registerAddCoreResolvables(
+  transitionService: ng.TransitionService,
+): void;
+/**
+ *
+ * @param {ng.Transition} trans
+ */
+export function treeChangesCleanup(trans: ng.Transition): void;

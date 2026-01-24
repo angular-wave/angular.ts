@@ -135,7 +135,7 @@ import {
 import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.js";
 import { Transition as TTransition } from "./router/transition/transition.js";
 import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.js";
-import { TransitionProviderService as TTransitionProviderService } from "./router/transition/interface.ts";
+import { TransitionService as TTransitionService } from "./router/transition/interface.ts";
 import { UrlConfigProvider as TUrlConfigProvider } from "./router/url/url-config.js";
 
 declare global {
@@ -180,7 +180,7 @@ declare global {
     export type SceProvider = TSceProvider;
     export type SceDelegateProvider = TSceDelegateProvider;
     export type TransitionProvider = TTransitionProvider;
-    export type TransitionProviderService = TTransitionProviderService;
+    export type TransitionService = TTransitionService;
     export type RouterProvider = TRouterProvider;
     export type TemplateFactoryProvider = TTemplateFactoryProvider;
     export type UrlConfigProvider = TUrlConfigProvider;
@@ -215,7 +215,6 @@ declare global {
     export type SceDelegateService = TSceDelegateService;
     export type SseService = TSseService;
     export type SseConfig = TSseConfig;
-    export type TransitionService = TransitionProvider & HookRegistry;
     export type TemplateCacheService = Map<string, string>;
     export type TemplateRequestService = TTemplateRequestService;
     export type UrlService = TUrlService;
