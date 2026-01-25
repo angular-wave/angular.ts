@@ -2,6 +2,10 @@ import { arrayTuples, find, omit, pick, unnestR } from "../../shared/common.js";
 import { propEq } from "../../shared/hof.js";
 import { TargetState } from "../state/target-state.js";
 import { PathNode } from "./path-node.js";
+
+/** @typedef {import("../params/param.js").Param} Param */
+/** @typedef {import("./interface.ts").GetParamsFn} GetParamsFn */
+
 /**
  * This class contains functions which convert TargetStates, Nodes and paths from one type to another.
  */
@@ -162,11 +166,11 @@ export class PathUtils {
    * Nodes are compared using their state property and their parameter values.
    * If a `paramsFn` is provided, only the [[Param]] returned by the function will be considered when comparing nodes.
    *
-   * @param pathA the first path
-   * @param pathB the second path
-   * @param paramsFn a function which returns the parameters to consider when comparing
+   * @param {PathNode[]} pathA the first path
+   * @param {PathNode[]} pathB the second path
+   * @param {GetParamsFn} [paramsFn] a function which returns the parameters to consider when comparing
    *
-   * @returns an array of PathNodes from the first path which match the nodes in the second path
+   * @returns {PathNode[] | false} an array of PathNodes from the first path which match the nodes in the second path
    */
   static matching(pathA, pathB, paramsFn) {
     let done = false;

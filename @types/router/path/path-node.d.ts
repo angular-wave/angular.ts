@@ -7,7 +7,8 @@
  */
 export class PathNode {
   constructor(stateOrNode: any);
-  state: any;
+  /** @type {ng.StateObject} */
+  state: ng.StateObject;
   paramSchema: any;
   paramValues: any;
   resolvables: any;

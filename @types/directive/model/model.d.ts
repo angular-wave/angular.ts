@@ -98,7 +98,10 @@ export class NgModelController {
   $invalid: boolean;
   $error: {};
   _success: {};
-  $pending: any;
+  /**
+   * @type {import("../../shared/interface.ts").Dict<any> | undefined}
+   */
+  $pending: import("../../shared/interface.ts").Dict<any> | undefined;
   $name: any;
   _parentForm: {
     $nonscope: boolean;

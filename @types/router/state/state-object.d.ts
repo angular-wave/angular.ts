@@ -47,13 +47,9 @@ export class StateObject {
    */
   includes: any;
   /**
-   * @type {{ [x: string]: StateObject; } | undefined}
+   * @type {StateObject[] | undefined}
    */
-  path:
-    | {
-        [x: string]: StateObject;
-      }
-    | undefined;
+  path: StateObject[] | undefined;
   /**
    * @type {any}
    */

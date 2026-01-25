@@ -147,6 +147,9 @@ export class NgModelController {
 
     this.$error = {}; // keep invalid keys here
     this._success = {}; // keep valid keys here
+    /**
+     * @type {import("../../shared/interface.ts").Dict<any> | undefined}
+     */
     this.$pending = undefined; // keep pending keys here
     this.$name = $interpolate($attr.name || "", false)($scope);
     this._parentForm = nullFormCtrl;

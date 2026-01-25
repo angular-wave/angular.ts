@@ -7,6 +7,8 @@ export function makeTargetState(
   registry: import("../state/state-registry.js").StateRegistryProvider,
   path: Array<PathNode>,
 ): TargetState;
+/** @typedef {import("../params/param.js").Param} Param */
+/** @typedef {import("./interface.ts").GetParamsFn} GetParamsFn */
 /**
  * This class contains functions which convert TargetStates, Nodes and paths from one type to another.
  */
@@ -53,13 +55,17 @@ export class PathUtils {
    * Nodes are compared using their state property and their parameter values.
    * If a `paramsFn` is provided, only the [[Param]] returned by the function will be considered when comparing nodes.
    *
-   * @param pathA the first path
-   * @param pathB the second path
-   * @param paramsFn a function which returns the parameters to consider when comparing
+   * @param {PathNode[]} pathA the first path
+   * @param {PathNode[]} pathB the second path
+   * @param {GetParamsFn} [paramsFn] a function which returns the parameters to consider when comparing
    *
-   * @returns an array of PathNodes from the first path which match the nodes in the second path
+   * @returns {PathNode[] | false} an array of PathNodes from the first path which match the nodes in the second path
    */
-  static matching(pathA: any, pathB: any, paramsFn: any): any[];
+  static matching(
+    pathA: PathNode[],
+    pathB: PathNode[],
+    paramsFn?: GetParamsFn,
+  ): PathNode[] | false;
   /**
    * Returns true if two paths are identical.
    *
@@ -84,5 +90,7 @@ export class PathUtils {
   /** Gets the raw parameter values from a path */
   static paramValues(path: any): any;
 }
+export type Param = import("../params/param.js").Param;
+export type GetParamsFn = import("./interface.ts").GetParamsFn;
 import { PathNode } from "./path-node.js";
 import { TargetState } from "../state/target-state.js";

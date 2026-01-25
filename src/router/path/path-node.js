@@ -14,6 +14,7 @@ export class PathNode {
     if (stateOrNode instanceof PathNode) {
       const node = stateOrNode;
 
+      /** @type {ng.StateObject} */
       this.state = node.state;
       this.paramSchema = node.paramSchema.slice();
       this.paramValues = Object.assign({}, node.paramValues);
