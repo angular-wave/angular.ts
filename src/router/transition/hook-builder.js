@@ -6,6 +6,8 @@ import {
   TransitionHookScope,
 } from "./transition-hook.js";
 
+/** @typedef {import("./transition-event-type.js").TransitionEventType} TransitionEventType */
+
 /**
  * This class returns applicable TransitionHooks for a specific Transition instance.
  *
@@ -29,7 +31,7 @@ export class HookBuilder {
 
   /**
    * @param {TransitionHookPhase} phase
-   * @returns
+   * @returns {TransitionHook[]}
    */
   buildHooksForPhase(phase) {
     return this.transition._transitionService
@@ -46,12 +48,15 @@ export class HookBuilder {
    * - Finds [[PathNode]] (or `PathNode[]`) to use as the TransitionHook context(s)
    * - For each of the [[PathNode]]s, creates a TransitionHook
    *
-   * @param hookType the type of the hook registration function, e.g., 'onEnter', 'onFinish'.
+   * @param {TransitionEventType} hookType the type of the hook registration function, e.g., 'onEnter', 'onFinish'.
+   * @returns {TransitionHook[]} an array of TransitionHook objects
    */
   buildHooks(hookType) {
     const { transition } = this;
 
-    const treeChanges = transition.treeChanges();
+    const treeChanges = /** @type {import("./interface.ts").TreeChanges} */ (
+      transition.treeChanges()
+    );
 
     // Find all the matching registered hooks for a given hook type
     const matchingHooks = this.getMatchingHooks(
@@ -66,12 +71,20 @@ export class HookBuilder {
       current: transition.options().current,
     };
 
-    const makeTransitionHooks = (hook) => {
+    const makeTransitionHooks = (
+      /** @type {import("./hook-registry.js").RegisteredHook} */ hook,
+    ) => {
       // Fetch the Nodes that caused this hook to match.
-      const matches = hook.matches(treeChanges, transition);
+      const matches = hook.matches(
+        /** @type {import("./interface.ts").TreeChanges} */ (treeChanges),
+        transition,
+      );
 
       // Select the PathNode[] that will be used as TransitionHook context objects
-      const matchingNodes = matches[hookType.criteriaMatchPath.name];
+      const matchingNodes =
+        /** @type {import("./interface.ts").IMatchingNodes} */ (matches)[
+          hookType.criteriaMatchPath.name
+        ];
 
       // Return an array of HookTuples
       return matchingNodes.map((node) => {
@@ -93,7 +106,9 @@ export class HookBuilder {
           transition,
           state,
           hook,
-          _options,
+          /** @type {import("./transition-hook.js").TransitionHookOptions} */ (
+            _options
+          ),
           this.transition._transitionService._exceptionHandler,
         );
 
@@ -116,8 +131,10 @@ export class HookBuilder {
    * which matched:
    * - the eventType
    * - the matchCriteria (to, from, exiting, retained, entering)
-   *
    * @returns an array of matched [[RegisteredHook]]s
+   * @param {import("./transition-event-type.js").TransitionEventType} hookType
+   * @param {import("./interface.ts").TreeChanges} treeChanges
+   * @param {import("./transition.js").Transition} transition
    */
   getMatchingHooks(hookType, treeChanges, transition) {
     const isCreate = hookType.hookPhase === TransitionHookPhase._CREATE;
@@ -146,11 +163,17 @@ export class HookBuilder {
  * @returns a tuple sort function
  */
 function tupleSort(reverseDepthSort = false) {
-  return function nodeDepthThenPriority(left, right) {
+  return function nodeDepthThenPriority(
+    /** @type {import("./interface.ts").HookTuple} */ left,
+    /** @type {import("./interface.ts").HookTuple} */ right,
+  ) {
     const factor = reverseDepthSort ? -1 : 1;
 
-    const depthDelta =
-      (left.node.state.path.length - right.node.state.path.length) * factor;
+    const leftPath = /** @type {ng.StateObject[]} */ (left.node.state.path);
+
+    const rightPath = /** @type {ng.StateObject[]} */ (right.node.state.path);
+
+    const depthDelta = (leftPath.length - rightPath.length) * factor;
 
     return depthDelta !== 0
       ? depthDelta

@@ -9,7 +9,7 @@ export class StateMatcher {
     base: any,
     matchGlob?: boolean,
   ):
-    | import("./interface.ts").BuiltStateDeclaration
-    | import("./state-object.js").StateObject;
+    | import("./state-object.js").StateObject
+    | import("./interface.ts").BuiltStateDeclaration;
   resolvePath(name: any, base: any): string;
 }

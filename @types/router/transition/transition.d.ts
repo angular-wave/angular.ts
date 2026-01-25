@@ -49,7 +49,8 @@ export class Transition {
   _targetState: import("../state/target-state.js").TargetState;
   _options: any;
   $id: number;
-  _treeChanges: import("./interface.ts").TreeChanges;
+  /** @type {TreeChanges} */
+  _treeChanges: TreeChanges;
   /**
    * Creates the transition-level hook registration functions
    * (which can then be used to register hooks)
@@ -62,29 +63,29 @@ export class Transition {
   getHooks(hookName: string): RegisteredHook[];
   applyViewConfigs(): void;
   /**
-   * @returns {import('../state/state-object.js').StateObject} the internal from [State] object
+   * @returns {StateObject} the internal from [State] object
    */
-  $from(): import("../state/state-object.js").StateObject;
+  $from(): StateObject;
   /**
-   * @returns {import('../state/state-object.js').StateObject} the internal to [State] object
+   * @returns {StateObject} the internal to [State] object
    */
-  $to(): import("../state/state-object.js").StateObject;
+  $to(): StateObject;
   /**
    * Returns the "from state"
    *
    * Returns the state that the transition is coming *from*.
    *
-   * @returns The state declaration object for the Transition's ("from state").
+   * @returns {StateDeclaration} The state declaration object for the Transition's ("from state").
    */
-  from(): import("../state/interface.ts").StateDeclaration;
+  from(): StateDeclaration;
   /**
    * Returns the "to state"
    *
    * Returns the state that the transition is going *to*.
    *
-   * @returns The state declaration object for the Transition's target state ("to state").
+   * @returns {StateDeclaration} The state declaration object for the Transition's target state ("to state").
    */
-  to(): import("../state/interface.ts").StateDeclaration;
+  to(): StateDeclaration;
   /**
    * Gets the Target State
    *
@@ -93,6 +94,10 @@ export class Transition {
    * @returns {TargetState} the [[TargetState]] of this Transition
    */
   targetState(): TargetState;
+  /**
+   * @param {string} pathname
+   * @returns {any}
+   */
   params(pathname?: string): any;
   /**
    * Gets all available resolve tokens (keys)
@@ -153,10 +158,15 @@ export class Transition {
    * });
    * ```
    *
-   * @param resolvable a [[ResolvableLiteral]] object (or a [[Resolvable]])
-   * @param state the state in the "to path" which should receive the new resolve (otherwise, the root state)
+   * @param {Resolvable | import("../resolve/interface.ts").ResolvableLiteral} resolvable a [[ResolvableLiteral]] object (or a [[Resolvable]])
+   * @param {import("../state/interface.ts").StateOrName} state the state in the "to path" which should receive the new resolve (otherwise, the root state)
    */
-  addResolvable(resolvable: any, state: any): void;
+  addResolvable(
+    resolvable:
+      | Resolvable
+      | import("../resolve/interface.ts").ResolvableLiteral,
+    state: import("../state/interface.ts").StateOrName,
+  ): void;
   /**
    * Gets the transition from which this transition was redirected.
    *
@@ -172,9 +182,9 @@ export class Transition {
    * });
    * ```
    *
-   * @returns The previous Transition, or null if this Transition is not the result of a redirection
+   * @returns {Transition} The previous Transition, or null if this Transition is not the result of a redirection
    */
-  redirectedFrom(): any;
+  redirectedFrom(): Transition;
   /**
    * Gets the original transition in a redirect chain
    *
@@ -199,34 +209,34 @@ export class Transition {
    * });
    * ```
    *
-   * @returns The original Transition that started a redirect chain
+   * @returns {Transition} The original Transition that started a redirect chain
    */
-  originalTransition(): any;
+  originalTransition(): Transition;
   /**
    * Get the transition options
    *
-   * @returns the options for this Transition.
+   * @returns {import("./interface.ts").TransitionOptions} the options for this Transition.
    */
-  options(): any;
+  options(): import("./interface.ts").TransitionOptions;
   /**
    * Gets the states being entered.
    *
    * @returns an array of states that will be entered during this transition.
    */
-  entering(): any;
+  entering(): import("../state/interface.ts").StateDeclaration[];
   /**
    * Gets the states being exited.
    *
-   * @returns {import("../state/interface.ts").BuiltStateDeclaration[]} an array of states that will be exited during this transition.
+   * @returns {import("../state/interface.ts").StateDeclaration[]} an array of states that will be exited during this transition.
    */
-  exiting(): import("../state/interface.ts").BuiltStateDeclaration[];
+  exiting(): import("../state/interface.ts").StateDeclaration[];
   /**
    * Gets the states being retained.
    *
-   * @returns an array of states that are already entered from a previous Transition, that will not be
+   * @returns {import("../state/interface.ts").StateDeclaration[]} an array of states that are already entered from a previous Transition, that will not be
    *    exited during this Transition
    */
-  retained(): any;
+  retained(): import("../state/interface.ts").StateDeclaration[];
   /**
    * Get the [[ViewConfig]]s associated with this Transition
    *
@@ -267,11 +277,11 @@ export class Transition {
    * This transition can be returned from a [[TransitionService]] hook to
    * redirect a transition to a new state and/or set of parameters.
    *
-   * @internal
+   * @param {TargetState} targetState the new target state for the redirected transition
    *
-   * @returns Returns a new [[Transition]] instance.
+   * @returns {Transition} Returns a new [[Transition]] instance.
    */
-  redirect(targetState: any): Transition;
+  redirect(targetState: TargetState): Transition;
   /** @internal If a transition doesn't exit/enter any states, returns any [[Param]] whose value changed */
   _changedParams(): Param[];
   /**
@@ -279,9 +289,9 @@ export class Transition {
    *
    * A transition is dynamic if no states are entered nor exited, but at least one dynamic parameter has changed.
    *
-   * @returns true if the Transition is dynamic
+   * @returns {boolean} true if the Transition is dynamic
    */
-  dynamic(): any;
+  dynamic(): boolean;
   /**
    * Returns true if the transition is ignored.
    *
@@ -298,11 +308,11 @@ export class Transition {
    *
    * @internal
    *
-   * @returns {Promise} a promise for a successful transition.
+   * @returns {Promise<any>} a promise for a successful transition.
    */
   run(): Promise<any>;
   success: boolean;
-  _error: any;
+  _error: Rejection;
   /**
    * Checks if the Transition is valid
    *
@@ -325,7 +335,7 @@ export class Transition {
    *
    * @returns a transition rejection explaining why the transition is invalid, or the reason the transition failed.
    */
-  error(): any;
+  error(): Rejection;
   /**
    * A string representation of the Transition
    *
@@ -343,6 +353,10 @@ export type RegisteredHooks = import("./interface.ts").RegisteredHooks;
 export type RegisteredHook = import("./hook-registry.js").RegisteredHook;
 export type TargetState = import("../state/target-state.js").TargetState;
 export type TreeChanges = import("../transition/interface.ts").TreeChanges;
-export type PathNode = import("../resolve/resolve-context.js").PathNode;
+export type PathNode = import("../path/path-node.js").PathNode;
+export type StateObject = import("../state/state-object.js").StateObject;
+export type StateDeclaration = import("../state/interface.ts").StateDeclaration;
 import { HookBuilder } from "./hook-builder.js";
+import { Resolvable } from "../resolve/resolvable.js";
 import { Param } from "../params/param.js";
+import { Rejection } from "./reject-factory.js";

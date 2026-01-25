@@ -127,7 +127,7 @@ export class ResolveContext {
    *
    * Note: each resolvable's [[ResolvePolicy]] is merged with the state's policy, and the global default.
    *
-   * @param {Resolvable[]} newResolvables the new Resolvables
+   * @param {Resolvable[] | import("./interface.ts").ResolvableLiteral[]} newResolvables the new Resolvables
    * @param {ng.StateObject} state Used to find the node to put the resolvable on
    */
   addResolvables(newResolvables, state) {

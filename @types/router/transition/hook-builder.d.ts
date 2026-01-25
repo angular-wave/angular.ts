@@ -1,3 +1,4 @@
+/** @typedef {import("./transition-event-type.js").TransitionEventType} TransitionEventType */
 /**
  * This class returns applicable TransitionHooks for a specific Transition instance.
  *
@@ -19,9 +20,9 @@ export class HookBuilder {
   transition: import("./transition.js").Transition;
   /**
    * @param {TransitionHookPhase} phase
-   * @returns
+   * @returns {TransitionHook[]}
    */
-  buildHooksForPhase(phase: TransitionHookPhase): any;
+  buildHooksForPhase(phase: TransitionHookPhase): TransitionHook[];
   /**
    * Returns an array of newly built TransitionHook objects.
    *
@@ -29,9 +30,10 @@ export class HookBuilder {
    * - Finds [[PathNode]] (or `PathNode[]`) to use as the TransitionHook context(s)
    * - For each of the [[PathNode]]s, creates a TransitionHook
    *
-   * @param hookType the type of the hook registration function, e.g., 'onEnter', 'onFinish'.
+   * @param {TransitionEventType} hookType the type of the hook registration function, e.g., 'onEnter', 'onFinish'.
+   * @returns {TransitionHook[]} an array of TransitionHook objects
    */
-  buildHooks(hookType: any): any;
+  buildHooks(hookType: TransitionEventType): TransitionHook[];
   /**
    * Finds all RegisteredHooks from:
    * - The Transition object instance hook registry
@@ -40,13 +42,18 @@ export class HookBuilder {
    * which matched:
    * - the eventType
    * - the matchCriteria (to, from, exiting, retained, entering)
-   *
    * @returns an array of matched [[RegisteredHook]]s
+   * @param {import("./transition-event-type.js").TransitionEventType} hookType
+   * @param {import("./interface.ts").TreeChanges} treeChanges
+   * @param {import("./transition.js").Transition} transition
    */
   getMatchingHooks(
-    hookType: any,
-    treeChanges: any,
-    transition: any,
+    hookType: import("./transition-event-type.js").TransitionEventType,
+    treeChanges: import("./interface.ts").TreeChanges,
+    transition: import("./transition.js").Transition,
   ): import("./hook-registry.js").RegisteredHook[];
 }
+export type TransitionEventType =
+  import("./transition-event-type.js").TransitionEventType;
 import { TransitionHookPhase } from "./transition-hook.js";
+import { TransitionHook } from "./transition-hook.js";

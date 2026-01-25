@@ -44,7 +44,7 @@ export class StateObject {
    */
   includes;
   /**
-   * @type {{ [x: string]: StateObject; } | undefined}
+   * @type {StateObject[] | undefined}
    */
   path;
 

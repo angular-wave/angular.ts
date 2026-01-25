@@ -5,7 +5,11 @@ import { StateObject } from "../state/state-object.js";
 import { PathNode } from "../path/path-node.js";
 import { TargetState } from "../state/target-state.js";
 import { RegisteredHook } from "./hook-registry.js";
-import { TransitionHookPhase, TransitionHookScope } from "./transition-hook.js";
+import {
+  TransitionHook,
+  TransitionHookPhase,
+  TransitionHookScope,
+} from "./transition-hook.js";
 import { TransitionEventType } from "./transition-event-type.js";
 
 /** Deregistration function returned by hook registrations */
@@ -944,6 +948,7 @@ export interface HookRegistry {
 }
 
 /**
+ * TODO: unite with TransitionProvider
  * The runtime service instance returned from `TransitionProvider.$get`.
  *
  * Note: In this codebase, `$get` returns the provider instance (`return this;`),
@@ -985,4 +990,12 @@ export interface TransitionService extends HookRegistry {
 
   /** @internal view service */
   $view: ng.ViewService;
+
+  _exceptionHandler: ng.ExceptionHandlerService;
+}
+
+export interface HookTuple {
+  hook: RegisteredHook;
+  node: PathNode;
+  transitionHook: TransitionHook;
 }
