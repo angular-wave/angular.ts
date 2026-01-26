@@ -399,15 +399,15 @@ export interface StateDeclaration {
    */
   parent?: string | StateDeclaration;
 
-  // /**
-  //  * Gets the internal State object API
-  //  *
-  //  * Gets the *internal API* for a registered state.
-  //  *
-  //  * Note: the internal [[StateObject]] API is subject to change without notice
-  //  * @internal
-  //  */
-  // _state?: () => StateObject;
+  /**
+   * Gets the internal State object API
+   *
+   * Gets the *internal API* for a registered state.
+   *
+   * Note: the internal [[StateObject]] API is subject to change without notice
+   * @internal
+   */
+  _state: () => BuiltStateDeclaration;
 
   /**
    * Resolve - a mechanism to asynchronously fetch data, participating in the Transition lifecycle
@@ -1079,3 +1079,8 @@ export type OnInvalidCallback = (
   fromState?: TargetState,
   injector?: ng.InjectorService,
 ) => HookResult;
+
+export type LazyLoadFn = (
+  transition: Transition,
+  state: StateDeclaration,
+) => Promise<LazyLoadResult>;

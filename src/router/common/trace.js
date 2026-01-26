@@ -192,7 +192,7 @@ export class Trace {
   /**
    * @internal called by ng-router code
    * @param {import("../transition/transition-hook.js").TransitionHook} step
-   * @param {import("../transition/transition.js").Transition} trans
+   * @param {ng.Transition} trans
    * @param {import("../transition/interface.ts").TransitionHookOptions} options
    */
   traceHookInvocation(step, trans, options) {
@@ -225,7 +225,7 @@ export class Trace {
    * @internal called by ng-router code
    * @param {import("../path/path-node.js").PathNode[]} path
    * @param {import("../resolve/interface.ts").PolicyWhen} when
-   * @param {import("../transition/transition.js").Transition} trans
+   * @param {ng.Transition} trans
    */
   traceResolvePath(path, when, trans) {
     if (!this.enabled(Category._RESOLVE)) return;
@@ -235,7 +235,7 @@ export class Trace {
   /**
    * @internal called by ng-router code
    * @param {import("../resolve/resolvable.js").Resolvable} resolvable
-   * @param {import("../transition/transition.js").Transition} trans
+   * @param {ng.Transition} trans
    */
   traceResolvableResolved(resolvable, trans) {
     if (!this.enabled(Category._RESOLVE)) return;
@@ -259,7 +259,7 @@ export class Trace {
   /**
    * @internal called by ng-router code
    * @param {import("../state/state-object.js").StateObject} finalState
-   * @param {import("../transition/transition.js").Transition} trans
+   * @param {ng.Transition} trans
    */
   traceSuccess(finalState, trans) {
     if (!this.enabled(Category._TRANSITION)) return;

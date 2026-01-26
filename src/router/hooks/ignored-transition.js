@@ -7,7 +7,7 @@ import { Rejection } from "../transition/reject-factory.js";
  *
  * If the transition should be ignored (because no parameter or states changed)
  * then the transition is ignored and not processed.
- * @param {import("../transition/transition.js").Transition} trans
+ * @param {ng.Transition} trans
  */
 function ignoredHook(trans) {
   const ignoredReason = trans._ignoredReason();
@@ -25,5 +25,6 @@ function ignoredHook(trans) {
 
   return Rejection.ignored().toPromise();
 }
-export const registerIgnoredTransitionHook = (transitionService) =>
-  transitionService.onBefore({}, ignoredHook, { priority: -9999 });
+export const registerIgnoredTransitionHook = (
+  /** @type {ng.TransitionService} */ transitionService,
+) => transitionService.onBefore({}, ignoredHook, { priority: -9999 });

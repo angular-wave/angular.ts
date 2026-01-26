@@ -3,10 +3,12 @@
  *
  * The returned function invokes the (for instance) state.onEnter hook when the
  * state is being entered.
+ * @param {string} hookName
+ * @return {import("../transition/interface").TransitionStateHookFn}
  */
 function makeEnterExitRetainHook(hookName) {
   return (transition, state) => {
-    const _state = state._state();
+    const _state = /** @type Record<string, any> */ (state._state());
 
     const hookFn = _state[hookName];
 
@@ -24,8 +26,16 @@ function makeEnterExitRetainHook(hookName) {
  */
 const onExitHook = makeEnterExitRetainHook("onExit");
 
-export const registerOnExitHook = (transitionService) =>
-  transitionService.onExit({ exiting: (state) => !!state.onExit }, onExitHook);
+export const registerOnExitHook = (
+  /** @type {ng.TransitionService} */ transitionService,
+) =>
+  transitionService.onExit(
+    {
+      exiting: (state) =>
+        !!(/** @type {ng.BuiltStateDeclaration} */ (state).onExit),
+    },
+    onExitHook,
+  );
 /**
  * The [[TransitionStateHookFn]] for onRetain
  *
@@ -37,9 +47,14 @@ export const registerOnExitHook = (transitionService) =>
  */
 const onRetainHook = makeEnterExitRetainHook("onRetain");
 
-export const registerOnRetainHook = (transitionService) =>
+export const registerOnRetainHook = (
+  /** @type {ng.TransitionService} */ transitionService,
+) =>
   transitionService.onRetain(
-    { retained: (state) => !!state.onRetain },
+    {
+      retained: (state) =>
+        !!(/** @type {ng.BuiltStateDeclaration} */ (state).onRetain),
+    },
     onRetainHook,
   );
 /**
@@ -53,8 +68,13 @@ export const registerOnRetainHook = (transitionService) =>
  */
 const onEnterHook = makeEnterExitRetainHook("onEnter");
 
-export const registerOnEnterHook = (transitionService) =>
+export const registerOnEnterHook = (
+  /** @type {ng.TransitionService} */ transitionService,
+) =>
   transitionService.onEnter(
-    { entering: (state) => !!state.onEnter },
+    {
+      entering: (state) =>
+        !!(/** @type {ng.BuiltStateDeclaration} */ (state).onEnter),
+    },
     onEnterHook,
   );

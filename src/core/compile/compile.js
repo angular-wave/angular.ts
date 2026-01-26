@@ -1755,6 +1755,7 @@ export class CompileProvider {
               for (
                 let scanningIndex = i + 1;
                 (candidateDirective = directives[scanningIndex++]);
+
               ) {
                 if (
                   (candidateDirective.transclude &&

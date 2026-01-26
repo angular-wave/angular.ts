@@ -1,7 +1,10 @@
 import { isFunction, isString } from "../../shared/utils.js";
 import { TargetState } from "../state/target-state";
 
-export const registerRedirectToHook = (transitionService, stateService) => {
+export const registerRedirectToHook = (
+  /** @type {ng.TransitionService} */ transitionService,
+  /** @type {ng.StateService} */ stateService,
+) => {
   /**
    * A [[TransitionHookFn]] that redirects to a different state or params
    *
@@ -9,12 +12,15 @@ export const registerRedirectToHook = (transitionService, stateService) => {
    *
    * See [[StateDeclaration.redirectTo]]
    */
-  const redirectToHook = (trans) => {
+  const redirectToHook = (/** @type {ng.Transition} */ trans) => {
     const redirect = trans.to().redirectTo;
 
     if (!redirect) return undefined;
     const $state = stateService;
 
+    /**
+     * @param {any} result
+     */
     function handleResult(result) {
       if (!result) return undefined;
 
@@ -26,9 +32,9 @@ export const registerRedirectToHook = (transitionService, stateService) => {
         return $state.target(result, trans.params(), trans.options());
       }
 
-      if (result.state || result.params) {
+      if (/** @type {any} */ (result).state || result.params) {
         return $state.target(
-          result.state || trans.to(),
+          /** @type {any} */ (result).state || trans.to(),
           result.params || trans.params(),
           trans.options(),
         );
@@ -45,7 +51,10 @@ export const registerRedirectToHook = (transitionService, stateService) => {
   };
 
   transitionService.onStart(
-    { to: (state) => !!state.redirectTo },
+    {
+      to: (state) =>
+        !!(/** @type {ng.BuiltStateDeclaration} */ (state).redirectTo),
+    },
     redirectToHook,
   );
 };

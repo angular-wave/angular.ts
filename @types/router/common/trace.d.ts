@@ -59,12 +59,12 @@ export class Trace {
   /**
    * @internal called by ng-router code
    * @param {import("../transition/transition-hook.js").TransitionHook} step
-   * @param {import("../transition/transition.js").Transition} trans
+   * @param {ng.Transition} trans
    * @param {import("../transition/interface.ts").TransitionHookOptions} options
    */
   traceHookInvocation(
     step: import("../transition/transition-hook.js").TransitionHook,
-    trans: import("../transition/transition.js").Transition,
+    trans: ng.Transition,
     options: import("../transition/interface.ts").TransitionHookOptions,
   ): void;
   /** @internal called by ng-router code */
@@ -77,21 +77,21 @@ export class Trace {
    * @internal called by ng-router code
    * @param {import("../path/path-node.js").PathNode[]} path
    * @param {import("../resolve/interface.ts").PolicyWhen} when
-   * @param {import("../transition/transition.js").Transition} trans
+   * @param {ng.Transition} trans
    */
   traceResolvePath(
     path: import("../path/path-node.js").PathNode[],
     when: import("../resolve/interface.ts").PolicyWhen,
-    trans: import("../transition/transition.js").Transition,
+    trans: ng.Transition,
   ): void;
   /**
    * @internal called by ng-router code
    * @param {import("../resolve/resolvable.js").Resolvable} resolvable
-   * @param {import("../transition/transition.js").Transition} trans
+   * @param {ng.Transition} trans
    */
   traceResolvableResolved(
     resolvable: import("../resolve/resolvable.js").Resolvable,
-    trans: import("../transition/transition.js").Transition,
+    trans: ng.Transition,
   ): void;
   /**
    * @internal called by ng-router code
@@ -102,11 +102,11 @@ export class Trace {
   /**
    * @internal called by ng-router code
    * @param {import("../state/state-object.js").StateObject} finalState
-   * @param {import("../transition/transition.js").Transition} trans
+   * @param {ng.Transition} trans
    */
   traceSuccess(
     finalState: import("../state/state-object.js").StateObject,
-    trans: import("../transition/transition.js").Transition,
+    trans: ng.Transition,
   ): void;
   /**
    * @internal called by ng-router code

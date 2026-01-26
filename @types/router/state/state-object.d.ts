@@ -61,6 +61,10 @@ export class StateObject {
   _stateObjectCache: {
     nameGlob: Glob;
   };
+  /**
+   * @type {(import("./interface.ts").LazyLoadFn) | undefined}
+   */
+  lazyLoad: import("./interface.ts").LazyLoadFn | undefined;
   /** @returns {StateObject} */
   _state(): StateObject;
   /**
@@ -70,11 +74,11 @@ export class StateObject {
    * reference to the actual `State` instance, the original definition object passed to
    * `$stateProvider.state()`, or the fully-qualified name.
    *
-   * @param {StateObject | string} ref Can be one of (a) a `State` instance, (b) an object that was passed
+   * @param {any} ref Can be one of (a) a `State` instance, (b) an object that was passed
    *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
    * @returns Returns `true` if `ref` matches the current `State` instance.
    */
-  is(ref: StateObject | string): boolean;
+  is(ref: any): boolean;
   /**
    * @deprecated this does not properly handle dot notation
    * @returns {string} Returns a dot-separated name of the state.

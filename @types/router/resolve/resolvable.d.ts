@@ -50,11 +50,11 @@ export class Resolvable {
    * Wait for this Resolvable's dependencies, then invoke this Resolvable's function
    * and update the Resolvable's state
    * @param {import("./resolve-context.js").ResolveContext} resolveContext
-   * @param {import("../transition/transition.js").Transition} [trans]
+   * @param {ng.Transition} [trans]
    */
   resolve(
     resolveContext: import("./resolve-context.js").ResolveContext,
-    trans?: import("../transition/transition.js").Transition,
+    trans?: ng.Transition,
   ): Promise<any>;
   /**
    * Gets a promise for this Resolvable's data.
@@ -62,12 +62,12 @@ export class Resolvable {
    * Fetches the data and returns a promise.
    * Returns the existing promise if it has already been fetched once.
    * @param {import("./resolve-context.js").ResolveContext} resolveContext
-   * @param {import("../transition/transition.js").Transition | undefined} [trans]
+   * @param {ng.Transition | undefined} [trans]
    * @return {Promise<any>}
    */
   get(
     resolveContext: import("./resolve-context.js").ResolveContext,
-    trans?: import("../transition/transition.js").Transition | undefined,
+    trans?: ng.Transition | undefined,
   ): Promise<any>;
   toString(): string;
   clone(): Resolvable;

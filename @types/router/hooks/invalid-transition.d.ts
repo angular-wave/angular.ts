@@ -1,1 +1,3 @@
-export function registerInvalidTransitionHook(transitionService: any): any;
+export function registerInvalidTransitionHook(
+  transitionService: ng.TransitionService,
+): import("../transition/interface.ts").DeregisterFn;

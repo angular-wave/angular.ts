@@ -42,10 +42,10 @@ export class Rejection {
   /**
    * Returns a Rejection due to ignored transition
    *
-   * @param {any} detail
+   * @param {any} [detail]
    * @returns {Rejection}
    */
-  static ignored(detail: any): Rejection;
+  static ignored(detail?: any): Rejection;
   /**
    * Returns a Rejection due to aborted transition
    *
@@ -74,9 +74,9 @@ export class Rejection {
   /**
    * @param {number} type
    * @param {string} message
-   * @param {any} detail
+   * @param {any} [detail]
    */
-  constructor(type: number, message: string, detail: any);
+  constructor(type: number, message: string, detail?: any);
   /** @type {number} */
   $id: number;
   /** @type {number} */

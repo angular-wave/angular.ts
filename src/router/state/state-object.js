@@ -72,6 +72,11 @@ export class StateObject {
     const nameGlob = this.name ? Glob.fromString(this.name) : null;
 
     this._stateObjectCache = { nameGlob };
+
+    /**
+     * @type {(import("./interface.ts").LazyLoadFn) | undefined}
+     */
+    this.lazyLoad = undefined;
   }
 
   /** @returns {StateObject} */
@@ -86,7 +91,7 @@ export class StateObject {
    * reference to the actual `State` instance, the original definition object passed to
    * `$stateProvider.state()`, or the fully-qualified name.
    *
-   * @param {StateObject | string} ref Can be one of (a) a `State` instance, (b) an object that was passed
+   * @param {any} ref Can be one of (a) a `State` instance, (b) an object that was passed
    *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
    * @returns Returns `true` if `ref` matches the current `State` instance.
    */
