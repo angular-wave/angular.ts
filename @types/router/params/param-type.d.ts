@@ -29,7 +29,8 @@ export class ParamType {
   constructor(def: any);
   pattern: RegExp;
   inherit: boolean;
-  name: any;
+  /** @type {string|undefined} */
+  name: string | undefined;
   /**
    * @param {any} val
    */
@@ -69,16 +70,26 @@ export class ParamType {
 }
 /**
  * Wraps up a `ParamType` object to handle array values.
- * @param {this} type
- * @param {string} mode
+ * @this {Record<string, any>}
+ * @param {ParamType & Record<string, any>} type
+ * @param {boolean | 'auto'} mode
  */
-declare function ArrayType(type: this, mode: string): void;
+declare function ArrayType(
+  this: Record<string, any>,
+  type: ParamType & Record<string, any>,
+  mode: boolean | "auto",
+): void;
 declare class ArrayType {
   /**
    * Wraps up a `ParamType` object to handle array values.
-   * @param {this} type
-   * @param {string} mode
+   * @this {Record<string, any>}
+   * @param {ParamType & Record<string, any>} type
+   * @param {boolean | 'auto'} mode
    */
-  constructor(type: this, mode: string);
+  constructor(
+    this: Record<string, any>,
+    type: ParamType & Record<string, any>,
+    mode: boolean | "auto",
+  );
 }
 export {};

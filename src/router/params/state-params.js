@@ -62,9 +62,15 @@ function ancestors(first, second) {
   /** @type {Array<StateObject>} */
   const path = [];
 
-  for (const i in first.path) {
-    if (second.path && first.path[i] !== second.path[i]) break;
-    path.push(first.path[i]);
+  const firstPath = first.path || [];
+
+  const secondPath = second.path || [];
+
+  const len = Math.min(firstPath.length, secondPath.length);
+
+  for (let i = 0; i < len; i++) {
+    if (firstPath[i] !== secondPath[i]) break;
+    path.push(firstPath[i]);
   }
 
   return path;

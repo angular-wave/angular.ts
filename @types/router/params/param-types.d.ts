@@ -31,17 +31,20 @@ export class ParamTypes {
     def: any;
   }[];
   defaultTypes: Record<string, any>;
-  types: any;
+  /**
+   * @type {Record<string, any>}
+   */
+  types: Record<string, any>;
   /**
    * Registers a parameter type
    *
    * End users should call [[UrlMatcherFactory.type]], which delegates to this method.
-   * @param {string | number | symbol} name
+   * @param {string} name
    * @param {import("./interface.ts").ParamTypeDefinition} [definition]
    * @param {() => import("../params/interface.ts").ParamTypeDefinition} [definitionFn]
    */
   type(
-    name: string | number | symbol,
+    name: string,
     definition?: import("./interface.ts").ParamTypeDefinition,
     definitionFn?: () => import("../params/interface.ts").ParamTypeDefinition,
   ): any;

@@ -32,6 +32,7 @@ export class ParamType {
     this.pattern = /.*/;
     this.inherit = true;
     Object.assign(this, def);
+    /** @type {string|undefined} */
     this.name = undefined;
   }
   // consider these four methods to be "abstract methods" that should be overridden
@@ -95,21 +96,28 @@ export class ParamType {
     if (mode === "auto" && !isSearch)
       throw new Error("'auto' array mode is for query parameters only");
 
-    return new ArrayType(this, /** @type {string} */ (mode));
+    return new ArrayType(this, mode);
   }
 }
 
 /**
  * Wraps up a `ParamType` object to handle array values.
- * @param {this} type
- * @param {string} mode
+ * @this {Record<string, any>}
+ * @param {ParamType & Record<string, any>} type
+ * @param {boolean | 'auto'} mode
  */
 function ArrayType(type, mode) {
   // Wrap non-array value as array
+  /**
+   * @param {any} val
+   */
   function arrayWrap(val) {
     return isArray(val) ? val : isDefined(val) ? [val] : [];
   }
   // Unwrap array value for "auto" mode. Return undefined for empty array.
+  /**
+   * @param {any} val
+   */
   function arrayUnwrap(val) {
     switch (val.length) {
       case 0:
@@ -122,11 +130,11 @@ function ArrayType(type, mode) {
   }
   // Wraps type (.is/.encode/.decode) functions to operate on each value of an array
   /**
-   * @param {(value: any, key: string | number) => any} callback
-   * @param {boolean} allTruthyMode
+   * @param {(value: any) => any} callback
+   * @param {boolean} [allTruthyMode]
    */
   function arrayHandler(callback, allTruthyMode) {
-    return function handleArray(val) {
+    return function handleArray(/** @type {string | any[]} */ val) {
       if (isArray(val) && val.length === 0) return val;
       const arr = arrayWrap(val);
 
@@ -142,7 +150,10 @@ function ArrayType(type, mode) {
    * @param {(arg0: any, arg1: any) => any} callback
    */
   function arrayEqualsHandler(callback) {
-    return function handleArray(val1, val2) {
+    return function handleArray(
+      /** @type {any} */ val1,
+      /** @type {any} */ val2,
+    ) {
       const left = arrayWrap(val1),
         right = arrayWrap(val2);
 
