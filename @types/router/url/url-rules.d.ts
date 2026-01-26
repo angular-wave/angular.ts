@@ -12,7 +12,10 @@ export class UrlRules {
   /** @param {UrlRuleFactory} urlRuleFactory */
   constructor(urlRuleFactory: UrlRuleFactory);
   _sortFn: typeof defaultRuleSortFn;
-  _rules: any[];
+  /**
+   * @type {BaseUrlRule[]}
+   */
+  _rules: BaseUrlRule[];
   _id: number;
   _urlRuleFactory: UrlRuleFactory;
   /**
@@ -31,16 +34,17 @@ export class UrlRules {
    * A rule should have a `match` function which returns truthy if the rule matched.
    * It should also have a `handler` function which is invoked if the rule is the best match.
    *
+   * @param {import('./url-rule.js').BaseUrlRule} rule the rule to register
    * @returns {() => void } a function that deregisters the rule
    */
-  rule(rule: any): () => void;
+  rule(rule: import("./url-rule.js").BaseUrlRule): () => void;
   _sorted: boolean;
   /**
    * Gets all registered rules
    *
-   * @returns an array of all the registered rules
+   * @returns {import("./interface.js").UrlRule[]} an array of all the registered rules
    */
-  rules(): any[];
+  rules(): import("./interface.js").UrlRule[];
   /**
    * Defines URL Rule priorities
    *
@@ -85,7 +89,11 @@ export class UrlRules {
    */
   sort(compareFn: any): void;
   ensureSorted(): void;
-  stableSort(arr: any, compareFn: any): any;
+  /**
+   * @param {any[]} arr
+   * @param {(arg0: any, arg1: any) => any} compareFn
+   */
+  stableSort(arr: any[], compareFn: (arg0: any, arg1: any) => any): any[];
   /**
    * Registers a `matcher` and `handler` for custom URLs handling.
    *
@@ -138,19 +146,20 @@ export class UrlRules {
    * ```
    *
    * Note: the `handler` may also invoke arbitrary code, such as `$state.go()`
-   *
-   * @param matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
-   * @param handler The path to redirect to, or a function that returns the path.
-   * @param options `{ priority: number }`
-   *
+   * @param {import("../state/state-object.js").StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
+   * @param {any} handler The path to redirect to, or a function that returns the path.
+   * @param {{ priority: any; }} options `{ priority: number }`
    * @return the registered [[UrlRule]]
    */
   when(
-    matcher: any,
+    matcher: import("../state/state-object.js").StateObject,
     handler: any,
-    options: any,
+    options: {
+      priority: any;
+    },
   ): import("./url-rule.js").BaseUrlRule;
 }
+export type UrlRule = import("./interface.ts").UrlRule;
 /**
  * Default rule priority sorting function.
  *
