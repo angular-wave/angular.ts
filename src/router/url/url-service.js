@@ -262,15 +262,16 @@ export class UrlService {
    *   urlService.sync();
    * });
    * ```
+   * @param {import("../../core/scope/interface.ts").ScopeEvent | undefined} [evt]
    */
   sync(evt) {
     if (evt && evt.defaultPrevented) return;
     const { stateService } = this;
 
     const url = {
-      path: this.$location.getPath(),
-      search: this.$location.getSearch(),
-      hash: this.$location.getHash(),
+      path: /** @type {ng.LocationService} */ (this.$location).getPath(),
+      search: /** @type {ng.LocationService} */ (this.$location).getSearch(),
+      hash: /** @type {ng.LocationService} */ (this.$location).getHash(),
     };
 
     /**
@@ -279,14 +280,24 @@ export class UrlService {
     const best = this.match(url);
 
     const applyResult = pattern([
-      [isString, (newurl) => this.url(newurl)],
+      [
+        isString,
+        (/** @type {string | undefined} */ newurl) => this.url(newurl),
+      ],
       [
         TargetState.isDef,
-        (def) => stateService.go(def.state, def.params, def.options),
+        /** @param {import("../state/interface.ts").TargetStateDef} def */ (
+          def,
+        ) =>
+          stateService.go(
+            /** @type {string} */ (def.state),
+            def.params,
+            def.options,
+          ),
       ],
       [
         is(TargetState),
-        (target) =>
+        (/** @type {TargetState} */ target) =>
           stateService.go(target.state(), target.params(), target.options()),
       ],
     ]);
@@ -332,6 +343,7 @@ export class UrlService {
    *
    * Given a URL (as a [[UrlParts]] object), check all rules and determine the best matching rule.
    * Return the result as a [[MatchResult]].
+   * @param {import("../../docs.ts").UrlParts} url
    * @returns {any}
    */
   match(url) {
@@ -368,6 +380,9 @@ export class UrlService {
     return best;
   }
 
+  /**
+   * @param {boolean | undefined} [read]
+   */
   update(read) {
     if (read) {
       this.location = this.url();
@@ -383,11 +398,10 @@ export class UrlService {
    * Internal API.
    *
    * Pushes a new location to the browser history.
-   *
    * @internal
-   * @param urlMatcher
-   * @param params
-   * @param options
+   * @param {{ format: (arg0: any) => string | undefined; }} urlMatcher
+   * @param {import("../params/state-params.js").StateParams} params
+   * @param {string} options
    */
   push(urlMatcher, params, options) {
     const replace = options && !!options.replace;
@@ -396,24 +410,22 @@ export class UrlService {
   }
 
   /**
-   * Builds and returns a URL with interpolated parameters
-   *
-   * #### Example:
-   * ```js
-   * matcher = $umf.compile("/about/:person");
-   * params = { person: "bob" };
-   * $bob = $url.href(matcher, params);
-   * // $bob == "/about/bob";
-   * ```
-   *
-   * @param urlMatcher The [[UrlMatcher]] object which is used as the template of the URL to generate.
-   * @param params An object of parameter values to fill the matcher's required parameters.
-   * @param options Options object. The options are:
-   *
-   * - **`absolute`** - {boolean=false},  If true will generate an absolute url, e.g. "http://www.example.com/fullurl".
-   *
-   * @returns Returns the fully compiled URL, or `null` if `params` fail validation against `urlMatcher`
-   */
+     * Builds and returns a URL with interpolated parameters
+     *
+     * #### Example:
+     * ```js
+     * matcher = $umf.compile("/about/:person");
+     * params = { person: "bob" };
+     * $bob = $url.href(matcher, params);
+     * // $bob == "/about/bob";
+     * ```
+     * @param {{ format: (arg0: any) => any; }} urlMatcher The [[UrlMatcher]] object which is used as the template of the URL to generate.
+     * @param {Object} params An object of parameter values to fill the matcher's required parameters.
+     * @param {{ absolute: any; }} options Options object. The options are:
+
+    - **`absolute`** - {boolean=false},  If true will generate an absolute url, e.g. "http://www.example.com/fullurl".
+     * @returns Returns the fully compiled URL, or `null` if `params` fail validation against `urlMatcher`
+     */
   href(urlMatcher, params, options) {
     let url = urlMatcher.format(params);
 

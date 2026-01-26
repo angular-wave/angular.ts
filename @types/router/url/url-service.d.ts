@@ -178,8 +178,11 @@ export class UrlService {
    *   urlService.sync();
    * });
    * ```
+   * @param {import("../../core/scope/interface.ts").ScopeEvent | undefined} [evt]
    */
-  sync(evt: any): void;
+  sync(
+    evt?: import("../../core/scope/interface.ts").ScopeEvent | undefined,
+  ): void;
   /**
    * Starts or stops listening for URL changes
    *
@@ -208,42 +211,57 @@ export class UrlService {
    *
    * Given a URL (as a [[UrlParts]] object), check all rules and determine the best matching rule.
    * Return the result as a [[MatchResult]].
+   * @param {import("../../docs.ts").UrlParts} url
    * @returns {any}
    */
-  match(url: any): any;
-  update(read: any): void;
+  match(url: import("../../docs.ts").UrlParts): any;
+  /**
+   * @param {boolean | undefined} [read]
+   */
+  update(read?: boolean | undefined): void;
   location: string;
   /**
    * Internal API.
    *
    * Pushes a new location to the browser history.
-   *
    * @internal
-   * @param urlMatcher
-   * @param params
-   * @param options
+   * @param {{ format: (arg0: any) => string | undefined; }} urlMatcher
+   * @param {import("../params/state-params.js").StateParams} params
+   * @param {string} options
    */
-  push(urlMatcher: any, params: any, options: any): void;
+  push(
+    urlMatcher: {
+      format: (arg0: any) => string | undefined;
+    },
+    params: import("../params/state-params.js").StateParams,
+    options: string,
+  ): void;
   /**
-   * Builds and returns a URL with interpolated parameters
-   *
-   * #### Example:
-   * ```js
-   * matcher = $umf.compile("/about/:person");
-   * params = { person: "bob" };
-   * $bob = $url.href(matcher, params);
-   * // $bob == "/about/bob";
-   * ```
-   *
-   * @param urlMatcher The [[UrlMatcher]] object which is used as the template of the URL to generate.
-   * @param params An object of parameter values to fill the matcher's required parameters.
-   * @param options Options object. The options are:
-   *
-   * - **`absolute`** - {boolean=false},  If true will generate an absolute url, e.g. "http://www.example.com/fullurl".
-   *
-   * @returns Returns the fully compiled URL, or `null` if `params` fail validation against `urlMatcher`
-   */
-  href(urlMatcher: any, params: any, options: any): any;
+       * Builds and returns a URL with interpolated parameters
+       *
+       * #### Example:
+       * ```js
+       * matcher = $umf.compile("/about/:person");
+       * params = { person: "bob" };
+       * $bob = $url.href(matcher, params);
+       * // $bob == "/about/bob";
+       * ```
+       * @param {{ format: (arg0: any) => any; }} urlMatcher The [[UrlMatcher]] object which is used as the template of the URL to generate.
+       * @param {Object} params An object of parameter values to fill the matcher's required parameters.
+       * @param {{ absolute: any; }} options Options object. The options are:
+  
+      - **`absolute`** - {boolean=false},  If true will generate an absolute url, e.g. "http://www.example.com/fullurl".
+       * @returns Returns the fully compiled URL, or `null` if `params` fail validation against `urlMatcher`
+       */
+  href(
+    urlMatcher: {
+      format: (arg0: any) => any;
+    },
+    params: any,
+    options: {
+      absolute: any;
+    },
+  ): any;
   /**
    * Creates a [[UrlMatcher]] for the specified pattern.
    *

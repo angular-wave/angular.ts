@@ -3,24 +3,48 @@ import { isDefined } from "../../shared/utils.js";
 import { removeFrom } from "../../shared/common.js";
 import { UrlRuleFactory } from "./url-rule.js";
 
+/** @typedef {import("./interface.ts").UrlRule} UrlRule */
+
+/**
+ * @param {{ priority: any; }} a
+ * @param {{ priority: any; }} b
+ */
 function prioritySort(a, b) {
   return (b.priority || 0) - (a.priority || 0);
 }
 
-const typeSort = (a, b) => {
-  const weights = { STATE: 4, URLMATCHER: 4, REGEXP: 3, RAW: 2, OTHER: 1 };
+const typeSort = (
+  /** @type {{ type: string | number; }} */ a,
+  /** @type {{ type: string | number; }} */ b,
+) => {
+  const weights = /** @type {Record<string, any>} */ ({
+    STATE: 4,
+    URLMATCHER: 4,
+    REGEXP: 3,
+    RAW: 2,
+    OTHER: 1,
+  });
 
   return (weights[a.type] || 0) - (weights[b.type] || 0);
 };
 
-const urlMatcherSort = (a, b) =>
+const urlMatcherSort = (
+  /** @type {{ urlMatcher: any; }} */ a,
+  /** @type {{ urlMatcher: any; }} */ b,
+) =>
   !a.urlMatcher || !b.urlMatcher
     ? 0
     : UrlMatcher.compare(a.urlMatcher, b.urlMatcher);
 
-const idSort = (a, b) => {
+const idSort = (
+  /** @type {{ type: string | number; $id: any; }} */ a,
+  /** @type {{ type: string | number; $id: any; }} */ b,
+) => {
   // Identically sorted STATE and URLMATCHER best rule will be chosen by `matchPriority` after each rule matches the URL
-  const useMatchPriority = { STATE: true, URLMATCHER: true };
+  const useMatchPriority = /** @type {Record<string, any>} */ ({
+    STATE: true,
+    URLMATCHER: true,
+  });
 
   const equal = useMatchPriority[a.type] && useMatchPriority[b.type];
 
@@ -67,6 +91,9 @@ export class UrlRules {
   /** @param {UrlRuleFactory} urlRuleFactory */
   constructor(urlRuleFactory) {
     this._sortFn = defaultRuleSortFn;
+    /**
+     * @type {BaseUrlRule[]}
+     */
     this._rules = [];
     this._id = 0;
     this._urlRuleFactory = urlRuleFactory;
@@ -91,6 +118,7 @@ export class UrlRules {
    * A rule should have a `match` function which returns truthy if the rule matched.
    * It should also have a `handler` function which is invoked if the rule is the best match.
    *
+   * @param {import('./url-rule.js').BaseUrlRule} rule the rule to register
    * @returns {() => void } a function that deregisters the rule
    */
   rule(rule) {
@@ -106,7 +134,7 @@ export class UrlRules {
   /**
    * Gets all registered rules
    *
-   * @returns an array of all the registered rules
+   * @returns {import("./interface.js").UrlRule[]} an array of all the registered rules
    */
   rules() {
     this.ensureSorted();
@@ -183,6 +211,10 @@ export class UrlRules {
     this._sorted || this.sort();
   }
 
+  /**
+   * @param {any[]} arr
+   * @param {(arg0: any, arg1: any) => any} compareFn
+   */
   stableSort(arr, compareFn) {
     const arrOfWrapper = arr.map((elem, idx) => ({ elem, idx }));
 
@@ -247,11 +279,9 @@ export class UrlRules {
    * ```
    *
    * Note: the `handler` may also invoke arbitrary code, such as `$state.go()`
-   *
-   * @param matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
-   * @param handler The path to redirect to, or a function that returns the path.
-   * @param options `{ priority: number }`
-   *
+   * @param {import("../state/state-object.js").StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
+   * @param {any} handler The path to redirect to, or a function that returns the path.
+   * @param {{ priority: any; }} options `{ priority: number }`
    * @return the registered [[UrlRule]]
    */
   when(matcher, handler, options) {

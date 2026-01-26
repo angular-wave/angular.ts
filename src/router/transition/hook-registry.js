@@ -18,7 +18,7 @@ export function matchState(state, criterion, transition) {
   const toMatch = isString(criterion) ? [criterion] : criterion;
 
   /**
-   * @param {{ name: string; }} _state
+   * @param {ng.BuiltStateDeclaration} _state
    */
   function matchGlobs(_state) {
     const globStrings = /** @type {string[]}*/ (toMatch);
@@ -36,7 +36,9 @@ export function matchState(state, criterion, transition) {
 
     return false;
   }
-  const matchFn = isFunction(toMatch) ? toMatch : matchGlobs;
+  const matchFn = /** @type {any} */ (
+    isFunction(toMatch) ? toMatch : matchGlobs
+  );
 
   return !!matchFn(state, transition);
 }
