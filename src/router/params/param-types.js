@@ -47,6 +47,9 @@ export class ParamTypes {
     const makeType = (/** @type {any} */ definition, /** @type {any} */ name) =>
       new ParamType(Object.assign({ name }, definition));
 
+    /**
+     * @type {Record<string, any>}
+     */
     this.types = inherit(map(this.defaultTypes, makeType), {});
   }
 
@@ -54,7 +57,7 @@ export class ParamTypes {
    * Registers a parameter type
    *
    * End users should call [[UrlMatcherFactory.type]], which delegates to this method.
-   * @param {string | number | symbol} name
+   * @param {string} name
    * @param {import("./interface.ts").ParamTypeDefinition} [definition]
    * @param {() => import("../params/interface.ts").ParamTypeDefinition} [definitionFn]
    */
@@ -63,7 +66,9 @@ export class ParamTypes {
 
     if (hasOwn(this.types, name))
       throw new Error(`A type named '${name}' has already been defined.`);
-    this.types[name] = new ParamType(Object.assign({ name }, definition));
+    this.types[/** @type {string} */ (name)] = new ParamType(
+      Object.assign({ name }, definition),
+    );
 
     if (definitionFn) {
       this.typeQueue.push({ name, def: definitionFn });
@@ -76,7 +81,7 @@ export class ParamTypes {
 
   _flushTypeQueue() {
     while (this.typeQueue.length) {
-      const type = this.typeQueue.shift();
+      const type = /** @type {any} */ (this.typeQueue.shift());
 
       if (type.pattern)
         throw new Error("You cannot override a type's .pattern at runtime.");
@@ -88,8 +93,8 @@ export class ParamTypes {
   }
 }
 function initDefaultTypes() {
-  const makeDefaultType = (def) => {
-    const valToString = (val) =>
+  const makeDefaultType = /** @param {any} def */ (def) => {
+    const valToString = (/** @type {any} */ val) =>
       !isNullOrUndefined(val) ? val.toString() : val;
 
     const defaultTypeBase = {
@@ -98,7 +103,7 @@ function initDefaultTypes() {
       is: is(String),
       pattern: /.*/,
 
-      equals: (a, b) => a === b, // allow coersion for null/undefined/""
+      equals: (/** @type {any} */ a, /** @type {any} */ b) => a === b, // allow coersion for null/undefined/""
     };
 
     return Object.assign({}, defaultTypeBase, def);
@@ -115,19 +120,25 @@ function initDefaultTypes() {
       inherit: false,
     }),
     int: makeDefaultType({
-      decode: (val) => parseInt(val, 10),
+      decode: (/** @type {string} */ val) => parseInt(val, 10),
+      /**
+       * @param {unknown} val
+       */
       is(val) {
         return !isNullOrUndefined(val) && this.decode(val.toString()) === val;
       },
       pattern: /-?\d+/,
     }),
     bool: makeDefaultType({
-      encode: (val) => (val && 1) || 0,
-      decode: (val) => parseInt(val, 10) !== 0,
+      encode: (/** @type {any} */ val) => (val && 1) || 0,
+      decode: (/** @type {string} */ val) => parseInt(val, 10) !== 0,
       is: is(Boolean),
       pattern: /[01]/,
     }),
     date: makeDefaultType({
+      /**
+       * @param {{ getFullYear: () => any; getMonth: () => number; getDate: () => any; }} val
+       */
       encode(val) {
         return !this.is(val)
           ? undefined
@@ -137,13 +148,21 @@ function initDefaultTypes() {
               `0${val.getDate()}`.slice(-2),
             ].join("-");
       },
+      /**
+       * @param {any} val
+       */
       decode(val) {
         if (this.is(val)) return val;
         const match = this.capture.exec(val);
 
         return match ? new Date(match[1], match[2] - 1, match[3]) : undefined;
       },
-      is: (val) => val instanceof Date && !isNaN(val.valueOf()),
+      is: (/** @type {any} */ val) =>
+        val instanceof Date && !isNaN(val.valueOf()),
+      /**
+       * @param {{ [x: string]: () => any; }} left
+       * @param {{ [x: string]: () => any; }} right
+       */
       equals(left, right) {
         return ["getFullYear", "getMonth", "getDate"].reduce(
           (acc, fn) => acc && left[fn]() === right[fn](),
@@ -162,8 +181,8 @@ function initDefaultTypes() {
     }),
     // does not encode/decode
     any: makeDefaultType({
-      encode: (x) => x,
-      decode: (x) => x,
+      encode: (/** @type {any} */ x) => x,
+      decode: (/** @type {any} */ x) => x,
       is: () => true,
       equals,
     }),
