@@ -58,7 +58,7 @@ export class Rejection {
   /**
    * @param {number} type
    * @param {string} message
-   * @param {any} detail
+   * @param {any} [detail]
    */
   constructor(type, message, detail) {
     /** @type {number} */
@@ -118,7 +118,7 @@ export class Rejection {
   /**
    * Returns a Rejection due to ignored transition
    *
-   * @param {any} detail
+   * @param {any} [detail]
    * @returns {Rejection}
    */
   static ignored(detail) {

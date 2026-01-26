@@ -110,7 +110,7 @@ export class Transition {
       TransitionHookPhase._CREATE,
     );
 
-    TransitionHook.invokeHooks(onCreateHooks, () => null);
+    TransitionHook.invokeHooks(onCreateHooks, () => Promise.resolve());
     this.applyViewConfigs();
   }
 

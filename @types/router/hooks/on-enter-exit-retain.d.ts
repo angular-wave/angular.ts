@@ -1,3 +1,9 @@
-export function registerOnExitHook(transitionService: any): any;
-export function registerOnRetainHook(transitionService: any): any;
-export function registerOnEnterHook(transitionService: any): any;
+export function registerOnExitHook(
+  transitionService: ng.TransitionService,
+): import("../transition/interface.ts").DeregisterFn;
+export function registerOnRetainHook(
+  transitionService: ng.TransitionService,
+): import("../transition/interface.ts").DeregisterFn;
+export function registerOnEnterHook(
+  transitionService: ng.TransitionService,
+): import("../transition/interface.ts").DeregisterFn;

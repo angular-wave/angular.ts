@@ -274,7 +274,7 @@ export class TransitionProvider {
     );
 
     this._eventTypes.push(eventType);
-    makeEvent(this, this, eventType);
+    makeEvent(this, /** @type {ng.} */ (this), eventType);
   }
 
   /**

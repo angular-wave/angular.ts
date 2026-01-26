@@ -194,7 +194,7 @@ export class ResolveContext {
       const subContext = this.subContext(node.state);
 
       const getResult = (
-        /** @type {{ get: (arg0: ResolveContext, arg1: import("../transition/transition.js").Transition) => Promise<any>; token: any; }} */ resolve,
+        /** @type {{ get: (arg0: ResolveContext, arg1: ng.Transition) => Promise<any>; token: any; }} */ resolve,
       ) =>
         resolve
           .get(subContext, trans)

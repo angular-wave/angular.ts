@@ -6,7 +6,7 @@
  * Allows the views to do async work in [[ViewConfig.load]] before the transition continues.
  * In angular 1, this includes loading the templates.
  */
-const loadEnteringViews = (transition) => {
+const loadEnteringViews = (/** @type {ng.Transition} */ transition) => {
   const enteringViews = transition.views("entering");
 
   if (!enteringViews.length) return undefined;
@@ -18,10 +18,14 @@ const loadEnteringViews = (transition) => {
   });
 };
 
-export const registerLoadEnteringViews = (transitionService) =>
-  transitionService.onFinish({}, loadEnteringViews);
+export const registerLoadEnteringViews = (
+  /** @type {ng.TransitionService} */ transitionService,
+) => transitionService.onFinish({}, loadEnteringViews);
 
-export const registerActivateViews = (transitionService, viewService) => {
+export const registerActivateViews = (
+  /** @type {ng.TransitionService} */ transitionService,
+  /** @type {ng.ViewService} */ viewService,
+) => {
   /**
    * A [[TransitionHookFn]] which activates the new views when a transition is successful.
    *
@@ -32,7 +36,7 @@ export const registerActivateViews = (transitionService, viewService) => {
    *
    * See [[ViewService]]
    */
-  const activateViews = (transition) => {
+  const activateViews = (/** @type {ng.Transition} */ transition) => {
     const enteringViews = transition.views("entering");
 
     const exitingViews = transition.views("exiting");

@@ -1,6 +1,8 @@
 import { ResolveContext } from "../resolve/resolve-context.js";
 import { val } from "../../shared/hof.js";
 
+/** @typedef  {import("../transition/interface.js").TreeChanges} TreeChanges */
+
 export const RESOLVE_HOOK_PRIORITY = 1000;
 /**
  * A [[TransitionHookFn]] which resolves all EAGER Resolvables in the To Path
@@ -11,14 +13,16 @@ export const RESOLVE_HOOK_PRIORITY = 1000;
  *
  * See [[StateDeclaration.resolve]]
  */
-const eagerResolvePath = (trans) =>
-  new ResolveContext(trans.treeChanges().to)
+const eagerResolvePath = (/** @type {ng.Transition} */ trans) =>
+  new ResolveContext(/** @type {TreeChanges} */ (trans.treeChanges()).to)
     .resolvePath("EAGER", trans)
     .then(() => {
       /* empty */
     });
 
-export const registerEagerResolvePath = (transitionService) =>
+export const registerEagerResolvePath = (
+  /** @type {ng.TransitionService} */ transitionService,
+) =>
   transitionService.onStart({}, eagerResolvePath, {
     priority: RESOLVE_HOOK_PRIORITY,
   });
@@ -31,8 +35,11 @@ export const registerEagerResolvePath = (transitionService) =>
  *
  * See [[StateDeclaration.resolve]]
  */
-const lazyResolveState = (trans, state) =>
-  new ResolveContext(trans.treeChanges().to)
+const lazyResolveState = (
+  /** @type {ng.Transition} */ trans,
+  /** @type {ng.StateDeclaration} */ state,
+) =>
+  new ResolveContext(/** @type {TreeChanges} */ (trans.treeChanges()).to)
     .subContext(state._state())
     .resolvePath("LAZY", trans)
     .then(() => {
@@ -55,14 +62,16 @@ export const registerLazyResolveState = (
  *
  * See [[StateDeclaration.resolve]]
  */
-const resolveRemaining = (trans) =>
-  new ResolveContext(trans.treeChanges().to)
+const resolveRemaining = (/** @type {ng.Transition} */ trans) =>
+  new ResolveContext(/** @type {TreeChanges} */ (trans.treeChanges()).to)
     .resolvePath("LAZY", trans)
     .then(() => {
       /* empty */
     });
 
-export const registerResolveRemaining = (transitionService) =>
+export const registerResolveRemaining = (
+  /** @type {ng.TransitionService} */ transitionService,
+) =>
   transitionService.onFinish({}, resolveRemaining, {
     priority: RESOLVE_HOOK_PRIORITY,
   });

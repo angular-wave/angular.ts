@@ -4,11 +4,14 @@
  * This hook is invoked at the end of the onBefore phase.
  * If the transition is invalid (for example, param values do not validate)
  * then the transition is rejected.
+ * @param {ng.Transition} trans
  */
 function invalidTransitionHook(trans) {
   if (!trans.valid()) {
-    throw new Error(trans.error().toString());
+    throw new Error(trans.error()?.toString());
   }
 }
-export const registerInvalidTransitionHook = (transitionService) =>
+export const registerInvalidTransitionHook = (
+  /** @type {ng.TransitionService} */ transitionService,
+) =>
   transitionService.onBefore({}, invalidTransitionHook, { priority: -10000 });

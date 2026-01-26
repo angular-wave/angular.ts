@@ -1,4 +1,4 @@
 export function registerRedirectToHook(
-  transitionService: any,
-  stateService: any,
+  transitionService: ng.TransitionService,
+  stateService: ng.StateService,
 ): void;

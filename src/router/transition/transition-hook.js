@@ -62,7 +62,7 @@ export class TransitionHook {
    * ```
    *
    * @param {TransitionHook[]} hooks the list of hooks to chain together
-   * @param {Promise<any>} waitFor if provided, the chain is `.then()`'ed off this promise
+   * @param {Promise<any>} [waitFor] if provided, the chain is `.then()`'ed off this promise
    * @returns a `Promise` for sequentially invoking the hooks (in order)
    */
   static chain(hooks, waitFor) {
@@ -82,7 +82,7 @@ export class TransitionHook {
    * If no hook returns a promise, then all hooks are processed synchronously.
    *
    * @param {TransitionHook[]} hooks the list of TransitionHooks to invoke
-   * @param {() => Promise<any> | null} doneCallback a callback that is invoked after all the hooks have successfully completed
+   * @param {() => Promise<any>} doneCallback a callback that is invoked after all the hooks have successfully completed
    *
    * @returns {Promise<any>} a promise for the async result, or the result of the callback
    */
@@ -167,7 +167,7 @@ export class TransitionHook {
       Rejection.normalize(err).toPromise();
 
     const handleError = (/** @type {Rejection} */ err) =>
-      hook.eventType.getErrorHandler(this)(err);
+      hook.eventType.getErrorHandler()(err);
 
     const handleResult = (/** @type {any} */ result) =>
       hook.eventType.getResultHandler(this)(result);
@@ -176,7 +176,9 @@ export class TransitionHook {
       const result = invokeCallback();
 
       if (!this.type.synchronous && isPromise(result)) {
-        return result.catch(normalizeErr).then(handleResult, handleError);
+        return /** @type Promise<any>} */ (result)
+          .catch(normalizeErr)
+          .then(handleResult, handleError);
       } else {
         return handleResult(result);
       }

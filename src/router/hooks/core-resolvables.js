@@ -13,11 +13,9 @@ export function registerAddCoreResolvables(transitionService) {
       Resolvable.fromData("$stateParams", trans.params()),
       "",
     );
-    trans
-      .entering()
-      .forEach((/** @type {ng.BuiltStateDeclaration} */ state) => {
-        trans.addResolvable(Resolvable.fromData("$state$", state), state);
-      });
+    trans.entering().forEach((/** @type {ng.StateDeclaration} */ state) => {
+      trans.addResolvable(Resolvable.fromData("$state$", state), state);
+    });
   });
 }
 
@@ -37,13 +35,13 @@ export function treeChangesCleanup(trans) {
     .reduce(uniqR, []);
 
   // If the resolvable is a Transition, return a new resolvable with null data
-  const replaceTransitionWithNull = (resolve) => {
+  const replaceTransitionWithNull = (/** @type {Resolvable} */ resolve) => {
     return TRANSITION_TOKENS.includes(resolve.token)
       ? Resolvable.fromData(resolve.token, null)
       : resolve;
   };
 
-  nodes.forEach((node) => {
+  nodes.forEach((/** @type {{ resolvables: Resolvable[]; }} */ node) => {
     node.resolvables = node.resolvables.map(replaceTransitionWithNull);
   });
 }

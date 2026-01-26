@@ -1,4 +1,4 @@
-import { StateDeclaration } from "../state/interface.ts";
+import { BuiltStateDeclaration, StateDeclaration } from "../state/interface.ts";
 import { PredicateBinary } from "../../shared/interface.ts";
 import { Transition } from "./transition.js";
 import { StateObject } from "../state/state-object.js";
@@ -224,7 +224,7 @@ export interface TransitionHookFn {
  * @returns an optional [[HookResult]] which may alter the transition
  */
 export interface TransitionStateHookFn {
-  (...injectables: unknown[]): HookResult;
+  (transition: Transition, state: StateDeclaration): HookResult;
 }
 /**
  * The signature for Transition onCreate Hooks.
@@ -284,7 +284,7 @@ export interface HookRegOptions {
   invokeLimit?: number;
 }
 /** A predicate type which tests if a [[StateObject]] and [[Transition]] passes some test. Returns a boolean. */
-export type IStateMatch = PredicateBinary<StateObject, Transition>;
+export type IStateMatch = PredicateBinary<BuiltStateDeclaration, Transition>;
 /**
  * Hook Criterion used to match a transition.
  *

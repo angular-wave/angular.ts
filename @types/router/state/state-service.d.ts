@@ -474,14 +474,14 @@ export class StateProvider {
        *
        * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
        * @param {import("./interface.ts").StateOrName} stateOrName the state that should be lazy loaded
-       * @param {import("../transition/transition.js").Transition} transition the optional Transition context to use (if the lazyLoad function requires an injector, etc)
+       * @param {ng.Transition} transition the optional Transition context to use (if the lazyLoad function requires an injector, etc)
       Note: If no transition is provided, a noop transition is created using the from the current state to the current state.
       This noop transition is not actually run.
        * @returns a promise to lazy load
        */
   lazyLoad(
     stateOrName: import("./interface.ts").StateOrName,
-    transition: import("../transition/transition.js").Transition,
+    transition: ng.Transition,
   ): Promise<import("./interface.ts").LazyLoadResult>;
 }
 export type StateRegistryProvider =

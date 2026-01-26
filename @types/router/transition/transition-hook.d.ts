@@ -33,10 +33,10 @@ export class TransitionHook {
    * ```
    *
    * @param {TransitionHook[]} hooks the list of hooks to chain together
-   * @param {Promise<any>} waitFor if provided, the chain is `.then()`'ed off this promise
+   * @param {Promise<any>} [waitFor] if provided, the chain is `.then()`'ed off this promise
    * @returns a `Promise` for sequentially invoking the hooks (in order)
    */
-  static chain(hooks: TransitionHook[], waitFor: Promise<any>): Promise<any>;
+  static chain(hooks: TransitionHook[], waitFor?: Promise<any>): Promise<any>;
   /**
    * Invokes all the provided TransitionHooks, in order.
    * Each hook's return value is checked.
@@ -44,13 +44,13 @@ export class TransitionHook {
    * If no hook returns a promise, then all hooks are processed synchronously.
    *
    * @param {TransitionHook[]} hooks the list of TransitionHooks to invoke
-   * @param {() => Promise<any> | null} doneCallback a callback that is invoked after all the hooks have successfully completed
+   * @param {() => Promise<any>} doneCallback a callback that is invoked after all the hooks have successfully completed
    *
    * @returns {Promise<any>} a promise for the async result, or the result of the callback
    */
   static invokeHooks(
     hooks: TransitionHook[],
-    doneCallback: () => Promise<any> | null,
+    doneCallback: () => Promise<any>,
   ): Promise<any>;
   /**
    * Run all TransitionHooks, ignoring their return value.
@@ -85,7 +85,7 @@ export class TransitionHook {
    * @param {unknown} err
    */
   logError(err: unknown): void;
-  invokeHook(): any;
+  invokeHook(): Promise<any>;
   /**
    * This method handles the return value of a Transition Hook.
    *

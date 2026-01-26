@@ -1,4 +1,4 @@
-import { isArray } from "../../shared/utils";
+import { isArray } from "../../shared/utils.js";
 
 /**
  * A [[TransitionHookFn]] that performs lazy loading
@@ -23,7 +23,7 @@ import { isArray } from "../../shared/utils";
  * ```
  *
  * See [[StateDeclaration.lazyLoad]]
- * @param {import("../transition/transition-service.js").TransitionProvider} transitionService
+ * @param {ng.TransitionService} transitionService
  * @param {ng.StateService} stateService
  * @param {ng.UrlService} urlService
  * @param {{ register: (arg0: any) => any; } | import("../state/state-registry.js").StateRegistryProvider | undefined} [stateRegistry]
@@ -36,11 +36,11 @@ export function registerLazyLoadHook(
 ) {
   return transitionService.onBefore(
     {
-      entering: (/** @type {{ lazyLoad: any; }} */ state) => {
-        return !!state.lazyLoad;
+      entering: (state) => {
+        return !!(/** @type {ng.BuiltStateDeclaration} */ (state).lazyLoad);
       },
     },
-    /** @param {ng.Transition} transition*/ (transition) => {
+    /** @param {ng.Transition} transition */ (transition) => {
       function retryTransition() {
         if (transition.originalTransition().options().source !== "url") {
           // The original transition was not triggered via url sync
@@ -77,9 +77,8 @@ export function registerLazyLoadHook(
       const promises = transition
         .entering()
         .filter(
-          (
-            /** @type {{ _state: () => { (): any; new (): any; lazyLoad: any; }; }} */ state,
-          ) => !!state._state().lazyLoad,
+          (/** @type {ng.StateDeclaration} */ state) =>
+            !!state._state().lazyLoad,
         )
         .map(
           (
@@ -92,48 +91,52 @@ export function registerLazyLoadHook(
   );
 }
 
+const lazyLoadPromiseCache = new WeakMap(); // WeakMap<Function, Promise<any>>
+
 /**
  * Invokes a state's lazy load function
- * @param {import("../transition/transition.js").Transition} transition a Transition context
+ * @param {ng.Transition} transition a Transition context
  * @param {import("../state/interface.js").StateDeclaration} state the state to lazy load
  * @param {{ register: (arg0: any) => any; } | undefined} [stateRegistry]
  * @return {Promise<import("../state/interface.ts").LazyLoadResult | undefined>} a promise for the lazy load result
  */
 export function lazyLoadState(transition, state, stateRegistry) {
-  const lazyLoadFn = state._state().lazyLoad;
+  const lazyLoadFn = /** @type {import("../state/interface.js").LazyLoadFn} */ (
+    state._state().lazyLoad
+  );
 
-  // Store/get the lazy load promise on/from the hookfn so it doesn't get re-invoked
-  let promise = lazyLoadFn._promise;
+  let promise = lazyLoadPromiseCache.get(lazyLoadFn);
 
   if (!promise) {
-    const success = (result) => {
+    const success = (/** @type {any} */ result) => {
       delete state.lazyLoad;
       delete state._state().lazyLoad;
-      delete lazyLoadFn._promise;
+      lazyLoadPromiseCache.delete(lazyLoadFn);
 
       return result;
     };
 
-    const error = (err) => {
-      delete lazyLoadFn._promise;
+    const error = (/** @type {any} */ err) => {
+      lazyLoadPromiseCache.delete(lazyLoadFn);
 
       return Promise.reject(err);
     };
 
-    promise = lazyLoadFn._promise = Promise.resolve(
-      lazyLoadFn(transition, state),
-    )
+    promise = Promise.resolve(lazyLoadFn(transition, state))
       .then(updateStateRegistry)
       .then(success, error);
+
+    lazyLoadPromiseCache.set(lazyLoadFn, promise);
   }
 
   /**
-   * Register any lazy loaded state definitions
-   * @param {{ states: any[]; }} result
+   * @param {import("../state/interface.js").LazyLoadResult} result
    */
   function updateStateRegistry(result) {
     if (result && isArray(result.states)) {
-      result.states.forEach((_state) => stateRegistry.register(_state));
+      result.states.forEach(
+        (_state) => stateRegistry && stateRegistry.register(_state),
+      );
     }
 
     return result;

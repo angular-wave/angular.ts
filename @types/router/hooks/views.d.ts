@@ -1,5 +1,7 @@
-export function registerLoadEnteringViews(transitionService: any): any;
+export function registerLoadEnteringViews(
+  transitionService: ng.TransitionService,
+): import("../transition/interface.ts").DeregisterFn;
 export function registerActivateViews(
-  transitionService: any,
-  viewService: any,
+  transitionService: ng.TransitionService,
+  viewService: ng.ViewService,
 ): void;
