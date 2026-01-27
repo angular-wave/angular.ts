@@ -32,6 +32,26 @@ const NG_OPTIONS_REGEXP =
 // 8: collection expression
 // 9: track by expression
 
+class OptionItem {
+  /** @type {HTMLOptionElement | null} */
+  element = null;
+
+  /**
+   * @param {any} selectValue
+   * @param {any} viewValue
+   * @param {any} label
+   * @param {any} group
+   * @param {any} disabled
+   */
+  constructor(selectValue, viewValue, label, group, disabled) {
+    this.selectValue = selectValue;
+    this.viewValue = viewValue;
+    this.label = label;
+    this.group = group;
+    this.disabled = disabled;
+  }
+}
+
 ngOptionsDirective.$inject = [$injectTokens._compile, $injectTokens._parse];
 /**
  *
@@ -86,14 +106,19 @@ export function ngOptionsDirective($compile, $parse) {
     // if we have a trackFn then use that (passing scope and locals)
     // otherwise just hash the given viewValue
     const getTrackByValueFn = trackBy
-      ? function (value, locals) {
-          return trackByFn(scope, locals);
+      ? function (/** @type {any} */ value, /** @type {any} */ locals) {
+          return /** @type {import("../../docs.ts").CompiledExpression} */ (
+            trackByFn
+          )(scope, locals);
         }
-      : function getHashOfValue(value) {
+      : function getHashOfValue(/** @type {any} */ value) {
           return hashKey(value);
         };
 
-    const getTrackByValue = function (value, key) {
+    const getTrackByValue = function (
+      /** @type {any} */ value,
+      /** @type {any=} */ key,
+    ) {
       return getTrackByValueFn(value, getLocals(value, key));
     };
 
@@ -105,31 +130,25 @@ export function ngOptionsDirective($compile, $parse) {
 
     const valuesFn = $parse(match[8]);
 
+    /** @type {Record<string, any>} */
     const locals = {};
 
     const getLocals = keyName
-      ? function (value, key) {
+      ? function (/** @type {any} */ value, /** @type {any} */ key) {
           locals[keyName] = key;
           locals[valueName] = value;
 
           return locals;
         }
-      : function (value) {
+      : function (/** @type {any} */ value) {
           locals[valueName] = value;
 
           return locals;
         };
 
-    class Option {
-      constructor(selectValue, viewValue, label, group, disabled) {
-        this.selectValue = selectValue;
-        this.viewValue = viewValue;
-        this.label = label;
-        this.group = group;
-        this.disabled = disabled;
-      }
-    }
-
+    /**
+     * @param {any[]} optionValues
+     */
     function getOptionValuesKeys(optionValues) {
       let optionValuesKeys;
 
@@ -154,10 +173,10 @@ export function ngOptionsDirective($compile, $parse) {
       getTrackByValue,
       getWatchables: valuesFn,
       getOptions() {
-        /** @type {Option[]} */
+        /** @type {OptionItem[]} */
         const optionItems = [];
 
-        /** @type {Object.<string, Option>} */
+        /** @type {Object.<string, OptionItem>} */
         const selectValueMap = {};
 
         // The option values were already computed in the `getWatchables` fn,
@@ -186,7 +205,7 @@ export function ngOptionsDirective($compile, $parse) {
 
           const disabled = disableWhenFn(scope, updatedLocals);
 
-          const optionItem = new Option(
+          const optionItem = new OptionItem(
             selectValue,
             viewValue,
             label,
@@ -201,9 +220,15 @@ export function ngOptionsDirective($compile, $parse) {
         return {
           items: optionItems,
           selectValueMap,
+          /**
+           * @param {any} value
+           */
           getOptionFromViewValue(value) {
-            return selectValueMap[getTrackByValue(value)];
+            return selectValueMap[getTrackByValue(value, undefined)];
           },
+          /**
+           * @param {{ viewValue: any; }} option
+           */
           getViewValueFromOption(option) {
             // If the viewValue could be an object that may be mutated by the application,
             // we need to make a copy and not return the reference to the value on the option.
@@ -254,6 +279,9 @@ export function ngOptionsDirective($compile, $parse) {
     // TODO double check
     unknownOption.nodeValue = "?";
 
+    /**
+     * @type {{ getOptionFromViewValue: any; selectValueMap: any; getViewValueFromOption: any; items: any; }}
+     */
     let options;
 
     const ngOptions = parseOptionsExpression(
@@ -272,7 +300,9 @@ export function ngOptionsDirective($compile, $parse) {
 
     // Update the controller methods for multiple selectable options
     if (!multiple) {
-      selectCtrl._writeValue = function writeNgOptionsValue(value) {
+      selectCtrl._writeValue = function writeNgOptionsValue(
+        /** @type {any} */ value,
+      ) {
         // The options might not be defined yet when ngModel tries to render
         if (!options) return;
 
@@ -321,12 +351,17 @@ export function ngOptionsDirective($compile, $parse) {
       // since ngModel only watches for object identity change
       // FIXME: When a user selects an option, this watch will fire needlessly
       if (ngOptions.trackBy) {
-        scope.$watch(ngOptions.getTrackByValue(ngModelCtrl.$viewValue), () => {
-          ngModelCtrl.$render();
-        });
+        scope.$watch(
+          ngOptions.getTrackByValue(ngModelCtrl.$viewValue, undefined),
+          () => {
+            ngModelCtrl.$render();
+          },
+        );
       }
     } else {
-      selectCtrl._writeValue = function writeNgOptionsMultiple(values) {
+      selectCtrl._writeValue = function writeNgOptionsMultiple(
+        /** @type {any[]} */ values,
+      ) {
         // The options might not be defined yet when ngModel tries to render
         if (!options) return;
 
@@ -335,11 +370,16 @@ export function ngOptionsDirective($compile, $parse) {
         const selectedOptions =
           (values && values.map(getAndUpdateSelectedOption)) || [];
 
-        options.items.forEach((option) => {
-          if (option.element.selected && !includes(selectedOptions, option)) {
-            option.element.selected = false;
-          }
-        });
+        options.items.forEach(
+          /** @param {OptionItem} option */ (option) => {
+            if (
+              option.element?.selected &&
+              !includes(selectedOptions, option)
+            ) {
+              option.element.selected = false;
+            }
+          },
+        );
       };
 
       selectCtrl._readValue = function readNgOptionsMultiple() {
@@ -395,7 +435,10 @@ export function ngOptionsDirective($compile, $parse) {
         // Redefine the registerOption function, which will catch
         // options that are added by ngIf etc. (rendering of the node is async because of
         // lazy transclusion)
-        selectCtrl.registerOption = function (optionScope, optionEl) {
+        selectCtrl.registerOption = function (
+          /** @type {ng.Scope} */ _optionScope,
+          /** @type {HTMLOptionElement} */ optionEl,
+        ) {
           if (optionEl.value === "") {
             selectCtrl.hasEmptyOption = true;
             selectCtrl.emptyOption = optionEl;
@@ -433,6 +476,10 @@ export function ngOptionsDirective($compile, $parse) {
 
     // ------------------------------------------------------------------ //
 
+    /**
+     * @param {OptionItem} option
+     * @param {DocumentFragment} parent
+     */
     function _addOptionElement(option, parent) {
       /**
        * @type {HTMLOptionElement}
@@ -445,6 +492,9 @@ export function ngOptionsDirective($compile, $parse) {
       updateOptionElement(option, optionElement);
     }
 
+    /**
+     * @param {any} viewValue
+     */
     function getAndUpdateSelectedOption(viewValue) {
       const option = options.getOptionFromViewValue(viewValue);
 
@@ -455,6 +505,10 @@ export function ngOptionsDirective($compile, $parse) {
       return option;
     }
 
+    /**
+     * @param {OptionItem} option
+     * @param {HTMLOptionElement} element
+     */
     function updateOptionElement(option, element) {
       option.element = element;
       element.disabled = option.disabled;
@@ -494,36 +548,39 @@ export function ngOptionsDirective($compile, $parse) {
 
       options = ngOptions.getOptions();
 
+      /** @type {Record<string, any>} */
       const groupElementMap = {};
 
-      options.items.forEach((option) => {
-        let groupElement;
+      options.items.forEach(
+        /** @param {OptionItem} option */ (option) => {
+          let groupElement;
 
-        if (isDefined(option.group)) {
-          // This option is to live in a group
-          // See if we have already created this group
-          groupElement = groupElementMap[option.group];
+          if (isDefined(option.group)) {
+            // This option is to live in a group
+            // See if we have already created this group
+            groupElement = groupElementMap[option.group];
 
-          if (!groupElement) {
-            groupElement = optGroupTemplate.cloneNode(false);
-            listFragment.appendChild(groupElement);
+            if (!groupElement) {
+              groupElement = optGroupTemplate.cloneNode(false);
+              listFragment.appendChild(groupElement);
 
-            // Update the label on the group element
-            // "null" is special cased because of Safari
-            /** @type {HTMLOptGroupElement} */
-            (groupElement).label =
-              option.group === null ? "null" : option.group;
+              // Update the label on the group element
+              // "null" is special cased because of Safari
+              /** @type {HTMLOptGroupElement} */
+              (groupElement).label =
+                option.group === null ? "null" : option.group;
 
-            // Store it for use later
-            groupElementMap[option.group] = groupElement;
+              // Store it for use later
+              groupElementMap[option.group] = groupElement;
+            }
+
+            _addOptionElement(option, groupElement);
+          } else {
+            // This option is not in a group
+            _addOptionElement(option, listFragment);
           }
-
-          _addOptionElement(option, groupElement);
-        } else {
-          // This option is not in a group
-          _addOptionElement(option, listFragment);
-        }
-      });
+        },
+      );
 
       selectElement.appendChild(listFragment);
 
@@ -560,7 +617,9 @@ export function ngOptionsDirective($compile, $parse) {
           /* empty */
         };
       },
-      post: ngOptionsPostLink,
+      post: /** @type {import("../../interface.ts").DirectiveLinkFn<any>} */ (
+        ngOptionsPostLink
+      ),
     },
   };
 }

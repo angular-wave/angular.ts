@@ -78,7 +78,7 @@ export function registerLazyLoadHook(
         .entering()
         .filter(
           (/** @type {ng.StateDeclaration} */ state) =>
-            !!state._state().lazyLoad,
+            state._state && !!state._state().lazyLoad,
         )
         .map(
           (
@@ -102,7 +102,7 @@ const lazyLoadPromiseCache = new WeakMap(); // WeakMap<Function, Promise<any>>
  */
 export function lazyLoadState(transition, state, stateRegistry) {
   const lazyLoadFn = /** @type {import("../state/interface.ts").LazyLoadFn} */ (
-    state._state().lazyLoad
+    state._state && state._state().lazyLoad
   );
 
   let promise = lazyLoadPromiseCache.get(lazyLoadFn);
@@ -110,7 +110,7 @@ export function lazyLoadState(transition, state, stateRegistry) {
   if (!promise) {
     const success = (/** @type {any} */ result) => {
       delete state.lazyLoad;
-      delete state._state().lazyLoad;
+      state._state && delete state._state().lazyLoad;
       lazyLoadPromiseCache.delete(lazyLoadFn);
 
       return result;

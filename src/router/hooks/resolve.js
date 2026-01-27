@@ -40,7 +40,7 @@ const lazyResolveState = (
   /** @type {ng.StateDeclaration} */ state,
 ) =>
   new ResolveContext(/** @type {TreeChanges} */ (trans.treeChanges()).to)
-    .subContext(state._state())
+    .subContext(/** @type {Function}*/ (state._state)())
     .resolvePath("LAZY", trans)
     .then(() => {
       /* empty */

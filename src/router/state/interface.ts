@@ -407,7 +407,7 @@ export interface StateDeclaration {
    * Note: the internal [[StateObject]] API is subject to change without notice
    * @internal
    */
-  _state: () => BuiltStateDeclaration;
+  _state?: () => BuiltStateDeclaration;
 
   /**
    * Resolve - a mechanism to asynchronously fetch data, participating in the Transition lifecycle
