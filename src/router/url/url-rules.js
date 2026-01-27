@@ -134,7 +134,7 @@ export class UrlRules {
   /**
    * Gets all registered rules
    *
-   * @returns {import("./interface.js").UrlRule[]} an array of all the registered rules
+   * @returns {import("./interface.ts").UrlRule[]} an array of all the registered rules
    */
   rules() {
     this.ensureSorted();

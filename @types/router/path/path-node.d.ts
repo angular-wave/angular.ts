@@ -6,7 +6,10 @@
  * The stateful information includes parameter values and resolve data.
  */
 export class PathNode {
-  constructor(stateOrNode: any);
+  /**
+   * @param {PathNode | ng.StateObject | undefined} stateOrNode
+   */
+  constructor(stateOrNode: PathNode | ng.StateObject | undefined);
   /** @type {ng.StateObject} */
   state: ng.StateObject;
   paramSchema: any;

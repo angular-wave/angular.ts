@@ -34,7 +34,10 @@ import {
   FilterFn as TFilterFn,
 } from "./filters/interface.ts";
 import { FilterProvider as TFilterProvider } from "./core/filter/filter.js";
-import { InterpolateService as TInterpolateService } from "./core/interpolate/interface.ts";
+import {
+  InterpolateService as TInterpolateService,
+  InterpolationFunction as TInterpolationFunction,
+} from "./core/interpolate/interface.ts";
 import { InterpolateProvider as TInterpolateProvider } from "./core/interpolate/interpolate.js";
 import {
   SceProvider as TSceProvider,
@@ -227,6 +230,7 @@ declare global {
         | (abstract new (...args: any[]) => any),
     > = TInjectable<T>;
     type InjectionTokens = typeof PublicInjectionTokens;
+    type InterpolationFunction = TInterpolationFunction;
     type InvocationDetail = TInvocationDetail;
     type Listener = TListener;
     type ListenerFn = TListenerFn;

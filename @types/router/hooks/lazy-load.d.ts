@@ -40,13 +40,13 @@ export function registerLazyLoadHook(
 /**
  * Invokes a state's lazy load function
  * @param {ng.Transition} transition a Transition context
- * @param {import("../state/interface.js").StateDeclaration} state the state to lazy load
+ * @param {import("../state/interface.ts").StateDeclaration} state the state to lazy load
  * @param {{ register: (arg0: any) => any; } | undefined} [stateRegistry]
  * @return {Promise<import("../state/interface.ts").LazyLoadResult | undefined>} a promise for the lazy load result
  */
 export function lazyLoadState(
   transition: ng.Transition,
-  state: import("../state/interface.js").StateDeclaration,
+  state: import("../state/interface.ts").StateDeclaration,
   stateRegistry?:
     | {
         register: (arg0: any) => any;

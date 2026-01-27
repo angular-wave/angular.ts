@@ -10,6 +10,9 @@ import { Param } from "../params/param.js";
  * The stateful information includes parameter values and resolve data.
  */
 export class PathNode {
+  /**
+   * @param {PathNode | ng.StateObject | undefined} stateOrNode
+   */
   constructor(stateOrNode) {
     if (stateOrNode instanceof PathNode) {
       const node = stateOrNode;

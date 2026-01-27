@@ -7,7 +7,7 @@ import { TransitionHookScope } from "./transition-hook.js";
  * Determines if the given state matches the matchCriteria
  * @internal
  * @param {import("../state/state-object.js").StateObject} state a State Object to test against
- * @param {import("./interface.js").HookMatchCriterion} criterion - If a string, matchState uses the string as a glob-matcher against the state name
+ * @param {import("./interface.ts").HookMatchCriterion} criterion - If a string, matchState uses the string as a glob-matcher against the state name
 - If an array (of strings), matchState uses each string in the array as a glob-matchers against the state name
   and returns a positive match if any of the globs match.
 - If a function, matchState calls the function with the state and returns true if the function's result is truthy.
@@ -49,10 +49,10 @@ export class RegisteredHook {
   /**
    * @param {ng.TransitionService} tranSvc
    * @param {import("./transition-event-type.js").TransitionEventType} eventType
-   * @param {import("./interface.js").HookFn} callback
-   * @param {import("./interface.js").HookMatchCriteria} matchCriteria
+   * @param {import("./interface.ts").HookFn} callback
+   * @param {import("./interface.ts").HookMatchCriteria} matchCriteria
    * @param {(hook: RegisteredHook) => void} removeHookFromRegistry
-   * @param {import("./interface.js").HookRegOptions} options
+   * @param {import("./interface.ts").HookRegOptions} options
    */
   constructor(
     tranSvc,
@@ -89,7 +89,7 @@ export class RegisteredHook {
    * with `entering: (state) => true` which only matches when a state is actually
    * being entered.
    * @param {import("../resolve/resolve-context.js").PathNode[]} nodes
-   * @param {import("./interface.js").HookMatchCriterion} criterion
+   * @param {import("./interface.ts").HookMatchCriterion} criterion
    * @param {ng.Transition} transition
    * @return {import("../resolve/resolve-context.js").PathNode[] | null}
    */
@@ -137,7 +137,7 @@ export class RegisteredHook {
    *   entering: _matchingNodes(treeChanges.entering,     mc.entering),
    * };
    * ```
-   * @param {import("./interface.js").TreeChanges} treeChanges
+   * @param {import("./interface.ts").TreeChanges} treeChanges
    * @param {ng.Transition} transition
    * @returns {{}}
    */
@@ -161,7 +161,7 @@ export class RegisteredHook {
       /** @type {Record<string, any>} */ (mn)[pathtype.name] =
         this._matchingNodes(
           nodes,
-          /** @type {import("./interface.js").HookMatchCriterion} */ (
+          /** @type {import("./interface.ts").HookMatchCriterion} */ (
             criteria[pathtype.name]
           ),
           transition,
@@ -173,9 +173,9 @@ export class RegisteredHook {
 
   /**
    * Determines if this hook's [[matchCriteria]] match the given [[TreeChanges]]
-   * @param {import("./interface.js").TreeChanges} treeChanges
+   * @param {import("./interface.ts").TreeChanges} treeChanges
    * @param {ng.Transition} transition
-   * @returns {import("./interface.js").IMatchingNodes | null} an IMatchingNodes object, or null. If an IMatchingNodes object is returned,
+   * @returns {import("./interface.ts").IMatchingNodes | null} an IMatchingNodes object, or null. If an IMatchingNodes object is returned,
    * its values are the matching [[PathNode]]s for each [[HookMatchCriterion]] (to, from, exiting, retained, entering)
    */
   matches(treeChanges, transition) {
@@ -185,7 +185,7 @@ export class RegisteredHook {
     const allMatched = Object.values(matches).every((x) => x);
 
     return allMatched
-      ? /** @type {import("./interface.js").IMatchingNodes } */ (matches)
+      ? /** @type {import("./interface.ts").IMatchingNodes } */ (matches)
       : null;
   }
 
@@ -199,7 +199,7 @@ export class RegisteredHook {
  * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
  * @param {ng.TransitionService} transitionService
  * @param {import("./transition-event-type.js").TransitionEventType} eventType
- * @returns {function(import("./interface.js").HookMatchCriteria, import("./interface.js").HookFn, {}=): (function(): void)|*}
+ * @returns {function(import("./interface.ts").HookMatchCriteria, import("./interface.ts").HookFn, {}=): (function(): void)|*}
  */
 export function makeEvent(hookSource, transitionService, eventType) {
   // Create the object which holds the registered transition hooks.
@@ -219,8 +219,8 @@ export function makeEvent(hookSource, transitionService, eventType) {
     hookRegistrationFn;
 
   /**
-   * @param {import("./interface.js").HookMatchCriteria} matchObject
-   * @param {import("./interface.js").HookFn} callback
+   * @param {import("./interface.ts").HookMatchCriteria} matchObject
+   * @param {import("./interface.ts").HookFn} callback
    */
   function hookRegistrationFn(matchObject, callback, options = {}) {
     const registeredHook = new RegisteredHook(

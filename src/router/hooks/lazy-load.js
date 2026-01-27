@@ -82,7 +82,7 @@ export function registerLazyLoadHook(
         )
         .map(
           (
-            /** @type {import("../state/interface.js").StateDeclaration} */ state,
+            /** @type {import("../state/interface.ts").StateDeclaration} */ state,
           ) => lazyLoadState(transition, state, stateRegistry),
         );
 
@@ -96,12 +96,12 @@ const lazyLoadPromiseCache = new WeakMap(); // WeakMap<Function, Promise<any>>
 /**
  * Invokes a state's lazy load function
  * @param {ng.Transition} transition a Transition context
- * @param {import("../state/interface.js").StateDeclaration} state the state to lazy load
+ * @param {import("../state/interface.ts").StateDeclaration} state the state to lazy load
  * @param {{ register: (arg0: any) => any; } | undefined} [stateRegistry]
  * @return {Promise<import("../state/interface.ts").LazyLoadResult | undefined>} a promise for the lazy load result
  */
 export function lazyLoadState(transition, state, stateRegistry) {
-  const lazyLoadFn = /** @type {import("../state/interface.js").LazyLoadFn} */ (
+  const lazyLoadFn = /** @type {import("../state/interface.ts").LazyLoadFn} */ (
     state._state().lazyLoad
   );
 
@@ -130,7 +130,7 @@ export function lazyLoadState(transition, state, stateRegistry) {
   }
 
   /**
-   * @param {import("../state/interface.js").LazyLoadResult} result
+   * @param {import("../state/interface.ts").LazyLoadResult} result
    */
   function updateStateRegistry(result) {
     if (result && isArray(result.states)) {
