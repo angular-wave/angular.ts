@@ -129,12 +129,13 @@ export class Scope {
    * @param {string} watchProp - An expression to be watched in the context of this model.
    * @param {ng.ListenerFn} [listenerFn] - A function to execute when changes are detected on watched context.
    * @param {boolean} [lazy] - A flag to indicate if the listener should be invoked immediately. Defaults to false.
+   * @return {(() => void) | undefined} - A function to deregister the watcher, or undefined if no listener function is provided.
    */
   $watch(
     watchProp: string,
     listenerFn?: ng.ListenerFn,
     lazy?: boolean,
-  ): () => void;
+  ): (() => void) | undefined;
   /**
    * @param {ng.Scope} [childInstance]
    * @returns {Proxy<ng.Scope> & ng.Scope}

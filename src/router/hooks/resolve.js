@@ -1,7 +1,7 @@
 import { ResolveContext } from "../resolve/resolve-context.js";
 import { val } from "../../shared/hof.js";
 
-/** @typedef  {import("../transition/interface.js").TreeChanges} TreeChanges */
+/** @typedef  {import("../transition/interface.ts").TreeChanges} TreeChanges */
 
 export const RESOLVE_HOOK_PRIORITY = 1000;
 /**

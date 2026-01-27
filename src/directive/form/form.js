@@ -25,7 +25,7 @@ import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
  *   $getControls: () => any[],
  *   _renameControl: Function,
  *   $removeControl: Function,
- *   $setValidity: Function | ((key: any, isValid: boolean, control: any) => any),
+ *   $setValidity: Function | ((key: any, isValid: boolean | undefined | null, control: any) => any),
  *   $setDirty: Function,
  *   $setPristine: Function,
  *   $setSubmitted: Function,
@@ -38,7 +38,10 @@ export const nullFormCtrl = {
     /* empty */
   },
   $getControls: () => [],
-  _renameControl: (control, name) => {
+  _renameControl: (
+    /** @type {{ $name: any; }} */ control,
+    /** @type {any} */ name,
+  ) => {
     control.$name = name;
   },
   $removeControl: () => {

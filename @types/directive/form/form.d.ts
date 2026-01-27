@@ -16,7 +16,7 @@ export function cachedToggleClass(
  *   $getControls: () => any[],
  *   _renameControl: Function,
  *   $removeControl: Function,
- *   $setValidity: Function | ((key: any, isValid: boolean, control: any) => any),
+ *   $setValidity: Function | ((key: any, isValid: boolean | undefined | null, control: any) => any),
  *   $setDirty: Function,
  *   $setPristine: Function,
  *   $setSubmitted: Function,
@@ -29,7 +29,9 @@ export const nullFormCtrl: {
   $getControls: () => any[];
   _renameControl: Function;
   $removeControl: Function;
-  $setValidity: Function | ((key: any, isValid: boolean, control: any) => any);
+  $setValidity:
+    | Function
+    | ((key: any, isValid: boolean | undefined | null, control: any) => any);
   $setDirty: Function;
   $setPristine: Function;
   $setSubmitted: Function;

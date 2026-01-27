@@ -42,9 +42,9 @@ export class UrlRules {
   /**
    * Gets all registered rules
    *
-   * @returns {import("./interface.js").UrlRule[]} an array of all the registered rules
+   * @returns {import("./interface.ts").UrlRule[]} an array of all the registered rules
    */
-  rules(): import("./interface.js").UrlRule[];
+  rules(): import("./interface.ts").UrlRule[];
   /**
    * Defines URL Rule priorities
    *
