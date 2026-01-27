@@ -449,7 +449,7 @@ export function getNodeName(element) {
 
 /**
  * @param {any} array
- * @param {string} obj
+ * @param {any} obj
  */
 export function includes(array, obj) {
   return Array.prototype.indexOf.call(array, obj) !== -1;

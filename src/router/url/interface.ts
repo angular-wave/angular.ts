@@ -12,8 +12,6 @@ export interface UrlMatcherCompileConfig {
   decodeParams?: boolean;
 }
 
-interface LocationConfig {}
-
 /**
  * An object containing the three parts of a URL
  */

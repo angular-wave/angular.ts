@@ -277,9 +277,9 @@ export function hasCustomToString(obj: { toString: () => string }): boolean;
 export function getNodeName(element: Element): string;
 /**
  * @param {any} array
- * @param {string} obj
+ * @param {any} obj
  */
-export function includes(array: any, obj: string): boolean;
+export function includes(array: any, obj: any): boolean;
 /**
  * Removes the first occurrence of a specified value from an array.
  *

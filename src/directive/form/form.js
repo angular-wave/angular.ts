@@ -112,7 +112,6 @@ const SUBMITTED_CLASS = "ng-submitted";
  *
  */
 // asks for $scope to fool the BC controller module
-
 export class FormController {
   static $nonscope = true;
   /* @ignore */ static $inject = [
@@ -134,9 +133,14 @@ export class FormController {
     /** @type {boolean} */
     this._isAnimated = hasAnimate($element);
 
+    /**
+     * @type {FormController[]}
+     */
     this._controls = [];
 
-    this.$name = $interpolate($attrs.name || $attrs.ngForm || "")($scope);
+    this.$name = /** @type {ng.InterpolationFunction} */ (
+      $interpolate($attrs.name || $attrs.ngForm || "")
+    )($scope);
 
     /**
      * @property {boolean} $dirty True if user has already interacted with the form.
@@ -147,7 +151,9 @@ export class FormController {
      * @propertys {boolean} $pristine - True if user has not interacted with the form yet.s
      */
     this.$pristine = true;
+    /** @type {boolean | undefined} */
     this.$valid = true;
+    /** @type {boolean | undefined} */
     this.$invalid = false;
     this.$submitted = false;
     /** @type {FormController|Object} */
@@ -155,8 +161,14 @@ export class FormController {
 
     this._element = $element;
     this._animate = $animate;
+    /** @type {Record<string, any>} */
     this.$error = {};
+
+    /** @type {Record<string, any>} */
     this._success = {};
+    /**
+     * @type {Record<string, any>| undefined}
+     */
     this.$pending = undefined;
     /** @type {Record<string, any>} */
     this._classCache = {};
@@ -164,6 +176,8 @@ export class FormController {
 
     this._classCache[VALID_CLASS] = isValid;
     this._classCache[INVALID_CLASS] = !isValid;
+
+    /** @type {Record<string, any>} */
     this.$target = {};
   }
 
@@ -207,6 +221,7 @@ export class FormController {
    *
    * For example, if an input control is added that is already `$dirty` and has `$error` properties,
    * calling `$setDirty()` and `$validate()` afterwards will propagate the state to the parent form.
+   * @param {FormController} control
    */
   $addControl(control) {
     // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
@@ -215,7 +230,7 @@ export class FormController {
     this._controls.push(control);
 
     if (control.$name) {
-      this[control.$name] = control;
+      /** @type {Record<string, any>} */ (this)[control.$name] = control;
     }
     control.$target._parentForm = this;
   }
@@ -237,17 +252,23 @@ export class FormController {
    * @returns {ReadonlyArray<FormController>}
    */
   $getControls() {
-    return shallowCopy(this._controls);
+    return /** @type {ReadonlyArray<FormController>} */ (
+      shallowCopy(this._controls)
+    );
   }
 
   // Private API: rename a form control
+  /**
+   * @param {FormController} control
+   * @param {string | number} newName
+   */
   _renameControl(control, newName) {
     const oldName = control.$name;
 
-    if (this[oldName] === control) {
-      delete this[oldName];
+    if (/** @type {Record<string, any>} */ (this)[oldName] === control) {
+      delete (/** @type {Record<string, any>} */ (this)[oldName]);
     }
-    this[newName] = control;
+    /** @type {Record<string, any>} */ (this)[newName] = control;
     control.$name = newName;
   }
 
@@ -263,8 +284,11 @@ export class FormController {
    * @param {FormController } control
    */
   $removeControl(control) {
-    if (control.$name && this[control.$name] === control) {
-      delete this[control.$name];
+    if (
+      control.$name &&
+      /** @type {Record<string, any>} */ (this)[control.$name] === control
+    ) {
+      delete (/** @type {Record<string, any>} */ (this)[control.$name]);
     }
     this.$pending &&
       Object.keys(this.$pending).forEach((name) => {
@@ -301,7 +325,7 @@ export class FormController {
     }
     this.$dirty = true;
     this.$pristine = false;
-    this._parentForm.$setDirty();
+    /** @type {FormController} */ (this._parentForm).$setDirty();
   }
 
   /**
@@ -361,7 +385,7 @@ export class FormController {
     let rootForm = this;
 
     while (rootForm._parentForm && rootForm._parentForm !== nullFormCtrl) {
-      rootForm = rootForm._parentForm;
+      rootForm = /** @type {FormController} */ (rootForm._parentForm);
     }
     rootForm._setSubmitted();
   }
@@ -380,6 +404,11 @@ export class FormController {
     });
   }
 
+  /**
+   * @param {Record<string, any>} object
+   * @param {string} property
+   * @param {FormController | import("../model/model.js").NgModelController} controller
+   */
   set(object, property, controller) {
     const list = object[property];
 
@@ -395,6 +424,11 @@ export class FormController {
     }
   }
 
+  /**
+   * @param {Record<string, any>} object
+   * @param {string} property
+   * @param {FormController | import("../model/model.js").NgModelController} controller
+   */
   unset(object, property, controller) {
     const list = object[property];
 
@@ -404,7 +438,7 @@ export class FormController {
     const index = arrayRemove(list, controller);
 
     if (index === -1) {
-      arrayRemove(list, controller.$target);
+      arrayRemove(list, /** @type {FormController} */ (controller).$target);
     }
 
     if (list.length === 0) {
@@ -425,7 +459,7 @@ export class FormController {
    *        `validationErrorKey` should be in camelCase and will get converted into dash-case for
    *        class name. Example: `myError` will result in `ng-valid-my-error` and
    *        `ng-invalid-my-error` classes and can be bound to as `{{ someForm.$error.myError }}`.
-   * @param {boolean} state Whether the current state is valid (true), invalid (false), pending
+   * @param {boolean | null | undefined} state Whether the current state is valid (true), invalid (false), pending
    *        (undefined),  or skipped (null). Pending is used for unfulfilled `$asyncValidators`.
    *        Skipped is used by AngularTS when validators do not run because of parse errors and when
    *        `$asyncValidators` do not run because any of the `$validators` failed.
@@ -480,7 +514,18 @@ export class FormController {
     }
 
     toggleValidationCss(this, validationErrorKey, combinedState);
-    this._parentForm.$setValidity(validationErrorKey, combinedState, this);
+    /** @type {FormController} */ (this._parentForm).$setValidity(
+      validationErrorKey,
+      combinedState,
+      this,
+    );
+
+    /**
+     * @param {FormController & Record<string, any>} ctrl
+     * @param {string} name
+     * @param {string} value
+     * @param {FormController | import("../model/model.js").NgModelController} controllerParam
+     */
     function createAndSet(ctrl, name, value, controllerParam) {
       if (!ctrl[name]) {
         ctrl[name] = {};
@@ -488,6 +533,12 @@ export class FormController {
       that.set(ctrl[name], value, controllerParam);
     }
 
+    /**
+     * @param {FormController & Record<string, any>} ctrl
+     * @param {string} name
+     * @param {string} value
+     * @param {FormController | import("../model/model.js").NgModelController} controllerParam
+     */
     function unsetAndCleanup(ctrl, name, value, controllerParam) {
       if (ctrl[name]) {
         that.unset(ctrl[name], value, controllerParam);
@@ -498,6 +549,11 @@ export class FormController {
       }
     }
 
+    /**
+     * @param {FormController | import("../model/model.js").NgModelController} ctrl
+     * @param {string} validationErrorKeyParam
+     * @param {boolean | null | undefined} isValid
+     */
     function toggleValidationCss(ctrl, validationErrorKeyParam, isValid) {
       validationErrorKeyParam = validationErrorKeyParam
         ? `-${snakeCase(validationErrorKeyParam, "-")}`
@@ -639,13 +695,9 @@ const formDirectiveFactory = function (isNgForm) {
 
               // if `action` attr is not present on the form, prevent the default action (submission)
               if (!("action" in attrParam)) {
-                // we can't use jq events because if a form is destroyed during submission the default
-                // action is not prevented. see #1238
-                //
-                // IE 9 is not affected because it doesn't fire a submit event and try to do a full
-                // page reload if the form was destroyed by submission of the form via a click handler
-                // on a button in the form. Looks like an IE9 specific bug.
-                const handleFormSubmission = function (event) {
+                const handleFormSubmission = function (
+                  /** @type {Event} */ event,
+                ) {
                   controller.$commitViewValue();
                   controller.$setSubmitted();
                   event.preventDefault();
@@ -655,19 +707,10 @@ const formDirectiveFactory = function (isNgForm) {
                   "submit",
                   handleFormSubmission,
                 );
-
-                // unregister the preventDefault listener so that we don't not leak memory but in a
-                // way that will achieve the prevention of the default action.
                 formElementParam.addEventListener("$destroy", () => {
-                  setTimeout(
-                    () => {
-                      formElementParam.removeEventListener(
-                        "submit",
-                        handleFormSubmission,
-                      );
-                    },
-                    0,
-                    false,
+                  formElementParam.removeEventListener(
+                    "submit",
+                    handleFormSubmission,
                   );
                 });
               }
@@ -676,11 +719,13 @@ const formDirectiveFactory = function (isNgForm) {
 
               parentFormCtrl.$addControl(controller);
 
-              const setter = nameAttr
-                ? getSetter(controller.$name)
-                : () => {
-                    /* empty */
-                  };
+              const setter = /** @type {Function} */ (
+                nameAttr
+                  ? getSetter(controller.$name)
+                  : () => {
+                      /* empty */
+                    }
+              );
 
               if (nameAttr) {
                 setter(scope, controller);
@@ -708,6 +753,10 @@ const formDirectiveFactory = function (isNgForm) {
           };
         },
       };
+
+      /**
+       * @param {string} expression
+       */
       function getSetter(expression) {
         if (expression === "") {
           // create an assignable expression, so forms with an empty name can be renamed later
@@ -722,13 +771,6 @@ const formDirectiveFactory = function (isNgForm) {
 
 export const formDirective = formDirectiveFactory();
 export const ngFormDirective = formDirectiveFactory("ngForm");
-
-// helper methods
-export function setupValidity(instance) {
-  instance._classCache = {};
-  instance._classCache[INVALID_CLASS] = !(instance._classCache[VALID_CLASS] =
-    instance._element.classList.contains(VALID_CLASS));
-}
 
 /**
  * @param {FormController|ng.NgModelController} ctrl

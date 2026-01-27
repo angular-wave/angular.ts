@@ -1,4 +1,3 @@
-export function setupValidity(instance: any): void;
 /**
  * @param {FormController|ng.NgModelController} ctrl
  * @param {string} className
@@ -101,7 +100,10 @@ export class FormController {
   );
   /** @type {boolean} */
   _isAnimated: boolean;
-  _controls: any[];
+  /**
+   * @type {FormController[]}
+   */
+  _controls: FormController[];
   $name: any;
   /**
    * @property {boolean} $dirty True if user has already interacted with the form.
@@ -111,19 +113,27 @@ export class FormController {
    * @propertys {boolean} $pristine - True if user has not interacted with the form yet.s
    */
   $pristine: boolean;
-  $valid: boolean;
-  $invalid: boolean;
+  /** @type {boolean | undefined} */
+  $valid: boolean | undefined;
+  /** @type {boolean | undefined} */
+  $invalid: boolean | undefined;
   $submitted: boolean;
   /** @type {FormController|Object} */
   _parentForm: FormController | any;
   _element: HTMLFormElement;
   _animate: import("../../docs.ts").AnimateService;
-  $error: {};
-  _success: {};
-  $pending: any;
+  /** @type {Record<string, any>} */
+  $error: Record<string, any>;
+  /** @type {Record<string, any>} */
+  _success: Record<string, any>;
+  /**
+   * @type {Record<string, any>| undefined}
+   */
+  $pending: Record<string, any> | undefined;
   /** @type {Record<string, any>} */
   _classCache: Record<string, any>;
-  $target: {};
+  /** @type {Record<string, any>} */
+  $target: Record<string, any>;
   /**
    * Rollback all form controls pending updates to the `$modelValue`.
    *
@@ -154,8 +164,9 @@ export class FormController {
    *
    * For example, if an input control is added that is already `$dirty` and has `$error` properties,
    * calling `$setDirty()` and `$validate()` afterwards will propagate the state to the parent form.
+   * @param {FormController} control
    */
-  $addControl(control: any): void;
+  $addControl(control: FormController): void;
   /**
    * This method returns a **shallow copy** of the controls that are currently part of this form.
    * The controls can be instances of {@link form.FormController `FormController`}
@@ -173,7 +184,11 @@ export class FormController {
    * @returns {ReadonlyArray<FormController>}
    */
   $getControls(): ReadonlyArray<FormController>;
-  _renameControl(control: any, newName: any): void;
+  /**
+   * @param {FormController} control
+   * @param {string | number} newName
+   */
+  _renameControl(control: FormController, newName: string | number): void;
   /**
    * Deregister a control from the form.
    *
@@ -222,8 +237,26 @@ export class FormController {
    */
   $setSubmitted(): void;
   _setSubmitted(): void;
-  set(object: any, property: any, controller: any): void;
-  unset(object: any, property: any, controller: any): void;
+  /**
+   * @param {Record<string, any>} object
+   * @param {string} property
+   * @param {FormController | import("../model/model.js").NgModelController} controller
+   */
+  set(
+    object: Record<string, any>,
+    property: string,
+    controller: FormController | import("../model/model.js").NgModelController,
+  ): void;
+  /**
+   * @param {Record<string, any>} object
+   * @param {string} property
+   * @param {FormController | import("../model/model.js").NgModelController} controller
+   */
+  unset(
+    object: Record<string, any>,
+    property: string,
+    controller: FormController | import("../model/model.js").NgModelController,
+  ): void;
   /**
    * Change the validity state of the form, and notify the parent form (if any).
    *
@@ -237,7 +270,7 @@ export class FormController {
    *        `validationErrorKey` should be in camelCase and will get converted into dash-case for
    *        class name. Example: `myError` will result in `ng-valid-my-error` and
    *        `ng-invalid-my-error` classes and can be bound to as `{{ someForm.$error.myError }}`.
-   * @param {boolean} state Whether the current state is valid (true), invalid (false), pending
+   * @param {boolean | null | undefined} state Whether the current state is valid (true), invalid (false), pending
    *        (undefined),  or skipped (null). Pending is used for unfulfilled `$asyncValidators`.
    *        Skipped is used by AngularTS when validators do not run because of parse errors and when
    *        `$asyncValidators` do not run because any of the `$validators` failed.
@@ -246,7 +279,7 @@ export class FormController {
    */
   $setValidity(
     validationErrorKey: string,
-    state: boolean,
+    state: boolean | null | undefined,
     controller: import("../model/model.js").NgModelController | FormController,
   ): void;
 }
