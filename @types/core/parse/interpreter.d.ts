@@ -31,198 +31,250 @@ export class ASTInterpreter {
    * Unary plus operation.
    * @param {function} argument - The argument function.
    * @param {Object} [context] - The context.
-   * @returns {function} The unary plus function.
+   * @returns {CompiledExpressionFunction} The unary plus function.
    */
-  "unary+"(argument: Function, context?: any): Function;
+  "unary+"(argument: Function, context?: any): CompiledExpressionFunction;
   /**
    * Unary minus operation.
    * @param {function} argument - The argument function.
    * @param {Object} [context] - The context.
-   * @returns {function} The unary minus function.
+   * @returns {CompiledExpressionFunction} The unary minus function.
    */
-  "unary-"(argument: Function, context?: any): Function;
+  "unary-"(argument: Function, context?: any): CompiledExpressionFunction;
   /**
    * Unary negation operation.
    * @param {function} argument - The argument function.
    * @param {Object} [context] - The context.
-   * @returns {function} The unary negation function.
+   * @returns {CompiledExpressionFunction} The unary negation function.
    */
-  "unary!"(argument: Function, context?: any): Function;
+  "unary!"(argument: Function, context?: any): CompiledExpressionFunction;
   /**
    * Binary plus operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary plus function.
+   * @returns {CompiledExpressionFunction} The binary plus function.
    */
-  "binary+"(left: Function, right: Function, context?: any): Function;
+  "binary+"(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary minus operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary minus function.
+   * @returns {CompiledExpressionFunction} The binary minus function.
    */
-  "binary-"(left: Function, right: Function, context?: any): Function;
+  "binary-"(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary multiplication operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary multiplication function.
+   * @returns {CompiledExpressionFunction} The binary multiplication function.
    */
-  "binary*"(left: Function, right: Function, context?: any): Function;
-  "binary/"(
-    left: any,
-    right: any,
-    context: any,
-  ): (
-    scope: any,
-    locals: any,
-    assign: any,
-  ) =>
-    | number
-    | {
-        value: number;
-      };
+  "binary*"(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary division operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary division function.
+   * @returns {CompiledExpressionFunction} The binary division function.
    */
-  "binary%"(left: Function, right: Function, context?: any): Function;
+  "binary/"(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
+  /**
+   * Binary modulo operation.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary division function.
+   */
+  "binary%"(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary strict equality operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary strict equality function.
+   * @returns {CompiledExpressionFunction} The binary strict equality function.
    */
-  "binary==="(left: Function, right: Function, context?: any): Function;
+  "binary==="(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary strict inequality operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary strict inequality function.
+   * @returns {CompiledExpressionFunction} The binary strict inequality function.
    */
-  "binary!=="(left: Function, right: Function, context?: any): Function;
+  "binary!=="(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary equality operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary equality function.
+   * @returns {CompiledExpressionFunction} The binary equality function.
    */
-  "binary=="(left: Function, right: Function, context?: any): Function;
+  "binary=="(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary inequality operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary inequality function.
+   * @returns {CompiledExpressionFunction} The binary inequality function.
    */
-  "binary!="(left: Function, right: Function, context?: any): Function;
+  "binary!="(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary less-than operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary less-than function.
+   * @returns {CompiledExpressionFunction} The binary less-than function.
    */
-  "binary<"(left: Function, right: Function, context?: any): Function;
+  "binary<"(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary greater-than operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary greater-than function.
+   * @returns {CompiledExpressionFunction} The binary greater-than function.
    */
-  "binary>"(left: Function, right: Function, context?: any): Function;
+  "binary>"(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary less-than-or-equal-to operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary less-than-or-equal-to function.
+   * @returns {CompiledExpressionFunction} The binary less-than-or-equal-to function.
    */
-  "binary<="(left: Function, right: Function, context?: any): Function;
+  "binary<="(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary greater-than-or-equal-to operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary greater-than-or-equal-to function.
+   * @returns {CompiledExpressionFunction} The binary greater-than-or-equal-to function.
    */
-  "binary>="(left: Function, right: Function, context?: any): Function;
+  "binary>="(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary logical AND operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary logical AND function.
+   * @returns {CompiledExpressionFunction} The binary logical AND function.
    */
-  "binary&&"(left: Function, right: Function, context?: any): Function;
+  "binary&&"(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Binary logical OR operation.
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary logical OR function.
+   * @returns {CompiledExpressionFunction} The binary logical OR function.
    */
-  "binary||"(left: Function, right: Function, context?: any): Function;
+  "binary||"(
+    left: Function,
+    right: Function,
+    context?: any,
+  ): CompiledExpressionFunction;
   /**
    * Ternary conditional operation.
    * @param {function} test - The test function.
    * @param {function} alternate - The alternate function.
    * @param {function} consequent - The consequent function.
    * @param {Object} [context] - The context.
-   * @returns {function} The ternary conditional function.
+   * @returns {CompiledExpressionFunction} The ternary conditional function.
    */
   "ternary?:"(
     test: Function,
     alternate: Function,
     consequent: Function,
     context?: any,
-  ): Function;
+  ): CompiledExpressionFunction;
   /**
    * Returns the value of a literal.
    * @param {*} value - The literal value.
    * @param {Object} [context] - The context.
-   * @returns {import("./interface.ts").CompiledExpressionFunction} The function returning the literal value.
+   * @returns {CompiledExpressionFunction} The function returning the literal value.
    */
-  value(
-    value: any,
-    context?: any,
-  ): import("./interface.ts").CompiledExpressionFunction;
+  value(value: any, context?: any): CompiledExpressionFunction;
   /**
    * Returns the value of an identifier.
    * @param {string} name - The identifier name.
    * @param {Object} [context] - The context.
    * @param {boolean|1} [create] - Whether to create the identifier if it does not exist.
-   * @returns {import("./interface.ts").CompiledExpressionFunction} The function returning the identifier value.
+   *  @returns {CompiledExpressionFunction}  The function returning the identifier value.
    */
   identifier(
     name: string,
     context?: any,
     create?: boolean | 1,
-  ): import("./interface.ts").CompiledExpressionFunction;
+  ): CompiledExpressionFunction;
   /**
    * Returns the value of a non-computed member expression.
    * @param {function} left - The left operand function.
    * @param {string} right - The right operand function.
    * @param {Object} [context] - The context.
    * @param {boolean|1} [create] - Whether to create the member if it does not exist.
-   * @returns {function} The function returning the non-computed member value.
+   * @returns {CompiledExpressionFunction}  The function returning the non-computed member value.
    */
   nonComputedMember(
     left: Function,
     right: string,
     context?: any,
     create?: boolean | 1,
-  ): Function;
+  ): CompiledExpressionFunction;
   #private;
 }
 export type ASTNode = import("./ast/ast-node.ts").ASTNode;

@@ -19,7 +19,7 @@ export interface CompiledExpressionProps {
    * Assigns a value to a context.
    * If value is not provided, may return the getter.
    */
-  _assign?: (context: any, value: any) => any;
+  _assign?: (scope: ng.Scope, value: any, locals?: object) => any;
 }
 /**
  * Expression function with context and optional locals/assign.
@@ -28,7 +28,7 @@ export interface CompiledExpressionProps {
 export type CompiledExpressionFunction = (
   context?: Scope | typeof Proxy<Scope>,
   locals?: object,
-  assign?: any,
+  _assign?: any,
 ) => any;
 /**
  * A compiled expression that is both a function and includes expression metadata.

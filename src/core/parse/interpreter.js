@@ -43,13 +43,11 @@ export class ASTInterpreter {
 
     const assignable = assignableAST(/** @type {BodyNode} */ (decoratedNode));
 
-    /** @type {import("./interface.ts").CompiledExpression} */
+    /** @type {CompiledExpression | undefined } */
     let assign;
 
     if (assignable) {
-      assign = /** @type {import("./interface.ts").CompiledExpression} */ (
-        this.#recurse(assignable)
-      );
+      assign = /** @type {CompiledExpression} */ (this.#recurse(assignable));
     }
 
     const toWatch = getInputs(body);
@@ -60,10 +58,7 @@ export class ASTInterpreter {
       inputs = [];
 
       for (const [key, watch] of entries(toWatch)) {
-        const input =
-          /** @type {import("./interface.ts").CompiledExpression} */ (
-            this.#recurse(watch)
-          );
+        const input = /** @type {CompiledExpression} */ (this.#recurse(watch));
 
         watch.input = input;
         inputs.push(input);
@@ -71,13 +66,15 @@ export class ASTInterpreter {
       }
     }
     /**
-     * @type {import("./interface.ts").CompiledExpressionFunction[]}
+     * @type {CompiledExpressionFunction[]}
      */
     const expressions = [];
 
     body.forEach(
       /** @param {ExpressionNode} expression */ (expression) => {
-        expressions.push(this.#recurse(expression.expression));
+        expressions.push(
+          this.#recurse(/** @type {ExpressionNode} */ (expression.expression)),
+        );
       },
     );
 
@@ -88,20 +85,24 @@ export class ASTInterpreter {
           }
         : body.length === 1
           ? /** @type {CompiledExpression} */ (expressions[0])
-          : function (scope, locals) {
-              let lastValue;
+          : /** @type {CompiledExpressionFunction} */ (
+              function (scope, locals) {
+                let lastValue;
 
-              for (let i = 0; i < expressions.length; i++) {
-                lastValue = expressions[i](scope, locals);
+                for (let i = 0; i < expressions.length; i++) {
+                  lastValue = expressions[i](scope, locals);
+                }
+
+                return lastValue;
               }
-
-              return lastValue;
-            };
+            );
 
     const fn = /** @type {CompiledExpression} */ (fnRaw);
 
     if (assign) {
-      fn._assign = (scope, value, locals) => assign(scope, locals, value);
+      fn._assign = /** @type {CompiledExpressionFunction}  */ (
+        (scope, value, locals) => assign(scope, locals, value)
+      );
     }
 
     if (inputs) {
@@ -118,55 +119,74 @@ export class ASTInterpreter {
    * @param {ExpressionNode & LiteralNode} ast - The AST node.
    * @param {Object} [context] - The context.
    * @param {boolean|1} [create] - The create flag.
-   * @returns {import("./interface.ts").CompiledExpressionFunction} The recursive function.
+   * @returns {CompiledExpressionFunction} The recursive function.
    */
   #recurse(ast, context, create) {
+    /**
+     * @type {Function}
+     */
     let left;
 
+    /**
+     * @type {string | Function | undefined}
+     */
     let right;
 
+    /** @type {ASTInterpreter & Record<string, any>} */
     const self = this;
 
+    /**
+     * @type {any[]}
+     */
     let args;
 
     switch (ast.type) {
       case ASTType._Literal:
         return this.value(ast.value, context);
       case ASTType._UnaryExpression:
-        right = this.#recurse(ast.argument);
+        right = this.#recurse(/** @type {ExpressionNode} */ (ast.argument));
 
-        return this[`unary${ast.operator}`](right, context);
+        return self[`unary${ast.operator}`](right, context);
       case ASTType._BinaryExpression:
-        left = this.#recurse(ast.left);
-        right = this.#recurse(ast.right);
+        left = this.#recurse(/** @type {ASTNode} */ (ast.left));
+        right = this.#recurse(/** @type {ASTNode} */ (ast.right));
 
-        return this[`binary${ast.operator}`](left, right, context);
+        return self[`binary${ast.operator}`](left, right, context);
       case ASTType._LogicalExpression:
-        left = this.#recurse(ast.left);
-        right = this.#recurse(ast.right);
+        left = this.#recurse(/** @type {ASTNode} */ (ast.left));
+        right = this.#recurse(/** @type {ASTNode} */ (ast.right));
 
-        return this[`binary${ast.operator}`](left, right, context);
+        return self[`binary${ast.operator}`](left, right, context);
       case ASTType._ConditionalExpression:
         return /** @type {import("./interface.ts").CompiledExpressionFunction} */ (
           this["ternary?:"](
-            this.#recurse(ast.test),
-            this.#recurse(ast.alternate),
-            this.#recurse(ast.consequent),
+            this.#recurse(/** @type {ASTNode} */ (ast.test)),
+            this.#recurse(/** @type {ASTNode} */ (ast.alternate)),
+            this.#recurse(/** @type {ASTNode} */ (ast.consequent)),
             context,
           )
         );
       case ASTType._Identifier:
-        return self.identifier(ast.name, context, create);
+        return self.identifier(
+          /** @type {string} */ (ast.name),
+          context,
+          create,
+        );
       case ASTType._MemberExpression:
-        left = this.#recurse(ast.object, false, !!create);
+        left = this.#recurse(
+          /** @type {ASTNode} */ (ast.object),
+          false,
+          !!create,
+        );
 
         if (!ast.computed) {
           right = /** @type {LiteralNode} */ (ast.property).name;
         }
 
-        if (ast.computed) right = this.#recurse(ast.property);
+        if (ast.computed)
+          right = this.#recurse(/** @type {ASTNode} */ (ast.property));
 
-        return /** @type {import("./interface.ts").CompiledExpressionFunction} */ (
+        return /** @type {CompiledExpressionFunction} */ (
           ast.computed
             ? this.#computedMember(
                 left,
@@ -183,25 +203,32 @@ export class ASTInterpreter {
         );
       case ASTType._CallExpression:
         args = [];
-        /** @type {ExpressionNode} */ (ast).arguments.forEach((expr) => {
+        /** @type {ASTNode[]} */ (
+          /** @type {ExpressionNode} */ (ast).arguments
+        ).forEach((expr) => {
           args.push(self.#recurse(expr));
         });
 
         if (/** @type {ExpressionNode} */ (ast).filter)
           right = this._$filter(
-            /** @type {LiteralNode} */ (
-              /** @type {ExpressionNode} */ (ast).callee
-            ).name,
+            /** @type {string} */ (
+              /** @type {LiteralNode} */ (
+                /** @type {ExpressionNode} */ (ast).callee
+              ).name
+            ),
           );
 
         if (!(/** @type {ExpressionNode} */ (ast).filter))
           right = this.#recurse(
-            /** @type {ExpressionNode} */ (ast).callee,
+            /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).callee),
             true,
           );
 
         return ast.filter
           ? (scope, locals, assign) => {
+              /**
+               * @type {any[]}
+               */
               const values = [];
 
               for (let i = 0; i < args.length; ++i) {
@@ -210,7 +237,7 @@ export class ASTInterpreter {
                 values.push(res);
               }
               const value = () => {
-                return right.apply(undefined, values);
+                return /** @type {Function} */ (right).apply(undefined, values);
               };
 
               return context
@@ -218,7 +245,7 @@ export class ASTInterpreter {
                 : value();
             }
           : (scope, locals, assign) => {
-              const rhs = right(
+              const rhs = /** @type {Function} */ (right)(
                 /** @type {ng.Scope} */ (scope).$target
                   ? /** @type {ng.Scope} */ (scope).$target
                   : scope,
@@ -242,13 +269,13 @@ export class ASTInterpreter {
               return context ? { value } : value;
             };
       case ASTType._AssignmentExpression:
-        left = this.#recurse(ast.left, true, 1);
-        right = this.#recurse(ast.right);
+        left = this.#recurse(/** @type {ASTNode} */ (ast.left), true, 1);
+        right = this.#recurse(/** @type {ASTNode} */ (ast.right));
 
         return (scope, locals, assign) => {
           const lhs = left(scope, locals, assign);
 
-          const rhs = right(scope, locals, assign);
+          const rhs = /** @type {Function} */ (right)(scope, locals, assign);
 
           // lhs.context[lhs.name] = rhs;
           const ctx = isProxy(lhs.context)
@@ -276,7 +303,9 @@ export class ASTInterpreter {
         };
       case ASTType._ObjectExpression:
         args = [];
-        /** @type {ObjectNode} */ (ast).properties.forEach(
+        /** @type {ObjectPropertyNode[]} */ (
+          /** @type {ObjectNode} */ (ast).properties
+        ).forEach(
           /** @param {ObjectPropertyNode} property */ (property) => {
             if (property.computed) {
               args.push({
@@ -298,6 +327,7 @@ export class ASTInterpreter {
         );
 
         return (scope, locals, assign) => {
+          /** @type {Record<string, any>} */
           const value = {};
 
           for (let i = 0; i < args.length; ++i) {
@@ -324,14 +354,14 @@ export class ASTInterpreter {
           context ? { value: assign } : assign;
     }
 
-    return undefined;
+    throw new Error(`Unknown AST type ${ast.type}`);
   }
 
   /**
    * Unary plus operation.
    * @param {function} argument - The argument function.
    * @param {Object} [context] - The context.
-   * @returns {function} The unary plus function.
+   * @returns {CompiledExpressionFunction} The unary plus function.
    */
   "unary+"(argument, context) {
     return (scope, locals, assign) => {
@@ -351,7 +381,7 @@ export class ASTInterpreter {
    * Unary minus operation.
    * @param {function} argument - The argument function.
    * @param {Object} [context] - The context.
-   * @returns {function} The unary minus function.
+   * @returns {CompiledExpressionFunction} The unary minus function.
    */
   "unary-"(argument, context) {
     return (scope, locals, assign) => {
@@ -371,7 +401,7 @@ export class ASTInterpreter {
    * Unary negation operation.
    * @param {function} argument - The argument function.
    * @param {Object} [context] - The context.
-   * @returns {function} The unary negation function.
+   * @returns {CompiledExpressionFunction} The unary negation function.
    */
   "unary!"(argument, context) {
     return (scope, locals, assign) => {
@@ -386,7 +416,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary plus function.
+   * @returns {CompiledExpressionFunction} The binary plus function.
    */
   "binary+"(left, right, context) {
     return (scope, locals, assign) => {
@@ -405,7 +435,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary minus function.
+   * @returns {CompiledExpressionFunction} The binary minus function.
    */
   "binary-"(left, right, context) {
     return (scope, locals, assign) => {
@@ -424,19 +454,11 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary multiplication function.
+   * @returns {CompiledExpressionFunction} The binary multiplication function.
    */
   "binary*"(left, right, context) {
     return (scope, locals, assign) => {
       const arg = left(scope, locals, assign) * right(scope, locals, assign);
-
-      return context ? { value: arg } : arg;
-    };
-  }
-
-  "binary/"(left, right, context) {
-    return (scope, locals, assign) => {
-      const arg = left(scope, locals, assign) / right(scope, locals, assign);
 
       return context ? { value: arg } : arg;
     };
@@ -447,7 +469,22 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary division function.
+   * @returns {CompiledExpressionFunction} The binary division function.
+   */
+  "binary/"(left, right, context) {
+    return (scope, locals, assign) => {
+      const arg = left(scope, locals, assign) / right(scope, locals, assign);
+
+      return context ? { value: arg } : arg;
+    };
+  }
+
+  /**
+   * Binary modulo operation.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary division function.
    */
   "binary%"(left, right, context) {
     return (scope, locals, assign) => {
@@ -462,7 +499,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary strict equality function.
+   * @returns {CompiledExpressionFunction} The binary strict equality function.
    */
   "binary==="(left, right, context) {
     return (scope, locals, assign) => {
@@ -477,7 +514,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary strict inequality function.
+   * @returns {CompiledExpressionFunction} The binary strict inequality function.
    */
   "binary!=="(left, right, context) {
     return (scope, locals, assign) => {
@@ -492,7 +529,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary equality function.
+   * @returns {CompiledExpressionFunction} The binary equality function.
    */
   "binary=="(left, right, context) {
     return (scope, locals, assign) => {
@@ -508,7 +545,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary inequality function.
+   * @returns {CompiledExpressionFunction} The binary inequality function.
    */
   "binary!="(left, right, context) {
     return (scope, locals, assign) => {
@@ -524,7 +561,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary less-than function.
+   * @returns {CompiledExpressionFunction} The binary less-than function.
    */
   "binary<"(left, right, context) {
     return (scope, locals, assign) => {
@@ -539,7 +576,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary greater-than function.
+   * @returns {CompiledExpressionFunction} The binary greater-than function.
    */
   "binary>"(left, right, context) {
     return (scope, locals, assign) => {
@@ -554,7 +591,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary less-than-or-equal-to function.
+   * @returns {CompiledExpressionFunction} The binary less-than-or-equal-to function.
    */
   "binary<="(left, right, context) {
     return (scope, locals, assign) => {
@@ -569,7 +606,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary greater-than-or-equal-to function.
+   * @returns {CompiledExpressionFunction} The binary greater-than-or-equal-to function.
    */
   "binary>="(left, right, context) {
     return (scope, locals, assign) => {
@@ -584,7 +621,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary logical AND function.
+   * @returns {CompiledExpressionFunction} The binary logical AND function.
    */
   "binary&&"(left, right, context) {
     return (scope, locals, assign) => {
@@ -599,7 +636,7 @@ export class ASTInterpreter {
    * @param {function} left - The left operand function.
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
-   * @returns {function} The binary logical OR function.
+   * @returns {CompiledExpressionFunction} The binary logical OR function.
    */
   "binary||"(left, right, context) {
     return (scope, locals, assign) => {
@@ -615,7 +652,7 @@ export class ASTInterpreter {
    * @param {function} alternate - The alternate function.
    * @param {function} consequent - The consequent function.
    * @param {Object} [context] - The context.
-   * @returns {function} The ternary conditional function.
+   * @returns {CompiledExpressionFunction} The ternary conditional function.
    */
   "ternary?:"(test, alternate, consequent, context) {
     return (scope, locals, assign) => {
@@ -631,7 +668,7 @@ export class ASTInterpreter {
    * Returns the value of a literal.
    * @param {*} value - The literal value.
    * @param {Object} [context] - The context.
-   * @returns {import("./interface.ts").CompiledExpressionFunction} The function returning the literal value.
+   * @returns {CompiledExpressionFunction} The function returning the literal value.
    */
   value(value, context) {
     return () =>
@@ -643,11 +680,11 @@ export class ASTInterpreter {
    * @param {string} name - The identifier name.
    * @param {Object} [context] - The context.
    * @param {boolean|1} [create] - Whether to create the identifier if it does not exist.
-   * @returns {import("./interface.ts").CompiledExpressionFunction} The function returning the identifier value.
+   *  @returns {CompiledExpressionFunction}  The function returning the identifier value.
    */
   identifier(name, context, create) {
     return (scope, locals) => {
-      /** @type {ng.Scope | unknown} */
+      /** @type {ng.Scope | Record<string, any> | undefined } */
       const base =
         locals && name in locals
           ? locals
@@ -659,7 +696,7 @@ export class ASTInterpreter {
       let value = undefined;
 
       if (base) {
-        value = deProxy(base)[name];
+        value = /** @type {Record<string, any>} */ (deProxy(base))[name];
       }
 
       if (context) {
@@ -676,7 +713,7 @@ export class ASTInterpreter {
    * @param {function} right - The right operand function.
    * @param {Object} [context] - The context.
    * @param {boolean|1} [create] - Whether to create the member if it does not exist.
-   * @returns {function} The function returning the computed member value.
+   * @returns {CompiledExpressionFunction}  The function returning the computed member value.
    */
   #computedMember(left, right, context, create) {
     return (scope, locals, assign) => {
@@ -712,7 +749,7 @@ export class ASTInterpreter {
    * @param {string} right - The right operand function.
    * @param {Object} [context] - The context.
    * @param {boolean|1} [create] - Whether to create the member if it does not exist.
-   * @returns {function} The function returning the non-computed member value.
+   * @returns {CompiledExpressionFunction}  The function returning the non-computed member value.
    */
   nonComputedMember(left, right, context, create) {
     return (scope, locals, assign) => {
@@ -749,8 +786,14 @@ export class ASTInterpreter {
  * @throws {Error} If the AST type is unknown
  */
 function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
+  /**
+   * @type {boolean | undefined}
+   */
   let allConstants;
 
+  /**
+   * @type {any[]}
+   */
   let argsToWatch;
 
   let isFilter;
@@ -796,7 +839,9 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       /** @type {BodyNode} */
       const decorated = /** @type {BodyNode} */ (
         findConstantAndWatchExpressions(
-          decoratedNode.argument,
+          /** @type {ASTNode} */ (
+            /** @type {ExpressionNode} */ (decoratedNode).argument
+          ),
           $filter,
           astIsPure,
         )
@@ -814,7 +859,9 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
         astIsPure,
       );
       decoratedRight = findConstantAndWatchExpressions(
-        decoratedNode.right,
+        /** @type {ASTNode} */ (
+          /** @type {ExpressionNode} */ (decoratedNode).right
+        ),
         $filter,
         astIsPure,
       );
@@ -834,7 +881,9 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
         astIsPure,
       );
       decoratedRight = findConstantAndWatchExpressions(
-        decoratedNode.right,
+        /** @type {ASTNode} */ (
+          /** @type {ExpressionNode} */ (decoratedNode).right
+        ),
         $filter,
         astIsPure,
       );
@@ -845,17 +894,17 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       return decoratedNode;
     case ASTType._ConditionalExpression:
       decoratedTest = findConstantAndWatchExpressions(
-        /** @type {ExpressionNode} */ (ast).test,
+        /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).test),
         $filter,
         astIsPure,
       );
       decoratedAlternate = findConstantAndWatchExpressions(
-        /** @type {ExpressionNode} */ (ast).alternate,
+        /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).alternate),
         $filter,
         astIsPure,
       );
       decoratedConsequent = findConstantAndWatchExpressions(
-        /** @type {ExpressionNode} */ (ast).consequent,
+        /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).consequent),
         $filter,
         astIsPure,
       );
@@ -873,21 +922,21 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       return decoratedNode;
     case ASTType._MemberExpression:
       decoratedObject = findConstantAndWatchExpressions(
-        /** @type {ExpressionNode} */ (ast).object,
+        /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).object),
         $filter,
         astIsPure,
       );
 
       if (/** @type {ExpressionNode} */ (ast).computed) {
         decoratedProperty = findConstantAndWatchExpressions(
-          /** @type {ExpressionNode} */ (ast).property,
+          /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).property),
           $filter,
           astIsPure,
         );
       }
       decoratedNode.constant =
         decoratedObject.constant &&
-        (!decoratedNode.computed || decoratedProperty.constant);
+        (!decoratedNode.computed || decoratedProperty?.constant);
       decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
 
       return decoratedNode;
@@ -895,7 +944,9 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       isFilter = /** @type {ExpressionNode} */ (ast).filter;
       allConstants = isFilter;
       argsToWatch = [];
-      /** @type {ExpressionNode} */ (ast).arguments.forEach((expr) => {
+      /** @type {ASTNode[]} */ (
+        /** @type {ExpressionNode} */ (ast).arguments
+      ).forEach((expr) => {
         const decorated = findConstantAndWatchExpressions(
           expr,
           $filter,
@@ -1024,12 +1075,16 @@ function assignableAST(ast) {
   return undefined;
 }
 
+/**
+ * @param {string | number} left
+ * @param {string | number} right
+ */
 function plusFn(left, right) {
   if (typeof left === "undefined" || isObject(left)) return right;
 
   if (typeof right === "undefined" || isObject(right)) return left;
 
-  return left + right;
+  return /** @type {number} */ (left) + /** @type {number} */ (right);
 }
 
 /**
@@ -1051,7 +1106,7 @@ function getInputs(body) {
 /**
  * Detect nodes which could depend on non-shallow state of objects
  * @param {ASTNode} node
- * @param {boolean|PURITY_ABSOLUTE|PURITY_RELATIVE} parentIsPure
+ * @param {boolean|PURITY_ABSOLUTE|PURITY_RELATIVE} [parentIsPure]
  * @returns {number|boolean}
  */
 function isPure(node, parentIsPure) {

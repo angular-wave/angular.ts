@@ -4,32 +4,68 @@
  * @returns {*}
  */
 export function createStringDateInputType(type: string, regexp: RegExp): any;
+/**
+ * @param {ng.Scope} scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {any} ctrl
+ * @param {string} parserName
+ */
 export function badInputChecker(
-  scope: any,
-  element: any,
-  attr: any,
+  scope: ng.Scope,
+  element: HTMLInputElement,
+  attr: ng.Attributes,
   ctrl: any,
-  parserName: any,
+  parserName: string,
 ): void;
-export function numberFormatterParser(ctrl: any): void;
-export function isNumberInteger(num: any): boolean;
-export function countDecimals(num: any): number;
+/**
+ * @param {NgModelController} ctrl
+ */
+export function numberFormatterParser(ctrl: NgModelController): void;
+/**
+ * @param {number} num
+ * @return {boolean}
+ */
+export function isNumberInteger(num: number): boolean;
+/**
+ * @param {number} num
+ * @return {number}
+ */
+export function countDecimals(num: number): number;
+/**
+ * @param {any} viewValue
+ * @param {number} stepBase
+ * @param {number | undefined} step
+ */
 export function isValidForStep(
   viewValue: any,
-  stepBase: any,
-  step: any,
+  stepBase: number,
+  step: number | undefined,
 ): boolean;
+/**
+ * @param {ng.Scope} scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {any} ctrl
+ * @param {ng.ParseService} $parse
+ */
 export function numberInputType(
-  scope: any,
-  element: any,
-  attr: any,
+  scope: ng.Scope,
+  element: HTMLInputElement,
+  attr: ng.Attributes,
   ctrl: any,
-  $parse: any,
+  $parse: ng.ParseService,
 ): void;
+/**
+ * @param {ng.Scope} scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {any} ctrl
+ */
 export function rangeInputType(
-  scope: any,
-  element: any,
-  attr: any,
+  scope: ng.Scope,
+  element: HTMLInputElement,
+  attr: ng.Attributes,
   ctrl: any,
 ): void;
 /**
@@ -48,7 +84,9 @@ export function hiddenInputDirective(): ng.Directive;
  * @returns {ng.Directive}
  */
 export function ngValueDirective(): ng.Directive;
+/** @typedef {import("../model/model.js").NgModelController} NgModelController */
 export const ISO_DATE_REGEXP: RegExp;
 export const URL_REGEXP: RegExp;
 export const EMAIL_REGEXP: RegExp;
 export const VALIDITY_STATE_PROPERTY: "validity";
+export type NgModelController = import("../model/model.js").NgModelController;

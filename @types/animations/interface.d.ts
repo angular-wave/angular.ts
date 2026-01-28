@@ -101,7 +101,7 @@ export interface AnimateService {
    */
   move(
     element: Element,
-    parent: Element,
+    parent: Element | null,
     after?: Element,
     options?: AnimationOptions,
   ): AnimateRunner;

@@ -71,16 +71,19 @@ export class CompileProvider {
   /* @ignore */ static $inject = [$t._provide, $t._sanitizeUriProvider];
 
   /**
-   * @param {import('../../interface.ts').Provider} $provide
+   * @param {ng.ProvideService} $provide
    * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $sanitizeUriProvider
    */
   constructor($provide, $sanitizeUriProvider) {
+    /**
+     * @type {Record<string, any>}
+     */
     const hasDirectives = {};
 
     const bindingCache = nullObject();
 
     /**
-     * @param {boolean} scope
+     * @param {Object} scope
      * @param {string} directiveName
      * @param {boolean} isController
      * @returns {Object} a configuration object for attribute bindings
@@ -134,6 +137,7 @@ export class CompileProvider {
      * @param {string} directiveName
      */
     function parseDirectiveBindings(directive, directiveName) {
+      /** @type {{ isolateScope: Object|null, bindToController: Object|null }} */
       const bindings = {
         isolateScope: null,
         bindToController: null,
@@ -228,15 +232,15 @@ export class CompileProvider {
      * @param {string|Object} name Name of the directive in camel-case (i.e. `ngBind` which will match
      *    as `ng-bind`), or an object map of directives where the keys are the names and the values
      *    are the factories.
-     * @param {Function|Array} directiveFactory An injectable directive factory function. See the
+     * @param {Function|Array<Function>} directiveFactory An injectable directive factory function. See the
      *    {@link guide/directive directive guide} and the {@link $compile compile API} for more info.
      * @returns {CompileProvider} Self for chaining.
      */
     this.directive = function registerDirective(name, directiveFactory) {
       assertArg(name, "name");
-      assertNotHasOwnProperty(name, "directive");
 
       if (isString(name)) {
+        assertNotHasOwnProperty(name, "directive");
         assertValidDirectiveName(name);
         assertArg(directiveFactory, "directiveFactory");
 
@@ -1755,6 +1759,7 @@ export class CompileProvider {
               for (
                 let scanningIndex = i + 1;
                 (candidateDirective = directives[scanningIndex++]);
+
               ) {
                 if (
                   (candidateDirective.transclude &&
