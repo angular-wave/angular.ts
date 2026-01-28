@@ -18,20 +18,37 @@ export function AriaProvider(): void;
 export class AriaProvider {
   config: (newConfig: any) => void;
   $get: () => {
-    config(key: any): any;
+    /**
+     * @param {string | number} key
+     */
+    config(key: string | number): any;
     _watchExpr: (
-      attrName: any,
+      attrName: string | number,
       ariaAttr: any,
-      nativeAriaNodeNamesParam: any,
+      nativeAriaNodeNamesParam: string | any[],
       negate: any,
-    ) => (scope: any, elem: any, attr: any) => void;
+    ) => (
+      /** @type {ng.Scope} */ scope: ng.Scope,
+      /** @type {HTMLElement} */ elem: HTMLElement,
+      /** @type {ng.Attributes} */ attr: ng.Attributes,
+    ) => void;
   };
 }
-export function ngDisabledAriaDirective($aria: any): any;
+/**
+ * @param {ng.AriaService} $aria
+ */
+export function ngDisabledAriaDirective(
+  $aria: ng.AriaService,
+): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
 export namespace ngDisabledAriaDirective {
   let $inject: string[];
 }
-export function ngShowAriaDirective($aria: any): any;
+/**
+ * @param {ng.AriaService} $aria
+ */
+export function ngShowAriaDirective(
+  $aria: ng.AriaService,
+): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
 export namespace ngShowAriaDirective {
   let $inject_1: string[];
   export { $inject_1 as $inject };
@@ -41,61 +58,84 @@ export namespace ngShowAriaDirective {
  */
 export function ngMessagesAriaDirective(): ng.Directive;
 /**
- * @param $aria
+ * @param {ng.AriaService} $aria
  * @param {ng.ParseService} $parse
  * @return {ng.Directive}
  */
 export function ngClickAriaDirective(
-  $aria: any,
+  $aria: ng.AriaService,
   $parse: ng.ParseService,
 ): ng.Directive;
 export namespace ngClickAriaDirective {
   let $inject_2: string[];
   export { $inject_2 as $inject };
 }
-export function ngRequiredAriaDirective($aria: any): any;
+/**
+ * @param {ng.AriaService} $aria
+ */
+export function ngRequiredAriaDirective(
+  $aria: ng.AriaService,
+): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
 export namespace ngRequiredAriaDirective {
   let $inject_3: string[];
   export { $inject_3 as $inject };
 }
-export function ngCheckedAriaDirective($aria: any): any;
+/**
+ * @param {ng.AriaService} $aria
+ */
+export function ngCheckedAriaDirective(
+  $aria: ng.AriaService,
+): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
 export namespace ngCheckedAriaDirective {
   let $inject_4: string[];
   export { $inject_4 as $inject };
 }
-export function ngValueAriaDirective($aria: any): any;
+/**
+ * @param {ng.AriaService} $aria
+ */
+export function ngValueAriaDirective(
+  $aria: ng.AriaService,
+): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
 export namespace ngValueAriaDirective {
   let $inject_5: string[];
   export { $inject_5 as $inject };
 }
-export function ngHideAriaDirective($aria: any): any;
+/**
+ * @param {ng.AriaService} $aria
+ */
+export function ngHideAriaDirective(
+  $aria: ng.AriaService,
+): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
 export namespace ngHideAriaDirective {
   let $inject_6: string[];
   export { $inject_6 as $inject };
 }
-export function ngReadonlyAriaDirective($aria: any): any;
+/**
+ * @param {ng.AriaService} $aria
+ */
+export function ngReadonlyAriaDirective(
+  $aria: ng.AriaService,
+): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
 export namespace ngReadonlyAriaDirective {
   let $inject_7: string[];
   export { $inject_7 as $inject };
 }
-export function ngModelAriaDirective($aria: any): {
-  restrict: string;
-  require: string;
-  priority: number;
-  compile(
-    _: any,
-    attr: any,
-  ): {
-    post(_: any, elem: any, attrPost: any, ngModel: any): void;
-  };
-};
+/**
+ * @param {ng.AriaService} $aria
+ * @returns {ng.Directive}
+ */
+export function ngModelAriaDirective($aria: ng.AriaService): ng.Directive;
 export namespace ngModelAriaDirective {
   let $inject_8: string[];
   export { $inject_8 as $inject };
 }
+/**
+ * @param {ng.AriaService} $aria
+ * @returns {import("../../interface.js").DirectiveLinkFn<any>}
+ */
 export function ngDblclickAriaDirective(
-  $aria: any,
-): (scope: any, elem: any, attr: any) => void;
+  $aria: ng.AriaService,
+): import("../../interface.js").DirectiveLinkFn<any>;
 export namespace ngDblclickAriaDirective {
   let $inject_9: string[];
   export { $inject_9 as $inject };

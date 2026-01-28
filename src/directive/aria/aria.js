@@ -40,6 +40,7 @@ const isNodeOneOf = function (
  *
  */
 export function AriaProvider() {
+  /** @type {Record<string, any>} */
   let config = {
     ariaHidden: true,
     ariaChecked: true,
@@ -53,12 +54,22 @@ export function AriaProvider() {
     bindRoleForClick: true,
   };
 
-  this.config = function (newConfig) {
+  this.config = function (/** @type {Object} */ newConfig) {
     config = extend(config, newConfig);
   };
 
+  /**
+   * @param {string | number} attrName
+   * @param {any} ariaAttr
+   * @param {string | any[]} nativeAriaNodeNamesParam
+   * @param {any} negate
+   */
   function watchExpr(attrName, ariaAttr, nativeAriaNodeNamesParam, negate) {
-    return function (scope, elem, attr) {
+    return function (
+      /** @type {ng.Scope} */ scope,
+      /** @type {HTMLElement} */ elem,
+      /** @type {ng.Attributes} */ attr,
+    ) {
       if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
 
       const ariaCamelName = attr.$normalize(ariaAttr);
@@ -79,6 +90,9 @@ export function AriaProvider() {
 
   this.$get = function () {
     return {
+      /**
+       * @param {string | number} key
+       */
       config(key) {
         return config[key];
       },
@@ -88,6 +102,9 @@ export function AriaProvider() {
 }
 
 ngDisabledAriaDirective.$inject = [$injectTokens._aria];
+/**
+ * @param {ng.AriaService} $aria
+ */
 export function ngDisabledAriaDirective($aria) {
   return $aria._watchExpr(
     "ngDisabled",
@@ -98,6 +115,9 @@ export function ngDisabledAriaDirective($aria) {
 }
 
 ngShowAriaDirective.$inject = [$injectTokens._aria];
+/**
+ * @param {ng.AriaService} $aria
+ */
 export function ngShowAriaDirective($aria) {
   return $aria._watchExpr("ngShow", "aria-hidden", [], true);
 }
@@ -122,7 +142,7 @@ export function ngMessagesAriaDirective() {
 ngClickAriaDirective.$inject = [$injectTokens._aria, $injectTokens._parse];
 
 /**
- * @param $aria
+ * @param {ng.AriaService} $aria
  * @param {ng.ParseService} $parse
  * @return {ng.Directive}
  */
@@ -184,6 +204,9 @@ export function ngClickAriaDirective($aria, $parse) {
 }
 
 ngRequiredAriaDirective.$inject = [$injectTokens._aria];
+/**
+ * @param {ng.AriaService} $aria
+ */
 export function ngRequiredAriaDirective($aria) {
   return $aria._watchExpr(
     "ngRequired",
@@ -194,6 +217,9 @@ export function ngRequiredAriaDirective($aria) {
 }
 
 ngCheckedAriaDirective.$inject = [$injectTokens._aria];
+/**
+ * @param {ng.AriaService} $aria
+ */
 export function ngCheckedAriaDirective($aria) {
   return $aria._watchExpr(
     "ngChecked",
@@ -204,6 +230,9 @@ export function ngCheckedAriaDirective($aria) {
 }
 
 ngValueAriaDirective.$inject = [$injectTokens._aria];
+/**
+ * @param {ng.AriaService} $aria
+ */
 export function ngValueAriaDirective($aria) {
   return $aria._watchExpr(
     "ngValue",
@@ -214,11 +243,17 @@ export function ngValueAriaDirective($aria) {
 }
 
 ngHideAriaDirective.$inject = [$injectTokens._aria];
+/**
+ * @param {ng.AriaService} $aria
+ */
 export function ngHideAriaDirective($aria) {
   return $aria._watchExpr("ngHide", "aria-hidden", [], false);
 }
 
 ngReadonlyAriaDirective.$inject = [$injectTokens._aria];
+/**
+ * @param {ng.AriaService} $aria
+ */
 export function ngReadonlyAriaDirective($aria) {
   return $aria._watchExpr(
     "ngReadonly",
@@ -229,7 +264,17 @@ export function ngReadonlyAriaDirective($aria) {
 }
 
 ngModelAriaDirective.$inject = [$injectTokens._aria];
+/**
+ * @param {ng.AriaService} $aria
+ * @returns {ng.Directive}
+ */
 export function ngModelAriaDirective($aria) {
+  /**
+   * @param {string} attr
+   * @param {string} normalizedAttr
+   * @param {HTMLElement} elem
+   * @param {boolean} allowNonAriaNodes
+   */
   function shouldAttachAttr(attr, normalizedAttr, elem, allowNonAriaNodes) {
     return (
       $aria.config(normalizedAttr) &&
@@ -239,6 +284,10 @@ export function ngModelAriaDirective($aria) {
     );
   }
 
+  /**
+   * @param {string} role
+   * @param {HTMLElement} elem
+   */
   function shouldAttachRole(role, elem) {
     // if element does not have role attribute
     // AND element type is equal to role (if custom element has a type equaling shape) <-- remove?
@@ -250,6 +299,10 @@ export function ngModelAriaDirective($aria) {
     );
   }
 
+  /**
+   * @param {ng.Attributes} attr
+   * @returns {string}
+   */
   function getShape(attr) {
     const { type } = attr;
 
@@ -316,7 +369,7 @@ export function ngModelAriaDirective($aria) {
               }
 
               if (needsTabIndex) {
-                elem.setAttribute("tabindex", 0);
+                elem.setAttribute("tabindex", "0");
               }
               break;
             case "range":
@@ -348,14 +401,17 @@ export function ngModelAriaDirective($aria) {
                 }
 
                 if (needsAriaValuenow) {
-                  ngModel.$watch("$modelValue", (newVal) => {
-                    elem.setAttribute("aria-valuenow", newVal);
-                  });
+                  ngModel.$watch(
+                    "$modelValue",
+                    (/** @type {string} */ newVal) => {
+                      elem.setAttribute("aria-valuenow", newVal);
+                    },
+                  );
                 }
               }
 
               if (needsTabIndex) {
-                elem.setAttribute("tabindex", 0);
+                elem.setAttribute("tabindex", "0");
               }
               break;
           }
@@ -375,7 +431,7 @@ export function ngModelAriaDirective($aria) {
           }
 
           if (shouldAttachAttr("aria-invalid", "ariaInvalid", elem, true)) {
-            ngModel.$watch("$invalid", (newVal) => {
+            ngModel.$watch("$invalid", (/** @type {any} */ newVal) => {
               elem.setAttribute("aria-invalid", (!!newVal).toString());
             });
           }
@@ -386,8 +442,12 @@ export function ngModelAriaDirective($aria) {
 }
 
 ngDblclickAriaDirective.$inject = [$injectTokens._aria];
+/**
+ * @param {ng.AriaService} $aria
+ * @returns {import("../../interface.js").DirectiveLinkFn<any>}
+ */
 export function ngDblclickAriaDirective($aria) {
-  return function (scope, elem, attr) {
+  return function (_scope, elem, attr) {
     if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
 
     if (
@@ -395,7 +455,7 @@ export function ngDblclickAriaDirective($aria) {
       !elem.hasAttribute("tabindex") &&
       !isNodeOneOf(elem, nativeAriaNodeNames)
     ) {
-      elem.setAttribute("tabindex", 0);
+      elem.setAttribute("tabindex", "0");
     }
   };
 }
