@@ -2,11 +2,11 @@ export const DirectiveSuffix: "Directive";
 export class CompileProvider {
   static $inject: string[];
   /**
-   * @param {import('../../interface.ts').Provider} $provide
+   * @param {ng.ProvideService} $provide
    * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $sanitizeUriProvider
    */
   constructor(
-    $provide: import("../../interface.ts").Provider,
+    $provide: ng.ProvideService,
     $sanitizeUriProvider: import("../sanitize/sanitize-uri.js").SanitizeUriProvider,
   );
   /**
@@ -15,13 +15,13 @@ export class CompileProvider {
    * @param {string|Object} name Name of the directive in camel-case (i.e. `ngBind` which will match
    *    as `ng-bind`), or an object map of directives where the keys are the names and the values
    *    are the factories.
-   * @param {Function|Array} directiveFactory An injectable directive factory function. See the
+   * @param {Function|Array<Function>} directiveFactory An injectable directive factory function. See the
    *    {@link guide/directive directive guide} and the {@link $compile compile API} for more info.
    * @returns {CompileProvider} Self for chaining.
    */
   directive: (
     name: string | any,
-    directiveFactory: Function | any[],
+    directiveFactory: Function | Array<Function>,
   ) => CompileProvider;
   /**
    * @param {string|Object} name Name of the component in camelCase (i.e. `myComp` which will match `<my-comp>`),

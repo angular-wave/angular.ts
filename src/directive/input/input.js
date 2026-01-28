@@ -14,6 +14,8 @@ import {
 } from "../../shared/utils.js";
 import { ngModelMinErr } from "./../model/model.js";
 
+/** @typedef {import("../model/model.js").NgModelController} NgModelController */
+
 // Regex code was initially obtained from SO prior to modification: https://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#answer-3143231
 export const ISO_DATE_REGEXP =
   /^\d{4,}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+(?:[+-][0-2]\d:[0-5]\d|Z)$/;
@@ -95,18 +97,33 @@ const inputType = {
   },
 };
 
+/**
+ * @param {NgModelController} ctrl
+ */
 function stringBasedInputType(ctrl) {
   ctrl.$formatters.push((value) =>
     ctrl.$isEmpty(value) ? value : value.toString(),
   );
 }
 
+/**
+ * @param {ng.Scope} scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {any} ctrl
+ */
 function textInputType(scope, element, attr, ctrl) {
   baseInputType(scope, element, attr, ctrl);
   stringBasedInputType(ctrl);
 }
 
-function baseInputType(_, element, attr, ctrl) {
+/**
+ * @param {ng.Scope} _scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {any} ctrl
+ */
+function baseInputType(_scope, element, attr, ctrl) {
   const type = element.type.toLowerCase();
 
   let composing = false;
@@ -123,8 +140,12 @@ function baseInputType(_, element, attr, ctrl) {
     listener();
   });
 
+  /**
+   * @type {number | null | undefined}
+   */
   let timeout;
 
+  /** @type {(ev?: Event) => void} */
   const listener = function (ev) {
     if (timeout) {
       clearTimeout(timeout);
@@ -163,7 +184,7 @@ function baseInputType(_, element, attr, ctrl) {
   // For these event types, when native validators are present and the browser supports the type,
   // check for validity changes on various DOM events.
   if (
-    PARTIAL_VALIDATION_TYPES[type] &&
+    PARTIAL_VALIDATION_TYPES.has(type) &&
     ctrl._hasNativeValidators &&
     type === attr.type
   ) {
@@ -206,9 +227,16 @@ function baseInputType(_, element, attr, ctrl) {
  * @returns {*}
  */
 export function createStringDateInputType(type, regexp) {
+  /**
+   * @param {ng.Scope} scope
+   * @param {HTMLInputElement} element
+   * @param {ng.Attributes} attr
+   * @param {any} ctrl
+   * @param {ng.ParseService} $parse
+   */
   return function stringDateInputType(scope, element, attr, ctrl, $parse) {
     baseInputType(scope, element, attr, ctrl);
-    ctrl.$parsers.push((value) => {
+    ctrl.$parsers.push((/** @type {string} */ value) => {
       if (ctrl.$isEmpty(value)) return null;
 
       if (regexp.test(value)) return value;
@@ -218,7 +246,7 @@ export function createStringDateInputType(type, regexp) {
       return undefined;
     });
 
-    ctrl.$formatters.push((value) => {
+    ctrl.$formatters.push((/** @type {unknown} */ value) => {
       if (ctrl.$isEmpty(value)) return "";
 
       if (!isString(value)) {
@@ -232,8 +260,10 @@ export function createStringDateInputType(type, regexp) {
     if (isDefined(attr.min) || attr.ngMin) {
       let minVal = attr.min || $parse?.(attr.ngMin)(scope);
 
-      ctrl.$validators.min = (_modelValue, viewValue) =>
-        ctrl.$isEmpty(viewValue) || viewValue >= minVal;
+      ctrl.$validators.min = (
+        /** @type {any} */ _modelValue,
+        /** @type {number} */ viewValue,
+      ) => ctrl.$isEmpty(viewValue) || viewValue >= minVal;
       attr.$observe("min", (val) => {
         minVal = val;
         ctrl.$validate();
@@ -243,8 +273,10 @@ export function createStringDateInputType(type, regexp) {
     if (isDefined(attr.max) || attr.ngMax) {
       let maxVal = attr.max || $parse?.(attr.ngMax)(scope);
 
-      ctrl.$validators.max = (_modelValue, viewValue) =>
-        ctrl.$isEmpty(viewValue) || viewValue <= maxVal;
+      ctrl.$validators.max = (
+        /** @type {any} */ _modelValue,
+        /** @type {number} */ viewValue,
+      ) => ctrl.$isEmpty(viewValue) || viewValue <= maxVal;
       attr.$observe("max", (val) => {
         maxVal = val;
         ctrl.$validate();
@@ -253,13 +285,20 @@ export function createStringDateInputType(type, regexp) {
   };
 }
 
+/**
+ * @param {ng.Scope} scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {any} ctrl
+ * @param {string} parserName
+ */
 export function badInputChecker(scope, element, attr, ctrl, parserName) {
   const nativeValidation = (ctrl._hasNativeValidators = isObject(
     element.validity,
   ));
 
   if (nativeValidation) {
-    ctrl.$parsers.push((value) => {
+    ctrl.$parsers.push((/** @type {any} */ value) => {
       const validity = element[VALIDITY_STATE_PROPERTY] || {};
 
       if (validity.badInput || validity.typeMismatch) {
@@ -273,6 +312,9 @@ export function badInputChecker(scope, element, attr, ctrl, parserName) {
   }
 }
 
+/**
+ * @param {NgModelController} ctrl
+ */
 export function numberFormatterParser(ctrl) {
   ctrl.$parsers.push((value) => {
     if (ctrl.$isEmpty(value)) return null;
@@ -296,6 +338,10 @@ export function numberFormatterParser(ctrl) {
   });
 }
 
+/**
+ * @param {any} val
+ * @return {number|undefined}
+ */
 function parseNumberAttrVal(val) {
   if (isDefined(val) && !isNumber(val)) {
     val = parseFloat(val);
@@ -304,6 +350,10 @@ function parseNumberAttrVal(val) {
   return !isNumberNaN(val) ? val : undefined;
 }
 
+/**
+ * @param {number} num
+ * @return {boolean}
+ */
 export function isNumberInteger(num) {
   // See http://stackoverflow.com/questions/14636536/how-to-check-if-a-variable-is-an-integer-in-javascript#14794066
   // (minus the assumption that `num` is a number)
@@ -311,6 +361,10 @@ export function isNumberInteger(num) {
   return (num | 0) === num;
 }
 
+/**
+ * @param {number} num
+ * @return {number}
+ */
 export function countDecimals(num) {
   const numString = num.toString();
 
@@ -332,6 +386,11 @@ export function countDecimals(num) {
   return numString.length - decimalSymbolIndex - 1;
 }
 
+/**
+ * @param {any} viewValue
+ * @param {number} stepBase
+ * @param {number | undefined} step
+ */
 export function isValidForStep(viewValue, stepBase, step) {
   // At this point `stepBase` and `step` are expected to be non-NaN values
   // and `viewValue` is expected to be a valid stringified number.
@@ -374,6 +433,13 @@ export function isValidForStep(viewValue, stepBase, step) {
   return (value - stepBase) % step === 0;
 }
 
+/**
+ * @param {ng.Scope} scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {any} ctrl
+ * @param {ng.ParseService} $parse
+ */
 export function numberInputType(scope, element, attr, ctrl, $parse) {
   badInputChecker(scope, element, attr, ctrl, "number");
   numberFormatterParser(ctrl);
@@ -432,7 +498,10 @@ export function numberInputType(scope, element, attr, ctrl, $parse) {
 
     let parsedStepVal = parseNumberAttrVal(stepVal);
 
-    ctrl.$validators.step = function (modelValue, viewValue) {
+    ctrl.$validators.step = function (
+      /** @type {any} */ modelValue,
+      /** @type {any} */ viewValue,
+    ) {
       return (
         ctrl.$isEmpty(viewValue) ||
         isUndefined(parsedStepVal) ||
@@ -451,6 +520,12 @@ export function numberInputType(scope, element, attr, ctrl, $parse) {
   }
 }
 
+/**
+ * @param {ng.Scope} scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {any} ctrl
+ */
 export function rangeInputType(scope, element, attr, ctrl) {
   badInputChecker(scope, element, attr, ctrl, "range");
   numberFormatterParser(ctrl);
@@ -628,6 +703,12 @@ export function rangeInputType(scope, element, attr, ctrl) {
   }
 }
 
+/**
+ * @param {ng.Scope} scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {any} ctrl
+ */
 function urlInputType(scope, element, attr, ctrl) {
   // Note: no badInputChecker here by purpose as `url` is only a validation
   // in browsers, i.e. we can always read out input.value even if it is not valid!
@@ -641,6 +722,12 @@ function urlInputType(scope, element, attr, ctrl) {
   };
 }
 
+/**
+ * @param {ng.Scope} scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {any} ctrl
+ */
 function emailInputType(scope, element, attr, ctrl) {
   // Note: no badInputChecker here by purpose as `url` is only a validation
   // in browsers, i.e. we can always read out input.value even if it is not valid!
@@ -654,6 +741,12 @@ function emailInputType(scope, element, attr, ctrl) {
   };
 }
 
+/**
+ * @param {ng.Scope} scope
+ * @param {HTMLInputElement} element
+ * @param {ng.Attributes} attr
+ * @param {any} ctrl
+ */
 function radioInputType(scope, element, attr, ctrl) {
   const doTrim = !attr.ngTrim || trim(attr.ngTrim) !== "false";
 
@@ -821,10 +914,13 @@ const CONSTANT_VALUE_REGEXP = /^(true|false|\d+)$/;
  */
 export function ngValueDirective() {
   /**
-   *  inputs use the value attribute as their default value if the value property is not set.
-   *  Once the value property has been set (by adding input), it will not react to changes to
-   *  the value attribute anymore. Setting both attribute and property fixes this behavior, and
-   *  makes it possible to use ngValue as a sort of one-way bind.
+   * inputs use the value attribute as their default value if the value property is not set.
+   * Once the value property has been set (by adding input), it will not react to changes to
+   * the value attribute anymore. Setting both attribute and property fixes this behavior, and
+   * makes it possible to use ngValue as a sort of one-way bind.
+   * @param {HTMLElement} element
+   * @param {ng.Attributes} attr
+   * @param {any} value
    */
   function updateElementValue(element, attr, value) {
     element.value = deProxy(value ?? "");

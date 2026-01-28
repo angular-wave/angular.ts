@@ -36,11 +36,19 @@ const VAR_OR_TUPLE_REGEX =
 ngRepeatDirective.$inject = [$injectTokens._animate];
 
 /**
- * TODO // Add type for animate service
- * @param {*}  $animate
+ * @param {ng.AnimateService}  $animate
  * @returns {ng.Directive}
  */
 export function ngRepeatDirective($animate) {
+  /**
+   * @param {ng.Scope} scope
+   * @param {number} index
+   * @param {string | number} valueIdentifier
+   * @param {any} value
+   * @param {string | number} keyIdentifier
+   * @param {any} key
+   * @param {number} arrayLength
+   */
   function updateScope(
     scope,
     index,
@@ -67,18 +75,33 @@ export function ngRepeatDirective($animate) {
     scope.$odd = !(scope.$even = (index & 1) === 0);
   }
 
+  /**
+   * @param {{ clone: any; }} block
+   */
   function getBlockStart(block) {
     return block.clone;
   }
 
+  /**
+   * @param {{ clone: any; }} block
+   */
   function getBlockEnd(block) {
     return block.clone;
   }
 
+  /**
+   * @param {ng.Scope} _$scope
+   * @param {any} _key
+   * @param {any} value
+   */
   function trackByIdArrayFn(_$scope, _key, value) {
     return hashKey(value);
   }
 
+  /**
+   * @param {ng.Scope} _$scope
+   * @param {any} key
+   */
   function trackByIdObjFn(_$scope, key) {
     return key;
   }
@@ -88,7 +111,7 @@ export function ngRepeatDirective($animate) {
     transclude: "element",
     priority: 1000,
     terminal: true,
-    compile: (_$element, $attr) => {
+    compile(_$element, $attr) {
       const expression = $attr.ngRepeat;
 
       const hasAnimate = !!$attr.animate;
@@ -152,10 +175,10 @@ export function ngRepeatDirective($animate) {
        * @param {ng.Scope} $scope
        * @param {HTMLElement} $element
        * @param {ng.Attributes} attr
-       * @param ctrl
-       * @param $transclude
+       * @param {any} _ctrl
+       * @param {ng.TranscludeFn=} $transclude
        */
-      function ngRepeatLink($scope, $element, attr, ctrl, $transclude) {
+      function ngRepeatLink($scope, $element, attr, _ctrl, $transclude) {
         // Store a list of elements from previous run. This is a hash where key is the item from the
         // iterator, and the value is objects with following properties.
         //   - scope: bound scope
@@ -171,22 +194,43 @@ export function ngRepeatDirective($animate) {
           rhs,
           (collection) => {
             swap();
-            let index,
-              previousNode = $element, // node that cloned nodes should be inserted after
-              // initialized to the comment node anchor
-              nextNode;
+            /**
+             * @type {number}
+             */
+            let index;
+
+            let previousNode = $element; // node that cloned nodes should be inserted after
+
+            // initialized to the comment node anchor
+            /** @type {Record<string, any>} */
+            let nextNode;
 
             const // Same as lastBlockMap but it has the current state. It will become the
               // lastBlockMap on the next iteration.
               nextBlockMap = nullObject();
 
-            let key,
-              value, // key/value of iteration
-              trackById,
-              trackByIdFn,
-              collectionKeys,
-              block, // last object information {scope, element, id}
-              elementsToRemove;
+            /**
+             * @type {string | number}
+             */
+            let key;
+
+            /**
+             * @type {any}
+             */
+            let value; // key/value of iteration
+
+            let trackById;
+
+            let trackByIdFn;
+
+            let collectionKeys;
+
+            /**
+             * @type {{ clone: any; scope?: any; id?: any; }}
+             */
+            let block; // last object information {scope, element, id}
+
+            let elementsToRemove;
 
             if (aliasAs) {
               $scope[aliasAs] = collection;
@@ -287,7 +331,11 @@ export function ngRepeatDirective($animate) {
 
                 if (getBlockStart(block) !== nextNode) {
                   // existing item which got moved
-                  $animate.move(getBlockNodes(block.clone), null, previousNode);
+                  $animate.move(
+                    /** @type {HTMLElement} */ (getBlockNodes(block.clone)[0]),
+                    null,
+                    previousNode,
+                  );
                 }
                 previousNode = getBlockEnd(block);
                 updateScope(
@@ -301,40 +349,36 @@ export function ngRepeatDirective($animate) {
                 );
               } else {
                 // new item which we don't know about
-                $transclude(
-                  /**
-                   * Clone attach function
-                   * @param {HTMLElement} clone
-                   * @param {ng.Scope} scope
-                   */
+                /** @type {ng.TranscludeFn} */ ($transclude)((clone, scope) => {
+                  block.scope = scope;
+                  const endNode = clone;
 
-                  (clone, scope) => {
-                    block.scope = scope;
-                    const endNode = clone;
-
-                    if (hasAnimate) {
-                      $animate.enter(clone, null, previousNode);
-                    } else {
-                      previousNode.after(clone);
-                    }
-
-                    previousNode = endNode;
-                    // Note: We only need the first/last node of the cloned nodes.
-                    // However, we need to keep the reference to the dom wrapper as it might be changed later
-                    // by a directive with templateUrl when its template arrives.
-                    block.clone = clone;
-                    nextBlockMap[block.id] = block;
-                    updateScope(
-                      block.scope,
-                      index,
-                      valueIdentifier,
-                      value,
-                      keyIdentifier,
-                      key,
-                      collectionLength,
+                  if (hasAnimate) {
+                    $animate.enter(
+                      /** @type {HTMLElement} */ (clone),
+                      null,
+                      previousNode,
                     );
-                  },
-                );
+                  } else {
+                    previousNode.after(/** @type {HTMLElement} */ (clone));
+                  }
+
+                  previousNode = /** @type {HTMLElement} */ (endNode);
+                  // Note: We only need the first/last node of the cloned nodes.
+                  // However, we need to keep the reference to the dom wrapper as it might be changed later
+                  // by a directive with templateUrl when its template arrives.
+                  block.clone = clone;
+                  nextBlockMap[block.id] = block;
+                  updateScope(
+                    block.scope,
+                    index,
+                    valueIdentifier,
+                    value,
+                    keyIdentifier,
+                    key,
+                    collectionLength,
+                  );
+                });
               }
             }
             lastBlockMap = nextBlockMap;
