@@ -134,6 +134,7 @@ import { Transition as TTransition } from "./router/transition/transition.js";
 import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.js";
 import { TransitionService as TTransitionService } from "./router/transition/interface.ts";
 import { UrlConfigProvider as TUrlConfigProvider } from "./router/url/url-config.js";
+import { AriaService as TAriaService } from "./directive/aria/interface.ts";
 declare global {
   interface Function {
     $inject?: readonly string[] | undefined;
@@ -178,6 +179,7 @@ declare global {
     type AnimateService = TAnimateService;
     type AnimateCssService = TAnimateCssService;
     type AnimateRunner = TAnimateRunner;
+    type AriaService = TAriaService;
     type CompileService = TCompileFn;
     type ControllerService = TControllerService;
     type CookieService = TCookieService;
