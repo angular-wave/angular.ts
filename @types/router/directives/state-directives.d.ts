@@ -31,16 +31,16 @@ export namespace $StateRefDynamicDirective {
  * @param {ng.StateService} $state
  * @param {ng.RouterService} $router
  * @param {ng.InterpolateService} $interpolate
- * @param {*} $stateRegistry
- * @param {*} $transitions
+ * @param {ng.StateRegistryService} $stateRegistry
+ * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
 export function $StateRefActiveDirective(
   $state: ng.StateService,
   $router: ng.RouterService,
   $interpolate: ng.InterpolateService,
-  $stateRegistry: any,
-  $transitions: any,
+  $stateRegistry: ng.StateRegistryService,
+  $transitions: ng.TransitionService,
 ): ng.Directive;
 export namespace $StateRefActiveDirective {
   let $inject_2: string[];

@@ -339,8 +339,8 @@ $StateRefActiveDirective.$inject = [
  * @param {ng.StateService} $state
  * @param {ng.RouterService} $router
  * @param {ng.InterpolateService} $interpolate
- * @param {*} $stateRegistry
- * @param {*} $transitions
+ * @param {ng.StateRegistryService} $stateRegistry
+ * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
 export function $StateRefActiveDirective(
@@ -352,17 +352,27 @@ export function $StateRefActiveDirective(
 ) {
   return {
     restrict: "A",
+    /**
+     * @param {ng.Scope} $scope
+     * @param {HTMLElement} $element
+     * @param {ng.Attributes} $attrs
+     */
     controller($scope, $element, $attrs) {
+      /**
+       * @type {any[]}
+       */
       let states = [];
 
+      /**
+       * @type {any}
+       */
       let ngSrefActive;
 
       // There probably isn't much point in $observing this
       // ngSrefActive and ngSrefActiveEq share the same directive object with some
       // slight difference in logic routing
-      const activeEqClass = $interpolate(
-        $attrs.ngSrefActiveEq || "",
-        false,
+      const activeEqClass = /** @type {ng.InterpolationFunction} */ (
+        $interpolate($attrs.ngSrefActiveEq || "", false)
       )($scope);
 
       try {
@@ -372,7 +382,10 @@ export function $StateRefActiveDirective(
         // Fall back to using $interpolate below
       }
       ngSrefActive =
-        ngSrefActive || $interpolate($attrs.ngSrefActive || "", false)($scope);
+        ngSrefActive ||
+        /** @type {ng.InterpolationFunction} */ (
+          $interpolate($attrs.ngSrefActive || "", false)
+        )($scope);
       setStatesFromDefinitionObject(ngSrefActive);
       // Allow ngSref to communicate with ngSrefActive[Equals]
       this._addStateInfo = function (newState, newParams) {
@@ -387,6 +400,9 @@ export function $StateRefActiveDirective(
 
         return deregister;
       };
+      /**
+       * @param {ng.Transition} trans
+       */
       function updateAfterTransition(trans) {
         trans.promise.then(update, () => {
           /* empty */
@@ -420,6 +436,9 @@ export function $StateRefActiveDirective(
       function handleStatesChanged() {
         setStatesFromDefinitionObject(ngSrefActive);
       }
+      /**
+       * @param {{ [s: string]: any; } | ArrayLike<any>} statesDefinition
+       */
       function setStatesFromDefinitionObject(statesDefinition) {
         if (isObject(statesDefinition)) {
           states = [];
@@ -454,6 +473,11 @@ export function $StateRefActiveDirective(
           });
         }
       }
+      /**
+       * @param {import("../state/interface.js").StateOrName} stateName
+       * @param {any} stateParams
+       * @param {string} activeClass
+       */
       function addState(stateName, stateParams, activeClass) {
         const state = $state.get(stateName, stateContext($element));
 
@@ -471,9 +495,10 @@ export function $StateRefActiveDirective(
       }
       // Update route state
       function update() {
-        const splitClasses = (str) => str.split(/\s/).filter(Boolean);
+        const splitClasses = (/** @type {string} */ str) =>
+          str.split(/\s/).filter(Boolean);
 
-        const getClasses = (stateList) =>
+        const getClasses = (/** @type {any[]} */ stateList) =>
           stateList
             .map((x) => x.activeClass)
             .map(splitClasses)
