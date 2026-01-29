@@ -47,3 +47,9 @@ export interface ScopeEvent {
    */
   defaultPrevented: boolean;
 }
+export type ScopeProxied<T extends object> = T & {
+  /** The Scope handler instance (your Proxy handler) */
+  $handler: ng.Scope;
+  /** The raw target object behind the proxy */
+  $target: T;
+};
