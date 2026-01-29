@@ -8,14 +8,14 @@ export function createStringDateInputType(type: string, regexp: RegExp): any;
  * @param {ng.Scope} scope
  * @param {HTMLInputElement} element
  * @param {ng.Attributes} attr
- * @param {any} ctrl
+ * @param {NgModelControllerProxied} ctrl
  * @param {string} parserName
  */
 export function badInputChecker(
   scope: ng.Scope,
   element: HTMLInputElement,
   attr: ng.Attributes,
-  ctrl: any,
+  ctrl: NgModelControllerProxied,
   parserName: string,
 ): void;
 /**
@@ -23,10 +23,10 @@ export function badInputChecker(
  */
 export function numberFormatterParser(ctrl: NgModelController): void;
 /**
- * @param {number} num
+ * @param {any} num
  * @return {boolean}
  */
-export function isNumberInteger(num: number): boolean;
+export function isNumberInteger(num: any): boolean;
 /**
  * @param {number} num
  * @return {number}
@@ -46,27 +46,27 @@ export function isValidForStep(
  * @param {ng.Scope} scope
  * @param {HTMLInputElement} element
  * @param {ng.Attributes} attr
- * @param {any} ctrl
+ * @param {NgModelControllerProxied} ctrl
  * @param {ng.ParseService} $parse
  */
 export function numberInputType(
   scope: ng.Scope,
   element: HTMLInputElement,
   attr: ng.Attributes,
-  ctrl: any,
+  ctrl: NgModelControllerProxied,
   $parse: ng.ParseService,
 ): void;
 /**
  * @param {ng.Scope} scope
  * @param {HTMLInputElement} element
  * @param {ng.Attributes} attr
- * @param {any} ctrl
+ * @param {NgModelControllerProxied} ctrl
  */
 export function rangeInputType(
   scope: ng.Scope,
   element: HTMLInputElement,
   attr: ng.Attributes,
-  ctrl: any,
+  ctrl: NgModelControllerProxied,
 ): void;
 /**
  * @param {ng.ParseService} $parse
@@ -85,8 +85,11 @@ export function hiddenInputDirective(): ng.Directive;
  */
 export function ngValueDirective(): ng.Directive;
 /** @typedef {import("../model/model.js").NgModelController} NgModelController */
+/** @typedef {import("./interface.ts").NgModelControllerProxied} NgModelControllerProxied */
 export const ISO_DATE_REGEXP: RegExp;
 export const URL_REGEXP: RegExp;
 export const EMAIL_REGEXP: RegExp;
 export const VALIDITY_STATE_PROPERTY: "validity";
 export type NgModelController = import("../model/model.js").NgModelController;
+export type NgModelControllerProxied =
+  import("./interface.ts").NgModelControllerProxied;

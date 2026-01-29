@@ -15,6 +15,7 @@ import {
 import { ngModelMinErr } from "./../model/model.js";
 
 /** @typedef {import("../model/model.js").NgModelController} NgModelController */
+/** @typedef {import("./interface.ts").NgModelControllerProxied} NgModelControllerProxied */
 
 // Regex code was initially obtained from SO prior to modification: https://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#answer-3143231
 export const ISO_DATE_REGEXP =
@@ -63,7 +64,7 @@ const PARTIAL_VALIDATION_TYPES = new Map();
 "date,datetime-local,month,time,week".split(",").forEach((type) => {
   PARTIAL_VALIDATION_TYPES.set(type, true);
 });
-
+/** @type {Record<string, import("./interface.js").InputTypeHandler>} */
 const inputType = {
   text: textInputType,
   date: createStringDateInputType("date", DATE_REGEXP),
@@ -110,7 +111,7 @@ function stringBasedInputType(ctrl) {
  * @param {ng.Scope} scope
  * @param {HTMLInputElement} element
  * @param {ng.Attributes} attr
- * @param {any} ctrl
+ * @param {NgModelControllerProxied} ctrl
  */
 function textInputType(scope, element, attr, ctrl) {
   baseInputType(scope, element, attr, ctrl);
@@ -121,7 +122,7 @@ function textInputType(scope, element, attr, ctrl) {
  * @param {ng.Scope} _scope
  * @param {HTMLInputElement} element
  * @param {ng.Attributes} attr
- * @param {any} ctrl
+ * @param {NgModelControllerProxied} ctrl
  */
 function baseInputType(_scope, element, attr, ctrl) {
   const type = element.type.toLowerCase();
@@ -190,8 +191,7 @@ function baseInputType(_scope, element, attr, ctrl) {
   ) {
     element.addEventListener(PARTIAL_VALIDATION_EVENTS, (ev) => {
       if (!timeout) {
-        // eslint-disable-next-line no-invalid-this
-        const validity = this[VALIDITY_STATE_PROPERTY];
+        const validity = element[VALIDITY_STATE_PROPERTY];
 
         const origBadInput = validity.badInput;
 
@@ -231,7 +231,7 @@ export function createStringDateInputType(type, regexp) {
    * @param {ng.Scope} scope
    * @param {HTMLInputElement} element
    * @param {ng.Attributes} attr
-   * @param {any} ctrl
+   * @param {NgModelControllerProxied} ctrl
    * @param {ng.ParseService} $parse
    */
   return function stringDateInputType(scope, element, attr, ctrl, $parse) {
@@ -289,7 +289,7 @@ export function createStringDateInputType(type, regexp) {
  * @param {ng.Scope} scope
  * @param {HTMLInputElement} element
  * @param {ng.Attributes} attr
- * @param {any} ctrl
+ * @param {NgModelControllerProxied} ctrl
  * @param {string} parserName
  */
 export function badInputChecker(scope, element, attr, ctrl, parserName) {
@@ -351,7 +351,7 @@ function parseNumberAttrVal(val) {
 }
 
 /**
- * @param {number} num
+ * @param {any} num
  * @return {boolean}
  */
 export function isNumberInteger(num) {
@@ -409,7 +409,9 @@ export function isValidForStep(viewValue, stepBase, step) {
 
     const stepBaseDecimals = isNonIntegerStepBase ? countDecimals(stepBase) : 0;
 
-    const stepDecimals = isNonIntegerStep ? countDecimals(step) : 0;
+    const stepDecimals = isNonIntegerStep
+      ? countDecimals(/** @type {number} */ (step))
+      : 0;
 
     const decimalCount = Math.max(
       valueDecimals,
@@ -421,23 +423,23 @@ export function isValidForStep(viewValue, stepBase, step) {
 
     value *= multiplier;
     stepBase *= multiplier;
-    step *= multiplier;
+    /** @type {number} */ (step) *= multiplier;
 
     if (isNonIntegerValue) value = Math.round(value);
 
     if (isNonIntegerStepBase) stepBase = Math.round(stepBase);
 
-    if (isNonIntegerStep) step = Math.round(step);
+    if (isNonIntegerStep) step = Math.round(/** @type {number} */ (step));
   }
 
-  return (value - stepBase) % step === 0;
+  return (value - stepBase) % /** @type {number} */ (step) === 0;
 }
 
 /**
  * @param {ng.Scope} scope
  * @param {HTMLInputElement} element
  * @param {ng.Attributes} attr
- * @param {any} ctrl
+ * @param {NgModelControllerProxied} ctrl
  * @param {ng.ParseService} $parse
  */
 export function numberInputType(scope, element, attr, ctrl, $parse) {
@@ -445,6 +447,9 @@ export function numberInputType(scope, element, attr, ctrl, $parse) {
   numberFormatterParser(ctrl);
   baseInputType(scope, element, attr, ctrl);
 
+  /**
+   * @type {number | undefined}
+   */
   let parsedMinVal;
 
   if (isDefined(attr.min) || attr.ngMin) {
@@ -452,11 +457,14 @@ export function numberInputType(scope, element, attr, ctrl, $parse) {
 
     parsedMinVal = parseNumberAttrVal(minVal);
 
-    ctrl.$validators.min = function (modelValue, viewValue) {
+    ctrl.$validators.min = function (
+      /** @type {any} */ modelValue,
+      /** @type {number} */ viewValue,
+    ) {
       return (
         ctrl.$isEmpty(viewValue) ||
         isUndefined(parsedMinVal) ||
-        viewValue >= parsedMinVal
+        viewValue >= /** @type {number} */ (parsedMinVal)
       );
     };
 
@@ -475,11 +483,14 @@ export function numberInputType(scope, element, attr, ctrl, $parse) {
 
     let parsedMaxVal = parseNumberAttrVal(maxVal);
 
-    ctrl.$validators.max = function (modelValue, viewValue) {
+    ctrl.$validators.max = function (
+      /** @type {any} */ modelValue,
+      /** @type {number} */ viewValue,
+    ) {
       return (
         ctrl.$isEmpty(viewValue) ||
         isUndefined(parsedMaxVal) ||
-        viewValue <= parsedMaxVal
+        viewValue <= /** @type {number} */ (parsedMaxVal)
       );
     };
 
@@ -524,7 +535,7 @@ export function numberInputType(scope, element, attr, ctrl, $parse) {
  * @param {ng.Scope} scope
  * @param {HTMLInputElement} element
  * @param {ng.Attributes} attr
- * @param {any} ctrl
+ * @param {NgModelControllerProxied} ctrl
  */
 export function rangeInputType(scope, element, attr, ctrl) {
   badInputChecker(scope, element, attr, ctrl, "range");
@@ -570,11 +581,14 @@ export function rangeInputType(scope, element, attr, ctrl) {
           return true;
         }
       : // non-support browsers validate the min val
-        function minValidator(modelValue, viewValue) {
+        function minValidator(
+          /** @type {any} */ modelValue,
+          /** @type {number} */ viewValue,
+        ) {
           return (
             ctrl.$isEmpty(viewValue) ||
             isUndefined(minVal) ||
-            viewValue >= minVal
+            viewValue >= /** @type {number} */ (minVal)
           );
         };
 
@@ -590,11 +604,14 @@ export function rangeInputType(scope, element, attr, ctrl) {
           return true;
         }
       : // non-support browsers validate the max val
-        function maxValidator(modelValue, viewValue) {
+        function maxValidator(
+          /** @type {any} */ modelValue,
+          /** @type {number} */ viewValue,
+        ) {
           return (
             ctrl.$isEmpty(viewValue) ||
             isUndefined(maxVal) ||
-            viewValue <= maxVal
+            viewValue <= /** @type {number} */ (maxVal)
           );
         };
 
@@ -612,7 +629,10 @@ export function rangeInputType(scope, element, attr, ctrl) {
           return !validity.stepMismatch;
         }
       : // ngStep doesn't set the setp attr, so the browser doesn't adjust the input value as setting step would
-        function stepValidator(modelValue, viewValue) {
+        function stepValidator(
+          /** @type {any} */ modelValue,
+          /** @type {any} */ viewValue,
+        ) {
           return (
             ctrl.$isEmpty(viewValue) ||
             isUndefined(stepVal) ||
@@ -623,6 +643,10 @@ export function rangeInputType(scope, element, attr, ctrl) {
     setInitialValueAndObserver("step", stepChange);
   }
 
+  /**
+   * @param {string} htmlAttrName
+   * @param {(val: string | undefined) => void} changeFn
+   */
   function setInitialValueAndObserver(htmlAttrName, changeFn) {
     // interpolated attributes set the attribute value only after a digest, but we need the
     // attribute value when the input is first rendered, so that the browser can adjust the
@@ -638,6 +662,9 @@ export function rangeInputType(scope, element, attr, ctrl) {
     });
   }
 
+  /**
+   * @param {any} val
+   */
   function minChange(val) {
     minVal = parseNumberAttrVal(val);
 
@@ -647,20 +674,17 @@ export function rangeInputType(scope, element, attr, ctrl) {
     }
 
     if (supportsRange) {
-      let elVal = element.value;
-
-      // IE11 doesn't set the el val correctly if the minVal is greater than the element value
-      if (minVal > elVal) {
-        elVal = minVal;
-        element.value = elVal;
-      }
-      ctrl.$setViewValue(elVal);
+      // Browser already normalizes element.value against min
+      ctrl.$setViewValue(element.value);
     } else {
       // TODO(matsko): implement validateLater to reduce number of validations
       ctrl.$validate();
     }
   }
 
+  /**
+   * @param {any} val
+   */
   function maxChange(val) {
     maxVal = parseNumberAttrVal(val);
 
@@ -670,21 +694,17 @@ export function rangeInputType(scope, element, attr, ctrl) {
     }
 
     if (supportsRange) {
-      let elVal = element.value;
-
-      // IE11 doesn't set the el val correctly if the maxVal is less than the element value
-      if (maxVal < elVal) {
-        element.value = maxVal;
-        // IE11 and Chrome don't set the value to the minVal when max < min
-        elVal = maxVal < minVal ? minVal : maxVal;
-      }
-      ctrl.$setViewValue(elVal);
+      // Browser normalizes element.value against max
+      ctrl.$setViewValue(element.value);
     } else {
       // TODO(matsko): implement validateLater to reduce number of validations
       ctrl.$validate();
     }
   }
 
+  /**
+   * @param {any} val
+   */
   function stepChange(val) {
     stepVal = parseNumberAttrVal(val);
 
@@ -707,7 +727,7 @@ export function rangeInputType(scope, element, attr, ctrl) {
  * @param {ng.Scope} scope
  * @param {HTMLInputElement} element
  * @param {ng.Attributes} attr
- * @param {any} ctrl
+ * @param {NgModelControllerProxied} ctrl
  */
 function urlInputType(scope, element, attr, ctrl) {
   // Note: no badInputChecker here by purpose as `url` is only a validation
@@ -715,7 +735,10 @@ function urlInputType(scope, element, attr, ctrl) {
   baseInputType(scope, element, attr, ctrl);
   stringBasedInputType(ctrl);
 
-  ctrl.$validators.url = function (modelValue, viewValue) {
+  ctrl.$validators.url = function (
+    /** @type {any} */ modelValue,
+    /** @type {any} */ viewValue,
+  ) {
     const value = modelValue || viewValue;
 
     return ctrl.$isEmpty(value) || URL_REGEXP.test(value);
@@ -726,7 +749,7 @@ function urlInputType(scope, element, attr, ctrl) {
  * @param {ng.Scope} scope
  * @param {HTMLInputElement} element
  * @param {ng.Attributes} attr
- * @param {any} ctrl
+ * @param {NgModelControllerProxied} ctrl
  */
 function emailInputType(scope, element, attr, ctrl) {
   // Note: no badInputChecker here by purpose as `url` is only a validation
@@ -734,7 +757,10 @@ function emailInputType(scope, element, attr, ctrl) {
   baseInputType(scope, element, attr, ctrl);
   stringBasedInputType(ctrl);
 
-  ctrl.$validators.email = function (modelValue, viewValue) {
+  ctrl.$validators.email = function (
+    /** @type {any} */ modelValue,
+    /** @type {any} */ viewValue,
+  ) {
     const value = modelValue || viewValue;
 
     return ctrl.$isEmpty(value) || EMAIL_REGEXP.test(value);
@@ -745,17 +771,17 @@ function emailInputType(scope, element, attr, ctrl) {
  * @param {ng.Scope} scope
  * @param {HTMLInputElement} element
  * @param {ng.Attributes} attr
- * @param {any} ctrl
+ * @param {NgModelControllerProxied} ctrl
  */
 function radioInputType(scope, element, attr, ctrl) {
   const doTrim = !attr.ngTrim || trim(attr.ngTrim) !== "false";
 
   // make the name unique, if not defined
   if (isUndefined(attr.name)) {
-    element.setAttribute("name", nextUid());
+    element.setAttribute("name", `${nextUid()}`);
   }
 
-  const listener = function (ev) {
+  const listener = function (/** @type {Event} */ ev) {
     if (element.checked) {
       let { value } = attr;
 
@@ -775,7 +801,7 @@ function radioInputType(scope, element, attr, ctrl) {
       value = trim(value);
     }
     const deproxy = isProxy(ctrl.$viewValue)
-      ? ctrl.$viewValue.$target
+      ? /** @type {ng.Scope} */ (ctrl.$viewValue).$target
       : ctrl.$viewValue;
 
     // the proxy may reach down two levels
@@ -840,7 +866,7 @@ function checkboxInputType(scope, element, attr, ctrl, $parse) {
     false,
   );
 
-  const listener = function (ev) {
+  const listener = function (/** @type {Event} */ ev) {
     ctrl.$setViewValue(element.checked, ev && ev.type);
   };
 
@@ -853,13 +879,15 @@ function checkboxInputType(scope, element, attr, ctrl, $parse) {
   // Override the standard `$isEmpty` because the $viewValue of an empty checkbox is always set to `false`
   // This is because of the parser below, which compares the `$modelValue` with `trueValue` to convert
   // it to a boolean.
-  ctrl.$isEmpty = function (value) {
+  ctrl.$isEmpty = function (/** @type {boolean} */ value) {
     return value === false;
   };
 
-  ctrl.$formatters.push((value) => equals(value, trueValue));
+  ctrl.$formatters.push((/** @type {any} */ value) => equals(value, trueValue));
 
-  ctrl.$parsers.push((value) => (value ? trueValue : falseValue));
+  ctrl.$parsers.push((/** @type {any} */ value) =>
+    value ? trueValue : falseValue,
+  );
 }
 
 inputDirective.$inject = [$injectTokens._parse];
@@ -877,7 +905,7 @@ export function inputDirective($parse) {
         if (ctrls[0]) {
           (inputType[attr.type?.toLowerCase()] || inputType.text)(
             scope,
-            element,
+            /** @type {HTMLInputElement} */ (element),
             attr,
             ctrls[0],
             $parse,
@@ -918,7 +946,7 @@ export function ngValueDirective() {
    * Once the value property has been set (by adding input), it will not react to changes to
    * the value attribute anymore. Setting both attribute and property fixes this behavior, and
    * makes it possible to use ngValue as a sort of one-way bind.
-   * @param {HTMLElement} element
+   * @param {HTMLInputElement} element
    * @param {ng.Attributes} attr
    * @param {any} value
    */
@@ -935,13 +963,21 @@ export function ngValueDirective() {
         return function (scope, elm, attr) {
           const value = scope.$eval(attr.ngValue);
 
-          updateElementValue(elm, attr, value);
+          updateElementValue(
+            /** @type {HTMLInputElement} */ (elm),
+            attr,
+            value,
+          );
         };
       }
 
       return function (scope, elm, attr) {
         scope.$watch(attr.ngValue, (value) => {
-          updateElementValue(elm, attr, value);
+          updateElementValue(
+            /** @type {HTMLInputElement} */ (elm),
+            attr,
+            value,
+          );
         });
       };
     },
