@@ -11,7 +11,7 @@ import { getInheritedData } from "../../shared/dom.js";
 import { $injectTokens } from "../../injection-tokens.js";
 
 /**
- * @param {string | string[]} ref
+ * @param {string} ref
  */
 function parseStateRef(ref) {
   const paramsOnly = ref.match(/^\s*({[^}]*})\s*$/);
@@ -27,6 +27,9 @@ function parseStateRef(ref) {
   return { state: parsed[1] || null, paramExpr: parsed[3] || null };
 }
 
+/**
+ * @param {Node} el
+ */
 function stateContext(el) {
   const $ngView = getInheritedData(el, "$ngView");
 
@@ -35,8 +38,13 @@ function stateContext(el) {
   return path ? tail(path).state.name : undefined;
 }
 
+/**
+ * @param {ng.StateService} $state
+ * @param {HTMLElement} $element
+ * @param {Record<string, any>} def
+ */
 function processedDef($state, $element, def) {
-  const ngState = def.ngState || $state.current.name;
+  const ngState = def.ngState || $state.current?.name;
 
   const ngStateOpts = Object.assign(
     defaultOpts($element, $state),
@@ -74,7 +82,7 @@ function getTypeInfo(el) {
  * @param {ng.Scope} scope
  */
 function clickHook(el, $state, type, getDef, scope) {
-  return function (event) {
+  return function (/** @type {MouseEvent} */ event) {
     const button = event.which || event.button,
       target = getDef();
 
@@ -274,6 +282,7 @@ export function $StateRefDynamicDirective(
        */
       let unlinkInfoFn = null;
 
+      /** @type {Record<string, any>} */
       const rawDef = {};
 
       const getDef = () => processedDef($state, element, rawDef);
@@ -287,7 +296,7 @@ export function $StateRefDynamicDirective(
           }),
           acc
         ),
-        {},
+        /** @type {Record<string, any>} */ ({}),
       );
 
       function update() {
@@ -452,10 +461,12 @@ export function $StateRefActiveDirective(
               stateOrNameParam,
               activeClassParam,
             ) {
-              const ref = parseStateRef(stateOrNameParam);
+              const ref = parseStateRef(
+                /** @type {string} */ (stateOrNameParam),
+              );
 
               addState(
-                ref.state,
+                /** @type {string} */ (ref.state),
                 ref.paramExpr && $scope.$eval(ref.paramExpr),
                 activeClassParam,
               );

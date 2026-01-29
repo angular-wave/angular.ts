@@ -1082,7 +1082,9 @@ export class CompileProvider {
             containingScope,
           ) {
             if (!transcludedScope) {
-              transcludedScope = scope.$transcluded(containingScope);
+              transcludedScope = scope.$transcluded(
+                /** @type {ng.Scope} */ (containingScope),
+              );
             }
 
             const transcludeRes = transcludeFn(transcludedScope, cloneFn, {
@@ -1825,7 +1827,6 @@ export class CompileProvider {
               for (
                 let scanningIndex = i + 1;
                 (candidateDirective = directives[scanningIndex++]);
-
               ) {
                 if (
                   (candidateDirective.transclude &&
