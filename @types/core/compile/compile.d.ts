@@ -110,7 +110,7 @@ export class CompileProvider {
     | RegExp
     | import("../sanitize/sanitize-uri.js").SanitizeUriProvider
     | undefined;
-  strictComponentBindingsEnabled: (enabled: any) => boolean | this;
+  strictComponentBindingsEnabled: (enabled: boolean) => boolean | this;
   /**
    * Defines the security context for DOM properties bound by ng-prop-*.
    *
@@ -132,15 +132,27 @@ export class CompileProvider {
         $exceptionHandler: ng.ExceptionHandlerService,
         $templateRequest: ng.TemplateRequestService,
         $parse: ng.ParseService,
-        $controller: any,
+        $controller: ng.ControllerService,
         $sce: ng.SceService,
         $animate: ng.AnimateService,
       ) => (
-        compileNode: string | Element | Node | ChildNode | NodeList,
-        transcludeFn?: import("./interface.ts").TranscludeFn,
+        compileNode: string | Element | Node | ChildNode | NodeList | null,
+        transcludeFn?: import("./interface.ts").TranscludeFn | null,
         maxPriority?: number,
         ignoreDirective?: string,
         previousCompileContext?: any,
       ) => import("./interface.ts").PublicLinkFn)
   )[];
 }
+export type BoundTranscludeFn = import("./interface.ts").BoundTranscludeFn;
+export type ChildTranscludeOrLinkFn =
+  import("./interface.ts").ChildTranscludeOrLinkFn;
+export type CloneAttachFn = import("./interface.ts").CloneAttachFn;
+export type CompileNodesFn = import("./interface.ts").CompileNodesFn;
+export type CompositeLinkFn = import("./interface.ts").CompositeLinkFn;
+export type NodeLinkFn = import("./interface.ts").NodeLinkFn;
+export type NodeLinkFnCtx = import("./interface.ts").NodeLinkFnCtx;
+export type PreviousCompileContext =
+  import("./interface.ts").PreviousCompileContext;
+export type PublicLinkFn = import("./interface.ts").PublicLinkFn;
+export type TranscludedNodes = import("./interface.ts").TranscludedNodes;

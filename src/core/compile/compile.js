@@ -50,6 +50,17 @@ import { Attributes } from "./attributes.js";
 import { ngObserveDirective } from "../../directive/observe/observe.js";
 import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
 
+/** @typedef {import("./interface.ts").BoundTranscludeFn} BoundTranscludeFn */
+/** @typedef {import("./interface.ts").ChildTranscludeOrLinkFn} ChildTranscludeOrLinkFn */
+/** @typedef {import("./interface.ts").CloneAttachFn} CloneAttachFn */
+/** @typedef {import("./interface.ts").CompileNodesFn} CompileNodesFn */
+/** @typedef {import("./interface.ts").CompositeLinkFn} CompositeLinkFn */
+/** @typedef {import("./interface.ts").NodeLinkFn} NodeLinkFn */
+/** @typedef {import("./interface.ts").NodeLinkFnCtx } NodeLinkFnCtx */
+/** @typedef {import("./interface.ts").PreviousCompileContext} PreviousCompileContext */
+/** @typedef {import("./interface.ts").PublicLinkFn} PublicLinkFn */
+/** @typedef {import("./interface.ts").TranscludedNodes} TranscludedNodes */
+
 const $compileMinErr = minErr("$compile");
 
 const EXCLUDED_DIRECTIVES = ["ngIf", "ngRepeat"];
@@ -352,12 +363,20 @@ export class CompileProvider {
           /* empty */
         };
 
+      /**
+       * @param {ng.InjectorService} $injector
+       */
       function factory($injector) {
-        function makeInjectable(fn) {
+        /**
+         * @param {string | Function | ng.AnnotatedFactory<any> | undefined} fn
+         */
+        const makeInjectable = (fn) => {
           if (isFunction(fn) || isArray(fn)) {
-            return function (tElement, tAttrs) {
-              // eslint-disable-next-line no-invalid-this
-              return $injector.invoke(fn, this, {
+            return (
+              /** @type {HTMLElement} */ tElement,
+              /** @type {ng.Attributes} */ tAttrs,
+            ) => {
+              return $injector.invoke(fn, null, {
                 $element: tElement,
                 $attrs: tAttrs,
               });
@@ -365,11 +384,12 @@ export class CompileProvider {
           }
 
           return fn;
-        }
+        };
 
         const template =
           !options.template && !options.templateUrl ? "" : options.template;
 
+        /** @type {Record<string, any>} */
         const ddo = {
           controller,
           controllerAs:
@@ -399,11 +419,11 @@ export class CompileProvider {
       // These could be used by libraries such as the new component router
       entries(options).forEach(([key, val]) => {
         if (key.charAt(0) === "$") {
-          factory[key] = val;
+          /** @type {Record<string, any>} */ (factory)[key] = val;
 
           // Don't try to copy over annotations to named controller
           if (isFunction(controller)) {
-            controller[key] = val;
+            /** @type {Record<string, any>} */ (controller)[key] = val;
           }
         }
       });
@@ -431,8 +451,6 @@ export class CompileProvider {
     this.aHrefSanitizationTrustedUrlList = function (regexp) {
       if (isDefined(regexp)) {
         $sanitizeUriProvider.aHrefSanitizationTrustedUrlList(regexp);
-
-        return undefined;
       }
 
       return $sanitizeUriProvider.aHrefSanitizationTrustedUrlList();
@@ -470,7 +488,7 @@ export class CompileProvider {
      *
      * Call this method to enable / disable the strict component bindings check. If enabled, the
      * compiler will enforce that all scope / controller bindings of a
-     * {@link $compileProvider#directive directive} / {@link $compileProvider#component component}
+     * {@link $compileProvider#directive} / {@link $compileProvider#component}
      * that are not set as optional with `?`, must be provided when the directive is instantiated.
      * If not provided, the compiler will throw the
      * {@link error/$compile/missingattr $compile:missingattr error}.
@@ -479,15 +497,16 @@ export class CompileProvider {
      */
     let strictComponentBindingsEnabled = false;
 
-    this.strictComponentBindingsEnabled = function (enabled) {
-      if (isDefined(enabled)) {
-        strictComponentBindingsEnabled = enabled;
+    this.strictComponentBindingsEnabled =
+      /** @param {boolean} enabled */ function (enabled) {
+        if (isDefined(enabled)) {
+          strictComponentBindingsEnabled = enabled;
 
-        return this;
-      }
+          return this;
+        }
 
-      return strictComponentBindingsEnabled;
-    };
+        return strictComponentBindingsEnabled;
+      };
 
     /**
      * The security context of DOM Properties.
@@ -607,7 +626,7 @@ export class CompileProvider {
        * @param {ng.ExceptionHandlerService} $exceptionHandler
        * @param {ng.TemplateRequestService} $templateRequest
        * @param {ng.ParseService} $parse
-       * @param {*} $controller
+       * @param {ng.ControllerService} $controller
        * @param {ng.SceService} $sce
        * @param {ng.AnimateService} $animate
        * @returns
@@ -667,16 +686,16 @@ export class CompileProvider {
           previousCompileContext,
         ) {
           /** @type {NodeRef | null} */
-          let nodeRef = new NodeRef(element);
+          let nodeRef = element ? new NodeRef(element) : null;
 
           /**
            * The composite link function is a composite of individual node linking functions.
            * It will be invoke by the public link function below.
-           * @type {ng.CompositeLinkFn}
+           * @type {ng.CompositeLinkFn | null}
            */
           let compositeLinkFn = compileNodes(
             nodeRef,
-            transcludeFn,
+            /** @type {ChildTranscludeOrLinkFn} */ (transcludeFn),
             maxPriority,
             ignoreDirective,
             previousCompileContext,
@@ -787,6 +806,9 @@ export class CompileProvider {
           return publicLinkFn;
         }
 
+        /**
+         * @param {HTMLElement} parentElement
+         */
         function detectNamespaceForChildElements(parentElement) {
           // TODO: Make this detect MathML as well...
           const node = parentElement;
@@ -802,18 +824,36 @@ export class CompileProvider {
         }
 
         /**
-         * Compile function matches each node in nodeList against the directives. Once all directives
-         * for a particular node are collected their compile functions are executed. The compile
-         * functions return values - the linking functions - are combined into a composite linking
-         * function, which is a linking function for the node.
+         * Compiles a `NodeRef` (single node or node-list) into a composite linking function.
          *
-         * @param {NodeRef} nodeRefList a node or an array of nodes or NodeList to compile
-         * @param {*} transcludeFn A linking function, where the
-         *        scope argument is auto-generated to the new child of the transcluded parent scope.
-         * @param {number=} [maxPriority] Max directive priority.
-         * @param {*} [ignoreDirective]
-         * @param {*} [previousCompileContext]
-         * @returns {ng.CompositeLinkFn} A composite linking function of all of the matched directives or null.
+         * Walks each node in `nodeRefList`, collects and applies directives (including template/templateUrl
+         * and transclusion handling), then recursively compiles child nodes when appropriate. The result is
+         * a `CompositeLinkFn` that, when invoked, links all compiled nodes in a stable order and wires up
+         * any required bound transclusion functions.
+         *
+         * Notes:
+         * - If no directives (or child link fns) are found anywhere in the list, this returns `null`.
+         * - `previousCompileContext` is only applied to the first node in a “virtual group” and is cleared
+         *   for subsequent nodes.
+         *
+         * @param {NodeRef} nodeRefList
+         *   The compilation root: either a single node wrapper or a wrapper around a NodeList/array.
+         * @param {ChildTranscludeOrLinkFn | null | undefined} transcludeFn
+         *   Parent transclusion/link function propagated down during compilation. When compiling child nodes,
+         *   this may be replaced with a node-specific transclusion function (e.g. for element transclusion or
+         *   template compilation).
+         * @param {number | undefined} [maxPriority]
+         *   If provided, directives with priority >= `maxPriority` are ignored on the first node in the list.
+         *   (Used to stop further directive application when compiling a subset.)
+         * @param {string | undefined} [ignoreDirective]
+         *   Normalized directive name to ignore while collecting directives (used to prevent recursion when
+         *   compiling transcluded content).
+         * @param {PreviousCompileContext | null | undefined} [previousCompileContext]
+         *   Internal bookkeeping passed through compilation passes to coordinate replace/transclusion/templateUrl
+         *   and virtual-group indexing.
+         *
+         * @returns {CompositeLinkFn | null}
+         *   A composite linking function for the compiled node list, or `null` if nothing requires linking.
          */
         function compileNodes(
           nodeRefList,
@@ -831,7 +871,7 @@ export class CompileProvider {
           const linkFnsList = []; // An array to hold node indices and their linkFns
 
           /**
-           * @type {{ (childLinkFn: import("./interface.ts").ChildLinkFn | null, scope: import("../scope/scope.js").Scope, node: Node | Element, boundTranscludeFn: import("./interface.ts").BoundTranscludeFn | null): void; (childLinkFn: import("./interface.ts").ChildLinkFn | null, scope: import("../scope/scope.js").Scope, node: Node | Element, boundTranscludeFn: import("./interface.ts").BoundTranscludeFn | null): void; }}
+           * @type {NodeLinkFn | undefined}
            */
           let nodeLinkFnFound;
 
@@ -847,15 +887,15 @@ export class CompileProvider {
               ignoreDirective,
             );
 
-            /** @type {ng.NodeLinkFnCtx} */
+            /** @type {ng.NodeLinkFnCtx | undefined} */
             let nodeLinkFnCtx;
 
             if (directives.length) {
               nodeLinkFnCtx = applyDirectivesToNode(
                 directives,
-                nodeRefList._getIndex(i),
+                nodeRefList?._getIndex(i),
                 attrs,
-                transcludeFn,
+                /** @type {ChildTranscludeOrLinkFn} */ (transcludeFn),
                 null,
                 [],
                 [],
@@ -874,16 +914,17 @@ export class CompileProvider {
             const { childNodes } = nodeRefList._getIndex(i);
 
             if (
-              (nodeLinkFn && nodeLinkFnCtx.terminal) ||
+              (nodeLinkFn && nodeLinkFnCtx?.terminal) ||
               !childNodes ||
               !childNodes.length
             ) {
               childLinkFn = null;
             } else {
               const transcluded = nodeLinkFn
-                ? (nodeLinkFnCtx.transcludeOnThisElement ||
-                    !nodeLinkFnCtx.templateOnThisElement) &&
-                  nodeLinkFnCtx.transclude
+                ? nodeLinkFnCtx?.transcludeOnThisElement ||
+                  !nodeLinkFnCtx?.templateOnThisElement
+                  ? nodeLinkFnCtx?.transclude
+                  : undefined
                 : transcludeFn;
 
               // recursive call
@@ -962,7 +1003,7 @@ export class CompileProvider {
                   // bind proper scope for the translusion function
                   childBoundTranscludeFn = createBoundTranscludeFn(
                     scope,
-                    nodeLinkFnCtx.transclude,
+                    /** @type {ng.TranscludeFn} */ (nodeLinkFnCtx?.transclude),
                     _parentBoundTranscludeFn,
                   );
                 } else if (
@@ -973,7 +1014,7 @@ export class CompileProvider {
                 } else if (!_parentBoundTranscludeFn && transcludeFn) {
                   childBoundTranscludeFn = createBoundTranscludeFn(
                     scope,
-                    transcludeFn,
+                    /** @type {ng.TranscludeFn} */ (transcludeFn),
                   );
                 } else {
                   childBoundTranscludeFn = null;
@@ -1002,11 +1043,15 @@ export class CompileProvider {
         }
 
         /**
-         * Prebinds the transclusion function to a scope
+         * Prebinds a transclusion function to a parent scope and threads parent-bound transclusion context.
+         *
          * @param {ng.Scope} scope
-         * @param {*} transcludeFn
-         * @param {*} previousBoundTranscludeFn
-         * @returns {ng.BoundTranscludeFn}
+         *   The parent scope used to derive transcluded scopes when one is not explicitly provided.
+         * @param {ng.TranscludeFn} transcludeFn
+         *   The underlying transclusion function to wrap (must expose `_slots` if slot transclusion is used).
+         * @param {BoundTranscludeFn | null | undefined} [previousBoundTranscludeFn]
+         *   Parent bound transclusion function (used to support nested transclusion).
+         * @returns {BoundTranscludeFn}
          */
         function createBoundTranscludeFn(
           scope,
@@ -1014,11 +1059,20 @@ export class CompileProvider {
           previousBoundTranscludeFn,
         ) {
           /**
-           * @param {ProxyConstructor & import("../scope/scope.js").Scope & Record<string, any>} transcludedScope
-           * @param {any} cloneFn
-           * @param {any} controllers
-           * @param {any} _futureParentElement
-           * @param {ng.Scope} containingScope
+           * Scope-bound wrapper that ensures a transcluded scope exists and forwards to `transcludeFn`.
+           *
+           * @param {ng.Scope | null | undefined} transcludedScope
+           *   The scope to use for transcluded content; if omitted/falsey, a new one is created via
+           *   `scope.$transcluded(containingScope)`.
+           * @param {CloneAttachFn | undefined} cloneFn
+           *   Optional clone-attach callback for the transcluded DOM.
+           * @param {unknown} controllers
+           *   Controllers to expose to the transclusion (used for element transclusion cases).
+           * @param {Node | Element | undefined} _futureParentElement
+           *   The element that will ultimately contain the transcluded nodes.
+           * @param {ng.Scope | undefined} containingScope
+           *   The “anchor” scope at the transclusion point, used to derive the transcluded scope.
+           * @returns {TranscludedNodes | void}
            */
           function boundTranscludeFn(
             transcludedScope,
@@ -1219,8 +1273,8 @@ export class CompileProvider {
          * A function generator that is used to support both eager and lazy compilation
          * linking function.
          * @param {boolean} eager
-         * @param {NodeList | Node} nodes
-         * @param {import("./interface.ts").TranscludeFn | null | undefined} transcludeFn
+         * @param {NodeList | Node | null} nodes
+         * @param {ng.TranscludeFn | null | undefined} transcludeFn
          * @param {number | undefined} maxPriority
          * @param {string | undefined} ignoreDirective
          * @param {{ _nonTlbTranscludeDirective?: any; needsNewScope?: any; } | null | undefined} previousCompileContext
@@ -1234,6 +1288,7 @@ export class CompileProvider {
           ignoreDirective,
           previousCompileContext,
         ) {
+          /** @type { ng.PublicLinkFn | undefined } */
           let compiled;
 
           if (eager) {
@@ -1248,7 +1303,11 @@ export class CompileProvider {
             );
           }
 
-          function lazyCompilation() {
+          /**
+           * @param {Parameters<PublicLinkFn>} args
+           * @returns {ReturnType<PublicLinkFn>}
+           */
+          function lazyCompilation(...args) {
             if (!compiled) {
               compiled = compile(
                 nodes,
@@ -1261,32 +1320,39 @@ export class CompileProvider {
               nodes = transcludeFn = previousCompileContext = null;
             }
 
-            /* eslint-disable no-invalid-this */
-            const ctx = this;
-
-            return compiled.apply(ctx, arguments);
+            return compiled(...args);
           }
 
           return /** @type {ng.PublicLinkFn} */ (lazyCompilation);
         }
 
         /**
-         * Once the directives have been collected, their compile functions are executed. This method
-         * is responsible for inlining directive templates as well as terminating the application
-         * of the directives if the terminal directive has been reached.
+         * Applies a sorted set of directives to a single node and produces the node-level link context.
          *
-         * @param {Array<any>} directives Array of collected directives to execute their compile function.
-         *        this needs to be pre-sorted by priority order.
-         * @param {Node | Element} compileNode  DOM node to apply the compile functions to
-         * @param {Attributes} templateAttrs The shared attribute function
-         * @param {ng.TranscludeFn} transcludeFn
-         * @param {Object=} originalReplaceDirective An optional directive that will be ignored when
-         *                                           compiling the transclusion.
-         * @param {Array.<Function>} [preLinkFns]
-         * @param {Array.<Function>} [postLinkFns]
-         * @param {Object} [previousCompileContext] Context used for previous compilation of the current
-         *                                        node
-         * @returns {ng.NodeLinkFnCtx} node link function
+         * Responsibilities:
+         * - Run directive `compile()` functions (and collect pre/post link fns).
+         * - Inline templates / handle `replace`, `templateUrl`, and transclusion.
+         * - Track terminal directives and scope requirements for later linking.
+         *
+         * @param {ng.Directive[]} directives
+         *   Collected directives for this node (must be pre-sorted by priority).
+         * @param {Node | Element} compileNode
+         *   The DOM node to apply directive compilation against (may be replaced during compilation).
+         * @param {Attributes} templateAttrs
+         *   Shared, normalized attributes for the node at compile-time.
+         * @param {ChildTranscludeOrLinkFn} transcludeFn
+         *   Parent transclusion/link function passed down during compilation.
+         * @param {ng.Directive | null | undefined} originalReplaceDirective
+         *   The original directive that triggered a `replace` (ignored when compiling transclusion/template).
+         * @param {Array<NodeLinkFn>} [preLinkFns]
+         *   Accumulator for pre-link functions (executed in registration order).
+         * @param {Array<ng.NodeLinkFn>} [postLinkFns]
+         *   Accumulator for post-link functions (executed in reverse order).
+         * @param {PreviousCompileContext} [previousCompileContext]
+         *   Internal bookkeeping for replace/transclusion/templateUrl compilation passes.
+         *
+         * @returns {NodeLinkFnCtx}
+         *   The node link context (nodeLinkFn + flags + transclusion/template metadata).
          */
         function applyDirectivesToNode(
           directives,
@@ -1759,6 +1825,7 @@ export class CompileProvider {
               for (
                 let scanningIndex = i + 1;
                 (candidateDirective = directives[scanningIndex++]);
+
               ) {
                 if (
                   (candidateDirective.transclude &&
@@ -2247,11 +2314,11 @@ export class CompileProvider {
 
         /**
          * @param {NodeRef} $element
-         * @param {Attributes} attrs
-         * @param {import("./interface.ts").TranscludeFn} transcludeFn
+         * @param {ng.Attributes} attrs
+         * @param {ng.TranscludeFn} transcludeFn
          * @param {{ [x: string]: any; }} _controllerDirectives
-         * @param {(ProxyConstructor & import("../scope/scope.js").Scope & Record<string, any>) | undefined} isolateScope
-         * @param {import("../scope/scope.js").Scope} scope
+         * @param {ng.Scope} isolateScope
+         * @param {ng.Scope} scope
          * @param {any} _newIsolateScopeDirective
          * @returns {any}
          */
@@ -2454,7 +2521,7 @@ export class CompileProvider {
           let afterTemplateNodeLinkFn;
 
           /**
-           * @type {import("./interface.ts").CompositeLinkFn}
+           * @type {CompositeLinkFn}
            */
           let afterTemplateChildLinkFn;
 
@@ -2687,8 +2754,8 @@ export class CompileProvider {
 
         /**
          * Sorting function for bound directives.
-         * @param {{ priority: number; name: number; index: number; }} a
-         * @param {{ priority: number; name: number; index: number; }} b
+         * @param {ng.Directive} a
+         * @param {ng.Directive} b
          */
         function byPriority(a, b) {
           const diff = b.priority - a.priority;

@@ -4,7 +4,7 @@ export type ControllerService = (
   locals?: ControllerLocals,
   later?: boolean,
   ident?: string,
-) => object | (() => object);
+) => any | (() => any);
 export type ControllerExpression = string | Injectable<ControllerConstructor>;
 export type ControllerLocals = Record<string, any> & {
   $scope?: ng.Scope;

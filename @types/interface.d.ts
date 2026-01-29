@@ -422,11 +422,11 @@ export interface Directive<TController = any> {
   /** Scope configuration (`true`, `false`, or object for isolate scope) */
   scope?: boolean | Record<string, string>;
   /** Inline template */
-  template?: string | ((element: Element, attrs: Attributes) => string);
+  template?: string | ((element: HTMLElement, attrs: Attributes) => string);
   /** Template namespace (e.g., SVG, HTML) */
   templateNamespace?: string;
   /** Template URL for loading from server */
-  templateUrl?: string | ((element: Element, attrs: Attributes) => string);
+  templateUrl?: string | ((element: HTMLElement, attrs: Attributes) => string);
   /** Enables transclusion or configures named slots */
   transclude?: boolean | string | Record<string, string>;
   /** Currently only used by view directive */
