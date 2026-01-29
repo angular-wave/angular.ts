@@ -459,12 +459,13 @@ export class StateProvider {
    * This may be returned from a Transition Hook to redirect a transition, for example.
    * @param {string | import("./interface.ts").StateDeclaration | import("./state-object.js").StateObject} identifier
    * @param {{}} params
+   * @param {any} [options]
    */
   target(identifier, params, options = {}) {
     // If we're reloading, find the state object to reload from
     if (isObject(options.reload) && !options.reload.name)
       throw new Error("Invalid reload state object");
-    const reg = this.stateRegistry;
+    const reg = /** @type {ng.StateRegistryService} */ (this.stateRegistry);
 
     options.reloadState =
       options.reload === true
@@ -484,7 +485,11 @@ export class StateProvider {
 
     const latestSuccess = globals._successfulTransitions.peekTail();
 
-    const rootPath = () => [new PathNode(this.stateRegistry.root())];
+    const rootPath = () => [
+      new PathNode(
+        /** @type {ng.StateRegistryService} */ (this.stateRegistry).root(),
+      ),
+    ];
 
     return latestSuccess ? latestSuccess._treeChanges.to : rootPath();
   }
@@ -612,7 +617,7 @@ export class StateProvider {
      * @param {any} stateOrName The state name (absolute or relative) or state object you'd like to check.
      * @param {Record<string, any> | undefined} params A param object, e.g. `{sectionId: section.id}`, that you'd like
     to test against the current active state.
-     * @param {{ relative: any; } | undefined} options An options object. The options are:
+     * @param {{ relative: any; } | undefined} [options] An options object. The options are:
     - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
     test relative to `options.relative` state (or name).
      * @returns Returns true if it is the state.
@@ -669,7 +674,7 @@ export class StateProvider {
     or state object to be searched for within the current state name.
      * @param {Record<string, any> | undefined} params A param object, e.g. `{sectionId: section.id}`,
     that you'd like to test against the current active state.
-     * @param {{ relative: any; } | undefined} options An options object. The options are:
+     * @param {{ relative: any; } | undefined} [options] An options object. The options are:
     - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
     test relative to `options.relative` state (or name).
      * @returns {boolean} Returns true if it does include the state

@@ -287,6 +287,7 @@ export class StateProvider {
    * This may be returned from a Transition Hook to redirect a transition, for example.
    * @param {string | import("./interface.ts").StateDeclaration | import("./state-object.js").StateObject} identifier
    * @param {{}} params
+   * @param {any} [options]
    */
   target(
     identifier:
@@ -294,7 +295,7 @@ export class StateProvider {
       | import("./interface.ts").StateDeclaration
       | import("./state-object.js").StateObject,
     params: {},
-    options?: {},
+    options?: any,
   ): TargetState;
   getCurrentPath(): PathNode[];
   /**
@@ -349,7 +350,7 @@ export class StateProvider {
        * @param {any} stateOrName The state name (absolute or relative) or state object you'd like to check.
        * @param {Record<string, any> | undefined} params A param object, e.g. `{sectionId: section.id}`, that you'd like
       to test against the current active state.
-       * @param {{ relative: any; } | undefined} options An options object. The options are:
+       * @param {{ relative: any; } | undefined} [options] An options object. The options are:
       - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
       test relative to `options.relative` state (or name).
        * @returns Returns true if it is the state.
@@ -357,7 +358,7 @@ export class StateProvider {
   is(
     stateOrName: any,
     params: Record<string, any> | undefined,
-    options:
+    options?:
       | {
           relative: any;
         }
@@ -394,7 +395,7 @@ export class StateProvider {
       or state object to be searched for within the current state name.
        * @param {Record<string, any> | undefined} params A param object, e.g. `{sectionId: section.id}`,
       that you'd like to test against the current active state.
-       * @param {{ relative: any; } | undefined} options An options object. The options are:
+       * @param {{ relative: any; } | undefined} [options] An options object. The options are:
       - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
       test relative to `options.relative` state (or name).
        * @returns {boolean} Returns true if it does include the state
@@ -402,7 +403,7 @@ export class StateProvider {
   includes(
     stateOrName: unknown,
     params: Record<string, any> | undefined,
-    options:
+    options?:
       | {
           relative: any;
         }
