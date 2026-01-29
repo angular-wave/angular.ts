@@ -256,8 +256,8 @@ export function extend(dst: any, ...src: any[]): any;
  */
 export function isNumberNaN(num: any): boolean;
 /**
- * @param {Object} parent
- * @param {Object} extra
+ * @param {any} parent
+ * @param {any} extra
  * @returns {Object}
  */
 export function inherit(parent: any, extra: any): any;

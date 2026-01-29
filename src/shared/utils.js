@@ -419,8 +419,8 @@ export function isNumberNaN(num) {
 }
 
 /**
- * @param {Object} parent
- * @param {Object} extra
+ * @param {any} parent
+ * @param {any} extra
  * @returns {Object}
  */
 export function inherit(parent, extra) {
