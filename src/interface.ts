@@ -512,26 +512,6 @@ export interface TemplateLinkingFunctionOptions {
   _futureParentElement?: Element | undefined;
 }
 
-/**
- * Configuration for ngModel behavior.
- */
-export interface NgModelOptions {
-  /** Space-separated event names that trigger updates */
-  updateOn?: string;
-  /** Delay in milliseconds or event-specific debounce times */
-  debounce?: number | Record<string, number>;
-  /** Whether to allow invalid values */
-  allowInvalid?: boolean;
-  /** Enables getter/setter style ngModel */
-  getterSetter?: boolean;
-  /** Timezone used for Date objects */
-  timezone?: string;
-  /** Time display format including seconds */
-  timeSecondsFormat?: string;
-  /** Whether to remove trailing :00 seconds */
-  timeStripZeroSeconds?: boolean;
-}
-
 export interface RootElementService extends Element {}
 
 /**

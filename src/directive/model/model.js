@@ -1023,7 +1023,7 @@ export class NgModelController {
    * **Note:** it is not possible to override the `getterSetter` option.
    * </div>
    *
-   * @param {import("../../interface.ts").NgModelOptions} options a hash of settings to override the previous options
+   * @param {import("./interface.ts").NgModelOptions} options a hash of settings to override the previous options
    *
    */
   $overrideModelOptions(options) {
