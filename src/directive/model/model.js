@@ -954,33 +954,35 @@ export class NgModelController {
   $setViewValue(value, trigger) {
     this.$viewValue = value;
 
-    if (this.$options?.getOption("updateOnDefault") && trigger) {
+    if (this.$options?.getOption("updateOnDefault")) {
       this._debounceViewValueCommit(trigger);
     }
   }
 
   /**
-   * @param {string} trigger
+   * @param {string | undefined} trigger
    */
   _debounceViewValueCommit(trigger) {
     let debounceDelay = this.$options.getOption("debounce");
 
-    const debounceVal = /** @type {Record<string, any>} */ (debounceDelay)[
-      trigger
-    ];
+    if (trigger) {
+      const debounceVal = /** @type {Record<string, any>} */ (debounceDelay)[
+        trigger
+      ];
 
-    if (isNumber(debounceVal)) {
-      debounceDelay = debounceVal;
-    } else if (
-      isNumber(
-        /** @type {Object.<string, number>} */ (debounceDelay).default,
-      ) &&
-      /** @type {string} */ (this.$options.getOption("updateOn")).indexOf(
-        trigger,
-      ) === -1
-    ) {
-      debounceDelay = /** @type {Object.<string, number>} */ (debounceDelay)
-        .default;
+      if (isNumber(debounceVal)) {
+        debounceDelay = debounceVal;
+      } else if (
+        isNumber(
+          /** @type {Object.<string, number>} */ (debounceDelay).default,
+        ) &&
+        /** @type {string} */ (this.$options.getOption("updateOn")).indexOf(
+          trigger,
+        ) === -1
+      ) {
+        debounceDelay = /** @type {Object.<string, number>} */ (debounceDelay)
+          .default;
+      }
     } else if (
       isNumber(/** @type {Record<string, any>} */ (debounceDelay)["*"])
     ) {

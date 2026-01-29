@@ -415,9 +415,9 @@ export class NgModelController {
    */
   $setViewValue(value: any, trigger?: string): void;
   /**
-   * @param {string} trigger
+   * @param {string | undefined} trigger
    */
-  _debounceViewValueCommit(trigger: string): void;
+  _debounceViewValueCommit(trigger: string | undefined): void;
   /**
    *
    * Override the current model options settings programmatically.
