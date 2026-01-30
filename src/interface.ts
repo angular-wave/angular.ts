@@ -512,7 +512,7 @@ export interface TemplateLinkingFunctionOptions {
   _futureParentElement?: Element | undefined;
 }
 
-export interface RootElementService extends Element {}
+export interface RootElementService extends HTMLElement {}
 
 export interface InvocationDetail {
   expr: string;
