@@ -514,14 +514,6 @@ export interface TemplateLinkingFunctionOptions {
 
 export interface RootElementService extends Element {}
 
-/**
- * The minimal local definitions required by $controller(ctrl, locals) calls.
- */
-export interface ControllerLocals {
-  $scope: Scope;
-  $element: Element;
-}
-
 export interface InvocationDetail {
   expr: string;
   _reply?: {
