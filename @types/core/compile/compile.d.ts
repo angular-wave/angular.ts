@@ -135,13 +135,7 @@ export class CompileProvider {
         $controller: ng.ControllerService,
         $sce: ng.SceService,
         $animate: ng.AnimateService,
-      ) => (
-        compileNode: string | Element | Node | ChildNode | NodeList | null,
-        transcludeFn?: import("./interface.ts").TranscludeFn | null,
-        maxPriority?: number,
-        ignoreDirective?: string,
-        previousCompileContext?: any,
-      ) => import("./interface.ts").PublicLinkFn)
+      ) => ng.CompileService)
   )[];
 }
 export type BoundTranscludeFn = import("./interface.ts").BoundTranscludeFn;
@@ -156,3 +150,14 @@ export type PreviousCompileContext =
   import("./interface.ts").PreviousCompileContext;
 export type PublicLinkFn = import("./interface.ts").PublicLinkFn;
 export type TranscludedNodes = import("./interface.ts").TranscludedNodes;
+export type InternalDirective = ng.Directive & {
+  name: string;
+  priority?: number;
+  index?: number;
+  _bindings?: any;
+  _isolateBindings?: any;
+  _isolateScope?: boolean;
+  _newScope?: boolean;
+  $$originalDirective?: any;
+  templateNamespace?: string;
+};
