@@ -19,9 +19,12 @@ export type TranscludeFn = {
   (scope: Scope, cb?: TranscludeFnCb): HTMLElement | void;
   _slots?: any;
 };
+/**
+ * Callback used when transcluded content is cloned.
+ */
 export type CloneAttachFn = (
   clone: Node | Element | NodeList,
-  scope?: Scope,
+  scope?: Scope | null,
 ) => void;
 /**
  * A specialized version of `TranscludeFn` with the scope argument already bound.
