@@ -58,7 +58,7 @@ function dataBuilder(state) {
 
 /**
  * @param {ng.UrlService} $url
- * @param {() => ng.BuiltStateDeclaration} root
+ * @param {() => ng.StateObject | ng.BuiltStateDeclaration | undefined} root
  */
 function getUrlBuilder($url, root) {
   return function (/** @type {ng.StateObject} */ stateObject) {
@@ -93,7 +93,10 @@ function getUrlBuilder($url, root) {
 
     return parsed && parsed.root
       ? url
-      : ((parent && parent.navigable) || root()).url.append(url);
+      : (
+          (parent && parent?.navigable) ||
+          /** @type {ng.StateObject | ng.BuiltStateDeclaration} */ (root())
+        ).url.append(url);
   };
 }
 
@@ -116,12 +119,13 @@ function getNavigableBuilder(rootFn) {
 function getParamsBuilder(paramFactory) {
   return function (/** @type {ng.BuiltStateDeclaration} */ state) {
     const makeConfigParam = (
-      /** @type {any} */ _config,
-      /** @type {string} */ id,
-    ) => paramFactory.fromConfig(id, null, state.self);
+      /** @type {import("../params/interface.js").ParamDeclaration} */ _config,
+      /** @type {string | number} */ id,
+    ) => paramFactory.fromConfig(/** @type {string} */ (id), null, state.self);
 
-    const urlParams =
-      (state.url && state.url.parameters({ inherit: false })) || [];
+    const urlParams = /** @type {import("./state-object.js").Param[]} */ (
+      (state.url && state.url.parameters({ inherit: false })) || []
+    );
 
     const nonUrlParams = Object.values(
       map(
@@ -140,10 +144,16 @@ function getParamsBuilder(paramFactory) {
   };
 }
 
+/**
+ * @param {ng.StateObject} state
+ */
 function pathBuilder(state) {
-  return state.parent ? state.parent.path.concat(state) : [state];
+  return state.parent ? state.parent?.path?.concat(state) : [state];
 }
 
+/**
+ * @param {ng.StateObject} state
+ */
 function includesBuilder(state) {
   const includes = state.parent ? Object.assign({}, state.parent.includes) : {};
 
@@ -193,25 +203,31 @@ function includesBuilder(state) {
  *   { provide: "myBazResolve", useFactory: function(dep) { dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
  * ]
  * @param {ng.StateObject & ng.StateDeclaration} state
+ * @param {boolean | undefined} strictDi
  */
 export function resolvablesBuilder(state, strictDi) {
   /** convert resolve: {} and resolvePolicy: {} objects to an array of tuples */
-  const objects2Tuples = (resolveObj, resolvePolicies) =>
+  const objects2Tuples = (
+    /** @type {Record<string, any> | undefined} */ resolveObj,
+    /** @type {Record<string, import("../resolve/interface.js").ResolvePolicy>} */ resolvePolicies,
+  ) =>
     Object.keys(resolveObj || {}).map((token) => ({
       token,
-      val: resolveObj[token],
+      val: /** @type {Record<string, any>} */ (resolveObj)[token],
       deps: undefined,
       policy: resolvePolicies[token],
     }));
 
   /** fetch DI annotations from a function or ng1-style array */
-  const annotateFn = (fn) => annotate(fn, strictDi);
+  const annotateFn = (/** @type {Function} */ fn) => annotate(fn, strictDi);
 
   /** true if the object has both `token` and `resolveFn`, and is probably a [[ResolveLiteral]] */
-  const isResolveLiteral = (obj) => !!(obj.token && obj.resolveFn);
+  const isResolveLiteral = (
+    /** @type {{ token: any; resolveFn: any; }} */ obj,
+  ) => !!(obj.token && obj.resolveFn);
 
   /** true if the object looks like a tuple from obj2Tuples */
-  const isTupleFromObj = (obj) =>
+  const isTupleFromObj = (/** @type {{ val: unknown; }} */ obj) =>
     !!(
       obj &&
       obj.val &&
@@ -221,12 +237,13 @@ export function resolvablesBuilder(state, strictDi) {
   // Given a literal resolve or provider object, returns a Resolvable
   const literal2Resolvable = pattern([
     [
-      (x) => x.resolveFn,
-      (y) => new Resolvable(getToken(y), y.resolveFn, y.deps, y.policy),
+      (/** @type {{ resolveFn: any; }} */ x) => x.resolveFn,
+      (/** @type {any} */ y) =>
+        new Resolvable(getToken(y), y.resolveFn, y.deps, y.policy),
     ],
     [
-      (x) => x.useFactory,
-      (y) =>
+      (/** @type {{ useFactory: any; }} */ x) => x.useFactory,
+      (/** @type {any} */ y) =>
         new Resolvable(
           getToken(y),
           y.useFactory,
@@ -235,29 +252,43 @@ export function resolvablesBuilder(state, strictDi) {
         ),
     ],
     [
-      (x) => x.useClass,
-      (y) => new Resolvable(getToken(y), () => new y.useClass(), [], y.policy),
+      (/** @type {{ useClass: any; }} */ x) => x.useClass,
+      (/** @type {any} */ y) =>
+        new Resolvable(getToken(y), () => new y.useClass(), [], y.policy),
     ],
     [
-      (x) => x.useValue,
-      (y) =>
+      (/** @type {{ useValue: any; }} */ x) => x.useValue,
+      (/** @type {any} */ y) =>
         new Resolvable(getToken(y), () => y.useValue, [], y.policy, y.useValue),
     ],
     [
-      (x) => x.useExisting,
-      (y) => new Resolvable(getToken(y), (x) => x, [y.useExisting], y.policy),
+      (/** @type {{ useExisting: any; }} */ x) => x.useExisting,
+      (/** @type {any} */ y) =>
+        new Resolvable(
+          getToken(y),
+          (/** @type {any} */ x) => x,
+          [y.useExisting],
+          y.policy,
+        ),
     ],
   ]);
 
   const tuple2Resolvable = pattern([
     [
-      (x) => isString(x.val),
-      (tuple) =>
-        new Resolvable(tuple.token, (x) => x, [tuple.val], tuple.policy),
+      (/** @type {{ val: unknown; }} */ x) => isString(x.val),
+      (
+        /** @type {{ token: any; val: any; policy: import("../resolve/interface.js").ResolvePolicy | undefined; }} */ tuple,
+      ) =>
+        new Resolvable(
+          tuple.token,
+          (/** @type {any} */ x) => x,
+          [tuple.val],
+          tuple.policy,
+        ),
     ],
     [
-      (x) => isArray(x.val),
-      (tuple) =>
+      (/** @type {{ val: any; }} */ x) => isArray(x.val),
+      (/** @type {any} */ tuple) =>
         new Resolvable(
           tuple.token,
           tail(tuple.val),
@@ -266,8 +297,8 @@ export function resolvablesBuilder(state, strictDi) {
         ),
     ],
     [
-      (x) => isFunction(x.val),
-      (tuple) =>
+      (/** @type {{ val: any; }} */ x) => isFunction(x.val),
+      (/** @type {any} */ tuple) =>
         new Resolvable(
           tuple.token,
           tuple.val,
@@ -278,12 +309,12 @@ export function resolvablesBuilder(state, strictDi) {
   ]);
 
   const item2Resolvable = pattern([
-    [is(Resolvable), (x) => x],
+    [is(Resolvable), (/** @type {any} */ x) => x],
     [isResolveLiteral, literal2Resolvable],
     [isTupleFromObj, tuple2Resolvable],
     [
       val(true),
-      (obj) => {
+      (/** @type {any} */ obj) => {
         throw new Error(`Invalid resolve value: ${stringify(obj)}`);
       },
     ],
@@ -295,7 +326,7 @@ export function resolvablesBuilder(state, strictDi) {
 
   const items = isArray(decl)
     ? decl
-    : objects2Tuples(decl, state.resolvePolicy || {});
+    : objects2Tuples(decl, /** @type {any} */ (state.resolvePolicy || {}));
 
   return items.map(item2Resolvable);
 }
@@ -410,7 +441,9 @@ export class StateBuilder {
         },
       );
 
-      state[key] = chain(state);
+      state[key] = chain(
+        /** @type {ng.StateObject & ng.BuiltStateDeclaration} */ (state),
+      );
     }
 
     return state;

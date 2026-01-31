@@ -1014,7 +1014,7 @@ export type StateRegistryListener = (
  * @param parent the previous builder function in the series.
  */
 export type BuilderFunction = (
-  state: StateObject,
+  state: ng.StateObject & ng.BuiltStateDeclaration,
   parent?: BuilderFunction,
 ) => any;
 export type OnInvalidCallback = (
