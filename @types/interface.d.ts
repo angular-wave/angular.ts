@@ -1,4 +1,5 @@
 import { Attributes } from "./core/compile/attributes.js";
+import { CloneAttachFn } from "./core/compile/interface.js";
 import { Scope } from "./core/scope/scope.js";
 import { NgModelController } from "./directive/model/model.js";
 export interface Constructor<T = any> {
@@ -446,30 +447,23 @@ export interface TranscludeFunctionObject {
   /** Transcludes content with a new scope */
   transcludeWithScope(
     scope: Scope,
-    cloneAttachFn: CloneAttachFunction,
+    cloneAttachFn: CloneAttachFn,
     element?: Element,
     slotName?: string,
   ): Element;
   /** Transcludes content without creating a new scope */
   transcludeWithoutScope(
-    cloneAttachFn?: CloneAttachFunction,
+    cloneAttachFn?: CloneAttachFn,
     element?: Element,
     slotName?: string,
   ): Element;
   /** Checks if a named slot is filled */
   isSlotFilled(slotName: string): boolean;
 }
-/**
- * Callback used when transcluded content is cloned.
- */
-export type CloneAttachFunction = (
-  clonedElement?: Element,
-  scope?: Scope,
-) => any;
 export interface TemplateLinkingFunction {
   (
     scope: ng.Scope,
-    cloneAttachFn?: CloneAttachFunction,
+    cloneAttachFn?: CloneAttachFn,
     options?: TemplateLinkingFunctionOptions,
   ): Element;
 }

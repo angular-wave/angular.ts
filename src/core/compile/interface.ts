@@ -21,9 +21,12 @@ export type TranscludeFn = {
   _slots?: any;
 };
 
+/**
+ * Callback used when transcluded content is cloned.
+ */
 export type CloneAttachFn = (
   clone: Node | Element | NodeList,
-  scope?: Scope,
+  scope?: Scope | null,
 ) => void;
 
 /**
