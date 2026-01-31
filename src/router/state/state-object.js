@@ -4,6 +4,7 @@ import { Glob } from "../glob/glob.js";
 import { hasOwn, isFunction, isObject } from "../../shared/utils.js";
 
 /** @typedef {import("../params/param.js").Param} Param */
+/** @typedef {import("../resolve/resolvable.js").Resolvable} Resolvable */
 
 /**
  * Internal representation of a ng-router state.
@@ -52,6 +53,12 @@ export class StateObject {
    * @type {any}
    */
   views;
+
+  /**
+   * A list of [[Resolvable]] objects.  The internal representation of [[resolve]].
+   * @type {Resolvable[] | undefined}
+   */
+  resolvables;
 
   /**
    * @param {import('./interface.ts').StateDeclaration} config
@@ -127,7 +134,7 @@ export class StateObject {
    * If `opts.inherit` is true, it also includes the ancestor states' [[Param]] objects.
    * If `opts.matchingKeys` exists, returns only `Param`s whose `id` is a key on the `matchingKeys` object
    *
-   * @param {Param} [opts] options
+   * @param {{ inherit?: boolean; matchingKeys?: any }} [opts] options
    * @returns {Param[]} the list of [[Param]] objects
    */
   parameters(opts) {

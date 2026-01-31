@@ -15,7 +15,7 @@ export class ParamFactory {
 
   /**
    * @param {string} id
-   * @param {ParamType} type
+   * @param {ParamType | null} type
    * @param {ng.StateDeclaration} state
    */
   fromConfig(id, type, state) {

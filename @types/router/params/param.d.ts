@@ -46,14 +46,14 @@ export class Param {
   /**
    *
    * @param {string} id
-   * @param {ParamType} type
+   * @param {ParamType | null} type
    * @param {DefType} location
    * @param {import("../url/url-config.js").UrlConfigProvider} urlConfig
    * @param {ng.StateDeclaration} state
    */
   constructor(
     id: string,
-    type: ParamType,
+    type: ParamType | null,
     location: DefType,
     urlConfig: import("../url/url-config.js").UrlConfigProvider,
     state: ng.StateDeclaration,

@@ -66,44 +66,36 @@ export class StateBuilder {
     urlService: ng.UrlService,
   );
   _matcher: import("./state-matcher.js").StateMatcher;
-  _$injector: any;
-  _builders: {
-    name: ((state: any) => any)[];
-    self: (typeof selfBuilder)[];
-    parent: ((
-      state: any,
-    ) =>
-      | import("./state-object.js").StateObject
-      | import("./interface.ts").BuiltStateDeclaration)[];
-    data: (typeof dataBuilder)[];
-    url: ((stateObject: any) => any)[];
-    navigable: ((state: any) => any)[];
-    params: ((state: any) => any)[];
-    views: (typeof ng1ViewsBuilder)[];
-    path: (typeof pathBuilder)[];
-    includes: (typeof includesBuilder)[];
-    resolvables: ((state: any) => any[])[];
-  };
+  /** @type {ng.InjectorService | undefined} */
+  _$injector: ng.InjectorService | undefined;
+  /** @type {Builders} */
+  _builders: Builders;
   /**
    * @param {string} name
    * @param {*} fn
-   * @returns {() => void | null | undefined}
+   * @returns {BuilderFunction | BuilderFunction[] | null | undefined}
    */
-  builder(name: string, fn: any): () => void | null | undefined;
+  builder(
+    name: string,
+    fn: any,
+  ): BuilderFunction | BuilderFunction[] | null | undefined;
   /**
    * Builds all of the properties on an essentially blank State object, returning a State object which has all its
    * properties and API built.
    *
-   * @param state an uninitialized State object
-   * @returns the built State object
+   * @param {ng.StateObject} state an uninitialized State object
+   * @returns {ng.StateObject | null} the built State object
    */
-  build(state: any): any;
-  parentName(state: any): any;
-  name(state: any): any;
+  build(state: ng.StateObject): ng.StateObject | null;
+  /**
+   *
+   * @param {ng.StateObject} state
+   * @returns {string}
+   */
+  parentName(state: ng.StateObject): string;
+  /** @param {ng.StateObject} state*/
+  name(state: ng.StateObject): string;
 }
-declare function selfBuilder(state: any): any;
-declare function dataBuilder(state: any): any;
-import { ng1ViewsBuilder } from "./views.js";
-declare function pathBuilder(state: any): any;
-declare function includesBuilder(state: any): any;
-export {};
+export type BuilderFunction = import("./interface.js").BuilderFunction;
+export type Builders = import("./interface.js").Builders;
+export type UrlMatcher = import("../url/url-matcher.js").UrlMatcher;

@@ -30,7 +30,7 @@ export class StateProvider {
   /**
    * The current [[StateObject]] (an internal API)
    */
-  get $current(): import("./state-object.js").StateObject;
+  get $current(): ng.StateObject;
   /**
    * @type {ng.RouterProvider}
    */

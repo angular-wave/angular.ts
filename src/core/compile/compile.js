@@ -60,19 +60,7 @@ import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
 /** @typedef {import("./interface.ts").PreviousCompileContext} PreviousCompileContext */
 /** @typedef {import("./interface.ts").PublicLinkFn} PublicLinkFn */
 /** @typedef {import("./interface.ts").TranscludedNodes} TranscludedNodes */
-/**
- * @typedef {ng.Directive & {
- *   name: string;
- *   priority?: number;
- *   index?: number;
- *   _bindings?: any;
- *   _isolateBindings?: any;
- *   _isolateScope?: boolean;
- *   _newScope?: boolean;
- *   $$originalDirective?: any;
- *   templateNamespace?: string;
- * }} InternalDirective
- */
+/** @typedef {import("./interface.ts").InternalDirective} InternalDirective */
 
 const $compileMinErr = minErr("$compile");
 
@@ -81,6 +69,8 @@ const EXCLUDED_DIRECTIVES = ["ngIf", "ngRepeat"];
 const ALL_OR_NOTHING_ATTRS = ["ngSrc", "ngSrcset", "src", "srcset"];
 
 const REQUIRE_PREFIX_REGEXP = /^(?:(\^\^?)?(\?)?(\^\^?)?)?/;
+
+const NG_PREFIX_BINDING = /^ng(Attr|Prop|On|Observe|Window)([A-Z].*)$/;
 
 // Ref: http://developers.whatwg.org/webappapis.html#event-handler-idl-attributes
 // The assumption is that future DOM event attribute names will begin with
@@ -644,7 +634,7 @@ export class CompileProvider {
        * @param {ng.AnimateService} $animate
        * @returns {ng.CompileService}
        */
-      function (
+      (
         $injector,
         $interpolate,
         $exceptionHandler,
@@ -653,7 +643,7 @@ export class CompileProvider {
         $controller,
         $sce,
         $animate,
-      ) {
+      ) => {
         // The onChanges hooks should all be run together in a single digest
         // When changes occur, the call to trigger their hooks will be added to this queue
         /**
@@ -683,8 +673,6 @@ export class CompileProvider {
           startSymbol === "{{" && endSymbol === "}}"
             ? (x) => x
             : (x) => x.replace(/\{\{/g, startSymbol).replace(/}}/g, endSymbol);
-
-        const NG_PREFIX_BINDING = /^ng(Attr|Prop|On|Observe|Window)([A-Z].*)$/;
 
         return compile;
 

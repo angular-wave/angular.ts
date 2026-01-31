@@ -19,6 +19,10 @@ import { Resolvable } from "../resolve/resolvable.js";
 import { ng1ViewsBuilder } from "./views.js";
 import { annotate } from "../../core/di/di.js";
 
+/** @typedef {import("./interface.js").BuilderFunction} BuilderFunction */
+/** @typedef {import("./interface.js").Builders} Builders */
+/** @typedef {import("../url/url-matcher.js").UrlMatcher} UrlMatcher */
+
 /**
  * @param {unknown} url
  */
@@ -29,12 +33,21 @@ function parseUrl(url) {
   return { val: root ? url.substring(1) : url, root };
 }
 
+/**
+ *
+ * @param {ng.BuiltStateDeclaration} state
+ * @returns {ng.StateDeclaration}
+ */
 function selfBuilder(state) {
   state.self._state = () => state;
 
   return state.self;
 }
 
+/**
+ * @param {ng.BuiltStateDeclaration} state
+ * @returns {any}
+ */
 function dataBuilder(state) {
   if (state.parent && state.parent.data) {
     state.data = state.self.data = inherit(state.parent.data, state.data);
@@ -43,8 +56,12 @@ function dataBuilder(state) {
   return state.data;
 }
 
+/**
+ * @param {ng.UrlService} $url
+ * @param {() => ng.BuiltStateDeclaration} root
+ */
 function getUrlBuilder($url, root) {
-  return function (stateObject) {
+  return function (/** @type {ng.StateObject} */ stateObject) {
     let stateDec = stateObject.self;
 
     // For future states, i.e., states whose name ends with `.**`,
@@ -55,7 +72,7 @@ function getUrlBuilder($url, root) {
       stateDec.name &&
       stateDec.name.match(/\.\*\*$/)
     ) {
-      const newStateDec = {};
+      const newStateDec = /** @type {ng.BuiltStateDeclaration} */ ({});
 
       copy(stateDec, newStateDec);
       newStateDec.url += "{remainder:any}"; // match any path (.*)
@@ -65,9 +82,9 @@ function getUrlBuilder($url, root) {
 
     const parsed = parseUrl(stateDec.url);
 
-    const url = !parsed
-      ? stateDec.url
-      : $url.compile(parsed.val, { state: stateDec });
+    const url = /** @type {UrlMatcher & Record<string, any>} */ (
+      !parsed ? stateDec.url : $url.compile(parsed.val, { state: stateDec })
+    );
 
     if (!url) return null;
 
@@ -80,8 +97,11 @@ function getUrlBuilder($url, root) {
   };
 }
 
+/**
+ * @param {{ (state: ng.StateObject): boolean; (arg0: any): any; }} rootFn
+ */
 function getNavigableBuilder(rootFn) {
-  return function (state) {
+  return function (/** @type {ng.StateObject} */ state) {
     return !rootFn(state) && state.url
       ? state
       : state.parent
@@ -94,9 +114,11 @@ function getNavigableBuilder(rootFn) {
  * @param {import("../params/param-factory.js").ParamFactory} paramFactory
  */
 function getParamsBuilder(paramFactory) {
-  return function (state) {
-    const makeConfigParam = (_config, id) =>
-      paramFactory.fromConfig(id, null, state.self);
+  return function (/** @type {ng.BuiltStateDeclaration} */ state) {
+    const makeConfigParam = (
+      /** @type {any} */ _config,
+      /** @type {string} */ id,
+    ) => paramFactory.fromConfig(id, null, state.self);
 
     const urlParams =
       (state.url && state.url.parameters({ inherit: false })) || [];
@@ -296,18 +318,23 @@ export class StateBuilder {
    */
   constructor(matcher, urlService) {
     this._matcher = matcher;
+    /** @type {ng.InjectorService | undefined} */
     this._$injector = undefined;
     const self = this;
 
     const root = () => matcher.find("");
 
+    /**
+     * @param {ng.StateObject} state
+     */
     function parentBuilder(state) {
       if (isRoot(state)) return null;
 
       return matcher.find(self.parentName(state)) || root();
     }
+    /** @type {Builders} */
     this._builders = {
-      name: [(state) => state.name],
+      name: [(/** @type {ng.StateObject} */ state) => state.name],
       self: [selfBuilder],
       parent: [parentBuilder],
       data: [dataBuilder],
@@ -323,7 +350,7 @@ export class StateBuilder {
       // Speed up $state.includes() as it's used a lot
       includes: [includesBuilder],
       resolvables: [
-        (state) =>
+        (/** @type {ng.StateObject & ng.StateDeclaration} */ state) =>
           resolvablesBuilder(
             state,
             this._$injector && this._$injector.strictDi,
@@ -335,7 +362,7 @@ export class StateBuilder {
   /**
    * @param {string} name
    * @param {*} fn
-   * @returns {() => void | null | undefined}
+   * @returns {BuilderFunction | BuilderFunction[] | null | undefined}
    */
   builder(name, fn) {
     const { _builders: builders } = this;
@@ -357,8 +384,8 @@ export class StateBuilder {
    * Builds all of the properties on an essentially blank State object, returning a State object which has all its
    * properties and API built.
    *
-   * @param state an uninitialized State object
-   * @returns the built State object
+   * @param {ng.StateObject} state an uninitialized State object
+   * @returns {ng.StateObject | null} the built State object
    */
   build(state) {
     const { _matcher: matcher, _builders: builders } = this;
@@ -372,7 +399,12 @@ export class StateBuilder {
     for (const key in builders) {
       if (!hasOwn(builders, key)) continue;
       const chain = builders[key].reduce(
-        (parentFn, step) => (_state) => step(_state, parentFn),
+        (
+          /** @type {BuilderFunction} */ parentFn,
+          /** @type {BuilderFunction} */ step,
+        ) =>
+          (_state) =>
+            step(_state, parentFn),
         () => {
           /* empty */
         },
@@ -384,6 +416,11 @@ export class StateBuilder {
     return state;
   }
 
+  /**
+   *
+   * @param {ng.StateObject} state
+   * @returns {string}
+   */
   parentName(state) {
     // name = 'foo.bar.baz.**'
     const name = state.name || "";
@@ -413,6 +450,7 @@ export class StateBuilder {
     return isString(state.parent) ? state.parent : state.parent.name;
   }
 
+  /** @param {ng.StateObject} state*/
   name(state) {
     const { name } = state;
 
@@ -425,11 +463,18 @@ export class StateBuilder {
   }
 }
 
+/**
+ * @param {ng.StateObject} state
+ * @returns {boolean}
+ */
 function isRoot(state) {
   return state.name === "";
 }
 
-/** extracts the token from a Provider or provide literal */
+/**
+ * extracts the token from a Provider or provide literal
+ * @param {{ provide: any; token: any; }} provider
+ */
 function getToken(provider) {
   return provider.provide || provider.token;
 }

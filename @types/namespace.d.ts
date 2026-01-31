@@ -245,7 +245,7 @@ declare global {
     type ScopeEvent = TScopeEvent;
     type ServiceProvider = TServiceProvider;
     type StateDeclaration = TStateDeclaration;
-    type StateObject = TStateObject;
+    type StateObject = TStateObject & Record<string, any>;
     type StorageBackend = TStorageBackend;
     type StorageType = TStorageType;
     type StreamConnectionConfig = TStreamConnectionConfig;

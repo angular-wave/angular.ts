@@ -174,7 +174,9 @@ export class StateRegistryProvider {
   decorator(
     property: string,
     builderFunction: import("./interface.ts").BuilderFunction,
-  ): () => void | null | undefined;
+  ):
+    | import("./interface.ts").BuilderFunction
+    | import("./interface.ts").BuilderFunction[];
 }
 export function getLocals(ctx: ResolveContext): {
   [x: string]: any;
