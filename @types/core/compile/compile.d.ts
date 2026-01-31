@@ -150,14 +150,4 @@ export type PreviousCompileContext =
   import("./interface.ts").PreviousCompileContext;
 export type PublicLinkFn = import("./interface.ts").PublicLinkFn;
 export type TranscludedNodes = import("./interface.ts").TranscludedNodes;
-export type InternalDirective = ng.Directive & {
-  name: string;
-  priority?: number;
-  index?: number;
-  _bindings?: any;
-  _isolateBindings?: any;
-  _isolateScope?: boolean;
-  _newScope?: boolean;
-  $$originalDirective?: any;
-  templateNamespace?: string;
-};
+export type InternalDirective = import("./interface.ts").InternalDirective;

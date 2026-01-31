@@ -12,10 +12,14 @@ export class ParamFactory {
   urlServiceConfig: import("../url/url-config.js").UrlConfigProvider;
   /**
    * @param {string} id
-   * @param {ParamType} type
+   * @param {ParamType | null} type
    * @param {ng.StateDeclaration} state
    */
-  fromConfig(id: string, type: ParamType, state: ng.StateDeclaration): Param;
+  fromConfig(
+    id: string,
+    type: ParamType | null,
+    state: ng.StateDeclaration,
+  ): Param;
   /**
    * @param {string} id
    * @param {ParamType} type

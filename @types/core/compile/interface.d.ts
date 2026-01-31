@@ -242,3 +242,55 @@ export interface PreviousCompileContext {
    */
   _templateDirective?: ng.Directive | null;
 }
+/**
+ * An internal augmentation of a directive definition object (DDO) used by the compiler.
+ *
+ * This extends `ng.Directive` with fields that AngularTS attaches during directive registration
+ * and compilation (e.g. sorting metadata, binding caches, template bookkeeping).
+ */
+export interface InternalDirective extends ng.Directive {
+  /**
+   * Normalized directive name (camelCase), e.g. `ngIf`.
+   * Typically set during registration.
+   */
+  name: string;
+  /**
+   * Directive priority used to order directive application during compilation.
+   * Higher priorities run first.
+   */
+  priority?: number;
+  /**
+   * Registration index (used as a stable tiebreaker when priorities and names match).
+   */
+  index?: number;
+  /**
+   * Parsed bindings metadata for isolate scope and/or bindToController.
+   * Populated by the compiler to avoid re-parsing.
+   */
+  _bindings?: any;
+  /**
+   * Parsed isolate-scope binding definitions (e.g. `{ foo: '@', bar: '=' }` expanded form).
+   * Typically derived from `_bindings.isolateScope`.
+   */
+  _isolateBindings?: any;
+  /**
+   * Marks that this directive (or one it was merged into) requires an isolate scope.
+   * Used for bookkeeping across template/replace/transclusion compilation passes.
+   */
+  _isolateScope?: boolean;
+  /**
+   * Marks that this directive (or one it was merged into) requires a new child scope.
+   * Used for bookkeeping across template/replace/transclusion compilation passes.
+   */
+  _newScope?: boolean;
+  /**
+   * When an async `templateUrl` directive is converted into a derived sync directive,
+   * this points back to the original directive.
+   */
+  $$originalDirective?: any;
+  /**
+   * Template namespace hint (e.g. `"svg"`), used when wrapping templates or compiling
+   * non-HTML content.
+   */
+  templateNamespace?: string;
+}

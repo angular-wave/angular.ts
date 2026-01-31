@@ -260,7 +260,7 @@ declare global {
     export type ScopeEvent = TScopeEvent;
     export type ServiceProvider = TServiceProvider;
     export type StateDeclaration = TStateDeclaration;
-    export type StateObject = TStateObject;
+    export type StateObject = TStateObject & Record<string, any>;
     export type StorageBackend = TStorageBackend;
     export type StorageType = TStorageType;
     export type StreamConnectionConfig = TStreamConnectionConfig;

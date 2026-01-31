@@ -64,7 +64,7 @@ function unwrapShorthand(cfg) {
 
 /**
  * @param {ParamDeclaration} cfg
- * @param {ParamType} urlType
+ * @param {ParamType | null} urlType
  * @param {DefType} location
  * @param {string} id
  * @param {import("./param-types.js").ParamTypes} paramTypes
@@ -146,7 +146,7 @@ export class Param {
   /**
    *
    * @param {string} id
-   * @param {ParamType} type
+   * @param {ParamType | null} type
    * @param {DefType} location
    * @param {import("../url/url-config.js").UrlConfigProvider} urlConfig
    * @param {ng.StateDeclaration} state
@@ -158,7 +158,9 @@ export class Param {
     const arrayMode = getArrayMode();
 
     type = /** @type {ParamType} */ (
-      arrayMode ? type.$asArray(arrayMode, location === DefType._SEARCH) : type
+      arrayMode
+        ? type && type.$asArray(arrayMode, location === DefType._SEARCH)
+        : type
     );
     const isOptional =
       config.value !== undefined || location === DefType._SEARCH;

@@ -1026,3 +1026,16 @@ export type LazyLoadFn = (
   transition: Transition,
   state: StateDeclaration,
 ) => Promise<LazyLoadResult>;
+export interface Builders {
+  [key: string]: BuilderFunction[];
+  name: BuilderFunction[];
+  parent: BuilderFunction[];
+  data: BuilderFunction[];
+  url: BuilderFunction[];
+  navigable: BuilderFunction[];
+  params: BuilderFunction[];
+  views: BuilderFunction[];
+  path: BuilderFunction[];
+  includes: BuilderFunction[];
+  resolvables: BuilderFunction[];
+}

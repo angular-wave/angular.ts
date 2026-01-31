@@ -26,11 +26,15 @@ export class PathNode {
     } else {
       const state = stateOrNode;
 
-      this.state = state;
-      this.paramSchema = state.parameters({ inherit: false });
+      this.state = /** @type {ng.StateObject} */ (state);
+      this.paramSchema = /** @type {ng.StateObject} */ (state).parameters({
+        inherit: false,
+      });
       this.paramValues = {};
 
-      this.resolvables = state.resolvables.map((res) => res.clone());
+      this.resolvables = /** @type {ng.StateObject} */ (state).resolvables?.map(
+        (res) => res.clone(),
+      );
     }
   }
 
@@ -38,29 +42,40 @@ export class PathNode {
     return new PathNode(this);
   }
 
-  /** Sets [[paramValues]] for the node, from the values of an object hash */
+  /**
+   * Sets [[paramValues]] for the node, from the values of an object hash
+   * @param {import("../params/interface.js").RawParams} params
+   * @returns {PathNode}
+   */
   applyRawParams(params) {
-    const getParamVal = (paramDef) => [
+    const getParamVal = (/** @type {Param} */ paramDef) => [
       paramDef.id,
       paramDef.value(params[paramDef.id]),
     ];
 
     this.paramValues = this.paramSchema.reduce(
-      (memo, pDef) => applyPairs(memo, getParamVal(pDef)),
+      (/** @type {{ [x: string]: any; }} */ memo, /** @type {Param} */ pDef) =>
+        applyPairs(memo, getParamVal(pDef)),
       {},
     );
 
     return this;
   }
 
-  /** Gets a specific [[Param]] metadata that belongs to the node */
+  /**
+   * Gets a specific [[Param]] metadata that belongs to the node
+   * @param {string} name
+   * @returns {Param | undefined}
+   */
   parameter(name) {
     return find(this.paramSchema, propEq("id", name));
   }
 
   /**
-   * @returns true if the state and parameter values for another PathNode are
-   * equal to the state and param values for this PathNode
+   * @param {PathNode} node
+   * @param {import("./interface.js").GetParamsFn} paramsFn
+   * @returns {boolean} true if the state and parameter values for another PathNode are
+  equal to the state and param values for this PathNode
    */
   equals(node, paramsFn) {
     const diff = this.diff(node, paramsFn);
@@ -75,10 +90,9 @@ export class PathNode {
    * Returns the [[Param]] (schema objects) whose parameter values differ.
    *
    * Given another node for a different state, returns `false`
-   *
-   * @param node The node to compare to
-   * @param paramsFn A function that returns which parameters should be compared.
-   * @returns The [[Param]]s which differ, or null if the two nodes are for different states
+   * @param {PathNode} node The node to compare to
+   * @param {import("./interface.js").GetParamsFn} paramsFn A function that returns which parameters should be compared.
+   * @returns { Param[] | false} The [[Param]]s which differ, or null if the two nodes are for different states
    */
   diff(node, paramsFn) {
     if (this.state !== node.state) return false;
