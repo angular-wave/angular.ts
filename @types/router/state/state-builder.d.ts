@@ -39,10 +39,11 @@
  *   { provide: "myBazResolve", useFactory: function(dep) { dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
  * ]
  * @param {ng.StateObject & ng.StateDeclaration} state
+ * @param {boolean | undefined} strictDi
  */
 export function resolvablesBuilder(
   state: ng.StateObject & ng.StateDeclaration,
-  strictDi: any,
+  strictDi: boolean | undefined,
 ): any[];
 /**
  * A internal global service
