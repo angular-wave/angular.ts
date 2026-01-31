@@ -1,6 +1,10 @@
 import { Attributes } from "./core/compile/attributes.js";
-import { CloneAttachFn } from "./core/compile/interface.js";
-import { Scope } from "./core/scope/scope.js";
+import type {
+  BoundTranscludeFn,
+  CloneAttachFn,
+  PublicLinkFn,
+  TemplateLinkingFunctionOptions as CompileTemplateLinkingFunctionOptions,
+} from "./core/compile/interface.js";
 import { NgModelController } from "./directive/model/model.js";
 export interface Constructor<T = any> {
   new (...args: any[]): T;
@@ -443,41 +447,14 @@ export type DirectiveFactory = DirectiveFactoryFn | AnnotatedDirectiveFactory;
 /**
  * Represents advanced transclusion functions used in directives.
  */
-export interface TranscludeFunctionObject {
-  /** Transcludes content with a new scope */
-  transcludeWithScope(
-    scope: Scope,
-    cloneAttachFn: CloneAttachFn,
-    element?: Element,
-    slotName?: string,
-  ): Element;
-  /** Transcludes content without creating a new scope */
-  transcludeWithoutScope(
-    cloneAttachFn?: CloneAttachFn,
-    element?: Element,
-    slotName?: string,
-  ): Element;
-  /** Checks if a named slot is filled */
-  isSlotFilled(slotName: string): boolean;
-}
-export interface TemplateLinkingFunction {
-  (
-    scope: ng.Scope,
-    cloneAttachFn?: CloneAttachFn,
-    options?: TemplateLinkingFunctionOptions,
-  ): Element;
-}
-export interface TemplateLinkingFunctionOptions {
-  _parentBoundTranscludeFn?: TranscludeFunctionObject | undefined;
-  transcludeControllers?:
-    | {
-        [controller: string]: {
-          instance: Controller;
-        };
-      }
-    | undefined;
-  _futureParentElement?: Element | undefined;
-}
+export type TranscludeFunctionObject = BoundTranscludeFn;
+/**
+ * Callback used when transcluded content is cloned.
+ */
+export type CloneAttachFunction = CloneAttachFn;
+export type TemplateLinkingFunction = PublicLinkFn;
+export type TemplateLinkingFunctionOptions =
+  CompileTemplateLinkingFunctionOptions;
 export interface RootElementService extends HTMLElement {}
 export interface InvocationDetail {
   expr: string;

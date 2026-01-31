@@ -2,11 +2,22 @@ import type { Scope } from "../scope/scope.js";
 import type { NodeRef } from "../../shared/noderef.js";
 
 export type TranscludedNodes = Node | Node[] | NodeList | null;
-export type TranscludeFnCb = (
+export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
+
+/**
+ * Callback used when transcluded content is cloned.
+ */
+export type CloneAttachFn = (
   clone?: TranscludedNodes,
   scope?: Scope | null,
-) => void;
-export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
+) => any;
+
+export interface TemplateLinkingFunctionOptions {
+  _parentBoundTranscludeFn?: BoundTranscludeFn | null;
+  transcludeControllers?: unknown;
+  _futureParentElement?: Node | Element | null | undefined;
+}
+
 /**
  * A function passed as the fifth argument to a `PublicLinkFn` link function.
  * It behaves like a linking function, with the `scope` argument automatically created
@@ -15,43 +26,64 @@ export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
  * The function returns the DOM content to be injected (transcluded) into the directive.
  */
 export type TranscludeFn = {
-  (cb: TranscludeFnCb): HTMLElement | void;
-  (clone?: TranscludedNodes, scope?: Scope | null): HTMLElement | void;
-  (scope: Scope, cb?: TranscludeFnCb): HTMLElement | void;
-  _slots?: any;
+  /**
+   * $transclude(cloneAttachFn, futureParentElement?, slotName?)
+   * (no explicit scope passed)
+   */
+  (
+    cloneAttachFn: CloneAttachFn,
+    futureParentElement?: Node | Element | null,
+    slotName?: string | number,
+  ): TranscludedNodes | void;
+
+  /**
+   * $transclude(scope?, cloneAttachFn?, futureParentElement?, slotName?)
+   * (scope-first form)
+   */
+  (
+    scope?: Scope | null,
+    cloneAttachFn?: CloneAttachFn,
+    futureParentElement?: Node | Element | null,
+    slotName?: string | number,
+  ): TranscludedNodes | void;
+
+  /**
+   * Internal call path that threads link options.
+   */
+  (
+    scope?: Scope | null,
+    cloneAttachFn?: CloneAttachFn,
+    options?: TemplateLinkingFunctionOptions,
+  ): TranscludedNodes | void;
+
+  /** Slot transclusion functions (if the parent declared slots). */
+  _slots?: Record<string | number, TranscludeFn | null>;
+
+  /** Added by your `controllersBoundTransclude` wrapper. */
+  isSlotFilled?: (slotName: string | number) => boolean;
+
+  /** Internal: unwraps to the bound transclude when threaded through link options. */
+  _boundTransclude?: BoundTranscludeFn;
 };
 
 /**
- * Callback used when transcluded content is cloned.
- */
-export type CloneAttachFn = (
-  clone: Node | Element | NodeList,
-  scope?: Scope | null,
-) => void;
-
-/**
- * A specialized version of `TranscludeFn` with the scope argument already bound.
- * This function requires no parameters and returns the same result as `TranscludeFn`.
+ * A specialized version of `TranscludeFn` with the parent scope already bound.
+ * Used internally to thread controller context and future parent elements.
  */
 export interface BoundTranscludeFn {
   (
-    scope?: Scope,
+    transcludedScope?: Scope | null,
     cloneAttachFn?: CloneAttachFn,
-    transcludeControllers?: unknown,
-    _futureParentElement?: Node | Element,
-    scopeToChild?: Scope,
-  ): Node | Element | NodeList;
+    controllers?: unknown,
+    futureParentElement?: Node | Element | null,
+    containingScope?: Scope,
+  ): TranscludedNodes | void;
 
-  _slots: Record<string, SlotTranscludeFn | null | undefined>;
+  _slots: Record<string | number, BoundTranscludeFn | null>;
+  _boundTransclude?: BoundTranscludeFn;
 }
 
-export type SlotTranscludeFn = (
-  scope?: Scope,
-  cloneAttachFn?: CloneAttachFn,
-  transcludeControllers?: unknown,
-  _futureParentElement?: Node | Element,
-  scopeToChild?: Scope,
-) => Node | Element | NodeList;
+export type SlotTranscludeFn = BoundTranscludeFn;
 
 /**
  * Represents a simple change in a watched value.
@@ -67,8 +99,8 @@ export interface SimpleChange {
 export type PublicLinkFn = {
   (
     scope: Scope,
-    cloneConnectFn?: TranscludeFn,
-    options?: any,
+    cloneAttachFn?: CloneAttachFn,
+    options?: TemplateLinkingFunctionOptions,
   ): Element | Node | ChildNode | Node[];
   pre?: any;
   post?: any;
@@ -79,7 +111,7 @@ export type PublicLinkFn = {
  */
 export type CompileFn = (
   compileNode: string | Element | Node | ChildNode | NodeList | null,
-  transcludeFn?: TranscludeFn | null,
+  transcludeFn?: ChildTranscludeOrLinkFn | null,
   maxPriority?: number,
   ignoreDirective?: string,
   previousCompileContext?: any, // TODO: define type if known
@@ -176,7 +208,7 @@ export type ApplyDirectivesToNodeFn = () => NodeLinkFn;
 export type CompositeLinkFn = (
   scope: Scope,
   $linkNode: NodeRef,
-  _parentBoundTranscludeFn?: Function,
+  _parentBoundTranscludeFn?: BoundTranscludeFn | null,
 ) => void;
 
 /**
