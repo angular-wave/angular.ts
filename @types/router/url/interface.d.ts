@@ -1,7 +1,8 @@
 import { StateDeclaration, TargetStateDef } from "../state/interface.ts";
 import { TargetState } from "../state/target-state.js";
-import { StateObject } from "../state/state-object.js";
+import { Param, StateObject } from "../state/state-object.js";
 import { UrlMatcher } from "./url-matcher.js";
+import { ParamType } from "../params/param-type.js";
 export interface UrlMatcherCompileConfig {
   state?: StateDeclaration;
   strict?: boolean;
@@ -114,4 +115,26 @@ export interface StateRule extends MatcherUrlRule {
 export interface RegExpRule extends UrlRule {
   type: "REGEXP";
   regexp: RegExp;
+}
+export interface UrlMatcherCache {
+  segments?: any[];
+  weights?: number[] | (2 | 3 | 1 | undefined)[];
+  path?: UrlMatcher[];
+  parent?: UrlMatcher;
+  pattern?: RegExp | null;
+}
+export interface MatchDetails {
+  id: string;
+  regexp: string;
+  segment: string;
+  type: ParamType;
+}
+export declare const defaultConfig: UrlMatcherCompileConfig;
+export interface ParamDetails {
+  param: Param;
+  value: any;
+  isValid: boolean;
+  isDefaultValue: boolean;
+  squash: boolean | string;
+  encoded: string | string[];
 }

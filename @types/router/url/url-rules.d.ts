@@ -13,17 +13,16 @@ export class UrlRules {
   constructor(urlRuleFactory: UrlRuleFactory);
   _sortFn: typeof defaultRuleSortFn;
   /**
-   * @type {BaseUrlRule[]}
+   * @type {UrlRule[]}
    */
-  _rules: BaseUrlRule[];
+  _rules: UrlRule[];
   _id: number;
   _urlRuleFactory: UrlRuleFactory;
   /**
    * Remove a rule previously registered
-   *
-   * @param rule the matcher rule that was previously registered using [[rule]]
+   * @param {BaseUrlRule} rule the matcher rule that was previously registered using [[rule]]
    */
-  removeRule(rule: any): void;
+  removeRule(rule: BaseUrlRule): void;
   /**
    * Manually adds a URL Rule.
    *
@@ -34,10 +33,10 @@ export class UrlRules {
    * A rule should have a `match` function which returns truthy if the rule matched.
    * It should also have a `handler` function which is invoked if the rule is the best match.
    *
-   * @param {import('./url-rule.js').BaseUrlRule} rule the rule to register
+   * @param {UrlRule} rule the rule to register
    * @returns {() => void } a function that deregisters the rule
    */
-  rule(rule: import("./url-rule.js").BaseUrlRule): () => void;
+  rule(rule: UrlRule): () => void;
   _sorted: boolean;
   /**
    * Gets all registered rules
@@ -77,17 +76,15 @@ export class UrlRules {
    *   return a.$id - b.$id;
    * }
    * ```
-   *
-   * @param compareFn a function that compares to [[UrlRule]] objects.
-   *    The `compareFn` should abide by the `Array.sort` compare function rules.
-   *    Given two rules, `a` and `b`, return a negative number if `a` should be higher priority.
-   *    Return a positive number if `b` should be higher priority.
-   *    Return `0` if the rules are identical.
-   *
-   *    See the [mozilla reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#Description)
-   *    for details.
+   * @param {((a: UrlRule, b: UrlRule) => number) | undefined} [compareFn] a function that compares to [[UrlRule]] objects.
+   * The `compareFn` should abide by the `Array.sort` compare function rules.
+   * Given two rules, `a` and `b`, return a negative number if `a` should be higher priority.
+   * Return a positive number if `b` should be higher priority.
+   * Return `0` if the rules are identical.
+   * See the [mozilla reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#Description)
+   * for details.
    */
-  sort(compareFn: any): void;
+  sort(compareFn?: ((a: UrlRule, b: UrlRule) => number) | undefined): void;
   ensureSorted(): void;
   /**
    * @param {any[]} arr
@@ -157,9 +154,11 @@ export class UrlRules {
     options: {
       priority: any;
     },
-  ): import("./url-rule.js").BaseUrlRule;
+  ): import("./interface.ts").UrlRule;
 }
 export type UrlRule = import("./interface.ts").UrlRule;
+export type MatcherUrlRule = import("./interface.ts").MatcherUrlRule;
+export type BaseUrlRule = import("./url-rule.js").BaseUrlRule;
 /**
  * Default rule priority sorting function.
  *
@@ -171,7 +170,9 @@ export type UrlRule = import("./interface.ts").UrlRule;
  * - Rule registration order (for rule types other than STATE and URLMATCHER)
  *   - Equally sorted State and UrlMatcher rules will each match the URL.
  *     Then, the *best* match is chosen based on how many parameter values were matched.
+ * @param {UrlRule} a
+ * @param {UrlRule} b
  */
-declare function defaultRuleSortFn(a: any, b: any): number;
+declare function defaultRuleSortFn(a: UrlRule, b: UrlRule): number;
 import { UrlRuleFactory } from "./url-rule.js";
 export {};

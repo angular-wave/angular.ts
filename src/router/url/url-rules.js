@@ -4,6 +4,8 @@ import { removeFrom } from "../../shared/common.js";
 import { UrlRuleFactory } from "./url-rule.js";
 
 /** @typedef {import("./interface.ts").UrlRule} UrlRule */
+/** @typedef {import("./interface.ts").MatcherUrlRule} MatcherUrlRule */
+/** @typedef {import("./url-rule.js").BaseUrlRule} BaseUrlRule */
 
 /**
  * @param {{ priority: any; }} a
@@ -29,8 +31,8 @@ const typeSort = (
 };
 
 const urlMatcherSort = (
-  /** @type {{ urlMatcher: any; }} */ a,
-  /** @type {{ urlMatcher: any; }} */ b,
+  /** @type {MatcherUrlRule} */ a,
+  /** @type {MatcherUrlRule} */ b,
 ) =>
   !a.urlMatcher || !b.urlMatcher
     ? 0
@@ -62,6 +64,8 @@ const idSort = (
  * - Rule registration order (for rule types other than STATE and URLMATCHER)
  *   - Equally sorted State and UrlMatcher rules will each match the URL.
  *     Then, the *best* match is chosen based on how many parameter values were matched.
+ * @param {UrlRule} a
+ * @param {UrlRule} b
  */
 function defaultRuleSortFn(a, b) {
   let cmp = prioritySort(a, b);
@@ -70,7 +74,10 @@ function defaultRuleSortFn(a, b) {
   cmp = typeSort(a, b);
 
   if (cmp !== 0) return cmp;
-  cmp = urlMatcherSort(a, b);
+  cmp = urlMatcherSort(
+    /** @type {MatcherUrlRule} */ (a),
+    /** @type {MatcherUrlRule} */ (b),
+  );
 
   if (cmp !== 0) return cmp;
 
@@ -92,7 +99,7 @@ export class UrlRules {
   constructor(urlRuleFactory) {
     this._sortFn = defaultRuleSortFn;
     /**
-     * @type {BaseUrlRule[]}
+     * @type {UrlRule[]}
      */
     this._rules = [];
     this._id = 0;
@@ -101,8 +108,7 @@ export class UrlRules {
 
   /**
    * Remove a rule previously registered
-   *
-   * @param rule the matcher rule that was previously registered using [[rule]]
+   * @param {BaseUrlRule} rule the matcher rule that was previously registered using [[rule]]
    */
   removeRule(rule) {
     removeFrom(this._rules, rule);
@@ -118,7 +124,7 @@ export class UrlRules {
    * A rule should have a `match` function which returns truthy if the rule matched.
    * It should also have a `handler` function which is invoked if the rule is the best match.
    *
-   * @param {import('./url-rule.js').BaseUrlRule} rule the rule to register
+   * @param {UrlRule} rule the rule to register
    * @returns {() => void } a function that deregisters the rule
    */
   rule(rule) {
@@ -174,15 +180,13 @@ export class UrlRules {
    *   return a.$id - b.$id;
    * }
    * ```
-   *
-   * @param compareFn a function that compares to [[UrlRule]] objects.
-   *    The `compareFn` should abide by the `Array.sort` compare function rules.
-   *    Given two rules, `a` and `b`, return a negative number if `a` should be higher priority.
-   *    Return a positive number if `b` should be higher priority.
-   *    Return `0` if the rules are identical.
-   *
-   *    See the [mozilla reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#Description)
-   *    for details.
+   * @param {((a: UrlRule, b: UrlRule) => number) | undefined} [compareFn] a function that compares to [[UrlRule]] objects.
+   * The `compareFn` should abide by the `Array.sort` compare function rules.
+   * Given two rules, `a` and `b`, return a negative number if `a` should be higher priority.
+   * Return a positive number if `b` should be higher priority.
+   * Return `0` if the rules are identical.
+   * See the [mozilla reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#Description)
+   * for details.
    */
   sort(compareFn) {
     const sorted = this.stableSort(
@@ -285,7 +289,9 @@ export class UrlRules {
    * @return the registered [[UrlRule]]
    */
   when(matcher, handler, options) {
-    const rule = this._urlRuleFactory.create(matcher, handler);
+    const rule = /** @type {UrlRule} */ (
+      this._urlRuleFactory.create(matcher, handler)
+    );
 
     if (isDefined(options && options.priority))
       rule.priority = options.priority;
