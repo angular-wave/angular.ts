@@ -42,20 +42,35 @@ export class UrlRuleFactory {
    *
    * @param {StateObject} what
    * @param {*} [handler]
-   * @returns {BaseUrlRule}
+   * @returns {import("./url-rules.js").UrlRule}
    */
   create(what, handler) {
     const { isState, isStateDeclaration } = StateObject;
 
     const makeRule = pattern([
-      [isString, (_what) => makeRule(this.urlService.compile(_what))],
-      [is(UrlMatcher), (_what) => this.fromUrlMatcher(_what, handler)],
+      [
+        isString,
+        (/** @type {string} */ _what) =>
+          makeRule(this.urlService.compile(_what)),
+      ],
+      [
+        is(UrlMatcher),
+        (/** @type {any} */ _what) => this.fromUrlMatcher(_what, handler),
+      ],
       [
         (...args) => isState(...args) || isStateDeclaration(...args),
-        (_what) => this.fromState(_what, this.stateService, this.routerGlobals),
+        (/** @type {any} */ _what) =>
+          this.fromState(_what, this.stateService, this.routerGlobals),
       ],
-      [is(RegExp), (_what) => this.fromRegExp(_what, handler)],
-      [isFunction, (_what) => new BaseUrlRule(_what, handler)],
+      [
+        is(RegExp),
+        (/** @type {any} */ _what) => this.fromRegExp(_what, handler),
+      ],
+      [
+        isFunction,
+        (/** @type {import("./interface.js").UrlRuleMatchFn} */ _what) =>
+          new BaseUrlRule(_what, handler),
+      ],
     ]);
 
     const rule = makeRule(what);
@@ -100,13 +115,21 @@ export class UrlRuleFactory {
    * var match = rule.match('/foo/123/456'); // results in { fooId: '123', barId: '456' }
    * var result = rule.handler(match); // '/home/123/456'
    * ```
+   * @param {UrlMatcher} urlMatcher
+   * @param {string | UrlMatcher | import("./interface.js").UrlRuleHandlerFn} handler
+   * @returns {import("./interface.js").MatcherUrlRule}
    */
   fromUrlMatcher(urlMatcher, handler) {
     let _handler = handler;
 
     if (isString(handler)) handler = this.urlService.compile(handler);
 
-    if (is(UrlMatcher)(handler)) _handler = (match) => handler.format(match);
+    if (is(UrlMatcher)(handler))
+      _handler = (match) => /** @type {UrlMatcher} */ (handler).format(match);
+    /**
+     * @param {import("./interface.js").UrlParts} url
+     * @returns {import("../params/interface.js").RawParams}
+     */
     function matchUrlParamters(url) {
       const params = urlMatcher.exec(url.path, url.search, url.hash);
 
@@ -117,6 +140,10 @@ export class UrlRuleFactory {
     // - No optional parameters in URL
     // - Some optional parameters, some matched
     // - Some optional parameters, all matched
+    /**
+     * @param {import("../params/interface.js").RawParams} params
+     * @returns {number}
+     */
     function matchPriority(params) {
       const optional = urlMatcher
         .parameters()
@@ -142,6 +169,10 @@ export class UrlRuleFactory {
    * var result = rule.handler(match);
    * // Starts a transition to 'foo' with params: { fooId: '123', barId: '456' }
    * ```
+   * @param {StateObject | import("../state/interface.js").StateDeclaration} stateOrDecl
+   * @param {import("../state/state-service.js").StateProvider} stateService
+   * @param {import("../router.js").RouterProvider} globals
+   * @returns {import("./interface.js").StateRule}
    */
   fromState(stateOrDecl, stateService, globals) {
     const state = StateObject.isStateDeclaration(stateOrDecl)
@@ -239,12 +270,39 @@ UrlRuleFactory.isUrlRule = (obj) =>
  * The value from the `match` function is passed through to the `handler`.
  */
 export class BaseUrlRule {
+  /**
+   * @param {import("./interface.js").UrlRuleMatchFn} match
+   * @param {import("./interface.js").UrlRuleHandlerFn} handler
+   */
   constructor(match, handler) {
+    /**
+     * @type {import("./interface.js").UrlRuleMatchFn}
+     */
     this.match = match;
+
+    /**
+     * @type {import("./interface.js").UrlRuleType}
+     */
     this.type = "RAW";
+
+    /**
+     * @type {number}
+     */
     this.$id = -1;
+
+    /**
+     * @type {string | undefined}
+     */
     this._group = undefined;
+
+    /**
+     * @type {import("./interface.js").UrlRuleHandlerFn}
+     */
     this.handler = handler || ((x) => x);
+
+    /**
+     * @type {number | undefined}
+     */
     this.priority = undefined;
   }
 

@@ -1,24 +1,38 @@
 import { isString } from "../../shared/utils.js";
+
+/** @typedef {import("./state-object.js").StateObject} StateObject */
+/** @typedef {import("./interface.ts").StateOrName} StateOrName */
+/** @typedef {import("./interface.ts").StateStore} StateStore */
+
 export class StateMatcher {
-  /** @param {import("./interface.ts").StateStore} states */
+  /** @param {StateStore} states */
   constructor(states) {
-    /** @type {import("./interface.ts").StateStore} */
+    /** @type {StateStore} */
     this._states = states;
   }
 
+  /**
+   * @param {string} stateName
+   */
   isRelative(stateName) {
     stateName = stateName || "";
 
     return stateName.indexOf(".") === 0 || stateName.indexOf("^") === 0;
   }
 
+  /**
+   * @param {StateOrName} stateOrName
+   * @param {StateOrName | undefined} [base]
+   * @returns {StateObject | undefined}
+   */
   find(stateOrName, base, matchGlob = true) {
     if (!stateOrName && stateOrName !== "") return undefined;
     const isStr = isString(stateOrName);
 
     let name = isStr ? stateOrName : stateOrName.name;
 
-    if (this.isRelative(name)) name = this.resolvePath(name, base);
+    if (this.isRelative(name))
+      name = this.resolvePath(name, /** @type {StateOrName} */ (base));
     const state = this._states[name];
 
     if (
@@ -26,12 +40,12 @@ export class StateMatcher {
       (isStr ||
         (!isStr && (state === stateOrName || state.self === stateOrName)))
     ) {
-      return state;
+      return /** @type {StateObject} */ (state);
     } else if (isStr && matchGlob) {
       const states = Object.values(this._states);
 
       const matches = states.filter((stateObj) =>
-        stateObj._stateObjectCache.nameGlob?.matches(name),
+        stateObj._stateObjectCache?.nameGlob?.matches(name),
       );
 
       if (matches.length > 1) {
@@ -40,12 +54,18 @@ export class StateMatcher {
         );
       }
 
-      return matches[0];
+      return /** @type {StateObject} */ (matches[0]);
     }
 
     return undefined;
   }
 
+  /**
+   * `
+   * @param {string} name
+   * @param {StateOrName} base
+   * @returns {string}
+   */
   resolvePath(name, base) {
     if (!base) throw new Error(`No reference point given for path '${name}'`);
     const baseState = this.find(base);
@@ -64,9 +84,9 @@ export class StateMatcher {
       }
 
       if (splitName[i] === "^") {
-        if (!current.parent)
+        if (!current?.parent)
           throw new Error(
-            `Path '${name}' not valid for state '${baseState.name}'`,
+            `Path '${name}' not valid for state '${baseState?.name}'`,
           );
         current = current.parent;
         continue;
@@ -75,6 +95,6 @@ export class StateMatcher {
     }
     const relName = splitName.slice(i).join(".");
 
-    return current.name + (current.name && relName ? "." : "") + relName;
+    return current?.name + (current?.name && relName ? "." : "") + relName;
   }
 }
