@@ -177,8 +177,9 @@ export class StateObject {
   }
 }
 /** Predicate which returns true if the object is a [[StateDeclaration]] object */
-StateObject.isStateDeclaration = (/** @type {{ _state: any; }} */ obj) =>
-  isFunction(obj._state);
+StateObject.isStateDeclaration = (
+  /** @type {StateObject | import("../state/interface.js").StateDeclaration} */ obj,
+) => isFunction(obj._state);
 
 /** Predicate which returns true if the object is an internal [[StateObject]] object */
 StateObject.isState = (/** @type {{ _stateObjectCache: any; }} */ obj) =>

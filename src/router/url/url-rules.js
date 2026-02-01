@@ -108,7 +108,7 @@ export class UrlRules {
 
   /**
    * Remove a rule previously registered
-   * @param {BaseUrlRule} rule the matcher rule that was previously registered using [[rule]]
+   * @param {UrlRule} rule the matcher rule that was previously registered using [[rule]]
    */
   removeRule(rule) {
     removeFrom(this._rules, rule);
@@ -286,12 +286,10 @@ export class UrlRules {
    * @param {import("../state/state-object.js").StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
    * @param {any} handler The path to redirect to, or a function that returns the path.
    * @param {{ priority: any; }} options `{ priority: number }`
-   * @return the registered [[UrlRule]]
+   * @return {UrlRule} the registered [[UrlRule]]
    */
   when(matcher, handler, options) {
-    const rule = /** @type {UrlRule} */ (
-      this._urlRuleFactory.create(matcher, handler)
-    );
+    const rule = this._urlRuleFactory.create(matcher, handler);
 
     if (isDefined(options && options.priority))
       rule.priority = options.priority;

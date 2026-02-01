@@ -353,7 +353,7 @@ export class UrlService {
     // Checks a single rule. Returns { rule: rule, match: match, weight: weight } if it matched, or undefined
     /**
      *
-     * @param {import("./url-rule").BaseUrlRule} rule
+     * @param {import("./interface.ts").UrlRule} rule
      */
     const checkRule = (rule) => {
       const match = rule.match(url);

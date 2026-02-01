@@ -20,9 +20,9 @@ export class UrlRules {
   _urlRuleFactory: UrlRuleFactory;
   /**
    * Remove a rule previously registered
-   * @param {BaseUrlRule} rule the matcher rule that was previously registered using [[rule]]
+   * @param {UrlRule} rule the matcher rule that was previously registered using [[rule]]
    */
-  removeRule(rule: BaseUrlRule): void;
+  removeRule(rule: UrlRule): void;
   /**
    * Manually adds a URL Rule.
    *
@@ -146,7 +146,7 @@ export class UrlRules {
    * @param {import("../state/state-object.js").StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
    * @param {any} handler The path to redirect to, or a function that returns the path.
    * @param {{ priority: any; }} options `{ priority: number }`
-   * @return the registered [[UrlRule]]
+   * @return {UrlRule} the registered [[UrlRule]]
    */
   when(
     matcher: import("../state/state-object.js").StateObject,
@@ -154,7 +154,7 @@ export class UrlRules {
     options: {
       priority: any;
     },
-  ): import("./interface.ts").UrlRule;
+  ): UrlRule;
 }
 export type UrlRule = import("./interface.ts").UrlRule;
 export type MatcherUrlRule = import("./interface.ts").MatcherUrlRule;
