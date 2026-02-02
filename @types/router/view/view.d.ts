@@ -14,7 +14,7 @@ export class ViewService {
   _viewConfigFactory: (
     path: import("../path/path-node.js").PathNode[],
     view: import("../state/interface.ts").ViewDeclaration,
-  ) => ViewConfig;
+  ) => import("../state/views.js").ViewConfig;
   $get: () => this;
   /**
    * @param {?import('../state/state-object.js').StateObject} [context]
@@ -39,13 +39,13 @@ export class ViewService {
    * This function deactivates a `ViewConfig`.
    * After calling [[sync]], it will un-pair from any `ng-view` with which it is currently paired.
    *
-   * @param {import("./interface.ts").ViewConfig} viewConfig The ViewConfig view to deregister.
+   * @param {ViewConfig} viewConfig The ViewConfig view to deregister.
    */
-  deactivateViewConfig(viewConfig: import("./interface.ts").ViewConfig): void;
+  deactivateViewConfig(viewConfig: ViewConfig): void;
   /**
-   * @param {import("./interface.ts").ViewConfig} viewConfig
+   * @param {ViewConfig} viewConfig
    */
-  activateViewConfig(viewConfig: import("./interface.ts").ViewConfig): void;
+  activateViewConfig(viewConfig: ViewConfig): void;
   sync(): void;
   /**
    * Registers a `ng-view` component
@@ -134,8 +134,7 @@ export namespace ViewService {
   function matches(
     ngViewsByFqn: import("../../shared/interface.ts").Dict<ActiveUIView>,
     ngView: ActiveUIView,
-  ): (
-    /** @type {import("./interface.ts").ViewConfig} */ viewConfig: import("./interface.ts").ViewConfig,
-  ) => boolean;
+  ): (/** @type {ViewConfig} */ viewConfig: ViewConfig) => boolean;
 }
 export type ActiveUIView = import("./interface.ts").ActiveUIView;
+export type ViewConfig = import("../state/views.js").ViewConfig;

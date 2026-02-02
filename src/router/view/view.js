@@ -4,6 +4,7 @@ import { trace } from "../common/trace.js";
 import { getViewConfigFactory } from "../state/views.js";
 
 /** @typedef {import("./interface.ts").ActiveUIView} ActiveUIView */
+/** @typedef {import("../state/views.js").ViewConfig} ViewConfig */
 
 /**
  * The View service
@@ -72,7 +73,7 @@ export class ViewService {
    * This function deactivates a `ViewConfig`.
    * After calling [[sync]], it will un-pair from any `ng-view` with which it is currently paired.
    *
-   * @param {import("./interface.ts").ViewConfig} viewConfig The ViewConfig view to deregister.
+   * @param {ViewConfig} viewConfig The ViewConfig view to deregister.
    */
   deactivateViewConfig(viewConfig) {
     trace.traceViewServiceEvent("<- Removing", viewConfig);
@@ -80,7 +81,7 @@ export class ViewService {
   }
 
   /**
-   * @param {import("./interface.ts").ViewConfig} viewConfig
+   * @param {ViewConfig} viewConfig
    */
   activateViewConfig(viewConfig) {
     trace.traceViewServiceEvent("-> Registering", viewConfig);
@@ -113,7 +114,7 @@ export class ViewService {
     }
     // Return the ViewConfig's context's depth in the context tree.
     /**
-     * @param {import("./interface.ts").ViewConfig} config
+     * @param {ViewConfig} config
      */
     function viewConfigDepth(config) {
       let context = /** @type {import("./interface.ts").ViewContext} */ (
@@ -168,7 +169,7 @@ export class ViewService {
       .sort(depthCompare(ngViewDepth, 1))
       .map(matchingConfigPair);
 
-    /** @type {import("./interface.ts").ViewConfig[]} */
+    /** @type {ViewConfig[]} */
     const matchedViewConfigs = ngViewTuples.map((tuple) => tuple.viewConfig);
 
     /** @type {import("./interface.ts").ViewTuple[]} */
@@ -308,7 +309,7 @@ ViewService.matches =
     /** @type {import("../../shared/interface.ts").Dict<ActiveUIView>} */ ngViewsByFqn,
     /** @type {ActiveUIView} */ ngView,
   ) =>
-  (/** @type {import("./interface.ts").ViewConfig} */ viewConfig) => {
+  (/** @type {ViewConfig} */ viewConfig) => {
     // Split names apart from both viewConfig and ngView into segments
     const vc = viewConfig.viewDecl;
 
