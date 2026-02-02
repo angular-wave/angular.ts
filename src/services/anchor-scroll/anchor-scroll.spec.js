@@ -28,6 +28,9 @@ describe("AnchorScrollService", () => {
 
     $injector = angular.bootstrap(el, ["default"]);
     $anchorScroll = $injector.get("$anchorScroll");
+
+    // Avoid leaking state between tests
+    $anchorScroll.yOffset = undefined;
   });
 
   afterEach(() => {
@@ -118,6 +121,36 @@ describe("AnchorScrollService", () => {
 
     $anchorScroll("fnOffset");
 
+    expect(window.scrollBy).toHaveBeenCalled();
+
+    document.body.removeChild(target);
+  });
+
+  it("should scroll when passed an element", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    spyOn(target, "scrollIntoView");
+
+    $anchorScroll(target);
+
+    expect(target.scrollIntoView).toHaveBeenCalled();
+
+    document.body.removeChild(target);
+  });
+
+  it("should apply yOffset when passed an element", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    spyOn(target, "scrollIntoView");
+    spyOn(window, "scrollBy");
+
+    $anchorScroll.yOffset = 40;
+
+    $anchorScroll(target);
+
+    expect(target.scrollIntoView).toHaveBeenCalled();
     expect(window.scrollBy).toHaveBeenCalled();
 
     document.body.removeChild(target);

@@ -2,7 +2,7 @@ export interface AnchorScrollService {
   /**
    * Invoke anchor scrolling.
    */
-  (hash?: string | number): void;
+  (hashOrElement?: string | number | HTMLElement): void;
   /**
    * Vertical scroll offset.
    * Can be a number, a function returning a number,

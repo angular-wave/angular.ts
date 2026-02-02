@@ -125,6 +125,7 @@ export class ViewConfig {
    * @param {import('../template-factory.js').TemplateFactoryProvider} factory
    */
   constructor(path, viewDecl, factory) {
+    this.$id = -1;
     /**
      * @type {Array<import('../path/path-node.js').PathNode>}
      */
@@ -147,7 +148,10 @@ export class ViewConfig {
      */
     this.template = undefined;
 
-    /** @type {Number} */ this.$id = id++;
+    /** @type {Number} */
+    this.$id = id++;
+
+    /** @type {boolean} */
     this.loaded = false;
     this.getTemplate = (
       /** @type {any} */ ngView,
@@ -163,6 +167,10 @@ export class ViewConfig {
         : this.template;
   }
 
+  /**
+   *
+   * @returns {Promise<ViewConfig>}
+   */
   async load() {
     const context = new ResolveContext(this.path);
 

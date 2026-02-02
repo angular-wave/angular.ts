@@ -1,4 +1,4 @@
-import { filter, tail, unnestR } from "../../shared/common.js";
+import { tail, unnestR } from "../../shared/common.js";
 import { hasAnimate, isDefined, isFunction } from "../../shared/utils.js";
 import { parse } from "../../shared/hof.js";
 import { ResolveContext } from "../resolve/resolve-context.js";
@@ -210,12 +210,12 @@ export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
             )(scope) || "$default";
 
         /**
-         * @type {HTMLElement}
+         * @type {HTMLElement | null}
          */
         let previousEl;
 
         /**
-         * @type {HTMLElement}
+         * @type {HTMLElement | null}
          */
         let currentEl;
 
@@ -229,6 +229,7 @@ export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
          */
         let viewConfig;
 
+        /** @type {import("../view/interface.ts").ActiveUIView} */
         const activeUIView = {
           id: /** @type {number} */ (directive.count)++, // Global sequential ID for ng-view tags added to DOM
           name, // ng-view name (<div ng-view="name"></div>
@@ -333,24 +334,39 @@ export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
            * @param {string} viewName Name of the view.
            */
           newScope.$emit("$viewContentLoading", name);
-          currentEl = $transclude(newScope, function (clone) {
-            setCacheData(clone, "$ngViewAnim", $ngViewAnim);
-            setCacheData(clone, "$ngView", $ngViewData);
-            renderer.enter(clone, $element, function () {
-              animEnter.resolve();
+          currentEl = /** @type {HTMLElement} */ (
+            /** @type {ng.TranscludeFn} */ ($transclude)(newScope, (clone) => {
+              setCacheData(
+                /** @type {HTMLElement} */ (clone),
+                "$ngViewAnim",
+                $ngViewAnim,
+              );
+              setCacheData(
+                /** @type {HTMLElement} */ (clone),
+                "$ngView",
+                $ngViewData,
+              );
+              renderer.enter(
+                /** @type {HTMLElement} */ (clone),
+                $element,
+                () => {
+                  animEnter.resolve(undefined);
 
-              if (currentScope)
-                currentScope.$emit("$viewContentAnimationEnded");
+                  if (currentScope)
+                    currentScope.$emit("$viewContentAnimationEnded");
 
-              if (
-                (isDefined(autoScrollExp) && !autoScrollExp) ||
-                (autoScrollExp && scope.$eval(autoScrollExp))
-              ) {
-                /** @type {ng.AnchorScrollService} */ ($anchorScroll)(clone);
-              }
-            });
-            cleanupLastView();
-          });
+                  if (
+                    (isDefined(autoScrollExp) && !autoScrollExp) ||
+                    (autoScrollExp && scope.$eval(autoScrollExp))
+                  ) {
+                    $anchorScroll(/** @type {HTMLElement} */ (clone));
+                  }
+                },
+              );
+              cleanupLastView();
+            })
+          );
+
           currentScope = newScope;
           /**
            * Fired once the view is **loaded**, *after* the DOM is rendered.
@@ -497,9 +513,9 @@ let _uiCanExitId = 0;
 /**
  * @ignore TODO: move these callbacks to $view and/or `/hooks/components.ts` or something
  * @param {ng.TransitionService} $transitions
- * @param {object | (() => object)} controllerInstance
+ * @param {any} controllerInstance
  * @param {ng.Scope} $scope
- * @param {{ viewDecl: { component: any; componentProvider: any; }; path: string | any[]; }} cfg
+ * @param {{ viewDecl: { component: any; componentProvider: any; }; path: import("../transition/transition.js").PathNode[]; }} cfg
  */
 function registerControllerCallbacks(
   $transitions,
@@ -525,50 +541,79 @@ function registerControllerCallbacks(
     const viewCreationTrans = resolveContext.getResolvable("$transition$").data;
 
     // Fire callback on any successful transition
-    const paramsUpdated = ($transition$) => {
+    const paramsUpdated = (
+      /** @type {ng.Transition | undefined} */ $transition$,
+    ) => {
+      if (!$transition$) return;
+
       // Exit early if the $transition$ is the same as the view was created within.
       // Exit early if the $transition$ will exit the state the view is for.
       if (
         $transition$ === viewCreationTrans ||
         $transition$.exiting().indexOf(viewState) !== -1
-      )
+      ) {
         return;
+      }
+
       const toParams = $transition$.params("to");
 
       const fromParams = $transition$.params("from");
 
-      const getNodeSchema = (node) => node.paramSchema;
+      const getNodeSchema = (/** @type {{ paramSchema: any }} */ node) =>
+        node.paramSchema;
 
-      const toSchema = $transition$
-        .treeChanges("to")
-        .map(getNodeSchema)
-        .reduce(unnestR, []);
+      const treeChanges = $transition$ && $transition$.treeChanges;
 
-      const fromSchema = $transition$
-        .treeChanges("from")
-        .map(getNodeSchema)
-        .reduce(unnestR, []);
+      const toNodes = isFunction(treeChanges)
+        ? (treeChanges.call($transition$, "to") ?? [])
+        : [];
+
+      const fromNodes = isFunction(treeChanges)
+        ? (treeChanges.call($transition$, "from") ?? [])
+        : [];
+
+      const toSchema =
+        /** @type {import("../transition/transition.js").PathNode[]} */ (
+          toNodes
+        )
+          .map(getNodeSchema)
+          .reduce(unnestR, []);
+
+      const fromSchema =
+        /** @type {import("../transition/transition.js").PathNode[]} */ (
+          fromNodes
+        )
+          .map(getNodeSchema)
+          .reduce(unnestR, []);
 
       // Find the to params that have different values than the from params
-      const changedToParams = toSchema.filter((param) => {
-        const idx = fromSchema.indexOf(param);
+      const changedToParams = toSchema.filter(
+        (/** @type {{ id: string | number; }} */ param) => {
+          const idx = fromSchema.indexOf(param);
 
-        return (
-          idx === -1 ||
-          !fromSchema[idx].type.equals(toParams[param.id], fromParams[param.id])
-        );
-      });
+          return (
+            idx === -1 ||
+            !fromSchema[idx].type.equals(
+              toParams[param.id],
+              fromParams[param.id],
+            )
+          );
+        },
+      );
 
       // Only trigger callback if a to param has changed or is new
       if (changedToParams.length) {
-        const changedKeys = changedToParams.map((x) => x.id);
-
-        // Filter the params to only changed/new to params.  `$transition$.params()` may be used to get all params.
-        const newValues = filter(
-          toParams,
-          (val, key) => changedKeys.indexOf(key) !== -1,
+        const changedKeys = /** @type {any[]} */ (
+          changedToParams.map((/** @type {{ id: any; }} */ x) => x.id)
         );
 
+        // Filter the params to only changed/new to params.  `$transition$.params()` may be used to get all params.
+        /** @type {Record<string, any>} */
+        const newValues = {};
+
+        changedKeys.forEach((key) => {
+          if (key in toParams) newValues[key] = toParams[key];
+        });
         controllerInstance.uiOnParamsChanged(newValues, $transition$);
       }
     };
@@ -585,14 +630,22 @@ function registerControllerCallbacks(
 
     const cacheProp = "_uiCanExitIds";
 
-    // Returns true if a redirect transition already answered truthy
-    const prevTruthyAnswer = (trans) =>
+    /**
+     * Returns true if any transition in the redirect chain already answered truthy
+     * @param {import("../transition/transition.js").Transition | null | undefined} trans
+     * @returns {boolean}
+     */
+    const prevTruthyAnswer = (
+      /** @type {ng.Transition & Record<String, any>} */ trans,
+    ) =>
       !!trans &&
       ((trans[cacheProp] && trans[cacheProp][id] === true) ||
         prevTruthyAnswer(trans.redirectedFrom()));
 
     // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
-    const wrappedHook = (trans) => {
+    const wrappedHook = (
+      /** @type {ng.Transition & Record<String, any>} */ trans,
+    ) => {
       let promise;
 
       const ids = (trans[cacheProp] = trans[cacheProp] || {});
