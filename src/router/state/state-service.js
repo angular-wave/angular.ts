@@ -491,7 +491,12 @@ export class StateProvider {
         `No such reload state '${isString(options.reload) ? options.reload : options.reload.name}'`,
       );
 
-    return new TargetState(this.stateRegistry, identifier, params, options);
+    return new TargetState(
+      /** @type {StateRegistryProvider} */ (this.stateRegistry),
+      identifier,
+      params,
+      options,
+    );
   }
 
   getCurrentPath() {

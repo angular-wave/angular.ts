@@ -3,23 +3,23 @@ export class StateQueueManager {
   /**
    * @param {import("./state-registry.js").StateRegistryProvider} stateRegistry
    * @param {import("../url/url-rules.js").UrlRules} urlServiceRules
-   * @param  {Record<string, StateObject>} states
-   * @param {*} builder
-   * @param {*} listeners
+   * @param {import("./interface.ts").StateStore} states
+   * @param {import("./state-builder.js").StateBuilder} builder
+   * @param {StateRegistryListener[]} listeners
    */
   constructor(
     stateRegistry: import("./state-registry.js").StateRegistryProvider,
     urlServiceRules: import("../url/url-rules.js").UrlRules,
-    states: Record<string, StateObject>,
-    builder: any,
-    listeners: any,
+    states: import("./interface.ts").StateStore,
+    builder: import("./state-builder.js").StateBuilder,
+    listeners: StateRegistryListener[],
   );
   stateRegistry: import("./state-registry.js").StateRegistryProvider;
   /** @type {import("../url/url-rules.js").UrlRules} */
   urlServiceRules: import("../url/url-rules.js").UrlRules;
-  /** @type {Record<string, StateObject>} */
-  states: Record<string, StateObject>;
-  builder: any;
+  /** @type {import("./interface.ts").StateStore} */
+  states: import("./interface.ts").StateStore;
+  builder: import("./state-builder.js").StateBuilder;
   /** @type {StateRegistryListener[]} */
   listeners: StateRegistryListener[];
   /**
@@ -31,7 +31,7 @@ export class StateQueueManager {
    * @returns {StateObject}
    */
   register(stateDecl: ng.StateDeclaration): StateObject;
-  flush(): Record<string, StateObject>;
+  flush(): import("./interface.ts").StateStore;
   /**
    *
    * @param {StateObject | ng.StateDeclaration} state

@@ -61,7 +61,7 @@ function ngViewString(ngView) {
 }
 
 const viewConfigString =
-  /** @param {import("../view/interface.ts").ViewConfig} viewConfig */ (
+  /** @param {import("../view/view.js").ViewConfig} viewConfig */ (
     viewConfig,
   ) => {
     const view = viewConfig.viewDecl;
@@ -332,7 +332,7 @@ export class Trace {
   /**
    * @internal called by ng-router code
    * @param {string} event
-   * @param {import("../view/interface.ts").ViewConfig} viewConfig
+   * @param {import("../view/view.js").ViewConfig} viewConfig
    */
   traceViewServiceEvent(event, viewConfig) {
     if (!this.enabled(Category._VIEWCONFIG)) return;
