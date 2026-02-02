@@ -1,6 +1,9 @@
 /** @typedef {import("./state-object.js").StateObject} StateObject */
 /** @typedef {import("./interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
 /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider } */
+/** @typedef {import("./interface.ts").StateRegistryListener} StateRegistryListener */
+/** @typedef {import("./interface.ts").StateDeclaration} StateDeclaration */
+/** @typedef {import("./interface.ts").StateOrName} StateOrName */
 /**
  * A registry for all of the application's [[StateDeclaration]]s
  *
@@ -36,9 +39,9 @@ export class StateRegistryProvider {
    */
   $injector: ng.InjectorService | undefined;
   /**
-   * @type {import("./interface.ts").StateRegistryListener[]}
+   * @type {StateRegistryListener[]}
    */
-  listeners: import("./interface.ts").StateRegistryListener[];
+  listeners: StateRegistryListener[];
   /**
    *@type {StateMatcher}
    */
@@ -137,25 +140,23 @@ export class StateRegistryProvider {
    * This removes a state from the registry.
    * If the state has children, they are are also removed from the registry.
    *
-   * @param {import("./interface.ts").StateOrName} stateOrName the state's name or object representation
+   * @param {StateOrName} stateOrName the state's name or object representation
    * @returns {BuiltStateDeclaration[]} a list of removed states
    */
-  deregister(
-    stateOrName: import("./interface.ts").StateOrName,
-  ): BuiltStateDeclaration[];
+  deregister(stateOrName: StateOrName): BuiltStateDeclaration[];
   /**
    * @return {ng.BuiltStateDeclaration[]}
    */
   getAll(): ng.BuiltStateDeclaration[];
   /**
    *
-   * @param {import("./interface.ts").StateOrName} stateOrName
-   * @param {import("./interface.ts").StateOrName} [base]
+   * @param {StateOrName} [stateOrName]
+   * @param {StateOrName} [base]
    * @returns {import("./state-service.js").StateDeclaration | import("./state-service.js").StateDeclaration[] | null}
    */
   get(
-    stateOrName: import("./interface.ts").StateOrName,
-    base?: import("./interface.ts").StateOrName,
+    stateOrName?: StateOrName,
+    base?: StateOrName,
     ...args: any[]
   ):
     | import("./state-service.js").StateDeclaration
@@ -188,6 +189,10 @@ export type BuiltStateDeclaration =
  * }
  */
 export type ServiceProvider = import("../../interface.ts").ServiceProvider;
+export type StateRegistryListener =
+  import("./interface.ts").StateRegistryListener;
+export type StateDeclaration = import("./interface.ts").StateDeclaration;
+export type StateOrName = import("./interface.ts").StateOrName;
 import { StateMatcher } from "./state-matcher.js";
 import { StateBuilder } from "./state-builder.js";
 import { StateQueueManager } from "./state-queue-manager.js";

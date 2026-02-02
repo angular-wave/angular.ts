@@ -1,11 +1,13 @@
 import { hasOwn, isString } from "../../shared/utils.js";
 import { StateObject } from "./state-object.js";
 
+/** @typedef {import("./state-registry.js").StateRegistryListener} StateRegistryListener */
+
 export class StateQueueManager {
   /**
    * @param {import("./state-registry.js").StateRegistryProvider} stateRegistry
    * @param {import("../url/url-rules.js").UrlRules} urlServiceRules
-   * @param {import("./interface.ts").StateStore} states
+   * @param  {Record<string, StateObject>} states
    * @param {*} builder
    * @param {*} listeners
    */
@@ -13,8 +15,11 @@ export class StateQueueManager {
     this.stateRegistry = stateRegistry;
     /** @type {import("../url/url-rules.js").UrlRules} */
     this.urlServiceRules = urlServiceRules;
+
+    /** @type {Record<string, StateObject>} */
     this.states = states;
     this.builder = builder;
+    /** @type {StateRegistryListener[]} */
     this.listeners = listeners;
     /**
      * @type {Array<StateObject>}
@@ -45,11 +50,15 @@ export class StateQueueManager {
   flush() {
     const { queue, states, builder } = this;
 
+    /** @type {StateObject[]} */
     const registered = [], // states that got registered
-      orphans = [], // states that don't yet have a parent registered
-      previousQueueLength = {}; // keep track of how long the queue when an orphan was first encountered
+      orphans = []; // states that don't yet have a parent registered
 
-    const getState = (name) => hasOwn(this.states, name) && this.states[name];
+    /** @type {Record<string, number>} */
+    const previousQueueLength = {}; // keep track of how long the queue when an orphan was first encountered
+
+    const getState = (/** @type {string} */ name) =>
+      hasOwn(this.states, name) && this.states[name];
 
     const notifyListeners = () => {
       if (registered.length) {
@@ -65,7 +74,7 @@ export class StateQueueManager {
     while (queue.length > 0) {
       const state = queue.shift();
 
-      const { name } = state;
+      const { name } = /** @type {StateObject} */ (state);
 
       const result = builder.build(state);
 
@@ -83,11 +92,11 @@ export class StateQueueManager {
           // Remove future state of the same name
           this.stateRegistry.deregister(existingFutureState);
         }
-        states[name] = state;
-        this.attachRoute(state);
+        states[name] = /** @type {StateObject} */ (state);
+        this.attachRoute(/** @type {StateObject} */ (state));
 
         if (orphanIdx >= 0) orphans.splice(orphanIdx, 1);
-        registered.push(state);
+        registered.push(/** @type {StateObject} */ (state));
         continue;
       }
       const prev = previousQueueLength[name];
@@ -97,14 +106,14 @@ export class StateQueueManager {
       if (orphanIdx >= 0 && prev === queue.length) {
         // Wait until two consecutive iterations where no additional states were dequeued successfully.
         // throw new Error(`Cannot register orphaned state '${name}'`);
-        queue.push(state);
+        queue.push(/** @type {StateObject} */ (state));
         notifyListeners();
 
         return states;
       } else if (orphanIdx < 0) {
         orphans.push(state);
       }
-      queue.push(state);
+      queue.push(/** @type {StateObject} */ (state));
     }
     notifyListeners();
 
@@ -113,14 +122,16 @@ export class StateQueueManager {
 
   /**
    *
-   * @param {ng.StateDeclaration} state
-   * @returns {() => void} a function that deregisters the rule
+   * @param {StateObject | ng.StateDeclaration} state
+   * @returns {void} a function that deregisters the rule
    */
   attachRoute(state) {
-    if (!state.abstract && state.url) {
+    if (!(/** @type {ng.StateDeclaration} */ (state).abstract) && state.url) {
       const rulesApi = this.urlServiceRules;
 
-      rulesApi.rule(rulesApi._urlRuleFactory.create(state));
+      rulesApi.rule(
+        rulesApi._urlRuleFactory.create(/** @type {StateObject} */ (state)),
+      );
     }
   }
 }

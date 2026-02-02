@@ -10,6 +10,9 @@ import { $injectTokens as $t, provider } from "../../injection-tokens.js";
 /** @typedef {import("./state-object.js").StateObject} StateObject */
 /** @typedef {import("./interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
 /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider } */
+/** @typedef {import("./interface.ts").StateRegistryListener} StateRegistryListener */
+/** @typedef {import("./interface.ts").StateDeclaration} StateDeclaration */
+/** @typedef {import("./interface.ts").StateOrName} StateOrName */
 
 /**
  * A registry for all of the application's [[StateDeclaration]]s
@@ -53,7 +56,7 @@ export class StateRegistryProvider {
     this.$injector = undefined;
 
     /**
-     * @type {import("./interface.ts").StateRegistryListener[]}
+     * @type {StateRegistryListener[]}
      */
     this.listeners = [];
 
@@ -287,7 +290,7 @@ export class StateRegistryProvider {
    * This removes a state from the registry.
    * If the state has children, they are are also removed from the registry.
    *
-   * @param {import("./interface.ts").StateOrName} stateOrName the state's name or object representation
+   * @param {StateOrName} stateOrName the state's name or object representation
    * @returns {BuiltStateDeclaration[]} a list of removed states
    */
   deregister(stateOrName) {
@@ -319,14 +322,17 @@ export class StateRegistryProvider {
 
   /**
    *
-   * @param {import("./interface.ts").StateOrName} stateOrName
-   * @param {import("./interface.ts").StateOrName} [base]
+   * @param {StateOrName} [stateOrName]
+   * @param {StateOrName} [base]
    * @returns {import("./state-service.js").StateDeclaration | import("./state-service.js").StateDeclaration[] | null}
    */
   get(stateOrName, base) {
     if (arguments.length === 0)
       return keys(this.states).map((name) => this.states[name].self);
-    const found = this.matcher.find(stateOrName, base);
+    const found = this.matcher.find(
+      /** @type {import("./interface.ts").StateOrName} */ (stateOrName),
+      base,
+    );
 
     return (found && found.self) || null;
   }

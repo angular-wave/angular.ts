@@ -14,6 +14,13 @@ import { $injectTokens, provider } from "../../injection-tokens.js";
 /** @typedef {import("./state-registry.js").StateRegistryProvider} StateRegistryProvider */
 /** @typedef {import("./interface.ts").StateDeclaration} StateDeclaration */
 /** @typedef {import("./state-object.js").StateObject} StateObject */
+/** @typedef {import("./state-matcher.js").StateOrName} StateOrName */
+/** @typedef {import("../transition/transition.js").Transition} Transition */
+/** @typedef {import("./interface.ts").TransitionPromise} TransitionPromise */
+/** @typedef {import("../transition/interface.ts").TransitionOptions} TransitionOptions */
+/** @typedef {import("../params/interface.ts").RawParams} RawParams */
+/** @typedef {import("./interface.ts").OnInvalidCallback} OnInvalidCallback */
+/** @typedef {import("../transition/transition-hook.js").HookResult} HookResult */
 
 const stdErr = minErr("$stateProvider");
 
@@ -25,7 +32,11 @@ const stdErr = minErr("$stateProvider");
  * @param {Promise<T>} promise
  * @returns {Promise<T>}
  */
-const silenceUncaughtInPromise = (promise) => promise.catch(() => 0) && promise;
+const silenceUncaughtInPromise = (promise) => {
+  promise.catch(() => undefined);
+
+  return promise;
+};
 
 /**
  * Creates a rejected promise whose rejection is intentionally silenced.
@@ -270,7 +281,7 @@ export class StateProvider {
 
     const injector = this.$injector;
 
-    const checkForRedirect = (result) => {
+    const checkForRedirect = (/** @type {HookResult} */ result) => {
       if (!(result instanceof TargetState)) {
         return undefined;
       }
@@ -298,6 +309,9 @@ export class StateProvider {
       );
     };
 
+    /**
+     * @returns {Promise<any>}
+     */
     function invokeNextCallback() {
       const nextCallback = callbackQueue.dequeue();
 
@@ -510,12 +524,12 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param {string | StateDeclaration | StateObject} to State name or state object.
-   * @param toParams A map of the parameters that will be sent to the state,
+   * @param {StateOrName} to State name or state object.
+   * @param {RawParams} toParams A map of the parameters that will be sent to the state,
    *      will populate $stateParams.
-   * @param options Transition options
+   * @param {TransitionOptions} options Transition options
    *
-   * @returns A promise representing the state of the new transition. See [[go]]
+   * @returns {TransitionPromise | Promise<any>} A promise representing the state of the new transition. See [[go]]
    */
   transitionTo(to, toParams = {}, options = {}) {
     options = defaults(options, defaultTransOpts);
@@ -544,42 +558,47 @@ export class StateProvider {
      * no error occurred.  Likewise, the transition.run() promise may be rejected because of
      * a Redirect, but the transitionTo() promise is chained to the new Transition's promise.
      */
-    const rejectedTransitionHandler = (trans) => (error) => {
-      if (error instanceof Rejection) {
-        const isLatest = this.globals._lastStartedTransitionId <= trans.$id;
+    /** @typedef {(error: any) => Promise<any>} RejectionHandler */
+    /** @typedef {(trans: Transition) => RejectionHandler} RejectedTransitionHandler */
 
-        if (error.type === RejectType._IGNORED) {
-          isLatest && /** @type {ng.UrlService} */ (this.urlService).update();
+    /** @type {RejectedTransitionHandler} */
+    const rejectedTransitionHandler =
+      (/** @type {Transition} */ trans) => (error) => {
+        if (error instanceof Rejection) {
+          const isLatest = this.globals._lastStartedTransitionId <= trans.$id;
 
-          // Consider ignored `Transition.run()` as a successful `transitionTo`
-          return Promise.resolve(this.globals.current);
+          if (error.type === RejectType._IGNORED) {
+            isLatest && /** @type {ng.UrlService} */ (this.urlService).update();
+
+            // Consider ignored `Transition.run()` as a successful `transitionTo`
+            return Promise.resolve(this.globals.current);
+          }
+          const { detail } = error;
+
+          if (
+            error.type === RejectType._SUPERSEDED &&
+            error.redirected &&
+            detail instanceof TargetState
+          ) {
+            // If `Transition.run()` was redirected, allow the `transitionTo()` promise to resolve successfully
+            // by returning the promise for the new (redirect) `Transition.run()`.
+            const redirect = trans.redirect(detail);
+
+            return redirect.run().catch(rejectedTransitionHandler(redirect));
+          }
+
+          if (error.type === RejectType._ABORTED) {
+            isLatest && /** @type {ng.UrlService} */ (this.urlService).update();
+
+            return Promise.reject(error);
+          }
         }
-        const { detail } = error;
+        const errorHandler = this.defaultErrorHandler();
 
-        if (
-          error.type === RejectType._SUPERSEDED &&
-          error.redirected &&
-          detail instanceof TargetState
-        ) {
-          // If `Transition.run()` was redirected, allow the `transitionTo()` promise to resolve successfully
-          // by returning the promise for the new (redirect) `Transition.run()`.
-          const redirect = trans.redirect(detail);
+        errorHandler(error);
 
-          return redirect.run().catch(rejectedTransitionHandler(redirect));
-        }
-
-        if (error.type === RejectType._ABORTED) {
-          isLatest && /** @type {ng.UrlService} */ (this.urlService).update();
-
-          return Promise.reject(error);
-        }
-      }
-      const errorHandler = this.defaultErrorHandler();
-
-      errorHandler(error);
-
-      return Promise.reject(error);
-    };
+        return Promise.reject(error);
+      };
 
     const transition = this.transitionService.create(currentPath, ref);
 
@@ -614,19 +633,19 @@ export class StateProvider {
      * ```html
      * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
      * ```
-     * @param {any} stateOrName The state name (absolute or relative) or state object you'd like to check.
-     * @param {Record<string, any> | undefined} params A param object, e.g. `{sectionId: section.id}`, that you'd like
+     * @param {import("./state-matcher.js").StateOrName} stateOrName The state name (absolute or relative) or state object you'd like to check.
+     * @param {import("../params/interface.ts").RawParams} [params] A param object, e.g. `{sectionId: section.id}`, that you'd like
     to test against the current active state.
-     * @param {{ relative: any; } | undefined} [options] An options object. The options are:
+     * @param {{ relative: import("./state-matcher.js").StateOrName | undefined; } | undefined} [options] An options object. The options are:
     - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
     test relative to `options.relative` state (or name).
-     * @returns Returns true if it is the state.
+     * @returns {boolean | undefined} Returns true if it is the state.
      */
   is(stateOrName, params, options) {
     options = defaults(options, { relative: this.$current });
-    const state = this.stateRegistry.matcher.find(
+    const state = this.stateRegistry?.matcher.find(
       stateOrName,
-      options.relative,
+      options?.relative,
     );
 
     if (!isDefined(state)) return undefined;
@@ -670,29 +689,30 @@ export class StateProvider {
      * $state.includes("*.details.*"); // returns false
      * $state.includes("item.**"); // returns false
      * ```
-     * @param {unknown} stateOrName A partial name, relative name, glob pattern,
+     * @param {StateOrName} stateOrName A partial name, relative name, glob pattern,
     or state object to be searched for within the current state name.
-     * @param {Record<string, any> | undefined} params A param object, e.g. `{sectionId: section.id}`,
+     * @param {RawParams} [params] A param object, e.g. `{sectionId: section.id}`,
     that you'd like to test against the current active state.
-     * @param {{ relative: any; } | undefined} [options] An options object. The options are:
+     * @param {TransitionOptions} [options] An options object. The options are:
     - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
     test relative to `options.relative` state (or name).
-     * @returns {boolean} Returns true if it does include the state
+     * @returns {boolean | undefined} Returns true if it does include the state
      */
   includes(stateOrName, params, options) {
     options = defaults(options, { relative: this.$current });
     const glob = isString(stateOrName) && Glob.fromString(stateOrName);
 
     if (glob) {
-      if (!glob.matches(this.$current.name)) return false;
-      stateOrName = this.$current.name;
+      if (!glob.matches(/** @type {string} */ (this.$current?.name)))
+        return false;
+      stateOrName = /** @type {string} */ (this.$current?.name);
     }
-    const state = this.stateRegistry.matcher.find(
+    const state = this.stateRegistry?.matcher.find(
       stateOrName,
-      options.relative,
+      options?.relative,
     );
 
-    const include = this.$current.includes;
+    const include = this.$current?.includes;
 
     if (!isDefined(state)) return undefined;
 
@@ -723,7 +743,7 @@ export class StateProvider {
    * @param {import("./state-matcher.js").StateOrName} stateOrName The state name or state object you'd like to generate a url from.
    * @param {import("../params/interface.ts").RawParams} params An object of parameter values to fill the state's required parameters.
    * @param {import("./interface.ts").HrefOptions} [options] Options object. The options are:
-   * @returns {string} compiled state url
+   * @returns {string | null} compiled state url
    */
   href(stateOrName, params, options) {
     const defaultHrefOpts = {
@@ -735,16 +755,20 @@ export class StateProvider {
 
     options = defaults(options, defaultHrefOpts);
     params = params || {};
-    const state = this.stateRegistry.matcher.find(
+    const state = this.stateRegistry?.matcher.find(
       stateOrName,
-      options.relative,
+      options?.relative,
     );
 
     if (!isDefined(state)) return null;
 
-    if (options.inherit)
-      params = this.globals.params.$inherit(params, this.$current, state);
-    const nav = state && options.lossy ? state.navigable : state;
+    if (options?.inherit)
+      params = this.globals.params.$inherit(
+        params,
+        /** @type {StateObject} */ (this.$current),
+        state,
+      );
+    const nav = state && options?.lossy ? state.navigable : state;
 
     if (!nav || nav.url === undefined || nav.url === null) {
       return null;
@@ -754,7 +778,7 @@ export class StateProvider {
       nav.url,
       params,
       {
-        absolute: options.absolute,
+        absolute: options?.absolute,
       },
     );
   }
@@ -779,7 +803,7 @@ export class StateProvider {
    *   // Do not log transitionTo errors
    * });
    * ```
-   * @param {import("../../docs.ts").ExceptionHandler | undefined} handler a global error handler function
+   * @param {import("../../docs.ts").ExceptionHandler | undefined} [handler] a global error handler function
    * @returns the current global error handler
    */
   defaultErrorHandler(handler) {
@@ -793,9 +817,9 @@ export class StateProvider {
   get(stateOrName, base) {
     const reg = this.stateRegistry;
 
-    if (arguments.length === 0) return reg.get();
+    if (arguments.length === 0) return reg?.get();
 
-    return reg.get(stateOrName, base || this.$current);
+    return reg?.get(stateOrName, base || this.$current);
   }
 
   /**
