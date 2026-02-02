@@ -182,5 +182,5 @@ StateObject.isStateDeclaration = (
 ) => isFunction(obj._state);
 
 /** Predicate which returns true if the object is an internal [[StateObject]] object */
-StateObject.isState = (/** @type {{ _stateObjectCache: any; }} */ obj) =>
+StateObject.isState = (/** @type {any} */ obj) =>
   isObject(obj._stateObjectCache);
