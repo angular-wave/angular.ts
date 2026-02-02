@@ -332,7 +332,7 @@ export function ngRepeatDirective($animate) {
                 if (getBlockStart(block) !== nextNode) {
                   // existing item which got moved
                   $animate.move(
-                    /** @type {HTMLElement} */ (getBlockNodes(block.clone)[0]),
+                    /** @type {any} */ (getBlockNodes(block.clone)),
                     null,
                     previousNode,
                   );
