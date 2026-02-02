@@ -167,7 +167,10 @@ export class StateProvider {
    * @param {PathNode[]} fromPath
    * @param {TargetState} toState
    */
-  _handleInvalidTargetState(fromPath: PathNode[], toState: TargetState): any;
+  _handleInvalidTargetState(
+    fromPath: PathNode[],
+    toState: TargetState,
+  ): Promise<any>;
   /**
    * Registers an Invalid State handler
    *
@@ -237,7 +240,9 @@ export class StateProvider {
    *
    * @returns A promise representing the state of the new transition. See [[StateService.go]]
    */
-  reload(reloadState?: string | StateDeclaration | StateObject): any;
+  reload(
+    reloadState?: string | StateDeclaration | StateObject,
+  ): Promise<any> | import("./interface.ts").TransitionPromise;
   /**
    * Transition to a different state and/or parameters
    *
@@ -314,18 +319,18 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param {string | StateDeclaration | StateObject} to State name or state object.
-   * @param toParams A map of the parameters that will be sent to the state,
+   * @param {StateOrName} to State name or state object.
+   * @param {RawParams} toParams A map of the parameters that will be sent to the state,
    *      will populate $stateParams.
-   * @param options Transition options
+   * @param {TransitionOptions} options Transition options
    *
-   * @returns A promise representing the state of the new transition. See [[go]]
+   * @returns {TransitionPromise | Promise<any>} A promise representing the state of the new transition. See [[go]]
    */
   transitionTo(
-    to: string | StateDeclaration | StateObject,
-    toParams?: {},
-    options?: {},
-  ): any;
+    to: StateOrName,
+    toParams?: RawParams,
+    options?: TransitionOptions,
+  ): TransitionPromise | Promise<any>;
   /**
        * Checks if the current state *is* the provided state
        *
@@ -347,23 +352,23 @@ export class StateProvider {
        * ```html
        * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
        * ```
-       * @param {any} stateOrName The state name (absolute or relative) or state object you'd like to check.
-       * @param {Record<string, any> | undefined} params A param object, e.g. `{sectionId: section.id}`, that you'd like
+       * @param {import("./state-matcher.js").StateOrName} stateOrName The state name (absolute or relative) or state object you'd like to check.
+       * @param {import("../params/interface.ts").RawParams} [params] A param object, e.g. `{sectionId: section.id}`, that you'd like
       to test against the current active state.
-       * @param {{ relative: any; } | undefined} [options] An options object. The options are:
+       * @param {{ relative: import("./state-matcher.js").StateOrName | undefined; } | undefined} [options] An options object. The options are:
       - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
       test relative to `options.relative` state (or name).
-       * @returns Returns true if it is the state.
+       * @returns {boolean | undefined} Returns true if it is the state.
        */
   is(
-    stateOrName: any,
-    params: Record<string, any> | undefined,
+    stateOrName: import("./state-matcher.js").StateOrName,
+    params?: import("../params/interface.ts").RawParams,
     options?:
       | {
-          relative: any;
+          relative: import("./state-matcher.js").StateOrName | undefined;
         }
       | undefined,
-  ): boolean;
+  ): boolean | undefined;
   /**
        * Checks if the current state *includes* the provided state
        *
@@ -391,24 +396,20 @@ export class StateProvider {
        * $state.includes("*.details.*"); // returns false
        * $state.includes("item.**"); // returns false
        * ```
-       * @param {unknown} stateOrName A partial name, relative name, glob pattern,
+       * @param {StateOrName} stateOrName A partial name, relative name, glob pattern,
       or state object to be searched for within the current state name.
-       * @param {Record<string, any> | undefined} params A param object, e.g. `{sectionId: section.id}`,
+       * @param {RawParams} [params] A param object, e.g. `{sectionId: section.id}`,
       that you'd like to test against the current active state.
-       * @param {{ relative: any; } | undefined} [options] An options object. The options are:
+       * @param {TransitionOptions} [options] An options object. The options are:
       - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
       test relative to `options.relative` state (or name).
-       * @returns {boolean} Returns true if it does include the state
+       * @returns {boolean | undefined} Returns true if it does include the state
        */
   includes(
-    stateOrName: unknown,
-    params: Record<string, any> | undefined,
-    options?:
-      | {
-          relative: any;
-        }
-      | undefined,
-  ): boolean;
+    stateOrName: StateOrName,
+    params?: RawParams,
+    options?: TransitionOptions,
+  ): boolean | undefined;
   /**
    * Generates a URL for a state and parameters
    *
@@ -421,13 +422,13 @@ export class StateProvider {
    * @param {import("./state-matcher.js").StateOrName} stateOrName The state name or state object you'd like to generate a url from.
    * @param {import("../params/interface.ts").RawParams} params An object of parameter values to fill the state's required parameters.
    * @param {import("./interface.ts").HrefOptions} [options] Options object. The options are:
-   * @returns {string} compiled state url
+   * @returns {string | null} compiled state url
    */
   href(
     stateOrName: import("./state-matcher.js").StateOrName,
     params: import("../params/interface.ts").RawParams,
     options?: import("./interface.ts").HrefOptions,
-  ): string;
+  ): string | null;
   /**
    * Sets or gets the default [[transitionTo]] error handler.
    *
@@ -448,11 +449,11 @@ export class StateProvider {
    *   // Do not log transitionTo errors
    * });
    * ```
-   * @param {import("../../docs.ts").ExceptionHandler | undefined} handler a global error handler function
+   * @param {import("../../docs.ts").ExceptionHandler | undefined} [handler] a global error handler function
    * @returns the current global error handler
    */
   defaultErrorHandler(
-    handler: import("../../docs.ts").ExceptionHandler | undefined,
+    handler?: import("../../docs.ts").ExceptionHandler | undefined,
   ): import("../../docs.ts").ExceptionHandler;
   /**
    * @param {import("./interface.ts").StateOrName} stateOrName
@@ -484,5 +485,13 @@ export type StateRegistryProvider =
   import("./state-registry.js").StateRegistryProvider;
 export type StateDeclaration = import("./interface.ts").StateDeclaration;
 export type StateObject = import("./state-object.js").StateObject;
+export type StateOrName = import("./state-matcher.js").StateOrName;
+export type Transition = import("../transition/transition.js").Transition;
+export type TransitionPromise = import("./interface.ts").TransitionPromise;
+export type TransitionOptions =
+  import("../transition/interface.ts").TransitionOptions;
+export type RawParams = import("../params/interface.ts").RawParams;
+export type OnInvalidCallback = import("./interface.ts").OnInvalidCallback;
+export type HookResult = import("../transition/transition-hook.js").HookResult;
 import { PathNode } from "../path/path-node.js";
 import { TargetState } from "./target-state.js";
