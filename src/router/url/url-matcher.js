@@ -22,6 +22,34 @@ import { joinNeighborsR, splitOnDelim } from "../../shared/strings.js";
 
 /** @typedef {import("./interface.js").UrlMatcherCache} UrlMatcherCache */
 
+/**
+ * @param {any} str
+ * @param {any} [param]
+ */
+function quoteRegExp(str, param) {
+  let surroundPattern = ["", ""];
+
+  let result = str.replace(/[\\[\]^$*+?.()|{}]/g, "\\$&");
+
+  if (!param) return result;
+  switch (param.squash) {
+    case false:
+      surroundPattern = ["(", `)${param.isOptional ? "?" : ""}`];
+      break;
+    case true:
+      result = result.replace(/\/$/, "");
+      surroundPattern = ["(?:/(", ")|/)?"];
+      break;
+    default:
+      surroundPattern = [`(${param.squash}|`, ")?"];
+      break;
+  }
+
+  return (
+    result + surroundPattern[0] + param.type.pattern.source + surroundPattern[1]
+  );
+}
+
 const memoizeTo = (
   /** @type {{ [x: string]: any; path?: UrlMatcher[]; }} */ obj,
   /** @type {string} */ _prop,
@@ -364,6 +392,9 @@ export class UrlMatcher {
       }
     }
     this._segments.push(segment);
+    this._compiled = patterns
+      .map((_pattern) => quoteRegExp.apply(null, /** @type {any} */ (_pattern)))
+      .concat(quoteRegExp(segment));
   }
 
   /**
