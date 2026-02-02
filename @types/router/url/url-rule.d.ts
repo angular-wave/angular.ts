@@ -116,17 +116,17 @@ export class UrlRuleFactory {
    * var match = rule.match('/foo/bar'); // results in [ '/foo/bar', 'bar' ]
    * var result = rule.handler(match); // '/home/bar'
    * ```
+   * @param {RegExp} regexp
+   * @param {string | import("./interface.js").UrlRuleHandlerFn} handler
+   * @returns {import("./interface.js").RegExpRule}
    */
   fromRegExp(
-    regexp: any,
-    handler: any,
-  ): BaseUrlRule & {
-    regexp: any;
-    type: string;
-  };
+    regexp: RegExp,
+    handler: string | import("./interface.js").UrlRuleHandlerFn,
+  ): import("./interface.js").RegExpRule;
 }
 export namespace UrlRuleFactory {
-  function isUrlRule(obj: any): boolean;
+  function isUrlRule(obj: { [x: string]: any }): boolean;
 }
 /**
  * A base rule which calls `match`
@@ -155,9 +155,9 @@ export class BaseUrlRule {
    */
   $id: number;
   /**
-   * @type {string | undefined}
+   * @type {number | undefined}
    */
-  _group: string | undefined;
+  _group: number | undefined;
   /**
    * @type {import("./interface.js").UrlRuleHandlerFn}
    */

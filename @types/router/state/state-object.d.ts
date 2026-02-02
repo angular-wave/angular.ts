@@ -124,7 +124,7 @@ export namespace StateObject {
     obj: StateObject | import("../state/interface.js").StateDeclaration,
   ): boolean;
   /** Predicate which returns true if the object is an internal [[StateObject]] object */
-  function isState(obj: { _stateObjectCache: any }): boolean;
+  function isState(obj: any): boolean;
 }
 export type Param = import("../params/param.js").Param;
 export type Resolvable = import("../resolve/resolvable.js").Resolvable;

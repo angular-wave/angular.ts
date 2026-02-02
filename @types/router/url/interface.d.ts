@@ -41,7 +41,7 @@ export interface MatchResult {
  * @return the matched value, either truthy or falsey
  */
 export interface UrlRuleMatchFn {
-  (url?: UrlParts, router?: ng.RouterService): any;
+  (url: UrlParts, router?: ng.RouterService): any;
 }
 /**
  * Handler invoked when a rule is matched

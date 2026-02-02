@@ -418,20 +418,15 @@ export class StateProvider {
    * ```js
    * expect($state.href("about.person", { person: "bob" })).toEqual("/about/bob");
    * ```
-   * @param {any} stateOrName The state name or state object you'd like to generate a url from.
-   * @param {Object} params An object of parameter values to fill the state's required parameters.
-   * @param {{ relative: any; inherit: any; lossy: any; absolute: any; }} options Options object. The options are:
+   * @param {import("./state-matcher.js").StateOrName} stateOrName The state name or state object you'd like to generate a url from.
+   * @param {import("../params/interface.ts").RawParams} params An object of parameter values to fill the state's required parameters.
+   * @param {import("./interface.ts").HrefOptions} [options] Options object. The options are:
    * @returns {string} compiled state url
    */
   href(
-    stateOrName: any,
-    params: any,
-    options: {
-      relative: any;
-      inherit: any;
-      lossy: any;
-      absolute: any;
-    },
+    stateOrName: import("./state-matcher.js").StateOrName,
+    params: import("../params/interface.ts").RawParams,
+    options?: import("./interface.ts").HrefOptions,
   ): string;
   /**
    * Sets or gets the default [[transitionTo]] error handler.
