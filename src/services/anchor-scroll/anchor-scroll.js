@@ -87,13 +87,20 @@ export class AnchorScrollProvider {
       }
 
       /** @type {ng.AnchorScrollService} */
-      const scroll = (hash) => {
+      const scroll = (hashOrElement) => {
+        // Direct element scrolling
+        if (hashOrElement instanceof HTMLElement) {
+          scrollTo(hashOrElement);
+
+          return;
+        }
         // Allow numeric hashes
-        hash = isString(hash)
-          ? hash
-          : isNumber(hash)
-            ? hash.toString()
+        const hash = isString(hashOrElement)
+          ? hashOrElement
+          : isNumber(hashOrElement)
+            ? hashOrElement.toString()
             : $location.getHash();
+
         let elm;
 
         // empty hash, scroll to the top of the page

@@ -47,6 +47,7 @@ export class ViewConfig {
     viewDecl: import("./interface.ts").ViewDeclaration,
     factory: import("../template-factory.js").TemplateFactoryProvider,
   );
+  $id: number;
   /**
    * @type {Array<import('../path/path-node.js').PathNode>}
    */
@@ -67,10 +68,14 @@ export class ViewConfig {
    * @type {string | undefined}
    */
   template: string | undefined;
-  /** @type {Number} */ $id: number;
+  /** @type {boolean} */
   loaded: boolean;
   getTemplate: (ngView: any, context: ResolveContext) => string;
-  load(): Promise<this>;
+  /**
+   *
+   * @returns {Promise<ViewConfig>}
+   */
+  load(): Promise<ViewConfig>;
   controller: any;
   /**
    * Gets the controller for a view configuration.
