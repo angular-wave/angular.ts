@@ -202,11 +202,11 @@ describe("UrlMatcher", () => {
       });
     });
 
-    xit("should allow embedded capture groups", () => {
+    it("should allow embedded capture groups", () => {
       const shouldPass = {
-        "/url/{matchedParam:([a-z]+)}/child/{childParam}":
+        "/url/{matchedParam:(?:[a-z]+)}/child/{childParam}":
           "/url/someword/child/childParam",
-        "/url/{matchedParam:([a-z]+)}/child/{childParam}?foo":
+        "/url/{matchedParam:(?:[a-z]+)}/child/{childParam}":
           "/url/someword/child/childParam",
       };
 
