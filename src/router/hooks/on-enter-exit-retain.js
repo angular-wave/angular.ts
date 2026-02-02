@@ -8,7 +8,9 @@
  */
 function makeEnterExitRetainHook(hookName) {
   return (transition, state) => {
-    const _state = /** @type Record<string, any> */ (state._state());
+    const _state = /** @type Record<string, any> */ (
+      state._state && state._state()
+    );
 
     const hookFn = _state[hookName];
 

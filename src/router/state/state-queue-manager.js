@@ -7,16 +7,16 @@ export class StateQueueManager {
   /**
    * @param {import("./state-registry.js").StateRegistryProvider} stateRegistry
    * @param {import("../url/url-rules.js").UrlRules} urlServiceRules
-   * @param  {Record<string, StateObject>} states
-   * @param {*} builder
-   * @param {*} listeners
+   * @param {import("./interface.ts").StateStore} states
+   * @param {import("./state-builder.js").StateBuilder} builder
+   * @param {StateRegistryListener[]} listeners
    */
   constructor(stateRegistry, urlServiceRules, states, builder, listeners) {
     this.stateRegistry = stateRegistry;
     /** @type {import("../url/url-rules.js").UrlRules} */
     this.urlServiceRules = urlServiceRules;
 
-    /** @type {Record<string, StateObject>} */
+    /** @type {import("./interface.ts").StateStore} */
     this.states = states;
     this.builder = builder;
     /** @type {StateRegistryListener[]} */
@@ -76,7 +76,7 @@ export class StateQueueManager {
 
       const { name } = /** @type {StateObject} */ (state);
 
-      const result = builder.build(state);
+      const result = builder.build(/** @type {StateObject} */ (state));
 
       const orphanIdx = orphans.indexOf(state);
 

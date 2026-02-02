@@ -144,11 +144,11 @@ export class Trace {
   /**
    * @internal called by ng-router code
    * @param {string} event
-   * @param {import("../view/interface.ts").ViewConfig} viewConfig
+   * @param {import("../view/view.js").ViewConfig} viewConfig
    */
   traceViewServiceEvent(
     event: string,
-    viewConfig: import("../view/interface.ts").ViewConfig,
+    viewConfig: import("../view/view.js").ViewConfig,
   ): void;
   /**
    * @internal called by ng-router code

@@ -191,7 +191,9 @@ export class ResolveContext {
       );
 
       // For the matching Resolvables, start their async fetch process.
-      const subContext = this.subContext(node.state);
+      const subContext = this.subContext(
+        /** @type {ng.BuiltStateDeclaration} */ (node.state),
+      );
 
       const getResult = (
         /** @type {{ get: (arg0: ResolveContext, arg1: ng.Transition) => Promise<any>; token: any; }} */ resolve,

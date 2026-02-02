@@ -36,11 +36,11 @@ export class TargetState {
    * Note: Do not construct a `TargetState` manually.
    * To create a `TargetState`, use the [[StateService.target]] factory method.
    *
-   * @param _stateRegistry The StateRegistry to use to look up the _definition
-   * @param _identifier An identifier for a state.
+   * @param {import("./state-service.js").StateRegistryProvider} _stateRegistry The StateRegistry to use to look up the _definition
+   * @param {import("./interface.js").StateOrName} _identifier An identifier for a state.
    *    Either a fully-qualified state name, or the object used to define the state.
-   * @param _params Parameters for the target state
-   * @param _options Transition options.
+   * @param {import("../params/interface.js").RawParams} _params Parameters for the target state
+   * @param {import("../transition/interface.js").TransitionOptions} _options Transition options.
    *
    * @internal
    */
@@ -98,7 +98,7 @@ export class TargetState {
 
   /** If the object is invalid, returns the reason why */
   error() {
-    const base = this.options().relative;
+    const base = /** @type {any} */ (this.options().relative);
 
     if (!this._definition && !!base) {
       const stateName = base.name ? base.name : base;
@@ -122,7 +122,8 @@ export class TargetState {
    * Returns a copy of this TargetState which targets a different state.
    * The new TargetState has the same parameter values and transition options.
    *
-   * @param state The new state that should be targeted
+   * @param {import("./interface.js").StateOrName} state The new state that should be targeted
+   * @returns {TargetState} A new TargetState instance which targets the desired state
    */
   withState(state) {
     return new TargetState(
@@ -136,9 +137,10 @@ export class TargetState {
   /**
    * Returns a copy of this TargetState, using the specified parameter values.
    *
-   * @param params the new parameter values to use
-   * @param replace When false (default) the new parameter values will be merged with the current values.
+   * @param {import("../params/interface.js").RawParams} params the new parameter values to use
+   * @param {boolean} replace When false (default) the new parameter values will be merged with the current values.
    *                When true the parameter values will be used instead of the current values.
+   * @returns {TargetState} A new TargetState instance which targets the same state with the desired parameters
    */
   withParams(params, replace = false) {
     const newParams = replace
@@ -156,9 +158,10 @@ export class TargetState {
   /**
    * Returns a copy of this TargetState, using the specified Transition Options.
    *
-   * @param options the new options to use
-   * @param replace When false (default) the new options will be merged with the current options.
+   * @param {import("../transition/interface.js").TransitionOptions} options the new options to use
+   * @param {boolean} replace When false (default) the new options will be merged with the current options.
    *                When true the options will be used instead of the current options.
+   * @returns {TargetState} A new TargetState instance which targets the same state with the desired options
    */
   withOptions(options, replace = false) {
     const newOpts = replace
@@ -174,7 +177,7 @@ export class TargetState {
   }
 }
 /** Returns true if the object has a state property that might be a state or state name */
-TargetState.isDef = (obj) => {
+TargetState.isDef = (/** @type {any} */ obj) => {
   return (
     obj &&
     obj.state &&

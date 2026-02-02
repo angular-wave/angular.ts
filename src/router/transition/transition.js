@@ -520,7 +520,10 @@ export class Transition {
 
     // Find any "entering" nodes in the redirect path that match the original path and aren't being reloaded
     const matchingEnteringNodes = params.filter(
-      (x) => !nodeIsReloading(targetState.options().reloadState)(x),
+      (x) =>
+        !nodeIsReloading(
+          /** @type {ng.StateObject} */ (targetState.options().reloadState),
+        )(x),
     );
 
     // Use the existing (possibly pre-resolved) resolvables for the matching entering nodes.

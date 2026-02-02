@@ -161,7 +161,11 @@ export class TransitionHook {
 
     trace.traceHookInvocation(this, this.transition, options);
     const invokeCallback = () =>
-      hook.callback.call(options.bind, this.transition, this.stateContext);
+      hook.callback.call(
+        options.bind,
+        this.transition,
+        /** @type {ng.StateDeclaration} */ (this.stateContext),
+      );
 
     const normalizeErr = (/** @type {any} */ err) =>
       Rejection.normalize(err).toPromise();
