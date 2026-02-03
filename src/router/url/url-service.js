@@ -298,7 +298,11 @@ export class UrlService {
       [
         is(TargetState),
         (/** @type {TargetState} */ target) =>
-          stateService.go(target.state(), target.params(), target.options()),
+          stateService.go(
+            /** @type {ng.StateDeclaration} */ (target.state()),
+            target.params(),
+            target.options(),
+          ),
       ],
     ]);
 
@@ -339,8 +343,6 @@ export class UrlService {
   }
 
   /**
-   * Matches a URL
-   *
    * Given a URL (as a [[UrlParts]] object), check all rules and determine the best matching rule.
    * Return the result as a [[MatchResult]].
    * @param {import("../../docs.ts").UrlParts} url

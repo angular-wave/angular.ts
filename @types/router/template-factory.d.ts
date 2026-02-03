@@ -13,13 +13,13 @@ export class TemplateFactoryProvider {
         $http: ng.HttpService,
         $templateCache: ng.TemplateCacheService,
         $templateRequest: ng.TemplateRequestService,
-        $injector: import("../core/di/internal-injector.js").InjectorService,
+        $injector: ng.InjectorService,
       ) => TemplateFactoryProvider)
   )[];
   $templateRequest: import("../services/template-request/interface.ts").TemplateRequestService;
   $http: import("../docs.ts").HttpService;
   $templateCache: ng.TemplateCacheService;
-  $injector: import("../core/di/internal-injector.js").InjectorService;
+  $injector: import("../docs.ts").InjectorService;
   /**
    * Creates a template from a configuration object.
    *
@@ -55,9 +55,9 @@ export class TemplateFactoryProvider {
    * @param {string|Function} url url of the template to load, or a function
    * that returns a url.
    * @param {Object} params Parameters to pass to the url function.
-   * @return {Promise<string>}
+   * @return {Promise<string> | null}
    */
-  fromUrl(url: string | Function, params: any): Promise<string>;
+  fromUrl(url: string | Function, params: any): Promise<string> | null;
   /**
    * Creates a template by invoking an injectable provider function.
    *
@@ -74,13 +74,13 @@ export class TemplateFactoryProvider {
   ): string | Promise<string>;
   /**
    * Creates a component's template by invoking an injectable provider function.
-   *
    * @param {import('../interface.ts').Injectable<any>} provider Function to invoke via `locals`
+   * @param {import("./resolve/resolve-context.js").ResolveContext} context
    * @return {Promise<any>} The template html as a string: "<component-name input1='::$resolve.foo'></component-name>".
    */
   fromComponentProvider(
     provider: import("../interface.ts").Injectable<any>,
-    context: any,
+    context: import("./resolve/resolve-context.js").ResolveContext,
   ): Promise<any>;
   /**
    * Creates a template from a component's name

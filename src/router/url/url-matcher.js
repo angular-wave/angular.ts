@@ -21,6 +21,7 @@ import { DefType, Param } from "../params/param.js";
 import { joinNeighborsR, splitOnDelim } from "../../shared/strings.js";
 
 /** @typedef {import("./interface.js").UrlMatcherCache} UrlMatcherCache */
+/** @typedef {import("./interface.ts").ParamDetails} ParamDetails */
 
 /**
  * @param {any} str
@@ -129,7 +130,7 @@ export class UrlMatcher {
 
     return arrayTuples(staticSegments, [...pathParams, undefined])
       .reduce(unnestR, [])
-      .filter((x) => x !== "" && isDefined(x));
+      .filter((/** @type {string} */ x) => x !== "" && isDefined(x));
   }
 
   /**
@@ -185,7 +186,9 @@ export class UrlMatcher {
           ?.map(UrlMatcher.pathSegmentsAndParams)
           .reduce(unnestR, [])
           .reduce(joinNeighborsR, [])
-          .map((x) => (isString(x) ? splitOnSlash(x) : x))
+          .map((/** @type {unknown} */ x) =>
+            isString(x) ? splitOnSlash(x) : x,
+          )
           .reduce(unnestR, []));
 
     /**
@@ -623,7 +626,9 @@ export class UrlMatcher {
     const pathSegmentsAndParams = /** @type {UrlMatcher[]} */ (urlMatchers)
       .map(UrlMatcher.pathSegmentsAndParams)
       .reduce(unnestR, [])
-      .map((x) => (isString(x) ? x : getDetails(x)));
+      .map((/** @type {string | Param} */ x) =>
+        isString(x) ? x : getDetails(/** @type {Param} */ (x)),
+      );
 
     // Extract the query params into a separate array
     const queryParams = /** @type {UrlMatcher[]} */ (urlMatchers)
@@ -661,7 +666,7 @@ export class UrlMatcher {
     /** @type {string} */
     const pathString = /** @type {string} */ (
       pathSegmentsAndParams.reduce(
-        /** @param {string} acc */ (acc, x) => {
+        /** @param {string} acc */ (acc, /** @type {ParamDetails} */ x) => {
           // The element is a static segment (a raw string); just append it
           if (isString(x)) return acc + x;
           // Otherwise, it's a ParamDetails.
@@ -699,7 +704,7 @@ export class UrlMatcher {
     // Build the query string by applying parameter values (array or regular)
     // then mapping to key=value, then flattening and joining using "&"
     const queryString = queryParams
-      .map((paramDetails) => {
+      .map((/** @type {ParamDetails} */ paramDetails) => {
         const { param, squash, isDefaultValue } = paramDetails;
 
         let { encoded } = paramDetails;

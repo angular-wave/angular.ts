@@ -108,9 +108,11 @@ export class ResolveContext {
      */
   subContext(state) {
     return new ResolveContext(
-      PathUtils.subPath(
-        this._path,
-        (/** @type {PathNode} */ node) => node.state === state,
+      /** @type {PathNode[]} */ (
+        PathUtils.subPath(
+          /** @type {PathNode[]} */ (this._path),
+          (node) => /** @type {PathNode} */ (node).state === state,
+        )
       ),
     );
   }
@@ -237,15 +239,15 @@ export class ResolveContext {
       PathUtils.subPath(this._path, (/** @type {any} */ x) => x === node) ||
       this._path;
 
-    const availableResolvables = subPath
-      .reduce(
+    const availableResolvables = /** @type {Resolvable[]} */ (
+      subPath.reduce(
         (
           /** @type {string | any[]} */ acc,
           /** @type {{ resolvables: any; }} */ _node,
         ) => acc.concat(_node.resolvables),
         [],
       ) // all of subpath's resolvables
-      .filter((/** @type {Resolvable} */ res) => res !== resolvable); // filter out the `resolvable` argument
+    ).filter((/** @type {Resolvable} */ res) => res !== resolvable); // filter out the `resolvable` argument
 
     return resolvable.deps.map((/** @type {string} */ token) => {
       const matching = availableResolvables.filter(

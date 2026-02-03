@@ -1,7 +1,7 @@
 /** Given a PathNode[], create an TargetState
  * @param {import("../state/state-registry.js").StateRegistryProvider} registry
  * @param {Array<PathNode>} path
- * @returns
+ * @returns {TargetState}
  */
 export function makeTargetState(
   registry: import("../state/state-registry.js").StateRegistryProvider,
@@ -10,6 +10,7 @@ export function makeTargetState(
 /** @typedef {import("../params/param.js").Param} Param */
 /** @typedef {import("./interface.ts").GetParamsFn} GetParamsFn */
 /** @typedef {import("../state/state-object.js").StateObject} StateObject */
+/** @typedef {import("../params/interface.ts").RawParams} RawParams */
 /**
  * This class contains functions which convert TargetStates, Nodes and paths from one type to another.
  */
@@ -23,7 +24,10 @@ export class PathUtils {
    * @param {PathNode[]} fromPath
    * @param {TargetState} targetState
    */
-  static buildToPath(fromPath: PathNode[], targetState: TargetState): any;
+  static buildToPath(
+    fromPath: PathNode[],
+    targetState: TargetState,
+  ): PathNode[];
   /**
    * Creates ViewConfig objects and adds to nodes.
    *
@@ -47,19 +51,27 @@ export class PathUtils {
    * Note: the keys provided in toKeys are intended to be those param keys explicitly specified by some
    * caller, for instance, $state.transitionTo(..., toParams).  If a key was found in toParams,
    * it is not inherited from the fromPath.
+   * @param {PathNode[]} fromPath
+   * @param {PathNode[]} toPath
+   * @param {string[]} [toKeys]
+   * @returns {PathNode[]}
    */
-  static inheritParams(fromPath: any, toPath: any, toKeys?: any[]): any;
+  static inheritParams(
+    fromPath: PathNode[],
+    toPath: PathNode[],
+    toKeys?: string[],
+  ): PathNode[];
   /**
    * Computes the tree changes (entering, exiting) between a fromPath and toPath.
    * @param {PathNode[]} fromPath
    * @param {PathNode[]} toPath
-   * @param {boolean} [reloadState]
+   * @param {StateObject} reloadState
    * @returns {import("../transition/interface.ts").TreeChanges}
    */
   static treeChanges(
     fromPath: PathNode[],
     toPath: PathNode[],
-    reloadState?: boolean,
+    reloadState: StateObject,
   ): import("../transition/interface.ts").TreeChanges;
   /**
    * Returns a new path which is: the subpath of the first path which matches the second path.
@@ -74,39 +86,53 @@ export class PathUtils {
    * @param {PathNode[]} pathB the second path
    * @param {GetParamsFn} [paramsFn] a function which returns the parameters to consider when comparing
    *
-   * @returns {PathNode[] | false} an array of PathNodes from the first path which match the nodes in the second path
+   * @returns {PathNode[]} an array of PathNodes from the first path which match the nodes in the second path
    */
   static matching(
     pathA: PathNode[],
     pathB: PathNode[],
     paramsFn?: GetParamsFn,
-  ): PathNode[] | false;
+  ): PathNode[];
   /**
    * Returns true if two paths are identical.
    *
-   * @param pathA
-   * @param pathB
-   * @param paramsFn a function which returns the parameters to consider when comparing
+   * @param {PathNode[]} pathA
+   * @param {PathNode[]} pathB
+   * @param {GetParamsFn} [paramsFn] a function which returns the parameters to consider when comparing
    * @returns true if the the states and parameter values for both paths are identical
    */
-  static equals(pathA: any, pathB: any, paramsFn: any): boolean;
+  static equals(
+    pathA: PathNode[],
+    pathB: PathNode[],
+    paramsFn?: GetParamsFn,
+  ): boolean;
   /**
    * Return a subpath of a path, which stops at the first matching node
    *
    * Given an array of nodes, returns a subset of the array starting from the first node,
    * stopping when the first node matches the predicate.
-   *
-   * @param path a path of [[PathNode]]s
-   * @param predicate a [[Predicate]] fn that matches [[PathNode]]s
-   * @returns a subpath up to the matching node, or undefined if no match is found
+   * @param {PathNode[]} path a path of [[PathNode]]s
+   * @param {import("../../shared/interface.ts").Predicate<PathNode>} predicate a [[Predicate]] fn that matches [[PathNode]]s
+   * @returns {PathNode[] | undefined} a subpath up to the matching node, or undefined if no match is found
    */
-  static subPath(path: any, predicate: any): any;
-  static nonDynamicParams(node: any): any;
-  /** Gets the raw parameter values from a path */
-  static paramValues(path: any): any;
+  static subPath(
+    path: PathNode[],
+    predicate: import("../../shared/interface.ts").Predicate<PathNode>,
+  ): PathNode[] | undefined;
+  /**
+   * @param {PathNode} node
+   * @return {Param[]}
+   */
+  static nonDynamicParams(node: PathNode): Param[];
+  /**
+   * Gets the raw parameter values from a path
+   * @param {PathNode[]} path
+   */
+  static paramValues(path: PathNode[]): any;
 }
 export type Param = import("../params/param.js").Param;
 export type GetParamsFn = import("./interface.ts").GetParamsFn;
 export type StateObject = import("../state/state-object.js").StateObject;
+export type RawParams = import("../params/interface.ts").RawParams;
 import { PathNode } from "./path-node.js";
 import { TargetState } from "../state/target-state.js";
