@@ -120,7 +120,9 @@ export class HookBuilder {
       .map(makeTransitionHooks)
       .reduce(unnestR, [])
       .sort(tupleSort(hookType.reverseSort))
-      .map((tuple) => tuple.transitionHook);
+      .map(
+        (/** @type {{ transitionHook: any; }} */ tuple) => tuple.transitionHook,
+      );
   }
 
   /**
@@ -150,7 +152,11 @@ export class HookBuilder {
       .map((reg) => reg.getHooks(hookType.name)) // Get named hooks from registries
       .filter(assertPredicate(isArray, `broken event named: ${hookType.name}`)) // Sanity check
       .reduce(unnestR, []) // Un-nest RegisteredHook[][] to RegisteredHook[] array
-      .filter((hook) => hook.matches(treeChanges, transition)); // Only those satisfying matchCriteria
+      .filter(
+        (
+          /** @type {{ matches: (arg0: import("./interface.ts").TreeChanges, arg1: ng.Transition) => any; }} */ hook,
+        ) => hook.matches(treeChanges, transition),
+      ); // Only those satisfying matchCriteria
   }
 }
 /**

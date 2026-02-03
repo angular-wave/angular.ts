@@ -268,10 +268,9 @@ export const anyTrueR = (/** @type {any} */ memo, /** @type {any} */ elem) =>
 /**
  * Reduce function which un-nests a single level of arrays
  *
- * @template T
- * @param {T[]} memo
- * @param {T | T[]} elem
- * @returns {T[]}
+ * @param {any} memo
+ * @param {any} elem
+ * @returns {any}
  *
  * @example
  * let input = [ [ "a", "b" ], [ "c", "d" ], [ [ "double", "nested" ] ] ];

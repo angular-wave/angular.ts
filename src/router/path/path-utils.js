@@ -5,20 +5,30 @@ import { PathNode } from "./path-node.js";
 
 /** @typedef {import("../params/param.js").Param} Param */
 /** @typedef {import("./interface.ts").GetParamsFn} GetParamsFn */
+/** @typedef {import("../state/state-object.js").StateObject} StateObject */
 
 /**
  * This class contains functions which convert TargetStates, Nodes and paths from one type to another.
  */
 export class PathUtils {
+  /**
+   * @param {TargetState} targetState
+   */
   static buildPath(targetState) {
     const toParams = targetState.params();
 
-    return targetState
-      .$state()
-      .path.map((state) => new PathNode(state).applyRawParams(toParams));
+    const stateObject = /** @type {ng.StateObject} */ (targetState.$state());
+
+    return stateObject.path?.map((state) =>
+      new PathNode(state).applyRawParams(toParams),
+    );
   }
 
-  /** Given a fromPath: PathNode[] and a TargetState, builds a toPath: PathNode[] */
+  /**
+   * Given a fromPath: PathNode[] and a TargetState, builds a toPath: PathNode[]
+   * @param {PathNode[]} fromPath
+   * @param {TargetState} targetState
+   */
   static buildToPath(fromPath, targetState) {
     const toPath = PathUtils.buildPath(targetState);
 
@@ -37,6 +47,9 @@ export class PathUtils {
    * Creates ViewConfig objects and adds to nodes.
    *
    * On each [[PathNode]], creates ViewConfig objects from the views: property of the node's state
+   * @param {ng.ViewService} $view
+   * @param {PathNode[]} path
+   * @param {StateObject[]} states
    */
   static applyViewConfigs($view, path, states) {
     // Only apply the viewConfigs to the nodes for the given states
@@ -45,7 +58,10 @@ export class PathUtils {
       .forEach((node) => {
         const viewDecls = Object.values(node.state.views || {});
 
-        const subPath = PathUtils.subPath(path, (x) => x === node);
+        const subPath = PathUtils.subPath(
+          path,
+          (/** @type {PathNode} */ x) => x === node,
+        );
 
         const viewConfigs = viewDecls.map((view) => {
           return $view._createViewConfig(subPath, view);

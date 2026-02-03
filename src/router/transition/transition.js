@@ -581,7 +581,9 @@ export class Transition {
 
     return !changes
       ? false
-      : changes.map((x) => x.dynamic).reduce(anyTrueR, false);
+      : changes
+          .map((/** @type {Param} */ x) => x.dynamic)
+          .reduce(anyTrueR, false);
   }
 
   /**
