@@ -79,11 +79,6 @@ export class StateObject {
     const nameGlob = this.name ? Glob.fromString(this.name) : null;
 
     this._stateObjectCache = { nameGlob };
-
-    /**
-     * @type {(import("./interface.ts").LazyLoadFn) | undefined}
-     */
-    this.lazyLoad = undefined;
   }
 
   /** @returns {StateObject} */
@@ -134,7 +129,7 @@ export class StateObject {
    * If `opts.inherit` is true, it also includes the ancestor states' [[Param]] objects.
    * If `opts.matchingKeys` exists, returns only `Param`s whose `id` is a key on the `matchingKeys` object
    *
-   * @param {{ inherit?: boolean; matchingKeys?: any }} [opts] options
+   * @param {Partial<Param>} [opts] options
    * @returns {Param[]} the list of [[Param]] objects
    */
   parameters(opts) {
