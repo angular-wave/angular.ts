@@ -176,7 +176,7 @@ export function tail<T>(arr: any[] | string): T | undefined;
 export function copy(src: any, dest: any): any;
 export function allTrueR(memo: any, elem: any): any;
 export function anyTrueR(memo: any, elem: any): any;
-export function unnestR<T>(memo: T[], elem: T | T[]): T[];
+export function unnestR(memo: any, elem: any): any;
 export function flattenR<T>(memo: T[], elem: any): T[];
 export function uniqR(acc: any[], token: any): any[];
 export function unnest(arr: any[]): any;

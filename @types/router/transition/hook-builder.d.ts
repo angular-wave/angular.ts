@@ -51,7 +51,7 @@ export class HookBuilder {
     hookType: import("./transition-event-type.js").TransitionEventType,
     treeChanges: import("./interface.ts").TreeChanges,
     transition: import("./transition.js").Transition,
-  ): import("./hook-registry.js").RegisteredHook[];
+  ): any;
 }
 export type TransitionEventType =
   import("./transition-event-type.js").TransitionEventType;

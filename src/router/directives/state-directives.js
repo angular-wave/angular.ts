@@ -534,11 +534,13 @@ export function $StateRefActiveDirective(
         const addClasses = fuzzyClasses.concat(exactClasses).reduce(uniqR, []);
 
         const removeClasses = allClasses.filter(
-          (cls) => !addClasses.includes(cls),
+          (/** @type {any} */ cls) => !addClasses.includes(cls),
         );
 
-        addClasses.forEach((className) => $element.classList.add(className));
-        removeClasses.forEach((className) =>
+        addClasses.forEach((/** @type {string} */ className) =>
+          $element.classList.add(className),
+        );
+        removeClasses.forEach((/** @type {string} */ className) =>
           $element.classList.remove(className),
         );
       }

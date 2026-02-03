@@ -283,7 +283,7 @@ export class Transition {
    */
   redirect(targetState: TargetState): Transition;
   /** @internal If a transition doesn't exit/enter any states, returns any [[Param]] whose value changed */
-  _changedParams(): Param[];
+  _changedParams(): any;
   /**
    * Returns true if the transition is dynamic.
    *
@@ -358,5 +358,4 @@ export type StateObject = import("../state/state-object.js").StateObject;
 export type StateDeclaration = import("../state/interface.ts").StateDeclaration;
 import { HookBuilder } from "./hook-builder.js";
 import { Resolvable } from "../resolve/resolvable.js";
-import { Param } from "../params/param.js";
 import { Rejection } from "./reject-factory.js";

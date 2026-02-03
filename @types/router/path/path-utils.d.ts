@@ -9,19 +9,34 @@ export function makeTargetState(
 ): TargetState;
 /** @typedef {import("../params/param.js").Param} Param */
 /** @typedef {import("./interface.ts").GetParamsFn} GetParamsFn */
+/** @typedef {import("../state/state-object.js").StateObject} StateObject */
 /**
  * This class contains functions which convert TargetStates, Nodes and paths from one type to another.
  */
 export class PathUtils {
-  static buildPath(targetState: any): any;
-  /** Given a fromPath: PathNode[] and a TargetState, builds a toPath: PathNode[] */
-  static buildToPath(fromPath: any, targetState: any): any;
+  /**
+   * @param {TargetState} targetState
+   */
+  static buildPath(targetState: TargetState): PathNode[];
+  /**
+   * Given a fromPath: PathNode[] and a TargetState, builds a toPath: PathNode[]
+   * @param {PathNode[]} fromPath
+   * @param {TargetState} targetState
+   */
+  static buildToPath(fromPath: PathNode[], targetState: TargetState): any;
   /**
    * Creates ViewConfig objects and adds to nodes.
    *
    * On each [[PathNode]], creates ViewConfig objects from the views: property of the node's state
+   * @param {ng.ViewService} $view
+   * @param {PathNode[]} path
+   * @param {StateObject[]} states
    */
-  static applyViewConfigs($view: any, path: any, states: any): void;
+  static applyViewConfigs(
+    $view: ng.ViewService,
+    path: PathNode[],
+    states: StateObject[],
+  ): void;
   /**
    * Given a fromPath and a toPath, returns a new to path which inherits parameters from the fromPath
    *
@@ -92,5 +107,6 @@ export class PathUtils {
 }
 export type Param = import("../params/param.js").Param;
 export type GetParamsFn = import("./interface.ts").GetParamsFn;
+export type StateObject = import("../state/state-object.js").StateObject;
 import { PathNode } from "./path-node.js";
 import { TargetState } from "../state/target-state.js";
