@@ -207,8 +207,6 @@ export class UrlService {
   listen(enabled: boolean): any;
   _stopListeningFn: any;
   /**
-   * Matches a URL
-   *
    * Given a URL (as a [[UrlParts]] object), check all rules and determine the best matching rule.
    * Return the result as a [[MatchResult]].
    * @param {import("../../docs.ts").UrlParts} url

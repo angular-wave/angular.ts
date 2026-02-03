@@ -265,7 +265,7 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param {string} to Absolute state name, state object, or relative state path (relative to current state).
+   * @param {StateOrName} to Absolute state name, state object, or relative state path (relative to current state).
    *
    * Some examples:
    *
@@ -283,7 +283,7 @@ export class StateProvider {
    *
    * @returns {Promise<any>} A promise representing the state of the new transition.
    */
-  go(to: string, params?: any, options?: any): Promise<any>;
+  go(to: StateOrName, params?: any, options?: any): Promise<any>;
   /**
    * Creates a [[TargetState]]
    *

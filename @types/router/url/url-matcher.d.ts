@@ -190,4 +190,5 @@ export namespace UrlMatcher {
   let nameValidator: RegExp;
 }
 export type UrlMatcherCache = import("./interface.js").UrlMatcherCache;
+export type ParamDetails = import("./interface.ts").ParamDetails;
 import { Param } from "../params/param.js";

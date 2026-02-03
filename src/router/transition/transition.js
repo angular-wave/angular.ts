@@ -102,7 +102,7 @@ export class Transition {
     /** @type {TreeChanges} */
     this._treeChanges = PathUtils.treeChanges(
       fromPath,
-      toPath,
+      /** @type {PathNode[]} */ (toPath),
       this._options.reloadState,
     );
     this.createTransitionHookRegFns();

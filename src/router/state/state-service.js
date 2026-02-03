@@ -439,7 +439,7 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param {string} to Absolute state name, state object, or relative state path (relative to current state).
+   * @param {StateOrName} to Absolute state name, state object, or relative state path (relative to current state).
    *
    * Some examples:
    *

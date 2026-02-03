@@ -31,7 +31,7 @@ export class TemplateFactoryProvider {
      * @param {ng.HttpService} $http
      * @param {ng.TemplateCacheService} $templateCache
      * @param {ng.TemplateRequestService} $templateRequest
-     * @param {import("../core/di/internal-injector.js").InjectorService} $injector
+     * @param {ng.InjectorService} $injector
      * @returns {TemplateFactoryProvider}
      */
     ($http, $templateCache, $templateRequest, $injector) => {
@@ -95,9 +95,15 @@ export class TemplateFactoryProvider {
 
     switch (getConfigType(config)) {
       case "template":
-        return asTemplate(this.fromString(config.template, params));
+        return asTemplate(
+          /** @type {string} */ (this.fromString(config.template, params)),
+        );
       case "templateUrl":
-        return asTemplate(this.fromUrl(config.templateUrl, params));
+        return asTemplate(
+          /** @type {Promise<any>} */ (
+            this.fromUrl(config.templateUrl, params)
+          ),
+        );
       case "templateProvider":
         return asTemplate(
           this.fromProvider(config.templateProvider, params, context),
@@ -134,7 +140,7 @@ export class TemplateFactoryProvider {
    * @param {string|Function} url url of the template to load, or a function
    * that returns a url.
    * @param {Object} params Parameters to pass to the url function.
-   * @return {Promise<string>}
+   * @return {Promise<string> | null}
    */
   fromUrl(url, params) {
     if (isFunction(url)) url = /** @type {Function} */ (url)(params);
@@ -169,8 +175,8 @@ export class TemplateFactoryProvider {
 
   /**
    * Creates a component's template by invoking an injectable provider function.
-   *
    * @param {import('../interface.ts').Injectable<any>} provider Function to invoke via `locals`
+   * @param {import("./resolve/resolve-context.js").ResolveContext} context
    * @return {Promise<any>} The template html as a string: "<component-name input1='::$resolve.foo'></component-name>".
    */
   fromComponentProvider(provider, context) {
@@ -201,7 +207,7 @@ export class TemplateFactoryProvider {
     bindings = bindings || {};
     // Bind once prefix
     // Convert to kebob name. Add x- prefix if the string starts with `x-` or `data-`
-    const kebob = (camelCase) => {
+    const kebob = (/** @type {string} */ camelCase) => {
       const kebobed = kebobString(camelCase);
 
       return /^(x|data)-/.exec(kebobed) ? `x-${kebobed}` : kebobed;
@@ -255,9 +261,11 @@ export class TemplateFactoryProvider {
 
 /**
  * Gets all the directive(s)' inputs ('@', '=', and '<') and outputs ('&')
+ * @param {ng.InjectorService | undefined} $injector
+ * @param {string} name
  */
 function getComponentBindings($injector, name) {
-  const cmpDefs = $injector.get(name + DirectiveSuffix); // could be multiple
+  const cmpDefs = $injector?.get(name + DirectiveSuffix); // could be multiple
 
   if (!cmpDefs || !cmpDefs.length)
     throw new Error(`Unable to find component named '${name}'`);
@@ -266,20 +274,29 @@ function getComponentBindings($injector, name) {
 }
 // Given a directive definition, find its object input attributes
 // Use different properties, depending on the type of directive (component, bindToController, normal)
-const getBindings = (def) => {
+const getBindings = (/** @type {ng.Directive} */ def) => {
   if (isObject(def.bindToController))
     return scopeBindings(def.bindToController);
 
-  return scopeBindings(def.scope);
+  return scopeBindings(/** @type {Record<string, string>} */ (def.scope));
 };
 
 // for ng 1.2 style, process the scope: { input: "=foo" }
 // for ng 1.3 through ng 1.5, process the component's bindToController: { input: "=foo" } object
-const scopeBindings = (bindingsObj) =>
-  Object.keys(bindingsObj || {})
-    // [ 'input', [ '=foo', '=', 'foo' ] ]
-    .map((key) => [key, /^([=<@&])[?]?(.*)/.exec(bindingsObj[key])])
-    // skip malformed values
-    .filter((tuple) => isDefined(tuple) && isArray(tuple[1]))
-    // { name: ('foo' || 'input'), type: '=' }
-    .map((tuple) => ({ name: tuple[1][2] || tuple[0], type: tuple[1][1] }));
+// for ng 1.2 style, process the scope: { input: "=foo" }
+// for ng 1.3 through ng 1.5, process the component's bindToController: { input: "=foo" } object
+const scopeBindings = (/** @type {Record<string, string>} */ bindingsObj) => {
+  /** @type {Array<[string, RegExpExecArray | null]>} */
+  const tuples = Object.keys(bindingsObj || {}).map((key) => {
+    const match = /^([=<@&])[?]?(.*)/.exec(bindingsObj[key] || "");
+
+    return [key, match];
+  });
+
+  /** @type {(x: [string, RegExpExecArray | null]) => x is [string, RegExpExecArray]} */
+  const hasMatch = (x) => x[1] !== null;
+
+  return tuples
+    .filter(hasMatch)
+    .map(([key, match]) => ({ name: match[2] || key, type: match[1] }));
+};
