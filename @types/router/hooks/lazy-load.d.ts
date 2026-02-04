@@ -22,14 +22,14 @@
  *
  * See [[StateDeclaration.lazyLoad]]
  * @param {ng.TransitionService} transitionService
- * @param {ng.StateService} stateService
- * @param {ng.UrlService} urlService
+ * @param {ng.StateService} [stateService]
+ * @param {ng.UrlService} [urlService]
  * @param {ng.StateRegistryService | undefined} [stateRegistry]
  */
 export function registerLazyLoadHook(
   transitionService: ng.TransitionService,
-  stateService: ng.StateService,
-  urlService: ng.UrlService,
+  stateService?: ng.StateService,
+  urlService?: ng.UrlService,
   stateRegistry?: ng.StateRegistryService | undefined,
 ): import("../transition/interface.ts").DeregisterFn;
 /**

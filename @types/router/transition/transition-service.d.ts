@@ -108,6 +108,24 @@ export class TransitionProvider {
   _defineCoreEvents(): void;
   _defineCorePaths(): void;
   /**
+   * @param {string} name
+   * @param {number} hookPhase
+   * @param {number} hookOrder
+   * @param {any} criteriaMatchPath
+   */
+  _defineEvent(
+    name: string,
+    hookPhase: number,
+    hookOrder: number,
+    criteriaMatchPath: any,
+    reverseSort?: boolean,
+    getResultHandler?: (
+      hook: TransitionHook,
+    ) => (result: import("./transition-hook.js").HookResult) => Promise<any>,
+    getErrorHandler?: () => (error: any) => Promise<never>,
+    synchronous?: boolean,
+  ): void;
+  /**
    * @param {TransitionHookPhase} [phase]
    * @return {any[]}
    */
@@ -261,4 +279,5 @@ export type PathTypes = import("./interface.ts").PathTypes;
 export type RegisteredHooks = import("./interface.ts").RegisteredHooks;
 import { TransitionEventType } from "./transition-event-type.js";
 import { Transition } from "./transition.js";
+import { TransitionHook } from "./transition-hook.js";
 import { TransitionHookPhase } from "./transition-hook.js";

@@ -24,8 +24,8 @@ import { isArray } from "../../shared/utils.js";
  *
  * See [[StateDeclaration.lazyLoad]]
  * @param {ng.TransitionService} transitionService
- * @param {ng.StateService} stateService
- * @param {ng.UrlService} urlService
+ * @param {ng.StateService} [stateService]
+ * @param {ng.UrlService} [urlService]
  * @param {ng.StateRegistryService | undefined} [stateRegistry]
  */
 export function registerLazyLoadHook(
@@ -47,8 +47,9 @@ export function registerLazyLoadHook(
           // The lazy state should be loaded now, so re-try the original transition
 
           const orig = transition.targetState();
+          // TODO invesigate why this is present if its not passed in transition service
 
-          return stateService.target(
+          return /** @type {ng.StateService} */ (stateService).target(
             orig.identifier(),
             orig.params(),
             orig.options(),
@@ -56,7 +57,7 @@ export function registerLazyLoadHook(
         }
         // The original transition was triggered via url sync
         // Run the URL rules and find the best match
-        const result = urlService.match(urlService.parts());
+        const result = urlService?.match(urlService.parts());
 
         const rule = result && result.rule;
 
@@ -67,10 +68,10 @@ export function registerLazyLoadHook(
 
           const params = result.match;
 
-          return stateService.target(state, params, transition.options());
+          return stateService?.target(state, params, transition.options());
         }
         // No matching state found, so let .sync() choose the best non-state match/otherwise
-        urlService.sync();
+        urlService?.sync();
 
         return undefined;
       }

@@ -1,5 +1,5 @@
 import { Transition } from "./transition.js";
-import { registerHook } from "./hook-registry.js";
+import { makeEvent, registerHook } from "./hook-registry.js";
 import {
   registerAddCoreResolvables,
   treeChangesCleanup,
@@ -200,70 +200,53 @@ export class TransitionProvider {
 
     const SYNCHRONOUS = true;
 
-    this._eventTypes = [
-      new TransitionEventType(
-        "onCreate",
-        TransitionHookPhase._CREATE,
-        0,
-        paths.to,
-        NORMAL_SORT,
-        /** @type {any} */ (TH.LOG_REJECTED_RESULT),
-        TH.THROW_ERROR,
-        SYNCHRONOUS,
-      ),
-      new TransitionEventType(
-        "onBefore",
-        TransitionHookPhase._BEFORE,
-        0,
-        paths.to,
-      ),
-      new TransitionEventType("onStart", TransitionHookPhase._RUN, 0, paths.to),
-      new TransitionEventType(
-        "onExit",
-        TransitionHookPhase._RUN,
-        100,
-        paths.exiting,
-        REVERSE_SORT,
-      ),
-      new TransitionEventType(
-        "onRetain",
-        TransitionHookPhase._RUN,
-        200,
-        paths.retained,
-      ),
-      new TransitionEventType(
-        "onEnter",
-        TransitionHookPhase._RUN,
-        300,
-        paths.entering,
-      ),
-      new TransitionEventType(
-        "onFinish",
-        TransitionHookPhase._RUN,
-        400,
-        paths.to,
-      ),
-      new TransitionEventType(
-        "onSuccess",
-        TransitionHookPhase._SUCCESS,
-        0,
-        paths.to,
-        NORMAL_SORT,
-        /** @type {any} */ (TH.LOG_REJECTED_RESULT),
-        TH.LOG_ERROR,
-        SYNCHRONOUS,
-      ),
-      new TransitionEventType(
-        "onError",
-        TransitionHookPhase._ERROR,
-        0,
-        paths.to,
-        NORMAL_SORT,
-        /** @type {any} */ (TH.LOG_REJECTED_RESULT),
-        TH.LOG_ERROR,
-        SYNCHRONOUS,
-      ),
-    ];
+    this._defineEvent(
+      "onCreate",
+      TransitionHookPhase._CREATE,
+      0,
+      paths.to,
+      NORMAL_SORT,
+      TH.LOG_REJECTED_RESULT,
+      TH.THROW_ERROR,
+      SYNCHRONOUS,
+    );
+    this._defineEvent("onBefore", TransitionHookPhase._BEFORE, 0, paths.to);
+    this._defineEvent("onStart", TransitionHookPhase._RUN, 0, paths.to);
+    this._defineEvent(
+      "onExit",
+      TransitionHookPhase._RUN,
+      100,
+      paths.exiting,
+      REVERSE_SORT,
+    );
+    this._defineEvent(
+      "onRetain",
+      TransitionHookPhase._RUN,
+      200,
+      paths.retained,
+    );
+    this._defineEvent("onEnter", TransitionHookPhase._RUN, 300, paths.entering);
+    this._defineEvent("onFinish", TransitionHookPhase._RUN, 400, paths.to);
+    this._defineEvent(
+      "onSuccess",
+      TransitionHookPhase._SUCCESS,
+      0,
+      paths.to,
+      NORMAL_SORT,
+      TH.LOG_REJECTED_RESULT,
+      TH.LOG_ERROR,
+      SYNCHRONOUS,
+    );
+    this._defineEvent(
+      "onError",
+      TransitionHookPhase._ERROR,
+      0,
+      paths.to,
+      NORMAL_SORT,
+      TH.LOG_REJECTED_RESULT,
+      TH.LOG_ERROR,
+      SYNCHRONOUS,
+    );
   }
 
   _defineCorePaths() {
@@ -274,6 +257,37 @@ export class TransitionProvider {
     this._definePathType("exiting", STATE);
     this._definePathType("retained", STATE);
     this._definePathType("entering", STATE);
+  }
+
+  /**
+   * @param {string} name
+   * @param {number} hookPhase
+   * @param {number} hookOrder
+   * @param {any} criteriaMatchPath
+   */
+  _defineEvent(
+    name,
+    hookPhase,
+    hookOrder,
+    criteriaMatchPath,
+    reverseSort = false,
+    getResultHandler = TransitionHook.HANDLE_RESULT,
+    getErrorHandler = TransitionHook.REJECT_ERROR,
+    synchronous = false,
+  ) {
+    const eventType = new TransitionEventType(
+      name,
+      hookPhase,
+      hookOrder,
+      criteriaMatchPath,
+      reverseSort,
+      getResultHandler,
+      getErrorHandler,
+      synchronous,
+    );
+
+    this._eventTypes.push(eventType);
+    makeEvent(this, this, eventType);
   }
 
   /**
@@ -467,6 +481,8 @@ export class TransitionProvider {
 
     // Updates global state after a transition
     fns.updateGlobals = registerUpdateGlobalState(this);
+    // Lazy load state trees
+    fns.lazyLoad = registerLazyLoadHook(this);
   }
 }
 
@@ -520,27 +536,24 @@ function registerUpdateUrl(transitionService, stateService, urlService) {
  * @param {ng.TransitionService} transitionService
  */
 function registerUpdateGlobalState(transitionService) {
-  return transitionService.onCreate(
-    {},
-    /** @param {import("./transition.js").Transition} trans */ (trans) => {
-      const globals = trans._globals;
+  return transitionService.onCreate({}, (trans) => {
+    const globals = trans._globals;
 
-      const transitionSuccessful = () => {
-        globals._successfulTransitions.enqueue(trans);
-        globals.$current = trans.$to();
-        globals.current = globals.$current.self;
-        copy(trans.params(), globals.params);
-      };
+    const transitionSuccessful = () => {
+      globals._successfulTransitions.enqueue(trans);
+      globals.$current = trans.$to();
+      globals.current = globals.$current.self;
+      copy(trans.params(), globals.params);
+    };
 
-      const clearCurrentTransition = () => {
-        // Only clear if this transition is still the active one
-        if (globals.transition === trans) {
-          globals.transition = undefined;
-        }
-      };
+    const clearCurrentTransition = () => {
+      // Only clear if this transition is still the active one
+      if (globals.transition === trans) {
+        globals.transition = undefined;
+      }
+    };
 
-      trans.onSuccess({}, transitionSuccessful, { priority: 10000 });
-      trans.promise.then(clearCurrentTransition, clearCurrentTransition);
-    },
-  );
+    trans.onSuccess({}, transitionSuccessful, { priority: 10000 });
+    trans.promise.then(clearCurrentTransition, clearCurrentTransition);
+  });
 }
