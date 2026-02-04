@@ -1,4 +1,4 @@
-/* Version: 0.18.0 - January 11, 2026 16:30:11 */
+/* Version: 0.19.0 - February 4, 2026 18:16:21 */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -444,8 +444,8 @@
   }
 
   /**
-   * @param {Object} parent
-   * @param {Object} extra
+   * @param {any} parent
+   * @param {any} extra
    * @returns {Object}
    */
   function inherit$1(parent, extra) {
@@ -474,7 +474,7 @@
 
   /**
    * @param {any} array
-   * @param {string} obj
+   * @param {any} obj
    */
   function includes(array, obj) {
     return Array.prototype.indexOf.call(array, obj) !== -1;
@@ -618,7 +618,7 @@
       return false;
 
     // Handle general objects
-    const keySet = Object.create(null);
+    const keySet = nullObject();
 
     for (const key in o1) {
       if (key.charAt(0) === "$" || isFunction(o1[key])) continue;
@@ -799,27 +799,29 @@
 
   /**
    * Parses an escaped url query string into key-value pairs.
-   * @param {string} keyValue
+   * @param {string} value
    * @returns {Object.<string,boolean|Array<any>>}
    */
-  function parseKeyValue(keyValue) {
+  function parseKeyValue(value) {
     /** @type {Record<string, boolean | string | Array<any>>} */
     const obj = {};
 
-    (keyValue || "").split("&").forEach((item) => {
+    const res = value || "";
+
+    res.split("&").forEach((keyValue) => {
       let splitPoint;
 
       let key;
 
       let val;
 
-      if (item) {
-        key = keyValue = item.replace(/\+/g, "%20");
-        splitPoint = item.indexOf("=");
+      if (keyValue) {
+        key = keyValue = keyValue.replace(/\+/g, "%20");
+        splitPoint = keyValue.indexOf("=");
 
         if (splitPoint !== -1) {
-          key = item.substring(0, splitPoint);
-          val = item.substring(splitPoint + 1);
+          key = keyValue.substring(0, splitPoint);
+          val = keyValue.substring(splitPoint + 1);
         }
         key = tryDecodeURIComponent(key);
 
@@ -1429,6 +1431,20 @@
   }
 
   /**
+   * Creates an object with no prototype.
+   *
+   * This is useful for use as a dictionary or map, since the returned object
+   * does not inherit from `Object.prototype` and therefore has no built-in
+   * properties such as `toString` or `hasOwnProperty`.
+   *
+   * @template T
+   * @returns {Record<string, T>} An object with a null prototype.
+   */
+  function nullObject() {
+    return Object.create(null);
+  }
+
+  /**
    * A helper list of tokens matching the standard injectables that come predefined in the core `ng` module.
    * These string tokens are commonly injected into services, directives, or components via `$inject`.
    *
@@ -1917,6 +1933,8 @@
     if (parent) parent.removeChild(element);
   }
 
+  const parser = new DOMParser();
+
   /**
    * Extracts the starting tag from an HTML string or DOM element.
    *
@@ -1927,8 +1945,6 @@
     let clone;
 
     if (typeof elementOrStr === "string") {
-      const parser = new DOMParser();
-
       const doc = parser.parseFromString(elementOrStr, "text/html");
 
       const { firstChild } = doc.body;
@@ -2041,29 +2057,39 @@
   }
 
   /**
-   * Creates a DOM element from an HTML string.
-   * @param {string} htmlString - A string representing the HTML to parse. Must have only one root element.
-   * @returns {Element} - The parsed DOM element.
+   * Parses an HTML string into a DocumentFragment.
+   * @param {string} htmlString
+   * @returns {DocumentFragment}
    */
-  function createElementFromHTML(htmlString) {
+  function parseHTML(htmlString) {
     const template = document.createElement("template");
 
     template.innerHTML = htmlString.trim();
 
-    return /** @type {Element} */ (template.content.firstChild);
+    return template.content;
   }
 
   /**
    * Creates a DOM element from an HTML string.
+   * Must have exactly one root node.
+   *
    * @param {string} htmlString - A string representing the HTML to parse.
-   * @returns {NodeList} - The parsed DOM element.
+   * @returns {Element}
+   */
+  function createElementFromHTML(htmlString) {
+    const content = parseHTML(htmlString);
+
+    return /** @type {Element} */ (content.firstChild);
+  }
+
+  /**
+   * Creates a NodeList from an HTML string.
+   *
+   * @param {string} htmlString - A string representing the HTML to parse.
+   * @returns {NodeListOf<ChildNode>}
    */
   function createNodelistFromHTML(htmlString) {
-    const template = document.createElement("template");
-
-    template.innerHTML = htmlString.trim();
-
-    return template.content.childNodes;
+    return parseHTML(htmlString).childNodes;
   }
 
   /**
@@ -3159,6 +3185,7 @@
 
   const JSON_START = /^\[|^\{(?!\{)/;
 
+  /** @type {Record<string, any>} */
   const JSON_ENDS = {
     "[": /]$/,
     "{": /}$/,
@@ -3168,9 +3195,13 @@
 
   const $httpMinErr = minErr("$http");
 
+  /**
+   * @param {string | number | boolean | Object | Date} v
+   * @returns {string | number | boolean}
+   */
   function serializeValue(v) {
     if (isObject(v)) {
-      return isDate(v) ? v.toISOString() : toJson(v);
+      return isDate(v) ? v.toISOString() : /** @type {string} */ (toJson(v));
     }
 
     return v;
@@ -3195,6 +3226,9 @@
     this.$get = () => {
       return (params) => {
         if (!params) return "";
+        /**
+         * @type {string[]}
+         */
         const parts = [];
 
         keys(params)
@@ -3206,13 +3240,22 @@
 
             if (isArray(value)) {
               /** @type {any[]} */ (value).forEach((v) => {
+                if (v === null || isUndefined(v) || isFunction(v)) return;
+
+                const serializedValue = serializeValue(
+                  /** @type {string | number | boolean | Object | Date} */ (v),
+                );
+
                 parts.push(
-                  `${encodeUriQuery(key)}=${encodeUriQuery(serializeValue(v))}`,
+                  `${encodeUriQuery(key)}=${encodeUriQuery(serializedValue)}`,
                 );
               });
             } else {
+              const sanitizedValue =
+                /** @type {string | number | boolean | Object | Date} */ (value);
+
               parts.push(
-                `${encodeUriQuery(key)}=${encodeUriQuery(serializeValue(value))}`,
+                `${encodeUriQuery(key)}=${encodeUriQuery(serializeValue(sanitizedValue))}`,
               );
             }
           });
@@ -3222,6 +3265,10 @@
     };
   }
 
+  /**
+   * @param {unknown} data
+   * @param {(arg0: string) => any} headers
+   */
   function defaultHttpResponseTransform(data, headers) {
     if (isString(data)) {
       // Strip json vulnerability protection prefix and trim whitespace
@@ -3268,14 +3315,19 @@
   /**
    * Parse headers into key value object
    *
-   * @param {string} headers Raw headers as a string
-   * @returns {Object} Parsed headers as key value object
+   * @param {string | Object} headers Raw headers as a string
+   * @returns {Record<string, string>} Parsed headers as key value object
    */
   function parseHeaders(headers) {
-    const parsed = Object.create(null);
+    /** @type {Record<string, string>} */
+    const parsed = nullObject();
 
     let i;
 
+    /**
+     * @param {string} key
+     * @param {any} val
+     */
     function fillInParsed(key, val) {
       if (key) {
         parsed[key] = parsed[key] ? `${parsed[key]}, ${val}` : val;
@@ -3309,29 +3361,32 @@
    * @see parseHeaders
    *
    * @param {(string|Object)} headers Headers to provide access to.
-   * @returns {function(string=)} Returns a getter function which if called with:
+   * @returns {import("./interface.ts").HttpHeadersGetter} Returns a getter function which if called with:
    *
-   *   - if called with an argument returns a single header value or null
+   *   - if called with an argument returns a single header value (empty string if missing)
    *   - if called with no arguments returns an object containing all headers.
    */
   function headersGetter(headers) {
+    /**
+     * @type {Record<string, string> | undefined}
+     */
     let headersObj;
 
-    return function (name) {
-      if (!headersObj) headersObj = parseHeaders(headers);
+    const getter = /** @type {import("./interface.ts").HttpHeadersGetter} */ (
+      function (name) {
+        if (!headersObj) headersObj = parseHeaders(headers);
 
-      if (name) {
-        let value = headersObj[name.toLowerCase()];
+        if (name) {
+          const value = headersObj[name.toLowerCase()];
 
-        if (value === undefined) {
-          value = null;
+          return value ?? "";
         }
 
-        return value;
+        return headersObj;
       }
+    );
 
-      return headersObj;
-    };
+    return getter;
   }
 
   /**
@@ -3340,9 +3395,9 @@
    * This function is used for both request and response transforming
    *
    * @param {*} data Data to transform.
-   * @param {function(string=):any} headers HTTP headers getter fn.
-   * @param {number} status HTTP status code of the response.
-   * @param {function(...any): any | Array<Function>} fns Function or an array of functions.
+   * @param {import("./interface.ts").HttpHeadersGetter} headers HTTP headers getter fn.
+   * @param {number=} status HTTP status code of the response.
+   * @param {((...args: any[]) => any) | Array<(...args: any[]) => any>} [fns] Function or an array of functions.
    * @returns {*} Transformed data.
    */
   function transformData(data, headers, status, fns) {
@@ -3359,6 +3414,9 @@
     return data;
   }
 
+  /**
+   * @param {number} status
+   */
   function isSuccess(status) {
     return status >= Http._OK && status < Http._MultipleChoices;
   }
@@ -3415,7 +3473,6 @@
     const defaults = (this.defaults = {
       // transform incoming response data
       transformResponse: [defaultHttpResponseTransform],
-
       // transform outgoing request data
       transformRequest: [
         function (data) {
@@ -3427,7 +3484,6 @@
             : data;
         },
       ],
-
       // default headers
       headers: {
         common: {
@@ -3437,11 +3493,9 @@
         put: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
         patch: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
       },
-
       xsrfCookieName: "XSRF-TOKEN",
       xsrfHeaderName: "X-XSRF-TOKEN",
-
-      paramSerializer: "$httpParamSerializer",
+      paramSerializer: $injectTokens._httpParamSerializer,
     });
 
     let useApplyAsync = false;
@@ -3534,7 +3588,7 @@
        * @param {ng.InjectorService} $injector
        * @param {ng.SceService} $sce
        * @param {ng.CookieService} $cookie
-       * @returns
+       * @returns {ng.HttpService}
        */
       function ($injector, $sce, $cookie) {
         /**
@@ -3553,6 +3607,7 @@
          * Interceptors stored in reverse order. Inner interceptors before outer interceptors.
          * The reversal is needed so that we can build up the interception chain around the
          * server request.
+         * @type {any[]}
          */
         const reversedInterceptors = [];
 
@@ -3574,269 +3629,240 @@
         /**
          * @property {Array.<Object>} requestConfig Array of config objects for currently pending
          * requests. This is primarily meant to be used for debugging purposes.
+         * @param {ng.RequestConfig} requestConfig
+         * @returns {import("./interface.ts").HttpPromise<any>}
          */
-        function $http(requestConfig) {
-          if (!isObject(requestConfig)) {
-            throw minErr("$http")(
-              "badreq",
-              "Http request configuration must be an object.  Received: {0}",
-              requestConfig,
-            );
-          }
-
-          if (!isString($sce.valueOf(requestConfig.url))) {
-            throw minErr("$http")(
-              "badreq",
-              "Http request configuration url must be a string or a $sce trusted object.  Received: {0}",
-              requestConfig.url,
-            );
-          }
-
-          const config = extend(
-            {
-              method: "get",
-              transformRequest: defaults.transformRequest,
-              transformResponse: defaults.transformResponse,
-              paramSerializer: defaults.paramSerializer,
-            },
-            requestConfig,
-          );
-
-          config.headers = mergeHeaders(requestConfig);
-          config.method = uppercase(config.method);
-          config.paramSerializer = isString(config.paramSerializer)
-            ? $injector.get(config.paramSerializer)
-            : config.paramSerializer;
-
-          const requestInterceptors = [];
-
-          const responseInterceptors = [];
-
-          let promise = Promise.resolve(config);
-
-          // apply interceptors
-          reversedInterceptors.forEach((interceptor) => {
-            if (interceptor.request || interceptor.requestError) {
-              requestInterceptors.unshift(
-                interceptor.request,
-                interceptor.requestError,
+        const $http = /** @type {import("./interface.ts").HttpService} */ (
+          function (requestConfig) {
+            if (!isObject(requestConfig)) {
+              throw minErr("$http")(
+                "badreq",
+                "Http request configuration must be an object.  Received: {0}",
+                requestConfig,
               );
             }
 
-            if (interceptor.response || interceptor.responseError) {
-              responseInterceptors.push(
-                interceptor.response,
-                interceptor.responseError,
+            if (!isString($sce.valueOf(requestConfig.url))) {
+              throw minErr("$http")(
+                "badreq",
+                "Http request configuration url must be a string or a $sce trusted object.  Received: {0}",
+                requestConfig.url,
               );
             }
-          });
 
-          promise = chainInterceptors(promise, requestInterceptors);
-          promise = promise.then(serverRequest);
-          promise = chainInterceptors(promise, responseInterceptors);
+            const config = /** @type {ng.RequestConfig} */ (
+              extend(
+                {
+                  method: "get",
+                  transformRequest: defaults.transformRequest,
+                  transformResponse: defaults.transformResponse,
+                  paramSerializer: defaults.paramSerializer,
+                },
+                requestConfig,
+              )
+            );
 
-          return promise;
+            config.headers = mergeHeaders(requestConfig);
+            config.method = /** @type {ng.HttpMethod} */ (
+              uppercase(config.method)
+            );
+            config.paramSerializer = isString(config.paramSerializer)
+              ? $injector.get(config.paramSerializer)
+              : config.paramSerializer;
 
-          function chainInterceptors(promiseParam, interceptors) {
-            for (let i = 0, ii = interceptors.length; i < ii; ) {
-              const thenFn = interceptors[i++];
+            /**
+             * @type {Array<import("./interface.ts").HttpInterceptor["request"] | import("./interface.ts").HttpInterceptor["requestError"]>}
+             */
+            const requestInterceptors = [];
 
-              const rejectFn = interceptors[i++];
+            /**
+             * @type {Array<import("./interface.ts").HttpInterceptor["response"] | import("./interface.ts").HttpInterceptor["responseError"]>}
+             */
+            const responseInterceptors = [];
 
-              promiseParam = promiseParam.then(thenFn, rejectFn);
-            }
+            /** @type {Promise<any>} */
+            let promise = Promise.resolve(config);
 
-            interceptors.length = 0;
+            // apply interceptors
+            reversedInterceptors.forEach((interceptor) => {
+              if (interceptor.request || interceptor.requestError) {
+                requestInterceptors.unshift(
+                  interceptor.request,
+                  interceptor.requestError,
+                );
+              }
 
-            return promiseParam;
-          }
-
-          function executeHeaderFns(headers, configParam) {
-            let headerContent;
-
-            const processedHeaders = {};
-
-            entries(headers).forEach(([header, headerFn]) => {
-              if (isFunction(headerFn)) {
-                headerContent = headerFn(configParam);
-
-                if (!isNullOrUndefined(headerContent)) {
-                  processedHeaders[header] = headerContent;
-                }
-              } else {
-                processedHeaders[header] = headerFn;
+              if (interceptor.response || interceptor.responseError) {
+                responseInterceptors.push(
+                  interceptor.response,
+                  interceptor.responseError,
+                );
               }
             });
 
-            return processedHeaders;
-          }
+            promise = chainInterceptors(promise, requestInterceptors);
+            promise = promise.then(serverRequest);
+            promise = chainInterceptors(promise, responseInterceptors);
 
-          function mergeHeaders(configParam) {
-            let defHeaders = defaults.headers;
-
-            const reqHeaders = extend({}, configParam.headers);
-
-            defHeaders = extend(
-              {},
-              defHeaders.common,
-              defHeaders[lowercase(configParam.method)],
+            return /** @type {import("./interface.ts").HttpPromise<any>} */ (
+              promise
             );
 
-            keys(defHeaders).forEach((defHeaderName) => {
-              const lowercaseDefHeaderName = lowercase(defHeaderName);
+            /**
+             * @param {Promise<any>} promiseParam
+             * @param {Array<((value: any) => any) | undefined>} interceptors
+             * @returns {Promise<any>}
+             */
+            function chainInterceptors(promiseParam, interceptors) {
+              for (let i = 0, ii = interceptors.length; i < ii; ) {
+                const thenFn = interceptors[i++];
 
-              const hasMatchingHeader = keys(reqHeaders).some((reqHeaderName) => {
-                return lowercase(reqHeaderName) === lowercaseDefHeaderName;
-              });
+                const rejectFn = interceptors[i++];
 
-              if (!hasMatchingHeader) {
-                reqHeaders[defHeaderName] = defHeaders[defHeaderName];
+                promiseParam = promiseParam.then(thenFn, rejectFn);
               }
-            });
 
-            // execute if header value is a function for merged headers
-            return executeHeaderFns(reqHeaders, shallowCopy(configParam));
-          }
+              interceptors.length = 0;
 
-          function serverRequest(configParam) {
-            const { headers } = configParam;
+              return promiseParam;
+            }
 
-            const reqData = transformData(
-              configParam.data,
-              headersGetter(headers),
-              undefined,
-              configParam.transformRequest,
-            );
+            /**
+             * @param {import("./interface.ts").HttpHeaderType} headers
+             * @param {ng.RequestConfig} configParam
+             */
+            function executeHeaderFns(headers, configParam) {
+              let headerContent;
 
-            // strip content-type if data is undefined
-            if (isUndefined(reqData)) {
-              keys(headers).forEach((header) => {
-                if (lowercase(header) === "content-type") {
-                  delete headers[header];
+              /** @type {Record<string, string>} */
+              const processedHeaders = {};
+
+              entries(headers).forEach(([header, headerFn]) => {
+                if (isFunction(headerFn)) {
+                  headerContent = headerFn(configParam);
+
+                  if (!isNullOrUndefined(headerContent)) {
+                    processedHeaders[header] = headerContent;
+                  }
+                } else {
+                  processedHeaders[header] = headerFn;
                 }
               });
+
+              return processedHeaders;
             }
 
-            if (
-              isUndefined(configParam.withCredentials) &&
-              !isUndefined(defaults.withCredentials)
-            ) {
-              configParam.withCredentials = defaults.withCredentials;
+            /**
+             * @param {ng.RequestConfig} configParam
+             */
+            function mergeHeaders(configParam) {
+              /** @type {import("./interface.ts").HttpRequestConfigHeaders} */
+              let defHeaders = defaults.headers || {};
+
+              const reqHeaders =
+                /** @type {import("./interface.ts").HttpHeaderType} */ (
+                  extend({}, configParam.headers || {})
+                );
+
+              defHeaders = extend(
+                {},
+                defHeaders.common || {},
+                defHeaders[lowercase(configParam.method)] || {},
+              );
+
+              keys(defHeaders).forEach((defHeaderName) => {
+                const lowercaseDefHeaderName = lowercase(defHeaderName);
+
+                const hasMatchingHeader = keys(reqHeaders).some(
+                  (reqHeaderName) => {
+                    return lowercase(reqHeaderName) === lowercaseDefHeaderName;
+                  },
+                );
+
+                if (!hasMatchingHeader) {
+                  reqHeaders[defHeaderName] = defHeaders[defHeaderName];
+                }
+              });
+
+              // execute if header value is a function for merged headers
+              return executeHeaderFns(reqHeaders, shallowCopy(configParam));
             }
 
-            // send request
-            return sendReq(configParam, reqData).then(
-              transformResponse,
-              transformResponse,
-            );
+            /**
+             * @param {ng.RequestConfig} configParam
+             */
+            function serverRequest(configParam) {
+              const headers = configParam.headers || {};
+
+              configParam.headers = headers;
+
+              const reqData = transformData(
+                configParam.data,
+                headersGetter(headers),
+                undefined,
+                /** @type {((...args: any[]) => any) | Array<(...args: any[]) => any>} */ (
+                  configParam.transformRequest || []
+                ),
+              );
+
+              // strip content-type if data is undefined
+              if (isUndefined(reqData)) {
+                keys(headers).forEach((header) => {
+                  if (lowercase(header) === "content-type") {
+                    delete headers[header];
+                  }
+                });
+              }
+
+              if (
+                isUndefined(configParam.withCredentials) &&
+                !isUndefined(defaults.withCredentials)
+              ) {
+                configParam.withCredentials = defaults.withCredentials;
+              }
+
+              // send request
+              return sendReq(configParam, reqData).then(
+                transformResponse,
+                transformResponse,
+              );
+            }
+
+            /**
+             * @param {import("./interface.ts").HttpResponse<any>} response
+             */
+            function transformResponse(response) {
+              const httpResponse =
+                /** @type {import("./interface.ts").HttpResponse<any>} */ (
+                  response
+                );
+
+              // make a copy since the response must be cacheable
+              const resp =
+                /** @type {import("./interface.ts").HttpResponse<any>} */ (
+                  extend({}, httpResponse)
+                );
+
+              resp.data = transformData(
+                httpResponse.data,
+                httpResponse.headers,
+                httpResponse.status,
+                /** @type {((...args: any[]) => any) | Array<(...args: any[]) => any>} */ (
+                  config.transformResponse || []
+                ),
+              );
+
+              return isSuccess(httpResponse.status) ? resp : Promise.reject(resp);
+            }
           }
+        );
 
-          function transformResponse(response) {
-            // make a copy since the response must be cacheable
-            const resp = extend({}, response);
-
-            resp.data = transformData(
-              response.data,
-              response.headers,
-              response.status,
-              config.transformResponse,
-            );
-
-            return isSuccess(response.status) ? resp : Promise.reject(resp);
-          }
-        }
-
+        /**
+         * @type {ng.RequestConfig[]}
+         */
         $http.pendingRequests = [];
 
-        /**
-         * Shortcut method to perform `GET` request.
-         *
-         * @param {string} url Absolute or relative URL of the resource that is being requested;
-         *                                   or an object created by a call to `$sce.trustAsResourceUrl(url)`.
-         * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-         * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-         * See {@link ng.$http#$http-returns `$http()` return value}.
-         */
-
-        /**
-         * Shortcut method to perform `DELETE` request.
-         *
-         * @param {string} url Absolute or relative URL of the resource that is being requested;
-         *                                   or an object created by a call to `$sce.trustAsResourceUrl(url)`.
-         * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-         * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-         * See {@link ng.$http#$http-returns `$http()` return value}.
-         */
-
-        /**
-         * Shortcut method to perform `HEAD` request.
-         *
-         * @param {string} url Absolute or relative URL of the resource that is being requested;
-         *                                   or an object created by a call to `$sce.trustAsResourceUrl(url)`.
-         * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-         * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-         * See {@link ng.$http#$http-returns `$http()` return value}.
-         */
-
-        /**
-         * Shortcut method to perform `JSONP` request.
-         *
-         * Note that, since JSONP requests are sensitive because the response is given full access to the browser,
-         * the url must be declared, via {@link $sce} as a trusted resource URL.
-         * You can trust a URL by adding it to the trusted resource URL list via
-         * {@link $sceDelegateProvider#trustedResourceUrlList  `$sceDelegateProvider.trustedResourceUrlList`} or
-         * by explicitly trusting the URL via {@link $sce#trustAsResourceUrl `$sce.trustAsResourceUrl(url)`}.
-         *
-         * You should avoid generating the URL for the JSONP request from user provided data.
-         * Provide additional query parameters via `params` property of the `config` parameter, rather than
-         * modifying the URL itself.
-         *
-         * You can also specify a default callback parameter name in `$http.defaults.jsonpCallbackParam`.
-         * Initially this is set to `'callback'`.
-         *
-         * <div class="alert alert-danger">
-         * You can no longer use the `JSON_CALLBACK` string as a placeholder for specifying where the callback
-         * parameter value should go.
-         * </div>
-         *
-         *
-         * @param {string} url Absolute or relative URL of the resource that is being requested;
-         *                                   or an object created by a call to `$sce.trustAsResourceUrl(url)`.
-         * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-         * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-         * See {@link ng.$http#$http-returns `$http()` return value}.
-         */
         createShortMethods("get", "delete", "head");
-
-        /**
-         * Shortcut method to perform `POST` request.
-         *
-         * @param {string} url Relative or absolute URL specifying the destination of the request
-         * @param {*} data Request content
-         * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-         * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-         * See {@link ng.$http#$http-returns `$http()` return value}.
-         */
-
-        /**
-         * Shortcut method to perform `PUT` request.
-         *
-         * @param {string} url Relative or absolute URL specifying the destination of the request
-         * @param {*} data Request content
-         * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-         * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-         * See {@link ng.$http#$http-returns `$http()` return value}.
-         */
-
-        /**
-         * Shortcut method to perform `PATCH` request.
-         *
-         * @param {string} url Relative or absolute URL specifying the destination of the request
-         * @param {*} data Request content
-         * @param {Object=} config Optional configuration object. See {@link ng.$http#$http-arguments `$http()` arguments}.
-         * @returns {HttpPromise}  A Promise that will be resolved or rejected with a response object.
-         * See {@link ng.$http#$http-returns `$http()` return value}.
-         */
         createShortMethodsWithData("post", "put", "patch");
 
         /**
@@ -3849,47 +3875,67 @@
 
         return $http;
 
+        /**
+         * @param {...("get" | "delete" | "head")} names
+         */
         function createShortMethods(...names) {
           names.forEach((name) => {
+            /**
+             * @param {string} url
+             * @param {import("./interface.ts").RequestShortcutConfig} [config]
+             */
             $http[name] = function (url, config) {
               return $http(
-                extend({}, config || {}, {
-                  method: name,
-                  url,
-                }),
-              );
-            };
-          });
-        }
-
-        function createShortMethodsWithData(...names) {
-          names.forEach((name) => {
-            $http[name] = function (url, data, config) {
-              return $http(
-                extend({}, config || {}, {
-                  method: name,
-                  url,
-                  data,
-                }),
+                /** @type {ng.RequestConfig} */ (
+                  extend({}, config || {}, {
+                    method: name,
+                    url,
+                  })
+                ),
               );
             };
           });
         }
 
         /**
-         * Makes the request.
-         *
-         * !!! ACCESSES CLOSURE VARS:
-         * defaults, $log, $rootScope, defaultCache, $http.pendingRequests
+         * @param {...("post" | "put" | "patch")} names
+         */
+        function createShortMethodsWithData(...names) {
+          names.forEach((name) => {
+            /**
+             * @param {string} url
+             * @param {string|Object} data
+             * @param {import("./interface.ts").RequestShortcutConfig} [config]
+             */
+            $http[name] = function (url, data, config) {
+              return $http(
+                /** @type {ng.RequestConfig} */ (
+                  extend({}, config || {}, {
+                    method: name,
+                    url,
+                    data,
+                  })
+                ),
+              );
+            };
+          });
+        }
+
+        /**
+         * @param {ng.RequestConfig} config
+         * @param {any} reqData
          */
         function sendReq(config, reqData) {
           const { promise, resolve, reject } = Promise.withResolvers();
 
+          /** @type {any} */
           let cache;
 
           let cachedResp;
 
-          const reqHeaders = config.headers;
+          const reqHeaders = config.headers || {};
+
+          config.headers = reqHeaders;
 
           let { url } = config;
 
@@ -3898,7 +3944,12 @@
             url = $sce.valueOf(url);
           }
 
-          url = buildUrl(url, config.paramSerializer(config.params));
+          url = buildUrl(
+            url,
+            /** @type {(obj: any) => string} */ (config.paramSerializer)(
+              config.params,
+            ),
+          );
 
           $http.pendingRequests.push(config);
           promise.then(removePendingReq, removePendingReq);
@@ -3948,13 +3999,21 @@
           // if we won't have the response in cache, set the xsrf headers and
           // send the request to the backend
           if (isUndefined(cachedResp)) {
-            const xsrfValue = urlIsAllowedOrigin(config.url)
-              ? $cookie.getAll()[config.xsrfCookieName || defaults.xsrfCookieName]
-              : undefined;
+            const xsrfCookieName =
+              config.xsrfCookieName || defaults.xsrfCookieName;
+
+            const xsrfValue =
+              xsrfCookieName && urlIsAllowedOrigin(config.url)
+                ? $cookie.getAll()[xsrfCookieName]
+                : undefined;
 
             if (xsrfValue) {
-              reqHeaders[config.xsrfHeaderName || defaults.xsrfHeaderName] =
-                xsrfValue;
+              const xsrfHeaderName =
+                config.xsrfHeaderName || defaults.xsrfHeaderName;
+
+              if (xsrfHeaderName) {
+                reqHeaders[xsrfHeaderName] = xsrfValue;
+              }
             }
 
             http(
@@ -3965,7 +4024,9 @@
               reqHeaders,
               config.timeout,
               config.withCredentials,
-              config.responseType,
+              /** @type {XMLHttpRequestResponseType | undefined} */ (
+                config.responseType
+              ),
               createApplyHandlers(config.eventHandlers),
               createApplyHandlers(config.uploadEventHandlers),
             );
@@ -3977,8 +4038,12 @@
            * @param eventHandlers
            * @return {Record<string, EventListener>}
            */
+          /**
+           * @param {ng.RequestConfig["eventHandlers"] | ng.RequestConfig["uploadEventHandlers"]} eventHandlers
+           */
           function createApplyHandlers(eventHandlers) {
             if (eventHandlers) {
+              /** @type {Record<string, EventListener>} */
               const applyHandlers = {};
 
               entries(eventHandlers).forEach(([key, eventHandler]) => {
@@ -3990,7 +4055,15 @@
                   }
 
                   function callEventHandler() {
-                    eventHandler(event);
+                    if (typeof eventHandler === "function") {
+                      eventHandler(event);
+                    } else if (
+                      eventHandler &&
+                      typeof eventHandler === "object" &&
+                      "handleEvent" in eventHandler
+                    ) {
+                      eventHandler.handleEvent(event);
+                    }
                   }
                 };
               });
@@ -4007,13 +4080,20 @@
            *  - resolves the raw $http promise
            *  - calls $apply
            */
+          /**
+           * @param {number} status
+           * @param {any} response
+           * @param {string | null} headersString
+           * @param {string} statusText
+           * @param {import("./interface.ts").HttpResponseStatus} xhrStatus
+           */
           function done(status, response, headersString, statusText, xhrStatus) {
             if (cache) {
               if (isSuccess(status)) {
                 cache.set(url, [
                   status,
                   response,
-                  parseHeaders(headersString),
+                  parseHeaders(headersString || ""),
                   statusText,
                   xhrStatus,
                 ]);
@@ -4042,6 +4122,11 @@
 
           /**
            * Resolves the raw $http promise.
+           * @param {any} response
+           * @param {number} status
+           * @param {string | Record<string, string> | null} headers
+           * @param {string} statusText
+           * @param {import("./interface.ts").HttpResponseStatus} xhrStatus
            */
           function resolvePromise(
             response,
@@ -4056,13 +4141,16 @@
             (isSuccess(status) ? resolve : reject)({
               data: response,
               status,
-              headers: headersGetter(headers),
+              headers: headersGetter(headers ?? ""),
               config,
               statusText,
               xhrStatus,
             });
           }
 
+          /**
+           * @param {import("./interface.ts").HttpResponse<any>} result
+           */
           function resolvePromiseWithResult(result) {
             resolvePromise(
               result.data,
@@ -4080,6 +4168,10 @@
           }
         }
 
+        /**
+         * @param {string} url
+         * @param {string} serializedParams
+         */
         function buildUrl(url, serializedParams) {
           if (serializedParams.length > 0) {
             url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
@@ -4097,13 +4189,13 @@
    * @param {string} method - The HTTP method (e.g., "GET", "POST").
    * @param {string} [url] - The URL to send the request to. Defaults to the current page URL.
    * @param {*} [post] - The body to send with the request, if any.
-   * @param {function(number, any, string|null, string, string): void} [callback] - Callback invoked when the request completes.
+   * @param {(status: number, response: any, headersString: string|null, statusText: string, xhrStatus: import("./interface.ts").HttpResponseStatus) => void} [callback] - Callback invoked when the request completes.
    * @param {Object<string, string|undefined>} [headers] - Headers to set on the request.
    * @param {number|Promise<any>} [timeout] - Timeout in ms or a cancellable promise.
    * @param {boolean} [withCredentials] - Whether to send credentials with the request.
    * @param {XMLHttpRequestResponseType} [responseType] - The type of data expected in the response.
-   * @param {Record<string, EventListener>} [eventHandlers] - Event listeners for the XMLHttpRequest object.
-   * @param {Record<string, EventListener>} [uploadEventHandlers] - Event listeners for the XMLHttpRequest.upload object.
+   * @param {ng.RequestConfig["eventHandlers"]} [eventHandlers] - Event listeners for the XMLHttpRequest object.
+   * @param {ng.RequestConfig["uploadEventHandlers"]} [uploadEventHandlers] - Event listeners for the XMLHttpRequest.upload object.
    * @returns {void}
    */
   function http(
@@ -4124,6 +4216,9 @@
 
     let abortedByTimeout = false;
 
+    /**
+     * @type {number | undefined}
+     */
     let timeoutId;
 
     xhr.open(method, url, true);
@@ -4194,7 +4289,7 @@
     if (typeof timeout === "number" && timeout > 0) {
       timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
     } else if (isPromiseLike(timeout)) {
-      /** @type {Promise} */ (timeout).then(() => {
+      /** @type {Promise<any>} */ (timeout).then(() => {
         timeoutRequest("abort");
       });
     }
@@ -4213,7 +4308,7 @@
      * @param {*} response - The parsed or raw response from the server.
      * @param {string|null} headersString - The raw response headers as a string.
      * @param {string} statusText - The status text returned by the server.
-     * @param {"complete"|"error"|"timeout"|"abort"} xhrStatus - Final status of the request.
+     * @param {ng.HttpResponseStatus} xhrStatus - Final status of the request.
      */
     function completeRequest(
       status,
@@ -4225,7 +4320,10 @@
       if (isDefined(timeoutId)) {
         clearTimeout(timeoutId);
       }
-      callback(status, response, headersString, statusText, xhrStatus);
+
+      if (callback) {
+        callback(status, response, headersString, statusText, xhrStatus);
+      }
     }
   }
 
@@ -4360,6 +4458,7 @@
 
         const formData = new FormData(form);
 
+        /** @type {import("../../shared/interface.ts").Dict<any>} */
         const data = {};
 
         formData.forEach((value, key) => {
@@ -4369,13 +4468,16 @@
         return data;
       }
 
-      return {
+      return /** @type {ng.Directive} */ ({
         restrict: "A",
         link(scope, element, attrs) {
           const eventName = attrs.trigger || getEventNameForElement(element);
 
           const tag = element.tagName.toLowerCase();
 
+          /**
+           * @type {Element | ChildNode[] | undefined}
+           */
           let content = undefined;
 
           if (isDefined(attrs.latch)) {
@@ -4402,7 +4504,7 @@
           /**
            * Handles DOM manipulation based on a swap strategy and server-rendered HTML.
            *
-           * @param {string | Object} html - The HTML string or object returned from the server.
+           * @param {string | Object} html - The HTML string or JSON object returned from the server.
            * @param {import("./interface.ts").SwapModeType} swap
            * @param {ng.Scope} scopeParam
            * @param {ng.Attributes} attrsParam
@@ -4420,11 +4522,14 @@
             if (attrsParam.animate) {
               animationEnabled = true;
             }
+            /**
+             * @type {ChildNode[]|*[]}
+             */
             let nodes = [];
 
             if (!["textcontent", "delete", "none"].includes(swap)) {
               if (!html) return;
-              const compiled = $compile(html)(scopeParam);
+              const compiled = $compile(/** @type {string} */ (html))(scopeParam);
 
               nodes =
                 compiled instanceof DocumentFragment
@@ -4494,7 +4599,7 @@
               case "textContent":
                 if (animationEnabled) {
                   $animate.leave(target).done(() => {
-                    target.textContent = html;
+                    target.textContent = /** @type {string} */ (html);
                     $animate.enter(
                       target,
                       /** @type {Element} */ (target.parentNode),
@@ -4504,7 +4609,7 @@
 
                   scopeParam.$flushQueue();
                 } else {
-                  target.textContent = html;
+                  target.textContent = /** @type {string} */ (html);
                 }
                 break;
 
@@ -4556,7 +4661,7 @@
                     animationEnabled &&
                     node.nodeType === NodeType._ELEMENT_NODE
                   ) {
-                    $animate.enter(node, target, null); // append at end
+                    $animate.enter(node, target); // append at end
                   } else {
                     target.appendChild(node);
                   }
@@ -4609,17 +4714,26 @@
               case "innerHTML":
               default:
                 if (animationEnabled) {
-                  if (content && content.nodeType !== NodeType._TEXT_NODE) {
-                    $animate.leave(content).done(() => {
-                      content = nodes[0];
-                      $animate.enter(nodes[0], target);
-                      scopeParam.$flushQueue();
-                    });
+                  if (
+                    content &&
+                    /** @type {HTMLElement} */ (content).nodeType !==
+                      NodeType._TEXT_NODE
+                  ) {
+                    $animate
+                      .leave(/** @type {HTMLElement} */ (content))
+                      .done(() => {
+                        content = nodes[0];
+                        $animate.enter(nodes[0], target);
+                        scopeParam.$flushQueue();
+                      });
                     scopeParam.$flushQueue();
                   } else {
                     content = nodes[0];
 
-                    if (content.nodeType === NodeType._TEXT_NODE) {
+                    if (
+                      /** @type {HTMLElement} */ (content).nodeType ===
+                      NodeType._TEXT_NODE
+                    ) {
                       target.replaceChildren(...nodes);
                     } else {
                       $animate.enter(nodes[0], target);
@@ -4649,7 +4763,9 @@
               return;
             }
 
-            const handler = (res) => {
+            const handler = /** @param {ng.HttpResponse<string|Object>} res */ (
+              res,
+            ) => {
               if (isDefined(attrs.loading)) {
                 attrs.$set("loading", false);
               }
@@ -4721,6 +4837,7 @@
             if (method === "post" || method === "put") {
               let data;
 
+              /** @type {ng.RequestShortcutConfig} */
               const config = {};
 
               if (attrs.enctype) {
@@ -4736,6 +4853,7 @@
               if (method === "get" && attrs.ngSse) {
                 const sseUrl = url;
 
+                /** @type {ng.SseConfig} */
                 const config = {
                   withCredentials: attrs.withCredentials === "true",
                   transformMessage: (data) => {
@@ -4756,13 +4874,13 @@
                   onMessage: (data) => {
                     const res = { status: 200, data };
 
-                    handler(res);
+                    handler(/** @type {ng.HttpResponse<Object>} */ (res));
                   },
                   onError: (err) => {
                     $log.error(`${attrName}: SSE error`, err);
                     const res = { status: 500, data: err };
 
-                    handler(res);
+                    handler(/** @type {ng.HttpResponse<Object>} */ (res));
                   },
                   onReconnect: (count) => {
                     $log.info(`ngSse: reconnected ${count} time(s)`);
@@ -4792,7 +4910,7 @@
             element.dispatchEvent(new Event("load"));
           }
         },
-      };
+      });
     };
   }
 
@@ -4905,6 +5023,9 @@
 
   /**
    * Swap result into DOM based on strategy
+   * @param {string} result
+   * @param {string} swap
+   * @param {HTMLElement} element
    */
   function handleSwap(result, swap, element) {
     switch (swap) {
@@ -4915,7 +5036,7 @@
         const temp = document.createElement("div");
 
         temp.innerHTML = result;
-        parent.replaceChild(temp.firstChild, element);
+        parent.replaceChild(/** @type {ChildNode} */ (temp.firstChild), element);
         break;
       }
       case "textContent":
@@ -4959,6 +5080,9 @@
       onError() {
         /* empty */
       },
+      /**
+       * @param {string} data
+       */
       transformMessage(data) {
         try {
           return JSON.parse(data);
@@ -4968,8 +5092,9 @@
       },
     };
 
-    /** @type {ng.WorkerConfig} */
-    const cfg = Object.assign({}, defaults, config);
+    const cfg = /** @type {import("./interface.ts").DefultWorkerConfig} */ (
+      Object.assign({}, defaults, config)
+    );
 
     let worker = new Worker(scriptPath, { type: "module" });
 
@@ -4983,7 +5108,7 @@
       wire(worker);
     };
 
-    const wire = (workerParam) => {
+    const wire = (/** @type {Worker} */ workerParam) => {
       workerParam.onmessage = function (event) {
         let { data } = event;
 
@@ -5654,10 +5779,23 @@
     }
   }
 
+  /**
+   * @typedef {import("../../interface.ts").ControllerConstructor} ControllerConstructor
+   * @typedef {import("../../interface.ts").Injectable<ControllerConstructor>} InjectableController
+   * @typedef {import("./interface.ts").ControllerService} ControllerService
+   * @typedef {import("./interface.ts").ControllerLocals} ControllerLocals
+   * @typedef {import("./interface.ts").ControllerExpression} ControllerExpression
+   */
+
   const $controllerMinErr = minErr("$controller");
 
   const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
 
+  /**
+   * @param {string | InjectableController | undefined} controller
+   * @param {string} [ident]
+   * @returns {string|undefined}
+   */
   function identifierForController(controller, ident) {
 
     if (isString(controller)) {
@@ -5670,75 +5808,103 @@
   }
 
   /**
-   * The {@link ng.$controller $controller service} is used by AngularTS to create new
-   * controllers.
-   *
-   * This provider allows controller registration via the
-   * {@link ng.$controllerProvider#register register} method.
+   * @param {unknown} def
+   * @param {string} name
+   * @returns {InjectableController}
    */
+  function normalizeControllerDef(def, name) {
+    if (isArray(def)) return /** @type {any} */ (def);
+
+    if (isFunction(def)) return /** @type {any} */ (def);
+
+    throw $controllerMinErr(
+      "ctrlreg",
+      "Controller '{0}' must be a function or an array-annotated injectable.",
+      name,
+    );
+  }
+
+  /**
+   * Extracts the underlying controller function from an injectable and provides
+   * safe access to `name` and `prototype`.
+   *
+   * @param {InjectableController} injectable
+   * @param {string} [argNameForErrors]
+   * @returns {{ func: Function, name: string, prototype: any }}
+   */
+  function unwrapController(injectable, argNameForErrors) {
+    const candidate = isArray(injectable)
+      ? injectable[injectable.length - 1]
+      : injectable;
+
+    // Defensive: should always hold if normalized, but keeps TS happy too.
+    assertArgFn(candidate, argNameForErrors || "controller", true);
+
+    /** @type {Function} */
+    const func = /** @type {any} */ (candidate);
+
+    return {
+      func,
+      name: func.name || "",
+      prototype: func.prototype || null,
+    };
+  }
+
   class ControllerProvider {
     constructor() {
-      /**
-       * @type {Map<string, Function|Object>}
-       * @private
-       */
+      /** @type {Map<string, InjectableController>} @private */
       this.controllers = new Map();
     }
 
-    /**
-     * Check if a controller with a given name exists.
-     *
-     * @param {string} name Controller name to check.
-     * @returns {boolean} True if the controller exists, false otherwise.
-     */
+    /** @param {string} name @returns {boolean} */
     has(name) {
       return this.controllers.has(name);
     }
 
     /**
-     * Register a controller.
-     *
-     * @param {string|Object} name Controller name, or an object map of controllers where the keys are
-     *    the names and the values are the constructors.
-     * @param {Function|Array} constructor Controller constructor function (optionally decorated with DI
-     *    annotations in the array notation).
+     * @param {string | Record<string, unknown>} name
+     * @param {unknown} [constructor]
      */
     register(name, constructor) {
-      assertNotHasOwnProperty(name, "controller");
+      if (isString(name)) {
+        assertNotHasOwnProperty(name, "controller");
+        this.controllers.set(name, normalizeControllerDef(constructor, name));
+
+        return;
+      }
 
       if (isObject(name)) {
         entries(name).forEach(([key, value]) => {
-          this.controllers.set(key, value);
+          this.controllers.set(key, normalizeControllerDef(value, key));
         });
-      } else {
-        this.controllers.set(name, constructor);
       }
     }
 
     /**
-     * $get method for dependency injection.
+     * @type {import("../../interface.ts").Injectable<($injector: ng.InjectorService) => ControllerService>}
      */
     $get = [
       $injectTokens._injector,
 
-      /**
-       * @param {ng.InjectorService} $injector
-       * @returns {import("./interface.ts").ControllerService} A service function that creates controllers.
-       */
+      /** @param {ng.InjectorService} $injector @returns {ControllerService} */
       ($injector) => {
+        /** @type {ControllerProvider} */
+        const provider = this;
+
         return (expression, locals, later, ident) => {
+          /** @type {any} */
           let instance;
 
-          let match;
+          /** @type {string | undefined} */
+          let constructorName;
 
-          let constructor;
-
+          /** @type {string | null} */
           let identifier = ident && isString(ident) ? ident : null;
 
           later = later === true;
 
           if (isString(expression)) {
-            match = /** @type {string} */ (expression).match(CNTRL_REG);
+            const match = /** @type {string} */ (expression).match(CNTRL_REG);
 
             if (!match) {
               throw $controllerMinErr(
@@ -5747,48 +5913,49 @@
                 expression,
               );
             }
-            constructor = match[1];
-            identifier = identifier || match[3];
-            expression = this.controllers.get(constructor);
 
-            if (!expression) {
+            constructorName = match[1];
+            identifier = identifier || match[3] || null;
+
+            const lookedUp = provider.controllers.get(constructorName);
+
+            if (!lookedUp) {
               throw $controllerMinErr(
                 "ctrlreg",
                 "The controller with the name '{0}' is not registered.",
-                constructor,
+                constructorName,
               );
             }
 
-            assertArgFn(expression, constructor, true);
+            expression = lookedUp;
+            assertArgFn(expression, constructorName, true);
           }
 
-          if (later) {
-            const controllerPrototype = (
-              isArray(expression) ? expression[expression.length - 1] : expression
-            ).prototype;
+          /** @type {InjectableController} */
+          const injectable = /** @type {any} */ (expression);
 
-            instance = Object.create(controllerPrototype || null);
+          const meta = unwrapController(injectable, constructorName);
+
+          if (later) {
+            instance = Object.create(meta.prototype || null);
+
+            const exportName = constructorName || meta.name;
 
             if (identifier) {
               instance.$controllerIdentifier = identifier;
-              this.addIdentifier(
-                locals,
-                identifier,
-                instance,
-                constructor || /** @type {any} */ (expression).name,
-              );
+              provider.addIdentifier(locals, identifier, instance, exportName);
             }
 
-            if (instance?.constructor?.$scopename) {
+            if (instance?.constructor?.$scopename && locals?.$scope) {
               locals.$scope.$scopename = instance.constructor.$scopename;
             }
 
-            return function () {
+            return () => {
               const result = $injector.invoke(
-                expression,
+                injectable,
                 instance,
                 locals,
-                constructor,
+                constructorName,
               );
 
               if (
@@ -5799,31 +5966,31 @@
 
                 if (identifier) {
                   instance.$controllerIdentifier = identifier;
-                  this.addIdentifier(
+                  provider.addIdentifier(
                     locals,
                     identifier,
                     instance,
-                    constructor || /** @type {any} */ (expression).name,
+                    exportName,
                   );
                 }
               }
 
               return instance;
-            }.bind(this, { instance, identifier });
+            };
           }
 
           instance = $injector.instantiate(
-            /** @type {any} */ (expression),
+            /** @type {any} */ (injectable),
             locals,
-            constructor,
+            constructorName,
           );
 
           if (identifier) {
-            this.addIdentifier(
+            provider.addIdentifier(
               locals,
               identifier,
               instance,
-              constructor || /** @type {any} */ (expression).name,
+              constructorName || meta.name,
             );
           }
 
@@ -5833,12 +6000,10 @@
     ];
 
     /**
-     * Adds an identifier to the controller instance in the given locals' scope.
-     *
-     * @param {Object} locals The locals object containing the scope.
-     * @param {string} identifier The identifier to assign.
-     * @param {Object} instance The controller instance.
-     * @param {string} name The name of the controller.
+     * @param {ControllerLocals | undefined} locals
+     * @param {string} identifier
+     * @param {object} instance
+     * @param {string} name
      */
     addIdentifier(locals, identifier, instance, name) {
       if (!(locals && isObject(locals.$scope))) {
@@ -5880,6 +6045,9 @@
   // Copied from:
   // http://docs.closure-library.googlecode.com/git/local_closure_goog_string_string.js.source.html#line1021
   // Prereq: s is a string.
+  /**
+   * @param {string} str
+   */
   function escapeForRegexp(str) {
     return str.replace(/([-()[\]{}+?*.$^|,:#<!\\])/g, "\\$1");
   }
@@ -6016,13 +6184,13 @@
 
       /**
        *
-       * @param {Array=} value When provided, replaces the trustedResourceUrlList with
+       * @param {(Array<RegExp | "self"> | null)=} value When provided, replaces the trustedResourceUrlList with
        *     the value provided.  This must be an array or null.  A snapshot of this array is used so
        *     further changes to the array are ignored.
        *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
        *     allowed in this array.
        *
-       * @return {Array<any>} The currently set trusted resource URL array.
+       * @return {Array<RegExp | "self">} The currently set trusted resource URL array.
        *
        *
        * Sets/Gets the list trusted of resource URLs.
@@ -6037,7 +6205,9 @@
        */
       this.trustedResourceUrlList = function (value) {
         if (arguments.length) {
-          trustedResourceUrlList = value.map(adjustMatcher);
+          const list = value || [];
+
+          trustedResourceUrlList = list.map(adjustMatcher);
         }
 
         return trustedResourceUrlList;
@@ -6045,7 +6215,7 @@
 
       /**
        *
-       * @param {Array=} bannedResourceUrlList When provided, replaces the `bannedResourceUrlList` with
+       * @param {(Array<RegExp | "self"> | null)=} value When provided, replaces the `bannedResourceUrlList` with
        *     the value provided. This must be an array or null. A snapshot of this array is used so
        *     further changes to the array are ignored.</p><p>
        *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
@@ -6057,7 +6227,7 @@
        *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
        *     the final say.
        *
-       * @return {Array<any>} The currently set `bannedResourceUrlList` array.
+       * @return {Array<RegExp | "self">} The currently set `bannedResourceUrlList` array.
        *
        *
        * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
@@ -6067,7 +6237,9 @@
        */
       this.bannedResourceUrlList = function (value) {
         if (arguments.length) {
-          bannedResourceUrlList = value.map(adjustMatcher);
+          const list = value || [];
+
+          bannedResourceUrlList = list.map(adjustMatcher);
         }
 
         return bannedResourceUrlList;
@@ -6114,6 +6286,10 @@
             return !!(/** @type {RegExp} */ (matcher).exec(parsedUrl.href));
           }
 
+          /**
+           * @param {string | Object} url
+           * @returns {boolean}
+           */
           function isResourceUrlAllowedByPolicy(url) {
             const parsedUrl = urlResolve(url.toString());
 
@@ -6142,7 +6318,12 @@
             return allowed;
           }
 
+          /**
+           * @param {new (...args: any[]) => any=} Base
+           * @return {new (trustedValue: string) => { _unwrapTrustedValue(): string }}
+           */
           function generateHolderType(Base) {
+            /** @param {string} trustedValue */
             const holderType = function TrustedValueHolderType(trustedValue) {
               this._unwrapTrustedValue = function () {
                 return trustedValue;
@@ -6164,6 +6345,7 @@
 
           const trustedValueHolderBase = generateHolderType();
 
+          /** @type {Record<string, new (trustedValue: string) => { _unwrapTrustedValue(): string }>} */
           const byType = {};
 
           byType[SCE_CONTEXTS.HTML] = generateHolderType(trustedValueHolderBase);
@@ -6174,7 +6356,6 @@
           byType[SCE_CONTEXTS.URL] = generateHolderType(
             byType[SCE_CONTEXTS.MEDIA_URL],
           );
-          byType[SCE_CONTEXTS.JS] = generateHolderType(trustedValueHolderBase);
           byType[SCE_CONTEXTS.RESOURCE_URL] = generateHolderType(
             byType[SCE_CONTEXTS.URL],
           );
@@ -6387,7 +6568,9 @@
        * @return {ng.SceService}
        */
       ($parse, $sceDelegate) => {
-        const sce = shallowCopy(SCE_CONTEXTS);
+        const sce = /** @type {ng.SceService & Record<string, any>} */ (
+          shallowCopy(SCE_CONTEXTS)
+        );
 
         /**
          * @return {Boolean} True if SCE is enabled, false otherwise.  If you want to set the value, you
@@ -6404,9 +6587,14 @@
         sce.valueOf = $sceDelegate.valueOf;
 
         if (!enabled) {
+          /**
+           * @param {string} type
+           * @param {*} value
+           */
           sce.trustAs = sce.getTrusted = function (type, value) {
             return value;
           };
+          /** @param {*} v */
           sce.valueOf = (v) => v;
         }
 
@@ -6490,16 +6678,6 @@
          */
 
         /**
-         * Shorthand method.  `$sce.trustAsJs(value)` →
-         *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.JS, value)`}
-         *
-         * @param {*} value The value to mark as trusted for `$sce.JS` context.
-         * @return {*} A wrapped version of value that can be used as a trusted variant of your `value`
-         *     in `$sce.JS` context. That context is currently unused, so there are almost no reasons to
-         *     use this function so far.
-         */
-
-        /**
          * Delegates to {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted`}.  As such,
          * takes any input, and either returns a value that's safe to use in the specified context,
          * or throws an exception. This function is aware of trusted values created by the `trustAs`
@@ -6544,14 +6722,6 @@
          *
          * @param {*} value The value to pass to `$sceDelegate.getTrusted`.
          * @return {*} The return value of `$sce.getTrusted($sce.RESOURCE_URL, value)`
-         */
-
-        /**
-         * Shorthand method.  `$sce.getTrustedJs(value)` →
-         *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.JS, value)`}
-         *
-         * @param {*} value The value to pass to `$sce.getTrusted`.
-         * @return {*} The return value of `$sce.getTrusted($sce.JS, value)`
          */
 
         /**
@@ -6629,12 +6799,15 @@
         entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
           const lName = name.toLowerCase();
 
+          /** @param {string} expr */
           sce[snakeToCamel(`parse_as_${lName}`)] = function (expr) {
             return parse(enumValue, expr);
           };
+          /** @param {*} value */
           sce[snakeToCamel(`get_trusted_${lName}`)] = function (value) {
             return getTrusted(enumValue, value);
           };
+          /** @param {*} value */
           sce[snakeToCamel(`trust_as_${lName}`)] = function (value) {
             return trustAs(enumValue, value);
           };
@@ -7038,8 +7211,7 @@
     * @returns {Function} Returns a deregistration function for this observer.
     */
     $observe(key, fn) {
-      const _observers =
-        this._observers || (this._observers = Object.create(null));
+      const _observers = this._observers || (this._observers = nullObject());
 
       const listeners = _observers[key] || (_observers[key] = []);
 
@@ -7217,6 +7389,18 @@
     };
   }
 
+  /** @typedef {import("./interface.ts").BoundTranscludeFn} BoundTranscludeFn */
+  /** @typedef {import("./interface.ts").ChildTranscludeOrLinkFn} ChildTranscludeOrLinkFn */
+  /** @typedef {import("./interface.ts").CloneAttachFn} CloneAttachFn */
+  /** @typedef {import("./interface.ts").CompileNodesFn} CompileNodesFn */
+  /** @typedef {import("./interface.ts").CompositeLinkFn} CompositeLinkFn */
+  /** @typedef {import("./interface.ts").NodeLinkFn} NodeLinkFn */
+  /** @typedef {import("./interface.ts").NodeLinkFnCtx } NodeLinkFnCtx */
+  /** @typedef {import("./interface.ts").PreviousCompileContext} PreviousCompileContext */
+  /** @typedef {import("./interface.ts").PublicLinkFn} PublicLinkFn */
+  /** @typedef {import("./interface.ts").TranscludedNodes} TranscludedNodes */
+  /** @typedef {import("./interface.ts").InternalDirective} InternalDirective */
+
   const $compileMinErr = minErr("$compile");
 
   const EXCLUDED_DIRECTIVES = ["ngIf", "ngRepeat"];
@@ -7225,12 +7409,14 @@
 
   const REQUIRE_PREFIX_REGEXP = /^(?:(\^\^?)?(\?)?(\^\^?)?)?/;
 
+  const NG_PREFIX_BINDING = /^ng(Attr|Prop|On|Observe|Window)([A-Z].*)$/;
+
   // Ref: http://developers.whatwg.org/webappapis.html#event-handler-idl-attributes
   // The assumption is that future DOM event attribute names will begin with
   // 'on' and be composed of only English letters.
   const EVENT_HANDLER_ATTR_REGEXP = /^(on[a-z]+|formaction)$/;
 
-  const valueFn = (value) => () => value;
+  const valueFn = (/** @type {any} */ value) => () => value;
 
   const DirectiveSuffix = "Directive";
 
@@ -7238,16 +7424,19 @@
     /* @ignore */ static $inject = [$injectTokens._provide, $injectTokens._sanitizeUriProvider];
 
     /**
-     * @param {import('../../interface.ts').Provider} $provide
+     * @param {ng.ProvideService} $provide
      * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $sanitizeUriProvider
      */
     constructor($provide, $sanitizeUriProvider) {
+      /**
+       * @type {Record<string, any>}
+       */
       const hasDirectives = {};
 
-      const bindingCache = Object.create(null);
+      const bindingCache = nullObject();
 
       /**
-       * @param {ng.Scope} scope
+       * @param {Object} scope
        * @param {string} directiveName
        * @param {boolean} isController
        * @returns {Object} a configuration object for attribute bindings
@@ -7255,7 +7444,7 @@
       function parseIsolateBindings(scope, directiveName, isController) {
         const LOCAL_REGEXP = /^([@&]|[=<]())(\??)\s*([\w$]*)$/;
 
-        const bindings = Object.create(null);
+        const bindings = nullObject();
 
         entries(scope).forEach(([scopeName, definition]) => {
           definition = definition.trim();
@@ -7296,7 +7485,12 @@
         return bindings;
       }
 
+      /**
+       * @param {ng.Directive} directive
+       * @param {string} directiveName
+       */
       function parseDirectiveBindings(directive, directiveName) {
+        /** @type {{ isolateScope: Object|null, bindToController: Object|null }} */
         const bindings = {
           isolateScope: null,
           bindToController: null,
@@ -7339,6 +7533,9 @@
         return bindings;
       }
 
+      /**
+       * @param {ng.Directive} directive
+       */
       function getDirectiveRequire(directive) {
         const require =
           directive.require || (directive.controller && directive.name);
@@ -7364,6 +7561,10 @@
         return require;
       }
 
+      /**
+       * @param {unknown} restrict
+       * @param {string} name
+       */
       function getDirectiveRestrict(restrict, name) {
         if (restrict && !(isString(restrict) && /[EA]/.test(restrict))) {
           throw $compileMinErr(
@@ -7384,15 +7585,15 @@
        * @param {string|Object} name Name of the directive in camel-case (i.e. `ngBind` which will match
        *    as `ng-bind`), or an object map of directives where the keys are the names and the values
        *    are the factories.
-       * @param {Function|Array} directiveFactory An injectable directive factory function. See the
+       * @param {Function|Array<Function>} directiveFactory An injectable directive factory function. See the
        *    {@link guide/directive directive guide} and the {@link $compile compile API} for more info.
        * @returns {CompileProvider} Self for chaining.
        */
       this.directive = function registerDirective(name, directiveFactory) {
         assertArg(name, "name");
-        assertNotHasOwnProperty(name, "directive");
 
         if (isString(name)) {
+          assertNotHasOwnProperty(name, "directive");
           assertValidDirectiveName(name);
           assertArg(directiveFactory, "directiveFactory");
 
@@ -7504,12 +7705,20 @@
             /* empty */
           };
 
+        /**
+         * @param {ng.InjectorService} $injector
+         */
         function factory($injector) {
-          function makeInjectable(fn) {
+          /**
+           * @param {string | Function | ng.AnnotatedFactory<any> | undefined} fn
+           */
+          const makeInjectable = (fn) => {
             if (isFunction(fn) || isArray(fn)) {
-              return function (tElement, tAttrs) {
-                // eslint-disable-next-line no-invalid-this
-                return $injector.invoke(fn, this, {
+              return (
+                /** @type {HTMLElement} */ tElement,
+                /** @type {ng.Attributes} */ tAttrs,
+              ) => {
+                return $injector.invoke(fn, null, {
                   $element: tElement,
                   $attrs: tAttrs,
                 });
@@ -7517,11 +7726,12 @@
             }
 
             return fn;
-          }
+          };
 
           const template =
             !options.template && !options.templateUrl ? "" : options.template;
 
+          /** @type {Record<string, any>} */
           const ddo = {
             controller,
             controllerAs:
@@ -7551,11 +7761,11 @@
         // These could be used by libraries such as the new component router
         entries(options).forEach(([key, val]) => {
           if (key.charAt(0) === "$") {
-            factory[key] = val;
+            /** @type {Record<string, any>} */ (factory)[key] = val;
 
             // Don't try to copy over annotations to named controller
             if (isFunction(controller)) {
-              controller[key] = val;
+              /** @type {Record<string, any>} */ (controller)[key] = val;
             }
           }
         });
@@ -7583,8 +7793,6 @@
       this.aHrefSanitizationTrustedUrlList = function (regexp) {
         if (isDefined(regexp)) {
           $sanitizeUriProvider.aHrefSanitizationTrustedUrlList(regexp);
-
-          return undefined;
         }
 
         return $sanitizeUriProvider.aHrefSanitizationTrustedUrlList();
@@ -7602,7 +7810,7 @@
        * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
        *
        * @param {RegExp=} regexp New regexp to trust urls with.
-       * @returns {RegExp|import('../sanitize/sanitize-uri.js').SanitizeUriProvider} Current RegExp if called without value or self for
+       * @returns {RegExp|import('../sanitize/sanitize-uri.js').SanitizeUriProvider | undefined} Current RegExp if called without value or self for
        *    chaining otherwise.
        */
       this.imgSrcSanitizationTrustedUrlList = function (regexp) {
@@ -7622,7 +7830,7 @@
        *
        * Call this method to enable / disable the strict component bindings check. If enabled, the
        * compiler will enforce that all scope / controller bindings of a
-       * {@link $compileProvider#directive directive} / {@link $compileProvider#component component}
+       * {@link $compileProvider#directive} / {@link $compileProvider#component}
        * that are not set as optional with `?`, must be provided when the directive is instantiated.
        * If not provided, the compiler will throw the
        * {@link error/$compile/missingattr $compile:missingattr error}.
@@ -7631,20 +7839,21 @@
        */
       let strictComponentBindingsEnabled = false;
 
-      this.strictComponentBindingsEnabled = function (enabled) {
-        if (isDefined(enabled)) {
-          strictComponentBindingsEnabled = enabled;
+      this.strictComponentBindingsEnabled =
+        /** @param {boolean} enabled */ function (enabled) {
+          if (isDefined(enabled)) {
+            strictComponentBindingsEnabled = enabled;
 
-          return this;
-        }
+            return this;
+          }
 
-        return strictComponentBindingsEnabled;
-      };
+          return strictComponentBindingsEnabled;
+        };
 
       /**
        * The security context of DOM Properties.
        */
-      const PROP_CONTEXTS = Object.create(null);
+      const PROP_CONTEXTS = nullObject();
 
       /**
        * Defines the security context for DOM properties bound by ng-prop-*.
@@ -7687,6 +7896,10 @@
        * - *|formAction, form|action URL => RESOURCE_URL (like the attribute)
        */
       (function registerNativePropertyContexts() {
+        /**
+         * @param {string} ctx
+         * @param {any[]} values
+         */
         function registerContext(ctx, values) {
           values.forEach((v) => {
             PROP_CONTEXTS[v.toLowerCase()] = ctx;
@@ -7755,12 +7968,12 @@
          * @param {ng.ExceptionHandlerService} $exceptionHandler
          * @param {ng.TemplateRequestService} $templateRequest
          * @param {ng.ParseService} $parse
-         * @param {*} $controller
+         * @param {ng.ControllerService} $controller
          * @param {ng.SceService} $sce
          * @param {ng.AnimateService} $animate
-         * @returns
+         * @returns {ng.CompileService}
          */
-        function (
+        (
           $injector,
           $interpolate,
           $exceptionHandler,
@@ -7769,10 +7982,13 @@
           $controller,
           $sce,
           $animate,
-        ) {
+        ) => {
           // The onChanges hooks should all be run together in a single digest
           // When changes occur, the call to trigger their hooks will be added to this queue
-          let onChangesQueue;
+          /**
+           * @type {(() => void)[]}
+           */
+          const onChangesQueue = [];
 
           // This function is called in a $postUpdate to trigger all the onChanges hooks in a single digest
           function flushOnChangesQueue() {
@@ -7784,20 +8000,18 @@
               }
             }
             // Reset the queue to trigger a new schedule next time there is a change
-            onChangesQueue = undefined;
+            onChangesQueue.length = 0;
           }
 
           const startSymbol = $interpolate.startSymbol();
 
           const endSymbol = $interpolate.endSymbol();
 
-          /** @type {(string) => string} */
+          /** @type {(x: string) => string} */
           const denormalizeTemplate =
             startSymbol === "{{" && endSymbol === "}}"
               ? (x) => x
               : (x) => x.replace(/\{\{/g, startSymbol).replace(/}}/g, endSymbol);
-
-          const NG_PREFIX_BINDING = /^ng(Attr|Prop|On|Observe|Window)([A-Z].*)$/;
 
           return compile;
 
@@ -7811,28 +8025,29 @@
             ignoreDirective,
             previousCompileContext,
           ) {
-            /** @type {NodeRef | null } */
-            let nodeRef = new NodeRef(element);
+            /** @type {NodeRef | null} */
+            let nodeRef = element ? new NodeRef(element) : null;
 
             /**
              * The composite link function is a composite of individual node linking functions.
              * It will be invoke by the public link function below.
-             * @type {ng.CompositeLinkFn}
+             * @type {ng.CompositeLinkFn | null}
              */
             let compositeLinkFn = compileNodes(
               nodeRef,
-              transcludeFn,
+              /** @type {ChildTranscludeOrLinkFn} */ (transcludeFn),
               maxPriority,
               ignoreDirective,
               previousCompileContext,
             );
 
+            /**
+             * @type {string | null}
+             */
             let namespace = null;
 
-            return publicLinkFn;
-
             /** @type {ng.PublicLinkFn} */
-            function publicLinkFn(scope, cloneConnectFn, options) {
+            const publicLinkFn = function (scope, cloneConnectFn, options) {
               if (!nodeRef) {
                 throw $compileMinErr(
                   "multilink",
@@ -7855,7 +8070,7 @@
                 // for transclusion, which caused us to lose a layer of element on which
                 // we could hold the new transclusion scope, so we will create it manually
                 // here.
-                scope = scope.$parent.$new();
+                scope = scope.$parent?.$new() || scope.$new();
               }
 
               options = options || {};
@@ -7903,12 +8118,17 @@
               }
 
               if (transcludeControllers) {
-                for (const controllerName in transcludeControllers) {
+                const controllers =
+                  /** @type {Record<string, { instance: any }>} */ (
+                    transcludeControllers
+                  );
+
+                for (const controllerName in controllers) {
                   assertArg($linkNode.element, "element");
                   setCacheData(
                     $linkNode.element,
                     `$${controllerName}Controller`,
-                    transcludeControllers[controllerName].instance,
+                    controllers[controllerName].instance,
                   );
                 }
               }
@@ -7926,9 +8146,14 @@
               }
 
               return $linkNode._getAll();
-            }
+            };
+
+            return publicLinkFn;
           }
 
+          /**
+           * @param {Element | Node | null | undefined} parentElement
+           */
           function detectNamespaceForChildElements(parentElement) {
             // TODO: Make this detect MathML as well...
             const node = parentElement;
@@ -7937,25 +8162,43 @@
               return "html";
             }
 
-            return getNodeName(node) !== "foreignobject" &&
-              toString.call(node).match(/SVG/)
+            return getNodeName(/** @type {Element} */ (node)) !==
+              "foreignobject" && toString.call(node).match(/SVG/)
               ? "svg"
               : "html";
           }
 
           /**
-           * Compile function matches each node in nodeList against the directives. Once all directives
-           * for a particular node are collected their compile functions are executed. The compile
-           * functions return values - the linking functions - are combined into a composite linking
-           * function, which is a linking function for the node.
+           * Compiles a `NodeRef` (single node or node-list) into a composite linking function.
            *
-           * @param {NodeRef} nodeRefList a node or an array of nodes or NodeList to compile
-           * @param {*} transcludeFn A linking function, where the
-           *        scope argument is auto-generated to the new child of the transcluded parent scope.
-           * @param {number=} [maxPriority] Max directive priority.
-           * @param {*} [ignoreDirective]
-           * @param {*} [previousCompileContext]
-           * @returns {ng.CompositeLinkFn} A composite linking function of all of the matched directives or null.
+           * Walks each node in `nodeRefList`, collects and applies directives (including template/templateUrl
+           * and transclusion handling), then recursively compiles child nodes when appropriate. The result is
+           * a `CompositeLinkFn` that, when invoked, links all compiled nodes in a stable order and wires up
+           * any required bound transclusion functions.
+           *
+           * Notes:
+           * - If no directives (or child link fns) are found anywhere in the list, this returns `null`.
+           * - `previousCompileContext` is only applied to the first node in a “virtual group” and is cleared
+           *   for subsequent nodes.
+           *
+           * @param {NodeRef | null} nodeRefList
+           *   The compilation root: either a single node wrapper or a wrapper around a NodeList/array.
+           * @param {ChildTranscludeOrLinkFn | null | undefined} transcludeFn
+           *   Parent transclusion/link function propagated down during compilation. When compiling child nodes,
+           *   this may be replaced with a node-specific transclusion function (e.g. for element transclusion or
+           *   template compilation).
+           * @param {number | undefined} [maxPriority]
+           *   If provided, directives with priority >= `maxPriority` are ignored on the first node in the list.
+           *   (Used to stop further directive application when compiling a subset.)
+           * @param {string | undefined} [ignoreDirective]
+           *   Normalized directive name to ignore while collecting directives (used to prevent recursion when
+           *   compiling transcluded content).
+           * @param {PreviousCompileContext | null | undefined} [previousCompileContext]
+           *   Internal bookkeeping passed through compilation passes to coordinate replace/transclusion/templateUrl
+           *   and virtual-group indexing.
+           *
+           * @returns {CompositeLinkFn | null}
+           *   A composite linking function for the compiled node list, or `null` if nothing requires linking.
            */
           function compileNodes(
             nodeRefList,
@@ -7964,6 +8207,7 @@
             ignoreDirective,
             previousCompileContext,
           ) {
+            if (!nodeRefList) return null;
             /**
              * Aggregates for the composite linking function, where a node in a node list is mapped
              * to a corresponding link function. For single elements, the node should be mapped to
@@ -7972,6 +8216,9 @@
              */
             const linkFnsList = []; // An array to hold node indices and their linkFns
 
+            /**
+             * @type {NodeLinkFn | undefined}
+             */
             let nodeLinkFnFound;
 
             let linkFnFound = false;
@@ -7986,15 +8233,15 @@
                 ignoreDirective,
               );
 
-              /** @type {ng.NodeLinkFnCtx} */
+              /** @type {ng.NodeLinkFnCtx | undefined} */
               let nodeLinkFnCtx;
 
               if (directives.length) {
                 nodeLinkFnCtx = applyDirectivesToNode(
                   directives,
-                  nodeRefList._getIndex(i),
+                  nodeRefList?._getIndex(i),
                   attrs,
-                  transcludeFn,
+                  /** @type {ChildTranscludeOrLinkFn} */ (transcludeFn),
                   null,
                   [],
                   [],
@@ -8013,16 +8260,17 @@
               const { childNodes } = nodeRefList._getIndex(i);
 
               if (
-                (nodeLinkFn && nodeLinkFnCtx.terminal) ||
+                (nodeLinkFn && nodeLinkFnCtx?.terminal) ||
                 !childNodes ||
                 !childNodes.length
               ) {
                 childLinkFn = null;
               } else {
                 const transcluded = nodeLinkFn
-                  ? (nodeLinkFnCtx.transcludeOnThisElement ||
-                      !nodeLinkFnCtx.templateOnThisElement) &&
-                    nodeLinkFnCtx.transclude
+                  ? nodeLinkFnCtx?.transcludeOnThisElement ||
+                    !nodeLinkFnCtx?.templateOnThisElement
+                    ? nodeLinkFnCtx?.transclude
+                    : undefined
                   : transcludeFn;
 
                 // recursive call
@@ -8073,7 +8321,7 @@
                       ? nodeRef.nodes[idx]
                       : nodeRef.node;
                   } else {
-                    if (nodeRefList._getIndex(idx)) {
+                    if (nodeRefList?._getIndex(idx)) {
                       stableNodeList[idx] = nodeRef.nodes[idx];
                     }
                   }
@@ -8101,7 +8349,7 @@
                     // bind proper scope for the translusion function
                     childBoundTranscludeFn = createBoundTranscludeFn(
                       scope,
-                      nodeLinkFnCtx.transclude,
+                      /** @type {ng.TranscludeFn} */ (nodeLinkFnCtx?.transclude),
                       _parentBoundTranscludeFn,
                     );
                   } else if (
@@ -8112,7 +8360,7 @@
                   } else if (!_parentBoundTranscludeFn && transcludeFn) {
                     childBoundTranscludeFn = createBoundTranscludeFn(
                       scope,
-                      transcludeFn,
+                      /** @type {ng.TranscludeFn} */ (transcludeFn),
                     );
                   } else {
                     childBoundTranscludeFn = null;
@@ -8141,17 +8389,37 @@
           }
 
           /**
-           * Prebinds the transclusion function to a scope
+           * Prebinds a transclusion function to a parent scope and threads parent-bound transclusion context.
+           *
            * @param {ng.Scope} scope
-           * @param {*} transcludeFn
-           * @param {*} previousBoundTranscludeFn
-           * @returns {ng.BoundTranscludeFn}
+           *   The parent scope used to derive transcluded scopes when one is not explicitly provided.
+           * @param {ng.TranscludeFn} transcludeFn
+           *   The underlying transclusion function to wrap (must expose `_slots` if slot transclusion is used).
+           * @param {BoundTranscludeFn | null | undefined} [previousBoundTranscludeFn]
+           *   Parent bound transclusion function (used to support nested transclusion).
+           * @returns {BoundTranscludeFn}
            */
           function createBoundTranscludeFn(
             scope,
             transcludeFn,
             previousBoundTranscludeFn,
           ) {
+            /**
+             * Scope-bound wrapper that ensures a transcluded scope exists and forwards to `transcludeFn`.
+             *
+             * @param {ng.Scope | null | undefined} transcludedScope
+             *   The scope to use for transcluded content; if omitted/falsey, a new one is created via
+             *   `scope.$transcluded(containingScope)`.
+             * @param {CloneAttachFn | undefined} cloneFn
+             *   Optional clone-attach callback for the transcluded DOM.
+             * @param {unknown} controllers
+             *   Controllers to expose to the transclusion (used for element transclusion cases).
+             * @param {Node | Element | null | undefined} _futureParentElement
+             *   The element that will ultimately contain the transcluded nodes.
+             * @param {ng.Scope | undefined} containingScope
+             *   The “anchor” scope at the transclusion point, used to derive the transcluded scope.
+             * @returns {TranscludedNodes | void}
+             */
             function boundTranscludeFn(
               transcludedScope,
               cloneFn,
@@ -8160,7 +8428,9 @@
               containingScope,
             ) {
               if (!transcludedScope) {
-                transcludedScope = scope.$transcluded(containingScope);
+                transcludedScope = scope.$transcluded(
+                  /** @type {ng.Scope} */ (containingScope),
+                );
               }
 
               const transcludeRes = transcludeFn(transcludedScope, cloneFn, {
@@ -8174,7 +8444,7 @@
 
             // We need  to attach the transclusion slots onto the `boundTranscludeFn`
             // so that they are available inside the `controllersBoundTransclude` function
-            const boundSlots = (boundTranscludeFn._slots = Object.create(null));
+            const boundSlots = (boundTranscludeFn._slots = nullObject());
 
             for (const slotName in transcludeFn._slots) {
               if (transcludeFn._slots[slotName]) {
@@ -8199,11 +8469,11 @@
            * @param {Attributes|any} attrs The shared attrs object which is used to populate the normalized attributes.
            * @param {number=} maxPriority Max directive priority.
            * @param {string} [ignoreDirective]
-           * @return {ng.Directive[]} An array to which the directives are added to. This array is sorted before the function returns.
+           * @return {InternalDirective[]} An array to which the directives are added to. This array is sorted before the function returns.
            */
           function collectDirectives(node, attrs, maxPriority, ignoreDirective) {
             /**
-             * @type {ng.Directive[]}
+             * @type {InternalDirective[]}
              */
             const directives = [];
 
@@ -8273,27 +8543,35 @@
                       addPropertyDirective(node, directives, nName, name);
                     } else if (isNgEvent) {
                       directives.push(
-                        createEventDirective(
-                          $parse,
-                          $exceptionHandler,
-                          nName,
-                          name,
+                        /** @type {InternalDirective} */ (
+                          createEventDirective(
+                            $parse,
+                            $exceptionHandler,
+                            nName,
+                            name,
+                          )
                         ),
                       );
                     } else {
                       // isWindow
                       directives.push(
-                        createWindowEventDirective(
-                          $parse,
-                          $exceptionHandler,
-                          window,
-                          nName,
-                          name,
+                        /** @type {InternalDirective} */ (
+                          createWindowEventDirective(
+                            $parse,
+                            $exceptionHandler,
+                            window,
+                            nName,
+                            name,
+                          )
                         ),
                       );
                     }
                   } else if (isNgObserve) {
-                    directives.push(ngObserveDirective(name, value));
+                    directives.push(
+                      /** @type {InternalDirective} */ (
+                        ngObserveDirective(name, value)
+                      ),
+                    );
                   } else {
                     // Update nName for cases where a prefix was removed
                     // NOTE: the .toLowerCase() is unnecessary and causes https://github.com/angular/angular.js/issues/16624 for ng-attr-*
@@ -8333,7 +8611,10 @@
 
                 break;
               case NodeType._TEXT_NODE:
-                addTextInterpolateDirective(directives, node.nodeValue);
+                addTextInterpolateDirective(
+                  directives,
+                  /** @type {string} */ (node.nodeValue),
+                );
                 break;
             }
 
@@ -8345,13 +8626,13 @@
           /**
            * A function generator that is used to support both eager and lazy compilation
            * linking function.
-           * @param eager
-           * @param {NodeList|Node} nodes
-           * @param transcludeFn
-           * @param maxPriority
-           * @param ignoreDirective
-           * @param previousCompileContext
-           * @returns {ng.PublicLinkFn|ng.TranscludeFn}
+           * @param {boolean} eager
+           * @param {NodeList | Node | null} nodes
+           * @param {ChildTranscludeOrLinkFn | null | undefined} transcludeFn
+           * @param {number | undefined} maxPriority
+           * @param {string | undefined} ignoreDirective
+           * @param {{ _nonTlbTranscludeDirective?: any; needsNewScope?: any; } | null | undefined} previousCompileContext
+           * @returns {ng.PublicLinkFn | ng.TranscludeFn}
            */
           function compilationGenerator(
             eager,
@@ -8361,6 +8642,7 @@
             ignoreDirective,
             previousCompileContext,
           ) {
+            /** @type { ng.PublicLinkFn | undefined } */
             let compiled;
 
             if (eager) {
@@ -8375,7 +8657,11 @@
               );
             }
 
-            function lazyCompilation() {
+            /**
+             * @param {Parameters<PublicLinkFn>} args
+             * @returns {ReturnType<PublicLinkFn>}
+             */
+            function lazyCompilation(...args) {
               if (!compiled) {
                 compiled = compile(
                   nodes,
@@ -8388,32 +8674,39 @@
                 nodes = transcludeFn = previousCompileContext = null;
               }
 
-              /* eslint-disable no-invalid-this */
-              const ctx = this;
-
-              return compiled.apply(ctx, arguments);
+              return compiled(...args);
             }
 
             return /** @type {ng.PublicLinkFn} */ (lazyCompilation);
           }
 
           /**
-           * Once the directives have been collected, their compile functions are executed. This method
-           * is responsible for inlining directive templates as well as terminating the application
-           * of the directives if the terminal directive has been reached.
+           * Applies a sorted set of directives to a single node and produces the node-level link context.
            *
-           * @param {Array<any>} directives Array of collected directives to execute their compile function.
-           *        this needs to be pre-sorted by priority order.
-           * @param {Node | Element} compileNode  DOM node to apply the compile functions to
-           * @param {Attributes} templateAttrs The shared attribute function
-           * @param {ng.TranscludeFn} transcludeFn
-           * @param {Object=} originalReplaceDirective An optional directive that will be ignored when
-           *                                           compiling the transclusion.
-           * @param {Array.<Function>} [preLinkFns]
-           * @param {Array.<Function>} [postLinkFns]
-           * @param {Object} [previousCompileContext] Context used for previous compilation of the current
-           *                                        node
-           * @returns {ng.NodeLinkFnCtx} node link function
+           * Responsibilities:
+           * - Run directive `compile()` functions (and collect pre/post link fns).
+           * - Inline templates / handle `replace`, `templateUrl`, and transclusion.
+           * - Track terminal directives and scope requirements for later linking.
+           *
+           * @param {InternalDirective[]} directives
+           *   Collected directives for this node (must be pre-sorted by priority).
+           * @param {Node | Element} compileNode
+           *   The DOM node to apply directive compilation against (may be replaced during compilation).
+           * @param {Attributes} templateAttrs
+           *   Shared, normalized attributes for the node at compile-time.
+           * @param {ChildTranscludeOrLinkFn} transcludeFn
+           *   Parent transclusion/link function passed down during compilation.
+           * @param {InternalDirective | null | undefined} originalReplaceDirective
+           *   The original directive that triggered a `replace` (ignored when compiling transclusion/template).
+           * @param {Array<NodeLinkFn>} [preLinkFns]
+           *   Accumulator for pre-link functions (executed in registration order).
+           * @param {Array<ng.NodeLinkFn>} [postLinkFns]
+           *   Accumulator for post-link functions (executed in reverse order).
+           * @param {PreviousCompileContext} [previousCompileContext]
+           *   Internal bookkeeping for replace/transclusion/templateUrl compilation passes.
+           *
+           * @returns {NodeLinkFnCtx}
+           *   The node link context (nodeLinkFn + flags + transclusion/template metadata).
            */
           function applyDirectivesToNode(
             directives,
@@ -8426,6 +8719,8 @@
             previousCompileContext,
           ) {
             previousCompileContext = previousCompileContext || {};
+            preLinkFns = /** @type {any[]} */ (preLinkFns || []);
+            postLinkFns = /** @type {any[]} */ (postLinkFns || []);
 
             let terminalPriority = -Number.MAX_VALUE;
 
@@ -8451,8 +8746,10 @@
             const { index } = previousCompileContext;
 
             templateAttrs._nodeRef = compileNodeRef;
+            /** @type {InternalDirective} */
             let directive;
 
+            /** @type {string} */
             let directiveName;
 
             let $template;
@@ -8487,7 +8784,8 @@
 
               let controllerScope;
 
-              let elementControllers;
+              /** @type {{ [s: string]: any; }} */
+              let elementControllers = nullObject();
 
               let scopeToChild = scope;
 
@@ -8501,7 +8799,7 @@
 
               if (compileNode === linkNode) {
                 attrs = templateAttrs;
-                $element = templateAttrs._nodeRef;
+                $element = /** @type {NodeRef} */ (templateAttrs._nodeRef);
               } else {
                 $element = new NodeRef(linkNode);
                 attrs = new Attributes(
@@ -8520,6 +8818,9 @@
               } else if (_newScopeDirective) {
                 controllerScope = scope.$parent;
               }
+              controllerScope = /** @type {ng.Scope} */ (
+                controllerScope || scope
+              );
 
               if (boundTranscludeFn) {
                 // track `boundTranscludeFn` so it can be unwrapped if `transcludeFn`
@@ -8531,27 +8832,32 @@
 
                 newTrancludeFn._boundTransclude = boundTranscludeFn;
                 // expose the slots on the `$transclude` function
-                newTrancludeFn.isSlotFilled = function (slotName) {
+                newTrancludeFn.isSlotFilled = function (
+                  /** @type {string | number} */ slotName,
+                ) {
                   return !!boundTranscludeFn._slots[slotName];
                 };
                 transcludeFn = newTrancludeFn;
               }
 
+              const controllerDirectives = _controllerDirectives || nullObject();
+
               if (_controllerDirectives) {
                 elementControllers = setupControllers(
                   $element,
                   attrs,
-                  transcludeFn,
+                  /** @type {ng.TranscludeFn} */ (transcludeFn),
                   _controllerDirectives,
-                  isolateScope,
+                  /** @type {ng.Scope} */ (isolateScope || scope),
                   scope,
                   _newIsolateScopeDirective,
                 );
               }
 
-              if (_newIsolateScopeDirective) {
-                isolateScope.$target._isolateBindings =
-                  _newIsolateScopeDirective._isolateBindings;
+              if (_newIsolateScopeDirective && isolateScope) {
+                isolateScope.$target._isolateBindings = /** @type {any} */ (
+                  _newIsolateScopeDirective
+                )._isolateBindings;
                 scopeBindingInfo = initializeDirectiveBindings(
                   scope,
                   attrs,
@@ -8567,11 +8873,12 @@
 
               // Initialize bindToController bindings
               for (const name in elementControllers) {
-                const controllerDirective = _controllerDirectives[name];
+                const controllerDirective = controllerDirectives[name];
 
                 const controller = elementControllers[name];
 
-                const bindings = controllerDirective._bindings.bindToController;
+                const bindings = /** @type {any} */ (controllerDirective)
+                  ._bindings.bindToController;
 
                 // Controller instance is bound to the scope
                 const controllerInstance = controller();
@@ -8583,7 +8890,7 @@
                   controller.instance,
                 );
                 controller.bindingInfo = initializeDirectiveBindings(
-                  controllerScope,
+                  /** @type {ng.Scope} */ (controllerScope),
                   attrs,
                   controller.instance,
                   bindings,
@@ -8593,7 +8900,7 @@
 
               // Bind the required controllers to the controller, if `require` is an object and `bindToController` is truthy
               if (_controllerDirectives) {
-                entries(_controllerDirectives).forEach(
+                entries(controllerDirectives).forEach(
                   ([name, controllerDirective]) => {
                     const { require } = controllerDirective;
 
@@ -8640,9 +8947,12 @@
                   }
 
                   if (isFunction(controllerInstance.$onDestroy)) {
-                    controllerScope.$on("$destroy", () => {
-                      controllerInstance.$onDestroy();
-                    });
+                    /** @type {ng.Scope} */ (controllerScope).$on(
+                      "$destroy",
+                      () => {
+                        controllerInstance.$onDestroy();
+                      },
+                    );
                   }
                 });
               }
@@ -8683,7 +8993,7 @@
                 (_newIsolateScopeDirective.template ||
                   _newIsolateScopeDirective.templateUrl === null)
               ) {
-                scopeToChild = isolateScope;
+                scopeToChild = isolateScope || scope;
               }
 
               if (
@@ -8714,7 +9024,7 @@
 
                 // invoke link function
                 try {
-                  if (postLinkFn.isolateScope) {
+                  if (postLinkFn.isolateScope && isolateScope) {
                     setIsolateScope($element.element, isolateScope);
                   }
 
@@ -8745,6 +9055,12 @@
               // the fifth parameter to the link function.
               // Example: function link (scope, element, attrs, ctrl, transclude) {}
               // Note: all arguments are optional!
+              /**
+               * @param {import("../scope/scope.js").Scope | import("./interface.ts").CloneAttachFn | undefined} scopeParam
+               * @param {import("./interface.ts").CloneAttachFn | Node | null | undefined} cloneAttachFn
+               * @param {Node | null | undefined} _futureParentElement
+               * @param {string | number | undefined} slotName
+               */
               function controllersBoundTransclude(
                 scopeParam,
                 cloneAttachFn,
@@ -8755,9 +9071,16 @@
 
                 // No scope passed in:
                 if (!isScope(scopeParam)) {
-                  slotName = _futureParentElement;
-                  _futureParentElement = cloneAttachFn;
-                  cloneAttachFn = scopeParam;
+                  slotName = /** @type {string | number | undefined} */ (
+                    _futureParentElement
+                  );
+                  _futureParentElement = /** @type {Node | null | undefined} */ (
+                    cloneAttachFn
+                  );
+                  cloneAttachFn =
+                    /** @type {import("./interface.ts").CloneAttachFn | undefined} */ (
+                      scopeParam
+                    );
                   scopeParam = undefined;
                 }
 
@@ -8771,6 +9094,10 @@
                     : $element.node;
                 }
 
+                if (!boundTranscludeFn) {
+                  return undefined;
+                }
+
                 if (slotName) {
                   // slotTranscludeFn can be one of three things:
                   //  * a transclude function - a filled slot
@@ -8780,8 +9107,8 @@
 
                   if (slotTranscludeFn) {
                     return slotTranscludeFn(
-                      scopeParam,
-                      cloneAttachFn,
+                      /** @type {ng.Scope | null | undefined} */ (scopeParam),
+                      /** @type {CloneAttachFn | undefined} */ (cloneAttachFn),
                       transcludeControllers,
                       _futureParentElement,
                       scopeToChild,
@@ -8801,8 +9128,8 @@
                   return undefined;
                 } else {
                   return boundTranscludeFn(
-                    scopeParam,
-                    cloneAttachFn,
+                    /** @type {ng.Scope | null | undefined} */ (scopeParam),
+                    /** @type {CloneAttachFn | undefined} */ (cloneAttachFn),
                     transcludeControllers,
                     _futureParentElement,
                     scopeToChild,
@@ -8814,8 +9141,9 @@
             // executes all directives on the current element
             for (let i = 0, ii = directives.length; i < ii; i++) {
               directive = directives[i];
+              const directivePriority = directive.priority || 0;
 
-              if (terminalPriority > directive.priority) {
+              if (terminalPriority > directivePriority) {
                 break; // prevent further processing of directives
               }
 
@@ -8830,7 +9158,9 @@
                     // Check that there is no scope of any kind already
                     assertNoDuplicate(
                       "new/isolated scope",
-                      _newIsolateScopeDirective || _newScopeDirective,
+                      /** @type {any} */ (
+                        _newIsolateScopeDirective || _newScopeDirective
+                      ),
                       directive,
                       compileNodeRef,
                     );
@@ -8840,7 +9170,7 @@
                     // Check that there is no isolated scope already
                     assertNoDuplicate(
                       "new/isolated scope",
-                      _newIsolateScopeDirective,
+                      /** @type {any} */ (_newIsolateScopeDirective),
                       directive,
                       compileNodeRef,
                     );
@@ -8850,7 +9180,7 @@
                 _newScopeDirective = _newScopeDirective || directive;
               }
 
-              directiveName = directive.name;
+              directiveName = directive.name || "";
 
               // If we encounter a condition that can result in transclusion on the directive,
               // then scan ahead in the remaining directives for others that may cause a multiple
@@ -8864,7 +9194,7 @@
 
               const shouldTransclude =
                 directive.transclude &&
-                !EXCLUDED_DIRECTIVES.includes(directive.name);
+                !EXCLUDED_DIRECTIVES.includes(directiveName);
 
               if (
                 !didScanForMultipleTransclusion &&
@@ -8875,11 +9205,12 @@
                 for (
                   let scanningIndex = i + 1;
                   (candidateDirective = directives[scanningIndex++]);
-
                 ) {
                   if (
                     (candidateDirective.transclude &&
-                      !EXCLUDED_DIRECTIVES.includes(candidateDirective.name)) ||
+                      !EXCLUDED_DIRECTIVES.includes(
+                        candidateDirective.name || "",
+                      )) ||
                     (candidateDirective.replace &&
                       (candidateDirective.templateUrl ||
                         candidateDirective.template))
@@ -8893,11 +9224,10 @@
               }
 
               if (!directive.templateUrl && directive.controller) {
-                _controllerDirectives =
-                  _controllerDirectives || Object.create(null);
+                _controllerDirectives = _controllerDirectives || nullObject();
                 assertNoDuplicate(
                   `'${directiveName}' controller`,
-                  _controllerDirectives[directiveName],
+                  /** @type {any} */ (_controllerDirectives[directiveName]),
                   directive,
                   compileNodeRef,
                 );
@@ -8912,10 +9242,10 @@
                 // Special case ngIf and ngRepeat so that we don't complain about duplicate transclusion.
                 // This option should only be used by directives that know how to safely handle element transclusion,
                 // where the transcluded nodes are added or replaced after linking.
-                if (!EXCLUDED_DIRECTIVES.includes(directive.name)) {
+                if (!EXCLUDED_DIRECTIVES.includes(directiveName)) {
                   assertNoDuplicate(
                     "transclusion",
-                    _nonTlbTranscludeDirective,
+                    /** @type {any} */ (_nonTlbTranscludeDirective),
                     directive,
                     compileNodeRef,
                   );
@@ -8924,24 +9254,27 @@
 
                 if (directiveValue === "element") {
                   hasElementTranscludeDirective = true;
-                  terminalPriority = directive.priority;
+                  terminalPriority = directivePriority;
                   $template = compileNodeRef;
                   compileNodeRef = new NodeRef(document.createComment(""));
                   templateAttrs._nodeRef = compileNodeRef;
                   compileNode = compileNodeRef.node;
-                  ctxNodeRef.node = compileNode;
+
+                  if (ctxNodeRef) {
+                    ctxNodeRef.node = compileNode;
+                  }
                   replaceWith(
-                    new NodeRef($template._element),
+                    new NodeRef(/** @type {Element} */ ($template._element)),
                     compileNode,
                     index,
                   );
 
                   childTranscludeFn = compilationGenerator(
                     mightHaveMultipleTransclusionError,
-                    $template._element,
+                    /** @type {Element} */ ($template._element),
                     transcludeFn,
                     terminalPriority,
-                    replaceDirective && replaceDirective.name,
+                    replaceDirective ? replaceDirective.name : undefined,
                     {
                       // Don't pass in:
                       // - _controllerDirectives - otherwise we'll create duplicates controllers
@@ -8954,8 +9287,9 @@
                     },
                   );
                 } else {
-                  const slots = Object.create(null);
+                  const slots = nullObject();
 
+                  /** @type {NodeList | DocumentFragment} */
                   let nodes;
 
                   if (!isObject(directiveValue)) {
@@ -8967,9 +9301,9 @@
                     // collect them up, compile them and store their transclusion functions
                     nodes = document.createDocumentFragment();
 
-                    const slotMap = Object.create(null);
+                    const slotMap = nullObject();
 
-                    const filledSlots = Object.create(null);
+                    const filledSlots = nullObject();
 
                     // Parse the element selectors
                     entries(directiveValue).forEach(
@@ -9009,7 +9343,7 @@
                           slots[slotName] || document.createDocumentFragment();
                         slots[slotName].appendChild(node);
                       } else {
-                        nodes.appendChild(node);
+                        /** @type {DocumentFragment} */ (nodes).appendChild(node);
                       }
                     });
 
@@ -9033,6 +9367,9 @@
                           mightHaveMultipleTransclusionError,
                           slotCompileNodes,
                           transcludeFn,
+                          undefined,
+                          undefined,
+                          previousCompileContext,
                         );
                       }
                     }
@@ -9052,7 +9389,8 @@
                     undefined,
                     {
                       needsNewScope:
-                        directive._isolateScope || directive._newScope,
+                        /** @type {any} */ (directive)._isolateScope ||
+                        /** @type {any} */ (directive)._newScope,
                     },
                   );
                   /** @type {import("./interface.ts").TranscludeFn} */ (
@@ -9065,14 +9403,17 @@
                 hasTemplate = true;
                 assertNoDuplicate(
                   "template",
-                  _templateDirective,
+                  /** @type {any} */ (_templateDirective),
                   directive,
                   compileNodeRef,
                 );
                 _templateDirective = directive;
 
                 directiveValue = isFunction(directive.template)
-                  ? directive.template(compileNodeRef.node, templateAttrs)
+                  ? directive.template(
+                      /** @type {HTMLElement} */ (compileNodeRef.node),
+                      templateAttrs,
+                    )
                   : directive.template;
 
                 directiveValue = denormalizeTemplate(directiveValue);
@@ -9083,11 +9424,9 @@
                   if (isTextNode(directiveValue)) {
                     $template = [];
                   } else {
-                    $template = removeComments(
-                      wrapTemplate(
-                        directive.templateNamespace,
-                        trim(directiveValue),
-                      ),
+                    $template = wrapTemplate(
+                      directive.templateNamespace,
+                      trim(directiveValue),
                     );
                   }
 
@@ -9112,14 +9451,15 @@
 
                   replaceWith(compileNodeRef, compileNode);
 
-                  if (parentNodeRef) {
+                  if (parentNodeRef && index !== undefined) {
                     /** @type {NodeRef} */ (parentNodeRef)._setIndex(
                       index,
                       compileNode,
                     );
                   }
 
-                  const newTemplateAttrs = { $attr: {} };
+                  /** @type {Attributes} */
+                  const newTemplateAttrs = /** @type {any} */ ({ $attr: {} });
 
                   // combine directives from the original node and from the template:
                   // - take the array of directives for this element
@@ -9164,7 +9504,7 @@
                 hasTemplate = true;
                 assertNoDuplicate(
                   "template",
-                  _templateDirective,
+                  /** @type {any} */ (_templateDirective),
                   directive,
                   compileNodeRef,
                 );
@@ -9174,37 +9514,39 @@
                   replaceDirective = directive;
                 }
 
-                nodeLinkFn = compileTemplateUrl(
-                  directives.splice(i, directives.length - i),
-                  compileNodeRef,
-                  templateAttrs,
-                  /** @type {Element} */ (compileNode),
-                  hasTranscludeDirective && childTranscludeFn,
-                  preLinkFns,
-                  postLinkFns,
-                  {
-                    index,
-                    _controllerDirectives,
-                    _newScopeDirective:
-                      _newScopeDirective !== directive && _newScopeDirective,
-                    _newIsolateScopeDirective,
-                    _templateDirective,
-                    _nonTlbTranscludeDirective,
-                    _futureParentElement:
-                      previousCompileContext._futureParentElement,
-                  },
+                nodeLinkFn = /** @type {ng.NodeLinkFn} */ (
+                  compileTemplateUrl(
+                    directives.splice(i, directives.length - i),
+                    compileNodeRef,
+                    templateAttrs,
+                    /** @type {Element} */ (compileNode),
+                    hasTranscludeDirective && childTranscludeFn,
+                    preLinkFns,
+                    postLinkFns,
+                    {
+                      index,
+                      _controllerDirectives,
+                      _newScopeDirective:
+                        _newScopeDirective !== directive && _newScopeDirective,
+                      _newIsolateScopeDirective,
+                      _templateDirective,
+                      _nonTlbTranscludeDirective,
+                      _futureParentElement:
+                        previousCompileContext._futureParentElement,
+                    },
+                  )
                 );
                 ii = directives.length;
               } else if (directive.compile) {
                 try {
-                  /** @type {ng.PublicLinkFn} */
+                  /** @type {any} */
                   const linkFn = directive.compile(
-                    compileNodeRef._getAny(),
+                    /** @type {HTMLElement} */ (compileNodeRef._getAny()),
                     templateAttrs,
                     childTranscludeFn,
                   );
 
-                  const context = directive.$$originalDirective || directive;
+                  const context = directive._originalDirective || directive;
 
                   if (isFunction(linkFn)) {
                     addLinkFns(null, bind(context, linkFn));
@@ -9221,7 +9563,7 @@
 
               if (directive.terminal) {
                 terminal = true;
-                terminalPriority = Math.max(terminalPriority, directive.priority);
+                terminalPriority = Math.max(terminalPriority, directivePriority);
               }
             }
 
@@ -9235,10 +9577,16 @@
               transclude: childTranscludeFn,
               transcludeOnThisElement: hasTranscludeDirective,
               templateOnThisElement: hasTemplate,
-              newScope: _newScopeDirective && _newScopeDirective.scope === true,
+              newScope: !!(
+                _newScopeDirective && _newScopeDirective.scope === true
+              ),
             };
 
             /// /////////////////
+            /**
+             * @param {any | null} pre
+             * @param {any | null} post
+             */
             function addLinkFns(pre, post) {
               if (pre) {
                 pre.require = directive.require;
@@ -9250,7 +9598,7 @@
                 ) {
                   pre = cloneAndAnnotateFn(pre, { isolateScope: true });
                 }
-                preLinkFns.push(pre);
+                /** @type {any[]} */ (preLinkFns).push(/** @type {any} */ (pre));
               }
 
               if (post) {
@@ -9263,7 +9611,9 @@
                 ) {
                   post = cloneAndAnnotateFn(post, { isolateScope: true });
                 }
-                postLinkFns.push(post);
+                /** @type {any[]} */ (postLinkFns).push(
+                  /** @type {any} */ (post),
+                );
               }
             }
           }
@@ -9272,9 +9622,9 @@
            *
            * @param {string} directiveName
            * @param {string | Array<any> | Record<string, any>} require
-           * @param {Element} $element
+           * @param {Element | undefined} $element
            * @param {*} elementControllers
-           * @returns
+           * @returns {any}
            */
           function getControllers(
             directiveName,
@@ -9282,10 +9632,13 @@
             $element,
             elementControllers,
           ) {
+            /** @type {any} */
             let value;
 
             if (isString(require)) {
-              const match = require.match(REQUIRE_PREFIX_REGEXP);
+              const match = /** @type {RegExpMatchArray} */ (
+                require.match(REQUIRE_PREFIX_REGEXP)
+              );
 
               const name = require.substring(match[0].length);
 
@@ -9295,7 +9648,7 @@
 
               // If only parents then start at the parent element
               if (inheritType === "^^") {
-                if ($element.parentElement) {
+                if ($element && $element.parentElement) {
                   $element = $element.parentElement;
                 } else {
                   $element = undefined;
@@ -9363,12 +9716,12 @@
 
           /**
            * @param {NodeRef} $element
-           * @param attrs
-           * @param transcludeFn
-           * @param _controllerDirectives
-           * @param isolateScope
-           * @param scope
-           * @param _newIsolateScopeDirective
+           * @param {Attributes} attrs
+           * @param {ng.TranscludeFn} transcludeFn
+           * @param {{ [x: string]: any; }} _controllerDirectives
+           * @param {ng.Scope} isolateScope
+           * @param {ng.Scope} scope
+           * @param {any} _newIsolateScopeDirective
            * @returns {any}
            */
           function setupControllers(
@@ -9380,7 +9733,7 @@
             scope,
             _newIsolateScopeDirective,
           ) {
-            const elementControllers = Object.create(null);
+            const elementControllers = nullObject();
 
             for (const controllerKey in _controllerDirectives) {
               const directive = _controllerDirectives[controllerKey];
@@ -9391,7 +9744,7 @@
                   directive._isolateScope
                     ? isolateScope
                     : scope,
-                $element: $element.node,
+                $element: /** @type {any} */ ($element.node),
                 $attrs: attrs,
                 $transclude: transcludeFn,
               };
@@ -9399,7 +9752,7 @@
               let { controller } = directive;
 
               if (controller === "@") {
-                controller = attrs[directive.name];
+                controller = /** @type {any} */ (attrs)[directive.name];
               }
 
               const controllerInstance = $controller(
@@ -9433,6 +9786,11 @@
           // asked for element transclusion
           // * if the directive itself asks for transclusion but it is at the root of a template and the original
           // element was replaced. See https://github.com/angular/angular.js/issues/12936
+          /**
+           * @param {any[]} directives
+           * @param {any} isolateScope
+           * @param {any} [newScope]
+           */
           function markDirectiveScope(directives, isolateScope, newScope) {
             for (let j = 0, jj = directives.length; j < jj; j++) {
               directives[j] = inherit$1(directives[j], {
@@ -9445,17 +9803,23 @@
           /**
            * looks up the directive and decorates it with exception handling and proper parameters. We
            * call this the boundDirective.
-           *
            * @param {string} name name of the directive to look up.
            * @param {string} location The directive must be found in specific format.
-           *   String containing any of these characters:
-           *
-           *   * `E`: element name
-           *   * `A': attribute
-           * @returns {boolean} true if directive was added.
+          String containing any of these characters:
+          
+          * `E`: element name
+          * `A': attribute
+           * @returns {InternalDirective | false} true if directive was added.
+           * @param {InternalDirective[]} tDirectives
+           * @param {number | undefined} maxPriority
            */
           function addDirective(tDirectives, name, location, maxPriority) {
+            /** @type {InternalDirective | false} */
             let match = false;
+
+            const maxPriorityValue = isUndefined(maxPriority)
+              ? Number.MAX_VALUE
+              : /** @type {number} */ (maxPriority);
 
             if (hasOwn(hasDirectives, name)) {
               for (
@@ -9469,8 +9833,7 @@
                 directive = directives[i];
 
                 if (
-                  (isUndefined(maxPriority) ||
-                    maxPriority > directive.priority) &&
+                  maxPriorityValue > (directive.priority || 0) &&
                   directive.restrict.indexOf(location) !== -1
                 ) {
                   if (!directive._bindings) {
@@ -9495,22 +9858,26 @@
            * on the template need to be merged with the existing attributes in the DOM.
            * The desired effect is to have both of the attributes present.
            *
-           * @param {object} dst destination attributes (original DOM)
-           * @param {object} src source attributes (from the directive template)
+           * @param {Attributes} dst destination attributes (original DOM)
+           * @param {Attributes} src source attributes (from the directive template)
            */
           function mergeTemplateAttributes(dst, src) {
+            const dstAny = /** @type {any} */ (dst);
+
+            const srcAny = /** @type {any} */ (src);
+
             const srcAttr = src.$attr;
 
             const dstAttr = dst.$attr;
 
             // reapply the old attributes to the new element
-            entries(dst).forEach(([key, value]) => {
+            entries(dstAny).forEach(([key, value]) => {
               if (key[0] !== "$" && key[0] !== "_") {
-                if (src[key] && src[key] !== value) {
+                if (srcAny[key] && srcAny[key] !== value) {
                   if (value.length) {
-                    value += (key === "style" ? ";" : " ") + src[key];
+                    value += (key === "style" ? ";" : " ") + srcAny[key];
                   } else {
-                    value = src[key];
+                    value = srcAny[key];
                   }
                 }
                 dst.$set(key, value, true, srcAttr[key]);
@@ -9518,13 +9885,13 @@
             });
 
             // copy the new attributes on the old attrs object
-            entries(src).forEach(([key, value]) => {
+            entries(srcAny).forEach(([key, value]) => {
               // Check if we already set this attribute in the loop above.
               // `dst` will never contain hasOwnProperty as DOM parser won't let it.
               // You will get an "InvalidCharacterError: DOM Exception 5" error if you
               // have an attribute like "has-own-property" or "data-has-own-property", etc.
               if (!hasOwn(dst, key) && key.charAt(0) !== "$") {
-                dst[key] = value;
+                dstAny[key] = value;
 
                 if (key !== "class" && key !== "style") {
                   dstAttr[key] = srcAttr[key];
@@ -9535,10 +9902,10 @@
 
           /**
            *
-           * @param {ng.Directive[]} directives
+           * @param {InternalDirective[]} directives
            * @param {NodeRef} $compileNode
            * @param {Attributes} tAttrs
-           * @param {Element} $rootElement
+           * @param {any} $rootElement
            * @param {*} childTranscludeFn
            * @param {Array<any>} preLinkFns
            * @param {Array<any>} postLinkFns
@@ -9555,25 +9922,35 @@
             postLinkFns,
             previousCompileContext,
           ) {
+            /**
+             * @type {any[] | null}
+             */
             let linkQueue = [];
 
             /** @type {any} */
             let afterTemplateNodeLinkFn;
 
-            let afterTemplateChildLinkFn;
+            /**
+             * @type {CompositeLinkFn | null}
+             */
+            let afterTemplateChildLinkFn = null;
 
             let afterTemplateNodeLinkFnCtx;
 
             const beforeTemplateCompileNode = $compileNode._getAny();
 
-            const origAsyncDirective = directives.shift();
+            const origAsyncDirective = /** @type {InternalDirective} */ (
+              directives.shift()
+            );
 
-            const derivedSyncDirective = inherit$1(origAsyncDirective, {
-              templateUrl: null,
-              transclude: null,
-              replace: null,
-              $$originalDirective: origAsyncDirective,
-            });
+            const derivedSyncDirective = /** @type {InternalDirective} */ (
+              inherit$1(origAsyncDirective, {
+                templateUrl: null,
+                transclude: null,
+                replace: null,
+                _originalDirective: origAsyncDirective,
+              })
+            );
 
             /** @type {string} */
             let templateUrl;
@@ -9618,9 +9995,7 @@
                         node.nodeType !== NodeType._TEXT_NODE,
                     );
                   } else {
-                    $template = removeComments(
-                      wrapTemplate(templateNamespace, trim(content)),
-                    );
+                    $template = wrapTemplate(templateNamespace, trim(content));
                   }
                   compileNode = $template[0];
 
@@ -9636,7 +10011,8 @@
                     );
                   }
 
-                  tempTemplateAttrs = { $attr: {} };
+                  /** @type {Attributes} */
+                  tempTemplateAttrs = /** @type {any} */ ({ $attr: {} });
 
                   replaceWith(
                     $compileNode,
@@ -9690,12 +10066,23 @@
                   childTranscludeFn,
                 );
 
-                while (linkQueue.length) {
-                  const scope = linkQueue.shift();
+                while (linkQueue && linkQueue.length) {
+                  const scope = /** @type {ng.Scope | undefined} */ (
+                    linkQueue.shift()
+                  );
 
-                  const beforeTemplateLinkNode = linkQueue.shift();
+                  const beforeTemplateLinkNode = /** @type {any} */ (
+                    linkQueue.shift()
+                  );
 
-                  const boundTranscludeFn = linkQueue.shift();
+                  const boundTranscludeFn =
+                    /** @type {BoundTranscludeFn | null | undefined} */ (
+                      linkQueue.shift()
+                    );
+
+                  if (!scope) {
+                    continue;
+                  }
 
                   let linkNode = $compileNode._getAny();
 
@@ -9733,7 +10120,9 @@
                   if (afterTemplateNodeLinkFnCtx.transcludeOnThisElement) {
                     childBoundTranscludeFn = createBoundTranscludeFn(
                       scope,
-                      afterTemplateNodeLinkFnCtx.transclude,
+                      /** @type {ng.TranscludeFn} */ (
+                        afterTemplateNodeLinkFnCtx.transclude
+                      ),
                       boundTranscludeFn,
                     );
                   } else {
@@ -9741,7 +10130,9 @@
                   }
 
                   afterTemplateNodeLinkFn(
-                    afterTemplateChildLinkFn,
+                    /** @type {CompositeLinkFn | null} */ (
+                      afterTemplateChildLinkFn
+                    ),
                     scope,
                     linkNode,
                     childBoundTranscludeFn,
@@ -9758,11 +10149,11 @@
               });
 
             return function delayedNodeLinkFn(
-              _ignoreChildLinkFn,
-              scope,
-              node,
-              rootElement,
-              boundTranscludeFn,
+              /** @type {any} */ _ignoreChildLinkFn,
+              /** @type {ng.Scope} */ scope,
+              /** @type {any} */ node,
+              /** @type {any} */ rootElement,
+              /** @type {any} */ boundTranscludeFn,
             ) {
               let childBoundTranscludeFn = boundTranscludeFn;
 
@@ -9781,7 +10172,9 @@
                   );
                 }
                 afterTemplateNodeLinkFn(
-                  afterTemplateChildLinkFn,
+                  /** @type {CompositeLinkFn | null} */ (
+                    afterTemplateChildLinkFn
+                  ),
                   scope,
                   node,
                   rootElement,
@@ -9793,9 +10186,13 @@
 
           /**
            * Sorting function for bound directives.
+           * @param {InternalDirective} a
+           * @param {InternalDirective} b
            */
           function byPriority(a, b) {
-            const diff = b.priority - a.priority;
+            const diff =
+              /** @type {number} */ (b.priority) -
+              /** @type {number} */ (a.priority);
 
             if (diff !== 0) {
               return diff;
@@ -9805,9 +10202,17 @@
               return a.name < b.name ? -1 : 1;
             }
 
-            return a.index - b.index;
+            return (
+              /** @type {number} */ (a.index) - /** @type {number} */ (b.index)
+            );
           }
 
+          /**
+           * @param {string} what
+           * @param {{ name: any; }} previousDirective
+           * @param {{ name: any; }} directive
+           * @param {NodeRef} element
+           */
           function assertNoDuplicate(
             what,
             previousDirective,
@@ -9856,7 +10261,7 @@
           }
 
           /**
-           * @param {string} type
+           * @param {string | undefined} type
            * @param {string} template
            * @returns
            */
@@ -9877,6 +10282,11 @@
             }
           }
 
+          /**
+           * @param {string} nodeName
+           * @param {string} attrNormalizedName
+           * @returns {string|undefined}
+           */
           function getTrustedAttrContext(nodeName, attrNormalizedName) {
             if (attrNormalizedName === "srcdoc") {
               return $sce.HTML;
@@ -9930,6 +10340,10 @@
             return undefined;
           }
 
+          /**
+           * @param {string} nodeName
+           * @param {string} propNormalizedName
+           */
           function getTrustedPropContext(nodeName, propNormalizedName) {
             const prop = propNormalizedName.toLowerCase();
 
@@ -9938,6 +10352,10 @@
             );
           }
 
+          /**
+           * @param {unknown} value
+           * @param {string} invokeType
+           */
           function sanitizeSrcset(value, invokeType) {
             if (!value) {
               return value;
@@ -9948,7 +10366,7 @@
                 "srcset",
                 'Can\'t pass trusted values to `{0}`: "{1}"',
                 invokeType,
-                /** @type {unknown} */ (value).toString(),
+                /** @type {Object} */ (value).toString(),
               );
             }
 
@@ -9999,6 +10417,12 @@
             return result;
           }
 
+          /**
+           * @param {Element} node
+           * @param {ng.Directive<any>[] | { priority: number; compile: (_: any, attr: any) => { pre: (scope: any, $element: any) => void; }; }[]} directives
+           * @param {string} attrName
+           * @param {string} propName
+           */
           function addPropertyDirective(node, directives, attrName, propName) {
             if (EVENT_HANDLER_ATTR_REGEXP.test(propName)) {
               throw $compileMinErr(
@@ -10011,7 +10435,7 @@
 
             const trustedContext = getTrustedPropContext(nodeName, propName);
 
-            let sanitizer = (x) => x;
+            let sanitizer = (/** @type {any} */ x) => x;
 
             // Sanitize img[srcset] + source[srcset] values.
             if (
@@ -10030,7 +10454,10 @@
                 const ngPropGetter = $parse(attr[attrName]);
 
                 return {
-                  pre: function ngPropPreLinkFn(scope, $element) {
+                  pre: function ngPropPreLinkFn(
+                    /** @type {import("../scope/scope.js").Scope} */ scope,
+                    /** @type {{ [x: string]: any; }} */ $element,
+                  ) {
                     function applyPropValue() {
                       const propValue = ngPropGetter(scope);
 
@@ -10049,6 +10476,13 @@
             });
           }
 
+          /**
+           * @param {Element} node
+           * @param {ng.Directive<any>[]} directives
+           * @param {string} value
+           * @param {string} name
+           * @param {boolean} isNgAttr
+           */
           function addAttrInterpolateDirective(
             node,
             directives,
@@ -10064,11 +10498,14 @@
 
             const allOrNothing = ALL_OR_NOTHING_ATTRS.includes(name) || isNgAttr;
 
-            let interpolateFn = $interpolate(
-              value,
-              mustHaveExpression,
-              trustedContext,
-              allOrNothing,
+            /** @type {import("../interpolate/interface.ts").InterpolationFunction | undefined} */
+            let interpolateFn = /** @type {any} */ (
+              $interpolate(
+                value,
+                mustHaveExpression,
+                trustedContext,
+                allOrNothing,
+              )
             );
 
             // no interpolation found -> ignore
@@ -10097,7 +10534,7 @@
                 return {
                   pre: function attrInterpolatePreLinkFn(scope, element, attr) {
                     const _observers =
-                      attr._observers || (attr._observers = Object.create(null));
+                      attr._observers || (attr._observers = nullObject());
 
                     // If the attribute has changed since last $interpolate()ed
                     const newValue = attr[name];
@@ -10107,12 +10544,14 @@
                       // (e.g. by another directive's compile function)
                       // ensure unset/empty values make interpolateFn falsy
                       interpolateFn =
-                        newValue &&
-                        $interpolate(
-                          newValue,
-                          true,
-                          trustedContext,
-                          allOrNothing,
+                        /** @type {import("../interpolate/interface.ts").InterpolationFunction | undefined} */ (
+                          newValue &&
+                            $interpolate(
+                              newValue,
+                              true,
+                              trustedContext,
+                              allOrNothing,
+                            )
                         );
                       value = newValue;
                     }
@@ -10135,7 +10574,10 @@
                         scope;
 
                       targetScope.$watch(x, () => {
-                        const newInterpolatedValue = interpolateFn(scope);
+                        const newInterpolatedValue =
+                          /** @type {import("../interpolate/interface.ts").InterpolationFunction} */ (
+                            interpolateFn
+                          )(scope);
 
                         // special case for class attribute addition + removal
                         // so that class changes can tap into the animation
@@ -10146,7 +10588,8 @@
                         if (name === "class") {
                           attr.$updateClass(
                             newInterpolatedValue,
-                            attr._element().classList.value,
+                            /** @type {Element} */ (attr._element()).classList
+                              .value,
                           );
                         } else {
                           attr.$set(
@@ -10212,6 +10655,10 @@
             elementsToRemove.node = newNode;
           }
 
+          /**
+           * @param {Function} fn
+           * @param {Object} annotation
+           */
           function cloneAndAnnotateFn(fn, annotation) {
             return extend(
               function () {
@@ -10222,6 +10669,10 @@
             );
           }
 
+          /**
+           * @param {string} attrName
+           * @param {string} directiveName
+           */
           function strictBindingsCheck(attrName, directiveName) {
             if (strictComponentBindingsEnabled) {
               throw $compileMinErr(
@@ -10250,11 +10701,20 @@
             bindings,
             directive,
           ) {
+            /**
+             * @type {((() => void) | undefined)[]}
+             */
             const removeWatchCollection = [];
 
+            /** @type {Record<string, import("./interface.ts").SimpleChange>} */
             const initialChanges = {};
 
+            /** @type {Record<string, import("./interface.ts").SimpleChange> | undefined} */
             let changes;
+
+            const attrsAny = /** @type {any} */ (attrs);
+
+            const destAny = /** @type {any} */ (destination);
 
             if (bindings) {
               entries(bindings).forEach(([scopeName, definition]) => {
@@ -10264,13 +10724,16 @@
                   mode, // @, =, <, or &
                 } = definition;
 
+                /** @type {any} */
                 let lastValue;
 
-                /** @type {import("../parse/interface").CompiledExpression} */
+                /** @type {import("../parse/interface").CompiledExpression | undefined} */
                 let parentGet;
 
+                /** @type {(scope: any, value: any) => any} */
                 let parentSet;
 
+                /** @type {(a: any, b: any) => boolean} */
                 let compare;
 
                 let removeWatch;
@@ -10283,41 +10746,47 @@
                   case "@":
                     if (!optional && !hasOwn(attrs, attrName)) {
                       strictBindingsCheck(attrName, directive.name);
-                      destination[scopeName] = attrs[attrName] = undefined;
+                      destAny[scopeName] = attrsAny[attrName] = undefined;
                     }
 
-                    removeWatch = attrs.$observe(attrName, (value) => {
-                      if (isString(value) || isBoolean(value)) {
-                        recordChanges(scopeName, value, firstChange);
+                    removeWatch = attrs.$observe(
+                      attrName,
+                      /** @param {any} value */ (value) => {
+                        if (isString(value) || isBoolean(value)) {
+                          recordChanges(scopeName, value, firstChange);
 
-                        destination[scopeName] = value;
+                          destAny[scopeName] = value;
 
-                        if (firstCall) {
-                          firstCall = false;
-                        } else {
-                          triggerOnChangesHook();
-                          firstChange = false;
+                          if (firstCall) {
+                            firstCall = false;
+                          } else {
+                            triggerOnChangesHook();
+                            firstChange = false;
+                          }
                         }
-                      }
-                    });
+                      },
+                    );
                     attrs._observers[attrName]._scope = scope;
-                    lastValue = attrs[attrName];
+                    lastValue = attrsAny[attrName];
 
                     if (isString(lastValue)) {
                       // If the attribute has been provided then we trigger an interpolation to ensure
                       // the value is there for use in the link fn
-                      destination[scopeName] = $interpolate(lastValue)(scope);
+                      destAny[scopeName] =
+                        /** @type {import("../interpolate/interface.ts").InterpolationFunction} */ (
+                          $interpolate(lastValue)
+                        )(scope);
                     } else if (isBoolean(lastValue)) {
                       // If the attributes is one of the BOOLEAN_ATTR then AngularTS will have converted
                       // the value to boolean rather than a string, so we special case this situation
-                      destination[scopeName] = lastValue;
+                      destAny[scopeName] = lastValue;
                     }
 
                     /**
                      * @type {import("./interface.ts").SimpleChange}
                      */
                     initialChanges[scopeName] = {
-                      currentValue: destination[scopeName],
+                      currentValue: destAny[scopeName],
                       firstChange: true,
                     };
                     removeWatchCollection.push(removeWatch);
@@ -10329,14 +10798,14 @@
                         break;
                       }
                       strictBindingsCheck(attrName, directive.name);
-                      attrs[attrName] = undefined;
+                      attrsAny[attrName] = undefined;
                     }
 
-                    if (optional && !attrs[attrName]) {
+                    if (optional && !attrsAny[attrName]) {
                       break;
                     }
 
-                    const attr = attrs[attrName];
+                    const attr = attrsAny[attrName];
 
                     parentGet = attr && $parse(attr);
 
@@ -10354,29 +10823,26 @@
                         throw $compileMinErr(
                           "nonassign",
                           "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!",
-                          attrs[attrName],
+                          attrsAny[attrName],
                           attrName,
                           directive.name,
                         );
                       };
                     // store the value that the parent scope had after the last check:
-                    lastValue = destination.$target[scopeName] =
+                    lastValue = destAny.$target[scopeName] =
                       parentGet && parentGet(scope.$target);
 
                     const parentValueWatch = function parentValueWatch(
-                      parentValue,
+                      /** @type {any} */ parentValue,
                     ) {
-                      if (!compare(parentValue, destination[scopeName])) {
+                      if (!compare(parentValue, destAny[scopeName])) {
                         // we are out of sync and need to copy
                         if (!compare(parentValue, lastValue)) {
                           // parent changed and it has precedence
-                          destination[scopeName] = parentValue;
+                          destAny[scopeName] = parentValue;
                         } else {
                           // if the parent can be assigned then do so
-                          parentSet(
-                            scope,
-                            (parentValue = destination[scopeName]),
-                          );
+                          parentSet(scope, (parentValue = destAny[scopeName]));
                         }
                       }
                       lastValue = parentValue;
@@ -10384,24 +10850,27 @@
                       return lastValue;
                     };
 
-                    if (attrs[attrName]) {
-                      const expr = attrs[attrName];
+                    if (attrsAny[attrName]) {
+                      const expr = attrsAny[attrName];
 
                       // make it lazy as we dont want to trigger the two way data binding at this point
                       scope.$watch(
                         expr,
                         (val) => {
-                          const res = $parse(attrs[attrName], parentValueWatch);
+                          const res = $parse(
+                            attrsAny[attrName],
+                            parentValueWatch,
+                          );
 
                           if (val) {
-                            if (parentGet._literal) {
+                            if (parentGet && parentGet._literal) {
                               scope.$target[attrName] = val;
                             } else {
                               scope[attrName] = val;
                             }
                             res(scope);
                           } else {
-                            scope[attrName] = scope[attrs[attrName]];
+                            scope[attrName] = scope[attrsAny[attrName]];
                           }
                         },
                         true,
@@ -10411,7 +10880,10 @@
                     removeWatch = destination.$watch(
                       attrName,
                       (val) => {
-                        if (val === lastValue && !isUndefined(attrs[attrName])) {
+                        if (
+                          val === lastValue &&
+                          !isUndefined(attrsAny[attrName])
+                        ) {
                           return;
                         }
 
@@ -10419,13 +10891,13 @@
                           (parentGet &&
                             !!parentGet._inputs &&
                             !parentGet._literal) ||
-                          (isUndefined(attrs[attrName]) && isDefined(val))
+                          (isUndefined(attrsAny[attrName]) && isDefined(val))
                         ) {
                           destination.$target[attrName] = lastValue;
                           throw $compileMinErr(
                             "nonassign",
                             "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!",
-                            attrs[attrName],
+                            attrsAny[attrName],
                             attrName,
                             directive.name,
                           );
@@ -10438,7 +10910,7 @@
                           } else {
                             parentSet(scope.$target, (lastValue = val));
                             scope.$handler._watchers
-                              .get(attrs[attrName])
+                              .get(attrsAny[attrName])
                               ?.forEach((watchFn) => {
                                 watchFn.listenerFn(val, scope.$target);
                               });
@@ -10457,29 +10929,29 @@
                         break;
                       }
                       strictBindingsCheck(attrName, directive.name);
-                      attrs[attrName] = undefined;
+                      attrsAny[attrName] = undefined;
                     }
 
-                    if (optional && !attrs[attrName]) {
+                    if (optional && !attrsAny[attrName]) {
                       break;
                     }
 
-                    parentGet = attrs[attrName] && $parse(attrs[attrName]);
+                    parentGet = attrsAny[attrName] && $parse(attrsAny[attrName]);
 
-                    destination.$target[scopeName] =
+                    destAny.$target[scopeName] =
                       parentGet && parentGet(scope.$target);
                     /** @type {import("./interface.ts").SimpleChange} */
                     initialChanges[scopeName] = {
-                      currentValue: destination.$target[scopeName],
+                      currentValue: destAny.$target[scopeName],
                       firstChange,
                     };
                     scope.$target.attrs = attrs;
 
-                    if (attrs[attrName]) {
+                    if (attrsAny[attrName]) {
                       removeWatch = scope.$watch(
-                        attrs[attrName],
+                        attrsAny[attrName],
                         (val) => {
-                          destination.$target[scopeName] = val;
+                          destAny.$target[scopeName] = val;
                           recordChanges(scopeName, val, firstChange);
 
                           if (firstChange) {
@@ -10498,7 +10970,7 @@
                     }
                     // Don't assign Object.prototype method to scope
                     parentGet = hasOwn(attrs, attrName)
-                      ? $parse(attrs[attrName])
+                      ? $parse(attrsAny[attrName])
                       : undefined;
 
                     // Don't assign noop to destination if expression is not valid
@@ -10506,8 +10978,10 @@
                       break;
                     }
 
-                    destination.$target[scopeName] = function (locals) {
-                      return parentGet(scope.$target, locals);
+                    destAny.$target[scopeName] = function (
+                      /** @type {any} */ locals,
+                    ) {
+                      return parentGet && parentGet(scope.$target, locals);
                     };
 
                     break;
@@ -10515,12 +10989,17 @@
               });
             }
 
+            /**
+             * @param {string} key
+             * @param {any} currentValue
+             * @param {boolean} initial
+             */
             function recordChanges(key, currentValue, initial) {
               if (isFunction(destination.$onChanges)) {
                 // If we have not already scheduled the top level onChangesQueue handler then do so now
-                if (!onChangesQueue) {
+                if (!onChangesQueue.length) {
                   scope.$postUpdate(flushOnChangesQueue);
-                  onChangesQueue = [];
+                  onChangesQueue.length = 0;
                 }
 
                 // If we have not already queued a trigger of onChanges for this controller then do so now
@@ -10554,7 +11033,7 @@
                     i < ii;
                     ++i
                   ) {
-                    removeWatchCollection[i]();
+                    /** @type {Function} */ (removeWatchCollection[i])();
                   }
                 },
             };
@@ -10562,27 +11041,6 @@
         },
       ];
     }
-  }
-
-  function removeComments(jqNodes) {
-    let i = jqNodes.length;
-
-    if (i <= 1) {
-      return jqNodes;
-    }
-
-    while (i--) {
-      const node = jqNodes[i];
-
-      if (
-        node.nodeType === NodeType._COMMENT_NODE ||
-        (node.nodeType === NodeType._TEXT_NODE && node.nodeValue.trim() === "")
-      ) {
-        [].splice.call(jqNodes, i, 1);
-      }
-    }
-
-    return jqNodes;
   }
 
   /**
@@ -10616,7 +11074,7 @@
    *   $getControls: () => any[],
    *   _renameControl: Function,
    *   $removeControl: Function,
-   *   $setValidity: Function | ((key: any, isValid: boolean, control: any) => any),
+   *   $setValidity: Function | ((key: any, isValid: boolean | undefined | null, control: any) => any),
    *   $setDirty: Function,
    *   $setPristine: Function,
    *   $setSubmitted: Function,
@@ -10629,7 +11087,10 @@
       /* empty */
     },
     $getControls: () => [],
-    _renameControl: (control, name) => {
+    _renameControl: (
+      /** @type {{ $name: any; }} */ control,
+      /** @type {any} */ name,
+    ) => {
       control.$name = name;
     },
     $removeControl: () => {
@@ -10700,7 +11161,6 @@
    *
    */
   // asks for $scope to fool the BC controller module
-
   class FormController {
     static $nonscope = true;
     /* @ignore */ static $inject = [
@@ -10722,9 +11182,14 @@
       /** @type {boolean} */
       this._isAnimated = hasAnimate($element);
 
+      /**
+       * @type {FormController[]}
+       */
       this._controls = [];
 
-      this.$name = $interpolate($attrs.name || $attrs.ngForm || "")($scope);
+      this.$name = /** @type {ng.InterpolationFunction} */ (
+        $interpolate($attrs.name || $attrs.ngForm || "")
+      )($scope);
 
       /**
        * @property {boolean} $dirty True if user has already interacted with the form.
@@ -10735,7 +11200,9 @@
        * @propertys {boolean} $pristine - True if user has not interacted with the form yet.s
        */
       this.$pristine = true;
+      /** @type {boolean | undefined} */
       this.$valid = true;
+      /** @type {boolean | undefined} */
       this.$invalid = false;
       this.$submitted = false;
       /** @type {FormController|Object} */
@@ -10743,14 +11210,23 @@
 
       this._element = $element;
       this._animate = $animate;
+      /** @type {Record<string, any>} */
       this.$error = {};
+
+      /** @type {Record<string, any>} */
       this._success = {};
+      /**
+       * @type {Record<string, any>| undefined}
+       */
       this.$pending = undefined;
+      /** @type {Record<string, any>} */
       this._classCache = {};
       const isValid = this._element.classList.contains(VALID_CLASS);
 
       this._classCache[VALID_CLASS] = isValid;
       this._classCache[INVALID_CLASS] = !isValid;
+
+      /** @type {Record<string, any>} */
       this.$target = {};
     }
 
@@ -10794,6 +11270,7 @@
      *
      * For example, if an input control is added that is already `$dirty` and has `$error` properties,
      * calling `$setDirty()` and `$validate()` afterwards will propagate the state to the parent form.
+     * @param {FormController} control
      */
     $addControl(control) {
       // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
@@ -10802,7 +11279,7 @@
       this._controls.push(control);
 
       if (control.$name) {
-        this[control.$name] = control;
+        /** @type {Record<string, any>} */ (this)[control.$name] = control;
       }
       control.$target._parentForm = this;
     }
@@ -10824,17 +11301,23 @@
      * @returns {ReadonlyArray<FormController>}
      */
     $getControls() {
-      return shallowCopy(this._controls);
+      return /** @type {ReadonlyArray<FormController>} */ (
+        shallowCopy(this._controls)
+      );
     }
 
     // Private API: rename a form control
+    /**
+     * @param {FormController} control
+     * @param {string | number} newName
+     */
     _renameControl(control, newName) {
       const oldName = control.$name;
 
-      if (this[oldName] === control) {
-        delete this[oldName];
+      if (/** @type {Record<string, any>} */ (this)[oldName] === control) {
+        delete (/** @type {Record<string, any>} */ (this)[oldName]);
       }
-      this[newName] = control;
+      /** @type {Record<string, any>} */ (this)[newName] = control;
       control.$name = newName;
     }
 
@@ -10850,8 +11333,11 @@
      * @param {FormController } control
      */
     $removeControl(control) {
-      if (control.$name && this[control.$name] === control) {
-        delete this[control.$name];
+      if (
+        control.$name &&
+        /** @type {Record<string, any>} */ (this)[control.$name] === control
+      ) {
+        delete (/** @type {Record<string, any>} */ (this)[control.$name]);
       }
       this.$pending &&
         Object.keys(this.$pending).forEach((name) => {
@@ -10888,7 +11374,7 @@
       }
       this.$dirty = true;
       this.$pristine = false;
-      this._parentForm.$setDirty();
+      /** @type {FormController} */ (this._parentForm).$setDirty();
     }
 
     /**
@@ -10948,7 +11434,7 @@
       let rootForm = this;
 
       while (rootForm._parentForm && rootForm._parentForm !== nullFormCtrl) {
-        rootForm = rootForm._parentForm;
+        rootForm = /** @type {FormController} */ (rootForm._parentForm);
       }
       rootForm._setSubmitted();
     }
@@ -10967,6 +11453,11 @@
       });
     }
 
+    /**
+     * @param {Record<string, any>} object
+     * @param {string} property
+     * @param {FormController | import("../model/model.js").NgModelController} controller
+     */
     set(object, property, controller) {
       const list = object[property];
 
@@ -10982,6 +11473,11 @@
       }
     }
 
+    /**
+     * @param {Record<string, any>} object
+     * @param {string} property
+     * @param {FormController | import("../model/model.js").NgModelController} controller
+     */
     unset(object, property, controller) {
       const list = object[property];
 
@@ -10991,7 +11487,7 @@
       const index = arrayRemove(list, controller);
 
       if (index === -1) {
-        arrayRemove(list, controller.$target);
+        arrayRemove(list, /** @type {FormController} */ (controller).$target);
       }
 
       if (list.length === 0) {
@@ -11012,7 +11508,7 @@
      *        `validationErrorKey` should be in camelCase and will get converted into dash-case for
      *        class name. Example: `myError` will result in `ng-valid-my-error` and
      *        `ng-invalid-my-error` classes and can be bound to as `{{ someForm.$error.myError }}`.
-     * @param {boolean} state Whether the current state is valid (true), invalid (false), pending
+     * @param {boolean | null | undefined} state Whether the current state is valid (true), invalid (false), pending
      *        (undefined),  or skipped (null). Pending is used for unfulfilled `$asyncValidators`.
      *        Skipped is used by AngularTS when validators do not run because of parse errors and when
      *        `$asyncValidators` do not run because any of the `$validators` failed.
@@ -11067,7 +11563,18 @@
       }
 
       toggleValidationCss(this, validationErrorKey, combinedState);
-      this._parentForm.$setValidity(validationErrorKey, combinedState, this);
+      /** @type {FormController} */ (this._parentForm).$setValidity(
+        validationErrorKey,
+        combinedState,
+        this,
+      );
+
+      /**
+       * @param {FormController & Record<string, any>} ctrl
+       * @param {string} name
+       * @param {string} value
+       * @param {FormController | import("../model/model.js").NgModelController} controllerParam
+       */
       function createAndSet(ctrl, name, value, controllerParam) {
         if (!ctrl[name]) {
           ctrl[name] = {};
@@ -11075,6 +11582,12 @@
         that.set(ctrl[name], value, controllerParam);
       }
 
+      /**
+       * @param {FormController & Record<string, any>} ctrl
+       * @param {string} name
+       * @param {string} value
+       * @param {FormController | import("../model/model.js").NgModelController} controllerParam
+       */
       function unsetAndCleanup(ctrl, name, value, controllerParam) {
         if (ctrl[name]) {
           that.unset(ctrl[name], value, controllerParam);
@@ -11085,6 +11598,11 @@
         }
       }
 
+      /**
+       * @param {FormController | import("../model/model.js").NgModelController} ctrl
+       * @param {string} validationErrorKeyParam
+       * @param {boolean | null | undefined} isValid
+       */
       function toggleValidationCss(ctrl, validationErrorKeyParam, isValid) {
         validationErrorKeyParam = validationErrorKeyParam
           ? `-${snakeCase(validationErrorKeyParam, "-")}`
@@ -11226,13 +11744,9 @@
 
                 // if `action` attr is not present on the form, prevent the default action (submission)
                 if (!("action" in attrParam)) {
-                  // we can't use jq events because if a form is destroyed during submission the default
-                  // action is not prevented. see #1238
-                  //
-                  // IE 9 is not affected because it doesn't fire a submit event and try to do a full
-                  // page reload if the form was destroyed by submission of the form via a click handler
-                  // on a button in the form. Looks like an IE9 specific bug.
-                  const handleFormSubmission = function (event) {
+                  const handleFormSubmission = function (
+                    /** @type {Event} */ event,
+                  ) {
                     controller.$commitViewValue();
                     controller.$setSubmitted();
                     event.preventDefault();
@@ -11242,19 +11756,10 @@
                     "submit",
                     handleFormSubmission,
                   );
-
-                  // unregister the preventDefault listener so that we don't not leak memory but in a
-                  // way that will achieve the prevention of the default action.
                   formElementParam.addEventListener("$destroy", () => {
-                    setTimeout(
-                      () => {
-                        formElementParam.removeEventListener(
-                          "submit",
-                          handleFormSubmission,
-                        );
-                      },
-                      0,
-                      false,
+                    formElementParam.removeEventListener(
+                      "submit",
+                      handleFormSubmission,
                     );
                   });
                 }
@@ -11263,11 +11768,13 @@
 
                 parentFormCtrl.$addControl(controller);
 
-                const setter = nameAttr
-                  ? getSetter(controller.$name)
-                  : () => {
-                      /* empty */
-                    };
+                const setter = /** @type {Function} */ (
+                  nameAttr
+                    ? getSetter(controller.$name)
+                    : () => {
+                        /* empty */
+                      }
+                );
 
                 if (nameAttr) {
                   setter(scope, controller);
@@ -11293,6 +11800,10 @@
             };
           },
         };
+
+        /**
+         * @param {string} expression
+         */
         function getSetter(expression) {
           if (expression === "") {
             // create an assignable expression, so forms with an empty name can be renamed later
@@ -11334,7 +11845,7 @@
   const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
 
   /**
-   * @typedef {Object} ModelOptionsConfig
+   * @typedef {Object & Record<string, any>} ModelOptionsConfig
    * @property {string} [updateOn] - A string specifying which events the input should be bound to. Multiple events can be set using a space-delimited list. The special event 'default' matches the default events belonging to the control.
    * @property {number|Object.<string, number>} [debounce] - An integer specifying the debounce time in milliseconds. A value of 0 triggers an immediate update. If an object is supplied, custom debounce values can be set for each event.
    * @property {boolean} [allowInvalid] - Indicates whether the model can be set with values that did not validate correctly. Defaults to false, which sets the model to undefined on validation failure.
@@ -11343,7 +11854,7 @@
    */
 
   class NgModelOptionsController {
-    static $nonscope = true;
+    /* @ignore */ static $nonscope = true;
     /* @ignore */ static $inject = [$injectTokens._attrs, $injectTokens._scope];
 
     /**
@@ -11353,8 +11864,11 @@
     constructor($attrs, $scope) {
       this._attrs = $attrs;
       this._scope = $scope;
-      /** @type {NgModelOptionsController?} */
-      this.parentCtrl;
+      /** @type {NgModelOptionsController | null} */
+      this.parentCtrl = null;
+
+      /** @type {ModelOptions} */
+      this.$options = defaultModelOptions;
     }
 
     $onInit() {
@@ -11466,6 +11980,10 @@
   }
 
   // shallow copy over values from `src` that are not already specified on `dst`
+  /**
+   * @param {ModelOptionsConfig} dst
+   * @param {Object & Record<string, any>} src
+   */
   function defaults$1(dst, src) {
     keys(src).forEach((key) => {
       if (!isDefined(dst[key])) {
@@ -11580,16 +12098,24 @@
       /** @type {boolean} */
       this.$dirty = false;
 
-      /** @type {boolean} */
+      /** @type {boolean | undefined} */
       this.$valid = true;
 
-      /** @type {boolean} */
+      /** @type {boolean | undefined} */
       this.$invalid = false;
 
+      /** @type {Record<string, boolean>} */
       this.$error = {}; // keep invalid keys here
+
+      /** @type {Record<string, boolean>} */
       this._success = {}; // keep valid keys here
+      /**
+       * @type {import("../../shared/interface.ts").Dict<any> | undefined}
+       */
       this.$pending = undefined; // keep pending keys here
-      this.$name = $interpolate($attr.name || "", false)($scope);
+      this.$name = /** @type {ng.InterpolationFunction} */ (
+        $interpolate($attr.name || "", false)
+      )($scope);
       this._parentForm = nullFormCtrl;
       this.$options = defaultModelOptions;
       this._updateEvents = "";
@@ -11597,7 +12123,10 @@
       this._updateEventHandler = this._updateEventHandler.bind(this);
 
       this._parsedNgModel = $parse($attr.ngModel);
-      this._parsedNgModelAssign = this._parsedNgModel._assign;
+      this._parsedNgModelAssign =
+        /** @type {(context: any, value: any) => any} */ (
+          this._parsedNgModel._assign
+        );
 
       /**
        * @type {import("../../core/parse/interface.ts").CompiledExpression |
@@ -11605,7 +12134,7 @@
        */
       this._ngModelGet = this._parsedNgModel;
       this._ngModelSet = this._parsedNgModelAssign;
-      this._pendingDebounce = null;
+      this._pendingDebounce = undefined;
       this._parserValid = undefined;
 
       /** @type {string} */
@@ -11624,6 +12153,7 @@
 
       this._hasNativeValidators = false;
 
+      /** @type {Record<string, boolean>} */
       this._classCache = {};
       const isValid = this._element.classList.contains(VALID_CLASS);
 
@@ -11635,17 +12165,34 @@
       setupModelWatcher(this);
     }
 
+    /**
+     * @param {{ [x: string]: boolean; }} object
+     * @param {string | number} property
+     */
     set(object, property) {
       object[property] = true;
     }
 
+    /**
+     * @param {{ [x: string]: any; }} object
+     * @param {string | number} property
+     */
     unset(object, property) {
       delete object[property];
     }
 
+    /**
+     * @param {string} validationErrorKey
+     * @param {boolean | undefined | null} state
+     */
     $setValidity(validationErrorKey, state) {
       const that = this;
 
+      /**
+       * @param {NgModelController & Record<string, any>} ctrl
+       * @param {string} name
+       * @param {string} value
+       */
       function createAndSet(ctrl, name, value) {
         if (!ctrl[name]) {
           ctrl[name] = {};
@@ -11653,6 +12200,11 @@
         that.set(ctrl[name], value);
       }
 
+      /**
+       * @param {NgModelController & Record<string, any>} ctrl
+       * @param {string} name
+       * @param {string} value
+       */
       function unsetAndCleanup(ctrl, name, value) {
         if (ctrl[name]) {
           that.unset(ctrl[name], value);
@@ -11663,6 +12215,11 @@
         }
       }
 
+      /**
+       * @param {NgModelController | import("../form/form.js").FormController} ctrl
+       * @param {string} validationErrorKeyParam
+       * @param {boolean | null | undefined} isValid
+       */
       function toggleValidationCss(ctrl, validationErrorKeyParam, isValid) {
         validationErrorKeyParam = validationErrorKeyParam
           ? `-${snakeCase(validationErrorKeyParam, "-")}`
@@ -11712,7 +12269,7 @@
       // combined state in this.$error[validationError] (used for forms),
       // where setting/unsetting only increments/decrements the value,
       // and does not replace it.
-      let combinedState;
+      let combinedState = undefined;
 
       if (this.$pending && this.$pending[validationErrorKey]) {
         combinedState = undefined;
@@ -11734,7 +12291,7 @@
 
         const invokeModelSetter = this._parse(`${this._attr.ngModel}(_$p)`);
 
-        this._ngModelGet = ($scope) => {
+        this._ngModelGet = (/** @type {ng.Scope | undefined} */ $scope) => {
           let modelValue = this._parsedNgModel($scope);
 
           if (isFunction(modelValue)) {
@@ -11743,7 +12300,10 @@
 
           return modelValue;
         };
-        this._ngModelSet = ($scope, newValue) => {
+        this._ngModelSet = (
+          /** @type {ng.Scope} */ $scope,
+          /** @type {any} */ newValue,
+        ) => {
           if (isFunction(this._parsedNgModel($scope))) {
             invokeModelSetter($scope, { _$p: newValue });
           } else {
@@ -11803,6 +12363,9 @@
       );
     }
 
+    /**
+     * @param {any} value
+     */
     _updateEmptyClasses(value) {
       if (this.$isEmpty(value)) {
         if (hasAnimate(this._element)) {
@@ -11991,7 +12554,7 @@
      * </example>
      */
     $rollbackViewValue() {
-      clearTimeout(this._pendingDebounce);
+      this._pendingDebounce && clearTimeout(this._pendingDebounce);
       this.$viewValue = this._lastCommittedViewValue;
       this.$render();
     }
@@ -12026,23 +12589,32 @@
 
       const that = this;
 
-      this._runValidators(modelValue, viewValue, (allValid) => {
-        // If there was no change in validity, don't update the model
-        // This prevents changing an invalid modelValue to undefined
-        if (!allowInvalid && prevValid !== allValid) {
-          // Note: Don't check this.$valid here, as we could have
-          // external validators (e.g. calculated on the server),
-          // that just call $setValidity and need the model value
-          // to calculate their validity.
-          that.$modelValue = allValid ? modelValue : undefined;
+      this._runValidators(
+        modelValue,
+        viewValue,
+        (/** @type {boolean | undefined} */ allValid) => {
+          // If there was no change in validity, don't update the model
+          // This prevents changing an invalid modelValue to undefined
+          if (!allowInvalid && prevValid !== allValid) {
+            // Note: Don't check this.$valid here, as we could have
+            // external validators (e.g. calculated on the server),
+            // that just call $setValidity and need the model value
+            // to calculate their validity.
+            that.$modelValue = allValid ? modelValue : undefined;
 
-          if (that.$modelValue !== prevModelValue) {
-            that._writeModelToScope();
+            if (that.$modelValue !== prevModelValue) {
+              that._writeModelToScope();
+            }
           }
-        }
-      });
+        },
+      );
     }
 
+    /**
+     * @param {any} modelValue
+     * @param {any} viewValue
+     * @param {Function} doneCallback
+     */
     _runValidators(modelValue, viewValue, doneCallback) {
       this._currentValidationRunId++;
       const localValidationRunId = this._currentValidationRunId;
@@ -12109,6 +12681,9 @@
       }
 
       function processAsyncValidators() {
+        /**
+         * @type {any[]}
+         */
         const validatorPromises = [];
 
         let allValid = true;
@@ -12151,12 +12726,19 @@
         }
       }
 
+      /**
+       * @param {string} name
+       * @param {boolean | undefined | null} isValid
+       */
       function setValidity(name, isValid) {
         if (localValidationRunId === that._currentValidationRunId) {
           that.$setValidity(name, isValid);
         }
       }
 
+      /**
+       * @param {boolean} allValid
+       */
       function validationDone(allValid) {
         if (localValidationRunId === that._currentValidationRunId) {
           doneCallback(allValid);
@@ -12244,7 +12826,7 @@
       this._runValidators(
         modelValue,
         this._lastCommittedViewValue,
-        (allValid) => {
+        (/** @type {any} */ allValid) => {
           if (!allowInvalid) {
             // Note: Don't check this.$valid here, as we could have
             // external validators (e.g. calculated on the server),
@@ -12336,26 +12918,37 @@
       }
     }
 
+    /**
+     * @param {string | undefined} trigger
+     */
     _debounceViewValueCommit(trigger) {
       let debounceDelay = this.$options.getOption("debounce");
 
-      if (isNumber(debounceDelay[trigger])) {
-        debounceDelay = debounceDelay[trigger];
+      if (trigger) {
+        const debounceVal = /** @type {Record<string, any>} */ (debounceDelay)[
+          trigger
+        ];
+
+        if (isNumber(debounceVal)) {
+          debounceDelay = debounceVal;
+        } else if (
+          isNumber(
+            /** @type {Object.<string, number>} */ (debounceDelay).default,
+          ) &&
+          /** @type {string} */ (this.$options.getOption("updateOn")).indexOf(
+            trigger,
+          ) === -1
+        ) {
+          debounceDelay = /** @type {Object.<string, number>} */ (debounceDelay)
+            .default;
+        }
       } else if (
-        isNumber(
-          /** @type {Object.<string, number>} */ (debounceDelay).default,
-        ) &&
-        /** @type {string} */ (this.$options.getOption("updateOn")).indexOf(
-          trigger,
-        ) === -1
+        isNumber(/** @type {Record<string, any>} */ (debounceDelay)["*"])
       ) {
-        debounceDelay = /** @type {Object.<string, number>} */ (debounceDelay)
-          .default;
-      } else if (isNumber(debounceDelay["*"])) {
-        debounceDelay = debounceDelay["*"];
+        debounceDelay = /** @type {Record<string, any>} */ (debounceDelay)["*"];
       }
 
-      clearTimeout(this._pendingDebounce);
+      this._pendingDebounce && clearTimeout(this._pendingDebounce);
       const that = this;
 
       if (/** @type {number} */ (debounceDelay) > 0) {
@@ -12389,7 +12982,7 @@
      * **Note:** it is not possible to override the `getterSetter` option.
      * </div>
      *
-     * @param {import("../../interface.ts").NgModelOptions} options a hash of settings to override the previous options
+     * @param {import("./interface.ts").NgModelOptions} options a hash of settings to override the previous options
      *
      */
     $overrideModelOptions(options) {
@@ -12536,8 +13129,8 @@
     }
 
     /**
-     * @ignore
-     * This method is called internally when the bound scope value changes.
+     * @ignore This method is called internally when the bound scope value changes.
+     * @param {any} modelValue
      */
     _setModelValue(modelValue) {
       this.$modelValue = this._rawModelValue = modelValue;
@@ -12577,11 +13170,17 @@
       }
     }
 
+    /**
+     * @param {Event} ev
+     */
     _updateEventHandler(ev) {
       this._debounceViewValueCommit(ev && ev.type);
     }
   }
 
+  /**
+   * @param {NgModelController} ctrl
+   */
   function setupModelWatcher(ctrl) {
     // model -> value
     // Note: we cannot use a normal scope.$watch as we want to detect the following:
@@ -12608,6 +13207,9 @@
     });
   }
 
+  /**
+   * @returns {ng.Directive}
+   */
   function ngModelDirective() {
     return {
       restrict: "A",
@@ -12644,9 +13246,11 @@
                   modelCtrl._parentForm._renameControl(modelCtrl, newValue);
                 }
               });
-              const deregisterWatch = scope.$watch(attr.ngModel, (val) => {
-                modelCtrl._setModelValue(deProxy(val));
-              });
+              const deregisterWatch = /** @type {() => void} */ (
+                scope.$watch(attr.ngModel, (val) => {
+                  modelCtrl._setModelValue(deProxy(val));
+                })
+              );
 
               scope.$on("$destroy", () => {
                 modelCtrl._parentForm.$removeControl(modelCtrl);
@@ -12722,7 +13326,7 @@
   "date,datetime-local,month,time,week".split(",").forEach((type) => {
     PARTIAL_VALIDATION_TYPES.set(type, true);
   });
-
+  /** @type {Record<string, import("./interface.js").InputTypeHandler>} */
   const inputType = {
     text: textInputType,
     date: createStringDateInputType("date", DATE_REGEXP),
@@ -12756,18 +13360,33 @@
     },
   };
 
+  /**
+   * @param {NgModelController} ctrl
+   */
   function stringBasedInputType(ctrl) {
     ctrl.$formatters.push((value) =>
       ctrl.$isEmpty(value) ? value : value.toString(),
     );
   }
 
+  /**
+   * @param {ng.Scope} scope
+   * @param {HTMLInputElement} element
+   * @param {ng.Attributes} attr
+   * @param {NgModelControllerProxied} ctrl
+   */
   function textInputType(scope, element, attr, ctrl) {
     baseInputType(scope, element, attr, ctrl);
     stringBasedInputType(ctrl);
   }
 
-  function baseInputType(_, element, attr, ctrl) {
+  /**
+   * @param {ng.Scope} _scope
+   * @param {HTMLInputElement} element
+   * @param {ng.Attributes} attr
+   * @param {NgModelControllerProxied} ctrl
+   */
+  function baseInputType(_scope, element, attr, ctrl) {
     const type = element.type.toLowerCase();
 
     let composing = false;
@@ -12784,8 +13403,12 @@
       listener();
     });
 
+    /**
+     * @type {number | null | undefined}
+     */
     let timeout;
 
+    /** @type {(ev?: Event) => void} */
     const listener = function (ev) {
       if (timeout) {
         clearTimeout(timeout);
@@ -12824,14 +13447,13 @@
     // For these event types, when native validators are present and the browser supports the type,
     // check for validity changes on various DOM events.
     if (
-      PARTIAL_VALIDATION_TYPES[type] &&
+      PARTIAL_VALIDATION_TYPES.has(type) &&
       ctrl._hasNativeValidators &&
       type === attr.type
     ) {
       element.addEventListener(PARTIAL_VALIDATION_EVENTS, (ev) => {
         if (!timeout) {
-          // eslint-disable-next-line no-invalid-this
-          const validity = this[VALIDITY_STATE_PROPERTY];
+          const validity = element[VALIDITY_STATE_PROPERTY];
 
           const origBadInput = validity.badInput;
 
@@ -12867,9 +13489,16 @@
    * @returns {*}
    */
   function createStringDateInputType(type, regexp) {
+    /**
+     * @param {ng.Scope} scope
+     * @param {HTMLInputElement} element
+     * @param {ng.Attributes} attr
+     * @param {NgModelControllerProxied} ctrl
+     * @param {ng.ParseService} $parse
+     */
     return function stringDateInputType(scope, element, attr, ctrl, $parse) {
       baseInputType(scope, element, attr, ctrl);
-      ctrl.$parsers.push((value) => {
+      ctrl.$parsers.push((/** @type {string} */ value) => {
         if (ctrl.$isEmpty(value)) return null;
 
         if (regexp.test(value)) return value;
@@ -12879,7 +13508,7 @@
         return undefined;
       });
 
-      ctrl.$formatters.push((value) => {
+      ctrl.$formatters.push((/** @type {unknown} */ value) => {
         if (ctrl.$isEmpty(value)) return "";
 
         if (!isString(value)) {
@@ -12893,8 +13522,10 @@
       if (isDefined(attr.min) || attr.ngMin) {
         let minVal = attr.min || $parse?.(attr.ngMin)(scope);
 
-        ctrl.$validators.min = (_modelValue, viewValue) =>
-          ctrl.$isEmpty(viewValue) || viewValue >= minVal;
+        ctrl.$validators.min = (
+          /** @type {any} */ _modelValue,
+          /** @type {number} */ viewValue,
+        ) => ctrl.$isEmpty(viewValue) || viewValue >= minVal;
         attr.$observe("min", (val) => {
           minVal = val;
           ctrl.$validate();
@@ -12904,8 +13535,10 @@
       if (isDefined(attr.max) || attr.ngMax) {
         let maxVal = attr.max || $parse?.(attr.ngMax)(scope);
 
-        ctrl.$validators.max = (_modelValue, viewValue) =>
-          ctrl.$isEmpty(viewValue) || viewValue <= maxVal;
+        ctrl.$validators.max = (
+          /** @type {any} */ _modelValue,
+          /** @type {number} */ viewValue,
+        ) => ctrl.$isEmpty(viewValue) || viewValue <= maxVal;
         attr.$observe("max", (val) => {
           maxVal = val;
           ctrl.$validate();
@@ -12914,13 +13547,20 @@
     };
   }
 
+  /**
+   * @param {ng.Scope} scope
+   * @param {HTMLInputElement} element
+   * @param {ng.Attributes} attr
+   * @param {NgModelControllerProxied} ctrl
+   * @param {string} parserName
+   */
   function badInputChecker(scope, element, attr, ctrl, parserName) {
     const nativeValidation = (ctrl._hasNativeValidators = isObject(
       element.validity,
     ));
 
     if (nativeValidation) {
-      ctrl.$parsers.push((value) => {
+      ctrl.$parsers.push((/** @type {any} */ value) => {
         const validity = element[VALIDITY_STATE_PROPERTY] || {};
 
         if (validity.badInput || validity.typeMismatch) {
@@ -12934,6 +13574,9 @@
     }
   }
 
+  /**
+   * @param {NgModelController} ctrl
+   */
   function numberFormatterParser(ctrl) {
     ctrl.$parsers.push((value) => {
       if (ctrl.$isEmpty(value)) return null;
@@ -12957,6 +13600,10 @@
     });
   }
 
+  /**
+   * @param {any} val
+   * @return {number|undefined}
+   */
   function parseNumberAttrVal(val) {
     if (isDefined(val) && !isNumber(val)) {
       val = parseFloat(val);
@@ -12965,6 +13612,10 @@
     return !isNumberNaN(val) ? val : undefined;
   }
 
+  /**
+   * @param {any} num
+   * @return {boolean}
+   */
   function isNumberInteger(num) {
     // See http://stackoverflow.com/questions/14636536/how-to-check-if-a-variable-is-an-integer-in-javascript#14794066
     // (minus the assumption that `num` is a number)
@@ -12972,6 +13623,10 @@
     return (num | 0) === num;
   }
 
+  /**
+   * @param {number} num
+   * @return {number}
+   */
   function countDecimals(num) {
     const numString = num.toString();
 
@@ -12993,6 +13648,11 @@
     return numString.length - decimalSymbolIndex - 1;
   }
 
+  /**
+   * @param {any} viewValue
+   * @param {number} stepBase
+   * @param {number | undefined} step
+   */
   function isValidForStep(viewValue, stepBase, step) {
     // At this point `stepBase` and `step` are expected to be non-NaN values
     // and `viewValue` is expected to be a valid stringified number.
@@ -13011,7 +13671,9 @@
 
       const stepBaseDecimals = isNonIntegerStepBase ? countDecimals(stepBase) : 0;
 
-      const stepDecimals = isNonIntegerStep ? countDecimals(step) : 0;
+      const stepDecimals = isNonIntegerStep
+        ? countDecimals(/** @type {number} */ (step))
+        : 0;
 
       const decimalCount = Math.max(
         valueDecimals,
@@ -13023,23 +13685,33 @@
 
       value *= multiplier;
       stepBase *= multiplier;
-      step *= multiplier;
+      /** @type {number} */ (step) *= multiplier;
 
       if (isNonIntegerValue) value = Math.round(value);
 
       if (isNonIntegerStepBase) stepBase = Math.round(stepBase);
 
-      if (isNonIntegerStep) step = Math.round(step);
+      if (isNonIntegerStep) step = Math.round(/** @type {number} */ (step));
     }
 
-    return (value - stepBase) % step === 0;
+    return (value - stepBase) % /** @type {number} */ (step) === 0;
   }
 
+  /**
+   * @param {ng.Scope} scope
+   * @param {HTMLInputElement} element
+   * @param {ng.Attributes} attr
+   * @param {NgModelControllerProxied} ctrl
+   * @param {ng.ParseService} $parse
+   */
   function numberInputType(scope, element, attr, ctrl, $parse) {
     badInputChecker(scope, element, attr, ctrl, "number");
     numberFormatterParser(ctrl);
     baseInputType(scope, element, attr, ctrl);
 
+    /**
+     * @type {number | undefined}
+     */
     let parsedMinVal;
 
     if (isDefined(attr.min) || attr.ngMin) {
@@ -13047,11 +13719,14 @@
 
       parsedMinVal = parseNumberAttrVal(minVal);
 
-      ctrl.$validators.min = function (modelValue, viewValue) {
+      ctrl.$validators.min = function (
+        /** @type {any} */ modelValue,
+        /** @type {number} */ viewValue,
+      ) {
         return (
           ctrl.$isEmpty(viewValue) ||
           isUndefined(parsedMinVal) ||
-          viewValue >= parsedMinVal
+          viewValue >= /** @type {number} */ (parsedMinVal)
         );
       };
 
@@ -13070,11 +13745,14 @@
 
       let parsedMaxVal = parseNumberAttrVal(maxVal);
 
-      ctrl.$validators.max = function (modelValue, viewValue) {
+      ctrl.$validators.max = function (
+        /** @type {any} */ modelValue,
+        /** @type {number} */ viewValue,
+      ) {
         return (
           ctrl.$isEmpty(viewValue) ||
           isUndefined(parsedMaxVal) ||
-          viewValue <= parsedMaxVal
+          viewValue <= /** @type {number} */ (parsedMaxVal)
         );
       };
 
@@ -13093,7 +13771,10 @@
 
       let parsedStepVal = parseNumberAttrVal(stepVal);
 
-      ctrl.$validators.step = function (modelValue, viewValue) {
+      ctrl.$validators.step = function (
+        /** @type {any} */ modelValue,
+        /** @type {any} */ viewValue,
+      ) {
         return (
           ctrl.$isEmpty(viewValue) ||
           isUndefined(parsedStepVal) ||
@@ -13112,6 +13793,12 @@
     }
   }
 
+  /**
+   * @param {ng.Scope} scope
+   * @param {HTMLInputElement} element
+   * @param {ng.Attributes} attr
+   * @param {NgModelControllerProxied} ctrl
+   */
   function rangeInputType(scope, element, attr, ctrl) {
     badInputChecker(scope, element, attr, ctrl, "range");
     numberFormatterParser(ctrl);
@@ -13156,11 +13843,14 @@
             return true;
           }
         : // non-support browsers validate the min val
-          function minValidator(modelValue, viewValue) {
+          function minValidator(
+            /** @type {any} */ modelValue,
+            /** @type {number} */ viewValue,
+          ) {
             return (
               ctrl.$isEmpty(viewValue) ||
               isUndefined(minVal) ||
-              viewValue >= minVal
+              viewValue >= /** @type {number} */ (minVal)
             );
           };
 
@@ -13176,11 +13866,14 @@
             return true;
           }
         : // non-support browsers validate the max val
-          function maxValidator(modelValue, viewValue) {
+          function maxValidator(
+            /** @type {any} */ modelValue,
+            /** @type {number} */ viewValue,
+          ) {
             return (
               ctrl.$isEmpty(viewValue) ||
               isUndefined(maxVal) ||
-              viewValue <= maxVal
+              viewValue <= /** @type {number} */ (maxVal)
             );
           };
 
@@ -13198,7 +13891,10 @@
             return !validity.stepMismatch;
           }
         : // ngStep doesn't set the setp attr, so the browser doesn't adjust the input value as setting step would
-          function stepValidator(modelValue, viewValue) {
+          function stepValidator(
+            /** @type {any} */ modelValue,
+            /** @type {any} */ viewValue,
+          ) {
             return (
               ctrl.$isEmpty(viewValue) ||
               isUndefined(stepVal) ||
@@ -13209,6 +13905,10 @@
       setInitialValueAndObserver("step", stepChange);
     }
 
+    /**
+     * @param {string} htmlAttrName
+     * @param {(val: string | undefined) => void} changeFn
+     */
     function setInitialValueAndObserver(htmlAttrName, changeFn) {
       // interpolated attributes set the attribute value only after a digest, but we need the
       // attribute value when the input is first rendered, so that the browser can adjust the
@@ -13224,6 +13924,9 @@
       });
     }
 
+    /**
+     * @param {any} val
+     */
     function minChange(val) {
       minVal = parseNumberAttrVal(val);
 
@@ -13233,20 +13936,17 @@
       }
 
       if (supportsRange) {
-        let elVal = element.value;
-
-        // IE11 doesn't set the el val correctly if the minVal is greater than the element value
-        if (minVal > elVal) {
-          elVal = minVal;
-          element.value = elVal;
-        }
-        ctrl.$setViewValue(elVal);
+        // Browser already normalizes element.value against min
+        ctrl.$setViewValue(element.value);
       } else {
         // TODO(matsko): implement validateLater to reduce number of validations
         ctrl.$validate();
       }
     }
 
+    /**
+     * @param {any} val
+     */
     function maxChange(val) {
       maxVal = parseNumberAttrVal(val);
 
@@ -13256,21 +13956,17 @@
       }
 
       if (supportsRange) {
-        let elVal = element.value;
-
-        // IE11 doesn't set the el val correctly if the maxVal is less than the element value
-        if (maxVal < elVal) {
-          element.value = maxVal;
-          // IE11 and Chrome don't set the value to the minVal when max < min
-          elVal = maxVal < minVal ? minVal : maxVal;
-        }
-        ctrl.$setViewValue(elVal);
+        // Browser normalizes element.value against max
+        ctrl.$setViewValue(element.value);
       } else {
         // TODO(matsko): implement validateLater to reduce number of validations
         ctrl.$validate();
       }
     }
 
+    /**
+     * @param {any} val
+     */
     function stepChange(val) {
       stepVal = parseNumberAttrVal(val);
 
@@ -13289,41 +13985,65 @@
     }
   }
 
+  /**
+   * @param {ng.Scope} scope
+   * @param {HTMLInputElement} element
+   * @param {ng.Attributes} attr
+   * @param {NgModelControllerProxied} ctrl
+   */
   function urlInputType(scope, element, attr, ctrl) {
     // Note: no badInputChecker here by purpose as `url` is only a validation
     // in browsers, i.e. we can always read out input.value even if it is not valid!
     baseInputType(scope, element, attr, ctrl);
     stringBasedInputType(ctrl);
 
-    ctrl.$validators.url = function (modelValue, viewValue) {
+    ctrl.$validators.url = function (
+      /** @type {any} */ modelValue,
+      /** @type {any} */ viewValue,
+    ) {
       const value = modelValue || viewValue;
 
       return ctrl.$isEmpty(value) || URL_REGEXP.test(value);
     };
   }
 
+  /**
+   * @param {ng.Scope} scope
+   * @param {HTMLInputElement} element
+   * @param {ng.Attributes} attr
+   * @param {NgModelControllerProxied} ctrl
+   */
   function emailInputType(scope, element, attr, ctrl) {
     // Note: no badInputChecker here by purpose as `url` is only a validation
     // in browsers, i.e. we can always read out input.value even if it is not valid!
     baseInputType(scope, element, attr, ctrl);
     stringBasedInputType(ctrl);
 
-    ctrl.$validators.email = function (modelValue, viewValue) {
+    ctrl.$validators.email = function (
+      /** @type {any} */ modelValue,
+      /** @type {any} */ viewValue,
+    ) {
       const value = modelValue || viewValue;
 
       return ctrl.$isEmpty(value) || EMAIL_REGEXP.test(value);
     };
   }
 
+  /**
+   * @param {ng.Scope} scope
+   * @param {HTMLInputElement} element
+   * @param {ng.Attributes} attr
+   * @param {NgModelControllerProxied} ctrl
+   */
   function radioInputType(scope, element, attr, ctrl) {
     const doTrim = !attr.ngTrim || trim(attr.ngTrim) !== "false";
 
     // make the name unique, if not defined
     if (isUndefined(attr.name)) {
-      element.setAttribute("name", nextUid());
+      element.setAttribute("name", `${nextUid()}`);
     }
 
-    const listener = function (ev) {
+    const listener = function (/** @type {Event} */ ev) {
       if (element.checked) {
         let { value } = attr;
 
@@ -13343,7 +14063,7 @@
         value = trim(value);
       }
       const deproxy = isProxy(ctrl.$viewValue)
-        ? ctrl.$viewValue.$target
+        ? /** @type {ng.Scope} */ (ctrl.$viewValue).$target
         : ctrl.$viewValue;
 
       // the proxy may reach down two levels
@@ -13408,7 +14128,7 @@
       false,
     );
 
-    const listener = function (ev) {
+    const listener = function (/** @type {Event} */ ev) {
       ctrl.$setViewValue(element.checked, ev && ev.type);
     };
 
@@ -13421,13 +14141,15 @@
     // Override the standard `$isEmpty` because the $viewValue of an empty checkbox is always set to `false`
     // This is because of the parser below, which compares the `$modelValue` with `trueValue` to convert
     // it to a boolean.
-    ctrl.$isEmpty = function (value) {
+    ctrl.$isEmpty = function (/** @type {boolean} */ value) {
       return value === false;
     };
 
-    ctrl.$formatters.push((value) => equals$1(value, trueValue));
+    ctrl.$formatters.push((/** @type {any} */ value) => equals$1(value, trueValue));
 
-    ctrl.$parsers.push((value) => (value ? trueValue : falseValue));
+    ctrl.$parsers.push((/** @type {any} */ value) =>
+      value ? trueValue : falseValue,
+    );
   }
 
   inputDirective.$inject = [$injectTokens._parse];
@@ -13445,7 +14167,7 @@
           if (ctrls[0]) {
             (inputType[attr.type?.toLowerCase()] || inputType.text)(
               scope,
-              element,
+              /** @type {HTMLInputElement} */ (element),
               attr,
               ctrls[0],
               $parse,
@@ -13482,10 +14204,13 @@
    */
   function ngValueDirective() {
     /**
-     *  inputs use the value attribute as their default value if the value property is not set.
-     *  Once the value property has been set (by adding input), it will not react to changes to
-     *  the value attribute anymore. Setting both attribute and property fixes this behavior, and
-     *  makes it possible to use ngValue as a sort of one-way bind.
+     * inputs use the value attribute as their default value if the value property is not set.
+     * Once the value property has been set (by adding input), it will not react to changes to
+     * the value attribute anymore. Setting both attribute and property fixes this behavior, and
+     * makes it possible to use ngValue as a sort of one-way bind.
+     * @param {HTMLInputElement} element
+     * @param {ng.Attributes} attr
+     * @param {any} value
      */
     function updateElementValue(element, attr, value) {
       element.value = deProxy(value ?? "");
@@ -13500,13 +14225,21 @@
           return function (scope, elm, attr) {
             const value = scope.$eval(attr.ngValue);
 
-            updateElementValue(elm, attr, value);
+            updateElementValue(
+              /** @type {HTMLInputElement} */ (elm),
+              attr,
+              value,
+            );
           };
         }
 
         return function (scope, elm, attr) {
           scope.$watch(attr.ngValue, (value) => {
-            updateElementValue(elm, attr, value);
+            updateElementValue(
+              /** @type {HTMLInputElement} */ (elm),
+              attr,
+              value,
+            );
           });
         };
       },
@@ -13658,7 +14391,7 @@
      */
     _un_selectEmptyOption() {
       if (this._hasEmptyOption) {
-        this._emptyOption.selected = false;
+        /** @type {HTMLOptionElement} */ (this._emptyOption).selected = false;
       }
     }
 
@@ -13839,12 +14572,18 @@
       interpolateValueFn,
       interpolateTextFn,
     ) {
+      /**
+       * @type {any}
+       */
       let oldVal;
 
+      /**
+       * @type {string}
+       */
       let hashedVal;
 
       if (optionAttrs.$attr.ngValue) {
-        optionAttrs.$observe("value", (newVal) => {
+        optionAttrs.$observe("value", (/** @type {any} */ newVal) => {
           let removal;
 
           const previouslySelected = optionElement.selected;
@@ -13866,7 +14605,7 @@
           }
         });
       } else if (interpolateValueFn) {
-        optionAttrs.$observe("value", (newVal) => {
+        optionAttrs.$observe("value", (/** @type {any} */ newVal) => {
           this._readValue();
           let removal;
 
@@ -13913,7 +14652,7 @@
         this._addOption(optionAttrs.value, optionElement);
       }
 
-      optionAttrs.$observe("disabled", (newVal) => {
+      optionAttrs.$observe("disabled", (/** @type {string} */ newVal) => {
         if (newVal === "true" || (newVal && optionElement.selected)) {
           if (this._multiple) {
             this._scheduleViewValueUpdate(true);
@@ -13959,9 +14698,15 @@
       },
     };
 
+    /**
+     * @param {ng.Scope} _scope
+     * @param {{ addEventListener: (arg0: string, arg1: () => void) => void; getElementsByTagName: (arg0: string) => HTMLCollection; }} element
+     * @param {ng.Attributes} attr
+     * @param {any[]} ctrls
+     */
     function selectPreLink(_scope, element, attr, ctrls) {
       /** @type {SelectController} */
-      const selectCtrl = ctrls[0];
+      const selectCtrl = /** @type {SelectController} */ (ctrls[0]);
 
       /** @type {import("../model/model.js").NgModelController} */
       const ngModelCtrl = ctrls[1];
@@ -13996,6 +14741,9 @@
 
         // Read value now needs to check each option to see if it is selected
         selectCtrl._readValue = function () {
+          /**
+           * @type {any[]}
+           */
           const array = [];
 
           /**
@@ -14003,22 +14751,20 @@
            */
           const options = element.getElementsByTagName("option");
 
-          Array.from(options).forEach(
-            /**
-             * @param {HTMLOptionElement} option
-             */
-            (option) => {
-              if (option.selected && !option.disabled) {
-                const val = option.value;
+          Array.from(options).forEach((option) => {
+            if (
+              /** @type {HTMLOptionElement} */ (option).selected &&
+              !(/** @type {HTMLOptionElement} */ (option).disabled)
+            ) {
+              const val = /** @type {HTMLOptionElement} */ (option).value;
 
-                array.push(
-                  val in selectCtrl._selectValueMap
-                    ? selectCtrl._selectValueMap[val]
-                    : val,
-                );
-              }
-            },
-          );
+              array.push(
+                val in selectCtrl._selectValueMap
+                  ? selectCtrl._selectValueMap[val]
+                  : val,
+              );
+            }
+          });
 
           return array;
         };
@@ -14030,30 +14776,32 @@
            */
           const options = element.getElementsByTagName("option");
 
-          Array.from(options).forEach(
-            /**
-             * @param {HTMLOptionElement} option
-             */
-            (option) => {
-              const shouldBeSelected =
-                !!value &&
-                (includes(value, option.value) ||
-                  includes(value, selectCtrl._selectValueMap[option.value]));
+          Array.from(options).forEach((option) => {
+            const shouldBeSelected =
+              !!value &&
+              (includes(value, /** @type {HTMLOptionElement} */ (option).value) ||
+                includes(
+                  value,
+                  selectCtrl._selectValueMap[
+                    /** @type {HTMLOptionElement} */ (option).value
+                  ],
+                ));
 
-              const currentlySelected = option.selected;
+            const currentlySelected = /** @type {HTMLOptionElement} */ (option)
+              .selected;
 
-              // Support: IE 9-11 only, Edge 12-15+
-              // In IE and Edge adding options to the selection via shift+click/UP/DOWN
-              // will de-select already selected options if "selected" on those options was set
-              // more than once (i.e. when the options were already selected)
-              // So we only modify the selected property if necessary.
-              // Note: this behavior cannot be replicated via unit tests because it only shows in the
-              // actual user interface.
-              if (shouldBeSelected !== currentlySelected) {
-                option.selected = shouldBeSelected;
-              }
-            },
-          );
+            // Support: IE 9-11 only, Edge 12-15+
+            // In IE and Edge adding options to the selection via shift+click/UP/DOWN
+            // will de-select already selected options if "selected" on those options was set
+            // more than once (i.e. when the options were already selected)
+            // So we only modify the selected property if necessary.
+            // Note: this behavior cannot be replicated via unit tests because it only shows in the
+            // actual user interface.
+            if (shouldBeSelected !== currentlySelected) {
+              /** @type {HTMLOptionElement} */ (option).selected =
+                shouldBeSelected;
+            }
+          });
         };
 
         // we have to do it on each watch since ngModel watches reference, but
@@ -14079,13 +14827,19 @@
       }
     }
 
+    /**
+     * @param {ng.Scope} _scope
+     * @param {HTMLElement} _element
+     * @param {ng.Attributes} _attrs
+     * @param {any[]} ctrls
+     */
     function selectPostLink(_scope, _element, _attrs, ctrls) {
       // if ngModel is not defined, we don't need to do anything
       const ngModelCtrl = ctrls[1];
 
       if (!ngModelCtrl) return;
 
-      const selectCtrl = ctrls[0];
+      const selectCtrl = /** @type {SelectController} */ (ctrls[0]);
 
       // We delegate rendering to the `_writeValue` method, which can be changed
       // if the select can have multiple selected values or if the options are being
@@ -14112,8 +14866,14 @@
       restrict: "E",
       priority: 100,
       compile(element, attr) {
+        /**
+         * @type {import("../../core/interpolate/interface.ts").InterpolationFunction | undefined}
+         */
         let interpolateValueFn;
 
+        /**
+         * @type {import("../../core/interpolate/interface.ts").InterpolationFunction | undefined}
+         */
         let interpolateTextFn;
 
         if (isDefined(attr.ngValue)) ; else if (isDefined(attr.value)) {
@@ -14137,8 +14897,13 @@
           const parent = elemParam.parentElement;
 
           const selectCtrl =
-            getCacheData(parent, selectCtrlName) ||
-            getCacheData(parent.parentElement, selectCtrlName); // in case we are in optgroup
+            getCacheData(/** @type {HTMLElement} */ (parent), selectCtrlName) ||
+            getCacheData(
+              /** @type {HTMLElement} */ (
+                /** @type {HTMLElement} */ (parent).parentElement
+              ),
+              selectCtrlName,
+            ); // in case we are in optgroup
 
           if (selectCtrl) {
             selectCtrl.registerOption(
@@ -14237,25 +15002,31 @@
          * @param {ng.Attributes} attr
          */
         link(scope, element, attr) {
+          /** @type {Record<string, number>} */
           let classCounts = getCacheData(element, "$classCounts");
 
+          // `ngClassOdd/ngClassEven` use `$index & 1` values (0/1). Plain `ngClass` uses `true`.
+          /** @type {number | boolean} */
           let oldModulo = true;
 
-          /** @type {string|undefined} */
-          let oldClassString;
+          /** @type {string} */
+          let oldClassString = "";
 
           if (!classCounts) {
-            // Use Object.create(null) to prevent class assumptions involving property
-            // names in Object.prototype
-            classCounts = Object.create(null);
+            // Use Object.create(null) to prevent assumptions involving Object.prototype keys.
+            classCounts = /** @type {Record<string, number>} */ (nullObject());
             setCacheData(element, "$classCounts", classCounts);
           }
+
+          // Cache once; `hasAnimate(element)` should be stable for this directive instance.
+          const animate = hasAnimate(element);
 
           if (name !== "ngClass") {
             scope.$watch("$index", () => {
               ngClassIndexWatchAction(scope.$index & 1);
             });
           }
+
           scope.$watch(attr[name], (val) => {
             ngClassWatchAction(toClassString(val));
           });
@@ -14264,15 +15035,15 @@
            * @param {string} classString
            */
           function addClasses(classString) {
-            classString = digestClassCounts(split(classString), 1);
+            const toAdd = digestClassCounts(split(classString), 1);
 
-            if (hasAnimate(element)) {
-              attr.$addClass(classString);
+            if (!toAdd.length) return;
+
+            if (animate) {
+              attr.$addClass(toAdd.join(" "));
             } else {
               scope.$postUpdate(() => {
-                if (classString !== "") {
-                  element.classList.add(...classString.trim().split(" "));
-                }
+                element.classList.add(...toAdd);
               });
             }
           }
@@ -14281,15 +15052,15 @@
            * @param {string} classString
            */
           function removeClasses(classString) {
-            classString = digestClassCounts(split(classString), -1);
+            const toRemove = digestClassCounts(split(classString), -1);
 
-            if (hasAnimate(element)) {
-              attr.$removeClass(classString);
+            if (!toRemove.length) return;
+
+            if (animate) {
+              attr.$removeClass(toRemove.join(" "));
             } else {
               scope.$postUpdate(() => {
-                if (classString !== "") {
-                  element.classList.remove(...classString.trim().split(" "));
-                }
+                element.classList.remove(...toRemove);
               });
             }
           }
@@ -14307,46 +15078,61 @@
 
             const toAddArray = arrayDifference(newClassArray, oldClassArray);
 
-            const toRemoveString = digestClassCounts(toRemoveArray, -1);
+            const toRemove = digestClassCounts(toRemoveArray, -1);
 
-            const toAddString = digestClassCounts(toAddArray, 1);
+            const toAdd = digestClassCounts(toAddArray, 1);
 
-            if (hasAnimate(element)) {
-              attr.$addClass(toAddString);
-              attr.$removeClass(toRemoveString);
+            if (animate) {
+              if (toAdd.length) attr.$addClass(toAdd.join(" "));
+
+              if (toRemove.length) attr.$removeClass(toRemove.join(" "));
             } else {
-              if (toAddString !== "") {
-                element.classList.add(...toAddString.trim().split(" "));
-              }
+              if (toAdd.length) element.classList.add(...toAdd);
 
-              if (toRemoveString !== "") {
-                element.classList.remove(...toRemoveString.trim().split(" "));
-              }
+              if (toRemove.length) element.classList.remove(...toRemove);
             }
           }
 
+          /**
+           * Updates reference-counts for classes and returns the classes that should be
+           * applied/removed for this operation.
+           *
+           * @param {string[]} classArray
+           * @param {number} count
+           * @returns {string[]}
+           */
           function digestClassCounts(classArray, count) {
+            /** @type {string[]} */
             const classesToUpdate = [];
 
-            if (classArray) {
-              classArray.forEach((className) => {
-                if (count > 0 || classCounts[className]) {
-                  classCounts[className] = (classCounts[className] || 0) + count;
+            for (let i = 0; i < classArray.length; i++) {
+              const className = classArray[i];
 
-                  if (classCounts[className] === +(count > 0)) {
-                    classesToUpdate.push(className);
-                  }
+              if (!className) continue;
+
+              // Only decrement if we have a count, otherwise we can go negative and
+              // remove classes that were never added.
+              if (count > 0 || classCounts[className]) {
+                const next = (classCounts[className] || 0) + count;
+
+                classCounts[className] = next;
+
+                // When adding: push when transitioning 0 -> 1.
+                // When removing: push when transitioning 1 -> 0.
+                if (next === (count > 0 ? 1 : 0)) {
+                  classesToUpdate.push(className);
                 }
-              });
+              }
             }
 
-            return classesToUpdate.join(" ");
+            return classesToUpdate;
           }
 
+          /**
+           * @param {number | boolean} newModulo
+           */
           function ngClassIndexWatchAction(newModulo) {
-            // This watch-action should run before the `ngClassWatchAction()`, thus it
-            // adds/removes `oldClassString`. If the `ngClass` expression has changed as well, the
-            // `ngClassWatchAction()` will update the classes.
+            // Runs before `ngClassWatchAction()`: it adds/removes `oldClassString`.
             if (newModulo === selector) {
               addClasses(oldClassString);
             } else {
@@ -14372,45 +15158,90 @@
   }
 
   // Helpers
+
+  /**
+   * Returns all items from `tokens1` that are not present in `tokens2`.
+   *
+   * @param {string[]} tokens1
+   * @param {string[]} tokens2
+   * @returns {string[]}
+   */
   function arrayDifference(tokens1, tokens2) {
     if (!tokens1 || !tokens1.length) return [];
 
     if (!tokens2 || !tokens2.length) return tokens1;
 
-    const values = [];
+    const set2 = new Set(tokens2);
 
-    outer: for (let i = 0; i < tokens1.length; i++) {
-      const token = tokens1[i];
+    /** @type {string[]} */
+    const out = [];
 
-      for (let j = 0; j < tokens2.length; j++) {
-        if (token === tokens2[j]) continue outer;
-      }
-      values.push(token);
+    for (let i = 0; i < tokens1.length; i++) {
+      const x = tokens1[i];
+
+      if (!set2.has(x)) out.push(x);
     }
 
-    return values;
+    return out;
   }
 
+  /**
+   * Split a class string into tokens.
+   *
+   * - Trims leading/trailing whitespace
+   * - Collapses any whitespace runs (space/tab/newline) into token boundaries
+   *
+   * @param {string} classString
+   * @return {string[]}
+   */
   function split(classString) {
-    return classString && classString.split(" ");
+    if (!classString) return [];
+    const trimmed = classString.trim();
+
+    return trimmed ? trimmed.split(/\s+/) : [];
   }
 
+  /**
+   * Convert an `ngClass` expression value into a space-delimited class string.
+   *
+   * Supports:
+   * - string: returned as-is
+   * - array: flattened and joined with spaces (falsy items are ignored)
+   * - object: keys with truthy values are included
+   * - other primitives: stringified
+   *
+   * @param {unknown} classValue
+   * @returns {string}
+   */
   function toClassString(classValue) {
-    if (!classValue) return classValue;
-
-    let classString = classValue;
+    if (!classValue) return "";
 
     if (isArray(classValue)) {
-      classString = classValue.map(toClassString).join(" ");
-    } else if (isObject(classValue)) {
-      classString = keys(classValue)
-        .filter((key) => classValue[key])
-        .join(" ");
-    } else if (!isString(classValue)) {
-      classString = `${classValue}`;
+      // Recursively stringify and omit empty results.
+      return classValue.map(toClassString).filter(Boolean).join(" ");
     }
 
-    return classString;
+    if (isObject(classValue)) {
+      const valueMap = /** @type {Record<string, any>} */ (classValue);
+
+      const ks = keys(valueMap);
+
+      let out = "";
+
+      for (let i = 0; i < ks.length; i++) {
+        const k = ks[i];
+
+        if (valueMap[k]) out += (out ? " " : "") + k;
+      }
+
+      return out;
+    }
+
+    if (isString(classValue)) {
+      return classValue;
+    }
+
+    return String(classValue);
   }
 
   const ngClassDirective = classDirective("", true);
@@ -14625,10 +15456,19 @@
 
           let changeCounter = 0;
 
+          /**
+           * @type {(ProxyConstructor & import("../../docs.js").Scope & Record<string, any>) | null}
+           */
           let currentScope;
 
+          /**
+           * @type {HTMLElement | null}
+           */
           let previousElement;
 
+          /**
+           * @type {HTMLElement | null}
+           */
           let currentElement;
 
           const cleanupLastIncludeContent = () => {
@@ -14657,7 +15497,7 @@
           };
 
           scope.$watch(srcExp, async (src) => {
-            const afterAnimation = function (response) {
+            const afterAnimation = function (/** @type {boolean} */ response) {
               response !== false && maybeScroll();
             };
 
@@ -14680,18 +15520,29 @@
                   // Note: We can't remove them in the cloneAttchFn of $transclude as that
                   // function is called before linking the content, which would apply child
                   // directives to non existing elements.
-                  const clone = $transclude(newScope, (cloneParam) => {
-                    cleanupLastIncludeContent();
+                  const clone = /** @type {HTMLElement} */ (
+                    /** @type {ng.TranscludeFn} */ ($transclude)(
+                      newScope,
+                      /** @param {import("../../core/compile/interface.ts").TranscludedNodes | undefined} cloneParam */ (
+                        cloneParam,
+                      ) => {
+                        cleanupLastIncludeContent();
 
-                    if (hasAnimate(cloneParam)) {
-                      $animate
-                        .enter(cloneParam, null, $element)
-                        .done(afterAnimation);
-                    } else {
-                      $element.after(cloneParam);
-                      maybeScroll();
-                    }
-                  });
+                        if (hasAnimate(/** @type {HTMLElement} */ (cloneParam))) {
+                          $animate
+                            .enter(
+                              /** @type {HTMLElement} */ (cloneParam),
+                              null,
+                              $element,
+                            )
+                            .done(afterAnimation);
+                        } else {
+                          $element.after(/** @type {HTMLElement} */ (cloneParam));
+                          maybeScroll();
+                        }
+                      },
+                    )
+                  );
 
                   currentScope = newScope;
                   currentElement = clone;
@@ -14886,11 +15737,19 @@
   ngRepeatDirective.$inject = [$injectTokens._animate];
 
   /**
-   * TODO // Add type for animate service
-   * @param {*}  $animate
+   * @param {ng.AnimateService}  $animate
    * @returns {ng.Directive}
    */
   function ngRepeatDirective($animate) {
+    /**
+     * @param {ng.Scope} scope
+     * @param {number} index
+     * @param {string | number} valueIdentifier
+     * @param {any} value
+     * @param {string | number} keyIdentifier
+     * @param {any} key
+     * @param {number} arrayLength
+     */
     function updateScope(
       scope,
       index,
@@ -14917,18 +15776,33 @@
       scope.$odd = !(scope.$even = (index & 1) === 0);
     }
 
+    /**
+     * @param {{ clone: any; }} block
+     */
     function getBlockStart(block) {
       return block.clone;
     }
 
+    /**
+     * @param {{ clone: any; }} block
+     */
     function getBlockEnd(block) {
       return block.clone;
     }
 
+    /**
+     * @param {ng.Scope} _$scope
+     * @param {any} _key
+     * @param {any} value
+     */
     function trackByIdArrayFn(_$scope, _key, value) {
       return hashKey(value);
     }
 
+    /**
+     * @param {ng.Scope} _$scope
+     * @param {any} key
+     */
     function trackByIdObjFn(_$scope, key) {
       return key;
     }
@@ -14938,7 +15812,7 @@
       transclude: "element",
       priority: 1000,
       terminal: true,
-      compile: (_$element, $attr) => {
+      compile(_$element, $attr) {
         const expression = $attr.ngRepeat;
 
         const hasAnimate = !!$attr.animate;
@@ -15000,10 +15874,10 @@
          * @param {ng.Scope} $scope
          * @param {HTMLElement} $element
          * @param {ng.Attributes} attr
-         * @param ctrl
-         * @param $transclude
+         * @param {any} _ctrl
+         * @param {ng.TranscludeFn=} $transclude
          */
-        function ngRepeatLink($scope, $element, attr, ctrl, $transclude) {
+        function ngRepeatLink($scope, $element, attr, _ctrl, $transclude) {
           // Store a list of elements from previous run. This is a hash where key is the item from the
           // iterator, and the value is objects with following properties.
           //   - scope: bound scope
@@ -15012,29 +15886,50 @@
           //
           // We are using no-proto object so that we don't need to guard against inherited props via
           // hasOwnProperty.
-          let lastBlockMap = Object.create(null);
+          let lastBlockMap = nullObject();
 
           // watch props
           $scope.$watch(
             rhs,
             (collection) => {
               swap();
-              let index,
-                previousNode = $element, // node that cloned nodes should be inserted after
-                // initialized to the comment node anchor
-                nextNode;
+              /**
+               * @type {number}
+               */
+              let index;
+
+              let previousNode = $element; // node that cloned nodes should be inserted after
+
+              // initialized to the comment node anchor
+              /** @type {Record<string, any>} */
+              let nextNode;
 
               const // Same as lastBlockMap but it has the current state. It will become the
                 // lastBlockMap on the next iteration.
-                nextBlockMap = Object.create(null);
+                nextBlockMap = nullObject();
 
-              let key,
-                value, // key/value of iteration
-                trackById,
-                trackByIdFn,
-                collectionKeys,
-                block, // last object information {scope, element, id}
-                elementsToRemove;
+              /**
+               * @type {string | number}
+               */
+              let key;
+
+              /**
+               * @type {any}
+               */
+              let value; // key/value of iteration
+
+              let trackById;
+
+              let trackByIdFn;
+
+              let collectionKeys;
+
+              /**
+               * @type {{ clone: any; scope?: any; id?: any; }}
+               */
+              let block; // last object information {scope, element, id}
+
+              let elementsToRemove;
 
               if (aliasAs) {
                 $scope[aliasAs] = collection;
@@ -15135,7 +16030,11 @@
 
                   if (getBlockStart(block) !== nextNode) {
                     // existing item which got moved
-                    $animate.move(getBlockNodes(block.clone), null, previousNode);
+                    $animate.move(
+                      /** @type {any} */ (getBlockNodes(block.clone)),
+                      null,
+                      previousNode,
+                    );
                   }
                   previousNode = getBlockEnd(block);
                   updateScope(
@@ -15149,40 +16048,36 @@
                   );
                 } else {
                   // new item which we don't know about
-                  $transclude(
-                    /**
-                     * Clone attach function
-                     * @param {HTMLElement} clone
-                     * @param {ng.Scope} scope
-                     */
+                  /** @type {ng.TranscludeFn} */ ($transclude)((clone, scope) => {
+                    block.scope = scope;
+                    const endNode = clone;
 
-                    (clone, scope) => {
-                      block.scope = scope;
-                      const endNode = clone;
-
-                      if (hasAnimate) {
-                        $animate.enter(clone, null, previousNode);
-                      } else {
-                        previousNode.after(clone);
-                      }
-
-                      previousNode = endNode;
-                      // Note: We only need the first/last node of the cloned nodes.
-                      // However, we need to keep the reference to the dom wrapper as it might be changed later
-                      // by a directive with templateUrl when its template arrives.
-                      block.clone = clone;
-                      nextBlockMap[block.id] = block;
-                      updateScope(
-                        block.scope,
-                        index,
-                        valueIdentifier,
-                        value,
-                        keyIdentifier,
-                        key,
-                        collectionLength,
+                    if (hasAnimate) {
+                      $animate.enter(
+                        /** @type {HTMLElement} */ (clone),
+                        null,
+                        previousNode,
                       );
-                    },
-                  );
+                    } else {
+                      previousNode.after(/** @type {HTMLElement} */ (clone));
+                    }
+
+                    previousNode = /** @type {HTMLElement} */ (endNode);
+                    // Note: We only need the first/last node of the cloned nodes.
+                    // However, we need to keep the reference to the dom wrapper as it might be changed later
+                    // by a directive with templateUrl when its template arrives.
+                    block.clone = clone;
+                    nextBlockMap[block.id] = block;
+                    updateScope(
+                      block.scope,
+                      index,
+                      valueIdentifier,
+                      value,
+                      keyIdentifier,
+                      key,
+                      collectionLength,
+                    );
+                  });
                 }
               }
               lastBlockMap = nextBlockMap;
@@ -15256,14 +16151,26 @@
 
         let selectedTranscludes = [];
 
+        /**
+         * @type {any[]}
+         */
         const selectedElements = [];
 
+        /**
+         * @type {import("../../docs.js").AnimateRunner[]}
+         */
         const previousLeaveAnimations = [];
 
+        /**
+         * @type {any[]}
+         */
         const selectedScopes = [];
 
-        const spliceFactory = function (array, index) {
-          return function (response) {
+        const spliceFactory = function (
+          /** @type {any[]} */ array,
+          /** @type {number} */ index,
+        ) {
+          return function (/** @type {boolean} */ response) {
             if (response !== false) array.splice(index, 1);
           };
         };
@@ -15277,7 +16184,11 @@
 
           // Start with the last, in case the array is modified during the loop
           while (previousLeaveAnimations.length) {
-            $animate.cancel(previousLeaveAnimations.pop());
+            $animate.cancel(
+              /** @type {import("../../docs.js").AnimateRunner} */ (
+                previousLeaveAnimations.pop()
+              ),
+            );
           }
 
           for (i = 0, ii = selectedScopes.length; i < ii; ++i) {
@@ -15303,30 +16214,47 @@
               ngSwitchController.cases["?"])
           ) {
             Object.values(selectedTranscludes).forEach((selectedTransclude) => {
-              selectedTransclude.transclude((caseElement, selectedScope) => {
-                selectedScopes.push(selectedScope);
-                const anchor = selectedTransclude.element;
+              selectedTransclude.transclude(
+                (
+                  /** @type {Node} */ caseElement,
+                  /** @type {any} */ selectedScope,
+                ) => {
+                  selectedScopes.push(selectedScope);
+                  const anchor = selectedTransclude.element;
 
-                // TODO removing this breaks repeater test
-                const block = {
-                  clone: caseElement,
-                  comment: document.createComment(""),
-                };
+                  // TODO removing this breaks repeater test
+                  const block = {
+                    clone: caseElement,
+                    comment: document.createComment(""),
+                  };
 
-                selectedElements.push(block);
+                  selectedElements.push(block);
 
-                if (hasAnimate(caseElement)) {
-                  if (runner) {
-                    requestAnimationFrame(() => {
-                      $animate.enter(caseElement, anchor.parentElement, anchor);
-                    });
+                  if (hasAnimate(caseElement)) {
+                    if (runner) {
+                      requestAnimationFrame(() => {
+                        $animate.enter(
+                          /** @type {HTMLElement} */ (caseElement),
+                          anchor.parentElement,
+                          anchor,
+                        );
+                      });
+                    } else {
+                      $animate.enter(
+                        /** @type {HTMLElement} */ (caseElement),
+                        anchor.parentElement,
+                        anchor,
+                      );
+                    }
                   } else {
-                    $animate.enter(caseElement, anchor.parentElement, anchor);
+                    domInsert(
+                      /** @type {HTMLElement} */ (caseElement),
+                      anchor.parentElement,
+                      anchor,
+                    );
                   }
-                } else {
-                  domInsert(caseElement, anchor.parentElement, anchor);
-                }
-              });
+                },
+              );
             });
           }
         });
@@ -15401,6 +16329,26 @@
   // 8: collection expression
   // 9: track by expression
 
+  class OptionItem {
+    /** @type {HTMLOptionElement | null} */
+    element = null;
+
+    /**
+     * @param {any} selectValue
+     * @param {any} viewValue
+     * @param {any} label
+     * @param {any} group
+     * @param {any} disabled
+     */
+    constructor(selectValue, viewValue, label, group, disabled) {
+      this.selectValue = selectValue;
+      this.viewValue = viewValue;
+      this.label = label;
+      this.group = group;
+      this.disabled = disabled;
+    }
+  }
+
   ngOptionsDirective.$inject = [$injectTokens._compile, $injectTokens._parse];
   /**
    *
@@ -15455,14 +16403,19 @@
       // if we have a trackFn then use that (passing scope and locals)
       // otherwise just hash the given viewValue
       const getTrackByValueFn = trackBy
-        ? function (value, locals) {
-            return trackByFn(scope, locals);
+        ? function (/** @type {any} */ value, /** @type {any} */ locals) {
+            return /** @type {import("../../docs.ts").CompiledExpression} */ (
+              trackByFn
+            )(scope, locals);
           }
-        : function getHashOfValue(value) {
+        : function getHashOfValue(/** @type {any} */ value) {
             return hashKey(value);
           };
 
-      const getTrackByValue = function (value, key) {
+      const getTrackByValue = function (
+        /** @type {any} */ value,
+        /** @type {any=} */ key,
+      ) {
         return getTrackByValueFn(value, getLocals(value, key));
       };
 
@@ -15474,31 +16427,25 @@
 
       const valuesFn = $parse(match[8]);
 
+      /** @type {Record<string, any>} */
       const locals = {};
 
       const getLocals = keyName
-        ? function (value, key) {
+        ? function (/** @type {any} */ value, /** @type {any} */ key) {
             locals[keyName] = key;
             locals[valueName] = value;
 
             return locals;
           }
-        : function (value) {
+        : function (/** @type {any} */ value) {
             locals[valueName] = value;
 
             return locals;
           };
 
-      class Option {
-        constructor(selectValue, viewValue, label, group, disabled) {
-          this.selectValue = selectValue;
-          this.viewValue = viewValue;
-          this.label = label;
-          this.group = group;
-          this.disabled = disabled;
-        }
-      }
-
+      /**
+       * @param {any[]} optionValues
+       */
       function getOptionValuesKeys(optionValues) {
         let optionValuesKeys;
 
@@ -15523,10 +16470,10 @@
         getTrackByValue,
         getWatchables: valuesFn,
         getOptions() {
-          /** @type {Option[]} */
+          /** @type {OptionItem[]} */
           const optionItems = [];
 
-          /** @type {Object.<string, Option>} */
+          /** @type {Object.<string, OptionItem>} */
           const selectValueMap = {};
 
           // The option values were already computed in the `getWatchables` fn,
@@ -15555,7 +16502,7 @@
 
             const disabled = disableWhenFn(scope, updatedLocals);
 
-            const optionItem = new Option(
+            const optionItem = new OptionItem(
               selectValue,
               viewValue,
               label,
@@ -15570,9 +16517,15 @@
           return {
             items: optionItems,
             selectValueMap,
+            /**
+             * @param {any} value
+             */
             getOptionFromViewValue(value) {
-              return selectValueMap[getTrackByValue(value)];
+              return selectValueMap[getTrackByValue(value, undefined)];
             },
+            /**
+             * @param {{ viewValue: any; }} option
+             */
             getViewValueFromOption(option) {
               // If the viewValue could be an object that may be mutated by the application,
               // we need to make a copy and not return the reference to the value on the option.
@@ -15623,6 +16576,9 @@
       // TODO double check
       unknownOption.nodeValue = "?";
 
+      /**
+       * @type {{ getOptionFromViewValue: any; selectValueMap: any; getViewValueFromOption: any; items: any; }}
+       */
       let options;
 
       const ngOptions = parseOptionsExpression(
@@ -15641,7 +16597,9 @@
 
       // Update the controller methods for multiple selectable options
       if (!multiple) {
-        selectCtrl._writeValue = function writeNgOptionsValue(value) {
+        selectCtrl._writeValue = function writeNgOptionsValue(
+          /** @type {any} */ value,
+        ) {
           // The options might not be defined yet when ngModel tries to render
           if (!options) return;
 
@@ -15690,12 +16648,17 @@
         // since ngModel only watches for object identity change
         // FIXME: When a user selects an option, this watch will fire needlessly
         if (ngOptions.trackBy) {
-          scope.$watch(ngOptions.getTrackByValue(ngModelCtrl.$viewValue), () => {
-            ngModelCtrl.$render();
-          });
+          scope.$watch(
+            ngOptions.getTrackByValue(ngModelCtrl.$viewValue, undefined),
+            () => {
+              ngModelCtrl.$render();
+            },
+          );
         }
       } else {
-        selectCtrl._writeValue = function writeNgOptionsMultiple(values) {
+        selectCtrl._writeValue = function writeNgOptionsMultiple(
+          /** @type {any[]} */ values,
+        ) {
           // The options might not be defined yet when ngModel tries to render
           if (!options) return;
 
@@ -15704,11 +16667,16 @@
           const selectedOptions =
             (values && values.map(getAndUpdateSelectedOption)) || [];
 
-          options.items.forEach((option) => {
-            if (option.element.selected && !includes(selectedOptions, option)) {
-              option.element.selected = false;
-            }
-          });
+          options.items.forEach(
+            /** @param {OptionItem} option */ (option) => {
+              if (
+                option.element?.selected &&
+                !includes(selectedOptions, option)
+              ) {
+                option.element.selected = false;
+              }
+            },
+          );
         };
 
         selectCtrl._readValue = function readNgOptionsMultiple() {
@@ -15764,7 +16732,10 @@
           // Redefine the registerOption function, which will catch
           // options that are added by ngIf etc. (rendering of the node is async because of
           // lazy transclusion)
-          selectCtrl.registerOption = function (optionScope, optionEl) {
+          selectCtrl.registerOption = function (
+            /** @type {ng.Scope} */ _optionScope,
+            /** @type {HTMLOptionElement} */ optionEl,
+          ) {
             if (optionEl.value === "") {
               selectCtrl.hasEmptyOption = true;
               selectCtrl.emptyOption = optionEl;
@@ -15802,6 +16773,10 @@
 
       // ------------------------------------------------------------------ //
 
+      /**
+       * @param {OptionItem} option
+       * @param {DocumentFragment} parent
+       */
       function _addOptionElement(option, parent) {
         /**
          * @type {HTMLOptionElement}
@@ -15814,6 +16789,9 @@
         updateOptionElement(option, optionElement);
       }
 
+      /**
+       * @param {any} viewValue
+       */
       function getAndUpdateSelectedOption(viewValue) {
         const option = options.getOptionFromViewValue(viewValue);
 
@@ -15824,6 +16802,10 @@
         return option;
       }
 
+      /**
+       * @param {OptionItem} option
+       * @param {HTMLOptionElement} element
+       */
       function updateOptionElement(option, element) {
         option.element = element;
         element.disabled = option.disabled;
@@ -15863,36 +16845,39 @@
 
         options = ngOptions.getOptions();
 
+        /** @type {Record<string, any>} */
         const groupElementMap = {};
 
-        options.items.forEach((option) => {
-          let groupElement;
+        options.items.forEach(
+          /** @param {OptionItem} option */ (option) => {
+            let groupElement;
 
-          if (isDefined(option.group)) {
-            // This option is to live in a group
-            // See if we have already created this group
-            groupElement = groupElementMap[option.group];
+            if (isDefined(option.group)) {
+              // This option is to live in a group
+              // See if we have already created this group
+              groupElement = groupElementMap[option.group];
 
-            if (!groupElement) {
-              groupElement = optGroupTemplate.cloneNode(false);
-              listFragment.appendChild(groupElement);
+              if (!groupElement) {
+                groupElement = optGroupTemplate.cloneNode(false);
+                listFragment.appendChild(groupElement);
 
-              // Update the label on the group element
-              // "null" is special cased because of Safari
-              /** @type {HTMLOptGroupElement} */
-              (groupElement).label =
-                option.group === null ? "null" : option.group;
+                // Update the label on the group element
+                // "null" is special cased because of Safari
+                /** @type {HTMLOptGroupElement} */
+                (groupElement).label =
+                  option.group === null ? "null" : option.group;
 
-              // Store it for use later
-              groupElementMap[option.group] = groupElement;
+                // Store it for use later
+                groupElementMap[option.group] = groupElement;
+              }
+
+              _addOptionElement(option, groupElement);
+            } else {
+              // This option is not in a group
+              _addOptionElement(option, listFragment);
             }
-
-            _addOptionElement(option, groupElement);
-          } else {
-            // This option is not in a group
-            _addOptionElement(option, listFragment);
-          }
-        });
+          },
+        );
 
         selectElement.appendChild(listFragment);
 
@@ -15929,7 +16914,9 @@
             /* empty */
           };
         },
-        post: ngOptionsPostLink,
+        post: /** @type {import("../../interface.ts").DirectiveLinkFn<any>} */ (
+          ngOptionsPostLink
+        ),
       },
     };
   }
@@ -16028,21 +17015,20 @@
           function useFallbackContent() {
             // Since this is the fallback content rather than the transcluded content,
             // we link against the scope of this directive rather than the transcluded scope
-            fallbackLinkFn(
-              $scope,
-
-              (clone) => {
-                $element.append(clone);
-              },
-            );
+            fallbackLinkFn($scope, (clone) => {
+              $element.append(/** @type {Node} */ (clone));
+            });
           }
 
+          /**
+           * @param {Node | NodeList} node
+           */
           function notWhitespace(node) {
             if (node instanceof Array) {
               return false;
             } else if (
-              node.nodeType !== NodeType._TEXT_NODE ||
-              node.nodeValue.trim()
+              /** @type {Node} */ (node).nodeType !== NodeType._TEXT_NODE ||
+              /** @type {String} */ (/** @type {Node} */ (node).nodeValue).trim()
             ) {
               return true;
             }
@@ -16289,8 +17275,14 @@
       restrict: "A",
       require: "?ngModel",
       compile: (_Elm, tAttr) => {
+        /**
+         * @type {string}
+         */
         let patternExp;
 
+        /**
+         * @type {(() => any) | ((arg0: ng.Scope) => string)}
+         */
         let parseFn;
 
         if (tAttr.ngPattern) {
@@ -16320,13 +17312,12 @@
           } else {
             patternExp = attr.pattern;
           }
-
-          let regexp = parsePatternAttr(attrVal, patternExp, elm);
+          let regexp = attrVal && parsePatternAttr(attrVal, patternExp, elm);
 
           attr.$observe("pattern", (newVal) => {
             const oldRegexp = regexp;
 
-            regexp = parsePatternAttr(newVal, patternExp, elm);
+            regexp = newVal && parsePatternAttr(newVal, patternExp, elm);
 
             if (
               (oldRegexp && oldRegexp.toString()) !==
@@ -16336,12 +17327,15 @@
             }
           });
 
-          ctrl.$validators.pattern = (_modelValue, viewValue) => {
+          ctrl.$validators.pattern = (
+            /** @type {any} */ _modelValue,
+            /** @type {any} */ viewValue,
+          ) => {
             // HTML5 pattern constraint validates the input value, so we validate the viewValue
             return (
               ctrl.$isEmpty(viewValue) ||
               isUndefined(regexp) ||
-              regexp.test(viewValue)
+              /** @type {RegExp} */ (regexp).test(viewValue)
             );
           };
         };
@@ -16456,10 +17450,10 @@
    */
   const minlengthDirective = [
     $injectTokens._parse,
-    /** @param {ng.ParseService} $parse */ ($parse) => ({
+    /** @param {ng.ParseService} $parse @return {ng.Directive} */ ($parse) => ({
       restrict: "A",
       require: "?ngModel",
-      link(scope, elm, attr, ctrl) {
+      link(scope, _elm, attr, ctrl) {
         if (!ctrl) return;
 
         let minlength =
@@ -16474,31 +17468,33 @@
             ctrl.$validate();
           }
         });
-        ctrl.$validators.minlength = function (modelValue, viewValue) {
+        ctrl.$validators.minlength = function (
+          /** @type {any} */ modelValue,
+          /** @type {string | any[]} */ viewValue,
+        ) {
           return ctrl.$isEmpty(viewValue) || viewValue.length >= minlengthParsed;
         };
       },
     }),
   ];
 
-  function parsePatternAttr(regex, patternExp, elm) {
-    if (!regex) return undefined;
+  /**
+   * @param {string | RegExp} input
+   * @param {string} patternExp
+   * @param {Element | Node} elm
+   * @returns {RegExp}
+   */
+  function parsePatternAttr(input, patternExp, elm) {
+    /** @type {RegExp | string} */
+    let regex = input;
 
-    if (isProxy(regex)) {
-      regex = /** @type {ng.Scope} */ (regex).$target;
-    }
-
-    if (isString(regex)) {
+    if (typeof regex === "string") {
       const match = regex.match(/^\/(.*)\/([gimsuy]*)$/);
 
-      if (match) {
-        regex = new RegExp(match[1], match[2]);
-      } else {
-        regex = new RegExp(`^${regex}$`);
-      }
+      regex = match ? new RegExp(match[1], match[2]) : new RegExp(`^${regex}$`);
     }
 
-    if (!regex.test) {
+    if (typeof regex.test !== "function") {
       throw minErr("ngPattern")(
         "noregexp",
         "Expected {0} to be a RegExp but was {1}. Element: {2}",
@@ -16511,6 +17507,9 @@
     return regex;
   }
 
+  /**
+   * @param {string} val
+   */
   function parseLength(val) {
     const intVal = parseInt(val, 10);
 
@@ -16597,13 +17596,20 @@
         }
 
         /** @type {ng.AnchorScrollService} */
-        const scroll = (hash) => {
+        const scroll = (hashOrElement) => {
+          // Direct element scrolling
+          if (hashOrElement instanceof HTMLElement) {
+            scrollTo(hashOrElement);
+
+            return;
+          }
           // Allow numeric hashes
-          hash = isString(hash)
-            ? hash
-            : isNumber(hash)
-              ? hash.toString()
+          const hash = isString(hashOrElement)
+            ? hashOrElement
+            : isNumber(hashOrElement)
+              ? hashOrElement.toString()
               : $location.getHash();
+
           let elm;
 
           // empty hash, scroll to the top of the page
@@ -16962,8 +17968,14 @@
   // $animate to either call the callback (< 1.2) or return a promise
   // that can be changed. This helper function ensures that the options
   // are wiped clean incase a callback function is provided.
+  /**
+   * @param {import("./interface.ts").AnimationOptions | undefined} options
+   * @returns {import("./interface.ts").AnimationOptions}
+   */
   function prepareAnimateOptions(options) {
-    return isObject(options) ? options : {};
+    return isObject(options)
+      ? options
+      : /** @type {import("./interface.ts").AnimationOptions} */ ({});
   }
 
   AnimateProvider.$inject = [$injectTokens._provide];
@@ -16972,11 +17984,17 @@
   function AnimateProvider($provide) {
     const provider = this;
 
-    let classNameFilter = null;
+    /**
+     * @type {RegExp | null}
+     */
+    let classNameFilter;
 
-    let customFilter = null;
+    /**
+     * @type {Function | null}
+     */
+    let customFilter;
 
-    this._registeredAnimations = Object.create(null);
+    this._registeredAnimations = nullObject();
 
     /**
      * Registers a new injectable animation factory function. The factory function produces the
@@ -17059,7 +18077,7 @@
      *   - **event** `{String}` - The name of the animation event (e.g. `enter`, `leave`, `addClass`
      *     etc).
      *   - **options** `{Object}` - A collection of options/styles used for the animation.
-     * @return {Function} The current filter function or `null` if there is none set.
+     * @return {Function | null} The current filter function or `null` if there is none set.
      */
     this.customFilter = function (filterFn) {
       if (arguments.length === 1) {
@@ -17082,7 +18100,7 @@
      * false, `classNameFilter` will not be checked.
      *
      * @param {RegExp=} expression The className expression which will be checked against all animations
-     * @return {RegExp} The current CSS className expression value. If null then there is no expression value
+     * @return {RegExp | null} The current CSS className expression value. If null then there is no expression value
      */
     this.classNameFilter = function (expression) {
       if (arguments.length === 1) {
@@ -17248,9 +18266,12 @@
            */
           enabled: (element, enabled) => {
             if (enabled !== undefined) {
-              return hasAnimate(element);
+              return hasAnimate(/** @type {Element} */ (element));
             } else {
-              element.setAttribute("animate", `${enabled}`);
+              /** @type {Element} */ (element).setAttribute(
+                "animate",
+                `${enabled}`,
+              );
             }
 
             return true;
@@ -17282,7 +18303,7 @@
            * @returns {ng.AnimateRunner} the animation runner
            */
           enter(element, parent, after, options) {
-            parent = parent || after.parentElement;
+            parent = parent || (after && after.parentElement);
 
             if (
               isInstanceOf(element, HTMLElement) &&
@@ -17402,7 +18423,7 @@
            * @param {Element} element the element which the CSS classes will be applied to
            * @param {string} add the CSS class(es) that will be added (multiple classes are separated via spaces)
            * @param {string} remove the CSS class(es) that will be removed (multiple classes are separated via spaces)
-           * @param {object=} options an optional collection of options/styles that will be applied to the element.
+           * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
            *
            * @return {ng.AnimateRunner} the animation runner
            */
@@ -17433,12 +18454,26 @@
            *   }
            * });
            * ```
-           *  @return {ng.AnimateRunner} the animation runner
+           *
+           * @param {Element} element the element which will be animated
+           * @param {Record<string, string | number>} from the initial CSS styles for the animation
+           * @param {Record<string, string | number>} to the final CSS styles for the animation
+           * @param {string=} className an optional CSS class name to apply for the animation
+           * @param {import("./interface.ts").AnimationOptions=} options an optional collection of options/styles that will be applied to the element.
+           * @return {ng.AnimateRunner} the animation runner
            */
           animate(element, from, to, className, options) {
             options = prepareAnimateOptions(options);
-            options.from = options.from ? extend(options.from, from) : from;
-            options.to = options.to ? extend(options.to, to) : to;
+            options.from = options.from
+              ? /** @type {Record<string, string | number>} */ (
+                  extend(options.from, from)
+                )
+              : from;
+            options.to = options.to
+              ? /** @type {Record<string, string | number>} */ (
+                  extend(options.to, to)
+                )
+              : to;
 
             className = className || "ng-inline-animate";
             options.tempClasses = mergeClasses(options.tempClasses, className);
@@ -18482,7 +19517,7 @@
          *    provides Strict Contextual Escaping for details.
          * @param {boolean=} allOrNothing if `true`, then the returned function returns undefined
          *    unless all embedded expressions evaluate to a value other than `undefined`.
-         * @returns {import("./interface.js").InterpolationFunction | undefined} an interpolation function which is used to compute the
+         * @returns {import("./interface.ts").InterpolationFunction | undefined} an interpolation function which is used to compute the
          *    interpolated string. The function has these parameters:
          *
          * - `context`: evaluation context for all expressions embedded in the interpolated text
@@ -18742,6 +19777,20 @@
 
   class Location {
     /**
+     * @ignore
+     * Current url
+     * @type {string | undefined}
+     */
+    _url;
+
+    /**
+     * @ignore
+     * Callback to update browser url
+     * @type {Function | undefined}
+     */
+    _updateBrowser;
+
+    /**
      * @param {string} appBase application base URL
      * @param {string} appBaseNoFile application base URL stripped of any filename
      * @param {boolean} [html5] Defaults to true
@@ -18769,20 +19818,6 @@
        * @type {string}
        */
       this.absUrl = "";
-
-      /**
-       * @ignore
-       * Current url
-       * @type {string}
-       */
-      this._url = undefined;
-
-      /**
-       * @ignore
-       * Callback to update browser url
-       * @type {Function | undefined}
-       */
-      this._updateBrowser = undefined;
     }
 
     /**
@@ -18792,13 +19827,18 @@
      * @return {Location} url
      */
     setUrl(url) {
+      validateRequired(url, "url");
       const match = PATH_MATCH.exec(url);
 
-      if (match[1] !== undefined || url === "") {
+      if (!match) {
+        throw $locationMinErr("badurl", 'Invalid url "{0}".', url);
+      }
+
+      if (match[1] || url === "") {
         this.setPath(match[1] || "");
       }
 
-      if (match[2] !== undefined || match[1] !== undefined || url === "") {
+      if (match[2] || match[1] || url === "") {
         this.setSearch(match[3] || "");
       }
 
@@ -18813,7 +19853,7 @@
      * @return {string} url
      */
     getUrl() {
-      return this._url;
+      return /** @type {string} */ (this._url);
     }
 
     /**
@@ -18823,8 +19863,12 @@
      * @return {Location}
      */
     setPath(path) {
-      const newPath = path !== null ? path.toString() : "";
+      validateRequired(path, "path");
+      let newPath = path !== null ? path.toString() : "";
 
+      if (this.html5) {
+        newPath = decodePath(newPath, this.html5);
+      }
       _path = newPath.charAt(0) === "/" ? newPath : `/${newPath}`;
       this._compose();
 
@@ -18847,6 +19891,7 @@
      * @return {Location} hash
      */
     setHash(hash) {
+      validateRequired(hash, "hash");
       _hash = hash !== null ? hash.toString() : "";
       this._compose();
 
@@ -18869,19 +19914,21 @@
      * @returns {Object} Search object or Location object
      */
     setSearch(search, paramValue) {
+      validateRequired(search, "search");
       switch (arguments.length) {
         case 1:
           if (isString(search) || isNumber(search)) {
             search = search.toString();
-            _search = parseKeyValue(search);
+            _search = parseKeyValue(/** @type {string} */ (search));
           } else if (isObject(search)) {
             search = structuredClone(search, {});
             // remove object undefined or null properties
             entries(search).forEach(([key, value]) => {
-              if (isNull(value)) delete search[key];
+              if (isNull(value))
+                delete (/** @type {Record<string, any>} */ (search)[key]);
             });
 
-            _search = search;
+            _search = /** @type {Record<string, any>} */ (search);
           } else {
             throw $locationMinErr(
               "isrcharg",
@@ -18891,9 +19938,11 @@
           break;
         default:
           if (isUndefined(paramValue) || paramValue === null) {
-            delete _search[search];
+            delete _search[/** @type {string} */ (search)];
           } else {
-            _search[search] = paramValue;
+            /** @type {Record<string, any>} */ (_search)[
+              /** @type {string} */ (search)
+            ] = paramValue;
           }
       }
 
@@ -19038,16 +20087,19 @@
 
         this._compose();
       } else {
-        const withoutBaseUrl =
-          stripBaseUrl(this.appBase, url) ||
-          stripBaseUrl(this.appBaseNoFile, url);
+        const withoutBaseUrl = /** @type {string} */ (
+          stripBaseUrl(this.appBase, url) || stripBaseUrl(this.appBaseNoFile, url)
+        );
 
         let withoutHashUrl;
 
         if (!isUndefined(withoutBaseUrl) && withoutBaseUrl.charAt(0) === "#") {
           // The rest of the URL starts with a hash so we have
           // got either a hashbang path or a plain hash fragment
-          withoutHashUrl = stripBaseUrl(this.hashPrefix, withoutBaseUrl);
+          withoutHashUrl = stripBaseUrl(
+            /** @type {string} */ (this.hashPrefix),
+            withoutBaseUrl,
+          );
 
           if (isUndefined(withoutHashUrl)) {
             // There was no hashbang prefix so we just have a hash fragment
@@ -19068,44 +20120,8 @@
           }
         }
 
-        parseAppUrl(withoutHashUrl, false);
-
-        _path = removeWindowsDriveName(_path, withoutHashUrl, this.appBase);
-
+        parseAppUrl(/** @type {string} */ (withoutHashUrl), false);
         this._compose();
-
-        /*
-         * In Windows, on an anchor node on documents loaded from
-         * the filesystem, the browser will return a pathname
-         * prefixed with the drive name ('/C:/path') when a
-         * pathname without a drive is set:
-         *  * a.setAttribute('href', '/foo')
-         *   * a.pathname === '/C:/foo' //true
-         *
-         * Inside of AngularTS, we're always using pathnames that
-         * do not include drive names for routing.
-         */
-        function removeWindowsDriveName(path, urlParam, base) {
-          /*
-          Matches paths for file protocol on windows,
-          such as /C:/foo/bar, and captures only /foo/bar.
-          */
-          const windowsFilePathExp = /^\/[A-Z]:(\/.*)/;
-
-          // Get the relative path from the input URL.
-          if (startsWith(urlParam, base)) {
-            urlParam = urlParam.replace(base, "");
-          }
-
-          // The input URL intentionally contains a first path segment that ends with a colon.
-          if (windowsFilePathExp.exec(urlParam)) {
-            return path;
-          }
-
-          const firstPathSegmentMatch = windowsFilePathExp.exec(path);
-
-          return firstPathSegmentMatch ? firstPathSegmentMatch[1] : path;
-        }
       }
     }
   }
@@ -19248,7 +20264,7 @@
       /**
        *
        * @param {ng.Scope} $rootScope
-       * @param {Element} $rootElement
+       * @param {HTMLElement} $rootElement
        * @param {ng.ExceptionHandlerService} $exceptionHandler
        * @returns {Location}
        */
@@ -19285,7 +20301,10 @@
 
         const IGNORE_URI_REGEXP = /^\s*(javascript|mailto):/i;
 
-        const setBrowserUrlWithFallback = (url, state) => {
+        const setBrowserUrlWithFallback = (
+          /** @type {string | undefined} */ url,
+          /** @type {any} */ state,
+        ) => {
           const oldUrl = $location.getUrl();
 
           const oldState = $location._state;
@@ -19328,7 +20347,11 @@
             while (elm.nodeName.toLowerCase() !== "a") {
               // ignore rewriting if no A tag (reached root element, or no parent - removed from document)
 
-              if (elm === $rootElement || !(elm = elm.parentElement)) return;
+              if (
+                elm === $rootElement ||
+                !(elm = /** @type {HTMLElement} */ (elm.parentElement))
+              )
+                return;
             }
 
             if (
@@ -19340,14 +20363,12 @@
 
             let absHref = /** @type {HTMLAnchorElement} */ (elm).href;
 
-            // get the actual href attribute - see
-            // http://msdn.microsoft.com/en-us/library/ie/dd347148(v=vs.85).aspx
-            const relHref =
-              elm.getAttribute("href") || elm.getAttribute("xlink:href");
+            const relHref = elm.getAttribute("href");
 
             if (
               isObject(absHref) &&
-              absHref.toString() === "[object SVGAnimatedString]"
+              /** @type {Object} */ (absHref).toString() ===
+                "[object SVGAnimatedString]"
             ) {
               // SVGAnimatedString.animVal should be identical to SVGAnimatedString.baseVal, unless during
               // an animation.
@@ -19367,7 +20388,9 @@
               !elm.getAttribute("target") &&
               !event.defaultPrevented
             ) {
-              if ($location.parseLinkUrl(absHref, relHref)) {
+              if (
+                $location.parseLinkUrl(absHref, /** @type {string} */ (relHref))
+              ) {
                 // We do a preventDefault for all urls that are part of the AngularTS application,
                 // in html5mode and also without, so that we are able to abort navigation without
                 // getting double entries in the location history.
@@ -20256,13 +21279,11 @@
 
       const assignable = assignableAST(/** @type {BodyNode} */ (decoratedNode));
 
-      /** @type {import("./interface.ts").CompiledExpression} */
+      /** @type {CompiledExpression | undefined } */
       let assign;
 
       if (assignable) {
-        assign = /** @type {import("./interface.ts").CompiledExpression} */ (
-          this.#recurse(assignable)
-        );
+        assign = /** @type {CompiledExpression} */ (this.#recurse(assignable));
       }
 
       const toWatch = getInputs(body);
@@ -20273,10 +21294,7 @@
         inputs = [];
 
         for (const [key, watch] of entries(toWatch)) {
-          const input =
-            /** @type {import("./interface.ts").CompiledExpression} */ (
-              this.#recurse(watch)
-            );
+          const input = /** @type {CompiledExpression} */ (this.#recurse(watch));
 
           watch.input = input;
           inputs.push(input);
@@ -20284,13 +21302,15 @@
         }
       }
       /**
-       * @type {import("./interface.ts").CompiledExpressionFunction[]}
+       * @type {CompiledExpressionFunction[]}
        */
       const expressions = [];
 
       body.forEach(
         /** @param {ExpressionNode} expression */ (expression) => {
-          expressions.push(this.#recurse(expression.expression));
+          expressions.push(
+            this.#recurse(/** @type {ExpressionNode} */ (expression.expression)),
+          );
         },
       );
 
@@ -20301,20 +21321,24 @@
             }
           : body.length === 1
             ? /** @type {CompiledExpression} */ (expressions[0])
-            : function (scope, locals) {
-                let lastValue;
+            : /** @type {CompiledExpressionFunction} */ (
+                function (scope, locals) {
+                  let lastValue;
 
-                for (let i = 0; i < expressions.length; i++) {
-                  lastValue = expressions[i](scope, locals);
+                  for (let i = 0; i < expressions.length; i++) {
+                    lastValue = expressions[i](scope, locals);
+                  }
+
+                  return lastValue;
                 }
-
-                return lastValue;
-              };
+              );
 
       const fn = /** @type {CompiledExpression} */ (fnRaw);
 
       if (assign) {
-        fn._assign = (scope, value, locals) => assign(scope, locals, value);
+        fn._assign = /** @type {CompiledExpressionFunction}  */ (
+          (scope, value, locals) => assign(scope, locals, value)
+        );
       }
 
       if (inputs) {
@@ -20331,55 +21355,74 @@
      * @param {ExpressionNode & LiteralNode} ast - The AST node.
      * @param {Object} [context] - The context.
      * @param {boolean|1} [create] - The create flag.
-     * @returns {import("./interface.ts").CompiledExpressionFunction} The recursive function.
+     * @returns {CompiledExpressionFunction} The recursive function.
      */
     #recurse(ast, context, create) {
+      /**
+       * @type {Function}
+       */
       let left;
 
+      /**
+       * @type {string | Function | undefined}
+       */
       let right;
 
+      /** @type {ASTInterpreter & Record<string, any>} */
       const self = this;
 
+      /**
+       * @type {any[]}
+       */
       let args;
 
       switch (ast.type) {
         case ASTType._Literal:
           return this.value(ast.value, context);
         case ASTType._UnaryExpression:
-          right = this.#recurse(ast.argument);
+          right = this.#recurse(/** @type {ExpressionNode} */ (ast.argument));
 
-          return this[`unary${ast.operator}`](right, context);
+          return self[`unary${ast.operator}`](right, context);
         case ASTType._BinaryExpression:
-          left = this.#recurse(ast.left);
-          right = this.#recurse(ast.right);
+          left = this.#recurse(/** @type {ASTNode} */ (ast.left));
+          right = this.#recurse(/** @type {ASTNode} */ (ast.right));
 
-          return this[`binary${ast.operator}`](left, right, context);
+          return self[`binary${ast.operator}`](left, right, context);
         case ASTType._LogicalExpression:
-          left = this.#recurse(ast.left);
-          right = this.#recurse(ast.right);
+          left = this.#recurse(/** @type {ASTNode} */ (ast.left));
+          right = this.#recurse(/** @type {ASTNode} */ (ast.right));
 
-          return this[`binary${ast.operator}`](left, right, context);
+          return self[`binary${ast.operator}`](left, right, context);
         case ASTType._ConditionalExpression:
           return /** @type {import("./interface.ts").CompiledExpressionFunction} */ (
             this["ternary?:"](
-              this.#recurse(ast.test),
-              this.#recurse(ast.alternate),
-              this.#recurse(ast.consequent),
+              this.#recurse(/** @type {ASTNode} */ (ast.test)),
+              this.#recurse(/** @type {ASTNode} */ (ast.alternate)),
+              this.#recurse(/** @type {ASTNode} */ (ast.consequent)),
               context,
             )
           );
         case ASTType._Identifier:
-          return self.identifier(ast.name, context, create);
+          return self.identifier(
+            /** @type {string} */ (ast.name),
+            context,
+            create,
+          );
         case ASTType._MemberExpression:
-          left = this.#recurse(ast.object, false, !!create);
+          left = this.#recurse(
+            /** @type {ASTNode} */ (ast.object),
+            false,
+            !!create,
+          );
 
           if (!ast.computed) {
             right = /** @type {LiteralNode} */ (ast.property).name;
           }
 
-          if (ast.computed) right = this.#recurse(ast.property);
+          if (ast.computed)
+            right = this.#recurse(/** @type {ASTNode} */ (ast.property));
 
-          return /** @type {import("./interface.ts").CompiledExpressionFunction} */ (
+          return /** @type {CompiledExpressionFunction} */ (
             ast.computed
               ? this.#computedMember(
                   left,
@@ -20396,25 +21439,32 @@
           );
         case ASTType._CallExpression:
           args = [];
-          /** @type {ExpressionNode} */ (ast).arguments.forEach((expr) => {
+          /** @type {ASTNode[]} */ (
+            /** @type {ExpressionNode} */ (ast).arguments
+          ).forEach((expr) => {
             args.push(self.#recurse(expr));
           });
 
           if (/** @type {ExpressionNode} */ (ast).filter)
             right = this._$filter(
-              /** @type {LiteralNode} */ (
-                /** @type {ExpressionNode} */ (ast).callee
-              ).name,
+              /** @type {string} */ (
+                /** @type {LiteralNode} */ (
+                  /** @type {ExpressionNode} */ (ast).callee
+                ).name
+              ),
             );
 
           if (!(/** @type {ExpressionNode} */ (ast).filter))
             right = this.#recurse(
-              /** @type {ExpressionNode} */ (ast).callee,
+              /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).callee),
               true,
             );
 
           return ast.filter
             ? (scope, locals, assign) => {
+                /**
+                 * @type {any[]}
+                 */
                 const values = [];
 
                 for (let i = 0; i < args.length; ++i) {
@@ -20423,7 +21473,7 @@
                   values.push(res);
                 }
                 const value = () => {
-                  return right.apply(undefined, values);
+                  return /** @type {Function} */ (right).apply(undefined, values);
                 };
 
                 return context
@@ -20431,7 +21481,7 @@
                   : value();
               }
             : (scope, locals, assign) => {
-                const rhs = right(
+                const rhs = /** @type {Function} */ (right)(
                   /** @type {ng.Scope} */ (scope).$target
                     ? /** @type {ng.Scope} */ (scope).$target
                     : scope,
@@ -20455,13 +21505,13 @@
                 return context ? { value } : value;
               };
         case ASTType._AssignmentExpression:
-          left = this.#recurse(ast.left, true, 1);
-          right = this.#recurse(ast.right);
+          left = this.#recurse(/** @type {ASTNode} */ (ast.left), true, 1);
+          right = this.#recurse(/** @type {ASTNode} */ (ast.right));
 
           return (scope, locals, assign) => {
             const lhs = left(scope, locals, assign);
 
-            const rhs = right(scope, locals, assign);
+            const rhs = /** @type {Function} */ (right)(scope, locals, assign);
 
             // lhs.context[lhs.name] = rhs;
             const ctx = isProxy(lhs.context)
@@ -20489,7 +21539,9 @@
           };
         case ASTType._ObjectExpression:
           args = [];
-          /** @type {ObjectNode} */ (ast).properties.forEach(
+          /** @type {ObjectPropertyNode[]} */ (
+            /** @type {ObjectNode} */ (ast).properties
+          ).forEach(
             /** @param {ObjectPropertyNode} property */ (property) => {
               if (property.computed) {
                 args.push({
@@ -20511,6 +21563,7 @@
           );
 
           return (scope, locals, assign) => {
+            /** @type {Record<string, any>} */
             const value = {};
 
             for (let i = 0; i < args.length; ++i) {
@@ -20537,14 +21590,14 @@
             context ? { value: assign } : assign;
       }
 
-      return undefined;
+      throw new Error(`Unknown AST type ${ast.type}`);
     }
 
     /**
      * Unary plus operation.
      * @param {function} argument - The argument function.
      * @param {Object} [context] - The context.
-     * @returns {function} The unary plus function.
+     * @returns {CompiledExpressionFunction} The unary plus function.
      */
     "unary+"(argument, context) {
       return (scope, locals, assign) => {
@@ -20564,7 +21617,7 @@
      * Unary minus operation.
      * @param {function} argument - The argument function.
      * @param {Object} [context] - The context.
-     * @returns {function} The unary minus function.
+     * @returns {CompiledExpressionFunction} The unary minus function.
      */
     "unary-"(argument, context) {
       return (scope, locals, assign) => {
@@ -20584,7 +21637,7 @@
      * Unary negation operation.
      * @param {function} argument - The argument function.
      * @param {Object} [context] - The context.
-     * @returns {function} The unary negation function.
+     * @returns {CompiledExpressionFunction} The unary negation function.
      */
     "unary!"(argument, context) {
       return (scope, locals, assign) => {
@@ -20599,7 +21652,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary plus function.
+     * @returns {CompiledExpressionFunction} The binary plus function.
      */
     "binary+"(left, right, context) {
       return (scope, locals, assign) => {
@@ -20618,7 +21671,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary minus function.
+     * @returns {CompiledExpressionFunction} The binary minus function.
      */
     "binary-"(left, right, context) {
       return (scope, locals, assign) => {
@@ -20637,19 +21690,11 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary multiplication function.
+     * @returns {CompiledExpressionFunction} The binary multiplication function.
      */
     "binary*"(left, right, context) {
       return (scope, locals, assign) => {
         const arg = left(scope, locals, assign) * right(scope, locals, assign);
-
-        return context ? { value: arg } : arg;
-      };
-    }
-
-    "binary/"(left, right, context) {
-      return (scope, locals, assign) => {
-        const arg = left(scope, locals, assign) / right(scope, locals, assign);
 
         return context ? { value: arg } : arg;
       };
@@ -20660,7 +21705,22 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary division function.
+     * @returns {CompiledExpressionFunction} The binary division function.
+     */
+    "binary/"(left, right, context) {
+      return (scope, locals, assign) => {
+        const arg = left(scope, locals, assign) / right(scope, locals, assign);
+
+        return context ? { value: arg } : arg;
+      };
+    }
+
+    /**
+     * Binary modulo operation.
+     * @param {function} left - The left operand function.
+     * @param {function} right - The right operand function.
+     * @param {Object} [context] - The context.
+     * @returns {CompiledExpressionFunction} The binary division function.
      */
     "binary%"(left, right, context) {
       return (scope, locals, assign) => {
@@ -20675,7 +21735,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary strict equality function.
+     * @returns {CompiledExpressionFunction} The binary strict equality function.
      */
     "binary==="(left, right, context) {
       return (scope, locals, assign) => {
@@ -20690,7 +21750,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary strict inequality function.
+     * @returns {CompiledExpressionFunction} The binary strict inequality function.
      */
     "binary!=="(left, right, context) {
       return (scope, locals, assign) => {
@@ -20705,7 +21765,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary equality function.
+     * @returns {CompiledExpressionFunction} The binary equality function.
      */
     "binary=="(left, right, context) {
       return (scope, locals, assign) => {
@@ -20721,7 +21781,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary inequality function.
+     * @returns {CompiledExpressionFunction} The binary inequality function.
      */
     "binary!="(left, right, context) {
       return (scope, locals, assign) => {
@@ -20737,7 +21797,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary less-than function.
+     * @returns {CompiledExpressionFunction} The binary less-than function.
      */
     "binary<"(left, right, context) {
       return (scope, locals, assign) => {
@@ -20752,7 +21812,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary greater-than function.
+     * @returns {CompiledExpressionFunction} The binary greater-than function.
      */
     "binary>"(left, right, context) {
       return (scope, locals, assign) => {
@@ -20767,7 +21827,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary less-than-or-equal-to function.
+     * @returns {CompiledExpressionFunction} The binary less-than-or-equal-to function.
      */
     "binary<="(left, right, context) {
       return (scope, locals, assign) => {
@@ -20782,7 +21842,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary greater-than-or-equal-to function.
+     * @returns {CompiledExpressionFunction} The binary greater-than-or-equal-to function.
      */
     "binary>="(left, right, context) {
       return (scope, locals, assign) => {
@@ -20797,7 +21857,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary logical AND function.
+     * @returns {CompiledExpressionFunction} The binary logical AND function.
      */
     "binary&&"(left, right, context) {
       return (scope, locals, assign) => {
@@ -20812,7 +21872,7 @@
      * @param {function} left - The left operand function.
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
-     * @returns {function} The binary logical OR function.
+     * @returns {CompiledExpressionFunction} The binary logical OR function.
      */
     "binary||"(left, right, context) {
       return (scope, locals, assign) => {
@@ -20828,7 +21888,7 @@
      * @param {function} alternate - The alternate function.
      * @param {function} consequent - The consequent function.
      * @param {Object} [context] - The context.
-     * @returns {function} The ternary conditional function.
+     * @returns {CompiledExpressionFunction} The ternary conditional function.
      */
     "ternary?:"(test, alternate, consequent, context) {
       return (scope, locals, assign) => {
@@ -20844,7 +21904,7 @@
      * Returns the value of a literal.
      * @param {*} value - The literal value.
      * @param {Object} [context] - The context.
-     * @returns {import("./interface.ts").CompiledExpressionFunction} The function returning the literal value.
+     * @returns {CompiledExpressionFunction} The function returning the literal value.
      */
     value(value, context) {
       return () =>
@@ -20856,11 +21916,11 @@
      * @param {string} name - The identifier name.
      * @param {Object} [context] - The context.
      * @param {boolean|1} [create] - Whether to create the identifier if it does not exist.
-     * @returns {import("./interface.ts").CompiledExpressionFunction} The function returning the identifier value.
+     *  @returns {CompiledExpressionFunction}  The function returning the identifier value.
      */
     identifier(name, context, create) {
       return (scope, locals) => {
-        /** @type {ng.Scope | unknown} */
+        /** @type {ng.Scope | Record<string, any> | undefined } */
         const base =
           locals && name in locals
             ? locals
@@ -20872,7 +21932,7 @@
         let value = undefined;
 
         if (base) {
-          value = deProxy(base)[name];
+          value = /** @type {Record<string, any>} */ (deProxy(base))[name];
         }
 
         if (context) {
@@ -20889,7 +21949,7 @@
      * @param {function} right - The right operand function.
      * @param {Object} [context] - The context.
      * @param {boolean|1} [create] - Whether to create the member if it does not exist.
-     * @returns {function} The function returning the computed member value.
+     * @returns {CompiledExpressionFunction}  The function returning the computed member value.
      */
     #computedMember(left, right, context, create) {
       return (scope, locals, assign) => {
@@ -20925,7 +21985,7 @@
      * @param {string} right - The right operand function.
      * @param {Object} [context] - The context.
      * @param {boolean|1} [create] - Whether to create the member if it does not exist.
-     * @returns {function} The function returning the non-computed member value.
+     * @returns {CompiledExpressionFunction}  The function returning the non-computed member value.
      */
     nonComputedMember(left, right, context, create) {
       return (scope, locals, assign) => {
@@ -20962,8 +22022,14 @@
    * @throws {Error} If the AST type is unknown
    */
   function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
+    /**
+     * @type {boolean | undefined}
+     */
     let allConstants;
 
+    /**
+     * @type {any[]}
+     */
     let argsToWatch;
 
     let isFilter;
@@ -21009,7 +22075,9 @@
         /** @type {BodyNode} */
         const decorated = /** @type {BodyNode} */ (
           findConstantAndWatchExpressions(
-            decoratedNode.argument,
+            /** @type {ASTNode} */ (
+              /** @type {ExpressionNode} */ (decoratedNode).argument
+            ),
             $filter,
             astIsPure,
           )
@@ -21027,7 +22095,9 @@
           astIsPure,
         );
         decoratedRight = findConstantAndWatchExpressions(
-          decoratedNode.right,
+          /** @type {ASTNode} */ (
+            /** @type {ExpressionNode} */ (decoratedNode).right
+          ),
           $filter,
           astIsPure,
         );
@@ -21047,7 +22117,9 @@
           astIsPure,
         );
         decoratedRight = findConstantAndWatchExpressions(
-          decoratedNode.right,
+          /** @type {ASTNode} */ (
+            /** @type {ExpressionNode} */ (decoratedNode).right
+          ),
           $filter,
           astIsPure,
         );
@@ -21058,17 +22130,17 @@
         return decoratedNode;
       case ASTType._ConditionalExpression:
         decoratedTest = findConstantAndWatchExpressions(
-          /** @type {ExpressionNode} */ (ast).test,
+          /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).test),
           $filter,
           astIsPure,
         );
         decoratedAlternate = findConstantAndWatchExpressions(
-          /** @type {ExpressionNode} */ (ast).alternate,
+          /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).alternate),
           $filter,
           astIsPure,
         );
         decoratedConsequent = findConstantAndWatchExpressions(
-          /** @type {ExpressionNode} */ (ast).consequent,
+          /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).consequent),
           $filter,
           astIsPure,
         );
@@ -21086,21 +22158,21 @@
         return decoratedNode;
       case ASTType._MemberExpression:
         decoratedObject = findConstantAndWatchExpressions(
-          /** @type {ExpressionNode} */ (ast).object,
+          /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).object),
           $filter,
           astIsPure,
         );
 
         if (/** @type {ExpressionNode} */ (ast).computed) {
           decoratedProperty = findConstantAndWatchExpressions(
-            /** @type {ExpressionNode} */ (ast).property,
+            /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).property),
             $filter,
             astIsPure,
           );
         }
         decoratedNode.constant =
           decoratedObject.constant &&
-          (!decoratedNode.computed || decoratedProperty.constant);
+          (!decoratedNode.computed || decoratedProperty?.constant);
         decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
 
         return decoratedNode;
@@ -21108,7 +22180,9 @@
         isFilter = /** @type {ExpressionNode} */ (ast).filter;
         allConstants = isFilter;
         argsToWatch = [];
-        /** @type {ExpressionNode} */ (ast).arguments.forEach((expr) => {
+        /** @type {ASTNode[]} */ (
+          /** @type {ExpressionNode} */ (ast).arguments
+        ).forEach((expr) => {
           const decorated = findConstantAndWatchExpressions(
             expr,
             $filter,
@@ -21237,12 +22311,16 @@
     return undefined;
   }
 
+  /**
+   * @param {string | number} left
+   * @param {string | number} right
+   */
   function plusFn(left, right) {
     if (typeof left === "undefined" || isObject(left)) return right;
 
     if (typeof right === "undefined" || isObject(right)) return left;
 
-    return left + right;
+    return /** @type {number} */ (left) + /** @type {number} */ (right);
   }
 
   /**
@@ -21264,7 +22342,7 @@
   /**
    * Detect nodes which could depend on non-shallow state of objects
    * @param {ASTNode} node
-   * @param {boolean|PURITY_ABSOLUTE|PURITY_RELATIVE} parentIsPure
+   * @param {boolean|PURITY_ABSOLUTE|PURITY_RELATIVE} [parentIsPure]
    * @returns {number|boolean}
    */
   function isPure(node, parentIsPure) {
@@ -22007,7 +23085,7 @@
 
   class ParseProvider {
     constructor() {
-      const cache = Object.create(null);
+      const cache = nullObject();
 
       this.$get = [
         $injectTokens._filter,
@@ -22813,6 +23891,7 @@
      * @param {string} watchProp - An expression to be watched in the context of this model.
      * @param {ng.ListenerFn} [listenerFn] - A function to execute when changes are detected on watched context.
      * @param {boolean} [lazy] - A flag to indicate if the listener should be invoked immediately. Defaults to false.
+     * @return {(() => void) | undefined} - A function to deregister the watcher, or undefined if no listener function is provided.
      */
     $watch(watchProp, listenerFn, lazy = false) {
       assert(isString(watchProp), "Watched property required");
@@ -23210,7 +24289,7 @@
      * @returns {Proxy<ng.Scope> & ng.Scope}
      */
     $newIsolate(instance) {
-      const child = instance ? Object.create(instance) : Object.create(null);
+      const child = instance ? Object.create(instance) : nullObject();
 
       const proxy = new Proxy(child, new Scope(this, this.$root));
 
@@ -23710,12 +24789,44 @@
    * Provider for the `$templateRequest` service.
    *
    * Fetches templates via HTTP and caches them in `$templateCache`.
-   * Templates are assumed trusted. This provider allows configuring
-   * per-request `$http` options such as headers, timeout, or transform functions.
+   * Templates are assumed trusted.
+   *
+   * This provider allows configuring per-request `$http` options such as headers,
+   * timeout, or transform functions via `httpOptions`.
+   *
+   * Option A:
+   * - Provide a sensible default for template fetching (e.g. `Accept: text/html`)
+   * - Keep `httpOptions` overridable during config phase
    */
   class TemplateRequestProvider {
-    /** @type {ng.RequestShortcutConfig|undefined} */
+    /**
+     * Optional `$http.get()` config applied to every template request.
+     *
+     * This is merged on top of the default template request config:
+     * - `cache: $templateCache`
+     * - `transformResponse`: with `defaultHttpResponseTransform` removed
+     *
+     * Use this to set template-specific defaults such as custom headers,
+     * timeouts, credentials, etc.
+     *
+     * @type {ng.RequestShortcutConfig}
+     */
     httpOptions;
+
+    constructor() {
+      /**
+       * Default options for template requests.
+       * Keeps behavior aligned with callers that previously used `$http` directly
+       * and set `Accept: text/html`.
+       *
+       * @type {ng.RequestShortcutConfig}
+       */
+      this.httpOptions = {
+        headers: {
+          Accept: "text/html",
+        },
+      };
+    }
 
     $get = [
       $injectTokens._templateCache,
@@ -23860,7 +24971,7 @@
 
   class NgMessageCtrl {
     /**
-     * @param {Element} $element
+     * @param {HTMLElement} $element
      * @param {ng.Scope} $scope
      * @param {ng.Attributes} $attrs
      * @param {ng.AnimateService} $animate
@@ -23873,6 +24984,7 @@
 
       this._latestKey = 0;
       this._nextAttachId = 0;
+      /** @type {Record<string, any>} */
       this._messages = {};
       this._renderLater = false;
       this._cachedCollection = null;
@@ -23900,6 +25012,7 @@
 
       const unmatchedMessages = [];
 
+      /** @type {Record<string, boolean>} */
       const matchedKeys = {};
 
       let truthyKeys = 0;
@@ -23973,6 +25086,11 @@
       }
     }
 
+    /**
+     * @param {{ _ngMessageNode: string; }} comment
+     * @param {any} messageCtrl
+     * @param {any} isDefault
+     */
     register(comment, messageCtrl, isDefault) {
       if (isDefault) {
         this._default = messageCtrl;
@@ -23990,6 +25108,10 @@
       this.reRender();
     }
 
+    /**
+     * @param {{ _ngMessageNode: any; }} comment
+     * @param {any} isDefault
+     */
     deregister(comment, isDefault) {
       if (isDefault) {
         delete this._default;
@@ -24003,6 +25125,10 @@
       this.reRender();
     }
 
+    /**
+     * @param {any} parent
+     * @param {any} comment
+     */
     findPreviousMessage(parent, comment) {
       let prevNode = comment;
 
@@ -24029,6 +25155,11 @@
       return undefined;
     }
 
+    /**
+     * @param {HTMLElement} parent
+     * @param {{ _ngMessageNode: string; }} comment
+     * @param {string} key
+     */
     insertMessageNode(parent, comment, key) {
       const messageNode = this._messages[key];
 
@@ -24047,6 +25178,11 @@
       }
     }
 
+    /**
+     * @param {HTMLElement} parent
+     * @param {{ _ngMessageNode: any; }} comment
+     * @param {string | number} key
+     */
     removeMessageNode(parent, comment, key) {
       const messageNode = this._messages[key];
 
@@ -24071,11 +25207,22 @@
     return {
       require: "ngMessages",
       restrict: "AE",
-      controller: ($element, $scope, $attrs) =>
-        new NgMessageCtrl($element, $scope, $attrs, $animate),
+      controller:
+        /**
+         * @param {HTMLElement} $element
+         * @param {ng.Scope} $scope
+         * @param {ng.Attributes} $attrs
+         * @returns {NgMessageCtrl}
+         */
+        ($element, $scope, $attrs) =>
+          new NgMessageCtrl($element, $scope, $attrs, $animate),
     };
   }
 
+  /**
+   * @param {ng.Scope} scope
+   * @param {string} attr
+   */
   function isAttrTruthy(scope, attr) {
     return (
       (isString(attr) && attr.length === 0) || // empty attribute
@@ -24083,6 +25230,9 @@
     );
   }
 
+  /**
+   * @param {unknown} val
+   */
   function truthy(val) {
     return isString(val) ? val.length : !!val;
   }
@@ -24124,7 +25274,7 @@
 
   /**
    * @param {boolean} isDefault
-   * @returns {(any) => ng.Directive}
+   * @returns {($animate: ng.AnimateService) => ng.Directive}
    */
   function ngMessageDirectiveFactory(isDefault) {
     ngMessageDirectiveFn.$inject = [$injectTokens._animate];
@@ -24140,8 +25290,14 @@
         terminal: true,
         require: "^^ngMessages",
         link(scope, element, attrs, ngMessagesCtrl, $transclude) {
-          let commentNode;
+          /**
+           * @type {HTMLElement}
+           */
+          let commentNode = element;
 
+          /**
+           * @type {any}
+           */
           let records;
 
           let staticExp;
@@ -24153,7 +25309,7 @@
             staticExp = attrs.ngMessage || attrs.when;
             dynamicExp = attrs.ngMessageExp || attrs.whenExp;
 
-            const assignRecords = function (items) {
+            const assignRecords = function (/** @type {string} */ items) {
               records = items
                 ? isArray(items)
                   ? items
@@ -24170,8 +25326,14 @@
             }
           }
 
+          /**
+           * @type {HTMLElement & { _attachId?: number } | undefined | null}
+           */
           let currentElement;
 
+          /**
+           * @type {{ detach: any; test?: (name: any) => boolean | undefined; attach?: () => void; }}
+           */
           let messageCtrl;
 
           ngMessagesCtrl.register(
@@ -24182,31 +25344,38 @@
               },
               attach() {
                 if (!currentElement) {
-                  $transclude((elm, newScope) => {
-                    $animate.enter(elm, null, element);
-                    currentElement = elm;
+                  /** @type {ng.TranscludeFn} */ ($transclude)(
+                    (elm, newScope) => {
+                      $animate.enter(
+                        /** @type {HTMLElement} */ (elm),
+                        null,
+                        element,
+                      );
+                      currentElement =
+                        /** @type {HTMLElement & { _attachId?: number }} */ (elm);
 
-                    // Each time we attach this node to a message we get a new id that we can match
-                    // when we are destroying the node later.
-                    const attachId = (currentElement._attachId =
-                      ngMessagesCtrl._getAttachId());
+                      // Each time we attach this node to a message we get a new id that we can match
+                      // when we are destroying the node later.
+                      const attachId = (currentElement._attachId =
+                        ngMessagesCtrl._getAttachId());
 
-                    // in the event that the element or a parent element is destroyed
-                    // by another structural directive then it's time
-                    // to deregister the message from the controller
-                    currentElement.addEventListener("$destroy", () => {
-                      // If the message element was removed via a call to `detach` then `currentElement` will be null
-                      // So this handler only handles cases where something else removed the message element.
-                      if (
-                        currentElement &&
-                        currentElement._attachId === attachId
-                      ) {
-                        ngMessagesCtrl.deregister(commentNode, isDefault);
-                        messageCtrl.detach();
-                      }
-                      newScope.$destroy();
-                    });
-                  });
+                      // in the event that the element or a parent element is destroyed
+                      // by another structural directive then it's time
+                      // to deregister the message from the controller
+                      currentElement.addEventListener("$destroy", () => {
+                        // If the message element was removed via a call to `detach` then `currentElement` will be null
+                        // So this handler only handles cases where something else removed the message element.
+                        if (
+                          currentElement &&
+                          currentElement._attachId === attachId
+                        ) {
+                          ngMessagesCtrl.deregister(commentNode, isDefault);
+                          messageCtrl.detach();
+                        }
+                        /** @type {ng.Scope} */ (newScope).$destroy();
+                      });
+                    },
+                  );
                 }
               },
               detach() {
@@ -24214,7 +25383,7 @@
                   const elm = currentElement;
 
                   currentElement = null;
-                  $animate.leave(elm);
+                  $animate.leave(/** @type {HTMLElement} */ (elm));
                 }
               },
             }),
@@ -24235,11 +25404,15 @@
     return ngMessageDirectiveFn;
   }
 
+  /**
+   * @param {string | object | Array<any>} collection
+   * @param {string | number | symbol} key
+   */
   function contains(collection, key) {
     if (collection) {
       return isArray(collection)
         ? collection.indexOf(key) >= 0
-        : hasOwn(collection, key);
+        : hasOwn(/** @type {object} */ (collection), key);
     }
 
     return undefined;
@@ -24260,7 +25433,10 @@
     "SUMMARY",
   ];
 
-  const isNodeOneOf = function (elem, nodeTypeArray) {
+  const isNodeOneOf = function (
+    /** @type {HTMLElement} */ elem,
+    /** @type {string | any[]} */ nodeTypeArray,
+  ) {
     return nodeTypeArray.indexOf(elem.nodeName) !== -1;
   };
 
@@ -24281,6 +25457,7 @@
    *
    */
   function AriaProvider() {
+    /** @type {Record<string, any>} */
     let config = {
       ariaHidden: true,
       ariaChecked: true,
@@ -24294,12 +25471,22 @@
       bindRoleForClick: true,
     };
 
-    this.config = function (newConfig) {
+    this.config = function (/** @type {Object} */ newConfig) {
       config = extend(config, newConfig);
     };
 
+    /**
+     * @param {string | number} attrName
+     * @param {any} ariaAttr
+     * @param {string | any[]} nativeAriaNodeNamesParam
+     * @param {any} negate
+     */
     function watchExpr(attrName, ariaAttr, nativeAriaNodeNamesParam, negate) {
-      return function (scope, elem, attr) {
+      return function (
+        /** @type {ng.Scope} */ scope,
+        /** @type {HTMLElement} */ elem,
+        /** @type {ng.Attributes} */ attr,
+      ) {
         if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
 
         const ariaCamelName = attr.$normalize(ariaAttr);
@@ -24320,6 +25507,9 @@
 
     this.$get = function () {
       return {
+        /**
+         * @param {string | number} key
+         */
         config(key) {
           return config[key];
         },
@@ -24329,6 +25519,9 @@
   }
 
   ngDisabledAriaDirective.$inject = [$injectTokens._aria];
+  /**
+   * @param {ng.AriaService} $aria
+   */
   function ngDisabledAriaDirective($aria) {
     return $aria._watchExpr(
       "ngDisabled",
@@ -24339,6 +25532,9 @@
   }
 
   ngShowAriaDirective.$inject = [$injectTokens._aria];
+  /**
+   * @param {ng.AriaService} $aria
+   */
   function ngShowAriaDirective($aria) {
     return $aria._watchExpr("ngShow", "aria-hidden", [], true);
   }
@@ -24363,7 +25559,7 @@
   ngClickAriaDirective.$inject = [$injectTokens._aria, $injectTokens._parse];
 
   /**
-   * @param $aria
+   * @param {ng.AriaService} $aria
    * @param {ng.ParseService} $parse
    * @return {ng.Directive}
    */
@@ -24425,6 +25621,9 @@
   }
 
   ngRequiredAriaDirective.$inject = [$injectTokens._aria];
+  /**
+   * @param {ng.AriaService} $aria
+   */
   function ngRequiredAriaDirective($aria) {
     return $aria._watchExpr(
       "ngRequired",
@@ -24435,6 +25634,9 @@
   }
 
   ngCheckedAriaDirective.$inject = [$injectTokens._aria];
+  /**
+   * @param {ng.AriaService} $aria
+   */
   function ngCheckedAriaDirective($aria) {
     return $aria._watchExpr(
       "ngChecked",
@@ -24445,6 +25647,9 @@
   }
 
   ngValueAriaDirective.$inject = [$injectTokens._aria];
+  /**
+   * @param {ng.AriaService} $aria
+   */
   function ngValueAriaDirective($aria) {
     return $aria._watchExpr(
       "ngValue",
@@ -24455,11 +25660,17 @@
   }
 
   ngHideAriaDirective.$inject = [$injectTokens._aria];
+  /**
+   * @param {ng.AriaService} $aria
+   */
   function ngHideAriaDirective($aria) {
     return $aria._watchExpr("ngHide", "aria-hidden", [], false);
   }
 
   ngReadonlyAriaDirective.$inject = [$injectTokens._aria];
+  /**
+   * @param {ng.AriaService} $aria
+   */
   function ngReadonlyAriaDirective($aria) {
     return $aria._watchExpr(
       "ngReadonly",
@@ -24470,7 +25681,17 @@
   }
 
   ngModelAriaDirective.$inject = [$injectTokens._aria];
+  /**
+   * @param {ng.AriaService} $aria
+   * @returns {ng.Directive}
+   */
   function ngModelAriaDirective($aria) {
+    /**
+     * @param {string} attr
+     * @param {string} normalizedAttr
+     * @param {HTMLElement} elem
+     * @param {boolean} allowNonAriaNodes
+     */
     function shouldAttachAttr(attr, normalizedAttr, elem, allowNonAriaNodes) {
       return (
         $aria.config(normalizedAttr) &&
@@ -24480,6 +25701,10 @@
       );
     }
 
+    /**
+     * @param {string} role
+     * @param {HTMLElement} elem
+     */
     function shouldAttachRole(role, elem) {
       // if element does not have role attribute
       // AND element type is equal to role (if custom element has a type equaling shape) <-- remove?
@@ -24491,6 +25716,10 @@
       );
     }
 
+    /**
+     * @param {ng.Attributes} attr
+     * @returns {string}
+     */
     function getShape(attr) {
       const { type } = attr;
 
@@ -24557,7 +25786,7 @@
                 }
 
                 if (needsTabIndex) {
-                  elem.setAttribute("tabindex", 0);
+                  elem.setAttribute("tabindex", "0");
                 }
                 break;
               case "range":
@@ -24589,14 +25818,17 @@
                   }
 
                   if (needsAriaValuenow) {
-                    ngModel.$watch("$modelValue", (newVal) => {
-                      elem.setAttribute("aria-valuenow", newVal);
-                    });
+                    ngModel.$watch(
+                      "$modelValue",
+                      (/** @type {string} */ newVal) => {
+                        elem.setAttribute("aria-valuenow", newVal);
+                      },
+                    );
                   }
                 }
 
                 if (needsTabIndex) {
-                  elem.setAttribute("tabindex", 0);
+                  elem.setAttribute("tabindex", "0");
                 }
                 break;
             }
@@ -24616,7 +25848,7 @@
             }
 
             if (shouldAttachAttr("aria-invalid", "ariaInvalid", elem, true)) {
-              ngModel.$watch("$invalid", (newVal) => {
+              ngModel.$watch("$invalid", (/** @type {any} */ newVal) => {
                 elem.setAttribute("aria-invalid", (!!newVal).toString());
               });
             }
@@ -24627,8 +25859,12 @@
   }
 
   ngDblclickAriaDirective.$inject = [$injectTokens._aria];
+  /**
+   * @param {ng.AriaService} $aria
+   * @returns {import("../../interface.js").DirectiveLinkFn<any>}
+   */
   function ngDblclickAriaDirective($aria) {
-    return function (scope, elem, attr) {
+    return function (_scope, elem, attr) {
       if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
 
       if (
@@ -24636,7 +25872,7 @@
         !elem.hasAttribute("tabindex") &&
         !isNodeOneOf(elem, nativeAriaNodeNames)
       ) {
-        elem.setAttribute("tabindex", 0);
+        elem.setAttribute("tabindex", "0");
       }
     };
   }
@@ -25190,65 +26426,106 @@
     animationDelay: "animationDelay",
   };
 
+  /**
+   * @param {any} duration
+   */
   function getCssKeyframeDurationStyle(duration) {
     return ["animationDuration", `${duration}s`];
   }
 
+  /**
+   * @param {number | undefined} delay
+   * @param {boolean | undefined} [isKeyframeAnimation]
+   */
   function getCssDelayStyle(delay, isKeyframeAnimation) {
     const prop = isKeyframeAnimation ? "animationDelay" : "transitionDelay";
 
     return [prop, `${delay}s`];
   }
 
+  /**
+   * @param {Element} element
+   * @param {{ [s: string]: string } | ArrayLike<string>} properties
+   * @returns {{ [s: string]: number | null }}
+   */
   function computeCssStyles(element, properties) {
-    const styles = Object.create(null);
+    const styles = nullObject();
 
-    const detectedStyles = window.getComputedStyle(element) || {};
+    const detectedStyles =
+      /** @type {CSSStyleDeclaration & import("../../shared/interface.ts").Dict<string>} */
+      (window.getComputedStyle(element) || {});
 
     entries(properties).forEach(([actualStyleName, formalStyleName]) => {
+      /** @type {string | number | null} */
       let val = detectedStyles[formalStyleName];
 
       if (val) {
-        const char = val.charAt(0);
-
-        // only numerical-based values have a negative sign or digit as the first value
-        if (char === "-" || char === "+" || char >= 0) {
-          val = parseMaxTime(val);
+        if (isString(val) && /^[+-]?\d/.test(val)) {
+          val = parseMaxTime(val); // number
         }
 
-        // by setting this to null in the event that the delay is not set or is set directly as 0
-        // then we can still allow for negative values to be used later on and not mistake this
-        // value for being greater than any other negative value.
         if (val === 0) {
           val = null;
         }
-        styles[actualStyleName] = val;
+
+        styles[actualStyleName] = /** @type {number | null} */ (val);
       }
     });
 
     return styles;
   }
 
+  /**
+   * Parse a CSS time value (or comma-separated list of values) and return the maximum duration.
+   *
+   * Accepts values expressed in seconds (`s`) or milliseconds (`ms`) as returned by `getComputedStyle()`,
+   * e.g. `"0.2s"`, `"150ms"`, or `"0.2s, 150ms"`. Milliseconds are converted to seconds before comparison.
+   *
+   * Invalid tokens are ignored. If no valid numeric token is found, the result is `0`.
+   *
+   * @param {string} str A CSS time string (optionally comma-separated).
+   * @returns {number} The maximum time value, expressed in **seconds**.
+   */
   function parseMaxTime(str) {
-    let maxValue = 0;
+    let max = 0;
 
-    str.split(/\s*,\s*/).forEach((value) => {
-      // it's always safe to consider only second values and omit `ms` values since
-      // getComputedStyle will always handle the conversion for us
-      if (value.charAt(value.length - 1) === "s") {
-        value = value.substring(0, value.length - 1);
+    str.split(/\s*,\s*/).forEach((token) => {
+      if (!token) return;
+
+      // Computed styles usually return either "Xs" or "Yms"
+      // (but we accept plain numbers too).
+      let num;
+
+      if (token.endsWith("ms")) {
+        num = parseFloat(token.slice(0, -2));
+
+        if (!isNaN(num)) num = num / 1000;
+      } else if (token.endsWith("s")) {
+        num = parseFloat(token.slice(0, -1));
+      } else {
+        num = parseFloat(token);
       }
-      value = parseFloat(value) || 0;
-      maxValue = maxValue ? Math.max(value, maxValue) : value;
+
+      if (!isNaN(num)) {
+        max = Math.max(max, num);
+      }
     });
 
-    return maxValue;
+    return max;
   }
 
+  /**s
+   * @param {unknown} val
+   */
   function truthyTimingValue(val) {
     return val === 0 || !isNullOrUndefined(val);
   }
 
+  /**
+   * @param {string | number | undefined} duration
+   * @param {boolean} applyOnlyDuration
+   * @return {import("../interface.ts").InlineStyleEntry}
+   */
   function getCssTransitionDurationStyle(duration, applyOnlyDuration) {
     let style = "transition";
 
@@ -25272,6 +26549,11 @@
   // value for the style (a falsy value implies that the style
   // is to be removed at the end of the animation). If we had a simple
   // "OR" statement then it would not be enough to catch that.
+  /**
+   * @param {{ [x: string]: any; }} backup
+   * @param {HTMLElement} node
+   * @param {any[]} properties
+   */
   function registerRestorableStyles(backup, node, properties) {
     properties.forEach((prop) => {
       backup[prop] = isDefined(backup[prop])
@@ -25281,17 +26563,24 @@
   }
 
   function AnimateCssProvider() {
+    /**
+     * @type {string}
+     */
     let activeClasses;
 
     this.$get = [
       /**
-       *
-       * @returns
+       * @returns {ng.AnimateCssService}
        */
-      function () {
+      () => {
         const applyAnimationClasses = applyAnimationClassesFactory();
 
-        // TODO add types
+        /**
+         * @param {any} node
+         * @param {string} cacheKey
+         * @param {any} allowNoDuration
+         * @param {{ transitionDuration: string; transitionDelay: string; transitionProperty: string; animationDuration: string; animationDelay: string; animationIterationCount: string; }} properties
+         */
         function computeCachedCssStyles(
           node,
           cacheKey,
@@ -25322,6 +26611,12 @@
           return timings;
         }
 
+        /**
+         * @param {Element} node
+         * @param {string | string[]} className
+         * @param {string} cacheKey
+         * @param {{ [s: string]: string; } | ArrayLike<string>} properties
+         */
         function computeCachedCssStaggerStyles(
           node,
           className,
@@ -25345,9 +26640,12 @@
               stagger = computeCssStyles(node, properties);
 
               // force the conversion of a null value to zero incase not set
-              stagger.animationDuration = Math.max(stagger.animationDuration, 0);
+              stagger.animationDuration = Math.max(
+                stagger.animationDuration || 0,
+                0,
+              );
               stagger.transitionDuration = Math.max(
-                stagger.transitionDuration,
+                stagger.transitionDuration || 0,
                 0,
               );
 
@@ -25360,8 +26658,12 @@
           return stagger || {};
         }
 
+        /** @type {Array<() => void>} */
         const rafWaitQueue = [];
 
+        /**
+         * @param {() => void} callback
+         */
         function waitUntilQuiet(callback) {
           rafWaitQueue.push(callback);
           rafScheduler._waitUntilQuiet(() => {
@@ -25380,6 +26682,11 @@
           });
         }
 
+        /**
+         * @param {HTMLElement} node
+         * @param {string} cacheKey
+         * @param {boolean} allowNoDuration
+         */
         function computeTimings(node, cacheKey, allowNoDuration) {
           const timings = computeCachedCssStyles(
             node,
@@ -25403,9 +26710,10 @@
 
         /**
          * @param {HTMLElement} element
-         * @param {ng.AnimationOptions} initialOptions
+         * @param {ng.AnimationOptions} [initialOptions]
+         * @return {{_willAnimate: boolean, start(): AnimateRunner, end: function(): void}}
          */
-        return function init(element, initialOptions) {
+        function init(element, initialOptions) {
           // all of the animation functions should create
           // a copy of the options data, however, if a
           // parent service has already created a copy then
@@ -25414,7 +26722,7 @@
           // we should stick to using that
           let options =
             initialOptions ||
-            /** @type {ng.AnimationOptions}}*/ ({
+            /** @type {ng.AnimationOptions} */ ({
               _skipPreparationClasses: false,
             });
 
@@ -25422,6 +26730,7 @@
             options = prepareAnimationOptions(structuredClone(options));
           }
 
+          /** @type {Record<string, string | null | undefined>} */
           const restoreStyles = {};
 
           const node = /** @type {HTMLElement} */ (element);
@@ -25436,26 +26745,52 @@
 
           const styles = packageStyles(options);
 
+          /**
+           * @type {boolean}
+           */
           let animationClosed;
 
+          /**
+           * @type {boolean}
+           */
           let animationPaused;
 
+          /**
+           * @type {boolean}
+           */
           let animationCompleted;
 
+          /**
+           * @type {AnimateRunner}
+           */
           let runner;
 
-          let runnerHost;
+          /** @type {import("../interface.ts").AnimationHost} */
+          let runnerHost = {};
 
+          /**
+           * @type {number}
+           */
           let maxDelay;
 
+          /**
+           * @type {number}
+           */
           let maxDelayTime;
 
+          /**
+           * @type {number}
+           */
           let maxDuration;
 
           let maxDurationTime;
 
+          /**
+           * @type {number}
+           */
           let startTime;
 
+          /** @type {string[]} */
           const events = [];
 
           if (options.duration === 0) {
@@ -25508,7 +26843,7 @@
             .join(" ")
             .trim();
 
-          const hasToStyles = styles.to && Object.keys(styles.to).length > 0;
+          const hasToStyles = !!(styles.to && Object.keys(styles.to).length > 0);
 
           const containsKeyframeAnimation =
             (options.keyframeStyle || "").length > 0;
@@ -25520,6 +26855,7 @@
             return closeAndReturnNoopAnimator();
           }
 
+          /** @type {{ animationDelay: number; animationDuration: number; transitionDuration: number; transitionDelay: number; }} */
           let stagger;
 
           let cacheKey = animateCache._cacheKey(
@@ -25530,7 +26866,7 @@
           );
 
           if (animateCache._containsCachedAnimationWithoutDuration(cacheKey)) {
-            preparationClasses = null;
+            preparationClasses = "";
 
             return closeAndReturnNoopAnimator();
           }
@@ -25590,9 +26926,11 @@
             temporaryStyles.push(keyframeStyle);
           }
 
+          const staggerIndex = options.staggerIndex ?? 0;
+
           const itemIndex = stagger
-            ? options.staggerIndex >= 0
-              ? options.staggerIndex
+            ? staggerIndex >= 0
+              ? staggerIndex
               : animateCache._count(cacheKey)
             : 0;
 
@@ -25605,7 +26943,7 @@
           // that if there is no transition defined then nothing will happen and this will also allow
           // other transitions to be stacked on top of each other without any chopping them out.
           if (isFirst) {
-            _blockTransitions(node, SAFE_FAST_FORWARD_DURATION_VALUE);
+            blockTransitions(node, SAFE_FAST_FORWARD_DURATION_VALUE);
           }
 
           let timings = computeTimings(node, cacheKey, !isStructural);
@@ -25616,10 +26954,31 @@
           // eslint-disable-next-line prefer-destructuring
           maxDuration = timings.maxDuration;
 
-          const flags = {};
+          /** @type {{
+            _hasTransitions: boolean;
+            _hasAnimations: boolean;
+            _hasTransitionAll: boolean;
+            _applyTransitionDuration: boolean;
+            _applyAnimationDuration: boolean;
+            _applyTransitionDelay: boolean;
+            _applyAnimationDelay: boolean;
+            _recalculateTimingStyles: boolean;
+            _blockTransition: boolean;
+            _blockKeyframeAnimation: boolean;
+          }} */
+          const flags = {
+            _hasTransitions: timings.transitionDuration > 0,
+            _hasAnimations: timings.animationDuration > 0,
+            _hasTransitionAll: false,
+            _applyTransitionDuration: false,
+            _applyAnimationDuration: false,
+            _applyTransitionDelay: false,
+            _applyAnimationDelay: false,
+            _recalculateTimingStyles: addRemoveClassName.length > 0,
+            _blockTransition: false,
+            _blockKeyframeAnimation: false,
+          };
 
-          flags._hasTransitions = timings.transitionDuration > 0;
-          flags._hasAnimations = timings.animationDuration > 0;
           flags._hasTransitionAll =
             flags._hasTransitions && timings.transitionProperty === "all";
           flags._applyTransitionDuration =
@@ -25627,13 +26986,12 @@
             ((flags._hasTransitions && !flags._hasTransitionAll) ||
               (flags._hasAnimations && !flags._hasTransitions));
           flags._applyAnimationDuration =
-            options.duration && flags._hasAnimations;
+            !!options.duration && flags._hasAnimations;
           flags._applyTransitionDelay =
             truthyTimingValue(options.delay) &&
             (flags._applyTransitionDuration || flags._hasTransitions);
           flags._applyAnimationDelay =
             truthyTimingValue(options.delay) && flags._hasAnimations;
-          flags._recalculateTimingStyles = addRemoveClassName.length > 0;
 
           if (flags._applyTransitionDuration || flags._applyAnimationDuration) {
             maxDuration = options.duration
@@ -25712,7 +27070,7 @@
           if (flags._blockTransition || flags._blockKeyframeAnimation) {
             applyBlocking(maxDuration);
           } else if (!options.skipBlocking) {
-            _blockTransitions(node, false);
+            blockTransitions(node, 0);
           }
 
           // TODO(matsko): for 1.5 change this code to have an animator object for better debugging
@@ -25720,13 +27078,19 @@
             _willAnimate: true,
             end: endFn,
             start() {
-              if (animationClosed) return undefined;
+              if (animationClosed) {
+                const noopRunner = new AnimateRunner();
+
+                noopRunner.complete(true);
+
+                return noopRunner;
+              }
 
               runnerHost = {
                 end: endFn,
                 cancel: cancelFn,
-                resume: null, // this will be set during the start() phase
-                pause: null,
+                resume: undefined, // this will be set during the start() phase
+                pause: undefined,
               };
 
               runner = new AnimateRunner(runnerHost);
@@ -25749,6 +27113,9 @@
             close(true);
           }
 
+          /**
+           * @param {boolean} [rejected]
+           */
           function close(rejected) {
             // if the promise has been called already then we shouldn't close
             // the animation again
@@ -25767,13 +27134,13 @@
             }
 
             _blockKeyframeAnimations(node, false);
-            _blockTransitions(node, false);
+            blockTransitions(node, 0);
 
             temporaryStyles.forEach((entry) => {
               // There is only one way to remove inline style properties entirely from elements.
               // By using `removeProperty` this works, but we need to convert camel-cased CSS
               // styles down to hyphenated values.
-              node.style[entry[0]] = "";
+              node.style.removeProperty(entry[0]);
             });
 
             applyAnimationClasses(element, options);
@@ -25819,9 +27186,12 @@
             }
           }
 
+          /**
+           * @param {number} duration
+           */
           function applyBlocking(duration) {
             if (flags._blockTransition) {
-              _blockTransitions(node, duration);
+              blockTransitions(node, duration);
             }
 
             if (flags._blockKeyframeAnimation) {
@@ -25850,6 +27220,9 @@
             };
           }
 
+          /**
+           * @param {Event & { originalEvent?: any }} event
+           */
           function onAnimationProgress(event) {
             event.stopPropagation();
             const ev = event.originalEvent || event;
@@ -25901,7 +27274,7 @@
             // will still happen when transitions are used. Only the transition will
             // not be paused since that is not possible. If the animation ends when
             // paused then it will not complete until unpaused or cancelled.
-            const playPause = function (playAnimation) {
+            const playPause = function (/** @type {boolean} */ playAnimation) {
               if (!animationCompleted) {
                 animationPaused = !playAnimation;
 
@@ -25957,12 +27330,12 @@
               // itself was cancelled entirely
               if (animationClosed) return;
 
-              applyBlocking(false);
+              applyBlocking(0);
 
               temporaryStyles.forEach((entry) => {
                 const key = entry[0];
 
-                node.style[key] = entry[1];
+                node.style.setProperty(key, entry[1]);
               });
 
               applyAnimationClasses(element, options);
@@ -26005,7 +27378,7 @@
                 timings.animationDelay = relativeDelay;
                 delayStyle = getCssDelayStyle(relativeDelay, true);
                 temporaryStyles.push(delayStyle);
-                node.style[delayStyle[0]] = delayStyle[1];
+                node.style.setProperty(delayStyle[0], delayStyle[1]);
               }
 
               maxDelayTime = maxDelay * ONE_SECOND;
@@ -26019,13 +27392,13 @@
                 if (flags._hasTransitions) {
                   easeProp = "transitionTimingFunction";
                   temporaryStyles.push([easeProp, easeVal]);
-                  node.style[easeProp] = easeVal;
+                  node.style.setProperty(easeProp, easeVal);
                 }
 
                 if (flags._hasAnimations) {
                   easeProp = "animationTimingFunction";
                   temporaryStyles.push([easeProp, easeVal]);
-                  node.style[easeProp] = easeVal;
+                  node.style.setProperty(easeProp, easeVal);
                 }
               }
 
@@ -26103,12 +27476,19 @@
               }
             }
           }
-        };
+        }
+
+        return init;
       },
     ];
   }
 
-  function _blockTransitions(node, duration) {
+  /**
+   * @param {HTMLElement} node
+   * @param {number} duration
+   * @returns {import("../interface.ts").InlineStyleEntry}
+   */
+  function blockTransitions(node, duration) {
     // we use a negative delay value since it performs blocking
     // yet it doesn't kill any existing transitions running on the
     // same element which makes this safe for class-based animations
@@ -26124,6 +27504,13 @@
   const NG_ANIMATE_PIN_DATA = "$ngAnimatePin";
 
   AnimateQueueProvider.$inject = provider([$injectTokens._animate]);
+
+  /** @typedef {import("../interface.ts").AnimationOptions} AnimationOptions */
+
+  /**
+   * @param {import("../animate.js").AnimateProvider} $animateProvider
+   * @constructor
+   */
   function AnimateQueueProvider($animateProvider) {
     const PRE_DIGEST_STATE = 1;
 
@@ -26131,12 +27518,17 @@
 
     const ONE_SPACE = " ";
 
+    /** @type {import("../../shared/interface.ts").Dict<any>} */
     const rules = (this.rules = {
       skip: [],
       cancel: [],
       join: [],
     });
 
+    /**
+     * @param {AnimationOptions} options
+     * @return {import("../queue/interface.ts").QueueAnimationData}
+     */
     function getEventData(options) {
       return {
         addClass: options.addClass,
@@ -26146,14 +27538,14 @@
       };
     }
 
+    /**
+     * @param {string} classString
+     * @return {Record<string, string>}
+     */
     function makeTruthyCssClassMap(classString) {
-      if (!classString) {
-        return null;
-      }
-
       const keys = classString.split(ONE_SPACE);
 
-      const map = Object.create(null);
+      const map = nullObject();
 
       keys.forEach((key) => {
         map[key] = true;
@@ -26162,6 +27554,10 @@
       return map;
     }
 
+    /**
+     * @param {string} newClassString
+     * @param {string} currentClassString
+     */
     function hasMatchingClasses(newClassString, currentClassString) {
       if (newClassString && currentClassString) {
         const currentClassMap = makeTruthyCssClassMap(currentClassString);
@@ -26174,12 +27570,22 @@
       return undefined;
     }
 
+    /**
+     * @param {string} ruleType
+     * @param {AnimationOptions} currentAnimation
+     * @param {any} previousAnimation
+     */
     function isAllowed(ruleType, currentAnimation, previousAnimation) {
-      return rules[ruleType].some((fn) =>
-        fn(currentAnimation, previousAnimation),
+      return rules[ruleType].some(
+        (/** @type {(arg0: AnimationOptions, arg1: any) => any} */ fn) =>
+          fn(currentAnimation, previousAnimation),
       );
     }
 
+    /**
+     * @param {AnimationOptions} animation
+     * @param {boolean | undefined} [and]
+     */
     function hasAnimationClasses(animation, and) {
       const a = (animation.addClass || "").length > 0;
 
@@ -26189,27 +27595,33 @@
     }
 
     rules.join.push(
-      (newAnimation) =>
+      (/** @type {AnimationOptions} */ newAnimation) =>
         // if the new animation is class-based then we can just tack that on
         !newAnimation.structural && hasAnimationClasses(newAnimation),
     );
 
     rules.skip.push(
-      (newAnimation) =>
+      (/** @type {AnimationOptions} */ newAnimation) =>
         // there is no need to animate anything if no classes are being added and
         // there is no structural animation that will be triggered
         !newAnimation.structural && !hasAnimationClasses(newAnimation),
     );
 
     rules.skip.push(
-      (newAnimation, currentAnimation) =>
+      (
+        /** @type {AnimationOptions} */ newAnimation,
+        /** @type {AnimationOptions} */ currentAnimation,
+      ) =>
         // why should we trigger a new structural animation if the element will
         // be removed from the DOM anyway?
         currentAnimation.event === "leave" && newAnimation.structural,
     );
 
     rules.skip.push(
-      (newAnimation, currentAnimation) =>
+      (
+        /** @type {AnimationOptions} */ newAnimation,
+        /** @type {AnimationOptions} */ currentAnimation,
+      ) =>
         // if there is an ongoing current animation then don't even bother running the class-based animation
         currentAnimation.structural &&
         currentAnimation.state === RUNNING_STATE &&
@@ -26217,42 +27629,62 @@
     );
 
     rules.cancel.push(
-      (newAnimation, currentAnimation) =>
+      (
+        /** @type {AnimationOptions} */ newAnimation,
+        /** @type {AnimationOptions} */ currentAnimation,
+      ) =>
         // there can never be two structural animations running at the same time
         currentAnimation.structural && newAnimation.structural,
     );
 
     rules.cancel.push(
-      (newAnimation, currentAnimation) =>
+      (
+        /** @type {AnimationOptions} */ newAnimation,
+        /** @type {AnimationOptions} */ currentAnimation,
+      ) =>
         // if the previous animation is already running, but the new animation will
         // be triggered, but the new animation is structural
         currentAnimation.state === RUNNING_STATE && newAnimation.structural,
     );
 
-    rules.cancel.push((newAnimation, currentAnimation) => {
-      // cancel the animation if classes added / removed in both animation cancel each other out,
-      // but only if the current animation isn't structural
+    rules.cancel.push(
+      (
+        /** @type {AnimationOptions} */ newAnimation,
+        /** @type {AnimationOptions} */ currentAnimation,
+      ) => {
+        // cancel the animation if classes added / removed in both animation cancel each other out,
+        // but only if the current animation isn't structural
 
-      if (currentAnimation.structural) return false;
+        if (currentAnimation.structural) return false;
 
-      const nA = newAnimation.addClass;
+        const nA = newAnimation.addClass;
 
-      const nR = newAnimation.removeClass;
+        const nR = newAnimation.removeClass;
 
-      const cA = currentAnimation.addClass;
+        const cA = currentAnimation.addClass;
 
-      const cR = currentAnimation.removeClass;
+        const cR = currentAnimation.removeClass;
 
-      // early detection to save the global CPU shortage :)
-      if (
-        (isUndefined(nA) && isUndefined(nR)) ||
-        (isUndefined(cA) && isUndefined(cR))
-      ) {
-        return false;
-      }
-
-      return hasMatchingClasses(nA, cR) || hasMatchingClasses(nR, cA);
-    });
+        // early detection to save the global CPU shortage :)
+        if (
+          (isUndefined(nA) && isUndefined(nR)) ||
+          (isUndefined(cA) && isUndefined(cR))
+        ) {
+          return false;
+        } else {
+          return (
+            hasMatchingClasses(
+              /** @type {string} */ (nA),
+              /** @type {string} */ (cR),
+            ) ||
+            hasMatchingClasses(
+              /** @type {string} */ (nR),
+              /** @type {string} */ (cA),
+            )
+          );
+        }
+      },
+    );
 
     this.$get = [
       $injectTokens._rootScope,
@@ -26273,7 +27705,7 @@
         function postDigestTaskFactory() {
           let postDigestCalled = false;
 
-          return function (fn) {
+          return function (/** @type {() => void} */ fn) {
             // we only issue a call to postDigest before
             // it has first passed. This prevents any callbacks
             // from not firing once the animation has completed
@@ -26289,7 +27721,8 @@
           };
         }
 
-        const callbackRegistry = Object.create(null);
+        /** @type {import("../queue/interface.ts").CallbackRegistry} */
+        const callbackRegistry = nullObject();
 
         // remember that the `customFilter`/`classNameFilter` are set during the
         // provider/config stage therefore we can optimize here and setup helper functions
@@ -26305,7 +27738,10 @@
 
         const isAnimatableClassName = !classNameFilter
           ? returnTrue
-          : function (node, options) {
+          : function (
+              /** @type {HTMLElement} */ node,
+              /** @type {import("../interface.ts").AnimationOptions} */ options,
+            ) {
               const className = [
                 node.getAttribute("class"),
                 options.addClass,
@@ -26317,11 +27753,24 @@
 
         const applyAnimationClasses = applyAnimationClassesFactory();
 
+        /**
+         * @param {HTMLElement} element
+         * @param {import("../interface.ts").AnimationOptions} animation
+         */
         function normalizeAnimationDetails(element, animation) {
           return mergeAnimationDetails(element, animation, {});
         }
 
+        /**
+         * @param {Node | null} targetParentNode
+         * @param {Node} targetNode
+         * @param {string} event
+         * @returns {import("../queue/interface.ts").AnimateEventCallback[]}
+         */
         function findCallbacks(targetParentNode, targetNode, event) {
+          /**
+           * @type {import("../queue/interface.ts").AnimateEventCallback[]}
+           */
           const matches = [];
 
           const entries = callbackRegistry[event];
@@ -26332,6 +27781,7 @@
                 matches.push(entry.callback);
               } else if (
                 event === "leave" &&
+                targetParentNode &&
                 entry.node.contains(targetParentNode)
               ) {
                 matches.push(entry.callback);
@@ -26342,8 +27792,15 @@
           return matches;
         }
 
+        /**
+         * @param {any[]} list
+         * @param {Node | NodeList | undefined} matchContainer
+         * @param {Function | undefined} [matchCallback]
+         */
         function filterFromRegistry(list, matchContainer, matchCallback) {
-          const containerNode = extractElementNode(matchContainer);
+          const containerNode = matchContainer
+            ? extractElementNode(matchContainer)
+            : undefined;
 
           return list.filter((entry) => {
             const isMatch =
@@ -26354,6 +27811,10 @@
           });
         }
 
+        /**
+         * @param {string} phase
+         * @param {Element} node
+         */
         function cleanupEventListeners(phase, node) {
           if (phase === "close" && !node.parentNode) {
             // If the element is not attached to a parentNode, it has been removed by
@@ -26362,9 +27823,12 @@
           }
         }
 
+        /** @type {import("../queue/interface.ts").AnimateQueueService} */
         const $animate = {
           on(event, container, callback) {
             const node = extractElementNode(container);
+
+            if (!node || !(node instanceof Element) || !callback) return;
 
             callbackRegistry[event] = callbackRegistry[event] || [];
             callbackRegistry[event].push({
@@ -26391,13 +27855,15 @@
 
               for (const eventType in callbackRegistry) {
                 callbackRegistry[eventType] = filterFromRegistry(
-                  callbackRegistry[eventType],
+                  callbackRegistry[eventType] || [],
                   container,
                 );
               }
 
               return;
             }
+
+            if (!isString(event)) return;
 
             const entries = callbackRegistry[event];
 
@@ -26427,7 +27893,7 @@
          * @param {Element} originalElement
          * @param {string} event
          * @param {*} initialOptions
-         * @returns void
+         * @returns {AnimateRunner}
          */
         function queueAnimation(originalElement, event, initialOptions) {
           // we always make a copy of the options since
@@ -26531,6 +27997,7 @@
             closeChildAnimations(node);
           }
 
+          /** @type {AnimationOptions} */
           const newAnimation = {
             structural: isStructural,
             element,
@@ -26630,7 +28097,7 @@
             // animate (from/to) can be quickly checked first, otherwise we check if any classes are present
             isValidAnimation =
               (newAnimation.event === "animate" &&
-                Object.keys(newAnimation.options.to || {}).length > 0) ||
+                Object.keys(newAnimation.options?.to || {}).length > 0) ||
               hasAnimationClasses(newAnimation);
           }
 
@@ -26666,7 +28133,7 @@
             // if addClass/removeClass is called before something like enter then the
             // registered parent element may not be present. The code below will ensure
             // that a final value for parent element is obtained
-            const parentElement = element.parentElement || [];
+            const parentElement = element.parentElement || null;
 
             // animate/structural/class-based animations all have requirements. Otherwise there
             // is no point in performing an animation. The parent node must also be set.
@@ -26746,6 +28213,12 @@
 
           return runner;
 
+          /**
+           * @param {AnimateRunner} runnerParam
+           * @param {string} eventParam
+           * @param {string} phase
+           * @param {import("../queue/interface.ts").QueueAnimationData} data
+           */
           function notifyProgress(runnerParam, eventParam, phase, data) {
             runInNextPostDigestOrNow(() => {
               const callbacks = findCallbacks(parentNode, node, eventParam);
@@ -26762,6 +28235,9 @@
             runnerParam.progress(eventParam, phase, data);
           }
 
+          /**
+           * @param {boolean | undefined} [reject]
+           */
           function close(reject) {
             clearGeneratedClasses(element, options);
             applyAnimationClasses(element, options);
@@ -26787,7 +28263,10 @@
           const children = node.querySelectorAll(`[${NG_ANIMATE_ATTR_NAME}]`);
 
           children.forEach((child) => {
-            const state = parseInt(child.getAttribute(NG_ANIMATE_ATTR_NAME), 10);
+            const state = parseInt(
+              /** @type {string} */ (child.getAttribute(NG_ANIMATE_ATTR_NAME)),
+              10,
+            );
 
             const animationDetails = activeAnimationsLookup.get(child);
 
@@ -26795,7 +28274,8 @@
               switch (state) {
                 case RUNNING_STATE:
                   animationDetails.runner.end();
-                /* falls through */
+                  activeAnimationsLookup.delete(child);
+                  break;
                 case PRE_DIGEST_STATE:
                   activeAnimationsLookup.delete(child);
                   break;
@@ -26804,6 +28284,9 @@
           });
         }
 
+        /**
+         * @param {Element} node
+         */
         function clearElementAnimationState(node) {
           node.removeAttribute(NG_ANIMATE_ATTR_NAME);
           activeAnimationsLookup.delete(node);
@@ -26815,6 +28298,8 @@
          * b) a parent element has an ongoing structural animation, and animateChildren is false
          * c) the element is not a child of the body
          * d) the element is not a child of the $rootElement
+         * @param {Element} node
+         * @param {Element} parentNode
          */
         function areAnimationsAllowed(node, parentNode) {
           const bodyNode = document.body;
@@ -26907,7 +28392,7 @@
             }
 
             // eslint-disable-next-line prefer-destructuring
-            parentNode = parentNode.parentNode;
+            parentNode = /** @type {Element} */ (parentNode.parentNode);
           }
 
           const allowAnimation =
@@ -26917,11 +28402,16 @@
           return allowAnimation && rootNodeDetected && bodyNodeDetected;
         }
 
+        /**
+         * @param {Element} node
+         * @param {number} state
+         * @param {AnimationOptions} [details]
+         */
         function markElementAnimationState(node, state, details) {
           details = details || {};
           details.state = state;
 
-          node.setAttribute(NG_ANIMATE_ATTR_NAME, state);
+          node.setAttribute(NG_ANIMATE_ATTR_NAME, state.toString());
 
           const oldValue = activeAnimationsLookup.get(node);
 
@@ -26935,6 +28425,9 @@
 
   AnimateJsProvider.$inject = provider([$injectTokens._animate]);
 
+  /**
+   * @param {import("./animate.js").AnimateProvider} $animateProvider
+   */
   function AnimateJsProvider($animateProvider) {
     this.$get = [
       $injectTokens._injector,
@@ -26946,33 +28439,48 @@
         const applyAnimationClasses = applyAnimationClassesFactory();
 
         /**
-         *
+         * @param {HTMLElement} element
+         * @param {string} event
+         * @param {string | string[] | null | undefined} classes
+         * @param {ng.AnimationOptions | undefined} options
+         * @returns {import("./interface.ts").Animator | undefined}
          */
-        return function animateJs(element, event, classes, options) {
+        return function (element, event, classes, options) {
           // Optional arguments
-          if (arguments.length === 3 && isObject(classes)) {
-            options = /** @type {Object} */ (classes);
+          if (arguments.length === 3 && !isArray(classes) && isObject(classes)) {
+            options = /** @type {ng.AnimationOptions} */ (classes);
             classes = null;
           }
 
-          options = prepareAnimationOptions(options);
+          /** @type {ng.AnimationOptions} */
+          const animationOptions = prepareAnimationOptions(options);
 
           if (!classes) {
             classes = element.getAttribute("class") || "";
 
-            if (options.addClass) classes += ` ${options.addClass}`;
+            if (animationOptions.addClass)
+              classes += ` ${animationOptions.addClass}`;
 
-            if (options.removeClass) classes += ` ${options.removeClass}`;
+            if (animationOptions.removeClass)
+              classes += ` ${animationOptions.removeClass}`;
           }
 
-          const classesToAdd = options.addClass;
+          const classesToAdd = animationOptions.addClass;
 
-          const classesToRemove = options.removeClass;
+          const classesToRemove = animationOptions.removeClass;
 
           // Lookup animation objects
           const animations = lookupAnimations(classes);
 
-          let before, after;
+          /**
+           * @type {((done: () => void) => void) | undefined}
+           */
+          let before;
+
+          /**
+           * @type {((done: () => void) => void) | undefined}
+           */
+          let after;
 
           if (animations.length) {
             let beforeFn, afterFn;
@@ -26986,53 +28494,84 @@
             }
 
             if (event !== "enter" && event !== "move") {
-              before = packageAnimations(element, options, animations, beforeFn, {
+              before = packageAnimations(
+                element,
+                animationOptions,
+                animations,
+                beforeFn,
+                {
+                  add: classesToAdd,
+                  remove: classesToRemove,
+                },
+              );
+            }
+            after = packageAnimations(
+              element,
+              animationOptions,
+              animations,
+              afterFn,
+              {
                 add: classesToAdd,
                 remove: classesToRemove,
-              });
-            }
-            after = packageAnimations(element, options, animations, afterFn, {
-              add: classesToAdd,
-              remove: classesToRemove,
-            });
+              },
+            );
           }
 
           if (!before && !after) return undefined;
 
           function applyOptions() {
-            options.domOperation();
-            applyAnimationClasses(element, options);
+            animationOptions.domOperation?.();
+            applyAnimationClasses(element, animationOptions);
           }
 
           function close() {
             applyOptions();
-            applyAnimationStyles(element, options);
+            applyAnimationStyles(element, animationOptions);
           }
 
+          /** @type {ng.AnimateRunner} */
           let runner;
 
-          return {
+          return /** @type {import("./interface.ts").AnimateJsRunner} */ ({
             _willAnimate: true,
 
             start() {
               if (runner) return runner;
 
               runner = new AnimateRunner({
-                end: () => onComplete(true),
-                cancel: () => onComplete(false),
+                end: () => finish(true),
+                cancel: () => finish(false),
               });
 
-              // Run before animations
-              if (before) before(runner.done.bind(runner));
-              else applyOptions();
+              let finished = false;
 
-              // Run after animations
-              if (after) after(runner.done.bind(runner));
+              let remaining = (before ? 1 : 0) + (after ? 1 : 0);
 
-              function onComplete(success) {
+              function partDone() {
+                if (finished) return;
+
+                if (--remaining === 0) finish(true);
+              }
+
+              /**
+               * @param {boolean | undefined} success
+               */
+              function finish(success) {
+                if (finished) return;
+                finished = true;
                 close();
                 runner.complete(success);
               }
+
+              // Run before animations
+              if (before) before(partDone);
+              else applyOptions();
+
+              // Run after animations
+              if (after) after(partDone);
+
+              // If neither before nor after exist, nothing will call partDone()
+              if (remaining === 0) finish(true);
 
               return runner;
             },
@@ -27047,17 +28586,25 @@
 
               return runner;
             },
-          };
+          });
 
           // ---- helpers ----
+          /**
+           * @param {string | string[]} classList
+           */
           function lookupAnimations(classList) {
-            classList = isArray(classList) ? classList : classList.split(" ");
+            const normalized = isArray(classList)
+              ? classList
+              : /** @type {string[]} */ (classList.split(" "));
+
+            /** @type {Array<Record<string, any>>} */
             const matches = [];
 
+            /** @type {Record<string, boolean>} */
             const flagMap = {};
 
-            for (let i = 0; i < classList.length; i++) {
-              const klass = classList[i];
+            for (let i = 0; i < normalized.length; i++) {
+              const klass = normalized[i];
 
               const animationFactory =
                 $animateProvider._registeredAnimations[klass];
@@ -27071,6 +28618,13 @@
             return matches;
           }
 
+          /**
+           * @param {HTMLElement} elementParam
+           * @param {ng.AnimationOptions} optionsParam
+           * @param {Array<Record<string, any>>} animationsParam
+           * @param {string} fnName
+           * @param {{ add?: string; remove?: string; }} classNames
+           */
           function packageAnimations(
             elementParam,
             optionsParam,
@@ -27078,6 +28632,7 @@
             fnName,
             classNames,
           ) {
+            /** @type {Array<(done: () => void) => void>} */
             const operations = [];
 
             animationsParam.forEach((ani) => {
@@ -27087,6 +28642,7 @@
 
               operations.push((done) => {
                 if (isFunction(animationFn)) {
+                  /** @type {any[]} */
                   let args;
 
                   switch (fnName) {
@@ -27125,6 +28681,9 @@
 
             if (!operations.length) return undefined;
 
+            /**
+             * @param {() => void} done
+             */
             return (done) => {
               let completed = 0;
 
@@ -27141,6 +28700,13 @@
       },
     ];
   }
+
+  /** @typedef {import("./interface.ts").SortedAnimationEntry} SortedAnimationEntry */
+  /** @typedef {import("./interface.ts").AnimationOptions} AnimationOptions */
+  /** @typedef {import("./interface.ts").AnimationDetails} AnimationDetails */
+  /** @typedef {import("./interface.ts").AnimationEntry} AnimationEntry */
+  /** @typedef {import("./interface.ts").AnchorRef} AnchorRef */
+  /** @typedef {import("./interface.ts").AnchorRefEntry} AnchorRefEntry */
 
   const RUNNER_STORAGE_KEY = "$$animationRunner";
 
@@ -27186,18 +28752,18 @@
        * @return {import("./interface.ts").AnimationService}
        */
       function ($rootScope, $injector) {
-        /**
-           * @type {{
-          // this data is used by the postDigest code and passed into
-          // the driver step function
-          element: any; classes: string; event: any; structural: boolean; options: any; beforeStart: () => void; close: (rejected: any) => void; }[]}
-           */
+        /** @type {AnimationEntry[]} */
         const animationQueue = [];
 
         const applyAnimationClasses = applyAnimationClassesFactory();
 
+        /**
+         * @param {SortedAnimationEntry[]} animations
+         */
         function sortAnimations(animations) {
-          const tree = { children: [] };
+          const tree = /** @type {Partial<SortedAnimationEntry>} */ ({
+            children: [],
+          });
 
           let i;
 
@@ -27224,8 +28790,13 @@
             processNode(animations[i]);
           }
 
-          return flatten(tree);
+          return flatten(/** @type {SortedAnimationEntry} */ (tree));
 
+          /**
+           *
+           * @param {SortedAnimationEntry} entry
+           * @returns
+           */
           function processNode(entry) {
             if (entry.processed) return entry;
             entry.processed = true;
@@ -27256,6 +28827,10 @@
             return entry;
           }
 
+          /**
+           * @param {SortedAnimationEntry} theeParam
+           * @returns
+           */
           function flatten(theeParam) {
             const result = [];
 
@@ -27296,9 +28871,19 @@
           }
         }
 
-        // TODO(matsko): document the signature in a better way
-        return function (elementParam, event, options) {
-          options = prepareAnimationOptions(options);
+        /**
+         * @param {HTMLElement} elementParam
+         * @param {string} event
+         * @param {AnimationOptions | undefined} optionsParam
+         * @returns {AnimateRunner}
+         */
+        return function (elementParam, event, optionsParam) {
+          /** @type {AnimationOptions & { domOperation: () => void }} */
+          const options =
+            /** @type {AnimationOptions & { domOperation: () => void }} */ (
+              prepareAnimationOptions(optionsParam)
+            );
+
           const isStructural = ["enter", "move", "leave"].indexOf(event) >= 0;
 
           // there is no animation at the current moment, however
@@ -27329,7 +28914,7 @@
 
           if (tempClasses) {
             classes += ` ${tempClasses}`;
-            options.tempClasses = null;
+            options.tempClasses = undefined;
           }
 
           if (isStructural) {
@@ -27342,9 +28927,9 @@
 
           setRunner(elementParam, runner);
 
+          // this data is used by the postDigest code and passed into
+          // the driver step function
           animationQueue.push({
-            // this data is used by the postDigest code and passed into
-            // the driver step function
             element: elementParam,
             classes,
             event,
@@ -27361,16 +28946,19 @@
           // were apart of the same postDigest flush call.
           if (animationQueue.length > 1) return runner;
           $rootScope.$postUpdate(() => {
+            /** @type {AnimationEntry[]} */
             const animations = [];
 
             animationQueue.forEach((entry) => {
               // the element was destroyed early on which removed the runner
               // form its storage. This means we can't animate this element
               // at all and it already has been closed due to destruction.
-              if (getRunner(entry.element)) {
+              if (getRunner(/** @type {HTMLElement} */ (entry.element))) {
                 animations.push(entry);
               } else {
-                entry.close();
+                /** @type {(reject?: boolean | undefined) => void} */ (
+                  entry.close
+                )();
               }
             });
 
@@ -27379,6 +28967,7 @@
 
             const groupedAnimations = groupAnimations(animations);
 
+            /** @type {SortedAnimationEntry[]} */
             const toBeSortedAnimations = [];
 
             groupedAnimations.forEach((animationEntry) => {
@@ -27423,9 +29012,12 @@
 
                   // in the event that the element was removed before the digest runs or
                   // during the RAF sequencing then we should not trigger the animation.
-                  const targetElement = animationEntry.anchors
-                    ? animationEntry.from.element || animationEntry.to.element
-                    : animationEntry.element;
+                  const targetElement =
+                    animationEntry.anchors &&
+                    animationEntry.from &&
+                    animationEntry.to
+                      ? animationEntry.from.element || animationEntry.to.element
+                      : animationEntry.element;
 
                   if (getRunner(targetElement)) {
                     const operation = invokeFirstDriver(animationEntry);
@@ -27440,12 +29032,13 @@
                   } else {
                     const animationRunner = startAnimationFn();
 
-                    animationRunner.done((status) => {
+                    animationRunner.done((/** @type {any} */ status) => {
                       closeFn(!status);
                     });
                     updateAnimationRunners(animationEntry, animationRunner);
                   }
                 },
+                children: [],
               });
             });
 
@@ -27453,6 +29046,9 @@
             // relationships. This ensures that the child classes are applied at the
             // right time.
             const finalAnimations = sortAnimations(toBeSortedAnimations);
+
+            /** @type {Array<() => void>} */
+            const flatFinalAnimations = [];
 
             for (let i = 0; i < finalAnimations.length; i++) {
               const innerArray = finalAnimations[i];
@@ -27463,7 +29059,7 @@
                 const { element } = entry;
 
                 // the RAFScheduler code only uses functions
-                finalAnimations[i][j] = entry.fn;
+                flatFinalAnimations.push(entry.fn);
 
                 // the first row of elements shouldn't have a prepare-class added to them
                 // since the elements are at the top of the animation hierarchy and they
@@ -27484,14 +29080,15 @@
               }
             }
 
-            const flatFinalAnimations = finalAnimations.flat();
-
             rafScheduler._schedule(flatFinalAnimations);
           });
 
           return runner;
 
-          // TODO(matsko): change to reference nodes
+          /**
+           * @param {HTMLElement} node
+           * @returns
+           */
           function getAnchorNodes(node) {
             const SELECTOR = `[${NG_ANIMATE_REF_ATTR}]`;
 
@@ -27499,6 +29096,9 @@
               ? [node]
               : node.querySelectorAll(SELECTOR);
 
+            /**
+             * @type {(Element | HTMLElement)[]}
+             */
             const anchors = [];
 
             items.forEach((nodeItem) => {
@@ -27512,9 +29112,15 @@
             return anchors;
           }
 
+          /**
+           * @param {AnimationEntry[]} animations
+           * @returns {AnimationEntry[]}
+           */
           function groupAnimations(animations) {
+            /** @type {AnimationEntry[]} */
             const preparedAnimations = [];
 
+            /** @type {Record<string, AnchorRefEntry>} */
             const refLookup = {};
 
             animations.forEach((animation, index) => {
@@ -27535,6 +29141,8 @@
                 anchorNodes.forEach((anchor) => {
                   const key = anchor.getAttribute(NG_ANIMATE_REF_ATTR);
 
+                  if (!key) return;
+
                   refLookup[key] = refLookup[key] || {};
                   refLookup[key][direction] = {
                     animationID: index,
@@ -27546,19 +29154,25 @@
               }
             });
 
+            /** @type {Record<string, boolean>} */
             const usedIndicesLookup = {};
 
+            /** @type {Record<string, AnimationEntry>} */
             const anchorGroups = {};
 
             Object.values(refLookup).forEach((operations) => {
-              const { from } = operations;
-
-              const { to } = operations;
+              const { from, to } = operations;
 
               if (!from || !to) {
                 // only one of these is set therefore we can't have an
                 // anchor animation since all three pieces are required
-                const index = from ? from.animationID : to.animationID;
+                const index = from
+                  ? from.animationID
+                  : to
+                    ? to.animationID
+                    : undefined;
+
+                if (index === undefined) return;
 
                 const indexKey = index.toString();
 
@@ -27579,6 +29193,9 @@
               if (!anchorGroups[lookupKey]) {
                 const group = (anchorGroups[lookupKey] = {
                   structural: true,
+                  element: /** @type {HTMLElement} */ (from.element),
+                  event: fromAnimation.event,
+                  options: fromAnimation.options,
                   beforeStart() {
                     fromAnimation.beforeStart();
                     toAnimation.beforeStart();
@@ -27607,18 +29224,37 @@
                 }
               }
 
-              anchorGroups[lookupKey].anchors.push({
-                out: from.element,
-                in: to.element,
-              });
+              const group = anchorGroups[lookupKey];
+
+              if (group?.anchors) {
+                group.anchors.push({
+                  out: /** @type {HTMLElement} */ (from.element),
+                  in: /** @type {HTMLElement} */ (to.element),
+                });
+              }
             });
 
             return preparedAnimations;
           }
 
+          /**
+           * @param {string | string[] | null | undefined} value
+           * @returns {string}
+           */
+          function normalizeClassValue(value) {
+            if (Array.isArray(value)) return value.join(" ");
+
+            return value || "";
+          }
+
+          /**
+           * @param {string | string[] | null | undefined} a
+           * @param {string | string[] | null | undefined} b
+           * @returns {string}
+           */
           function cssClassesIntersection(a, b) {
-            a = a.split(" ");
-            b = b.split(" ");
+            a = normalizeClassValue(a).split(" ");
+            b = normalizeClassValue(b).split(" ");
             const matches = [];
 
             for (let i = 0; i < a.length; i++) {
@@ -27637,6 +29273,9 @@
             return matches.join(" ");
           }
 
+          /**
+           * @param {import("./interface.ts").AnimationDetails} animationDetails
+           */
           function invokeFirstDriver(animationDetails) {
             // we loop in reverse order since the more general drivers (like CSS and JS)
             // may attempt more elements, but custom drivers are more particular
@@ -27670,6 +29309,11 @@
             }
           }
 
+          /**
+           *
+           * @param {*} animation
+           * @param {*} newRunner
+           */
           function updateAnimationRunners(animation, newRunner) {
             if (animation.from && animation.to) {
               update(animation.from.element);
@@ -27678,6 +29322,9 @@
               update(animation.element);
             }
 
+            /**
+             * @param {Element} el
+             */
             function update(el) {
               getRunner(el).setHost(newRunner);
             }
@@ -27688,6 +29335,9 @@
               getRunner(elementParam)?.end();
           }
 
+          /**
+           * @param {boolean | undefined} [rejected]
+           */
           function close(rejected) {
             removeRunner(elementParam);
 
@@ -27696,9 +29346,13 @@
             options.domOperation();
 
             if (tempClasses) {
-              tempClasses
-                .split(" ")
-                .forEach((cls) => elementParam.classList.remove(cls));
+              const classList = Array.isArray(tempClasses)
+                ? tempClasses
+                : tempClasses.split(" ");
+
+              classList.forEach((/** @type {string} */ cls) =>
+                elementParam.classList.remove(cls),
+              );
             }
 
             runner.complete(!rejected);
@@ -27726,10 +29380,10 @@
 
     /**
      * @param {Element} node
+     * @returns {boolean}
      */
     function isDocumentFragment(node) {
-      // eslint-disable-next-line no-magic-numbers
-      return node.parentNode && node.parentNode.nodeType === 11;
+      return node.parentNode?.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE;
     }
 
     /**
@@ -27741,7 +29395,7 @@
       /**
        *
        * @param {*} $animateCss
-       * @param {Element} $rootElement
+       * @param {HTMLElement} $rootElement
        * @returns
        */
       function ($animateCss, $rootElement) {
@@ -27757,29 +29411,37 @@
             ? rootNode
             : bodyNode;
 
-        return function initDriverFn(animationDetails) {
+        return /** @param {import("./interface.ts").AnimationDetails} animationDetails */ function initDriverFn(
+          animationDetails,
+        ) {
           return animationDetails.from && animationDetails.to
             ? prepareFromToAnchorAnimation(
                 animationDetails.from,
                 animationDetails.to,
-                animationDetails.anchors,
+                animationDetails.anchors || [],
               )
             : prepareRegularAnimation(animationDetails);
         };
 
+        /**
+         * @param {HTMLElement} outAnchor
+         * @param {HTMLElement} inAnchor
+         * @returns {{ start(): AnimateRunner } | null}
+         */
         function prepareAnchoredAnimation(outAnchor, inAnchor) {
-          const clone = outAnchor.cloneNode(true);
+          const clone = /** @type {HTMLElement} */ (outAnchor.cloneNode(true));
 
-          const startingClasses = filterCssClasses(getClassVal(clone));
+          const startingClasses = filterCssClasses(clone.getAttribute("class"));
 
-          outAnchor[0].classList.add(NG_ANIMATE_SHIM_CLASS_NAME);
-          inAnchor[0].classList.add(NG_ANIMATE_SHIM_CLASS_NAME);
+          outAnchor.classList.add(NG_ANIMATE_SHIM_CLASS_NAME);
+          inAnchor.classList.add(NG_ANIMATE_SHIM_CLASS_NAME);
 
           clone.classList.add(NG_ANIMATE_ANCHOR_CLASS_NAME);
 
           rootBodyElement.append(clone);
 
-          let animatorIn;
+          /** @type {ReturnType<typeof prepareInAnimation> | null} */
+          let animatorIn = null;
 
           const animatorOut = prepareOutAnimation();
 
@@ -27791,11 +29453,19 @@
             animatorIn = prepareInAnimation();
 
             if (!animatorIn) {
-              return end();
+              end();
+
+              return null;
             }
           }
 
           const startingAnimator = animatorOut || animatorIn;
+
+          if (!startingAnimator) {
+            end();
+
+            return null;
+          }
 
           return {
             start() {
@@ -27840,14 +29510,21 @@
             },
           };
 
+          /**
+           * @param {HTMLElement} anchor
+           */
           function calculateAnchorStyles(anchor) {
+            /** @type {import("../shared/interface.ts").Dict<string>} */
             const styles = {};
 
             const coords = anchor.getBoundingClientRect();
 
             // we iterate directly since safari messes up and doesn't return
             // all the keys for the coords object when iterated
-            ["width", "height", "top", "left"].forEach((key) => {
+            /** @type {Array<"width" | "height" | "top" | "left">} */
+            const keys = ["width", "height", "top", "left"];
+
+            keys.forEach((key) => {
               let value = coords[key];
 
               switch (key) {
@@ -27876,12 +29553,10 @@
             return animator._willAnimate ? animator : null;
           }
 
-          function getClassVal(element) {
-            return element.getAttribute("class") || "";
-          }
-
           function prepareInAnimation() {
-            const endingClasses = filterCssClasses(getClassVal(inAnchor));
+            const endingClasses = filterCssClasses(
+              inAnchor.getAttribute("class"),
+            );
 
             const toAdd = getUniqueValues(endingClasses, startingClasses);
 
@@ -27901,16 +29576,22 @@
 
           function end() {
             clone.remove();
-            outAnchor[0].classList.remove(NG_ANIMATE_SHIM_CLASS_NAME);
-            inAnchor[0].classList.remove(NG_ANIMATE_SHIM_CLASS_NAME);
+            outAnchor.classList.remove(NG_ANIMATE_SHIM_CLASS_NAME);
+            inAnchor.classList.remove(NG_ANIMATE_SHIM_CLASS_NAME);
           }
         }
 
+        /**
+         * @param {import("./interface.ts").AnimationDetails} from
+         * @param {import("./interface.ts").AnimationDetails} to
+         * @param {NonNullable<import("./interface.ts").AnimationDetails["anchors"]>} anchors
+         */
         function prepareFromToAnchorAnimation(from, to, anchors) {
           const fromAnimation = prepareRegularAnimation(from);
 
           const toAnimation = prepareRegularAnimation(to);
 
+          /** @type {Array<{ start(): ng.AnimateRunner }>} */
           const anchorAnimations = [];
 
           anchors.forEach((anchor) => {
@@ -27931,6 +29612,9 @@
 
           return {
             start() {
+              /**
+               * @type {ng.AnimateRunner[]}
+               */
               const animationRunners = [];
 
               if (fromAnimation) {
@@ -27965,6 +29649,9 @@
           };
         }
 
+        /**
+         * @param {import("./interface.ts").AnimationDetails} animationDetails
+         */
         function prepareRegularAnimation(animationDetails) {
           const options = animationDetails.options || {};
 
@@ -27986,7 +29673,7 @@
           // with `-active` to trigger the animation.
           if (options.preparationClasses) {
             options.event = concatWithSpace(
-              options.event,
+              /** @type {string} */ (options.event),
               options.preparationClasses,
             );
           }
@@ -28004,17 +29691,25 @@
     ];
   }
 
+  /**
+   * @param {string | null} classes
+   * @return {string}
+   */
   function filterCssClasses(classes) {
     // remove all the `ng-` stuff
-    return classes.replace(/\bng-\S+\b/g, "");
+    return classes ? classes.replace(/\bng-\S+\b/g, "") : "";
   }
 
+  /**
+   * @param {string | string[]} a
+   * @param {string | string[]} b
+   */
   function getUniqueValues(a, b) {
     if (isString(a)) a = a.split(" ");
 
     if (isString(b)) b = b.split(" ");
 
-    return a.filter((val) => b.indexOf(val) === -1).join(" ");
+    return a.filter((/** @type {any} */ val) => b.indexOf(val) === -1).join(" ");
   }
 
   AnimateJsDriverProvider.$inject = provider([$injectTokens._animation]);
@@ -28028,10 +29723,13 @@
       $injectTokens._animateJs,
       /**
        *
-       * @param {*} $$animateJs
+       * @param {import("./interface.ts").AnimateJsFn} $$animateJs
        */
       function ($$animateJs) {
-        return function initDriverFn(animationDetails) {
+        /**
+         * @param {import("./interface.ts").AnimationDetails} animationDetails
+         */
+        function initDriverFn(animationDetails) {
           if (animationDetails.from && animationDetails.to) {
             const fromAnimation = prepareAnimation(animationDetails.from);
 
@@ -28041,6 +29739,7 @@
 
             return {
               start() {
+                /** @type {Array<ng.AnimateRunner>} */
                 const animationRunners = [];
 
                 if (fromAnimation) {
@@ -28069,6 +29768,9 @@
                   };
                 }
 
+                /**
+                 * @param {boolean} status
+                 */
                 function done(status) {
                   runner.complete(status);
                 }
@@ -28077,20 +29779,27 @@
           }
 
           return prepareAnimation(animationDetails);
-        };
+        }
 
+        /**
+         * @param {import("./interface.ts").AnimationDetails} animationDetails
+         * @return {import("./interface.ts").Animator | undefined}
+         */
         function prepareAnimation(animationDetails) {
           // TODO(matsko): make sure to check for grouped animations and delegate down to normal animations
           const { element, event, options, classes } = animationDetails;
 
           return $$animateJs(element, event, classes, options);
         }
+
+        return initDriverFn;
       },
     ];
   }
 
   ngAnimateSwapDirective.$inject = [$injectTokens._animate];
   /**
+   * @param {ng.AnimateService} $animate
    * @returns {ng.Directive}
    */
   function ngAnimateSwapDirective($animate) {
@@ -28101,8 +29810,14 @@
       priority: 550, // We use 550 here to ensure that the directive is caught before others,
       // but after `ngIf` (at priority 600).
       link(scope, $element, attrs, _ctrl, $transclude) {
+        /**
+         * @type {HTMLElement | undefined}
+         */
         let previousElement;
 
+        /**
+         * @type {ng.Scope | undefined | null}
+         */
         let previousScope;
 
         scope.$watch(attrs.ngAnimateSwap || attrs.for, (value) => {
@@ -28116,10 +29831,10 @@
           }
 
           if (value) {
-            $transclude((clone, childScope) => {
-              previousElement = clone;
+            /** @type {ng.TranscludeFn} */ ($transclude)((clone, childScope) => {
+              previousElement = /** @type {HTMLElement} */ (clone);
               previousScope = childScope;
-              $animate.enter(clone, null, $element);
+              $animate.enter(/** @type {HTMLElement} */ (clone), null, $element);
             });
           }
         });
@@ -28145,7 +29860,7 @@
           // Interpolate and set the value, so that it is available to
           // animations that run right after compilation
           setData(
-            /** @type {import("../core/interpolate/interface.js").InterpolationFunction} */ (
+            /** @type {import("../core/interpolate/interface.ts").InterpolationFunction} */ (
               $interpolate(val)
             )(scope),
           );
@@ -28265,8 +29980,8 @@
    * Applies a set of defaults to an options object.  The options object is filtered
    * to only those properties of the objects in the defaultsList.
    * Earlier objects in the defaultsList take precedence when applying defaults.
-   * @param {{}} opts
-   * @param {{ current?: (() => void) | (() => null); transition?: null; traceData?: {}; bind?: null; inherit?: boolean; matchingKeys?: null; state?: { params: {}; }; strict?: boolean; caseInsensitive?: boolean; relative?: import("../router/state/state-object.js").StateObject | null | undefined; location?: boolean; notify?: boolean; reload?: boolean; supercede?: boolean; custom?: {}; source?: string; lossy?: boolean; absolute?: boolean; }[]} defaultsList
+   * @param {any} opts
+   * @param {any} defaultsList
    */
   function defaults(opts, ...defaultsList) {
     const defaultVals = Object.assign({}, ...defaultsList.reverse());
@@ -28425,10 +30140,9 @@
   /**
    * Reduce function which un-nests a single level of arrays
    *
-   * @template T
-   * @param {T[]} memo
-   * @param {T | T[]} elem
-   * @returns {T[]}
+   * @param {any} memo
+   * @param {any} elem
+   * @returns {any}
    *
    * @example
    * let input = [ [ "a", "b" ], [ "c", "d" ], [ [ "double", "nested" ] ] ];
@@ -28795,44 +30509,55 @@
    */
   class ParamType {
     /**
-     * @param def  A configuration object which contains the custom type definition.  The object's
-     *        properties will override the default methods and/or pattern in `ParamType`'s public interface.
-     */
+       * @param {any} def A configuration object which contains the custom type definition.  The object's
+      properties will override the default methods and/or pattern in `ParamType`'s public interface.
+       */
     constructor(def) {
       this.pattern = /.*/;
       this.inherit = true;
       Object.assign(this, def);
+      /** @type {string|undefined} */
       this.name = undefined;
     }
     // consider these four methods to be "abstract methods" that should be overridden
 
+    /**
+     * @param {any} val
+     */
     is(val) {
       return !!val;
     }
 
+    /**
+     * @param {any} val
+     */
     encode(val) {
       return val;
     }
 
+    /**
+     * @param {any} val
+     */
     decode(val) {
       return val;
     }
 
+    /**
+     * @param {any} a
+     * @param {any} b
+     */
     equals(a, b) {
       return a === b;
-    }
-
-    $subPattern() {
-      const sub = this.pattern.toString();
-
-      return sub.substring(1, sub.length - 2);
     }
 
     toString() {
       return `{ParamType:${this.name}}`;
     }
 
-    /** Given an encoded string, or a decoded object, returns a decoded object */
+    /**
+     * Given an encoded string, or a decoded object, returns a decoded object
+     * @param {any} val
+     */
     $normalize(val) {
       return this.is(val) ? val : this.decode(val);
     }
@@ -28846,6 +30571,8 @@
      * if `mode` is "auto", then
      * - url: "/path?queryParam=1 will create $stateParams.queryParam: 1
      * - url: "/path?queryParam=1&queryParam=2 will create $stateParams.queryParam: [1, 2]
+     * @param {boolean |'auto'} mode
+     * @param {any} isSearch
      */
     $asArray(mode, isSearch) {
       if (!mode) return this;
@@ -28856,13 +30583,25 @@
       return new ArrayType(this, mode);
     }
   }
-  /** Wraps up a `ParamType` object to handle array values. */
+
+  /**
+   * Wraps up a `ParamType` object to handle array values.
+   * @this {Record<string, any>}
+   * @param {ParamType & Record<string, any>} type
+   * @param {boolean | 'auto'} mode
+   */
   function ArrayType(type, mode) {
     // Wrap non-array value as array
+    /**
+     * @param {any} val
+     */
     function arrayWrap(val) {
       return isArray(val) ? val : isDefined(val) ? [val] : [];
     }
     // Unwrap array value for "auto" mode. Return undefined for empty array.
+    /**
+     * @param {any} val
+     */
     function arrayUnwrap(val) {
       switch (val.length) {
         case 0:
@@ -28874,8 +30613,12 @@
       }
     }
     // Wraps type (.is/.encode/.decode) functions to operate on each value of an array
+    /**
+     * @param {(value: any) => any} callback
+     * @param {boolean} [allTruthyMode]
+     */
     function arrayHandler(callback, allTruthyMode) {
-      return function handleArray(val) {
+      return function handleArray(/** @type {string | any[]} */ val) {
         if (isArray(val) && val.length === 0) return val;
         const arr = arrayWrap(val);
 
@@ -28887,8 +30630,14 @@
       };
     }
     // Wraps type (.equals) functions to operate on each value of an array
+    /**
+     * @param {(arg0: any, arg1: any) => any} callback
+     */
     function arrayEqualsHandler(callback) {
-      return function handleArray(val1, val2) {
+      return function handleArray(
+        /** @type {any} */ val1,
+        /** @type {any} */ val2,
+      ) {
         const left = arrayWrap(val1),
           right = arrayWrap(val2);
 
@@ -28908,6 +30657,7 @@
 
       this[name] = wrapperFn(paramTypeFn);
     });
+
     Object.assign(this, {
       dynamic: type.dynamic,
       name: type.name,
@@ -28945,6 +30695,9 @@
   class ParamTypes {
     constructor() {
       this.enqueue = true;
+      /**
+       * @type {{ name: any; def: any; }[]}
+       */
       this.typeQueue = [];
       this.defaultTypes = pick(ParamTypes.prototype, [
         "hash",
@@ -28958,9 +30711,12 @@
         "any",
       ]);
       // Register default types. Store them in the prototype of this.types.
-      const makeType = (definition, name) =>
+      const makeType = (/** @type {any} */ definition, /** @type {any} */ name) =>
         new ParamType(Object.assign({ name }, definition));
 
+      /**
+       * @type {Record<string, any>}
+       */
       this.types = inherit(map(this.defaultTypes, makeType), {});
     }
 
@@ -28968,13 +30724,18 @@
      * Registers a parameter type
      *
      * End users should call [[UrlMatcherFactory.type]], which delegates to this method.
+     * @param {string} name
+     * @param {import("./interface.ts").ParamTypeDefinition} [definition]
+     * @param {() => import("../params/interface.ts").ParamTypeDefinition} [definitionFn]
      */
     type(name, definition, definitionFn) {
       if (!isDefined(definition)) return this.types[name];
 
       if (hasOwn(this.types, name))
         throw new Error(`A type named '${name}' has already been defined.`);
-      this.types[name] = new ParamType(Object.assign({ name }, definition));
+      this.types[/** @type {string} */ (name)] = new ParamType(
+        Object.assign({ name }, definition),
+      );
 
       if (definitionFn) {
         this.typeQueue.push({ name, def: definitionFn });
@@ -28987,7 +30748,7 @@
 
     _flushTypeQueue() {
       while (this.typeQueue.length) {
-        const type = this.typeQueue.shift();
+        const type = /** @type {any} */ (this.typeQueue.shift());
 
         if (type.pattern)
           throw new Error("You cannot override a type's .pattern at runtime.");
@@ -28999,8 +30760,8 @@
     }
   }
   function initDefaultTypes() {
-    const makeDefaultType = (def) => {
-      const valToString = (val) =>
+    const makeDefaultType = /** @param {any} def */ (def) => {
+      const valToString = (/** @type {any} */ val) =>
         !isNullOrUndefined(val) ? val.toString() : val;
 
       const defaultTypeBase = {
@@ -29009,7 +30770,7 @@
         is: is(String),
         pattern: /.*/,
 
-        equals: (a, b) => a === b, // allow coersion for null/undefined/""
+        equals: (/** @type {any} */ a, /** @type {any} */ b) => a === b, // allow coersion for null/undefined/""
       };
 
       return Object.assign({}, defaultTypeBase, def);
@@ -29026,19 +30787,25 @@
         inherit: false,
       }),
       int: makeDefaultType({
-        decode: (val) => parseInt(val, 10),
+        decode: (/** @type {string} */ val) => parseInt(val, 10),
+        /**
+         * @param {unknown} val
+         */
         is(val) {
           return !isNullOrUndefined(val) && this.decode(val.toString()) === val;
         },
         pattern: /-?\d+/,
       }),
       bool: makeDefaultType({
-        encode: (val) => (val && 1) || 0,
-        decode: (val) => parseInt(val, 10) !== 0,
+        encode: (/** @type {any} */ val) => (val && 1) || 0,
+        decode: (/** @type {string} */ val) => parseInt(val, 10) !== 0,
         is: is(Boolean),
         pattern: /[01]/,
       }),
       date: makeDefaultType({
+        /**
+         * @param {{ getFullYear: () => any; getMonth: () => number; getDate: () => any; }} val
+         */
         encode(val) {
           return !this.is(val)
             ? undefined
@@ -29048,13 +30815,21 @@
                 `0${val.getDate()}`.slice(-2),
               ].join("-");
         },
+        /**
+         * @param {any} val
+         */
         decode(val) {
           if (this.is(val)) return val;
           const match = this.capture.exec(val);
 
           return match ? new Date(match[1], match[2] - 1, match[3]) : undefined;
         },
-        is: (val) => val instanceof Date && !isNaN(val.valueOf()),
+        is: (/** @type {any} */ val) =>
+          val instanceof Date && !isNaN(val.valueOf()),
+        /**
+         * @param {{ [x: string]: () => any; }} left
+         * @param {{ [x: string]: () => any; }} right
+         */
         equals(left, right) {
           return ["getFullYear", "getMonth", "getDate"].reduce(
             (acc, fn) => acc && left[fn]() === right[fn](),
@@ -29073,8 +30848,8 @@
       }),
       // does not encode/decode
       any: makeDefaultType({
-        encode: (x) => x,
-        decode: (x) => x,
+        encode: (/** @type {any} */ x) => x,
+        decode: (/** @type {any} */ x) => x,
         is: () => true,
         equals,
       }),
@@ -29103,7 +30878,7 @@
       this._isCaseInsensitive = false;
       /** @type {boolean} */
       this._isStrictMode = true;
-      /** @type {boolean} */
+      /** @type {boolean | string} */
       this._defaultSquashPolicy = false;
       /**
        * Applys ng1-specific path parameter encoding
@@ -29118,17 +30893,14 @@
        */
       const pathType = this.type("path");
 
-      pathType.encode = (x) =>
+      pathType.encode = (/** @type {unknown} */ x) =>
         !isNullOrUndefined(x)
-          ? x
-              .toString()
-              .replace(/([~/])/g, (match) => ({ "~": "~~", "/": "~2F" })[match])
+          ? x.toString().replace(/([~/])/g, (i) => (i === "~" ? "~~" : "~2F"))
           : x;
-      pathType.decode = (x) =>
+
+      pathType.decode = (/** @type {unknown} */ x) =>
         !isNullOrUndefined(x)
-          ? x
-              .toString()
-              .replace(/(~~|~2F)/g, (match) => ({ "~~": "~", "~2F": "/" })[match])
+          ? x.toString().replace(/(~~|~2F)/g, (i) => (i === "~~" ? "~" : "/"))
           : x;
       this.paramTypes.enqueue = false;
       this.paramTypes._flushTypeQueue();
@@ -29144,9 +30916,8 @@
      * // Allow case insensitive url matches
      * urlService.config.caseInsensitive(true);
      * ```
-     *
-     * @param value `false` to match URL in a case sensitive manner; otherwise `true`;
-     * @returns the current value of caseInsensitive
+     * @param {boolean} [value] `false` to match URL in a case sensitive manner; otherwise `true`;
+     * @returns {boolean} the current value of caseInsensitive
      */
     caseInsensitive(value) {
       return (this._isCaseInsensitive = isDefined(value)
@@ -29163,13 +30934,13 @@
      * urlService.config.defaultSquashPolicy(true);
      * ```
      *
-     * @param value A string that defines the default parameter URL squashing behavior.
+     * @param {boolean | string} [value] A string that defines the default parameter URL squashing behavior.
      *    - `nosquash`: When generating an href with a default parameter value, do not squash the parameter value from the URL
      *    - `slash`: When generating an href with a default parameter value, squash (remove) the parameter value, and, if the
      *      parameter is surrounded by slashes, squash (remove) one slash from the URL
      *    - any other string, e.g. "~": When generating an href with a default parameter value, squash (remove)
      *      the parameter value from the URL and replace it with this string.
-     * @returns the current value of defaultSquashPolicy
+     * @returns {boolean | string} the current value of defaultSquashPolicy
      */
     defaultSquashPolicy(value) {
       if (
@@ -29196,8 +30967,8 @@
      * urlService.config.strictMode(false);
      * ```
      *
-     * @param value `false` to match trailing slashes in URLs, otherwise `true`.
-     * @returns the current value of strictMode
+     * @param {boolean} value `false` to match trailing slashes in URLs, otherwise `true`.
+     * @returns {boolean} the current value of strictMode
      */
     strictMode(value) {
       return (this._isStrictMode = isDefined(value) ? value : this._isStrictMode);
@@ -29224,9 +30995,9 @@
      *
      * See [[ParamTypeDefinition]] for more examples
      *
-     * @param name The type name.
-     * @param definition The type definition. See [[ParamTypeDefinition]] for information on the values accepted.
-     * @param definitionFn A function that is injected before the app runtime starts.
+     * @param {string} name The type name.
+     * @param {import("../params/interface.ts").ParamTypeDefinition} [definition] The type definition. See [[ParamTypeDefinition]] for information on the values accepted.
+     * @param {() => import("../params/interface.ts").ParamTypeDefinition} [definitionFn] A function that is injected before the app runtime starts.
      *        The result of this function should be a [[ParamTypeDefinition]].
      *        The result is merged into the existing `definition`.
      *        See [[ParamType]] for information on the values accepted.
@@ -29240,6 +31011,8 @@
     }
   }
 
+  /** @typedef {import("../state/state-object.js").StateObject} StateObject */
+
   class StateParams {
     constructor(params = {}) {
       Object.assign(this, params);
@@ -29250,30 +31023,38 @@
      * current state and a given destination state.
      *
      * @param {Object} newParams The set of parameters which will be composited with inherited params.
-     * @param {Object} $current Internal definition of object representing the current state.
-     * @param {Object} $to Internal definition of object representing state to transition to.
+     * @param {StateObject} $current Internal definition of object representing the current state.
+     * @param {StateObject} $to Internal definition of object representing state to transition to.
      */
     $inherit(newParams, $current, $to) {
-      const parents = ancestors($current, $to),
-        inherited = {},
-        inheritList = [];
+      const parents = ancestors($current, $to);
 
-      for (const i in parents) {
-        if (!parents[i] || !parents[i].params) continue;
-        const parentParams = parents[i].params;
+      /** @type {Record<string, any>} */
+      const inherited = {};
 
+      /** @type {string[]} */
+      const inheritList = [];
+
+      for (const parent of parents) {
+        if (!parent || !parent.params) continue;
+        /** @type {Record<string, any>} */
+        const parentParams = parent.params;
+
+        /** @type {string[]} */
         const parentParamsKeys = keys(parentParams);
 
         if (!parentParamsKeys.length) continue;
 
-        for (const j in parentParamsKeys) {
+        for (const key of parentParamsKeys) {
           if (
-            parentParams[parentParamsKeys[j]].inherit === false ||
-            inheritList.indexOf(parentParamsKeys[j]) >= 0
-          )
+            parentParams[key].inherit === false ||
+            inheritList.indexOf(key) >= 0
+          ) {
             continue;
-          inheritList.push(parentParamsKeys[j]);
-          inherited[parentParamsKeys[j]] = this[parentParamsKeys[j]];
+          }
+
+          inheritList.push(key);
+          inherited[key] = /** @type {Record<string, any>} */ (this)[key];
         }
       }
 
@@ -29284,16 +31065,23 @@
   /**
    * Finds the common ancestor path between two states.
    *
-   * @param {Object} first The first state.
-   * @param {Object} second The second state.
-   * @return {Array<any>} Returns an array of state names in descending order, not including the root.
+   * @param {StateObject} first The first state.
+   * @param {StateObject} second The second state.
+   * @return {Array<StateObject>} Returns an array of state names in descending order, not including the root.
    */
   function ancestors(first, second) {
+    /** @type {Array<StateObject>} */
     const path = [];
 
-    for (const i in first.path) {
-      if (first.path[i] !== second.path[i]) break;
-      path.push(first.path[i]);
+    const firstPath = first.path || [];
+
+    const secondPath = second.path || [];
+
+    const len = Math.min(firstPath.length, secondPath.length);
+
+    for (let i = 0; i < len; i++) {
+      if (firstPath[i] !== secondPath[i]) break;
+      path.push(firstPath[i]);
     }
 
     return path;
@@ -29439,33 +31227,33 @@
       this._lastStartedTransitionId = -1;
 
       /**
-       * @type {Queue<import("./transition/transition.js").Transition>}
+       * @type {Queue<ng.Transition>}
        */
       this._transitionHistory = new Queue(
-        /** @type {Array<import("./transition/transition.js").Transition>} */ ([]),
+        /** @type {Array<ng.Transition>} */ ([]),
         1,
       );
 
       /**
-       * @type {Queue<import("./transition/transition.js").Transition>}
+       * @type {Queue<ng.Transition>}
        */
       this._successfulTransitions = new Queue(
-        /** @type {Array<import("./transition/transition.js").Transition>} */ ([]),
+        /** @type {Array<ng.Transition>} */ ([]),
         1,
       );
 
       /**
-       * @type {import("./state/interface.ts").StateDeclaration|undefined}
+       * @type {ng.StateDeclaration|undefined}
        */
       this.current = undefined;
 
       /**
-       * @type {import("./state/state-object.js").StateObject|undefined}
+       * @type {ng.StateObject|undefined}
        */
       this.$current = undefined;
 
       /**
-       * @type {import("./transition/transition.js").Transition|undefined}
+       * @type {ng.Transition|undefined}
        */
       this.transition = undefined;
     }
@@ -29696,8 +31484,15 @@
    * @packageDocumentation
    */
 
+  /** @typedef {import("../transition/interface.ts").HookResult} HookResult */
+  /** @typedef {import("../transition/transition-hook.js").TransitionHook} TransitionHook */
+
   const MAX_PAD_LENGTH = 30;
 
+  /**
+   * @param {import("../view/interface.ts").ActiveUIView} ngView
+   * @return {string}
+   */
   function ngViewString(ngView) {
     if (!ngView) return "ng-view (defunct)";
     const state = ngView.creationContext
@@ -29707,16 +31502,25 @@
     return `[ng-view#${ngView.id}:${ngView.fqn} (${ngView.name}@${state})]`;
   }
 
-  const viewConfigString = (viewConfig) => {
-    const view = viewConfig.viewDecl;
+  const viewConfigString =
+    /** @param {import("../view/view.js").ViewConfig} viewConfig */ (
+      viewConfig,
+    ) => {
+      const view = viewConfig.viewDecl;
 
-    const state = view.$context.name || "(root)";
+      const state = view.$context?.name || "(root)";
 
-    return `[View#${viewConfig.$id} from '${state}' state]: target ng-view: '${view.$ngViewName}@${view.$ngViewContextAnchor}'`;
-  };
+      return `[View#${viewConfig.$id} from '${state}' state]: target ng-view: '${view.$ngViewName}@${view.$ngViewContextAnchor}'`;
+    };
 
+  /**
+   * @param {Category | string} input
+   * @return {string}
+   */
   function normalizedCat(input) {
-    return isNumber(input) ? Category[input] : Category[Category[input]];
+    return isNumber(input)
+      ? Category[input]
+      : Category[Category[/** @type {string} */ (input)]];
   }
   /**
    * Trace categories Enum
@@ -29733,32 +31537,43 @@
    */
 
   /**
-   * @enum {number}
+   * @type {Record<string, string>}
    */
   const Category = {
-    _RESOLVE: 0,
-    _TRANSITION: 1,
-    _HOOK: 2,
-    _UIVIEW: 3,
-    _VIEWCONFIG: 4,
+    _RESOLVE: "RESOLVE",
+    _TRANSITION: "TRANSITION",
+    _HOOK: "HOOK",
+    _UIVIEW: "UIVIEW",
+    _VIEWCONFIG: "VIEWCONFIG",
   };
 
   const _tid = parse("$id");
 
   const _rid = parse("router.$id");
 
-  const transLbl = (trans) => `Transition #${_tid(trans)}-${_rid(trans)}`;
+  /**
+   * @param {ng.Transition} trans
+   * @return {string}
+   */
+  function transLbl(trans) {
+    return `Transition #${_tid(trans)}-${_rid(trans)}`;
+  }
 
   /**
    * Prints ng-router Transition trace information to the console.
    */
   class Trace {
     constructor() {
+      /** @type {Record<string, boolean> } */
       this._enabled = {};
       this.approximateDigests = 0;
       this.$logger = window.angular?.$injector?.get($injectTokens._log);
     }
 
+    /**
+     * @param {boolean} enabled
+     * @param {string[]} categories
+     */
     _set(enabled, categories) {
       if (!categories.length) {
         categories = keys(Category)
@@ -29771,10 +31586,16 @@
         .forEach((category) => (this._enabled[category] = enabled));
     }
 
+    /**
+     * @param {string[]} categories
+     */
     enable(...categories) {
       this._set(true, categories);
     }
 
+    /**
+     * @param {string[]} categories
+     */
     disable(...categories) {
       this._set(false, categories);
     }
@@ -29785,26 +31606,37 @@
      * ```js
      * trace.enabled("VIEWCONFIG"); // true or false
      * ```
-     *
-     * @returns boolean true if the category is enabled
+     * @param {string} category
+     * @returns {boolean} true if the category is enabled
      */
     enabled(category) {
       return !!this._enabled[normalizedCat(category)];
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {ng.Transition} trans
+     */
     traceTransitionStart(trans) {
       if (!this.enabled(Category._TRANSITION)) return;
       this.$logger.log(`${transLbl(trans)}: Started  -> ${stringify(trans)}`);
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {ng.Transition} trans
+     */
     traceTransitionIgnored(trans) {
       if (!this.enabled(Category._TRANSITION)) return;
       this.$logger.log(`${transLbl(trans)}: Ignored  <> ${stringify(trans)}`);
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {import("../transition/transition-hook.js").TransitionHook} step
+     * @param {ng.Transition} trans
+     * @param {import("../transition/interface.ts").TransitionHookOptions} options
+     */
     traceHookInvocation(step, trans, options) {
       if (!this.enabled(Category._HOOK)) return;
       const event = parse("traceData.hookType")(options) || "internal",
@@ -29820,6 +31652,10 @@
     }
 
     /** @internal called by ng-router code */
+    /**
+     * @param {HookResult} hookResult
+     * @param {ng.Transition} trans
+     */
     traceHookResult(hookResult, trans) {
       if (!this.enabled(Category._HOOK)) return;
       this.$logger.log(
@@ -29827,13 +31663,22 @@
       );
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {import("../path/path-node.js").PathNode[]} path
+     * @param {import("../resolve/interface.ts").PolicyWhen} when
+     * @param {ng.Transition} trans
+     */
     traceResolvePath(path, when, trans) {
       if (!this.enabled(Category._RESOLVE)) return;
       this.$logger.log(`${transLbl(trans)}:         Resolving ${path} (${when})`);
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {import("../resolve/resolvable.js").Resolvable} resolvable
+     * @param {ng.Transition} trans
+     */
     traceResolvableResolved(resolvable, trans) {
       if (!this.enabled(Category._RESOLVE)) return;
       this.$logger.log(
@@ -29841,7 +31686,11 @@
       );
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {any} reason
+     * @param {ng.Transition} trans
+     */
     traceError(reason, trans) {
       if (!this.enabled(Category._TRANSITION)) return;
       this.$logger.log(
@@ -29849,7 +31698,11 @@
       );
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {import("../state/state-object.js").StateObject} finalState
+     * @param {ng.Transition} trans
+     */
     traceSuccess(finalState, trans) {
       if (!this.enabled(Category._TRANSITION)) return;
       this.$logger.log(
@@ -29857,7 +31710,11 @@
       );
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {string} event
+     * @param {import("../view/interface.ts").ActiveUIView} viewData
+     */
     traceUIViewEvent(event, viewData, extra = "") {
       if (!this.enabled(Category._UIVIEW)) return;
       this.$logger.log(
@@ -29865,7 +31722,11 @@
       );
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {import("../view/interface.ts").ActiveUIView} viewData
+     * @param {import("../view/interface.ts").ViewContext | undefined} context
+     */
     traceUIViewConfigUpdated(viewData, context) {
       if (!this.enabled(Category._UIVIEW)) return;
       this.traceUIViewEvent(
@@ -29875,13 +31736,20 @@
       );
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {import("../view/interface.ts").ActiveUIView} viewData
+     * @param {string} html
+     */
     traceUIViewFill(viewData, html) {
       if (!this.enabled(Category._UIVIEW)) return;
       this.traceUIViewEvent("Fill", viewData, ` with: ${maxLength(200, html)}`);
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {import("../view/interface.ts").ViewTuple[]} pairs
+     */
     traceViewSync(pairs) {
       if (!this.enabled(Category._VIEWCONFIG)) return;
       const uivheader = "uiview component fqn";
@@ -29894,7 +31762,7 @@
 
           const cfg =
             viewConfig &&
-            `${viewConfig.viewDecl.$context.name}: (${viewConfig.viewDecl.$name})`;
+            `${viewConfig.viewDecl.$context?.name}: (${viewConfig.viewDecl.$name})`;
 
           return { [uivheader]: uiv, [cfgheader]: cfg };
         })
@@ -29903,13 +31771,21 @@
       this.$logger.table(mapping);
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {string} event
+     * @param {import("../view/view.js").ViewConfig} viewConfig
+     */
     traceViewServiceEvent(event, viewConfig) {
       if (!this.enabled(Category._VIEWCONFIG)) return;
       this.$logger.log(`VIEWCONFIG: ${event} ${viewConfigString(viewConfig)}`);
     }
 
-    /** @internal called by ng-router code */
+    /**
+     * @internal called by ng-router code
+     * @param {string} event
+     * @param {import("../view/interface.ts").ActiveUIView} viewData
+     */
     traceViewServiceUIViewEvent(event, viewData) {
       if (!this.enabled(Category._VIEWCONFIG)) return;
       this.$logger.log(`VIEWCONFIG: ${event} ${ngViewString(viewData)}`);
@@ -29944,6 +31820,13 @@
    * parameter to those fns.
    */
   class Resolvable {
+    /**
+     * @param {any} arg1
+     * @param {Function | undefined} [resolveFn]
+     * @param {any[]} [deps]
+     * @param {import("./interface.ts").ResolvePolicy | undefined} [policy]
+     * @param {any} [data]
+     */
     constructor(arg1, resolveFn, deps, policy, data) {
       this.resolved = false;
       this.promise = undefined;
@@ -29972,6 +31855,10 @@
       }
     }
 
+    /**
+     * @param {ng.BuiltStateDeclaration} state
+     * @returns {import("./interface.ts").ResolvePolicy}
+     */
     getPolicy(state) {
       const thisPolicy = this.policy || {};
 
@@ -29990,18 +31877,21 @@
      * Given a ResolveContext that this Resolvable is found in:
      * Wait for this Resolvable's dependencies, then invoke this Resolvable's function
      * and update the Resolvable's state
+     * @param {import("./resolve-context.js").ResolveContext} resolveContext
+     * @param {ng.Transition} [trans]
      */
     resolve(resolveContext, trans) {
       // Gets all dependencies from ResolveContext and wait for them to be resolved
+      /** @type {() => Promise<any[]>} */
       const getResolvableDependencies = () =>
         Promise.all(
-          resolveContext
-            .getDependencies(this)
-            .map((resolvable) => resolvable.get(resolveContext, trans)),
+          resolveContext.getDependencies(this).map((resolvable) => {
+            return resolvable.get(resolveContext, trans);
+          }),
         );
 
       // Invokes the resolve function passing the resolved dependencies as arguments
-      const invokeResolveFn = (resolvedDeps) =>
+      const invokeResolveFn = (/** @type {any[]} */ resolvedDeps) =>
         this.resolveFn.apply(null, resolvedDeps);
 
       const node = resolveContext.findNode(this);
@@ -30010,14 +31900,16 @@
 
       const asyncPolicy = this.getPolicy(state).async;
 
-      const customAsyncPolicy = isFunction(asyncPolicy) ? asyncPolicy : (x) => x;
+      const customAsyncPolicy = isFunction(asyncPolicy)
+        ? asyncPolicy
+        : (/** @type {any} */ x) => x;
 
       // After the final value has been resolved, update the state of the Resolvable
-      const applyResolvedValue = (resolvedValue) => {
+      const applyResolvedValue = (/** @type {any} */ resolvedValue) => {
         this.data = resolvedValue;
         this.resolved = true;
         this.resolveFn = null;
-        trace.traceResolvableResolved(this, trans);
+        trace.traceResolvableResolved(this, /** @type {ng.Transition} */ (trans));
 
         return this.data;
       };
@@ -30037,6 +31929,9 @@
      *
      * Fetches the data and returns a promise.
      * Returns the existing promise if it has already been fetched once.
+     * @param {import("./resolve-context.js").ResolveContext} resolveContext
+     * @param {ng.Transition | undefined} [trans]
+     * @return {Promise<any>}
      */
     get(resolveContext, trans) {
       return this.promise || this.resolve(resolveContext, trans);
@@ -30050,8 +31945,8 @@
       return new Resolvable(this);
     }
   }
-  Resolvable.fromData = (token, data) =>
-    new Resolvable(token, () => data, null, null, data);
+  Resolvable.fromData = (/** @type {any} */ token, /** @type {any} */ data) =>
+    new Resolvable(token, () => data, undefined, undefined, data);
 
   /**
    * Encapsulate the target (destination) state/params/options of a [[Transition]].
@@ -30089,11 +31984,11 @@
      * Note: Do not construct a `TargetState` manually.
      * To create a `TargetState`, use the [[StateService.target]] factory method.
      *
-     * @param _stateRegistry The StateRegistry to use to look up the _definition
-     * @param _identifier An identifier for a state.
+     * @param {import("./state-service.js").StateRegistryProvider} _stateRegistry The StateRegistry to use to look up the _definition
+     * @param {import("./interface.js").StateOrName} _identifier An identifier for a state.
      *    Either a fully-qualified state name, or the object used to define the state.
-     * @param _params Parameters for the target state
-     * @param _options Transition options.
+     * @param {import("../params/interface.js").RawParams} _params Parameters for the target state
+     * @param {import("../transition/interface.js").TransitionOptions} _options Transition options.
      *
      * @internal
      */
@@ -30151,7 +32046,7 @@
 
     /** If the object is invalid, returns the reason why */
     error() {
-      const base = this.options().relative;
+      const base = /** @type {any} */ (this.options().relative);
 
       if (!this._definition && !!base) {
         const stateName = base.name ? base.name : base;
@@ -30175,7 +32070,8 @@
      * Returns a copy of this TargetState which targets a different state.
      * The new TargetState has the same parameter values and transition options.
      *
-     * @param state The new state that should be targeted
+     * @param {import("./interface.js").StateOrName} state The new state that should be targeted
+     * @returns {TargetState} A new TargetState instance which targets the desired state
      */
     withState(state) {
       return new TargetState(
@@ -30189,9 +32085,10 @@
     /**
      * Returns a copy of this TargetState, using the specified parameter values.
      *
-     * @param params the new parameter values to use
-     * @param replace When false (default) the new parameter values will be merged with the current values.
+     * @param {import("../params/interface.js").RawParams} params the new parameter values to use
+     * @param {boolean} replace When false (default) the new parameter values will be merged with the current values.
      *                When true the parameter values will be used instead of the current values.
+     * @returns {TargetState} A new TargetState instance which targets the same state with the desired parameters
      */
     withParams(params, replace = false) {
       const newParams = replace
@@ -30209,9 +32106,10 @@
     /**
      * Returns a copy of this TargetState, using the specified Transition Options.
      *
-     * @param options the new options to use
-     * @param replace When false (default) the new options will be merged with the current options.
+     * @param {import("../transition/interface.js").TransitionOptions} options the new options to use
+     * @param {boolean} replace When false (default) the new options will be merged with the current options.
      *                When true the options will be used instead of the current options.
+     * @returns {TargetState} A new TargetState instance which targets the same state with the desired options
      */
     withOptions(options, replace = false) {
       const newOpts = replace
@@ -30227,7 +32125,7 @@
     }
   }
   /** Returns true if the object has a state property that might be a state or state name */
-  TargetState.isDef = (obj) => {
+  TargetState.isDef = (/** @type {any} */ obj) => {
     return (
       obj &&
       obj.state &&
@@ -30235,13 +32133,14 @@
     );
   };
 
-  const isShorthand = (cfg) =>
+  /** @typedef {import("./interface.ts").ParamDeclaration} ParamDeclaration */
+
+  const isShorthand = /** @param {ParamDeclaration} cfg */ (cfg) =>
     ["value", "type", "squash", "array", "dynamic"].filter(
       Object.prototype.hasOwnProperty.bind(cfg || {}),
     ).length === 0;
 
   /**
-   * @internal
    * @enum {number}
    */
   const DefType = {
@@ -30250,6 +32149,12 @@
     _CONFIG: 2,
   };
 
+  /**
+   * @param {string} paramName
+   * @param {DefType} location
+   * @param {ng.StateDeclaration} state
+   * @return {import("./interface.ts").ParamDeclaration}
+   */
   function getParamDeclaration(paramName, location, state) {
     const noReloadOnSearch =
       (state.reloadOnSearch === false && location === DefType._SEARCH) ||
@@ -30266,6 +32171,10 @@
     return Object.assign(defaultConfig, paramConfig);
   }
 
+  /**
+   * @param {ParamDeclaration} cfg
+   * @return {ParamDeclaration}
+   */
   function unwrapShorthand(cfg) {
     cfg = isShorthand(cfg) ? { value: cfg } : cfg;
     getStaticDefaultValue._cacheable = true;
@@ -30277,6 +32186,13 @@
     return Object.assign(cfg, { _fn });
   }
 
+  /**
+   * @param {ParamDeclaration} cfg
+   * @param {ParamType | null} urlType
+   * @param {DefType} location
+   * @param {string} id
+   * @param {import("./param-types.js").ParamTypes} paramTypes
+   */
   function getType(cfg, urlType, location, id, paramTypes) {
     if (cfg.type && urlType && urlType.name !== "string")
       throw new Error(`Param '${id}' has two type configurations.`);
@@ -30285,9 +32201,9 @@
       cfg.type &&
       urlType &&
       urlType.name === "string" &&
-      paramTypes.type(cfg.type)
+      paramTypes.type(/** @type {string} */ (cfg.type))
     )
-      return paramTypes.type(cfg.type);
+      return paramTypes.type(/** @type {string} */ (cfg.type));
 
     if (urlType) return urlType;
 
@@ -30307,7 +32223,12 @@
     return cfg.type instanceof ParamType ? cfg.type : paramTypes.type(cfg.type);
   }
 
-  /** returns false, true, or the squash value to indicate the "default parameter url squash policy". */
+  /**
+   * returns false, true, or the squash value to indicate the "default parameter url squash policy".
+   * @param {ParamDeclaration} config
+   * @param {boolean} isOptional
+   * @param {boolean | string} defaultPolicy
+   */
   function getSquashPolicy(config, isOptional, defaultPolicy) {
     const { squash } = config;
 
@@ -30321,6 +32242,12 @@
     );
   }
 
+  /**
+   * @param {ParamDeclaration} config
+   * @param {boolean} arrayMode
+   * @param {boolean} isOptional
+   * @param {string | boolean} squash
+   */
   function getReplace(config, arrayMode, isOptional, squash) {
     const defaultPolicy = [
       { from: "", to: isOptional || arrayMode ? undefined : "" },
@@ -30330,22 +32257,23 @@
     const replace = isArray(config.replace) ? config.replace : [];
 
     if (isString(squash)) replace.push({ from: squash, to: undefined });
-    const configuredKeys = map(replace, (x) => x.from);
+
+    const configuredKeys = /** @type {string[]} */ (map(replace, (x) => x.from));
 
     return filter(
       defaultPolicy,
-      (item) => configuredKeys.indexOf(item.from) === -1,
+      (item) => configuredKeys.indexOf(/** @type {string} */ (item.from)) === -1,
     ).concat(replace);
   }
 
   class Param {
     /**
      *
-     * @param {*} id
-     * @param {*} type
+     * @param {string} id
+     * @param {ParamType | null} type
      * @param {DefType} location
      * @param {import("../url/url-config.js").UrlConfigProvider} urlConfig
-     * @param {*} state
+     * @param {ng.StateDeclaration} state
      */
     constructor(id, type, location, urlConfig, state) {
       const config = getParamDeclaration(id, location, state);
@@ -30353,17 +32281,17 @@
       type = getType(config, type, location, id, urlConfig.paramTypes);
       const arrayMode = getArrayMode();
 
-      type = arrayMode
-        ? type.$asArray(arrayMode, location === DefType._SEARCH)
-        : type;
+      type = /** @type {ParamType} */ (
+        arrayMode
+          ? type && type.$asArray(arrayMode, location === DefType._SEARCH)
+          : type
+      );
       const isOptional =
         config.value !== undefined || location === DefType._SEARCH;
 
-      const dynamic = isDefined(config.dynamic)
-        ? !!config.dynamic
-        : !!type.dynamic;
+      const dynamic = !!config.dynamic;
 
-      const raw = isDefined(config.raw) ? !!config.raw : !!type.raw;
+      const raw = !!config.raw;
 
       const squash = getSquashPolicy(
         config,
@@ -30398,8 +32326,13 @@
       this.inherit = inherit;
       this.array = arrayMode;
       this.config = config;
+      /** @type {import("./interface.ts").RawParams | undefined} */
+      this.matchingKeys = undefined;
     }
 
+    /**
+     * @param {any} value
+     */
     isDefaultValue(value) {
       return this.isOptional && this.type.equals(this.value(), value);
     }
@@ -30407,6 +32340,7 @@
     /**
      * [Internal] Gets the decoded representation of a value if the value is defined, otherwise, returns the
      * default value, which may be the result of an injectable function.
+     * @param {undefined} [value]
      */
     value(value) {
       /**
@@ -30437,7 +32371,7 @@
         return defaultValue;
       };
 
-      const replaceSpecialValues = (val) => {
+      const replaceSpecialValues = (/** @type {any} */ val) => {
         for (const tuple of this.replace) {
           if (tuple.from === val) return tuple.to;
         }
@@ -30454,6 +32388,9 @@
       return this.location === DefType._SEARCH;
     }
 
+    /**
+     * @param {null} value
+     */
     validates(value) {
       // There was no parameter value, but the param is optional
       if ((isUndefined(value) || value === null) && this.isOptional) return true;
@@ -30471,7 +32408,13 @@
       return `{Param:${this.id} ${this.type} squash: '${this.squash}' optional: ${this.isOptional}}`;
     }
 
+    /**
+     * @param {Param[]} params
+     * @param {Record<string, any>} values
+     * @return {import("./interface.ts").RawParams}
+     */
     static values(params, values = {}) {
+      /** @type {import("./interface.ts").RawParams} */
       const paramValues = {};
 
       for (const param of params) {
@@ -30485,12 +32428,10 @@
      * Finds [[Param]] objects which have different param values
      *
      * Filters a list of [[Param]] objects to only those whose parameter values differ in two param value objects
-     *
-     * @param params: The list of Param objects to filter
-     * @param values1: The first set of parameter values
-     * @param values2: the second set of parameter values
-     *
-     * @returns any Param objects whose values were different between values1 and values2
+     * @param {Param[]} params : The list of Param objects to filter
+     * @param {Record<string, any>} values1 : The first set of parameter values
+     * @param {Record<string, any>} values2 : the second set of parameter values
+     * @returns {Param[]} any Param objects whose values were different between values1 and values2
      */
     static changed(params, values1 = {}, values2 = {}) {
       return params.filter(
@@ -30500,18 +32441,21 @@
 
     /**
      * Checks if two param value objects are equal (for a set of [[Param]] objects)
-     *
-     * @param params The list of [[Param]] objects to check
+     * @param {any[]} params The list of [[Param]] objects to check
      * @param values1 The first set of param values
      * @param values2 The second set of param values
-     *
      * @returns true if the param values in values1 and values2 are equal
      */
     static equals(params, values1 = {}, values2 = {}) {
       return Param.changed(params, values1, values2).length === 0;
     }
 
-    /** Returns true if a the parameter values are valid, according to the Param definitions */
+    /**
+     * Returns true if a the parameter values are valid, according to the Param definitions
+     * @param {any[]} params
+     * @param {Record<string, any>} values
+     * @return {boolean}
+     */
     static validates(params, values = {}) {
       return params
         .map((param) => param.validates(values[param.id]))
@@ -30527,10 +32471,14 @@
    * The stateful information includes parameter values and resolve data.
    */
   class PathNode {
+    /**
+     * @param {PathNode | ng.StateObject | undefined} stateOrNode
+     */
     constructor(stateOrNode) {
       if (stateOrNode instanceof PathNode) {
         const node = stateOrNode;
 
+        /** @type {ng.StateObject} */
         this.state = node.state;
         this.paramSchema = node.paramSchema.slice();
         this.paramValues = Object.assign({}, node.paramValues);
@@ -30539,11 +32487,15 @@
       } else {
         const state = stateOrNode;
 
-        this.state = state;
-        this.paramSchema = state.parameters({ inherit: false });
+        this.state = /** @type {ng.StateObject} */ (state);
+        this.paramSchema = /** @type {ng.StateObject} */ (state).parameters({
+          inherit: false,
+        });
         this.paramValues = {};
 
-        this.resolvables = state.resolvables.map((res) => res.clone());
+        this.resolvables = /** @type {ng.StateObject} */ (state).resolvables?.map(
+          (res) => res.clone(),
+        );
       }
     }
 
@@ -30551,29 +32503,40 @@
       return new PathNode(this);
     }
 
-    /** Sets [[paramValues]] for the node, from the values of an object hash */
+    /**
+     * Sets [[paramValues]] for the node, from the values of an object hash
+     * @param {import("../params/interface.js").RawParams} params
+     * @returns {PathNode}
+     */
     applyRawParams(params) {
-      const getParamVal = (paramDef) => [
+      const getParamVal = (/** @type {Param} */ paramDef) => [
         paramDef.id,
         paramDef.value(params[paramDef.id]),
       ];
 
       this.paramValues = this.paramSchema.reduce(
-        (memo, pDef) => applyPairs(memo, getParamVal(pDef)),
+        (/** @type {{ [x: string]: any; }} */ memo, /** @type {Param} */ pDef) =>
+          applyPairs(memo, getParamVal(pDef)),
         {},
       );
 
       return this;
     }
 
-    /** Gets a specific [[Param]] metadata that belongs to the node */
+    /**
+     * Gets a specific [[Param]] metadata that belongs to the node
+     * @param {string} name
+     * @returns {Param | undefined}
+     */
     parameter(name) {
       return find(this.paramSchema, propEq("id", name));
     }
 
     /**
-     * @returns true if the state and parameter values for another PathNode are
-     * equal to the state and param values for this PathNode
+     * @param {PathNode} node
+     * @param {import("./interface.js").GetParamsFn} paramsFn
+     * @returns {boolean} true if the state and parameter values for another PathNode are
+    equal to the state and param values for this PathNode
      */
     equals(node, paramsFn) {
       const diff = this.diff(node, paramsFn);
@@ -30588,10 +32551,9 @@
      * Returns the [[Param]] (schema objects) whose parameter values differ.
      *
      * Given another node for a different state, returns `false`
-     *
-     * @param node The node to compare to
-     * @param paramsFn A function that returns which parameters should be compared.
-     * @returns The [[Param]]s which differ, or null if the two nodes are for different states
+     * @param {PathNode} node The node to compare to
+     * @param {import("./interface.js").GetParamsFn} paramsFn A function that returns which parameters should be compared.
+     * @returns { Param[] | false} The [[Param]]s which differ, or null if the two nodes are for different states
      */
     diff(node, paramsFn) {
       if (this.state !== node.state) return false;
@@ -30601,26 +32563,40 @@
     }
   }
 
+  /** @typedef {import("../params/param.js").Param} Param */
+  /** @typedef {import("./interface.ts").GetParamsFn} GetParamsFn */
+  /** @typedef {import("../state/state-object.js").StateObject} StateObject */
+  /** @typedef {import("../params/interface.ts").RawParams} RawParams */
+
   /**
    * This class contains functions which convert TargetStates, Nodes and paths from one type to another.
    */
   class PathUtils {
+    /**
+     * @param {TargetState} targetState
+     */
     static buildPath(targetState) {
       const toParams = targetState.params();
 
-      return targetState
-        .$state()
-        .path.map((state) => new PathNode(state).applyRawParams(toParams));
+      const stateObject = /** @type {ng.StateObject} */ (targetState.$state());
+
+      return stateObject.path?.map((state) =>
+        new PathNode(state).applyRawParams(toParams),
+      );
     }
 
-    /** Given a fromPath: PathNode[] and a TargetState, builds a toPath: PathNode[] */
+    /**
+     * Given a fromPath: PathNode[] and a TargetState, builds a toPath: PathNode[]
+     * @param {PathNode[]} fromPath
+     * @param {TargetState} targetState
+     */
     static buildToPath(fromPath, targetState) {
       const toPath = PathUtils.buildPath(targetState);
 
       if (targetState.options().inherit) {
         return PathUtils.inheritParams(
           fromPath,
-          toPath,
+          /** @type {PathNode[]} */ (toPath),
           Object.keys(targetState.params()),
         );
       }
@@ -30632,6 +32608,9 @@
      * Creates ViewConfig objects and adds to nodes.
      *
      * On each [[PathNode]], creates ViewConfig objects from the views: property of the node's state
+     * @param {ng.ViewService} $view
+     * @param {PathNode[]} path
+     * @param {StateObject[]} states
      */
     static applyViewConfigs($view, path, states) {
       // Only apply the viewConfigs to the nodes for the given states
@@ -30643,7 +32622,10 @@
           const subPath = PathUtils.subPath(path, (x) => x === node);
 
           const viewConfigs = viewDecls.map((view) => {
-            return $view._createViewConfig(subPath, view);
+            return $view._createViewConfig(
+              /** @type {PathNode[]} */ (subPath),
+              view,
+            );
           });
 
           node.views = viewConfigs.reduce(unnestR, []);
@@ -30660,8 +32642,17 @@
      * Note: the keys provided in toKeys are intended to be those param keys explicitly specified by some
      * caller, for instance, $state.transitionTo(..., toParams).  If a key was found in toParams,
      * it is not inherited from the fromPath.
+     * @param {PathNode[]} fromPath
+     * @param {PathNode[]} toPath
+     * @param {string[]} [toKeys]
+     * @returns {PathNode[]}
      */
     static inheritParams(fromPath, toPath, toKeys = []) {
+      /**
+       * @param {PathNode[]} path
+       * @param {StateObject} state
+       * @returns {RawParams}
+       */
       function nodeParamVals(path, state) {
         /** @type {PathNode} */
         const node = find(path, propEq("state", state));
@@ -30671,12 +32662,14 @@
       const noInherit = fromPath
         .map((node) => node.paramSchema)
         .reduce(unnestR, [])
-        .filter((param) => !param.inherit)
-        .map((x) => x.id);
+        .filter((/** @type {RawParams} */ param) => !param.inherit)
+        .map((/** @type {RawParams} */ x) => x.id);
 
       /**
        * Given an [[PathNode]] "toNode", return a new [[PathNode]] with param values inherited from the
        * matching node in fromPath.  Only inherit keys that aren't found in "toKeys" from the node in "fromPath""
+       * @param {PathNode} toNode
+       * @return {PathNode}
        */
       function makeInheritedParamsNode(toNode) {
         // All param values for the node (may include default key/vals, when key was not found in toParams)
@@ -30709,7 +32702,7 @@
      * Computes the tree changes (entering, exiting) between a fromPath and toPath.
      * @param {PathNode[]} fromPath
      * @param {PathNode[]} toPath
-     * @param {boolean} [reloadState]
+     * @param {StateObject} reloadState
      * @returns {import("../transition/interface.ts").TreeChanges}
      */
     static treeChanges(fromPath, toPath, reloadState) {
@@ -30717,8 +32710,10 @@
 
       let keep = 0;
 
-      const nodesMatch = (node1, node2) =>
-        node1.equals(node2, PathUtils.nonDynamicParams);
+      const nodesMatch = (
+        /** @type {PathNode} */ node1,
+        /** @type {PathNode} */ node2,
+      ) => node1.equals(node2, PathUtils.nonDynamicParams);
 
       while (
         keep < max &&
@@ -30727,7 +32722,12 @@
       ) {
         keep++;
       }
-      /** Given a retained node, return a new node which uses the to node's param values */
+
+      /**
+       * Given a retained node, return a new node which uses the to node's param values
+       * @param {PathNode} retainedNode
+       * @param {number} idx
+       */
       function applyToParams(retainedNode, idx) {
         const cloned = retainedNode.clone();
 
@@ -30761,11 +32761,11 @@
      * Nodes are compared using their state property and their parameter values.
      * If a `paramsFn` is provided, only the [[Param]] returned by the function will be considered when comparing nodes.
      *
-     * @param pathA the first path
-     * @param pathB the second path
-     * @param paramsFn a function which returns the parameters to consider when comparing
+     * @param {PathNode[]} pathA the first path
+     * @param {PathNode[]} pathB the second path
+     * @param {GetParamsFn} [paramsFn] a function which returns the parameters to consider when comparing
      *
-     * @returns an array of PathNodes from the first path which match the nodes in the second path
+     * @returns {PathNode[]} an array of PathNodes from the first path which match the nodes in the second path
      */
     static matching(pathA, pathB, paramsFn) {
       let done = false;
@@ -30782,9 +32782,9 @@
     /**
      * Returns true if two paths are identical.
      *
-     * @param pathA
-     * @param pathB
-     * @param paramsFn a function which returns the parameters to consider when comparing
+     * @param {PathNode[]} pathA
+     * @param {PathNode[]} pathB
+     * @param {GetParamsFn} [paramsFn] a function which returns the parameters to consider when comparing
      * @returns true if the the states and parameter values for both paths are identical
      */
     static equals(pathA, pathB, paramsFn) {
@@ -30799,10 +32799,9 @@
      *
      * Given an array of nodes, returns a subset of the array starting from the first node,
      * stopping when the first node matches the predicate.
-     *
-     * @param path a path of [[PathNode]]s
-     * @param predicate a [[Predicate]] fn that matches [[PathNode]]s
-     * @returns a subpath up to the matching node, or undefined if no match is found
+     * @param {PathNode[]} path a path of [[PathNode]]s
+     * @param {import("../../shared/interface.ts").Predicate<PathNode>} predicate a [[Predicate]] fn that matches [[PathNode]]s
+     * @returns {PathNode[] | undefined} a subpath up to the matching node, or undefined if no match is found
      */
     static subPath(path, predicate) {
       const node = find(path, predicate);
@@ -30812,13 +32811,20 @@
       return elementIdx === -1 ? undefined : path.slice(0, elementIdx + 1);
     }
 
+    /**
+     * @param {PathNode} node
+     * @return {Param[]}
+     */
     static nonDynamicParams(node) {
       return node.state
         .parameters({ inherit: false })
         .filter((param) => !param.dynamic);
     }
 
-    /** Gets the raw parameter values from a path */
+    /**
+     * Gets the raw parameter values from a path
+     * @param {PathNode[]} path
+     */
     static paramValues(path) {
       return path.reduce((acc, node) => Object.assign(acc, node.paramValues), {});
     }
@@ -30827,18 +32833,20 @@
   /** Given a PathNode[], create an TargetState
    * @param {import("../state/state-registry.js").StateRegistryProvider} registry
    * @param {Array<PathNode>} path
-   * @returns
+   * @returns {TargetState}
    */
   function makeTargetState(registry, path) {
     return new TargetState(
       registry,
-      path.at(-1).state,
+      /** @type {PathNode} */ (path.at(-1)).state,
       path
         .map((x) => x.paramValues)
         .reduce((acc, obj) => ({ ...acc, ...obj }), {}),
       {},
     );
   }
+
+  /** @typedef {import("../path/path-node.js").PathNode} PathNode */
 
   const resolvePolicies = {
     when: {
@@ -30861,6 +32869,9 @@
    * The ResolveContext closes over the [[PathNode]]s, and provides DI for the last node in the path.
    */
   class ResolveContext {
+    /**
+     * @param {import("../resolve/resolve-context.js").PathNode[]} _path
+     */
     constructor(_path) {
       this._path = _path;
     }
@@ -30870,7 +32881,11 @@
       return this._path
         .reduce(
           (acc, node) =>
-            acc.concat(node.resolvables.map((resolve) => resolve.token)),
+            acc.concat(
+              node.resolvables.map(
+                (/** @type {Resolvable} */ resolve) => resolve.token,
+              ),
+            ),
           [],
         )
         .reduce(uniqR, []);
@@ -30881,17 +32896,23 @@
      *
      * Gets the last Resolvable that matches the token in this context, or undefined.
      * Throws an error if it doesn't exist in the ResolveContext
+     * @param {string} token
+     * @return {Resolvable}
      */
     getResolvable(token) {
       const matching = this._path
         .map((node) => node.resolvables)
         .reduce(unnestR, [])
-        .filter((resolve) => resolve.token === token);
+        .filter((/** @type {Resolvable} */ resolve) => resolve.token === token);
 
-      return tail(matching);
+      return /** @type {Resolvable} */ (tail(matching));
     }
 
-    /** Returns the [[ResolvePolicy]] for the given [[Resolvable]] */
+    /**
+     * Returns the [[ResolvePolicy]] for the given [[Resolvable]]
+     * @param {Resolvable} resolvable
+     * @return {import("./interface.ts").ResolvePolicy}
+     */
     getPolicy(resolvable) {
       const node = this.findNode(resolvable);
 
@@ -30899,31 +32920,35 @@
     }
 
     /**
-     * Returns a ResolveContext that includes a portion of this one
-     *
-     * Given a state, this method creates a new ResolveContext from this one.
-     * The new context starts at the first node (root) and stops at the node for the `state` parameter.
-     *
-     * #### Why
-     *
-     * When a transition is created, the nodes in the "To Path" are injected from a ResolveContext.
-     * A ResolveContext closes over a path of [[PathNode]]s and processes the resolvables.
-     * The "To State" can inject values from its own resolvables, as well as those from all its ancestor state's (node's).
-     * This method is used to create a narrower context when injecting ancestor nodes.
-     *
-     * @example
-     * `let ABCD = new ResolveContext([A, B, C, D]);`
-     *
-     * Given a path `[A, B, C, D]`, where `A`, `B`, `C` and `D` are nodes for states `a`, `b`, `c`, `d`:
-     * When injecting `D`, `D` should have access to all resolvables from `A`, `B`, `C`, `D`.
-     * However, `B` should only be able to access resolvables from `A`, `B`.
-     *
-     * When resolving for the `B` node, first take the full "To Path" Context `[A,B,C,D]` and limit to the subpath `[A,B]`.
-     * `let AB = ABCD.subcontext(a)`
-     */
+       * Returns a ResolveContext that includes a portion of this one
+       *
+       * Given a state, this method creates a new ResolveContext from this one.
+       * The new context starts at the first node (root) and stops at the node for the `state` parameter.
+       *
+       * #### Why
+       *
+       * When a transition is created, the nodes in the "To Path" are injected from a ResolveContext.
+       * A ResolveContext closes over a path of [[PathNode]]s and processes the resolvables.
+       * The "To State" can inject values from its own resolvables, as well as those from all its ancestor state's (node's).
+       * This method is used to create a narrower context when injecting ancestor nodes.
+       * @example `let ABCD = new ResolveContext([A, B, C, D]);`
+
+      Given a path `[A, B, C, D]`, where `A`, `B`, `C` and `D` are nodes for states `a`, `b`, `c`, `d`:
+      When injecting `D`, `D` should have access to all resolvables from `A`, `B`, `C`, `D`.
+      However, `B` should only be able to access resolvables from `A`, `B`.
+
+      When resolving for the `B` node, first take the full "To Path" Context `[A,B,C,D]` and limit to the subpath `[A,B]`.
+      `let AB = ABCD.subcontext(a)`
+       * @param {ng.BuiltStateDeclaration} state
+       */
     subContext(state) {
       return new ResolveContext(
-        PathUtils.subPath(this._path, (node) => node.state === state),
+        /** @type {PathNode[]} */ (
+          PathUtils.subPath(
+            /** @type {PathNode[]} */ (this._path),
+            (node) => /** @type {PathNode} */ (node).state === state,
+          )
+        ),
       );
     }
 
@@ -30939,8 +32964,8 @@
      *
      * Note: each resolvable's [[ResolvePolicy]] is merged with the state's policy, and the global default.
      *
-     * @param {Resolvable[]} newResolvables the new Resolvables
-     * @param state Used to find the node to put the resolvable on
+     * @param {Resolvable[] | import("./interface.ts").ResolvableLiteral[]} newResolvables the new Resolvables
+     * @param {ng.StateObject} state Used to find the node to put the resolvable on
      */
     addResolvables(newResolvables, state) {
       /** @type {import('../path/path-node').PathNode} */
@@ -30949,15 +32974,18 @@
       const keys = newResolvables.map((resolve) => resolve.token);
 
       node.resolvables = node.resolvables
-        .filter((resolve) => keys.indexOf(resolve.token) === -1)
+        .filter(
+          (/** @type {Resolvable} */ resolve) =>
+            keys.indexOf(resolve.token) === -1,
+        )
         .concat(newResolvables);
     }
 
     /**
      * Returns a promise for an array of resolved path Element promises
      *
-     * @param {string} when
-     * @param trans
+     * @param {import("./interface.ts").PolicyWhen} when
+     * @param {ng.Transition} trans
      * @returns {Promise<any>|any}
      */
     resolvePath(when = "LAZY", trans) {
@@ -30971,11 +32999,23 @@
 
       // get the subpath to the state argument, if provided
       trace.traceResolvePath(this._path, when, trans);
-      const matchesPolicy = (acceptedVals, whenOrAsync) => (resolvable) =>
-        acceptedVals.includes(this.getPolicy(resolvable)[whenOrAsync]);
+      const matchesPolicy =
+        (
+          /** @type {string | any[]} */ acceptedVals,
+          /** @type {string} */ whenOrAsync,
+        ) =>
+        (/** @type {Resolvable} */ resolvable) =>
+          acceptedVals.includes(
+            /** @type {Record<string, any>} */ (this.getPolicy(resolvable))[
+              whenOrAsync
+            ],
+          );
 
       // Trigger all the (matching) Resolvables in the path
       // Reduce all the "WAIT" Resolvables into an array
+      /**
+       * @type {any[]}
+       */
       const promises = this._path.reduce((acc, node) => {
         const nodeResolvables = node.resolvables.filter(
           matchesPolicy(matchedWhens, "when"),
@@ -30984,13 +33024,17 @@
         const nowait = nodeResolvables.filter(matchesPolicy(["NOWAIT"], "async"));
 
         const wait = nodeResolvables.filter(
-          (x) => !matchesPolicy(["NOWAIT"], "async")(x),
+          (/** @type {Resolvable} */ x) => !matchesPolicy(["NOWAIT"], "async")(x),
         );
 
         // For the matching Resolvables, start their async fetch process.
-        const subContext = this.subContext(node.state);
+        const subContext = this.subContext(
+          /** @type {ng.BuiltStateDeclaration} */ (node.state),
+        );
 
-        const getResult = (resolve) =>
+        const getResult = (
+          /** @type {{ get: (arg0: ResolveContext, arg1: ng.Transition) => Promise<any>; token: any; }} */ resolve,
+        ) =>
           resolve
             .get(subContext, trans)
             // Return a tuple that includes the Resolvable's token
@@ -31005,8 +33049,13 @@
       return Promise.all(promises);
     }
 
+    /**
+     * @param {Resolvable} resolvable
+     */
     findNode(resolvable) {
-      return find(this._path, (node) => node.resolvables.includes(resolvable));
+      return find(this._path, (/** @type {PathNode} */ node) =>
+        node.resolvables.includes(resolvable),
+      );
     }
 
     /**
@@ -31022,15 +33071,22 @@
       // Find which other resolvables are "visible" to the `resolvable` argument
       // subpath stopping at resolvable's node, or the whole path (if the resolvable isn't in the path)
       const subPath =
-        PathUtils.subPath(this._path, (x) => x === node) || this._path;
+        PathUtils.subPath(this._path, (/** @type {any} */ x) => x === node) ||
+        this._path;
 
-      const availableResolvables = subPath
-        .reduce((acc, _node) => acc.concat(_node.resolvables), []) // all of subpath's resolvables
-        .filter((res) => res !== resolvable); // filter out the `resolvable` argument
+      const availableResolvables = /** @type {Resolvable[]} */ (
+        subPath.reduce(
+          (
+            /** @type {string | any[]} */ acc,
+            /** @type {{ resolvables: any; }} */ _node,
+          ) => acc.concat(_node.resolvables),
+          [],
+        ) // all of subpath's resolvables
+      ).filter((/** @type {Resolvable} */ res) => res !== resolvable); // filter out the `resolvable` argument
 
-      return resolvable.deps.map((token) => {
+      return resolvable.deps.map((/** @type {string} */ token) => {
         const matching = availableResolvables.filter(
-          (resolve) => resolve.token === token,
+          (/** @type {{ token: string; }} */ resolve) => resolve.token === token,
         );
 
         if (matching.length) return tail(matching);
@@ -31047,19 +33103,36 @@
     }
   }
 
+  /**
+   * @return {(path: import("../path/path-node.js").PathNode[], view: import("./interface.ts").ViewDeclaration) => ViewConfig}
+   */
   function getViewConfigFactory() {
+    /**
+     * @type {import("../template-factory.js").TemplateFactoryProvider | null}
+     */
     let templateFactory = null;
 
-    return (path, view) => {
+    return (
+      /** @type {import("../path/path-node.js").PathNode[]} */ path,
+      /** @type {import("./interface.ts").ViewDeclaration} */ view,
+    ) => {
       templateFactory =
         templateFactory || window.angular.$injector.get("$templateFactory"); // TODO: remove static injector
 
-      return new ViewConfig(path, view, templateFactory);
+      return new ViewConfig(
+        path,
+        view,
+        /** @type {import("../template-factory.js").TemplateFactoryProvider} */ (
+          templateFactory
+        ),
+      );
     };
   }
 
-  const hasAnyKey = (keys, obj) =>
-    keys.reduce((acc, key) => acc || isDefined(obj[key]), false);
+  const hasAnyKey = (
+    /** @type {any[]} */ keys,
+    /** @type {import("./state-object.js").StateObject & Record<string, any>} */ obj,
+  ) => keys.reduce((acc, key) => acc || isDefined(obj[key]), false);
 
   /**
    * This is a [[StateBuilder.builder]] function for angular1 `views`.
@@ -31069,7 +33142,7 @@
    *
    * If no `views: {}` property exists on the [[StateDeclaration]], then it creates the `views` object
    * and applies the state-level configuration to a view named `$default`.
-   *
+   * @param {ng.StateObject & Record<string, any>} state
    */
   function ng1ViewsBuilder(state) {
     // Do not process root state
@@ -31102,8 +33175,9 @@
           ` ${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`,
       );
     }
-    const views = {},
-      viewsObject = state.views || { $default: pick(state, allViewKeys) };
+    const views = /** @type {Record<string, any>} */ ({});
+
+    const viewsObject = state.views || { $default: pick(state, allViewKeys) };
 
     entries(viewsObject).forEach(([name, config]) => {
       // Account for views: { "": { template... } }
@@ -31144,19 +33218,42 @@
   class ViewConfig {
     /**
      * @param {Array<import('../path/path-node.js').PathNode>} path
-     * @param viewDecl
+     * @param {import("./interface.ts").ViewDeclaration} viewDecl
      * @param {import('../template-factory.js').TemplateFactoryProvider} factory
      */
     constructor(path, viewDecl, factory) {
+      this.$id = -1;
+      /**
+       * @type {Array<import('../path/path-node.js').PathNode>}
+       */
       this.path = path;
+
+      /**
+       * @type {import("./interface.ts").ViewDeclaration}
+       */
       this.viewDecl = viewDecl;
+      /**
+       * @type {import('../template-factory.js').TemplateFactoryProvider}
+       */
       this.factory = factory;
+      /**
+       * @type {string | undefined}
+       */
       this.component = undefined;
+      /**
+       * @type {string | undefined}
+       */
       this.template = undefined;
 
-      /** @type {Number} */ this.$id = id$1++;
+      /** @type {Number} */
+      this.$id = id$1++;
+
+      /** @type {boolean} */
       this.loaded = false;
-      this.getTemplate = (ngView, context) =>
+      this.getTemplate = (
+        /** @type {any} */ ngView,
+        /** @type {ResolveContext} */ context,
+      ) =>
         this.component
           ? this.factory.makeComponentTemplate(
               ngView,
@@ -31167,7 +33264,11 @@
           : this.template;
     }
 
-    load() {
+    /**
+     *
+     * @returns {Promise<ViewConfig>}
+     */
+    async load() {
       const context = new ResolveContext(this.path);
 
       const params = this.path.reduce(
@@ -31180,19 +33281,19 @@
         Promise.resolve(this.getController(context)),
       ];
 
-      return Promise.all(promises).then((results) => {
-        trace.traceViewServiceEvent("Loaded", this);
-        this.controller = results[1];
-        Object.assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
+      const results = await Promise.all(promises);
 
-        return this;
-      });
+      trace.traceViewServiceEvent("Loaded", this);
+      this.controller = results[1];
+      Object.assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
+
+      return this;
     }
 
     /**
      * Gets the controller for a view configuration.
-     *
-     * @returns {Function|Promise.<Function>} Returns a controller, or a promise that resolves to a controller.
+     * @returns {Function | Promise<Function>} Returns a controller, or a promise that resolves to a controller.
+     * @param {ResolveContext} context
      */
     getController(context) {
       const provider = this.viewDecl.controllerProvider;
@@ -31210,11 +33311,11 @@
     /**
      * Normalizes a view's name from a state.views configuration block.
      *
-     * This should be used by a framework implementation to calculate the values for
+     * This calculates the values for
      * [[_ViewDeclaration.$ngViewName]] and [[_ViewDeclaration.$ngViewContextAnchor]].
      *
-     * @param context the context object (state declaration) that the view belongs to
-     * @param rawViewName the name of the view, as declared in the [[StateDeclaration.views]]
+     * @param {import("./state-service.js").StateObject} context the context object (state declaration) that the view belongs to
+     * @param {string} rawViewName the name of the view, as declared in the [[StateDeclaration.views]]
      *
      * @returns the normalized ngViewName and ngViewContextAnchor that the view targets
      */
@@ -31248,9 +33349,23 @@
       const relativeMatch = /^(\^(?:\.\^)*)$/;
 
       if (relativeMatch.exec(ngViewContextAnchor)) {
-        const anchorState = ngViewContextAnchor
-          .split(".")
-          .reduce((anchor) => anchor.parent, context);
+        /** @type {import("./state-service.js").StateObject | undefined} */
+        let anchorState = context;
+
+        // "^.^.^" -> ["^", "^", "^"] (count how many times we go up)
+        const hops = ngViewContextAnchor.split(".").filter(Boolean).length;
+
+        for (let i = 0; i < hops; i++) {
+          anchorState = anchorState && anchorState.parent;
+        }
+
+        // If the anchor goes past the root, fall back to the root-most known state
+        // (or keep `context` if you prefer different behavior).
+        if (!anchorState) {
+          anchorState = context;
+
+          while (anchorState.parent) anchorState = anchorState.parent;
+        }
 
         ngViewContextAnchor = anchorState.name;
       } else if (ngViewContextAnchor === ".") {
@@ -31260,6 +33375,9 @@
       return { ngViewName, ngViewContextAnchor };
     }
   }
+
+  /** @typedef {import("./interface.ts").ActiveUIView} ActiveUIView */
+  /** @typedef {import("../state/views.js").ViewConfig} ViewConfig */
 
   /**
    * The View service
@@ -31282,10 +33400,19 @@
 
   class ViewService {
     constructor() {
+      /**
+       * @type {any[]}
+       */
       this._ngViews = [];
+      /**
+       * @type {any[]}
+       */
       this._viewConfigs = [];
+      /**
+       * @type {any[]}
+       */
       this._listeners = [];
-      this._viewConfigFactory(getViewConfigFactory());
+      this._viewConfigFactory = getViewConfigFactory();
     }
 
     $get = () => this;
@@ -31298,13 +33425,9 @@
       return (this._rootContext = context || this._rootContext);
     }
 
-    _viewConfigFactory(factory) {
-      this._viewConfigFactory = factory;
-    }
-
     /**
-     * @param path
-     * @param decl
+     * @param {import("../path/path-node.js").PathNode[]} path
+     * @param {import("../state/interface.ts").ViewDeclaration} decl
      * @return {import("../state/views.js").ViewConfig}
      */
     _createViewConfig(path, decl) {
@@ -31312,9 +33435,7 @@
       const cfgFactory = this._viewConfigFactory;
 
       if (!cfgFactory)
-        throw new Error(
-          `ViewService: No view config factory registered for type ${decl.$type}`,
-        );
+        throw new Error("ViewService: No view config factory registered");
 
       return cfgFactory(path, decl);
     }
@@ -31325,19 +33446,23 @@
      * This function deactivates a `ViewConfig`.
      * After calling [[sync]], it will un-pair from any `ng-view` with which it is currently paired.
      *
-     * @param viewConfig The ViewConfig view to deregister.
+     * @param {ViewConfig} viewConfig The ViewConfig view to deregister.
      */
     deactivateViewConfig(viewConfig) {
       trace.traceViewServiceEvent("<- Removing", viewConfig);
       removeFrom(this._viewConfigs, viewConfig);
     }
 
+    /**
+     * @param {ViewConfig} viewConfig
+     */
     activateViewConfig(viewConfig) {
       trace.traceViewServiceEvent("-> Registering", viewConfig);
       this._viewConfigs.push(viewConfig);
     }
 
     sync() {
+      /** @type {import("../../shared/interface.ts").Dict<import("./interface.ts").ActiveUIView>} */
       const ngViewsByFqn = this._ngViews
         .map((uiv) => [uiv.fqn, uiv])
         .reduce(applyPairs, {});
@@ -31345,9 +33470,15 @@
       // Return a weighted depth value for a ngView.
       // The depth is the nesting depth of ng-views (based on FQN; times 10,000)
       // plus the depth of the state that is populating the ngView
+      /**
+       * @param {import("./interface.ts").ActiveUIView} ngView
+       */
       function ngViewDepth(ngView) {
-        const stateDepth = (context) =>
-          context && context.parent ? stateDepth(context.parent) + 1 : 1;
+        /** @type {(context: import("./interface.ts").ViewContext) => number} */
+        const stateDepth =
+          /** @param {import("./interface.ts").ViewContext} context */ (
+            context,
+          ) => (context && context.parent ? stateDepth(context.parent) + 1 : 1);
 
         return (
           ngView.fqn.split(".").length * FQN_MULTIPLIER +
@@ -31355,8 +33486,13 @@
         );
       }
       // Return the ViewConfig's context's depth in the context tree.
+      /**
+       * @param {ViewConfig} config
+       */
       function viewConfigDepth(config) {
-        let context = config.viewDecl.$context,
+        let context = /** @type {import("./interface.ts").ViewContext} */ (
+            config.viewDecl.$context
+          ),
           count = 0;
 
         while (++count && context.parent) context = context.parent;
@@ -31365,11 +33501,17 @@
       }
       // Given a depth function, returns a compare function which can return either ascending or descending order
       const depthCompare = curry(
-        (depthFn, posNeg, left, right) =>
-          posNeg * (depthFn(left) - depthFn(right)),
+        (
+          /** @type {(arg0: any) => number} */ depthFn,
+          /** @type {number} */ posNeg,
+          /** @type {any} */ left,
+          /** @type {any} */ right,
+        ) => posNeg * (depthFn(left) - depthFn(right)),
       );
 
-      const matchingConfigPair = (ngView) => {
+      const matchingConfigPair = (
+        /** @type {import("./interface.ts").ActiveUIView} */ ngView,
+      ) => {
         const matchingConfigs = this._viewConfigs.filter(
           ViewService.matches(ngViewsByFqn, ngView),
         );
@@ -31384,21 +33526,26 @@
         return { ngView, viewConfig: matchingConfigs[0] };
       };
 
-      const configureUIView = (tuple) => {
+      const configureUIView = (
+        /** @type {import("./interface.ts").ViewTuple} */ tuple,
+      ) => {
         // If a parent ng-view is reconfigured, it could destroy child ng-views.
         // Before configuring a child ng-view, make sure it's still in the active ngViews array.
         if (this._ngViews.indexOf(tuple.ngView) !== -1) {
-          tuple.ngView.configUpdated(tuple.viewConfig);
+          tuple.ngView?.configUpdated(tuple.viewConfig);
         }
       };
 
       // Sort views by FQN and state depth. Process uiviews nearest the root first.
+      /** @type {import("./interface.ts").ViewTuple[]} */
       const ngViewTuples = this._ngViews
         .sort(depthCompare(ngViewDepth, 1))
         .map(matchingConfigPair);
 
+      /** @type {ViewConfig[]} */
       const matchedViewConfigs = ngViewTuples.map((tuple) => tuple.viewConfig);
 
+      /** @type {import("./interface.ts").ViewTuple[]} */
       const unmatchedConfigTuples = this._viewConfigs
         .filter((config) => !matchedViewConfigs.includes(config))
         .map((viewConfig) => ({ ngView: undefined, viewConfig }));
@@ -31406,6 +33553,7 @@
       ngViewTuples.forEach((tuple) => {
         configureUIView(tuple);
       });
+      /** @type {import("./interface.ts").ViewTuple[]} */
       const allTuples = ngViewTuples.concat(unmatchedConfigTuples);
 
       this._listeners.forEach((cb) => cb(allTuples));
@@ -31423,15 +33571,15 @@
      *
      * Note: There is no corresponding `deregisterUIView`.
      *       A `ng-view` should hang on to the return value of `registerUIView` and invoke it to deregister itself.
-     *
-     * @param ngView The metadata for a UIView
-     * @return a de-registration function used when the view is destroyed.
+     * @param {import("./interface.ts").ActiveUIView} ngView The metadata for a UIView
+     * @return {() => void} a de-registration function used when the view is destroyed.
      */
     registerUIView(ngView) {
       trace.traceViewServiceUIViewEvent("-> Registering", ngView);
       const ngViews = this._ngViews;
 
-      const fqnAndTypeMatches = (uiv) => uiv.fqn === ngView.fqn;
+      const fqnAndTypeMatches = /** @param {ActiveUIView} uiv */ (uiv) =>
+        uiv.fqn === ngView.fqn;
 
       if (ngViews.filter(fqnAndTypeMatches).length)
         trace.traceViewServiceUIViewEvent("!!!! duplicate ngView named:", ngView);
@@ -31457,7 +33605,7 @@
     /**
      * Returns the list of views currently available on the page, by fully-qualified name.
      *
-     * @return {Array<any>} Returns an array of fully-qualified view names.
+     * @return {Array<string>} Returns an array of fully-qualified view names.
      */
     available() {
       return this._ngViews.map((view) => view.fqn);
@@ -31466,7 +33614,7 @@
     /**
      * Returns the list of views on the page containing loaded content.
      *
-     * @return {Array<any>} Returns an array of fully-qualified view names.
+     * @return {Array<string>} Returns an array of fully-qualified view names.
      */
     active() {
       return this._ngViews
@@ -31482,8 +33630,6 @@
    *
    * A ViewConfig has a target ng-view name and a context anchor.  The ng-view name can be a simple name, or
    * can be a segmented ng-view path, describing a portion of a ng-view fqn.
-   *
-   * In order for a ng-view to match ViewConfig, ng-view's $type must match the ViewConfig's $type
    *
    * If the ViewConfig's target ng-view name is a simple name (no dots), then a ng-view matches if:
    * - the ng-view's name matches the ViewConfig's target name
@@ -31531,30 +33677,33 @@
    *
    * @internal
    */
-  ViewService.matches = (ngViewsByFqn, ngView) => (viewConfig) => {
-    // Don't supply an ng1 ng-view with an ng2 ViewConfig, etc
-    if (ngView.$type !== viewConfig.viewDecl.$type) return false;
-    // Split names apart from both viewConfig and ngView into segments
-    const vc = viewConfig.viewDecl;
+  ViewService.matches =
+    (
+      /** @type {import("../../shared/interface.ts").Dict<ActiveUIView>} */ ngViewsByFqn,
+      /** @type {ActiveUIView} */ ngView,
+    ) =>
+    (/** @type {ViewConfig} */ viewConfig) => {
+      // Split names apart from both viewConfig and ngView into segments
+      const vc = viewConfig.viewDecl;
 
-    const vcSegments = vc.$ngViewName.split(".");
+      const vcSegments = /** @type {string[]} */ (vc.$ngViewName?.split("."));
 
-    const uivSegments = ngView.fqn.split(".");
+      const uivSegments = ngView.fqn.split(".");
 
-    // Check if the tails of the segment arrays match. ex, these arrays' tails match:
-    // vc: ["foo", "bar"], uiv fqn: ["$default", "foo", "bar"]
-    if (!equals(vcSegments, uivSegments.slice(0 - vcSegments.length)))
-      return false;
-    // Now check if the fqn ending at the first segment of the viewConfig matches the context:
-    // ["$default", "foo"].join(".") == "$default.foo", does the ng-view $default.foo context match?
-    const negOffset = 1 - vcSegments.length || undefined;
+      // Check if the tails of the segment arrays match. ex, these arrays' tails match:
+      // vc: ["foo", "bar"], uiv fqn: ["$default", "foo", "bar"]
+      if (!equals(vcSegments, uivSegments.slice(0 - vcSegments.length)))
+        return false;
+      // Now check if the fqn ending at the first segment of the viewConfig matches the context:
+      // ["$default", "foo"].join(".") == "$default.foo", does the ng-view $default.foo context match?
+      const negOffset = 1 - vcSegments.length || undefined;
 
-    const fqnToFirstSegment = uivSegments.slice(0, negOffset).join(".");
+      const fqnToFirstSegment = uivSegments.slice(0, negOffset).join(".");
 
-    const ngViewContext = ngViewsByFqn[fqnToFirstSegment].creationContext;
+      const ngViewContext = ngViewsByFqn[fqnToFirstSegment].creationContext;
 
-    return vc.$ngViewContextAnchor === (ngViewContext && ngViewContext.name);
-  };
+      return vc.$ngViewContextAnchor === (ngViewContext && ngViewContext.name);
+    };
 
   /**
    * An object for Transition Rejection reasons.
@@ -31613,18 +33762,28 @@
     /**
      * @param {number} type
      * @param {string} message
-     * @param {any} detail
+     * @param {any} [detail]
      */
     constructor(type, message, detail) {
       /** @type {number} */
       this.$id = id++;
+      /** @type {number} */
       this.type = type;
+      /** @type {string} */
       this.message = message;
+      /** @type {any} */
       this.detail = detail;
+      /** @type {boolean} */
       this.redirected = false;
     }
 
-    /** Returns a Rejection due to transition superseded */
+    /**
+     * Returns a Rejection due to transition superseded
+     *
+     * @param {any} [detail]
+     * @param {{ redirected?: boolean } | undefined} [options]
+     * @returns {Rejection}
+     */
     static superseded(detail, options) {
       const message =
         "The transition has been superseded by a different transition";
@@ -31638,15 +33797,21 @@
       return rejection;
     }
 
-    /** Returns a Rejection due to redirected transition
-     * @param {any} detail @returns {Rejection}
+    /**
+     * Returns a Rejection due to redirected transition
+     *
+     * @param {any} [detail]
+     * @returns {Rejection}
      */
     static redirected(detail) {
       return Rejection.superseded(detail, { redirected: true });
     }
 
-    /** Returns a Rejection due to invalid transition
-     * @param {any} detail @returns {Rejection}
+    /**
+     * Returns a Rejection due to invalid transition
+     *
+     * @param {any} detail
+     * @returns {Rejection}
      */
     static invalid(detail) {
       const message = "This transition is invalid";
@@ -31654,8 +33819,11 @@
       return new Rejection(RejectType._INVALID, message, detail);
     }
 
-    /** Returns a Rejection due to ignored transition
-     * @param {any} detail @returns {Rejection}
+    /**
+     * Returns a Rejection due to ignored transition
+     *
+     * @param {any} [detail]
+     * @returns {Rejection}
      */
     static ignored(detail) {
       const message = "The transition was ignored";
@@ -31663,8 +33831,11 @@
       return new Rejection(RejectType._IGNORED, message, detail);
     }
 
-    /** Returns a Rejection due to aborted transition
-     * @param {any} detail @returns {Rejection}
+    /**
+     * Returns a Rejection due to aborted transition
+     *
+     * @param {any} [detail]
+     * @returns {Rejection}
      */
     static aborted(detail) {
       const message = "The transition has been aborted";
@@ -31672,8 +33843,10 @@
       return new Rejection(RejectType._ABORTED, message, detail);
     }
 
-    /** Returns a Rejection due to aborted transition
-     * @param detail
+    /**
+     * Returns a Rejection due to errored transition
+     *
+     * @param {any} [detail]
      * @returns {Rejection}
      */
     static errored(detail) {
@@ -31689,14 +33862,21 @@
      * If the value is already a Rejection, returns it.
      * Otherwise, wraps and returns the value as a Rejection (Rejection type: ERROR).
      *
-     * @returns `detail` if it is already a `Rejection`, else returns an ERROR Rejection.
+     * @param {any} detail
+     * @returns {Rejection} `detail` if it is already a `Rejection`, else returns an ERROR Rejection.
      */
     static normalize(detail) {
       return is(Rejection)(detail) ? detail : Rejection.errored(detail);
     }
 
-    /** @returns {string} */
+    /**
+     * @returns {string}
+     */
     toString() {
+      /**
+       * @param {any} data
+       * @returns {string}
+       */
       const detailString = (data) =>
         data && data.toString !== Object.prototype.toString
           ? data.toString()
@@ -31710,7 +33890,9 @@
     }
 
     /**
-     * @returns {Promise<any> & {_transitionRejection: Rejection}}
+     * Returns a rejected Promise annotated with `_transitionRejection` for identification.
+     *
+     * @returns {Promise<any> & { _transitionRejection: Rejection }}
      */
     toPromise() {
       return Object.assign(((x) => (x.catch(() => 0), x))(Promise.reject(this)), {
@@ -31719,6 +33901,15 @@
     }
   }
 
+  /** @typedef {import("./interface.ts").TransitionHookOptions} TransitionHookOptions */
+  /** @typedef {import("./interface.ts").HookResult} HookResult */
+  /** @typedef {import("./transition.js").Transition} Transition */
+  /** @typedef {import("./hook-registry.js").RegisteredHook} RegisteredHook */
+
+  /**
+   * Default options for TransitionHook
+   * @type {Partial<TransitionHookOptions>}
+   */
   const defaultOptions = {
     current: () => {
       /* empty */
@@ -31765,14 +33956,16 @@
      * promise.then(handleSuccess, handleError);
      * ```
      *
-     * @param hooks the list of hooks to chain together
-     * @param waitFor if provided, the chain is `.then()`'ed off this promise
+     * @param {TransitionHook[]} hooks the list of hooks to chain together
+     * @param {Promise<any>} [waitFor] if provided, the chain is `.then()`'ed off this promise
      * @returns a `Promise` for sequentially invoking the hooks (in order)
      */
     static chain(hooks, waitFor) {
       // Chain the next hook off the previous
-      const createHookChainR = (prev, nextHook) =>
-        prev.then(() => nextHook.invokeHook());
+      const createHookChainR = (
+        /** @type {Promise<any>} */ prev,
+        /** @type {TransitionHook} */ nextHook,
+      ) => prev.then(() => nextHook.invokeHook());
 
       return hooks.reduce(createHookChainR, waitFor || Promise.resolve());
     }
@@ -31783,10 +33976,10 @@
      * If any hook returns a promise, then the rest of the hooks are chained off that promise, and the promise is returned.
      * If no hook returns a promise, then all hooks are processed synchronously.
      *
-     * @param hooks the list of TransitionHooks to invoke
-     * @param doneCallback a callback that is invoked after all the hooks have successfully completed
+     * @param {TransitionHook[]} hooks the list of TransitionHooks to invoke
+     * @param {() => Promise<any>} doneCallback a callback that is invoked after all the hooks have successfully completed
      *
-     * @returns a promise for the async result, or the result of the callback
+     * @returns {Promise<any>} a promise for the async result, or the result of the callback
      */
     static invokeHooks(hooks, doneCallback) {
       for (let idx = 0; idx < hooks.length; idx++) {
@@ -31806,6 +33999,7 @@
 
     /**
      * Run all TransitionHooks, ignoring their return value.
+     * @param {TransitionHook[]} hooks
      */
     static runAllHooks(hooks) {
       hooks.forEach((hook) => hook.invokeHook());
@@ -31813,10 +34007,10 @@
 
     /**
      *
-     * @param {*} transition
-     * @param {*} stateContext
-     * @param {*} registeredHook
-     * @param {*} options
+     * @param {Transition} transition
+     * @param {import("../state/interface.ts").StateDeclaration | null} stateContext
+     * @param {RegisteredHook} registeredHook
+     * @param {TransitionHookOptions} options
      * @param {ng.ExceptionHandlerService} exceptionHandler
      */
     constructor(
@@ -31829,17 +34023,24 @@
       this.transition = transition;
       this.stateContext = stateContext;
       this.registeredHook = registeredHook;
-      this.options = options;
+      /** @type {TransitionHookOptions} */
+      this.options = /** @type {TransitionHookOptions} */ (
+        defaults(options, defaultOptions)
+      );
+
+      this.type = registeredHook.eventType;
+
       this.isSuperseded = () =>
         this.type.hookPhase === TransitionHookPhase._RUN &&
-        !this.options.transition.isActive();
-      this.options = defaults(options, defaultOptions);
-      this.type = registeredHook.eventType;
+        !this.options.transition?.isActive();
 
       /** @type {ng.ExceptionHandlerService} */
       this._exceptionHandler = exceptionHandler;
     }
 
+    /**
+     * @param {unknown} err
+     */
     logError(err) {
       this._exceptionHandler(err);
     }
@@ -31855,20 +34056,28 @@
 
       trace.traceHookInvocation(this, this.transition, options);
       const invokeCallback = () =>
-        hook.callback.call(options.bind, this.transition, this.stateContext);
+        hook.callback.call(
+          options.bind,
+          this.transition,
+          /** @type {ng.StateDeclaration} */ (this.stateContext),
+        );
 
-      const normalizeErr = (err) => Rejection.normalize(err).toPromise();
+      const normalizeErr = (/** @type {any} */ err) =>
+        Rejection.normalize(err).toPromise();
 
-      const handleError = (err) => hook.eventType.getErrorHandler(this)(err);
+      const handleError = (/** @type {Rejection} */ err) =>
+        hook.eventType.getErrorHandler()(err);
 
-      const handleResult = (result) =>
+      const handleResult = (/** @type {any} */ result) =>
         hook.eventType.getResultHandler(this)(result);
 
       try {
         const result = invokeCallback();
 
         if (!this.type.synchronous && isPromise(result)) {
-          return result.catch(normalizeErr).then(handleResult, handleError);
+          return /** @type Promise<any>} */ (result)
+            .catch(normalizeErr)
+            .then(handleResult, handleError);
         } else {
           return handleResult(result);
         }
@@ -31890,6 +34099,8 @@
      *
      * This also handles "transition superseded" -- when a new transition
      * was started while the hook was still running
+     * @param {HookResult} result
+     * @returns {Promise<any> | undefined}
      */
     handleHookResult(result) {
       const notCurrent = this.getNotCurrentRejection();
@@ -31899,7 +34110,9 @@
       // Hook returned a promise
       if (isPromise(result)) {
         // Wait for the promise, then reprocess with the resulting value
-        return result.then((val) => this.handleHookResult(val));
+        return /** @type {Promise<any>} */ (result).then((val) =>
+          this.handleHookResult(val),
+        );
       }
       trace.traceHookResult(result, this.transition);
 
@@ -31930,8 +34143,9 @@
       // This transition is no longer current.
       // Another transition started while this hook was still running.
       if (this.isSuperseded()) {
-        // Abort this transition
-        return Rejection.superseded(this.options.current()).toPromise();
+        return Rejection.superseded(
+          /** @type {TransitionHookOptions} */ (this.options).current(),
+        ).toPromise();
       }
 
       return undefined;
@@ -31954,26 +34168,35 @@
    * These GetResultHandler(s) are used by [[invokeHook]] below
    * Each HookType chooses a GetResultHandler (See: [[TransitionService._defineCoreEvents]])
    */
-  TransitionHook.HANDLE_RESULT = (hook) => (result) =>
-    hook.handleHookResult(result);
+  TransitionHook.HANDLE_RESULT =
+    (/** @type {TransitionHook} */ hook) => (/** @type {HookResult} */ result) =>
+      hook.handleHookResult(result);
   /**
    * If the result is a promise rejection, log it.
    * Otherwise, ignore the result.
    */
-  TransitionHook.LOG_REJECTED_RESULT = (hook) => (result) => {
-    isPromise(result) &&
-      result.catch((err) => hook.logError(Rejection.normalize(err)));
+  TransitionHook.LOG_REJECTED_RESULT =
+    (/** @type {{ logError: (arg0: Rejection) => any; }} */ hook) =>
+    (/** @type {HookResult} */ result) => {
+      if (isPromise(result)) {
+        /** @type {Promise<any>} */ (result).catch((/** @type {any} */ err) =>
+          hook.logError(Rejection.normalize(err)),
+        );
+      }
 
-    return undefined;
-  };
+      return undefined;
+    };
   /**
    * These GetErrorHandler(s) are used by [[invokeHook]] below
    * Each HookType chooses a GetErrorHandler (See: [[TransitionService._defineCoreEvents]])
    */
-  TransitionHook.LOG_ERROR = (hook) => (error) => hook.logError(error);
-  TransitionHook.REJECT_ERROR = () => (error) =>
+  TransitionHook.LOG_ERROR =
+    /** @param {{ logError: (arg0: any) => any; }} [hook] */ (hook) =>
+      (/** @type {any} */ error) =>
+        hook?.logError(error);
+  TransitionHook.REJECT_ERROR = () => (/** @type {any} */ error) =>
     ((x) => (x.catch(() => 0), x))(Promise.reject(error));
-  TransitionHook.THROW_ERROR = () => (error) => {
+  TransitionHook.THROW_ERROR = () => (/** @type {any} */ error) => {
     throw error;
   };
 
@@ -32079,22 +34302,23 @@
 
   /**
    * Determines if the given state matches the matchCriteria
-   *
    * @internal
-   *
-   * @param state a State Object to test against
-   * @param criterion
-   * - If a string, matchState uses the string as a glob-matcher against the state name
-   * - If an array (of strings), matchState uses each string in the array as a glob-matchers against the state name
-   *   and returns a positive match if any of the globs match.
-   * - If a function, matchState calls the function with the state and returns true if the function's result is truthy.
+   * @param {import("../state/state-object.js").StateObject} state a State Object to test against
+   * @param {import("./interface.ts").HookMatchCriterion} criterion - If a string, matchState uses the string as a glob-matcher against the state name
+  - If an array (of strings), matchState uses each string in the array as a glob-matchers against the state name
+    and returns a positive match if any of the globs match.
+  - If a function, matchState calls the function with the state and returns true if the function's result is truthy.
+   * @param {ng.Transition} transition
    * @returns {boolean}
    */
   function matchState(state, criterion, transition) {
     const toMatch = isString(criterion) ? [criterion] : criterion;
 
+    /**
+     * @param {ng.BuiltStateDeclaration} _state
+     */
     function matchGlobs(_state) {
-      const globStrings = toMatch;
+      const globStrings = /** @type {string[]}*/ (toMatch);
 
       for (let i = 0; i < globStrings.length; i++) {
         const glob = new Glob(globStrings[i]);
@@ -32109,7 +34333,9 @@
 
       return false;
     }
-    const matchFn = isFunction(toMatch) ? toMatch : matchGlobs;
+    const matchFn = /** @type {any} */ (
+      isFunction(toMatch) ? toMatch : matchGlobs
+    );
 
     return !!matchFn(state, transition);
   }
@@ -32118,12 +34344,12 @@
    */
   class RegisteredHook {
     /**
-     * @param {import("./transition-service.js").TransitionProvider} tranSvc
-     * @param eventType
-     * @param callback
-     * @param matchCriteria
-     * @param removeHookFromRegistry
-     * @param options
+     * @param {ng.TransitionService} tranSvc
+     * @param {import("./transition-event-type.js").TransitionEventType} eventType
+     * @param {import("./interface.ts").HookFn} callback
+     * @param {import("./interface.ts").HookMatchCriteria} matchCriteria
+     * @param {(hook: RegisteredHook) => void} removeHookFromRegistry
+     * @param {import("./interface.ts").HookRegOptions} options
      */
     constructor(
       tranSvc,
@@ -32133,7 +34359,6 @@
       removeHookFromRegistry,
       options = {},
     ) {
-      /** @type {import("./transition-service.js").TransitionProvider} */
       this.tranSvc = tranSvc;
       this.eventType = eventType;
       this.callback = callback;
@@ -32160,6 +34385,10 @@
      * to still match a transition, even when `entering === []`.  Contrast that
      * with `entering: (state) => true` which only matches when a state is actually
      * being entered.
+     * @param {import("../resolve/resolve-context.js").PathNode[]} nodes
+     * @param {import("./interface.ts").HookMatchCriterion} criterion
+     * @param {ng.Transition} transition
+     * @return {import("../resolve/resolve-context.js").PathNode[] | null}
      */
     _matchingNodes(nodes, criterion, transition) {
       if (criterion === true) return nodes;
@@ -32183,9 +34412,12 @@
      *   exiting: true,
      *   retained: true,
      * }
+     * @returns {import("./interface.ts").HookMatchCriteria}
      */
     _getDefaultMatchCriteria() {
-      return map(this.tranSvc._getPathTypes(), () => true);
+      return /** @type {import("./interface.ts").HookMatchCriteria} */ (
+        map(this.tranSvc._getPathTypes(), () => true)
+      );
     }
 
     /**
@@ -32202,6 +34434,9 @@
      *   entering: _matchingNodes(treeChanges.entering,     mc.entering),
      * };
      * ```
+     * @param {import("./interface.ts").TreeChanges} treeChanges
+     * @param {ng.Transition} transition
+     * @returns {{}}
      */
     _getMatchingNodes(treeChanges, transition) {
       const criteria = Object.assign(
@@ -32220,11 +34455,14 @@
 
         const nodes = isStateHook ? path : [tail(path)];
 
-        mn[pathtype.name] = this._matchingNodes(
-          nodes,
-          criteria[pathtype.name],
-          transition,
-        );
+        /** @type {Record<string, any>} */ (mn)[pathtype.name] =
+          this._matchingNodes(
+            nodes,
+            /** @type {import("./interface.ts").HookMatchCriterion} */ (
+              criteria[pathtype.name]
+            ),
+            transition,
+          );
 
         return mn;
       }, {});
@@ -32232,9 +34470,10 @@
 
     /**
      * Determines if this hook's [[matchCriteria]] match the given [[TreeChanges]]
-     *
-     * @returns an IMatchingNodes object, or null. If an IMatchingNodes object is returned, its values
-     * are the matching [[PathNode]]s for each [[HookMatchCriterion]] (to, from, exiting, retained, entering)
+     * @param {import("./interface.ts").TreeChanges} treeChanges
+     * @param {ng.Transition} transition
+     * @returns {import("./interface.ts").IMatchingNodes | null} an IMatchingNodes object, or null. If an IMatchingNodes object is returned,
+     * its values are the matching [[PathNode]]s for each [[HookMatchCriterion]] (to, from, exiting, retained, entering)
      */
     matches(treeChanges, transition) {
       const matches = this._getMatchingNodes(treeChanges, transition);
@@ -32242,7 +34481,9 @@
       // Check if all the criteria matched the TreeChanges object
       const allMatched = Object.values(matches).every((x) => x);
 
-      return allMatched ? matches : null;
+      return allMatched
+        ? /** @type {import("./interface.ts").IMatchingNodes } */ (matches)
+        : null;
     }
 
     deregister() {
@@ -32251,23 +34492,75 @@
     }
   }
   /**
-   * Return a registration function of the requested type.
+   * Register a transition hook without mutating the hookSource surface.
    * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
    * @param {ng.TransitionProvider} transitionService
    * @param {import("./transition-event-type.js").TransitionEventType} eventType
-   * @returns {( matchObject: any, callback: Function, options?: Record<string, any> ) => () => void }
+   * @param {import("./interface.ts").HookMatchCriteria} matchCriteria
+   * @param {import("./interface.ts").HookFn} callback
+   * @param {import("./interface.ts").HookRegOptions} options
+   * @returns {import("./interface.ts").DeregisterFn}
    */
-  function makeEvent(hookSource, transitionService, eventType) {
+  function registerHook(
+    hookSource,
+    transitionService,
+    eventType,
+    matchCriteria,
+    callback,
+    options = {},
+  ) {
     // Create the object which holds the registered transition hooks.
+    /** @type {{ [x: string]: RegisteredHook[] } & Record<string, any>} */
     const _registeredHooks = (hookSource._registeredHooks =
       hookSource._registeredHooks || {});
 
+    const hooks = (_registeredHooks[eventType.name] =
+      _registeredHooks[eventType.name] || []);
+
+    const removeHookFn = (/** @type {RegisteredHook} */ hook) =>
+      removeFrom(hooks, hook);
+
+    const registeredHook = new RegisteredHook(
+      transitionService,
+      eventType,
+      callback,
+      matchCriteria,
+      removeHookFn,
+      options,
+    );
+
+    hooks.push(registeredHook);
+
+    return registeredHook.deregister.bind(registeredHook);
+  }
+  /**
+   * Return a registration function of the requested type.
+   * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
+   * @param {ng.TransitionService} transitionService
+   * @param {import("./transition-event-type.js").TransitionEventType} eventType
+   * @returns {function(import("./interface.ts").HookMatchCriteria, import("./interface.ts").HookFn, {}=): (function(): void)|*}
+   */
+  function makeEvent(hookSource, transitionService, eventType) {
+    // Create the object which holds the registered transition hooks.
+    /** @type {{ [x: string]: RegisteredHook[] } & Record<string, any>} */
+    const _registeredHooks = (hookSource._registeredHooks =
+      hookSource._registeredHooks || {});
+
+    /**
+     * @type {any[]}
+     */
     const hooks = (_registeredHooks[eventType.name] = []);
 
-    const removeHookFn = (x) => removeFrom(hooks, x);
+    const removeHookFn = (/** @type {any} */ x) => removeFrom(hooks, x);
 
     // Create hook registration function on the HookRegistry for the event
-    hookSource[eventType.name] = hookRegistrationFn;
+    /** @type Record<string, any> */ (hookSource)[eventType.name] =
+      hookRegistrationFn;
+
+    /**
+     * @param {import("./interface.ts").HookMatchCriteria} matchObject
+     * @param {import("./interface.ts").HookFn} callback
+     */
     function hookRegistrationFn(matchObject, callback, options = {}) {
       const registeredHook = new RegisteredHook(
         transitionService,
@@ -32285,6 +34578,8 @@
 
     return hookRegistrationFn;
   }
+
+  /** @typedef {import("./transition-event-type.js").TransitionEventType} TransitionEventType */
 
   /**
    * This class returns applicable TransitionHooks for a specific Transition instance.
@@ -32309,10 +34604,10 @@
 
     /**
      * @param {TransitionHookPhase} phase
-     * @returns
+     * @returns {TransitionHook[]}
      */
     buildHooksForPhase(phase) {
-      return this.transition._transitionProvider
+      return this.transition._transitionService
         ._getEvents(phase)
         .map((type) => this.buildHooks(type))
         .reduce(unnestR, [])
@@ -32326,12 +34621,15 @@
      * - Finds [[PathNode]] (or `PathNode[]`) to use as the TransitionHook context(s)
      * - For each of the [[PathNode]]s, creates a TransitionHook
      *
-     * @param hookType the type of the hook registration function, e.g., 'onEnter', 'onFinish'.
+     * @param {TransitionEventType} hookType the type of the hook registration function, e.g., 'onEnter', 'onFinish'.
+     * @returns {TransitionHook[]} an array of TransitionHook objects
      */
     buildHooks(hookType) {
       const { transition } = this;
 
-      const treeChanges = transition.treeChanges();
+      const treeChanges = /** @type {import("./interface.ts").TreeChanges} */ (
+        transition.treeChanges()
+      );
 
       // Find all the matching registered hooks for a given hook type
       const matchingHooks = this.getMatchingHooks(
@@ -32346,12 +34644,20 @@
         current: transition.options().current,
       };
 
-      const makeTransitionHooks = (hook) => {
+      const makeTransitionHooks = (
+        /** @type {import("./hook-registry.js").RegisteredHook} */ hook,
+      ) => {
         // Fetch the Nodes that caused this hook to match.
-        const matches = hook.matches(treeChanges, transition);
+        const matches = hook.matches(
+          /** @type {import("./interface.ts").TreeChanges} */ (treeChanges),
+          transition,
+        );
 
         // Select the PathNode[] that will be used as TransitionHook context objects
-        const matchingNodes = matches[hookType.criteriaMatchPath.name];
+        const matchingNodes =
+          /** @type {import("./interface.ts").IMatchingNodes} */ (matches)[
+            hookType.criteriaMatchPath.name
+          ];
 
         // Return an array of HookTuples
         return matchingNodes.map((node) => {
@@ -32363,6 +34669,7 @@
             baseHookOptions,
           );
 
+          /** @type {import("../state/interface.ts").StateDeclaration | null} */
           const state =
             hookType.criteriaMatchPath.scope === TransitionHookScope._STATE
               ? node.state.self
@@ -32372,8 +34679,10 @@
             transition,
             state,
             hook,
-            _options,
-            this.transition._transitionProvider._exceptionHandler,
+            /** @type {import("./transition-hook.js").TransitionHookOptions} */ (
+              _options
+            ),
+            this.transition._transitionService._exceptionHandler,
           );
 
           return { hook, node, transitionHook };
@@ -32384,7 +34693,9 @@
         .map(makeTransitionHooks)
         .reduce(unnestR, [])
         .sort(tupleSort(hookType.reverseSort))
-        .map((tuple) => tuple.transitionHook);
+        .map(
+          (/** @type {{ transitionHook: any; }} */ tuple) => tuple.transitionHook,
+        );
     }
 
     /**
@@ -32395,14 +34706,16 @@
      * which matched:
      * - the eventType
      * - the matchCriteria (to, from, exiting, retained, entering)
-     *
      * @returns an array of matched [[RegisteredHook]]s
+     * @param {import("./transition-event-type.js").TransitionEventType} hookType
+     * @param {import("./interface.ts").TreeChanges} treeChanges
+     * @param {import("./transition.js").Transition} transition
      */
     getMatchingHooks(hookType, treeChanges, transition) {
       const isCreate = hookType.hookPhase === TransitionHookPhase._CREATE;
 
       // Instance and Global hook registries
-      const $transitions = this.transition._transitionProvider;
+      const $transitions = this.transition._transitionService;
 
       const registries = isCreate
         ? [$transitions]
@@ -32412,7 +34725,11 @@
         .map((reg) => reg.getHooks(hookType.name)) // Get named hooks from registries
         .filter(assertPredicate(isArray, `broken event named: ${hookType.name}`)) // Sanity check
         .reduce(unnestR, []) // Un-nest RegisteredHook[][] to RegisteredHook[] array
-        .filter((hook) => hook.matches(treeChanges, transition)); // Only those satisfying matchCriteria
+        .filter(
+          (
+            /** @type {{ matches: (arg0: import("./interface.ts").TreeChanges, arg1: ng.Transition) => any; }} */ hook,
+          ) => hook.matches(treeChanges, transition),
+        ); // Only those satisfying matchCriteria
     }
   }
   /**
@@ -32425,11 +34742,17 @@
    * @returns a tuple sort function
    */
   function tupleSort(reverseDepthSort = false) {
-    return function nodeDepthThenPriority(left, right) {
+    return function nodeDepthThenPriority(
+      /** @type {import("./interface.ts").HookTuple} */ left,
+      /** @type {import("./interface.ts").HookTuple} */ right,
+    ) {
       const factor = reverseDepthSort ? -1 : 1;
 
-      const depthDelta =
-        (left.node.state.path.length - right.node.state.path.length) * factor;
+      const leftPath = /** @type {ng.StateObject[]} */ (left.node.state.path);
+
+      const rightPath = /** @type {ng.StateObject[]} */ (right.node.state.path);
+
+      const depthDelta = (leftPath.length - rightPath.length) * factor;
 
       return depthDelta !== 0
         ? depthDelta
@@ -32437,7 +34760,18 @@
     };
   }
 
-  /** @typedef {import('./interface.ts').HookRegistry} HookRegistry */
+  /** @typedef {import('./interface.ts').DeregisterFn} DeregisterFn */
+  /** @typedef {import('./interface.ts').HookFn} HookFn */
+  /** @typedef {import('./interface.ts').HookMatchCriteria} HookMatchCriteria */
+  /** @typedef {import('./interface.ts').HookRegOptions} HookRegOptions */
+  /** @typedef {import("../state/interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
+  /** @typedef {import("./interface.ts").RegisteredHooks} RegisteredHooks */
+  /** @typedef {import("./hook-registry.js").RegisteredHook} RegisteredHook */
+  /** @typedef {import('../state/target-state.js').TargetState} TargetState */
+  /** @typedef {import("../transition/interface.ts").TreeChanges} TreeChanges */
+  /** @typedef {import("../path/path-node.js").PathNode} PathNode */
+  /** @typedef {import("../state/state-object.js").StateObject} StateObject */
+  /** @typedef {import("../state/interface.ts").StateDeclaration} StateDeclaration */
 
   const REDIRECT_MAX = 20;
 
@@ -32448,7 +34782,6 @@
    *
    * This object contains all contextual information about the to/from states, parameters, resolves.
    * It has information about all states being entered and exited as a result of the transition.
-   * @extends {HookRegistry}
    */
   class Transition {
     /**
@@ -32456,10 +34789,10 @@
      *
      * If the target state is not valid, an error is thrown.
      *
-     * @param {Array<import('../path/path-node.js').PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
+     * @param {Array<PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
      *        encapsulates the "from state".
-     * @param {import('../state/target-state.js').TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
-     * @param {ng.TransitionProvider} transitionService The [[TransitionService]] instance
+     * @param {TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
+     * @param {import("./transition-service.js").TransitionProvider} transitionService
      * @param {ng.RouterService} globals
      */
     constructor(fromPath, targetState, transitionService, globals) {
@@ -32468,8 +34801,7 @@
        */
       this._globals = globals;
 
-      /** @type {ng.TransitionProvider} */
-      this._transitionProvider = transitionService;
+      this._transitionService = transitionService;
 
       /** @type {PromiseWithResolvers<any>} */
       this._deferred = Promise.withResolvers();
@@ -32481,12 +34813,16 @@
        * When the transition is unsuccessful, the promise is rejected with the [[Rejection]] or javascript error
        */
       this.promise = this._deferred.promise;
-      /** @internal Holds the hook registration functions such as those passed to Transition.onStart() */
+      /** @type {RegisteredHooks} Holds the hook registration functions such as those passed to Transition.onStart() */
       this._registeredHooks = {};
 
+      /** @type {HookBuilder} */
       this._hookBuilder = new HookBuilder(this);
+
       /** Checks if this transition is currently active/running. */
+      /** @type {() => boolean} */
       this.isActive = () => this._globals.transition === this;
+
       this._targetState = targetState;
 
       if (!targetState.valid()) {
@@ -32500,64 +34836,168 @@
       this.$id = transitionService._transitionCount++;
       const toPath = PathUtils.buildToPath(fromPath, targetState);
 
+      /** @type {TreeChanges} */
       this._treeChanges = PathUtils.treeChanges(
         fromPath,
-        toPath,
+        /** @type {PathNode[]} */ (toPath),
         this._options.reloadState,
       );
-      this.createTransitionHookRegFns();
       const onCreateHooks = this._hookBuilder.buildHooksForPhase(
         TransitionHookPhase._CREATE,
       );
 
-      TransitionHook.invokeHooks(onCreateHooks, () => null);
+      TransitionHook.invokeHooks(onCreateHooks, () => Promise.resolve());
       this.applyViewConfigs();
-      this.onStart = undefined;
-      this.onBefore = undefined;
-      this.onSuccess = undefined;
-      this.onEnter = undefined;
-      this.onRetain = undefined;
-      this.onExit = undefined;
-      this.onFinish = undefined;
-      this.onError = undefined;
     }
 
     /**
-     * Creates the transition-level hook registration functions
-     * (which can then be used to register hooks)
+     * @param {string} hookName
+     * @returns {RegisteredHook[]}
      */
-    createTransitionHookRegFns() {
-      this._transitionProvider
-        ._getEvents()
-        .filter((type) => type.hookPhase !== TransitionHookPhase._CREATE)
-        .forEach((type) => {
-          return makeEvent(this, this._transitionProvider, type);
-        });
+    getHooks(hookName) {
+      return this._registeredHooks[hookName] || [];
     }
 
-    getHooks(hookName) {
-      return this._registeredHooks[hookName];
+    /**
+     * Registers a hook by event name.
+     * @param {string} eventName
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    on(eventName, matchCriteria, callback, options) {
+      const eventType = this._getEventType(eventName);
+
+      if (eventType.hookPhase === TransitionHookPhase._CREATE) {
+        throw new Error("onCreate hooks can only be registered on the service");
+      }
+
+      return registerHook(
+        this,
+        this._transitionService,
+        eventType,
+        matchCriteria,
+        callback,
+        options,
+      );
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onBefore(matchCriteria, callback, options) {
+      return this.on("onBefore", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onStart(matchCriteria, callback, options) {
+      return this.on("onStart", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onEnter(matchCriteria, callback, options) {
+      return this.on("onEnter", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onRetain(matchCriteria, callback, options) {
+      return this.on("onRetain", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onExit(matchCriteria, callback, options) {
+      return this.on("onExit", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onFinish(matchCriteria, callback, options) {
+      return this.on("onFinish", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onSuccess(matchCriteria, callback, options) {
+      return this.on("onSuccess", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onError(matchCriteria, callback, options) {
+      return this.on("onError", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {string} eventName
+     * @returns {import("./transition-event-type.js").TransitionEventType}
+     */
+    _getEventType(eventName) {
+      const eventType = this._transitionService
+        ._getEvents()
+        .find((type) => type.name === eventName);
+
+      if (!eventType) {
+        throw new Error(`Unknown Transition hook event: ${eventName}`);
+      }
+
+      return eventType;
     }
 
     applyViewConfigs() {
       const enteringStates = this._treeChanges.entering.map((node) => node.state);
 
       PathUtils.applyViewConfigs(
-        this._transitionProvider.$view,
+        this._transitionService.$view,
         this._treeChanges.to,
         enteringStates,
       );
     }
 
     /**
-     * @returns {import('../state/state-object.js').StateObject} the internal from [State] object
+     * @returns {StateObject} the internal from [State] object
      */
     $from() {
       return tail(this._treeChanges.from).state;
     }
 
     /**
-     * @returns {import('../state/state-object.js').StateObject} the internal to [State] object
+     * @returns {StateObject} the internal to [State] object
      */
     $to() {
       return tail(this._treeChanges.to).state;
@@ -32568,7 +35008,7 @@
      *
      * Returns the state that the transition is coming *from*.
      *
-     * @returns The state declaration object for the Transition's ("from state").
+     * @returns {StateDeclaration} The state declaration object for the Transition's ("from state").
      */
     from() {
       return this.$from().self;
@@ -32579,7 +35019,7 @@
      *
      * Returns the state that the transition is going *to*.
      *
-     * @returns The state declaration object for the Transition's target state ("to state").
+     * @returns {StateDeclaration} The state declaration object for the Transition's target state ("to state").
      */
     to() {
       return this.$to().self;
@@ -32590,31 +35030,19 @@
      *
      * A transition's [[TargetState]] encapsulates the [[to]] state, the [[params]], and the [[options]] as a single object.
      *
-     * @returns the [[TargetState]] of this Transition
+     * @returns {TargetState} the [[TargetState]] of this Transition
      */
     targetState() {
       return this._targetState;
     }
 
     /**
-     * Determines whether two transitions are equivalent.
-     * @deprecated
+     * @param {string} pathname
+     * @returns {any}
      */
-    is(compare) {
-      if (compare instanceof Transition) {
-        // TODO: Also compare parameters
-        return this.is({ to: compare.$to().name, from: compare.$from().name });
-      }
-
-      return !(
-        (compare.to && !matchState(this.$to(), compare.to, this)) ||
-        (compare.from && !matchState(this.$from(), compare.from, this))
-      );
-    }
-
     params(pathname = "to") {
       return Object.freeze(
-        this._treeChanges[pathname]
+        /** @type {PathNode[]} */ (this._treeChanges[pathname])
           .map((x) => x.paramValues)
           .reduce((acc, obj) => ({ ...acc, ...obj }), {}),
       );
@@ -32653,7 +35081,9 @@
      * @returns an array of resolve tokens (keys)
      */
     getResolveTokens(pathname = "to") {
-      return new ResolveContext(this._treeChanges[pathname]).getTokens();
+      return new ResolveContext(
+        /** @type {PathNode[]} */ (this._treeChanges[pathname]),
+      ).getTokens();
     }
 
     /**
@@ -32682,8 +35112,8 @@
      * });
      * ```
      *
-     * @param resolvable a [[ResolvableLiteral]] object (or a [[Resolvable]])
-     * @param state the state in the "to path" which should receive the new resolve (otherwise, the root state)
+     * @param {Resolvable | import("../resolve/interface.ts").ResolvableLiteral} resolvable a [[ResolvableLiteral]] object (or a [[Resolvable]])
+     * @param {import("../state/interface.ts").StateOrName} state the state in the "to path" which should receive the new resolve (otherwise, the root state)
      */
     addResolvable(resolvable, state) {
       if (state === void 0) {
@@ -32696,7 +35126,7 @@
 
       const topath = this._treeChanges.to;
 
-      const targetNode = find(topath, (node) => {
+      const targetNode = find(topath, (/** @type {PathNode} */ node) => {
         return node.state.name === stateName;
       });
 
@@ -32705,7 +35135,7 @@
 
       resolveContext.addResolvables(
         [resolvable],
-        /** @type {import("../path/path-node.js").PathNode} */ (targetNode).state,
+        /** @type {PathNode} */ (targetNode).state,
       );
     }
 
@@ -32724,7 +35154,7 @@
      * });
      * ```
      *
-     * @returns The previous Transition, or null if this Transition is not the result of a redirection
+     * @returns {Transition} The previous Transition, or null if this Transition is not the result of a redirection
      */
     redirectedFrom() {
       return this._options.redirectedFrom || null;
@@ -32754,7 +35184,7 @@
      * });
      * ```
      *
-     * @returns The original Transition that started a redirect chain
+     * @returns {Transition} The original Transition that started a redirect chain
      */
     originalTransition() {
       const rf = this.redirectedFrom();
@@ -32765,7 +35195,7 @@
     /**
      * Get the transition options
      *
-     * @returns the options for this Transition.
+     * @returns {import("./interface.ts").TransitionOptions} the options for this Transition.
      */
     options() {
       return this._options;
@@ -32777,28 +35207,38 @@
      * @returns an array of states that will be entered during this transition.
      */
     entering() {
-      return map(this._treeChanges.entering, (x) => x.state).map((x) => x.self);
+      const states = /** @type {ng.StateObject[]} */ (
+        map(this._treeChanges.entering, (x) => x.state)
+      );
+
+      return states.map((x) => x.self);
     }
 
     /**
      * Gets the states being exited.
      *
-     * @returns an array of states that will be exited during this transition.
+     * @returns {import("../state/interface.ts").StateDeclaration[]} an array of states that will be exited during this transition.
      */
     exiting() {
-      return map(this._treeChanges.exiting, (x) => x.state)
-        .map((x) => x.self)
-        .reverse();
+      const states = /** @type {ng.StateObject[]} */ (
+        map(this._treeChanges.exiting, (x) => x.state)
+      );
+
+      return states.map((x) => x.self).reverse();
     }
 
     /**
      * Gets the states being retained.
      *
-     * @returns an array of states that are already entered from a previous Transition, that will not be
+     * @returns {import("../state/interface.ts").StateDeclaration[]} an array of states that are already entered from a previous Transition, that will not be
      *    exited during this Transition
      */
     retained() {
-      return map(this._treeChanges.retained, (x) => x.state).map((x) => x.self);
+      const states = /** @type {ng.StateObject[]} */ (
+        map(this._treeChanges.retained, (x) => x.state)
+      );
+
+      return states.map((x) => x.self);
     }
 
     /**
@@ -32809,20 +35249,43 @@
      *
      * @param pathname the name of the path to fetch views for:
      *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
-     * @param state If provided, only returns the `ViewConfig`s for a single state in the path
+     * @param {ng.StateObject} [state] If provided, only returns the `ViewConfig`s for a single state in the path
      *
-     * @returns a list of ViewConfig objects for the given path.
+     * @returns {import("../state/views.js").ViewConfig[]} a list of ViewConfig objects for the given path.
      */
     views(pathname = "entering", state) {
       let path = this._treeChanges[pathname];
 
-      path = !state ? path : path.filter(propEq("state", state));
+      path = !state
+        ? path
+        : /** @type {import('../path/path-node.js').PathNode[]} */ (path).filter(
+            propEq("state", state),
+          );
 
-      return path.map((x) => x.views).reduce(unnestR, []);
+      return /** @type {import('../path/path-node.js').PathNode[]} */ (path)
+        .map((x) => x.views)
+        .reduce(unnestR, []);
     }
 
+    /**
+     * Return the transition's tree changes
+     *
+     * A transition goes from one state/parameters to another state/parameters.
+     * During a transition, states are entered and/or exited.
+     *
+     * This function returns various branches (paths) which represent the changes to the
+     * active state tree that are caused by the transition.
+     *
+     * @param {string} [pathname] The name of the tree changes path to get:
+     *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
+     * @returns {import('../path/path-node.js').PathNode[] | import("./interface.ts").TreeChanges}
+     */
     treeChanges(pathname) {
-      return pathname ? this._treeChanges[pathname] : this._treeChanges;
+      return pathname
+        ? /** @type {import('../path/path-node.js').PathNode[]} */ (
+            this._treeChanges[pathname]
+          )
+        : this._treeChanges;
     }
 
     /**
@@ -32831,19 +35294,23 @@
      * This transition can be returned from a [[TransitionService]] hook to
      * redirect a transition to a new state and/or set of parameters.
      *
-     * @internal
+     * @param {TargetState} targetState the new target state for the redirected transition
      *
-     * @returns Returns a new [[Transition]] instance.
+     * @returns {Transition} Returns a new [[Transition]] instance.
      */
     redirect(targetState) {
       let redirects = 1,
-        trans = this;
+        trans = /** @type {Transition} */ (this);
 
       while (!isNullOrUndefined((trans = trans.redirectedFrom()))) {
         if (++redirects > REDIRECT_MAX)
           throw new Error(`Too many consecutive Transition redirects (20+)`);
       }
-      const redirectOpts = { redirectedFrom: this, source: "redirect" };
+      const redirectOpts =
+        /** @type {import("./interface.ts").TransitionOptions} */ ({
+          redirectedFrom: this,
+          source: "redirect",
+        });
 
       // If the original transition was caused by URL sync, then use { location: 'replace' }
       // on the new transition (unless the target state explicitly specifies location: false).
@@ -32863,7 +35330,7 @@
       );
 
       targetState = targetState.withOptions(newOptions, true);
-      const newTransition = this._transitionProvider.create(
+      const newTransition = this._transitionService.create(
         this._treeChanges.from,
         targetState,
       );
@@ -32881,16 +35348,27 @@
       // You can wait for the resolve, then redirect to a child state based on the result.
       // The redirected transition does not have to re-fetch the resolve.
       // ---------------------------------------------------------
-      const nodeIsReloading = (reloadState) => (node) => {
-        return reloadState && node.state.includes[reloadState.name];
-      };
+      const nodeIsReloading =
+        (/** @type {ng.StateObject} */ reloadState) =>
+        (/** @type {PathNode} */ node) => {
+          return reloadState && node.state.includes[reloadState.name];
+        };
+
+      const params = /** @type {PathNode[]} */ (
+        PathUtils.matching(
+          redirectEnteringNodes,
+          originalEnteringNodes,
+          PathUtils.nonDynamicParams,
+        )
+      );
 
       // Find any "entering" nodes in the redirect path that match the original path and aren't being reloaded
-      const matchingEnteringNodes = PathUtils.matching(
-        redirectEnteringNodes,
-        originalEnteringNodes,
-        PathUtils.nonDynamicParams,
-      ).filter((x) => !nodeIsReloading(targetState.options().reloadState)(x));
+      const matchingEnteringNodes = params.filter(
+        (x) =>
+          !nodeIsReloading(
+            /** @type {ng.StateObject} */ (targetState.options().reloadState),
+          )(x),
+      );
 
       // Use the existing (possibly pre-resolved) resolvables for the matching entering nodes.
       matchingEnteringNodes.forEach((node, idx) => {
@@ -32940,14 +35418,16 @@
      *
      * A transition is dynamic if no states are entered nor exited, but at least one dynamic parameter has changed.
      *
-     * @returns true if the Transition is dynamic
+     * @returns {boolean} true if the Transition is dynamic
      */
     dynamic() {
       const changes = this._changedParams();
 
       return !changes
         ? false
-        : changes.map((x) => x.dynamic).reduce(anyTrueR, false);
+        : changes
+            .map((/** @type {Param} */ x) => x.dynamic)
+            .reduce(anyTrueR, false);
     }
 
     /**
@@ -32966,13 +35446,16 @@
 
       const { reloadState } = this._options;
 
-      const same = (pathA, pathB) => {
+      const same = (
+        /** @type {PathNode[]} */ pathA,
+        /** @type {PathNode[]} */ pathB,
+      ) => {
         if (pathA.length !== pathB.length) return false;
         const matching = PathUtils.matching(pathA, pathB);
 
         return (
           pathA.length ===
-          matching.filter(
+          /** @type {PathNode[]} */ (matching).filter(
             (node) => !reloadState || !node.state.includes[reloadState.name],
           ).length
         );
@@ -33006,11 +35489,12 @@
      *
      * @internal
      *
-     * @returns {Promise} a promise for a successful transition.
+     * @returns {Promise<any>} a promise for a successful transition.
      */
     run() {
       // Gets transition hooks array for the given phase
-      const getHooksFor = (phase) => this._hookBuilder.buildHooksForPhase(phase);
+      const getHooksFor = (/** @type {TransitionHookPhase} */ phase) =>
+        this._hookBuilder.buildHooksForPhase(phase);
 
       // When the chain is complete, then resolve or reject the deferred
       const transitionSuccess = () => {
@@ -33026,7 +35510,7 @@
         });
       };
 
-      const transitionError = (reason) => {
+      const transitionError = (/** @type {Rejection} */ reason) => {
         trace.traceError(reason, this);
         this.success = false;
         this._deferred.reject(reason);
@@ -33137,7 +35621,9 @@
 
       const toStateOrName = this.to();
 
-      const avoidEmptyHash = (params) =>
+      const avoidEmptyHash = (
+        /** @type {import("../params/interface.ts").RawParams} */ params,
+      ) =>
         params["#"] !== null && params["#"] !== undefined
           ? params
           : omit(params, ["#"]);
@@ -33162,15 +35648,18 @@
 
   Transition.diToken = Transition;
 
+  /**
+   * @param {ng.TransitionService} transitionService
+   */
   function registerAddCoreResolvables(transitionService) {
-    transitionService.onCreate({}, function addCoreResolvables(trans) {
+    return transitionService.onCreate({}, function addCoreResolvables(trans) {
       trans.addResolvable(Resolvable.fromData(Transition, trans), "");
       trans.addResolvable(Resolvable.fromData("$transition$", trans), "");
       trans.addResolvable(
         Resolvable.fromData("$stateParams", trans.params()),
         "",
       );
-      trans.entering().forEach((state) => {
+      trans.entering().forEach((/** @type {ng.StateDeclaration} */ state) => {
         trans.addResolvable(Resolvable.fromData("$state$", state), state);
       });
     });
@@ -33182,19 +35671,23 @@
   // previous Transitions reachable in memory, causing a memory leak
   // This function removes resolves for '$transition$' and `Transition` from the treeChanges.
   // Do not use this on current transitions, only on old ones.
+  /**
+   *
+   * @param {ng.Transition} trans
+   */
   function treeChangesCleanup(trans) {
     const nodes = Object.values(trans.treeChanges())
       .reduce(unnestR, [])
       .reduce(uniqR, []);
 
     // If the resolvable is a Transition, return a new resolvable with null data
-    const replaceTransitionWithNull = (resolve) => {
+    const replaceTransitionWithNull = (/** @type {Resolvable} */ resolve) => {
       return TRANSITION_TOKENS.includes(resolve.token)
         ? Resolvable.fromData(resolve.token, null)
         : resolve;
     };
 
-    nodes.forEach((node) => {
+    nodes.forEach((/** @type {{ resolvables: Resolvable[]; }} */ node) => {
       node.resolvables = node.resolvables.map(replaceTransitionWithNull);
     });
   }
@@ -33204,10 +35697,14 @@
    *
    * The returned function invokes the (for instance) state.onEnter hook when the
    * state is being entered.
+   * @param {string} hookName
+   * @return {import("../transition/interface").TransitionStateHookFn}
    */
   function makeEnterExitRetainHook(hookName) {
     return (transition, state) => {
-      const _state = state._state();
+      const _state = /** @type Record<string, any> */ (
+        state._state && state._state()
+      );
 
       const hookFn = _state[hookName];
 
@@ -33225,8 +35722,16 @@
    */
   const onExitHook = makeEnterExitRetainHook("onExit");
 
-  const registerOnExitHook = (transitionService) =>
-    transitionService.onExit({ exiting: (state) => !!state.onExit }, onExitHook);
+  const registerOnExitHook = (
+    /** @type {ng.TransitionService} */ transitionService,
+  ) =>
+    transitionService.onExit(
+      {
+        exiting: (state) =>
+          !!(/** @type {ng.BuiltStateDeclaration} */ (state).onExit),
+      },
+      onExitHook,
+    );
   /**
    * The [[TransitionStateHookFn]] for onRetain
    *
@@ -33238,9 +35743,14 @@
    */
   const onRetainHook = makeEnterExitRetainHook("onRetain");
 
-  const registerOnRetainHook = (transitionService) =>
+  const registerOnRetainHook = (
+    /** @type {ng.TransitionService} */ transitionService,
+  ) =>
     transitionService.onRetain(
-      { retained: (state) => !!state.onRetain },
+      {
+        retained: (state) =>
+          !!(/** @type {ng.BuiltStateDeclaration} */ (state).onRetain),
+      },
       onRetainHook,
     );
   /**
@@ -33254,11 +35764,18 @@
    */
   const onEnterHook = makeEnterExitRetainHook("onEnter");
 
-  const registerOnEnterHook = (transitionService) =>
+  const registerOnEnterHook = (
+    /** @type {ng.TransitionService} */ transitionService,
+  ) =>
     transitionService.onEnter(
-      { entering: (state) => !!state.onEnter },
+      {
+        entering: (state) =>
+          !!(/** @type {ng.BuiltStateDeclaration} */ (state).onEnter),
+      },
       onEnterHook,
     );
+
+  /** @typedef  {import("../transition/interface.ts").TreeChanges} TreeChanges */
 
   const RESOLVE_HOOK_PRIORITY = 1000;
   /**
@@ -33270,14 +35787,16 @@
    *
    * See [[StateDeclaration.resolve]]
    */
-  const eagerResolvePath = (trans) =>
-    new ResolveContext(trans.treeChanges().to)
+  const eagerResolvePath = (/** @type {ng.Transition} */ trans) =>
+    new ResolveContext(/** @type {TreeChanges} */ (trans.treeChanges()).to)
       .resolvePath("EAGER", trans)
       .then(() => {
         /* empty */
       });
 
-  const registerEagerResolvePath = (transitionService) =>
+  const registerEagerResolvePath = (
+    /** @type {ng.TransitionService} */ transitionService,
+  ) =>
     transitionService.onStart({}, eagerResolvePath, {
       priority: RESOLVE_HOOK_PRIORITY,
     });
@@ -33290,15 +35809,20 @@
    *
    * See [[StateDeclaration.resolve]]
    */
-  const lazyResolveState = (trans, state) =>
-    new ResolveContext(trans.treeChanges().to)
-      .subContext(state._state())
+  const lazyResolveState = (
+    /** @type {ng.Transition} */ trans,
+    /** @type {ng.StateDeclaration} */ state,
+  ) =>
+    new ResolveContext(/** @type {TreeChanges} */ (trans.treeChanges()).to)
+      .subContext(/** @type {Function}*/ (state._state)())
       .resolvePath("LAZY", trans)
       .then(() => {
         /* empty */
       });
 
-  const registerLazyResolveState = (transitionService) =>
+  const registerLazyResolveState = (
+    /** @type {ng.TransitionService} */ transitionService,
+  ) =>
     transitionService.onEnter({ entering: val(true) }, lazyResolveState, {
       priority: RESOLVE_HOOK_PRIORITY,
     });
@@ -33312,14 +35836,16 @@
    *
    * See [[StateDeclaration.resolve]]
    */
-  const resolveRemaining = (trans) =>
-    new ResolveContext(trans.treeChanges().to)
+  const resolveRemaining = (/** @type {ng.Transition} */ trans) =>
+    new ResolveContext(/** @type {TreeChanges} */ (trans.treeChanges()).to)
       .resolvePath("LAZY", trans)
       .then(() => {
         /* empty */
       });
 
-  const registerResolveRemaining = (transitionService) =>
+  const registerResolveRemaining = (
+    /** @type {ng.TransitionService} */ transitionService,
+  ) =>
     transitionService.onFinish({}, resolveRemaining, {
       priority: RESOLVE_HOOK_PRIORITY,
     });
@@ -33332,7 +35858,7 @@
    * Allows the views to do async work in [[ViewConfig.load]] before the transition continues.
    * In angular 1, this includes loading the templates.
    */
-  const loadEnteringViews = (transition) => {
+  const loadEnteringViews = (/** @type {ng.Transition} */ transition) => {
     const enteringViews = transition.views("entering");
 
     if (!enteringViews.length) return undefined;
@@ -33344,10 +35870,14 @@
     });
   };
 
-  const registerLoadEnteringViews = (transitionService) =>
-    transitionService.onFinish({}, loadEnteringViews);
+  const registerLoadEnteringViews = (
+    /** @type {ng.TransitionService} */ transitionService,
+  ) => transitionService.onFinish({}, loadEnteringViews);
 
-  const registerActivateViews = (transitionService, viewService) => {
+  const registerActivateViews = (
+    /** @type {ng.TransitionService} */ transitionService,
+    /** @type {ng.ViewService} */ viewService,
+  ) => {
     /**
      * A [[TransitionHookFn]] which activates the new views when a transition is successful.
      *
@@ -33358,7 +35888,7 @@
      *
      * See [[ViewService]]
      */
-    const activateViews = (transition) => {
+    const activateViews = (/** @type {ng.Transition} */ transition) => {
       const enteringViews = transition.views("entering");
 
       const exitingViews = transition.views("exiting");
@@ -33371,44 +35901,8 @@
       viewService.sync();
     };
 
-    transitionService.onSuccess({}, activateViews);
+    return transitionService.onSuccess({}, activateViews);
   };
-
-  /**
-   * A [[TransitionHookFn]] which updates global ng-router state
-   *
-   * Registered using `transitionService.onBefore({}, updateGlobalState);`
-   *
-   * Before a [[Transition]] starts, updates the global value of "the current transition" ([[Globals.transition]]).
-   * After a successful [[Transition]], updates the global values of "the current state"
-   * ([[Globals.current]] and [[Globals.$current]]) and "the current param values" ([[Globals.params]]).
-   *
-   * See also the deprecated properties:
-   * [[StateService.transition]], [[StateService.current]], [[StateService.params]]
-   *
-   * @param {import('../transition/transition.js').Transition} trans
-   */
-  const updateGlobalState = (trans) => {
-    const globals = trans._globals;
-
-    const transitionSuccessful = () => {
-      globals._successfulTransitions.enqueue(trans);
-      globals.$current = trans.$to();
-      globals.current = globals.$current.self;
-      copy(trans.params(), globals.params);
-    };
-
-    const clearCurrentTransition = () => {
-      // Do not clear globals.transition if a different transition has started in the meantime
-      if (globals.transition === trans) globals.transition = null;
-    };
-
-    trans.onSuccess({}, transitionSuccessful, { priority: 10000 });
-    trans.promise.then(clearCurrentTransition, clearCurrentTransition);
-  };
-
-  const registerUpdateGlobalState = (transitionService) =>
-    transitionService.onCreate({}, updateGlobalState);
 
   /**
    * A [[TransitionHookFn]] that performs lazy loading
@@ -33433,6 +35927,10 @@
    * ```
    *
    * See [[StateDeclaration.lazyLoad]]
+   * @param {ng.TransitionService} transitionService
+   * @param {ng.StateService} [stateService]
+   * @param {ng.UrlService} [urlService]
+   * @param {ng.StateRegistryService | undefined} [stateRegistry]
    */
   function registerLazyLoadHook(
     transitionService,
@@ -33443,20 +35941,19 @@
     return transitionService.onBefore(
       {
         entering: (state) => {
-          return !!state.lazyLoad;
+          return !!(/** @type {ng.BuiltStateDeclaration} */ (state).lazyLoad);
         },
       },
-      /** @param {import("../transition/transition.js").Transition} transition*/ (
-        transition,
-      ) => {
+      /** @param {ng.Transition} transition */ (transition) => {
         function retryTransition() {
           if (transition.originalTransition().options().source !== "url") {
             // The original transition was not triggered via url sync
             // The lazy state should be loaded now, so re-try the original transition
 
             const orig = transition.targetState();
+            // TODO invesigate why this is present if its not passed in transition service
 
-            return stateService.target(
+            return /** @type {ng.StateService} */ (stateService).target(
               orig.identifier(),
               orig.params(),
               orig.options(),
@@ -33464,7 +35961,7 @@
           }
           // The original transition was triggered via url sync
           // Run the URL rules and find the best match
-          const result = urlService.match(urlService.parts());
+          const result = urlService?.match(urlService.parts());
 
           const rule = result && result.rule;
 
@@ -33475,61 +35972,76 @@
 
             const params = result.match;
 
-            return stateService.target(state, params, transition.options());
+            return stateService?.target(state, params, transition.options());
           }
           // No matching state found, so let .sync() choose the best non-state match/otherwise
-          urlService.sync();
+          urlService?.sync();
 
           return undefined;
         }
         const promises = transition
           .entering()
-          .filter((state) => !!state._state().lazyLoad)
-          .map((state) => lazyLoadState(transition, state, stateRegistry));
+          .filter(
+            (/** @type {ng.StateDeclaration} */ state) =>
+              state._state && !!state._state().lazyLoad,
+          )
+          .map(
+            (
+              /** @type {import("../state/interface.ts").StateDeclaration} */ state,
+            ) => lazyLoadState(transition, state, stateRegistry),
+          );
 
         return Promise.all(promises).then(retryTransition);
       },
     );
   }
 
+  const lazyLoadPromiseCache = new WeakMap(); // WeakMap<Function, Promise<any>>
+
   /**
    * Invokes a state's lazy load function
-   *
-   * @param transition a Transition context
-   * @param state the state to lazy load
-   * @returns A promise for the lazy load result
+   * @param {ng.Transition} transition a Transition context
+   * @param {import("../state/interface.ts").StateDeclaration} state the state to lazy load
+   * @param {ng.StateRegistryService | undefined} [stateRegistry]
+   * @return {Promise<import("../state/interface.ts").LazyLoadResult | undefined>} a promise for the lazy load result
    */
   function lazyLoadState(transition, state, stateRegistry) {
-    const lazyLoadFn = state._state().lazyLoad;
+    const lazyLoadFn = /** @type {import("../state/interface.ts").LazyLoadFn} */ (
+      state._state && state._state().lazyLoad
+    );
 
-    // Store/get the lazy load promise on/from the hookfn so it doesn't get re-invoked
-    let promise = lazyLoadFn._promise;
+    let promise = lazyLoadPromiseCache.get(lazyLoadFn);
 
     if (!promise) {
-      const success = (result) => {
+      const success = (/** @type {any} */ result) => {
         delete state.lazyLoad;
-        delete state._state().lazyLoad;
-        delete lazyLoadFn._promise;
+        state._state && delete state._state().lazyLoad;
+        lazyLoadPromiseCache.delete(lazyLoadFn);
 
         return result;
       };
 
-      const error = (err) => {
-        delete lazyLoadFn._promise;
+      const error = (/** @type {any} */ err) => {
+        lazyLoadPromiseCache.delete(lazyLoadFn);
 
         return Promise.reject(err);
       };
 
-      promise = lazyLoadFn._promise = Promise.resolve(
-        lazyLoadFn(transition, state),
-      )
+      promise = Promise.resolve(lazyLoadFn(transition, state))
         .then(updateStateRegistry)
         .then(success, error);
+
+      lazyLoadPromiseCache.set(lazyLoadFn, promise);
     }
-    /** Register any lazy loaded state definitions */
+
+    /**
+     * @param {import("../state/interface.ts").LazyLoadResult} result
+     */
     function updateStateRegistry(result) {
       if (result && isArray(result.states)) {
-        result.states.forEach((_state) => stateRegistry.register(_state));
+        result.states.forEach(
+          (_state) => stateRegistry && stateRegistry.register(_state),
+        );
       }
 
       return result;
@@ -33543,6 +36055,12 @@
    * Plugins can define custom hook types, such as sticky states does for `onInactive`.
    */
   class TransitionEventType {
+    /**
+     * @param {string} name
+     * @param {number} hookPhase
+     * @param {number} hookOrder
+     * @param {any} criteriaMatchPath
+     */
     constructor(
       name,
       hookPhase,
@@ -33571,7 +36089,7 @@
    *
    * If the transition should be ignored (because no parameter or states changed)
    * then the transition is ignored and not processed.
-   * @param {import("../transition/transition.js").Transition} trans
+   * @param {ng.Transition} trans
    */
   function ignoredHook(trans) {
     const ignoredReason = trans._ignoredReason();
@@ -33589,8 +36107,9 @@
 
     return Rejection.ignored().toPromise();
   }
-  const registerIgnoredTransitionHook = (transitionService) =>
-    transitionService.onBefore({}, ignoredHook, { priority: -9999 });
+  const registerIgnoredTransitionHook = (
+    /** @type {ng.TransitionService} */ transitionService,
+  ) => transitionService.onBefore({}, ignoredHook, { priority: -9999 });
 
   /**
    * A [[TransitionHookFn]] that rejects the Transition if it is invalid
@@ -33598,16 +36117,22 @@
    * This hook is invoked at the end of the onBefore phase.
    * If the transition is invalid (for example, param values do not validate)
    * then the transition is rejected.
+   * @param {ng.Transition} trans
    */
   function invalidTransitionHook(trans) {
     if (!trans.valid()) {
-      throw new Error(trans.error().toString());
+      throw new Error(trans.error()?.toString());
     }
   }
-  const registerInvalidTransitionHook = (transitionService) =>
+  const registerInvalidTransitionHook = (
+    /** @type {ng.TransitionService} */ transitionService,
+  ) =>
     transitionService.onBefore({}, invalidTransitionHook, { priority: -1e4 });
 
-  const registerRedirectToHook = (transitionService, stateService) => {
+  const registerRedirectToHook = (
+    /** @type {ng.TransitionService} */ transitionService,
+    /** @type {ng.StateService} */ stateService,
+  ) => {
     /**
      * A [[TransitionHookFn]] that redirects to a different state or params
      *
@@ -33615,12 +36140,15 @@
      *
      * See [[StateDeclaration.redirectTo]]
      */
-    const redirectToHook = (trans) => {
+    const redirectToHook = (/** @type {ng.Transition} */ trans) => {
       const redirect = trans.to().redirectTo;
 
       if (!redirect) return undefined;
       const $state = stateService;
 
+      /**
+       * @param {any} result
+       */
       function handleResult(result) {
         if (!result) return undefined;
 
@@ -33632,9 +36160,9 @@
           return $state.target(result, trans.params(), trans.options());
         }
 
-        if (result.state || result.params) {
+        if (/** @type {any} */ (result).state || result.params) {
           return $state.target(
-            result.state || trans.to(),
+            /** @type {any} */ (result).state || trans.to(),
             result.params || trans.params(),
             trans.options(),
           );
@@ -33650,60 +36178,32 @@
       return handleResult(redirect);
     };
 
-    transitionService.onStart(
-      { to: (state) => !!state.redirectTo },
+    return transitionService.onStart(
+      {
+        to: (state) =>
+          !!(/** @type {ng.BuiltStateDeclaration} */ (state).redirectTo),
+      },
       redirectToHook,
     );
   };
 
-  const registerUpdateUrl = (
-    transitionService,
-    stateService,
-    urlService,
-  ) => {
-    /**
-     * A [[TransitionHookFn]] which updates the URL after a successful transition
-     *
-     * Registered using `transitionService.onSuccess({}, updateUrl);`
-     */
-    const updateUrl = (transition) => {
-      const options = transition.options();
-
-      const $state = stateService;
-
-      // Dont update the url in these situations:
-      // The transition was triggered by a URL sync (options.source === 'url')
-      // The user doesn't want the url to update (options.location === false)
-      // The destination state, and all parents have no navigable url
-      if (
-        options.source !== "url" &&
-        options.location &&
-        $state.$current.navigable
-      ) {
-        const urlOptions = { replace: options.location === "replace" };
-
-        urlService.push(
-          $state.$current.navigable.url,
-          $state.globals.params,
-          urlOptions,
-        );
-      }
-      urlService.update(true);
-    };
-
-    transitionService.onSuccess({}, updateUrl, { priority: 9999 });
-  };
-
+  /** @typedef {import("./interface.ts").DeregisterFn} DeregisterFn */
+  /** @typedef {import("./interface.ts").HookFn} HookFn */
+  /** @typedef {import("./interface.ts").HookMatchCriteria} HookMatchCriteria */
+  /** @typedef {import("./interface.ts").HookRegOptions} HookRegOptions */
+  /** @typedef {import("./interface.ts").PathTypes} PathTypes */
+  /** @typedef {import("./interface.ts").RegisteredHooks} RegisteredHooks */
   /**
    * The default [[Transition]] options.
    *
    * Include this object when applying custom defaults:
    * let reloadOpts = { reload: true, notify: true }
    * let options = defaults(theirOpts, customDefaults, defaultOptions);
+   * @type {import("./interface.ts").TransitionOptions}
    */
   const defaultTransOpts = {
     location: true,
-    relative: null,
+    relative: undefined,
     inherit: false,
     notify: true,
     reload: false,
@@ -33737,14 +36237,20 @@
      */
     constructor(globals, viewService, $exceptionHandler) {
       this._transitionCount = 0;
-      /** The transition hook types, such as `onEnter`, `onStart`, etc */
+      /**
+       * The transition hook types, such as `onEnter`, `onStart`, etc
+       * @type {TransitionEventType[]}
+       */
       this._eventTypes = [];
       /** @internal The registered transition hooks */
+      /** @type {RegisteredHooks} */
       this._registeredHooks = {};
       /** The  paths on a criteria object */
-      this._criteriaPaths = {};
+      /** @type {PathTypes} */
+      this._criteriaPaths = /** @type {PathTypes} */ ({});
       this.globals = globals;
       this.$view = viewService;
+      /** @type {Record<string, DeregisterFn | undefined>} */
       this._deregisterHookFns = {};
       this._defineCorePaths();
       this._defineCoreEvents();
@@ -33760,6 +36266,13 @@
       $injectTokens._url,
       $injectTokens._stateRegistry,
       $injectTokens._view,
+      /**
+       * @param {ng.StateService} stateService
+       * @param {ng.UrlService} urlService
+       * @param {ng.StateRegistryService} stateRegistry
+       * @param {ng.ViewService} viewService
+       * @returns {TransitionProvider}
+       */
       (stateService, urlService, stateRegistry, viewService) => {
         // Lazy load state trees
         this._deregisterHookFns.lazyLoad = registerLazyLoadHook(
@@ -33824,6 +36337,10 @@
      * @param fromPath the path to the current state (the from state)
      * @param targetState the target state (destination)
      * @returns a Transition
+     */
+    /**
+     * @param {import("../path/path-node.js").PathNode[]} fromPath
+     * @param {import("../state/target-state.js").TargetState} targetState
      */
     create(fromPath, targetState) {
       return new Transition(fromPath, targetState, this, this.globals);
@@ -33898,6 +36415,12 @@
       this._definePathType("entering", STATE);
     }
 
+    /**
+     * @param {string} name
+     * @param {number} hookPhase
+     * @param {number} hookOrder
+     * @param {any} criteriaMatchPath
+     */
     _defineEvent(
       name,
       hookPhase,
@@ -33949,8 +36472,9 @@
      * Another example: the `to` path in [[HookMatchCriteria]] is a TRANSITION scoped path.
      * It was defined by calling `defineTreeChangesCriterion('to', TransitionHookScope.TRANSITION)`
      * Only the tail of the `to` path is checked against the criteria and returned as part of the match.
-     *
      * @internal
+     * @param {string} name
+     * @param {number} hookScope
      */
     _definePathType(name, hookScope) {
       this._criteriaPaths[name] = { name, scope: hookScope };
@@ -33960,8 +36484,137 @@
       return this._criteriaPaths;
     }
 
+    /**
+     * @param {string} hookName
+     * @returns {import("./hook-registry.js").RegisteredHook[]}
+     */
     getHooks(hookName) {
-      return this._registeredHooks[hookName];
+      return this._registeredHooks[hookName] || [];
+    }
+
+    /**
+     * Registers a hook by event name.
+     * @param {string} eventName
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    on(eventName, matchCriteria, callback, options) {
+      const eventType = this._getEventType(eventName);
+
+      return registerHook(
+        this,
+        this,
+        eventType,
+        matchCriteria,
+        callback,
+        options,
+      );
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onCreate(matchCriteria, callback, options) {
+      return this.on("onCreate", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onBefore(matchCriteria, callback, options) {
+      return this.on("onBefore", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onStart(matchCriteria, callback, options) {
+      return this.on("onStart", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onEnter(matchCriteria, callback, options) {
+      return this.on("onEnter", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onRetain(matchCriteria, callback, options) {
+      return this.on("onRetain", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onExit(matchCriteria, callback, options) {
+      return this.on("onExit", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onFinish(matchCriteria, callback, options) {
+      return this.on("onFinish", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onSuccess(matchCriteria, callback, options) {
+      return this.on("onSuccess", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {HookMatchCriteria} matchCriteria
+     * @param {HookFn} callback
+     * @param {HookRegOptions} [options]
+     * @returns {DeregisterFn}
+     */
+    onError(matchCriteria, callback, options) {
+      return this.on("onError", matchCriteria, callback, options);
+    }
+
+    /**
+     * @param {string} eventName
+     * @returns {TransitionEventType}
+     */
+    _getEventType(eventName) {
+      const eventType = this._eventTypes.find((type) => type.name === eventName);
+
+      if (!eventType) {
+        throw new Error(`Unknown Transition hook event: ${eventName}`);
+      }
+
+      return eventType;
     }
 
     _registerCoreTransitionHooks() {
@@ -33989,6 +36642,89 @@
     }
   }
 
+  /**
+   * @param {ng.TransitionService} transitionService
+   * @param {ng.StateService} stateService
+   * @param {ng.UrlService} urlService
+   */
+  function registerUpdateUrl(transitionService, stateService, urlService) {
+    /**
+     * A [[TransitionHookFn]] which updates the URL after a successful transition
+     *
+     * Registered using `transitionService.onSuccess({}, updateUrl);`
+     */
+    const updateUrl = (/** @type {ng.Transition}} */ transition) => {
+      const options = transition.options();
+
+      const $state = stateService;
+
+      // Dont update the url in these situations:
+      // The transition was triggered by a URL sync (options.source === 'url')
+      // The user doesn't want the url to update (options.location === false)
+      // The destination state, and all parents have no navigable url
+      if (
+        options.source !== "url" &&
+        options.location &&
+        $state.$current?.navigable
+      ) {
+        const urlOptions = /** @type {any} */ ({
+          replace: options.location === "replace",
+        });
+
+        urlService.push(
+          $state.$current.navigable.url,
+          $state.globals.params,
+          urlOptions,
+        );
+      }
+      urlService.update(true);
+    };
+
+    return transitionService.onSuccess({}, updateUrl, { priority: 9999 });
+  }
+
+  /**
+   * Registers a hook that keeps global router state in sync with transitions.
+   *
+   * - Sets the current transition before it runs
+   * - Updates current state and params on success
+   * - Clears the current transition when finished
+   * @param {ng.TransitionService} transitionService
+   */
+  function registerUpdateGlobalState(transitionService) {
+    return transitionService.onCreate({}, (trans) => {
+      const globals = trans._globals;
+
+      const transitionSuccessful = () => {
+        globals._successfulTransitions.enqueue(trans);
+        globals.$current = trans.$to();
+        globals.current = globals.$current.self;
+        copy(trans.params(), globals.params);
+      };
+
+      const clearCurrentTransition = () => {
+        // Only clear if this transition is still the active one
+        if (globals.transition === trans) {
+          globals.transition = undefined;
+        }
+      };
+
+      trans.onSuccess({}, transitionSuccessful, { priority: 10000 });
+      trans.promise.then(clearCurrentTransition, clearCurrentTransition);
+    });
+  }
+
+  /** @typedef {import("./state-registry.js").StateRegistryProvider} StateRegistryProvider */
+  /** @typedef {import("./interface.ts").StateDeclaration} StateDeclaration */
+  /** @typedef {import("./state-object.js").StateObject} StateObject */
+  /** @typedef {import("./state-matcher.js").StateOrName} StateOrName */
+  /** @typedef {import("../transition/transition.js").Transition} Transition */
+  /** @typedef {import("./interface.ts").TransitionPromise} TransitionPromise */
+  /** @typedef {import("../transition/interface.ts").TransitionOptions} TransitionOptions */
+  /** @typedef {import("../params/interface.ts").RawParams} RawParams */
+  /** @typedef {import("./interface.ts").OnInvalidCallback} OnInvalidCallback */
+  /** @typedef {import("../transition/transition-hook.js").HookResult} HookResult */
+
   const stdErr = minErr("$stateProvider");
 
   /**
@@ -33999,7 +36735,11 @@
    * @param {Promise<T>} promise
    * @returns {Promise<T>}
    */
-  const silenceUncaughtInPromise = (promise) => promise.catch(() => 0) && promise;
+  const silenceUncaughtInPromise = (promise) => {
+    promise.catch(() => undefined);
+
+    return promise;
+  };
 
   /**
    * Creates a rejected promise whose rejection is intentionally silenced.
@@ -34028,8 +36768,6 @@
 
     /**
      * The current [[StateDeclaration]]
-     *
-     * @deprecated This is a passthrough through to [[Router.current]]
      */
     get current() {
       return this.globals.current;
@@ -34037,8 +36775,6 @@
 
     /**
      * The current [[StateObject]] (an internal API)
-     *
-     * @deprecated This is a passthrough through to [[Router.$current]]
      */
     get $current() {
       return this.globals.$current;
@@ -34066,12 +36802,19 @@
        */
       this.transitionService = transitionService;
 
+      /**
+       * @type {StateRegistryProvider | undefined}
+       */
       this.stateRegistry = undefined;
 
-      /** @type {ng.UrlService} */
+      /** @type {ng.UrlService | undefined } */
       this.urlService = undefined;
-      /** @type {ng.InjectorService} */
+      /** @type {ng.InjectorService | undefined } */
       this.$injector = undefined;
+
+      /**
+       * @type {import("./interface.ts").OnInvalidCallback[]}
+       */
       this.invalidCallbacks = [];
 
       /** @type {ng.ExceptionHandlerService} */
@@ -34083,6 +36826,7 @@
       $injectTokens._url,
       /**
        * @param {ng.InjectorService} $injector
+       * @param {ng.UrlService} $url
        * @returns {StateProvider}
        */
       ($injector, $url) => {
@@ -34174,7 +36918,7 @@
      * ```
      *
      * @param {string} name The name of the builder function to decorate.
-     * @param {object} func A function that is responsible for decorating the original
+     * @param {import("./interface.ts").BuilderFunction} func A function that is responsible for decorating the original
      * builder function. The function receives two parameters:
      *
      *   - `{object}` - state - The state urlConfig object.
@@ -34183,7 +36927,12 @@
      * @return {object} $stateProvider - $stateProvider instance
      */
     decorator(name, func) {
-      return this.stateRegistry.decorator(name, func) || this;
+      return (
+        /** @type {StateRegistryProvider} */ (this.stateRegistry).decorator(
+          name,
+          func,
+        ) || this
+      );
     }
 
     /**
@@ -34196,9 +36945,11 @@
       }
 
       try {
-        this.stateRegistry.register(definition);
+        /** @type {StateRegistryProvider} */ (this.stateRegistry).register(
+          definition,
+        );
       } catch (err) {
-        throw stdErr("stateinvalid", err.message);
+        throw stdErr("stateinvalid", /** @type {Error} */ (err).message);
       }
 
       return this;
@@ -34212,11 +36963,15 @@
      * The results of the callbacks are wrapped in Promise.resolve(), so the callbacks may return promises.
      *
      * If a callback returns an TargetState, then it is used as arguments to $state.transitionTo() and the result returned.
-     *
      * @internal
+     * @param {PathNode[]} fromPath
+     * @param {TargetState} toState
      */
     _handleInvalidTargetState(fromPath, toState) {
-      const fromState = makeTargetState(this.stateRegistry, fromPath);
+      const fromState = makeTargetState(
+        /** @type {StateRegistryProvider} */ (this.stateRegistry),
+        fromPath,
+      );
 
       const { globals } = this;
 
@@ -34224,12 +36979,12 @@
 
       const latest = latestThing();
 
-      /** @type {Queue<Function>} */
+      /** @type {Queue<import("./interface.ts").OnInvalidCallback>} */
       const callbackQueue = new Queue(this.invalidCallbacks.slice());
 
       const injector = this.$injector;
 
-      const checkForRedirect = (result) => {
+      const checkForRedirect = (/** @type {HookResult} */ result) => {
         if (!(result instanceof TargetState)) {
           return undefined;
         }
@@ -34257,6 +37012,9 @@
         );
       };
 
+      /**
+       * @returns {Promise<any>}
+       */
       function invokeNextCallback() {
         const nextCallback = callbackQueue.dequeue();
 
@@ -34291,7 +37049,7 @@
      * });
      * ```
      *
-     * @param {function} callback invoked when the toState is invalid
+     * @param {import("./interface.ts").OnInvalidCallback} callback invoked when the toState is invalid
      *   This function receives the (invalid) toState, the fromState, and an injector.
      *   The function may optionally return a [[TargetState]] or a Promise for a TargetState.
      *   If one is returned, it is treated as a redirect.
@@ -34301,9 +37059,9 @@
     onInvalid(callback) {
       this.invalidCallbacks.push(callback);
 
-      return function deregisterListener() {
+      return () => {
         removeFrom(this.invalidCallbacks, callback);
-      }.bind(this);
+      };
     }
 
     /**
@@ -34331,7 +37089,7 @@
      * });
      * ```
      *
-     * @param reloadState A state name or a state object.
+     * @param {string | StateDeclaration | StateObject} [reloadState] A state name or a state object.
      *    If present, this state and all its children will be reloaded, but ancestors will not reload.
      *
      * #### Example:
@@ -34351,11 +37109,15 @@
      * @returns A promise representing the state of the new transition. See [[StateService.go]]
      */
     reload(reloadState) {
-      return this.transitionTo(this.globals.current, this.globals.params, {
-        reload: isDefined(reloadState) ? reloadState : true,
-        inherit: false,
-        notify: false,
-      });
+      return this.transitionTo(
+        /** @type {StateDeclaration} */ (this.globals.current),
+        this.globals.params,
+        {
+          reload: isDefined(reloadState) ? reloadState : true,
+          inherit: false,
+          notify: false,
+        },
+      );
     }
 
     /**
@@ -34380,7 +37142,7 @@
      * });
      * ```
      *
-     * @param to Absolute state name, state object, or relative state path (relative to current state).
+     * @param {StateOrName} to Absolute state name, state object, or relative state path (relative to current state).
      *
      * Some examples:
      *
@@ -34389,14 +37151,14 @@
      * - `$state.go('^.sibling')` - if current state is `home.child`, will go to the `home.sibling` state
      * - `$state.go('.child.grandchild')` - if current state is home, will go to the `home.child.grandchild` state
      *
-     * @param params A map of the parameters that will be sent to the state, will populate $stateParams.
+     * @param {*} [params] A map of the parameters that will be sent to the state, will populate $stateParams.
      *
      *    Any parameters that are not specified will be inherited from current parameter values (because of `inherit: true`).
      *    This allows, for example, going to a sibling state that shares parameters defined by a parent state.
      *
-     * @param options Transition options
+     * @param {*} [options] Transition options
      *
-     * @returns {promise} A promise representing the state of the new transition.
+     * @returns {Promise<any>} A promise representing the state of the new transition.
      */
     go(to, params, options) {
       const defautGoOpts = { relative: this.$current, inherit: true };
@@ -34412,12 +37174,15 @@
      * This is a factory method for creating a TargetState
      *
      * This may be returned from a Transition Hook to redirect a transition, for example.
+     * @param {string | import("./interface.ts").StateDeclaration | import("./state-object.js").StateObject} identifier
+     * @param {{}} params
+     * @param {any} [options]
      */
     target(identifier, params, options = {}) {
       // If we're reloading, find the state object to reload from
       if (isObject(options.reload) && !options.reload.name)
         throw new Error("Invalid reload state object");
-      const reg = this.stateRegistry;
+      const reg = /** @type {ng.StateRegistryService} */ (this.stateRegistry);
 
       options.reloadState =
         options.reload === true
@@ -34429,7 +37194,12 @@
           `No such reload state '${isString(options.reload) ? options.reload : options.reload.name}'`,
         );
 
-      return new TargetState(this.stateRegistry, identifier, params, options);
+      return new TargetState(
+        /** @type {StateRegistryProvider} */ (this.stateRegistry),
+        identifier,
+        params,
+        options,
+      );
     }
 
     getCurrentPath() {
@@ -34437,7 +37207,11 @@
 
       const latestSuccess = globals._successfulTransitions.peekTail();
 
-      const rootPath = () => [new PathNode(this.stateRegistry.root())];
+      const rootPath = () => [
+        new PathNode(
+          /** @type {ng.StateRegistryService} */ (this.stateRegistry).root(),
+        ),
+      ];
 
       return latestSuccess ? latestSuccess._treeChanges.to : rootPath();
     }
@@ -34458,12 +37232,12 @@
      * });
      * ```
      *
-     * @param to State name or state object.
-     * @param toParams A map of the parameters that will be sent to the state,
+     * @param {StateOrName} to State name or state object.
+     * @param {RawParams} toParams A map of the parameters that will be sent to the state,
      *      will populate $stateParams.
-     * @param options Transition options
+     * @param {TransitionOptions} options Transition options
      *
-     * @returns A promise representing the state of the new transition. See [[go]]
+     * @returns {TransitionPromise | Promise<any>} A promise representing the state of the new transition. See [[go]]
      */
     transitionTo(to, toParams = {}, options = {}) {
       options = defaults(options, defaultTransOpts);
@@ -34492,42 +37266,47 @@
        * no error occurred.  Likewise, the transition.run() promise may be rejected because of
        * a Redirect, but the transitionTo() promise is chained to the new Transition's promise.
        */
-      const rejectedTransitionHandler = (trans) => (error) => {
-        if (error instanceof Rejection) {
-          const isLatest = this.globals._lastStartedTransitionId <= trans.$id;
+      /** @typedef {(error: any) => Promise<any>} RejectionHandler */
+      /** @typedef {(trans: Transition) => RejectionHandler} RejectedTransitionHandler */
 
-          if (error.type === RejectType._IGNORED) {
-            isLatest && this.urlService.update();
+      /** @type {RejectedTransitionHandler} */
+      const rejectedTransitionHandler =
+        (/** @type {Transition} */ trans) => (error) => {
+          if (error instanceof Rejection) {
+            const isLatest = this.globals._lastStartedTransitionId <= trans.$id;
 
-            // Consider ignored `Transition.run()` as a successful `transitionTo`
-            return Promise.resolve(this.globals.current);
+            if (error.type === RejectType._IGNORED) {
+              isLatest && /** @type {ng.UrlService} */ (this.urlService).update();
+
+              // Consider ignored `Transition.run()` as a successful `transitionTo`
+              return Promise.resolve(this.globals.current);
+            }
+            const { detail } = error;
+
+            if (
+              error.type === RejectType._SUPERSEDED &&
+              error.redirected &&
+              detail instanceof TargetState
+            ) {
+              // If `Transition.run()` was redirected, allow the `transitionTo()` promise to resolve successfully
+              // by returning the promise for the new (redirect) `Transition.run()`.
+              const redirect = trans.redirect(detail);
+
+              return redirect.run().catch(rejectedTransitionHandler(redirect));
+            }
+
+            if (error.type === RejectType._ABORTED) {
+              isLatest && /** @type {ng.UrlService} */ (this.urlService).update();
+
+              return Promise.reject(error);
+            }
           }
-          const { detail } = error;
+          const errorHandler = this.defaultErrorHandler();
 
-          if (
-            error.type === RejectType._SUPERSEDED &&
-            error.redirected &&
-            detail instanceof TargetState
-          ) {
-            // If `Transition.run()` was redirected, allow the `transitionTo()` promise to resolve successfully
-            // by returning the promise for the new (redirect) `Transition.run()`.
-            const redirect = trans.redirect(detail);
+          errorHandler(error);
 
-            return redirect.run().catch(rejectedTransitionHandler(redirect));
-          }
-
-          if (error.type === RejectType._ABORTED) {
-            isLatest && this.urlService.update();
-
-            return Promise.reject(error);
-          }
-        }
-        const errorHandler = this.defaultErrorHandler();
-
-        errorHandler(error);
-
-        return Promise.reject(error);
-      };
+          return Promise.reject(error);
+        };
 
       const transition = this.transitionService.create(currentPath, ref);
 
@@ -34542,41 +37321,39 @@
     }
 
     /**
-     * Checks if the current state *is* the provided state
-     *
-     * Similar to [[includes]] but only checks for the full state name.
-     * If params is supplied then it will be tested for strict equality against the current
-     * active params object, so all params must match with none missing and no extras.
-     *
-     * #### Example:
-     * ```js
-     * $state.$current.name = 'contacts.details.item';
-     *
-     * // absolute name
-     * $state.is('contact.details.item'); // returns true
-     * $state.is(contactDetailItemStateObject); // returns true
-     * ```
-     *
-     * // relative name (. and ^), typically from a template
-     * // E.g. from the 'contacts.details' template
-     * ```html
-     * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
-     * ```
-     *
-     * @param stateOrName The state name (absolute or relative) or state object you'd like to check.
-     * @param params A param object, e.g. `{sectionId: section.id}`, that you'd like
-     * to test against the current active state.
-     * @param options An options object. The options are:
-     *   - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
-     *     test relative to `options.relative` state (or name).
-     *
-     * @returns Returns true if it is the state.
-     */
+       * Checks if the current state *is* the provided state
+       *
+       * Similar to [[includes]] but only checks for the full state name.
+       * If params is supplied then it will be tested for strict equality against the current
+       * active params object, so all params must match with none missing and no extras.
+       *
+       * #### Example:
+       * ```js
+       * $state.$current.name = 'contacts.details.item';
+       *
+       * // absolute name
+       * $state.is('contact.details.item'); // returns true
+       * $state.is(contactDetailItemStateObject); // returns true
+       * ```
+       *
+       * // relative name (. and ^), typically from a template
+       * // E.g. from the 'contacts.details' template
+       * ```html
+       * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
+       * ```
+       * @param {import("./state-matcher.js").StateOrName} stateOrName The state name (absolute or relative) or state object you'd like to check.
+       * @param {import("../params/interface.ts").RawParams} [params] A param object, e.g. `{sectionId: section.id}`, that you'd like
+      to test against the current active state.
+       * @param {{ relative: import("./state-matcher.js").StateOrName | undefined; } | undefined} [options] An options object. The options are:
+      - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
+      test relative to `options.relative` state (or name).
+       * @returns {boolean | undefined} Returns true if it is the state.
+       */
     is(stateOrName, params, options) {
       options = defaults(options, { relative: this.$current });
-      const state = this.stateRegistry.matcher.find(
+      const state = this.stateRegistry?.matcher.find(
         stateOrName,
-        options.relative,
+        options?.relative,
       );
 
       if (!isDefined(state)) return undefined;
@@ -34594,64 +37371,66 @@
     }
 
     /**
-     * Checks if the current state *includes* the provided state
-     *
-     * A method to determine if the current active state is equal to or is the child of the
-     * state stateName. If any params are passed then they will be tested for a match as well.
-     * Not all the parameters need to be passed, just the ones you'd like to test for equality.
-     *
-     * #### Example when `$state.$current.name === 'contacts.details.item'`
-     * ```js
-     * // Using partial names
-     * $state.includes("contacts"); // returns true
-     * $state.includes("contacts.details"); // returns true
-     * $state.includes("contacts.details.item"); // returns true
-     * $state.includes("contacts.list"); // returns false
-     * $state.includes("about"); // returns false
-     * ```
-     *
-     * #### Glob Examples when `* $state.$current.name === 'contacts.details.item.url'`:
-     * ```js
-     * $state.includes("*.details.*.*"); // returns true
-     * $state.includes("*.details.**"); // returns true
-     * $state.includes("**.item.**"); // returns true
-     * $state.includes("*.details.item.url"); // returns true
-     * $state.includes("*.details.*.url"); // returns true
-     * $state.includes("*.details.*"); // returns false
-     * $state.includes("item.**"); // returns false
-     * ```
-     *
-     * @param stateOrName A partial name, relative name, glob pattern,
-     *   or state object to be searched for within the current state name.
-     * @param params A param object, e.g. `{sectionId: section.id}`,
-     *   that you'd like to test against the current active state.
-     * @param options An options object. The options are:
-     *   - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
-     *     test relative to `options.relative` state (or name).
-     *
-     * @returns {boolean} Returns true if it does include the state
-     */
+       * Checks if the current state *includes* the provided state
+       *
+       * A method to determine if the current active state is equal to or is the child of the
+       * state stateName. If any params are passed then they will be tested for a match as well.
+       * Not all the parameters need to be passed, just the ones you'd like to test for equality.
+       *
+       * #### Example when `$state.$current.name === 'contacts.details.item'`
+       * ```js
+       * // Using partial names
+       * $state.includes("contacts"); // returns true
+       * $state.includes("contacts.details"); // returns true
+       * $state.includes("contacts.details.item"); // returns true
+       * $state.includes("contacts.list"); // returns false
+       * $state.includes("about"); // returns false
+       * ```
+       *
+       * #### Glob Examples when `* $state.$current.name === 'contacts.details.item.url'`:
+       * ```js
+       * $state.includes("*.details.*.*"); // returns true
+       * $state.includes("*.details.**"); // returns true
+       * $state.includes("**.item.**"); // returns true
+       * $state.includes("*.details.item.url"); // returns true
+       * $state.includes("*.details.*.url"); // returns true
+       * $state.includes("*.details.*"); // returns false
+       * $state.includes("item.**"); // returns false
+       * ```
+       * @param {StateOrName} stateOrName A partial name, relative name, glob pattern,
+      or state object to be searched for within the current state name.
+       * @param {RawParams} [params] A param object, e.g. `{sectionId: section.id}`,
+      that you'd like to test against the current active state.
+       * @param {TransitionOptions} [options] An options object. The options are:
+      - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
+      test relative to `options.relative` state (or name).
+       * @returns {boolean | undefined} Returns true if it does include the state
+       */
     includes(stateOrName, params, options) {
       options = defaults(options, { relative: this.$current });
       const glob = isString(stateOrName) && Glob.fromString(stateOrName);
 
       if (glob) {
-        if (!glob.matches(this.$current.name)) return false;
-        stateOrName = this.$current.name;
+        if (!glob.matches(/** @type {string} */ (this.$current?.name)))
+          return false;
+        stateOrName = /** @type {string} */ (this.$current?.name);
       }
-      const state = this.stateRegistry.matcher.find(
+      const state = this.stateRegistry?.matcher.find(
         stateOrName,
-        options.relative,
+        options?.relative,
       );
 
-      const include = this.$current.includes;
+      const include = this.$current?.includes;
 
       if (!isDefined(state)) return undefined;
 
       if (!isDefined(include[state.name])) return false;
 
       if (!params) return true;
-      const schema = state.parameters({ inherit: true, matchingKeys: params });
+      const schema = /** @type {ng.StateObject} */ (state).parameters({
+        inherit: true,
+        matchingKeys: params,
+      });
 
       return Param.equals(
         schema,
@@ -34669,12 +37448,10 @@
      * ```js
      * expect($state.href("about.person", { person: "bob" })).toEqual("/about/bob");
      * ```
-     *
-     * @param stateOrName The state name or state object you'd like to generate a url from.
-     * @param params An object of parameter values to fill the state's required parameters.
-     * @param options Options object. The options are:
-     *
-     * @returns {string} compiled state url
+     * @param {import("./state-matcher.js").StateOrName} stateOrName The state name or state object you'd like to generate a url from.
+     * @param {import("../params/interface.ts").RawParams} params An object of parameter values to fill the state's required parameters.
+     * @param {import("./interface.ts").HrefOptions} [options] Options object. The options are:
+     * @returns {string | null} compiled state url
      */
     href(stateOrName, params, options) {
       const defaultHrefOpts = {
@@ -34686,24 +37463,32 @@
 
       options = defaults(options, defaultHrefOpts);
       params = params || {};
-      const state = this.stateRegistry.matcher.find(
+      const state = this.stateRegistry?.matcher.find(
         stateOrName,
-        options.relative,
+        options?.relative,
       );
 
       if (!isDefined(state)) return null;
 
-      if (options.inherit)
-        params = this.globals.params.$inherit(params, this.$current, state);
-      const nav = state && options.lossy ? state.navigable : state;
+      if (options?.inherit)
+        params = this.globals.params.$inherit(
+          params,
+          /** @type {StateObject} */ (this.$current),
+          state,
+        );
+      const nav = state && options?.lossy ? state.navigable : state;
 
       if (!nav || nav.url === undefined || nav.url === null) {
         return null;
       }
 
-      return this.urlService.href(nav.url, params, {
-        absolute: options.absolute,
-      });
+      return /** @type {ng.UrlService} */ (this.urlService).href(
+        nav.url,
+        params,
+        {
+          absolute: options?.absolute,
+        },
+      );
     }
 
     /**
@@ -34726,42 +37511,46 @@
      *   // Do not log transitionTo errors
      * });
      * ```
-     *
-     * @param handler a global error handler function
+     * @param {import("../../docs.ts").ExceptionHandler | undefined} [handler] a global error handler function
      * @returns the current global error handler
      */
     defaultErrorHandler(handler) {
       return (this._defaultErrorHandler = handler || this._defaultErrorHandler);
     }
 
+    /**
+     * @param {import("./interface.ts").StateOrName} stateOrName
+     * @param {undefined} [base]
+     */
     get(stateOrName, base) {
       const reg = this.stateRegistry;
 
-      if (arguments.length === 0) return reg.get();
+      if (arguments.length === 0) return reg?.get();
 
-      return reg.get(stateOrName, base || this.$current);
+      return reg?.get(stateOrName, base || this.$current);
     }
 
     /**
-     * Lazy loads a state
-     *
-     * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
-     *
-     * @param stateOrName the state that should be lazy loaded
-     * @param transition the optional Transition context to use (if the lazyLoad function requires an injector, etc)
-     * Note: If no transition is provided, a noop transition is created using the from the current state to the current state.
-     * This noop transition is not actually run.
-     *
-     * @returns a promise to lazy load
-     */
+       * Lazy loads a state
+       *
+       * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
+       * @param {import("./interface.ts").StateOrName} stateOrName the state that should be lazy loaded
+       * @param {ng.Transition} transition the optional Transition context to use (if the lazyLoad function requires an injector, etc)
+      Note: If no transition is provided, a noop transition is created using the from the current state to the current state.
+      This noop transition is not actually run.
+       * @returns a promise to lazy load
+       */
     lazyLoad(stateOrName, transition) {
-      const state = this.get(stateOrName);
+      const state = /** @type {ng.StateDeclaration} */ (this.get(stateOrName));
 
       if (!state || !state.lazyLoad)
         throw new Error(`Can not lazy load ${stateOrName}`);
       const currentPath = this.getCurrentPath();
 
-      const target = makeTargetState(this.stateRegistry, currentPath);
+      const target = makeTargetState(
+        /** @type {StateRegistryProvider} */ (this.stateRegistry),
+        currentPath,
+      );
 
       transition =
         transition || this.transitionService.create(currentPath, target);
@@ -34780,11 +37569,6 @@
    * Service which manages loading of templates from a ViewConfig.
    */
   class TemplateFactoryProvider {
-    constructor() {
-      /** @type {boolean} */
-      this._useHttp = false;
-    }
-
     $get = [
       $injectTokens._http,
       $injectTokens._templateCache,
@@ -34794,8 +37578,8 @@
        * @param {ng.HttpService} $http
        * @param {ng.TemplateCacheService} $templateCache
        * @param {ng.TemplateRequestService} $templateRequest
-       * @param {import("../core/di/internal-injector.js").InjectorService} $injector
-       * @returns
+       * @param {ng.InjectorService} $injector
+       * @returns {TemplateFactoryProvider}
        */
       ($http, $templateCache, $templateRequest, $injector) => {
         this.$templateRequest = $templateRequest;
@@ -34806,14 +37590,6 @@
         return this;
       },
     ];
-
-    /**
-     * Forces the provider to use $http service directly
-     * @param {boolean} value
-     */
-    useHttpService(value) {
-      this._useHttp = value;
-    }
 
     /**
      * Creates a template from a configuration object.
@@ -34832,12 +37608,24 @@
     fromConfig(config, params, context) {
       const defaultTemplate = "<ng-view></ng-view>";
 
+      /**
+       * @param {string | Promise<string>} result
+       * @returns {Promise<{ template: string }>}
+       */
       const asTemplate = (result) =>
         Promise.resolve(result).then((str) => ({ template: str }));
 
+      /**
+       * @param {string | Promise<string>} result
+       * @returns {Promise<{ component: string }>}
+       */
       const asComponent = (result) =>
         Promise.resolve(result).then((str) => ({ component: str }));
 
+      /**
+       * @param {any} configParam
+       * @returns {"template"|"templateUrl"|"templateProvider"|"component"|"componentProvider"|"default"}
+       */
       const getConfigType = (configParam) => {
         if (isDefined(configParam.template)) return "template";
 
@@ -34854,9 +37642,15 @@
 
       switch (getConfigType(config)) {
         case "template":
-          return asTemplate(this.fromString(config.template, params));
+          return asTemplate(
+            /** @type {string} */ (this.fromString(config.template, params)),
+          );
         case "templateUrl":
-          return asTemplate(this.fromUrl(config.templateUrl, params));
+          return asTemplate(
+            /** @type {Promise<any>} */ (
+              this.fromUrl(config.templateUrl, params)
+            ),
+          );
         case "templateProvider":
           return asTemplate(
             this.fromProvider(config.templateProvider, params, context),
@@ -34893,25 +37687,16 @@
      * @param {string|Function} url url of the template to load, or a function
      * that returns a url.
      * @param {Object} params Parameters to pass to the url function.
-     * @return {Promise<string>}
+     * @return {Promise<string> | null}
      */
     fromUrl(url, params) {
       if (isFunction(url)) url = /** @type {Function} */ (url)(params);
 
       if (isNullOrUndefined(url)) return null;
 
-      if (this._useHttp) {
-        return this.$http
-          .get(/** @type {string} */ (url), {
-            cache: this.$templateCache,
-            headers: { Accept: "text/html" },
-          })
-          .then(function (response) {
-            return response.data;
-          });
-      }
-
-      return this.$templateRequest(/** @type {string} */ (url));
+      return /** @type {ng.TemplateRequestService} */ (this.$templateRequest)(
+        /** @type {string} */ (url),
+      );
     }
 
     /**
@@ -34937,8 +37722,8 @@
 
     /**
      * Creates a component's template by invoking an injectable provider function.
-     *
      * @param {import('../interface.ts').Injectable<any>} provider Function to invoke via `locals`
+     * @param {import("./resolve/resolve-context.js").ResolveContext} context
      * @return {Promise<any>} The template html as a string: "<component-name input1='::$resolve.foo'></component-name>".
      */
     fromComponentProvider(provider, context) {
@@ -34969,7 +37754,7 @@
       bindings = bindings || {};
       // Bind once prefix
       // Convert to kebob name. Add x- prefix if the string starts with `x-` or `data-`
-      const kebob = (camelCase) => {
+      const kebob = (/** @type {string} */ camelCase) => {
         const kebobed = kebobString(camelCase);
 
         return /^(x|data)-/.exec(kebobed) ? `x-${kebobed}` : kebobed;
@@ -35023,9 +37808,11 @@
 
   /**
    * Gets all the directive(s)' inputs ('@', '=', and '<') and outputs ('&')
+   * @param {ng.InjectorService | undefined} $injector
+   * @param {string} name
    */
   function getComponentBindings($injector, name) {
-    const cmpDefs = $injector.get(name + DirectiveSuffix); // could be multiple
+    const cmpDefs = $injector?.get(name + DirectiveSuffix); // could be multiple
 
     if (!cmpDefs || !cmpDefs.length)
       throw new Error(`Unable to find component named '${name}'`);
@@ -35034,24 +37821,40 @@
   }
   // Given a directive definition, find its object input attributes
   // Use different properties, depending on the type of directive (component, bindToController, normal)
-  const getBindings = (def) => {
+  const getBindings = (/** @type {ng.Directive} */ def) => {
     if (isObject(def.bindToController))
       return scopeBindings(def.bindToController);
 
-    return scopeBindings(def.scope);
+    return scopeBindings(/** @type {Record<string, string>} */ (def.scope));
   };
 
   // for ng 1.2 style, process the scope: { input: "=foo" }
   // for ng 1.3 through ng 1.5, process the component's bindToController: { input: "=foo" } object
-  const scopeBindings = (bindingsObj) =>
-    Object.keys(bindingsObj || {})
-      // [ 'input', [ '=foo', '=', 'foo' ] ]
-      .map((key) => [key, /^([=<@&])[?]?(.*)/.exec(bindingsObj[key])])
-      // skip malformed values
-      .filter((tuple) => isDefined(tuple) && isArray(tuple[1]))
-      // { name: ('foo' || 'input'), type: '=' }
-      .map((tuple) => ({ name: tuple[1][2] || tuple[0], type: tuple[1][1] }));
+  // for ng 1.2 style, process the scope: { input: "=foo" }
+  // for ng 1.3 through ng 1.5, process the component's bindToController: { input: "=foo" } object
+  const scopeBindings = (/** @type {Record<string, string>} */ bindingsObj) => {
+    /** @type {Array<[string, RegExpExecArray | null]>} */
+    const tuples = Object.keys(bindingsObj || {}).map((key) => {
+      const match = /^([=<@&])[?]?(.*)/.exec(bindingsObj[key] || "");
 
+      return [key, match];
+    });
+
+    /** @type {(x: [string, RegExpExecArray | null]) => x is [string, RegExpExecArray]} */
+    const hasMatch = (x) => x[1] !== null;
+
+    return tuples
+      .filter(hasMatch)
+      .map(([key, match]) => ({ name: match[2] || key, type: match[1] }));
+  };
+
+  /** @typedef {import("./interface.js").UrlMatcherCache} UrlMatcherCache */
+  /** @typedef {import("./interface.ts").ParamDetails} ParamDetails */
+
+  /**
+   * @param {any} str
+   * @param {any} [param]
+   */
   function quoteRegExp(str, param) {
     let surroundPattern = ["", ""];
 
@@ -35075,7 +37878,12 @@
       result + surroundPattern[0] + param.type.pattern.source + surroundPattern[1]
     );
   }
-  const memoizeTo = (obj, _prop, fn) => (obj[_prop] = obj[_prop] || fn());
+
+  const memoizeTo = (
+    /** @type {{ [x: string]: any; path?: UrlMatcher[]; }} */ obj,
+    /** @type {string} */ _prop,
+    /** @type {{ (): RegExp; (): any; }} */ fn,
+  ) => (obj[_prop] = obj[_prop] || fn());
 
   const splitOnSlash = splitOnDelim("/");
 
@@ -35137,7 +37945,10 @@
    *
    */
   class UrlMatcher {
-    /** @internal Given a matcher, return an array with the matcher's path segments and path params, in order */
+    /**
+     * @internal Given a matcher, return an array with the matcher's path segments and path params, in order
+     * @param {UrlMatcher} matcher
+     */
     static pathSegmentsAndParams(matcher) {
       const staticSegments = matcher._segments;
 
@@ -35145,12 +37956,16 @@
         (path) => path.location === DefType._PATH,
       );
 
-      return arrayTuples(staticSegments, pathParams.concat(undefined))
+      return arrayTuples(staticSegments, [...pathParams, undefined])
         .reduce(unnestR, [])
-        .filter((x) => x !== "" && isDefined(x));
+        .filter((/** @type {string} */ x) => x !== "" && isDefined(x));
     }
 
-    /** @internal Given a matcher, return an array with the matcher's query params */
+    /**
+     * @internal Given a matcher, return an array with the matcher's query params
+     * @param {UrlMatcher} matcher
+     * @returns {Param[]}
+     */
     static queryParams(matcher) {
       return matcher._params.filter((path) => path.location === DefType._SEARCH);
     }
@@ -35163,6 +37978,8 @@
      * Each dynamic segment is a path parameter.
      *
      * The comparison function sorts static segments before dynamic ones.
+     * @param {UrlMatcher} a
+     * @param {UrlMatcher} b
      */
     static compare(a, b) {
       /**
@@ -35194,10 +38011,12 @@
         (matcher._cache.segments =
           matcher._cache.segments ||
           matcher._cache.path
-            .map(UrlMatcher.pathSegmentsAndParams)
+            ?.map(UrlMatcher.pathSegmentsAndParams)
             .reduce(unnestR, [])
             .reduce(joinNeighborsR, [])
-            .map((x) => (isString(x) ? splitOnSlash(x) : x))
+            .map((/** @type {unknown} */ x) =>
+              isString(x) ? splitOnSlash(x) : x,
+            )
             .reduce(unnestR, []));
 
       /**
@@ -35205,7 +38024,7 @@
        *
        * Caches the result as `matcher._cache.weights`
        */
-      const weights = (matcher) =>
+      const weights = (/** @type {UrlMatcher} */ matcher) =>
         (matcher._cache.weights =
           matcher._cache.weights ||
           segments(matcher).map((segment) => {
@@ -35222,7 +38041,11 @@
       /**
        * Pads shorter array in-place (mutates)
        */
-      const padArrays = (left, right, padVal) => {
+      const padArrays = (
+        /** @type {any[]} */ left,
+        /** @type {any[]} */ right,
+        /** @type {number} */ padVal,
+      ) => {
         const len = Math.max(left.length, right.length);
 
         while (left.length < len) left.push(padVal);
@@ -35248,20 +38071,28 @@
     }
 
     /**
-     * @param pattern The pattern to compile into a matcher.
-     * @param paramTypes The [[ParamTypes]] registry
-     * @param paramFactory A [[ParamFactory]] object
-     * @param config  A [[UrlMatcherCompileConfig]] configuration object
+     * @param {string} pattern The pattern to compile into a matcher.
+     * @param {import("../params/param-types.js").ParamTypes} paramTypes The [[ParamTypes]] registry
+     * @param {import("../params/param-factory.js").ParamFactory} paramFactory A [[ParamFactory]] object
+     * @param {import("./interface.js").UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
      */
     constructor(pattern, paramTypes, paramFactory, config) {
-      this._cache = { path: [/** @type {UrlMatcher} */ (this)] };
+      this._cache = /** @type {UrlMatcherCache} */ ({
+        path: [/** @type {UrlMatcher} */ (this)],
+      });
 
+      /**
+       * @type {any[]}
+       */
       this._children = [];
 
       this._params = [];
 
       this._segments = [];
 
+      /**
+       * @type {any[]}
+       */
       this._compiled = [];
       this.config = config = defaults(config, defaultConfig);
       this.pattern = pattern;
@@ -35301,7 +38132,7 @@
 
       let matchArray;
 
-      const checkParamErrors = (id) => {
+      const checkParamErrors = (/** @type {string} */ id) => {
         if (!UrlMatcher.nameValidator.test(id))
           throw new Error(
             `Invalid parameter name '${id}' in pattern '${pattern}'`,
@@ -35315,7 +38146,10 @@
 
       // Split into static segments separated by path parameter placeholders.
       // The number of segments is always 1 more than the number of parameters.
-      const matchDetails = (match, isSearch) => {
+      const matchDetails = (
+        /** @type {RegExpExecArray} */ match,
+        /** @type {boolean} */ isSearch,
+      ) => {
         // IE[78] returns '' for unmatched groups instead of null
         const id = match[2] || match[3];
 
@@ -35323,7 +38157,7 @@
           ? match[4]
           : match[4] || (match[1] === "*" ? "[\\s\\S]*" : null);
 
-        const makeRegexpType = (str) =>
+        const makeRegexpType = (/** @type {string | RegExp} */ str) =>
           inherit(paramTypes.type(isSearch ? "query" : "path"), {
             pattern: new RegExp(
               str,
@@ -35351,7 +38185,11 @@
         if (details.segment.indexOf("?") >= 0) break; // we're into the search part
         checkParamErrors(details.id);
         this._params.push(
-          paramFactory.fromPath(details.id, details.type, config.state),
+          paramFactory.fromPath(
+            details.id,
+            details.type,
+            /** @type {ng.StateDeclaration} */ (config.state),
+          ),
         );
         this._segments.push(details.segment);
         patterns.push([details.segment, tail(this._params)]);
@@ -35373,7 +38211,11 @@
             details = matchDetails(matchArray, true);
             checkParamErrors(details.id);
             this._params.push(
-              paramFactory.fromSearch(details.id, details.type, config.state),
+              paramFactory.fromSearch(
+                details.id,
+                details.type,
+                /** @type {ng.StateDeclaration} */ (config.state),
+              ),
             );
             last = placeholder.lastIndex;
             // check if ?&
@@ -35382,7 +38224,7 @@
       }
       this._segments.push(segment);
       this._compiled = patterns
-        .map((_pattern) => quoteRegExp.apply(null, _pattern))
+        .map((_pattern) => quoteRegExp.apply(null, /** @type {any} */ (_pattern)))
         .concat(quoteRegExp(segment));
     }
 
@@ -35391,12 +38233,13 @@
      *
      * Builds a new UrlMatcher by appending another UrlMatcher to this one.
      *
-     * @param url A `UrlMatcher` instance to append as a child of the current `UrlMatcher`.
+     * @param {UrlMatcher} url A `UrlMatcher` instance to append as a child of the current `UrlMatcher`.
+     * @returns {UrlMatcher} A new `UrlMatcher` instance representing the concatenation of this `UrlMatcher` and the provided `url` matcher.
      */
     append(url) {
       this._children.push(url);
       url._cache = {
-        path: this._cache.path.concat(url),
+        path: this._cache.path?.concat(url),
         parent: this,
         pattern: null,
       };
@@ -35405,7 +38248,7 @@
     }
 
     isRoot() {
-      return this._cache.path[0] === this;
+      return /** @type {UrlMatcher[]} */ (this._cache.path)[0] === this;
     }
 
     /** Returns the input pattern string */
@@ -35413,6 +38256,11 @@
       return this.pattern;
     }
 
+    /**
+     * @param {any} value
+     * @param {Param} param
+     * @returns {any}
+     */
     _getDecodedParamValue(value, param) {
       return param.value(value);
     }
@@ -35435,19 +38283,21 @@
      * });
      * // returns { id: 'bob', q: 'hello', r: null }
      * ```
-     *
-     * @param path    The URL path to match, e.g. `$location.getPath()`.
-     * @param search  URL search parameters, e.g. `$location.getSearch()`.
-     * @param hash    URL hash e.g. `$location.getHash()`.
-     *
-     * @returns The captured parameter values.
+     * @param {string} path The URL path to match, e.g. `$location.getPath()`.
+     * @param {any} search URL search parameters, e.g. `$location.getSearch()`.
+     * @param {string} hash URL hash e.g. `$location.getHash()`.
+     * @returns {import("../params/interface.js").RawParams | null} The captured parameter values.
      */
     exec(path, search = {}, hash) {
       const match = memoizeTo(this._cache, "pattern", () => {
         return new RegExp(
           [
             "^",
-            unnest(this._cache.path.map((x) => x._compiled)).join(""),
+            unnest(
+              /** @type {UrlMatcher[]} */ (this._cache.path).map(
+                (x) => x._compiled,
+              ),
+            ).join(""),
             this.config.strict === false ? "/?" : "",
             "$",
           ].join(""),
@@ -35460,23 +38310,30 @@
       const allParams = this.parameters(),
         pathParams = allParams.filter((param) => !param.isSearch()),
         searchParams = allParams.filter((param) => param.isSearch()),
-        nPathSegments = this._cache.path
+        nPathSegments = /** @type {UrlMatcher[]} */ (this._cache.path)
           .map((urlm) => urlm._segments.length - 1)
           .reduce((a, x) => a + x),
-        values = {};
+        values = /** @type {Record<string, any>} */ ({});
 
       if (nPathSegments !== match.length - 1)
         throw new Error(`Unbalanced capture group in route '${this.pattern}'`);
+      /**
+       * @param {any} paramVal
+       */
       function decodePathArray(paramVal) {
-        const reverseString = (str) => str.split("").reverse().join("");
+        const reverseString = (/** @type {string} */ str) =>
+          str.split("").reverse().join("");
 
-        const unquoteDashes = (str) => str.replace(/\\-/g, "-");
+        const unquoteDashes = (/** @type {string} */ str) =>
+          str.replace(/\\-/g, "-");
 
         const split = reverseString(paramVal).split(/-(?!\\)/);
 
         const allReversed = map(split, reverseString);
 
-        return map(allReversed, unquoteDashes).reverse();
+        return /** @type {string[]} */ (
+          map(allReversed, unquoteDashes)
+        ).reverse();
       }
 
       for (let i = 0; i < nPathSegments; i++) {
@@ -35510,22 +38367,25 @@
      * @internal
      * Returns all the [[Param]] objects of all path and search parameters of this pattern in order of appearance.
      *
+     * @param {any} [opts]
      * @returns {Array.<Param>}  An array of [[Param]] objects. Must be treated as read-only. If the
      *    pattern has no parameters, an empty array is returned.
      */
     parameters(opts = {}) {
       if (opts.inherit === false) return this._params;
 
-      return unnest(this._cache.path.map((matcher) => matcher._params));
+      return unnest(
+        /** @type {UrlMatcher[]} */ (this._cache.path).map(
+          (matcher) => matcher._params,
+        ),
+      );
     }
 
     /**
-     * @internal
-     * Returns a single parameter from this UrlMatcher by id
-     *
-     * @param id
-     * @param opts
-     * @returns {Param|any|boolean|UrlMatcher|null}
+     * @internal Returns a single parameter from this UrlMatcher by id
+     * @param {string} id
+     * @param {any} opts
+     * @returns {Param | any | boolean | UrlMatcher | null}
      */
     parameter(id, opts = {}) {
       const findParam = () => {
@@ -35550,12 +38410,14 @@
      *
      * Checks an object hash of parameters to validate their correctness according to the parameter
      * types of this `UrlMatcher`.
-     *
-     * @param params The object hash of parameters to validate.
-     * @returns Returns `true` if `params` validates, otherwise `false`.
+     * @param {import("../params/interface.js").RawParams} params The object hash of parameters to validate.
+     * @returns {boolean} Returns `true` if `params` validates, otherwise `false`.
      */
     validates(params) {
-      const validParamVal = (param, val) => !param || param.validates(val);
+      const validParamVal = (
+        /** @type {Param} */ param,
+        /** @type {any} */ val,
+      ) => !param || param.validates(val);
 
       params = params || {};
       // I'm not sure why this checks only the param keys passed in, and not all the params known to the matcher
@@ -35580,7 +38442,7 @@
      * // returns '/user/bob?q=yes'
      * ```
      *
-     * @param values  the values to substitute for the parameters in this pattern.
+     * @param {import("../params/interface.js").RawParams} values  the values to substitute for the parameters in this pattern.
      * @returns the formatted URL (path and optionally search part).
      */
     format(values = {}) {
@@ -35589,24 +38451,28 @@
 
       // Extract all the static segments and Params (processed as ParamDetails)
       // into an ordered array
-      const pathSegmentsAndParams = urlMatchers
+      const pathSegmentsAndParams = /** @type {UrlMatcher[]} */ (urlMatchers)
         .map(UrlMatcher.pathSegmentsAndParams)
         .reduce(unnestR, [])
-        .map((x) => (isString(x) ? x : getDetails(x)));
+        .map((/** @type {string | Param} */ x) =>
+          isString(x) ? x : getDetails(/** @type {Param} */ (x)),
+        );
 
       // Extract the query params into a separate array
-      const queryParams = urlMatchers
+      const queryParams = /** @type {UrlMatcher[]} */ (urlMatchers)
         .map(UrlMatcher.queryParams)
         .reduce(unnestR, [])
         .map(getDetails);
 
-      const isInvalid = (param) => param.isValid === false;
+      const isInvalid = (/** @type {any} */ param) => param.isValid === false;
 
       if (pathSegmentsAndParams.concat(queryParams).filter(isInvalid).length) {
         return null;
       }
       /**
        * Given a Param, applies the parameter value, then returns detailed information about it
+       * @param {Param} param
+       * @returns {import("./interface.js").ParamDetails}
        */
       function getDetails(param) {
         // Normalize to typed value
@@ -35628,7 +38494,7 @@
       /** @type {string} */
       const pathString = /** @type {string} */ (
         pathSegmentsAndParams.reduce(
-          /** @param {string} acc */ (acc, x) => {
+          /** @param {string} acc */ (acc, /** @type {ParamDetails} */ x) => {
             // The element is a static segment (a raw string); just append it
             if (isString(x)) return acc + x;
             // Otherwise, it's a ParamDetails.
@@ -35666,7 +38532,7 @@
       // Build the query string by applying parameter values (array or regular)
       // then mapping to key=value, then flattening and joining using "&"
       const queryString = queryParams
-        .map((paramDetails) => {
+        .map((/** @type {ParamDetails} */ paramDetails) => {
           const { param, squash, isDefaultValue } = paramDetails;
 
           let { encoded } = paramDetails;
@@ -35678,9 +38544,14 @@
 
           if (encoded.length === 0) return undefined;
 
-          if (!param.raw) encoded = map(encoded, encodeURIComponent);
+          if (!param.raw)
+            encoded = /** @type {string |string[]} */ (
+              map(encoded, encodeURIComponent)
+            );
 
-          return encoded.map((val) => `${param.id}=${val}`);
+          return /** @type {any} */ (encoded).map(
+            (/** @type {any} */ val) => `${param.id}=${val}`,
+          );
         })
         .reduce(unnestR, [])
         .join("&");
@@ -35696,6 +38567,9 @@
 
   UrlMatcher.nameValidator = /^\w+([-.]+\w+)*(?:\[\])?$/;
 
+  /**
+   * @param {string | number | boolean} str
+   */
   function encodeDashes(str) {
     // Replace dashes with encoded "\-"
     return encodeURIComponent(str).replace(
@@ -35703,6 +38577,9 @@
       (char) => `%5C%${char.charCodeAt(0).toString(16).toUpperCase()}`,
     );
   }
+
+  /** @typedef {import("../params/param.js").Param} Param */
+  /** @typedef {import("../resolve/resolvable.js").Resolvable} Resolvable */
 
   /**
    * Internal representation of a ng-router state.
@@ -35716,32 +38593,72 @@
    * @extends {ng.StateDeclaration}
    */
   class StateObject {
+    /**
+     * @type {string}
+     */
     name;
+    /**
+     * @type {{ url: any; } | undefined | null}
+     */
     navigable;
-    /** @type {?StateObject} */
+
+    /** @type {StateObject | undefined} */
     parent;
+
+    /**
+     * @type {ArrayLike<Param> | undefined}
+     */
     params;
+
+    /**
+     * @type {{ parameter: (arg0: any, arg1: {}) => any; } | undefined}
+     */
     url;
+
+    /**
+     * @type {any}
+     */
     includes;
+    /**
+     * @type {StateObject[] | undefined}
+     */
+    path;
+
+    /**
+     * @type {any}
+     */
+    views;
+
+    /**
+     * A list of [[Resolvable]] objects.  The internal representation of [[resolve]].
+     * @type {Resolvable[] | undefined}
+     */
+    resolvables;
 
     /**
      * @param {import('./interface.ts').StateDeclaration} config
      */
     constructor(config) {
       Object.assign(this, config);
-      this._state = () => {
-        return this;
-      };
+
       /**
-       * @type {ng.StateDeclaration|ng.BuiltStateDeclaration}
+       * @type {ng.StateDeclaration}
        */
       this.self = config;
+
+      this.name = config.name;
+
       /**
        * @type {?Glob}
        */
       const nameGlob = this.name ? Glob.fromString(this.name) : null;
 
       this._stateObjectCache = { nameGlob };
+    }
+
+    /** @returns {StateObject} */
+    _state() {
+      return this;
     }
 
     /**
@@ -35751,7 +38668,7 @@
      * reference to the actual `State` instance, the original definition object passed to
      * `$stateProvider.state()`, or the fully-qualified name.
      *
-     * @param ref Can be one of (a) a `State` instance, (b) an object that was passed
+     * @param {any} ref Can be one of (a) a `State` instance, (b) an object that was passed
      *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
      * @returns Returns `true` if `ref` matches the current `State` instance.
      */
@@ -35761,7 +38678,7 @@
 
     /**
      * @deprecated this does not properly handle dot notation
-     * @returns Returns a dot-separated name of the state.
+     * @returns {string} Returns a dot-separated name of the state.
      */
     fqn() {
       if (!this.parent || !(this.parent instanceof this.constructor))
@@ -35774,7 +38691,7 @@
     /**
      * Returns the root node of this state's tree.
      *
-     * @returns The root of this state's tree.
+     * @returns {StateObject} The root of this state's tree.
      */
     root() {
       return (this.parent && this.parent.root()) || this;
@@ -35787,17 +38704,22 @@
      * If `opts.inherit` is true, it also includes the ancestor states' [[Param]] objects.
      * If `opts.matchingKeys` exists, returns only `Param`s whose `id` is a key on the `matchingKeys` object
      *
-     * @param opts options
+     * @param {Partial<Param>} [opts] options
+     * @returns {Param[]} the list of [[Param]] objects
      */
     parameters(opts) {
-      opts = defaults(opts, { inherit: true, matchingKeys: null });
+      const params = /** @type {Param} */ (
+        defaults(opts, { inherit: true, matchingKeys: null })
+      );
+
       const inherited =
-        (opts.inherit && this.parent && this.parent.parameters()) || [];
+        (params.inherit && this.parent && this.parent.parameters()) || [];
 
       return inherited
-        .concat(Object.values(this.params))
+        .concat(Object.values(/** @type {ArrayLike<Param>} */ (this.params)))
         .filter(
-          (param) => !opts.matchingKeys || hasOwn(opts.matchingKeys, param.id),
+          (param) =>
+            !params.matchingKeys || hasOwn(params.matchingKeys, param.id),
         );
     }
 
@@ -35805,13 +38727,17 @@
      * Returns a single [[Param]] that is owned by the state
      *
      * If `opts.inherit` is true, it also searches the ancestor states` [[Param]]s.
-     * @param id the name of the [[Param]] to return
-     * @param opts options
+     * @param {string} id the name of the [[Param]] to return
+     * @param {Param} [opts] options
+     * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
      */
-    parameter(id, opts = {}) {
+    parameter(id, opts = /** @type {Param} */ ({})) {
       return (
         (this.url && this.url.parameter(id, opts)) ||
-        find(Object.values(this.params), propEq("id", id)) ||
+        find(
+          Object.values(/** @type {ArrayLike<Param>} */ (this.params)),
+          propEq("id", id),
+        ) ||
         (opts.inherit && this.parent && this.parent.parameter(id))
       );
     }
@@ -35821,9 +38747,13 @@
     }
   }
   /** Predicate which returns true if the object is a [[StateDeclaration]] object */
-  StateObject.isStateDeclaration = (obj) => isFunction(obj._state);
+  StateObject.isStateDeclaration = (
+    /** @type {StateObject | import("../state/interface.js").StateDeclaration} */ obj,
+  ) => isFunction(obj._state);
+
   /** Predicate which returns true if the object is an internal [[StateObject]] object */
-  StateObject.isState = (obj) => isObject(obj._stateObjectCache);
+  StateObject.isState = (/** @type {any} */ obj) =>
+    isObject(obj._stateObjectCache);
 
   /**
    * Creates a [[UrlRule]]
@@ -35857,22 +38787,38 @@
 
     /**
      *
-     * @param {*} what
-     * @param {*} handler
-     * @returns {BaseUrlRule}
+     * @param {StateObject} what
+     * @param {*} [handler]
+     * @returns {import("./url-rules.js").UrlRule}
      */
     create(what, handler) {
       const { isState, isStateDeclaration } = StateObject;
 
       const makeRule = pattern([
-        [isString, (_what) => makeRule(this.urlService.compile(_what))],
-        [is(UrlMatcher), (_what) => this.fromUrlMatcher(_what, handler)],
         [
-          (...args) => isState(...args) || isStateDeclaration(...args),
-          (_what) => this.fromState(_what, this.stateService, this.routerGlobals),
+          isString,
+          (/** @type {string} */ _what) =>
+            makeRule(this.urlService.compile(_what)),
         ],
-        [is(RegExp), (_what) => this.fromRegExp(_what, handler)],
-        [isFunction, (_what) => new BaseUrlRule(_what, handler)],
+        [
+          is(UrlMatcher),
+          (/** @type {any} */ _what) => this.fromUrlMatcher(_what, handler),
+        ],
+        [
+          (/** @type {any} */ _what) =>
+            isState(_what) || isStateDeclaration(_what),
+          (/** @type {any} */ _what) =>
+            this.fromState(_what, this.stateService, this.routerGlobals),
+        ],
+        [
+          is(RegExp),
+          (/** @type {any} */ _what) => this.fromRegExp(_what, handler),
+        ],
+        [
+          isFunction,
+          (/** @type {import("./interface.js").UrlRuleMatchFn} */ _what) =>
+            new BaseUrlRule(_what, handler),
+        ],
       ]);
 
       const rule = makeRule(what);
@@ -35917,23 +38863,50 @@
      * var match = rule.match('/foo/123/456'); // results in { fooId: '123', barId: '456' }
      * var result = rule.handler(match); // '/home/123/456'
      * ```
+     * @param {UrlMatcher} urlMatcher
+     * @param {string | UrlMatcher | import("./interface.js").UrlRuleHandlerFn} handler
+     * @returns {import("./interface.js").MatcherUrlRule}
      */
     fromUrlMatcher(urlMatcher, handler) {
       let _handler = handler;
 
       if (isString(handler)) handler = this.urlService.compile(handler);
 
-      if (is(UrlMatcher)(handler)) _handler = (match) => handler.format(match);
-      function matchUrlParamters(url) {
-        const params = urlMatcher.exec(url.path, url.search, url.hash);
+      if (is(UrlMatcher)(handler)) {
+        const matcher = /** @type {UrlMatcher} */ (handler);
 
-        return urlMatcher.validates(params) && params;
+        _handler = (match) => {
+          const url = matcher.format(match); // string | null
+
+          return url === null ? undefined : url; // string | void
+        };
+      }
+      /**
+       * @param {import("./interface.js").UrlParts} url
+       * @returns {import("../params/interface.js").RawParams | boolean | null}
+       */
+      function matchUrlParamters(url) {
+        const params = urlMatcher.exec(
+          url.path,
+          url.search,
+          /** @type {string} */ (url.hash),
+        );
+
+        return (
+          urlMatcher.validates(
+            /** @type {import("../params/interface.js").RawParams} */ (params),
+          ) && params
+        );
       }
       // Prioritize URLs, lowest to highest:
       // - Some optional URL parameters, but none matched
       // - No optional parameters in URL
       // - Some optional parameters, some matched
       // - Some optional parameters, all matched
+      /**
+       * @param {import("../params/interface.js").RawParams} params
+       * @returns {number}
+       */
       function matchPriority(params) {
         const optional = urlMatcher
           .parameters()
@@ -35944,9 +38917,18 @@
 
         return matched.length / optional.length;
       }
+      /** @type {{ urlMatcher: UrlMatcher; matchPriority: (params: import("../params/interface.js").RawParams) => number; type: "URLMATCHER" }} */
       const details = { urlMatcher, matchPriority, type: "URLMATCHER" };
 
-      return Object.assign(new BaseUrlRule(matchUrlParamters, _handler), details);
+      return /** @type {import("./interface.js").MatcherUrlRule} */ (
+        Object.assign(
+          new BaseUrlRule(
+            matchUrlParamters,
+            /** @type {import("./interface.js").UrlRuleHandlerFn} */ (_handler),
+          ),
+          details,
+        )
+      );
     }
 
     /**
@@ -35959,10 +38941,14 @@
      * var result = rule.handler(match);
      * // Starts a transition to 'foo' with params: { fooId: '123', barId: '456' }
      * ```
+     * @param {StateObject | import("../state/interface.js").StateDeclaration} stateOrDecl
+     * @param {import("../state/state-service.js").StateProvider} stateService
+     * @param {import("../router.js").RouterProvider} globals
+     * @returns {import("./interface.js").StateRule}
      */
     fromState(stateOrDecl, stateService, globals) {
       const state = StateObject.isStateDeclaration(stateOrDecl)
-        ? stateOrDecl._state()
+        ? /** @type {StateObject} */ (stateOrDecl)?._state()
         : stateOrDecl;
 
       /**
@@ -35972,12 +38958,19 @@
        * A new transition is not required if the current state's URL
        * and the new URL are already identical
        */
-      const handler = (match) => {
+      const handler = (
+        /** @type {import("../params/interface.js").RawParams} */ match,
+      ) => {
         const $state = stateService;
 
         if (
           $state.href(state, match) !==
-          $state.href(globals.current, globals.params)
+          $state.href(
+            /** @type {import("../state/interface.js").StateDeclaration} */ (
+              globals.current
+            ),
+            globals.params,
+          )
         ) {
           $state.transitionTo(state, match, { inherit: true, source: "url" });
         }
@@ -35985,7 +38978,12 @@
 
       const details = { state, type: "STATE" };
 
-      return Object.assign(this.fromUrlMatcher(state.url, handler), details);
+      return /** @type {import("./interface.js").StateRule} */ (
+        Object.assign(
+          this.fromUrlMatcher(/** @type {UrlMatcher} */ (state.url), handler),
+          details,
+        )
+      );
     }
 
     /**
@@ -36019,6 +39017,9 @@
      * var match = rule.match('/foo/bar'); // results in [ '/foo/bar', 'bar' ]
      * var result = rule.handler(match); // '/home/bar'
      * ```
+     * @param {RegExp} regexp
+     * @param {string | import("./interface.js").UrlRuleHandlerFn} handler
+     * @returns {import("./interface.js").RegExpRule}
      */
     fromRegExp(regexp, handler) {
       if (regexp.global || regexp.sticky)
@@ -36028,26 +39029,36 @@
        * If the string has any String.replace() style variables in it (like `$2`),
        * they will be replaced by the captures from [[match]]
        */
-      const redirectUrlTo = (match) =>
+      const redirectUrlTo = (/** @type {RegExpExecArray} */ match) =>
         // Interpolates matched values into $1 $2, etc using a String.replace()-style pattern
-        handler.replace(
+        /** @type {string} */ (handler).replace(
           /\$(\$|\d{1,2})/,
           (_, what) => match[what === "$" ? 0 : Number(what)],
         );
 
       const _handler = isString(handler) ? redirectUrlTo : handler;
 
-      const matchParamsFromRegexp = (url) => regexp.exec(url.path);
+      const matchParamsFromRegexp = (
+        /** @type {import("./interface.js").UrlParts} */ url,
+      ) => regexp.exec(url.path);
 
       const details = { regexp, type: "REGEXP" };
 
-      return Object.assign(
-        new BaseUrlRule(matchParamsFromRegexp, _handler),
-        details,
+      return /** @type {import("./interface.js").RegExpRule} */ (
+        Object.assign(
+          new BaseUrlRule(
+            /** @type  {import("./interface.js").UrlRuleMatchFn} */ (
+              matchParamsFromRegexp
+            ),
+            _handler,
+          ),
+          details,
+        )
       );
     }
   }
-  UrlRuleFactory.isUrlRule = (obj) =>
+
+  UrlRuleFactory.isUrlRule = (/** @type {{ [x: string]: any; }} */ obj) =>
     obj && ["type", "match", "handler"].every((key) => isDefined(obj[key]));
 
   /**
@@ -36056,12 +39067,39 @@
    * The value from the `match` function is passed through to the `handler`.
    */
   class BaseUrlRule {
+    /**
+     * @param {import("./interface.js").UrlRuleMatchFn} match
+     * @param {import("./interface.js").UrlRuleHandlerFn} handler
+     */
     constructor(match, handler) {
+      /**
+       * @type {import("./interface.js").UrlRuleMatchFn}
+       */
       this.match = match;
+
+      /**
+       * @type {import("./interface.js").UrlRuleType}
+       */
       this.type = "RAW";
+
+      /**
+       * @type {number}
+       */
       this.$id = -1;
+
+      /**
+       * @type {number | undefined}
+       */
       this._group = undefined;
+
+      /**
+       * @type {import("./interface.js").UrlRuleHandlerFn}
+       */
       this.handler = handler || ((x) => x);
+
+      /**
+       * @type {number | undefined}
+       */
       this.priority = undefined;
     }
 
@@ -36077,24 +39115,50 @@
     }
   }
 
+  /** @typedef {import("./interface.ts").UrlRule} UrlRule */
+  /** @typedef {import("./interface.ts").MatcherUrlRule} MatcherUrlRule */
+  /** @typedef {import("./url-rule.js").BaseUrlRule} BaseUrlRule */
+
+  /**
+   * @param {{ priority: any; }} a
+   * @param {{ priority: any; }} b
+   */
   function prioritySort(a, b) {
     return (b.priority || 0) - (a.priority || 0);
   }
 
-  const typeSort = (a, b) => {
-    const weights = { STATE: 4, URLMATCHER: 4, REGEXP: 3, RAW: 2, OTHER: 1 };
+  const typeSort = (
+    /** @type {{ type: string | number; }} */ a,
+    /** @type {{ type: string | number; }} */ b,
+  ) => {
+    const weights = /** @type {Record<string, any>} */ ({
+      STATE: 4,
+      URLMATCHER: 4,
+      REGEXP: 3,
+      RAW: 2,
+      OTHER: 1,
+    });
 
     return (weights[a.type] || 0) - (weights[b.type] || 0);
   };
 
-  const urlMatcherSort = (a, b) =>
+  const urlMatcherSort = (
+    /** @type {MatcherUrlRule} */ a,
+    /** @type {MatcherUrlRule} */ b,
+  ) =>
     !a.urlMatcher || !b.urlMatcher
       ? 0
       : UrlMatcher.compare(a.urlMatcher, b.urlMatcher);
 
-  const idSort = (a, b) => {
+  const idSort = (
+    /** @type {{ type: string | number; $id: any; }} */ a,
+    /** @type {{ type: string | number; $id: any; }} */ b,
+  ) => {
     // Identically sorted STATE and URLMATCHER best rule will be chosen by `matchPriority` after each rule matches the URL
-    const useMatchPriority = { STATE: true, URLMATCHER: true };
+    const useMatchPriority = /** @type {Record<string, any>} */ ({
+      STATE: true,
+      URLMATCHER: true,
+    });
 
     const equal = useMatchPriority[a.type] && useMatchPriority[b.type];
 
@@ -36112,6 +39176,8 @@
    * - Rule registration order (for rule types other than STATE and URLMATCHER)
    *   - Equally sorted State and UrlMatcher rules will each match the URL.
    *     Then, the *best* match is chosen based on how many parameter values were matched.
+   * @param {UrlRule} a
+   * @param {UrlRule} b
    */
   function defaultRuleSortFn(a, b) {
     let cmp = prioritySort(a, b);
@@ -36120,7 +39186,10 @@
     cmp = typeSort(a, b);
 
     if (cmp !== 0) return cmp;
-    cmp = urlMatcherSort(a, b);
+    cmp = urlMatcherSort(
+      /** @type {MatcherUrlRule} */ (a),
+      /** @type {MatcherUrlRule} */ (b),
+    );
 
     if (cmp !== 0) return cmp;
 
@@ -36141,6 +39210,9 @@
     /** @param {UrlRuleFactory} urlRuleFactory */
     constructor(urlRuleFactory) {
       this._sortFn = defaultRuleSortFn;
+      /**
+       * @type {UrlRule[]}
+       */
       this._rules = [];
       this._id = 0;
       this._urlRuleFactory = urlRuleFactory;
@@ -36148,8 +39220,7 @@
 
     /**
      * Remove a rule previously registered
-     *
-     * @param rule the matcher rule that was previously registered using [[rule]]
+     * @param {UrlRule} rule the matcher rule that was previously registered using [[rule]]
      */
     removeRule(rule) {
       removeFrom(this._rules, rule);
@@ -36165,6 +39236,7 @@
      * A rule should have a `match` function which returns truthy if the rule matched.
      * It should also have a `handler` function which is invoked if the rule is the best match.
      *
+     * @param {UrlRule} rule the rule to register
      * @returns {() => void } a function that deregisters the rule
      */
     rule(rule) {
@@ -36180,7 +39252,7 @@
     /**
      * Gets all registered rules
      *
-     * @returns an array of all the registered rules
+     * @returns {import("./interface.ts").UrlRule[]} an array of all the registered rules
      */
     rules() {
       this.ensureSorted();
@@ -36220,15 +39292,13 @@
      *   return a.$id - b.$id;
      * }
      * ```
-     *
-     * @param compareFn a function that compares to [[UrlRule]] objects.
-     *    The `compareFn` should abide by the `Array.sort` compare function rules.
-     *    Given two rules, `a` and `b`, return a negative number if `a` should be higher priority.
-     *    Return a positive number if `b` should be higher priority.
-     *    Return `0` if the rules are identical.
-     *
-     *    See the [mozilla reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#Description)
-     *    for details.
+     * @param {((a: UrlRule, b: UrlRule) => number) | undefined} [compareFn] a function that compares to [[UrlRule]] objects.
+     * The `compareFn` should abide by the `Array.sort` compare function rules.
+     * Given two rules, `a` and `b`, return a negative number if `a` should be higher priority.
+     * Return a positive number if `b` should be higher priority.
+     * Return `0` if the rules are identical.
+     * See the [mozilla reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#Description)
+     * for details.
      */
     sort(compareFn) {
       const sorted = this.stableSort(
@@ -36257,6 +39327,10 @@
       this._sorted || this.sort();
     }
 
+    /**
+     * @param {any[]} arr
+     * @param {(arg0: any, arg1: any) => any} compareFn
+     */
     stableSort(arr, compareFn) {
       const arrOfWrapper = arr.map((elem, idx) => ({ elem, idx }));
 
@@ -36321,12 +39395,10 @@
      * ```
      *
      * Note: the `handler` may also invoke arbitrary code, such as `$state.go()`
-     *
-     * @param matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
-     * @param handler The path to redirect to, or a function that returns the path.
-     * @param options `{ priority: number }`
-     *
-     * @return the registered [[UrlRule]]
+     * @param {import("../state/state-object.js").StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
+     * @param {any} handler The path to redirect to, or a function that returns the path.
+     * @param {{ priority: any; }} options `{ priority: number }`
+     * @return {UrlRule} the registered [[UrlRule]]
      */
     when(matcher, handler, options) {
       const rule = this._urlRuleFactory.create(matcher, handler);
@@ -36339,6 +39411,8 @@
     }
   }
 
+  /** @typedef {import("./param-type.js").ParamType} ParamType */
+
   class ParamFactory {
     /**
      * @param {import("../url/url-config.js").UrlConfigProvider} urlServiceConfig
@@ -36350,14 +39424,29 @@
       this.urlServiceConfig = urlServiceConfig;
     }
 
+    /**
+     * @param {string} id
+     * @param {ParamType | null} type
+     * @param {ng.StateDeclaration} state
+     */
     fromConfig(id, type, state) {
       return new Param(id, type, DefType._CONFIG, this.urlServiceConfig, state);
     }
 
+    /**
+     * @param {string} id
+     * @param {ParamType} type
+     * @param {ng.StateDeclaration} state
+     */
     fromPath(id, type, state) {
       return new Param(id, type, DefType._PATH, this.urlServiceConfig, state);
     }
 
+    /**
+     * @param {string} id
+     * @param {ParamType} type
+     * @param {ng.StateDeclaration} state
+     */
     fromSearch(id, type, state) {
       return new Param(id, type, DefType._SEARCH, this.urlServiceConfig, state);
     }
@@ -36374,7 +39463,7 @@
       $injectTokens._urlConfig,
     ]);
 
-    /** @type {ng.LocationService} */
+    /** @type {ng.LocationService | undefined} */
     $location;
 
     /**
@@ -36385,11 +39474,15 @@
      */
     constructor($locationProvider, stateProvider, globals, urlConfigProvider) {
       /** @private */
+
       this._locationProvider = $locationProvider;
       this.stateService = stateProvider;
 
-      /** @type {UrlRuleFactory} Provides services related to the URL */
-      this._urlRuleFactory = new UrlRuleFactory(this, this.stateService, globals);
+      /**
+       * @type {UrlRuleFactory} Provides services related to the URL
+       * @ignore
+       */
+      this._urlRuleFactory = new UrlRuleFactory(this, stateProvider, globals);
 
       /**
        * The nested [[UrlRules]] API for managing URL rules and rewrites
@@ -36399,13 +39492,21 @@
       this._rules = new UrlRules(this._urlRuleFactory);
       /**
        * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
+       * @ignore
        * @type {import("./url-config.js").UrlConfigProvider}
        */
       this._config = urlConfigProvider;
 
-      /** @type {ParamFactory} Creates a new [[Param]] for a given location (DefType) */
+      /**
+       * @type {ParamFactory} Creates a new [[Param]] for a given location (DefType)
+       * @ignore
+       */
       this._paramFactory = new ParamFactory(this._config);
 
+      /**
+       * @type {((evt: ng.ScopeEvent) => void)[]}
+       * @ignore
+       */
       this._urlListeners = [];
     }
 
@@ -36417,7 +39518,7 @@
      * @return {string} the path portion of the url
      */
     getPath() {
-      return this.$location.getPath();
+      return /** @type {ng.LocationService} */ (this.$location).getPath();
     }
 
     /**
@@ -36428,7 +39529,7 @@
      * @return {Object} the search (query) portion of the url, as an object
      */
     getSearch() {
-      return this.$location.getSearch();
+      return /** @type {ng.LocationService} */ (this.$location).getSearch();
     }
 
     /**
@@ -36439,7 +39540,7 @@
      * @return {string} the hash (anchor) portion of the url
      */
     getHash() {
-      return this.$location.getHash();
+      return /** @type {ng.LocationService} */ (this.$location).getHash();
     }
 
     $get = [
@@ -36453,11 +39554,14 @@
        */
       ($location, $rootScope) => {
         this.$location = $location;
-        $rootScope.$on("$locationChangeSuccess", (evt) => {
-          for (let i = 0, j = this._urlListeners.length; i < j; i++) {
-            this._urlListeners[i](evt);
-          }
-        });
+        $rootScope.$on(
+          "$locationChangeSuccess",
+          /** @param {ng.ScopeEvent} evt */ (evt) => {
+            for (let i = 0, j = this._urlListeners.length; i < j; i++) {
+              this._urlListeners[i](evt);
+            }
+          },
+        );
         this.listen(true);
 
         return this;
@@ -36529,12 +39633,13 @@
       if (isDefined(newUrl)) {
         const decodeUri = decodeURIComponent(newUrl);
 
-        this.$location.setUrl(decodeUri);
+        /** @type {ng.LocationService} */ (this.$location).setUrl(decodeUri);
       }
 
-      if (state) this.$location.setState(state);
+      if (state)
+        /** @type {ng.LocationService} */ (this.$location).setState(state);
 
-      return this.$location.getUrl();
+      return /** @type {ng.LocationService} */ (this.$location).getUrl();
     }
 
     /**
@@ -36549,8 +39654,8 @@
      * let deregisterFn = locationServices.onChange((evt) => console.log("url change", evt));
      * ```
      *
-     * @param {Function} callback a function that will be called when the url is changing
-     * @return {Function} a function that de-registers the callback
+     * @param {(evt: ng.ScopeEvent) => void} callback a function that will be called when the url is changing
+     * @return {() => void} a function that de-registers the callback
      */
     onChange(callback) {
       this._urlListeners.push(callback);
@@ -36568,9 +39673,9 @@
      */
     parts() {
       return {
-        path: this.$location.getPath(),
-        search: this.$location.getSearch(),
-        hash: this.$location.getHash(),
+        path: /** @type {ng.LocationService} */ (this.$location).getPath(),
+        search: /** @type {ng.LocationService} */ (this.$location).getSearch(),
+        hash: /** @type {ng.LocationService} */ (this.$location).getHash(),
       };
     }
 
@@ -36592,15 +39697,16 @@
      *   urlService.sync();
      * });
      * ```
+     * @param {import("../../core/scope/interface.ts").ScopeEvent | undefined} [evt]
      */
     sync(evt) {
       if (evt && evt.defaultPrevented) return;
       const { stateService } = this;
 
       const url = {
-        path: this.$location.getPath(),
-        search: this.$location.getSearch(),
-        hash: this.$location.getHash(),
+        path: /** @type {ng.LocationService} */ (this.$location).getPath(),
+        search: /** @type {ng.LocationService} */ (this.$location).getSearch(),
+        hash: /** @type {ng.LocationService} */ (this.$location).getHash(),
       };
 
       /**
@@ -36609,15 +39715,29 @@
       const best = this.match(url);
 
       const applyResult = pattern([
-        [isString, (newurl) => this.url(newurl)],
+        [
+          isString,
+          (/** @type {string | undefined} */ newurl) => this.url(newurl),
+        ],
         [
           TargetState.isDef,
-          (def) => stateService.go(def.state, def.params, def.options),
+          /** @param {import("../state/interface.ts").TargetStateDef} def */ (
+            def,
+          ) =>
+            stateService.go(
+              /** @type {string} */ (def.state),
+              def.params,
+              def.options,
+            ),
         ],
         [
           is(TargetState),
-          (target) =>
-            stateService.go(target.state(), target.params(), target.options()),
+          (/** @type {TargetState} */ target) =>
+            stateService.go(
+              /** @type {ng.StateDeclaration} */ (target.state()),
+              target.params(),
+              target.options(),
+            ),
         ],
       ]);
 
@@ -36658,10 +39778,9 @@
     }
 
     /**
-     * Matches a URL
-     *
      * Given a URL (as a [[UrlParts]] object), check all rules and determine the best matching rule.
      * Return the result as a [[MatchResult]].
+     * @param {import("../../docs.ts").UrlParts} url
      * @returns {any}
      */
     match(url) {
@@ -36671,7 +39790,7 @@
       // Checks a single rule. Returns { rule: rule, match: match, weight: weight } if it matched, or undefined
       /**
        *
-       * @param {import("./url-rule").BaseUrlRule} rule
+       * @param {import("./interface.ts").UrlRule} rule
        */
       const checkRule = (rule) => {
         const match = rule.match(url);
@@ -36698,6 +39817,9 @@
       return best;
     }
 
+    /**
+     * @param {boolean | undefined} [read]
+     */
     update(read) {
       if (read) {
         this.location = this.url();
@@ -36713,11 +39835,10 @@
      * Internal API.
      *
      * Pushes a new location to the browser history.
-     *
      * @internal
-     * @param urlMatcher
-     * @param params
-     * @param options
+     * @param {{ format: (arg0: any) => string | undefined; }} urlMatcher
+     * @param {import("../params/state-params.js").StateParams} params
+     * @param {string} options
      */
     push(urlMatcher, params, options) {
       const replace = options && !!options.replace;
@@ -36726,24 +39847,22 @@
     }
 
     /**
-     * Builds and returns a URL with interpolated parameters
-     *
-     * #### Example:
-     * ```js
-     * matcher = $umf.compile("/about/:person");
-     * params = { person: "bob" };
-     * $bob = $url.href(matcher, params);
-     * // $bob == "/about/bob";
-     * ```
-     *
-     * @param urlMatcher The [[UrlMatcher]] object which is used as the template of the URL to generate.
-     * @param params An object of parameter values to fill the matcher's required parameters.
-     * @param options Options object. The options are:
-     *
-     * - **`absolute`** - {boolean=false},  If true will generate an absolute url, e.g. "http://www.example.com/fullurl".
-     *
-     * @returns Returns the fully compiled URL, or `null` if `params` fail validation against `urlMatcher`
-     */
+       * Builds and returns a URL with interpolated parameters
+       *
+       * #### Example:
+       * ```js
+       * matcher = $umf.compile("/about/:person");
+       * params = { person: "bob" };
+       * $bob = $url.href(matcher, params);
+       * // $bob == "/about/bob";
+       * ```
+       * @param {{ format: (arg0: any) => any; }} urlMatcher The [[UrlMatcher]] object which is used as the template of the URL to generate.
+       * @param {Object} params An object of parameter values to fill the matcher's required parameters.
+       * @param {{ absolute: any; }} options Options object. The options are:
+
+      - **`absolute`** - {boolean=false},  If true will generate an absolute url, e.g. "http://www.example.com/fullurl".
+       * @returns Returns the fully compiled URL, or `null` if `params` fail validation against `urlMatcher`
+       */
     href(urlMatcher, params, options) {
       let url = urlMatcher.format(params);
 
@@ -36772,8 +39891,8 @@
     /**
      * Creates a [[UrlMatcher]] for the specified pattern.
      *
-     * @param urlPattern  The URL pattern.
-     * @param config  The config object hash.
+     * @param {string} urlPattern  The URL pattern.
+     * @param {*} [config]  The config object hash.
      * @returns The UrlMatcher.
      */
     compile(urlPattern, config) {
@@ -36799,12 +39918,11 @@
     /**
      * Returns true if the specified object is a [[UrlMatcher]], or false otherwise.
      *
-     * @param object  The object to perform the type check against.
+     * @param {UrlMatcher & Record<string, any>} object  The object to perform the type check against.
      * @returns `true` if the object matches the `UrlMatcher` interface, by
      *          implementing all the same methods.
      */
     isMatcher(object) {
-      // TODO: typeof?
       if (!isObject(object)) return false;
       let result = true;
 
@@ -36817,6 +39935,12 @@
     }
   }
 
+  /**
+   * @param {string} url
+   * @param {boolean} isHtml5
+   * @param {any} absolute
+   * @param {string} baseHref
+   */
   function appendBasePath(url, isHtml5, absolute, baseHref) {
     if (baseHref === "/") return url;
 
@@ -36827,26 +39951,39 @@
     return url;
   }
 
+  /** @typedef {import("./state-object.js").StateObject} StateObject */
+  /** @typedef {import("./interface.ts").StateOrName} StateOrName */
+  /** @typedef {import("./interface.ts").StateStore} StateStore */
+
   class StateMatcher {
-    /** @param {import("./interface.ts").StateStore} states */
+    /** @param {StateStore} states */
     constructor(states) {
-      /** @type {import("./interface.ts").StateStore} */
+      /** @type {StateStore} */
       this._states = states;
     }
 
+    /**
+     * @param {string} stateName
+     */
     isRelative(stateName) {
       stateName = stateName || "";
 
       return stateName.indexOf(".") === 0 || stateName.indexOf("^") === 0;
     }
 
+    /**
+     * @param {StateOrName} stateOrName
+     * @param {StateOrName | undefined} [base]
+     * @returns {StateObject | undefined}
+     */
     find(stateOrName, base, matchGlob = true) {
       if (!stateOrName && stateOrName !== "") return undefined;
       const isStr = isString(stateOrName);
 
       let name = isStr ? stateOrName : stateOrName.name;
 
-      if (this.isRelative(name)) name = this.resolvePath(name, base);
+      if (this.isRelative(name))
+        name = this.resolvePath(name, /** @type {StateOrName} */ (base));
       const state = this._states[name];
 
       if (
@@ -36854,12 +39991,12 @@
         (isStr ||
           (!isStr && (state === stateOrName || state.self === stateOrName)))
       ) {
-        return state;
+        return /** @type {StateObject} */ (state);
       } else if (isStr && matchGlob) {
         const states = Object.values(this._states);
 
         const matches = states.filter((stateObj) =>
-          stateObj._stateObjectCache.nameGlob?.matches(name),
+          stateObj._stateObjectCache?.nameGlob?.matches(name),
         );
 
         if (matches.length > 1) {
@@ -36868,12 +40005,18 @@
           );
         }
 
-        return matches[0];
+        return /** @type {StateObject} */ (matches[0]);
       }
 
       return undefined;
     }
 
+    /**
+     * `
+     * @param {string} name
+     * @param {StateOrName} base
+     * @returns {string}
+     */
     resolvePath(name, base) {
       if (!base) throw new Error(`No reference point given for path '${name}'`);
       const baseState = this.find(base);
@@ -36892,9 +40035,9 @@
         }
 
         if (splitName[i] === "^") {
-          if (!current.parent)
+          if (!current?.parent)
             throw new Error(
-              `Path '${name}' not valid for state '${baseState.name}'`,
+              `Path '${name}' not valid for state '${baseState?.name}'`,
             );
           current = current.parent;
           continue;
@@ -36903,10 +40046,17 @@
       }
       const relName = splitName.slice(i).join(".");
 
-      return current.name + (current.name && relName ? "." : "") + relName;
+      return current?.name + (current?.name && relName ? "." : "") + relName;
     }
   }
 
+  /** @typedef {import("./interface.js").BuilderFunction} BuilderFunction */
+  /** @typedef {import("./interface.js").Builders} Builders */
+  /** @typedef {import("../url/url-matcher.js").UrlMatcher} UrlMatcher */
+
+  /**
+   * @param {unknown} url
+   */
   function parseUrl(url) {
     if (!isString(url)) return false;
     const root = url.charAt(0) === "^";
@@ -36914,12 +40064,21 @@
     return { val: root ? url.substring(1) : url, root };
   }
 
+  /**
+   *
+   * @param {ng.BuiltStateDeclaration} state
+   * @returns {ng.StateDeclaration}
+   */
   function selfBuilder(state) {
     state.self._state = () => state;
 
     return state.self;
   }
 
+  /**
+   * @param {ng.BuiltStateDeclaration} state
+   * @returns {any}
+   */
   function dataBuilder(state) {
     if (state.parent && state.parent.data) {
       state.data = state.self.data = inherit(state.parent.data, state.data);
@@ -36928,8 +40087,12 @@
     return state.data;
   }
 
+  /**
+   * @param {ng.UrlService} $url
+   * @param {() => ng.StateObject | ng.BuiltStateDeclaration | undefined} root
+   */
   function getUrlBuilder($url, root) {
-    return function (stateObject) {
+    return function (/** @type {ng.StateObject} */ stateObject) {
       let stateDec = stateObject.self;
 
       // For future states, i.e., states whose name ends with `.**`,
@@ -36940,7 +40103,7 @@
         stateDec.name &&
         stateDec.name.match(/\.\*\*$/)
       ) {
-        const newStateDec = {};
+        const newStateDec = /** @type {ng.BuiltStateDeclaration} */ ({});
 
         copy(stateDec, newStateDec);
         newStateDec.url += "{remainder:any}"; // match any path (.*)
@@ -36950,9 +40113,9 @@
 
       const parsed = parseUrl(stateDec.url);
 
-      const url = !parsed
-        ? stateDec.url
-        : $url.compile(parsed.val, { state: stateDec });
+      const url = /** @type {UrlMatcher & Record<string, any>} */ (
+        !parsed ? stateDec.url : $url.compile(parsed.val, { state: stateDec })
+      );
 
       if (!url) return null;
 
@@ -36961,12 +40124,18 @@
 
       return parsed && parsed.root
         ? url
-        : ((parent && parent.navigable) || root()).url.append(url);
+        : (
+            (parent && parent?.navigable) ||
+            /** @type {ng.StateObject | ng.BuiltStateDeclaration} */ (root())
+          ).url.append(url);
     };
   }
 
+  /**
+   * @param {{ (state: ng.StateObject): boolean; (arg0: any): any; }} rootFn
+   */
   function getNavigableBuilder(rootFn) {
-    return function (state) {
+    return function (/** @type {ng.StateObject} */ state) {
       return !rootFn(state) && state.url
         ? state
         : state.parent
@@ -36979,12 +40148,15 @@
    * @param {import("../params/param-factory.js").ParamFactory} paramFactory
    */
   function getParamsBuilder(paramFactory) {
-    return function (state) {
-      const makeConfigParam = (_config, id) =>
-        paramFactory.fromConfig(id, null, state.self);
+    return function (/** @type {ng.BuiltStateDeclaration} */ state) {
+      const makeConfigParam = (
+        /** @type {import("../params/interface.js").ParamDeclaration} */ _config,
+        /** @type {string | number} */ id,
+      ) => paramFactory.fromConfig(/** @type {string} */ (id), null, state.self);
 
-      const urlParams =
-        (state.url && state.url.parameters({ inherit: false })) || [];
+      const urlParams = /** @type {import("./state-object.js").Param[]} */ (
+        (state.url && state.url.parameters({ inherit: false })) || []
+      );
 
       const nonUrlParams = Object.values(
         map(
@@ -37003,10 +40175,16 @@
     };
   }
 
+  /**
+   * @param {ng.StateObject} state
+   */
   function pathBuilder(state) {
-    return state.parent ? state.parent.path.concat(state) : [state];
+    return state.parent ? state.parent?.path?.concat(state) : [state];
   }
 
+  /**
+   * @param {ng.StateObject} state
+   */
   function includesBuilder(state) {
     const includes = state.parent ? Object.assign({}, state.parent.includes) : {};
 
@@ -37056,36 +40234,31 @@
    *   { provide: "myBazResolve", useFactory: function(dep) { dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
    * ]
    * @param {ng.StateObject & ng.StateDeclaration} state
+   * @param {boolean | undefined} strictDi
    */
-  function resolvablesBuilder(state) {
+  function resolvablesBuilder(state, strictDi) {
     /** convert resolve: {} and resolvePolicy: {} objects to an array of tuples */
-    const objects2Tuples = (resolveObj, resolvePolicies) =>
+    const objects2Tuples = (
+      /** @type {Record<string, any> | undefined} */ resolveObj,
+      /** @type {Record<string, import("../resolve/interface.js").ResolvePolicy>} */ resolvePolicies,
+    ) =>
       Object.keys(resolveObj || {}).map((token) => ({
         token,
-        val: resolveObj[token],
+        val: /** @type {Record<string, any>} */ (resolveObj)[token],
         deps: undefined,
         policy: resolvePolicies[token],
       }));
 
     /** fetch DI annotations from a function or ng1-style array */
-    const annotateFn = (fn) => {
-      const { $injector } = window.angular;
-
-      // ng1 doesn't have an $injector until runtime.
-      // If the $injector doesn't exist, use "deferred" literal as a
-      // marker indicating they should be annotated when runtime starts
-      return (
-        fn.$inject ||
-        ($injector && annotate(fn, $injector.strictDi)) ||
-        "deferred"
-      );
-    };
+    const annotateFn = (/** @type {Function} */ fn) => annotate(fn, strictDi);
 
     /** true if the object has both `token` and `resolveFn`, and is probably a [[ResolveLiteral]] */
-    const isResolveLiteral = (obj) => !!(obj.token && obj.resolveFn);
+    const isResolveLiteral = (
+      /** @type {{ token: any; resolveFn: any; }} */ obj,
+    ) => !!(obj.token && obj.resolveFn);
 
     /** true if the object looks like a tuple from obj2Tuples */
-    const isTupleFromObj = (obj) =>
+    const isTupleFromObj = (/** @type {{ val: unknown; }} */ obj) =>
       !!(
         obj &&
         obj.val &&
@@ -37095,12 +40268,13 @@
     // Given a literal resolve or provider object, returns a Resolvable
     const literal2Resolvable = pattern([
       [
-        (x) => x.resolveFn,
-        (y) => new Resolvable(getToken(y), y.resolveFn, y.deps, y.policy),
+        (/** @type {{ resolveFn: any; }} */ x) => x.resolveFn,
+        (/** @type {any} */ y) =>
+          new Resolvable(getToken(y), y.resolveFn, y.deps, y.policy),
       ],
       [
-        (x) => x.useFactory,
-        (y) =>
+        (/** @type {{ useFactory: any; }} */ x) => x.useFactory,
+        (/** @type {any} */ y) =>
           new Resolvable(
             getToken(y),
             y.useFactory,
@@ -37109,29 +40283,43 @@
           ),
       ],
       [
-        (x) => x.useClass,
-        (y) => new Resolvable(getToken(y), () => new y.useClass(), [], y.policy),
+        (/** @type {{ useClass: any; }} */ x) => x.useClass,
+        (/** @type {any} */ y) =>
+          new Resolvable(getToken(y), () => new y.useClass(), [], y.policy),
       ],
       [
-        (x) => x.useValue,
-        (y) =>
+        (/** @type {{ useValue: any; }} */ x) => x.useValue,
+        (/** @type {any} */ y) =>
           new Resolvable(getToken(y), () => y.useValue, [], y.policy, y.useValue),
       ],
       [
-        (x) => x.useExisting,
-        (y) => new Resolvable(getToken(y), (x) => x, [y.useExisting], y.policy),
+        (/** @type {{ useExisting: any; }} */ x) => x.useExisting,
+        (/** @type {any} */ y) =>
+          new Resolvable(
+            getToken(y),
+            (/** @type {any} */ x) => x,
+            [y.useExisting],
+            y.policy,
+          ),
       ],
     ]);
 
     const tuple2Resolvable = pattern([
       [
-        (x) => isString(x.val),
-        (tuple) =>
-          new Resolvable(tuple.token, (x) => x, [tuple.val], tuple.policy),
+        (/** @type {{ val: unknown; }} */ x) => isString(x.val),
+        (
+          /** @type {{ token: any; val: any; policy: import("../resolve/interface.js").ResolvePolicy | undefined; }} */ tuple,
+        ) =>
+          new Resolvable(
+            tuple.token,
+            (/** @type {any} */ x) => x,
+            [tuple.val],
+            tuple.policy,
+          ),
       ],
       [
-        (x) => isArray(x.val),
-        (tuple) =>
+        (/** @type {{ val: any; }} */ x) => isArray(x.val),
+        (/** @type {any} */ tuple) =>
           new Resolvable(
             tuple.token,
             tail(tuple.val),
@@ -37140,8 +40328,8 @@
           ),
       ],
       [
-        (x) => isFunction(x.val),
-        (tuple) =>
+        (/** @type {{ val: any; }} */ x) => isFunction(x.val),
+        (/** @type {any} */ tuple) =>
           new Resolvable(
             tuple.token,
             tuple.val,
@@ -37152,12 +40340,12 @@
     ]);
 
     const item2Resolvable = pattern([
-      [is(Resolvable), (x) => x],
+      [is(Resolvable), (/** @type {any} */ x) => x],
       [isResolveLiteral, literal2Resolvable],
       [isTupleFromObj, tuple2Resolvable],
       [
         val(true),
-        (obj) => {
+        (/** @type {any} */ obj) => {
           throw new Error(`Invalid resolve value: ${stringify(obj)}`);
         },
       ],
@@ -37169,7 +40357,7 @@
 
     const items = isArray(decl)
       ? decl
-      : objects2Tuples(decl, state.resolvePolicy || {});
+      : objects2Tuples(decl, /** @type {any} */ (state.resolvePolicy || {}));
 
     return items.map(item2Resolvable);
   }
@@ -37192,18 +40380,23 @@
      */
     constructor(matcher, urlService) {
       this._matcher = matcher;
+      /** @type {ng.InjectorService | undefined} */
       this._$injector = undefined;
       const self = this;
 
       const root = () => matcher.find("");
 
+      /**
+       * @param {ng.StateObject} state
+       */
       function parentBuilder(state) {
         if (isRoot(state)) return null;
 
         return matcher.find(self.parentName(state)) || root();
       }
+      /** @type {Builders} */
       this._builders = {
-        name: [(state) => state.name],
+        name: [(/** @type {ng.StateObject} */ state) => state.name],
         self: [selfBuilder],
         parent: [parentBuilder],
         data: [dataBuilder],
@@ -37213,17 +40406,26 @@
         navigable: [getNavigableBuilder(isRoot)],
         // TODO
         params: [getParamsBuilder(urlService._paramFactory)],
-        // Each framework-specific ng-router implementation should define its own `views` builder
-        // e.g., src/ng1/statebuilders/views.ts
-        views: [],
+        views: [ng1ViewsBuilder],
         // Keep a full path from the root down to this state as this is needed for state activation.
         path: [pathBuilder],
         // Speed up $state.includes() as it's used a lot
         includes: [includesBuilder],
-        resolvables: [resolvablesBuilder],
+        resolvables: [
+          (/** @type {ng.StateObject & ng.StateDeclaration} */ state) =>
+            resolvablesBuilder(
+              state,
+              this._$injector && this._$injector.strictDi,
+            ),
+        ],
       };
     }
 
+    /**
+     * @param {string} name
+     * @param {*} fn
+     * @returns {BuilderFunction | BuilderFunction[] | null | undefined}
+     */
     builder(name, fn) {
       const { _builders: builders } = this;
 
@@ -37244,8 +40446,8 @@
      * Builds all of the properties on an essentially blank State object, returning a State object which has all its
      * properties and API built.
      *
-     * @param state an uninitialized State object
-     * @returns the built State object
+     * @param {ng.StateObject} state an uninitialized State object
+     * @returns {ng.StateObject | null} the built State object
      */
     build(state) {
       const { _matcher: matcher, _builders: builders } = this;
@@ -37259,18 +40461,30 @@
       for (const key in builders) {
         if (!hasOwn(builders, key)) continue;
         const chain = builders[key].reduce(
-          (parentFn, step) => (_state) => step(_state, parentFn),
+          (
+            /** @type {BuilderFunction} */ parentFn,
+            /** @type {BuilderFunction} */ step,
+          ) =>
+            (_state) =>
+              step(_state, parentFn),
           () => {
             /* empty */
           },
         );
 
-        state[key] = chain(state);
+        state[key] = chain(
+          /** @type {ng.StateObject & ng.BuiltStateDeclaration} */ (state),
+        );
       }
 
       return state;
     }
 
+    /**
+     *
+     * @param {ng.StateObject} state
+     * @returns {string}
+     */
     parentName(state) {
       // name = 'foo.bar.baz.**'
       const name = state.name || "";
@@ -37300,6 +40514,7 @@
       return isString(state.parent) ? state.parent : state.parent.name;
     }
 
+    /** @param {ng.StateObject} state*/
     name(state) {
       const { name } = state;
 
@@ -37312,29 +40527,41 @@
     }
   }
 
+  /**
+   * @param {ng.StateObject} state
+   * @returns {boolean}
+   */
   function isRoot(state) {
     return state.name === "";
   }
 
-  /** extracts the token from a Provider or provide literal */
+  /**
+   * extracts the token from a Provider or provide literal
+   * @param {{ provide: any; token: any; }} provider
+   */
   function getToken(provider) {
     return provider.provide || provider.token;
   }
+
+  /** @typedef {import("./state-registry.js").StateRegistryListener} StateRegistryListener */
 
   class StateQueueManager {
     /**
      * @param {import("./state-registry.js").StateRegistryProvider} stateRegistry
      * @param {import("../url/url-rules.js").UrlRules} urlServiceRules
      * @param {import("./interface.ts").StateStore} states
-     * @param {*} builder
-     * @param {*} listeners
+     * @param {import("./state-builder.js").StateBuilder} builder
+     * @param {StateRegistryListener[]} listeners
      */
     constructor(stateRegistry, urlServiceRules, states, builder, listeners) {
       this.stateRegistry = stateRegistry;
       /** @type {import("../url/url-rules.js").UrlRules} */
       this.urlServiceRules = urlServiceRules;
+
+      /** @type {import("./interface.ts").StateStore} */
       this.states = states;
       this.builder = builder;
+      /** @type {StateRegistryListener[]} */
       this.listeners = listeners;
       /**
        * @type {Array<StateObject>}
@@ -37342,6 +40569,10 @@
       this.queue = [];
     }
 
+    /**
+     * @param {ng.StateDeclaration} stateDecl
+     * @returns {StateObject}
+     */
     register(stateDecl) {
       const state = new StateObject(stateDecl);
 
@@ -37361,11 +40592,15 @@
     flush() {
       const { queue, states, builder } = this;
 
+      /** @type {StateObject[]} */
       const registered = [], // states that got registered
-        orphans = [], // states that don't yet have a parent registered
-        previousQueueLength = {}; // keep track of how long the queue when an orphan was first encountered
+        orphans = []; // states that don't yet have a parent registered
 
-      const getState = (name) => hasOwn(this.states, name) && this.states[name];
+      /** @type {Record<string, number>} */
+      const previousQueueLength = {}; // keep track of how long the queue when an orphan was first encountered
+
+      const getState = (/** @type {string} */ name) =>
+        hasOwn(this.states, name) && this.states[name];
 
       const notifyListeners = () => {
         if (registered.length) {
@@ -37381,9 +40616,9 @@
       while (queue.length > 0) {
         const state = queue.shift();
 
-        const { name } = state;
+        const { name } = /** @type {StateObject} */ (state);
 
-        const result = builder.build(state);
+        const result = builder.build(/** @type {StateObject} */ (state));
 
         const orphanIdx = orphans.indexOf(state);
 
@@ -37399,11 +40634,11 @@
             // Remove future state of the same name
             this.stateRegistry.deregister(existingFutureState);
           }
-          states[name] = state;
-          this.attachRoute(state);
+          states[name] = /** @type {StateObject} */ (state);
+          this.attachRoute(/** @type {StateObject} */ (state));
 
           if (orphanIdx >= 0) orphans.splice(orphanIdx, 1);
-          registered.push(state);
+          registered.push(/** @type {StateObject} */ (state));
           continue;
         }
         const prev = previousQueueLength[name];
@@ -37413,14 +40648,14 @@
         if (orphanIdx >= 0 && prev === queue.length) {
           // Wait until two consecutive iterations where no additional states were dequeued successfully.
           // throw new Error(`Cannot register orphaned state '${name}'`);
-          queue.push(state);
+          queue.push(/** @type {StateObject} */ (state));
           notifyListeners();
 
           return states;
         } else if (orphanIdx < 0) {
           orphans.push(state);
         }
-        queue.push(state);
+        queue.push(/** @type {StateObject} */ (state));
       }
       notifyListeners();
 
@@ -37429,18 +40664,27 @@
 
     /**
      *
-     * @param {ng.StateDeclaration} state
-     * @returns {() => void} a function that deregisters the rule
+     * @param {StateObject | ng.StateDeclaration} state
+     * @returns {void} a function that deregisters the rule
      */
     attachRoute(state) {
-      if (state.abstract || !state.url) return;
-      const rulesApi = this.urlServiceRules;
+      if (!(/** @type {ng.StateDeclaration} */ (state).abstract) && state.url) {
+        const rulesApi = this.urlServiceRules;
 
-      rulesApi.rule(rulesApi._urlRuleFactory.create(state));
+        rulesApi.rule(
+          rulesApi._urlRuleFactory.create(/** @type {StateObject} */ (state)),
+        );
+      }
     }
   }
 
+  /** @typedef {import("./state-object.js").StateObject} StateObject */
+  /** @typedef {import("./interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
   /** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider } */
+  /** @typedef {import("./interface.ts").StateRegistryListener} StateRegistryListener */
+  /** @typedef {import("./interface.ts").StateDeclaration} StateDeclaration */
+  /** @typedef {import("./interface.ts").StateOrName} StateOrName */
+
   /**
    * A registry for all of the application's [[StateDeclaration]]s
    *
@@ -37466,15 +40710,37 @@
       this.states = {};
 
       stateService.stateRegistry = this; // <- circular wiring
+
+      /**
+       * @type {ng.UrlService}
+       */
       this.urlService = urlService;
+
+      /**
+       * @type {import("../url/url-rules.js").UrlRules}
+       */
       this.urlServiceRules = urlService._rules;
+
+      /**
+       * @type {ng.InjectorService|undefined}
+       */
       this.$injector = undefined;
+
+      /**
+       * @type {StateRegistryListener[]}
+       */
       this.listeners = [];
+
+      /**
+       *@type {StateMatcher}
+       */
       this.matcher = new StateMatcher(this.states);
+
+      /**
+       * @type {StateBuilder}
+       */
       this.builder = new StateBuilder(this.matcher, urlService);
-      // Apply ng1 specific StateBuilder code for `views`, `resolve`, and `onExit/Retain/Enter` properties
-      // TODO we can probably move this inside buildr
-      this.builder.builder("views", ng1ViewsBuilder);
+      // Apply ng1 specific StateBuilder code for `onExit/Retain/Enter` properties
       this.builder.builder("onExit", this.getStateHookBuilder("onExit"));
       this.builder.builder("onRetain", this.getStateHookBuilder("onRetain"));
       this.builder.builder("onEnter", this.getStateHookBuilder("onEnter"));
@@ -37491,7 +40757,9 @@
 
       viewService.rootViewContext(this.root());
       globals.$current = this.root();
-      globals.current = globals.$current.self;
+      globals.current = /** @type {import("./state-service.js").StateObject} */ (
+        globals.$current
+      ).self;
     }
 
     $get = [
@@ -37512,21 +40780,31 @@
      * This is a [[StateBuilder.builder]] function for angular1 `onEnter`, `onExit`,
      * `onRetain` callback hooks on a [[StateDeclaration]].
      *
-     * When the [[StateBuilder]] builds a [[StateObject]] object from a raw [[StateDeclaration]], this builder
-     * ensures that those hooks are injectable for @uirouter/angularjs (ng1).
-     *
-     * @internalapi
+     * @param {string} hookName
      */
     getStateHookBuilder(hookName) {
       const that = this;
 
+      /**
+       * @param {import("./state-object").StateObject & Record<string, any>} stateObject
+       * @returns {((trans: ng.Transition, state: ng.BuiltStateDeclaration) => any) | undefined}
+       */
       return function stateHookBuilder(stateObject) {
         const hook = stateObject[hookName];
 
         const pathname = hookName === "onExit" ? "from" : "to";
 
+        /**
+         * @param {ng.Transition} trans
+         * @param {ng.BuiltStateDeclaration} state
+         * @returns {any}
+         */
         function decoratedNg1Hook(trans, state) {
-          const resolveContext = new ResolveContext(trans.treeChanges(pathname));
+          const resolveContext = new ResolveContext(
+            /** @type {import("../resolve/resolve-context.js").PathNode[]} */ (
+              trans.treeChanges(pathname)
+            ),
+          );
 
           const subContext = resolveContext.subContext(state._state());
 
@@ -37535,7 +40813,11 @@
             $transition$: trans,
           });
 
-          return that.$injector.invoke(hook, that, locals);
+          return /** @type {ng.InjectorService} */ (that.$injector).invoke(
+            hook,
+            that,
+            locals,
+          );
         }
 
         return hook ? decoratedNg1Hook : undefined;
@@ -37546,10 +40828,10 @@
      * @private
      */
     registerRoot() {
+      /** @type {ng.StateDeclaration} */
       const rootStateDef = {
         name: "",
         url: "^",
-        views: null,
         params: {
           "#": { value: null, type: "hash", dynamic: true },
         },
@@ -37585,17 +40867,20 @@
      * });
      * ```
      *
-     * @param listener a callback function invoked when the registered states changes.
+     * @param {import("./interface.ts").StateRegistryListener} listener a callback function invoked when the registered states changes.
      *        The function receives two parameters, `event` and `state`.
      *        See [[StateRegistryListener]]
      * @return a function that deregisters the listener
      */
     onStatesChanged(listener) {
+      /** @type {StateRegistryProvider} */
+      const registryProvider = this;
+
       this.listeners.push(listener);
 
-      return function deregisterListener() {
-        removeFrom(this.listeners, listener);
-      }.bind(this);
+      return () => {
+        removeFrom(registryProvider.listeners, listener);
+      };
     }
 
     /**
@@ -37618,7 +40903,7 @@
      *
      * Note: a state will be queued if the state's parent isn't yet registered.
      *
-     * @param stateDefinition the definition of the state to register.
+     * @param {import("./interface.ts")._StateDeclaration} stateDefinition the definition of the state to register.
      * @returns the internal [[StateObject]] object.
      *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
      *          If the state was only queued, then the object is not fully built.
@@ -37627,11 +40912,24 @@
       return this.stateQueue.register(stateDefinition);
     }
 
+    /**
+     *
+     * @param {BuiltStateDeclaration} state
+     * @returns {BuiltStateDeclaration[]}
+     */
     _deregisterTree(state) {
+      /** @type {BuiltStateDeclaration[]} */
       const all = this.getAll().map((x) => x._state());
 
-      const getChildren = (states) => {
-        const _children = all.filter((x) => states.indexOf(x.parent) !== -1);
+      /** @type {(states: BuiltStateDeclaration[]) => BuiltStateDeclaration[]} */
+      const getChildren = /** @param {BuiltStateDeclaration[]} states */ (
+        states,
+      ) => {
+        const _children = all.filter(
+          (x) =>
+            states.indexOf(/** @type {BuiltStateDeclaration} */ (x.parent)) !==
+            -1,
+        );
 
         return _children.length === 0
           ? _children
@@ -37663,22 +40961,15 @@
      * This removes a state from the registry.
      * If the state has children, they are are also removed from the registry.
      *
-     * @param stateOrName the state's name or object representation
-     * @returns {import('./state-object').StateObject[]} a list of removed states
+     * @param {StateOrName} stateOrName the state's name or object representation
+     * @returns {BuiltStateDeclaration[]} a list of removed states
      */
     deregister(stateOrName) {
-      const state =
-        /** @type {import("./interface.ts").BuiltStateDeclaration} */ (
-          this.get(stateOrName)
-        );
+      const state = /** @type {BuiltStateDeclaration} */ (this.get(stateOrName));
 
       if (!state)
         throw new Error(`Can't deregister state; not found: ${stateOrName}`);
-      const deregisteredStates = this._deregisterTree(
-        /** @type {import("./interface.ts").BuiltStateDeclaration} */ (
-          state
-        )._state(),
-      );
+      const deregisteredStates = this._deregisterTree(state._state());
 
       this.listeners.forEach((listener) =>
         listener(
@@ -37700,10 +40991,19 @@
       );
     }
 
+    /**
+     *
+     * @param {StateOrName} [stateOrName]
+     * @param {StateOrName} [base]
+     * @returns {import("./state-service.js").StateDeclaration | import("./state-service.js").StateDeclaration[] | null}
+     */
     get(stateOrName, base) {
       if (arguments.length === 0)
         return keys(this.states).map((name) => this.states[name].self);
-      const found = this.matcher.find(stateOrName, base);
+      const found = this.matcher.find(
+        /** @type {import("./interface.ts").StateOrName} */ (stateOrName),
+        base,
+      );
 
       return (found && found.self) || null;
     }
@@ -37714,8 +41014,8 @@
      *
      * The BuilderFunction(s) will be used to define the property on any subsequently built [[StateObject]] objects.
      *
-     * @param property The name of the State property being registered for.
-     * @param builderFunction The BuilderFunction which will be used to build the State property
+     * @param {string} property The name of the State property being registered for.
+     * @param {import("./interface.ts").BuilderFunction} builderFunction The BuilderFunction which will be used to build the State property
      * @returns a function which deregisters the BuilderFunction
      */
     decorator(property, builderFunction) {
@@ -37723,7 +41023,8 @@
     }
   }
 
-  const getLocals = (ctx) => {
+  const getLocals = /** @param {ResolveContext} ctx */ (ctx) => {
+    /** @type {string[]} */
     const tokens = ctx.getTokens().filter(isString);
 
     const tuples = tokens.map((key) => {
@@ -37740,6 +41041,9 @@
     return tuples.reduce(applyPairs, {});
   };
 
+  /**
+   * @param {string} ref
+   */
   function parseStateRef(ref) {
     const paramsOnly = ref.match(/^\s*({[^}]*})\s*$/);
 
@@ -37754,6 +41058,9 @@
     return { state: parsed[1] || null, paramExpr: parsed[3] || null };
   }
 
+  /**
+   * @param {Node} el
+   */
   function stateContext(el) {
     const $ngView = getInheritedData(el, "$ngView");
 
@@ -37762,8 +41069,13 @@
     return path ? tail(path).state.name : undefined;
   }
 
+  /**
+   * @param {ng.StateService} $state
+   * @param {HTMLElement} $element
+   * @param {Record<string, any>} def
+   */
   function processedDef($state, $element, def) {
-    const ngState = def.ngState || $state.current.name;
+    const ngState = def.ngState || $state.current?.name;
 
     const ngStateOpts = Object.assign(
       defaultOpts($element, $state),
@@ -37775,6 +41087,9 @@
     return { ngState, ngStateParams: def.ngStateParams, ngStateOpts, href };
   }
 
+  /**
+   * @param {HTMLElement} el
+   */
   function getTypeInfo(el) {
     // SVGAElement does not use the href attribute, but rather the 'xlinkHref' attribute.
     const isSvg =
@@ -37790,8 +41105,15 @@
     };
   }
 
+  /**
+   * @param {HTMLElement} el
+   * @param {import("../state/state-service.js").StateProvider} $state
+   * @param {{ attr?: string; isAnchor: any; clickable?: boolean; }} type
+   * @param {{ (): { ngState: any; ngStateParams: any; ngStateOpts: any; href: any; }; (): { ngState: any; ngStateParams: any; ngStateOpts: any; href: any; }; (): any; }} getDef
+   * @param {ng.Scope} scope
+   */
   function clickHook(el, $state, type, getDef, scope) {
-    return function (event) {
+    return function (/** @type {MouseEvent} */ event) {
       const button = event.which || event.button,
         target = getDef();
 
@@ -37830,6 +41152,10 @@
     };
   }
 
+  /**
+   * @param {any} el
+   * @param {{ $current: any; }} $state
+   */
   function defaultOpts(el, $state) {
     return {
       relative: stateContext(el) || $state.$current,
@@ -37838,6 +41164,12 @@
     };
   }
 
+  /**
+   * @param {HTMLElement} element
+   * @param {ng.Scope} scope
+   * @param {{ (event: any): void; (event: any): void; }} hookFn
+   * @param {{ events: any; }} ngStateOpts
+   */
   function bindEvents(element, scope, hookFn, ngStateOpts) {
     let events = ngStateOpts ? ngStateOpts.events : undefined;
 
@@ -37886,6 +41218,9 @@
 
         const active = ngSrefActive[1] || ngSrefActive[0];
 
+        /**
+         * @type {(() => void) | null}
+         */
         let unlinkInfoFn = null;
 
         const rawDef = {};
@@ -37973,8 +41308,12 @@
 
         const active = ngSrefActive[1] || ngSrefActive[0];
 
+        /**
+         * @type {(() => void) | null}
+         */
         let unlinkInfoFn = null;
 
+        /** @type {Record<string, any>} */
         const rawDef = {};
 
         const getDef = () => processedDef($state, element, rawDef);
@@ -37988,7 +41327,7 @@
             }),
             acc
           ),
-          {},
+          /** @type {Record<string, any>} */ ({}),
         );
 
         function update() {
@@ -38040,8 +41379,8 @@
    * @param {ng.StateService} $state
    * @param {ng.RouterService} $router
    * @param {ng.InterpolateService} $interpolate
-   * @param {*} $stateRegistry
-   * @param {*} $transitions
+   * @param {ng.StateRegistryService} $stateRegistry
+   * @param {ng.TransitionService} $transitions
    * @returns {ng.Directive}
    */
   function $StateRefActiveDirective(
@@ -38053,17 +41392,27 @@
   ) {
     return {
       restrict: "A",
+      /**
+       * @param {ng.Scope} $scope
+       * @param {HTMLElement} $element
+       * @param {ng.Attributes} $attrs
+       */
       controller($scope, $element, $attrs) {
+        /**
+         * @type {any[]}
+         */
         let states = [];
 
+        /**
+         * @type {any}
+         */
         let ngSrefActive;
 
         // There probably isn't much point in $observing this
         // ngSrefActive and ngSrefActiveEq share the same directive object with some
         // slight difference in logic routing
-        const activeEqClass = $interpolate(
-          $attrs.ngSrefActiveEq || "",
-          false,
+        const activeEqClass = /** @type {ng.InterpolationFunction} */ (
+          $interpolate($attrs.ngSrefActiveEq || "", false)
         )($scope);
 
         try {
@@ -38073,7 +41422,10 @@
           // Fall back to using $interpolate below
         }
         ngSrefActive =
-          ngSrefActive || $interpolate($attrs.ngSrefActive || "", false)($scope);
+          ngSrefActive ||
+          /** @type {ng.InterpolationFunction} */ (
+            $interpolate($attrs.ngSrefActive || "", false)
+          )($scope);
         setStatesFromDefinitionObject(ngSrefActive);
         // Allow ngSref to communicate with ngSrefActive[Equals]
         this._addStateInfo = function (newState, newParams) {
@@ -38088,6 +41440,9 @@
 
           return deregister;
         };
+        /**
+         * @param {ng.Transition} trans
+         */
         function updateAfterTransition(trans) {
           trans.promise.then(update, () => {
             /* empty */
@@ -38121,6 +41476,9 @@
         function handleStatesChanged() {
           setStatesFromDefinitionObject(ngSrefActive);
         }
+        /**
+         * @param {{ [s: string]: any; } | ArrayLike<any>} statesDefinition
+         */
         function setStatesFromDefinitionObject(statesDefinition) {
           if (isObject(statesDefinition)) {
             states = [];
@@ -38134,10 +41492,12 @@
                 stateOrNameParam,
                 activeClassParam,
               ) {
-                const ref = parseStateRef(stateOrNameParam);
+                const ref = parseStateRef(
+                  /** @type {string} */ (stateOrNameParam),
+                );
 
                 addState(
-                  ref.state,
+                  /** @type {string} */ (ref.state),
                   ref.paramExpr && $scope.$eval(ref.paramExpr),
                   activeClassParam,
                 );
@@ -38155,6 +41515,11 @@
             });
           }
         }
+        /**
+         * @param {import("../state/interface.js").StateOrName} stateName
+         * @param {any} stateParams
+         * @param {string} activeClass
+         */
         function addState(stateName, stateParams, activeClass) {
           const state = $state.get(stateName, stateContext($element));
 
@@ -38172,9 +41537,10 @@
         }
         // Update route state
         function update() {
-          const splitClasses = (str) => str.split(/\s/).filter(Boolean);
+          const splitClasses = (/** @type {string} */ str) =>
+            str.split(/\s/).filter(Boolean);
 
-          const getClasses = (stateList) =>
+          const getClasses = (/** @type {any[]} */ stateList) =>
             stateList
               .map((x) => x.activeClass)
               .map(splitClasses)
@@ -38199,11 +41565,13 @@
           const addClasses = fuzzyClasses.concat(exactClasses).reduce(uniqR, []);
 
           const removeClasses = allClasses.filter(
-            (cls) => !addClasses.includes(cls),
+            (/** @type {any} */ cls) => !addClasses.includes(cls),
           );
 
-          addClasses.forEach((className) => $element.classList.add(className));
-          removeClasses.forEach((className) =>
+          addClasses.forEach((/** @type {string} */ className) =>
+            $element.classList.add(className),
+          );
+          removeClasses.forEach((/** @type {string} */ className) =>
             $element.classList.remove(className),
           );
         }
@@ -38355,6 +41723,11 @@
   function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
     function getRenderer() {
       return {
+        /**
+         * @param {HTMLElement} element
+         * @param {HTMLElement} target
+         * @param {() => void} cb
+         */
         enter(element, target, cb) {
           if (hasAnimate(element)) {
             $animate.enter(element, null, target).then(cb);
@@ -38363,24 +41736,30 @@
             cb();
           }
         },
+
+        /**
+         * @param {HTMLElement} element
+         * @param {() => void} cb
+         */
         leave(element, cb) {
           if (hasAnimate(element)) {
             $animate.leave(element).then(cb);
           } else {
-            element.parentElement.removeChild(element);
+            /** @type {HTMLElement} */ (element.parentElement).removeChild(
+              element,
+            );
             cb();
           }
         },
       };
     }
-    function configsEqual(config1, config2) {
-      return config1 === config2;
-    }
+
     const rootData = {
       $cfg: { viewDecl: { $context: $view.rootViewContext() } },
       $ngView: {},
     };
 
+    /** @type {ng.Directive} */
     const directive = {
       count: 0,
       terminal: true,
@@ -38393,12 +41772,33 @@
             renderer = getRenderer(),
             inherited = getInheritedData($element, "$ngView") || rootData,
             name =
-              $interpolate(attrs.ngView || attrs.name || "")(scope) || "$default";
+              /** @type {import("../../core/interpolate/interface.ts").InterpolationFunction} */ (
+                $interpolate(attrs.ngView || attrs.name || "")
+              )(scope) || "$default";
 
-          let previousEl, currentEl, currentScope, viewConfig;
+          /**
+           * @type {HTMLElement | null}
+           */
+          let previousEl;
 
+          /**
+           * @type {HTMLElement | null}
+           */
+          let currentEl;
+
+          /**
+           * @type {ng.Scope | null}
+           */
+          let currentScope;
+
+          /**
+           * @type {any}
+           */
+          let viewConfig;
+
+          /** @type {import("../view/interface.ts").ActiveUIView} */
           const activeUIView = {
-            id: directive.count++, // Global sequential ID for ng-view tags added to DOM
+            id: /** @type {number} */ (directive.count)++, // Global sequential ID for ng-view tags added to DOM
             name, // ng-view name (<div ng-view="name"></div>
             fqn: inherited.$ngView.fqn
               ? `${inherited.$ngView.fqn}.${name}`
@@ -38420,10 +41820,14 @@
           };
 
           trace.traceUIViewEvent("Linking", activeUIView);
+
+          /**
+           * @param {ViewConfig} config
+           */
           function configUpdatedCallback(config) {
             if (config && !(config instanceof ViewConfig)) return;
 
-            if (configsEqual(viewConfig, config)) return;
+            if (viewConfig === config) return;
             trace.traceUIViewConfigUpdated(
               activeUIView,
               config && config.viewDecl && config.viewDecl.$context,
@@ -38468,6 +41872,10 @@
               currentEl = null;
             }
           }
+
+          /**
+           * @param {ViewConfig | undefined} [config]
+           */
           function updateView(config) {
             const newScope = scope.$new();
 
@@ -38493,24 +41901,39 @@
              * @param {string} viewName Name of the view.
              */
             newScope.$emit("$viewContentLoading", name);
-            currentEl = $transclude(newScope, function (clone) {
-              setCacheData(clone, "$ngViewAnim", $ngViewAnim);
-              setCacheData(clone, "$ngView", $ngViewData);
-              renderer.enter(clone, $element, function () {
-                animEnter.resolve();
+            currentEl = /** @type {HTMLElement} */ (
+              /** @type {ng.TranscludeFn} */ ($transclude)(newScope, (clone) => {
+                setCacheData(
+                  /** @type {HTMLElement} */ (clone),
+                  "$ngViewAnim",
+                  $ngViewAnim,
+                );
+                setCacheData(
+                  /** @type {HTMLElement} */ (clone),
+                  "$ngView",
+                  $ngViewData,
+                );
+                renderer.enter(
+                  /** @type {HTMLElement} */ (clone),
+                  $element,
+                  () => {
+                    animEnter.resolve(undefined);
 
-                if (currentScope)
-                  currentScope.$emit("$viewContentAnimationEnded");
+                    if (currentScope)
+                      currentScope.$emit("$viewContentAnimationEnded");
 
-                if (
-                  (isDefined(autoScrollExp) && !autoScrollExp) ||
-                  (autoScrollExp && scope.$eval(autoScrollExp))
-                ) {
-                  /** @type {ng.AnchorScrollService} */ ($anchorScroll)(clone);
-                }
-              });
-              cleanupLastView();
-            });
+                    if (
+                      (isDefined(autoScrollExp) && !autoScrollExp) ||
+                      (autoScrollExp && scope.$eval(autoScrollExp))
+                    ) {
+                      $anchorScroll(/** @type {HTMLElement} */ (clone));
+                    }
+                  },
+                );
+                cleanupLastView();
+              })
+            );
+
             currentScope = newScope;
             /**
              * Fired once the view is **loaded**, *after* the DOM is rendered.
@@ -38537,7 +41960,7 @@
    * @param {ng.CompileService} $compile
    * @param {ng.ControllerService} $controller
    * @param {ng.TransitionService} $transitions
-   * @returns
+   * @return {ng.Directive}
    */
   function $ViewDirectiveFill($compile, $controller, $transitions) {
     const getControllerAs = parse("viewDecl.controllerAs");
@@ -38556,7 +41979,11 @@
 
           if (!data) {
             $element.innerHTML = initial;
-            $compile($element.contentDocument || $element.childNodes)(scope);
+
+            $compile(
+              /** @type {HTMLIFrameElement} */ ($element).contentDocument ||
+                $element.childNodes,
+            )(scope);
 
             return;
           }
@@ -38571,7 +41998,10 @@
 
           $element.innerHTML = cfg.getTemplate($element, resolveCtx) || initial;
           trace.traceUIViewFill(data.$ngView, $element.innerHTML);
-          const link = $compile($element.contentDocument || $element.childNodes);
+          const link = $compile(
+            /** @type {HTMLIFrameElement} */ ($element).contentDocument ||
+              $element.childNodes,
+          );
 
           const { controller } = cfg;
 
@@ -38647,7 +42077,13 @@
   /** @ignore incrementing id */
   let _uiCanExitId = 0;
 
-  /** @ignore TODO: move these callbacks to $view and/or `/hooks/components.ts` or something */
+  /**
+   * @ignore TODO: move these callbacks to $view and/or `/hooks/components.ts` or something
+   * @param {ng.TransitionService} $transitions
+   * @param {any} controllerInstance
+   * @param {ng.Scope} $scope
+   * @param {{ viewDecl: { component: any; componentProvider: any; }; path: import("../transition/transition.js").PathNode[]; }} cfg
+   */
   function registerControllerCallbacks(
     $transitions,
     controllerInstance,
@@ -38672,50 +42108,79 @@
       const viewCreationTrans = resolveContext.getResolvable("$transition$").data;
 
       // Fire callback on any successful transition
-      const paramsUpdated = ($transition$) => {
+      const paramsUpdated = (
+        /** @type {ng.Transition | undefined} */ $transition$,
+      ) => {
+        if (!$transition$) return;
+
         // Exit early if the $transition$ is the same as the view was created within.
         // Exit early if the $transition$ will exit the state the view is for.
         if (
           $transition$ === viewCreationTrans ||
           $transition$.exiting().indexOf(viewState) !== -1
-        )
+        ) {
           return;
+        }
+
         const toParams = $transition$.params("to");
 
         const fromParams = $transition$.params("from");
 
-        const getNodeSchema = (node) => node.paramSchema;
+        const getNodeSchema = (/** @type {{ paramSchema: any }} */ node) =>
+          node.paramSchema;
 
-        const toSchema = $transition$
-          .treeChanges("to")
-          .map(getNodeSchema)
-          .reduce(unnestR, []);
+        const treeChanges = $transition$ && $transition$.treeChanges;
 
-        const fromSchema = $transition$
-          .treeChanges("from")
-          .map(getNodeSchema)
-          .reduce(unnestR, []);
+        const toNodes = isFunction(treeChanges)
+          ? (treeChanges.call($transition$, "to") ?? [])
+          : [];
+
+        const fromNodes = isFunction(treeChanges)
+          ? (treeChanges.call($transition$, "from") ?? [])
+          : [];
+
+        const toSchema =
+          /** @type {import("../transition/transition.js").PathNode[]} */ (
+            toNodes
+          )
+            .map(getNodeSchema)
+            .reduce(unnestR, []);
+
+        const fromSchema =
+          /** @type {import("../transition/transition.js").PathNode[]} */ (
+            fromNodes
+          )
+            .map(getNodeSchema)
+            .reduce(unnestR, []);
 
         // Find the to params that have different values than the from params
-        const changedToParams = toSchema.filter((param) => {
-          const idx = fromSchema.indexOf(param);
+        const changedToParams = toSchema.filter(
+          (/** @type {{ id: string | number; }} */ param) => {
+            const idx = fromSchema.indexOf(param);
 
-          return (
-            idx === -1 ||
-            !fromSchema[idx].type.equals(toParams[param.id], fromParams[param.id])
-          );
-        });
+            return (
+              idx === -1 ||
+              !fromSchema[idx].type.equals(
+                toParams[param.id],
+                fromParams[param.id],
+              )
+            );
+          },
+        );
 
         // Only trigger callback if a to param has changed or is new
         if (changedToParams.length) {
-          const changedKeys = changedToParams.map((x) => x.id);
-
-          // Filter the params to only changed/new to params.  `$transition$.params()` may be used to get all params.
-          const newValues = filter(
-            toParams,
-            (val, key) => changedKeys.indexOf(key) !== -1,
+          const changedKeys = /** @type {any[]} */ (
+            changedToParams.map((/** @type {{ id: any; }} */ x) => x.id)
           );
 
+          // Filter the params to only changed/new to params.  `$transition$.params()` may be used to get all params.
+          /** @type {Record<string, any>} */
+          const newValues = {};
+
+          changedKeys.forEach((key) => {
+            if (key in toParams) newValues[key] = toParams[key];
+          });
           controllerInstance.uiOnParamsChanged(newValues, $transition$);
         }
       };
@@ -38732,14 +42197,22 @@
 
       const cacheProp = "_uiCanExitIds";
 
-      // Returns true if a redirect transition already answered truthy
-      const prevTruthyAnswer = (trans) =>
+      /**
+       * Returns true if any transition in the redirect chain already answered truthy
+       * @param {import("../transition/transition.js").Transition | null | undefined} trans
+       * @returns {boolean}
+       */
+      const prevTruthyAnswer = (
+        /** @type {ng.Transition & Record<String, any>} */ trans,
+      ) =>
         !!trans &&
         ((trans[cacheProp] && trans[cacheProp][id] === true) ||
           prevTruthyAnswer(trans.redirectedFrom()));
 
       // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
-      const wrappedHook = (trans) => {
+      const wrappedHook = (
+        /** @type {ng.Transition & Record<String, any>} */ trans,
+      ) => {
         let promise;
 
         const ids = (trans[cacheProp] = trans[cacheProp] || {});
@@ -38885,7 +42358,7 @@
      */
     constructor($exceptionHandler) {
       /** @private {Object<string, Array<{fn: Function, context: any}>>} */
-      this._topics = Object.create(null);
+      this._topics = nullObject();
 
       /** @private */
       this._disposed = false;
@@ -38899,7 +42372,7 @@
      */
     reset() {
       /** @private {Object<string, Array<{fn: Function, context: any}>>} */
-      this._topics = Object.create(null);
+      this._topics = nullObject();
 
       /** @private */
       this._disposed = false;
@@ -38919,7 +42392,7 @@
     dispose() {
       if (this._disposed) return;
       this._disposed = true;
-      this._topics = Object.create(null);
+      this._topics = nullObject();
     }
 
     /**
@@ -39577,7 +43050,7 @@
   let _lastCookieString = "";
 
   /** @type {Record<string, string>} */
-  let _lastCookieMap = Object.create(null);
+  let _lastCookieMap = nullObject();
 
   /**
    * @returns {Record<string,string>}
@@ -39594,7 +43067,7 @@
     _lastCookieString = current;
 
     /** @type {Record<string, string>} */
-    const out = Object.create(null);
+    const out = nullObject();
 
     if (!current) {
       _lastCookieMap = out;
@@ -40056,7 +43529,7 @@
     async list(params = {}) {
       const url = this.buildUrl(this._baseUrl, params);
 
-      const resp = await this.#request("get", url, null, params);
+      const resp = await this.#request("GET", url, null, params);
 
       if (!isArray(resp.data)) return [];
 
@@ -40075,7 +43548,7 @@
       assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
       const url = this.buildUrl(`${this._baseUrl}/${id}`, params);
 
-      const resp = await this.#request("get", url, null, params);
+      const resp = await this.#request("GET", url, null, params);
 
       return this.#mapEntity(resp.data);
     }
@@ -40087,7 +43560,7 @@
      */
     async create(item) {
       assert(!isNullOrUndefined(item), `${BADARG}:item ${item}`);
-      const resp = await this.#request("post", this._baseUrl, item);
+      const resp = await this.#request("POST", this._baseUrl, item);
 
       return this.#mapEntity(resp.data);
     }
@@ -40103,7 +43576,7 @@
       const url = `${this._baseUrl}/${id}`;
 
       try {
-        const resp = await this.#request("put", url, item);
+        const resp = await this.#request("PUT", url, item);
 
         return this.#mapEntity(resp.data);
       } catch {
@@ -40121,7 +43594,7 @@
       const url = `${this._baseUrl}/${id}`;
 
       try {
-        await this.#request("delete", url);
+        await this.#request("DELETE", url);
 
         return true;
       } catch {
@@ -40131,7 +43604,7 @@
 
     /**
      * Core HTTP request wrapper
-     * @param {"get"|"post"|"put"|"delete"} method
+     * @param {ng.HttpMethod} method
      * @param {string} url
      * @param {any=} data
      * @param {Record<string, any>=} params
@@ -40486,7 +43959,7 @@
        * @public
        * @type {string} `version` from `package.json`
        */
-      this.version = "0.18.0"; //inserted via rollup plugin
+      this.version = "0.19.0"; //inserted via rollup plugin
 
       /**
        * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
@@ -40590,7 +44063,7 @@
     }
 
     /**
-     * @param {CustomEvent} event
+     * @param {CustomEvent<string | ng.InvocationDetail>} event
      */
     dispatchEvent(event) {
       const $parse = this.$injector.get($injectTokens._parse);
@@ -40601,11 +44074,109 @@
         ? this.$injector.get(injectable)
         : this.getScopeByName(injectable);
 
-      if (!target) return false;
+      if (!target) {
+        const { detail } = event;
 
-      $parse(event.detail)(target);
+        if (
+          isObject(detail) &&
+          /** @type {ng.InvocationDetail} */ (detail)._reply
+        ) {
+          /** @type {ng.InvocationDetail} */ (detail)._reply.reject(
+            new Error(`No target found for "${injectable}"`),
+          );
+        }
+
+        return false;
+      }
+      const { detail } = event;
+
+      const expr = isString(detail)
+        ? detail
+        : isObject(detail)
+          ? detail.expr
+          : "";
+
+      try {
+        const result = $parse(expr)(target);
+
+        if (
+          isObject(detail) &&
+          /** @type {ng.InvocationDetail} */ (detail)._reply
+        ) {
+          Promise.resolve(result).then(
+            /** @type {ng.InvocationDetail} */ (detail)._reply.resolve,
+            /** @type {ng.InvocationDetail} */ (detail)._reply.reject,
+          );
+        }
+      } catch (err) {
+        if (detail && typeof detail === "object" && detail._reply) {
+          detail._reply.reject(err);
+        }
+      }
 
       return true;
+    }
+
+    /**
+     * Fire-and-forget. Accepts a single string: "<target>.<expression>"
+     * @param {string} input
+     */
+    emit(input) {
+      const { type, expr } = this.#split(input);
+
+      this.dispatchEvent(new CustomEvent(type, { detail: expr }));
+    }
+
+    /**
+     * Await result. Accepts a single string: "<target>.<expression>"
+     * @param {string} input
+     * @returns {Promise<any>}
+     */
+    call(input) {
+      const { type, expr } = this.#split(input);
+
+      return new Promise((resolve, reject) => {
+        const ok = this.dispatchEvent(
+          new CustomEvent(type, {
+            detail: { expr, __reply: { resolve, reject } },
+          }),
+        );
+
+        if (!ok) reject(new Error(`Dispatch failed for "${type}"`));
+      });
+    }
+
+    /**
+     * Split by period. First segment => target, rest => expression (re-joined by '.').
+     * @param {string} input
+     * @returns {{ type: string, expr: string }}
+     */
+    #split(input) {
+      if (typeof input !== "string") {
+        throw new TypeError("Invocation must be a string.");
+      }
+
+      const trimmed = input.trim();
+
+      const parts = trimmed.split(".");
+
+      if (parts.length < 2) {
+        throw new Error(
+          `Invalid invocation "${input}". Expected "<target>.<expression>".`,
+        );
+      }
+
+      const type = /** @type {string} */ (parts.shift()).trim();
+
+      const expr = parts.join(".").trim();
+
+      if (!type || !expr) {
+        throw new Error(
+          `Invalid invocation "${input}". Expected "<target>.<expression>".`,
+        );
+      }
+
+      return { type, expr };
     }
 
     /**
@@ -40643,7 +44214,7 @@
      * </html>
      * ```
      *
-     * @param {string | Element | Document} element DOM element which is the root of AngularTS application.
+     * @param {string | HTMLElement | HTMLDocument} element DOM element which is the root of AngularTS application.
      * @param {Array<String|any>} [modules] an array of modules to load into the application.
      *     Each item in the array should be the name of a predefined module or a (DI annotated)
      *     function that will be invoked by the injector as a `config` block.
@@ -40688,7 +44259,7 @@
         $injectTokens._injector,
         /**
          * @param {ng.Scope} scope
-         * @param {Element} el
+         * @param {HTMLElement} el
          * @param {ng.CompileService} compile
          * @param {ng.InjectorService} $injector
          */
@@ -40760,10 +44331,10 @@
     }
 
     /**
-     * @param {Element|Document} element
+     * @param {HTMLElement|HTMLDocument} element
      */
     init(element) {
-      /** @type {Element|undefined} */
+      /** @type {HTMLElement|undefined} */
       let appElement;
 
       let module;
@@ -40775,18 +44346,21 @@
         const name = `${prefix}app`;
 
         if (
-          /** @type {Element} */ (element).hasAttribute &&
-          /** @type {Element} */ (element).hasAttribute(name)
+          /** @type {HTMLElement} */ (element).hasAttribute &&
+          /** @type {HTMLElement} */ (element).hasAttribute(name)
         ) {
-          appElement = /** @type {Element} */ (element);
-          module = /** @type {Element} */ (element).getAttribute(name);
+          appElement = /** @type {HTMLElement} */ (element);
+          module = appElement.getAttribute(name);
         }
 
+        /** @type {HTMLElement} */
         let candidate;
 
         if (
           !appElement &&
-          (candidate = element.querySelector(`[${name.replace(":", "\\:")}]`))
+          (candidate = /** @type {HTMLElement} */ (
+            element.querySelector(`[${name.replace(":", "\\:")}]`)
+          ))
         ) {
           appElement = candidate;
           module = candidate.getAttribute(name);
