@@ -215,7 +215,7 @@ export class Angular extends EventTarget {
    * Fire-and-forget. Accepts a single string: "<target>.<expression>"
    * @param {string} input
    */
-  cast(input) {
+  emit(input) {
     const { type, expr } = this.#split(input);
 
     this.dispatchEvent(new CustomEvent(type, { detail: expr }));
