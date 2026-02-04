@@ -287,7 +287,7 @@ export interface InternalDirective extends ng.Directive {
    * When an async `templateUrl` directive is converted into a derived sync directive,
    * this points back to the original directive.
    */
-  $$originalDirective?: any;
+  _originalDirective?: any;
   /**
    * Template namespace hint (e.g. `"svg"`), used when wrapping templates or compiling
    * non-HTML content.
