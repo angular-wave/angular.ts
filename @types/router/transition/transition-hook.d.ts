@@ -121,12 +121,12 @@ export namespace TransitionHook {
    */
   function LOG_REJECTED_RESULT(hook: {
     logError: (arg0: Rejection) => any;
-  }): (/** @type {Promise<any>} */ result: Promise<any>) => any;
+  }): (/** @type {HookResult} */ result: HookResult) => any;
   /**
    * These GetErrorHandler(s) are used by [[invokeHook]] below
    * Each HookType chooses a GetErrorHandler (See: [[TransitionService._defineCoreEvents]])
    */
-  function LOG_ERROR(hook: {
+  function LOG_ERROR(hook?: {
     logError: (arg0: any) => any;
   }): (/** @type {any} */ error: any) => any;
   function REJECT_ERROR(): (/** @type {any} */ error: any) => Promise<never>;

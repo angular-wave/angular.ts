@@ -50,7 +50,7 @@ export const registerRedirectToHook = (
     return handleResult(redirect);
   };
 
-  transitionService.onStart(
+  return transitionService.onStart(
     {
       to: (state) =>
         !!(/** @type {ng.BuiltStateDeclaration} */ (state).redirectTo),

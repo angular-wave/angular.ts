@@ -17,7 +17,7 @@ import {
 } from "../../shared/utils.js";
 import { is, propEq, val } from "../../shared/hof.js";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.js";
-import { makeEvent } from "./hook-registry.js";
+import { registerHook } from "./hook-registry.js";
 import { HookBuilder } from "./hook-builder.js";
 import { PathUtils } from "../path/path-utils.js";
 import { Param } from "../params/param.js";
@@ -25,7 +25,10 @@ import { Resolvable } from "../resolve/resolvable.js";
 import { ResolveContext } from "../resolve/resolve-context.js";
 import { Rejection } from "./reject-factory.js";
 
-/** @typedef {import('./interface.ts').HookRegistry} HookRegistry */
+/** @typedef {import('./interface.ts').DeregisterFn} DeregisterFn */
+/** @typedef {import('./interface.ts').HookFn} HookFn */
+/** @typedef {import('./interface.ts').HookMatchCriteria} HookMatchCriteria */
+/** @typedef {import('./interface.ts').HookRegOptions} HookRegOptions */
 /** @typedef {import("../state/interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
 /** @typedef {import("./interface.ts").RegisteredHooks} RegisteredHooks */
 /** @typedef {import("./hook-registry.js").RegisteredHook} RegisteredHook */
@@ -44,7 +47,6 @@ const REDIRECT_MAX = 20;
  *
  * This object contains all contextual information about the to/from states, parameters, resolves.
  * It has information about all states being entered and exited as a result of the transition.
- * @extends {HookRegistry}
  */
 export class Transition {
   /**
@@ -55,7 +57,7 @@ export class Transition {
    * @param {Array<PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
    *        encapsulates the "from state".
    * @param {TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
-   * @param {ng.TransitionService} transitionService
+   * @param {import("./transition-service.js").TransitionProvider} transitionService
    * @param {ng.RouterService} globals
    */
   constructor(fromPath, targetState, transitionService, globals) {
@@ -105,7 +107,6 @@ export class Transition {
       /** @type {PathNode[]} */ (toPath),
       this._options.reloadState,
     );
-    this.createTransitionHookRegFns();
     const onCreateHooks = this._hookBuilder.buildHooksForPhase(
       TransitionHookPhase._CREATE,
     );
@@ -115,24 +116,132 @@ export class Transition {
   }
 
   /**
-   * Creates the transition-level hook registration functions
-   * (which can then be used to register hooks)
-   */
-  createTransitionHookRegFns() {
-    this._transitionService
-      ._getEvents()
-      .filter((type) => type.hookPhase !== TransitionHookPhase._CREATE)
-      .forEach((type) => {
-        return makeEvent(this, this._transitionService, type);
-      });
-  }
-
-  /**
    * @param {string} hookName
    * @returns {RegisteredHook[]}
    */
   getHooks(hookName) {
-    return this._registeredHooks[hookName];
+    return this._registeredHooks[hookName] || [];
+  }
+
+  /**
+   * Registers a hook by event name.
+   * @param {string} eventName
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  on(eventName, matchCriteria, callback, options) {
+    const eventType = this._getEventType(eventName);
+
+    if (eventType.hookPhase === TransitionHookPhase._CREATE) {
+      throw new Error("onCreate hooks can only be registered on the service");
+    }
+
+    return registerHook(
+      this,
+      this._transitionService,
+      eventType,
+      matchCriteria,
+      callback,
+      options,
+    );
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onBefore(matchCriteria, callback, options) {
+    return this.on("onBefore", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onStart(matchCriteria, callback, options) {
+    return this.on("onStart", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onEnter(matchCriteria, callback, options) {
+    return this.on("onEnter", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onRetain(matchCriteria, callback, options) {
+    return this.on("onRetain", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onExit(matchCriteria, callback, options) {
+    return this.on("onExit", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onFinish(matchCriteria, callback, options) {
+    return this.on("onFinish", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onSuccess(matchCriteria, callback, options) {
+    return this.on("onSuccess", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onError(matchCriteria, callback, options) {
+    return this.on("onError", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {string} eventName
+   * @returns {import("./transition-event-type.js").TransitionEventType}
+   */
+  _getEventType(eventName) {
+    const eventType = this._transitionService
+      ._getEvents()
+      .find((type) => type.name === eventName);
+
+    if (!eventType) {
+      throw new Error(`Unknown Transition hook event: ${eventName}`);
+    }
+
+    return eventType;
   }
 
   applyViewConfigs() {

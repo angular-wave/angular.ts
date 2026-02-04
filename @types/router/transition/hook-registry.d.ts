@@ -15,6 +15,24 @@ export function matchState(
   transition: ng.Transition,
 ): boolean;
 /**
+ * Register a transition hook without mutating the hookSource surface.
+ * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
+ * @param {ng.TransitionProvider} transitionService
+ * @param {import("./transition-event-type.js").TransitionEventType} eventType
+ * @param {import("./interface.ts").HookMatchCriteria} matchCriteria
+ * @param {import("./interface.ts").HookFn} callback
+ * @param {import("./interface.ts").HookRegOptions} options
+ * @returns {import("./interface.ts").DeregisterFn}
+ */
+export function registerHook(
+  hookSource: ng.TransitionProvider | import("./transition.js").Transition,
+  transitionService: ng.TransitionProvider,
+  eventType: import("./transition-event-type.js").TransitionEventType,
+  matchCriteria: import("./interface.ts").HookMatchCriteria,
+  callback: import("./interface.ts").HookFn,
+  options?: import("./interface.ts").HookRegOptions,
+): import("./interface.ts").DeregisterFn;
+/**
  * Return a registration function of the requested type.
  * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
  * @param {ng.TransitionService} transitionService

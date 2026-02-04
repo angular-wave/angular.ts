@@ -3,7 +3,7 @@
  */
 export function registerAddCoreResolvables(
   transitionService: ng.TransitionService,
-): void;
+): import("../transition/interface.ts").DeregisterFn;
 /**
  *
  * @param {ng.Transition} trans

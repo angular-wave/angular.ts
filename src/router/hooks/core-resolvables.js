@@ -6,7 +6,7 @@ import { uniqR, unnestR } from "../../shared/common.js";
  * @param {ng.TransitionService} transitionService
  */
 export function registerAddCoreResolvables(transitionService) {
-  transitionService.onCreate({}, function addCoreResolvables(trans) {
+  return transitionService.onCreate({}, function addCoreResolvables(trans) {
     trans.addResolvable(Resolvable.fromData(Transition, trans), "");
     trans.addResolvable(Resolvable.fromData("$transition$", trans), "");
     trans.addResolvable(

@@ -1,4 +1,4 @@
 export function registerRedirectToHook(
   transitionService: ng.TransitionService,
   stateService: ng.StateService,
-): void;
+): import("../transition/interface.ts").DeregisterFn;
