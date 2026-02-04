@@ -345,36 +345,90 @@ describe("$state", () => {
       dealoc(document.getElementById("app"));
     });
 
-    it("returns a promise for the target state", () => {
-      const promise = $state.transitionTo(A, {});
-      expect(isFunction(promise.then)).toBeTruthy();
-      expect(promise.transition.to()).toBe(A);
-    });
+    describe("(with dynamic params because reloadOnSearch=false)", function () {
+      describe("and only query params changed", () => {
+        let entered = false;
+        beforeEach(async () => {
+          await initStateTo(RS);
+          $transitions.onEnter({ entering: "RS" }, function () {
+            entered = true;
+          });
+          await wait(200);
+        });
 
-    it("returns a promise for the target state", () => {
-      const promise = $state.transitionTo(A, {});
-      expect(isFunction(promise.then)).toBeTruthy();
-      expect(promise.transition.to()).toBe(A);
-    });
+        // this passes in isolation
+        it("updates $stateParams", async () => {
+          await initStateTo(RS);
+          $location.setSearch({ term: "hello" });
+          $rootScope.$broadcast("$locationChangeSuccess");
+          await wait(100);
+          expect($stateParams.term).toEqual("hello");
+          expect(entered).toBeFalsy();
+        });
 
-    it("show return promise with an error on invalid state", (done) => {
-      let res = $state.transitionTo("about.person.item", { id: 5 });
-      let message;
-      res.catch((x) => {
-        message = x.message;
+        it("doesn't re-enter state (triggered by url change)", async () => {
+          $location.setSearch({ term: "hello" });
+          $rootScope.$broadcast("$locationChangeSuccess");
+
+          expect($location.getSearch()).toEqual({ term: "hello" });
+          expect(entered).toBeFalsy();
+        });
+
+        it("doesn't re-enter state (triggered by $state transition)", async () => {
+          await initStateTo(RS);
+          const promise = $state.go(".", { term: "hello" });
+          let success = false,
+            transition = promise.transition;
+          await transition.promise.then(async () => {
+            success = true;
+          });
+
+          expect($state.current).toBe(RS);
+          expect(entered).toBeFalsy();
+          expect(success).toBeTruthy();
+          expect($location.getSearch()).toEqual({ term: "hello" });
+        });
+
+        it("updates URL when (triggered by $state transition)", async () => {
+          await initStateTo(RS);
+          await $state.go(".", { term: "goodbye" });
+
+          expect($stateParams.term).toEqual("goodbye");
+          expect($location.getUrl()).toEqual("/search?term=goodbye");
+          expect(entered).toBeFalsy();
+        });
       });
-      setTimeout(() => {
-        expect(message).toBeDefined();
-        done();
-      }, 100);
     });
 
-    it("allows transitions by name", (done) => {
-      $state.transitionTo("A", {});
-      setTimeout(() => {
+    describe("basic functionality", () => {
+      it("returns a promise for the target state", () => {
+        const promise = $state.transitionTo(A, {});
+        expect(isFunction(promise.then)).toBeTruthy();
+        expect(promise.transition.to()).toBe(A);
+      });
+
+      it("returns a promise for the target state", () => {
+        const promise = $state.transitionTo(A, {});
+        expect(isFunction(promise.then)).toBeTruthy();
+        expect(promise.transition.to()).toBe(A);
+      });
+
+      it("show return promise with an error on invalid state", async () => {
+        let res = $state.transitionTo("about.person.item", { id: 5 });
+        let message;
+        res.catch((x) => {
+          message = x.message;
+        });
+        await wait(200);
+        expect(message).toBeDefined();
+      });
+
+      it("allows transitions by name", async () => {
+        $state.transitionTo("A", {});
+        await wait(200);
+
         expect($state.current).toEqual(A);
-        done();
-      }, 200);
+      });
     });
 
     describe("dynamic transitions", function () {
@@ -804,60 +858,6 @@ describe("$state", () => {
           expect(dynlog).toBe(
             "success;[configDyn=cd2,searchDyn=sd2];{configDyn=cd2,searchDyn=sd2};",
           );
-        });
-      });
-    });
-
-    describe("(with dynamic params because reloadOnSearch=false)", function () {
-      describe("and only query params changed", () => {
-        let entered = false;
-        beforeEach(async () => {
-          await initStateTo(RS);
-          $transitions.onEnter({ entering: "RS" }, function () {
-            entered = true;
-          });
-        });
-
-        // this passes in isolation
-        it("updates $stateParams", async () => {
-          await initStateTo(RS);
-          $location.setSearch({ term: "hello" });
-          $rootScope.$broadcast("$locationChangeSuccess");
-          await wait(100);
-          expect($stateParams.term).toEqual("hello");
-          expect(entered).toBeFalsy();
-        });
-
-        it("doesn't re-enter state (triggered by url change)", async () => {
-          $location.setSearch({ term: "hello" });
-          $rootScope.$broadcast("$locationChangeSuccess");
-
-          expect($location.getSearch()).toEqual({ term: "hello" });
-          expect(entered).toBeFalsy();
-        });
-
-        it("doesn't re-enter state (triggered by $state transition)", async () => {
-          await initStateTo(RS);
-          const promise = $state.go(".", { term: "hello" });
-          let success = false,
-            transition = promise.transition;
-          await transition.promise.then(async () => {
-            success = true;
-          });
-
-          expect($state.current).toBe(RS);
-          expect(entered).toBeFalsy();
-          expect(success).toBeTruthy();
-          expect($location.getSearch()).toEqual({ term: "hello" });
-        });
-
-        it("updates URL when (triggered by $state transition)", async () => {
-          await initStateTo(RS);
-          await $state.go(".", { term: "goodbye" });
-
-          expect($stateParams.term).toEqual("goodbye");
-          expect($location.getUrl()).toEqual("/search?term=goodbye");
-          expect(entered).toBeFalsy();
         });
       });
     });
