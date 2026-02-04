@@ -49,5 +49,5 @@ export const registerActivateViews = (
     viewService.sync();
   };
 
-  transitionService.onSuccess({}, activateViews);
+  return transitionService.onSuccess({}, activateViews);
 };

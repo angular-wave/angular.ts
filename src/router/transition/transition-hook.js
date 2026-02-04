@@ -282,9 +282,12 @@ TransitionHook.HANDLE_RESULT =
  */
 TransitionHook.LOG_REJECTED_RESULT =
   (/** @type {{ logError: (arg0: Rejection) => any; }} */ hook) =>
-  (/** @type {Promise<any>} */ result) => {
-    isPromise(result) &&
-      result.catch((err) => hook.logError(Rejection.normalize(err)));
+  (/** @type {HookResult} */ result) => {
+    if (isPromise(result)) {
+      /** @type {Promise<any>} */ (result).catch((/** @type {any} */ err) =>
+        hook.logError(Rejection.normalize(err)),
+      );
+    }
 
     return undefined;
   };
@@ -293,9 +296,9 @@ TransitionHook.LOG_REJECTED_RESULT =
  * Each HookType chooses a GetErrorHandler (See: [[TransitionService._defineCoreEvents]])
  */
 TransitionHook.LOG_ERROR =
-  (/** @type {{ logError: (arg0: any) => any; }} */ hook) =>
-  (/** @type {any} */ error) =>
-    hook.logError(error);
+  /** @param {{ logError: (arg0: any) => any; }} [hook] */ (hook) =>
+    (/** @type {any} */ error) =>
+      hook?.logError(error);
 TransitionHook.REJECT_ERROR = () => (/** @type {any} */ error) =>
   ((x) => (x.catch(() => 0), x))(Promise.reject(error));
 TransitionHook.THROW_ERROR = () => (/** @type {any} */ error) => {

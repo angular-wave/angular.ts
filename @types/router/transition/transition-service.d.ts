@@ -1,3 +1,9 @@
+/** @typedef {import("./interface.ts").DeregisterFn} DeregisterFn */
+/** @typedef {import("./interface.ts").HookFn} HookFn */
+/** @typedef {import("./interface.ts").HookMatchCriteria} HookMatchCriteria */
+/** @typedef {import("./interface.ts").HookRegOptions} HookRegOptions */
+/** @typedef {import("./interface.ts").PathTypes} PathTypes */
+/** @typedef {import("./interface.ts").RegisteredHooks} RegisteredHooks */
 /**
  * The default [[Transition]] options.
  *
@@ -37,12 +43,15 @@ export class TransitionProvider {
    */
   _eventTypes: TransitionEventType[];
   /** @internal The registered transition hooks */
-  _registeredHooks: {};
+  /** @type {RegisteredHooks} */
+  _registeredHooks: RegisteredHooks;
   /** The  paths on a criteria object */
-  _criteriaPaths: {};
+  /** @type {PathTypes} */
+  _criteriaPaths: PathTypes;
   globals: import("../router.js").RouterProvider;
   $view: import("../view/view.js").ViewService;
-  _deregisterHookFns: {};
+  /** @type {Record<string, DeregisterFn | undefined>} */
+  _deregisterHookFns: Record<string, DeregisterFn | undefined>;
   /** @type {ng.ExceptionHandlerService} */
   _exceptionHandler: ng.ExceptionHandlerService;
   $get: (
@@ -52,7 +61,7 @@ export class TransitionProvider {
         urlService: ng.UrlService,
         stateRegistry: ng.StateRegistryService,
         viewService: ng.ViewService,
-      ) => ng.TransitionService)
+      ) => TransitionProvider)
   )[];
   /**
    * Registers a [[TransitionHookFn]], called *while a transition is being constructed*.
@@ -88,27 +97,16 @@ export class TransitionProvider {
    * @param targetState the target state (destination)
    * @returns a Transition
    */
-  create(fromPath: any, targetState: any): Transition;
+  /**
+   * @param {import("../path/path-node.js").PathNode[]} fromPath
+   * @param {import("../state/target-state.js").TargetState} targetState
+   */
+  create(
+    fromPath: import("../path/path-node.js").PathNode[],
+    targetState: import("../state/target-state.js").TargetState,
+  ): Transition;
   _defineCoreEvents(): void;
   _defineCorePaths(): void;
-  /**
-   * @param {string} name
-   * @param {number} hookPhase
-   * @param {number} hookOrder
-   * @param {any} criteriaMatchPath
-   */
-  _defineEvent(
-    name: string,
-    hookPhase: number,
-    hookOrder: number,
-    criteriaMatchPath: any,
-    reverseSort?: boolean,
-    getResultHandler?: (
-      hook: TransitionHook,
-    ) => (result: import("./transition-hook.js").HookResult) => Promise<any>,
-    getErrorHandler?: () => (error: any) => Promise<never>,
-    synchronous?: boolean,
-  ): void;
   /**
    * @param {TransitionHookPhase} [phase]
    * @return {any[]}
@@ -129,11 +127,138 @@ export class TransitionProvider {
    * @param {number} hookScope
    */
   _definePathType(name: string, hookScope: number): void;
-  _getPathTypes(): {};
-  getHooks(hookName: any): any;
+  _getPathTypes(): import("./interface.ts").PathTypes;
+  /**
+   * @param {string} hookName
+   * @returns {import("./hook-registry.js").RegisteredHook[]}
+   */
+  getHooks(hookName: string): import("./hook-registry.js").RegisteredHook[];
+  /**
+   * Registers a hook by event name.
+   * @param {string} eventName
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  on(
+    eventName: string,
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onCreate(
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onBefore(
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onStart(
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onEnter(
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onRetain(
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onExit(
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onFinish(
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onSuccess(
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onError(
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
+  /**
+   * @param {string} eventName
+   * @returns {TransitionEventType}
+   */
+  _getEventType(eventName: string): TransitionEventType;
   _registerCoreTransitionHooks(): void;
 }
+export type DeregisterFn = import("./interface.ts").DeregisterFn;
+export type HookFn = import("./interface.ts").HookFn;
+export type HookMatchCriteria = import("./interface.ts").HookMatchCriteria;
+export type HookRegOptions = import("./interface.ts").HookRegOptions;
+export type PathTypes = import("./interface.ts").PathTypes;
+export type RegisteredHooks = import("./interface.ts").RegisteredHooks;
 import { TransitionEventType } from "./transition-event-type.js";
 import { Transition } from "./transition.js";
-import { TransitionHook } from "./transition-hook.js";
 import { TransitionHookPhase } from "./transition-hook.js";

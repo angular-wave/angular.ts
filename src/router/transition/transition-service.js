@@ -1,5 +1,5 @@
 import { Transition } from "./transition.js";
-import { makeEvent } from "./hook-registry.js";
+import { registerHook } from "./hook-registry.js";
 import {
   registerAddCoreResolvables,
   treeChangesCleanup,
@@ -31,6 +31,12 @@ import { registerInvalidTransitionHook } from "../hooks/invalid-transition.js";
 import { registerRedirectToHook } from "../hooks/redirect-to.js";
 import { $injectTokens as $t, provider } from "../../injection-tokens.js";
 import { copy } from "../../shared/common.js";
+/** @typedef {import("./interface.ts").DeregisterFn} DeregisterFn */
+/** @typedef {import("./interface.ts").HookFn} HookFn */
+/** @typedef {import("./interface.ts").HookMatchCriteria} HookMatchCriteria */
+/** @typedef {import("./interface.ts").HookRegOptions} HookRegOptions */
+/** @typedef {import("./interface.ts").PathTypes} PathTypes */
+/** @typedef {import("./interface.ts").RegisteredHooks} RegisteredHooks */
 /**
  * The default [[Transition]] options.
  *
@@ -81,11 +87,14 @@ export class TransitionProvider {
      */
     this._eventTypes = [];
     /** @internal The registered transition hooks */
+    /** @type {RegisteredHooks} */
     this._registeredHooks = {};
     /** The  paths on a criteria object */
-    this._criteriaPaths = {};
+    /** @type {PathTypes} */
+    this._criteriaPaths = /** @type {PathTypes} */ ({});
     this.globals = globals;
     this.$view = viewService;
+    /** @type {Record<string, DeregisterFn | undefined>} */
     this._deregisterHookFns = {};
     this._defineCorePaths();
     this._defineCoreEvents();
@@ -106,7 +115,7 @@ export class TransitionProvider {
      * @param {ng.UrlService} urlService
      * @param {ng.StateRegistryService} stateRegistry
      * @param {ng.ViewService} viewService
-     * @returns {ng.TransitionService}
+     * @returns {TransitionProvider}
      */
     (stateService, urlService, stateRegistry, viewService) => {
       // Lazy load state trees
@@ -173,6 +182,10 @@ export class TransitionProvider {
    * @param targetState the target state (destination)
    * @returns a Transition
    */
+  /**
+   * @param {import("../path/path-node.js").PathNode[]} fromPath
+   * @param {import("../state/target-state.js").TargetState} targetState
+   */
   create(fromPath, targetState) {
     return new Transition(fromPath, targetState, this, this.globals);
   }
@@ -187,53 +200,70 @@ export class TransitionProvider {
 
     const SYNCHRONOUS = true;
 
-    this._defineEvent(
-      "onCreate",
-      TransitionHookPhase._CREATE,
-      0,
-      paths.to,
-      NORMAL_SORT,
-      TH.LOG_REJECTED_RESULT,
-      TH.THROW_ERROR,
-      SYNCHRONOUS,
-    );
-    this._defineEvent("onBefore", TransitionHookPhase._BEFORE, 0, paths.to);
-    this._defineEvent("onStart", TransitionHookPhase._RUN, 0, paths.to);
-    this._defineEvent(
-      "onExit",
-      TransitionHookPhase._RUN,
-      100,
-      paths.exiting,
-      REVERSE_SORT,
-    );
-    this._defineEvent(
-      "onRetain",
-      TransitionHookPhase._RUN,
-      200,
-      paths.retained,
-    );
-    this._defineEvent("onEnter", TransitionHookPhase._RUN, 300, paths.entering);
-    this._defineEvent("onFinish", TransitionHookPhase._RUN, 400, paths.to);
-    this._defineEvent(
-      "onSuccess",
-      TransitionHookPhase._SUCCESS,
-      0,
-      paths.to,
-      NORMAL_SORT,
-      TH.LOG_REJECTED_RESULT,
-      TH.LOG_ERROR,
-      SYNCHRONOUS,
-    );
-    this._defineEvent(
-      "onError",
-      TransitionHookPhase._ERROR,
-      0,
-      paths.to,
-      NORMAL_SORT,
-      TH.LOG_REJECTED_RESULT,
-      TH.LOG_ERROR,
-      SYNCHRONOUS,
-    );
+    this._eventTypes = [
+      new TransitionEventType(
+        "onCreate",
+        TransitionHookPhase._CREATE,
+        0,
+        paths.to,
+        NORMAL_SORT,
+        /** @type {any} */ (TH.LOG_REJECTED_RESULT),
+        TH.THROW_ERROR,
+        SYNCHRONOUS,
+      ),
+      new TransitionEventType(
+        "onBefore",
+        TransitionHookPhase._BEFORE,
+        0,
+        paths.to,
+      ),
+      new TransitionEventType("onStart", TransitionHookPhase._RUN, 0, paths.to),
+      new TransitionEventType(
+        "onExit",
+        TransitionHookPhase._RUN,
+        100,
+        paths.exiting,
+        REVERSE_SORT,
+      ),
+      new TransitionEventType(
+        "onRetain",
+        TransitionHookPhase._RUN,
+        200,
+        paths.retained,
+      ),
+      new TransitionEventType(
+        "onEnter",
+        TransitionHookPhase._RUN,
+        300,
+        paths.entering,
+      ),
+      new TransitionEventType(
+        "onFinish",
+        TransitionHookPhase._RUN,
+        400,
+        paths.to,
+      ),
+      new TransitionEventType(
+        "onSuccess",
+        TransitionHookPhase._SUCCESS,
+        0,
+        paths.to,
+        NORMAL_SORT,
+        /** @type {any} */ (TH.LOG_REJECTED_RESULT),
+        TH.LOG_ERROR,
+        SYNCHRONOUS,
+      ),
+      new TransitionEventType(
+        "onError",
+        TransitionHookPhase._ERROR,
+        0,
+        paths.to,
+        NORMAL_SORT,
+        /** @type {any} */ (TH.LOG_REJECTED_RESULT),
+        TH.LOG_ERROR,
+        SYNCHRONOUS,
+      ),
+    ];
   }
 
   _defineCorePaths() {
@@ -244,37 +274,6 @@ export class TransitionProvider {
     this._definePathType("exiting", STATE);
     this._definePathType("retained", STATE);
     this._definePathType("entering", STATE);
-  }
-
-  /**
-   * @param {string} name
-   * @param {number} hookPhase
-   * @param {number} hookOrder
-   * @param {any} criteriaMatchPath
-   */
-  _defineEvent(
-    name,
-    hookPhase,
-    hookOrder,
-    criteriaMatchPath,
-    reverseSort = false,
-    getResultHandler = TransitionHook.HANDLE_RESULT,
-    getErrorHandler = TransitionHook.REJECT_ERROR,
-    synchronous = false,
-  ) {
-    const eventType = new TransitionEventType(
-      name,
-      hookPhase,
-      hookOrder,
-      criteriaMatchPath,
-      reverseSort,
-      getResultHandler,
-      getErrorHandler,
-      synchronous,
-    );
-
-    this._eventTypes.push(eventType);
-    makeEvent(this, /** @type {ng.} */ (this), eventType);
   }
 
   /**
@@ -315,8 +314,137 @@ export class TransitionProvider {
     return this._criteriaPaths;
   }
 
+  /**
+   * @param {string} hookName
+   * @returns {import("./hook-registry.js").RegisteredHook[]}
+   */
   getHooks(hookName) {
-    return this._registeredHooks[hookName];
+    return this._registeredHooks[hookName] || [];
+  }
+
+  /**
+   * Registers a hook by event name.
+   * @param {string} eventName
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  on(eventName, matchCriteria, callback, options) {
+    const eventType = this._getEventType(eventName);
+
+    return registerHook(
+      this,
+      this,
+      eventType,
+      matchCriteria,
+      callback,
+      options,
+    );
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onCreate(matchCriteria, callback, options) {
+    return this.on("onCreate", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onBefore(matchCriteria, callback, options) {
+    return this.on("onBefore", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onStart(matchCriteria, callback, options) {
+    return this.on("onStart", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onEnter(matchCriteria, callback, options) {
+    return this.on("onEnter", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onRetain(matchCriteria, callback, options) {
+    return this.on("onRetain", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onExit(matchCriteria, callback, options) {
+    return this.on("onExit", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onFinish(matchCriteria, callback, options) {
+    return this.on("onFinish", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onSuccess(matchCriteria, callback, options) {
+    return this.on("onSuccess", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {HookMatchCriteria} matchCriteria
+   * @param {HookFn} callback
+   * @param {HookRegOptions} [options]
+   * @returns {DeregisterFn}
+   */
+  onError(matchCriteria, callback, options) {
+    return this.on("onError", matchCriteria, callback, options);
+  }
+
+  /**
+   * @param {string} eventName
+   * @returns {TransitionEventType}
+   */
+  _getEventType(eventName) {
+    const eventType = this._eventTypes.find((type) => type.name === eventName);
+
+    if (!eventType) {
+      throw new Error(`Unknown Transition hook event: ${eventName}`);
+    }
+
+    return eventType;
   }
 
   _registerCoreTransitionHooks() {
@@ -339,8 +467,6 @@ export class TransitionProvider {
 
     // Updates global state after a transition
     fns.updateGlobals = registerUpdateGlobalState(this);
-    // Lazy load state trees
-    fns.lazyLoad = registerLazyLoadHook(this);
   }
 }
 
@@ -369,7 +495,9 @@ function registerUpdateUrl(transitionService, stateService, urlService) {
       options.location &&
       $state.$current?.navigable
     ) {
-      const urlOptions = { replace: options.location === "replace" };
+      const urlOptions = /** @type {any} */ ({
+        replace: options.location === "replace",
+      });
 
       urlService.push(
         $state.$current.navigable.url,
@@ -380,7 +508,7 @@ function registerUpdateUrl(transitionService, stateService, urlService) {
     urlService.update(true);
   };
 
-  transitionService.onSuccess({}, updateUrl, { priority: 9999 });
+  return transitionService.onSuccess({}, updateUrl, { priority: 9999 });
 }
 
 /**
@@ -392,24 +520,27 @@ function registerUpdateUrl(transitionService, stateService, urlService) {
  * @param {ng.TransitionService} transitionService
  */
 function registerUpdateGlobalState(transitionService) {
-  return transitionService.onCreate({}, (trans) => {
-    const globals = trans._globals;
+  return transitionService.onCreate(
+    {},
+    /** @param {import("./transition.js").Transition} trans */ (trans) => {
+      const globals = trans._globals;
 
-    const transitionSuccessful = () => {
-      globals._successfulTransitions.enqueue(trans);
-      globals.$current = trans.$to();
-      globals.current = globals.$current.self;
-      copy(trans.params(), globals.params);
-    };
+      const transitionSuccessful = () => {
+        globals._successfulTransitions.enqueue(trans);
+        globals.$current = trans.$to();
+        globals.current = globals.$current.self;
+        copy(trans.params(), globals.params);
+      };
 
-    const clearCurrentTransition = () => {
-      // Only clear if this transition is still the active one
-      if (globals.transition === trans) {
-        globals.transition = undefined;
-      }
-    };
+      const clearCurrentTransition = () => {
+        // Only clear if this transition is still the active one
+        if (globals.transition === trans) {
+          globals.transition = undefined;
+        }
+      };
 
-    trans.onSuccess({}, transitionSuccessful, { priority: 10000 });
-    trans.promise.then(clearCurrentTransition, clearCurrentTransition);
-  });
+      trans.onSuccess({}, transitionSuccessful, { priority: 10000 });
+      trans.promise.then(clearCurrentTransition, clearCurrentTransition);
+    },
+  );
 }

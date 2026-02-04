@@ -195,6 +195,48 @@ export class RegisteredHook {
   }
 }
 /**
+ * Register a transition hook without mutating the hookSource surface.
+ * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
+ * @param {ng.TransitionProvider} transitionService
+ * @param {import("./transition-event-type.js").TransitionEventType} eventType
+ * @param {import("./interface.ts").HookMatchCriteria} matchCriteria
+ * @param {import("./interface.ts").HookFn} callback
+ * @param {import("./interface.ts").HookRegOptions} options
+ * @returns {import("./interface.ts").DeregisterFn}
+ */
+export function registerHook(
+  hookSource,
+  transitionService,
+  eventType,
+  matchCriteria,
+  callback,
+  options = {},
+) {
+  // Create the object which holds the registered transition hooks.
+  /** @type {{ [x: string]: RegisteredHook[] } & Record<string, any>} */
+  const _registeredHooks = (hookSource._registeredHooks =
+    hookSource._registeredHooks || {});
+
+  const hooks = (_registeredHooks[eventType.name] =
+    _registeredHooks[eventType.name] || []);
+
+  const removeHookFn = (/** @type {RegisteredHook} */ hook) =>
+    removeFrom(hooks, hook);
+
+  const registeredHook = new RegisteredHook(
+    transitionService,
+    eventType,
+    callback,
+    matchCriteria,
+    removeHookFn,
+    options,
+  );
+
+  hooks.push(registeredHook);
+
+  return registeredHook.deregister.bind(registeredHook);
+}
+/**
  * Return a registration function of the requested type.
  * @param {ng.TransitionProvider| import("./transition.js").Transition} hookSource
  * @param {ng.TransitionService} transitionService
