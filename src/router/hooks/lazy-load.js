@@ -26,7 +26,7 @@ import { isArray } from "../../shared/utils.js";
  * @param {ng.TransitionService} transitionService
  * @param {ng.StateService} stateService
  * @param {ng.UrlService} urlService
- * @param {{ register: (arg0: any) => any; } | import("../state/state-registry.js").StateRegistryProvider | undefined} [stateRegistry]
+ * @param {ng.StateRegistryService | undefined} [stateRegistry]
  */
 export function registerLazyLoadHook(
   transitionService,
@@ -97,7 +97,7 @@ const lazyLoadPromiseCache = new WeakMap(); // WeakMap<Function, Promise<any>>
  * Invokes a state's lazy load function
  * @param {ng.Transition} transition a Transition context
  * @param {import("../state/interface.ts").StateDeclaration} state the state to lazy load
- * @param {{ register: (arg0: any) => any; } | undefined} [stateRegistry]
+ * @param {ng.StateRegistryService | undefined} [stateRegistry]
  * @return {Promise<import("../state/interface.ts").LazyLoadResult | undefined>} a promise for the lazy load result
  */
 export function lazyLoadState(transition, state, stateRegistry) {

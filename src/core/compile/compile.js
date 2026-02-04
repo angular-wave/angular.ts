@@ -2209,7 +2209,7 @@ export class CompileProvider {
                   childTranscludeFn,
                 );
 
-                const context = directive.$$originalDirective || directive;
+                const context = directive._originalDirective || directive;
 
                 if (isFunction(linkFn)) {
                   addLinkFns(null, bind(context, linkFn));
@@ -2611,7 +2611,7 @@ export class CompileProvider {
               templateUrl: null,
               transclude: null,
               replace: null,
-              $$originalDirective: origAsyncDirective,
+              _originalDirective: origAsyncDirective,
             })
           );
 
