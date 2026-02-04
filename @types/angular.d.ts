@@ -93,7 +93,7 @@ export class Angular extends EventTarget {
    * Fire-and-forget. Accepts a single string: "<target>.<expression>"
    * @param {string} input
    */
-  cast(input: string): void;
+  emit(input: string): void;
   /**
    * Await result. Accepts a single string: "<target>.<expression>"
    * @param {string} input
