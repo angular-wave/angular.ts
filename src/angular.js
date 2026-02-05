@@ -7,6 +7,7 @@ import {
   isString,
   minErr,
   ngAttrPrefixes,
+  values,
 } from "./shared/utils.js";
 import {
   getController,
@@ -82,7 +83,7 @@ export class Angular extends EventTarget {
 
     /** @type {ng.InjectionTokens} */
     this.$t = /** @type {ng.InjectionTokens} */ ({});
-    Object.values($t).forEach((i) => {
+    values($t).forEach((i) => {
       /** @type {any} */ (this.$t)[i] = i;
     });
 

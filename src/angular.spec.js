@@ -160,6 +160,19 @@ describe("angular", () => {
         window.angular.submodules[0].$injector,
       );
     });
+
+    it("they should share save $eventBus", () => {
+      element = createElementFromHTML(`<div>
+             <div ng-app>{{ 2 + 2 }}</div>
+             <div ng-app>{{ 3 + 3 }}</div>
+        </div>`);
+
+      window.angular.init(element);
+
+      expect(window.angular.submodules[0].$eventBus).toBe(
+        window.angular.$eventBus,
+      );
+    });
   });
 
   describe("AngularTS service", () => {

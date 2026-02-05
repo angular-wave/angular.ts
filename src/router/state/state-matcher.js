@@ -1,4 +1,4 @@
-import { isString } from "../../shared/utils.js";
+import { isString, values } from "../../shared/utils.js";
 
 /** @typedef {import("./state-object.js").StateObject} StateObject */
 /** @typedef {import("./interface.ts").StateOrName} StateOrName */
@@ -42,7 +42,7 @@ export class StateMatcher {
     ) {
       return /** @type {StateObject} */ (state);
     } else if (isStr && matchGlob) {
-      const states = Object.values(this._states);
+      const states = values(this._states);
 
       const matches = states.filter((stateObj) =>
         stateObj._stateObjectCache?.nameGlob?.matches(name),

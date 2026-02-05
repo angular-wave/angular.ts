@@ -1,5 +1,5 @@
 import { map, removeFrom, tail } from "../../shared/common.js";
-import { isFunction, isString } from "../../shared/utils.js";
+import { isFunction, isString, values } from "../../shared/utils.js";
 import { Glob } from "../glob/glob.js";
 import { TransitionHookScope } from "./transition-hook.js";
 
@@ -147,7 +147,7 @@ export class RegisteredHook {
       this.matchCriteria,
     );
 
-    const paths = Object.values(this.tranSvc._getPathTypes());
+    const paths = values(this.tranSvc._getPathTypes());
 
     return paths.reduce((mn, pathtype) => {
       // STATE scope criteria matches against every node in the path.
@@ -182,7 +182,7 @@ export class RegisteredHook {
     const matches = this._getMatchingNodes(treeChanges, transition);
 
     // Check if all the criteria matched the TreeChanges object
-    const allMatched = Object.values(matches).every((x) => x);
+    const allMatched = values(matches).every((x) => x);
 
     return allMatched
       ? /** @type {import("./interface.ts").IMatchingNodes } */ (matches)

@@ -632,6 +632,11 @@ export function hasOwn(obj: object, key: string | number | symbol): boolean;
  */
 export function keys(obj: any): string[];
 /**
+ * @param {Object} obj
+ * @returns {any[]}
+ */
+export function values(obj: any): any[];
+/**
  * @template T
  * @param {{ [s: string]: T; } | ArrayLike<T>} obj
  * @returns {[string, T][]}

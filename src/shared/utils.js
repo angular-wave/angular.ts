@@ -1289,6 +1289,14 @@ export function keys(obj) {
 }
 
 /**
+ * @param {Object} obj
+ * @returns {any[]}
+ */
+export function values(obj) {
+  return Object.values(obj);
+}
+
+/**
  * @template T
  * @param {{ [s: string]: T; } | ArrayLike<T>} obj
  * @returns {[string, T][]}

@@ -1,7 +1,7 @@
 import { defaults, find } from "../../shared/common.js";
 import { propEq } from "../../shared/hof.js";
 import { Glob } from "../glob/glob.js";
-import { hasOwn, isFunction, isObject } from "../../shared/utils.js";
+import { hasOwn, isFunction, isObject, values } from "../../shared/utils.js";
 
 /** @typedef {import("../params/param.js").Param} Param */
 /** @typedef {import("../resolve/resolvable.js").Resolvable} Resolvable */
@@ -141,7 +141,7 @@ export class StateObject {
       (params.inherit && this.parent && this.parent.parameters()) || [];
 
     return inherited
-      .concat(Object.values(/** @type {ArrayLike<Param>} */ (this.params)))
+      .concat(values(/** @type {ArrayLike<Param>} */ (this.params)))
       .filter(
         (param) =>
           !params.matchingKeys || hasOwn(params.matchingKeys, param.id),
@@ -160,7 +160,7 @@ export class StateObject {
     return (
       (this.url && this.url.parameter(id, opts)) ||
       find(
-        Object.values(/** @type {ArrayLike<Param>} */ (this.params)),
+        values(/** @type {ArrayLike<Param>} */ (this.params)),
         propEq("id", id),
       ) ||
       (opts.inherit && this.parent && this.parent.parameter(id))

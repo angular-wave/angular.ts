@@ -1,6 +1,7 @@
 import { Transition } from "../transition/transition.js";
 import { Resolvable } from "../resolve/resolvable.js";
 import { uniqR, unnestR } from "../../shared/common.js";
+import { values } from "../../shared/utils.js";
 
 /**
  * @param {ng.TransitionService} transitionService
@@ -30,7 +31,7 @@ const TRANSITION_TOKENS = ["$transition$", Transition];
  * @param {ng.Transition} trans
  */
 export function treeChangesCleanup(trans) {
-  const nodes = Object.values(trans.treeChanges())
+  const nodes = values(trans.treeChanges())
     .reduce(unnestR, [])
     .reduce(uniqR, []);
 

@@ -1,6 +1,9 @@
 import { $injectTokens, provider } from "../../injection-tokens.js";
 import { nullObject } from "../../shared/utils.js";
 
+/** @type {PubSub | undefined} */
+let eventBusInstance;
+
 /**
  * Configurable provider for an injectable event bus
  * @extends {ng.ServiceProvider}
@@ -13,15 +16,15 @@ export class PubSubProvider {
 
   /**
    * @param {ng.ExceptionHandlerProvider} $exceptionHandler
-   * @param {ng.ServiceProvider} angularProvider
+   * @param {ng.AngularServiceProvider} angularProvider
    */
   constructor($exceptionHandler, angularProvider) {
     /**
      * @type {PubSub}
      */
-    this.eventBus = new PubSub($exceptionHandler.handler);
-    /** @type {ng.Angular} */ (angularProvider.$get()).$eventBus =
-      this.eventBus;
+    this.eventBus = eventBusInstance =
+      eventBusInstance || new PubSub($exceptionHandler.handler);
+    angularProvider.$get().$eventBus = this.eventBus;
   }
 
   $get = () => this.eventBus;
