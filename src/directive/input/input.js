@@ -64,7 +64,7 @@ const PARTIAL_VALIDATION_TYPES = new Map();
 "date,datetime-local,month,time,week".split(",").forEach((type) => {
   PARTIAL_VALIDATION_TYPES.set(type, true);
 });
-/** @type {Record<string, import("./interface.js").InputTypeHandler>} */
+/** @type {Record<string, import("./interface.ts").InputTypeHandler>} */
 const inputType = {
   text: textInputType,
   date: createStringDateInputType("date", DATE_REGEXP),

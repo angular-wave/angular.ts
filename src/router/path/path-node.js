@@ -44,7 +44,7 @@ export class PathNode {
 
   /**
    * Sets [[paramValues]] for the node, from the values of an object hash
-   * @param {import("../params/interface.js").RawParams} params
+   * @param {import("../params/interface.ts").RawParams} params
    * @returns {PathNode}
    */
   applyRawParams(params) {
@@ -73,7 +73,7 @@ export class PathNode {
 
   /**
    * @param {PathNode} node
-   * @param {import("./interface.js").GetParamsFn} paramsFn
+   * @param {import("./interface.ts").GetParamsFn} paramsFn
    * @returns {boolean} true if the state and parameter values for another PathNode are
   equal to the state and param values for this PathNode
    */
@@ -91,7 +91,7 @@ export class PathNode {
    *
    * Given another node for a different state, returns `false`
    * @param {PathNode} node The node to compare to
-   * @param {import("./interface.js").GetParamsFn} paramsFn A function that returns which parameters should be compared.
+   * @param {import("./interface.ts").GetParamsFn} paramsFn A function that returns which parameters should be compared.
    * @returns { Param[] | false} The [[Param]]s which differ, or null if the two nodes are for different states
    */
   diff(node, paramsFn) {

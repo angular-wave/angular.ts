@@ -367,9 +367,7 @@ describe("$animate", () => {
       const copiedOptions = structuredClone(initialOptions);
       expect(copiedOptions).toEqual(initialOptions);
 
-      const runner = $animate.enter(element, parent, null, copiedOptions);
-      expect(copiedOptions).toEqual(initialOptions);
-
+      $animate.enter(element, parent, null, copiedOptions);
       expect(copiedOptions).toEqual(initialOptions);
     });
 

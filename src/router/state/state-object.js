@@ -173,7 +173,7 @@ export class StateObject {
 }
 /** Predicate which returns true if the object is a [[StateDeclaration]] object */
 StateObject.isStateDeclaration = (
-  /** @type {StateObject | import("../state/interface.js").StateDeclaration} */ obj,
+  /** @type {StateObject | import("../state/interface.ts").StateDeclaration} */ obj,
 ) => isFunction(obj._state);
 
 /** Predicate which returns true if the object is an internal [[StateObject]] object */

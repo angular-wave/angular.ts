@@ -444,7 +444,7 @@ export function ngModelAriaDirective($aria) {
 ngDblclickAriaDirective.$inject = [$injectTokens._aria];
 /**
  * @param {ng.AriaService} $aria
- * @returns {import("../../interface.js").DirectiveLinkFn<any>}
+ * @returns {import("../../interface.ts").DirectiveLinkFn<any>}
  */
 export function ngDblclickAriaDirective($aria) {
   return function (_scope, elem, attr) {

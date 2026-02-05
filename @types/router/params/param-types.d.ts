@@ -22,6 +22,11 @@
  * ```
  */
 export class ParamTypes {
+  /**
+   * @param {ng.AngularService} $angular
+   */
+  constructor($angular: ng.AngularService);
+  $injector: import("../../docs.ts").InjectorService;
   enqueue: boolean;
   /**
    * @type {{ name: any; def: any; }[]}

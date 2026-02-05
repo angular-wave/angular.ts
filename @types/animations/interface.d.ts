@@ -323,14 +323,6 @@ export interface Animator {
   end(): void;
 }
 /**
- * Variant of {@link Animator} where `end()` returns the runner for chaining.
- *
- * Useful when callers rely on runner semantics after forcing completion.
- */
-export interface AnimatorWithEndRunner extends Animator {
-  end(): AnimateRunner;
-}
-/**
  * Normalized animation factory signature used by the animation subsystem.
  *
  * Unlike {@link AnimateJsFn}, this always returns an {@link Animator} (never `undefined`),

@@ -20,7 +20,7 @@ import {
 import { DefType, Param } from "../params/param.js";
 import { joinNeighborsR, splitOnDelim } from "../../shared/strings.js";
 
-/** @typedef {import("./interface.js").UrlMatcherCache} UrlMatcherCache */
+/** @typedef {import("./interface.ts").UrlMatcherCache} UrlMatcherCache */
 /** @typedef {import("./interface.ts").ParamDetails} ParamDetails */
 
 /**
@@ -246,7 +246,7 @@ export class UrlMatcher {
    * @param {string} pattern The pattern to compile into a matcher.
    * @param {import("../params/param-types.js").ParamTypes} paramTypes The [[ParamTypes]] registry
    * @param {import("../params/param-factory.js").ParamFactory} paramFactory A [[ParamFactory]] object
-   * @param {import("./interface.js").UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
+   * @param {import("./interface.ts").UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
    */
   constructor(pattern, paramTypes, paramFactory, config) {
     this._cache = /** @type {UrlMatcherCache} */ ({
@@ -458,7 +458,7 @@ export class UrlMatcher {
    * @param {string} path The URL path to match, e.g. `$location.getPath()`.
    * @param {any} search URL search parameters, e.g. `$location.getSearch()`.
    * @param {string} hash URL hash e.g. `$location.getHash()`.
-   * @returns {import("../params/interface.js").RawParams | null} The captured parameter values.
+   * @returns {import("../params/interface.ts").RawParams | null} The captured parameter values.
    */
   exec(path, search = {}, hash) {
     const match = memoizeTo(this._cache, "pattern", () => {
@@ -582,7 +582,7 @@ export class UrlMatcher {
    *
    * Checks an object hash of parameters to validate their correctness according to the parameter
    * types of this `UrlMatcher`.
-   * @param {import("../params/interface.js").RawParams} params The object hash of parameters to validate.
+   * @param {import("../params/interface.ts").RawParams} params The object hash of parameters to validate.
    * @returns {boolean} Returns `true` if `params` validates, otherwise `false`.
    */
   validates(params) {
@@ -614,7 +614,7 @@ export class UrlMatcher {
    * // returns '/user/bob?q=yes'
    * ```
    *
-   * @param {import("../params/interface.js").RawParams} values  the values to substitute for the parameters in this pattern.
+   * @param {import("../params/interface.ts").RawParams} values  the values to substitute for the parameters in this pattern.
    * @returns the formatted URL (path and optionally search part).
    */
   format(values = {}) {
@@ -644,7 +644,7 @@ export class UrlMatcher {
     /**
      * Given a Param, applies the parameter value, then returns detailed information about it
      * @param {Param} param
-     * @returns {import("./interface.js").ParamDetails}
+     * @returns {import("./interface.ts").ParamDetails}
      */
     function getDetails(param) {
       // Normalize to typed value

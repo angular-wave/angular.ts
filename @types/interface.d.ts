@@ -4,7 +4,7 @@ import type {
   CloneAttachFn,
   PublicLinkFn,
   TemplateLinkingFunctionOptions as CompileTemplateLinkingFunctionOptions,
-} from "./core/compile/interface.js";
+} from "./core/compile/interface.ts";
 import { NgModelController } from "./directive/model/model.js";
 export interface Constructor<T = any> {
   new (...args: any[]): T;
@@ -51,6 +51,7 @@ export declare const PublicInjectionTokens: {
   readonly $websocket: "$websocket";
   readonly $provide: "$provide";
   readonly $injector: "$injector";
+  readonly $angularProvider: "$angularProvider";
   readonly $compileProvider: "$compileProvider";
   readonly $animateProvider: "$animateProvider";
   readonly $filterProvider: "$filterProvider";
@@ -134,6 +135,9 @@ export interface ServiceProviderFactory {
 export interface ServiceProvider {
   $get: Injectable<any>;
 }
+export type AngularServiceProvider = {
+  $get: (...args: any[]) => ng.AngularService;
+};
 /**
  * The API for registering different types of providers with the injector.
  *

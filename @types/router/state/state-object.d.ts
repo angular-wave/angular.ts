@@ -117,7 +117,7 @@ export class StateObject {
 export namespace StateObject {
   /** Predicate which returns true if the object is a [[StateDeclaration]] object */
   function isStateDeclaration(
-    obj: StateObject | import("../state/interface.js").StateDeclaration,
+    obj: StateObject | import("../state/interface.ts").StateDeclaration,
   ): boolean;
   /** Predicate which returns true if the object is an internal [[StateObject]] object */
   function isState(obj: any): boolean;

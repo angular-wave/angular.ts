@@ -131,11 +131,11 @@ export namespace ngModelAriaDirective {
 }
 /**
  * @param {ng.AriaService} $aria
- * @returns {import("../../interface.js").DirectiveLinkFn<any>}
+ * @returns {import("../../interface.ts").DirectiveLinkFn<any>}
  */
 export function ngDblclickAriaDirective(
   $aria: ng.AriaService,
-): import("../../interface.js").DirectiveLinkFn<any>;
+): import("../../interface.ts").DirectiveLinkFn<any>;
 export namespace ngDblclickAriaDirective {
   let $inject_9: string[];
   export { $inject_9 as $inject };

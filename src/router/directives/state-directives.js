@@ -485,7 +485,7 @@ export function $StateRefActiveDirective(
         }
       }
       /**
-       * @param {import("../state/interface.js").StateOrName} stateName
+       * @param {import("../state/interface.ts").StateOrName} stateName
        * @param {any} stateParams
        * @param {string} activeClass
        */

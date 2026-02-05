@@ -1,80 +1,20 @@
-import { CompileProvider } from "./core/compile/compile.js";
-import {
-  hiddenInputDirective,
-  inputDirective,
-  ngValueDirective,
-} from "./directive/input/input.js";
-import { formDirective, ngFormDirective } from "./directive/form/form.js";
-import { scriptDirective } from "./directive/script/script.js";
-import { optionDirective, selectDirective } from "./directive/select/select.js";
-import {
-  ngBindDirective,
-  ngBindHtmlDirective,
-  ngBindTemplateDirective,
-} from "./directive/bind/bind.js";
-import {
-  ngClassDirective,
-  ngClassEvenDirective,
-  ngClassOddDirective,
-} from "./directive/class/class.js";
-import { ngCloakDirective } from "./directive/cloak/cloak.js";
-import { ngControllerDirective } from "./directive/controller/controller.js";
-import {
-  ngHideDirective,
-  ngShowDirective,
-} from "./directive/show-hide/show-hide.js";
-import { ngIfDirective } from "./directive/if/if.js";
-import {
-  ngIncludeDirective,
-  ngIncludeFillContentDirective,
-} from "./directive/include/include.js";
-import { ngInitDirective } from "./directive/init/init.js";
-import { ngNonBindableDirective } from "./directive/non-bindable/non-bindable.js";
-import { ngRefDirective } from "./directive/ref/ref.js";
-import { ngRepeatDirective } from "./directive/repeat/repeat.js";
-import { ngStyleDirective } from "./directive/style/style.js";
-import {
-  ngSwitchDefaultDirective,
-  ngSwitchDirective,
-  ngSwitchWhenDirective,
-} from "./directive/switch/switch.js";
-import { ngOptionsDirective } from "./directive/options/options.js";
-import { ngTranscludeDirective } from "./directive/transclude/transclude.js";
-import { ngModelDirective } from "./directive/model/model.js";
-import {
-  maxlengthDirective,
-  minlengthDirective,
-  patternDirective,
-  requiredDirective,
-} from "./directive/validators/validators.js";
-import { ngModelOptionsDirective } from "./directive/model-options/model-options.js";
-import { ngAttributeAliasDirectives } from "./directive/attrs/attrs.js";
-import { ngEventDirectives } from "./directive/events/events.js";
-import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
+import { $$AnimateChildrenDirective } from "./animations/animate-children-directive.js";
+import { AnimateCssDriverProvider } from "./animations/animate-css-driver.js";
+import { AnimateJsDriverProvider } from "./animations/animate-js-driver.js";
+import { AnimateJsProvider } from "./animations/animate-js.js";
+import { ngAnimateSwapDirective } from "./animations/animate-swap.js";
 import { AnimateProvider } from "./animations/animate.js";
-import { TemplateCacheProvider } from "./services/template-cache/template-cache.js";
+import { AnimationProvider } from "./animations/animation.js";
+import { AnimateCssProvider } from "./animations/css/animate-css.js";
+import { AnimateQueueProvider } from "./animations/queue/animate-queue.js";
+import { CompileProvider } from "./core/compile/compile.js";
 import { ControllerProvider } from "./core/controller/controller.js";
-import { ExceptionHandlerProvider } from "./services/exception/exception.js";
 import { FilterProvider } from "./core/filter/filter.js";
 import { InterpolateProvider } from "./core/interpolate/interpolate.js";
-import {
-  HttpParamSerializerProvider,
-  HttpProvider,
-} from "./services/http/http.js";
-import { LocationProvider } from "./services/location/location.js";
-import { LogProvider } from "./services/log/log.js";
 import { ParseProvider } from "./core/parse/parse.js";
-import { RootScopeProvider } from "./core/scope/scope.js";
-import { SceDelegateProvider, SceProvider } from "./services/sce/sce.js";
-import { TemplateRequestProvider } from "./services/template-request/template-request.js";
 import { SanitizeUriProvider } from "./core/sanitize/sanitize-uri.js";
-import {
-  ngMessageDefaultDirective,
-  ngMessageDirective,
-  ngMessageExpDirective,
-  ngMessagesDirective,
-  ngMessagesIncludeDirective,
-} from "./directive/messages/messages.js";
+import { RootScopeProvider } from "./core/scope/scope.js";
+import { $injectTokens as $t } from "./injection-tokens.js";
 import {
   AriaProvider,
   ngCheckedAriaDirective,
@@ -89,22 +29,80 @@ import {
   ngShowAriaDirective,
   ngValueAriaDirective,
 } from "./directive/aria/aria.js";
-import { AnimateCssProvider } from "./animations/css/animate-css.js";
-import { AnimateQueueProvider } from "./animations/queue/animate-queue.js";
-import { AnimateJsProvider } from "./animations/animate-js.js";
-import { AnimationProvider } from "./animations/animation.js";
-import { AnimateCssDriverProvider } from "./animations/animate-css-driver.js";
-import { AnimateJsDriverProvider } from "./animations/animate-js-driver.js";
-import { ngAnimateSwapDirective } from "./animations/animate-swap.js";
-import { $$AnimateChildrenDirective } from "./animations/animate-children-directive.js";
-import { UrlConfigProvider } from "./router/url/url-config.js";
-import { RouterProvider } from "./router/router.js";
-import { ViewService } from "./router/view/view.js";
-import { TransitionProvider } from "./router/transition/transition-service.js";
-import { StateProvider } from "./router/state/state-service.js";
-import { TemplateFactoryProvider } from "./router/template-factory.js";
-import { UrlService } from "./router/url/url-service.js";
-import { StateRegistryProvider } from "./router/state/state-registry.js";
+import { ngAttributeAliasDirectives } from "./directive/attrs/attrs.js";
+import {
+  ngBindDirective,
+  ngBindHtmlDirective,
+  ngBindTemplateDirective,
+} from "./directive/bind/bind.js";
+import { ngChannelDirective } from "./directive/channel/channel.js";
+import {
+  ngClassDirective,
+  ngClassEvenDirective,
+  ngClassOddDirective,
+} from "./directive/class/class.js";
+import { ngCloakDirective } from "./directive/cloak/cloak.js";
+import { ngControllerDirective } from "./directive/controller/controller.js";
+import { ngElDirective } from "./directive/el/el.js";
+import { ngEventDirectives } from "./directive/events/events.js";
+import { formDirective, ngFormDirective } from "./directive/form/form.js";
+import {
+  ngDeleteDirective,
+  ngGetDirective,
+  ngPostDirective,
+  ngPutDirective,
+  ngSseDirective,
+} from "./directive/http/http.js";
+import { ngIfDirective } from "./directive/if/if.js";
+import {
+  ngIncludeDirective,
+  ngIncludeFillContentDirective,
+} from "./directive/include/include.js";
+import {
+  hiddenInputDirective,
+  inputDirective,
+  ngValueDirective,
+} from "./directive/input/input.js";
+import { ngInitDirective } from "./directive/init/init.js";
+import { ngInjectDirective } from "./directive/inject/inject.js";
+import { ngListenerDirective } from "./directive/listener/listener.js";
+import { ngModelDirective } from "./directive/model/model.js";
+import { ngModelOptionsDirective } from "./directive/model-options/model-options.js";
+import {
+  ngMessageDefaultDirective,
+  ngMessageDirective,
+  ngMessageExpDirective,
+  ngMessagesDirective,
+  ngMessagesIncludeDirective,
+} from "./directive/messages/messages.js";
+import { ngNonBindableDirective } from "./directive/non-bindable/non-bindable.js";
+import { ngOptionsDirective } from "./directive/options/options.js";
+import { optionDirective, selectDirective } from "./directive/select/select.js";
+import { ngRefDirective } from "./directive/ref/ref.js";
+import { ngRepeatDirective } from "./directive/repeat/repeat.js";
+import { ngScopeDirective } from "./directive/scope/scope.js";
+import { scriptDirective } from "./directive/script/script.js";
+import { ngSetterDirective } from "./directive/setter/setter.js";
+import {
+  ngHideDirective,
+  ngShowDirective,
+} from "./directive/show-hide/show-hide.js";
+import { ngStyleDirective } from "./directive/style/style.js";
+import {
+  ngSwitchDefaultDirective,
+  ngSwitchDirective,
+  ngSwitchWhenDirective,
+} from "./directive/switch/switch.js";
+import { ngTranscludeDirective } from "./directive/transclude/transclude.js";
+import {
+  maxlengthDirective,
+  minlengthDirective,
+  patternDirective,
+  requiredDirective,
+} from "./directive/validators/validators.js";
+import { ngViewportDirective } from "./directive/viewport/viewport.js";
+import { ngWasmDirective } from "./directive/wasm/wasm.js";
+import { ngWorkerDirective } from "./directive/worker/worker.js";
 import { trace } from "./router/common/trace.js";
 import {
   $StateRefActiveDirective,
@@ -115,27 +113,29 @@ import {
   $ViewDirectiveFill,
   $ViewDirective,
 } from "./router/directives/view-directive.js";
-import { ngChannelDirective } from "./directive/channel/channel.js";
-import { ngSetterDirective } from "./directive/setter/setter.js";
-import { PubSubProvider } from "./services/pubsub/pubsub.js";
-import {
-  ngDeleteDirective,
-  ngGetDirective,
-  ngPostDirective,
-  ngPutDirective,
-  ngSseDirective,
-} from "./directive/http/http.js";
-import { $injectTokens as $t } from "./injection-tokens.js";
-import { ngInjectDirective } from "./directive/inject/inject.js";
-import { ngElDirective } from "./directive/el/el.js";
-import { SseProvider } from "./services/sse/sse.js";
-import { ngViewportDirective } from "./directive/viewport/viewport.js";
-import { ngWorkerDirective } from "./directive/worker/worker.js";
-import { ngWasmDirective } from "./directive/wasm/wasm.js";
-import { ngScopeDirective } from "./directive/scope/scope.js";
+import { RouterProvider } from "./router/router.js";
+import { StateProvider } from "./router/state/state-service.js";
+import { StateRegistryProvider } from "./router/state/state-registry.js";
+import { TemplateFactoryProvider } from "./router/template-factory.js";
+import { TransitionProvider } from "./router/transition/transition-service.js";
+import { UrlConfigProvider } from "./router/url/url-config.js";
+import { UrlService } from "./router/url/url-service.js";
+import { ViewService } from "./router/view/view.js";
+import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
 import { CookieProvider } from "./services/cookie/cookie.js";
+import { ExceptionHandlerProvider } from "./services/exception/exception.js";
+import {
+  HttpParamSerializerProvider,
+  HttpProvider,
+} from "./services/http/http.js";
+import { LocationProvider } from "./services/location/location.js";
+import { LogProvider } from "./services/log/log.js";
+import { PubSubProvider } from "./services/pubsub/pubsub.js";
 import { RestProvider } from "./services/rest/rest.js";
-import { ngListenerDirective } from "./directive/listener/listener.js";
+import { SceDelegateProvider, SceProvider } from "./services/sce/sce.js";
+import { SseProvider } from "./services/sse/sse.js";
+import { TemplateCacheProvider } from "./services/template-cache/template-cache.js";
+import { TemplateRequestProvider } from "./services/template-request/template-request.js";
 import { WebSocketProvider } from "./services/websocket/websocket.js";
 
 /**
@@ -156,7 +156,12 @@ export function registerNgModule(angular) {
           $provide.provider({
             $$sanitizeUri: SanitizeUriProvider,
           });
-          $provide.value($t._angular, angular);
+          $provide.provider(
+            "$angular",
+            class Test {
+              $get = () => angular;
+            },
+          );
           $provide.value($t._window, window);
           $provide.value($t._document, document);
           $provide

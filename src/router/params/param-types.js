@@ -26,7 +26,11 @@ import { ParamType } from "./param-type.js";
  * ```
  */
 export class ParamTypes {
-  constructor() {
+  /**
+   * @param {ng.AngularService} $angular
+   */
+  constructor($angular) {
+    this.$injector = $angular.$injector;
     this.enqueue = true;
     /**
      * @type {{ name: any; def: any; }[]}
@@ -85,10 +89,7 @@ export class ParamTypes {
 
       if (type.pattern)
         throw new Error("You cannot override a type's .pattern at runtime.");
-      Object.assign(
-        this.types[type.name],
-        window.angular.$injector.invoke(type.def),
-      );
+      Object.assign(this.types[type.name], this.$injector.invoke(type.def));
     }
   }
 }

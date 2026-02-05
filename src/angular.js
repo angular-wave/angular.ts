@@ -37,6 +37,9 @@ export class Angular extends EventTarget {
   constructor(submodule = false) {
     super();
 
+    /** @private @type {Angular[]} */
+    this.submodules = [];
+
     /** @private @type {boolean} */
     this._submodule = submodule;
 
@@ -83,6 +86,7 @@ export class Angular extends EventTarget {
       /** @type {any} */ (this.$t)[i] = i;
     });
 
+    // do not override window.angular for submodules
     if (!submodule) {
       window.angular = this;
     }
@@ -338,7 +342,7 @@ export class Angular extends EventTarget {
        * @param {import('./interface.ts').Provider} $provide
        */
       ($provide) => {
-        $provide.value("$rootElement", element);
+        $provide.value($t._rootElement, element);
       },
     ]);
 
@@ -362,7 +366,7 @@ export class Angular extends EventTarget {
         // ng-route deps
         this.$injector = $injector; // TODO refactor away as this as this prevents multiple apps from being used
 
-        setCacheData(el, "$injector", $injector);
+        setCacheData(el, $t._injector, $injector);
 
         const compileFn = compile(el);
 
@@ -428,45 +432,56 @@ export class Angular extends EventTarget {
    * @param {HTMLElement|HTMLDocument} element
    */
   init(element) {
-    /** @type {HTMLElement|undefined} */
-    let appElement;
+    /**
+     * @type {{ _element: HTMLElement; _module: string | null; }[]}
+     */
+    const appElements = [];
 
-    let module;
-
-    const config = {};
+    let multimode = false;
 
     // The element `element` has priority over any other element.
     ngAttrPrefixes.forEach((prefix) => {
       const name = `${prefix}app`;
 
+      /** @type {HTMLElement[] | NodeList} */
+      let candidates;
+
       if (
-        /** @type {HTMLElement} */ (element).hasAttribute &&
+        element.nodeType === 1 &&
         /** @type {HTMLElement} */ (element).hasAttribute(name)
       ) {
-        appElement = /** @type {HTMLElement} */ (element);
-        module = appElement.getAttribute(name);
+        candidates = [/** @type {HTMLElement} */ (element)];
+      } else {
+        candidates = element.querySelectorAll(`[${name}]`);
       }
 
-      /** @type {HTMLElement} */
-      let candidate;
-
-      if (
-        !appElement &&
-        (candidate = /** @type {HTMLElement} */ (
-          element.querySelector(`[${name.replace(":", "\\:")}]`)
-        ))
-      ) {
-        appElement = candidate;
-        module = candidate.getAttribute(name);
-      }
+      candidates.forEach((el) => {
+        appElements.push({
+          _element: /** @type {HTMLElement} */ (el),
+          _module: /** @type {HTMLElement} */ (el).getAttribute(name),
+        });
+      });
     });
 
-    if (appElement) {
-      config.strictDi =
-        appElement.hasAttribute(STRICT_DI) ||
-        appElement.hasAttribute(`data-${STRICT_DI}`);
-      this.bootstrap(appElement, module ? [module] : [], config);
-    }
+    appElements.forEach((app) => {
+      const strictDi =
+        app._element.hasAttribute(STRICT_DI) ||
+        app._element.hasAttribute(`data-${STRICT_DI}`);
+
+      if (multimode) {
+        const submodule = new Angular(true);
+
+        this.submodules.push(submodule);
+        submodule.bootstrap(app._element, app._module ? [app._module] : [], {
+          strictDi,
+        });
+      } else {
+        this.bootstrap(app._element, app._module ? [app._module] : [], {
+          strictDi,
+        });
+      }
+      multimode = true;
+    });
   }
 
   /**
@@ -483,7 +498,7 @@ export class Angular extends EventTarget {
   getScopeByName(name) {
     validateIsString(name, "name");
     /** @type {ng.RootScopeService} */
-    const $rootScope = this.$injector.get("$rootScope");
+    const $rootScope = this.$injector.get($t._rootScope);
 
     const scope = $rootScope.$searchByName(name);
 

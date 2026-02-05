@@ -4,7 +4,7 @@ import type {
   CloneAttachFn,
   PublicLinkFn,
   TemplateLinkingFunctionOptions as CompileTemplateLinkingFunctionOptions,
-} from "./core/compile/interface.js";
+} from "./core/compile/interface.ts";
 import { NgModelController } from "./directive/model/model.js";
 
 export interface Constructor<T = any> {
@@ -53,6 +53,7 @@ export const PublicInjectionTokens = {
   $websocket: "$websocket",
   $provide: "$provide",
   $injector: "$injector",
+  $angularProvider: "$angularProvider",
   $compileProvider: "$compileProvider",
   $animateProvider: "$animateProvider",
   $filterProvider: "$filterProvider",
@@ -144,6 +145,10 @@ export interface ServiceProviderFactory {
 export interface ServiceProvider {
   $get: Injectable<any>;
 }
+
+export type AngularServiceProvider = {
+  $get: (...args: any[]) => ng.AngularService;
+};
 
 /**
  * The API for registering different types of providers with the injector.

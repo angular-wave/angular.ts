@@ -62,6 +62,7 @@ import {
   Expression as TExpression,
   PublicInjectionTokens,
   InvocationDetail as TInvocationDetail,
+  AngularServiceProvider as TAngularServiceProvider,
 } from "./interface.ts";
 import {
   SseService as TSseService,
@@ -162,6 +163,7 @@ declare global {
     type Scope = TScope & Record<string, any>;
     type TranscludeFn = TTranscludeFn;
     type AnchorScrollProvider = TAnchorScrollProvider;
+    type AngularServiceProvider = TAngularServiceProvider;
     type AnimateProvider = TAnimateProvider;
     type FilterProvider = TFilterProvider;
     type ExceptionHandlerProvider = TExceptionHandlerProvider;

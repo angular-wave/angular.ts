@@ -58,13 +58,13 @@ export class UrlRuleFactory {
    * var result = rule.handler(match); // '/home/123/456'
    * ```
    * @param {UrlMatcher} urlMatcher
-   * @param {string | UrlMatcher | import("./interface.js").UrlRuleHandlerFn} handler
-   * @returns {import("./interface.js").MatcherUrlRule}
+   * @param {string | UrlMatcher | import("./interface.ts").UrlRuleHandlerFn} handler
+   * @returns {import("./interface.ts").MatcherUrlRule}
    */
   fromUrlMatcher(
     urlMatcher: UrlMatcher,
-    handler: string | UrlMatcher | import("./interface.js").UrlRuleHandlerFn,
-  ): import("./interface.js").MatcherUrlRule;
+    handler: string | UrlMatcher | import("./interface.ts").UrlRuleHandlerFn,
+  ): import("./interface.ts").MatcherUrlRule;
   /**
    * A UrlRule which matches a state by its url
    *
@@ -75,16 +75,16 @@ export class UrlRuleFactory {
    * var result = rule.handler(match);
    * // Starts a transition to 'foo' with params: { fooId: '123', barId: '456' }
    * ```
-   * @param {StateObject | import("../state/interface.js").StateDeclaration} stateOrDecl
+   * @param {StateObject | import("../state/interface.ts").StateDeclaration} stateOrDecl
    * @param {import("../state/state-service.js").StateProvider} stateService
    * @param {import("../router.js").RouterProvider} globals
-   * @returns {import("./interface.js").StateRule}
+   * @returns {import("./interface.ts").StateRule}
    */
   fromState(
-    stateOrDecl: StateObject | import("../state/interface.js").StateDeclaration,
+    stateOrDecl: StateObject | import("../state/interface.ts").StateDeclaration,
     stateService: import("../state/state-service.js").StateProvider,
     globals: import("../router.js").RouterProvider,
-  ): import("./interface.js").StateRule;
+  ): import("./interface.ts").StateRule;
   /**
    * A UrlRule which matches based on a regular expression
    *
@@ -117,13 +117,13 @@ export class UrlRuleFactory {
    * var result = rule.handler(match); // '/home/bar'
    * ```
    * @param {RegExp} regexp
-   * @param {string | import("./interface.js").UrlRuleHandlerFn} handler
-   * @returns {import("./interface.js").RegExpRule}
+   * @param {string | import("./interface.ts").UrlRuleHandlerFn} handler
+   * @returns {import("./interface.ts").RegExpRule}
    */
   fromRegExp(
     regexp: RegExp,
-    handler: string | import("./interface.js").UrlRuleHandlerFn,
-  ): import("./interface.js").RegExpRule;
+    handler: string | import("./interface.ts").UrlRuleHandlerFn,
+  ): import("./interface.ts").RegExpRule;
 }
 export namespace UrlRuleFactory {
   function isUrlRule(obj: { [x: string]: any }): boolean;
@@ -135,21 +135,21 @@ export namespace UrlRuleFactory {
  */
 export class BaseUrlRule {
   /**
-   * @param {import("./interface.js").UrlRuleMatchFn} match
-   * @param {import("./interface.js").UrlRuleHandlerFn} handler
+   * @param {import("./interface.ts").UrlRuleMatchFn} match
+   * @param {import("./interface.ts").UrlRuleHandlerFn} handler
    */
   constructor(
-    match: import("./interface.js").UrlRuleMatchFn,
-    handler: import("./interface.js").UrlRuleHandlerFn,
+    match: import("./interface.ts").UrlRuleMatchFn,
+    handler: import("./interface.ts").UrlRuleHandlerFn,
   );
   /**
-   * @type {import("./interface.js").UrlRuleMatchFn}
+   * @type {import("./interface.ts").UrlRuleMatchFn}
    */
-  match: import("./interface.js").UrlRuleMatchFn;
+  match: import("./interface.ts").UrlRuleMatchFn;
   /**
-   * @type {import("./interface.js").UrlRuleType}
+   * @type {import("./interface.ts").UrlRuleType}
    */
-  type: import("./interface.js").UrlRuleType;
+  type: import("./interface.ts").UrlRuleType;
   /**
    * @type {number}
    */
@@ -159,9 +159,9 @@ export class BaseUrlRule {
    */
   _group: number | undefined;
   /**
-   * @type {import("./interface.js").UrlRuleHandlerFn}
+   * @type {import("./interface.ts").UrlRuleHandlerFn}
    */
-  handler: import("./interface.js").UrlRuleHandlerFn;
+  handler: import("./interface.ts").UrlRuleHandlerFn;
   /**
    * @type {number | undefined}
    */
