@@ -1,5 +1,6 @@
 import { arrayTuples, find, omit, pick, unnestR } from "../../shared/common.js";
 import { propEq } from "../../shared/hof.js";
+import { values } from "../../shared/utils.js";
 import { TargetState } from "../state/target-state.js";
 import { PathNode } from "./path-node.js";
 
@@ -57,7 +58,7 @@ export class PathUtils {
     path
       .filter((node) => states.includes(node.state))
       .forEach((node) => {
-        const viewDecls = Object.values(node.state.views || {});
+        const viewDecls = values(node.state.views || {});
 
         const subPath = PathUtils.subPath(path, (x) => x === node);
 

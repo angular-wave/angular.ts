@@ -6,11 +6,11 @@ export class PubSubProvider {
   static $inject: string[];
   /**
    * @param {ng.ExceptionHandlerProvider} $exceptionHandler
-   * @param {ng.ServiceProvider} angularProvider
+   * @param {ng.AngularServiceProvider} angularProvider
    */
   constructor(
     $exceptionHandler: ng.ExceptionHandlerProvider,
-    angularProvider: ng.ServiceProvider,
+    angularProvider: ng.AngularServiceProvider,
   );
   /**
    * @type {PubSub}

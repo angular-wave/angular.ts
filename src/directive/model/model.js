@@ -23,6 +23,7 @@ import {
   keys,
   minErr,
   snakeCase,
+  values,
 } from "../../shared/utils.js";
 import {
   PENDING_CLASS,
@@ -895,7 +896,7 @@ export class NgModelController {
 
   _writeModelToScope() {
     this._ngModelSet(this._scope, this.$modelValue);
-    Object.values(this.$viewChangeListeners).forEach((listener) => {
+    values(this.$viewChangeListeners).forEach((listener) => {
       try {
         listener();
       } catch (err) {

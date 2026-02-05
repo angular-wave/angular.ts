@@ -5,7 +5,6 @@ import type {
   PublicLinkFn,
   TemplateLinkingFunctionOptions as CompileTemplateLinkingFunctionOptions,
 } from "./core/compile/interface.ts";
-import { NgModelController } from "./directive/model/model.js";
 
 export interface Constructor<T = any> {
   new (...args: any[]): T;
@@ -394,7 +393,7 @@ export type DirectiveController =
 /**
  * Represents a controller used within directive link functions.
  */
-export type TController<T> = DirectiveController | NgModelController | T;
+export type TController<T> = T;
 
 /**
  * Defines optional pre/post link functions in directive compile phase.
@@ -411,7 +410,7 @@ export type DirectiveLinkFn<T> = (
   scope: ng.Scope,
   element: HTMLElement,
   attrs: ng.Attributes,
-  controller?: TController<T>,
+  controller: TController<T>,
   transclude?: ng.TranscludeFn,
 ) => void;
 

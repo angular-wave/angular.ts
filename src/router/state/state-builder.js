@@ -12,6 +12,7 @@ import {
   isDefined,
   isFunction,
   isString,
+  values,
 } from "../../shared/utils.js";
 import { stringify } from "../../shared/strings.js";
 import { is, pattern, val } from "../../shared/hof.js";
@@ -127,7 +128,7 @@ function getParamsBuilder(paramFactory) {
       (state.url && state.url.parameters({ inherit: false })) || []
     );
 
-    const nonUrlParams = Object.values(
+    const nonUrlParams = values(
       map(
         omit(
           state.params || {},

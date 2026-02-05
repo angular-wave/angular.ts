@@ -4,7 +4,7 @@ import {
   removeElementData,
   setCacheData,
 } from "../shared/dom.js";
-import { mergeClasses } from "../shared/utils.js";
+import { mergeClasses, values } from "../shared/utils.js";
 import {
   NG_ANIMATE_CLASSNAME,
   PREPARE_CLASS_SUFFIX,
@@ -476,7 +476,7 @@ export function AnimationProvider() {
           /** @type {Record<string, AnimationEntry>} */
           const anchorGroups = {};
 
-          Object.values(refLookup).forEach((operations) => {
+          values(refLookup).forEach((operations) => {
             const { from, to } = operations;
 
             if (!from || !to) {

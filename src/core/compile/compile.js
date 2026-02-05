@@ -39,6 +39,7 @@ import {
   nullObject,
   simpleCompare,
   trim,
+  values,
 } from "../../shared/utils.js";
 import { SCE_CONTEXTS } from "../../services/sce/sce.js";
 import { PREFIX_REGEXP } from "../../shared/constants.js";
@@ -559,10 +560,10 @@ export class CompileProvider {
     (function registerNativePropertyContexts() {
       /**
        * @param {string} ctx
-       * @param {any[]} values
+       * @param {any[]} items
        */
-      function registerContext(ctx, values) {
-        values.forEach((v) => {
+      function registerContext(ctx, items) {
+        items.forEach((v) => {
           PROP_CONTEXTS[v.toLowerCase()] = ctx;
         });
       }
@@ -1588,7 +1589,7 @@ export class CompileProvider {
 
             // Handle the init and destroy lifecycle hooks on all controllers that have them
             if (elementControllers) {
-              Object.values(elementControllers).forEach((controller) => {
+              values(elementControllers).forEach((controller) => {
                 const controllerInstance = controller.instance;
 
                 if (isFunction(controllerInstance.$onChanges)) {
@@ -1705,7 +1706,7 @@ export class CompileProvider {
 
             if (elementControllers) {
               // Trigger $postLink lifecycle hooks
-              Object.values(elementControllers).forEach((controller) => {
+              values(elementControllers).forEach((controller) => {
                 const controllerInstance = controller.instance;
 
                 if (isFunction(controllerInstance.$postLink)) {

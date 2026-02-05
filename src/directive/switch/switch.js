@@ -1,38 +1,44 @@
 import { $injectTokens } from "../../injection-tokens.js";
 import { domInsert } from "../../shared/dom.js";
-import { hasAnimate } from "../../shared/utils.js";
+import { hasAnimate, values } from "../../shared/utils.js";
+
+/**
+ * @typedef {object} NgSwitchBlock
+ * @property {Node} _clone
+ * @property {Comment} _comment
+ */
+
+class NgSwitchController {
+  constructor() {
+    /** @type {Record<string, { transclude: ng.TranscludeFn; element: Element;}[]>} */
+    this._cases = {};
+  }
+}
 
 ngSwitchDirective.$inject = [$injectTokens._animate];
 
 /**
  * @param {ng.AnimateService} $animate
- * @returns {ng.Directive}
+ * @returns {ng.Directive<NgSwitchController>}
  */
 export function ngSwitchDirective($animate) {
   return {
     require: "ngSwitch",
 
     // asks for $scope to fool the BC controller module
-    controller: [
-      $injectTokens._scope,
-      class {
-        constructor() {
-          this.cases = {};
-        }
-      },
-    ],
+    controller: NgSwitchController,
     link(scope, _element, attr, ngSwitchController) {
       const watchExpr = attr.ngSwitch || attr.on;
 
       let selectedTranscludes = [];
 
       /**
-       * @type {any[]}
+       * @type {NgSwitchBlock[]}
        */
       const selectedElements = [];
 
       /**
-       * @type {import("../../docs.js").AnimateRunner[]}
+       * @type {ng.AnimateRunner[]}
        */
       const previousLeaveAnimations = [];
 
@@ -67,16 +73,18 @@ export function ngSwitchDirective($animate) {
         }
 
         for (i = 0, ii = selectedScopes.length; i < ii; ++i) {
-          const selected = selectedElements[i].clone;
+          const selected = selectedElements[i]._clone;
 
           selectedScopes[i].$destroy();
 
           if (hasAnimate(selected)) {
-            runner = previousLeaveAnimations[i] = $animate.leave(selected);
+            runner = previousLeaveAnimations[i] = $animate.leave(
+              /** @type {HTMLElement} */ (selected),
+            );
 
             runner.done(spliceFactory(previousLeaveAnimations, i));
           } else {
-            selected.remove();
+            /** @type {HTMLElement} */ (selected).remove();
           }
         }
 
@@ -85,27 +93,27 @@ export function ngSwitchDirective($animate) {
 
         if (
           (selectedTranscludes =
-            ngSwitchController.cases[`!${value}`] ||
-            ngSwitchController.cases["?"])
+            ngSwitchController._cases[`!${value}`] ||
+            ngSwitchController._cases["?"])
         ) {
-          Object.values(selectedTranscludes).forEach((selectedTransclude) => {
+          values(selectedTranscludes).forEach((selectedTransclude) => {
             selectedTransclude.transclude(
               (
-                /** @type {Node} */ caseElement,
-                /** @type {any} */ selectedScope,
+                /** @type{HTMLElement} */ caseElement,
+                /** @type {ng.Scope} */ selectedScope,
               ) => {
                 selectedScopes.push(selectedScope);
                 const anchor = selectedTransclude.element;
 
-                // TODO removing this breaks repeater test
+                /** @type {NgSwitchBlock} */
                 const block = {
-                  clone: caseElement,
-                  comment: document.createComment(""),
+                  _clone: /** @type {Node} */ (caseElement),
+                  _comment: document.createComment(""),
                 };
 
                 selectedElements.push(block);
 
-                if (hasAnimate(caseElement)) {
+                if (hasAnimate(/** @type {Node} */ (caseElement))) {
                   if (runner) {
                     requestAnimationFrame(() => {
                       $animate.enter(
@@ -124,7 +132,7 @@ export function ngSwitchDirective($animate) {
                 } else {
                   domInsert(
                     /** @type {HTMLElement} */ (caseElement),
-                    anchor.parentElement,
+                    /** @type {HTMLElement} */ (anchor.parentElement),
                     anchor,
                   );
                 }
@@ -138,37 +146,35 @@ export function ngSwitchDirective($animate) {
 }
 
 /**
- * @returns {ng.Directive}
+ * @returns {ng.Directive<NgSwitchController>}
  */
 export function ngSwitchWhenDirective() {
   return {
     transclude: "element",
     terminal: true,
     priority: 1200,
-
     require: "^ngSwitch",
     link(scope, element, attrs, ctrl, $transclude) {
-      const cases = attrs.ngSwitchWhen
+      attrs.ngSwitchWhen
         .split(attrs.ngSwitchWhenSeparator)
         .sort()
         .filter(
           // Filter duplicate cases
           (elementParam, index, array) => array[index - 1] !== elementParam,
-        );
-
-      cases.forEach((whenCase) => {
-        ctrl.cases[`!${whenCase}`] = ctrl.cases[`!${whenCase}`] || [];
-        ctrl.cases[`!${whenCase}`].push({
-          transclude: $transclude,
-          element,
+        )
+        .forEach((whenCase) => {
+          ctrl._cases[`!${whenCase}`] = ctrl._cases[`!${whenCase}`] || [];
+          ctrl._cases[`!${whenCase}`].push({
+            transclude: /** @type {ng.TranscludeFn} */ ($transclude),
+            element,
+          });
         });
-      });
     },
   };
 }
 
 /**
- * @returns {ng.Directive}
+ * @returns {ng.Directive<NgSwitchController>}
  */
 export function ngSwitchDefaultDirective() {
   return {
@@ -177,8 +183,11 @@ export function ngSwitchDefaultDirective() {
     priority: 1200,
     require: "^ngSwitch",
     link(_scope, element, _attr, ctrl, $transclude) {
-      ctrl.cases["?"] = ctrl.cases["?"] || [];
-      ctrl.cases["?"].push({ transclude: $transclude, element });
+      ctrl._cases["?"] = ctrl._cases["?"] || [];
+      ctrl._cases["?"].push({
+        transclude: /** @type {ng.TranscludeFn} */ ($transclude),
+        element,
+      });
     },
   };
 }

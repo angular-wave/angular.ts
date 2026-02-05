@@ -6,6 +6,7 @@ import {
   isDefined,
   minErr,
   nullObject,
+  values,
 } from "../../shared/utils.js";
 import { getBlockNodes, removeElement } from "../../shared/dom.js";
 import { $injectTokens } from "../../injection-tokens.js";
@@ -270,7 +271,7 @@ export function ngRepeatDirective($animate) {
                 nextBlockOrder[index] = block;
               } else if (nextBlockMap[trackById]) {
                 // if collision detected. restore lastBlockMap and throw an error
-                Object.values(nextBlockOrder).forEach((x) => {
+                values(nextBlockOrder).forEach((x) => {
                   if (x && x.scope) lastBlockMap[x.id] = block;
                 });
                 throw ngRepeatMinErr(
