@@ -1,5 +1,7 @@
 export class Angular extends EventTarget {
   constructor(submodule?: boolean);
+  /** @private @type {Angular[]} */
+  private submodules;
   /** @private @type {boolean} */
   private _submodule;
   /** @private @type {!Array<string|any>} */

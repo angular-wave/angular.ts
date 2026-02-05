@@ -25,23 +25,14 @@ describe("angular", () => {
 
   describe("angular.init", () => {
     let bootstrapSpy;
-    let element;
+    let element = createElementFromHTML("<div></div>");
 
     beforeEach(() => {
-      element = {
-        hasAttribute(name) {
-          return !!element[name];
-        },
+      bootstrapSpy = spyOn(angular, "bootstrap").and.callThrough();
+    });
 
-        querySelector(arg) {
-          return element.querySelector[arg] || null;
-        },
-
-        getAttribute(name) {
-          return element[name];
-        },
-      };
-      bootstrapSpy = spyOn(window.angular, "bootstrap").and.callThrough();
+    afterEach(() => {
+      dealoc(element);
     });
 
     it("should do nothing when not found", () => {
@@ -59,16 +50,13 @@ describe("angular", () => {
 
     it("should look for ngApp directive using querySelectorAll", () => {
       window.angular.module("ABC", []);
-      element.querySelector["[ng-app]"] = createElementFromHTML(
-        '<div ng-app="ABC"></div>',
-      );
+      element = createElementFromHTML('<div><div ng-app="ABC"></div></div>');
       window.angular.init(element);
       expect(bootstrapSpy).toHaveBeenCalled();
     });
 
     it("should bootstrap anonymously", () => {
-      element.querySelector["[ng-app]"] =
-        createElementFromHTML("<div ng-app></div>");
+      element = createElementFromHTML("<div ng-app></div>");
       window.angular.init(element);
       expect(bootstrapSpy).toHaveBeenCalled();
     });
@@ -146,6 +134,31 @@ describe("angular", () => {
       }).toThrowError(/strictdi/);
 
       dealoc(appElement);
+    });
+  });
+
+  describe("angular.init with multiple apps", () => {
+    let element;
+
+    afterEach(() => {
+      dealoc(element);
+    });
+
+    it("should bootstrap multiple apps in the same document", () => {
+      element = createElementFromHTML(`<div>
+             <div ng-app>{{ 2 + 2 }}</div>
+             <div ng-app>{{ 3 + 3 }}</div>
+        </div>`);
+
+      window.angular.init(element);
+
+      expect(window.angular._submodule).toBeFalse();
+      expect(window.angular.submodules.length).toBe(1);
+      expect(window.angular.submodules[0]).toBeDefined();
+      expect(window.angular.submodules[0]._submodule).toBeTrue();
+      expect(window.angular.$injector).not.toBe(
+        window.angular.submodules[0].$injector,
+      );
     });
   });
 

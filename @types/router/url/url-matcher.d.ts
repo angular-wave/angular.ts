@@ -77,15 +77,15 @@ export class UrlMatcher {
    * @param {string} pattern The pattern to compile into a matcher.
    * @param {import("../params/param-types.js").ParamTypes} paramTypes The [[ParamTypes]] registry
    * @param {import("../params/param-factory.js").ParamFactory} paramFactory A [[ParamFactory]] object
-   * @param {import("./interface.js").UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
+   * @param {import("./interface.ts").UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
    */
   constructor(
     pattern: string,
     paramTypes: import("../params/param-types.js").ParamTypes,
     paramFactory: import("../params/param-factory.js").ParamFactory,
-    config: import("./interface.js").UrlMatcherCompileConfig,
+    config: import("./interface.ts").UrlMatcherCompileConfig,
   );
-  _cache: import("./interface.js").UrlMatcherCache;
+  _cache: import("./interface.ts").UrlMatcherCache;
   /**
    * @type {any[]}
    */
@@ -137,13 +137,13 @@ export class UrlMatcher {
    * @param {string} path The URL path to match, e.g. `$location.getPath()`.
    * @param {any} search URL search parameters, e.g. `$location.getSearch()`.
    * @param {string} hash URL hash e.g. `$location.getHash()`.
-   * @returns {import("../params/interface.js").RawParams | null} The captured parameter values.
+   * @returns {import("../params/interface.ts").RawParams | null} The captured parameter values.
    */
   exec(
     path: string,
     search: any,
     hash: string,
-  ): import("../params/interface.js").RawParams | null;
+  ): import("../params/interface.ts").RawParams | null;
   /**
    * @internal
    * Returns all the [[Param]] objects of all path and search parameters of this pattern in order of appearance.
@@ -165,10 +165,10 @@ export class UrlMatcher {
    *
    * Checks an object hash of parameters to validate their correctness according to the parameter
    * types of this `UrlMatcher`.
-   * @param {import("../params/interface.js").RawParams} params The object hash of parameters to validate.
+   * @param {import("../params/interface.ts").RawParams} params The object hash of parameters to validate.
    * @returns {boolean} Returns `true` if `params` validates, otherwise `false`.
    */
-  validates(params: import("../params/interface.js").RawParams): boolean;
+  validates(params: import("../params/interface.ts").RawParams): boolean;
   /**
    * Given a set of parameter values, creates a URL from this UrlMatcher.
    *
@@ -181,14 +181,14 @@ export class UrlMatcher {
    * // returns '/user/bob?q=yes'
    * ```
    *
-   * @param {import("../params/interface.js").RawParams} values  the values to substitute for the parameters in this pattern.
+   * @param {import("../params/interface.ts").RawParams} values  the values to substitute for the parameters in this pattern.
    * @returns the formatted URL (path and optionally search part).
    */
-  format(values?: import("../params/interface.js").RawParams): string;
+  format(values?: import("../params/interface.ts").RawParams): string;
 }
 export namespace UrlMatcher {
   let nameValidator: RegExp;
 }
-export type UrlMatcherCache = import("./interface.js").UrlMatcherCache;
+export type UrlMatcherCache = import("./interface.ts").UrlMatcherCache;
 export type ParamDetails = import("./interface.ts").ParamDetails;
 import { Param } from "../params/param.js";

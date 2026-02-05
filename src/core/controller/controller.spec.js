@@ -149,7 +149,7 @@ describe("$controller", () => {
       const BoundFooCtrl = FooCtrl.bind(null);
 
       $controllerProvider.register("FooCtrl", ["$scope", BoundFooCtrl]);
-      ctrl = $controller("FooCtrl", { $scope: scope });
+      $controller("FooCtrl", { $scope: scope });
 
       expect(scope.foo).toBe("bar");
     });

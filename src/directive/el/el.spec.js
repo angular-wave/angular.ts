@@ -1,7 +1,6 @@
 import { Angular } from "../../angular.js";
 import { dealoc } from "../../shared/dom.js";
 import { wait } from "../../shared/test-utils.js";
-import { ngElDirective } from "./el.js";
 
 describe("ngEl", () => {
   let $compile, $rootScope, el, $log;

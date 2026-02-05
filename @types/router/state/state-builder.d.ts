@@ -97,6 +97,6 @@ export class StateBuilder {
   /** @param {ng.StateObject} state*/
   name(state: ng.StateObject): string;
 }
-export type BuilderFunction = import("./interface.js").BuilderFunction;
-export type Builders = import("./interface.js").Builders;
+export type BuilderFunction = import("./interface.ts").BuilderFunction;
+export type Builders = import("./interface.ts").Builders;
 export type UrlMatcher = import("../url/url-matcher.js").UrlMatcher;

@@ -310,7 +310,7 @@ export class NgModelController {
     // combined state in this.$error[validationError] (used for forms),
     // where setting/unsetting only increments/decrements the value,
     // and does not replace it.
-    let combinedState = undefined;
+    let combinedState;
 
     if (this.$pending && this.$pending[validationErrorKey]) {
       combinedState = undefined;

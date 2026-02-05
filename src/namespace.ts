@@ -67,6 +67,7 @@ import {
   Expression as TExpression,
   PublicInjectionTokens,
   InvocationDetail as TInvocationDetail,
+  AngularServiceProvider as TAngularServiceProvider,
 } from "./interface.ts";
 import {
   SseService as TSseService,
@@ -173,6 +174,7 @@ declare global {
 
     // Providers
     export type AnchorScrollProvider = TAnchorScrollProvider;
+    export type AngularServiceProvider = TAngularServiceProvider;
     export type AnimateProvider = TAnimateProvider;
     export type FilterProvider = TFilterProvider;
     export type ExceptionHandlerProvider = TExceptionHandlerProvider;

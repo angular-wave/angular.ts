@@ -19,8 +19,8 @@ import { Resolvable } from "../resolve/resolvable.js";
 import { ng1ViewsBuilder } from "./views.js";
 import { annotate } from "../../core/di/di.js";
 
-/** @typedef {import("./interface.js").BuilderFunction} BuilderFunction */
-/** @typedef {import("./interface.js").Builders} Builders */
+/** @typedef {import("./interface.ts").BuilderFunction} BuilderFunction */
+/** @typedef {import("./interface.ts").Builders} Builders */
 /** @typedef {import("../url/url-matcher.js").UrlMatcher} UrlMatcher */
 
 /**
@@ -119,7 +119,7 @@ function getNavigableBuilder(rootFn) {
 function getParamsBuilder(paramFactory) {
   return function (/** @type {ng.BuiltStateDeclaration} */ state) {
     const makeConfigParam = (
-      /** @type {import("../params/interface.js").ParamDeclaration} */ _config,
+      /** @type {import("../params/interface.ts").ParamDeclaration} */ _config,
       /** @type {string | number} */ id,
     ) => paramFactory.fromConfig(/** @type {string} */ (id), null, state.self);
 
@@ -209,7 +209,7 @@ export function resolvablesBuilder(state, strictDi) {
   /** convert resolve: {} and resolvePolicy: {} objects to an array of tuples */
   const objects2Tuples = (
     /** @type {Record<string, any> | undefined} */ resolveObj,
-    /** @type {Record<string, import("../resolve/interface.js").ResolvePolicy>} */ resolvePolicies,
+    /** @type {Record<string, import("../resolve/interface.ts").ResolvePolicy>} */ resolvePolicies,
   ) =>
     Object.keys(resolveObj || {}).map((token) => ({
       token,
@@ -277,7 +277,7 @@ export function resolvablesBuilder(state, strictDi) {
     [
       (/** @type {{ val: unknown; }} */ x) => isString(x.val),
       (
-        /** @type {{ token: any; val: any; policy: import("../resolve/interface.js").ResolvePolicy | undefined; }} */ tuple,
+        /** @type {{ token: any; val: any; policy: import("../resolve/interface.ts").ResolvePolicy | undefined; }} */ tuple,
       ) =>
         new Resolvable(
           tuple.token,

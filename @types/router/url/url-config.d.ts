@@ -12,6 +12,11 @@
  * This API is found at `router.urlService.config` (see: [[UIRouter.urlService]], [[URLService.config]])
  */
 export class UrlConfigProvider {
+  static $inject: string[];
+  /**
+   * @param {ng.AngularServiceProvider} $angularProvider
+   */
+  constructor($angularProvider: ng.AngularServiceProvider);
   /** @type {ParamTypes} */
   paramTypes: ParamTypes;
   /** @type {boolean} */
