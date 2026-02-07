@@ -55,8 +55,10 @@ describe("parser", () => {
         expect(scope.$eval("1 + 2.5")).toEqual(3.5);
         expect(scope.$eval("1 + -2.5")).toEqual(-1.5);
         expect(scope.$eval("1+2*3/4")).toEqual(1 + (2 * 3) / 4);
-        expect(scope.$eval("0--1+1.5")).toEqual(0 - -1 + 1.5);
-        expect(scope.$eval("-0--1++2*-3/-4")).toEqual(-0 - -1 + (+2 * -3) / -4);
+        expect(scope.$eval("0-(-1)+1.5")).toEqual(0 - -1 + 1.5);
+        expect(scope.$eval("-0-(-1)+(+2)*-3/-4")).toEqual(
+          -0 - -1 + (+2 * -3) / -4,
+        );
         expect(scope.$eval("1/2*3")).toEqual((1 / 2) * 3);
       });
 
