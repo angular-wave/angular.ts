@@ -75,7 +75,16 @@ export class AST {
    * Parses a unary expression.
    * @returns {ASTNode} The unary expression node.
    */
+  /**
+   * Parses a unary / prefix update expression.
+   * @returns {ASTNode}
+   */
   _unary(): ASTNode;
+  /**
+   * Parses a postfix update expression.
+   * @returns {ASTNode}
+   */
+  _postfix(): ASTNode;
   /**
    * Parses a primary expression.
    * @returns {ASTNode} The primary expression node.

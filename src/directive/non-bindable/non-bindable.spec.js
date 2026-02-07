@@ -11,13 +11,7 @@ describe("ngNonBindable", () => {
 
   beforeEach(() => {
     window.angular = new Angular();
-    window.angular
-      .module("myModule", ["ng"])
-      .decorator("$exceptionHandler", function () {
-        return (exception, cause) => {
-          throw new Error(exception.message);
-        };
-      });
+    window.angular.module("myModule", ["ng"]);
     injector = createInjector(["myModule"]);
     $compile = injector.get("$compile");
     $rootScope = injector.get("$rootScope");

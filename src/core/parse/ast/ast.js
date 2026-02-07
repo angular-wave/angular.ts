@@ -274,19 +274,73 @@ export class AST {
    * Parses a unary expression.
    * @returns {ASTNode} The unary expression node.
    */
+  /**
+   * Parses a unary / prefix update expression.
+   * @returns {ASTNode}
+   */
   _unary() {
     let token;
 
+    // Prefix update: ++a / --a
+    if ((token = this._expect("++", "--"))) {
+      const argument = this._unary(); // allow ++(a.b) style nesting via recursion
+
+      if (!isAssignable(argument)) {
+        throw $parseMinErr(
+          "lval",
+          "Invalid left-hand side in prefix operation",
+        );
+      }
+
+      return {
+        type: ASTType._UpdateExpression,
+        operator: /** @type {Token} */ (token).text,
+        prefix: true,
+        argument,
+      };
+    }
+
+    // Existing unary: + - !
     if ((token = this._expect("+", "-", "!"))) {
       return {
         type: ASTType._UnaryExpression,
-        operator: /** @type {import("../lexer/lexer.js").Token} */ (token).text,
+        operator: /** @type {Token} */ (token).text,
         prefix: true,
         argument: this._unary(),
       };
     }
 
-    return this._primary();
+    // Leaf is postfix (primary + possible trailing ++/--)
+    return this._postfix();
+  }
+
+  /**
+   * Parses a postfix update expression.
+   * @returns {ASTNode}
+   */
+  _postfix() {
+    let expr = this._primary();
+
+    // Only one postfix update is allowed (JS also disallows chaining like a++++ in most contexts)
+    const token = this._expect("++", "--");
+
+    if (token) {
+      if (!isAssignable(expr)) {
+        throw $parseMinErr(
+          "lval",
+          "Invalid left-hand side in postfix operation",
+        );
+      }
+
+      expr = {
+        type: ASTType._UpdateExpression,
+        operator: /** @type {Token} */ (token).text,
+        prefix: false,
+        argument: expr,
+      };
+    }
+
+    return expr;
   }
 
   /**

@@ -352,6 +352,47 @@ export class ASTInterpreter {
       case ASTType._NGValueParameter:
         return (scope, locals, assign) =>
           context ? { value: assign } : assign;
+
+      case ASTType._UpdateExpression: {
+        // Must be assignable: Identifier or MemberExpression
+        // Reuse the "context mode" lvalue resolver that returns { context, name, value }
+        const ref = this.#recurse(
+          /** @type {ASTNode} */ (ast.argument),
+          true,
+          1,
+        );
+
+        const op = /** @type {"++"|"--"} */ (ast.operator);
+
+        const prefix = !!ast.prefix;
+
+        return (scope, locals, assign) => {
+          const lhs = ref(scope, locals, assign);
+
+          // No place to assign -> behave like JS (throw) rather than silently no-op
+          if (!lhs || isNullOrUndefined(lhs.context)) {
+            throw new Error(
+              `${op} operand is not assignable (context is ${lhs?.context})`,
+            );
+          }
+
+          // JS-style numeric coercion
+          const oldNum = Number(lhs.value);
+
+          const newNum = op === "++" ? oldNum + 1 : oldNum - 1;
+
+          // Write back (same proxy handling as AssignmentExpression)
+          const ctx = isProxy(lhs.context)
+            ? lhs.context
+            : (lhs.context.$proxy ?? lhs.context);
+
+          ctx[lhs.name] = newNum;
+
+          const out = prefix ? newNum : oldNum;
+
+          return context ? { value: out } : out;
+        };
+      }
     }
 
     throw new Error(`Unknown AST type ${ast.type}`);
@@ -1043,6 +1084,19 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
       decoratedNode.toWatch = [];
 
       return decoratedNode;
+    case ASTType._UpdateExpression: {
+      // side-effectful, not constant
+      findConstantAndWatchExpressions(
+        /** @type {ASTNode} */ (/** @type {ExpressionNode} */ (ast).argument),
+        $filter,
+        false, // force impurity downwards
+      );
+
+      decoratedNode.constant = false;
+      decoratedNode.toWatch = [decoratedNode]; // treat like assignment: watch the expression
+
+      return decoratedNode;
+    }
     default:
       throw new Error(`Unknown AST node type: ${ast.type}`);
   }
@@ -1130,6 +1184,8 @@ function isPure(node, parentIsPure) {
 
     // Functions / filters probably read state from within objects
     case ASTType._CallExpression:
+      return false;
+    case ASTType._UpdateExpression:
       return false;
   }
 

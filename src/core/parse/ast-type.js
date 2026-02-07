@@ -20,4 +20,5 @@ export const ASTType = {
   _ThisExpression: 15,
   _LocalsExpression: 16,
   _NGValueParameter: 17,
+  _UpdateExpression: 18,
 };
