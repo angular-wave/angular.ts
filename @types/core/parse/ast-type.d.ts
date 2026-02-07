@@ -17,4 +17,5 @@ export namespace ASTType {
   let _ThisExpression: number;
   let _LocalsExpression: number;
   let _NGValueParameter: number;
+  let _UpdateExpression: number;
 }
