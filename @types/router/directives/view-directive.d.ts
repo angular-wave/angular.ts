@@ -5,13 +5,13 @@
  * @param {ng.InterpolateService} $interpolate
  * @returns {ng.Directive}
  */
-export function $ViewDirective(
+export function ViewDirective(
   $view: ng.ViewService,
   $animate: ng.AnimateService,
   $anchorScroll: ng.AnchorScrollService,
   $interpolate: ng.InterpolateService,
 ): ng.Directive;
-export namespace $ViewDirective {
+export namespace ViewDirective {
   let $inject: string[];
 }
 /**
@@ -20,12 +20,12 @@ export namespace $ViewDirective {
  * @param {ng.TransitionService} $transitions
  * @return {ng.Directive}
  */
-export function $ViewDirectiveFill(
+export function ViewDirectiveFill(
   $compile: ng.CompileService,
   $controller: ng.ControllerService,
   $transitions: ng.TransitionService,
 ): ng.Directive;
-export namespace $ViewDirectiveFill {
+export namespace ViewDirectiveFill {
   let $inject_1: string[];
   export { $inject_1 as $inject };
 }

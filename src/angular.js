@@ -35,14 +35,14 @@ const STRICT_DI = "strict-di";
 const moduleRegistry = {};
 
 export class Angular extends EventTarget {
-  constructor(submodule = false) {
+  constructor(subapp = false) {
     super();
 
     /** @private @type {Angular[]} */
-    this.submodules = [];
+    this.subapps = [];
 
     /** @private @type {boolean} */
-    this._submodule = submodule;
+    this._subapp = subapp;
 
     /** @private @type {!Array<string|any>} */
     this._bootsrappedModules = [];
@@ -87,8 +87,8 @@ export class Angular extends EventTarget {
       /** @type {any} */ (this.$t)[i] = i;
     });
 
-    // do not override window.angular for submodules
-    if (!submodule) {
+    // do not override window.angular for subapps, only for the root app
+    if (!subapp) {
       window.angular = this;
     }
     registerNgModule(this);
@@ -472,7 +472,7 @@ export class Angular extends EventTarget {
       if (multimode) {
         const submodule = new Angular(true);
 
-        this.submodules.push(submodule);
+        this.subapps.push(submodule);
         submodule.bootstrap(app._element, app._module ? [app._module] : [], {
           strictDi,
         });

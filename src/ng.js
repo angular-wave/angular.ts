@@ -105,13 +105,13 @@ import { ngWasmDirective } from "./directive/wasm/wasm.js";
 import { ngWorkerDirective } from "./directive/worker/worker.js";
 import { trace } from "./router/common/trace.js";
 import {
-  $StateRefActiveDirective,
-  $StateRefDirective,
-  $StateRefDynamicDirective,
+  StateRefActiveDirective,
+  StateRefDirective,
+  StateRefDynamicDirective,
 } from "./router/directives/state-directives.js";
 import {
-  $ViewDirectiveFill,
-  $ViewDirective,
+  ViewDirectiveFill,
+  ViewDirective,
 } from "./router/directives/view-directive.js";
 import { RouterProvider } from "./router/router.js";
 import { StateProvider } from "./router/state/state-service.js";
@@ -157,7 +157,7 @@ export function registerNgModule(angular) {
             $$sanitizeUri: SanitizeUriProvider,
           });
           $provide.provider(
-            "$angular",
+            $t._angular,
             class Test {
               $get = () => angular;
             },
@@ -245,14 +245,14 @@ export function registerNgModule(angular) {
               ngRequired: ngRequiredAriaDirective,
               ngValue: ngValueAriaDirective,
               // router directives
-              ngSref: $StateRefDirective,
-              ngSrefActive: $StateRefActiveDirective,
-              ngSrefActiveEq: $StateRefActiveDirective,
-              ngState: $StateRefDynamicDirective,
-              ngView: $ViewDirective,
+              ngSref: StateRefDirective,
+              ngSrefActive: StateRefActiveDirective,
+              ngSrefActiveEq: StateRefActiveDirective,
+              ngState: StateRefDynamicDirective,
+              ngView: ViewDirective,
             })
             .directive({
-              ngView: $ViewDirectiveFill,
+              ngView: ViewDirectiveFill,
             })
             .directive(ngAttributeAliasDirectives)
             .directive(ngEventDirectives);

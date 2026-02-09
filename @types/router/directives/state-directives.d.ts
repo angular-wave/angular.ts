@@ -4,12 +4,12 @@
  * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
-export function $StateRefDirective(
+export function StateRefDirective(
   $stateService: ng.StateService,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
 ): ng.Directive;
-export namespace $StateRefDirective {
+export namespace StateRefDirective {
   let $inject: string[];
 }
 /**
@@ -18,12 +18,12 @@ export namespace $StateRefDirective {
  * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
-export function $StateRefDynamicDirective(
+export function StateRefDynamicDirective(
   $state: ng.StateService,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
 ): ng.Directive;
-export namespace $StateRefDynamicDirective {
+export namespace StateRefDynamicDirective {
   let $inject_1: string[];
   export { $inject_1 as $inject };
 }
@@ -35,14 +35,14 @@ export namespace $StateRefDynamicDirective {
  * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
-export function $StateRefActiveDirective(
+export function StateRefActiveDirective(
   $state: ng.StateService,
   $router: ng.RouterService,
   $interpolate: ng.InterpolateService,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
 ): ng.Directive;
-export namespace $StateRefActiveDirective {
+export namespace StateRefActiveDirective {
   let $inject_2: string[];
   export { $inject_2 as $inject };
 }
