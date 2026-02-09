@@ -412,6 +412,42 @@ describe("parser", () => {
         expect(scope.a).toBe(2);
       });
 
+      it("should evaluate update expressions", () => {
+        scope.a = 1;
+
+        // postfix returns old value
+        expect(scope.$eval("a++")).toBe(1);
+        expect(scope.a).toBe(2);
+
+        // prefix returns new value
+        expect(scope.$eval("++a")).toBe(3);
+        expect(scope.a).toBe(3);
+
+        // decrement forms
+        expect(scope.$eval("a--")).toBe(3);
+        expect(scope.a).toBe(2);
+
+        expect(scope.$eval("--a")).toBe(1);
+        expect(scope.a).toBe(1);
+      });
+
+      it("should evaluate update expressions on member access", () => {
+        scope.obj = { n: 5 };
+
+        expect(scope.$eval("obj.n++")).toBe(5);
+        expect(scope.obj.n).toBe(6);
+
+        expect(scope.$eval("++obj.n")).toBe(7);
+        expect(scope.obj.n).toBe(7);
+
+        scope.key = "n";
+        expect(scope.$eval("obj[key]--")).toBe(7);
+        expect(scope.obj.n).toBe(6);
+
+        expect(scope.$eval("--obj[key]")).toBe(5);
+        expect(scope.obj.n).toBe(5);
+      });
+
       it("should evaluate function call without arguments", () => {
         scope.const = function (a, b) {
           return 123;

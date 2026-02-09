@@ -740,12 +740,12 @@ describe("ngView", () => {
   //     scope.shouldShow = true;
   //     ;
 
-  //     // $ViewDirective enter animation - Basically it's just the <!-- ngView --> comment
+  //     // ViewDirective enter animation - Basically it's just the <!-- ngView --> comment
   //     animation = $animate.queue.shift();
   //     expect(animation.event).toBe("enter");
   //     expect(animation.element.textContent).toBe("");
 
-  //     // $ViewDirectiveFill enter animation - The second ngView directive that files in the content
+  //     // ViewDirectiveFill enter animation - The second ngView directive that files in the content
   //     animation = $animate.queue.shift();
   //     expect(animation.event).toBe("enter");
   //     expect(animation.element.textContent).toBe(content);

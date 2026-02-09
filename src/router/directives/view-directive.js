@@ -139,7 +139,7 @@ import { $injectTokens } from "../../injection-tokens.js";
  * ```
  */
 
-$ViewDirective.$inject = [
+ViewDirective.$inject = [
   $injectTokens._view,
   $injectTokens._animate,
   $injectTokens._anchorScroll,
@@ -153,7 +153,7 @@ $ViewDirective.$inject = [
  * @param {ng.InterpolateService} $interpolate
  * @returns {ng.Directive}
  */
-export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
+export function ViewDirective($view, $animate, $anchorScroll, $interpolate) {
   function getRenderer() {
     return {
       /**
@@ -383,7 +383,7 @@ export function $ViewDirective($view, $animate, $anchorScroll, $interpolate) {
   return directive;
 }
 
-$ViewDirectiveFill.$inject = [
+ViewDirectiveFill.$inject = [
   $injectTokens._compile,
   $injectTokens._controller,
   $injectTokens._transitions,
@@ -395,7 +395,7 @@ $ViewDirectiveFill.$inject = [
  * @param {ng.TransitionService} $transitions
  * @return {ng.Directive}
  */
-export function $ViewDirectiveFill($compile, $controller, $transitions) {
+export function ViewDirectiveFill($compile, $controller, $transitions) {
   const getControllerAs = parse("viewDecl.controllerAs");
 
   const getResolveAs = parse("viewDecl.resolveAs");

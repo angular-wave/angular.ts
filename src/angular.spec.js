@@ -152,12 +152,12 @@ describe("angular", () => {
 
       window.angular.init(element);
 
-      expect(window.angular._submodule).toBeFalse();
-      expect(window.angular.submodules.length).toBe(1);
-      expect(window.angular.submodules[0]).toBeDefined();
-      expect(window.angular.submodules[0]._submodule).toBeTrue();
+      expect(window.angular._subapp).toBeFalse();
+      expect(window.angular.subapps.length).toBe(1);
+      expect(window.angular.subapps[0]).toBeDefined();
+      expect(window.angular.subapps[0]._submodule).toBeTrue();
       expect(window.angular.$injector).not.toBe(
-        window.angular.submodules[0].$injector,
+        window.angular.subapps[0].$injector,
       );
     });
 

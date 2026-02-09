@@ -160,7 +160,7 @@ function bindEvents(element, scope, hookFn, ngStateOpts) {
 
 // // TODO: SEPARATE THESE OUT
 
-$StateRefDirective.$inject = [
+StateRefDirective.$inject = [
   $injectTokens._state,
   $injectTokens._stateRegistry,
   $injectTokens._transitions,
@@ -172,11 +172,7 @@ $StateRefDirective.$inject = [
  * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
-export function $StateRefDirective(
-  $stateService,
-  $stateRegistry,
-  $transitions,
-) {
+export function StateRefDirective($stateService, $stateRegistry, $transitions) {
   const $state = $stateService;
 
   return {
@@ -252,7 +248,7 @@ export function $StateRefDirective(
   };
 }
 
-$StateRefDynamicDirective.$inject = [
+StateRefDynamicDirective.$inject = [
   $injectTokens._state,
   $injectTokens._stateRegistry,
   $injectTokens._transitions,
@@ -264,11 +260,7 @@ $StateRefDynamicDirective.$inject = [
  * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
-export function $StateRefDynamicDirective(
-  $state,
-  $stateRegistry,
-  $transitions,
-) {
+export function StateRefDynamicDirective($state, $stateRegistry, $transitions) {
   return {
     restrict: "A",
     require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
@@ -336,7 +328,7 @@ export function $StateRefDynamicDirective(
   };
 }
 
-$StateRefActiveDirective.$inject = [
+StateRefActiveDirective.$inject = [
   $injectTokens._state,
   $injectTokens._router,
   $injectTokens._interpolate,
@@ -352,7 +344,7 @@ $StateRefActiveDirective.$inject = [
  * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
-export function $StateRefActiveDirective(
+export function StateRefActiveDirective(
   $state,
   $router,
   $interpolate,
