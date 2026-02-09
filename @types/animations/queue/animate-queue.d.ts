@@ -13,7 +13,7 @@ export class AnimateQueueProvider {
    * @constructor
    */
   constructor($animateProvider: import("../animate.js").AnimateProvider);
-  rules: import("../../shared/interface.ts").Dict<any>;
+  rules: Record<string, any>;
   $get: (
     | string
     | ((

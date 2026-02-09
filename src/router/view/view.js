@@ -89,7 +89,7 @@ export class ViewService {
   }
 
   sync() {
-    /** @type {import("../../shared/interface.ts").Dict<import("./interface.ts").ActiveUIView>} */
+    /** @type {Record<string, import("./interface.ts").ActiveUIView>} */
     const ngViewsByFqn = this._ngViews
       .map((uiv) => [uiv.fqn, uiv])
       .reduce(applyPairs, {});
@@ -306,7 +306,7 @@ export class ViewService {
  */
 ViewService.matches =
   (
-    /** @type {import("../../shared/interface.ts").Dict<ActiveUIView>} */ ngViewsByFqn,
+    /** @type {Record<string, ActiveUIView>} */ ngViewsByFqn,
     /** @type {ActiveUIView} */ ngView,
   ) =>
   (/** @type {ViewConfig} */ viewConfig) => {

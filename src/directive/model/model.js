@@ -152,7 +152,7 @@ export class NgModelController {
     /** @type {Record<string, boolean>} */
     this._success = {}; // keep valid keys here
     /**
-     * @type {import("../../shared/interface.ts").Dict<any> | undefined}
+     * @type {Record<string, any> | undefined}
      */
     this.$pending = undefined; // keep pending keys here
     this.$name = /** @type {ng.InterpolationFunction} */ (

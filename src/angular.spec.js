@@ -155,7 +155,7 @@ describe("angular", () => {
       expect(window.angular._subapp).toBeFalse();
       expect(window.angular.subapps.length).toBe(1);
       expect(window.angular.subapps[0]).toBeDefined();
-      expect(window.angular.subapps[0]._submodule).toBeTrue();
+      expect(window.angular.subapps[0]._subapp).toBeTrue();
       expect(window.angular.$injector).not.toBe(
         window.angular.subapps[0].$injector,
       );
@@ -169,7 +169,7 @@ describe("angular", () => {
 
       window.angular.init(element);
 
-      expect(window.angular.submodules[0].$eventBus).toBe(
+      expect(window.angular.subapps[0].$eventBus).toBe(
         window.angular.$eventBus,
       );
     });

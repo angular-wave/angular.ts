@@ -157,7 +157,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
          * @param {HTMLElement} anchor
          */
         function calculateAnchorStyles(anchor) {
-          /** @type {import("../shared/interface.ts").Dict<string>} */
+          /** @type {Record<string, string>} */
           const styles = {};
 
           const coords = anchor.getBoundingClientRect();
