@@ -132,7 +132,7 @@ export namespace ViewService {
    * @internal
    */
   function matches(
-    ngViewsByFqn: import("../../shared/interface.ts").Dict<ActiveUIView>,
+    ngViewsByFqn: Record<string, ActiveUIView>,
     ngView: ActiveUIView,
   ): (/** @type {ViewConfig} */ viewConfig: ViewConfig) => boolean;
 }

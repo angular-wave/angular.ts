@@ -142,7 +142,7 @@ export function createHttpDirective(method, attrName) {
 
       const formData = new FormData(form);
 
-      /** @type {import("../../shared/interface.ts").Dict<any>} */
+      /** @type {Record<string, any>} */
       const data = {};
 
       formData.forEach((value, key) => {

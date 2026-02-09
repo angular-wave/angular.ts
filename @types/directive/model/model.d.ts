@@ -95,9 +95,9 @@ export class NgModelController {
   /** @type {Record<string, boolean>} */
   _success: Record<string, boolean>;
   /**
-   * @type {import("../../shared/interface.ts").Dict<any> | undefined}
+   * @type {Record<string, any> | undefined}
    */
-  $pending: import("../../shared/interface.ts").Dict<any> | undefined;
+  $pending: Record<string, any> | undefined;
   $name: any;
   _parentForm: {
     $nonscope: boolean;

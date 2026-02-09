@@ -45,7 +45,7 @@ export function AnimateQueueProvider($animateProvider) {
 
   const ONE_SPACE = " ";
 
-  /** @type {import("../../shared/interface.ts").Dict<any>} */
+  /** @type {Record<string, any>} */
   const rules = (this.rules = {
     skip: [],
     cancel: [],

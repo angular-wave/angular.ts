@@ -1,4 +1,3 @@
-import { Dict } from "../../shared/interface.ts";
 export interface HttpHeadersGetter {
   (): {
     [name: string]: string;
@@ -117,12 +116,12 @@ export interface RequestConfig extends RequestShortcutConfig {
    * Event listeners to be bound to the XMLHttpRequest object.
    * To bind events to the XMLHttpRequest upload object, use uploadEventHandlers. The handler will be called in the context of a $apply block.
    */
-  eventHandlers?: Dict<EventListenerOrEventListenerObject>;
+  eventHandlers?: Record<string, EventListenerOrEventListenerObject>;
   /**
    * Event listeners to be bound to the XMLHttpRequest upload object.
    * To bind events to the XMLHttpRequest object, use eventHandlers. The handler will be called in the context of a $apply block.
    */
-  uploadEventHandlers?: Dict<EventListenerOrEventListenerObject>;
+  uploadEventHandlers?: Record<string, EventListenerOrEventListenerObject>;
 }
 export type HttpResponseStatus = "complete" | "error" | "timeout" | "abort";
 export interface HttpResponse<T> {

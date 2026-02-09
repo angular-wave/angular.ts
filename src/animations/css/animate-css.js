@@ -84,7 +84,7 @@ function computeCssStyles(element, properties) {
   const styles = nullObject();
 
   const detectedStyles =
-    /** @type {CSSStyleDeclaration & import("../../shared/interface.ts").Dict<string>} */
+    /** @type {CSSStyleDeclaration & Record<string, string>} */
     (window.getComputedStyle(element) || {});
 
   entries(properties).forEach(([actualStyleName, formalStyleName]) => {
