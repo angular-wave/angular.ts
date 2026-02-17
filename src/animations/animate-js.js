@@ -1,6 +1,6 @@
 import { isArray, isFunction, isObject } from "../shared/utils.js";
 import {
-  applyAnimationClassesFactory,
+  applyAnimationClasses,
   applyAnimationStyles,
   prepareAnimationOptions,
 } from "./shared.js";
@@ -20,8 +20,6 @@ export function AnimateJsProvider($animateProvider) {
      * @returns {import("./interface.ts").AnimateJsFn}
      */
     ($injector) => {
-      const applyAnimationClasses = applyAnimationClassesFactory();
-
       /**
        * @param {HTMLElement} element
        * @param {string} event

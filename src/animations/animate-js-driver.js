@@ -7,7 +7,7 @@ AnimateJsDriverProvider.$inject = provider([$injectTokens._animation]);
  * @param {import("./animation.js").AnimationProvider} $$animationProvider
  */
 export function AnimateJsDriverProvider($$animationProvider) {
-  $$animationProvider.drivers.push($injectTokens._animateJsDriver);
+  $$animationProvider._drivers.push($injectTokens._animateJsDriver);
   this.$get = [
     $injectTokens._animateJs,
     /**
