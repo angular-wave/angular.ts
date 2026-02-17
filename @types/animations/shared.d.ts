@@ -28,10 +28,10 @@ export function pendClasses(
 export function stripCommentsFromElement(
   element: NodeList | Node,
 ): Node[] | Node | undefined;
-export function applyAnimationClassesFactory(): (
-  /** @type {HTMLElement} */ element: HTMLElement,
-  /** @type {ng.AnimationOptions} */ options: ng.AnimationOptions,
-) => void;
+export function applyAnimationClasses(
+  element: HTMLElement,
+  options: ng.AnimationOptions,
+): void;
 /**
  * @param {ng.AnimationOptions | undefined} options
  */

@@ -14,7 +14,7 @@ import {
 } from "../../shared/utils.js";
 import {
   NG_ANIMATE_CHILDREN_DATA,
-  applyAnimationClassesFactory,
+  applyAnimationClasses,
   applyAnimationStyles,
   applyGeneratedPreparationClasses,
   clearGeneratedClasses,
@@ -277,8 +277,6 @@ export function AnimateQueueProvider($animateProvider) {
 
             return classNameFilter.test(className);
           };
-
-      const applyAnimationClasses = applyAnimationClassesFactory();
 
       /**
        * @param {HTMLElement} element

@@ -1,6 +1,8 @@
-export function AnimationProvider(): void;
 export class AnimationProvider {
-  drivers: string[];
+  /**
+   * @type {string[]}
+   */
+  _drivers: string[];
   $get: (
     | string
     | ((
@@ -8,6 +10,7 @@ export class AnimationProvider {
         $injector: ng.InjectorService,
       ) => import("./interface.ts").AnimationService)
   )[];
+  #private;
 }
 export type SortedAnimationEntry =
   import("./interface.ts").SortedAnimationEntry;

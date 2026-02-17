@@ -19,7 +19,7 @@ import {
   ADD_CLASS_SUFFIX,
   EVENT_CLASS_PREFIX,
   REMOVE_CLASS_SUFFIX,
-  applyAnimationClassesFactory,
+  applyAnimationClasses,
   applyAnimationFromStyles,
   applyAnimationStyles,
   applyAnimationToStyles,
@@ -205,8 +205,6 @@ export function AnimateCssProvider() {
      * @returns {ng.AnimateCssService}
      */
     () => {
-      const applyAnimationClasses = applyAnimationClassesFactory();
-
       /**
        * @param {any} node
        * @param {string} cacheKey

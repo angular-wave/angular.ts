@@ -54,21 +54,19 @@ export function stripCommentsFromElement(element) {
   }
 }
 
-export function applyAnimationClassesFactory() {
-  return function (
-    /** @type {HTMLElement} */ element,
-    /** @type {ng.AnimationOptions} */ options,
-  ) {
-    if (options.addClass) {
-      element.classList.add(...options.addClass.trim().split(" "));
-      options.addClass = undefined;
-    }
+export function applyAnimationClasses(
+  /** @type {HTMLElement} */ element,
+  /** @type {ng.AnimationOptions} */ options,
+) {
+  if (options.addClass) {
+    element.classList.add(...options.addClass.trim().split(" "));
+    options.addClass = undefined;
+  }
 
-    if (options.removeClass) {
-      element.classList.remove(...options.removeClass.trim().split(" "));
-      options.removeClass = undefined;
-    }
-  };
+  if (options.removeClass) {
+    element.classList.remove(...options.removeClass.trim().split(" "));
+    options.removeClass = undefined;
+  }
 }
 
 /**

@@ -19,7 +19,7 @@ AnimateCssDriverProvider.$inject = provider([$injectTokens._animation]);
  * @param {import("./animation.js").AnimationProvider} $$animationProvider
  */
 export function AnimateCssDriverProvider($$animationProvider) {
-  $$animationProvider.drivers.push($injectTokens._animateCssDriver);
+  $$animationProvider._drivers.push($injectTokens._animateCssDriver);
 
   /**
    * @param {Element} node
