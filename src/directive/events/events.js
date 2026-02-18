@@ -10,7 +10,7 @@ import { $injectTokens as $t } from "../../injection-tokens.js";
  */
 export const ngEventDirectives = {};
 
-"click copy cut dblclick focus blur keydown keyup load mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste submit touchstart touchend touchmove"
+"blur change click copy cut dblclick focus input keydown keyup load mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste submit touchstart touchend touchmove"
   .split(" ")
   .forEach((eventName) => {
     const directiveName = directiveNormalize(`ng-${eventName}`);
