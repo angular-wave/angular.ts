@@ -2,6 +2,7 @@ import { Angular } from "../../angular.js";
 import { createInjector } from "../../core/di/injector.js";
 import { dealoc } from "../../shared/dom.js";
 import { browserTrigger, wait } from "../../shared/test-utils.js";
+import { createWindowEventDirective } from "./events.js";
 
 describe("event directives", () => {
   let angular;
@@ -9,6 +10,8 @@ describe("event directives", () => {
   let injector;
   let $rootScope;
   let $compile;
+  let $parse;
+  let $exceptionHandler;
   let logs = [];
   let app = document.getElementById("app");
 
@@ -23,9 +26,11 @@ describe("event directives", () => {
         };
       });
     injector = createInjector(["myModule"]).invoke(
-      (_$rootScope_, _$compile_) => {
+      (_$rootScope_, _$compile_, _$parse_, _$exceptionHandler_) => {
         $rootScope = _$rootScope_;
         $compile = _$compile_;
+        $parse = _$parse_;
+        $exceptionHandler = _$exceptionHandler_;
       },
     );
   });
@@ -138,6 +143,40 @@ describe("event directives", () => {
       // expect(scope.e.target).toBe(element);
       expect(scope.e.target).toBeDefined();
     });
+  });
+
+  it("should remove the event listener when the scope is destroyed", async () => {
+    const scope = $rootScope.$new();
+    const el = document.createElement("button");
+    el.setAttribute("ng-click", "clicked = true");
+    spyOn(el, "addEventListener").and.callThrough();
+    spyOn(el, "removeEventListener").and.callThrough();
+
+    element = $compile(el)(scope);
+    await wait();
+
+    expect(el.addEventListener).toHaveBeenCalledWith(
+      "click",
+      jasmine.any(Function),
+    );
+    const handler = el.addEventListener.calls.mostRecent().args[1];
+
+    scope.$destroy();
+
+    expect(el.removeEventListener).toHaveBeenCalledWith("click", handler);
+  });
+
+  it("should expose keyboard event information to handlers", async () => {
+    const scope = $rootScope.$new();
+    element = $compile('<input type="text" ng-keydown="lastKey = $event.key">')(
+      scope,
+    );
+    await wait();
+
+    browserTrigger(element, { type: "keydown", key: "Enter" });
+    await wait();
+
+    expect(scope.lastKey).toEqual("Enter");
   });
 
   describe("blur", () => {
@@ -260,6 +299,73 @@ describe("event directives", () => {
       await wait();
       expect(logs[0]).toEqual("listener error");
       expect(logs[1]).toEqual("done");
+    });
+  });
+
+  describe("createWindowEventDirective", () => {
+    it("should register and remove window listeners", () => {
+      const windowSpy = {
+        addEventListener: jasmine.createSpy("addEventListener"),
+        removeEventListener: jasmine.createSpy("removeEventListener"),
+      };
+      const directive = createWindowEventDirective(
+        $parse,
+        $exceptionHandler,
+        windowSpy,
+        "ngWindowResize",
+        "resize",
+      );
+      const attr = { ngWindowResize: "onResize($event)" };
+      const link = directive.compile(null, attr);
+      const scope = $rootScope.$new();
+      scope.onResize = jasmine.createSpy("onResize");
+
+      link(scope);
+
+      expect(windowSpy.addEventListener).toHaveBeenCalledWith(
+        "resize",
+        jasmine.any(Function),
+      );
+      const handler = windowSpy.addEventListener.calls.mostRecent().args[1];
+
+      const event = { type: "resize" };
+      handler(event);
+
+      expect(scope.onResize).toHaveBeenCalledWith(event);
+
+      scope.$destroy();
+
+      expect(windowSpy.removeEventListener).toHaveBeenCalledWith(
+        "resize",
+        handler,
+      );
+    });
+
+    it("should delegate window listener errors to $exceptionHandler", () => {
+      const windowSpy = {
+        addEventListener: jasmine.createSpy("addEventListener"),
+        removeEventListener: jasmine.createSpy("removeEventListener"),
+      };
+      const directive = createWindowEventDirective(
+        $parse,
+        $exceptionHandler,
+        windowSpy,
+        "ngWindowResize",
+        "resize",
+      );
+      const attr = { ngWindowResize: "boom()" };
+      const link = directive.compile(null, attr);
+      const scope = $rootScope.$new();
+      scope.boom = () => {
+        throw new Error("window listener error");
+      };
+
+      link(scope);
+
+      const handler = windowSpy.addEventListener.calls.mostRecent().args[1];
+      handler({ type: "resize" });
+
+      expect(logs).toEqual(["window listener error"]);
     });
   });
 });
