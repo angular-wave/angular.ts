@@ -1959,11 +1959,20 @@ export class CompileProvider {
                 if (!isObject(directiveValue)) {
                   //
                   // Clone childnodes before clearing contents on transcluded directives
-                  nodes = compileNode.cloneNode(true).childNodes;
+                  // Create a temporary container to preserve separate text nodes without browser normalization
+                  // (see https://github.com/angular/angular.js/issues/14924)
+                  const tempContainer = document.createElement("div");
+
+                  Array.from(compileNode.childNodes).forEach((node) => {
+                    tempContainer.appendChild(node.cloneNode(true));
+                  });
+                  nodes = tempContainer.childNodes;
                 } else {
                   // We have transclusion slots,
                   // collect them up, compile them and store their transclusion functions
-                  nodes = document.createDocumentFragment();
+                  // Use a temporary container to preserve separate text nodes without browser normalization
+                  // (see https://github.com/angular/angular.js/issues/14924)
+                  const tempContainer = document.createElement("div");
 
                   const slotMap = nullObject();
 
@@ -1992,8 +2001,15 @@ export class CompileProvider {
                     },
                   );
 
+                  // Clone childnodes before distributing to slots
+                  // Clone each node individually to prevent browser DOM normalization
+                  // which can merge adjacent text nodes (see https://github.com/angular/angular.js/issues/14924)
+                  const clonedChildNodes = Array.from(
+                    compileNode.childNodes,
+                  ).map((node) => node.cloneNode(true));
+
                   // Add the matching elements into their slot
-                  compileNodeRef.element.childNodes.forEach((node) => {
+                  clonedChildNodes.forEach((node) => {
                     const slotName =
                       slotMap[
                         directiveNormalize(
@@ -2007,7 +2023,7 @@ export class CompileProvider {
                         slots[slotName] || document.createDocumentFragment();
                       slots[slotName].appendChild(node);
                     } else {
-                      /** @type {DocumentFragment} */ (nodes).appendChild(node);
+                      tempContainer.appendChild(node);
                     }
                   });
 
@@ -2025,6 +2041,7 @@ export class CompileProvider {
                   for (const slotName in slots) {
                     if (slots[slotName]) {
                       // Only define a transclusion function if the slot was filled
+                      // Convert to static array to prevent DOM normalization of text nodes
                       const slotCompileNodes = slots[slotName].childNodes;
 
                       slots[slotName] = compilationGenerator(
@@ -2038,7 +2055,7 @@ export class CompileProvider {
                     }
                   }
 
-                  nodes = nodes.childNodes;
+                  nodes = tempContainer.childNodes;
                 }
 
                 emptyElement(/** @type {Element} */ (compileNode)); // clear contents on transcluded directives
