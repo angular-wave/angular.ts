@@ -13785,7 +13785,7 @@ describe("$compile", () => {
     });
   });
 
-  xdescribe("multi-slot transclude", () => {
+  describe("multi-slot transclude", () => {
     it("should only include elements without a matching transclusion element in default transclusion slot", async () => {
       module.directive("minionComponent", () => ({
         restrict: "E",
@@ -13886,8 +13886,8 @@ describe("$compile", () => {
       )($rootScope);
       await wait();
       expect(element.firstChild.innerText).toEqual("gru");
-      expect(element.children()[1].innerText).toEqual("stuartkevin");
-      expect(element.children()[2].innerText).toEqual("dorothy");
+      expect(element.children[1].innerText).toEqual("stuartkevin");
+      expect(element.children[2].innerText).toEqual("dorothy");
     });
 
     it("should use the `ng-transclude-slot` attribute if ng-transclude is used as an element", async () => {
@@ -14111,13 +14111,13 @@ describe("$compile", () => {
       element.appendChild(document.createTextNode("2{{ value }}"));
       element.appendChild(document.createTextNode("3{{ value }}"));
 
-      const initialWatcherCount = $rootScope.$handler._watchers.size;
+      const initialWatcherCount =
+        $rootScope.$handler._watchers.get("value")?.length || 0;
       $compile(element)($rootScope);
       $rootScope.$apply("value = 0");
       await wait();
       const newWatcherCount =
-        $rootScope.$handler._watchers.size - initialWatcherCount;
-
+        $rootScope.$handler._watchers.get("value").length - initialWatcherCount;
       expect(element.textContent).toBe("102030");
       expect(newWatcherCount).toBe(3);
     });
