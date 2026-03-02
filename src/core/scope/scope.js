@@ -30,6 +30,10 @@ import { $injectTokens as $t } from "../../injection-tokens.js";
  */
 let uid = 0;
 
+/**
+ * @private
+ * @return {number}
+ */
 function nextId() {
   uid += 1;
 
@@ -103,7 +107,46 @@ export function createScope(target = {}, context) {
 
 const global = globalThis;
 
+/** @type {Set<string>} */
+const arrayMutationMethods = new Set(["pop", "shift", "unshift"]);
+
 const wStr = "[object Window]";
+
+/** @type {Function[]} */
+const nonScopeConstructors = [
+  Window,
+  Document,
+  Element,
+  Node,
+  EventTarget,
+  Promise,
+  HTMLCollection,
+  NodeList,
+  Event,
+  Date,
+  RegExp,
+  Map,
+  Set,
+  WeakMap,
+  WeakSet,
+  ArrayBuffer,
+  DataView,
+  Uint8Array,
+  Uint16Array,
+  Uint32Array,
+  Int8Array,
+  Int16Array,
+  Int32Array,
+  Float32Array,
+  Float64Array,
+  Function,
+  Error,
+  Blob,
+  File,
+  FormData,
+  URL,
+  URLSearchParams,
+];
 
 /**
  * Checks if a target should be excluded from scope observability
@@ -112,15 +155,7 @@ const wStr = "[object Window]";
  */
 export function isNonScope(target) {
   // 1. Null or primitive types are non-scope
-  if (
-    target === null ||
-    typeof target === "undefined" ||
-    typeof target === "number" ||
-    typeof target === "string" ||
-    typeof target === "boolean" ||
-    typeof target === "symbol" ||
-    typeof target === "bigint"
-  ) {
+  if (target === null || typeof target !== "object") {
     return true;
   }
 
@@ -140,44 +175,10 @@ export function isNonScope(target) {
   }
 
   // 4. Safe instanceof checks
-  const nonScopeConstructors = [
-    Window,
-    Document,
-    Element,
-    Node,
-    EventTarget,
-    Promise,
-    HTMLCollection,
-    NodeList,
-    Event,
-    Date,
-    RegExp,
-    Map,
-    Set,
-    WeakMap,
-    WeakSet,
-    ArrayBuffer,
-    DataView,
-    Uint8Array,
-    Uint16Array,
-    Uint32Array,
-    Int8Array,
-    Int16Array,
-    Int32Array,
-    Float32Array,
-    Float64Array,
-    Function,
-    Error,
-    Blob,
-    File,
-    FormData,
-    URL,
-    URLSearchParams,
-  ];
-
-  for (const Ctor of nonScopeConstructors) {
+  for (let i = 0, l = nonScopeConstructors.length; i < l; i++) {
     try {
-      if (target instanceof /** @type {any} */ (Ctor)) return true;
+      if (target instanceof /** @type {any} */ (nonScopeConstructors[i]))
+        return true;
     } catch {
       /* empty */
     }
@@ -374,7 +375,7 @@ export class Scope {
             this.#scheduleListener(_foreignListeners);
           }
 
-          this.#checkeListenersForAllKeys(value);
+          this.#checkListenersForAllKeys(value);
         }
         target[property] = createScope(value, this);
 
@@ -606,7 +607,7 @@ export class Scope {
 
     if (
       isArray(target) &&
-      ["pop", "shift", "unshift"].includes(/** @type { string } */ (property))
+      arrayMutationMethods.has(/** @type {string} */ (property))
     ) {
       if (this._objectListeners.has(proxy)) {
         const keyList = /** @type {string []} */ (
@@ -704,11 +705,15 @@ export class Scope {
   /**
    * @param {Object & Record<string, any>} value
    */
-  #checkeListenersForAllKeys(value) {
+  #checkListenersForAllKeys(value) {
     if (isUndefined(value)) {
       return;
     }
-    keys(value).forEach((k) => {
+    const keyList = keys(value);
+
+    for (let i = 0, l = keyList.length; i < l; i++) {
+      const k = keyList[i];
+
       const listeners = this._watchers.get(k);
 
       if (listeners) {
@@ -716,9 +721,9 @@ export class Scope {
       }
 
       if (isObject(value[k])) {
-        this.#checkeListenersForAllKeys(value[k]);
+        this.#checkListenersForAllKeys(value[k]);
       }
-    });
+    }
   }
 
   /**
@@ -727,16 +732,10 @@ export class Scope {
    */
   #scheduleListener(listeners, filter = (val) => val) {
     queueMicrotask(() => {
-      let index = 0;
-
       const filteredListeners = filter(listeners);
 
-      while (index < filteredListeners.length) {
-        const listener = filteredListeners[index];
-
-        this.#notifyListener(listener, this.$target);
-
-        index++;
+      for (let i = 0, l = filteredListeners.length; i < l; i++) {
+        this.#notifyListener(filteredListeners[i], this.$target);
       }
     });
   }
@@ -1212,9 +1211,7 @@ export class Scope {
 
     listenerList.splice(index, 1);
 
-    if (listenerList.length) {
-      this._watchers.set(key, listenerList);
-    } else {
+    if (listenerList.length === 0) {
       this._watchers.delete(key);
     }
 
@@ -1236,9 +1233,7 @@ export class Scope {
 
     listenerList.splice(index, 1);
 
-    if (listenerList.length) {
-      this._foreignListeners.set(key, listenerList);
-    } else {
+    if (listenerList.length === 0) {
       this._foreignListeners.delete(key);
     }
 
@@ -1261,7 +1256,7 @@ export class Scope {
       return res;
     }
 
-    if (res.name === Object.hasOwnProperty.name) {
+    if (res === Object.hasOwnProperty) {
       return res;
     }
 
@@ -1375,7 +1370,7 @@ export class Scope {
     if (event) {
       event.currentScope = this.$proxy;
     } else {
-      event = event || {
+      event = {
         name,
         targetScope: this.$proxy,
         currentScope: this.$proxy,
@@ -1424,13 +1419,16 @@ export class Scope {
     }
 
     if (broadcast) {
-      if (this._children.length > 0) {
-        this._children.forEach((child) => {
-          event = child.$handler.#eventHelper(
-            { name, event, broadcast },
-            ...args,
-          );
-        });
+      const children = this._children;
+
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+
+        if (!child) continue;
+        event = child.$handler.#eventHelper(
+          { name, event, broadcast },
+          ...args,
+        );
       }
 
       return event;
@@ -1472,8 +1470,6 @@ export class Scope {
 
       if (val.length === 0) {
         this._watchers.delete(key);
-      } else {
-        this._watchers.set(key, val);
       }
     }
 
@@ -1523,10 +1519,8 @@ export class Scope {
 
       listenerFn(newVal, originalTarget);
 
-      while ($postUpdateQueue.length) {
-        const fn = /** @type {Function} */ ($postUpdateQueue.shift());
-
-        fn();
+      while ($postUpdateQueue.length > 0) {
+        /** @type {Function} */ ($postUpdateQueue.shift())();
       }
     } catch (err) {
       $exceptionHandler(err);
