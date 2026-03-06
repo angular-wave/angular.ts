@@ -1,6 +1,5 @@
 import {
   assert,
-  concat,
   entries,
   hasOwn,
   isArray,
@@ -72,6 +71,26 @@ export class RootScopeProvider {
   ];
 }
 
+/** @type {WeakMap<Object, Set<string>>} Cache for nonscope property sets */
+const nonscopeSetsCache = new WeakMap();
+
+/**
+ * @param {any} arr
+ * @returns {Set<string> | null}
+ */
+function getNonscopeSet(arr) {
+  if (!isArray(arr)) return null;
+
+  let cached = nonscopeSetsCache.get(arr);
+
+  if (!cached) {
+    cached = new Set(arr);
+    nonscopeSetsCache.set(arr, cached);
+  }
+
+  return cached;
+}
+
 /**
  * @private
  * Creates a deep proxy for the target object, intercepting property changes
@@ -89,16 +108,14 @@ export function createScope(target = {}, context) {
 
   const keyList = keys(target);
 
-  const ctorNonScope = isArray(target.constructor?.$nonscope)
-    ? target.constructor.$nonscope
-    : null;
+  const ctorNonScope = getNonscopeSet(target.constructor?.$nonscope);
 
-  const instNonScope = isArray(target.$nonscope) ? target.$nonscope : null;
+  const instNonScope = getNonscopeSet(target.$nonscope);
 
   for (let i = 0, l = keyList.length; i < l; i++) {
     const key = keyList[i];
 
-    if (ctorNonScope?.includes(key) || instNonScope?.includes(key)) continue;
+    if (ctorNonScope?.has(key) || instNonScope?.has(key)) continue;
     target[key] = createScope(target[key], proxy.$handler);
   }
 
@@ -148,6 +165,12 @@ const nonScopeConstructors = [
   URLSearchParams,
 ];
 
+/** @type {WeakSet<Object>} Cache for objects already determined to be non-scope */
+const nonScopeCache = new WeakSet();
+
+/** @type {WeakSet<Object>} Cache for objects already determined to be scope-eligible */
+const scopeCache = new WeakSet();
+
 /**
  * Checks if a target should be excluded from scope observability
  * @param {any} target
@@ -159,36 +182,60 @@ export function isNonScope(target) {
     return true;
   }
 
-  // 2. Explicit non-scope flags
-  if (target.$nonscope === true || target?.constructor?.$nonscope === true) {
+  // 2. Fast cache lookups
+  if (nonScopeCache.has(target)) {
     return true;
   }
 
-  // 3. Global objects
+  if (scopeCache.has(target)) {
+    return false;
+  }
+
+  // 3. Explicit non-scope flags
+  if (target.$nonscope === true || target?.constructor?.$nonscope === true) {
+    nonScopeCache.add(target);
+
+    return true;
+  }
+
+  // 4. Global objects
   if (
     target === global.window ||
     target === global.document ||
     target === global.self ||
     target === global.frames
   ) {
+    nonScopeCache.add(target);
+
     return true;
   }
 
-  // 4. Safe instanceof checks
+  // 5. Safe instanceof checks
   for (let i = 0, l = nonScopeConstructors.length; i < l; i++) {
     try {
-      if (target instanceof /** @type {any} */ (nonScopeConstructors[i]))
+      if (target instanceof /** @type {any} */ (nonScopeConstructors[i])) {
+        nonScopeCache.add(target);
+
         return true;
+      }
     } catch {
       /* empty */
     }
   }
 
   try {
-    return Object.prototype.toString.call(target) === wStr;
+    if (Object.prototype.toString.call(target) === wStr) {
+      nonScopeCache.add(target);
+
+      return true;
+    }
   } catch {
     return false;
   }
+
+  scopeCache.add(target);
+
+  return false;
 }
 
 /**
@@ -309,7 +356,9 @@ export class Scope {
 
     const nonscopeProps = target.constructor?.$nonscope ?? target.$nonscope;
 
-    if (isArray(nonscopeProps) && nonscopeProps.includes(property)) {
+    const nsSet = getNonscopeSet(nonscopeProps);
+
+    if (nsSet?.has(property)) {
       target[property] = value;
 
       return true;
@@ -602,8 +651,13 @@ export class Scope {
       this.$proxy = proxy;
     }
 
-    this.propertyMap.$target = target;
-    this.propertyMap.$proxy = proxy;
+    if (this.propertyMap.$target !== target) {
+      this.propertyMap.$target = target;
+    }
+
+    if (this.propertyMap.$proxy !== proxy) {
+      this.propertyMap.$proxy = proxy;
+    }
 
     if (
       isArray(target) &&
@@ -728,14 +782,16 @@ export class Scope {
 
   /**
    * @param {import('./interface.ts').Listener[]} listeners
-   * @param {(listeners: import('./interface').Listener[]) => import('./interface').Listener[]} filter
+   * @param {(listeners: import('./interface').Listener[]) => import('./interface').Listener[]} [filter]
    */
-  #scheduleListener(listeners, filter = (val) => val) {
+  #scheduleListener(listeners, filter) {
+    const target = this.$target;
+
     queueMicrotask(() => {
-      const filteredListeners = filter(listeners);
+      const filteredListeners = filter ? filter(listeners) : listeners;
 
       for (let i = 0, l = filteredListeners.length; i < l; i++) {
-        this.#notifyListener(filteredListeners[i], this.$target);
+        this.#notifyListener(filteredListeners[i], target);
       }
     });
   }
@@ -1203,19 +1259,28 @@ export class Scope {
   #deregisterKey(key, id) {
     const listenerList = this._watchers.get(key);
 
-    if (!listenerList) return false;
-
-    const index = listenerList.findIndex((x) => x.id === id);
-
-    if (index === -1) return false;
-
-    listenerList.splice(index, 1);
-
-    if (listenerList.length === 0) {
-      this._watchers.delete(key);
+    if (!listenerList) {
+      return false;
     }
 
-    return true;
+    const len = listenerList.length;
+
+    for (let i = 0; i < len; i++) {
+      if (listenerList[i].id === id) {
+        if (len === 1) {
+          // Last element — just delete the key entirely
+          this._watchers.delete(key);
+        } else {
+          // Swap with last element and pop — O(1) removal
+          listenerList[i] = listenerList[len - 1];
+          listenerList.length = len - 1;
+        }
+
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -1225,19 +1290,26 @@ export class Scope {
   _deregisterForeignKey(key, id) {
     const listenerList = this._foreignListeners.get(key);
 
-    if (!listenerList) return false;
-
-    const index = listenerList.findIndex((x) => x.id === id);
-
-    if (index === -1) return false;
-
-    listenerList.splice(index, 1);
-
-    if (listenerList.length === 0) {
-      this._foreignListeners.delete(key);
+    if (!listenerList) {
+      return false;
     }
 
-    return true;
+    const len = listenerList.length;
+
+    for (let i = 0; i < len; i++) {
+      if (listenerList[i].id === id) {
+        if (len === 1) {
+          this._foreignListeners.delete(key);
+        } else {
+          listenerList[i] = listenerList[len - 1];
+          listenerList.length = len - 1;
+        }
+
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -1385,7 +1457,7 @@ export class Scope {
       };
     }
 
-    const listenerArgs = concat([event], [event].concat(args), 1);
+    const listenerArgs = [event, ...args];
 
     const listeners = this._listeners.get(name);
 
@@ -1461,10 +1533,14 @@ export class Scope {
 
     this.$broadcast("$destroy");
 
+    const scopeId = this.$id;
+
     for (const [key, val] of this._watchers) {
+      // Reverse iterate with swap-pop for O(n) instead of O(n²)
       for (let i = val.length - 1; i >= 0; i--) {
-        if (val[i].scopeId === this.$id) {
-          val.splice(i, 1);
+        if (val[i].scopeId === scopeId) {
+          val[i] = val[val.length - 1];
+          val.length--;
         }
       }
 
@@ -1479,8 +1555,10 @@ export class Scope {
       const children = /** @type {Scope} */ (this.$parent)._children;
 
       for (let i = 0, l = children.length; i < l; i++) {
-        if (children[i].$id === this.$id) {
-          children.splice(i, 1);
+        if (children[i].$id === scopeId) {
+          // Swap with last and pop for O(1) removal
+          children[i] = children[l - 1];
+          children.length = l - 1;
           break;
         }
       }
@@ -1519,8 +1597,11 @@ export class Scope {
 
       listenerFn(newVal, originalTarget);
 
-      while ($postUpdateQueue.length > 0) {
-        /** @type {Function} */ ($postUpdateQueue.shift())();
+      if ($postUpdateQueue.length > 0) {
+        for (let qi = 0; qi < $postUpdateQueue.length; qi++) {
+          /** @type {Function} */ ($postUpdateQueue[qi])();
+        }
+        $postUpdateQueue.length = 0;
       }
     } catch (err) {
       $exceptionHandler(err);
@@ -1529,9 +1610,10 @@ export class Scope {
 
   /* @ignore */
   $flushQueue() {
-    while ($postUpdateQueue.length) {
-      /** @type {Function} */ ($postUpdateQueue.shift())();
+    for (let i = 0; i < $postUpdateQueue.length; i++) {
+      /** @type {Function} */ ($postUpdateQueue[i])();
     }
+    $postUpdateQueue.length = 0;
   }
 
   /**
