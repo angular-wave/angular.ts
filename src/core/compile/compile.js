@@ -2747,18 +2747,22 @@ export class CompileProvider {
                 childTranscludeFn,
               );
 
-              while (linkQueue && linkQueue.length) {
+              for (
+                let queueIndex = 0;
+                linkQueue && queueIndex < linkQueue.length;
+                queueIndex += 3
+              ) {
                 const scope = /** @type {ng.Scope | undefined} */ (
-                  linkQueue.shift()
+                  linkQueue[queueIndex]
                 );
 
                 const beforeTemplateLinkNode = /** @type {any} */ (
-                  linkQueue.shift()
+                  linkQueue[queueIndex + 1]
                 );
 
                 const boundTranscludeFn =
                   /** @type {BoundTranscludeFn | null | undefined} */ (
-                    linkQueue.shift()
+                    linkQueue[queueIndex + 2]
                   );
 
                 if (!scope) {

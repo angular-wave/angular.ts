@@ -3016,6 +3016,37 @@ describe("$compile", () => {
       }, 10);
     });
 
+    it("drains queued clone link requests in order after template received", (done) => {
+      const linkedOrder = [];
+      registerDirectives({
+        myDirective: () => {
+          return {
+            templateUrl: "/public/my_directive.html",
+            link: (scope) => {
+              linkedOrder.push(scope.order);
+            },
+          };
+        },
+      });
+      reloadModules();
+      const el = $("<div my-directive></div>");
+      const linkFunction = $compile(el);
+
+      const firstScope = $rootScope.$new();
+      firstScope.order = "first";
+      const secondScope = $rootScope.$new();
+      secondScope.order = "second";
+
+      // Queue multiple links while templateUrl is still unresolved.
+      linkFunction(firstScope, () => {});
+      linkFunction(secondScope, () => {});
+
+      setTimeout(() => {
+        expect(linkedOrder).toEqual(["first", "second"]);
+        done();
+      }, 100);
+    });
+
     it("links directives that were compiled earlier", (done) => {
       const linkSpy = jasmine.createSpy();
       registerDirectives({
