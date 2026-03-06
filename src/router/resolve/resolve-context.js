@@ -239,22 +239,34 @@ export class ResolveContext {
       PathUtils.subPath(this._path, (/** @type {any} */ x) => x === node) ||
       this._path;
 
-    const availableResolvables = /** @type {Resolvable[]} */ (
-      subPath.reduce(
-        (
-          /** @type {string | any[]} */ acc,
-          /** @type {{ resolvables: any; }} */ _node,
-        ) => acc.concat(_node.resolvables),
-        [],
-      ) // all of subpath's resolvables
-    ).filter((/** @type {Resolvable} */ res) => res !== resolvable); // filter out the `resolvable` argument
+    /** @type {Resolvable[]} */
+    const availableResolvables = [];
+
+    for (let i = 0; i < subPath.length; i++) {
+      const { resolvables } = subPath[i];
+
+      for (let j = 0; j < resolvables.length; j++) {
+        const candidate = /** @type {Resolvable} */ (resolvables[j]);
+
+        if (candidate !== resolvable) {
+          availableResolvables.push(candidate);
+        }
+      }
+    }
+
+    /** @type {Map<any, Resolvable>} */
+    const latestByToken = new Map();
+
+    for (let i = 0; i < availableResolvables.length; i++) {
+      const candidate = availableResolvables[i];
+
+      latestByToken.set(candidate.token, candidate);
+    }
 
     return resolvable.deps.map((/** @type {string} */ token) => {
-      const matching = availableResolvables.filter(
-        (/** @type {{ token: string; }} */ resolve) => resolve.token === token,
-      );
+      const matching = latestByToken.get(token);
 
-      if (matching.length) return tail(matching);
+      if (matching) return matching;
       const fromInjector = window.angular.$injector.get(token);
 
       if (isUndefined(fromInjector)) {

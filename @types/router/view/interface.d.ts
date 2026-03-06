@@ -16,9 +16,9 @@ export interface ActiveUIView {
   /** The state context in which the ng-view tag was created. */
   creationContext: ViewContext;
   /** A callback that should apply a ViewConfig (or clear the ng-view, if config is undefined) */
-  configUpdated: (config: ViewConfig) => void;
+  configUpdated: (config: ViewConfig | undefined) => void;
 }
 export interface ViewTuple {
   ngView: ActiveUIView | undefined;
-  viewConfig: ViewConfig;
+  viewConfig: ViewConfig | undefined;
 }

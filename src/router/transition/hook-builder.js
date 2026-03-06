@@ -65,26 +65,19 @@ export class HookBuilder {
       transition,
     );
 
-    if (!matchingHooks) return [];
+    if (!matchingHooks.length) return [];
     const baseHookOptions = {
       transition,
       current: transition.options().current,
     };
 
     const makeTransitionHooks = (
-      /** @type {import("./hook-registry.js").RegisteredHook} */ hook,
+      /** @type {{ hook: import("./hook-registry.js").RegisteredHook; matches: import("./interface.ts").IMatchingNodes }} */ item,
     ) => {
-      // Fetch the Nodes that caused this hook to match.
-      const matches = hook.matches(
-        /** @type {import("./interface.ts").TreeChanges} */ (treeChanges),
-        transition,
-      );
+      const { hook, matches } = item;
 
       // Select the PathNode[] that will be used as TransitionHook context objects
-      const matchingNodes =
-        /** @type {import("./interface.ts").IMatchingNodes} */ (matches)[
-          hookType.criteriaMatchPath.name
-        ];
+      const matchingNodes = matches[hookType.criteriaMatchPath.name];
 
       // Return an array of HookTuples
       return matchingNodes.map((node) => {
@@ -133,7 +126,7 @@ export class HookBuilder {
    * which matched:
    * - the eventType
    * - the matchCriteria (to, from, exiting, retained, entering)
-   * @returns an array of matched [[RegisteredHook]]s
+   * @returns an array of matched hooks and their computed matching nodes
    * @param {import("./transition-event-type.js").TransitionEventType} hookType
    * @param {import("./interface.ts").TreeChanges} treeChanges
    * @param {import("./transition.js").Transition} transition
@@ -152,10 +145,18 @@ export class HookBuilder {
       .map((reg) => reg.getHooks(hookType.name)) // Get named hooks from registries
       .filter(assertPredicate(isArray, `broken event named: ${hookType.name}`)) // Sanity check
       .reduce(unnestR, []) // Un-nest RegisteredHook[][] to RegisteredHook[] array
-      .filter(
+      .map(
         (
           /** @type {{ matches: (arg0: import("./interface.ts").TreeChanges, arg1: ng.Transition) => any; }} */ hook,
-        ) => hook.matches(treeChanges, transition),
+        ) => ({
+          hook,
+          matches: hook.matches(treeChanges, transition),
+        }),
+      )
+      .filter(
+        (
+          /** @type {{ matches: import("./interface.ts").IMatchingNodes | null }} */ entry,
+        ) => entry.matches,
       ); // Only those satisfying matchCriteria
   }
 }

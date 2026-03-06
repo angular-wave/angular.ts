@@ -1,5 +1,4 @@
-import { applyPairs, equals, removeFrom } from "../../shared/common.js";
-import { curry } from "../../shared/hof.js";
+import { equals, removeFrom } from "../../shared/common.js";
 import { trace } from "../common/trace.js";
 import { getViewConfigFactory } from "../state/views.js";
 
@@ -90,96 +89,133 @@ export class ViewService {
 
   sync() {
     /** @type {Record<string, import("./interface.ts").ActiveUIView>} */
-    const ngViewsByFqn = this._ngViews
-      .map((uiv) => [uiv.fqn, uiv])
-      .reduce(applyPairs, {});
+    const ngViewsByFqn = {};
 
-    // Return a weighted depth value for a ngView.
-    // The depth is the nesting depth of ng-views (based on FQN; times 10,000)
-    // plus the depth of the state that is populating the ngView
+    for (let i = 0; i < this._ngViews.length; i++) {
+      const ngView = this._ngViews[i];
+
+      ngViewsByFqn[ngView.fqn] = ngView;
+    }
+
+    /**
+     * @param {import("./interface.ts").ViewContext} context
+     * @returns {number}
+     */
+    const contextDepth = (context) => {
+      let cursor = context;
+
+      let depth = 1;
+
+      while (cursor && cursor.parent) {
+        depth++;
+        cursor = cursor.parent;
+      }
+
+      return depth;
+    };
+
+    /** @type {Map<import("./interface.ts").ActiveUIView, number>} */
+    const ngViewDepthCache = new Map();
+
     /**
      * @param {import("./interface.ts").ActiveUIView} ngView
+     * @returns {number}
      */
-    function ngViewDepth(ngView) {
-      /** @type {(context: import("./interface.ts").ViewContext) => number} */
-      const stateDepth =
-        /** @param {import("./interface.ts").ViewContext} context */ (
-          context,
-        ) => (context && context.parent ? stateDepth(context.parent) + 1 : 1);
+    const ngViewDepth = (ngView) => {
+      const cached = ngViewDepthCache.get(ngView);
 
-      return (
+      if (cached !== undefined) return cached;
+
+      const computed =
         ngView.fqn.split(".").length * FQN_MULTIPLIER +
-        stateDepth(ngView.creationContext)
-      );
-    }
-    // Return the ViewConfig's context's depth in the context tree.
+        contextDepth(ngView.creationContext);
+
+      ngViewDepthCache.set(ngView, computed);
+
+      return computed;
+    };
+
+    /** @type {Map<ViewConfig, number>} */
+    const viewConfigDepthCache = new Map();
+
     /**
      * @param {ViewConfig} config
+     * @returns {number}
      */
-    function viewConfigDepth(config) {
+    const viewConfigDepth = (config) => {
+      const cached = viewConfigDepthCache.get(config);
+
+      if (cached !== undefined) return cached;
+
       let context = /** @type {import("./interface.ts").ViewContext} */ (
           config.viewDecl.$context
         ),
         count = 0;
 
       while (++count && context.parent) context = context.parent;
+      viewConfigDepthCache.set(config, count);
 
       return count;
-    }
-    // Given a depth function, returns a compare function which can return either ascending or descending order
-    const depthCompare = curry(
-      (
-        /** @type {(arg0: any) => number} */ depthFn,
-        /** @type {number} */ posNeg,
-        /** @type {any} */ left,
-        /** @type {any} */ right,
-      ) => posNeg * (depthFn(left) - depthFn(right)),
-    );
-
-    const matchingConfigPair = (
-      /** @type {import("./interface.ts").ActiveUIView} */ ngView,
-    ) => {
-      const matchingConfigs = this._viewConfigs.filter(
-        ViewService.matches(ngViewsByFqn, ngView),
-      );
-
-      if (matchingConfigs.length > 1) {
-        // This is OK.  Child states can target a ng-view that the parent state also targets (the child wins)
-        // Sort by depth and return the match from the deepest child
-        // console.log(`Multiple matching view configs for ${ngView.fqn}`, matchingConfigs);
-        matchingConfigs.sort(depthCompare(viewConfigDepth, -1)); // descending
-      }
-
-      return { ngView, viewConfig: matchingConfigs[0] };
     };
 
-    const configureUIView = (
-      /** @type {import("./interface.ts").ViewTuple} */ tuple,
-    ) => {
+    // Sort views by FQN and state depth. Process uiviews nearest the root first.
+    this._ngViews.sort((left, right) => ngViewDepth(left) - ngViewDepth(right));
+
+    /** @type {Set<ViewConfig>} */
+    const matchedViewConfigs = new Set();
+
+    /** @type {import("./interface.ts").ViewTuple[]} */
+    const ngViewTuples = [];
+
+    for (let i = 0; i < this._ngViews.length; i++) {
+      const ngView = this._ngViews[i];
+
+      const matches = ViewService.matches(ngViewsByFqn, ngView);
+
+      /** @type {ViewConfig | undefined} */
+      let bestMatch;
+
+      let bestDepth = Number.NEGATIVE_INFINITY;
+
+      for (let j = 0; j < this._viewConfigs.length; j++) {
+        const candidate = this._viewConfigs[j];
+
+        if (!matches(candidate)) continue;
+
+        const candidateDepth = viewConfigDepth(candidate);
+
+        if (!bestMatch || candidateDepth > bestDepth) {
+          bestMatch = candidate;
+          bestDepth = candidateDepth;
+        }
+      }
+
+      if (bestMatch) {
+        matchedViewConfigs.add(bestMatch);
+      }
+      ngViewTuples.push({ ngView, viewConfig: bestMatch });
+    }
+
+    /** @type {import("./interface.ts").ViewTuple[]} */
+    const unmatchedConfigTuples = [];
+
+    for (let i = 0; i < this._viewConfigs.length; i++) {
+      const viewConfig = this._viewConfigs[i];
+
+      if (!matchedViewConfigs.has(viewConfig)) {
+        unmatchedConfigTuples.push({ ngView: undefined, viewConfig });
+      }
+    }
+
+    for (let i = 0; i < ngViewTuples.length; i++) {
+      const tuple = ngViewTuples[i];
+
       // If a parent ng-view is reconfigured, it could destroy child ng-views.
       // Before configuring a child ng-view, make sure it's still in the active ngViews array.
       if (this._ngViews.indexOf(tuple.ngView) !== -1) {
         tuple.ngView?.configUpdated(tuple.viewConfig);
       }
-    };
-
-    // Sort views by FQN and state depth. Process uiviews nearest the root first.
-    /** @type {import("./interface.ts").ViewTuple[]} */
-    const ngViewTuples = this._ngViews
-      .sort(depthCompare(ngViewDepth, 1))
-      .map(matchingConfigPair);
-
-    /** @type {ViewConfig[]} */
-    const matchedViewConfigs = ngViewTuples.map((tuple) => tuple.viewConfig);
-
-    /** @type {import("./interface.ts").ViewTuple[]} */
-    const unmatchedConfigTuples = this._viewConfigs
-      .filter((config) => !matchedViewConfigs.includes(config))
-      .map((viewConfig) => ({ ngView: undefined, viewConfig }));
-
-    ngViewTuples.forEach((tuple) => {
-      configureUIView(tuple);
-    });
+    }
     /** @type {import("./interface.ts").ViewTuple[]} */
     const allTuples = ngViewTuples.concat(unmatchedConfigTuples);
 
@@ -304,18 +340,17 @@ export class ViewService {
  *
  * @internal
  */
-ViewService.matches =
-  (
-    /** @type {Record<string, ActiveUIView>} */ ngViewsByFqn,
-    /** @type {ActiveUIView} */ ngView,
-  ) =>
-  (/** @type {ViewConfig} */ viewConfig) => {
+ViewService.matches = (
+  /** @type {Record<string, ActiveUIView>} */ ngViewsByFqn,
+  /** @type {ActiveUIView} */ ngView,
+) => {
+  const uivSegments = ngView.fqn.split(".");
+
+  return (/** @type {ViewConfig} */ viewConfig) => {
     // Split names apart from both viewConfig and ngView into segments
     const vc = viewConfig.viewDecl;
 
     const vcSegments = /** @type {string[]} */ (vc.$ngViewName?.split("."));
-
-    const uivSegments = ngView.fqn.split(".");
 
     // Check if the tails of the segment arrays match. ex, these arrays' tails match:
     // vc: ["foo", "bar"], uiv fqn: ["$default", "foo", "bar"]
@@ -331,3 +366,4 @@ ViewService.matches =
 
     return vc.$ngViewContextAnchor === (ngViewContext && ngViewContext.name);
   };
+};
