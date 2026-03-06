@@ -1,7 +1,7 @@
-import { $injectTokens, provider } from "../injection-tokens.js";
+import { $injectTokens } from "../injection-tokens.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 
-AnimateJsDriverProvider.$inject = provider([$injectTokens._animation]);
+AnimateJsDriverProvider.$inject = ["$$animationProvider"];
 
 /**
  * @param {import("./animation.js").AnimationProvider} $$animationProvider

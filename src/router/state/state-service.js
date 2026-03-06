@@ -9,7 +9,7 @@ import { TargetState } from "./target-state.js";
 import { Param } from "../params/param.js";
 import { Glob } from "../glob/glob.js";
 import { lazyLoadState } from "../hooks/lazy-load.js";
-import { $injectTokens, provider } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.js";
 
 /** @typedef {import("./state-registry.js").StateRegistryProvider} StateRegistryProvider */
 /** @typedef {import("./interface.ts").StateDeclaration} StateDeclaration */
@@ -77,11 +77,11 @@ export class StateProvider {
     return this.globals.$current;
   }
 
-  /* @ignore */ static $inject = provider([
-    $injectTokens._router,
-    $injectTokens._transitions,
-    $injectTokens._exceptionHandler,
-  ]);
+  /* @ignore */ static $inject = [
+    $injectTokens._routerProvider,
+    $injectTokens._transitionsProvider,
+    $injectTokens._exceptionHandlerProvider,
+  ];
 
   /**
    *

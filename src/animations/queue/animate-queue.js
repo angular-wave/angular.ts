@@ -22,7 +22,7 @@ import {
   prepareAnimationOptions,
   stripCommentsFromElement,
 } from "../shared.js";
-import { $injectTokens as $t, provider } from "../../injection-tokens.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 import { AnimateRunner } from "../runner/animate-runner.js";
 import { NodeType } from "../../shared/node.js";
 
@@ -30,7 +30,7 @@ const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 
 const NG_ANIMATE_PIN_DATA = "$ngAnimatePin";
 
-AnimateQueueProvider.$inject = provider([$t._animate]);
+AnimateQueueProvider.$inject = [$t._animateProvider];
 
 /** @typedef {import("../interface.ts").AnimationOptions} AnimationOptions */
 

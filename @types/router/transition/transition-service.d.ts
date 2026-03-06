@@ -122,7 +122,22 @@ export class TransitionProvider {
     getResultHandler?: (
       hook: TransitionHook,
     ) => (result: import("./transition-hook.js").HookResult) => Promise<any>,
-    getErrorHandler?: () => (error: any) => Promise<never>,
+    getErrorHandler?: () => (
+      error: any /**
+       * Adds a Path to be used as a criterion against a TreeChanges path
+       *
+       * For example: the `exiting` path in [[HookMatchCriteria]] is a STATE scoped path.
+       * It was defined by calling `defineTreeChangesCriterion('exiting', TransitionHookScope.STATE)`
+       * Each state in the exiting path is checked against the criteria and returned as part of the match.
+       *
+       * Another example: the `to` path in [[HookMatchCriteria]] is a TRANSITION scoped path.
+       * It was defined by calling `defineTreeChangesCriterion('to', TransitionHookScope.TRANSITION)`
+       * Only the tail of the `to` path is checked against the criteria and returned as part of the match.
+       * @internal
+       * @param {string} name
+       * @param {number} hookScope
+       */,
+    ) => Promise<never>,
     synchronous?: boolean,
   ): void;
   /**

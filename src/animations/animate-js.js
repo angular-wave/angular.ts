@@ -4,10 +4,10 @@ import {
   applyAnimationStyles,
   prepareAnimationOptions,
 } from "./shared.js";
-import { $injectTokens, provider } from "../injection-tokens.js";
+import { $injectTokens } from "../injection-tokens.js";
 import { AnimateRunner } from "./runner/animate-runner.js";
 
-AnimateJsProvider.$inject = provider([$injectTokens._animate]);
+AnimateJsProvider.$inject = [$injectTokens._animateProvider];
 
 /**
  * @param {import("./animate.js").AnimateProvider} $animateProvider

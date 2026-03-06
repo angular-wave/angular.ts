@@ -1,4 +1,4 @@
-import { $injectTokens, provider } from "../injection-tokens.js";
+import { $injectTokens } from "../injection-tokens.js";
 import { NodeType } from "../shared/node.js";
 import { isString } from "../shared/utils.js";
 
@@ -13,7 +13,7 @@ const NG_OUT_ANCHOR_CLASS_NAME = "ng-anchor-out";
 
 const NG_IN_ANCHOR_CLASS_NAME = "ng-anchor-in";
 
-AnimateCssDriverProvider.$inject = provider([$injectTokens._animation]);
+AnimateCssDriverProvider.$inject = ["$$animationProvider"];
 
 /**
  * @param {import("./animation.js").AnimationProvider} $$animationProvider
