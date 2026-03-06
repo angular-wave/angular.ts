@@ -1,6 +1,6 @@
 import { ParamTypes } from "../params/param-types";
 import { isDefined, isNullOrUndefined, isString } from "../../shared/utils.js";
-import { $injectTokens, provider } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.js";
 /**
  * An API to customize the URL behavior and retrieve URL configuration
  *
@@ -15,7 +15,7 @@ import { $injectTokens, provider } from "../../injection-tokens.js";
  * This API is found at `router.urlService.config` (see: [[UIRouter.urlService]], [[URLService.config]])
  */
 export class UrlConfigProvider {
-  static $inject = provider([$injectTokens._angular]);
+  static $inject = [$injectTokens._angularProvider];
 
   /**
    * @param {ng.AngularServiceProvider} $angularProvider

@@ -68,16 +68,37 @@ export const $injectTokens = {
   // provide literals
   _provide: "$provide",
   _injector: "$injector",
+  _angularProvider: "$angularProvider",
+  _anchorScrollProvider: "$anchorScrollProvider",
+  _animateCssProvider: "$animateCssProvider",
+  _ariaProvider: "$ariaProvider",
   _compileProvider: "$compileProvider",
   _animateProvider: "$animateProvider",
+  _cookieProvider: "$cookieProvider",
+  _eventBusProvider: "$eventBusProvider",
+  _exceptionHandlerProvider: "$exceptionHandlerProvider",
   _filterProvider: "$filterProvider",
+  _httpProvider: "$httpProvider",
+  _httpParamSerializerProvider: "$httpParamSerializerProvider",
+  _interpolateProvider: "$interpolateProvider",
+  _locationProvider: "$locationProvider",
+  _logProvider: "$logProvider",
+  _parseProvider: "$parseProvider",
+  _restProvider: "$restProvider",
+  _rootScopeProvider: "$rootScopeProvider",
+  _routerProvider: "$routerProvider",
+  _sceProvider: "$sceProvider",
+  _sceDelegateProvider: "$sceDelegateProvider",
+  _sseProvider: "$sseProvider",
+  _stateProvider: "$stateProvider",
+  _stateRegistryProvider: "$stateRegistryProvider",
+  _templateCacheProvider: "$templateCacheProvider",
+  _templateFactoryProvider: "$templateFactoryProvider",
+  _templateRequestProvider: "$templateRequestProvider",
+  _transitionsProvider: "$transitionsProvider",
+  _urlConfigProvider: "$urlConfigProvider",
+  _urlProvider: "$urlProvider",
+  _viewProvider: "$viewProvider",
+  _websocketProvider: "$websocketProvider",
   _controllerProvider: "$controllerProvider",
 };
-
-/**
- * Utility for mapping to service-names to providers
- * @param {String[]} services
- */
-export function provider(services) {
-  return services.map((x) => `${x}Provider`);
-}

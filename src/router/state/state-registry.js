@@ -5,7 +5,7 @@ import { applyPairs, removeFrom } from "../../shared/common.js";
 import { propEq } from "../../shared/hof.js";
 import { ResolveContext } from "../resolve/resolve-context.js";
 import { isString, keys } from "../../shared/utils.js";
-import { $injectTokens as $t, provider } from "../../injection-tokens.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 
 /** @typedef {import("./state-object.js").StateObject} StateObject */
 /** @typedef {import("./interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
@@ -21,12 +21,12 @@ import { $injectTokens as $t, provider } from "../../injection-tokens.js";
  *
  */
 export class StateRegistryProvider {
-  /* @ignore */ static $inject = provider([
-    $t._url,
-    $t._state,
-    $t._router,
-    $t._view,
-  ]);
+  /* @ignore */ static $inject = [
+    $t._urlProvider,
+    $t._stateProvider,
+    $t._routerProvider,
+    $t._viewProvider,
+  ];
 
   /**
    * @param {ng.UrlService} urlService

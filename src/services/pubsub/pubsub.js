@@ -1,4 +1,4 @@
-import { $injectTokens, provider } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.js";
 import { nullObject } from "../../shared/utils.js";
 
 /** @type {PubSub | undefined} */
@@ -9,10 +9,10 @@ let eventBusInstance;
  * @extends {ng.ServiceProvider}
  */
 export class PubSubProvider {
-  static $inject = provider([
-    $injectTokens._exceptionHandler,
-    $injectTokens._angular,
-  ]);
+  static $inject = [
+    $injectTokens._exceptionHandlerProvider,
+    $injectTokens._angularProvider,
+  ];
 
   /**
    * @param {ng.ExceptionHandlerProvider} $exceptionHandler

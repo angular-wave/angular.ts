@@ -29,7 +29,7 @@ import { isDefined } from "../../shared/utils.js";
 import { registerIgnoredTransitionHook } from "../hooks/ignored-transition.js";
 import { registerInvalidTransitionHook } from "../hooks/invalid-transition.js";
 import { registerRedirectToHook } from "../hooks/redirect-to.js";
-import { $injectTokens as $t, provider } from "../../injection-tokens.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 import { copy } from "../../shared/common.js";
 /** @typedef {import("./interface.ts").DeregisterFn} DeregisterFn */
 /** @typedef {import("./interface.ts").HookFn} HookFn */
@@ -68,11 +68,11 @@ export const defaultTransOpts = {
  * This API is located at `router.transitionService` ([[UIRouter.transitionService]])
  */
 export class TransitionProvider {
-  /* @ignore */ static $inject = provider([
-    $t._router,
-    $t._view,
-    $t._exceptionHandler,
-  ]);
+  /* @ignore */ static $inject = [
+    $t._routerProvider,
+    $t._viewProvider,
+    $t._exceptionHandlerProvider,
+  ];
 
   /**
    * @param {ng.RouterService} globals

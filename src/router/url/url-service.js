@@ -15,18 +15,18 @@ import { UrlMatcher } from "./url-matcher.js";
 import { ParamFactory } from "../params/param-factory.js";
 import { UrlRuleFactory } from "./url-rule.js";
 import { getBaseHref } from "../../shared/dom.js";
-import { $injectTokens as $t, provider } from "../../injection-tokens.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 
 /**
  * API for URL management
  */
 export class UrlService {
-  /* @ignore */ static $inject = provider([
-    $t._location,
-    $t._state,
-    $t._router,
-    $t._urlConfig,
-  ]);
+  /* @ignore */ static $inject = [
+    $t._locationProvider,
+    $t._stateProvider,
+    $t._routerProvider,
+    $t._urlConfigProvider,
+  ];
 
   /** @type {ng.LocationService | undefined} */
   $location;
