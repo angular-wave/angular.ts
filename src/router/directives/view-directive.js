@@ -255,7 +255,7 @@ export function ViewDirective($view, $animate, $anchorScroll, $interpolate) {
         trace.traceUIViewEvent("Linking", activeUIView);
 
         /**
-         * @param {ViewConfig} config
+         * @param {ViewConfig | undefined} config
          */
         function configUpdatedCallback(config) {
           if (config && !(config instanceof ViewConfig)) return;

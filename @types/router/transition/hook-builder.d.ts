@@ -42,7 +42,7 @@ export class HookBuilder {
    * which matched:
    * - the eventType
    * - the matchCriteria (to, from, exiting, retained, entering)
-   * @returns an array of matched [[RegisteredHook]]s
+   * @returns an array of matched hooks and their computed matching nodes
    * @param {import("./transition-event-type.js").TransitionEventType} hookType
    * @param {import("./interface.ts").TreeChanges} treeChanges
    * @param {import("./transition.js").Transition} transition
