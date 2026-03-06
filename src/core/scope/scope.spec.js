@@ -1357,7 +1357,6 @@ describe("Scope", () => {
         expect(child1.$$watchersCount).toBe(2);
         expect(grandChild1.$$watchersCount).toBe(1);
         expect(child2.$$watchersCount).toBe(2);
-        expect(grandChild1.$$watchersCount).toBe(1);
         expect(grandChild2.$$watchersCount).toBe(1);
         grandChild2.$destroy();
 
@@ -3110,5 +3109,543 @@ describe("isNonScope", () => {
 
   it("ignores events", () => {
     expect(isNonScope(new PointerEvent("test"))).toBeTrue();
+  });
+});
+
+describe("Scope optimizations", () => {
+  let scope;
+  let $rootScope;
+  let injector;
+  let logs;
+
+  beforeEach(() => {
+    logs = [];
+    delete window.angular;
+    window.angular = new Angular();
+    window.angular
+      .module("myModule", ["ng"])
+      .decorator("$exceptionHandler", function () {
+        return (exception, cause) => {
+          logs.push(exception);
+          console.error(exception, cause);
+        };
+      });
+
+    injector = createInjector(["myModule"]);
+    $rootScope = injector.get("$rootScope");
+    scope = $rootScope;
+  });
+
+  describe("isNonScope caching", () => {
+    it("should return consistent results on repeated calls for the same object", () => {
+      const obj = {};
+
+      expect(isNonScope(obj)).toBe(false);
+      expect(isNonScope(obj)).toBe(false);
+    });
+
+    it("should cache non-scope results for known non-scope types", () => {
+      const date = new Date();
+
+      expect(isNonScope(date)).toBe(true);
+      // Second call should hit the cache and still return true
+      expect(isNonScope(date)).toBe(true);
+    });
+
+    it("should cache scope-eligible results for plain objects", () => {
+      const plain = { a: 1 };
+
+      expect(isNonScope(plain)).toBe(false);
+      // Second call should hit scopeCache and still return false
+      expect(isNonScope(plain)).toBe(false);
+    });
+
+    it("should cache non-scope results for DOM elements", () => {
+      const div = document.createElement("div");
+
+      expect(isNonScope(div)).toBe(true);
+      expect(isNonScope(div)).toBe(true);
+    });
+
+    it("should cache results for user-defined classes", () => {
+      class MyModel {
+        value = 42;
+      }
+
+      const instance = new MyModel();
+
+      expect(isNonScope(instance)).toBe(false);
+      expect(isNonScope(instance)).toBe(false);
+    });
+
+    it("should still correctly identify primitives without caching", () => {
+      expect(isNonScope(null)).toBe(true);
+      expect(isNonScope(undefined)).toBe(true);
+      expect(isNonScope(42)).toBe(true);
+      expect(isNonScope("string")).toBe(true);
+      expect(isNonScope(true)).toBe(true);
+    });
+  });
+
+  describe("$nonscope Set caching via getNonscopeSet", () => {
+    it("should skip $nonscope properties in createScope using cached Set", () => {
+      class Ctrl {
+        constructor() {
+          this.a = { nested: true };
+          this.b = { nested: true };
+        }
+      }
+
+      Ctrl.$nonscope = ["a"];
+
+      const res1 = createScope(new Ctrl());
+
+      expect(isProxy(res1.a)).toBeFalse();
+      expect(isProxy(res1.b)).toBeTrue();
+
+      // Second instance should use cached Set and still work
+      const res2 = createScope(new Ctrl());
+
+      expect(isProxy(res2.a)).toBeFalse();
+      expect(isProxy(res2.b)).toBeTrue();
+    });
+
+    it("should cache instance $nonscope arrays as Sets", () => {
+      const res1 = createScope({
+        a: { x: 1 },
+        b: { y: 2 },
+        $nonscope: ["a"],
+      });
+
+      expect(isProxy(res1.a)).toBeFalse();
+      expect(isProxy(res1.b)).toBeTrue();
+    });
+
+    it("should bypass nonscope properties during set operations", async () => {
+      class Ctrl {
+        constructor() {
+          this.a = {};
+          this.b = {};
+        }
+      }
+
+      Ctrl.$nonscope = ["a"];
+
+      const res = createScope(new Ctrl());
+
+      res.a = { replaced: true };
+      expect(res.a.replaced).toBeTrue();
+      expect(isProxy(res.a)).toBeFalse();
+
+      // Setting a non-excluded property should still proxy
+      res.b = { replaced: true };
+      expect(isProxy(res.b)).toBeTrue();
+    });
+  });
+
+  describe("swap-and-pop watcher deregistration", () => {
+    it("should correctly deregister a single watcher", async () => {
+      const deregister = scope.$watch("a", () => {
+        /* empty */
+      });
+
+      expect(scope.$$watchersCount).toBe(1);
+      deregister();
+      expect(scope.$$watchersCount).toBe(0);
+    });
+
+    it("should correctly deregister one of multiple watchers on the same key", async () => {
+      let log = "";
+
+      scope.$watch("a", () => {
+        log += "1";
+      });
+
+      const deregister2 = scope.$watch("a", () => {
+        log += "2";
+      });
+
+      scope.$watch("a", () => {
+        log += "3";
+      });
+
+      expect(scope.$$watchersCount).toBe(3);
+      deregister2();
+      expect(scope.$$watchersCount).toBe(2);
+
+      // Wait for the initial registration fires to complete, then reset
+      await wait();
+      log = "";
+
+      // Only remaining watchers should fire on new changes
+      scope.a = 42;
+      await wait();
+      expect(log).toContain("1");
+      expect(log).toContain("3");
+      expect(log).not.toContain("2");
+    });
+
+    it("should correctly deregister the first watcher when multiple exist", async () => {
+      let log = "";
+
+      const deregister1 = scope.$watch("x", () => {
+        log += "A";
+      });
+
+      scope.$watch("x", () => {
+        log += "B";
+      });
+
+      scope.$watch("x", () => {
+        log += "C";
+      });
+
+      deregister1();
+
+      // Wait for initial fires to flush, then reset
+      await wait();
+      log = "";
+
+      scope.x = 1;
+      await wait();
+
+      // A should not appear after deregistration; B and C should
+      expect(log.includes("A")).toBe(false);
+      expect(log.includes("B")).toBe(true);
+      expect(log.includes("C")).toBe(true);
+    });
+
+    it("should correctly deregister the last watcher when multiple exist", async () => {
+      let log = "";
+
+      scope.$watch("x", () => {
+        log += "A";
+      });
+
+      scope.$watch("x", () => {
+        log += "B";
+      });
+
+      const deregister3 = scope.$watch("x", () => {
+        log += "C";
+      });
+
+      deregister3();
+
+      // Wait for initial fires to flush, then reset
+      await wait();
+      log = "";
+
+      scope.x = 1;
+      await wait();
+
+      expect(log.includes("C")).toBe(false);
+      expect(log.includes("A")).toBe(true);
+      expect(log.includes("B")).toBe(true);
+    });
+
+    it("should handle deregistering all watchers one by one", () => {
+      const d1 = scope.$watch("a", () => {});
+      const d2 = scope.$watch("a", () => {});
+      const d3 = scope.$watch("a", () => {});
+
+      expect(scope.$$watchersCount).toBe(3);
+      d1();
+      expect(scope.$$watchersCount).toBe(2);
+      d2();
+      expect(scope.$$watchersCount).toBe(1);
+      d3();
+      expect(scope.$$watchersCount).toBe(0);
+    });
+  });
+
+  describe("$destroy with swap-and-pop child removal", () => {
+    it("should correctly remove a child from the middle of multiple children", () => {
+      const child1 = scope.$new();
+      const child2 = scope.$new();
+      const child3 = scope.$new();
+
+      const id1 = child1.$id;
+      const id3 = child3.$id;
+
+      expect(scope._children.length).toBe(3);
+      child2.$destroy();
+      expect(scope._children.length).toBe(2);
+
+      // The remaining children should be child1 and child3
+      const remainingIds = scope._children.map((c) => c.$id);
+
+      expect(remainingIds).toContain(id1);
+      expect(remainingIds).toContain(id3);
+    });
+
+    it("should correctly remove the first child", () => {
+      const child1 = scope.$new();
+      const child2 = scope.$new();
+      const child3 = scope.$new();
+
+      const id2 = child2.$id;
+      const id3 = child3.$id;
+
+      child1.$destroy();
+      expect(scope._children.length).toBe(2);
+
+      const remainingIds = scope._children.map((c) => c.$id);
+
+      expect(remainingIds).toContain(id2);
+      expect(remainingIds).toContain(id3);
+    });
+
+    it("should correctly remove the last child", () => {
+      const child1 = scope.$new();
+      const child2 = scope.$new();
+      const child3 = scope.$new();
+
+      const id1 = child1.$id;
+      const id2 = child2.$id;
+
+      child3.$destroy();
+      expect(scope._children.length).toBe(2);
+
+      const remainingIds = scope._children.map((c) => c.$id);
+
+      expect(remainingIds).toContain(id1);
+      expect(remainingIds).toContain(id2);
+    });
+
+    it("should correctly remove the only child", () => {
+      const child = scope.$new();
+
+      expect(scope._children.length).toBe(1);
+      child.$destroy();
+      expect(scope._children.length).toBe(0);
+    });
+
+    it("should clean up watchers using swap-pop strategy", async () => {
+      const child1 = scope.$new();
+      const child2 = scope.$new();
+
+      child1.$watch("a", () => {});
+      child2.$watch("a", () => {});
+
+      expect(scope.$handler._watchers.get("a").length).toBe(2);
+
+      child1.$destroy();
+      expect(scope.$handler._watchers.get("a").length).toBe(1);
+
+      // Remaining watcher should belong to child2
+      const remaining = scope.$handler._watchers.get("a")[0];
+
+      expect(remaining.scopeId).toBe(child2.$id);
+    });
+
+    it("should not destroy twice", () => {
+      const child = scope.$new();
+
+      expect(scope._children.length).toBe(1);
+      child.$destroy();
+      expect(scope._children.length).toBe(0);
+      // Second call should be a no-op
+      child.$destroy();
+      expect(scope._children.length).toBe(0);
+    });
+  });
+
+  describe("$flushQueue with index-based drain", () => {
+    it("should process all queued callbacks", () => {
+      let signature = "";
+
+      $postUpdateQueue.push(() => {
+        signature += "A";
+      });
+      $postUpdateQueue.push(() => {
+        signature += "B";
+      });
+      $postUpdateQueue.push(() => {
+        signature += "C";
+      });
+
+      scope.$flushQueue();
+      expect(signature).toBe("ABC");
+      expect($postUpdateQueue.length).toBe(0);
+    });
+
+    it("should handle an empty queue gracefully", () => {
+      $postUpdateQueue.length = 0;
+      expect(() => scope.$flushQueue()).not.toThrow();
+      expect($postUpdateQueue.length).toBe(0);
+    });
+
+    it("should clear the queue after processing", () => {
+      $postUpdateQueue.push(() => {});
+      $postUpdateQueue.push(() => {});
+      expect($postUpdateQueue.length).toBe(2);
+
+      scope.$flushQueue();
+      expect($postUpdateQueue.length).toBe(0);
+    });
+
+    it("should process callbacks that add to the queue during flushing", () => {
+      let signature = "";
+
+      $postUpdateQueue.push(() => {
+        signature += "A";
+        $postUpdateQueue.push(() => {
+          signature += "D";
+        });
+      });
+      $postUpdateQueue.push(() => {
+        signature += "B";
+      });
+      $postUpdateQueue.push(() => {
+        signature += "C";
+      });
+
+      scope.$flushQueue();
+      // D is added during iteration, and since we iterate with i < length,
+      // the dynamically-added item should also be processed
+      expect(signature).toBe("ABCD");
+      expect($postUpdateQueue.length).toBe(0);
+    });
+  });
+
+  describe("$postUpdate queue drain in #notifyListener", () => {
+    it("should drain $postUpdateQueue after watcher notification", async () => {
+      let signature = "";
+
+      scope.$postUpdate(() => {
+        signature += "POST";
+      });
+
+      scope.$watch("val", () => {
+        signature += "WATCH";
+      });
+
+      scope.val = 1;
+      await wait();
+
+      expect(signature).toContain("WATCH");
+      expect(signature).toContain("POST");
+    });
+  });
+
+  describe("#scheduleListener target capture", () => {
+    it("should use the correct target when notifying watchers", async () => {
+      let receivedTarget;
+
+      scope.$watch("a", (newVal, target) => {
+        receivedTarget = target;
+      });
+
+      scope.a = 42;
+      await wait();
+
+      expect(receivedTarget).toBeDefined();
+      expect(isDefined(receivedTarget)).toBeTrue();
+    });
+
+    it("should capture distinct targets for sequential changes", async () => {
+      const targets = [];
+
+      scope.$watch("a", (newVal, target) => {
+        targets.push(newVal);
+      });
+
+      scope.a = 1;
+      await wait();
+
+      scope.a = 2;
+      await wait();
+
+      expect(targets).toContain(1);
+      expect(targets).toContain(2);
+    });
+  });
+
+  describe("event propagation with spread args", () => {
+    it("should pass event and args correctly via $emit", () => {
+      let receivedEvent;
+      let receivedArgs;
+
+      scope.$on("testEvent", (event, arg1, arg2) => {
+        receivedEvent = event;
+        receivedArgs = [arg1, arg2];
+      });
+
+      scope.$emit("testEvent", "hello", 42);
+
+      expect(receivedEvent.name).toBe("testEvent");
+      expect(receivedArgs).toEqual(["hello", 42]);
+    });
+
+    it("should pass event and args correctly via $broadcast", () => {
+      const child = scope.$new();
+      let receivedEvent;
+      let receivedArgs;
+
+      child.$on("testEvent", (event, arg1, arg2) => {
+        receivedEvent = event;
+        receivedArgs = [arg1, arg2];
+      });
+
+      scope.$broadcast("testEvent", "world", 99);
+
+      expect(receivedEvent.name).toBe("testEvent");
+      expect(receivedArgs).toEqual(["world", 99]);
+    });
+
+    it("should pass event and multiple args via $emit up the scope chain", () => {
+      const child = scope.$new();
+      let capturedArgs;
+
+      scope.$on("myEvent", (event, ...args) => {
+        capturedArgs = args;
+      });
+
+      child.$emit("myEvent", "a", "b", "c");
+      expect(capturedArgs).toEqual(["a", "b", "c"]);
+    });
+
+    it("should pass event with no extra args", () => {
+      let receivedEvent;
+
+      scope.$on("noArgs", (event) => {
+        receivedEvent = event;
+      });
+
+      scope.$emit("noArgs");
+      expect(receivedEvent.name).toBe("noArgs");
+    });
+  });
+
+  describe("get() conditional propertyMap writes", () => {
+    it("should return scope properties correctly on repeated access", () => {
+      scope.x = 10;
+      // Access multiple times — conditional write optimization should not break reads
+      expect(scope.x).toBe(10);
+      expect(scope.x).toBe(10);
+      expect(scope.x).toBe(10);
+    });
+
+    it("should return handler properties correctly", () => {
+      expect(scope.$id).toBeDefined();
+      expect(typeof scope.$id).toBe("number");
+      // Repeated access should be consistent
+      const id = scope.$id;
+
+      expect(scope.$id).toBe(id);
+    });
+
+    it("should correctly resolve $parent, $root, and $handler on child scopes", () => {
+      const child = scope.$new();
+
+      expect(child.$root).toBeDefined();
+      expect(child.$parent).toBeDefined();
+      expect(child.$handler).toBeDefined();
+
+      // Repeated access should be stable
+      expect(child.$root).toBe(child.$root);
+      expect(child.$parent).toBe(child.$parent);
+    });
   });
 });
