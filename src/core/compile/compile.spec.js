@@ -1,5 +1,6 @@
 import { Angular } from "../../angular.js";
 import { createInjector } from "../di/injector.js";
+import { NodeRef } from "../../shared/noderef.js";
 import {
   dealoc,
   getCacheData,
@@ -12,6 +13,17 @@ import {
 import { isFunction, getNodeName, extend, assert } from "../../shared/utils.js";
 import { Cache } from "../../shared/dom.js";
 import { wait } from "../../shared/test-utils.js";
+import {
+  applyTextInterpolationValue,
+  buildInterpolationWatchExpression,
+  buildStableNodeList,
+  byPriority,
+  detectNamespaceForChildElements,
+  getDirectiveRequire,
+  getDirectiveRestrict,
+  replaceWith,
+  wrapTemplate,
+} from "./compile.js";
 
 function isUnknownElement(el) {
   return !!el.toString().match(/Unknown/);
@@ -120,6 +132,124 @@ describe("$compile", () => {
       },
     ]);
   }
+
+  describe("helper functions", () => {
+    it("normalizes object-form directive require declarations", () => {
+      const directive = {
+        name: "myDirective",
+        require: {
+          own: "^^",
+          explicit: "^parentCtrl",
+        },
+      };
+
+      expect(getDirectiveRequire(directive)).toEqual({
+        own: "^^own",
+        explicit: "^parentCtrl",
+      });
+    });
+
+    it("uses the directive name as require when a controller exists", () => {
+      expect(
+        getDirectiveRequire({
+          name: "myDirective",
+          controller() {
+            /* empty */
+          },
+        }),
+      ).toBe("myDirective");
+    });
+
+    it("defaults directive restrict to EA and validates invalid values", () => {
+      expect(getDirectiveRestrict(undefined, "testDirective")).toBe("EA");
+      expect(() => getDirectiveRestrict("C", "testDirective")).toThrow();
+    });
+
+    it("detects child namespace from parent element", () => {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      const foreignObject = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "foreignObject",
+      );
+
+      expect(detectNamespaceForChildElements(null)).toBe("html");
+      expect(detectNamespaceForChildElements(svg)).toBe("svg");
+      expect(detectNamespaceForChildElements(foreignObject)).toBe("html");
+    });
+
+    it("builds interpolation watch expressions", () => {
+      expect(buildInterpolationWatchExpression(["a"])).toBe("a");
+      expect(buildInterpolationWatchExpression(["a", "b.c"])).toBe("[a,b.c]");
+    });
+
+    it("applies text interpolation values to elements and text nodes", () => {
+      const element = document.createElement("div");
+      const text = document.createTextNode("");
+
+      applyTextInterpolationValue(element, "<span>value</span>");
+      applyTextInterpolationValue(text, "plain");
+
+      expect(element.innerHTML).toBe("<span>value</span>");
+      expect(text.nodeValue).toBe("plain");
+    });
+
+    it("sorts directives by priority, name, and index", () => {
+      const directives = [
+        { name: "bDir", priority: 1, index: 3 },
+        { name: "aDir", priority: 2, index: 2 },
+        { name: "aDir", priority: 1, index: 1 },
+      ];
+
+      directives.sort(byPriority);
+
+      expect(
+        directives.map((d) => `${d.priority}:${d.name}:${d.index}`),
+      ).toEqual(["2:aDir:2", "1:aDir:1", "1:bDir:3"]);
+    });
+
+    it("wraps svg templates in a namespace container", () => {
+      const wrapped = wrapTemplate("svg", "<circle></circle>");
+
+      expect(wrapped.length).toBe(1);
+      expect(getNodeName(wrapped[0])).toBe("circle");
+    });
+
+    it("returns html templates unchanged when wrapping is unnecessary", () => {
+      expect(wrapTemplate("html", "<div></div>")).toBe("<div></div>");
+    });
+
+    it("builds a stable node list from indexed mappings", () => {
+      const first = document.createElement("div");
+      const second = document.createElement("span");
+      const nodeRef = new NodeRef([first, second]);
+      const stableNodes = buildStableNodeList(
+        {
+          _linkFnsList: [{ _index: 0 }, { _index: 1 }],
+          _nodeRefList: nodeRef,
+          _nodeLinkFnFound: () => {
+            /* empty */
+          },
+          _transcludeFn: null,
+        },
+        nodeRef,
+      );
+
+      expect(stableNodes).toEqual([first, second]);
+    });
+
+    it("replaces a node and updates the node reference", () => {
+      const parent = document.createElement("div");
+      const original = document.createElement("span");
+      const replacement = document.createElement("strong");
+      const nodeRef = new NodeRef(original);
+
+      parent.appendChild(original);
+      replaceWith(nodeRef, replacement, 0);
+
+      expect(parent.firstChild).toBe(replacement);
+      expect(nodeRef.node).toBe(replacement);
+    });
+  });
 
   function registerComponent(name, options) {
     myModule.component(name, options);

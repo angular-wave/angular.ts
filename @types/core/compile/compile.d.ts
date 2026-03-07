@@ -1,3 +1,95 @@
+/**
+ * Normalizes the `require` declaration for a directive.
+ * Object-form requires inherit their own key when the value omits the directive name
+ * (e.g. `{ foo: "^^" }` becomes `{ foo: "^^foo" }`).
+ *
+ * @param {ng.Directive} directive
+ * @returns {string | Array<any> | Record<string, string> | undefined}
+ */
+export function getDirectiveRequire(
+  directive: ng.Directive,
+): string | Array<any> | Record<string, string> | undefined;
+/**
+ * Validates and normalizes a directive `restrict` value.
+ *
+ * @param {unknown} restrict
+ * @param {string} name
+ * @returns {string}
+ */
+export function getDirectiveRestrict(restrict: unknown, name: string): string;
+/**
+ * Detects the namespace used when compiling child nodes beneath a parent element.
+ * This is primarily used to decide whether template wrapping should happen in HTML or SVG mode.
+ *
+ * @param {Element | Node | null | undefined} parentElement
+ * @returns {"html" | "svg"}
+ */
+export function detectNamespaceForChildElements(
+  parentElement: Element | Node | null | undefined,
+): "html" | "svg";
+/**
+ * Builds a stable node array for linking so index-based mappings stay valid even if DOM shape changes.
+ *
+ * @param {CompositeLinkState} state
+ * @param {NodeRef} nodeRef
+ * @returns {Node[]}
+ */
+export function buildStableNodeList(
+  state: CompositeLinkState,
+  nodeRef: NodeRef,
+): Node[];
+/**
+ * Serializes one or more interpolation inputs into the watch expression used by `$watch`.
+ * Single expressions stay unchanged; multi-input interpolations are packed into an array expression.
+ *
+ * @param {string[]} expressions
+ * @returns {string}
+ */
+export function buildInterpolationWatchExpression(
+  expressions: string[],
+): string;
+/**
+ * Writes the interpolated text result to either an element node or a text node.
+ *
+ * @param {Node} node
+ * @param {string} value
+ * @returns {void}
+ */
+export function applyTextInterpolationValue(node: Node, value: string): void;
+/**
+ * Sorts directives by priority, then name, then registration index.
+ * This matches the compiler's directive application order.
+ *
+ * @param {InternalDirective} a
+ * @param {InternalDirective} b
+ * @returns {number}
+ */
+export function byPriority(a: InternalDirective, b: InternalDirective): number;
+/**
+ * Wraps non-HTML templates in a temporary namespace container so the browser parses SVG/MathML correctly.
+ *
+ * @param {string | undefined} type
+ * @param {string} template
+ * @returns {string | NodeListOf<ChildNode>}
+ */
+export function wrapTemplate(
+  type: string | undefined,
+  template: string,
+): string | NodeListOf<ChildNode>;
+/**
+ * Replaces the node currently represented by `elementsToRemove` while preserving the removed nodes
+ * in a fragment so traversal and later queries continue to work during compilation.
+ *
+ * @param {NodeRef} elementsToRemove
+ * @param {Node} newNode
+ * @param {number} [index]
+ * @returns {void}
+ */
+export function replaceWith(
+  elementsToRemove: NodeRef,
+  newNode: Node,
+  index?: number,
+): void;
 export const DirectiveSuffix: "Directive";
 export class CompileProvider {
   static $inject: string[];
@@ -141,6 +233,7 @@ export class CompileProvider {
 export type BoundTranscludeFn = import("./interface.ts").BoundTranscludeFn;
 export type ChildTranscludeOrLinkFn =
   import("./interface.ts").ChildTranscludeOrLinkFn;
+export type ChildLinkFn = import("./interface.ts").ChildLinkFn;
 export type CloneAttachFn = import("./interface.ts").CloneAttachFn;
 export type CompileNodesFn = import("./interface.ts").CompileNodesFn;
 export type CompositeLinkFn = import("./interface.ts").CompositeLinkFn;
@@ -149,6 +242,7 @@ export type NodeLinkFnCtx = import("./interface.ts").NodeLinkFnCtx;
 export type PreviousCompileContext =
   import("./interface.ts").PreviousCompileContext;
 export type PublicLinkFn = import("./interface.ts").PublicLinkFn;
+export type StoredNodeLinkFn = import("./interface.ts").StoredNodeLinkFn;
 export type TranscludedNodes = import("./interface.ts").TranscludedNodes;
 export type InternalDirective = import("./interface.ts").InternalDirective;
 export type LinkFnRecord = {
@@ -156,11 +250,58 @@ export type LinkFnRecord = {
   _require: string | Array<any> | Record<string, any> | undefined;
   _directiveName: string;
   _isolateScope: boolean;
+  _linkCtx?: any;
 };
 export type CompositeLinkState = {
   _linkFnsList: import("./interface.ts").LinkFnMapping[];
   _nodeRefList: NodeRef;
-  _nodeLinkFnFound?: NodeLinkFn;
+  _nodeLinkFnFound?: Function;
   _transcludeFn: ChildTranscludeOrLinkFn | null | undefined;
 };
+export type NodeLinkState = {
+  _compileNode: Node | Element;
+  _templateAttrs: Attributes;
+  _transcludeFn: ChildTranscludeOrLinkFn;
+  _controllerDirectives?: Record<string, any>;
+  _newIsolateScopeDirective?: InternalDirective | null;
+  _newScopeDirective?: InternalDirective | null;
+  _hasElementTranscludeDirective?: boolean;
+  _preLinkFns: LinkFnRecord[];
+  _postLinkFns: LinkFnRecord[];
+};
+export type ControllersBoundTranscludeState = {
+  _boundTranscludeFn: BoundTranscludeFn;
+  _elementControllers: Record<string, any>;
+  _hasElementTranscludeDirective?: boolean;
+  _scopeToChild: import("../scope/scope.js").Scope;
+  _elementRef: NodeRef;
+};
+export type TextInterpolateLinkState = {
+  _interpolateFn: import("../interpolate/interface.ts").InterpolationFunction;
+  _watchExpression: string;
+};
+export type AttrInterpolateLinkState = {
+  _name: string;
+  _value: string;
+  _trustedContext: string | undefined;
+  _allOrNothing: boolean;
+  _interpolateFn?: import("../interpolate/interface.ts").InterpolationFunction;
+};
+export type PropertyDirectiveLinkState = {
+  _attrName: string;
+  _propName: string;
+  _ngPropGetter: Function;
+  _sanitizer: Function;
+};
+export type DelayedTemplateLinkState = {
+  _linkQueue: any[] | null;
+  _afterTemplateChildLinkFn: CompositeLinkFn | null;
+  _afterTemplateNodeLinkFnCtx?: NodeLinkFnCtx;
+  _beforeTemplateCompileNode: Node | Element;
+  _compileNodeRef: NodeRef;
+  _compiledNode?: Element;
+  _origAsyncDirective: InternalDirective;
+  _previousCompileContext: PreviousCompileContext;
+};
 import { NodeRef } from "../../shared/noderef.js";
+import { Attributes } from "./attributes.js";

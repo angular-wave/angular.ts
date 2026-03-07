@@ -186,10 +186,22 @@ export type NodeLinkFn = (
 ) => void;
 
 /**
+ * Internal variant used when a shared node-link executor receives its state explicitly.
+ */
+export type StoredNodeLinkFn = (
+  state: unknown,
+  childLinkFn: ChildLinkFn | CompositeLinkFn | null | undefined,
+  scope: Scope,
+  node: Node | Element,
+  boundTranscludeFn: BoundTranscludeFn | null,
+) => void;
+
+/**
  * Context information for a NodeLinkFn.
  */
 export interface NodeLinkFnCtx {
-  _nodeLinkFn: NodeLinkFn;
+  _nodeLinkFn: NodeLinkFn | StoredNodeLinkFn;
+  _nodeLinkFnState?: unknown;
   _terminal: boolean;
   _transclude: ChildTranscludeOrLinkFn;
   _transcludeOnThisElement: boolean;
