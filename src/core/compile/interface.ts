@@ -14,7 +14,7 @@ export type CloneAttachFn = (
 
 export interface TemplateLinkingFunctionOptions {
   _parentBoundTranscludeFn?: BoundTranscludeFn | null;
-  transcludeControllers?: unknown;
+  _transcludeControllers?: unknown;
   _futureParentElement?: Node | Element | null | undefined;
 }
 
@@ -189,12 +189,12 @@ export type NodeLinkFn = (
  * Context information for a NodeLinkFn.
  */
 export interface NodeLinkFnCtx {
-  nodeLinkFn: NodeLinkFn;
-  terminal: boolean;
-  transclude: ChildTranscludeOrLinkFn;
-  transcludeOnThisElement: boolean;
-  templateOnThisElement: boolean;
-  newScope: boolean;
+  _nodeLinkFn: NodeLinkFn;
+  _terminal: boolean;
+  _transclude: ChildTranscludeOrLinkFn;
+  _transcludeOnThisElement: boolean;
+  _templateOnThisElement: boolean;
+  _newScope: boolean;
 }
 
 /**
@@ -218,29 +218,29 @@ export type CompositeLinkFn = (
  */
 export interface PreviousCompileContext {
   /** Index of the current node inside the parent NodeRef list (virtual group position). */
-  index?: number;
+  _index?: number;
 
   /** The parent NodeRef list that the current node belongs to (used when replaced nodes must be re-indexed). */
-  parentNodeRef?: NodeRef;
+  _parentNodeRef?: NodeRef;
 
   /**
    * Mutable NodeRef pointing at the “current” compile node for this context.
    * Updated when directives replace or element-transclude the node (e.g. comment anchor).
    */
-  ctxNodeRef?: NodeRef;
+  _ctxNodeRef?: NodeRef;
 
   /**
    * When true, linking must create a fresh scope anchor because a parent replace+transclusion
    * removed the element that would normally hold the transclusion scope.
    * Consumed by `publicLinkFn` to do `scope.$parent?.$new()` in that edge case.
    */
-  needsNewScope?: boolean;
+  _needsNewScope?: boolean;
 
   /**
    * True if an element-transcluding directive has been applied (transclude === "element").
    * Affects how controllers/transclusion are resolved and how templateUrl linking re-attaches nodes.
    */
-  hasElementTranscludeDirective?: boolean;
+  _hasElementTranscludeDirective?: boolean;
 
   /**
    * The directive that requested “non-terminal” (non-TLB) transclusion most recently.
