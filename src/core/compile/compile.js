@@ -2957,18 +2957,23 @@ export class CompileProvider {
             directives.push({
               priority: 0,
               compile: () => (scope, node) => {
-                interpolateFn.expressions.forEach((x) => {
-                  scope.$watch(x, () => {
-                    const res = interpolateFn(deProxy(scope));
+                const { expressions } = interpolateFn;
 
-                    switch (node.nodeType) {
-                      case 1:
-                        node.innerHTML = res;
-                        break;
-                      default:
-                        node.nodeValue = res;
-                    }
-                  });
+                const watchExpression =
+                  expressions.length === 1
+                    ? expressions[0]
+                    : `[${expressions.join(",")}]`;
+
+                scope.$watch(watchExpression, () => {
+                  const res = interpolateFn(deProxy(scope));
+
+                  switch (node.nodeType) {
+                    case 1:
+                      node.innerHTML = res;
+                      break;
+                    default:
+                      node.nodeValue = res;
+                  }
                 });
               },
             });
@@ -3283,12 +3288,20 @@ export class CompileProvider {
                   attr[name] = interpolateFn(scope);
 
                   (_observers[name] || (_observers[name] = []))._inter = true;
-                  interpolateFn.expressions.forEach((x) => {
+
+                  if (interpolateFn.expressions.length > 0) {
                     const targetScope =
                       (attr._observers && attr._observers[name]._scope) ||
                       scope;
 
-                    targetScope.$watch(x, () => {
+                    const { expressions } = interpolateFn;
+
+                    const watchExpression =
+                      expressions.length === 1
+                        ? expressions[0]
+                        : `[${expressions.join(",")}]`;
+
+                    targetScope.$watch(watchExpression, () => {
                       const newInterpolatedValue =
                         /** @type {import("../interpolate/interface.ts").InterpolationFunction} */ (
                           interpolateFn
@@ -3315,7 +3328,7 @@ export class CompileProvider {
                         );
                       }
                     });
-                  });
+                  }
 
                   if (interpolateFn.expressions.length === 0) {
                     attr.$set(
@@ -3568,22 +3581,19 @@ export class CompileProvider {
                   if (attrsAny[attrName]) {
                     const expr = attrsAny[attrName];
 
+                    const syncParentValue = $parse(expr, parentValueWatch);
+
                     // make it lazy as we dont want to trigger the two way data binding at this point
                     scope.$watch(
                       expr,
                       (val) => {
-                        const res = $parse(
-                          attrsAny[attrName],
-                          parentValueWatch,
-                        );
-
                         if (val) {
                           if (parentGet && parentGet._literal) {
                             scope.$target[attrName] = val;
                           } else {
                             scope[attrName] = val;
                           }
-                          res(scope);
+                          syncParentValue(scope);
                         } else {
                           scope[attrName] = scope[attrsAny[attrName]];
                         }
