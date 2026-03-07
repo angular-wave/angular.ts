@@ -97,6 +97,9 @@ export class CompileProvider {
 
     const bindingCache = nullObject();
 
+    /** @type {Record<string, any[] | undefined>} */
+    const directiveLookupCache = nullObject();
+
     /**
      * @param {Object} scope
      * @param {string} directiveName
@@ -303,6 +306,7 @@ export class CompileProvider {
           ]);
         }
         hasDirectives[name].push(directiveFactory);
+        delete directiveLookupCache[name];
       } else {
         entries(name).forEach(([k, v]) => registerDirective(k, v));
       }
@@ -1146,7 +1150,7 @@ export class CompileProvider {
           let nodeName;
 
           switch (nodeType) {
-            case NodeType._ELEMENT_NODE /* Element */:
+            case NodeType._ELEMENT_NODE /* Element */: {
               nodeName = node.nodeName.toLowerCase();
 
               if (ignoreDirective !== directiveNormalize(nodeName)) {
@@ -1160,7 +1164,13 @@ export class CompileProvider {
               }
 
               // iterate over the attributes
-              for (let j = 0; j < node.attributes?.length; j++) {
+              const nodeAttributes = node.attributes;
+
+              for (
+                let j = 0, nodeAttributesLength = nodeAttributes?.length || 0;
+                j < nodeAttributesLength;
+                j++
+              ) {
                 let isNgAttr = false;
 
                 let isNgProp = false;
@@ -1171,7 +1181,7 @@ export class CompileProvider {
 
                 let isWindow = false;
 
-                const attr = node.attributes[j];
+                const attr = nodeAttributes[j];
 
                 let { name } = attr;
 
@@ -1272,6 +1282,7 @@ export class CompileProvider {
               }
 
               break;
+            }
             case NodeType._TEXT_NODE:
               addTextInterpolateDirective(
                 directives,
@@ -1282,7 +1293,9 @@ export class CompileProvider {
               break;
           }
 
-          directives.sort(byPriority);
+          if (directives.length > 1) {
+            directives.sort(byPriority);
+          }
 
           return directives;
         }
@@ -1963,9 +1976,17 @@ export class CompileProvider {
                   // (see https://github.com/angular/angular.js/issues/14924)
                   const tempContainer = document.createElement("div");
 
-                  Array.from(compileNode.childNodes).forEach((node) => {
-                    tempContainer.appendChild(node.cloneNode(true));
-                  });
+                  const { childNodes } = compileNode;
+
+                  for (
+                    let childIndex = 0, childCount = childNodes.length;
+                    childIndex < childCount;
+                    childIndex++
+                  ) {
+                    tempContainer.appendChild(
+                      childNodes[childIndex].cloneNode(true),
+                    );
+                  }
                   nodes = tempContainer.childNodes;
                 } else {
                   // We have transclusion slots,
@@ -2004,12 +2025,16 @@ export class CompileProvider {
                   // Clone childnodes before distributing to slots
                   // Clone each node individually to prevent browser DOM normalization
                   // which can merge adjacent text nodes (see https://github.com/angular/angular.js/issues/14924)
-                  const clonedChildNodes = Array.from(
-                    compileNode.childNodes,
-                  ).map((node) => node.cloneNode(true));
+                  const { childNodes } = compileNode;
 
                   // Add the matching elements into their slot
-                  clonedChildNodes.forEach((node) => {
+                  for (
+                    let childIndex = 0, childCount = childNodes.length;
+                    childIndex < childCount;
+                    childIndex++
+                  ) {
+                    const node = childNodes[childIndex].cloneNode(true);
+
                     const slotName =
                       slotMap[
                         directiveNormalize(
@@ -2025,7 +2050,7 @@ export class CompileProvider {
                     } else {
                       tempContainer.appendChild(node);
                     }
-                  });
+                  }
 
                   // Check for required slots that were not filled
                   entries(filledSlots).forEach(([slotName, filled]) => {
@@ -2503,15 +2528,20 @@ export class CompileProvider {
             : /** @type {number} */ (maxPriority);
 
           if (hasOwn(hasDirectives, name)) {
+            const directives = hasOwn(directiveLookupCache, name)
+              ? directiveLookupCache[name]
+              : (directiveLookupCache[name] = $injector.get(
+                  name + DirectiveSuffix,
+                ));
+
             for (
               let directive,
-                directives = $injector.get(name + DirectiveSuffix),
                 i = 0,
-                ii = directives.length;
+                ii = /** @type {any[]} */ (directives).length;
               i < ii;
               i++
             ) {
-              directive = directives[i];
+              directive = /** @type {any[]} */ (directives)[i];
 
               if (
                 maxPriorityValue > (directive.priority || 0) &&
