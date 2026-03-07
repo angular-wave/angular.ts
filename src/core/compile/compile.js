@@ -53,6 +53,7 @@ import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
 
 /** @typedef {import("./interface.ts").BoundTranscludeFn} BoundTranscludeFn */
 /** @typedef {import("./interface.ts").ChildTranscludeOrLinkFn} ChildTranscludeOrLinkFn */
+/** @typedef {import("./interface.ts").ChildLinkFn} ChildLinkFn */
 /** @typedef {import("./interface.ts").CloneAttachFn} CloneAttachFn */
 /** @typedef {import("./interface.ts").CompileNodesFn} CompileNodesFn */
 /** @typedef {import("./interface.ts").CompositeLinkFn} CompositeLinkFn */
@@ -60,10 +61,17 @@ import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
 /** @typedef {import("./interface.ts").NodeLinkFnCtx } NodeLinkFnCtx */
 /** @typedef {import("./interface.ts").PreviousCompileContext} PreviousCompileContext */
 /** @typedef {import("./interface.ts").PublicLinkFn} PublicLinkFn */
+/** @typedef {import("./interface.ts").StoredNodeLinkFn} StoredNodeLinkFn */
 /** @typedef {import("./interface.ts").TranscludedNodes} TranscludedNodes */
 /** @typedef {import("./interface.ts").InternalDirective} InternalDirective */
-/** @typedef {{ _fn: Function; _require: string | Array<any> | Record<string, any> | undefined; _directiveName: string; _isolateScope: boolean }} LinkFnRecord */
-/** @typedef {{ _linkFnsList: import("./interface.ts").LinkFnMapping[]; _nodeRefList: NodeRef; _nodeLinkFnFound?: NodeLinkFn; _transcludeFn: ChildTranscludeOrLinkFn | null | undefined }} CompositeLinkState */
+/** @typedef {{ _fn: Function; _require: string | Array<any> | Record<string, any> | undefined; _directiveName: string; _isolateScope: boolean; _linkCtx?: any }} LinkFnRecord */
+/** @typedef {{ _linkFnsList: import("./interface.ts").LinkFnMapping[]; _nodeRefList: NodeRef; _nodeLinkFnFound?: Function; _transcludeFn: ChildTranscludeOrLinkFn | null | undefined }} CompositeLinkState */
+/** @typedef {{ _compileNode: Node | Element; _templateAttrs: Attributes; _transcludeFn: ChildTranscludeOrLinkFn; _controllerDirectives?: Record<string, any>; _newIsolateScopeDirective?: InternalDirective | null; _newScopeDirective?: InternalDirective | null; _hasElementTranscludeDirective?: boolean; _preLinkFns: LinkFnRecord[]; _postLinkFns: LinkFnRecord[] }} NodeLinkState */
+/** @typedef {{ _boundTranscludeFn: BoundTranscludeFn; _elementControllers: Record<string, any>; _hasElementTranscludeDirective?: boolean; _scopeToChild: import("../scope/scope.js").Scope; _elementRef: NodeRef }} ControllersBoundTranscludeState */
+/** @typedef {{ _interpolateFn: import("../interpolate/interface.ts").InterpolationFunction; _watchExpression: string }} TextInterpolateLinkState */
+/** @typedef {{ _name: string; _value: string; _trustedContext: string | undefined; _allOrNothing: boolean; _interpolateFn?: import("../interpolate/interface.ts").InterpolationFunction }} AttrInterpolateLinkState */
+/** @typedef {{ _attrName: string; _propName: string; _ngPropGetter: Function; _sanitizer: Function }} PropertyDirectiveLinkState */
+/** @typedef {{ _linkQueue: any[] | null; _afterTemplateChildLinkFn: CompositeLinkFn | null; _afterTemplateNodeLinkFnCtx?: NodeLinkFnCtx; _beforeTemplateCompileNode: Node | Element; _compileNodeRef: NodeRef; _compiledNode?: Element; _origAsyncDirective: InternalDirective; _previousCompileContext: PreviousCompileContext; }} DelayedTemplateLinkState */
 
 const $compileMinErr = minErr("$compile");
 
@@ -198,52 +206,6 @@ export class CompileProvider {
       }
 
       return bindings;
-    }
-
-    /**
-     * @param {ng.Directive} directive
-     */
-    function getDirectiveRequire(directive) {
-      const require =
-        directive.require || (directive.controller && directive.name);
-
-      if (!isArray(require) && isObject(require)) {
-        const entryList = entries(require);
-
-        for (let i = 0, len = entryList.length; i < len; i++) {
-          const [key, value] = entryList[i];
-
-          const match = value.match(REQUIRE_PREFIX_REGEXP);
-
-          if (!match) continue; // safety check if match fails
-
-          const name = value.substring(match[0].length);
-
-          if (!name) {
-            require[key] = match[0] + key;
-          }
-        }
-      }
-
-      return require;
-    }
-
-    /**
-     * @param {unknown} restrict
-     * @param {string} name
-     */
-    function getDirectiveRestrict(restrict, name) {
-      if (restrict && !(isString(restrict) && /[EA]/.test(restrict))) {
-        throw $compileMinErr(
-          "badrestrict",
-          "Restrict property '{0}' of directive '{1}' is invalid",
-          restrict,
-          name,
-        );
-      }
-
-      // Default is element or attribute
-      return restrict || "EA";
     }
 
     /**
@@ -820,60 +782,6 @@ export class CompileProvider {
         }
 
         /**
-         * @param {Element | Node | null | undefined} parentElement
-         */
-        function detectNamespaceForChildElements(parentElement) {
-          // TODO: Make this detect MathML as well...
-          const node = parentElement;
-
-          if (!node) {
-            return "html";
-          }
-
-          return getNodeName(/** @type {Element} */ (node)) !==
-            "foreignobject" && toString.call(node).match(/SVG/)
-            ? "svg"
-            : "html";
-        }
-
-        /**
-         * Builds a stable node array for linking so index-based mappings stay valid even if DOM shape changes.
-         *
-         * @param {CompositeLinkState} state
-         * @param {NodeRef} nodeRef
-         */
-        function buildStableNodeList(state, nodeRef) {
-          /** @type {Node[]} */
-          let stableNodeList = [];
-
-          if (state._nodeLinkFnFound) {
-            const stableLength = nodeRef._isList ? nodeRef.nodes.length : 1;
-
-            stableNodeList = new Array(stableLength);
-
-            for (let i = 0, l = state._linkFnsList.length; i < l; i++) {
-              const { _index: idx } = state._linkFnsList[i];
-
-              if (idx === 0) {
-                stableNodeList[idx] = nodeRef._isList
-                  ? nodeRef.nodes[idx]
-                  : nodeRef.node;
-              } else if (state._nodeRefList?._getIndex(idx)) {
-                stableNodeList[idx] = nodeRef.nodes[idx];
-              }
-            }
-          } else if (nodeRef._isList) {
-            for (let i = 0, l = nodeRef.nodes.length; i < l; i++) {
-              stableNodeList.push(nodeRef.nodes[i]);
-            }
-          } else {
-            stableNodeList.push(nodeRef.node);
-          }
-
-          return stableNodeList;
-        }
-
-        /**
          * Runs node-level and child-level link functions for one compiled node list using precomputed mapping state.
          *
          * @param {CompositeLinkState} state
@@ -924,7 +832,8 @@ export class CompileProvider {
                 setScope(node, childScope);
               }
 
-              _nodeLinkFnCtx._nodeLinkFn(
+              invokeNodeLinkFnCtx(
+                _nodeLinkFnCtx,
                 _childLinkFn,
                 childScope,
                 node,
@@ -988,9 +897,7 @@ export class CompileProvider {
            */
           const linkFnsList = []; // An array to hold node indices and their linkFns
 
-          /**
-           * @type {NodeLinkFn | undefined}
-           */
+          /** @type {Function | undefined} */
           let nodeLinkFnFound;
 
           let linkFnFound = false;
@@ -1409,6 +1316,7 @@ export class CompileProvider {
          * @param {string | Array<any> | Record<string, any> | undefined} require
          * @param {string} directiveName
          * @param {boolean} isolateScope
+         * @param {any} [linkCtx]
          */
         function pushLinkFnRecord(
           linkFns,
@@ -1416,6 +1324,7 @@ export class CompileProvider {
           require,
           directiveName,
           isolateScope,
+          linkCtx,
         ) {
           if (!linkFn) {
             return;
@@ -1426,6 +1335,7 @@ export class CompileProvider {
             _require: require,
             _directiveName: directiveName,
             _isolateScope: isolateScope,
+            _linkCtx: linkCtx,
           });
         }
 
@@ -1449,6 +1359,17 @@ export class CompileProvider {
           controllers,
           transcludeFn,
         ) {
+          if (isDefined(linkFnRecord._linkCtx)) {
+            return linkFnRecord._fn(
+              linkFnRecord._linkCtx,
+              linkFnRecord._isolateScope ? isolateScope : scope,
+              node,
+              attrs,
+              controllers,
+              transcludeFn,
+            );
+          }
+
           return linkFnRecord._fn(
             linkFnRecord._isolateScope ? isolateScope : scope,
             node,
@@ -1456,6 +1377,725 @@ export class CompileProvider {
             controllers,
             transcludeFn,
           );
+        }
+
+        /**
+         * Shared post-link executor for text interpolation directives.
+         *
+         * @param {TextInterpolateLinkState} linkState
+         * @param {import("../scope/scope.js").Scope} scope
+         * @param {Node} node
+         */
+        function textInterpolateLinkFn(linkState, scope, node) {
+          scope.$watch(linkState._watchExpression, () => {
+            applyTextInterpolationValue(
+              node,
+              linkState._interpolateFn(deProxy(scope)),
+            );
+          });
+        }
+
+        /**
+         * Applies the latest interpolated attribute value using the same class/srcset special cases
+         * as the original inline pre-link closure.
+         *
+         * @param {AttrInterpolateLinkState} linkState
+         * @param {Attributes} attr
+         * @param {string} value
+         */
+        function applyInterpolatedAttrValue(linkState, attr, value) {
+          if (linkState._name === "class") {
+            attr.$updateClass(
+              value,
+              /** @type {Element} */ (attr._element()).classList.value,
+            );
+
+            return;
+          }
+
+          attr.$set(
+            linkState._name,
+            linkState._name === "srcset"
+              ? $sce.getTrustedMediaUrl(value)
+              : value,
+          );
+        }
+
+        /**
+         * Shared pre-link executor for interpolated attributes. The mutable link state keeps the
+         * current interpolation function in sync if an earlier compile step rewrites the attribute.
+         *
+         * @param {AttrInterpolateLinkState} linkState
+         * @param {import("../scope/scope.js").Scope} scope
+         * @param {Node} _element
+         * @param {Attributes} attr
+         */
+        function attrInterpolatePreLinkFn(linkState, scope, _element, attr) {
+          const _observers =
+            attr._observers || (attr._observers = nullObject());
+
+          // Recompute interpolation if another compile step rewrote the attribute value.
+          const attrsAny = /** @type {Record<string, any>} */ (attr);
+
+          const newValue = attrsAny[linkState._name];
+
+          if (newValue !== linkState._value) {
+            linkState._interpolateFn =
+              /** @type {import("../interpolate/interface.ts").InterpolationFunction | undefined} */ (
+                newValue &&
+                  $interpolate(
+                    newValue,
+                    true,
+                    linkState._trustedContext,
+                    linkState._allOrNothing,
+                  )
+              );
+            linkState._value = newValue;
+          }
+
+          if (!linkState._interpolateFn) {
+            return;
+          }
+
+          attrsAny[linkState._name] = linkState._interpolateFn(scope);
+          (
+            _observers[linkState._name] || (_observers[linkState._name] = [])
+          )._inter = true;
+
+          if (linkState._interpolateFn.expressions.length > 0) {
+            const targetScope =
+              (attr._observers && attr._observers[linkState._name]._scope) ||
+              scope;
+
+            const watchExpression = buildInterpolationWatchExpression(
+              linkState._interpolateFn.expressions,
+            );
+
+            targetScope.$watch(watchExpression, () => {
+              applyInterpolatedAttrValue(
+                linkState,
+                attr,
+                /** @type {import("../interpolate/interface.ts").InterpolationFunction} */ (
+                  linkState._interpolateFn
+                )(scope),
+              );
+            });
+          }
+
+          if (linkState._interpolateFn.expressions.length === 0) {
+            applyInterpolatedAttrValue(linkState, attr, newValue);
+          }
+        }
+
+        /**
+         * Applies one property binding update using the parsed getter and sanitizer captured at compile time.
+         *
+         * @param {PropertyDirectiveLinkState} linkState
+         * @param {import("../scope/scope.js").Scope} scope
+         * @param {{ [x: string]: any; }} $element
+         */
+        function applyPropertyDirectiveValue(linkState, scope, $element) {
+          const propValue = linkState._ngPropGetter(scope);
+
+          $element[linkState._propName] = linkState._sanitizer(propValue);
+        }
+
+        /**
+         * Shared pre-link executor for `ng-prop-*` bindings. Watch callbacks still need per-link state,
+         * but the compile-time getter/sanitizer wiring is now reused.
+         *
+         * @param {PropertyDirectiveLinkState} linkState
+         * @param {import("../scope/scope.js").Scope} scope
+         * @param {{ [x: string]: any; }} $element
+         * @param {Attributes} attr
+         */
+        function propertyDirectivePreLinkFn(linkState, scope, $element, attr) {
+          const attrsAny = /** @type {Record<string, any>} */ (attr);
+
+          applyPropertyDirectiveValue(linkState, scope, $element);
+
+          scope.$watch(linkState._propName, () => {
+            applyPropertyDirectiveValue(linkState, scope, $element);
+          });
+
+          scope.$watch(attrsAny[linkState._attrName], (val) => {
+            $sce.valueOf(val);
+            applyPropertyDirectiveValue(linkState, scope, $element);
+          });
+        }
+
+        /**
+         * Invokes node link functions that may either be direct link functions or shared executors
+         * that read their per-node state from `nodeLinkFnCtx`.
+         *
+         * @param {NodeLinkFnCtx} nodeLinkFnCtx
+         * @param {ChildLinkFn | CompositeLinkFn | null | undefined} childLinkFn
+         * @param {import("../scope/scope.js").Scope} scope
+         * @param {Node | Element} node
+         * @param {BoundTranscludeFn | null} boundTranscludeFn
+         */
+        function invokeNodeLinkFnCtx(
+          nodeLinkFnCtx,
+          childLinkFn,
+          scope,
+          node,
+          boundTranscludeFn,
+        ) {
+          if (isDefined(nodeLinkFnCtx._nodeLinkFnState)) {
+            return /** @type {StoredNodeLinkFn} */ (nodeLinkFnCtx._nodeLinkFn)(
+              nodeLinkFnCtx._nodeLinkFnState,
+              childLinkFn,
+              scope,
+              node,
+              boundTranscludeFn,
+            );
+          }
+
+          return /** @type {NodeLinkFn} */ (nodeLinkFnCtx._nodeLinkFn)(
+            childLinkFn,
+            scope,
+            node,
+            boundTranscludeFn,
+          );
+        }
+
+        /**
+         * Links against a resolved async template using the already materialized node.
+         * This is the direct path for links that happen after the template has loaded.
+         *
+         * @param {DelayedTemplateLinkState} delayedState
+         * @param {import("../scope/scope.js").Scope} scope
+         * @param {Node | Element} node
+         * @param {BoundTranscludeFn | null | undefined} boundTranscludeFn
+         */
+        function invokeResolvedTemplateNodeLink(
+          delayedState,
+          scope,
+          node,
+          boundTranscludeFn,
+        ) {
+          const afterTemplateNodeLinkFnCtx =
+            delayedState._afterTemplateNodeLinkFnCtx;
+
+          if (!afterTemplateNodeLinkFnCtx) {
+            return;
+          }
+
+          let childBoundTranscludeFn = boundTranscludeFn;
+
+          if (afterTemplateNodeLinkFnCtx._transcludeOnThisElement) {
+            childBoundTranscludeFn = createBoundTranscludeFn(
+              scope,
+              /** @type {ng.TranscludeFn} */ (
+                afterTemplateNodeLinkFnCtx._transclude
+              ),
+              boundTranscludeFn,
+            );
+          }
+
+          invokeNodeLinkFnCtx(
+            afterTemplateNodeLinkFnCtx,
+            delayedState._afterTemplateChildLinkFn,
+            scope,
+            node,
+            /** @type {BoundTranscludeFn | null} */ (
+              childBoundTranscludeFn || null
+            ),
+          );
+        }
+
+        /**
+         * Replays one queued link request after an async templateUrl has resolved.
+         * Queued requests may need clone/class reconciliation because the template DOM did not
+         * exist at the time the original link request was recorded.
+         *
+         * @param {DelayedTemplateLinkState} delayedState
+         * @param {import("../scope/scope.js").Scope} scope
+         * @param {Node | Element} beforeTemplateLinkNode
+         * @param {BoundTranscludeFn | null | undefined} boundTranscludeFn
+         */
+        function replayResolvedTemplateNodeLink(
+          delayedState,
+          scope,
+          beforeTemplateLinkNode,
+          boundTranscludeFn,
+        ) {
+          const afterTemplateNodeLinkFnCtx =
+            delayedState._afterTemplateNodeLinkFnCtx;
+
+          if (!afterTemplateNodeLinkFnCtx || !delayedState._compiledNode) {
+            return;
+          }
+
+          if (scope._destroyed) {
+            return;
+          }
+
+          let linkNode = delayedState._compileNodeRef._getAny();
+
+          if (
+            beforeTemplateLinkNode !== delayedState._beforeTemplateCompileNode
+          ) {
+            const oldClasses = /** @type {Element} */ (beforeTemplateLinkNode)
+              .className;
+
+            if (
+              !(
+                delayedState._previousCompileContext
+                  ._hasElementTranscludeDirective &&
+                delayedState._origAsyncDirective.replace
+              )
+            ) {
+              // The linked node was cloned before the template arrived; clone the resolved template too.
+              linkNode = delayedState._compiledNode.cloneNode(true);
+              beforeTemplateLinkNode.appendChild(linkNode);
+            }
+
+            try {
+              if (oldClasses !== "") {
+                delayedState._compileNodeRef.element.classList.forEach((cls) =>
+                  /** @type {Element} */ (beforeTemplateLinkNode).classList.add(
+                    cls,
+                  ),
+                );
+              }
+            } catch {
+              // Ignore read-only SVG className updates.
+            }
+          }
+
+          invokeResolvedTemplateNodeLink(
+            delayedState,
+            scope,
+            linkNode,
+            boundTranscludeFn,
+          );
+        }
+
+        /**
+         * Shared delayed link executor for async `templateUrl` directives. Until the template resolves,
+         * it stores link requests in a compact queue; afterwards it links directly against the resolved template.
+         *
+         * @param {DelayedTemplateLinkState} delayedState
+         * @param {any} _ignoreChildLinkFn
+         * @param {import("../scope/scope.js").Scope} scope
+         * @param {Node | Element} node
+         * @param {BoundTranscludeFn | null | undefined} boundTranscludeFn
+         */
+        function invokeDelayedTemplateNodeLinkFn(
+          delayedState,
+          _ignoreChildLinkFn,
+          scope,
+          node,
+          boundTranscludeFn,
+        ) {
+          if (scope._destroyed) {
+            return;
+          }
+
+          if (delayedState._linkQueue) {
+            delayedState._linkQueue.push(scope, node, boundTranscludeFn);
+
+            return;
+          }
+
+          invokeResolvedTemplateNodeLink(
+            delayedState,
+            scope,
+            node,
+            boundTranscludeFn,
+          );
+        }
+
+        /**
+         * Handles `$transclude(...)` calls for the shared node-link executor.
+         *
+         * @param {ControllersBoundTranscludeState} transcludeState
+         * @param {import("../scope/scope.js").Scope | CloneAttachFn | undefined} scopeParam
+         * @param {CloneAttachFn | Node | null | undefined} cloneAttachFn
+         * @param {Node | null | undefined} _futureParentElement
+         * @param {string | number | undefined} slotName
+         */
+        function invokeControllersBoundTransclude(
+          transcludeState,
+          scopeParam,
+          cloneAttachFn,
+          _futureParentElement,
+          slotName,
+        ) {
+          let _transcludeControllers;
+
+          if (!isScope(scopeParam)) {
+            slotName = /** @type {string | number | undefined} */ (
+              _futureParentElement
+            );
+            _futureParentElement = /** @type {Node | null | undefined} */ (
+              cloneAttachFn
+            );
+            cloneAttachFn = /** @type {CloneAttachFn | undefined} */ (
+              scopeParam
+            );
+            scopeParam = undefined;
+          }
+
+          if (transcludeState._hasElementTranscludeDirective) {
+            _transcludeControllers = transcludeState._elementControllers;
+          }
+
+          if (!_futureParentElement) {
+            _futureParentElement =
+              transcludeState._hasElementTranscludeDirective
+                ? transcludeState._elementRef.node.parentElement
+                : transcludeState._elementRef.node;
+          }
+
+          if (slotName) {
+            const slotTranscludeFn =
+              transcludeState._boundTranscludeFn._slots[slotName];
+
+            if (slotTranscludeFn) {
+              return slotTranscludeFn(
+                /** @type {ng.Scope | null | undefined} */ (scopeParam),
+                /** @type {CloneAttachFn | undefined} */ (cloneAttachFn),
+                _transcludeControllers,
+                _futureParentElement,
+                transcludeState._scopeToChild,
+              );
+            }
+
+            if (isUndefined(slotTranscludeFn)) {
+              throw $compileMinErr(
+                "noslot",
+                'No parent directive that requires a transclusion with slot name "{0}". ' +
+                  "Element: {1}",
+                slotName,
+                startingTag(transcludeState._elementRef.element),
+              );
+            }
+
+            return undefined;
+          }
+
+          return transcludeState._boundTranscludeFn(
+            /** @type {ng.Scope | null | undefined} */ (scopeParam),
+            /** @type {CloneAttachFn | undefined} */ (cloneAttachFn),
+            _transcludeControllers,
+            _futureParentElement,
+            transcludeState._scopeToChild,
+          );
+        }
+
+        /**
+         * Reuses one implementation for the standard node-link path by passing all compile-time
+         * state explicitly instead of closing over it in a per-node function.
+         *
+         * @param {NodeLinkState} nodeLinkState
+         * @param {ChildLinkFn | CompositeLinkFn | null | undefined} childLinkFn
+         * @param {import("../scope/scope.js").Scope} scope
+         * @param {Node | Element} linkNode
+         * @param {BoundTranscludeFn | null} boundTranscludeFn
+         */
+        function invokeStoredNodeLinkFn(
+          nodeLinkState,
+          childLinkFn,
+          scope,
+          linkNode,
+          boundTranscludeFn,
+        ) {
+          let isolateScope;
+
+          let controllerScope;
+
+          /** @type {{ [s: string]: any; }} */
+          let elementControllers = nullObject();
+
+          let scopeToChild = scope;
+
+          /** @type {NodeRef} */
+          let $element;
+
+          /** @type {Attributes} */
+          let attrs;
+
+          let scopeBindingInfo;
+
+          if (nodeLinkState._compileNode === linkNode) {
+            attrs = nodeLinkState._templateAttrs;
+            $element = /** @type {NodeRef} */ (
+              nodeLinkState._templateAttrs._nodeRef
+            );
+          } else {
+            $element = new NodeRef(linkNode);
+            attrs = new Attributes(
+              $animate,
+              $exceptionHandler,
+              $sce,
+              $element,
+              nodeLinkState._templateAttrs,
+            );
+          }
+
+          controllerScope = scope;
+
+          if (nodeLinkState._newIsolateScopeDirective) {
+            isolateScope = scope.$newIsolate();
+          } else if (nodeLinkState._newScopeDirective) {
+            controllerScope = scope.$parent;
+          }
+
+          controllerScope = /** @type {ng.Scope} */ (controllerScope || scope);
+
+          let transcludeFn = nodeLinkState._transcludeFn;
+
+          if (boundTranscludeFn) {
+            /** @type {ControllersBoundTranscludeState} */
+            const transcludeState = {
+              _boundTranscludeFn: boundTranscludeFn,
+              _elementControllers: elementControllers,
+              _hasElementTranscludeDirective:
+                nodeLinkState._hasElementTranscludeDirective,
+              _scopeToChild: scopeToChild,
+              _elementRef: $element,
+            };
+
+            const controllersBoundTransclude = function (
+              /** @type {import("../scope/scope.js").Scope | CloneAttachFn | undefined} */ scopeParam,
+              /** @type {CloneAttachFn | Node | null | undefined} */ cloneAttachFn,
+              /** @type {Node | null | undefined} */ _futureParentElement,
+              /** @type {string | number | undefined} */ slotName,
+            ) {
+              transcludeState._scopeToChild = scopeToChild;
+              transcludeState._elementRef = $element;
+              transcludeState._elementControllers = elementControllers;
+
+              return invokeControllersBoundTransclude(
+                transcludeState,
+                scopeParam,
+                cloneAttachFn,
+                _futureParentElement,
+                slotName,
+              );
+            };
+
+            /** @type {any} */
+            const newTranscludeFn = /** @type {any} */ (
+              controllersBoundTransclude
+            );
+
+            newTranscludeFn._boundTransclude = boundTranscludeFn;
+            newTranscludeFn.isSlotFilled = function (
+              /** @type {string | number} */ slotName,
+            ) {
+              return !!this._boundTransclude._slots[slotName];
+            };
+            transcludeFn = newTranscludeFn;
+          }
+
+          const controllerDirectives =
+            nodeLinkState._controllerDirectives || nullObject();
+
+          if (nodeLinkState._controllerDirectives) {
+            elementControllers = setupControllers(
+              $element,
+              attrs,
+              /** @type {ng.TranscludeFn} */ (transcludeFn),
+              nodeLinkState._controllerDirectives,
+              /** @type {ng.Scope} */ (isolateScope || scope),
+              scope,
+              nodeLinkState._newIsolateScopeDirective,
+            );
+          }
+
+          if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
+            isolateScope.$target._isolateBindings = /** @type {any} */ (
+              nodeLinkState._newIsolateScopeDirective
+            )._isolateBindings;
+            scopeBindingInfo = initializeDirectiveBindings(
+              scope,
+              attrs,
+              isolateScope,
+              isolateScope._isolateBindings,
+              nodeLinkState._newIsolateScopeDirective,
+            );
+
+            if (scopeBindingInfo.removeWatches) {
+              isolateScope.$on("$destroy", scopeBindingInfo.removeWatches);
+            }
+          }
+
+          for (const name in elementControllers) {
+            const controllerDirective = controllerDirectives[name];
+
+            const controller = elementControllers[name];
+
+            const bindings = /** @type {any} */ (controllerDirective)._bindings
+              .bindToController;
+
+            const controllerInstance = controller();
+
+            controller.instance = controllerScope.$new(controllerInstance);
+            setCacheData(
+              $element.node,
+              `$${controllerDirective.name}Controller`,
+              controller.instance,
+            );
+            controller.bindingInfo = initializeDirectiveBindings(
+              /** @type {ng.Scope} */ (controllerScope),
+              attrs,
+              controller.instance,
+              bindings,
+              controllerDirective,
+            );
+          }
+
+          if (nodeLinkState._controllerDirectives) {
+            entries(controllerDirectives).forEach(
+              ([name, controllerDirective]) => {
+                const { require } = controllerDirective;
+
+                if (
+                  controllerDirective.bindToController &&
+                  !isArray(require) &&
+                  isObject(require)
+                ) {
+                  extend(
+                    elementControllers[name].instance,
+                    getControllers(
+                      name,
+                      require,
+                      $element.element,
+                      elementControllers,
+                    ),
+                  );
+                }
+              },
+            );
+          }
+
+          if (elementControllers) {
+            values(elementControllers).forEach((controller) => {
+              const controllerInstance = controller.instance;
+
+              if (isFunction(controllerInstance.$onChanges)) {
+                try {
+                  controllerInstance.$onChanges(
+                    controller.bindingInfo.initialChanges,
+                  );
+                } catch (err) {
+                  $exceptionHandler(err);
+                }
+              }
+
+              if (isFunction(controllerInstance.$onInit)) {
+                try {
+                  controllerInstance.$target.$onInit();
+                } catch (err) {
+                  $exceptionHandler(err);
+                }
+              }
+
+              if (isFunction(controllerInstance.$onDestroy)) {
+                /** @type {ng.Scope} */ (controllerScope).$on(
+                  "$destroy",
+                  () => {
+                    controllerInstance.$onDestroy();
+                  },
+                );
+              }
+            });
+          }
+
+          for (let i = 0, ii = nodeLinkState._preLinkFns.length; i < ii; i++) {
+            const preLinkFn = /** @type {LinkFnRecord} */ (
+              nodeLinkState._preLinkFns[i]
+            );
+
+            const controllers =
+              preLinkFn._require &&
+              getControllers(
+                preLinkFn._directiveName,
+                preLinkFn._require,
+                $element.element,
+                elementControllers,
+              );
+
+            try {
+              invokeLinkFnRecord(
+                preLinkFn,
+                isolateScope,
+                scope,
+                $element.node,
+                attrs,
+                controllers,
+                transcludeFn,
+              );
+            } catch (err) {
+              $exceptionHandler(err);
+            }
+          }
+
+          if (
+            nodeLinkState._newIsolateScopeDirective &&
+            (nodeLinkState._newIsolateScopeDirective.template ||
+              nodeLinkState._newIsolateScopeDirective.templateUrl === null)
+          ) {
+            scopeToChild = isolateScope || scope;
+          }
+
+          if (
+            childLinkFn &&
+            linkNode.childNodes &&
+            linkNode.childNodes.length
+          ) {
+            childLinkFn(
+              scopeToChild,
+              new NodeRef(linkNode.childNodes),
+              boundTranscludeFn,
+            );
+          }
+
+          for (let i = nodeLinkState._postLinkFns.length - 1; i >= 0; i--) {
+            const postLinkFn = /** @type {LinkFnRecord} */ (
+              nodeLinkState._postLinkFns[i]
+            );
+
+            const controllers =
+              postLinkFn._require &&
+              getControllers(
+                postLinkFn._directiveName,
+                postLinkFn._require,
+                /** @type {Element} */ ($element.node),
+                elementControllers,
+              );
+
+            try {
+              if (postLinkFn._isolateScope && isolateScope) {
+                setIsolateScope($element.element, isolateScope);
+              }
+
+              invokeLinkFnRecord(
+                postLinkFn,
+                isolateScope,
+                scope,
+                $element.node,
+                attrs,
+                controllers,
+                transcludeFn,
+              );
+            } catch (err) {
+              $exceptionHandler(err);
+            }
+          }
+
+          if (elementControllers) {
+            values(elementControllers).forEach((controller) => {
+              const controllerInstance = controller.instance;
+
+              if (isFunction(controllerInstance.$postLink)) {
+                controllerInstance.$postLink();
+              }
+            });
+          }
         }
 
         /**
@@ -1543,382 +2183,10 @@ export class CompileProvider {
 
           let directiveValue;
 
-          /**
-           * Links all the directives of a single node.
-           * @type {ng.NodeLinkFn}
-           */
+          /** @type {NodeLinkFn | StoredNodeLinkFn | undefined} */
+          let nodeLinkFn;
 
-          let nodeLinkFn = function (
-            childLinkFn,
-            scope,
-            linkNode,
-            boundTranscludeFn,
-          ) {
-            let i;
-
-            let ii;
-
-            let isolateScope;
-
-            let controllerScope;
-
-            /** @type {{ [s: string]: any; }} */
-            let elementControllers = nullObject();
-
-            let scopeToChild = scope;
-
-            /** @type {NodeRef} */
-            let $element;
-
-            /** @type {Attributes} */
-            let attrs;
-
-            let scopeBindingInfo;
-
-            if (compileNode === linkNode) {
-              attrs = templateAttrs;
-              $element = /** @type {NodeRef} */ (templateAttrs._nodeRef);
-            } else {
-              $element = new NodeRef(linkNode);
-              attrs = new Attributes(
-                $animate,
-                $exceptionHandler,
-                $sce,
-                $element,
-                templateAttrs,
-              );
-            }
-
-            controllerScope = scope;
-
-            if (_newIsolateScopeDirective) {
-              isolateScope = scope.$newIsolate();
-            } else if (_newScopeDirective) {
-              controllerScope = scope.$parent;
-            }
-            controllerScope = /** @type {ng.Scope} */ (
-              controllerScope || scope
-            );
-
-            if (boundTranscludeFn) {
-              // track `boundTranscludeFn` so it can be unwrapped if `transcludeFn`
-              // is later passed as `_parentBoundTranscludeFn` to `publicLinkFn`
-              /** @type {any} */
-              const newTrancludeFn = /** @type {any} */ (
-                controllersBoundTransclude
-              );
-
-              newTrancludeFn._boundTransclude = boundTranscludeFn;
-              // expose the slots on the `$transclude` function
-              newTrancludeFn.isSlotFilled = function (
-                /** @type {string | number} */ slotName,
-              ) {
-                return !!boundTranscludeFn._slots[slotName];
-              };
-              transcludeFn = newTrancludeFn;
-            }
-
-            const controllerDirectives = _controllerDirectives || nullObject();
-
-            if (_controllerDirectives) {
-              elementControllers = setupControllers(
-                $element,
-                attrs,
-                /** @type {ng.TranscludeFn} */ (transcludeFn),
-                _controllerDirectives,
-                /** @type {ng.Scope} */ (isolateScope || scope),
-                scope,
-                _newIsolateScopeDirective,
-              );
-            }
-
-            if (_newIsolateScopeDirective && isolateScope) {
-              isolateScope.$target._isolateBindings = /** @type {any} */ (
-                _newIsolateScopeDirective
-              )._isolateBindings;
-              scopeBindingInfo = initializeDirectiveBindings(
-                scope,
-                attrs,
-                isolateScope,
-                isolateScope._isolateBindings,
-                _newIsolateScopeDirective,
-              );
-
-              if (scopeBindingInfo.removeWatches) {
-                isolateScope.$on("$destroy", scopeBindingInfo.removeWatches);
-              }
-            }
-
-            // Initialize bindToController bindings
-            for (const name in elementControllers) {
-              const controllerDirective = controllerDirectives[name];
-
-              const controller = elementControllers[name];
-
-              const bindings = /** @type {any} */ (controllerDirective)
-                ._bindings.bindToController;
-
-              // Controller instance is bound to the scope
-              const controllerInstance = controller();
-
-              controller.instance = controllerScope.$new(controllerInstance);
-              setCacheData(
-                $element.node,
-                `$${controllerDirective.name}Controller`,
-                controller.instance,
-              );
-              controller.bindingInfo = initializeDirectiveBindings(
-                /** @type {ng.Scope} */ (controllerScope),
-                attrs,
-                controller.instance,
-                bindings,
-                controllerDirective,
-              );
-            }
-
-            // Bind the required controllers to the controller, if `require` is an object and `bindToController` is truthy
-            if (_controllerDirectives) {
-              entries(controllerDirectives).forEach(
-                ([name, controllerDirective]) => {
-                  const { require } = controllerDirective;
-
-                  if (
-                    controllerDirective.bindToController &&
-                    !isArray(require) &&
-                    isObject(require)
-                  ) {
-                    extend(
-                      elementControllers[name].instance,
-                      getControllers(
-                        name,
-                        require,
-                        $element.element,
-                        elementControllers,
-                      ),
-                    );
-                  }
-                },
-              );
-            }
-
-            // Handle the init and destroy lifecycle hooks on all controllers that have them
-            if (elementControllers) {
-              values(elementControllers).forEach((controller) => {
-                const controllerInstance = controller.instance;
-
-                if (isFunction(controllerInstance.$onChanges)) {
-                  try {
-                    controllerInstance.$onChanges(
-                      controller.bindingInfo.initialChanges,
-                    );
-                  } catch (err) {
-                    $exceptionHandler(err);
-                  }
-                }
-
-                if (isFunction(controllerInstance.$onInit)) {
-                  try {
-                    controllerInstance.$target.$onInit();
-                  } catch (err) {
-                    $exceptionHandler(err);
-                  }
-                }
-
-                if (isFunction(controllerInstance.$onDestroy)) {
-                  /** @type {ng.Scope} */ (controllerScope).$on(
-                    "$destroy",
-                    () => {
-                      controllerInstance.$onDestroy();
-                    },
-                  );
-                }
-              });
-            }
-
-            // PRELINKING
-            for (i = 0, ii = preLinkFns.length; i < ii; i++) {
-              const preLinkFn = /** @type {LinkFnRecord} */ (preLinkFns[i]);
-
-              const controllers =
-                preLinkFn._require &&
-                getControllers(
-                  preLinkFn._directiveName,
-                  preLinkFn._require,
-                  $element.element,
-                  elementControllers,
-                );
-
-              // invoke link function
-              try {
-                invokeLinkFnRecord(
-                  preLinkFn,
-                  isolateScope,
-                  scope,
-                  $element.node, // Prelink functions accept a Node
-                  attrs,
-                  controllers,
-                  transcludeFn,
-                );
-              } catch (err) {
-                $exceptionHandler(err);
-              }
-            }
-
-            // RECURSION
-            // We only pass the isolate scope, if the isolate directive has a template,
-            // otherwise the child elements do not belong to the isolate directive.
-
-            if (
-              _newIsolateScopeDirective &&
-              (_newIsolateScopeDirective.template ||
-                _newIsolateScopeDirective.templateUrl === null)
-            ) {
-              scopeToChild = isolateScope || scope;
-            }
-
-            if (
-              childLinkFn &&
-              linkNode &&
-              linkNode.childNodes &&
-              linkNode.childNodes.length
-            ) {
-              childLinkFn(
-                scopeToChild,
-                new NodeRef(linkNode.childNodes),
-                boundTranscludeFn,
-              );
-            }
-
-            // POSTLINKING
-            for (i = postLinkFns.length - 1; i >= 0; i--) {
-              const postLinkFn = /** @type {LinkFnRecord} */ (postLinkFns[i]);
-
-              const controllers =
-                postLinkFn._require &&
-                getControllers(
-                  postLinkFn._directiveName,
-                  postLinkFn._require,
-                  /** @type {Element} */ ($element.node),
-                  elementControllers,
-                );
-
-              // invoke link function
-              try {
-                if (postLinkFn._isolateScope && isolateScope) {
-                  setIsolateScope($element.element, isolateScope);
-                }
-
-                invokeLinkFnRecord(
-                  postLinkFn,
-                  isolateScope,
-                  scope,
-                  $element.node,
-                  attrs,
-                  controllers,
-                  transcludeFn,
-                );
-              } catch (err) {
-                $exceptionHandler(err);
-              }
-            }
-
-            if (elementControllers) {
-              // Trigger $postLink lifecycle hooks
-              values(elementControllers).forEach((controller) => {
-                const controllerInstance = controller.instance;
-
-                if (isFunction(controllerInstance.$postLink)) {
-                  controllerInstance.$postLink();
-                }
-              });
-            }
-
-            // This is the function that is injected as `$transclude` or
-            // the fifth parameter to the link function.
-            // Example: function link (scope, element, attrs, ctrl, transclude) {}
-            // Note: all arguments are optional!
-            /**
-             * @param {import("../scope/scope.js").Scope | import("./interface.ts").CloneAttachFn | undefined} scopeParam
-             * @param {import("./interface.ts").CloneAttachFn | Node | null | undefined} cloneAttachFn
-             * @param {Node | null | undefined} _futureParentElement
-             * @param {string | number | undefined} slotName
-             */
-            function controllersBoundTransclude(
-              scopeParam,
-              cloneAttachFn,
-              _futureParentElement,
-              slotName,
-            ) {
-              let _transcludeControllers;
-
-              // No scope passed in:
-              if (!isScope(scopeParam)) {
-                slotName = /** @type {string | number | undefined} */ (
-                  _futureParentElement
-                );
-                _futureParentElement = /** @type {Node | null | undefined} */ (
-                  cloneAttachFn
-                );
-                cloneAttachFn =
-                  /** @type {import("./interface.ts").CloneAttachFn | undefined} */ (
-                    scopeParam
-                  );
-                scopeParam = undefined;
-              }
-
-              if (_hasElementTranscludeDirective) {
-                _transcludeControllers = elementControllers;
-              }
-
-              if (!_futureParentElement) {
-                _futureParentElement = _hasElementTranscludeDirective
-                  ? $element.node.parentElement
-                  : $element.node;
-              }
-
-              if (!boundTranscludeFn) {
-                return undefined;
-              }
-
-              if (slotName) {
-                // slotTranscludeFn can be one of three things:
-                //  * a transclude function - a filled slot
-                //  * `null` - an optional slot that was not filled
-                //  * `undefined` - a slot that was not declared (i.e. invalid)
-                const slotTranscludeFn = boundTranscludeFn._slots[slotName];
-
-                if (slotTranscludeFn) {
-                  return slotTranscludeFn(
-                    /** @type {ng.Scope | null | undefined} */ (scopeParam),
-                    /** @type {CloneAttachFn | undefined} */ (cloneAttachFn),
-                    _transcludeControllers,
-                    _futureParentElement,
-                    scopeToChild,
-                  );
-                }
-
-                if (isUndefined(slotTranscludeFn)) {
-                  throw $compileMinErr(
-                    "noslot",
-                    'No parent directive that requires a transclusion with slot name "{0}". ' +
-                      "Element: {1}",
-                    slotName,
-                    startingTag($element.element),
-                  );
-                }
-
-                return undefined;
-              } else {
-                return boundTranscludeFn(
-                  /** @type {ng.Scope | null | undefined} */ (scopeParam),
-                  /** @type {CloneAttachFn | undefined} */ (cloneAttachFn),
-                  _transcludeControllers,
-                  _futureParentElement,
-                  scopeToChild,
-                );
-              }
-            }
-          };
+          let nodeLinkFnState;
 
           // executes all directives on the current element
           for (let i = 0, ii = directives.length; i < ii; i++) {
@@ -2325,28 +2593,29 @@ export class CompileProvider {
                 replaceDirective = directive;
               }
 
-              nodeLinkFn = /** @type {ng.NodeLinkFn} */ (
-                compileTemplateUrl(
-                  directives.splice(i, directives.length - i),
-                  compileNodeRef,
-                  templateAttrs,
-                  /** @type {Element} */ (compileNode),
-                  hasTranscludeDirective && childTranscludeFn,
-                  preLinkFns,
-                  postLinkFns,
-                  {
-                    _index,
-                    _controllerDirectives,
-                    _newScopeDirective:
-                      _newScopeDirective !== directive && _newScopeDirective,
-                    _newIsolateScopeDirective,
-                    _templateDirective,
-                    _nonTlbTranscludeDirective,
-                    _futureParentElement:
-                      previousCompileContext._futureParentElement,
-                  },
-                )
-              );
+              ({ _nodeLinkFn: nodeLinkFn, _nodeLinkFnState: nodeLinkFnState } =
+                /** @type {any} */ (
+                  compileTemplateUrl(
+                    directives.splice(i, directives.length - i),
+                    compileNodeRef,
+                    templateAttrs,
+                    /** @type {Element} */ (compileNode),
+                    hasTranscludeDirective && childTranscludeFn,
+                    preLinkFns,
+                    postLinkFns,
+                    {
+                      _index,
+                      _controllerDirectives,
+                      _newScopeDirective:
+                        _newScopeDirective !== directive && _newScopeDirective,
+                      _newIsolateScopeDirective,
+                      _templateDirective,
+                      _nonTlbTranscludeDirective,
+                      _futureParentElement:
+                        previousCompileContext._futureParentElement,
+                    },
+                  )
+                ));
               ii = directives.length;
             } else if (directive.compile) {
               try {
@@ -2364,27 +2633,46 @@ export class CompileProvider {
                   !!directive._isolateScope;
 
                 if (isFunction(linkFn)) {
+                  const linkCtx = linkFn._linkCtx;
+
                   pushLinkFnRecord(
                     postLinkFns,
-                    bind(context, linkFn),
+                    isDefined(linkCtx) ? linkFn : bind(context, linkFn),
                     directive.require,
                     directiveName,
                     isolateScope,
+                    linkCtx,
                   );
                 } else if (linkFn) {
+                  const preLinkCtx = linkFn._preLinkCtx || linkFn._linkCtx;
+
+                  const postLinkCtx = linkFn._postLinkCtx || linkFn._linkCtx;
+
                   pushLinkFnRecord(
                     preLinkFns,
-                    bind(context, /** @type {ng.PublicLinkFn} */ (linkFn).pre),
+                    isDefined(preLinkCtx)
+                      ? /** @type {ng.PublicLinkFn} */ (linkFn).pre
+                      : bind(
+                          context,
+                          /** @type {ng.PublicLinkFn} */ (linkFn).pre,
+                        ),
                     directive.require,
                     directiveName,
                     isolateScope,
+                    preLinkCtx,
                   );
                   pushLinkFnRecord(
                     postLinkFns,
-                    bind(context, /** @type {ng.PublicLinkFn} */ (linkFn).post),
+                    isDefined(postLinkCtx)
+                      ? /** @type {ng.PublicLinkFn} */ (linkFn).post
+                      : bind(
+                          context,
+                          /** @type {ng.PublicLinkFn} */ (linkFn).post,
+                        ),
                     directive.require,
                     directiveName,
                     isolateScope,
+                    postLinkCtx,
                   );
                 }
               } catch (err) {
@@ -2401,9 +2689,27 @@ export class CompileProvider {
           previousCompileContext._hasElementTranscludeDirective =
             _hasElementTranscludeDirective;
 
+          if (!nodeLinkFn) {
+            nodeLinkFn = /** @type {StoredNodeLinkFn} */ (
+              invokeStoredNodeLinkFn
+            );
+            nodeLinkFnState = {
+              _compileNode: compileNode,
+              _templateAttrs: templateAttrs,
+              _transcludeFn: childTranscludeFn,
+              _controllerDirectives,
+              _newIsolateScopeDirective,
+              _newScopeDirective,
+              _hasElementTranscludeDirective,
+              _preLinkFns: preLinkFns,
+              _postLinkFns: postLinkFns,
+            };
+          }
+
           // might be normal or delayed nodeLinkFn depending on if templateUrl is present
           return {
             _nodeLinkFn: nodeLinkFn,
+            _nodeLinkFnState: nodeLinkFnState,
             _terminal: terminal,
             _transclude: childTranscludeFn,
             _transcludeOnThisElement: hasTranscludeDirective,
@@ -2723,26 +3029,19 @@ export class CompileProvider {
           postLinkFns,
           previousCompileContext,
         ) {
-          /**
-           * @type {any[] | null}
-           */
-          let linkQueue = [];
-
-          /** @type {any} */
-          let afterTemplateNodeLinkFn;
-
-          /**
-           * @type {CompositeLinkFn | null}
-           */
-          let afterTemplateChildLinkFn = null;
-
-          let afterTemplateNodeLinkFnCtx;
-
-          const beforeTemplateCompileNode = $compileNode._getAny();
-
           const origAsyncDirective = /** @type {InternalDirective} */ (
             directives.shift()
           );
+
+          /** @type {DelayedTemplateLinkState} */
+          const delayedState = {
+            _linkQueue: [],
+            _afterTemplateChildLinkFn: null,
+            _beforeTemplateCompileNode: $compileNode._getAny(),
+            _compileNodeRef: $compileNode,
+            _origAsyncDirective: origAsyncDirective,
+            _previousCompileContext: previousCompileContext,
+          };
 
           const derivedSyncDirective = /** @type {InternalDirective} */ (
             inherit(origAsyncDirective, {
@@ -2779,8 +3078,6 @@ export class CompileProvider {
               let tempTemplateAttrs;
 
               let $template;
-
-              let childBoundTranscludeFn;
 
               content = denormalizeTemplate(content);
 
@@ -2836,13 +3133,13 @@ export class CompileProvider {
                 mergeTemplateAttributes(tAttrs, tempTemplateAttrs);
               } else {
                 compileNode = /** @type {Element} */ (
-                  beforeTemplateCompileNode
+                  delayedState._beforeTemplateCompileNode
                 );
                 $compileNode.element.innerHTML = content;
               }
 
               directives.unshift(derivedSyncDirective);
-              afterTemplateNodeLinkFnCtx = applyDirectivesToNode(
+              delayedState._afterTemplateNodeLinkFnCtx = applyDirectivesToNode(
                 directives,
                 compileNode,
                 tAttrs,
@@ -2853,8 +3150,6 @@ export class CompileProvider {
                 { ...previousCompileContext, _ctxNodeRef: $compileNode },
               );
 
-              afterTemplateNodeLinkFn = afterTemplateNodeLinkFnCtx?._nodeLinkFn;
-
               if ($rootElement) {
                 entries($rootElement).forEach(([i, node]) => {
                   if (node === compileNode) {
@@ -2862,88 +3157,43 @@ export class CompileProvider {
                   }
                 });
               }
-              afterTemplateChildLinkFn = compileNodes(
+              delayedState._compiledNode = compileNode;
+              delayedState._afterTemplateChildLinkFn = compileNodes(
                 new NodeRef($compileNode._getAny().childNodes),
                 childTranscludeFn,
               );
 
               for (
                 let queueIndex = 0;
-                linkQueue && queueIndex < linkQueue.length;
+                delayedState._linkQueue &&
+                queueIndex < delayedState._linkQueue.length;
                 queueIndex += 3
               ) {
                 const scope = /** @type {ng.Scope | undefined} */ (
-                  linkQueue[queueIndex]
+                  delayedState._linkQueue[queueIndex]
                 );
 
                 const beforeTemplateLinkNode = /** @type {any} */ (
-                  linkQueue[queueIndex + 1]
+                  delayedState._linkQueue[queueIndex + 1]
                 );
 
                 const boundTranscludeFn =
                   /** @type {BoundTranscludeFn | null | undefined} */ (
-                    linkQueue[queueIndex + 2]
+                    delayedState._linkQueue[queueIndex + 2]
                   );
 
                 if (!scope) {
                   continue;
                 }
 
-                let linkNode = $compileNode._getAny();
-
-                if (scope._destroyed) {
-                  continue;
-                }
-
-                if (beforeTemplateLinkNode !== beforeTemplateCompileNode) {
-                  const oldClasses = beforeTemplateLinkNode.className;
-
-                  if (
-                    !(
-                      previousCompileContext._hasElementTranscludeDirective &&
-                      origAsyncDirective.replace
-                    )
-                  ) {
-                    // it was cloned therefore we have to clone as well.
-                    linkNode = compileNode.cloneNode(true);
-                    beforeTemplateLinkNode.appendChild(linkNode);
-                  }
-
-                  // Copy in CSS classes from original node
-                  try {
-                    if (oldClasses !== "") {
-                      $compileNode.element.classList.forEach((cls) =>
-                        beforeTemplateLinkNode.classList.add(cls),
-                      );
-                    }
-                  } catch {
-                    // ignore, since it means that we are trying to set class on
-                    // SVG element, where class name is read-only.
-                  }
-                }
-
-                if (afterTemplateNodeLinkFnCtx._transcludeOnThisElement) {
-                  childBoundTranscludeFn = createBoundTranscludeFn(
-                    scope,
-                    /** @type {ng.TranscludeFn} */ (
-                      afterTemplateNodeLinkFnCtx._transclude
-                    ),
-                    boundTranscludeFn,
-                  );
-                } else {
-                  childBoundTranscludeFn = boundTranscludeFn;
-                }
-
-                afterTemplateNodeLinkFn(
-                  /** @type {CompositeLinkFn | null} */ (
-                    afterTemplateChildLinkFn
-                  ),
+                replayResolvedTemplateNodeLink(
+                  delayedState,
                   scope,
-                  linkNode,
-                  childBoundTranscludeFn,
+                  beforeTemplateLinkNode,
+                  boundTranscludeFn,
                 );
               }
-              linkQueue = null;
+              delayedState._linkQueue = null;
             })
             .catch((error) => {
               if (isError(error)) {
@@ -2953,63 +3203,10 @@ export class CompileProvider {
               }
             });
 
-          return function delayedNodeLinkFn(
-            /** @type {any} */ _ignoreChildLinkFn,
-            /** @type {ng.Scope} */ scope,
-            /** @type {any} */ node,
-            /** @type {any} */ rootElement,
-            /** @type {any} */ boundTranscludeFn,
-          ) {
-            let childBoundTranscludeFn = boundTranscludeFn;
-
-            if (scope._destroyed) {
-              return;
-            }
-
-            if (linkQueue) {
-              linkQueue.push(scope, node, rootElement);
-            } else {
-              if (afterTemplateNodeLinkFn._transcludeOnThisElement) {
-                childBoundTranscludeFn = createBoundTranscludeFn(
-                  scope,
-                  afterTemplateNodeLinkFn._transclude,
-                  boundTranscludeFn,
-                );
-              }
-              afterTemplateNodeLinkFn(
-                /** @type {CompositeLinkFn | null} */ (
-                  afterTemplateChildLinkFn
-                ),
-                scope,
-                node,
-                rootElement,
-                childBoundTranscludeFn,
-              );
-            }
+          return {
+            _nodeLinkFn: invokeDelayedTemplateNodeLinkFn,
+            _nodeLinkFnState: delayedState,
           };
-        }
-
-        /**
-         * Sorting function for bound directives.
-         * @param {InternalDirective} a
-         * @param {InternalDirective} b
-         */
-        function byPriority(a, b) {
-          const diff =
-            /** @type {number} */ (b.priority) -
-            /** @type {number} */ (a.priority);
-
-          if (diff !== 0) {
-            return diff;
-          }
-
-          if (a.name !== b.name) {
-            return a.name < b.name ? -1 : 1;
-          }
-
-          return (
-            /** @type {number} */ (a.index) - /** @type {number} */ (b.index)
-          );
         }
 
         /**
@@ -3044,51 +3241,22 @@ export class CompileProvider {
           const interpolateFn = $interpolate(text, true);
 
           if (interpolateFn) {
+            /** @type {TextInterpolateLinkState} */
+            const linkState = {
+              _interpolateFn: interpolateFn,
+              _watchExpression: buildInterpolationWatchExpression(
+                interpolateFn.expressions,
+              ),
+            };
+
             directives.push({
               priority: 0,
-              compile: () => (scope, node) => {
-                const { expressions } = interpolateFn;
-
-                const watchExpression =
-                  expressions.length === 1
-                    ? expressions[0]
-                    : `[${expressions.join(",")}]`;
-
-                scope.$watch(watchExpression, () => {
-                  const res = interpolateFn(deProxy(scope));
-
-                  switch (node.nodeType) {
-                    case 1:
-                      node.innerHTML = res;
-                      break;
-                    default:
-                      node.nodeValue = res;
-                  }
-                });
-              },
+              compile: () =>
+                /** @type {any} */ ({
+                  post: textInterpolateLinkFn,
+                  _postLinkCtx: linkState,
+                }),
             });
-          }
-        }
-
-        /**
-         * @param {string | undefined} type
-         * @param {string} template
-         * @returns
-         */
-        function wrapTemplate(type, template) {
-          type = (type || "html").toLowerCase();
-          switch (type) {
-            case "svg":
-            case "math": {
-              const wrapper =
-                /** @type {HTMLDivElement} */ document.createElement("div");
-
-              wrapper.innerHTML = `<${type}>${template}</${type}>`;
-
-              return wrapper.childNodes[0].childNodes;
-            }
-            default:
-              return template;
           }
         }
 
@@ -3261,27 +3429,15 @@ export class CompileProvider {
           directives.push({
             priority: 100,
             compile: function ngPropCompileFn(_, attr) {
-              const ngPropGetter = $parse(attr[attrName]);
-
-              return {
-                pre: function ngPropPreLinkFn(
-                  /** @type {import("../scope/scope.js").Scope} */ scope,
-                  /** @type {{ [x: string]: any; }} */ $element,
-                ) {
-                  function applyPropValue() {
-                    const propValue = ngPropGetter(scope);
-
-                    $element[propName] = sanitizer(propValue);
-                  }
-
-                  applyPropValue();
-                  scope.$watch(propName, applyPropValue);
-                  scope.$watch(attr[attrName], (val) => {
-                    $sce.valueOf(val);
-                    applyPropValue();
-                  });
+              return /** @type {any} */ ({
+                pre: propertyDirectivePreLinkFn,
+                _preLinkCtx: {
+                  _attrName: attrName,
+                  _propName: propName,
+                  _ngPropGetter: $parse(attr[attrName]),
+                  _sanitizer: sanitizer,
                 },
-              };
+              });
             },
           });
         }
@@ -3309,7 +3465,7 @@ export class CompileProvider {
           const allOrNothing = ALL_OR_NOTHING_ATTRS.includes(name) || isNgAttr;
 
           /** @type {import("../interpolate/interface.ts").InterpolationFunction | undefined} */
-          let interpolateFn = /** @type {any} */ (
+          const interpolateFn = /** @type {any} */ (
             $interpolate(
               value,
               mustHaveExpression,
@@ -3341,136 +3497,18 @@ export class CompileProvider {
           directives.push({
             priority: 100,
             compile() {
-              return {
-                pre: function attrInterpolatePreLinkFn(scope, element, attr) {
-                  const _observers =
-                    attr._observers || (attr._observers = nullObject());
-
-                  // If the attribute has changed since last $interpolate()ed
-                  const newValue = attr[name];
-
-                  if (newValue !== value) {
-                    // we need to interpolate again since the attribute value has been updated
-                    // (e.g. by another directive's compile function)
-                    // ensure unset/empty values make interpolateFn falsy
-                    interpolateFn =
-                      /** @type {import("../interpolate/interface.ts").InterpolationFunction | undefined} */ (
-                        newValue &&
-                          $interpolate(
-                            newValue,
-                            true,
-                            trustedContext,
-                            allOrNothing,
-                          )
-                      );
-                    value = newValue;
-                  }
-
-                  // if attribute was updated so that there is no interpolation going on we don't want to
-                  // register any observers
-                  if (!interpolateFn) {
-                    return;
-                  }
-
-                  // initialize attr object so that it's ready in case we need the value for isolate
-                  // scope initialization, otherwise the value would not be available from isolate
-                  // directive's linking fn during linking phase
-                  attr[name] = interpolateFn(scope);
-
-                  (_observers[name] || (_observers[name] = []))._inter = true;
-
-                  if (interpolateFn.expressions.length > 0) {
-                    const targetScope =
-                      (attr._observers && attr._observers[name]._scope) ||
-                      scope;
-
-                    const { expressions } = interpolateFn;
-
-                    const watchExpression =
-                      expressions.length === 1
-                        ? expressions[0]
-                        : `[${expressions.join(",")}]`;
-
-                    targetScope.$watch(watchExpression, () => {
-                      const newInterpolatedValue =
-                        /** @type {import("../interpolate/interface.ts").InterpolationFunction} */ (
-                          interpolateFn
-                        )(scope);
-
-                      // special case for class attribute addition + removal
-                      // so that class changes can tap into the animation
-                      // hooks provided by the $animate service. Be sure to
-                      // skip animations when the first digest occurs (when
-                      // both the new and the old values are the same) since
-                      // the CSS classes are the non-interpolated values
-                      if (name === "class") {
-                        attr.$updateClass(
-                          newInterpolatedValue,
-                          /** @type {Element} */ (attr._element()).classList
-                            .value,
-                        );
-                      } else {
-                        attr.$set(
-                          name,
-                          name === "srcset"
-                            ? $sce.getTrustedMediaUrl(newInterpolatedValue)
-                            : newInterpolatedValue,
-                        );
-                      }
-                    });
-                  }
-
-                  if (interpolateFn.expressions.length === 0) {
-                    attr.$set(
-                      name,
-                      name === "srcset"
-                        ? $sce.getTrustedMediaUrl(newValue)
-                        : newValue,
-                    );
-                  }
+              return /** @type {any} */ ({
+                pre: attrInterpolatePreLinkFn,
+                _preLinkCtx: {
+                  _name: name,
+                  _value: value,
+                  _trustedContext: trustedContext,
+                  _allOrNothing: allOrNothing,
+                  _interpolateFn: interpolateFn,
                 },
-              };
+              });
             },
           });
-        }
-
-        /**
-         *
-         * @param {NodeRef} elementsToRemove The JQLite element which we are going to replace. We keep
-         *                                  the shell, but replace its DOM node reference.
-         * @param {Node} newNode The new DOM node.
-         * @param {number} [index] Parent node index.
-         */
-        function replaceWith(elementsToRemove, newNode, index) {
-          const firstElementToRemove = elementsToRemove._getAny();
-
-          // const removeCount = elementsToRemove.length;
-          const parent = firstElementToRemove.parentNode;
-
-          if (parent) {
-            if (isDefined(index)) {
-              const oldChild = parent.childNodes[index];
-
-              if (oldChild) {
-                parent.replaceChild(newNode, oldChild);
-              }
-            } else {
-              parent.insertBefore(newNode, parent.firstChild);
-              //parent.append(newNode);
-            }
-          }
-
-          // Append all the `elementsToRemove` to a fragment. This will...
-          // - remove them from the DOM
-          // - allow them to still be traversed with .nextSibling
-          // - allow a single fragment.qSA to fetch all elements being removed
-          const fragment = document.createDocumentFragment();
-
-          elementsToRemove._collection().forEach((element) => {
-            fragment.appendChild(element);
-          });
-
-          elementsToRemove.node = newNode;
         }
 
         /**
@@ -3866,4 +3904,228 @@ function assertValidDirectiveName(name) {
       name,
     );
   }
+}
+
+/**
+ * Normalizes the `require` declaration for a directive.
+ * Object-form requires inherit their own key when the value omits the directive name
+ * (e.g. `{ foo: "^^" }` becomes `{ foo: "^^foo" }`).
+ *
+ * @param {ng.Directive} directive
+ * @returns {string | Array<any> | Record<string, string> | undefined}
+ */
+export function getDirectiveRequire(directive) {
+  const require = directive.require || (directive.controller && directive.name);
+
+  if (!isArray(require) && isObject(require)) {
+    const entryList = entries(require);
+
+    for (let i = 0, len = entryList.length; i < len; i++) {
+      const [key, value] = entryList[i];
+
+      const match = value.match(REQUIRE_PREFIX_REGEXP);
+
+      if (!match) continue;
+
+      const name = value.substring(match[0].length);
+
+      if (!name) {
+        require[key] = match[0] + key;
+      }
+    }
+  }
+
+  return require;
+}
+
+/**
+ * Validates and normalizes a directive `restrict` value.
+ *
+ * @param {unknown} restrict
+ * @param {string} name
+ * @returns {string}
+ */
+export function getDirectiveRestrict(restrict, name) {
+  if (restrict && !(isString(restrict) && /[EA]/.test(restrict))) {
+    throw $compileMinErr(
+      "badrestrict",
+      "Restrict property '{0}' of directive '{1}' is invalid",
+      restrict,
+      name,
+    );
+  }
+
+  return isString(restrict) ? restrict : "EA";
+}
+
+/**
+ * Detects the namespace used when compiling child nodes beneath a parent element.
+ * This is primarily used to decide whether template wrapping should happen in HTML or SVG mode.
+ *
+ * @param {Element | Node | null | undefined} parentElement
+ * @returns {"html" | "svg"}
+ */
+export function detectNamespaceForChildElements(parentElement) {
+  const node = parentElement;
+
+  if (!node) {
+    return "html";
+  }
+
+  return getNodeName(/** @type {Element} */ (node)) !== "foreignobject" &&
+    toString.call(node).match(/SVG/)
+    ? "svg"
+    : "html";
+}
+
+/**
+ * Builds a stable node array for linking so index-based mappings stay valid even if DOM shape changes.
+ *
+ * @param {CompositeLinkState} state
+ * @param {NodeRef} nodeRef
+ * @returns {Node[]}
+ */
+export function buildStableNodeList(state, nodeRef) {
+  /** @type {Node[]} */
+  let stableNodeList = [];
+
+  if (state._nodeLinkFnFound) {
+    const stableLength = nodeRef._isList ? nodeRef.nodes.length : 1;
+
+    stableNodeList = new Array(stableLength);
+
+    for (let i = 0, l = state._linkFnsList.length; i < l; i++) {
+      const { _index: idx } = state._linkFnsList[i];
+
+      if (idx === 0) {
+        stableNodeList[idx] = nodeRef._isList
+          ? nodeRef.nodes[idx]
+          : nodeRef.node;
+      } else if (state._nodeRefList?._getIndex(idx)) {
+        stableNodeList[idx] = nodeRef.nodes[idx];
+      }
+    }
+  } else if (nodeRef._isList) {
+    for (let i = 0, l = nodeRef.nodes.length; i < l; i++) {
+      stableNodeList.push(nodeRef.nodes[i]);
+    }
+  } else {
+    stableNodeList.push(nodeRef.node);
+  }
+
+  return stableNodeList;
+}
+
+/**
+ * Serializes one or more interpolation inputs into the watch expression used by `$watch`.
+ * Single expressions stay unchanged; multi-input interpolations are packed into an array expression.
+ *
+ * @param {string[]} expressions
+ * @returns {string}
+ */
+export function buildInterpolationWatchExpression(expressions) {
+  return expressions.length === 1
+    ? expressions[0]
+    : `[${expressions.join(",")}]`;
+}
+
+/**
+ * Writes the interpolated text result to either an element node or a text node.
+ *
+ * @param {Node} node
+ * @param {string} value
+ * @returns {void}
+ */
+export function applyTextInterpolationValue(node, value) {
+  switch (node.nodeType) {
+    case 1:
+      /** @type {Element} */ (node).innerHTML = value;
+      break;
+    default:
+      node.nodeValue = value;
+  }
+}
+
+/**
+ * Sorts directives by priority, then name, then registration index.
+ * This matches the compiler's directive application order.
+ *
+ * @param {InternalDirective} a
+ * @param {InternalDirective} b
+ * @returns {number}
+ */
+export function byPriority(a, b) {
+  const diff =
+    /** @type {number} */ (b.priority) - /** @type {number} */ (a.priority);
+
+  if (diff !== 0) {
+    return diff;
+  }
+
+  if (a.name !== b.name) {
+    return a.name < b.name ? -1 : 1;
+  }
+
+  return /** @type {number} */ (a.index) - /** @type {number} */ (b.index);
+}
+
+/**
+ * Wraps non-HTML templates in a temporary namespace container so the browser parses SVG/MathML correctly.
+ *
+ * @param {string | undefined} type
+ * @param {string} template
+ * @returns {string | NodeListOf<ChildNode>}
+ */
+export function wrapTemplate(type, template) {
+  type = (type || "html").toLowerCase();
+
+  switch (type) {
+    case "svg":
+    case "math": {
+      const wrapper = /** @type {HTMLDivElement} */ (
+        document.createElement("div")
+      );
+
+      wrapper.innerHTML = `<${type}>${template}</${type}>`;
+
+      return wrapper.childNodes[0].childNodes;
+    }
+    default:
+      return template;
+  }
+}
+
+/**
+ * Replaces the node currently represented by `elementsToRemove` while preserving the removed nodes
+ * in a fragment so traversal and later queries continue to work during compilation.
+ *
+ * @param {NodeRef} elementsToRemove
+ * @param {Node} newNode
+ * @param {number} [index]
+ * @returns {void}
+ */
+export function replaceWith(elementsToRemove, newNode, index) {
+  const firstElementToRemove = elementsToRemove._getAny();
+
+  const parent = firstElementToRemove.parentNode;
+
+  if (parent) {
+    if (isDefined(index)) {
+      const oldChild = parent.childNodes[index];
+
+      if (oldChild) {
+        parent.replaceChild(newNode, oldChild);
+      }
+    } else {
+      parent.insertBefore(newNode, parent.firstChild);
+    }
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  elementsToRemove._collection().forEach((element) => {
+    fragment.appendChild(element);
+  });
+
+  elementsToRemove.node = newNode;
 }
