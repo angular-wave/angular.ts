@@ -1,3 +1,8 @@
+import { Param } from "../params/param.ts";
+import type { UrlMatcherCache, UrlMatcherCompileConfig } from "./interface.ts";
+import type { ParamFactory } from "../params/param-factory.ts";
+import type { ParamTypes } from "../params/param-types.ts";
+import type { RawParams } from "../params/interface.ts";
 /**
  * Matches URLs against patterns.
  *
@@ -49,18 +54,15 @@
  *   in the built-in  `date` ParamType matches `2014-11-12`) and provides a Date object in $stateParams.start
  *
  */
-export class UrlMatcher {
-  /**
-   * @internal Given a matcher, return an array with the matcher's path segments and path params, in order
-   * @param {UrlMatcher} matcher
-   */
-  static pathSegmentsAndParams(matcher: UrlMatcher): any;
-  /**
-   * @internal Given a matcher, return an array with the matcher's query params
-   * @param {UrlMatcher} matcher
-   * @returns {Param[]}
-   */
-  static queryParams(matcher: UrlMatcher): Param[];
+export declare class UrlMatcher {
+  static nameValidator: RegExp;
+  _cache: UrlMatcherCache;
+  _children: any[];
+  _params: Param[];
+  _segments: string[];
+  _compiled: any[];
+  config: any;
+  pattern: string;
   /**
    * Compare two UrlMatchers
    *
@@ -75,29 +77,16 @@ export class UrlMatcher {
   static compare(a: UrlMatcher, b: UrlMatcher): number;
   /**
    * @param {string} pattern The pattern to compile into a matcher.
-   * @param {import("../params/param-types.js").ParamTypes} paramTypes The [[ParamTypes]] registry
-   * @param {import("../params/param-factory.js").ParamFactory} paramFactory A [[ParamFactory]] object
+   * @param {import("../params/param-types.ts").ParamTypes} paramTypes The [[ParamTypes]] registry
+   * @param {import("../params/param-factory.ts").ParamFactory} paramFactory A [[ParamFactory]] object
    * @param {import("./interface.ts").UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
    */
   constructor(
     pattern: string,
-    paramTypes: import("../params/param-types.js").ParamTypes,
-    paramFactory: import("../params/param-factory.js").ParamFactory,
-    config: import("./interface.ts").UrlMatcherCompileConfig,
+    paramTypes: ParamTypes,
+    paramFactory: ParamFactory,
+    config: UrlMatcherCompileConfig,
   );
-  _cache: import("./interface.ts").UrlMatcherCache;
-  /**
-   * @type {any[]}
-   */
-  _children: any[];
-  _params: Param[];
-  _segments: string[];
-  /**
-   * @type {any[]}
-   */
-  _compiled: any[];
-  config: any;
-  pattern: string;
   /**
    * Creates a new concatenated UrlMatcher
    *
@@ -139,27 +128,7 @@ export class UrlMatcher {
    * @param {string} hash URL hash e.g. `$location.getHash()`.
    * @returns {import("../params/interface.ts").RawParams | null} The captured parameter values.
    */
-  exec(
-    path: string,
-    search: any,
-    hash: string,
-  ): import("../params/interface.ts").RawParams | null;
-  /**
-   * @internal
-   * Returns all the [[Param]] objects of all path and search parameters of this pattern in order of appearance.
-   *
-   * @param {any} [opts]
-   * @returns {Array.<Param>}  An array of [[Param]] objects. Must be treated as read-only. If the
-   *    pattern has no parameters, an empty array is returned.
-   */
-  parameters(opts?: any): Array<Param>;
-  /**
-   * @internal Returns a single parameter from this UrlMatcher by id
-   * @param {string} id
-   * @param {any} opts
-   * @returns {Param | any | boolean | UrlMatcher | null}
-   */
-  parameter(id: string, opts?: any): Param | any | boolean | UrlMatcher | null;
+  exec(path: string, search: any, hash: string): RawParams | null;
   /**
    * Validates the input parameter values against this UrlMatcher
    *
@@ -168,7 +137,7 @@ export class UrlMatcher {
    * @param {import("../params/interface.ts").RawParams} params The object hash of parameters to validate.
    * @returns {boolean} Returns `true` if `params` validates, otherwise `false`.
    */
-  validates(params: import("../params/interface.ts").RawParams): boolean;
+  validates(params: RawParams): boolean;
   /**
    * Given a set of parameter values, creates a URL from this UrlMatcher.
    *
@@ -184,11 +153,5 @@ export class UrlMatcher {
    * @param {import("../params/interface.ts").RawParams} values  the values to substitute for the parameters in this pattern.
    * @returns the formatted URL (path and optionally search part).
    */
-  format(values?: import("../params/interface.ts").RawParams): string;
+  format(values?: RawParams): string;
 }
-export namespace UrlMatcher {
-  let nameValidator: RegExp;
-}
-export type UrlMatcherCache = import("./interface.ts").UrlMatcherCache;
-export type ParamDetails = import("./interface.ts").ParamDetails;
-import { Param } from "../params/param.js";

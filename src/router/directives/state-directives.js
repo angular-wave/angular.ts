@@ -76,7 +76,7 @@ function getTypeInfo(el) {
 
 /**
  * @param {HTMLElement} el
- * @param {import("../state/state-service.js").StateProvider} $state
+ * @param {import("../state/state-service.ts").StateProvider} $state
  * @param {{ attr?: string; isAnchor: any; clickable?: boolean; }} type
  * @param {{ (): { ngState: any; ngStateParams: any; ngStateOpts: any; href: any; }; (): { ngState: any; ngStateParams: any; ngStateOpts: any; href: any; }; (): any; }} getDef
  * @param {ng.Scope} scope

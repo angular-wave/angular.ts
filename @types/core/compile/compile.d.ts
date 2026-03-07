@@ -95,11 +95,11 @@ export class CompileProvider {
   static $inject: string[];
   /**
    * @param {ng.ProvideService} $provide
-   * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $sanitizeUriProvider
+   * @param {import('../sanitize/sanitize-uri.ts').SanitizeUriProvider} $sanitizeUriProvider
    */
   constructor(
     $provide: ng.ProvideService,
-    $sanitizeUriProvider: import("../sanitize/sanitize-uri.js").SanitizeUriProvider,
+    $sanitizeUriProvider: import("../sanitize/sanitize-uri.ts").SanitizeUriProvider,
   );
   /**
    * Register a new directive with the compiler.
@@ -175,12 +175,12 @@ export class CompileProvider {
    * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
    *
    * @param {RegExp=} regexp New regexp to trust urls with.
-   * @returns {RegExp|import('../sanitize/sanitize-uri.js').SanitizeUriProvider} Current RegExp if called without value or self for
+   * @returns {RegExp|import('../sanitize/sanitize-uri.ts').SanitizeUriProvider} Current RegExp if called without value or self for
    *    chaining otherwise.
    */
   aHrefSanitizationTrustedUrlList: (
     regexp?: RegExp | undefined,
-  ) => RegExp | import("../sanitize/sanitize-uri.js").SanitizeUriProvider;
+  ) => RegExp | import("../sanitize/sanitize-uri.ts").SanitizeUriProvider;
   /**
    * Retrieves or overrides the default regular expression that is used for determining trusted safe
    * urls during img[src] sanitization.
@@ -193,14 +193,14 @@ export class CompileProvider {
    * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
    *
    * @param {RegExp=} regexp New regexp to trust urls with.
-   * @returns {RegExp|import('../sanitize/sanitize-uri.js').SanitizeUriProvider | undefined} Current RegExp if called without value or self for
+   * @returns {RegExp|import('../sanitize/sanitize-uri.ts').SanitizeUriProvider | undefined} Current RegExp if called without value or self for
    *    chaining otherwise.
    */
   imgSrcSanitizationTrustedUrlList: (
     regexp?: RegExp | undefined,
   ) =>
     | RegExp
-    | import("../sanitize/sanitize-uri.js").SanitizeUriProvider
+    | import("../sanitize/sanitize-uri.ts").SanitizeUriProvider
     | undefined;
   strictComponentBindingsEnabled: (enabled: boolean) => boolean | this;
   /**

@@ -223,7 +223,7 @@ export class Trace {
 
   /**
    * @internal called by ng-router code
-   * @param {import("../path/path-node.js").PathNode[]} path
+   * @param {import("../path/path-node.ts").PathNode[]} path
    * @param {import("../resolve/interface.ts").PolicyWhen} when
    * @param {ng.Transition} trans
    */
@@ -258,7 +258,7 @@ export class Trace {
 
   /**
    * @internal called by ng-router code
-   * @param {import("../state/state-object.js").StateObject} finalState
+   * @param {import("../state/state-object.ts").StateObject} finalState
    * @param {ng.Transition} trans
    */
   traceSuccess(finalState, trans) {

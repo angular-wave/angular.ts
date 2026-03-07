@@ -75,12 +75,12 @@ export class Trace {
   traceHookResult(hookResult: HookResult, trans: ng.Transition): void;
   /**
    * @internal called by ng-router code
-   * @param {import("../path/path-node.js").PathNode[]} path
+   * @param {import("../path/path-node.ts").PathNode[]} path
    * @param {import("../resolve/interface.ts").PolicyWhen} when
    * @param {ng.Transition} trans
    */
   traceResolvePath(
-    path: import("../path/path-node.js").PathNode[],
+    path: import("../path/path-node.ts").PathNode[],
     when: import("../resolve/interface.ts").PolicyWhen,
     trans: ng.Transition,
   ): void;
@@ -101,11 +101,11 @@ export class Trace {
   traceError(reason: any, trans: ng.Transition): void;
   /**
    * @internal called by ng-router code
-   * @param {import("../state/state-object.js").StateObject} finalState
+   * @param {import("../state/state-object.ts").StateObject} finalState
    * @param {ng.Transition} trans
    */
   traceSuccess(
-    finalState: import("../state/state-object.js").StateObject,
+    finalState: import("../state/state-object.ts").StateObject,
     trans: ng.Transition,
   ): void;
   /**

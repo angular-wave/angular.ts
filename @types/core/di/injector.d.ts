@@ -1,11 +1,14 @@
+import { InjectorService } from "./internal-injector.ts";
+import type { Injectable } from "../../interface.ts";
+type ModuleLike = string | Function | Injectable<(...args: any[]) => any>;
 /**
  *
  * @param {Array<String|Function>} modulesToLoad
  * @param {boolean} [strictDi]
  * @returns {InjectorService}
  */
-export function createInjector(
-  modulesToLoad: Array<string | Function>,
+export declare function createInjector(
+  modulesToLoad: ModuleLike[],
   strictDi?: boolean,
 ): InjectorService;
-import { InjectorService } from "./internal-injector.js";
+export {};

@@ -1,9 +1,9 @@
 import { BuiltStateDeclaration, StateDeclaration } from "../state/interface.ts";
 import { PredicateBinary } from "../../shared/interface.ts";
 import { Transition } from "./transition.js";
-import { StateObject } from "../state/state-object.js";
-import { PathNode } from "../path/path-node.js";
-import { TargetState } from "../state/target-state.js";
+import { StateObject } from "../state/state-object.ts";
+import { PathNode } from "../path/path-node.ts";
+import { TargetState } from "../state/target-state.ts";
 import { RegisteredHook } from "./hook-registry.js";
 import {
   TransitionHook,

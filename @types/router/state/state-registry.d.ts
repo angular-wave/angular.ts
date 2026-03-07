@@ -1,17 +1,36 @@
-/** @typedef {import("./state-object.js").StateObject} StateObject */
-/** @typedef {import("./interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
-/** @typedef {import('../../interface.ts').ServiceProvider} ServiceProvider } */
-/** @typedef {import("./interface.ts").StateRegistryListener} StateRegistryListener */
-/** @typedef {import("./interface.ts").StateDeclaration} StateDeclaration */
-/** @typedef {import("./interface.ts").StateOrName} StateOrName */
+import { StateMatcher } from "./state-matcher.ts";
+import { StateBuilder } from "./state-builder.ts";
+import { StateQueueManager } from "./state-queue-manager.ts";
+import { ResolveContext } from "../resolve/resolve-context.js";
+import type { InjectorService } from "../../core/di/internal-injector.ts";
+import type {
+  BuilderFunction,
+  BuiltStateDeclaration,
+  _StateDeclaration,
+  StateDeclaration,
+  StateOrName,
+  StateRegistryListener,
+  StateStore,
+} from "./interface.ts";
+import type { StateObject } from "./state-object.ts";
+import type { UrlRules } from "../url/url-rules.ts";
 /**
  * A registry for all of the application's [[StateDeclaration]]s
  *
  * This API is found at `$stateRegistry` ([[UIRouter.stateRegistry]])
  *
  */
-export class StateRegistryProvider {
+export declare class StateRegistryProvider {
   static $inject: string[];
+  states: StateStore;
+  urlService: ng.UrlService;
+  urlServiceRules: UrlRules;
+  $injector: ng.InjectorService | undefined;
+  listeners: StateRegistryListener[];
+  matcher: StateMatcher;
+  builder: StateBuilder;
+  stateQueue: StateQueueManager;
+  _root: StateObject;
   /**
    * @param {ng.UrlService} urlService
    * @param {ng.StateService} stateService
@@ -24,34 +43,7 @@ export class StateRegistryProvider {
     globals: ng.RouterService,
     viewService: ng.ViewService,
   );
-  /** @type {import("./interface.ts").StateStore} */
-  states: import("./interface.ts").StateStore;
-  /**
-   * @type {ng.UrlService}
-   */
-  urlService: ng.UrlService;
-  /**
-   * @type {import("../url/url-rules.js").UrlRules}
-   */
-  urlServiceRules: import("../url/url-rules.js").UrlRules;
-  /**
-   * @type {ng.InjectorService|undefined}
-   */
-  $injector: ng.InjectorService | undefined;
-  /**
-   * @type {StateRegistryListener[]}
-   */
-  listeners: StateRegistryListener[];
-  /**
-   *@type {StateMatcher}
-   */
-  matcher: StateMatcher;
-  /**
-   * @type {StateBuilder}
-   */
-  builder: StateBuilder;
-  stateQueue: StateQueueManager;
-  $get: (string | (($injector: any) => StateRegistryProvider))[];
+  $get: (string | (($injector: InjectorService) => this))[];
   /**
    * This is a [[StateBuilder.builder]] function for angular1 `onEnter`, `onExit`,
    * `onRetain` callback hooks on a [[StateDeclaration]].
@@ -61,15 +53,14 @@ export class StateRegistryProvider {
   getStateHookBuilder(
     hookName: string,
   ): (
-    stateObject: any & Record<string, any>,
+    stateObject: StateObject & Record<string, any>,
   ) =>
-    | ((trans: ng.Transition, state: ng.BuiltStateDeclaration) => any)
+    | ((trans: ng.Transition, state: BuiltStateDeclaration) => any)
     | undefined;
   /**
    * @private
    */
-  private registerRoot;
-  _root: import("./state-object.js").StateObject;
+  registerRoot(): void;
   /**
    * Listen for a State Registry events
    *
@@ -100,9 +91,7 @@ export class StateRegistryProvider {
    *        See [[StateRegistryListener]]
    * @return a function that deregisters the listener
    */
-  onStatesChanged(
-    listener: import("./interface.ts").StateRegistryListener,
-  ): () => void;
+  onStatesChanged(listener: StateRegistryListener): () => void;
   /**
    * Gets the implicit root state
    *
@@ -112,7 +101,7 @@ export class StateRegistryProvider {
    *
    * @return the root [[StateObject]]
    */
-  root(): import("./state-object.js").StateObject;
+  root(): StateObject;
   /**
    * Adds a state to the registry
    *
@@ -125,9 +114,7 @@ export class StateRegistryProvider {
    *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
    *          If the state was only queued, then the object is not fully built.
    */
-  register(
-    stateDefinition: import("./interface.ts")._StateDeclaration,
-  ): import("./state-object.js").StateObject;
+  register(stateDefinition: _StateDeclaration): StateObject;
   /**
    *
    * @param {BuiltStateDeclaration} state
@@ -147,21 +134,17 @@ export class StateRegistryProvider {
   /**
    * @return {ng.BuiltStateDeclaration[]}
    */
-  getAll(): ng.BuiltStateDeclaration[];
+  getAll(): BuiltStateDeclaration[];
   /**
    *
    * @param {StateOrName} [stateOrName]
    * @param {StateOrName} [base]
-   * @returns {import("./state-service.js").StateDeclaration | import("./state-service.js").StateDeclaration[] | null}
+   * @returns {import("./state-service.ts").StateDeclaration | import("./state-service.ts").StateDeclaration[] | null}
    */
   get(
     stateOrName?: StateOrName,
     base?: StateOrName,
-    ...args: any[]
-  ):
-    | import("./state-service.js").StateDeclaration
-    | import("./state-service.js").StateDeclaration[]
-    | null;
+  ): StateDeclaration | StateDeclaration[] | null;
   /**
    * Registers a [[BuilderFunction]] for a specific [[StateObject]] property (e.g., `parent`, `url`, or `path`).
    * More than one BuilderFunction can be registered for a given property.
@@ -174,26 +157,7 @@ export class StateRegistryProvider {
    */
   decorator(
     property: string,
-    builderFunction: import("./interface.ts").BuilderFunction,
-  ):
-    | import("./interface.ts").BuilderFunction
-    | import("./interface.ts").BuilderFunction[];
+    builderFunction: BuilderFunction,
+  ): BuilderFunction | BuilderFunction[] | (() => null);
 }
-export function getLocals(ctx: ResolveContext): {
-  [x: string]: any;
-};
-export type StateObject = import("./state-object.js").StateObject;
-export type BuiltStateDeclaration =
-  import("./interface.ts").BuiltStateDeclaration;
-/**
- * }
- */
-export type ServiceProvider = import("../../interface.ts").ServiceProvider;
-export type StateRegistryListener =
-  import("./interface.ts").StateRegistryListener;
-export type StateDeclaration = import("./interface.ts").StateDeclaration;
-export type StateOrName = import("./interface.ts").StateOrName;
-import { StateMatcher } from "./state-matcher.js";
-import { StateBuilder } from "./state-builder.js";
-import { StateQueueManager } from "./state-queue-manager.js";
-import { ResolveContext } from "../resolve/resolve-context.js";
+export declare const getLocals: (ctx: ResolveContext) => Record<string, any>;

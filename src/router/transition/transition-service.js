@@ -183,8 +183,8 @@ export class TransitionProvider {
    * @returns a Transition
    */
   /**
-   * @param {import("../path/path-node.js").PathNode[]} fromPath
-   * @param {import("../state/target-state.js").TargetState} targetState
+   * @param {import("../path/path-node.ts").PathNode[]} fromPath
+   * @param {import("../state/target-state.ts").TargetState} targetState
    */
   create(fromPath, targetState) {
     return new Transition(fromPath, targetState, this, this.globals);

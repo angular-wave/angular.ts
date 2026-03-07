@@ -13,7 +13,7 @@ export { SceProvider, SceDelegateProvider } from "./services/sce/sce.js";
 export { SceService, SceDelegateService } from "./services/sce/interface.ts";
 export * from "./index.js";
 export * from "./angular.js";
-export * from "./core/di/internal-injector.js";
+export * from "./core/di/internal-injector.ts";
 export * from "./core/scope/scope.js";
 export * from "./services/cookie/cookie.js";
 export * from "./services/cookie/interface.ts";
@@ -22,4 +22,4 @@ export * from "./services/exception/interface.ts";
 export * from "./core/parse/interface.ts";
 
 export * from "./filters/interface.ts";
-export * from "./core/filter/filter.js";
+export * from "./core/filter/filter.ts";

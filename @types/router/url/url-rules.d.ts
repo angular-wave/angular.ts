@@ -1,3 +1,20 @@
+import { UrlRuleFactory } from "./url-rule.ts";
+import type { UrlRule } from "./interface.ts";
+/**
+ * Default rule priority sorting function.
+ *
+ * Sorts rules by:
+ *
+ * - Explicit priority (set rule priority using [[UrlRules.when]])
+ * - Rule type (STATE: 4, URLMATCHER: 4, REGEXP: 3, RAW: 2, OTHER: 1)
+ * - `UrlMatcher` specificity ([[UrlMatcher.compare]]): works for STATE and URLMATCHER types to pick the most specific rule.
+ * - Rule registration order (for rule types other than STATE and URLMATCHER)
+ *   - Equally sorted State and UrlMatcher rules will each match the URL.
+ *     Then, the *best* match is chosen based on how many parameter values were matched.
+ * @param {UrlRule} a
+ * @param {UrlRule} b
+ */
+declare function defaultRuleSortFn(a: UrlRule, b: UrlRule): number;
 /**
  * API for managing URL rules
  *
@@ -8,16 +25,14 @@
  *
  * This API is found at `$url.rules` (see: [[UIRouter.urlService]], [[URLService.rules]])
  */
-export class UrlRules {
-  /** @param {UrlRuleFactory} urlRuleFactory */
-  constructor(urlRuleFactory: UrlRuleFactory);
+export declare class UrlRules {
   _sortFn: typeof defaultRuleSortFn;
-  /**
-   * @type {UrlRule[]}
-   */
   _rules: UrlRule[];
   _id: number;
   _urlRuleFactory: UrlRuleFactory;
+  _sorted: boolean;
+  /** @param {UrlRuleFactory} urlRuleFactory */
+  constructor(urlRuleFactory: UrlRuleFactory);
   /**
    * Remove a rule previously registered
    * @param {UrlRule} rule the matcher rule that was previously registered using [[rule]]
@@ -37,13 +52,12 @@ export class UrlRules {
    * @returns {() => void } a function that deregisters the rule
    */
   rule(rule: UrlRule): () => void;
-  _sorted: boolean;
   /**
    * Gets all registered rules
    *
    * @returns {import("./interface.ts").UrlRule[]} an array of all the registered rules
    */
-  rules(): import("./interface.ts").UrlRule[];
+  rules(): UrlRule[];
   /**
    * Defines URL Rule priorities
    *
@@ -143,36 +157,17 @@ export class UrlRules {
    * ```
    *
    * Note: the `handler` may also invoke arbitrary code, such as `$state.go()`
-   * @param {import("../state/state-object.js").StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
+   * @param {import("../state/state-object.ts").StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
    * @param {any} handler The path to redirect to, or a function that returns the path.
    * @param {{ priority: any; }} options `{ priority: number }`
    * @return {UrlRule} the registered [[UrlRule]]
    */
   when(
-    matcher: import("../state/state-object.js").StateObject,
+    matcher: import("../state/state-object.ts").StateObject,
     handler: any,
     options: {
       priority: any;
     },
   ): UrlRule;
 }
-export type UrlRule = import("./interface.ts").UrlRule;
-export type MatcherUrlRule = import("./interface.ts").MatcherUrlRule;
-export type BaseUrlRule = import("./url-rule.js").BaseUrlRule;
-/**
- * Default rule priority sorting function.
- *
- * Sorts rules by:
- *
- * - Explicit priority (set rule priority using [[UrlRules.when]])
- * - Rule type (STATE: 4, URLMATCHER: 4, REGEXP: 3, RAW: 2, OTHER: 1)
- * - `UrlMatcher` specificity ([[UrlMatcher.compare]]): works for STATE and URLMATCHER types to pick the most specific rule.
- * - Rule registration order (for rule types other than STATE and URLMATCHER)
- *   - Equally sorted State and UrlMatcher rules will each match the URL.
- *     Then, the *best* match is chosen based on how many parameter values were matched.
- * @param {UrlRule} a
- * @param {UrlRule} b
- */
-declare function defaultRuleSortFn(a: UrlRule, b: UrlRule): number;
-import { UrlRuleFactory } from "./url-rule.js";
 export {};

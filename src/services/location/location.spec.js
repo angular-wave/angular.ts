@@ -12,7 +12,7 @@ import {
   urlsEqual,
 } from "./location.js";
 import { Angular } from "../../angular.js";
-import { createInjector } from "../../core/di/injector.js";
+import { createInjector } from "../../core/di/injector.ts";
 
 describe("$location", () => {
   let module;

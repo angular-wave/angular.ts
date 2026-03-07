@@ -63,7 +63,7 @@ export function registerLazyLoadHook(
 
         // If the best match is a state, redirect the transition (instead
         // of calling sync() which supersedes the current transition)
-        if (rule && rule.type === "STATE") {
+        if (rule && rule.type === "STATE" && rule.state) {
           const { state } = rule;
 
           const params = result.match;

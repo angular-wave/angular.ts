@@ -26,7 +26,7 @@ import {
 } from "./utils.js";
 import { createElementFromHTML, dealoc, startingTag } from "./dom.js";
 import { Angular } from "../angular.js";
-import { createInjector } from "../core/di/injector.js";
+import { createInjector } from "../core/di/injector.ts";
 
 describe("utility functions", () => {
   let element, document, module, injector, $rootScope, $compile, angular;

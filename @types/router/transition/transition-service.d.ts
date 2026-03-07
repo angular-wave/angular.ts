@@ -98,12 +98,12 @@ export class TransitionProvider {
    * @returns a Transition
    */
   /**
-   * @param {import("../path/path-node.js").PathNode[]} fromPath
-   * @param {import("../state/target-state.js").TargetState} targetState
+   * @param {import("../path/path-node.ts").PathNode[]} fromPath
+   * @param {import("../state/target-state.ts").TargetState} targetState
    */
   create(
-    fromPath: import("../path/path-node.js").PathNode[],
-    targetState: import("../state/target-state.js").TargetState,
+    fromPath: import("../path/path-node.ts").PathNode[],
+    targetState: import("../state/target-state.ts").TargetState,
   ): Transition;
   _defineCoreEvents(): void;
   _defineCorePaths(): void;

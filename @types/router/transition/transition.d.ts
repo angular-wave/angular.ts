@@ -45,7 +45,7 @@ export class Transition {
   /** Checks if this transition is currently active/running. */
   /** @type {() => boolean} */
   isActive: () => boolean;
-  _targetState: import("../state/target-state.js").TargetState;
+  _targetState: import("../state/target-state.ts").TargetState;
   _options: any;
   $id: number;
   /** @type {TreeChanges} */
@@ -350,12 +350,12 @@ export class Transition {
    *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
    * @param {ng.StateObject} [state] If provided, only returns the `ViewConfig`s for a single state in the path
    *
-   * @returns {import("../state/views.js").ViewConfig[]} a list of ViewConfig objects for the given path.
+   * @returns {import("../state/views.ts").ViewConfig[]} a list of ViewConfig objects for the given path.
    */
   views(
     pathname?: string,
     state?: ng.StateObject,
-  ): import("../state/views.js").ViewConfig[];
+  ): import("../state/views.ts").ViewConfig[];
   /**
    * Return the transition's tree changes
    *
@@ -367,12 +367,12 @@ export class Transition {
    *
    * @param {string} [pathname] The name of the tree changes path to get:
    *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
-   * @returns {import('../path/path-node.js').PathNode[] | import("./interface.ts").TreeChanges}
+   * @returns {import('../path/path-node.ts').PathNode[] | import("./interface.ts").TreeChanges}
    */
   treeChanges(
     pathname?: string,
   ):
-    | import("../path/path-node.js").PathNode[]
+    | import("../path/path-node.ts").PathNode[]
     | import("./interface.ts").TreeChanges;
   /**
    * Creates a new transition that is a redirection of the current one.
@@ -457,10 +457,10 @@ export type BuiltStateDeclaration =
   import("../state/interface.ts").BuiltStateDeclaration;
 export type RegisteredHooks = import("./interface.ts").RegisteredHooks;
 export type RegisteredHook = import("./hook-registry.js").RegisteredHook;
-export type TargetState = import("../state/target-state.js").TargetState;
+export type TargetState = import("../state/target-state.ts").TargetState;
 export type TreeChanges = import("../transition/interface.ts").TreeChanges;
-export type PathNode = import("../path/path-node.js").PathNode;
-export type StateObject = import("../state/state-object.js").StateObject;
+export type PathNode = import("../path/path-node.ts").PathNode;
+export type StateObject = import("../state/state-object.ts").StateObject;
 export type StateDeclaration = import("../state/interface.ts").StateDeclaration;
 import { HookBuilder } from "./hook-builder.js";
 import { Resolvable } from "../resolve/resolvable.js";

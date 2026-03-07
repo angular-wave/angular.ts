@@ -1,21 +1,22 @@
-export class AST {
-  /**
-   * @param {import('../lexer/lexer.js').Lexer} lexer - The lexer instance for tokenizing input
-   */
-  constructor(lexer: import("../lexer/lexer.js").Lexer);
-  /** @type {import('../lexer/lexer.js').Lexer} */
-  _lexer: import("../lexer/lexer.js").Lexer;
-  /** @type {Record<string, any>} */
-  _selfReferential: Record<string, any>;
+import type { Lexer } from "../lexer/lexer.ts";
+import type { Token } from "../lexer/token.ts";
+import type { ASTNode } from "./ast-node.ts";
+export declare class AST {
+  _lexer: Lexer;
+  _selfReferential: Record<string, ASTNode>;
   _index: number;
+  _text: string;
+  _tokens: Token[];
+  /**
+   * @param {Lexer} lexer - The lexer instance for tokenizing input
+   */
+  constructor(lexer: Lexer);
   /**
    * Parses the input text and generates an AST.
    * @param {string} text - The input text to parse.
    * @returns {ASTNode} The root node of the AST.
    */
   _ast(text: string): ASTNode;
-  _text: string;
-  _tokens: import("../lexer/token.js").Token[];
   /**
    * Parses a program.
    * @returns {ASTNode} The program node.
@@ -124,32 +125,30 @@ export class AST {
   /**
    * Throws a syntax error.
    * @param {string} msg - The error message.
-   * @param {import("../lexer/lexer.js").Token} token - The token that caused the error.
+   * @param {import("../lexer/lexer.ts").Token} token - The token that caused the error.
    */
-  _throwError(msg: string, token: import("../lexer/lexer.js").Token): void;
+  _throwError(msg: string, token: Token): never;
   /**
    * Consumes a token if it matches the expected type.
    * @param {string} [e1] - The expected token type.
-   * @returns {import("../lexer/lexer.js").Token} The consumed token.
+   * @returns {import("../lexer/lexer.ts").Token} The consumed token.
    */
-  _consume(e1?: string): import("../lexer/lexer.js").Token;
+  _consume(e1?: string): Token;
   /**
    * Returns the next token without consuming it.
-   * @returns {import("../lexer/lexer.js").Token} The next token.
+   * @returns {import("../lexer/lexer.ts").Token} The next token.
    */
-  _peekToken(): import("../lexer/lexer.js").Token;
+  _peekToken(): Token;
   /**
    * Checks if the next token matches any of the expected types.
    * @param {...string} expected - The expected token types.
-   * @returns {import('../lexer/lexer.js').Token|boolean} The next token if it matches, otherwise false.
+   * @returns {import('../lexer/lexer.ts').Token|boolean} The next token if it matches, otherwise false.
    */
-  _peek(...expected: string[]): import("../lexer/lexer.js").Token | boolean;
+  _peek(...expected: string[]): Token | false;
   /**
    * Consumes the next token if it matches any of the expected types.
    * @param {...string} expected - The expected token types.
-   * @returns {import("../lexer/lexer.js").Token|boolean} The consumed token if it matches, otherwise false.
+   * @returns {import("../lexer/lexer.ts").Token|boolean} The consumed token if it matches, otherwise false.
    */
-  _expect(...expected: string[]): import("../lexer/lexer.js").Token | boolean;
+  _expect(...expected: string[]): Token | false;
 }
-export type ASTNode = import("./ast-node.ts").ASTNode;
-export type Token = import("../lexer/token.js").Token;

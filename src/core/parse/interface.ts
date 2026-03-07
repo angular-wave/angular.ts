@@ -15,6 +15,8 @@ export interface CompiledExpressionProps {
   _decoratedNode: BodyNode;
   /** Expression inputs; may be an array or a function. */
   _inputs?: any[] | Function;
+  /** Optional interceptor applied to the evaluated result. */
+  _interceptor?: (value: any) => any;
   /**
    * Optional assign function for two-way binding.
    * Assigns a value to a context.

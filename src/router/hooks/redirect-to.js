@@ -1,5 +1,5 @@
 import { isFunction, isString } from "../../shared/utils.js";
-import { TargetState } from "../state/target-state";
+import { TargetState } from "../state/target-state.ts";
 
 export const registerRedirectToHook = (
   /** @type {ng.TransitionService} */ transitionService,

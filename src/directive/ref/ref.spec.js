@@ -1,4 +1,4 @@
-import { createInjector } from "../../core/di/injector.js";
+import { createInjector } from "../../core/di/injector.ts";
 import { Angular } from "../../angular.js";
 import { createElementFromHTML } from "../../shared/dom.js";
 

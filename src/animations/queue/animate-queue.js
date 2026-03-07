@@ -24,7 +24,7 @@ import {
 } from "../shared.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 import { AnimateRunner } from "../runner/animate-runner.js";
-import { NodeType } from "../../shared/node.js";
+import { NodeType } from "../../shared/node.ts";
 
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 

@@ -1,6 +1,6 @@
 import { createElementFromHTML, dealoc } from "../../shared/dom.js";
 import { Angular } from "../../angular.js";
-import { createInjector } from "../../core/di/injector.js";
+import { createInjector } from "../../core/di/injector.ts";
 
 describe("ngCloak", () => {
   let element;

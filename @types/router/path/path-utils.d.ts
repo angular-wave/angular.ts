@@ -1,20 +1,15 @@
-/** Given a PathNode[], create an TargetState
- * @param {import("../state/state-registry.js").StateRegistryProvider} registry
- * @param {Array<PathNode>} path
- * @returns {TargetState}
- */
-export function makeTargetState(
-  registry: import("../state/state-registry.js").StateRegistryProvider,
-  path: Array<PathNode>,
-): TargetState;
-/** @typedef {import("../params/param.js").Param} Param */
-/** @typedef {import("./interface.ts").GetParamsFn} GetParamsFn */
-/** @typedef {import("../state/state-object.js").StateObject} StateObject */
-/** @typedef {import("../params/interface.ts").RawParams} RawParams */
+import { TargetState } from "../state/target-state.ts";
+import { PathNode } from "./path-node.ts";
+import type { Param } from "../params/param.ts";
+import type { GetParamsFn } from "./interface.ts";
+import type { StateObject } from "../state/state-object.ts";
+import type { RawParams } from "../params/interface.ts";
+import type { TreeChanges } from "../transition/interface.ts";
+import type { StateRegistryProvider } from "../state/state-registry.ts";
 /**
  * This class contains functions which convert TargetStates, Nodes and paths from one type to another.
  */
-export class PathUtils {
+export declare class PathUtils {
   /**
    * @param {TargetState} targetState
    */
@@ -72,7 +67,7 @@ export class PathUtils {
     fromPath: PathNode[],
     toPath: PathNode[],
     reloadState: StateObject,
-  ): import("../transition/interface.ts").TreeChanges;
+  ): TreeChanges;
   /**
    * Returns a new path which is: the subpath of the first path which matches the second path.
    *
@@ -128,11 +123,14 @@ export class PathUtils {
    * Gets the raw parameter values from a path
    * @param {PathNode[]} path
    */
-  static paramValues(path: PathNode[]): any;
+  static paramValues(path: PathNode[]): RawParams;
 }
-export type Param = import("../params/param.js").Param;
-export type GetParamsFn = import("./interface.ts").GetParamsFn;
-export type StateObject = import("../state/state-object.js").StateObject;
-export type RawParams = import("../params/interface.ts").RawParams;
-import { PathNode } from "./path-node.js";
-import { TargetState } from "../state/target-state.js";
+/** Given a PathNode[], create an TargetState
+ * @param {import("../state/state-registry.ts").StateRegistryProvider} registry
+ * @param {Array<PathNode>} path
+ * @returns {TargetState}
+ */
+export declare function makeTargetState(
+  registry: StateRegistryProvider,
+  path: PathNode[],
+): TargetState;

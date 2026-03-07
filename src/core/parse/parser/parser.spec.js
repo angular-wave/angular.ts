@@ -1,4 +1,4 @@
-import { Parser } from "./parser.js";
+import { Parser } from "./parser.ts";
 
 describe("Parser", () => {
   it("can be contructed", () => {

@@ -9,7 +9,7 @@ import {
   validateIsString,
   validateRequired,
   BADARG,
-} from "../../shared/validate.js";
+} from "../../shared/validate.ts";
 
 /**
  * Service provider that creates a {@link CookieService $cookie} service.

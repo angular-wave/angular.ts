@@ -7,7 +7,7 @@ import {
   TOUCHED_CLASS,
   UNTOUCHED_CLASS,
   VALID_CLASS,
-} from "../../shared/constants.js";
+} from "../../shared/constants.ts";
 import {
   deProxy,
   entries,

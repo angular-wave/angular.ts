@@ -5,7 +5,7 @@ import {
   isNullOrUndefined,
   isString,
 } from "../../shared/utils.js";
-import { BADARG } from "../../shared/validate.js";
+import { BADARG } from "../../shared/validate.ts";
 import { expandUriTemplate } from "./rfc.js";
 
 /**

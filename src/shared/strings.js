@@ -1,6 +1,6 @@
 import { pushR, tail } from "./common.js";
 import { pattern, val } from "./hof.js";
-import { isInjectable, isPromise } from "./predicates.js";
+import { isInjectable, isPromise } from "./predicates.ts";
 import {
   isArray,
   isFunction,

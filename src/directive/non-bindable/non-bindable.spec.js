@@ -1,6 +1,6 @@
 import { dealoc } from "../../shared/dom.js";
 import { Angular } from "../../angular.js";
-import { createInjector } from "../../core/di/injector.js";
+import { createInjector } from "../../core/di/injector.ts";
 import { wait } from "../../shared/test-utils.js";
 
 describe("ngNonBindable", () => {

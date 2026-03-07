@@ -1,4 +1,4 @@
-import { StateBuilder } from "./state-builder.js";
+import { StateBuilder } from "./state-builder.ts";
 import { Angular } from "../../angular.js";
 import { dealoc } from "../../shared/dom.js";
 

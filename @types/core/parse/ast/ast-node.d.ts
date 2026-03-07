@@ -1,4 +1,4 @@
-import { ASTType } from "../ast-type.js";
+import { ASTType } from "../ast-type.ts";
 /** The kind of an object property */
 export type PropertyKind = "init" | "get" | "set";
 /** Base properties for all AST nodes */
@@ -9,6 +9,33 @@ interface BaseNode {
   isPure?: boolean;
   /** Indicates whether the expression is a constant. */
   constant?: boolean;
+  /** Watch targets collected during AST decoration. */
+  toWatch?: ASTNode[];
+  /** Generic expression payload fields used across legacy node shapes. */
+  expression?: ASTNode;
+  left?: ASTNode;
+  right?: ASTNode;
+  argument?: ASTNode;
+  test?: ASTNode;
+  alternate?: ASTNode;
+  consequent?: ASTNode;
+  callee?: ASTNode;
+  arguments?: ASTNode[];
+  object?: ASTNode;
+  property?: ASTNode;
+  computed?: boolean;
+  operator?: string;
+  filter?: boolean;
+  prefix?: boolean;
+  name?: string;
+  value?: any;
+  elements?: ASTNode[];
+  properties?: ASTNode[];
+  body?: ASTNode[];
+  key?: ASTNode;
+  kind?: PropertyKind;
+  input?: any;
+  watchId?: string;
 }
 /** A node that contains a list of statements, e.g., Program or BlockStatement */
 export interface BodyNode extends BaseNode {
