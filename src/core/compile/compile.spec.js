@@ -7084,6 +7084,23 @@ describe("$compile", () => {
         expect(element.getAttribute("title")).toBe("A-C");
       });
 
+      it("should update multi-expression text interpolation when nested object is assigned later", async () => {
+        element = $compile("<div>{{a.firstName}} {{a.lastName}}</div>")(
+          $rootScope,
+        );
+
+        await wait();
+        expect(element.textContent).toBe(" ");
+
+        $rootScope.a = { firstName: "John", lastName: "Doe" };
+        await wait();
+        expect(element.textContent).toBe("John Doe");
+
+        $rootScope.a.lastName = "Wick";
+        await wait();
+        expect(element.textContent).toBe("John Wick");
+      });
+
       it("should process attribute interpolation in pre-linking phase at priority 100", async () => {
         module
           .directive("attrLog", () => ({
