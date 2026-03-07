@@ -7057,6 +7057,33 @@ describe("$compile", () => {
         expect(element.getAttribute("foo")).toEqual("some/1");
       });
 
+      it("should update single-expression text interpolation when value changes", async () => {
+        element = $compile("<div>{{name}}</div>")($rootScope);
+
+        $rootScope.name = "first";
+        await wait();
+        expect(element.textContent).toBe("first");
+
+        $rootScope.name = "second";
+        await wait();
+        expect(element.textContent).toBe("second");
+      });
+
+      it("should update multi-expression attribute interpolation when any part changes", async () => {
+        element = $compile('<div title="{{first}}-{{second}}"></div>')(
+          $rootScope,
+        );
+
+        $rootScope.first = "A";
+        $rootScope.second = "B";
+        await wait();
+        expect(element.getAttribute("title")).toBe("A-B");
+
+        $rootScope.second = "C";
+        await wait();
+        expect(element.getAttribute("title")).toBe("A-C");
+      });
+
       it("should process attribute interpolation in pre-linking phase at priority 100", async () => {
         module
           .directive("attrLog", () => ({
