@@ -121,9 +121,9 @@ export type CompileFn = (
  * Represents a mapping of linking functions.
  */
 export interface LinkFnMapping {
-  index: number;
-  nodeLinkFnCtx?: NodeLinkFnCtx;
-  childLinkFn?: CompositeLinkFn | null;
+  _index: number;
+  _nodeLinkFnCtx?: NodeLinkFnCtx;
+  _childLinkFn?: CompositeLinkFn | null;
 }
 
 /**

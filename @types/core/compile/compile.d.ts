@@ -151,3 +151,16 @@ export type PreviousCompileContext =
 export type PublicLinkFn = import("./interface.ts").PublicLinkFn;
 export type TranscludedNodes = import("./interface.ts").TranscludedNodes;
 export type InternalDirective = import("./interface.ts").InternalDirective;
+export type LinkFnRecord = {
+  _fn: Function;
+  _require: string | Array<any> | Record<string, any> | undefined;
+  _directiveName: string;
+  _isolateScope: boolean;
+};
+export type CompositeLinkState = {
+  _linkFnsList: import("./interface.ts").LinkFnMapping[];
+  _nodeRefList: NodeRef;
+  _nodeLinkFnFound?: NodeLinkFn;
+  _transcludeFn: ChildTranscludeOrLinkFn | null | undefined;
+};
+import { NodeRef } from "../../shared/noderef.js";

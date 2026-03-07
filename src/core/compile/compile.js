@@ -62,6 +62,8 @@ import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
 /** @typedef {import("./interface.ts").PublicLinkFn} PublicLinkFn */
 /** @typedef {import("./interface.ts").TranscludedNodes} TranscludedNodes */
 /** @typedef {import("./interface.ts").InternalDirective} InternalDirective */
+/** @typedef {{ _fn: Function; _require: string | Array<any> | Record<string, any> | undefined; _directiveName: string; _isolateScope: boolean }} LinkFnRecord */
+/** @typedef {{ _linkFnsList: import("./interface.ts").LinkFnMapping[]; _nodeRefList: NodeRef; _nodeLinkFnFound?: NodeLinkFn; _transcludeFn: ChildTranscludeOrLinkFn | null | undefined }} CompositeLinkState */
 
 const $compileMinErr = minErr("$compile");
 
@@ -835,6 +837,110 @@ export class CompileProvider {
         }
 
         /**
+         * Builds a stable node array for linking so index-based mappings stay valid even if DOM shape changes.
+         *
+         * @param {CompositeLinkState} state
+         * @param {NodeRef} nodeRef
+         */
+        function buildStableNodeList(state, nodeRef) {
+          /** @type {Node[]} */
+          let stableNodeList = [];
+
+          if (state._nodeLinkFnFound) {
+            const stableLength = nodeRef._isList ? nodeRef.nodes.length : 1;
+
+            stableNodeList = new Array(stableLength);
+
+            for (let i = 0, l = state._linkFnsList.length; i < l; i++) {
+              const { _index: idx } = state._linkFnsList[i];
+
+              if (idx === 0) {
+                stableNodeList[idx] = nodeRef._isList
+                  ? nodeRef.nodes[idx]
+                  : nodeRef.node;
+              } else if (state._nodeRefList?._getIndex(idx)) {
+                stableNodeList[idx] = nodeRef.nodes[idx];
+              }
+            }
+          } else if (nodeRef._isList) {
+            for (let i = 0, l = nodeRef.nodes.length; i < l; i++) {
+              stableNodeList.push(nodeRef.nodes[i]);
+            }
+          } else {
+            stableNodeList.push(nodeRef.node);
+          }
+
+          return stableNodeList;
+        }
+
+        /**
+         * Runs node-level and child-level link functions for one compiled node list using precomputed mapping state.
+         *
+         * @param {CompositeLinkState} state
+         * @param {Node[]} stableNodeList
+         * @param {ng.Scope} scope
+         * @param {*} _parentBoundTranscludeFn
+         */
+        function linkCompositeNodes(
+          state,
+          stableNodeList,
+          scope,
+          _parentBoundTranscludeFn,
+        ) {
+          for (let i = 0, l = state._linkFnsList.length; i < l; i++) {
+            const { _index, _nodeLinkFnCtx, _childLinkFn } =
+              state._linkFnsList[i];
+
+            const node = stableNodeList[_index];
+
+            /** @type {any} */ (node)._stable = true;
+
+            let childScope, childBoundTranscludeFn;
+
+            if (_nodeLinkFnCtx?._nodeLinkFn) {
+              childScope = _nodeLinkFnCtx._newScope ? scope.$new() : scope;
+
+              if (_nodeLinkFnCtx._transcludeOnThisElement) {
+                childBoundTranscludeFn = createBoundTranscludeFn(
+                  scope,
+                  /** @type {ng.TranscludeFn} */ (_nodeLinkFnCtx._transclude),
+                  _parentBoundTranscludeFn,
+                );
+              } else if (
+                !_nodeLinkFnCtx._templateOnThisElement &&
+                _parentBoundTranscludeFn
+              ) {
+                childBoundTranscludeFn = _parentBoundTranscludeFn;
+              } else if (!_parentBoundTranscludeFn && state._transcludeFn) {
+                childBoundTranscludeFn = createBoundTranscludeFn(
+                  scope,
+                  /** @type {ng.TranscludeFn} */ (state._transcludeFn),
+                );
+              } else {
+                childBoundTranscludeFn = null;
+              }
+
+              if (_nodeLinkFnCtx?._newScope) {
+                setScope(node, childScope);
+              }
+
+              _nodeLinkFnCtx._nodeLinkFn(
+                _childLinkFn,
+                childScope,
+                node,
+                childBoundTranscludeFn,
+              );
+            } else if (_childLinkFn) {
+              _childLinkFn(
+                scope,
+                new NodeRef(node.childNodes),
+                _parentBoundTranscludeFn,
+              );
+            }
+          }
+        }
+
+        /**
          * Compiles a `NodeRef` (single node or node-list) into a composite linking function.
          *
          * Walks each node in `nodeRefList`, collects and applies directives (including template/templateUrl
@@ -947,9 +1053,9 @@ export class CompileProvider {
 
             if (nodeLinkFn || childLinkFn) {
               linkFnsList.push({
-                index: i,
-                nodeLinkFnCtx,
-                childLinkFn,
+                _index: i,
+                _nodeLinkFnCtx: nodeLinkFnCtx,
+                _childLinkFn: childLinkFn,
               });
               linkFnFound = true;
               nodeLinkFnFound = nodeLinkFnFound || nodeLinkFn;
@@ -959,99 +1065,37 @@ export class CompileProvider {
             previousCompileContext = null;
           }
 
-          // return a composite linking function if we have found anything, null otherwise
-          return linkFnFound ? compositeLinkFn : null;
-
-          /**
-           * The composite link function links all the individual nodes
-           *
-           * @param {ng.Scope} scope
-           * @param {NodeRef} nodeRef
-           * @param {*} [_parentBoundTranscludeFn]
-           */
-          function compositeLinkFn(scope, nodeRef, _parentBoundTranscludeFn) {
-            assertArg(nodeRef, "nodeRef");
-            let stableNodeList = [];
-
-            if (nodeLinkFnFound) {
-              // create a stable copy of the nodeList, only copying elements with linkFns
-              const stableLength = nodeRef._isList ? nodeRef.nodes.length : 1;
-
-              stableNodeList = new Array(stableLength);
-              // create a sparse array by only copying the elements which have a linkFn
-              linkFnsList.forEach((val) => {
-                const idx = val.index;
-
-                if (idx === 0) {
-                  stableNodeList[idx] = nodeRef._isList
-                    ? nodeRef.nodes[idx]
-                    : nodeRef.node;
-                } else {
-                  if (nodeRefList?._getIndex(idx)) {
-                    stableNodeList[idx] = nodeRef.nodes[idx];
-                  }
-                }
-              });
-            } else {
-              if (nodeRef._isList) {
-                nodeRef.nodes.forEach((elem) => stableNodeList.push(elem));
-              } else {
-                stableNodeList.push(nodeRef.node);
-              }
-            }
-
-            linkFnsList.forEach(({ index, nodeLinkFnCtx, childLinkFn }) => {
-              const node = stableNodeList[index];
-
-              node._stable = true;
-              let childScope;
-
-              let childBoundTranscludeFn;
-
-              if (nodeLinkFnCtx?._nodeLinkFn) {
-                childScope = nodeLinkFnCtx._newScope ? scope.$new() : scope;
-
-                if (nodeLinkFnCtx._transcludeOnThisElement) {
-                  // bind proper scope for the translusion function
-                  childBoundTranscludeFn = createBoundTranscludeFn(
-                    scope,
-                    /** @type {ng.TranscludeFn} */ (nodeLinkFnCtx?._transclude),
-                    _parentBoundTranscludeFn,
-                  );
-                } else if (
-                  !nodeLinkFnCtx._templateOnThisElement &&
-                  _parentBoundTranscludeFn
-                ) {
-                  childBoundTranscludeFn = _parentBoundTranscludeFn;
-                } else if (!_parentBoundTranscludeFn && transcludeFn) {
-                  childBoundTranscludeFn = createBoundTranscludeFn(
-                    scope,
-                    /** @type {ng.TranscludeFn} */ (transcludeFn),
-                  );
-                } else {
-                  childBoundTranscludeFn = null;
-                }
-
-                // attach new scope to element
-                if (nodeLinkFnCtx?._newScope) {
-                  setScope(node, childScope);
-                }
-
-                nodeLinkFnCtx._nodeLinkFn(
-                  childLinkFn,
-                  childScope,
-                  node,
-                  childBoundTranscludeFn,
-                );
-              } else if (childLinkFn) {
-                childLinkFn(
-                  scope,
-                  new NodeRef(node.childNodes),
-                  _parentBoundTranscludeFn,
-                );
-              }
-            });
+          if (!linkFnFound) {
+            return null;
           }
+
+          /** @type {CompositeLinkState} */
+          const compositeLinkState = {
+            _linkFnsList: linkFnsList,
+            _nodeRefList: nodeRefList,
+            _nodeLinkFnFound: nodeLinkFnFound,
+            _transcludeFn: transcludeFn,
+          };
+
+          return function compositeLinkFn(
+            scope,
+            nodeRef,
+            _parentBoundTranscludeFn,
+          ) {
+            assertArg(nodeRef, "nodeRef");
+
+            const stableNodeList = buildStableNodeList(
+              compositeLinkState,
+              nodeRef,
+            );
+
+            linkCompositeNodes(
+              compositeLinkState,
+              stableNodeList,
+              scope,
+              _parentBoundTranscludeFn,
+            );
+          };
         }
 
         /**
@@ -1358,6 +1402,63 @@ export class CompileProvider {
         }
 
         /**
+         * Stores link metadata in a compact record so linking can use shared invokers instead of wrapped closures.
+         *
+         * @param {LinkFnRecord[]} linkFns
+         * @param {Function | null | undefined} linkFn
+         * @param {string | Array<any> | Record<string, any> | undefined} require
+         * @param {string} directiveName
+         * @param {boolean} isolateScope
+         */
+        function pushLinkFnRecord(
+          linkFns,
+          linkFn,
+          require,
+          directiveName,
+          isolateScope,
+        ) {
+          if (!linkFn) {
+            return;
+          }
+
+          linkFns.push({
+            _fn: linkFn,
+            _require: require,
+            _directiveName: directiveName,
+            _isolateScope: isolateScope,
+          });
+        }
+
+        /**
+         * Invokes a link record with consistent scope selection and argument ordering.
+         *
+         * @param {LinkFnRecord} linkFnRecord
+         * @param {import("../scope/scope.js").Scope | undefined} isolateScope
+         * @param {import("../scope/scope.js").Scope} scope
+         * @param {Node} node
+         * @param {Attributes} attrs
+         * @param {*} controllers
+         * @param {*} transcludeFn
+         */
+        function invokeLinkFnRecord(
+          linkFnRecord,
+          isolateScope,
+          scope,
+          node,
+          attrs,
+          controllers,
+          transcludeFn,
+        ) {
+          return linkFnRecord._fn(
+            linkFnRecord._isolateScope ? isolateScope : scope,
+            node,
+            attrs,
+            controllers,
+            transcludeFn,
+          );
+        }
+
+        /**
          * Applies a sorted set of directives to a single node and produces the node-level link context.
          *
          * Responsibilities:
@@ -1375,9 +1476,9 @@ export class CompileProvider {
          *   Parent transclusion/link function passed down during compilation.
          * @param {InternalDirective | null | undefined} originalReplaceDirective
          *   The original directive that triggered a `replace` (ignored when compiling transclusion/template).
-         * @param {Array<NodeLinkFn>} [preLinkFns]
+         * @param {Array<LinkFnRecord>} [preLinkFns]
          *   Accumulator for pre-link functions (executed in registration order).
-         * @param {Array<ng.NodeLinkFn>} [postLinkFns]
+         * @param {Array<LinkFnRecord>} [postLinkFns]
          *   Accumulator for post-link functions (executed in reverse order).
          * @param {PreviousCompileContext} [previousCompileContext]
          *   Internal bookkeeping for replace/transclusion/templateUrl compilation passes.
@@ -1636,7 +1737,7 @@ export class CompileProvider {
 
             // PRELINKING
             for (i = 0, ii = preLinkFns.length; i < ii; i++) {
-              const preLinkFn = /** @type {any} */ (preLinkFns[i]);
+              const preLinkFn = /** @type {LinkFnRecord} */ (preLinkFns[i]);
 
               const controllers =
                 preLinkFn._require &&
@@ -1649,8 +1750,10 @@ export class CompileProvider {
 
               // invoke link function
               try {
-                preLinkFn(
-                  preLinkFn._isolateScope ? isolateScope : scope,
+                invokeLinkFnRecord(
+                  preLinkFn,
+                  isolateScope,
+                  scope,
                   $element.node, // Prelink functions accept a Node
                   attrs,
                   controllers,
@@ -1688,7 +1791,7 @@ export class CompileProvider {
 
             // POSTLINKING
             for (i = postLinkFns.length - 1; i >= 0; i--) {
-              const postLinkFn = /** @type {any} */ (postLinkFns[i]);
+              const postLinkFn = /** @type {LinkFnRecord} */ (postLinkFns[i]);
 
               const controllers =
                 postLinkFn._require &&
@@ -1705,8 +1808,10 @@ export class CompileProvider {
                   setIsolateScope($element.element, isolateScope);
                 }
 
-                postLinkFn(
-                  postLinkFn._isolateScope ? isolateScope : scope,
+                invokeLinkFnRecord(
+                  postLinkFn,
+                  isolateScope,
+                  scope,
                   $element.node,
                   attrs,
                   controllers,
@@ -2254,12 +2359,32 @@ export class CompileProvider {
 
                 const context = directive._originalDirective || directive;
 
+                const isolateScope =
+                  _newIsolateScopeDirective === directive ||
+                  !!directive._isolateScope;
+
                 if (isFunction(linkFn)) {
-                  addLinkFns(null, bind(context, linkFn));
+                  pushLinkFnRecord(
+                    postLinkFns,
+                    bind(context, linkFn),
+                    directive.require,
+                    directiveName,
+                    isolateScope,
+                  );
                 } else if (linkFn) {
-                  addLinkFns(
+                  pushLinkFnRecord(
+                    preLinkFns,
                     bind(context, /** @type {ng.PublicLinkFn} */ (linkFn).pre),
+                    directive.require,
+                    directiveName,
+                    isolateScope,
+                  );
+                  pushLinkFnRecord(
+                    postLinkFns,
                     bind(context, /** @type {ng.PublicLinkFn} */ (linkFn).post),
+                    directive.require,
+                    directiveName,
+                    isolateScope,
                   );
                 }
               } catch (err) {
@@ -2287,41 +2412,6 @@ export class CompileProvider {
               _newScopeDirective && _newScopeDirective.scope === true
             ),
           };
-
-          /// /////////////////
-          /**
-           * @param {any | null} pre
-           * @param {any | null} post
-           */
-          function addLinkFns(pre, post) {
-            if (pre) {
-              pre._require = directive.require;
-              pre._directiveName = directiveName;
-
-              if (
-                _newIsolateScopeDirective === directive ||
-                directive._isolateScope
-              ) {
-                pre = cloneAndAnnotateFn(pre, { _isolateScope: true });
-              }
-              /** @type {any[]} */ (preLinkFns).push(/** @type {any} */ (pre));
-            }
-
-            if (post) {
-              post._require = directive.require;
-              post._directiveName = directiveName;
-
-              if (
-                _newIsolateScopeDirective === directive ||
-                directive._isolateScope
-              ) {
-                post = cloneAndAnnotateFn(post, { _isolateScope: true });
-              }
-              /** @type {any[]} */ (postLinkFns).push(
-                /** @type {any} */ (post),
-              );
-            }
-          }
         }
 
         /**
@@ -3381,20 +3471,6 @@ export class CompileProvider {
           });
 
           elementsToRemove.node = newNode;
-        }
-
-        /**
-         * @param {Function} fn
-         * @param {Object} annotation
-         */
-        function cloneAndAnnotateFn(fn, annotation) {
-          return extend(
-            function () {
-              return fn.apply(null, arguments);
-            },
-            fn,
-            annotation,
-          );
         }
 
         /**
