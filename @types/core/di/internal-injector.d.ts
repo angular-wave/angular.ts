@@ -1,59 +1,16 @@
-/**
- * Injector for providers
- */
-export class ProviderInjector extends AbstractInjector {
-  /**
-   * @param {import('./interface.ts').ProviderCache} cache
-   * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
-   */
-  constructor(cache: import("./interface.ts").ProviderCache, strictDi: boolean);
-  _cache: import("./interface.ts").ProviderCache;
-  /**
-   * Factory method for creating services.
-   * @param {string} caller - The name of the caller requesting the service.
-   * @throws {Error} If the provider is unknown.
-   */
-  factory(caller: string): void;
-}
-/**
- * Injector for factories and services
- */
-export class InjectorService extends AbstractInjector {
-  /**
-   * @param {ProviderInjector} providerInjector
-   * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
-   */
-  constructor(providerInjector: ProviderInjector, strictDi: boolean);
-  /** @type {(mods: Array<Function | string | ng.AnnotatedFactory<any>>) => void} */
-  loadNewModules: (
-    mods: Array<Function | string | ng.AnnotatedFactory<any>>,
-  ) => void;
-  /** @private @type {ProviderInjector} */
-  private _providerInjector;
-  /**
-   *
-   * @param {string} name
-   * @returns {boolean}
-   */
-  has(name: string): boolean;
-}
+import type { AnnotatedFactory } from "../../interface.ts";
+import type { ProviderCache } from "./interface.ts";
+import type { NgModule } from "./ng-module/ng-module.ts";
+type InjectableFn = Function | AnnotatedFactory<(...args: any[]) => any>;
 declare class AbstractInjector {
+  _cache: Record<string, any>;
+  strictDi: boolean;
+  _path: string[];
+  _modules: Record<string, NgModule>;
   /**
    * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
    */
   constructor(strictDi: boolean);
-  /**
-   * @type {Object<String, Function>}
-   */
-  _cache: any;
-  /** @type {boolean} */
-  strictDi: boolean;
-  /** @type {string[]} */
-  _path: string[];
-  /** @type {Object.<string, ng.NgModule>} */
-  _modules: {
-    [x: string]: import("./ng-module/ng-module.js").NgModule;
-  };
   /**
    * Get a service by name.
    *
@@ -70,8 +27,8 @@ declare class AbstractInjector {
    * @returns
    */
   _injectionArgs(
-    fn: Function | ng.AnnotatedFactory<any>,
-    locals?: any & Record<string, any>,
+    fn: InjectableFn,
+    locals?: Record<string, any>,
     serviceName?: string,
   ): any[];
   /**
@@ -84,9 +41,9 @@ declare class AbstractInjector {
    * @returns {*}
    */
   invoke(
-    fn: Function | string | ng.AnnotatedFactory<any>,
+    fn: InjectableFn | string,
     self?: any,
-    locals?: any,
+    locals?: Record<string, any> | string,
     serviceName?: string,
   ): any;
   /**
@@ -96,8 +53,8 @@ declare class AbstractInjector {
    * @param {string} [serviceName]
    */
   instantiate(
-    type: Function | ng.AnnotatedFactory<any>,
-    locals?: any,
+    type: InjectableFn,
+    locals?: Record<string, any>,
     serviceName?: string,
   ): any;
   /**
@@ -106,5 +63,46 @@ declare class AbstractInjector {
    * @returns {any}
    */
   factory(_serviceName: string): any;
+}
+/**
+ * Injector for providers
+ */
+export declare class ProviderInjector extends AbstractInjector {
+  /**
+   * @param {import('./interface.ts').ProviderCache} cache
+   * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
+   */
+  constructor(cache: ProviderCache, strictDi: boolean);
+  /**
+   * Factory method for creating services.
+   * @param {string} caller - The name of the caller requesting the service.
+   * @throws {Error} If the provider is unknown.
+   */
+  factory(caller: string): never;
+}
+/**
+ * Injector for factories and services
+ */
+export declare class InjectorService extends AbstractInjector {
+  loadNewModules: (
+    mods: Array<Function | string | AnnotatedFactory<(...args: any[]) => any>>,
+  ) => void;
+  _providerInjector: ProviderInjector;
+  /**
+   * @param {ProviderInjector} providerInjector
+   * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
+   */
+  constructor(providerInjector: ProviderInjector, strictDi: boolean);
+  /**
+   * @param {string} serviceName
+   * @returns {*}
+   */
+  factory(serviceName: string): any;
+  /**
+   *
+   * @param {string} name
+   * @returns {boolean}
+   */
+  has(name: string): boolean;
 }
 export {};

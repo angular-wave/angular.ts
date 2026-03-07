@@ -1,11 +1,9 @@
-/** @typedef {import("./state-object.js").StateObject} StateObject */
-/** @typedef {import("./interface.ts").StateOrName} StateOrName */
-/** @typedef {import("./interface.ts").StateStore} StateStore */
-export class StateMatcher {
+import type { StateObject } from "./state-object.ts";
+import type { StateOrName, StateStore } from "./interface.ts";
+export declare class StateMatcher {
+  _states: StateStore;
   /** @param {StateStore} states */
   constructor(states: StateStore);
-  /** @type {StateStore} */
-  _states: StateStore;
   /**
    * @param {string} stateName
    */
@@ -17,7 +15,7 @@ export class StateMatcher {
    */
   find(
     stateOrName: StateOrName,
-    base?: StateOrName | undefined,
+    base?: StateOrName,
     matchGlob?: boolean,
   ): StateObject | undefined;
   /**
@@ -28,6 +26,4 @@ export class StateMatcher {
    */
   resolvePath(name: string, base: StateOrName): string;
 }
-export type StateObject = import("./state-object.js").StateObject;
-export type StateOrName = import("./interface.ts").StateOrName;
-export type StateStore = import("./interface.ts").StateStore;
+export type { StateObject, StateOrName, StateStore };

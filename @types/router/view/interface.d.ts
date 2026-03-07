@@ -1,4 +1,4 @@
-import { ViewConfig } from "../state/views.js";
+import { ViewConfig } from "../state/views.ts";
 /** The context ref can be anything that has a `name` and a `parent` reference to another IContextRef */
 export interface ViewContext {
   name: string;

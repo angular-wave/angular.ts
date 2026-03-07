@@ -1,6 +1,6 @@
 import { minErr } from "../../shared/utils.js";
 import { emptyElement, startingTag } from "../../shared/dom.js";
-import { NodeType } from "../../shared/node.js";
+import { NodeType } from "../../shared/node.ts";
 import { $injectTokens } from "../../injection-tokens.js";
 
 /**

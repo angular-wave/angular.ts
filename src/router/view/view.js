@@ -1,9 +1,9 @@
 import { equals, removeFrom } from "../../shared/common.js";
 import { trace } from "../common/trace.js";
-import { getViewConfigFactory } from "../state/views.js";
+import { getViewConfigFactory } from "../state/views.ts";
 
 /** @typedef {import("./interface.ts").ActiveUIView} ActiveUIView */
-/** @typedef {import("../state/views.js").ViewConfig} ViewConfig */
+/** @typedef {import("../state/views.ts").ViewConfig} ViewConfig */
 
 /**
  * The View service
@@ -44,17 +44,17 @@ export class ViewService {
   $get = () => this;
 
   /**
-   * @param {?import('../state/state-object.js').StateObject} [context]
-   * @return {?import('../state/state-object.js').StateObject}
+   * @param {?import('../state/state-object.ts').StateObject} [context]
+   * @return {?import('../state/state-object.ts').StateObject}
    */
   rootViewContext(context) {
     return (this._rootContext = context || this._rootContext);
   }
 
   /**
-   * @param {import("../path/path-node.js").PathNode[]} path
+   * @param {import("../path/path-node.ts").PathNode[]} path
    * @param {import("../state/interface.ts").ViewDeclaration} decl
-   * @return {import("../state/views.js").ViewConfig}
+   * @return {import("../state/views.ts").ViewConfig}
    */
   _createViewConfig(path, decl) {
     /** @type {function(any, any): any} */

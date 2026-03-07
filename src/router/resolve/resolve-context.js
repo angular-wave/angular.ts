@@ -2,11 +2,11 @@ import { find, tail, uniqR, unnestR } from "../../shared/common.js";
 import { propEq } from "../../shared/hof.js";
 import { trace } from "../common/trace.js";
 import { Resolvable } from "./resolvable.js";
-import { PathUtils } from "../path/path-utils.js";
+import { PathUtils } from "../path/path-utils.ts";
 import { stringify } from "../../shared/strings.js";
 import { isUndefined } from "../../shared/utils.js";
 
-/** @typedef {import("../path/path-node.js").PathNode} PathNode */
+/** @typedef {import("../path/path-node.ts").PathNode} PathNode */
 
 export const resolvePolicies = {
   when: {
@@ -45,13 +45,16 @@ export class ResolveContext {
   getTokens() {
     return this._path
       .reduce(
-        (acc, node) =>
+        (
+          /** @type {any[]} */ acc,
+          /** @type {import("../path/path-node.ts").PathNode} */ node,
+        ) =>
           acc.concat(
             node.resolvables.map(
               (/** @type {Resolvable} */ resolve) => resolve.token,
             ),
           ),
-        [],
+        /** @type {any[]} */ ([]),
       )
       .reduce(uniqR, []);
   }
@@ -143,7 +146,7 @@ export class ResolveContext {
         (/** @type {Resolvable} */ resolve) =>
           keys.indexOf(resolve.token) === -1,
       )
-      .concat(newResolvables);
+      .concat(/** @type {Resolvable[]} */ (newResolvables));
   }
 
   /**
@@ -208,7 +211,7 @@ export class ResolveContext {
       nowait.forEach(getResult);
 
       return acc.concat(wait.map(getResult));
-    }, []);
+    }, /** @type {Promise<{ token: any; value: any; }>[] } */ ([]));
 
     // Wait for all the "WAIT" resolvables
     return Promise.all(promises);

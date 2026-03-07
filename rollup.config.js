@@ -7,6 +7,7 @@ import postcss from "postcss";
 import { readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import ts from "typescript";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,7 +35,37 @@ function cssMinifyPlugin() {
   };
 }
 
-const basePlugins = [resolve(), commonjs(), versionInjector()];
+function typescriptPlugin() {
+  return {
+    name: "typescript",
+    transform(code, id) {
+      if (!id.endsWith(".ts")) {
+        return null;
+      }
+
+      const result = ts.transpileModule(code, {
+        compilerOptions: {
+          module: ts.ModuleKind.ESNext,
+          target: ts.ScriptTarget.ES2017,
+          sourceMap: true,
+        },
+        fileName: id,
+      });
+
+      return {
+        code: result.outputText,
+        map: result.sourceMapText ? JSON.parse(result.sourceMapText) : null,
+      };
+    },
+  };
+}
+
+const basePlugins = [
+  resolve(),
+  typescriptPlugin(),
+  commonjs(),
+  versionInjector(),
+];
 
 export default [
   // ---- Minified UMD ----

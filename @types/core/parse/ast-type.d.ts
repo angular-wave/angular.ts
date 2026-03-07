@@ -1,21 +1,21 @@
-export type ASTType = number;
-export namespace ASTType {
-  let _Program: number;
-  let _ExpressionStatement: number;
-  let _AssignmentExpression: number;
-  let _ConditionalExpression: number;
-  let _LogicalExpression: number;
-  let _BinaryExpression: number;
-  let _UnaryExpression: number;
-  let _CallExpression: number;
-  let _MemberExpression: number;
-  let _Identifier: number;
-  let _Literal: number;
-  let _ArrayExpression: number;
-  let _Property: number;
-  let _ObjectExpression: number;
-  let _ThisExpression: number;
-  let _LocalsExpression: number;
-  let _NGValueParameter: number;
-  let _UpdateExpression: number;
-}
+export declare const ASTType: {
+  readonly _Program: 1;
+  readonly _ExpressionStatement: 2;
+  readonly _AssignmentExpression: 3;
+  readonly _ConditionalExpression: 4;
+  readonly _LogicalExpression: 5;
+  readonly _BinaryExpression: 6;
+  readonly _UnaryExpression: 7;
+  readonly _CallExpression: 8;
+  readonly _MemberExpression: 9;
+  readonly _Identifier: 10;
+  readonly _Literal: 11;
+  readonly _ArrayExpression: 12;
+  readonly _Property: 13;
+  readonly _ObjectExpression: 14;
+  readonly _ThisExpression: 15;
+  readonly _LocalsExpression: 16;
+  readonly _NGValueParameter: 17;
+  readonly _UpdateExpression: 18;
+};
+export type ASTType = (typeof ASTType)[keyof typeof ASTType];

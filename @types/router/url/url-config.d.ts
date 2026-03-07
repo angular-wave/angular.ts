@@ -1,3 +1,6 @@
+import { ParamTypes } from "../params/param-types.ts";
+import type { ParamTypeDefinition } from "../params/interface.ts";
+import type { ParamType } from "../params/param-type.ts";
 /**
  * An API to customize the URL behavior and retrieve URL configuration
  *
@@ -11,20 +14,16 @@
  *
  * This API is found at `router.urlService.config` (see: [[UIRouter.urlService]], [[URLService.config]])
  */
-export class UrlConfigProvider {
+export declare class UrlConfigProvider {
   static $inject: string[];
+  paramTypes: ParamTypes;
+  _isCaseInsensitive: boolean;
+  _isStrictMode: boolean;
+  _defaultSquashPolicy: boolean | string;
   /**
    * @param {ng.AngularServiceProvider} $angularProvider
    */
   constructor($angularProvider: ng.AngularServiceProvider);
-  /** @type {ParamTypes} */
-  paramTypes: ParamTypes;
-  /** @type {boolean} */
-  _isCaseInsensitive: boolean;
-  /** @type {boolean} */
-  _isStrictMode: boolean;
-  /** @type {boolean | string} */
-  _defaultSquashPolicy: boolean | string;
   $get: () => this;
   /**
    * Defines whether URL matching should be case sensitive (the default behavior), or not.
@@ -97,11 +96,12 @@ export class UrlConfigProvider {
    *        The result is merged into the existing `definition`.
    *        See [[ParamType]] for information on the values accepted.
    *
-   * @returns if only the `name` parameter was specified: the currently registered [[ParamType]] object, or undefined
+   * @returns {import("../params/param-type.ts").ParamType | UrlConfigProvider | undefined}
    */
+  type(name: string): ParamType | undefined;
   type(
     name: string,
-    definition?: import("../params/interface.ts").ParamTypeDefinition,
-    definitionFn?: () => import("../params/interface.ts").ParamTypeDefinition,
-  ): any;
+    definition: ParamTypeDefinition,
+    definitionFn?: () => ParamTypeDefinition,
+  ): UrlConfigProvider;
 }

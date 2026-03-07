@@ -12,27 +12,27 @@ export class ViewService {
    */
   _listeners: any[];
   _viewConfigFactory: (
-    path: import("../path/path-node.js").PathNode[],
+    path: import("../path/path-node.ts").PathNode[],
     view: import("../state/interface.ts").ViewDeclaration,
-  ) => import("../state/views.js").ViewConfig;
+  ) => import("../state/views.ts").ViewConfig;
   $get: () => this;
   /**
-   * @param {?import('../state/state-object.js').StateObject} [context]
-   * @return {?import('../state/state-object.js').StateObject}
+   * @param {?import('../state/state-object.ts').StateObject} [context]
+   * @return {?import('../state/state-object.ts').StateObject}
    */
   rootViewContext(
-    context?: import("../state/state-object.js").StateObject | null,
-  ): import("../state/state-object.js").StateObject | null;
+    context?: import("../state/state-object.ts").StateObject | null,
+  ): import("../state/state-object.ts").StateObject | null;
   _rootContext: any;
   /**
-   * @param {import("../path/path-node.js").PathNode[]} path
+   * @param {import("../path/path-node.ts").PathNode[]} path
    * @param {import("../state/interface.ts").ViewDeclaration} decl
-   * @return {import("../state/views.js").ViewConfig}
+   * @return {import("../state/views.ts").ViewConfig}
    */
   _createViewConfig(
-    path: import("../path/path-node.js").PathNode[],
+    path: import("../path/path-node.ts").PathNode[],
     decl: import("../state/interface.ts").ViewDeclaration,
-  ): import("../state/views.js").ViewConfig;
+  ): import("../state/views.ts").ViewConfig;
   /**
    * Deactivates a ViewConfig.
    *
@@ -137,4 +137,4 @@ export namespace ViewService {
   ): (/** @type {ViewConfig} */ viewConfig: ViewConfig) => boolean;
 }
 export type ActiveUIView = import("./interface.ts").ActiveUIView;
-export type ViewConfig = import("../state/views.js").ViewConfig;
+export type ViewConfig = import("../state/views.ts").ViewConfig;

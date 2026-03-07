@@ -6,7 +6,7 @@ import { TransitionHookScope } from "./transition-hook.js";
 /**
  * Determines if the given state matches the matchCriteria
  * @internal
- * @param {import("../state/state-object.js").StateObject} state a State Object to test against
+ * @param {import("../state/state-object.ts").StateObject} state a State Object to test against
  * @param {import("./interface.ts").HookMatchCriterion} criterion - If a string, matchState uses the string as a glob-matcher against the state name
 - If an array (of strings), matchState uses each string in the array as a glob-matchers against the state name
   and returns a positive match if any of the globs match.

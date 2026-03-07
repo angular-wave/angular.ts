@@ -11,9 +11,9 @@ import {
   setScope,
   startingTag,
 } from "../../shared/dom.js";
-import { NodeType } from "../../shared/node.js";
+import { NodeType } from "../../shared/node.ts";
 import { NodeRef } from "../../shared/noderef.js";
-import { identifierForController } from "../controller/controller.js";
+import { identifierForController } from "../controller/controller.ts";
 import {
   assertArg,
   assertNotHasOwnProperty,
@@ -42,7 +42,7 @@ import {
   values,
 } from "../../shared/utils.js";
 import { SCE_CONTEXTS } from "../../services/sce/sce.js";
-import { PREFIX_REGEXP } from "../../shared/constants.js";
+import { PREFIX_REGEXP } from "../../shared/constants.ts";
 import {
   createEventDirective,
   createWindowEventDirective,
@@ -97,7 +97,7 @@ export class CompileProvider {
 
   /**
    * @param {ng.ProvideService} $provide
-   * @param {import('../sanitize/sanitize-uri.js').SanitizeUriProvider} $sanitizeUriProvider
+   * @param {import('../sanitize/sanitize-uri.ts').SanitizeUriProvider} $sanitizeUriProvider
    */
   constructor($provide, $sanitizeUriProvider) {
     /**
@@ -417,7 +417,7 @@ export class CompileProvider {
      * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
      *
      * @param {RegExp=} regexp New regexp to trust urls with.
-     * @returns {RegExp|import('../sanitize/sanitize-uri.js').SanitizeUriProvider} Current RegExp if called without value or self for
+     * @returns {RegExp|import('../sanitize/sanitize-uri.ts').SanitizeUriProvider} Current RegExp if called without value or self for
      *    chaining otherwise.
      */
     this.aHrefSanitizationTrustedUrlList = function (regexp) {
@@ -440,7 +440,7 @@ export class CompileProvider {
      * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
      *
      * @param {RegExp=} regexp New regexp to trust urls with.
-     * @returns {RegExp|import('../sanitize/sanitize-uri.js').SanitizeUriProvider | undefined} Current RegExp if called without value or self for
+     * @returns {RegExp|import('../sanitize/sanitize-uri.ts').SanitizeUriProvider | undefined} Current RegExp if called without value or self for
      *    chaining otherwise.
      */
     this.imgSrcSanitizationTrustedUrlList = function (regexp) {

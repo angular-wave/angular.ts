@@ -12,7 +12,7 @@ import {
   snakeCase,
   trim,
 } from "../../shared/utils.js";
-import { ALIASED_ATTR } from "../../shared/constants.js";
+import { ALIASED_ATTR } from "../../shared/constants.ts";
 
 const $compileMinErr = minErr("$compile");
 

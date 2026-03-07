@@ -1,6 +1,6 @@
 import { $injectTokens } from "../../injection-tokens.js";
 import { getCacheData } from "../../shared/dom.js";
-import { NodeType } from "../../shared/node.js";
+import { NodeType } from "../../shared/node.ts";
 import {
   assertNotHasOwnProperty,
   equals,

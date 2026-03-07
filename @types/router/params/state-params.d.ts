@@ -1,6 +1,7 @@
-/** @typedef {import("../state/state-object.js").StateObject} StateObject */
-export class StateParams {
-  constructor(params?: {});
+import type { StateObject } from "../state/state-object.ts";
+export declare class StateParams {
+  [key: string]: any;
+  constructor(params?: Record<string, any>);
   /**
    * Merges a set of parameters with all parameters inherited between the common parents of the
    * current state and a given destination state.
@@ -9,6 +10,9 @@ export class StateParams {
    * @param {StateObject} $current Internal definition of object representing the current state.
    * @param {StateObject} $to Internal definition of object representing state to transition to.
    */
-  $inherit(newParams: any, $current: StateObject, $to: StateObject): any;
+  $inherit(
+    newParams: Record<string, any>,
+    $current: StateObject,
+    $to: StateObject,
+  ): Record<string, any>;
 }
-export type StateObject = import("../state/state-object.js").StateObject;

@@ -1,5 +1,5 @@
 import { isFunction } from "../../shared/utils.js";
-import { createInjector } from "../di/injector.js";
+import { createInjector } from "../di/injector.ts";
 import { Angular } from "../../angular.js";
 import { wait } from "../../shared/test-utils.js";
 

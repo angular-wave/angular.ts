@@ -1,10 +1,10 @@
 import { defaults } from "../../shared/common.js";
 import { fnToString, maxLength } from "../../shared/strings.js";
-import { isPromise } from "../../shared/predicates.js";
+import { isPromise } from "../../shared/predicates.ts";
 import { parse } from "../../shared/hof.js";
 import { trace } from "../common/trace.js";
 import { Rejection } from "./reject-factory.js";
-import { TargetState } from "../state/target-state.js";
+import { TargetState } from "../state/target-state.ts";
 
 /** @typedef {import("./interface.ts").TransitionHookOptions} TransitionHookOptions */
 /** @typedef {import("./interface.ts").HookResult} HookResult */

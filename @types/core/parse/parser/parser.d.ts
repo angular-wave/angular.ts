@@ -1,25 +1,11 @@
-/**
- * @constructor
- */
-export class Parser {
-  /**
-   *
-   * @param {import('../lexer/lexer.js').Lexer} lexer
-   * @param {ng.FilterService} $filter
-   */
-  constructor(
-    lexer: import("../lexer/lexer.js").Lexer,
-    $filter: ng.FilterService,
-  );
-  /** @type {AST} */
+import type { FilterService } from "../../../filters/interface.ts";
+import type { CompiledExpression } from "../interface.ts";
+import { AST } from "../ast/ast.ts";
+import { ASTInterpreter } from "../interpreter.ts";
+import type { Lexer } from "../lexer/lexer.ts";
+export declare class Parser {
   _ast: AST;
-  /** @type {ASTInterpreter} */
   _astCompiler: ASTInterpreter;
-  /**
-   * @param {string} exp - Expression to be parsed
-   * @returns {import("../interface.ts").CompiledExpression}
-   */
-  _parse(exp: string): import("../interface.ts").CompiledExpression;
+  constructor(lexer: Lexer, $filter: FilterService);
+  _parse(exp: string): CompiledExpression;
 }
-import { AST } from "../ast/ast.js";
-import { ASTInterpreter } from "../interpreter.js";

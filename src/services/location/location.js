@@ -16,7 +16,7 @@ import {
 } from "../../shared/utils.js";
 import { getBaseHref } from "../../shared/dom.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
-import { validateRequired } from "../../shared/validate.js";
+import { validateRequired } from "../../shared/validate.ts";
 
 const PATH_MATCH = /^([^?#]*)(\?([^#]*))?(#(.*))?$/;
 

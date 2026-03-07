@@ -2,7 +2,7 @@ import { createElementFromHTML, dealoc } from "../shared/dom.js";
 import { Angular } from "../angular.js";
 import { isObject } from "../shared/utils.js";
 import { isFunction, wait } from "../shared/utils.js";
-import { createInjector } from "../core/di/injector.js";
+import { createInjector } from "../core/di/injector.ts";
 
 describe("$animate", () => {
   describe("with animation", () => {

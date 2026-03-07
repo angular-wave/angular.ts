@@ -15,13 +15,13 @@ import {
   getScope,
   setCacheData,
 } from "./shared/dom.js";
-import { createInjector } from "./core/di/injector.js";
-import { NgModule } from "./core/di/ng-module/ng-module.js";
+import { createInjector } from "./core/di/injector.ts";
+import { NgModule } from "./core/di/ng-module/ng-module.ts";
 import { registerNgModule } from "./ng.js";
 import { unnestR } from "./shared/common.js";
 import { $injectTokens as $t } from "./injection-tokens.js";
-import { annotate } from "./core/di/di.js";
-import { validateIsString } from "./shared/validate.js";
+import { annotate } from "./core/di/di.ts";
+import { validateIsString } from "./shared/validate.ts";
 
 const ngMinErr = minErr("ng");
 
@@ -388,7 +388,7 @@ export class Angular extends EventTarget {
           }
         }
 
-        /** @type {import("./router/state/state-registry.js").StateRegistryProvider} */
+        /** @type {import("./router/state/state-registry.ts").StateRegistryProvider} */
         const stateRegistry = $injector.get($t._stateRegistry);
 
         stateRegistry

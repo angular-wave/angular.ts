@@ -19,8 +19,8 @@ import { is, propEq, val } from "../../shared/hof.js";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.js";
 import { registerHook } from "./hook-registry.js";
 import { HookBuilder } from "./hook-builder.js";
-import { PathUtils } from "../path/path-utils.js";
-import { Param } from "../params/param.js";
+import { PathUtils } from "../path/path-utils.ts";
+import { Param } from "../params/param.ts";
 import { Resolvable } from "../resolve/resolvable.js";
 import { ResolveContext } from "../resolve/resolve-context.js";
 import { Rejection } from "./reject-factory.js";
@@ -32,10 +32,10 @@ import { Rejection } from "./reject-factory.js";
 /** @typedef {import("../state/interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
 /** @typedef {import("./interface.ts").RegisteredHooks} RegisteredHooks */
 /** @typedef {import("./hook-registry.js").RegisteredHook} RegisteredHook */
-/** @typedef {import('../state/target-state.js').TargetState} TargetState */
+/** @typedef {import('../state/target-state.ts').TargetState} TargetState */
 /** @typedef {import("../transition/interface.ts").TreeChanges} TreeChanges */
-/** @typedef {import("../path/path-node.js").PathNode} PathNode */
-/** @typedef {import("../state/state-object.js").StateObject} StateObject */
+/** @typedef {import("../path/path-node.ts").PathNode} PathNode */
+/** @typedef {import("../state/state-object.ts").StateObject} StateObject */
 /** @typedef {import("../state/interface.ts").StateDeclaration} StateDeclaration */
 
 const REDIRECT_MAX = 20;
@@ -516,18 +516,18 @@ export class Transition {
    *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
    * @param {ng.StateObject} [state] If provided, only returns the `ViewConfig`s for a single state in the path
    *
-   * @returns {import("../state/views.js").ViewConfig[]} a list of ViewConfig objects for the given path.
+   * @returns {import("../state/views.ts").ViewConfig[]} a list of ViewConfig objects for the given path.
    */
   views(pathname = "entering", state) {
     let path = this._treeChanges[pathname];
 
     path = !state
       ? path
-      : /** @type {import('../path/path-node.js').PathNode[]} */ (path).filter(
+      : /** @type {import('../path/path-node.ts').PathNode[]} */ (path).filter(
           propEq("state", state),
         );
 
-    return /** @type {import('../path/path-node.js').PathNode[]} */ (path)
+    return /** @type {import('../path/path-node.ts').PathNode[]} */ (path)
       .map((x) => x.views)
       .reduce(unnestR, []);
   }
@@ -543,11 +543,11 @@ export class Transition {
    *
    * @param {string} [pathname] The name of the tree changes path to get:
    *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
-   * @returns {import('../path/path-node.js').PathNode[] | import("./interface.ts").TreeChanges}
+   * @returns {import('../path/path-node.ts').PathNode[] | import("./interface.ts").TreeChanges}
    */
   treeChanges(pathname) {
     return pathname
-      ? /** @type {import('../path/path-node.js').PathNode[]} */ (
+      ? /** @type {import('../path/path-node.ts').PathNode[]} */ (
           this._treeChanges[pathname]
         )
       : this._treeChanges;

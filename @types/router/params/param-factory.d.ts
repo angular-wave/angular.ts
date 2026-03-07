@@ -1,15 +1,12 @@
-/** @typedef {import("./param-type.js").ParamType} ParamType */
-export class ParamFactory {
+import { Param } from "./param.ts";
+import type { ParamType } from "./param-type.ts";
+import type { UrlConfigProvider } from "../url/url-config.ts";
+export declare class ParamFactory {
+  urlServiceConfig: UrlConfigProvider;
   /**
    * @param {import("../url/url-config.js").UrlConfigProvider} urlServiceConfig
    */
-  constructor(
-    urlServiceConfig: import("../url/url-config.js").UrlConfigProvider,
-  );
-  /**
-   * @type {import("../url/url-config.js").UrlConfigProvider}
-   */
-  urlServiceConfig: import("../url/url-config.js").UrlConfigProvider;
+  constructor(urlServiceConfig: UrlConfigProvider);
   /**
    * @param {string} id
    * @param {ParamType | null} type
@@ -33,5 +30,3 @@ export class ParamFactory {
    */
   fromSearch(id: string, type: ParamType, state: ng.StateDeclaration): Param;
 }
-export type ParamType = import("./param-type.js").ParamType;
-import { Param } from "./param.js";

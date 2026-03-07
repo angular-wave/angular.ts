@@ -1,6 +1,6 @@
 import { BOOLEAN_ATTR } from "../../shared/dom.js";
 import { directiveNormalize, entries } from "../../shared/utils.js";
-import { ALIASED_ATTR } from "../../shared/constants.js";
+import { ALIASED_ATTR } from "../../shared/constants.ts";
 import { $injectTokens } from "../../injection-tokens.js";
 
 export const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;

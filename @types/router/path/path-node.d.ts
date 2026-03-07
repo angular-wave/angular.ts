@@ -1,3 +1,9 @@
+import { Param } from "../params/param.ts";
+import type { RawParams } from "../params/interface.ts";
+import type { StateObject } from "../state/state-object.ts";
+import type { GetParamsFn } from "./interface.ts";
+import type { ViewConfig } from "../state/views.ts";
+import type { Resolvable } from "../resolve/resolvable.js";
 /**
  * A node in a [[TreeChanges]] path
  *
@@ -5,24 +11,23 @@
  * Each PathNode corresponds to a state being entered, exited, or retained.
  * The stateful information includes parameter values and resolve data.
  */
-export class PathNode {
+export declare class PathNode {
+  state: StateObject;
+  paramSchema: Param[];
+  paramValues: RawParams;
+  resolvables: Resolvable[];
+  views?: ViewConfig[];
   /**
    * @param {PathNode | ng.StateObject | undefined} stateOrNode
    */
-  constructor(stateOrNode: PathNode | ng.StateObject | undefined);
-  /** @type {ng.StateObject} */
-  state: ng.StateObject;
-  paramSchema: any;
-  paramValues: any;
-  resolvables: any;
-  views: any;
+  constructor(stateOrNode?: PathNode | StateObject);
   clone(): PathNode;
   /**
    * Sets [[paramValues]] for the node, from the values of an object hash
    * @param {import("../params/interface.ts").RawParams} params
    * @returns {PathNode}
    */
-  applyRawParams(params: import("../params/interface.ts").RawParams): PathNode;
+  applyRawParams(params: RawParams): PathNode;
   /**
    * Gets a specific [[Param]] metadata that belongs to the node
    * @param {string} name
@@ -35,10 +40,7 @@ export class PathNode {
      * @returns {boolean} true if the state and parameter values for another PathNode are
     equal to the state and param values for this PathNode
      */
-  equals(
-    node: PathNode,
-    paramsFn: import("./interface.ts").GetParamsFn,
-  ): boolean;
+  equals(node: PathNode, paramsFn?: GetParamsFn): boolean;
   /**
    * Finds Params with different parameter values on another PathNode.
    *
@@ -50,9 +52,5 @@ export class PathNode {
    * @param {import("./interface.ts").GetParamsFn} paramsFn A function that returns which parameters should be compared.
    * @returns { Param[] | false} The [[Param]]s which differ, or null if the two nodes are for different states
    */
-  diff(
-    node: PathNode,
-    paramsFn: import("./interface.ts").GetParamsFn,
-  ): Param[] | false;
+  diff(node: PathNode, paramsFn?: GetParamsFn): Param[] | false;
 }
-import { Param } from "../params/param.js";

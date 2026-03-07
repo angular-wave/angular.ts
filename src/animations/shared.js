@@ -1,5 +1,5 @@
 import { isArray, isString } from "../shared/utils.js";
-import { NodeType } from "../shared/node.js";
+import { NodeType } from "../shared/node.ts";
 
 export const ADD_CLASS_SUFFIX = "-add";
 export const REMOVE_CLASS_SUFFIX = "-remove";

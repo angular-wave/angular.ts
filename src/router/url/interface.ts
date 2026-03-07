@@ -1,8 +1,8 @@
 import { StateDeclaration, TargetStateDef } from "../state/interface.ts";
-import { TargetState } from "../state/target-state.js";
-import { Param, StateObject } from "../state/state-object.js";
-import { UrlMatcher } from "./url-matcher.js";
-import { ParamType } from "../params/param-type.js";
+import { TargetState } from "../state/target-state.ts";
+import { Param, StateObject } from "../state/state-object.ts";
+import { UrlMatcher } from "./url-matcher.ts";
+import { ParamType } from "../params/param-type.ts";
 
 export interface UrlMatcherCompileConfig {
   // If state is provided, use the configuration in the `params` block
@@ -94,6 +94,15 @@ export interface UrlRule {
 
   /** The type of the rule */
   type: UrlRuleType;
+
+  /** Present for state-backed rules */
+  state?: StateObject;
+
+  /** Present for matcher-backed rules */
+  urlMatcher?: UrlMatcher;
+
+  /** Present for regexp-backed rules */
+  regexp?: RegExp;
 
   /**
    * This function should match the url and return the match details

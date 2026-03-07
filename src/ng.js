@@ -8,11 +8,11 @@ import { AnimationProvider } from "./animations/animation.js";
 import { AnimateCssProvider } from "./animations/css/animate-css.js";
 import { AnimateQueueProvider } from "./animations/queue/animate-queue.js";
 import { CompileProvider } from "./core/compile/compile.js";
-import { ControllerProvider } from "./core/controller/controller.js";
-import { FilterProvider } from "./core/filter/filter.js";
-import { InterpolateProvider } from "./core/interpolate/interpolate.js";
-import { ParseProvider } from "./core/parse/parse.js";
-import { SanitizeUriProvider } from "./core/sanitize/sanitize-uri.js";
+import { ControllerProvider } from "./core/controller/controller.ts";
+import { FilterProvider } from "./core/filter/filter.ts";
+import { InterpolateProvider } from "./core/interpolate/interpolate.ts";
+import { ParseProvider } from "./core/parse/parse.ts";
+import { SanitizeUriProvider } from "./core/sanitize/sanitize-uri.ts";
 import { RootScopeProvider } from "./core/scope/scope.js";
 import { $injectTokens as $t } from "./injection-tokens.js";
 import {
@@ -114,12 +114,12 @@ import {
   ViewDirective,
 } from "./router/directives/view-directive.js";
 import { RouterProvider } from "./router/router.js";
-import { StateProvider } from "./router/state/state-service.js";
-import { StateRegistryProvider } from "./router/state/state-registry.js";
+import { StateProvider } from "./router/state/state-service.ts";
+import { StateRegistryProvider } from "./router/state/state-registry.ts";
 import { TemplateFactoryProvider } from "./router/template-factory.js";
 import { TransitionProvider } from "./router/transition/transition-service.js";
-import { UrlConfigProvider } from "./router/url/url-config.js";
-import { UrlService } from "./router/url/url-service.js";
+import { UrlConfigProvider } from "./router/url/url-config.ts";
+import { UrlService } from "./router/url/url-service.ts";
 import { ViewService } from "./router/view/view.js";
 import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
 import { CookieProvider } from "./services/cookie/cookie.js";
@@ -301,7 +301,7 @@ export function registerNgModule(angular) {
       $t._router,
       /**
        * @param {ng.RouterService} globals
-       * @returns {import('./router/params/state-params.js').StateParams }
+       * @returns {import('./router/params/state-params.ts').StateParams }
        */
       (globals) => globals.params,
     ])

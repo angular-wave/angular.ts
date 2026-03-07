@@ -1,5 +1,5 @@
 import { Angular } from "../../angular.js";
-import { createInjector } from "../../core/di/injector.js";
+import { createInjector } from "../../core/di/injector.ts";
 import { dealoc } from "../../shared/dom.js";
 import { browserTrigger, wait } from "../../shared/test-utils.js";
 import { createWindowEventDirective } from "./events.js";

@@ -1,3 +1,11 @@
+import { Resolvable } from "../resolve/resolvable.js";
+import type {
+  BuilderFunction,
+  Builders,
+  StateDeclaration,
+} from "./interface.ts";
+import type { StateMatcher } from "./state-matcher.ts";
+import type { StateObject } from "./state-object.ts";
 /**
  * This is a [[StateBuilder.builder]] function for the `resolve:` block on a [[StateDeclaration]].
  *
@@ -41,10 +49,10 @@
  * @param {ng.StateObject & ng.StateDeclaration} state
  * @param {boolean | undefined} strictDi
  */
-export function resolvablesBuilder(
-  state: ng.StateObject & ng.StateDeclaration,
+export declare function resolvablesBuilder(
+  state: StateObject & StateDeclaration,
   strictDi: boolean | undefined,
-): any[];
+): Resolvable[];
 /**
  * A internal global service
  *
@@ -57,20 +65,15 @@ export function resolvablesBuilder(
  * Custom properties or API may be added to the internal [[StateObject]] object by registering a decorator function
  * using the [[builder]] method.
  */
-export class StateBuilder {
+export declare class StateBuilder {
+  _matcher: StateMatcher;
+  _$injector: ng.InjectorService | undefined;
+  _builders: Builders;
   /**
-   * @param {import('./state-matcher.js').StateMatcher} matcher
+   * @param {StateMatcher} matcher
    * @param {ng.UrlService} urlService
    */
-  constructor(
-    matcher: import("./state-matcher.js").StateMatcher,
-    urlService: ng.UrlService,
-  );
-  _matcher: import("./state-matcher.js").StateMatcher;
-  /** @type {ng.InjectorService | undefined} */
-  _$injector: ng.InjectorService | undefined;
-  /** @type {Builders} */
-  _builders: Builders;
+  constructor(matcher: StateMatcher, urlService: ng.UrlService);
   /**
    * @param {string} name
    * @param {*} fn
@@ -78,8 +81,8 @@ export class StateBuilder {
    */
   builder(
     name: string,
-    fn: any,
-  ): BuilderFunction | BuilderFunction[] | null | undefined;
+    fn?: any,
+  ): BuilderFunction | BuilderFunction[] | (() => null) | undefined;
   /**
    * Builds all of the properties on an essentially blank State object, returning a State object which has all its
    * properties and API built.
@@ -87,16 +90,13 @@ export class StateBuilder {
    * @param {ng.StateObject} state an uninitialized State object
    * @returns {ng.StateObject | null} the built State object
    */
-  build(state: ng.StateObject): ng.StateObject | null;
+  build(state: StateObject): StateObject | null;
   /**
    *
    * @param {ng.StateObject} state
    * @returns {string}
    */
-  parentName(state: ng.StateObject): string;
+  parentName(state: StateObject): string;
   /** @param {ng.StateObject} state*/
-  name(state: ng.StateObject): string;
+  name(state: StateObject): string;
 }
-export type BuilderFunction = import("./interface.ts").BuilderFunction;
-export type Builders = import("./interface.ts").Builders;
-export type UrlMatcher = import("../url/url-matcher.js").UrlMatcher;

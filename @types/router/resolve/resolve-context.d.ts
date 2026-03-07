@@ -23,7 +23,7 @@ export class ResolveContext {
    * @param {import("../resolve/resolve-context.js").PathNode[]} _path
    */
   constructor(_path: import("../resolve/resolve-context.js").PathNode[]);
-  _path: import("../path/path-node.js").PathNode[];
+  _path: import("../path/path-node.ts").PathNode[];
   /** Gets all the tokens found in the resolve context, de-duplicated */
   getTokens(): any;
   /**
@@ -107,5 +107,5 @@ export class ResolveContext {
    */
   getDependencies(resolvable: Resolvable): Resolvable[];
 }
-export type PathNode = import("../path/path-node.js").PathNode;
+export type PathNode = import("../path/path-node.ts").PathNode;
 import { Resolvable } from "./resolvable.js";

@@ -14,7 +14,7 @@ import {
   nextUid,
   nullObject,
 } from "../../shared/utils.js";
-import { ASTType } from "../parse/ast-type.js";
+import { ASTType } from "../parse/ast-type.ts";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
 /** @typedef {import("../parse/ast/ast-node.ts").ExpressionNode} ExpressionNode */

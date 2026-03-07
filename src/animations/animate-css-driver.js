@@ -1,5 +1,5 @@
 import { $injectTokens } from "../injection-tokens.js";
-import { NodeType } from "../shared/node.js";
+import { NodeType } from "../shared/node.ts";
 import { isString } from "../shared/utils.js";
 
 import { AnimateRunner } from "./runner/animate-runner.js";

@@ -3,14 +3,14 @@ import { hasAnimate, isDefined, isFunction } from "../../shared/utils.js";
 import { parse } from "../../shared/hof.js";
 import { ResolveContext } from "../resolve/resolve-context.js";
 import { trace } from "../common/trace.js";
-import { ViewConfig } from "../state/views.js";
+import { ViewConfig } from "../state/views.ts";
 import {
   dealoc,
   getCacheData,
   getInheritedData,
   setCacheData,
 } from "../../shared/dom.js";
-import { getLocals } from "../state/state-registry.js";
+import { getLocals } from "../state/state-registry.ts";
 import { $injectTokens } from "../../injection-tokens.js";
 
 /**

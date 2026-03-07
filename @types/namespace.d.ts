@@ -8,8 +8,8 @@ import {
   Listener as TListener,
   ScopeEvent as TScopeEvent,
 } from "./core/scope/interface.ts";
-import { NgModule as TNgModule } from "./core/di/ng-module/ng-module.js";
-import { InjectorService as TInjectorService } from "./core/di/internal-injector.js";
+import { NgModule as TNgModule } from "./core/di/ng-module/ng-module.ts";
+import { InjectorService as TInjectorService } from "./core/di/internal-injector.ts";
 import { AnchorScrollProvider as TAnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
 import { AnchorScrollService as TAnchorScrollService } from "./services/anchor-scroll/interface.ts";
 import { ControllerService as TControllerService } from "./core/controller/interface.ts";
@@ -33,17 +33,17 @@ import {
   FilterService as TFilterService,
   FilterFn as TFilterFn,
 } from "./filters/interface.ts";
-import { FilterProvider as TFilterProvider } from "./core/filter/filter.js";
+import { FilterProvider as TFilterProvider } from "./core/filter/filter.ts";
 import {
   InterpolateService as TInterpolateService,
   InterpolationFunction as TInterpolationFunction,
 } from "./core/interpolate/interface.ts";
-import { InterpolateProvider as TInterpolateProvider } from "./core/interpolate/interpolate.js";
+import { InterpolateProvider as TInterpolateProvider } from "./core/interpolate/interpolate.ts";
 import {
   SceProvider as TSceProvider,
   SceDelegateProvider as TSceDelegateProvider,
 } from "./services/sce/sce.js";
-import { StateProvider as TStateProvider } from "./router/state/state-service.js";
+import { StateProvider as TStateProvider } from "./router/state/state-service.ts";
 import { HttpService as THttpService } from "./services/http/interface.ts";
 import { LogService as TLogService } from "./services/log/interface.ts";
 import {
@@ -113,15 +113,15 @@ import { NgModelController as TNgModelController } from "./directive/model/model
 import { RouterProvider as TRouterProvider } from "./router/router.ts";
 import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.js";
 import { AnimateProvider as TAnimateProvider } from "./animations/animate.js";
-import { UrlService as TUrlService } from "./router/url/url-service.js";
+import { UrlService as TUrlService } from "./router/url/url-service.ts";
 import { LocationProvider as TLocationProvider } from "./services/location/location.js";
 import { ViewService as TViewService } from "./router/view/view.js";
 import {
   BuiltStateDeclaration as TBuiltStateDeclaration,
   StateDeclaration as TStateDeclaration,
 } from "./router/state/interface.ts";
-import { StateObject as TStateObject } from "./router/state/state-object.js";
-import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.js";
+import { StateObject as TStateObject } from "./router/state/state-object.ts";
+import { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.ts";
 import {
   SceService as TSceService,
   SceDelegateService as TSceDelegateService,
@@ -134,7 +134,7 @@ import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-run
 import { Transition as TTransition } from "./router/transition/transition.js";
 import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.js";
 import { TransitionService as TTransitionService } from "./router/transition/interface.ts";
-import { UrlConfigProvider as TUrlConfigProvider } from "./router/url/url-config.js";
+import { UrlConfigProvider as TUrlConfigProvider } from "./router/url/url-config.ts";
 import { AriaService as TAriaService } from "./directive/aria/interface.ts";
 declare global {
   interface Function {

@@ -1,26 +1,19 @@
-/**
- *
- * Used for configuring the interpolation markup. Defaults to `{{` and `}}`.
- *
- * <div class="alert alert-danger">
- * This feature is sometimes used to mix different markup languages, e.g. to wrap an AngularTS
- * template within a Python Jinja template (or any other template language). Mixing templating
- * languages is **very dangerous**. The embedding template language will not safely escape AngularTS
- * expressions, so any user-controlled values in the template will cause Cross Site Scripting (XSS)
- * security bugs!
- * </div>
- */
-export class InterpolateProvider {
-  /**
-   * @type {string} Symbol to denote start of expression in the interpolated string. Defaults to `{{`.
-   */
+import type { ParseService } from "../parse/interface.ts";
+import type { InterpolateService } from "./interface.ts";
+type SceLike = {
+  URL: string;
+  MEDIA_URL: string;
+  getTrusted(context: string | undefined, value: any): any;
+  valueOf(value: any): any;
+};
+export declare class InterpolateProvider {
   startSymbol: string;
-  /**
-   * @type {string} Symbol to denote the end of expression in the interpolated string. Defaults to `}}`.
-   */
   endSymbol: string;
-  $get: (
-    | string
-    | (($parse: ng.ParseService, $sce: ng.SceService) => ng.InterpolateService)
-  )[];
+  $get: [
+    string,
+    string,
+    ($parse: ParseService, $sce: SceLike) => InterpolateService,
+  ];
+  constructor();
 }
+export {};

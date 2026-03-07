@@ -15,7 +15,7 @@ import {
   INVALID_CLASS,
   PRISTINE_CLASS,
   VALID_CLASS,
-} from "../../shared/constants.js";
+} from "../../shared/constants.ts";
 import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
 
 /**

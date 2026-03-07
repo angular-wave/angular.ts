@@ -1,4 +1,19 @@
-export class UrlRuleFactory {
+import { UrlMatcher } from "./url-matcher.ts";
+import { StateObject } from "../state/state-object.ts";
+import type {
+  MatcherUrlRule,
+  RegExpRule,
+  StateRule,
+  UrlRule,
+  UrlRuleHandlerFn,
+  UrlRuleMatchFn,
+  UrlRuleType,
+} from "./interface.ts";
+export declare class UrlRuleFactory {
+  urlService: ng.UrlService;
+  stateService: ng.StateService;
+  routerGlobals: ng.RouterService;
+  static isUrlRule(obj: unknown): obj is UrlRule;
   /**
    * @param {ng.UrlService} urlService
    * @param {ng.StateService} stateService
@@ -9,19 +24,22 @@ export class UrlRuleFactory {
     stateService: ng.StateService,
     routerGlobals: ng.RouterService,
   );
-  /** @type {ng.UrlService} */
-  urlService: ng.UrlService;
-  /** @type {ng.StateService} */
-  stateService: ng.StateService;
-  /** @type {ng.RouterService} */
-  routerGlobals: ng.RouterService;
   /**
    *
    * @param {StateObject} what
    * @param {*} [handler]
    * @returns {import("./url-rules.js").UrlRule}
    */
-  create(what: StateObject, handler?: any): import("./url-rules.js").UrlRule;
+  create(
+    what:
+      | StateObject
+      | import("../state/interface.ts").StateDeclaration
+      | string
+      | UrlMatcher
+      | RegExp
+      | UrlRuleMatchFn,
+    handler?: any,
+  ): UrlRule;
   /**
    * A UrlRule which matches based on a UrlMatcher
    *
@@ -63,8 +81,8 @@ export class UrlRuleFactory {
    */
   fromUrlMatcher(
     urlMatcher: UrlMatcher,
-    handler: string | UrlMatcher | import("./interface.ts").UrlRuleHandlerFn,
-  ): import("./interface.ts").MatcherUrlRule;
+    handler?: string | UrlMatcher | UrlRuleHandlerFn,
+  ): MatcherUrlRule;
   /**
    * A UrlRule which matches a state by its url
    *
@@ -76,15 +94,15 @@ export class UrlRuleFactory {
    * // Starts a transition to 'foo' with params: { fooId: '123', barId: '456' }
    * ```
    * @param {StateObject | import("../state/interface.ts").StateDeclaration} stateOrDecl
-   * @param {import("../state/state-service.js").StateProvider} stateService
+   * @param {import("../state/state-service.ts").StateProvider} stateService
    * @param {import("../router.js").RouterProvider} globals
    * @returns {import("./interface.ts").StateRule}
    */
   fromState(
     stateOrDecl: StateObject | import("../state/interface.ts").StateDeclaration,
-    stateService: import("../state/state-service.js").StateProvider,
+    stateService: import("../state/state-service.ts").StateProvider,
     globals: import("../router.js").RouterProvider,
-  ): import("./interface.ts").StateRule;
+  ): StateRule;
   /**
    * A UrlRule which matches based on a regular expression
    *
@@ -120,52 +138,25 @@ export class UrlRuleFactory {
    * @param {string | import("./interface.ts").UrlRuleHandlerFn} handler
    * @returns {import("./interface.ts").RegExpRule}
    */
-  fromRegExp(
-    regexp: RegExp,
-    handler: string | import("./interface.ts").UrlRuleHandlerFn,
-  ): import("./interface.ts").RegExpRule;
-}
-export namespace UrlRuleFactory {
-  function isUrlRule(obj: { [x: string]: any }): boolean;
+  fromRegExp(regexp: RegExp, handler: string | UrlRuleHandlerFn): RegExpRule;
 }
 /**
  * A base rule which calls `match`
  *
  * The value from the `match` function is passed through to the `handler`.
  */
-export class BaseUrlRule {
+export declare class BaseUrlRule {
+  match: UrlRuleMatchFn;
+  type: UrlRuleType;
+  $id: number;
+  _group: number | undefined;
+  handler: UrlRuleHandlerFn;
+  priority: number | undefined;
   /**
    * @param {import("./interface.ts").UrlRuleMatchFn} match
    * @param {import("./interface.ts").UrlRuleHandlerFn} handler
    */
-  constructor(
-    match: import("./interface.ts").UrlRuleMatchFn,
-    handler: import("./interface.ts").UrlRuleHandlerFn,
-  );
-  /**
-   * @type {import("./interface.ts").UrlRuleMatchFn}
-   */
-  match: import("./interface.ts").UrlRuleMatchFn;
-  /**
-   * @type {import("./interface.ts").UrlRuleType}
-   */
-  type: import("./interface.ts").UrlRuleType;
-  /**
-   * @type {number}
-   */
-  $id: number;
-  /**
-   * @type {number | undefined}
-   */
-  _group: number | undefined;
-  /**
-   * @type {import("./interface.ts").UrlRuleHandlerFn}
-   */
-  handler: import("./interface.ts").UrlRuleHandlerFn;
-  /**
-   * @type {number | undefined}
-   */
-  priority: number | undefined;
+  constructor(match: UrlRuleMatchFn, handler: UrlRuleHandlerFn);
   /**
    * This function should be overridden
    * @param {*} [params]
@@ -173,5 +164,3 @@ export class BaseUrlRule {
    */
   matchPriority(params?: any): number;
 }
-import { StateObject } from "../state/state-object.js";
-import { UrlMatcher } from "./url-matcher.js";

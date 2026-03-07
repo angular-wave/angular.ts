@@ -1,7 +1,7 @@
-import { AST } from "./ast.js";
-import { Lexer } from "../lexer/lexer.js";
-import { createInjector } from "../../di/injector.js";
-import { ASTType } from "../ast-type.js";
+import { AST } from "./ast.ts";
+import { Lexer } from "../lexer/lexer.ts";
+import { createInjector } from "../../di/injector.ts";
+import { ASTType } from "../ast-type.ts";
 import { Angular } from "../../../angular.js";
 
 describe("ast", () => {

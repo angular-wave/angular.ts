@@ -1,10 +1,23 @@
+import type { Injectable } from "../../../interface.ts";
+type InvokeQueueItem = [string, string, any[]];
+type WasmOptions = {
+  raw?: boolean;
+  [key: string]: any;
+};
 /**
  * Modules are collections of application configuration information for components:
  * controllers, directives, filters, etc. They provide recipes for the injector
  * to do the actual instantiation. A module itself has no behaviour but only state.
  * A such, it acts as a data structure between the Angular instance and the injector service.
  */
-export class NgModule {
+export declare class NgModule {
+  name: string;
+  _requires: string[];
+  _invokeQueue: InvokeQueueItem[];
+  _configBlocks: InvokeQueueItem[];
+  _runBlocks: Array<Injectable<(...args: any[]) => any>>;
+  _services: string[];
+  _restDefinitions: Array<ng.RestDefinition<any>>;
   /**
    * @param {string} name - Name of the module
    * @param {Array<string>} requires - List of modules which the injector will load before the current module
@@ -12,38 +25,9 @@ export class NgModule {
    */
   constructor(
     name: string,
-    requires: Array<string>,
-    configFn?: ng.Injectable<any>,
+    requires: string[],
+    configFn?: Injectable<(...args: any[]) => any>,
   );
-  /**
-   * @public
-   * Name of the current module.
-   * @type {string}
-   */
-  public name: string;
-  /**
-   * Array of module names that this module depends on.
-   * @ignore
-   * @type {string[]}
-   */
-  _requires: string[];
-  /**
-   * Holds a collection of tasks, required to instantiate an angular component
-   * @ignore
-   * @type {!Array<Array<*>>}
-   */
-  _invokeQueue: Array<Array<any>>;
-  /**
-   * @ignore
-   * @type {!Array<Array<*>>}
-   */
-  _configBlocks: Array<Array<any>>;
-  /** @ignore @type {!Array.<ng.Injectable<any>>} */
-  _runBlocks: Array<ng.Injectable<any>>;
-  /** @ignore @type {!Array.<ng.Injectable<any>>} */
-  _services: Array<ng.Injectable<any>>;
-  /** @ignore @type {!Array.<ng.RestDefinition<any>>} */
-  _restDefinitions: Array<ng.RestDefinition<any>>;
   /**
    * @param {string} name
    * @param {any} object - Allows undefined
@@ -55,18 +39,18 @@ export class NgModule {
    * @param {Object|string|number} object
    * @returns {NgModule}
    */
-  constant(name: string, object: any | string | number): NgModule;
+  constant(name: string, object: object | string | number): NgModule;
   /**
    *
    * @param {ng.Injectable<any>} configFn
    * @returns {NgModule}
    */
-  config(configFn: ng.Injectable<any>): NgModule;
+  config(configFn: Injectable<(...args: any[]) => any>): NgModule;
   /**
    * @param {ng.Injectable<any>} block
    * @returns {NgModule}
    */
-  run(block: ng.Injectable<any>): NgModule;
+  run(block: Injectable<(...args: any[]) => any>): NgModule;
   /**
    * @param {string} name
    * @param {ng.Component} options
@@ -78,37 +62,55 @@ export class NgModule {
    * @param {ng.Injectable<any>} providerFunction
    * @returns {NgModule}
    */
-  factory(name: string, providerFunction: ng.Injectable<any>): NgModule;
+  factory(
+    name: string,
+    providerFunction: Injectable<(...args: any[]) => any>,
+  ): NgModule;
   /**
    * @param {string} name
    * @param {ng.Injectable<any>} serviceFunction
    * @returns {NgModule}
    */
-  service(name: string, serviceFunction: ng.Injectable<any>): NgModule;
+  service(
+    name: string,
+    serviceFunction: Injectable<(...args: any[]) => any>,
+  ): NgModule;
   /**
    * @param {string} name
    * @param {ng.Injectable<any>} providerType
    * @returns {NgModule}
    */
-  provider(name: string, providerType: ng.Injectable<any>): NgModule;
+  provider(
+    name: string,
+    providerType: Injectable<(...args: any[]) => any>,
+  ): NgModule;
   /**
    * @param {string} name
    * @param {ng.Injectable<any>} decorFn
    * @returns {NgModule}
    */
-  decorator(name: string, decorFn: ng.Injectable<any>): NgModule;
+  decorator(
+    name: string,
+    decorFn: Injectable<(...args: any[]) => any>,
+  ): NgModule;
   /**
    * @param {string} name
    * @param {ng.Injectable<any>} directiveFactory
    * @returns {NgModule}
    */
-  directive(name: string, directiveFactory: ng.Injectable<any>): NgModule;
+  directive(
+    name: string,
+    directiveFactory: Injectable<(...args: any[]) => any>,
+  ): NgModule;
   /**
    * @param {string} name
    * @param {ng.Injectable<any>} animationFactory
    * @returns {NgModule}
    */
-  animation(name: string, animationFactory: ng.Injectable<any>): NgModule;
+  animation(
+    name: string,
+    animationFactory: Injectable<(...args: any[]) => any>,
+  ): NgModule;
   /**
    * @param {string} name
    * @param {ng.FilterFactory} filterFn
@@ -125,7 +127,7 @@ export class NgModule {
    */
   controller(
     name: string,
-    ctlFn: ng.Injectable<ng.ControllerConstructor>,
+    ctlFn: Injectable<ng.ControllerConstructor>,
   ): NgModule;
   /**
    * Register a named WebAssembly module that will be instantiated via $provide.
@@ -151,12 +153,8 @@ export class NgModule {
   wasm(
     name: string,
     src: string,
-    imports?: {
-      [x: string]: any;
-    },
-    opts?: {
-      [x: string]: any;
-    },
+    imports?: Record<string, any>,
+    opts?: WasmOptions,
   ): NgModule;
   /**
    * Register a named worker that will be instantiated via $provide.
@@ -180,7 +178,7 @@ export class NgModule {
    */
   store(
     name: string,
-    ctor: Function | any,
+    ctor: Function | object,
     type: ng.StorageType,
     backendOrConfig?: ng.StorageBackend,
   ): NgModule;
@@ -197,7 +195,7 @@ export class NgModule {
     name: string,
     url: string,
     entityClass: ng.EntityClass<T>,
-    options?: any | undefined,
+    options?: Record<string, any>,
   ): NgModule;
   /**
    * Register a pre-configured SSE connection during module configuration.
@@ -224,3 +222,4 @@ export class NgModule {
     options?: ng.WebSocketConfig,
   ): NgModule;
 }
+export {};

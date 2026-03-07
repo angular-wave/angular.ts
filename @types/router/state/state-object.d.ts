@@ -1,5 +1,7 @@
-/** @typedef {import("../params/param.js").Param} Param */
-/** @typedef {import("../resolve/resolvable.js").Resolvable} Resolvable */
+import { Glob } from "../glob/glob.js";
+import type { Param } from "../params/param.ts";
+import type { Resolvable } from "../resolve/resolvable.js";
+import type { StateDeclaration } from "./interface.ts";
 /**
  * Internal representation of a ng-router state.
  *
@@ -11,62 +13,37 @@
  * Each of its own properties (i.e., `hasOwnProperty`) are built using builders from the [[StateBuilder]].
  * @extends {ng.StateDeclaration}
  */
-export class StateObject {
-  /**
-   * @param {import('./interface.ts').StateDeclaration} config
-   */
-  constructor(config: import("./interface.ts").StateDeclaration);
-  /**
-   * @type {string}
-   */
-  name: string;
-  /**
-   * @type {{ url: any; } | undefined | null}
-   */
+export declare class StateObject {
+  static isStateDeclaration(
+    obj: StateObject | StateDeclaration,
+  ): obj is StateDeclaration;
+  static isState(obj: any): obj is StateObject;
+  name: any;
   navigable:
     | {
         url: any;
       }
     | undefined
     | null;
-  /** @type {StateObject | undefined} */
   parent: StateObject | undefined;
-  /**
-   * @type {ArrayLike<Param> | undefined}
-   */
   params: ArrayLike<Param> | undefined;
-  /**
-   * @type {{ parameter: (arg0: any, arg1: {}) => any; } | undefined}
-   */
   url:
     | {
-        parameter: (arg0: any, arg1: {}) => any;
+        parameter: (id: any, opts: {}) => any;
       }
     | undefined;
-  /**
-   * @type {any}
-   */
   includes: any;
-  /**
-   * @type {StateObject[] | undefined}
-   */
   path: StateObject[] | undefined;
-  /**
-   * @type {any}
-   */
   views: any;
-  /**
-   * A list of [[Resolvable]] objects.  The internal representation of [[resolve]].
-   * @type {Resolvable[] | undefined}
-   */
   resolvables: Resolvable[] | undefined;
-  /**
-   * @type {ng.StateDeclaration}
-   */
-  self: ng.StateDeclaration;
+  self: StateDeclaration;
   _stateObjectCache: {
-    nameGlob: Glob;
+    nameGlob: Glob | null;
   };
+  /**
+   * @param {import('./interface.ts').StateDeclaration} config
+   */
+  constructor(config: StateDeclaration);
   /** @returns {StateObject} */
   _state(): StateObject;
   /**
@@ -111,17 +88,7 @@ export class StateObject {
    * @param {Param} [opts] options
    * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
    */
-  parameter(id: string, opts?: Param): Param | undefined;
+  parameter(id: string, opts?: Partial<Param>): Param | undefined;
   toString(): string;
 }
-export namespace StateObject {
-  /** Predicate which returns true if the object is a [[StateDeclaration]] object */
-  function isStateDeclaration(
-    obj: StateObject | import("../state/interface.ts").StateDeclaration,
-  ): boolean;
-  /** Predicate which returns true if the object is an internal [[StateObject]] object */
-  function isState(obj: any): boolean;
-}
-export type Param = import("../params/param.js").Param;
-export type Resolvable = import("../resolve/resolvable.js").Resolvable;
-import { Glob } from "../glob/glob.js";
+export type { Param };

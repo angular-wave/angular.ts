@@ -8,7 +8,7 @@ import {
 import { tail, unnestR } from "../shared/common.js";
 import { Resolvable } from "./resolve/resolvable.js";
 import { kebobString } from "../shared/strings.js";
-import { annotate } from "../core/di/di.js";
+import { annotate } from "../core/di/di.ts";
 import { DirectiveSuffix } from "../core/compile/compile.js";
 import { $injectTokens as $t } from "../injection-tokens.js";
 

@@ -1,8 +1,8 @@
 import { createElementFromHTML, dealoc } from "./shared/dom.js";
 import { Angular } from "./angular.js";
-import { createInjector } from "./core/di/injector.js";
+import { createInjector } from "./core/di/injector.ts";
 import { wait } from "./shared/test-utils.js";
-import { NgModule } from "./core/di/ng-module/ng-module.js";
+import { NgModule } from "./core/di/ng-module/ng-module.ts";
 
 describe("angular", () => {
   let element, document, module, injector, $rootScope, $compile, angular;

@@ -1,16 +1,6 @@
-/**
- * @param {Function} func
- * @returns {boolean}
- */
-export function isClass(func: Function): boolean;
-/**
- * @param {any} fn
- * @param {boolean} [strictDi]
- * @param {string} [name]
- * @returns {Array<string>}
- */
-export function annotate(
-  fn: any,
+export declare function isClass(func: Function): boolean;
+export declare function annotate(
+  fn: unknown,
   strictDi?: boolean,
   name?: string,
-): Array<string>;
+): string[];

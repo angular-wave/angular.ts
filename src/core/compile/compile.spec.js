@@ -1,5 +1,5 @@
 import { Angular } from "../../angular.js";
-import { createInjector } from "../di/injector.js";
+import { createInjector } from "../di/injector.ts";
 import { NodeRef } from "../../shared/noderef.js";
 import {
   dealoc,

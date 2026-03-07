@@ -1,6 +1,6 @@
 import { Angular } from "../../angular.js";
 import { browserTrigger, wait } from "../../shared/test-utils.js";
-import { createInjector } from "../../core/di/injector.js";
+import { createInjector } from "../../core/di/injector.ts";
 
 describe("ngOn* event binding", () => {
   let $rootScope, module, injector, $compile;

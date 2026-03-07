@@ -1,4 +1,4 @@
-import { InjectorService, ProviderInjector } from "./internal-injector.js";
+import { InjectorService, ProviderInjector } from "./internal-injector.ts";
 
 export interface StorageLike {
   getItem(key: string): string | null;

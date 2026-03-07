@@ -43,5 +43,5 @@ export class RouterProvider {
  * }
  */
 export type ServiceProvider = import("../interface.ts").ServiceProvider;
-import { StateParams } from "./params/state-params.js";
+import { StateParams } from "./params/state-params.ts";
 import { Queue } from "../shared/queue.js";

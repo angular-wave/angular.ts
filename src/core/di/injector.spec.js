@@ -1,5 +1,5 @@
 import { Angular } from "../../angular.js";
-import { createInjector } from "./injector.js";
+import { createInjector } from "./injector.ts";
 import { annotate } from "./di.js";
 import { extend } from "../../shared/utils.js";
 

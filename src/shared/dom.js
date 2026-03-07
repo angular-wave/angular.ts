@@ -1,5 +1,5 @@
 import { hasOwn, isArray, isDefined, isObject, keys } from "./utils.js";
-import { NodeType } from "./node.js";
+import { NodeType } from "./node.ts";
 import { $injectTokens } from "../injection-tokens.js";
 
 /** @type {number} */

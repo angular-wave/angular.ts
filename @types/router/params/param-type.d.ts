@@ -1,3 +1,4 @@
+import type { ParamTypeDefinition } from "./interface.ts";
 /**
  * An internal class which implements [[ParamTypeDefinition]].
  *
@@ -21,16 +22,16 @@
  * var paramType = new ParamType(paramTypeDef);
  * ```
  */
-export class ParamType {
+export declare class ParamType {
+  [key: string]: any;
+  pattern: RegExp;
+  inherit: boolean;
+  name: string | undefined;
   /**
        * @param {any} def A configuration object which contains the custom type definition.  The object's
       properties will override the default methods and/or pattern in `ParamType`'s public interface.
        */
-  constructor(def: any);
-  pattern: RegExp;
-  inherit: boolean;
-  /** @type {string|undefined} */
-  name: string | undefined;
+  constructor(def: ParamTypeDefinition & Record<string, any>);
   /**
    * @param {any} val
    */
@@ -66,30 +67,5 @@ export class ParamType {
    * @param {boolean |'auto'} mode
    * @param {any} isSearch
    */
-  $asArray(mode: boolean | "auto", isSearch: any): ArrayType;
+  $asArray(mode: boolean | "auto", isSearch: boolean): ParamType;
 }
-/**
- * Wraps up a `ParamType` object to handle array values.
- * @this {Record<string, any>}
- * @param {ParamType & Record<string, any>} type
- * @param {boolean | 'auto'} mode
- */
-declare function ArrayType(
-  this: Record<string, any>,
-  type: ParamType & Record<string, any>,
-  mode: boolean | "auto",
-): void;
-declare class ArrayType {
-  /**
-   * Wraps up a `ParamType` object to handle array values.
-   * @this {Record<string, any>}
-   * @param {ParamType & Record<string, any>} type
-   * @param {boolean | 'auto'} mode
-   */
-  constructor(
-    this: Record<string, any>,
-    type: ParamType & Record<string, any>,
-    mode: boolean | "auto",
-  );
-}
-export {};

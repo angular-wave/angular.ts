@@ -1,12 +1,11 @@
-export const VALID_CLASS: "ng-valid";
-export const INVALID_CLASS: "ng-invalid";
-export const PRISTINE_CLASS: "ng-pristine";
-export const DIRTY_CLASS: "ng-dirty";
-export const UNTOUCHED_CLASS: "ng-untouched";
-export const TOUCHED_CLASS: "ng-touched";
-export const EMPTY_CLASS: "ng-empty";
-export const NOT_EMPTY_CLASS: "ng-not-empty";
-export const PREFIX_REGEXP: RegExp;
-export const SPECIAL_CHARS_REGEXP: RegExp;
-/** @type {Record<string, string>} */
-export const ALIASED_ATTR: Record<string, string>;
+export declare const VALID_CLASS = "ng-valid";
+export declare const INVALID_CLASS = "ng-invalid";
+export declare const PRISTINE_CLASS = "ng-pristine";
+export declare const DIRTY_CLASS = "ng-dirty";
+export declare const UNTOUCHED_CLASS = "ng-untouched";
+export declare const TOUCHED_CLASS = "ng-touched";
+export declare const EMPTY_CLASS = "ng-empty";
+export declare const NOT_EMPTY_CLASS = "ng-not-empty";
+export declare const PREFIX_REGEXP: RegExp;
+export declare const SPECIAL_CHARS_REGEXP: RegExp;
+export declare const ALIASED_ATTR: Record<string, string>;

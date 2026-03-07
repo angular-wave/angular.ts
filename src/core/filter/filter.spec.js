@@ -1,5 +1,5 @@
 import { Angular } from "../../angular.js";
-import { createInjector } from "../di/injector.js";
+import { createInjector } from "../di/injector.ts";
 
 describe("filter", function () {
   beforeEach(() => {

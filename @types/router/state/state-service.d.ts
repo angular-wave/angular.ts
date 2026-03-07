@@ -1,10 +1,53 @@
-export function silentRejection<E = unknown>(error: E): Promise<never>;
+import { PathNode } from "../path/path-node.ts";
+import { TargetState } from "./target-state.ts";
+import type { RawParams } from "../params/interface.ts";
+import type { TransitionOptions } from "../transition/interface.ts";
+import type {
+  HrefOptions,
+  OnInvalidCallback,
+  StateDeclaration,
+  StateOrName,
+  TransitionPromise,
+} from "./interface.ts";
+import type { StateObject } from "./state-object.ts";
+import type { StateRegistryProvider } from "./state-registry.ts";
+/**
+ * Creates a rejected promise whose rejection is intentionally silenced.
+ *
+ * @template [E=unknown]
+ * @param {E} error
+ * @returns {Promise<never>}
+ */
+export declare const silentRejection: <E = unknown>(error: E) => Promise<never>;
 /**
  * Provides services related to ng-router states.
  *
  * This API is located at `router.stateService` ([[UIRouter.stateService]])
  */
-export class StateProvider {
+export declare class StateProvider {
+  globals: ng.RouterProvider;
+  transitionService: ng.TransitionProvider;
+  stateRegistry: StateRegistryProvider | undefined;
+  urlService: ng.UrlService | undefined;
+  $injector: ng.InjectorService | undefined;
+  invalidCallbacks: OnInvalidCallback[];
+  _defaultErrorHandler: ng.ExceptionHandlerService;
+  _getRegistry(): StateRegistryProvider;
+  _getUrlService(): ng.UrlService;
+  /**
+   * The latest successful state parameters
+   *
+   * @deprecated This is a passthrough through to [[Router.params]]
+   */
+  get params(): import("../params/state-params.ts").StateParams;
+  /**
+   * The current [[StateDeclaration]]
+   */
+  get current(): StateDeclaration | undefined;
+  /**
+   * The current [[StateObject]] (an internal API)
+   */
+  get $current(): StateObject | undefined;
   static $inject: string[];
   /**
    *
@@ -17,45 +60,9 @@ export class StateProvider {
     transitionService: ng.TransitionProvider,
     exceptionHandlerProvider: ng.ExceptionHandlerProvider,
   );
-  /**
-   * The latest successful state parameters
-   *
-   * @deprecated This is a passthrough through to [[Router.params]]
-   */
-  get params(): import("../params/state-params.js").StateParams;
-  /**
-   * The current [[StateDeclaration]]
-   */
-  get current(): import("./interface.ts").StateDeclaration;
-  /**
-   * The current [[StateObject]] (an internal API)
-   */
-  get $current(): ng.StateObject;
-  /**
-   * @type {ng.RouterProvider}
-   */
-  globals: ng.RouterProvider;
-  /**
-   * @type {ng.TransitionProvider}
-   */
-  transitionService: ng.TransitionProvider;
-  /**
-   * @type {StateRegistryProvider | undefined}
-   */
-  stateRegistry: StateRegistryProvider | undefined;
-  /** @type {ng.UrlService | undefined } */
-  urlService: ng.UrlService | undefined;
-  /** @type {ng.InjectorService | undefined } */
-  $injector: ng.InjectorService | undefined;
-  /**
-   * @type {import("./interface.ts").OnInvalidCallback[]}
-   */
-  invalidCallbacks: import("./interface.ts").OnInvalidCallback[];
-  /** @type {ng.ExceptionHandlerService} */
-  _defaultErrorHandler: ng.ExceptionHandlerService;
   $get: (
     | string
-    | (($injector: ng.InjectorService, $url: ng.UrlService) => StateProvider)
+    | (($injector: ng.InjectorService, $url: ng.UrlService) => this)
   )[];
   /**
    * Decorates states when they are registered
@@ -149,28 +156,15 @@ export class StateProvider {
   decorator(
     name: string,
     func: import("./interface.ts").BuilderFunction,
-  ): object;
+  ):
+    | this
+    | import("./interface.ts").BuilderFunction
+    | import("./interface.ts").BuilderFunction[];
   /**
    *
    * @param {import("./interface.ts").StateDeclaration} definition
    */
-  state(definition: import("./interface.ts").StateDeclaration): this;
-  /**
-   * Handler for when [[transitionTo]] is called with an invalid state.
-   *
-   * Invokes the [[onInvalid]] callbacks, in natural order.
-   * Each callback's return value is checked in sequence until one of them returns an instance of TargetState.
-   * The results of the callbacks are wrapped in Promise.resolve(), so the callbacks may return promises.
-   *
-   * If a callback returns an TargetState, then it is used as arguments to $state.transitionTo() and the result returned.
-   * @internal
-   * @param {PathNode[]} fromPath
-   * @param {TargetState} toState
-   */
-  _handleInvalidTargetState(
-    fromPath: PathNode[],
-    toState: TargetState,
-  ): Promise<any>;
+  state(definition: StateDeclaration): this;
   /**
    * Registers an Invalid State handler
    *
@@ -195,7 +189,7 @@ export class StateProvider {
    *
    * @returns a function which deregisters the callback
    */
-  onInvalid(callback: import("./interface.ts").OnInvalidCallback): () => void;
+  onInvalid(callback: OnInvalidCallback): () => void;
   /**
    * Reloads the current state
    *
@@ -242,7 +236,7 @@ export class StateProvider {
    */
   reload(
     reloadState?: string | StateDeclaration | StateObject,
-  ): Promise<any> | import("./interface.ts").TransitionPromise;
+  ): Promise<any> | TransitionPromise;
   /**
    * Transition to a different state and/or parameters
    *
@@ -283,25 +277,22 @@ export class StateProvider {
    *
    * @returns {Promise<any>} A promise representing the state of the new transition.
    */
-  go(to: StateOrName, params?: any, options?: any): Promise<any>;
+  go(
+    to: StateOrName,
+    params?: any,
+    options?: any,
+  ): Promise<any> | TransitionPromise;
   /**
    * Creates a [[TargetState]]
    *
    * This is a factory method for creating a TargetState
    *
    * This may be returned from a Transition Hook to redirect a transition, for example.
-   * @param {string | import("./interface.ts").StateDeclaration | import("./state-object.js").StateObject} identifier
+   * @param {string | import("./interface.ts").StateDeclaration | import("./state-object.ts").StateObject} identifier
    * @param {{}} params
    * @param {any} [options]
    */
-  target(
-    identifier:
-      | string
-      | import("./interface.ts").StateDeclaration
-      | import("./state-object.js").StateObject,
-    params: {},
-    options?: any,
-  ): TargetState;
+  target(identifier: StateOrName, params?: any, options?: any): TargetState;
   getCurrentPath(): PathNode[];
   /**
    * Low-level method for transitioning to a new state.
@@ -329,7 +320,7 @@ export class StateProvider {
   transitionTo(
     to: StateOrName,
     toParams?: RawParams,
-    options?: TransitionOptions,
+    options?: TransitionOptions | any,
   ): TransitionPromise | Promise<any>;
   /**
        * Checks if the current state *is* the provided state
@@ -352,22 +343,20 @@ export class StateProvider {
        * ```html
        * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
        * ```
-       * @param {import("./state-matcher.js").StateOrName} stateOrName The state name (absolute or relative) or state object you'd like to check.
+       * @param {import("./state-matcher.ts").StateOrName} stateOrName The state name (absolute or relative) or state object you'd like to check.
        * @param {import("../params/interface.ts").RawParams} [params] A param object, e.g. `{sectionId: section.id}`, that you'd like
       to test against the current active state.
-       * @param {{ relative: import("./state-matcher.js").StateOrName | undefined; } | undefined} [options] An options object. The options are:
+       * @param {{ relative: import("./state-matcher.ts").StateOrName | undefined; } | undefined} [options] An options object. The options are:
       - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
       test relative to `options.relative` state (or name).
        * @returns {boolean | undefined} Returns true if it is the state.
        */
   is(
-    stateOrName: import("./state-matcher.js").StateOrName,
-    params?: import("../params/interface.ts").RawParams,
-    options?:
-      | {
-          relative: import("./state-matcher.js").StateOrName | undefined;
-        }
-      | undefined,
+    stateOrName: StateOrName,
+    params?: RawParams,
+    options?: {
+      relative: StateOrName | undefined;
+    },
   ): boolean | undefined;
   /**
        * Checks if the current state *includes* the provided state
@@ -419,15 +408,15 @@ export class StateProvider {
    * ```js
    * expect($state.href("about.person", { person: "bob" })).toEqual("/about/bob");
    * ```
-   * @param {import("./state-matcher.js").StateOrName} stateOrName The state name or state object you'd like to generate a url from.
+   * @param {import("./state-matcher.ts").StateOrName} stateOrName The state name or state object you'd like to generate a url from.
    * @param {import("../params/interface.ts").RawParams} params An object of parameter values to fill the state's required parameters.
    * @param {import("./interface.ts").HrefOptions} [options] Options object. The options are:
    * @returns {string | null} compiled state url
    */
   href(
-    stateOrName: import("./state-matcher.js").StateOrName,
-    params: import("../params/interface.ts").RawParams,
-    options?: import("./interface.ts").HrefOptions,
+    stateOrName: StateOrName,
+    params?: RawParams,
+    options?: HrefOptions,
   ): string | null;
   /**
    * Sets or gets the default [[transitionTo]] error handler.
@@ -452,20 +441,15 @@ export class StateProvider {
    * @param {import("../../docs.ts").ExceptionHandler | undefined} [handler] a global error handler function
    * @returns the current global error handler
    */
-  defaultErrorHandler(
-    handler?: import("../../docs.ts").ExceptionHandler | undefined,
-  ): import("../../docs.ts").ExceptionHandler;
+  defaultErrorHandler(handler?: any): any;
   /**
    * @param {import("./interface.ts").StateOrName} stateOrName
    * @param {undefined} [base]
    */
   get(
-    stateOrName: import("./interface.ts").StateOrName,
-    base?: undefined,
-    ...args: any[]
-  ):
-    | import("./interface.ts").StateDeclaration
-    | import("./interface.ts").StateDeclaration[];
+    stateOrName?: StateOrName,
+    base?: StateOrName,
+  ): StateDeclaration | StateDeclaration[];
   /**
        * Lazy loads a state
        *
@@ -477,21 +461,7 @@ export class StateProvider {
        * @returns a promise to lazy load
        */
   lazyLoad(
-    stateOrName: import("./interface.ts").StateOrName,
-    transition: ng.Transition,
+    stateOrName: StateOrName,
+    transition?: ng.Transition,
   ): Promise<import("./interface.ts").LazyLoadResult>;
 }
-export type StateRegistryProvider =
-  import("./state-registry.js").StateRegistryProvider;
-export type StateDeclaration = import("./interface.ts").StateDeclaration;
-export type StateObject = import("./state-object.js").StateObject;
-export type StateOrName = import("./state-matcher.js").StateOrName;
-export type Transition = import("../transition/transition.js").Transition;
-export type TransitionPromise = import("./interface.ts").TransitionPromise;
-export type TransitionOptions =
-  import("../transition/interface.ts").TransitionOptions;
-export type RawParams = import("../params/interface.ts").RawParams;
-export type OnInvalidCallback = import("./interface.ts").OnInvalidCallback;
-export type HookResult = import("../transition/transition-hook.js").HookResult;
-import { PathNode } from "../path/path-node.js";
-import { TargetState } from "./target-state.js";
