@@ -623,6 +623,26 @@ describe("ngRepeat", () => {
       expect(lis[0].getAttribute("mark")).toEqual("b");
       expect(lis[1].getAttribute("mark")).toEqual("a");
     });
+
+    it("keeps grouped interpolation bindings when reused blocks get a new item", async () => {
+      element = $compile(
+        '<ul><li ng-repeat="todo in tasks">{{todo.task}} {{todo.done}}|</li></ul>',
+      )(scope);
+      scope.tasks = [
+        { task: "Learn AngularTS", done: true },
+        { task: "Build an AngularTS app", done: false },
+      ];
+
+      await wait();
+      expect(element.textContent).toBe(
+        "Learn AngularTS true|Build an AngularTS app false|",
+      );
+
+      scope.tasks = scope.tasks.filter((task) => !task.done);
+      await wait();
+
+      expect(element.textContent).toBe("Build an AngularTS app false|");
+    });
   });
 
   describe("nesting in replaced directive templates", () => {

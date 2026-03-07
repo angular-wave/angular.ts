@@ -986,6 +986,44 @@ describe("Scope", () => {
 
         expect(spy).not.toHaveBeenCalled();
       });
+
+      it("watches grouped member expressions when the source object is reassigned", async () => {
+        scope.todo = { task: "Learn AngularTS", done: true };
+        let res;
+
+        scope.$watch("[todo.task, todo.done]", (val) => {
+          res = val;
+        });
+
+        await wait();
+        expect(res).toEqual(["Learn AngularTS", true]);
+
+        scope.todo = { task: "Build an AngularTS app", done: false };
+        await wait();
+        expect(res).toEqual(["Build an AngularTS app", false]);
+      });
+
+      it("keeps falsy member values when a grouped watch is rebound to another proxied object", async () => {
+        scope.tasks = [
+          { task: "Learn AngularTS", done: true },
+          { task: "Build an AngularTS app", done: false },
+        ];
+
+        const child = scope.$new();
+        let res;
+
+        child.todo = scope.tasks[0];
+        child.$watch("[todo.task, todo.done]", (val) => {
+          res = val;
+        });
+
+        await wait();
+        expect(res).toEqual(["Learn AngularTS", true]);
+
+        child.todo = scope.tasks.filter((task) => !task.done)[0];
+        await wait();
+        expect(res).toEqual(["Build an AngularTS app", false]);
+      });
     });
 
     describe("apply expression", () => {

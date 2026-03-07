@@ -92,24 +92,35 @@ function getNonscopeSet(arr) {
 }
 
 /**
- * Resolves a watcher key for AST nodes used in `$watch` registration.
- * Member expressions prefer the property key (`a.b` -> `b`) and fall back to
- * the object key for computed access (`a[idx]` -> `a`).
+ * Collects all keys that should trigger a grouped `$watch` expression.
+ * This keeps interpolation arrays reactive for both direct property changes
+ * (`todo.done`) and object reassignments (`todo = nextTodo` in `ng-repeat`).
  *
  * @param {import("../parse/ast/ast-node.ts").ASTNode | undefined} node
- * @returns {string | undefined}
+ * @param {Set<string>} watchKeys
+ * @returns {Set<string>}
  */
-function resolveWatchKey(node) {
-  if (!node) return undefined;
+function collectWatchKeys(node, watchKeys = new Set()) {
+  if (!node) return watchKeys;
 
   if (node.type === ASTType._Identifier) {
-    return /** @type {LiteralNode} */ (node).name;
+    const identifier = /** @type {LiteralNode} */ (node).name;
+
+    if (identifier) watchKeys.add(identifier);
+
+    return watchKeys;
   }
 
   if (node.type === ASTType._Literal) {
     const literal = /** @type {LiteralNode} */ (node);
 
-    return isString(literal.value) ? literal.value : literal.name;
+    if (isString(literal.value)) {
+      watchKeys.add(literal.value);
+    } else if (literal.name) {
+      watchKeys.add(literal.name);
+    }
+
+    return watchKeys;
   }
 
   if (node.type === ASTType._MemberExpression) {
@@ -117,22 +128,38 @@ function resolveWatchKey(node) {
 
     const propertyKey = /** @type {LiteralNode} */ (member.property)?.name;
 
-    if (propertyKey) return propertyKey;
+    if (propertyKey) {
+      watchKeys.add(propertyKey);
+    } else {
+      collectWatchKeys(member.property, watchKeys);
+    }
 
-    return resolveWatchKey(member.object);
+    collectWatchKeys(member.object, watchKeys);
+
+    return watchKeys;
   }
 
   const { toWatch } = /** @type {BodyNode} */ (node);
 
   if (toWatch?.length) {
-    const [firstWatchTarget] = toWatch;
+    for (let i = 0, l = toWatch.length; i < l; i++) {
+      const watchTarget = toWatch[i];
 
-    if (firstWatchTarget !== node) {
-      return resolveWatchKey(firstWatchTarget);
+      if (watchTarget !== node) {
+        collectWatchKeys(watchTarget, watchKeys);
+      }
+    }
+
+    if (watchKeys.size > 0) {
+      return watchKeys;
     }
   }
 
-  return /** @type {LiteralNode} */ (node).name;
+  const fallbackKey = /** @type {LiteralNode} */ (node).name;
+
+  if (fallbackKey) watchKeys.add(fallbackKey);
+
+  return watchKeys;
 }
 
 /**
@@ -451,7 +478,7 @@ export class Scope {
           const keyList = keys(oldValue);
 
           for (const k of keyList) {
-            if (!value[k]) delete oldValue[k];
+            if (!hasOwn(value, k)) delete oldValue[k];
           }
         }
 
@@ -1103,26 +1130,30 @@ export class Scope {
       case ASTType._ArrayExpression: {
         const { elements } = /** @type {ArrayNode} */ (expr);
 
+        /** @type {string[]} */
+        const keyList = [];
+
+        /** @type {Set<string>} */
+        const seenKeys = new Set();
+
         for (let i = 0, l = elements.length; i < l; i++) {
-          const x = elements[i];
+          const elementKeys = collectWatchKeys(elements[i]);
 
-          const registerKey = resolveWatchKey(x);
+          elementKeys.forEach((registerKey) => {
+            if (seenKeys.has(registerKey)) return;
+            seenKeys.add(registerKey);
+            keyList.push(registerKey);
+          });
+        }
 
-          if (!registerKey) continue;
-
-          this.#registerKey(registerKey, listener);
+        for (let i = 0, l = keyList.length; i < l; i++) {
+          this.#registerKey(keyList[i], listener);
           this.#scheduleListener([listener]);
         }
 
         return () => {
-          for (let i = 0, l = elements.length; i < l; i++) {
-            const x = elements[i];
-
-            const deregisterKey = resolveWatchKey(x);
-
-            if (!deregisterKey) continue;
-
-            this.#deregisterKey(deregisterKey, listener.id);
+          for (let i = 0, l = keyList.length; i < l; i++) {
+            this.#deregisterKey(keyList[i], listener.id);
           }
         };
       }
