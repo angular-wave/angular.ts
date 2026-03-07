@@ -92,6 +92,50 @@ function getNonscopeSet(arr) {
 }
 
 /**
+ * Resolves a watcher key for AST nodes used in `$watch` registration.
+ * Member expressions prefer the property key (`a.b` -> `b`) and fall back to
+ * the object key for computed access (`a[idx]` -> `a`).
+ *
+ * @param {import("../parse/ast/ast-node.ts").ASTNode | undefined} node
+ * @returns {string | undefined}
+ */
+function resolveWatchKey(node) {
+  if (!node) return undefined;
+
+  if (node.type === ASTType._Identifier) {
+    return /** @type {LiteralNode} */ (node).name;
+  }
+
+  if (node.type === ASTType._Literal) {
+    const literal = /** @type {LiteralNode} */ (node);
+
+    return isString(literal.value) ? literal.value : literal.name;
+  }
+
+  if (node.type === ASTType._MemberExpression) {
+    const member = /** @type {ExpressionNode} */ (node);
+
+    const propertyKey = /** @type {LiteralNode} */ (member.property)?.name;
+
+    if (propertyKey) return propertyKey;
+
+    return resolveWatchKey(member.object);
+  }
+
+  const { toWatch } = /** @type {BodyNode} */ (node);
+
+  if (toWatch?.length) {
+    const [firstWatchTarget] = toWatch;
+
+    if (firstWatchTarget !== node) {
+      return resolveWatchKey(firstWatchTarget);
+    }
+  }
+
+  return /** @type {LiteralNode} */ (node).name;
+}
+
+/**
  * @private
  * Creates a deep proxy for the target object, intercepting property changes
  * and recursively applying proxies to nested objects.
@@ -1062,12 +1106,7 @@ export class Scope {
         for (let i = 0, l = elements.length; i < l; i++) {
           const x = elements[i];
 
-          const registerKey =
-            x.type === ASTType._Literal
-              ? /** @type {LiteralNode} */ (x).value
-              : /** @type {LiteralNode} */ (
-                  /** @type {BodyNode} */ (x).toWatch[0]
-                )?.name;
+          const registerKey = resolveWatchKey(x);
 
           if (!registerKey) continue;
 
@@ -1079,12 +1118,7 @@ export class Scope {
           for (let i = 0, l = elements.length; i < l; i++) {
             const x = elements[i];
 
-            const deregisterKey =
-              x.type === ASTType._Literal
-                ? /** @type {LiteralNode} */ (x).value
-                : /** @type {LiteralNode} */ (
-                    /** @type {BodyNode} */ (x).toWatch[0]
-                  ).name;
+            const deregisterKey = resolveWatchKey(x);
 
             if (!deregisterKey) continue;
 

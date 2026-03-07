@@ -953,6 +953,39 @@ describe("Scope", () => {
         await wait();
         expect(res).toEqual(2);
       });
+
+      it("watches member expressions when parent object is assigned later", async () => {
+        let res;
+
+        scope.$watch("[a.firstName, a.lastName]", (val) => {
+          res = val;
+        });
+
+        await wait();
+        expect(res).toEqual([undefined, undefined]);
+
+        scope.a = { firstName: "John", lastName: "Doe" };
+        await wait();
+        expect(res).toEqual(["John", "Doe"]);
+
+        scope.a.lastName = "Wick";
+        await wait();
+        expect(res).toEqual(["John", "Wick"]);
+      });
+
+      it("deregisters array member-expression watchers", async () => {
+        const spy = jasmine.createSpy("array member watch");
+        const unwatch = scope.$watch("[a.firstName, a.lastName]", spy);
+
+        await wait();
+        spy.calls.reset();
+
+        /** @type {Function} */ (unwatch)();
+        scope.a = { firstName: "John", lastName: "Doe" };
+        await wait();
+
+        expect(spy).not.toHaveBeenCalled();
+      });
     });
 
     describe("apply expression", () => {
