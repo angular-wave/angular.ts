@@ -1,10 +1,6 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
+import { expectNoJasmineFailures } from "../../../playwright-jasmine.js";
 
 test("parser unit tests contain no errors", async ({ page }) => {
-  await page.goto("src/core/parse/parse.html");
-  await page.content();
-  await page.waitForTimeout(100);
-  await expect(page.locator(".jasmine-overall-result")).toHaveText(
-    / 0 failures/,
-  );
+  await expectNoJasmineFailures(page, "src/core/parse/parse.html");
 });

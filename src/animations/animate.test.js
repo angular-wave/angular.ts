@@ -1,10 +1,6 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
+import { expectNoJasmineFailures } from "../../playwright-jasmine.js";
 
 test("raf-scheduler unit tests contain no errors", async ({ page }) => {
-  await page.goto("src/animations/animate.html");
-  await page.content();
-
-  await expect(page.locator(".jasmine-overall-result")).toHaveText(
-    / 0 failures/,
-  );
+  await expectNoJasmineFailures(page, "src/animations/animate.html");
 });

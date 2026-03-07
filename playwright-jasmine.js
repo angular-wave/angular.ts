@@ -1,0 +1,190 @@
+import { expect } from "@playwright/test";
+
+const DEFAULT_TIMEOUT = 120_000;
+const MAX_FAILURES = 10;
+const MAX_MESSAGES = 3;
+const MAX_LOG_LINES = 10;
+
+/**
+ * Runs a Jasmine HTML runner from an existing Playwright test and reports
+ * explicit spec failures when the suite finishes.
+ *
+ * @param {import("@playwright/test").Page} page
+ * @param {string} url
+ * @param {{ timeout?: number }} [options]
+ * @returns {Promise<void>}
+ */
+export async function expectNoJasmineFailures(page, url, options = {}) {
+  const diagnostics = await runJasminePage(page, url, options);
+  expect(
+    diagnostics.failedSpecs,
+    formatJasmineFailureReport(url, diagnostics),
+  ).toEqual([]);
+}
+
+/**
+ * Waits for the browser-side Jasmine runner to finish and collects failures.
+ *
+ * @param {import("@playwright/test").Page} page
+ * @param {string} url
+ * @param {{ timeout?: number }} [options]
+ * @returns {Promise<JasmineDiagnostics>}
+ */
+export async function runJasminePage(page, url, options = {}) {
+  const pageErrors = [];
+  const consoleErrors = [];
+  const timeout = options.timeout ?? DEFAULT_TIMEOUT;
+
+  page.on("pageerror", (error) => {
+    pageErrors.push(error.stack || error.message);
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      consoleErrors.push(message.text());
+    }
+  });
+
+  await page.goto(url);
+
+  try {
+    await page.waitForFunction(
+      () =>
+        typeof window.jsApiReporter?.status === "function" &&
+        window.jsApiReporter.status() === "done",
+      { timeout },
+    );
+  } catch (error) {
+    const diagnostics = await collectJasmineDiagnostics(page);
+    diagnostics.pageErrors = pageErrors;
+    diagnostics.consoleErrors = consoleErrors;
+    throw new Error(formatJasmineFailureReport(url, diagnostics), {
+      cause: error,
+    });
+  }
+
+  const diagnostics = await collectJasmineDiagnostics(page);
+  diagnostics.pageErrors = pageErrors;
+  diagnostics.consoleErrors = consoleErrors;
+  return diagnostics;
+}
+
+/**
+ * Reads Jasmine reporter output from the page and normalizes it into a small
+ * object the Playwright wrapper can assert on.
+ *
+ * @param {import("@playwright/test").Page} page
+ * @returns {Promise<JasmineDiagnostics>}
+ */
+async function collectJasmineDiagnostics(page) {
+  return page.evaluate(() => {
+    const reporter = window.jsApiReporter;
+    const overallText =
+      document.querySelector(".jasmine-overall-result")?.textContent?.trim() ||
+      "";
+    const status =
+      typeof reporter?.status === "function" ? reporter.status() : null;
+    const specs =
+      typeof reporter?.specResults === "function" ? reporter.specResults() : [];
+    const failedSpecs = specs
+      .filter((spec) => spec.status === "failed")
+      .map((spec) => ({
+        fullName: spec.fullName,
+        failedExpectations: (spec.failedExpectations || []).map(
+          (expectation) => expectation.message,
+        ),
+      }));
+
+    return {
+      failedSpecs,
+      overallText,
+      status,
+      totalSpecs: specs.length,
+      pageErrors: [],
+      consoleErrors: [],
+    };
+  });
+}
+
+/**
+ * Builds a human-readable assertion message with the failed spec names and
+ * expectation messages pulled from Jasmine.
+ *
+ * @param {string} url
+ * @param {JasmineDiagnostics} diagnostics
+ * @returns {string}
+ */
+function formatJasmineFailureReport(url, diagnostics) {
+  const lines = [`Jasmine failures for ${url}`];
+
+  if (diagnostics.status && diagnostics.status !== "done") {
+    lines.push(`Status: ${diagnostics.status}`);
+  }
+  if (diagnostics.overallText) {
+    lines.push(`Summary: ${diagnostics.overallText}`);
+  }
+  if (diagnostics.totalSpecs) {
+    lines.push(`Total specs: ${diagnostics.totalSpecs}`);
+  }
+
+  if (diagnostics.failedSpecs.length > 0) {
+    lines.push("Failed specs:");
+
+    diagnostics.failedSpecs.slice(0, MAX_FAILURES).forEach((spec, index) => {
+      lines.push(`${index + 1}. ${spec.fullName}`);
+      spec.failedExpectations.slice(0, MAX_MESSAGES).forEach((message) => {
+        lines.push(`   - ${message}`);
+      });
+    });
+
+    if (diagnostics.failedSpecs.length > MAX_FAILURES) {
+      lines.push(
+        `... ${diagnostics.failedSpecs.length - MAX_FAILURES} more failed specs`,
+      );
+    }
+  } else {
+    lines.push("No failed specs were reported.");
+  }
+
+  appendLogSection(lines, "Page errors", diagnostics.pageErrors);
+  appendLogSection(lines, "Console errors", diagnostics.consoleErrors);
+
+  return lines.join("\n");
+}
+
+/**
+ * Adds captured browser-side errors to the failure report without letting the
+ * output become excessively large.
+ *
+ * @param {string[]} lines
+ * @param {string} label
+ * @param {string[]} values
+ * @returns {void}
+ */
+function appendLogSection(lines, label, values) {
+  if (values.length === 0) {
+    return;
+  }
+
+  lines.push(`${label}:`);
+  values.slice(0, MAX_LOG_LINES).forEach((value) => {
+    lines.push(`- ${value}`);
+  });
+
+  if (values.length > MAX_LOG_LINES) {
+    lines.push(`... ${values.length - MAX_LOG_LINES} more`);
+  }
+}
+
+/**
+ * @typedef {{
+ *   failedSpecs: Array<{
+ *     fullName: string,
+ *     failedExpectations: string[],
+ *   }>,
+ *   overallText: string,
+ *   status: string | null,
+ *   totalSpecs: number,
+ *   pageErrors: string[],
+ *   consoleErrors: string[],
+ * }} JasmineDiagnostics
+ */
