@@ -1,5 +1,5 @@
 import { equals, inherit, map, pick } from "../../shared/common.ts";
-import { hasOwn, isDefined, isNullOrUndefined } from "../../shared/utils.js";
+import { hasOwn, isDefined, isNullOrUndefined } from "../../shared/utils.ts";
 import { is } from "../../shared/hof.ts";
 import { ParamType } from "./param-type.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";

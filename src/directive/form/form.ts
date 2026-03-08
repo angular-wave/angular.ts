@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   arrayRemove,
   assertNotHasOwnProperty,
@@ -10,7 +9,7 @@ import {
   isUndefined,
   shallowCopy,
   snakeCase,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import {
   DIRTY_CLASS,
   INVALID_CLASS,
@@ -39,10 +38,7 @@ export const nullFormCtrl = {
     /* empty */
   },
   $getControls: () => [],
-  _renameControl: (
-    /** @type {{ $name: any; }} */ control,
-    /** @type {any} */ name,
-  ) => {
+  _renameControl: (control: { $name: any }, name: any) => {
     control.$name = name;
   },
   $removeControl: () => {
@@ -123,6 +119,38 @@ export class FormController {
     $t._interpolate,
   ];
 
+  _isAnimated: boolean;
+
+  _controls: any[];
+
+  $name: any;
+
+  $dirty: boolean;
+
+  $pristine: boolean;
+
+  $valid: boolean | undefined;
+
+  $invalid: boolean | undefined;
+
+  $submitted: boolean;
+
+  _parentForm: any;
+
+  _element: HTMLFormElement;
+
+  _animate: ng.AnimateService;
+
+  $error: Record<string, any>;
+
+  _success: Record<string, any>;
+
+  $pending: Record<string, any> | undefined;
+
+  _classCache: Record<string, any>;
+
+  $target: Record<string, any>;
+
   /**
    * @param {HTMLFormElement} $element
    * @param {ng.Attributes} $attrs
@@ -130,7 +158,13 @@ export class FormController {
    * @param {ng.AnimateService} $animate
    * @param {ng.InterpolateService} $interpolate
    */
-  constructor($element, $attrs, $scope, $animate, $interpolate) {
+  constructor(
+    $element: HTMLFormElement,
+    $attrs: ng.Attributes,
+    $scope: ng.Scope,
+    $animate: ng.AnimateService,
+    $interpolate: ng.InterpolateService,
+  ) {
     /** @type {boolean} */
     this._isAnimated = hasAnimate($element);
 
@@ -139,9 +173,12 @@ export class FormController {
      */
     this._controls = [];
 
-    this.$name = /** @type {ng.InterpolationFunction} */ $interpolate(
-      $attrs.name || $attrs.ngForm || "",
-    )($scope);
+    this.$name =
+      (
+        $interpolate($attrs.name || $attrs.ngForm || "") as
+          | ng.InterpolationFunction
+          | undefined
+      )?.($scope) || "";
 
     /**
      * @property {boolean} $dirty True if user has already interacted with the form.
@@ -189,8 +226,8 @@ export class FormController {
    * event defined in `ng-model-options`. This method is typically needed by the reset button of
    * a form that uses `ng-model-options` to pend updates.
    */
-  $rollbackViewValue() {
-    this._controls.forEach((control) => {
+  $rollbackViewValue(): void {
+    this._controls.forEach((control: any) => {
       control.$rollbackViewValue();
     });
   }
@@ -202,8 +239,8 @@ export class FormController {
    * event defined in `ng-model-options`. This method is rarely needed as `NgModelController`
    * usually handles calling this in response to input events.
    */
-  $commitViewValue() {
-    this._controls.forEach((control) => {
+  $commitViewValue(): void {
+    this._controls.forEach((control: any) => {
       control.$commitViewValue();
     });
   }
@@ -224,14 +261,14 @@ export class FormController {
    * calling `$setDirty()` and `$validate()` afterwards will propagate the state to the parent form.
    * @param {FormController} control
    */
-  $addControl(control) {
+  $addControl(control: any): void {
     // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
     // and not added to the scope.  Now we throw an error.
     assertNotHasOwnProperty(control.$name, "input");
     this._controls.push(control);
 
     if (control.$name) {
-      /** @type {Record<string, any>} */ this[control.$name] = control;
+      (this as Record<string, any>)[control.$name] = control;
     }
     control.$target._parentForm = this;
   }
@@ -252,7 +289,7 @@ export class FormController {
    * you need access to the controls.
    * @returns {ReadonlyArray<FormController>}
    */
-  $getControls() {
+  $getControls(): ReadonlyArray<FormController> {
     return /** @type {ReadonlyArray<FormController>} */ shallowCopy(
       this._controls,
     );
@@ -263,13 +300,13 @@ export class FormController {
    * @param {FormController} control
    * @param {string | number} newName
    */
-  _renameControl(control, newName) {
+  _renameControl(control: any, newName: string | number): void {
     const oldName = control.$name;
 
-    if (/** @type {Record<string, any>} */ this[oldName] === control) {
-      delete (/** @type {Record<string, any>} */ this[oldName]);
+    if ((this as Record<string, any>)[oldName] === control) {
+      delete (this as Record<string, any>)[oldName];
     }
-    /** @type {Record<string, any>} */ this[newName] = control;
+    (this as Record<string, any>)[newName] = control;
     control.$name = newName;
   }
 
@@ -284,12 +321,12 @@ export class FormController {
    * may not mean that the form is still `$dirty`.
    * @param {FormController } control
    */
-  $removeControl(control) {
+  $removeControl(control: any): void {
     if (
       control.$name &&
-      /** @type {Record<string, any>} */ this[control.$name] === control
+      (this as Record<string, any>)[control.$name] === control
     ) {
-      delete (/** @type {Record<string, any>} */ this[control.$name]);
+      delete (this as Record<string, any>)[control.$name];
     }
     this.$pending &&
       Object.keys(this.$pending).forEach((name) => {
@@ -315,7 +352,7 @@ export class FormController {
    * This method can be called to add the 'ng-dirty' class and set the form to a dirty
    * state (ng-dirty class). This method will also propagate to parent forms.
    */
-  $setDirty() {
+  $setDirty(): void {
     if (hasAnimate(this._element)) {
       this._animate.removeClass(this._element, PRISTINE_CLASS);
       this._animate.addClass(this._element, DIRTY_CLASS);
@@ -341,7 +378,7 @@ export class FormController {
    * Setting a form back to a pristine state is often useful when we want to 'reuse' a form after
    * saving or resetting it.
    */
-  $setPristine() {
+  $setPristine(): void {
     if (hasAnimate(this._element)) {
       this._animate.setClass(
         this._element,
@@ -357,7 +394,7 @@ export class FormController {
     this.$dirty = false;
     this.$pristine = true;
     this.$submitted = false;
-    this._controls.forEach((control) => {
+    this._controls.forEach((control: any) => {
       control.$setPristine();
     });
   }
@@ -371,8 +408,8 @@ export class FormController {
    * Setting a form controls back to their untouched state is often useful when setting the form
    * back to its pristine state.
    */
-  $setUntouched() {
-    this._controls.forEach((control) => {
+  $setUntouched(): void {
+    this._controls.forEach((control: any) => {
       control.$setUntouched();
     });
   }
@@ -381,7 +418,7 @@ export class FormController {
    * Sets the form to its `$submitted` state. This will also set `$submitted` on all child and
    * parent forms of the form.
    */
-  $setSubmitted() {
+  $setSubmitted(): void {
     /** @type {FormController} */
     let rootForm = this;
 
@@ -391,14 +428,14 @@ export class FormController {
     rootForm._setSubmitted();
   }
 
-  _setSubmitted() {
+  _setSubmitted(): void {
     if (hasAnimate(this._element)) {
       this._animate.addClass(this._element, SUBMITTED_CLASS);
     } else {
       this._element.classList.add(SUBMITTED_CLASS);
     }
     this.$submitted = true;
-    this._controls.forEach((control) => {
+    this._controls.forEach((control: any) => {
       if (control._setSubmitted) {
         control._setSubmitted();
       }
@@ -408,9 +445,9 @@ export class FormController {
   /**
    * @param {Record<string, any>} object
    * @param {string} property
-   * @param {FormController | import("../model/model.js").NgModelController} controller
+   * @param {FormController | import("../model/model.ts").NgModelController} controller
    */
-  set(object, property, controller) {
+  set(object: Record<string, any>, property: string, controller: any): void {
     const list = object[property];
 
     if (!list) {
@@ -428,9 +465,9 @@ export class FormController {
   /**
    * @param {Record<string, any>} object
    * @param {string} property
-   * @param {FormController | import("../model/model.js").NgModelController} controller
+   * @param {FormController | import("../model/model.ts").NgModelController} controller
    */
-  unset(object, property, controller) {
+  unset(object: Record<string, any>, property: string, controller: any): void {
     const list = object[property];
 
     if (!list) {
@@ -464,10 +501,14 @@ export class FormController {
    *        (undefined),  or skipped (null). Pending is used for unfulfilled `$asyncValidators`.
    *        Skipped is used by AngularTS when validators do not run because of parse errors and when
    *        `$asyncValidators` do not run because any of the `$validators` failed.
-   * @param {import("../model/model.js").NgModelController | FormController} controller - The controller whose validity state is
+   * @param {import("../model/model.ts").NgModelController | FormController} controller - The controller whose validity state is
    *        triggering the change.
    */
-  $setValidity(validationErrorKey, state, controller) {
+  $setValidity(
+    validationErrorKey: string,
+    state: boolean | null | undefined,
+    controller: any,
+  ): void {
     const that = this;
 
     if (isUndefined(state)) {
@@ -525,9 +566,16 @@ export class FormController {
      * @param {FormController & Record<string, any>} ctrl
      * @param {string} name
      * @param {string} value
-     * @param {FormController | import("../model/model.js").NgModelController} controllerParam
+     * @param {FormController | import("../model/model.ts").NgModelController} controllerParam
      */
-    function createAndSet(ctrl, name, value, controllerParam) {
+    function createAndSet(
+      ctrl: FormController & Record<string, any>,
+      name: string,
+      value: string,
+      controllerParam:
+        | FormController
+        | import("../model/model.ts").NgModelController,
+    ) {
       if (!ctrl[name]) {
         ctrl[name] = {};
       }
@@ -538,9 +586,16 @@ export class FormController {
      * @param {FormController & Record<string, any>} ctrl
      * @param {string} name
      * @param {string} value
-     * @param {FormController | import("../model/model.js").NgModelController} controllerParam
+     * @param {FormController | import("../model/model.ts").NgModelController} controllerParam
      */
-    function unsetAndCleanup(ctrl, name, value, controllerParam) {
+    function unsetAndCleanup(
+      ctrl: FormController & Record<string, any>,
+      name: string,
+      value: string,
+      controllerParam:
+        | FormController
+        | import("../model/model.ts").NgModelController,
+    ) {
       if (ctrl[name]) {
         that.unset(ctrl[name], value, controllerParam);
       }
@@ -551,11 +606,15 @@ export class FormController {
     }
 
     /**
-     * @param {FormController | import("../model/model.js").NgModelController} ctrl
+     * @param {FormController | import("../model/model.ts").NgModelController} ctrl
      * @param {string} validationErrorKeyParam
      * @param {boolean | null | undefined} isValid
      */
-    function toggleValidationCss(ctrl, validationErrorKeyParam, isValid) {
+    function toggleValidationCss(
+      ctrl: FormController | import("../model/model.ts").NgModelController,
+      validationErrorKeyParam: string,
+      isValid: boolean | null | undefined,
+    ) {
       validationErrorKeyParam = validationErrorKeyParam
         ? `-${snakeCase(validationErrorKeyParam, "-")}`
         : "";
@@ -662,20 +721,23 @@ export class FormController {
  * @param {string=} isNgForm Name of the form. If specified, the form controller will be published into
  *                       related scope, under this name.
  */
-const formDirectiveFactory = function (isNgForm) {
+const formDirectiveFactory = function (isNgForm?: string) {
   return [
     $injectTokens._parse,
     /**
      * @param {ng.ParseService} $parse
      * @returns {ng.Directive}
      */
-    function ($parse) {
+    function ($parse: ng.ParseService) {
       return {
         name: "form",
         restrict: isNgForm ? "EA" : "E",
         require: ["form", "^^?form"], // first is the form's own ctrl, second is an optional parent form
         controller: FormController,
-        compile: function ngFormCompile(formElement, attr) {
+        compile: function ngFormCompile(
+          formElement: HTMLFormElement,
+          attr: ng.Attributes,
+        ) {
           // Setup initial state of the control
           formElement.classList.add(PRISTINE_CLASS, VALID_CLASS);
 
@@ -687,18 +749,16 @@ const formDirectiveFactory = function (isNgForm) {
 
           return {
             pre: function ngFormPreLink(
-              scope,
-              formElementParam,
-              attrParam,
-              ctrls,
+              scope: ng.Scope,
+              formElementParam: HTMLFormElement,
+              attrParam: ng.Attributes,
+              ctrls: any[],
             ) {
               const controller = ctrls[0];
 
               // if `action` attr is not present on the form, prevent the default action (submission)
               if (!("action" in attrParam)) {
-                const handleFormSubmission = function (
-                  /** @type {Event} */ event,
-                ) {
+                const handleFormSubmission = function (event: Event) {
                   controller.$commitViewValue();
                   controller.$setSubmitted();
                   event.preventDefault();
@@ -720,15 +780,18 @@ const formDirectiveFactory = function (isNgForm) {
 
               parentFormCtrl.$addControl(controller);
 
-              const setter = /** @type {Function} */ nameAttr
-                ? getSetter(controller.$name)
+              const setter: (scopeParam: any, value: any) => void = nameAttr
+                ? getSetter(controller.$name) ||
+                  (() => {
+                    /* empty */
+                  })
                 : () => {
                     /* empty */
                   };
 
               if (nameAttr) {
                 setter(scope, controller);
-                attrParam.$observe(nameAttr, (newValue) => {
+                attrParam.$observe(nameAttr, (newValue: any) => {
                   if (controller.$name === newValue) return;
                   scope.$target[controller.$name] = undefined;
                   controller._parentForm._renameControl(controller, newValue);
@@ -748,15 +811,15 @@ const formDirectiveFactory = function (isNgForm) {
                 setter(scope, undefined);
                 extend(controller, nullFormCtrl); // stop propagating child destruction handlers upwards
               });
-            },
+            } as unknown as import("../../interface.ts").DirectiveLinkFn<any>,
           };
-        },
+        } as unknown as import("../../interface.ts").DirectiveCompileFn,
       };
 
       /**
        * @param {string} expression
        */
-      function getSetter(expression) {
+      function getSetter(expression: string) {
         if (expression === "") {
           // create an assignable expression, so forms with an empty name can be renamed later
           return $parse('this[""]')._assign;
@@ -776,7 +839,11 @@ export const ngFormDirective = formDirectiveFactory("ngForm");
  * @param {string} className
  * @param {boolean} switchValue
  */
-export function cachedToggleClass(ctrl, className, switchValue) {
+export function cachedToggleClass(
+  ctrl: any,
+  className: string,
+  switchValue: boolean,
+) {
   if (switchValue && !ctrl._classCache[className]) {
     if (ctrl._isAnimated) {
       ctrl._animate.addClass(ctrl._element, className);

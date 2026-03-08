@@ -1,5 +1,5 @@
 import { $injectTokens } from "../../injection-tokens.ts";
-import { entries } from "../../shared/utils.js";
+import { entries } from "../../shared/utils.ts";
 import { StreamConnection } from "../stream/stream.ts";
 import type { LogService } from "../log/interface.ts";
 import type { SseConfig, SseConnection, SseService } from "./interface.ts";

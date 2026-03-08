@@ -33,7 +33,7 @@
  * @packageDocumentation
  */
 import { parse } from "../../shared/hof.ts";
-import { isNumber, keys } from "../../shared/utils.js";
+import { isNumber, keys } from "../../shared/utils.ts";
 import {
   functionToString,
   maxLength,

@@ -5,7 +5,7 @@ import {
   isNull,
   isObject,
   isString,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { is, pattern } from "../../shared/hof.ts";
 import { UrlRules } from "./url-rules.ts";
 import { TargetState } from "../state/target-state.ts";

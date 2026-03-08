@@ -23,7 +23,7 @@ import {
   toKeyValue,
   uppercase,
   baseExtend,
-} from "./utils.js";
+} from "./utils.ts";
 import { createElementFromHTML, dealoc, startingTag } from "./dom.ts";
 import { Angular } from "../angular.ts";
 import { createInjector } from "../core/di/injector.ts";

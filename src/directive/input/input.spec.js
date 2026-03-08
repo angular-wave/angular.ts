@@ -5,7 +5,7 @@ import {
   getController,
 } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
-import { EMAIL_REGEXP, ISO_DATE_REGEXP, URL_REGEXP } from "./input.js";
+import { EMAIL_REGEXP, ISO_DATE_REGEXP, URL_REGEXP } from "./input.ts";
 
 describe("input", () => {
   let $compile;

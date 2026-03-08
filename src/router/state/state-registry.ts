@@ -4,7 +4,7 @@ import { StateQueueManager } from "./state-queue-manager.ts";
 import { applyPairs, removeFrom } from "../../shared/common.ts";
 import { propEq } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
-import { isString, keys } from "../../shared/utils.js";
+import { isString, keys } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type {

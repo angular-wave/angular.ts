@@ -9,7 +9,7 @@ import {
   isObject,
   isString,
   minErr,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import type {
   ControllerExpression,
   ControllerLocals,

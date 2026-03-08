@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { $injectTokens } from "../../injection-tokens.ts";
 import {
   entries,
@@ -6,20 +5,49 @@ import {
   isArray,
   isInstanceOf,
   isString,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 
 const ACTIVE_CLASS = "ng-active";
 
 const INACTIVE_CLASS = "ng-inactive";
 
+type MessageCollection = Record<string, any>;
+type MessageNodeComment = Comment & { _ngMessageNode?: string };
+type LinkedMessageCtrl = {
+  message: MessageInstance;
+  next?: LinkedMessageCtrl;
+};
+type MessageInstance = {
+  attach: () => void;
+  detach: () => void;
+  test: (name: string | number | symbol) => boolean | undefined;
+};
+
 class NgMessageCtrl {
+  _element: HTMLElement;
+  _scope: ng.Scope;
+  _attrs: ng.Attributes;
+  _animate: ng.AnimateService;
+  _latestKey: number;
+  _nextAttachId: number;
+  _messages: Record<string, LinkedMessageCtrl>;
+  _renderLater: boolean;
+  _cachedCollection: MessageCollection | null;
+  _head: LinkedMessageCtrl | undefined;
+  _default: MessageInstance | undefined;
+
   /**
    * @param {HTMLElement} $element
    * @param {ng.Scope} $scope
    * @param {ng.Attributes} $attrs
    * @param {ng.AnimateService} $animate
    */
-  constructor($element, $scope, $attrs, $animate) {
+  constructor(
+    $element: HTMLElement,
+    $scope: ng.Scope,
+    $attrs: ng.Attributes,
+    $animate: ng.AnimateService,
+  ) {
     this._element = $element;
     this._scope = $scope;
     this._attrs = $attrs;
@@ -41,11 +69,11 @@ class NgMessageCtrl {
     );
   }
 
-  _getAttachId() {
+  _getAttachId(): number {
     return this._nextAttachId++;
   }
 
-  _render(collection = {}) {
+  _render(collection: MessageCollection = {}): void {
     this._renderLater = false;
     this._cachedCollection = collection;
 
@@ -53,10 +81,9 @@ class NgMessageCtrl {
       isAttrTruthy(this._scope, this._attrs.ngMessagesMultiple) ||
       isAttrTruthy(this._scope, this._attrs.multiple);
 
-    const unmatchedMessages = [];
+    const unmatchedMessages: MessageInstance[] = [];
 
-    /** @type {Record<string, boolean>} */
-    const matchedKeys = {};
+    const matchedKeys: Record<string, boolean> = {};
 
     let truthyKeys = 0;
 
@@ -103,10 +130,10 @@ class NgMessageCtrl {
 
     const messageMatched = unmatchedMessages.length !== totalMessages;
 
-    const attachDefault = this._default && !messageMatched && truthyKeys > 0;
+    const attachDefault = !!this._default && !messageMatched && truthyKeys > 0;
 
     if (attachDefault) {
-      this._default.attach();
+      this._default!.attach();
     } else if (this._default) {
       this._default.detach();
     }
@@ -118,7 +145,7 @@ class NgMessageCtrl {
     }
   }
 
-  reRender() {
+  reRender(): void {
     if (!this._renderLater) {
       this._renderLater = true;
       Promise.resolve().then(() => {
@@ -134,7 +161,11 @@ class NgMessageCtrl {
    * @param {any} messageCtrl
    * @param {any} isDefault
    */
-  register(comment, messageCtrl, isDefault) {
+  register(
+    comment: MessageNodeComment,
+    messageCtrl: MessageInstance,
+    isDefault: boolean,
+  ): void {
     if (isDefault) {
       this._default = messageCtrl;
     } else {
@@ -155,15 +186,17 @@ class NgMessageCtrl {
    * @param {{ _ngMessageNode: any; }} comment
    * @param {any} isDefault
    */
-  deregister(comment, isDefault) {
+  deregister(comment: MessageNodeComment, isDefault: boolean): void {
     if (isDefault) {
       delete this._default;
     } else {
       const key = comment._ngMessageNode;
 
       delete comment._ngMessageNode;
-      this.removeMessageNode(this._element, comment, key);
-      delete this._messages[key];
+      if (key) {
+        this.removeMessageNode(this._element, comment, key);
+        delete this._messages[key];
+      }
     }
     this.reRender();
   }
@@ -172,10 +205,13 @@ class NgMessageCtrl {
    * @param {any} parent
    * @param {any} comment
    */
-  findPreviousMessage(parent, comment) {
-    let prevNode = comment;
+  findPreviousMessage(
+    parent: Node,
+    comment: Node & { _ngMessageNode?: string },
+  ): LinkedMessageCtrl | undefined {
+    let prevNode: (Node & { _ngMessageNode?: string }) | null = comment;
 
-    const parentLookup = [];
+    const parentLookup: Node[] = [];
 
     while (prevNode && prevNode !== parent) {
       const prevKey = prevNode._ngMessageNode;
@@ -190,8 +226,12 @@ class NgMessageCtrl {
       } else if (prevNode.previousSibling) {
         prevNode = prevNode.previousSibling;
       } else {
-        prevNode = prevNode.parentNode;
-        parentLookup.push(prevNode);
+        prevNode = prevNode.parentNode as
+          | (Node & { _ngMessageNode?: string })
+          | null;
+        if (prevNode) {
+          parentLookup.push(prevNode);
+        }
       }
     }
 
@@ -203,7 +243,12 @@ class NgMessageCtrl {
    * @param {{ _ngMessageNode: string; }} comment
    * @param {string} key
    */
-  insertMessageNode(parent, comment, key) {
+  insertMessageNode(
+    parent: HTMLElement,
+    comment: MessageNodeComment,
+    key: string,
+  ): void {
+    void parent;
     const messageNode = this._messages[key];
 
     if (!this._head) {
@@ -226,7 +271,12 @@ class NgMessageCtrl {
    * @param {{ _ngMessageNode: any; }} comment
    * @param {string | number} key
    */
-  removeMessageNode(parent, comment, key) {
+  removeMessageNode(
+    parent: HTMLElement,
+    comment: MessageNodeComment,
+    key: string | number,
+  ): void {
+    void parent;
     const messageNode = this._messages[key];
 
     if (!messageNode) return;
@@ -246,7 +296,9 @@ ngMessagesDirective.$inject = [$injectTokens._animate];
  * @param {ng.AnimateService} $animate
  * @returns {ng.Directive<NgMessageCtrl>}
  */
-export function ngMessagesDirective($animate) {
+export function ngMessagesDirective(
+  $animate: ng.AnimateService,
+): ng.Directive<NgMessageCtrl> {
   return {
     require: "ngMessages",
     restrict: "AE",
@@ -257,7 +309,7 @@ export function ngMessagesDirective($animate) {
        * @param {ng.Attributes} $attrs
        * @returns {NgMessageCtrl}
        */
-      ($element, $scope, $attrs) =>
+      ($element: HTMLElement, $scope: ng.Scope, $attrs: ng.Attributes) =>
         new NgMessageCtrl($element, $scope, $attrs, $animate),
   };
 }
@@ -266,7 +318,7 @@ export function ngMessagesDirective($animate) {
  * @param {ng.Scope} scope
  * @param {string} attr
  */
-function isAttrTruthy(scope, attr) {
+function isAttrTruthy(scope: ng.Scope, attr: string | undefined): boolean {
   return (
     (isString(attr) && attr.length === 0) || // empty attribute
     truthy(attr && scope.$eval(attr))
@@ -276,8 +328,8 @@ function isAttrTruthy(scope, attr) {
 /**
  * @param {unknown} val
  */
-function truthy(val) {
-  return isString(val) ? val.length : !!val;
+function truthy(val: unknown): boolean {
+  return isString(val) ? val.length > 0 : !!val;
 }
 
 ngMessagesIncludeDirective.$inject = [
@@ -290,23 +342,28 @@ ngMessagesIncludeDirective.$inject = [
  * @param {ng.CompileService} $compile
  * @returns {ng.Directive}
  */
-export function ngMessagesIncludeDirective($templateRequest, $compile) {
+export function ngMessagesIncludeDirective(
+  $templateRequest: ng.TemplateRequestService,
+  $compile: ng.CompileService,
+): ng.Directive<any> {
   return {
     restrict: "AE",
     require: "^^ngMessages", // we only require this for validation sake
-    link($scope, element, attrs) {
+    link($scope: ng.Scope, element: Element, attrs: ng.Attributes) {
       const src = attrs.ngMessagesInclude || attrs.src;
 
-      $templateRequest(src).then((html) => {
+      $templateRequest(src).then((html: string) => {
         if ($scope._destroyed) return;
 
         if (isString(html) && !html.trim()) {
           // Empty template - nothing to compile
         } else {
           // Non-empty template - compile and link
-          $compile(html)($scope, (contents) => {
+          $compile(html)($scope, ((
+            contents?: Node | Element | Node[] | NodeList | null,
+          ) => {
             isInstanceOf(contents, Node) && element.after(contents);
-          });
+          }) as (contents?: Node | Element | Node[] | NodeList | null) => void);
         }
       });
     },
@@ -321,40 +378,52 @@ export const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
  * @param {boolean} isDefault
  * @returns {($animate: ng.AnimateService) => ng.Directive}
  */
-function ngMessageDirectiveFactory(isDefault) {
+function ngMessageDirectiveFactory(
+  isDefault: boolean,
+): ($animate: ng.AnimateService) => ng.Directive<any> {
   ngMessageDirectiveFn.$inject = [$injectTokens._animate];
   /**
    * @param {ng.AnimateService} $animate
    * @returns {ng.Directive}
    */
-  function ngMessageDirectiveFn($animate) {
+  function ngMessageDirectiveFn(
+    $animate: ng.AnimateService,
+  ): ng.Directive<any> {
     return {
       restrict: "AE",
       transclude: "element",
       priority: 1, // must run before ngBind, otherwise the text is set on the comment
       terminal: true,
       require: "^^ngMessages",
-      link(scope, element, attrs, ngMessagesCtrl, $transclude) {
+      link: (
+        scope: ng.Scope,
+        element: HTMLElement,
+        attrs: ng.Attributes,
+        ngMessagesCtrl: NgMessageCtrl,
+        $transclude: ng.TranscludeFn,
+      ) => {
         /**
          * @type {HTMLElement}
          */
-        let commentNode = element;
+        let commentNode = element as unknown as MessageNodeComment;
 
         /**
          * @type {any}
          */
-        let records;
+        let records: string[] | null = null;
 
-        let staticExp;
+        let staticExp: string | undefined;
 
-        let dynamicExp;
+        let dynamicExp: string | undefined;
 
         if (!isDefault) {
-          commentNode = element;
+          commentNode = element as unknown as MessageNodeComment;
           staticExp = attrs.ngMessage || attrs.when;
           dynamicExp = attrs.ngMessageExp || attrs.whenExp;
 
-          const assignRecords = function (/** @type {string} */ items) {
+          const assignRecords = function (
+            items: string | string[] | undefined,
+          ) {
             records = items
               ? isArray(items)
                 ? items
@@ -374,25 +443,29 @@ function ngMessageDirectiveFactory(isDefault) {
         /**
          * @type {HTMLElement & { _attachId?: number } | undefined | null}
          */
-        let currentElement;
+        let currentElement: (HTMLElement & { _attachId?: number }) | null =
+          null;
 
         /**
          * @type {{ detach: any; test?: (name: any) => boolean | undefined; attach?: () => void; }}
          */
-        let messageCtrl;
+        let messageCtrl: MessageInstance;
 
         ngMessagesCtrl.register(
           commentNode,
           (messageCtrl = {
-            test(name) {
+            test(name: string | number | symbol) {
               return contains(records, name);
             },
             attach() {
               if (!currentElement) {
-                /** @type {ng.TranscludeFn} */ $transclude((elm, newScope) => {
-                  $animate.enter(/** @type {HTMLElement} */ elm, null, element);
-                  currentElement =
-                    /** @type {HTMLElement & { _attachId?: number }} */ elm;
+                $transclude((elm, newScope) => {
+                  const transcludedElement = elm as HTMLElement & {
+                    _attachId?: number;
+                  };
+
+                  $animate.enter(transcludedElement, null, element);
+                  currentElement = transcludedElement;
 
                   // Each time we attach this node to a message we get a new id that we can match
                   // when we are destroying the node later.
@@ -412,7 +485,7 @@ function ngMessageDirectiveFactory(isDefault) {
                       ngMessagesCtrl.deregister(commentNode, isDefault);
                       messageCtrl.detach();
                     }
-                    /** @type {ng.Scope} */ newScope.$destroy();
+                    newScope?.$destroy();
                   });
                 });
               }
@@ -422,7 +495,7 @@ function ngMessageDirectiveFactory(isDefault) {
                 const elm = currentElement;
 
                 currentElement = null;
-                $animate.leave(/** @type {HTMLElement} */ elm);
+                $animate.leave(elm);
               }
             },
           }),
@@ -437,7 +510,7 @@ function ngMessageDirectiveFactory(isDefault) {
           ngMessagesCtrl.deregister(commentNode, isDefault);
         });
       },
-    };
+    } as unknown as ng.Directive<any>;
   }
 
   return ngMessageDirectiveFn;
@@ -447,10 +520,13 @@ function ngMessageDirectiveFactory(isDefault) {
  * @param {string | object | Array<any>} collection
  * @param {string | number | symbol} key
  */
-function contains(collection, key) {
+function contains(
+  collection: string[] | object | Array<any> | null | undefined,
+  key: string | number | symbol,
+): boolean | undefined {
   if (collection) {
     return isArray(collection)
-      ? collection.indexOf(key) >= 0
+      ? collection.indexOf(String(key)) >= 0
       : hasOwn(/** @type {object} */ collection, key);
   }
 

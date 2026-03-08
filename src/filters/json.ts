@@ -1,4 +1,4 @@
-import { isUndefined, toJson } from "../shared/utils.js";
+import { isUndefined, toJson } from "../shared/utils.ts";
 
 /**
  * Serializes a value to JSON using AngularTS's `toJson` helper.

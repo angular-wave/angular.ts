@@ -1,5 +1,5 @@
 import { pick, tail } from "../../shared/common.ts";
-import { entries, isArray, isDefined, isString } from "../../shared/utils.js";
+import { entries, isArray, isDefined, isString } from "../../shared/utils.ts";
 import { isInjectable } from "../../shared/predicates.ts";
 import { trace } from "../common/trace.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";

@@ -8,7 +8,7 @@ export { angular } from "./index.ts";
 
 import { Angular as TAngular } from "./angular.ts";
 import { Attributes as TAttributes } from "./core/compile/attributes.ts";
-import { Scope as TScope } from "./core/scope/scope.js";
+import { Scope as TScope } from "./core/scope/scope.ts";
 import { ProviderCache as TProviderCache } from "./core/di/interface.ts";
 import {
   ListenerFn as TListenerFn,
@@ -120,7 +120,7 @@ import {
 } from "./services/rest/interface.ts";
 import { RestService as TRestService } from "./services/rest/rest.ts";
 import { ServiceProvider as TServiceProvider } from "./interface.ts";
-import { NgModelController as TNgModelController } from "./directive/model/model.js";
+import { NgModelController as TNgModelController } from "./directive/model/model.ts";
 import { RouterProvider as TRouterProvider } from "./router/router.ts";
 import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.ts";
 import { UrlService as TUrlService } from "./router/url/url-service.ts";

@@ -1,7 +1,7 @@
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { dealoc } from "../../shared/dom.ts";
-import { isDefined } from "../../shared/utils.js";
+import { isDefined } from "../../shared/utils.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("ngHref", () => {

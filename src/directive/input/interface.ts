@@ -1,5 +1,5 @@
 import { ScopeProxied } from "../../core/scope/interface.ts";
-import { NgModelController } from "../model/model.js";
+import { NgModelController } from "../model/model.ts";
 
 export type NgModelControllerProxied = ScopeProxied<NgModelController>;
 

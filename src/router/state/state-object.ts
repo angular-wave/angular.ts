@@ -1,7 +1,7 @@
 import { defaults, find } from "../../shared/common.ts";
 import { propEq } from "../../shared/hof.ts";
 import { Glob } from "../glob/glob.ts";
-import { hasOwn, isFunction, isObject, values } from "../../shared/utils.js";
+import { hasOwn, isFunction, isObject, values } from "../../shared/utils.ts";
 import type { Param } from "../params/param.ts";
 import type { Resolvable } from "../resolve/resolvable.ts";
 import type { StateDeclaration } from "./interface.ts";

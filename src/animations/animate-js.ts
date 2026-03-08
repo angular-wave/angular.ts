@@ -1,5 +1,10 @@
-// @ts-nocheck
-import { isArray, isFunction, isObject } from "../shared/utils.js";
+import type {
+  AnimationOptions,
+  Animator,
+  AnimateJsFn,
+  AnimateJsRunner,
+} from "./interface.ts";
+import { isArray, isFunction, isObject } from "../shared/utils.ts";
 import {
   applyAnimationClasses,
   applyAnimationStyles,
@@ -10,17 +15,30 @@ import { AnimateRunner } from "./runner/animate-runner.ts";
 
 AnimateJsProvider.$inject = [$injectTokens._animateProvider];
 
+type JsAnimationOperation = (done: () => void) => void;
+
+interface AnimateProviderShape {
+  _registeredAnimations: Record<string, string>;
+}
+
+interface JsAnimationHandlerMap {
+  [key: string]: ((...args: any[]) => unknown) | undefined;
+}
+
 /**
  * @param {import("./animate.ts").AnimateProvider} $animateProvider
  */
-export function AnimateJsProvider($animateProvider) {
+export function AnimateJsProvider(
+  this: { $get?: unknown },
+  $animateProvider: AnimateProviderShape,
+): void {
   this.$get = [
     $injectTokens._injector,
     /**
      * @param {ng.InjectorService} $injector
      * @returns {import("./interface.ts").AnimateJsFn}
      */
-    ($injector) => {
+    ($injector: ng.InjectorService): AnimateJsFn => {
       /**
        * @param {HTMLElement} element
        * @param {string} event
@@ -28,14 +46,18 @@ export function AnimateJsProvider($animateProvider) {
        * @param {ng.AnimationOptions | undefined} options
        * @returns {import("./interface.ts").Animator | undefined}
        */
-      return function (element, event, classes, options) {
+      return function (
+        element: HTMLElement,
+        event: string,
+        classes?: string | string[] | null,
+        options?: AnimationOptions,
+      ): Animator | undefined {
         // Optional arguments
         if (arguments.length === 3 && !isArray(classes) && isObject(classes)) {
-          options = /** @type {ng.AnimationOptions} */ classes;
+          options = classes as AnimationOptions;
           classes = null;
         }
 
-        /** @type {ng.AnimationOptions} */
         const animationOptions = prepareAnimationOptions(options);
 
         if (!classes) {
@@ -58,15 +80,16 @@ export function AnimateJsProvider($animateProvider) {
         /**
          * @type {((done: () => void) => void) | undefined}
          */
-        let before;
+        let before: JsAnimationOperation | undefined;
 
         /**
          * @type {((done: () => void) => void) | undefined}
          */
-        let after;
+        let after: JsAnimationOperation | undefined;
 
         if (animations.length) {
-          let beforeFn, afterFn;
+          let beforeFn: string;
+          let afterFn: string;
 
           if (event === "leave") {
             beforeFn = "leave";
@@ -113,9 +136,9 @@ export function AnimateJsProvider($animateProvider) {
         }
 
         /** @type {ng.AnimateRunner} */
-        let runner;
+        let runner: AnimateRunner | undefined;
 
-        return /** @type {import("./interface.ts").AnimateJsRunner} */ {
+        const animateJsRunner: AnimateJsRunner = {
           _willAnimate: true,
 
           start() {
@@ -139,11 +162,11 @@ export function AnimateJsProvider($animateProvider) {
             /**
              * @param {boolean | undefined} success
              */
-            function finish(success) {
+            function finish(success?: boolean) {
               if (finished) return;
               finished = true;
               close();
-              runner.complete(success);
+              runner!.complete(success);
             }
 
             // Run before animations
@@ -171,20 +194,23 @@ export function AnimateJsProvider($animateProvider) {
           },
         };
 
+        return animateJsRunner;
+
         // ---- helpers ----
         /**
          * @param {string | string[]} classList
          */
-        function lookupAnimations(classList) {
+        function lookupAnimations(
+          classList: string | string[],
+        ): JsAnimationHandlerMap[] {
           const normalized = isArray(classList)
             ? classList
-            : /** @type {string[]} */ classList.split(" ");
+            : classList.split(" ");
 
-          /** @type {Array<Record<string, any>>} */
-          const matches = [];
+          const matches: JsAnimationHandlerMap[] = [];
 
           /** @type {Record<string, boolean>} */
-          const flagMap = {};
+          const flagMap: Record<string, boolean> = {};
 
           for (let i = 0; i < normalized.length; i++) {
             const klass = normalized[i];
@@ -193,7 +219,9 @@ export function AnimateJsProvider($animateProvider) {
               $animateProvider._registeredAnimations[klass];
 
             if (animationFactory && !flagMap[klass]) {
-              matches.push($injector.get(animationFactory));
+              matches.push(
+                $injector.get(animationFactory) as JsAnimationHandlerMap,
+              );
               flagMap[klass] = true;
             }
           }
@@ -209,23 +237,21 @@ export function AnimateJsProvider($animateProvider) {
          * @param {{ add?: string; remove?: string; }} classNames
          */
         function packageAnimations(
-          elementParam,
-          optionsParam,
-          animationsParam,
-          fnName,
-          classNames,
-        ) {
-          /** @type {Array<(done: () => void) => void>} */
-          const operations = [];
+          elementParam: HTMLElement,
+          optionsParam: AnimationOptions,
+          animationsParam: JsAnimationHandlerMap[],
+          fnName: string,
+          classNames: { add?: string; remove?: string },
+        ): JsAnimationOperation | undefined {
+          const operations: JsAnimationOperation[] = [];
 
-          animationsParam.forEach((ani) => {
+          animationsParam.forEach((ani: JsAnimationHandlerMap) => {
             const animationFn = ani[fnName];
 
             if (!animationFn) return;
 
-            operations.push((done) => {
+            operations.push((done: () => void) => {
               if (isFunction(animationFn)) {
-                /** @type {any[]} */
                 let args;
 
                 switch (fnName) {
@@ -267,7 +293,7 @@ export function AnimateJsProvider($animateProvider) {
           /**
            * @param {() => void} done
            */
-          return (done) => {
+          return (done: () => void) => {
             let completed = 0;
 
             const total = operations.length;

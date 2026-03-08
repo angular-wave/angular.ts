@@ -1,4 +1,4 @@
-import { directiveNormalize } from "../../shared/utils.js";
+import { directiveNormalize } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as

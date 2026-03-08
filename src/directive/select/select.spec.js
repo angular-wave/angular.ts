@@ -4,7 +4,7 @@ import {
   dealoc,
   getController,
 } from "../../shared/dom.ts";
-import { hashKey, equals, isNumberNaN } from "../../shared/utils.js";
+import { hashKey, equals, isNumberNaN } from "../../shared/utils.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
 
 describe("select", () => {

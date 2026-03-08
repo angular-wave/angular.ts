@@ -3,7 +3,7 @@ import {
   isDefined,
   toDebugString,
   errorHandlingConfig,
-} from "./utils.js";
+} from "./utils.ts";
 
 describe("errors", () => {
   afterEach(() => {

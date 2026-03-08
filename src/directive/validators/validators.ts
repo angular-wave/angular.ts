@@ -1,13 +1,16 @@
-// @ts-nocheck
 import {
   hasOwn,
   isNumberNaN,
   isUndefined,
   minErr,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { REGEX_STRING_REGEXP } from "./../attrs/attrs.ts";
 import { startingTag } from "../../shared/dom.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
+
+type ValidatingNgModelController = ng.NgModelController & {
+  $validators: Record<string, (modelValue: any, viewValue: any) => boolean>;
+};
 
 /**
  *
@@ -32,13 +35,16 @@ import { $injectTokens as $t } from "../../injection-tokens.ts";
  * custom controls, `$isEmpty()` can be overwritten to account for a $viewValue that is not string-based.
  *
  */
-export const requiredDirective = [
+export const requiredDirective: [
+  string,
+  ($parse: ng.ParseService) => ng.Directive<any>,
+] = [
   $t._parse,
   /**
    * @param {import("../../core/parse/interface.ts").ParseService} $parse
    * @returns {ng.Directive}
    */
-  ($parse) => ({
+  ($parse: ng.ParseService) => ({
     restrict: "A",
     require: "?ngModel",
     link:
@@ -49,7 +55,12 @@ export const requiredDirective = [
        * @param {ng.NgModelController} ctrl
        * @returns
        */
-      (scope, _elm, attr, ctrl) => {
+      (
+        scope: ng.Scope,
+        _elm: Element,
+        attr: ng.Attributes,
+        ctrl?: ValidatingNgModelController,
+      ) => {
         if (!ctrl) return;
         // For boolean attributes like required, presence means true
         let value =
@@ -62,11 +73,11 @@ export const requiredDirective = [
           attr.required = "true";
         }
 
-        ctrl.$validators.required = (_modelValue, viewValue) => {
+        ctrl.$validators.required = (_modelValue: any, viewValue: any) => {
           return !value || !ctrl.$isEmpty(viewValue);
         };
 
-        attr.$observe("required", (newVal) => {
+        attr.$observe("required", (newVal?: any) => {
           if (value !== newVal) {
             value = newVal;
             ctrl.$validate();
@@ -115,25 +126,28 @@ export const requiredDirective = [
  * </ol>
  * </div>
  */
-export const patternDirective = [
+export const patternDirective: [
+  string,
+  ($parse: ng.ParseService) => ng.Directive<any>,
+] = [
   $t._parse,
   /**
    * @param {ng.ParseService} $parse
    * @returns {ng.Directive}
    */
-  ($parse) => ({
+  ($parse: ng.ParseService) => ({
     restrict: "A",
     require: "?ngModel",
-    compile: (_Elm, tAttr) => {
+    compile: (_Elm: Element, tAttr: ng.Attributes) => {
       /**
        * @type {string}
        */
-      let patternExp;
+      let patternExp = "";
 
       /**
        * @type {(() => any) | ((arg0: ng.Scope) => string)}
        */
-      let parseFn;
+      let parseFn: (() => any) | ((scope: ng.Scope) => string) | undefined;
 
       if (tAttr.ngPattern) {
         patternExp = tAttr.ngPattern;
@@ -153,18 +167,23 @@ export const patternDirective = [
         }
       }
 
-      return function (scope, elm, attr, ctrl) {
+      return function (
+        scope: ng.Scope,
+        elm: Element | Node,
+        attr: ng.Attributes,
+        ctrl?: ValidatingNgModelController,
+      ) {
         if (!ctrl) return;
         let attrVal = attr.pattern;
 
         if (attr.ngPattern) {
-          attrVal = parseFn(scope);
+          attrVal = parseFn?.(scope);
         } else {
           patternExp = attr.pattern;
         }
         let regexp = attrVal && parsePatternAttr(attrVal, patternExp, elm);
 
-        attr.$observe("pattern", (newVal) => {
+        attr.$observe("pattern", (newVal?: any) => {
           const oldRegexp = regexp;
 
           regexp = newVal && parsePatternAttr(newVal, patternExp, elm);
@@ -177,10 +196,7 @@ export const patternDirective = [
           }
         });
 
-        ctrl.$validators.pattern = (
-          /** @type {any} */ _modelValue,
-          /** @type {any} */ viewValue,
-        ) => {
+        ctrl.$validators.pattern = (_modelValue: any, viewValue: any) => {
           // HTML5 pattern constraint validates the input value, so we validate the viewValue
           return (
             ctrl.$isEmpty(viewValue) ||
@@ -223,13 +239,16 @@ export const patternDirective = [
  * </div>
  *
  */
-export const maxlengthDirective = [
+export const maxlengthDirective: [
+  string,
+  ($parse: ng.ParseService) => ng.Directive<any>,
+] = [
   $t._parse,
   /**
    * @param {ng.ParseService} $parse
    * @returns {ng.Directive}
    */
-  ($parse) => ({
+  ($parse: ng.ParseService) => ({
     restrict: "A",
     require: "?ngModel",
     link:
@@ -240,7 +259,12 @@ export const maxlengthDirective = [
        * @param {ng.NgModelController} ctrl
        * @returns
        */
-      (scope, _elm, attr, ctrl) => {
+      (
+        scope: ng.Scope,
+        _elm: Element,
+        attr: ng.Attributes,
+        ctrl?: ValidatingNgModelController,
+      ) => {
         if (!ctrl) return;
 
         let maxlength =
@@ -249,14 +273,17 @@ export const maxlengthDirective = [
 
         let maxlengthParsed = parseLength(maxlength);
 
-        attr.$observe("maxlength", (value) => {
+        attr.$observe("maxlength", (value?: any) => {
           if (maxlength !== value) {
             maxlengthParsed = parseLength(value);
             maxlength = value;
             ctrl.$validate();
           }
         });
-        ctrl.$validators.maxlength = function (_modelValue, viewValue) {
+        ctrl.$validators.maxlength = function (
+          _modelValue: any,
+          viewValue: any,
+        ) {
           return (
             maxlengthParsed < 0 ||
             ctrl.$isEmpty(viewValue) ||
@@ -298,12 +325,22 @@ export const maxlengthDirective = [
  * </div>
  *
  */
-export const minlengthDirective = [
+export const minlengthDirective: [
+  string,
+  ($parse: ng.ParseService) => ng.Directive<any>,
+] = [
   $t._parse,
-  /** @param {ng.ParseService} $parse @return {ng.Directive} */ ($parse) => ({
+  /** @param {ng.ParseService} $parse @return {ng.Directive} */ (
+    $parse: ng.ParseService,
+  ) => ({
     restrict: "A",
     require: "?ngModel",
-    link(scope, _elm, attr, ctrl) {
+    link(
+      scope: ng.Scope,
+      _elm: Element,
+      attr: ng.Attributes,
+      ctrl?: ValidatingNgModelController,
+    ) {
       if (!ctrl) return;
 
       let minlength =
@@ -311,7 +348,7 @@ export const minlengthDirective = [
 
       let minlengthParsed = parseLength(minlength) || -1;
 
-      attr.$observe("minlength", (value) => {
+      attr.$observe("minlength", (value?: any) => {
         if (minlength !== value) {
           minlengthParsed = parseLength(value) || -1;
           minlength = value;
@@ -319,9 +356,10 @@ export const minlengthDirective = [
         }
       });
       ctrl.$validators.minlength = function (
-        /** @type {any} */ modelValue,
-        /** @type {string | any[]} */ viewValue,
+        modelValue: any,
+        viewValue: string | any[],
       ) {
+        void modelValue;
         return ctrl.$isEmpty(viewValue) || viewValue.length >= minlengthParsed;
       };
     },
@@ -334,7 +372,11 @@ export const minlengthDirective = [
  * @param {Element | Node} elm
  * @returns {RegExp}
  */
-function parsePatternAttr(input, patternExp, elm) {
+function parsePatternAttr(
+  input: string | RegExp,
+  patternExp: string,
+  elm: Element | Node,
+): RegExp {
   /** @type {RegExp | string} */
   let regex = input;
 
@@ -360,7 +402,7 @@ function parsePatternAttr(input, patternExp, elm) {
 /**
  * @param {string} val
  */
-function parseLength(val) {
+function parseLength(val: any): number {
   const intVal = parseInt(val, 10);
 
   return isNumberNaN(intVal) ? -1 : intVal;

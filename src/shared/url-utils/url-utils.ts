@@ -1,4 +1,4 @@
-import { isString } from "../../shared/utils.js";
+import { isString } from "../../shared/utils.ts";
 import type { ParsedUrl, ResolvableUrl } from "./interface.ts";
 
 const originUrl = urlResolve(window.location.href);

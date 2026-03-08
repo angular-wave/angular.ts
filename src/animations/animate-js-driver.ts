@@ -1,13 +1,23 @@
-// @ts-nocheck
 import { $injectTokens } from "../injection-tokens.ts";
 import { AnimateRunner } from "./runner/animate-runner.ts";
+import type { AnimateJsFn, AnimationDetails, Animator } from "./interface.ts";
 
 AnimateJsDriverProvider.$inject = ["$$animationProvider"];
 
 /**
  * @param {import("./animation.ts").AnimationProvider} $$animationProvider
  */
-export function AnimateJsDriverProvider($$animationProvider) {
+export function AnimateJsDriverProvider(
+  this: {
+    $get: [
+      string,
+      (
+        $$animateJs: AnimateJsFn,
+      ) => (animationDetails: AnimationDetails) => Animator | undefined,
+    ];
+  },
+  $$animationProvider: { _drivers: string[] },
+): void {
   $$animationProvider._drivers.push($injectTokens._animateJsDriver);
   this.$get = [
     $injectTokens._animateJs,
@@ -15,11 +25,13 @@ export function AnimateJsDriverProvider($$animationProvider) {
      *
      * @param {import("./interface.ts").AnimateJsFn} $$animateJs
      */
-    function ($$animateJs) {
+    function ($$animateJs: AnimateJsFn) {
       /**
        * @param {import("./interface.ts").AnimationDetails} animationDetails
        */
-      function initDriverFn(animationDetails) {
+      function initDriverFn(
+        animationDetails: AnimationDetails,
+      ): Animator | undefined {
         if (animationDetails.from && animationDetails.to) {
           const fromAnimation = prepareAnimation(animationDetails.from);
 
@@ -29,8 +41,7 @@ export function AnimateJsDriverProvider($$animationProvider) {
 
           return {
             start() {
-              /** @type {Array<ng.AnimateRunner>} */
-              const animationRunners = [];
+              const animationRunners: Array<AnimateRunner> = [];
 
               if (fromAnimation) {
                 animationRunners.push(fromAnimation.start());
@@ -61,11 +72,11 @@ export function AnimateJsDriverProvider($$animationProvider) {
               /**
                * @param {boolean} status
                */
-              function done(status) {
+              function done(status: boolean) {
                 runner.complete(status);
               }
             },
-          };
+          } as unknown as Animator;
         }
 
         return prepareAnimation(animationDetails);
@@ -75,7 +86,9 @@ export function AnimateJsDriverProvider($$animationProvider) {
        * @param {import("./interface.ts").AnimationDetails} animationDetails
        * @return {import("./interface.ts").Animator | undefined}
        */
-      function prepareAnimation(animationDetails) {
+      function prepareAnimation(
+        animationDetails: AnimationDetails,
+      ): Animator | undefined {
         // TODO(matsko): make sure to check for grouped animations and delegate down to normal animations
         const { element, event, options, classes } = animationDetails;
 

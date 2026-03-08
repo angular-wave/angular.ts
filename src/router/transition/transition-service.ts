@@ -1,5 +1,5 @@
 import { copy } from "../../shared/common.ts";
-import { isDefined } from "../../shared/utils.js";
+import { isDefined } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import {
   registerAddCoreResolvables,

@@ -1,7 +1,11 @@
-// @ts-nocheck
+import type {
+  AnimationDetails,
+  AnimationOptions,
+  Animator,
+} from "./interface.ts";
 import { $injectTokens } from "../injection-tokens.ts";
 import { NodeType } from "../shared/node.ts";
-import { isString } from "../shared/utils.js";
+import { isString } from "../shared/utils.ts";
 
 import { AnimateRunner } from "./runner/animate-runner.ts";
 import { concatWithSpace } from "./shared.ts";
@@ -16,17 +20,28 @@ const NG_IN_ANCHOR_CLASS_NAME = "ng-anchor-in";
 
 AnimateCssDriverProvider.$inject = ["$$animationProvider"];
 
+interface AnimationProviderShape {
+  _drivers: string[];
+}
+
+interface AnimateCssService {
+  (element: HTMLElement, options: AnimationOptions): Animator;
+}
+
 /**
  * @param {import("./animation.ts").AnimationProvider} $$animationProvider
  */
-export function AnimateCssDriverProvider($$animationProvider) {
+export function AnimateCssDriverProvider(
+  this: { $get?: unknown },
+  $$animationProvider: AnimationProviderShape,
+): void {
   $$animationProvider._drivers.push($injectTokens._animateCssDriver);
 
   /**
    * @param {Element} node
    * @returns {boolean}
    */
-  function isDocumentFragment(node) {
+  function isDocumentFragment(node: Element): boolean {
     return node.parentNode?.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE;
   }
 
@@ -42,7 +57,12 @@ export function AnimateCssDriverProvider($$animationProvider) {
      * @param {HTMLElement} $rootElement
      * @returns
      */
-    function ($animateCss, $rootElement) {
+    function (
+      $animateCss: AnimateCssService,
+      $rootElement: HTMLElement,
+    ): (
+      animationDetails: AnimationDetails,
+    ) => Animator | { start(): AnimateRunner } | undefined | null {
       const bodyNode = document.body;
 
       const rootNode = $rootElement;
@@ -55,9 +75,9 @@ export function AnimateCssDriverProvider($$animationProvider) {
           ? rootNode
           : bodyNode;
 
-      return /** @param {import("./interface.ts").AnimationDetails} animationDetails */ function initDriverFn(
-        animationDetails,
-      ) {
+      return function initDriverFn(
+        animationDetails: AnimationDetails,
+      ): Animator | { start(): AnimateRunner } | undefined | null {
         return animationDetails.from && animationDetails.to
           ? prepareFromToAnchorAnimation(
               animationDetails.from,
@@ -72,8 +92,11 @@ export function AnimateCssDriverProvider($$animationProvider) {
        * @param {HTMLElement} inAnchor
        * @returns {{ start(): AnimateRunner } | null}
        */
-      function prepareAnchoredAnimation(outAnchor, inAnchor) {
-        const clone = /** @type {HTMLElement} */ outAnchor.cloneNode(true);
+      function prepareAnchoredAnimation(
+        outAnchor: HTMLElement,
+        inAnchor: HTMLElement,
+      ): { start(): AnimateRunner } | null {
+        const clone = outAnchor.cloneNode(true) as HTMLElement;
 
         const startingClasses = filterCssClasses(clone.getAttribute("class"));
 
@@ -85,7 +108,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
         rootBodyElement.append(clone);
 
         /** @type {ReturnType<typeof prepareInAnimation> | null} */
-        let animatorIn = null;
+        let animatorIn: Animator | null = null;
 
         const animatorOut = prepareOutAnimation();
 
@@ -118,7 +141,8 @@ export function AnimateCssDriverProvider($$animationProvider) {
               cancel: endFn,
             });
 
-            let currentAnimation = startingAnimator.start();
+            let currentAnimation: AnimateRunner | null =
+              startingAnimator.start();
 
             currentAnimation.done(() => {
               currentAnimation = null;
@@ -157,16 +181,25 @@ export function AnimateCssDriverProvider($$animationProvider) {
         /**
          * @param {HTMLElement} anchor
          */
-        function calculateAnchorStyles(anchor) {
-          /** @type {Record<string, string>} */
-          const styles = {};
+        function calculateAnchorStyles(
+          anchor: HTMLElement,
+        ): Record<"width" | "height" | "top" | "left", string> {
+          const styles = {} as Record<
+            "width" | "height" | "top" | "left",
+            string
+          >;
 
           const coords = anchor.getBoundingClientRect();
 
           // we iterate directly since safari messes up and doesn't return
           // all the keys for the coords object when iterated
           /** @type {Array<"width" | "height" | "top" | "left">} */
-          const keys = ["width", "height", "top", "left"];
+          const keys: Array<"width" | "height" | "top" | "left"> = [
+            "width",
+            "height",
+            "top",
+            "left",
+          ];
 
           keys.forEach((key) => {
             let value = coords[key];
@@ -185,19 +218,19 @@ export function AnimateCssDriverProvider($$animationProvider) {
           return styles;
         }
 
-        function prepareOutAnimation() {
+        function prepareOutAnimation(): Animator | null {
           const animator = $animateCss(clone, {
             addClass: NG_OUT_ANCHOR_CLASS_NAME,
             delay: true,
             from: calculateAnchorStyles(outAnchor),
-          });
+          } as unknown as AnimationOptions);
 
           // read the comment within `prepareRegularAnimation` to understand
           // why this check is necessary
           return animator._willAnimate ? animator : null;
         }
 
-        function prepareInAnimation() {
+        function prepareInAnimation(): Animator | null {
           const endingClasses = filterCssClasses(
             inAnchor.getAttribute("class"),
           );
@@ -211,7 +244,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
             addClass: `${NG_IN_ANCHOR_CLASS_NAME} ${toAdd}`,
             removeClass: `${NG_OUT_ANCHOR_CLASS_NAME} ${toRemove}`,
             delay: true,
-          });
+          } as unknown as AnimationOptions);
 
           // read the comment within `prepareRegularAnimation` to understand
           // why this check is necessary
@@ -230,15 +263,19 @@ export function AnimateCssDriverProvider($$animationProvider) {
        * @param {import("./interface.ts").AnimationDetails} to
        * @param {NonNullable<import("./interface.ts").AnimationDetails["anchors"]>} anchors
        */
-      function prepareFromToAnchorAnimation(from, to, anchors) {
+      function prepareFromToAnchorAnimation(
+        from: AnimationDetails,
+        to: AnimationDetails,
+        anchors: NonNullable<AnimationDetails["anchors"]>,
+      ): { start(): AnimateRunner } | undefined {
         const fromAnimation = prepareRegularAnimation(from);
 
         const toAnimation = prepareRegularAnimation(to);
 
         /** @type {Array<{ start(): ng.AnimateRunner }>} */
-        const anchorAnimations = [];
+        const anchorAnimations: Array<{ start(): AnimateRunner }> = [];
 
-        anchors.forEach((anchor) => {
+        anchors.forEach((anchor: { out: HTMLElement; in: HTMLElement }) => {
           const outElement = anchor.out;
 
           const inElement = anchor.in;
@@ -259,7 +296,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
             /**
              * @type {ng.AnimateRunner[]}
              */
-            const animationRunners = [];
+            const animationRunners: AnimateRunner[] = [];
 
             if (fromAnimation) {
               animationRunners.push(fromAnimation.start());
@@ -296,8 +333,10 @@ export function AnimateCssDriverProvider($$animationProvider) {
       /**
        * @param {import("./interface.ts").AnimationDetails} animationDetails
        */
-      function prepareRegularAnimation(animationDetails) {
-        const options = animationDetails.options || {};
+      function prepareRegularAnimation(
+        animationDetails: AnimationDetails,
+      ): Animator | null {
+        const options = animationDetails.options || ({} as AnimationOptions);
 
         if (animationDetails.structural) {
           options.event = animationDetails.event;
@@ -317,7 +356,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
         // with `-active` to trigger the animation.
         if (options.preparationClasses) {
           options.event = concatWithSpace(
-            /** @type {string} */ options.event,
+            String(options.event ?? ""),
             options.preparationClasses,
           );
         }
@@ -339,7 +378,7 @@ export function AnimateCssDriverProvider($$animationProvider) {
  * @param {string | null} classes
  * @return {string}
  */
-function filterCssClasses(classes) {
+function filterCssClasses(classes: string | null): string {
   // remove all the `ng-` stuff
   return classes ? classes.replace(/\bng-\S+\b/g, "") : "";
 }
@@ -348,10 +387,9 @@ function filterCssClasses(classes) {
  * @param {string | string[]} a
  * @param {string | string[]} b
  */
-function getUniqueValues(a, b) {
-  if (isString(a)) a = a.split(" ");
+function getUniqueValues(a: string | string[], b: string | string[]): string {
+  const aList = isString(a) ? a.split(" ") : a;
+  const bList = isString(b) ? b.split(" ") : b;
 
-  if (isString(b)) b = b.split(" ");
-
-  return a.filter((/** @type {any} */ val) => b.indexOf(val) === -1).join(" ");
+  return aList.filter((val: string) => bList.indexOf(val) === -1).join(" ");
 }

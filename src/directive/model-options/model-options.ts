@@ -1,5 +1,5 @@
 import { $injectTokens } from "../../injection-tokens.ts";
-import { entries, isDefined, keys, trim } from "../../shared/utils.js";
+import { entries, isDefined, keys, trim } from "../../shared/utils.ts";
 import type { NgModelOptions } from "../model/interface.ts";
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;

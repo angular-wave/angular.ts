@@ -13,7 +13,7 @@ import {
   isUndefined,
   minErr,
   shallowCopy,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 
 import { snakeToCamel } from "../../shared/dom.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";

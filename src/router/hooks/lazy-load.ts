@@ -1,4 +1,4 @@
-import { isArray } from "../../shared/utils.js";
+import { isArray } from "../../shared/utils.ts";
 import type {
   LazyLoadFn,
   LazyLoadResult,

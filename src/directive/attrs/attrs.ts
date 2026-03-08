@@ -1,5 +1,5 @@
 import { BOOLEAN_ATTR } from "../../shared/dom.ts";
-import { directiveNormalize, entries } from "../../shared/utils.js";
+import { directiveNormalize, entries } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 

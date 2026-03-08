@@ -1,6 +1,6 @@
 import { dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
-import { isFunction } from "../../shared/utils.js";
+import { isFunction } from "../../shared/utils.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("$state", () => {

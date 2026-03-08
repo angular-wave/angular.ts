@@ -1,4 +1,4 @@
-// @ts-nocheck
+import type { AnimationHost } from "../interface.ts";
 /**
  * Hybrid AnimateRunner
  * Supports both CSS animations (batched) and JS animations (per-Tick).
@@ -10,10 +10,6 @@
  *   - can be awaited as a Promise
  *
  * It intentionally mirrors AngularJS 1.x $$AnimateRunner behavior.
- */
-
-/**
- * @typedef {import("../interface.ts").AnimationHost} AnimationHost
  */
 
 /**
@@ -36,7 +32,7 @@ const RunnerState = {
  * Global queue used to batch CSS animation callbacks.
  * @type {Array<VoidFunction>}
  */
-let queue = [];
+let queue: VoidFunction[] = [];
 
 /** @type {boolean} */
 let scheduled = false;
@@ -62,7 +58,7 @@ function flush() {
  *
  * @param {VoidFunction} fn
  */
-function schedule(fn) {
+function schedule(fn: VoidFunction): void {
   queue.push(fn);
 
   if (!scheduled) {
@@ -73,26 +69,27 @@ function schedule(fn) {
 }
 
 export class AnimateRunner {
+  _host: AnimationHost;
+  _doneCallbacks: Array<(ok: boolean) => void>;
+  _state: number;
+  _promise: Promise<void> | null;
+  _tick: (fn: VoidFunction) => void;
+
   /**
    * @param {AnimationHost} [host] - Optional animation host callbacks.
    * @param {boolean} [jsAnimation=false]
    *        If true: use RAF/timer ticks.
    *        If false: use batched CSS animation ticks.
    */
-  constructor(host = {}, jsAnimation = false) {
-    /** @type {AnimationHost} */
+  constructor(host: AnimationHost = {}, jsAnimation = false) {
     this._host = host;
 
-    /** @type {Array<(ok: boolean) => void>} */
     this._doneCallbacks = [];
 
-    /** @type {RunnerState} */
     this._state = RunnerState._INITIAL;
 
     /**
      * Deferred promise used by .then/.catch/.finally.
-     * @type {Promise<void>|null}
-     * @private
      */
     this._promise = null;
 
@@ -100,22 +97,17 @@ export class AnimateRunner {
      * Internal tick scheduling function.
      * - JS animations: immediate RAF or fallback timer
      * - CSS animations: batched global queue
-     * @type {(fn: VoidFunction) => void}
-     * @private
      */
     if (jsAnimation) {
-      /** @type {(fn: VoidFunction) => void} */
-      const rafTick = (fn) => {
+      const rafTick = (fn: VoidFunction): void => {
         requestAnimationFrame(fn);
       };
 
-      /** @type {(fn: VoidFunction) => void} */
-      const timeoutTick = (fn) => {
+      const timeoutTick = (fn: VoidFunction): void => {
         setTimeout(fn, 0);
       };
 
-      /** @type {(fn: VoidFunction) => void} */
-      this._tick = (fn) => {
+      this._tick = (fn: VoidFunction): void => {
         // When tab is hidden, requestAnimationFrame throttles heavily.
         if (document.hidden) timeoutTick(fn);
         else rafTick(fn);
@@ -129,7 +121,7 @@ export class AnimateRunner {
    * Sets or replaces the current host.
    * @param {AnimationHost} host
    */
-  setHost(host) {
+  setHost(host: AnimationHost): void {
     this._host = host || {};
   }
 
@@ -139,7 +131,7 @@ export class AnimateRunner {
    *
    * @param {(ok: boolean) => void} fn
    */
-  done(fn) {
+  done(fn: (ok: boolean) => void): void {
     if (this._state === RunnerState._DONE) {
       fn(true);
     } else {
@@ -151,17 +143,17 @@ export class AnimateRunner {
    * Reports progress to host.
    * @param {...any} args
    */
-  progress(...args) {
+  progress(...args: any[]): void {
     this._host.progress?.(...args);
   }
 
   /** Pause underlying animation (if supported). */
-  pause() {
+  pause(): void {
     this._host.pause?.();
   }
 
   /** Resume underlying animation (if supported). */
-  resume() {
+  resume(): void {
     this._host.resume?.();
   }
 
@@ -169,7 +161,7 @@ export class AnimateRunner {
    * Ends the animation successfully.
    * Equivalent to user choosing to finish it immediately.
    */
-  end() {
+  end(): void {
     this._host.end?.();
     this._finish(true);
   }
@@ -177,7 +169,7 @@ export class AnimateRunner {
   /**
    * Cancels the animation.
    */
-  cancel() {
+  cancel(): void {
     this._host.cancel?.();
     this._finish(false);
   }
@@ -187,7 +179,7 @@ export class AnimateRunner {
    *
    * @param {boolean} [status=true]
    */
-  complete(status = true) {
+  complete(status = true): void {
     if (this._state === RunnerState._INITIAL) {
       this._state = RunnerState._PENDING;
       this._tick(() => this._finish(status));
@@ -199,7 +191,7 @@ export class AnimateRunner {
    * @param {boolean} status
    * @private
    */
-  _finish(status) {
+  _finish(status: boolean): void {
     if (this._state === RunnerState._DONE) return;
 
     this._state = RunnerState._DONE;
@@ -222,7 +214,7 @@ export class AnimateRunner {
   getPromise() {
     if (!this._promise) {
       this._promise = new Promise((resolve, reject) => {
-        this.done((ok) => (ok === false ? reject() : resolve()));
+        this.done((ok) => (ok === false ? reject() : resolve(undefined)));
       });
     }
 
@@ -236,7 +228,10 @@ export class AnimateRunner {
    * @param {(reason: any) => any} [onRejected]
    * @returns {Promise<T>}
    */
-  then(onFulfilled, onRejected) {
+  then<T>(
+    onFulfilled: (value: void) => T | PromiseLike<T>,
+    onRejected?: ((reason: any) => T | PromiseLike<T>) | null,
+  ): Promise<T> {
     return this.getPromise().then(onFulfilled, onRejected);
   }
 
@@ -245,7 +240,7 @@ export class AnimateRunner {
    * @param {(reason: any) => any} onRejected
    * @returns {Promise<void>}
    */
-  catch(onRejected) {
+  catch(onRejected: (reason: any) => any): Promise<void> {
     return this.getPromise().catch(onRejected);
   }
 
@@ -254,7 +249,7 @@ export class AnimateRunner {
    * @param {() => any} onFinally
    * @returns {Promise<void>}
    */
-  finally(onFinally) {
+  finally(onFinally: () => any): Promise<void> {
     return this.getPromise().finally(onFinally);
   }
 
@@ -269,7 +264,10 @@ export class AnimateRunner {
    * @param {AnimateRunner[]} runners
    * @param {(ok: boolean) => void} callback
    */
-  static _chain(runners, callback) {
+  static _chain(
+    runners: AnimateRunner[],
+    callback: (ok: boolean) => void,
+  ): void {
     let i = 0;
 
     const next = (ok = true) => {
@@ -290,7 +288,7 @@ export class AnimateRunner {
    * @param {AnimateRunner[]} runners
    * @param {(ok: boolean) => void} callback
    */
-  static _all(runners, callback) {
+  static _all(runners: AnimateRunner[], callback: (ok: boolean) => void): void {
     let remaining = runners.length;
 
     let status = true;

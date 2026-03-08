@@ -6,7 +6,7 @@ import {
   isNumber,
   isString,
   notNullOrUndefined,
-} from "./utils.js";
+} from "./utils.ts";
 
 export const BADARG = "badarg";
 export const BADARGKEY = "badarg: key";

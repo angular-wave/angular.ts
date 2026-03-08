@@ -8,7 +8,7 @@ import {
   isObject,
   isUndefined,
   minErr,
-} from "../shared/utils.js";
+} from "../shared/utils.ts";
 
 /**
  * @returns {ng.FilterFn}

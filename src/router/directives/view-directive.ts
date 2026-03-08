@@ -1,5 +1,5 @@
 import { tail, unnestR, withResolvers } from "../../shared/common.ts";
-import { hasAnimate, isDefined, isFunction } from "../../shared/utils.js";
+import { hasAnimate, isDefined, isFunction } from "../../shared/utils.ts";
 import { parse } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { trace } from "../common/trace.ts";
@@ -387,8 +387,8 @@ export function ViewDirective(
            *
            * @param {Object} event Event object.
            */
-          currentScope.$emit("$viewContentLoaded", config || viewConfig);
-          currentScope.$eval(onloadExp);
+          currentScope!.$emit("$viewContentLoaded", config || viewConfig);
+          currentScope!.$eval(onloadExp);
         }
       };
     },

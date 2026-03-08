@@ -11,7 +11,7 @@ import {
   nullObject,
   snakeCase,
   trim,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 import type { NodeRef } from "../../shared/noderef.ts";
 
@@ -189,6 +189,7 @@ export class Attributes {
     }
 
     if (writeAttr !== false) {
+      if (!attrName) return;
       const elem = this._element() as Element;
 
       if (isNullOrUndefined(maybeSanitizedValue)) {

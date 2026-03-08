@@ -1,5 +1,5 @@
 import { assertPredicate, unnestR } from "../../shared/common.ts";
-import { isArray } from "../../shared/utils.js";
+import { isArray } from "../../shared/utils.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { RegisteredHook } from "./hook-registry.ts";
 import {

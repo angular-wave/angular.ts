@@ -1,4 +1,4 @@
-import { isDefined, hasAnimate } from "../../shared/utils.js";
+import { isDefined, hasAnimate } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 
 ngIncludeDirective.$inject = [
@@ -63,11 +63,7 @@ export function ngIncludeDirective(
 
         let changeCounter = 0;
 
-        let currentScope:
-          | (ProxyConstructor &
-              import("../../docs.ts").Scope &
-              Record<string, any>)
-          | null;
+        let currentScope: ng.Scope | null;
 
         let previousElement: HTMLElement | null;
 
@@ -137,7 +133,7 @@ export function ngIncludeDirective(
 
                 currentScope = newScope;
                 currentElement = clone;
-                currentScope.$emit("$includeContentLoaded", src);
+                currentScope!.$emit("$includeContentLoaded", src);
                 scope.$eval(onloadExp);
               })
               .catch((err: unknown) => {

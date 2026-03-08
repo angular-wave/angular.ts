@@ -26,8 +26,11 @@
     "node": ">=24.0.0"
   },
   "scripts": {
+    "build": "./node_modules/.bin/rollup -c",
     "playwright": "./node_modules/.bin/playwright test",
-    "prepare": "husky"
+    "types": "rm -rf @types && ./node_modules/.bin/tsc --project tsconfig.types.json && npx prettier ./@types --write --cache --log-level=silent",
+    "prepare": "husky",
+    "prepack": "rm -rf dist @types && npm run build && npm run types"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",

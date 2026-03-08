@@ -16,7 +16,7 @@ build:
 		rm -r "$(BUILD_DIR)"; \
 	fi
 	@npm i
-	./node_modules/.bin/rollup -c
+	@npm run build
 
 size:
 	./node_modules/.bin/rollup -c --configName min --silent
@@ -53,10 +53,8 @@ check:
 	./node_modules/.bin/tsc 
 
 types:
-	@rm -rf @types
 	@echo "Generating *.d.ts"
-	@npx -p typescript tsc --project tsconfig.types.json
-	$(MAKE) pretty
+	@npm run types
 
 TYPEDOC_DIR = docs/static/typedoc
 doc: 

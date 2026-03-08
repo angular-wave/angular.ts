@@ -28,7 +28,7 @@ import {
   toJson,
   trim,
   uppercase,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 
 const APPLICATION_JSON = "application/json";
@@ -73,7 +73,7 @@ function serializeValue(
     return jsonValue ?? "";
   }
 
-  return v;
+  return v as string | number | boolean;
 }
 
 /**

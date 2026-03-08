@@ -1,5 +1,5 @@
 import { ParamTypes } from "../params/param-types.ts";
-import { isDefined, isNullOrUndefined, isString } from "../../shared/utils.js";
+import { isDefined, isNullOrUndefined, isString } from "../../shared/utils.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import type { ParamTypeDefinition } from "../params/interface.ts";
 import type { ParamType } from "../params/param-type.ts";

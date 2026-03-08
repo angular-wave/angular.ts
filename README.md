@@ -38,6 +38,8 @@ $ npm i @angular-wave/angular.ts
 
 ```
 
+The published package includes generated TypeScript declarations under `@types/`.
+
 or
 
 ```html

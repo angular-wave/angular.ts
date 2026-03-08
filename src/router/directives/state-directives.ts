@@ -5,7 +5,7 @@ import {
   isNullOrUndefined,
   isObject,
   isString,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { parse } from "../../shared/hof.ts";
 import { getInheritedData } from "../../shared/dom.ts";
 import { $injectTokens } from "../../injection-tokens.ts";

@@ -21,7 +21,7 @@ export { SceService, SceDelegateService } from "./services/sce/interface.ts";
 export * from "./index.ts";
 export * from "./angular.ts";
 export * from "./core/di/internal-injector.ts";
-export * from "./core/scope/scope.js";
+export * from "./core/scope/scope.ts";
 export * from "./services/cookie/cookie.ts";
 export * from "./services/cookie/interface.ts";
 export * from "./services/exception/exception.ts";

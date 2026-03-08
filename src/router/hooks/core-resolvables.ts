@@ -1,5 +1,5 @@
 import { uniqR, unnestR } from "../../shared/common.ts";
-import { values } from "../../shared/utils.js";
+import { values } from "../../shared/utils.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { Transition } from "../transition/transition.ts";
 import type { PathNode } from "../path/path-node.ts";
