@@ -1,6 +1,6 @@
 import { StateBuilder } from "./state-builder.ts";
-import { Angular } from "../../angular.js";
-import { dealoc } from "../../shared/dom.js";
+import { Angular } from "../../angular.ts";
+import { dealoc } from "../../shared/dom.ts";
 
 // TODO refactor this to url service as it is using the provider right now
 describe("StateBuilder", function () {

@@ -13,11 +13,9 @@
  * @param {Object<string, any>} vars
  * @returns {string}
  */
-export function expandUriTemplate(
+export declare function expandUriTemplate(
   template: string,
-  vars?: {
-    [x: string]: any;
-  },
+  vars?: Record<string, any>,
 ): string;
 /**
  * Helper: percent-encode a string. If allowReserved true, reserved chars are NOT encoded.
@@ -25,16 +23,14 @@ export function expandUriTemplate(
  * @param {boolean} allowReserved
  * @returns {string}
  */
-export function pctEncode(str: string, allowReserved: boolean): string;
+export declare function pctEncode(str: string, allowReserved: boolean): string;
 /**
  * Parse and expand a single expression (content between { and }).
  * @param {string} expression
  * @param {Object<string, any>} vars
  * @returns {string}
  */
-export function expandExpression(
+export declare function expandExpression(
   expression: string,
-  vars: {
-    [x: string]: any;
-  },
+  vars: Record<string, any>,
 ): string;

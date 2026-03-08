@@ -1,6 +1,6 @@
-import { dealoc } from "../../shared/dom.js";
-import { Angular } from "../../angular.js";
-import { map, find } from "../../shared/common.js";
+import { dealoc } from "../../shared/dom.ts";
+import { Angular } from "../../angular.ts";
+import { map, find } from "../../shared/common.ts";
 
 describe("UrlMatcher", () => {
   let $url;

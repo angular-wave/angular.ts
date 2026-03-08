@@ -1,0 +1,253 @@
+import {
+  isDefined,
+  isNullOrUndefined,
+  isNumber,
+  isString,
+  nullObject,
+} from "../../shared/utils.js";
+import {
+  validateIsString,
+  validateRequired,
+  BADARG,
+} from "../../shared/validate.ts";
+
+/**
+ * Service provider that creates a {@link CookieService $cookie} service.
+ * @type {ng.ServiceProvider}
+ */
+export class CookieProvider {
+  defaults: ng.CookieOptions;
+
+  constructor() {
+    this.defaults = {};
+  }
+
+  $get = () => new CookieService(this.defaults);
+}
+
+/**
+ *
+ * Provides high-level APIs for interacting with browser cookies:
+ *  - Raw get/set/remove
+ *  - JSON serialization helpers
+ *  - Global defaults supplied by $cookiesProvider
+ */
+export class CookieService {
+  private _defaults: ng.CookieOptions;
+
+  /**
+   * @param {ng.CookieOptions} defaults
+   *   Default cookie attributes defined by `$cookiesProvider.defaults`.
+   */
+  constructor(defaults: ng.CookieOptions) {
+    this._defaults = Object.freeze({ ...defaults });
+  }
+
+  /**
+   * Retrieves a raw cookie value.
+   *
+   * @param {string} key
+   * @returns {string|null}
+   * @throws {URIError} – If decodeURIComponent fails.
+   */
+  get(key: string): string | null {
+    validateIsString(key, "key");
+    const all = parseCookies();
+
+    return all[key] || null;
+  }
+
+  /**
+   * Retrieves a cookie and deserializes its JSON content.
+   *
+   * @template T
+   * @param {string} key
+   * @returns {T|null}
+   * @throws {SyntaxError} if cookie JSON is invalid
+   */
+  getObject<T>(key: string): T | null {
+    validateIsString(key, "key");
+
+    const raw = this.get(key);
+
+    if (!raw) return null;
+
+    return JSON.parse(raw) as T;
+  }
+
+  /**
+   * Returns an object containing all raw cookies.
+   *
+   * @returns {Record<string, string>}
+   * @throws {URIError} – If decodeURIComponent fails
+   */
+  getAll(): Record<string, string> {
+    return parseCookies();
+  }
+
+  /**
+   * Sets a raw cookie value.
+   *
+   * @param {string} key
+   * @param {string} value
+   * @param {ng.CookieOptions} [options]
+   * @throws {URIError} if key or value cannot be encoded
+   */
+  put(key: string, value: string, options: ng.CookieOptions = {}): void {
+    validateIsString(key, "key");
+    validateIsString(value, "value");
+    const encodedKey = encodeURIComponent(key);
+
+    const encodedVal = encodeURIComponent(value);
+
+    document.cookie = `${encodedKey}=${encodedVal}${buildOptions({
+      ...this._defaults,
+      ...options,
+    })}`;
+  }
+
+  /**
+   * Serializes an object as JSON and stores it as a cookie.
+   *
+   * @param {string} key
+   * @param {any} value
+   * @param {ng.CookieOptions} [options]
+   * @throws {TypeError} if Object cannot be converted to JSON
+   */
+  putObject(key: string, value: any, options?: ng.CookieOptions): void {
+    validateIsString(key, "key");
+    validateRequired(value, "value");
+    const str = JSON.stringify(value);
+
+    this.put(key, str, options);
+  }
+
+  /**
+   * Removes a cookie by setting an expired date.
+   *
+   * @param {string} key
+   * @param {ng.CookieOptions} [options]
+   */
+  remove(key: string, options: ng.CookieOptions = {}): void {
+    validateIsString(key, "key");
+    this.put(key, "", {
+      ...this._defaults,
+      ...options,
+      expires: new Date(0),
+    });
+  }
+}
+
+/*----------Helpers----------*/
+
+// Internal cache
+let _lastCookieString = "";
+
+let _lastCookieMap: Record<string, string> = nullObject();
+
+/**
+ * @returns {Record<string,string>}
+ * @throws {URIError} – If decodeURIComponent fails
+ */
+function parseCookies(): Record<string, string> {
+  const current = document.cookie;
+
+  // Fast path: return cached object if nothing changed
+  if (current === _lastCookieString) {
+    return _lastCookieMap;
+  }
+
+  _lastCookieString = current;
+
+  /** @type {Record<string, string>} */
+  const out: Record<string, string> = nullObject();
+
+  if (!current) {
+    _lastCookieMap = out;
+
+    return out;
+  }
+
+  const parts = current.split("; ");
+
+  for (const part of parts) {
+    const eq = part.indexOf("=");
+
+    if (eq === -1) continue; // skip malformed cookie
+
+    const key = decodeURIComponent(part.substring(0, eq));
+
+    const val = decodeURIComponent(part.substring(eq + 1));
+
+    out[key] = val; // last wins
+  }
+
+  _lastCookieMap = out;
+
+  return out;
+}
+
+/**
+ * Build cookie options string from an options object.
+ * Safely validates types for path, domain, expires, secure, and samesite.
+ *
+ * @param {ng.CookieOptions} opts
+ * @returns {string}
+ * @throws {TypeError} if any of options are invalid
+ */
+function buildOptions(opts: ng.CookieOptions = {}): string {
+  const parts: string[] = [];
+
+  // Path
+  if (isDefined(opts.path)) {
+    if (!isString(opts.path))
+      throw new TypeError(`${BADARG}:path ${opts.path}`);
+    parts.push(`path=${opts.path}`);
+  }
+
+  // Domain
+  if (isDefined(opts.domain)) {
+    if (!isString(opts.domain))
+      throw new TypeError(`${BADARG}:domain ${opts.domain}`);
+    parts.push(`domain=${opts.domain}`);
+  }
+
+  // Expires
+  if (!isNullOrUndefined(opts.expires)) {
+    let expDate;
+
+    if (opts.expires instanceof Date) {
+      expDate = opts.expires;
+    } else if (isNumber(opts.expires) || isString(opts.expires)) {
+      expDate = new Date(opts.expires);
+    } else {
+      throw new TypeError(`${BADARG}:expires ${String(opts.expires)}`);
+    }
+
+    if (isNaN(expDate.getTime())) {
+      throw new TypeError(`${BADARG}:expires ${String(opts.expires)}`);
+    }
+
+    parts.push(`expires=${expDate.toUTCString()}`);
+  }
+
+  // Secure
+  if (opts.secure) {
+    parts.push("secure");
+  }
+
+  // SameSite
+  if (isDefined(opts.samesite)) {
+    if (!isString(opts.samesite))
+      throw new TypeError(`${BADARG}:samesite ${opts.samesite}`);
+    const samesite = opts.samesite.toLowerCase();
+
+    if (!["lax", "strict", "none"].includes(samesite)) {
+      throw new TypeError(`${BADARG}:samesite ${opts.samesite}`);
+    }
+    parts.push(`samesite=${samesite}`);
+  }
+
+  // Join all parts with semicolons
+  return parts.length ? `;${parts.join(";")}` : "";
+}

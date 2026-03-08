@@ -1,20 +1,32 @@
 /**
+ * Expando cache for adding properties to DOM nodes with JavaScript.
+ * This used to be an Object in JQLite decorator, but swapped out for a Map
+ *
+ * @type {Map<number, import('../interface.ts').ExpandoStore>}
+ */
+export declare const Cache: Map<any, any>;
+/**
+ * A list of boolean attributes in HTML.
+ * @type {string[]}
+ */
+export declare const BOOLEAN_ATTR: string[];
+/**
  * Converts kebab-case to camelCase.
  * @param {string} name Name to normalize
  * @returns {string}
  */
-export function kebabToCamel(name: string): string;
+export declare function kebabToCamel(name: string): string;
 /**
  * Converts sname to camelCase.
  * @param {string} name
  * @returns {string}
  */
-export function snakeToCamel(name: string): string;
+export declare function snakeToCamel(name: string): string;
 /**
  * @param {Element & Record<string, any>} element
  * @param {string} [name]
  */
-export function removeElementData(
+export declare function removeElementData(
   element: Element & Record<string, any>,
   name?: string,
 ): void;
@@ -27,24 +39,28 @@ export function removeElementData(
  * @param {boolean} [createIfNecessary=false]
  * @returns {import("../interface.ts").ExpandoStore}
  */
-export function getExpando(
+export declare function getExpando(
   element: Element & Record<string, any>,
   createIfNecessary?: boolean,
-): import("../interface.ts").ExpandoStore;
+): import("../interface.ts").ExpandoStore | undefined;
 /**
  * Checks if the string contains HTML tags or entities.
  * @param {string} html
  * @returns {boolean} True if the string is plain text, false if it contains HTML tags or entities.
  */
-export function isTextNode(html: string): boolean;
+export declare function isTextNode(html: string): boolean;
 /**
  * @param {Element & Record<string, any>} element
  * @param {Element & Record<string, any>} element
  * @param {boolean} [onlyDescendants]
  * @returns {void}
  */
-export function dealoc(
-  element: Element & Record<string, any>,
+export declare function dealoc(
+  element:
+    | (Element & Record<string, any>)
+    | (Element & Record<string, any>)[]
+    | null
+    | undefined,
   onlyDescendants?: boolean,
 ): void;
 /**
@@ -55,13 +71,9 @@ export function dealoc(
  * @param {*} [value] - The value to set. If not provided, the function acts as a getter.
  * @returns {*} - The retrieved data if acting as a getter. Otherwise, undefined.
  */
-export function getOrSetCacheData(
+export declare function getOrSetCacheData(
   element: Element,
-  key:
-    | string
-    | {
-        [x: string]: any;
-      },
+  key?: string | Record<string, any>,
   value?: any,
 ): any;
 /**
@@ -72,7 +84,7 @@ export function getOrSetCacheData(
  * @param {*} [value] - The value to set. If not provided, the function acts as a getter.
  * @returns
  */
-export function setCacheData(
+export declare function setCacheData(
   element: Element | Node,
   key: string,
   value?: any,
@@ -84,7 +96,7 @@ export function setCacheData(
  * @param {string} [key] - The key (as a string) to retrieve. If not provided, returns all data.
  * @returns {*} - The retrieved data for the given key or all data if no key is provided.
  */
-export function getCacheData(element: Element, key?: string): any;
+export declare function getCacheData(element: Element, key?: string): any;
 /**
  * Deletes cache data for a given element for a particular key.
  *
@@ -92,21 +104,21 @@ export function getCacheData(element: Element, key?: string): any;
  * @param {string} key - The key (as a string) to delete.
  * @returns void
  */
-export function deleteCacheData(element: Element, key: string): void;
+export declare function deleteCacheData(element: Element, key?: string): void;
 /**
  * Gets scope for a given element.
  *
  * @param {Element} element - The DOM element to get data from.
  * @returns {ng.Scope} - The retrieved data for the given key or all data if no key is provided.
  */
-export function getScope(element: Element): ng.Scope;
+export declare function getScope(element: Element): ng.Scope;
 /**
  * Set scope for a given element.
  *
  * @param {Element|Node|ChildNode} element - The DOM element to set data on.
  * @param {ng.Scope} scope - The Scope attached to this element
  */
-export function setScope(
+export declare function setScope(
   element: Element | Node | ChildNode,
   scope: ng.Scope,
 ): void;
@@ -116,14 +128,17 @@ export function setScope(
  * @param {Element} element - The DOM element to get data from.
  * @returns {*} - The retrieved data for the given key or all data if no key is provided.
  */
-export function getIsolateScope(element: Element): any;
+export declare function getIsolateScope(element: Element): any;
 /**
  * Set isolate scope for a given element.
  *
  * @param {Element} element - The DOM element to set data on.
  * @param {ng.Scope} scope - The Scope attached to this element
  */
-export function setIsolateScope(element: Element, scope: ng.Scope): void;
+export declare function setIsolateScope(
+  element: Element,
+  scope: ng.Scope,
+): void;
 /**
  * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
  *
@@ -131,7 +146,7 @@ export function setIsolateScope(element: Element, scope: ng.Scope): void;
  * @param {string} [name] - Controller name.
  * @returns {ng.Scope|undefined} - The retrieved data
  */
-export function getController(
+export declare function getController(
   element: Element,
   name?: string,
 ): ng.Scope | undefined;
@@ -142,26 +157,31 @@ export function getController(
  * @param {string} name - The data key to look up
  * @returns {any} - The found value, or undefined if not found
  */
-export function getInheritedData(element: Node, name: string): any;
+export declare function getInheritedData(element: Node, name: string): any;
 /**
  *
  * @param {Element} element
  * @param {boolean} keepData
  */
-export function removeElement(element: Element, keepData?: boolean): void;
+export declare function removeElement(
+  element: Element,
+  keepData?: boolean,
+): void;
 /**
  * Extracts the starting tag from an HTML string or DOM element.
  *
  * @param {string|Element|Node} elementOrStr - The HTML string or DOM element to process.
  * @returns {string} The starting tag or processed result.
  */
-export function startingTag(elementOrStr: string | Element | Node): string;
+export declare function startingTag(
+  elementOrStr: string | Element | Node,
+): string;
 /**
  * Return the DOM siblings between the first and last node in the given array.
  * @param {Node[]} nodes
  * @returns {Node[]}
  */
-export function getBlockNodes(nodes: Node[]): Node[];
+export declare function getBlockNodes(nodes: Node[]): Node[];
 /**
  * Gets the name of a boolean attribute if it exists on a given element.
  *
@@ -169,7 +189,7 @@ export function getBlockNodes(nodes: Node[]): Node[];
  * @param {string} name - The name of the attribute.
  * @returns {string|false} - The attribute name if valid, otherwise false.
  */
-export function getBooleanAttrName(
+export declare function getBooleanAttrName(
   element: Element,
   name: string,
 ): string | false;
@@ -178,13 +198,15 @@ export function getBooleanAttrName(
  * listeners.
  * @param {NodeListOf<Element>|Element[]} nodes
  */
-export function cleanElementData(nodes: NodeListOf<Element> | Element[]): void;
+export declare function cleanElementData(
+  nodes: NodeListOf<Element> | Element[],
+): void;
 /**
  * Return instance of InjectorService attached to element
  * @param {Element} element
  * @returns {ng.InjectorService}
  */
-export function getInjector(element: Element): ng.InjectorService;
+export declare function getInjector(element: Element): ng.InjectorService;
 /**
  * Creates a DOM element from an HTML string.
  * Must have exactly one root node.
@@ -192,21 +214,21 @@ export function getInjector(element: Element): ng.InjectorService;
  * @param {string} htmlString - A string representing the HTML to parse.
  * @returns {Element}
  */
-export function createElementFromHTML(htmlString: string): Element;
+export declare function createElementFromHTML(htmlString: string): Element;
 /**
  * Creates a NodeList from an HTML string.
  *
  * @param {string} htmlString - A string representing the HTML to parse.
  * @returns {NodeListOf<ChildNode>}
  */
-export function createNodelistFromHTML(
+export declare function createNodelistFromHTML(
   htmlString: string,
 ): NodeListOf<ChildNode>;
 /**
  * Remove element from the DOM and clear Cache data, associated with the node.
  * @param {Element} element
  */
-export function emptyElement(element: Element): void;
+export declare function emptyElement(element: Element): void;
 /**
  * Inserts a DOM element before or at the beginning of a parent element.
  *
@@ -223,7 +245,7 @@ export function emptyElement(element: Element): void;
  *
  * @returns {void}
  */
-export function domInsert(
+export declare function domInsert(
   element: HTMLElement | Element,
   parentElement: HTMLElement | Element,
   afterElement?: ChildNode | Element | null,
@@ -233,31 +255,21 @@ export function domInsert(
  * @param {HTMLElement} parent
  * @param {ChildNode | null | undefined} after
  */
-export function animatedomInsert(
+export declare function animatedomInsert(
   element: HTMLElement,
   parent: HTMLElement,
-  after: ChildNode | null | undefined,
+  after?: ChildNode | null,
 ): void;
 /**
  * Returns the base href of the document.
  *
  * @returns {string} The base href.
  */
-export function getBaseHref(): string;
+export declare function getBaseHref(): string;
 /**
  * @param {NodeList|Node} element
  * @returns {Node | undefined}
  */
-export function extractElementNode(element: NodeList | Node): Node | undefined;
-/**
- * Expando cache for adding properties to DOM nodes with JavaScript.
- * This used to be an Object in JQLite decorator, but swapped out for a Map
- *
- * @type {Map<number, import('../interface.ts').ExpandoStore>}
- */
-export const Cache: Map<number, import("../interface.ts").ExpandoStore>;
-/**
- * A list of boolean attributes in HTML.
- * @type {string[]}
- */
-export const BOOLEAN_ATTR: string[];
+export declare function extractElementNode(
+  element: NodeList | Node,
+): Node | undefined;

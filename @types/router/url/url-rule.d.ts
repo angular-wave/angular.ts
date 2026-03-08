@@ -28,7 +28,7 @@ export declare class UrlRuleFactory {
    *
    * @param {StateObject} what
    * @param {*} [handler]
-   * @returns {import("./url-rules.js").UrlRule}
+   * @returns {import("./url-rules.ts").UrlRule}
    */
   create(
     what:
@@ -95,13 +95,13 @@ export declare class UrlRuleFactory {
    * ```
    * @param {StateObject | import("../state/interface.ts").StateDeclaration} stateOrDecl
    * @param {import("../state/state-service.ts").StateProvider} stateService
-   * @param {import("../router.js").RouterProvider} globals
+   * @param {import("../router.ts").RouterProvider} globals
    * @returns {import("./interface.ts").StateRule}
    */
   fromState(
     stateOrDecl: StateObject | import("../state/interface.ts").StateDeclaration,
     stateService: import("../state/state-service.ts").StateProvider,
-    globals: import("../router.js").RouterProvider,
+    globals: import("../router.ts").RouterProvider,
   ): StateRule;
   /**
    * A UrlRule which matches based on a regular expression

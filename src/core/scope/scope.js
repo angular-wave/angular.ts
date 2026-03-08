@@ -15,7 +15,7 @@ import {
   nullObject,
 } from "../../shared/utils.js";
 import { ASTType } from "../parse/ast-type.ts";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+import { $injectTokens as $t } from "../../injection-tokens.ts";
 
 /** @typedef {import("../parse/ast/ast-node.ts").ExpressionNode} ExpressionNode */
 /** @typedef {import("../parse/ast/ast-node.ts").LiteralNode} LiteralNode */

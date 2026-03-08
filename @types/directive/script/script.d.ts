@@ -1,10 +1,6 @@
-/**
- * @param {ng.TemplateCacheService} $templateCache
- * @returns {ng.Directive}
- */
-export function scriptDirective(
+export declare function scriptDirective(
   $templateCache: ng.TemplateCacheService,
 ): ng.Directive;
-export namespace scriptDirective {
-  let $inject: string[];
+export declare namespace scriptDirective {
+  var $inject: "$templateCache"[];
 }

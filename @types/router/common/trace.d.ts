@@ -1,3 +1,6 @@
+type CategoryValue = (typeof Category)[keyof typeof Category];
+type TraceCategoryInput = CategoryValue | string | number;
+type TraceLogger = Pick<Console, "log" | "table">;
 /**
  * Trace categories Enum
  *
@@ -14,151 +17,34 @@
 /**
  * @type {Record<string, string>}
  */
-export const Category: Record<string, string>;
+export declare const Category: {
+  readonly _RESOLVE: "RESOLVE";
+  readonly _TRANSITION: "TRANSITION";
+  readonly _HOOK: "HOOK";
+  readonly _UIVIEW: "UIVIEW";
+  readonly _VIEWCONFIG: "VIEWCONFIG";
+};
 /**
  * Prints ng-router Transition trace information to the console.
  */
-export class Trace {
-  /** @type {Record<string, boolean> } */
+export declare class Trace {
   _enabled: Record<string, boolean>;
   approximateDigests: number;
-  $logger: any;
-  /**
-   * @param {boolean} enabled
-   * @param {string[]} categories
-   */
-  _set(enabled: boolean, categories: string[]): void;
-  /**
-   * @param {string[]} categories
-   */
-  enable(...categories: string[]): void;
-  /**
-   * @param {string[]} categories
-   */
-  disable(...categories: string[]): void;
+  $logger: TraceLogger;
+  constructor();
+  _set(enabled: boolean, categories: TraceCategoryInput[]): void;
+  enable(...categories: TraceCategoryInput[]): void;
+  disable(...categories: TraceCategoryInput[]): void;
   /**
    * Retrieves the enabled stateus of a [[Category]]
    *
    * ```js
    * trace.enabled("VIEWCONFIG"); // true or false
    * ```
-   * @param {string} category
+   * @param {TraceCategoryInput} category
    * @returns {boolean} true if the category is enabled
    */
-  enabled(category: string): boolean;
-  /**
-   * @internal called by ng-router code
-   * @param {ng.Transition} trans
-   */
-  traceTransitionStart(trans: ng.Transition): void;
-  /**
-   * @internal called by ng-router code
-   * @param {ng.Transition} trans
-   */
-  traceTransitionIgnored(trans: ng.Transition): void;
-  /**
-   * @internal called by ng-router code
-   * @param {import("../transition/transition-hook.js").TransitionHook} step
-   * @param {ng.Transition} trans
-   * @param {import("../transition/interface.ts").TransitionHookOptions} options
-   */
-  traceHookInvocation(
-    step: import("../transition/transition-hook.js").TransitionHook,
-    trans: ng.Transition,
-    options: import("../transition/interface.ts").TransitionHookOptions,
-  ): void;
-  /** @internal called by ng-router code */
-  /**
-   * @param {HookResult} hookResult
-   * @param {ng.Transition} trans
-   */
-  traceHookResult(hookResult: HookResult, trans: ng.Transition): void;
-  /**
-   * @internal called by ng-router code
-   * @param {import("../path/path-node.ts").PathNode[]} path
-   * @param {import("../resolve/interface.ts").PolicyWhen} when
-   * @param {ng.Transition} trans
-   */
-  traceResolvePath(
-    path: import("../path/path-node.ts").PathNode[],
-    when: import("../resolve/interface.ts").PolicyWhen,
-    trans: ng.Transition,
-  ): void;
-  /**
-   * @internal called by ng-router code
-   * @param {import("../resolve/resolvable.js").Resolvable} resolvable
-   * @param {ng.Transition} trans
-   */
-  traceResolvableResolved(
-    resolvable: import("../resolve/resolvable.js").Resolvable,
-    trans: ng.Transition,
-  ): void;
-  /**
-   * @internal called by ng-router code
-   * @param {any} reason
-   * @param {ng.Transition} trans
-   */
-  traceError(reason: any, trans: ng.Transition): void;
-  /**
-   * @internal called by ng-router code
-   * @param {import("../state/state-object.ts").StateObject} finalState
-   * @param {ng.Transition} trans
-   */
-  traceSuccess(
-    finalState: import("../state/state-object.ts").StateObject,
-    trans: ng.Transition,
-  ): void;
-  /**
-   * @internal called by ng-router code
-   * @param {string} event
-   * @param {import("../view/interface.ts").ActiveUIView} viewData
-   */
-  traceUIViewEvent(
-    event: string,
-    viewData: import("../view/interface.ts").ActiveUIView,
-    extra?: string,
-  ): void;
-  /**
-   * @internal called by ng-router code
-   * @param {import("../view/interface.ts").ActiveUIView} viewData
-   * @param {import("../view/interface.ts").ViewContext | undefined} context
-   */
-  traceUIViewConfigUpdated(
-    viewData: import("../view/interface.ts").ActiveUIView,
-    context: import("../view/interface.ts").ViewContext | undefined,
-  ): void;
-  /**
-   * @internal called by ng-router code
-   * @param {import("../view/interface.ts").ActiveUIView} viewData
-   * @param {string} html
-   */
-  traceUIViewFill(
-    viewData: import("../view/interface.ts").ActiveUIView,
-    html: string,
-  ): void;
-  /**
-   * @internal called by ng-router code
-   * @param {import("../view/interface.ts").ViewTuple[]} pairs
-   */
-  traceViewSync(pairs: import("../view/interface.ts").ViewTuple[]): void;
-  /**
-   * @internal called by ng-router code
-   * @param {string} event
-   * @param {import("../view/view.js").ViewConfig} viewConfig
-   */
-  traceViewServiceEvent(
-    event: string,
-    viewConfig: import("../view/view.js").ViewConfig,
-  ): void;
-  /**
-   * @internal called by ng-router code
-   * @param {string} event
-   * @param {import("../view/interface.ts").ActiveUIView} viewData
-   */
-  traceViewServiceUIViewEvent(
-    event: string,
-    viewData: import("../view/interface.ts").ActiveUIView,
-  ): void;
+  enabled(category: TraceCategoryInput): boolean;
 }
 /**
  * The [[Trace]] singleton
@@ -169,7 +55,5 @@ export class Trace {
  * trace.enable(1, 5);
  * ```
  */
-export const trace: Trace;
-export type HookResult = import("../transition/interface.ts").HookResult;
-export type TransitionHook =
-  import("../transition/transition-hook.js").TransitionHook;
+export declare const trace: Trace;
+export {};

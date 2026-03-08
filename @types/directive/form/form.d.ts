@@ -1,14 +1,4 @@
 /**
- * @param {FormController|ng.NgModelController} ctrl
- * @param {string} className
- * @param {boolean} switchValue
- */
-export function cachedToggleClass(
-  ctrl: FormController | ng.NgModelController,
-  className: string,
-  switchValue: boolean,
-): void;
-/**
  * @type {{
  *   $nonscope: boolean,
  *   $addControl: Function,
@@ -22,21 +12,19 @@ export function cachedToggleClass(
  *   _setSubmitted: Function
  * }}
  */
-export const nullFormCtrl: {
+export declare const nullFormCtrl: {
   $nonscope: boolean;
-  $addControl: Function;
+  $addControl: () => void;
   $getControls: () => any[];
-  _renameControl: Function;
-  $removeControl: Function;
-  $setValidity:
-    | Function
-    | ((key: any, isValid: boolean | undefined | null, control: any) => any);
-  $setDirty: Function;
-  $setPristine: Function;
-  $setSubmitted: Function;
-  _setSubmitted: Function;
+  _renameControl: (control: any, name: any) => void;
+  $removeControl: () => void;
+  $setValidity: () => void;
+  $setDirty: () => void;
+  $setPristine: () => void;
+  $setSubmitted: () => void;
+  _setSubmitted: () => void;
 };
-export const PENDING_CLASS: "ng-pending";
+export declare const PENDING_CLASS = "ng-pending";
 /**
  * @property {boolean} $dirty True if user has already interacted with the form.
  * @property {boolean} $valid True if all of the containing forms and controls are valid.
@@ -81,9 +69,15 @@ export const PENDING_CLASS: "ng-pending";
  * of `FormController`.
  *
  */
-export class FormController {
+export declare class FormController {
   static $nonscope: boolean;
-  static $inject: string[];
+  static $inject: (
+    | "$attrs"
+    | "$scope"
+    | "$element"
+    | "$animate"
+    | "$interpolate"
+  )[];
   /**
    * @param {HTMLFormElement} $element
    * @param {ng.Attributes} $attrs
@@ -92,48 +86,12 @@ export class FormController {
    * @param {ng.InterpolateService} $interpolate
    */
   constructor(
-    $element: HTMLFormElement,
-    $attrs: ng.Attributes,
-    $scope: ng.Scope,
-    $animate: ng.AnimateService,
-    $interpolate: ng.InterpolateService,
+    $element: any,
+    $attrs: any,
+    $scope: any,
+    $animate: any,
+    $interpolate: any,
   );
-  /** @type {boolean} */
-  _isAnimated: boolean;
-  /**
-   * @type {FormController[]}
-   */
-  _controls: FormController[];
-  $name: any;
-  /**
-   * @property {boolean} $dirty True if user has already interacted with the form.
-   */
-  $dirty: boolean;
-  /**
-   * @propertys {boolean} $pristine - True if user has not interacted with the form yet.s
-   */
-  $pristine: boolean;
-  /** @type {boolean | undefined} */
-  $valid: boolean | undefined;
-  /** @type {boolean | undefined} */
-  $invalid: boolean | undefined;
-  $submitted: boolean;
-  /** @type {FormController|Object} */
-  _parentForm: FormController | any;
-  _element: HTMLFormElement;
-  _animate: import("../../docs.ts").AnimateService;
-  /** @type {Record<string, any>} */
-  $error: Record<string, any>;
-  /** @type {Record<string, any>} */
-  _success: Record<string, any>;
-  /**
-   * @type {Record<string, any>| undefined}
-   */
-  $pending: Record<string, any> | undefined;
-  /** @type {Record<string, any>} */
-  _classCache: Record<string, any>;
-  /** @type {Record<string, any>} */
-  $target: Record<string, any>;
   /**
    * Rollback all form controls pending updates to the `$modelValue`.
    *
@@ -166,7 +124,7 @@ export class FormController {
    * calling `$setDirty()` and `$validate()` afterwards will propagate the state to the parent form.
    * @param {FormController} control
    */
-  $addControl(control: FormController): void;
+  $addControl(control: any): void;
   /**
    * This method returns a **shallow copy** of the controls that are currently part of this form.
    * The controls can be instances of {@link form.FormController `FormController`}
@@ -183,12 +141,12 @@ export class FormController {
    * you need access to the controls.
    * @returns {ReadonlyArray<FormController>}
    */
-  $getControls(): ReadonlyArray<FormController>;
+  $getControls(): any;
   /**
    * @param {FormController} control
    * @param {string | number} newName
    */
-  _renameControl(control: FormController, newName: string | number): void;
+  _renameControl(control: any, newName: any): void;
   /**
    * Deregister a control from the form.
    *
@@ -200,7 +158,7 @@ export class FormController {
    * may not mean that the form is still `$dirty`.
    * @param {FormController } control
    */
-  $removeControl(control: FormController): void;
+  $removeControl(control: any): void;
   /**
    * Sets the form to a dirty state.
    *
@@ -242,21 +200,13 @@ export class FormController {
    * @param {string} property
    * @param {FormController | import("../model/model.js").NgModelController} controller
    */
-  set(
-    object: Record<string, any>,
-    property: string,
-    controller: FormController | import("../model/model.js").NgModelController,
-  ): void;
+  set(object: any, property: any, controller: any): void;
   /**
    * @param {Record<string, any>} object
    * @param {string} property
    * @param {FormController | import("../model/model.js").NgModelController} controller
    */
-  unset(
-    object: Record<string, any>,
-    property: string,
-    controller: FormController | import("../model/model.js").NgModelController,
-  ): void;
+  unset(object: any, property: any, controller: any): void;
   /**
    * Change the validity state of the form, and notify the parent form (if any).
    *
@@ -277,17 +227,55 @@ export class FormController {
    * @param {import("../model/model.js").NgModelController | FormController} controller - The controller whose validity state is
    *        triggering the change.
    */
-  $setValidity(
-    validationErrorKey: string,
-    state: boolean | null | undefined,
-    controller: import("../model/model.js").NgModelController | FormController,
-  ): void;
+  $setValidity(validationErrorKey: any, state: any, controller: any): void;
 }
-export const formDirective: (
-  | string
-  | (($parse: ng.ParseService) => ng.Directive)
+export declare const formDirective: (
+  | "$parse"
+  | (($parse: any) => {
+      name: string;
+      restrict: string;
+      require: string[];
+      controller: typeof FormController;
+      compile: (
+        formElement: any,
+        attr: any,
+      ) => {
+        pre: (
+          scope: any,
+          formElementParam: any,
+          attrParam: any,
+          ctrls: any,
+        ) => void;
+      };
+    })
 )[];
-export const ngFormDirective: (
-  | string
-  | (($parse: ng.ParseService) => ng.Directive)
+export declare const ngFormDirective: (
+  | "$parse"
+  | (($parse: any) => {
+      name: string;
+      restrict: string;
+      require: string[];
+      controller: typeof FormController;
+      compile: (
+        formElement: any,
+        attr: any,
+      ) => {
+        pre: (
+          scope: any,
+          formElementParam: any,
+          attrParam: any,
+          ctrls: any,
+        ) => void;
+      };
+    })
 )[];
+/**
+ * @param {FormController|ng.NgModelController} ctrl
+ * @param {string} className
+ * @param {boolean} switchValue
+ */
+export declare function cachedToggleClass(
+  ctrl: any,
+  className: any,
+  switchValue: any,
+): void;

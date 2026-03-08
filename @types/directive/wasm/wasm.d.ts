@@ -1,4 +1,1 @@
-/**
- * @return {ng.Directive}
- */
-export function ngWasmDirective(): ng.Directive;
+export declare function ngWasmDirective(): ng.Directive;

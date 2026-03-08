@@ -1,4 +1,1 @@
-/**
- * @returns {ng.Directive}
- */
-export function ngViewportDirective(): ng.Directive;
+export declare function ngViewportDirective(): ng.Directive;

@@ -1,8 +1,12 @@
 /**
  * @template T, ID
  */
-export class RestService<T, ID> {
+export declare class RestService<T, ID> {
   static $nonscope: boolean;
+  private _$http;
+  private _baseUrl;
+  private _entityClass?;
+  private _options;
   /**
    * Core REST service for CRUD operations.
    * Safe, predictable, and optionally maps raw JSON to entity class instances.
@@ -16,16 +20,8 @@ export class RestService<T, ID> {
     $http: ng.HttpService,
     baseUrl: string,
     entityClass?: ng.EntityClass<T>,
-    options?: any,
+    options?: Record<string, any>,
   );
-  /** @private */
-  private _$http;
-  /** @private */
-  private _baseUrl;
-  /** @private */
-  private _entityClass;
-  /** @private */
-  private _options;
   /**
    * Build full URL from template and parameters
    * @param {string} template
@@ -34,18 +30,24 @@ export class RestService<T, ID> {
    */
   buildUrl(template: string, params: Record<string, any>): string;
   /**
+   * Map raw JSON to entity instance or return as-is
+   * @param {any} data
+   * @returns {T|any}
+   */
+  private _mapEntity;
+  /**
    * List entities
    * @param {Record<string, any>=} params
    * @returns {Promise<T[]>}
    */
-  list(params?: Record<string, any> | undefined): Promise<T[]>;
+  list(params?: Record<string, any>): Promise<T[]>;
   /**
    * Read single entity by ID
    * @param {ID} id
    * @param {Record<string, any>=} params
    * @returns {Promise<T|null>}
    */
-  read(id: ID, params?: Record<string, any> | undefined): Promise<T | null>;
+  read(id: ID, params?: Record<string, any>): Promise<T | null>;
   /**
    * Create a new entity
    * @param {T} item
@@ -65,14 +67,22 @@ export class RestService<T, ID> {
    * @returns {Promise<boolean>}
    */
   delete(id: ID): Promise<boolean>;
-  #private;
+  /**
+   * Core HTTP request wrapper
+   * @param {ng.HttpMethod} method
+   * @param {string} url
+   * @param {any=} data
+   * @param {Record<string, any>=} params
+   * @returns {Promise<any>}
+   */
+  private _request;
 }
 /**
  * Provider for registering REST endpoints during module configuration.
  */
-export class RestProvider {
-  /** @private @type {ng.RestDefinition<any>[]} */
+export declare class RestProvider {
   private _definitions;
+  constructor();
   /**
    * Register a REST resource at config phase
    * @template T
@@ -84,25 +94,23 @@ export class RestProvider {
   rest<T>(
     name: string,
     url: string,
-    entityClass?:
-      | {
-          new (data: any): T;
-        }
-      | undefined,
-    options?: any | undefined,
+    entityClass?: {
+      new (data: any): T;
+    },
+    options?: Record<string, any>,
   ): void;
   /**
    * $get factory: returns a factory function and allows access to named services
    * @returns {(baseUrl:string, entityClass?:Function, options?:object) => RestService & { get(name:string): RestService, listNames(): string[] }}
    */
   $get: (
-    | string
+    | "$http"
     | ((
         $http: ng.HttpService,
-      ) => (
+      ) => <T, ID>(
         baseUrl: string,
         entityClass?: ng.EntityClass<T>,
-        options?: object,
+        options?: Record<string, any>,
       ) => RestService<T, ID>)
   )[];
 }

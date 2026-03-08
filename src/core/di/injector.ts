@@ -13,8 +13,8 @@ import {
   minErr,
 } from "../../shared/utils.js";
 import { InjectorService, ProviderInjector } from "./internal-injector.ts";
-import { createPersistentProxy } from "../../services/storage/storage.js";
-import { $injectTokens } from "../../injection-tokens.js";
+import { createPersistentProxy } from "../../services/storage/storage.ts";
+import { $injectTokens } from "../../injection-tokens.ts";
 import { validateArray } from "../../shared/validate.ts";
 import type {
   Constructor,
@@ -247,17 +247,17 @@ export function createInjector(
             const cookieOpts = backendOrConfig?.cookie ?? {};
 
             return createPersistentProxy(instance, name, {
-              getItem(key) {
+              getItem(key: string) {
                 const raw = $cookie.get(key);
 
                 return isNullOrUndefined(raw) ? null : raw;
               },
 
-              setItem(k, v) {
+              setItem(k: string, v: string) {
                 $cookie.put(k, v, cookieOpts);
               },
 
-              removeItem(k) {
+              removeItem(k: string) {
                 $cookie.remove(k, cookieOpts);
               },
 

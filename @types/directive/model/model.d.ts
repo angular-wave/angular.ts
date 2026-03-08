@@ -41,7 +41,15 @@ export const ngModelMinErr: (arg0: string, ...arg1: any[]) => Error;
  */
 export class NgModelController {
   static $nonscope: boolean;
-  static $inject: string[];
+  static $inject: (
+    | "$attrs"
+    | "$scope"
+    | "$element"
+    | "$animate"
+    | "$exceptionHandler"
+    | "$interpolate"
+    | "$parse"
+  )[];
   /**
    * @param {ng.Scope} $scope
    * @param {ng.ExceptionHandlerService} $exceptionHandler
@@ -101,29 +109,17 @@ export class NgModelController {
   $name: any;
   _parentForm: {
     $nonscope: boolean;
-    $addControl: Function;
+    $addControl: () => void;
     $getControls: () => any[];
-    _renameControl: Function;
-    $removeControl: Function;
-    $setValidity:
-      | Function
-      | ((key: any, isValid: boolean | undefined | null, control: any) => any);
-    $setDirty: Function;
-    $setPristine: Function;
-    $setSubmitted: Function;
-    _setSubmitted: Function;
+    _renameControl: (control: any, name: any) => void;
+    $removeControl: () => void;
+    $setValidity: () => void;
+    $setDirty: () => void;
+    $setPristine: () => void;
+    $setSubmitted: () => void;
+    _setSubmitted: () => void;
   };
-  $options: {
-    _options: import("../model-options/model-options.js").ModelOptionsConfig;
-    getOption(name: string):
-      | string
-      | boolean
-      | number
-      | {
-          [x: string]: number;
-        };
-    createChild(options: ModelOptionsConfig): /*elided*/ any;
-  };
+  $options: import("../model-options/model-options.ts").ModelOptions;
   _updateEvents: string;
   /**
    * @param {Event} ev

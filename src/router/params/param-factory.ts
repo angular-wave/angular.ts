@@ -6,7 +6,7 @@ export class ParamFactory {
   urlServiceConfig: UrlConfigProvider;
 
   /**
-   * @param {import("../url/url-config.js").UrlConfigProvider} urlServiceConfig
+   * @param {import("../url/url-config.ts").UrlConfigProvider} urlServiceConfig
    */
   constructor(urlServiceConfig: UrlConfigProvider) {
     this.urlServiceConfig = urlServiceConfig;

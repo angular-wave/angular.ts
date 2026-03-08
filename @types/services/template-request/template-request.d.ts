@@ -11,7 +11,7 @@
  * - Provide a sensible default for template fetching (e.g. `Accept: text/html`)
  * - Keep `httpOptions` overridable during config phase
  */
-export class TemplateRequestProvider {
+export declare class TemplateRequestProvider {
   /**
    * Optional `$http.get()` config applied to every template request.
    *
@@ -25,11 +25,13 @@ export class TemplateRequestProvider {
    * @type {ng.RequestShortcutConfig}
    */
   httpOptions: ng.RequestShortcutConfig;
+  constructor();
   $get: (
-    | string
+    | "$http"
+    | "$templateCache"
     | ((
         $templateCache: ng.TemplateCacheService,
         $http: ng.HttpService,
-      ) => ng.TemplateRequestService)
+      ) => (templateUrl: string) => Promise<string>)
   )[];
 }

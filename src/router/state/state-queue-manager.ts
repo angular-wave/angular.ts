@@ -15,7 +15,7 @@ export class StateQueueManager {
 
   /**
    * @param {import("./state-registry.ts").StateRegistryProvider} stateRegistry
-   * @param {import("../url/url-rules.js").UrlRules} urlServiceRules
+   * @param {import("../url/url-rules.ts").UrlRules} urlServiceRules
    * @param {import("./interface.ts").StateStore} states
    * @param {import("./state-builder.ts").StateBuilder} builder
    * @param {StateRegistryListener[]} listeners

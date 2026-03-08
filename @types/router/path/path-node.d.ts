@@ -3,7 +3,7 @@ import type { RawParams } from "../params/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { GetParamsFn } from "./interface.ts";
 import type { ViewConfig } from "../state/views.ts";
-import type { Resolvable } from "../resolve/resolvable.js";
+import type { Resolvable } from "../resolve/resolvable.ts";
 /**
  * A node in a [[TreeChanges]] path
  *

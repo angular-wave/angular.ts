@@ -29,10 +29,10 @@ import {
   PENDING_CLASS,
   cachedToggleClass,
   nullFormCtrl,
-} from "../form/form.js";
-import { defaultModelOptions } from "../model-options/model-options.js";
-import { startingTag } from "../../shared/dom.js";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+} from "../form/form.ts";
+import { defaultModelOptions } from "../model-options/model-options.ts";
+import { startingTag } from "../../shared/dom.ts";
+import { $injectTokens as $t } from "../../injection-tokens.ts";
 
 export const ngModelMinErr = minErr("ngModel");
 
@@ -258,7 +258,7 @@ export class NgModelController {
     }
 
     /**
-     * @param {NgModelController | import("../form/form.js").FormController} ctrl
+     * @param {NgModelController | import("../form/form.ts").FormController} ctrl
      * @param {string} validationErrorKeyParam
      * @param {boolean | null | undefined} isValid
      */
@@ -324,7 +324,11 @@ export class NgModelController {
     }
 
     toggleValidationCss(this, validationErrorKey, combinedState);
-    this._parentForm.$setValidity(validationErrorKey, combinedState, this);
+    /** @type {any} */ (this._parentForm).$setValidity(
+      validationErrorKey,
+      combinedState,
+      this,
+    );
   }
 
   _initGetterSetters() {
@@ -1030,7 +1034,7 @@ export class NgModelController {
   $overrideModelOptions(options) {
     this._removeAllEventListeners();
     this.$options = this.$options.createChild(options);
-    this._updateEvents = this.$options._options.updateOn;
+    this._updateEvents = this.$options._options.updateOn || "";
     this._setUpdateOnEvents();
   }
 

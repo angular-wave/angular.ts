@@ -1,25 +1,9 @@
 /**
- * @param {import("./animation.js").AnimationProvider} $$animationProvider
+ * @param {import("./animation.ts").AnimationProvider} $$animationProvider
  */
-export function AnimateCssDriverProvider(
-  $$animationProvider: import("./animation.js").AnimationProvider,
+export declare function AnimateCssDriverProvider(
+  $$animationProvider: any,
 ): void;
-export class AnimateCssDriverProvider {
-  /**
-   * @param {import("./animation.js").AnimationProvider} $$animationProvider
-   */
-  constructor($$animationProvider: import("./animation.js").AnimationProvider);
-  /**
-   * @returns {Function}
-   */
-  $get: (
-    | string
-    | ((
-        $animateCss: any,
-        $rootElement: HTMLElement,
-      ) => (animationDetails: import("./interface.ts").AnimationDetails) => any)
-  )[];
-}
-export namespace AnimateCssDriverProvider {
-  let $inject: string[];
+export declare namespace AnimateCssDriverProvider {
+  var $inject: string[];
 }

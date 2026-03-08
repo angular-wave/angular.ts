@@ -9,105 +9,21 @@
  *
  * Note that serializer will sort the request parameters alphabetically.
  */
-export function HttpParamSerializerProvider(): void;
-export class HttpParamSerializerProvider {
-  /**
-   * @returns {import('./interface.ts').HttpParamSerializer}
-   * A function that serializes parameters into a query string.
-   */
-  $get: () => import("./interface.ts").HttpParamSerializer;
-}
+export declare function HttpParamSerializerProvider(this: {
+  $get?: () => import("./interface.ts").HttpParamSerializer;
+}): void;
 /**
  * @param {unknown} data
  * @param {(arg0: string) => any} headers
  */
-export function defaultHttpResponseTransform(
+export declare function defaultHttpResponseTransform(
   data: unknown,
   headers: (arg0: string) => any,
 ): unknown;
 /**
  * Use `$httpProvider` to change the default behavior of the {@link ng.$http $http} service.
  */
-export function HttpProvider(): void;
-export class HttpProvider {
-  defaults: import("./interface.ts").HttpProviderDefaults;
-  /**
-   * Configure $http service to combine processing of multiple http responses received at around
-   * the same time via {@link ng.$rootScope.Scope#$applyAsync $rootScope.$applyAsync}. This can result in
-   * significant performance improvement for bigger applications that make many HTTP requests
-   * concurrently (common during application bootstrap).
-   *
-   * Defaults to false. If no value is specified, returns the current configured value.
-   *
-   * @param {boolean=} value If true, when requests are loaded, they will schedule a deferred
-   *    "apply" on the next tick, giving time for subsequent requests in a roughly ~10ms window
-   *    to load and share the same digest cycle.
-   *
-   * @returns {boolean|Object} If a value is specified, returns the $httpProvider for chaining.
-   *    otherwise, returns the current configured value.
-   */
-  useApplyAsync: (value?: boolean | undefined) => boolean | any;
-  /**
-   * Array containing service factories for all synchronous or asynchronous {@link ng.$http $http}
-   * pre-processing of request or postprocessing of responses.
-   *
-   * These service factories are ordered by request, i.e. they are applied in the same order as the
-   * array, on request, but reverse order, on response.
-   *
-   * {@link ng.$http#interceptors Interceptors detailed info}
-   * @type {Array<string | ng.Injectable<import("./interface.ts").HttpInterceptorFactory>>}
-   */
-  interceptors: Array<
-    string | ng.Injectable<import("./interface.ts").HttpInterceptorFactory>
-  >;
-  /**
-   * Array containing URLs whose origins are trusted to receive the XSRF token. See the
-   * {@link ng.$http#security-considerations Security Considerations} sections for more details on
-   * XSRF.
-   *
-   * **Note:** An "origin" consists of the [URI scheme](https://en.wikipedia.org/wiki/URI_scheme),
-   * the [hostname](https://en.wikipedia.org/wiki/Hostname) and the
-   * [port number](https://en.wikipedia.org/wiki/Port_(computer_networking). For `http:` and
-   * `https:`, the port number can be omitted if using th default ports (80 and 443 respectively).
-   * Examples: `http://example.com`, `https://api.example.com:9876`
-   *
-   * <div class="alert alert-warning">
-   *   It is not possible to trust specific URLs/paths. The `path`, `query` and `fragment` parts
-   *   of a URL will be ignored. For example, `https://foo.com/path/bar?query=baz#fragment` will be
-   *   treated as `https://foo.com`, meaning that **all** requests to URLs starting with
-   *   `https://foo.com/` will include the XSRF token.
-   * </div>
-   *
-   * @example
-   *
-   * ```js
-   * // App served from `https://example.com/`.
-   * angular.
-   *   module('xsrfTrustedOriginsExample', []).
-   *   config(['$httpProvider', function($httpProvider) {
-   *     $httpProvider.xsrfTrustedOrigins.push('https://api.example.com');
-   *   }]).
-   *   run(['$http', function($http) {
-   *     // The XSRF token will be sent.
-   *     $http.get('https://api.example.com/preferences').then(...);
-   *
-   *     // The XSRF token will NOT be sent.
-   *     $http.get('https://stats.example.com/activity').then(...);
-   *   }]);
-   * ```
-   *
-   * @type {string[]}
-   */
-  xsrfTrustedOrigins: string[];
-  $get: (
-    | string
-    | ((
-        $injector: ng.InjectorService,
-        $sce: ng.SceService,
-        $cookie: ng.CookieService,
-      ) => ng.HttpService)
-  )[];
-}
+export declare function HttpProvider(this: any): void;
 /**
  * Makes an HTTP request using XMLHttpRequest with flexible options.
  *
@@ -123,7 +39,7 @@ export class HttpProvider {
  * @param {ng.RequestConfig["uploadEventHandlers"]} [uploadEventHandlers] - Event listeners for the XMLHttpRequest.upload object.
  * @returns {void}
  */
-export function http(
+export declare function http(
   method: string,
   url?: string,
   post?: any,
@@ -134,20 +50,10 @@ export function http(
     statusText: string,
     xhrStatus: import("./interface.ts").HttpResponseStatus,
   ) => void,
-  headers?: {
-    [x: string]: string;
-  },
+  headers?: Record<string, string | undefined>,
   timeout?: number | Promise<any>,
   withCredentials?: boolean,
   responseType?: XMLHttpRequestResponseType,
   eventHandlers?: ng.RequestConfig["eventHandlers"],
   uploadEventHandlers?: ng.RequestConfig["uploadEventHandlers"],
 ): void;
-export type Http = number;
-export namespace Http {
-  let _OK: number;
-  let _MultipleChoices: number;
-  let _BadRequest: number;
-  let _NotFound: number;
-  let _ErrorMax: number;
-}

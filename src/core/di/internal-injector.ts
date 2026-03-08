@@ -6,7 +6,7 @@ import {
 } from "../../shared/utils.js";
 import type { AnnotatedFactory } from "../../interface.ts";
 import { annotate, isClass } from "./di.ts";
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import type { ProviderCache } from "./interface.ts";
 import type { NgModule } from "./ng-module/ng-module.ts";
 

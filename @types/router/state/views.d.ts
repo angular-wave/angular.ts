@@ -1,8 +1,8 @@
-import { ResolveContext } from "../resolve/resolve-context.js";
+import { ResolveContext } from "../resolve/resolve-context.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
-import type { TemplateFactoryProvider } from "../template-factory.js";
+import type { TemplateFactoryProvider } from "../template-factory.ts";
 /**
  * @return {(path: PathNode[], view: ViewDeclaration) => ViewConfig}
  */

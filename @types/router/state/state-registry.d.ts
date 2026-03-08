@@ -1,7 +1,7 @@
 import { StateMatcher } from "./state-matcher.ts";
 import { StateBuilder } from "./state-builder.ts";
 import { StateQueueManager } from "./state-queue-manager.ts";
-import { ResolveContext } from "../resolve/resolve-context.js";
+import { ResolveContext } from "../resolve/resolve-context.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type {
   BuilderFunction,
@@ -21,7 +21,12 @@ import type { UrlRules } from "../url/url-rules.ts";
  *
  */
 export declare class StateRegistryProvider {
-  static $inject: string[];
+  static $inject: (
+    | "$routerProvider"
+    | "$stateProvider"
+    | "$urlProvider"
+    | "$viewProvider"
+  )[];
   states: StateStore;
   urlService: ng.UrlService;
   urlServiceRules: UrlRules;
@@ -43,7 +48,7 @@ export declare class StateRegistryProvider {
     globals: ng.RouterService,
     viewService: ng.ViewService,
   );
-  $get: (string | (($injector: InjectorService) => this))[];
+  $get: ("$injector" | (($injector: InjectorService) => this))[];
   /**
    * This is a [[StateBuilder.builder]] function for angular1 `onEnter`, `onExit`,
    * `onRetain` callback hooks on a [[StateDeclaration]].

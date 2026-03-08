@@ -1,47 +1,16 @@
-/** @typedef {import('../interface.ts').ServiceProvider} ServiceProvider } */
-/**
- * Global router state
- *
- * This is where we hold the global mutable state such as current state, current
- * params, current transition, etc.
- */
-export class RouterProvider {
-  /**
-   * Current parameter values
-   *
-   * The parameter values from the latest successful transition
-   * @type {StateParams}
-   */
-  params: StateParams;
-  /**
-   * @type {number}
-   */
-  _lastStartedTransitionId: number;
-  /**
-   * @type {Queue<ng.Transition>}
-   */
-  _transitionHistory: Queue<ng.Transition>;
-  /**
-   * @type {Queue<ng.Transition>}
-   */
-  _successfulTransitions: Queue<ng.Transition>;
-  /**
-   * @type {ng.StateDeclaration|undefined}
-   */
-  current: ng.StateDeclaration | undefined;
-  /**
-   * @type {ng.StateObject|undefined}
-   */
-  $current: ng.StateObject | undefined;
-  /**
-   * @type {ng.Transition|undefined}
-   */
-  transition: ng.Transition | undefined;
-  $get: () => this;
-}
-/**
- * }
- */
-export type ServiceProvider = import("../interface.ts").ServiceProvider;
+import { Queue } from "../shared/queue.ts";
 import { StateParams } from "./params/state-params.ts";
-import { Queue } from "../shared/queue.js";
+import type { StateDeclaration } from "./state/interface.ts";
+import type { StateObject } from "./state/state-object.ts";
+import type { Transition } from "./transition/transition.ts";
+export declare class RouterProvider {
+  params: StateParams;
+  _lastStartedTransitionId: number;
+  _transitionHistory: Queue<Transition>;
+  _successfulTransitions: Queue<Transition>;
+  current: StateDeclaration | undefined;
+  $current: StateObject | undefined;
+  transition: Transition | undefined;
+  constructor();
+  $get: () => RouterProvider;
+}

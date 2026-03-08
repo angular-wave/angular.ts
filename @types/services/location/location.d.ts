@@ -1,3 +1,176 @@
+import type { Html5Mode, UrlChangeListener } from "./interface.ts";
+export declare class Location {
+  appBase: string;
+  appBaseNoFile: string;
+  html5: boolean;
+  basePrefix?: string;
+  hashPrefix?: string;
+  absUrl: string;
+  _url: string;
+  _updateBrowser?: () => void;
+  _state: History["state"];
+  /**
+   * @ignore
+   * Current url
+   * @type {string | undefined}
+   */
+  /**
+   * @param {string} appBase application base URL
+   * @param {string} appBaseNoFile application base URL stripped of any filename
+   * @param {boolean} [html5] Defaults to true
+   * @param {string} [prefix] URL path prefix for html5 mode or hash prefix for hashbang mode
+   */
+  constructor(
+    appBase: string,
+    appBaseNoFile: string,
+    html5?: boolean,
+    prefix?: string,
+  );
+  /**
+   * Change path, search and hash, when called with parameter and return `$location`.
+   *
+   * @param {string} url New URL without base prefix (e.g. `/path?a=b#hash`)
+   * @return {Location} url
+   */
+  setUrl(url: string): this;
+  /**
+   * Return URL (e.g. `/path?a=b#hash`) when called without any parameter.
+   *
+   * @return {string} url
+   */
+  getUrl(): string;
+  /**
+   * Change path parameter and return `$location`.
+   *
+   * @param {(string|number)} path New path
+   * @return {Location}
+   */
+  setPath(path: string | number | null): this;
+  /**
+   *
+   * Return path of current URL
+   *
+   * @return {string}
+   */
+  getPath(): string;
+  /**
+   * Changes the hash fragment when called with a parameter and returns `$location`.
+   * @param {(string|number)} hash New hash fragment
+   * @return {Location} hash
+   */
+  setHash(hash: string | number | null): this;
+  /**
+   * Returns the hash fragment when called without any parameters.
+   * @return {string} hash
+   */
+  getHash(): string;
+  /**
+   * Sets the search part (as object) of current URL
+   *
+   * @param {string|Object} search New search params - string or hash object.
+   * @param {(string|number|Array<string>|boolean)=} paramValue If search is a string or number, then paramValue will override only a single search property.
+   * @returns {Object} Search object or Location object
+   */
+  setSearch(
+    search: string | number | Record<string, any>,
+    paramValue?: string | number | Array<string> | boolean | null,
+  ): this;
+  /**
+   * Returns the search part (as object) of current URL
+   *
+   * @returns {Object} Search object or Location object
+   */
+  getSearch(): Record<string, any>;
+  /**
+   * @private
+   * Compose url and update `url` and `absUrl` property
+   */
+  _compose(): void;
+  /**
+   * Change the history state object when called with one parameter and return `$location`.
+   * The state object is later passed to `pushState` or `replaceState`.
+   * See {@link https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state|History.state}
+   *
+   * NOTE: This method is supported only in HTML5 mode and only in browsers supporting
+   * the HTML5 History API (i.e. methods `pushState` and `replaceState`). If you need to support
+   * older browsers (like IE9 or Android < 4.0), don't use this method.
+   * @param {any} state
+   * @returns {Location}
+   */
+  setState(state: any): this;
+  /**
+   * Return the history state object
+   * @returns {any}
+   */
+  getState(): History["state"];
+  /**
+   * @param {string} url
+   * @param {string} relHref
+   * @returns {boolean}
+   */
+  parseLinkUrl(url: string, relHref: string | null): boolean;
+  /**
+   * Parse given HTML5 (regular) URL string into properties
+   * @param {string} url HTML5 URL
+   */
+  parse(url: string): void;
+}
+export declare class LocationProvider {
+  hashPrefixConf: string;
+  html5ModeConf: Html5Mode;
+  _urlChangeListeners: UrlChangeListener[];
+  _urlChangeInit: boolean;
+  _cachedState: History["state"];
+  _lastHistoryState: History["state"];
+  _lastBrowserUrl: string;
+  lastCachedState: History["state"];
+  constructor();
+  /**
+   * Updates the browser's current URL and history state.
+   *
+   * @param {string|undefined} url - The target URL to navigate to.
+   * @param {*} [state=null] - Optional history state object to associate with the new URL.
+   * @returns {LocationProvider}
+   */
+  setUrl(url: string | undefined, state?: any): this;
+  /**
+   * Returns the current URL with any empty hash (`#`) removed.
+   * @return {string}
+   */
+  getBrowserUrl(): string;
+  /**
+   * Returns the cached state.
+   * @returns {History['state']} The cached state.
+   */
+  state(): History["state"];
+  /**
+   * Caches the current state.
+   *
+   * @private
+   */
+  cacheState(): void;
+  /**
+   * Fires the state or URL change event.
+   */
+  _fireStateOrUrlChange(): void;
+  /**
+   * Registers a callback to be called when the URL changes.
+   *
+   * @param {import("./interface.ts").UrlChangeListener} callback - The callback function to register.
+   * @returns void
+   */
+  _onUrlChange(callback: UrlChangeListener): void;
+  $get: (
+    | "$exceptionHandler"
+    | "$rootScope"
+    | "$rootElement"
+    | ((
+        $rootScope: ng.Scope,
+        $rootElement: HTMLElement,
+        $exceptionHandler: ng.ExceptionHandlerService,
+      ) => Location)
+  )[];
+}
 /**
  * ///////////////////////////
  *     PRIVATE HELPERS
@@ -28,7 +201,7 @@
  * encodePath("folder1%2Fsub/folder2")
  * // returns "folder1%2Fsub/folder2"
  */
-export function encodePath(path: string): string;
+export declare function encodePath(path: string): string;
 /**
  * @ignore
  * Decodes each segment of a URL path.
@@ -41,7 +214,7 @@ export function encodePath(path: string): string;
  * @param {boolean} html5Mode - If true, encodes forward slashes in segments as "%2F".
  * @returns {string} The decoded path with segments optionally encoding slashes.
  */
-export function decodePath(path: string, html5Mode: boolean): string;
+export declare function decodePath(path: string, html5Mode: boolean): string;
 /**
  * @ignore
  * Normalizes a URL path by encoding the path segments, query parameters, and hash fragment.
@@ -69,15 +242,10 @@ export function decodePath(path: string, html5Mode: boolean): string;
  * normalizePath("user profile/images", null, null)
  * // returns "user%20profile/images"
  */
-export function normalizePath(
+export declare function normalizePath(
   pathValue: string,
-  searchValue:
-    | {
-        [x: string]: any;
-      }
-    | string
-    | null,
-  hashValue: string | null,
+  searchValue: Record<string, any> | string | null | undefined,
+  hashValue: string | null | undefined,
 ): string;
 /**
  * @ignore
@@ -87,7 +255,7 @@ export function normalizePath(
  * @param {boolean} html5Mode - Whether HTML5 mode is enabled (affects decoding).
  * @throws Will throw an error if the URL starts with invalid slashes.
  */
-export function parseAppUrl(url: string, html5Mode: boolean): void;
+export declare function parseAppUrl(url: string, html5Mode: boolean): void;
 /**
  * @ignore
  * Returns the substring of `url` after the `base` string if `url` starts with `base`.
@@ -97,7 +265,10 @@ export function parseAppUrl(url: string, html5Mode: boolean): void;
  * @returns {string|undefined} returns text from `url` after `base` or `undefined` if it does not begin with
  *                   the expected string.
  */
-export function stripBaseUrl(base: string, url: string): string | undefined;
+export declare function stripBaseUrl(
+  base: string,
+  url: string,
+): string | undefined;
 /**
  * @ignore
  * Removes the hash fragment (including the '#') from the given URL string.
@@ -105,7 +276,7 @@ export function stripBaseUrl(base: string, url: string): string | undefined;
  * @param {string} url - The URL string to process.
  * @returns {string} The URL without the hash fragment.
  */
-export function stripHash(url: string): string;
+export declare function stripHash(url: string): string;
 /**
  * @ignore
  * Removes the file name (and any hash) from a URL, returning the base directory path.
@@ -120,7 +291,7 @@ export function stripHash(url: string): string;
  * @param {string} url - The URL from which to strip the file name and hash.
  * @returns {string} The base path of the URL, ending with a slash.
  */
-export function stripFile(url: string): string;
+export declare function stripFile(url: string): string;
 /**
  * @ignore
  * Extracts the base server URL (scheme, host, and optional port) from a full URL.
@@ -137,7 +308,7 @@ export function stripFile(url: string): string;
  * @param {string} url - The full URL to extract the server base from.
  * @returns {string} The server base, including scheme and host (and port if present).
  */
-export function serverBase(url: string): string;
+export declare function serverBase(url: string): string;
 /**
  * @ignore
  * Determine if two URLs are equal despite potential differences in encoding,
@@ -147,186 +318,4 @@ export function serverBase(url: string): string;
  * @param {string} y - Second URL to compare.
  * @returns {boolean} True if URLs are equivalent after normalization.
  */
-export function urlsEqual(x: string, y: string): boolean;
-export class Location {
-  /**
-   * @param {string} appBase application base URL
-   * @param {string} appBaseNoFile application base URL stripped of any filename
-   * @param {boolean} [html5] Defaults to true
-   * @param {string} [prefix] URL path prefix for html5 mode or hash prefix for hashbang mode
-   */
-  constructor(
-    appBase: string,
-    appBaseNoFile: string,
-    html5?: boolean,
-    prefix?: string,
-  );
-  /**
-   * @ignore
-   * Current url
-   * @type {string | undefined}
-   */
-  _url: string | undefined;
-  /**
-   * @ignore
-   * Callback to update browser url
-   * @type {Function | undefined}
-   */
-  _updateBrowser: Function | undefined;
-  /** @type {string} */
-  appBase: string;
-  /** @type {string} */
-  appBaseNoFile: string;
-  /** @type {boolean} */
-  html5: boolean;
-  /** @type {string | undefined} */
-  basePrefix: string | undefined;
-  /** @type {string | undefined} */
-  hashPrefix: string | undefined;
-  /**
-   * An absolute URL is the full URL, including protocol (http/https ), the optional subdomain (e.g. www ), domain (example.com), and path (which includes the directory and slug)
-   * with all segments encoded according to rules specified in [RFC 3986](http://www.ietf.org/rfc/rfc3986.txt).
-   * @type {string}
-   */
-  absUrl: string;
-  /**
-   * Change path, search and hash, when called with parameter and return `$location`.
-   *
-   * @param {string} url New URL without base prefix (e.g. `/path?a=b#hash`)
-   * @return {Location} url
-   */
-  setUrl(url: string): Location;
-  /**
-   * Return URL (e.g. `/path?a=b#hash`) when called without any parameter.
-   *
-   * @return {string} url
-   */
-  getUrl(): string;
-  /**
-   * Change path parameter and return `$location`.
-   *
-   * @param {(string|number)} path New path
-   * @return {Location}
-   */
-  setPath(path: string | number): Location;
-  /**
-   *
-   * Return path of current URL
-   *
-   * @return {string}
-   */
-  getPath(): string;
-  /**
-   * Changes the hash fragment when called with a parameter and returns `$location`.
-   * @param {(string|number)} hash New hash fragment
-   * @return {Location} hash
-   */
-  setHash(hash: string | number): Location;
-  /**
-   * Returns the hash fragment when called without any parameters.
-   * @return {string} hash
-   */
-  getHash(): string;
-  /**
-   * Sets the search part (as object) of current URL
-   *
-   * @param {string|Object} search New search params - string or hash object.
-   * @param {(string|number|Array<string>|boolean)=} paramValue If search is a string or number, then paramValue will override only a single search property.
-   * @returns {Object} Search object or Location object
-   */
-  setSearch(
-    search: string | any,
-    paramValue?: (string | number | Array<string> | boolean) | undefined,
-    ...args: any[]
-  ): any;
-  /**
-   * Returns the search part (as object) of current URL
-   *
-   * @returns {Object} Search object or Location object
-   */
-  getSearch(): any;
-  /**
-   * @private
-   * Compose url and update `url` and `absUrl` property
-   */
-  private _compose;
-  /**
-   * Change the history state object when called with one parameter and return `$location`.
-   * The state object is later passed to `pushState` or `replaceState`.
-   * See {@link https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state|History.state}
-   *
-   * NOTE: This method is supported only in HTML5 mode and only in browsers supporting
-   * the HTML5 History API (i.e. methods `pushState` and `replaceState`). If you need to support
-   * older browsers (like IE9 or Android < 4.0), don't use this method.
-   * @param {any} state
-   * @returns {Location}
-   */
-  setState(state: any): Location;
-  _state: any;
-  /**
-   * Return the history state object
-   * @returns {any}
-   */
-  getState(): any;
-  /**
-   * @param {string} url
-   * @param {string} relHref
-   * @returns {boolean}
-   */
-  parseLinkUrl(url: string, relHref: string): boolean;
-  /**
-   * Parse given HTML5 (regular) URL string into properties
-   * @param {string} url HTML5 URL
-   */
-  parse(url: string): void;
-}
-export class LocationProvider {
-  /** @type {string} */
-  hashPrefixConf: string;
-  /** @type {import("./interface.ts").Html5Mode} */
-  html5ModeConf: import("./interface.ts").Html5Mode;
-  /** @private @type {Array<import("./interface.ts").UrlChangeListener>} */
-  private _urlChangeListeners;
-  /** @private */
-  private _urlChangeInit;
-  /** @private @type {History['state']} */
-  private _cachedState;
-  /** @private @type {History['state']} */
-  private _lastHistoryState;
-  /** @private @type {string} */
-  private _lastBrowserUrl;
-  /**
-   * Updates the browser's current URL and history state.
-   *
-   * @param {string|undefined} url - The target URL to navigate to.
-   * @param {*} [state=null] - Optional history state object to associate with the new URL.
-   * @returns {LocationProvider}
-   */
-  setUrl(url: string | undefined, state?: any): LocationProvider;
-  /**
-   * Returns the current URL with any empty hash (`#`) removed.
-   * @return {string}
-   */
-  getBrowserUrl(): string;
-  /**
-   * Returns the cached state.
-   * @returns {History['state']} The cached state.
-   */
-  state(): History["state"];
-  /**
-   * Caches the current state.
-   *
-   * @private
-   */
-  private cacheState;
-  lastCachedState: any;
-  $get: (
-    | string
-    | ((
-        $rootScope: ng.Scope,
-        $rootElement: HTMLElement,
-        $exceptionHandler: ng.ExceptionHandlerService,
-      ) => Location)
-  )[];
-  #private;
-}
+export declare function urlsEqual(x: string, y: string): boolean;

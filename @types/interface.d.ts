@@ -1,4 +1,4 @@
-import { Attributes } from "./core/compile/attributes.js";
+import { Attributes } from "./core/compile/attributes.ts";
 import type {
   BoundTranscludeFn,
   CloneAttachFn,

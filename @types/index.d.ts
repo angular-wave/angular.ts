@@ -1,2 +1,2 @@
-export const angular: Angular;
-import { Angular } from "./angular.js";
+import { Angular } from "./angular.ts";
+export declare const angular: Angular;

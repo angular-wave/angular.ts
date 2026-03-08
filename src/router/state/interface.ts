@@ -2,7 +2,7 @@ import { ParamDeclaration, RawParams } from "../params/interface.ts";
 import { StateObject } from "./state-object.ts";
 import { ViewContext } from "../view/interface.ts";
 import { Injectable } from "../../interface.ts";
-import { Transition } from "../transition/transition.js";
+import { Transition } from "../transition/transition.ts";
 import {
   TransitionStateHookFn,
   TransitionOptions,
@@ -13,9 +13,9 @@ import {
   ResolvableLiteral,
   ProviderLike,
 } from "../resolve/interface.ts";
-import { Resolvable } from "../resolve/resolvable.js";
+import { Resolvable } from "../resolve/resolvable.ts";
 import { TargetState } from "./target-state.ts";
-import { Glob } from "../glob/glob.js";
+import { Glob } from "../glob/glob.ts";
 
 export type StateOrName = string | StateDeclaration | StateObject;
 
@@ -882,7 +882,7 @@ export interface StateDeclaration {
    * {
    *   name: 'parent.**',
    *   url: '/parent',
-   *   lazyLoad: () => import('./lazy.states.js')
+   *   lazyLoad: () => import('./lazy.states.ts')
    * }
    * ```
    *
@@ -891,8 +891,8 @@ export interface StateDeclaration {
    * This file is lazy loaded.  It exports an array of states.
    *
    * ```js
-   * import {ChildComponent} from "./child.component.js";
-   * import {ParentComponent} from "./parent.component.js";
+   * import {ChildComponent} from "./child.component.ts";
+   * import {ParentComponent} from "./parent.component.ts";
    *
    * // This fully defined state replaces the future state
    * let parentState = {

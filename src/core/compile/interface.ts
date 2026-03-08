@@ -1,5 +1,5 @@
 import type { Scope } from "../scope/scope.js";
-import type { NodeRef } from "../../shared/noderef.js";
+import type { NodeRef } from "../../shared/noderef.ts";
 
 export type TranscludedNodes = Node | Node[] | NodeList | null;
 export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;

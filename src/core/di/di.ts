@@ -4,7 +4,7 @@ import {
   isFunction,
   minErr,
 } from "../../shared/utils.js";
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import type { AnnotatedFactory } from "../../interface.ts";
 
 const $injectorMinErr = minErr($injectTokens._injector);

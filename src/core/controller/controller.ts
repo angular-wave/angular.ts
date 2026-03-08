@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import type { ControllerConstructor, Injectable } from "../../interface.ts";
 import {
   assertArgFn,

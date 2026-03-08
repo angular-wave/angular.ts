@@ -2,18 +2,15 @@
  * A simple bounded FIFO queue with optional eviction notifications.
  * @template T
  */
-export class Queue<T> {
+export declare class Queue<T> {
+  _items: T[];
+  _limit: number | null;
+  _evictListeners: Array<(item: T) => void>;
   /**
    * @param {T[]} [items=[]] - Initial queue items.
    * @param {number|null} [limit=null] - Maximum allowed items before eviction (null = unlimited).
    */
   constructor(items?: T[], limit?: number | null);
-  /** @type {T[]} */
-  _items: T[];
-  /** @type {number|null} */
-  _limit: number | null;
-  /** @type {Array<(item: T) => void>} */
-  _evictListeners: Array<(item: T) => void>;
   /**
    * Register a listener that will be called with the evicted item.
    * @param {(item: T) => void} listener

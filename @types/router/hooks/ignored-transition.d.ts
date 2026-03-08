@@ -1,3 +1,4 @@
-export function registerIgnoredTransitionHook(
-  transitionService: ng.TransitionService,
-): import("../transition/interface.ts").DeregisterFn;
+import type { TransitionService } from "../transition/interface.ts";
+export declare const registerIgnoredTransitionHook: (
+  transitionService: TransitionService,
+) => import("../transition/interface.ts").DeregisterFn;

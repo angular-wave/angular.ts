@@ -1,7 +1,8 @@
-export function registerLoadEnteringViews(
-  transitionService: ng.TransitionService,
-): import("../transition/interface.ts").DeregisterFn;
-export function registerActivateViews(
-  transitionService: ng.TransitionService,
+import type { TransitionService } from "../transition/interface.ts";
+export declare const registerLoadEnteringViews: (
+  transitionService: TransitionService,
+) => import("../transition/interface.ts").DeregisterFn;
+export declare const registerActivateViews: (
+  transitionService: TransitionService,
   viewService: ng.ViewService,
-): import("../transition/interface.ts").DeregisterFn;
+) => import("../transition/interface.ts").DeregisterFn;

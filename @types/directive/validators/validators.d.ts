@@ -21,11 +21,13 @@
  * custom controls, `$isEmpty()` can be overwritten to account for a $viewValue that is not string-based.
  *
  */
-export const requiredDirective: (
-  | string
-  | ((
-      $parse: import("../../core/parse/interface.ts").ParseService,
-    ) => ng.Directive)
+export declare const requiredDirective: (
+  | "$parse"
+  | (($parse: any) => {
+      restrict: string;
+      require: string;
+      link: (scope: any, _elm: any, attr: any, ctrl: any) => void;
+    })
 )[];
 /**
  * @param {String|RegExp} ngPattern AngularTS expression that must evaluate to a `RegExp` or a `String`
@@ -66,9 +68,16 @@ export const requiredDirective: (
  * </ol>
  * </div>
  */
-export const patternDirective: (
-  | string
-  | (($parse: ng.ParseService) => ng.Directive)
+export declare const patternDirective: (
+  | "$parse"
+  | (($parse: any) => {
+      restrict: string;
+      require: string;
+      compile: (
+        _Elm: any,
+        tAttr: any,
+      ) => (scope: any, elm: any, attr: any, ctrl: any) => void;
+    })
 )[];
 /**
  * @param {string} ngMaxlength AngularTS expression that must evaluate to a `Number` or `String`
@@ -100,9 +109,13 @@ export const patternDirective: (
  * </div>
  *
  */
-export const maxlengthDirective: (
-  | string
-  | (($parse: ng.ParseService) => ng.Directive)
+export declare const maxlengthDirective: (
+  | "$parse"
+  | (($parse: any) => {
+      restrict: string;
+      require: string;
+      link: (scope: any, _elm: any, attr: any, ctrl: any) => void;
+    })
 )[];
 /**
  *
@@ -135,7 +148,11 @@ export const maxlengthDirective: (
  * </div>
  *
  */
-export const minlengthDirective: (
-  | string
-  | (($parse: ng.ParseService) => ng.Directive)
+export declare const minlengthDirective: (
+  | "$parse"
+  | (($parse: any) => {
+      restrict: string;
+      require: string;
+      link(scope: any, _elm: any, attr: any, ctrl: any): void;
+    })
 )[];

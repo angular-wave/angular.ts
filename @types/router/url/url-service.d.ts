@@ -7,7 +7,12 @@ import type { MatchResult, UrlParts } from "./interface.ts";
  * API for URL management
  */
 export declare class UrlService {
-  static $inject: string[];
+  static $inject: (
+    | "$locationProvider"
+    | "$routerProvider"
+    | "$stateProvider"
+    | "$urlConfigProvider"
+  )[];
   $location: ng.LocationService | undefined;
   _locationProvider: ng.LocationProvider;
   stateService: import("../../router/state/state-service.ts").StateProvider;
@@ -27,13 +32,13 @@ export declare class UrlService {
   /**
    * @param {ng.LocationProvider} $locationProvider
    * @param {import("../../router/state/state-service.ts").StateProvider} stateProvider
-   * @param {import("../router.js").RouterProvider} globals
+   * @param {import("../router.ts").RouterProvider} globals
    * @param {import("../../router/url/url-config.ts").UrlConfigProvider} urlConfigProvider
    */
   constructor(
     $locationProvider: ng.LocationProvider,
     stateProvider: import("../../router/state/state-service.ts").StateProvider,
-    globals: import("../router.js").RouterProvider,
+    globals: import("../router.ts").RouterProvider,
     urlConfigProvider: import("../../router/url/url-config.ts").UrlConfigProvider,
   );
   /**
@@ -61,7 +66,8 @@ export declare class UrlService {
    */
   getHash(): string;
   $get: (
-    | string
+    | "$location"
+    | "$rootScope"
     | (($location: ng.LocationService, $rootScope: ng.RootScopeService) => this)
   )[];
   /**

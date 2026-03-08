@@ -1,33 +1,3 @@
-/**
- * @param {ng.AnimateService} $animate
- * @returns {ng.Directive<NgMessageCtrl>}
- */
-export function ngMessagesDirective(
-  $animate: ng.AnimateService,
-): ng.Directive<NgMessageCtrl>;
-export namespace ngMessagesDirective {
-  let $inject: string[];
-}
-/**
- * @param {ng.TemplateRequestService} $templateRequest
- * @param {ng.CompileService} $compile
- * @returns {ng.Directive}
- */
-export function ngMessagesIncludeDirective(
-  $templateRequest: ng.TemplateRequestService,
-  $compile: ng.CompileService,
-): ng.Directive;
-export namespace ngMessagesIncludeDirective {
-  let $inject_1: string[];
-  export { $inject_1 as $inject };
-}
-export const ngMessageDirective: ($animate: ng.AnimateService) => ng.Directive;
-export const ngMessageExpDirective: (
-  $animate: ng.AnimateService,
-) => ng.Directive;
-export const ngMessageDefaultDirective: (
-  $animate: ng.AnimateService,
-) => ng.Directive;
 declare class NgMessageCtrl {
   /**
    * @param {HTMLElement} $element
@@ -35,24 +5,7 @@ declare class NgMessageCtrl {
    * @param {ng.Attributes} $attrs
    * @param {ng.AnimateService} $animate
    */
-  constructor(
-    $element: HTMLElement,
-    $scope: ng.Scope,
-    $attrs: ng.Attributes,
-    $animate: ng.AnimateService,
-  );
-  _element: HTMLElement;
-  _scope: ng.Scope;
-  _attrs: ng.Attributes;
-  _animate: import("../../docs.ts").AnimateService;
-  _latestKey: number;
-  _nextAttachId: number;
-  /** @type {Record<string, any>} */
-  _messages: Record<string, any>;
-  _renderLater: boolean;
-  _cachedCollection: {};
-  _head: any;
-  _default: any;
+  constructor($element: any, $scope: any, $attrs: any, $animate: any);
   _getAttachId(): number;
   _render(collection?: {}): void;
   reRender(): void;
@@ -61,23 +14,12 @@ declare class NgMessageCtrl {
    * @param {any} messageCtrl
    * @param {any} isDefault
    */
-  register(
-    comment: {
-      _ngMessageNode: string;
-    },
-    messageCtrl: any,
-    isDefault: any,
-  ): void;
+  register(comment: any, messageCtrl: any, isDefault: any): void;
   /**
    * @param {{ _ngMessageNode: any; }} comment
    * @param {any} isDefault
    */
-  deregister(
-    comment: {
-      _ngMessageNode: any;
-    },
-    isDefault: any,
-  ): void;
+  deregister(comment: any, isDefault: any): void;
   /**
    * @param {any} parent
    * @param {any} comment
@@ -88,24 +30,91 @@ declare class NgMessageCtrl {
    * @param {{ _ngMessageNode: string; }} comment
    * @param {string} key
    */
-  insertMessageNode(
-    parent: HTMLElement,
-    comment: {
-      _ngMessageNode: string;
-    },
-    key: string,
-  ): void;
+  insertMessageNode(parent: any, comment: any, key: any): void;
   /**
    * @param {HTMLElement} parent
    * @param {{ _ngMessageNode: any; }} comment
    * @param {string | number} key
    */
-  removeMessageNode(
-    parent: HTMLElement,
-    comment: {
-      _ngMessageNode: any;
-    },
-    key: string | number,
-  ): void;
+  removeMessageNode(parent: any, comment: any, key: any): void;
 }
+/**
+ * @param {ng.AnimateService} $animate
+ * @returns {ng.Directive<NgMessageCtrl>}
+ */
+export declare function ngMessagesDirective($animate: any): {
+  require: string;
+  restrict: string;
+  controller: ($element: any, $scope: any, $attrs: any) => NgMessageCtrl;
+};
+export declare namespace ngMessagesDirective {
+  var $inject: "$animate"[];
+}
+/**
+ * @param {ng.TemplateRequestService} $templateRequest
+ * @param {ng.CompileService} $compile
+ * @returns {ng.Directive}
+ */
+export declare function ngMessagesIncludeDirective(
+  $templateRequest: any,
+  $compile: any,
+): {
+  restrict: string;
+  require: string;
+  link($scope: any, element: any, attrs: any): void;
+};
+export declare namespace ngMessagesIncludeDirective {
+  var $inject: ("$compile" | "$templateRequest")[];
+}
+export declare const ngMessageDirective: {
+  ($animate: any): {
+    restrict: string;
+    transclude: string;
+    priority: number;
+    terminal: boolean;
+    require: string;
+    link(
+      scope: any,
+      element: any,
+      attrs: any,
+      ngMessagesCtrl: any,
+      $transclude: any,
+    ): void;
+  };
+  $inject: "$animate"[];
+};
+export declare const ngMessageExpDirective: {
+  ($animate: any): {
+    restrict: string;
+    transclude: string;
+    priority: number;
+    terminal: boolean;
+    require: string;
+    link(
+      scope: any,
+      element: any,
+      attrs: any,
+      ngMessagesCtrl: any,
+      $transclude: any,
+    ): void;
+  };
+  $inject: "$animate"[];
+};
+export declare const ngMessageDefaultDirective: {
+  ($animate: any): {
+    restrict: string;
+    transclude: string;
+    priority: number;
+    terminal: boolean;
+    require: string;
+    link(
+      scope: any,
+      element: any,
+      attrs: any,
+      ngMessagesCtrl: any,
+      $transclude: any,
+    ): void;
+  };
+  $inject: "$animate"[];
+};
 export {};

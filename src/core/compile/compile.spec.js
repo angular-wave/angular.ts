@@ -1,6 +1,6 @@
-import { Angular } from "../../angular.js";
+import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
-import { NodeRef } from "../../shared/noderef.js";
+import { NodeRef } from "../../shared/noderef.ts";
 import {
   dealoc,
   getCacheData,
@@ -9,10 +9,10 @@ import {
   getController,
   getScope,
   getIsolateScope,
-} from "../../shared/dom.js";
+} from "../../shared/dom.ts";
 import { isFunction, getNodeName, extend, assert } from "../../shared/utils.js";
-import { Cache } from "../../shared/dom.js";
-import { wait } from "../../shared/test-utils.js";
+import { Cache } from "../../shared/dom.ts";
+import { wait } from "../../shared/test-utils.ts";
 import {
   applyTextInterpolationValue,
   buildInterpolationWatchExpression,
@@ -73,10 +73,10 @@ describe("$compile", () => {
     errorLog = [],
     $sce;
 
-  /** @type {import("../di/ng-module.js").NgModule} */
+  /** @type {import("../di/ng-module.ts").NgModule} */
   let myModule;
 
-  /** @type {import("../di/ng-module.js").NgModule} */
+  /** @type {import("../di/ng-module.ts").NgModule} */
   let module;
 
   /** @type {Angular} */
@@ -4904,7 +4904,7 @@ describe("$compile", () => {
     });
 
     it("should ignore special chars before processing attribute directive name", () => {
-      // a regression https://github.com/angular/angular.js/issues/16278
+      // a regression https://github.com/angular/angular.ts/issues/16278
       myModule.directive("t", () => ({
         restrict: "A",
         link: {
@@ -6397,7 +6397,7 @@ describe("$compile", () => {
         });
 
         it("should support templateUrl with replace", async () => {
-          // a regression https://github.com/angular/angular.js/issues/3792
+          // a regression https://github.com/angular/angular.ts/issues/3792
           module.directive("simple", () => ({
             templateUrl: "/some.html",
             replace: true,
@@ -7917,7 +7917,7 @@ describe("$compile", () => {
           });
 
           it("should not automatically sanitize a[href]", async () => {
-            // Breaking change in https://github.com/angular/angular.js/pull/16378
+            // Breaking change in https://github.com/angular/angular.ts/pull/16378
             element = $compile("<a></a>")($rootScope);
             await wait();
 
@@ -7927,7 +7927,7 @@ describe("$compile", () => {
           });
 
           it("should not automatically sanitize img[src]", async () => {
-            // Breaking change in https://github.com/angular/angular.js/pull/16378
+            // Breaking change in https://github.com/angular/angular.ts/pull/16378
             element = $compile("<img></img>")($rootScope);
             await wait();
             $rootScope.attr.$set("img", "evil:foo()");
@@ -9796,7 +9796,7 @@ describe("$compile", () => {
             });
           });
 
-          // https://github.com/angular/angular.js/issues/15833
+          // https://github.com/angular/angular.ts/issues/15833
           it("should work with ng-model inputs", async () => {
             let componentScope;
 
@@ -12304,7 +12304,7 @@ describe("$compile", () => {
           }).toThrowError(/multidir/);
         });
 
-        // see issue https://github.com/angular/angular.js/issues/12936
+        // see issue https://github.com/angular/angular.ts/issues/12936
         it("should use the proper scope when it is on the root element of a replaced directive template", async () => {
           module
             .directive("isolate", () => ({
@@ -12330,7 +12330,7 @@ describe("$compile", () => {
           expect(element.textContent).toEqual("iso");
         });
 
-        // see issue https://github.com/angular/angular.js/issues/12936
+        // see issue https://github.com/angular/angular.ts/issues/12936
         it("should use the proper scope when it is on the root element of a replaced directive template with child scope", async () => {
           module
             .directive("child", () => ({
@@ -12958,7 +12958,7 @@ describe("$compile", () => {
           expect(capturedChildCtrl).toBeTruthy();
         });
 
-        // See issue https://github.com/angular/angular.js/issues/14924
+        // See issue https://github.com/angular/angular.ts/issues/14924
         it("should not process top-level transcluded text nodes merged into their sibling", async () => {
           module.directive("transclude", () => ({
             template: "<ng-transclude></ng-transclude>",
@@ -12977,7 +12977,7 @@ describe("$compile", () => {
           expect(element.textContent).toBe("102030");
         });
 
-        // see issue https://github.com/angular/angular.js/issues/9413
+        // see issue https://github.com/angular/angular.ts/issues/9413
         describe("passing a parent bound transclude function to the link function returned from `$compile`", () => {
           beforeEach(() => {
             module
@@ -13063,7 +13063,7 @@ describe("$compile", () => {
           });
         });
 
-        // see issue https://github.com/angular/angular.js/issues/9095
+        // see issue https://github.com/angular/angular.ts/issues/9095
         // TODO Migrate scope removal to mutation observer
         xdescribe("removing a transcluded element", () => {
           beforeEach(() => {
@@ -13757,7 +13757,7 @@ describe("$compile", () => {
     });
 
     it('should safely create transclude comment node and not break with "-->"', async () => {
-      // see: https://github.com/angular/angular.js/issues/1740
+      // see: https://github.com/angular/angular.ts/issues/1740
       element = $compile(
         "<ul><li ng-repeat=\"item in ['-->', 'x']\">{{item}}|</li></ul>",
       )($rootScope);
@@ -14303,7 +14303,7 @@ describe("$compile", () => {
       expect(element.children[2].innerText).toEqual("dorothy");
     });
 
-    // See issue https://github.com/angular/angular.js/issues/14924
+    // See issue https://github.com/angular/angular.ts/issues/14924
     it("should not process top-level transcluded text nodes merged into their sibling", async () => {
       module.directive("transclude", () => ({
         template: "<ng-transclude></ng-transclude>",
@@ -15167,7 +15167,7 @@ describe("$compile", () => {
       expect(attrs.ngAttrSuperTitle).toBeUndefined();
       expect(attrs.$attr.ngAttrSuperTitle).toBeUndefined();
 
-      // Note the casing is incorrect: https://github.com/angular/angular.js/issues/16624
+      // Note the casing is incorrect: https://github.com/angular/angular.ts/issues/16624
       expect(attrs.myCameltitle).toBe("56");
       expect(attrs.$attr.myCameltitle).toBe("my-camelTitle");
       expect(attrs.ngAttrMyCameltitle).toBeUndefined();

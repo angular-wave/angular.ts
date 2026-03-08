@@ -14,129 +14,107 @@
  * Requires the {@link ngAria} module to be installed.
  *
  */
-export function AriaProvider(): void;
-export class AriaProvider {
-  config: (newConfig: any) => void;
-  $get: () => {
-    /**
-     * @param {string | number} key
-     */
-    config(key: string | number): any;
-    _watchExpr: (
-      attrName: string | number,
-      ariaAttr: any,
-      nativeAriaNodeNamesParam: string | any[],
-      negate: any,
-    ) => (
-      /** @type {ng.Scope} */ scope: ng.Scope,
-      /** @type {HTMLElement} */ elem: HTMLElement,
-      /** @type {ng.Attributes} */ attr: ng.Attributes,
-    ) => void;
-  };
+export declare function AriaProvider(): void;
+/**
+ * @param {ng.AriaService} $aria
+ */
+export declare function ngDisabledAriaDirective($aria: any): any;
+export declare namespace ngDisabledAriaDirective {
+  var $inject: "$aria"[];
 }
 /**
  * @param {ng.AriaService} $aria
  */
-export function ngDisabledAriaDirective(
-  $aria: ng.AriaService,
-): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
-export namespace ngDisabledAriaDirective {
-  let $inject: string[];
-}
-/**
- * @param {ng.AriaService} $aria
- */
-export function ngShowAriaDirective(
-  $aria: ng.AriaService,
-): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
-export namespace ngShowAriaDirective {
-  let $inject_1: string[];
-  export { $inject_1 as $inject };
+export declare function ngShowAriaDirective($aria: any): any;
+export declare namespace ngShowAriaDirective {
+  var $inject: "$aria"[];
 }
 /**
  * @return {ng.Directive}
  */
-export function ngMessagesAriaDirective(): ng.Directive;
+export declare function ngMessagesAriaDirective(): {
+  restrict: string;
+  require: string;
+  link(_scope: any, elem: any, attr: any): void;
+};
 /**
  * @param {ng.AriaService} $aria
  * @param {ng.ParseService} $parse
  * @return {ng.Directive}
  */
-export function ngClickAriaDirective(
-  $aria: ng.AriaService,
-  $parse: ng.ParseService,
-): ng.Directive;
-export namespace ngClickAriaDirective {
-  let $inject_2: string[];
-  export { $inject_2 as $inject };
+export declare function ngClickAriaDirective(
+  $aria: any,
+  $parse: any,
+): {
+  restrict: string;
+  compile(
+    _elem: any,
+    attr: any,
+  ): (scope: any, elem: any, attrParam: any) => void;
+};
+export declare namespace ngClickAriaDirective {
+  var $inject: ("$aria" | "$parse")[];
 }
 /**
  * @param {ng.AriaService} $aria
  */
-export function ngRequiredAriaDirective(
-  $aria: ng.AriaService,
-): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
-export namespace ngRequiredAriaDirective {
-  let $inject_3: string[];
-  export { $inject_3 as $inject };
+export declare function ngRequiredAriaDirective($aria: any): any;
+export declare namespace ngRequiredAriaDirective {
+  var $inject: "$aria"[];
 }
 /**
  * @param {ng.AriaService} $aria
  */
-export function ngCheckedAriaDirective(
-  $aria: ng.AriaService,
-): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
-export namespace ngCheckedAriaDirective {
-  let $inject_4: string[];
-  export { $inject_4 as $inject };
+export declare function ngCheckedAriaDirective($aria: any): any;
+export declare namespace ngCheckedAriaDirective {
+  var $inject: "$aria"[];
 }
 /**
  * @param {ng.AriaService} $aria
  */
-export function ngValueAriaDirective(
-  $aria: ng.AriaService,
-): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
-export namespace ngValueAriaDirective {
-  let $inject_5: string[];
-  export { $inject_5 as $inject };
+export declare function ngValueAriaDirective($aria: any): any;
+export declare namespace ngValueAriaDirective {
+  var $inject: "$aria"[];
 }
 /**
  * @param {ng.AriaService} $aria
  */
-export function ngHideAriaDirective(
-  $aria: ng.AriaService,
-): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
-export namespace ngHideAriaDirective {
-  let $inject_6: string[];
-  export { $inject_6 as $inject };
+export declare function ngHideAriaDirective($aria: any): any;
+export declare namespace ngHideAriaDirective {
+  var $inject: "$aria"[];
 }
 /**
  * @param {ng.AriaService} $aria
  */
-export function ngReadonlyAriaDirective(
-  $aria: ng.AriaService,
-): (scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) => void;
-export namespace ngReadonlyAriaDirective {
-  let $inject_7: string[];
-  export { $inject_7 as $inject };
+export declare function ngReadonlyAriaDirective($aria: any): any;
+export declare namespace ngReadonlyAriaDirective {
+  var $inject: "$aria"[];
 }
 /**
  * @param {ng.AriaService} $aria
  * @returns {ng.Directive}
  */
-export function ngModelAriaDirective($aria: ng.AriaService): ng.Directive;
-export namespace ngModelAriaDirective {
-  let $inject_8: string[];
-  export { $inject_8 as $inject };
+export declare function ngModelAriaDirective($aria: any): {
+  restrict: string;
+  require: string;
+  priority: number;
+  compile(
+    _: any,
+    attr: any,
+  ): {
+    post(_: any, elem: any, attrPost: any, ngModel: any): void;
+  };
+};
+export declare namespace ngModelAriaDirective {
+  var $inject: "$aria"[];
 }
 /**
  * @param {ng.AriaService} $aria
  * @returns {import("../../interface.ts").DirectiveLinkFn<any>}
  */
-export function ngDblclickAriaDirective(
-  $aria: ng.AriaService,
-): import("../../interface.ts").DirectiveLinkFn<any>;
-export namespace ngDblclickAriaDirective {
-  let $inject_9: string[];
-  export { $inject_9 as $inject };
+export declare function ngDblclickAriaDirective(
+  $aria: any,
+): (_scope: any, elem: any, attr: any) => void;
+export declare namespace ngDblclickAriaDirective {
+  var $inject: "$aria"[];
 }

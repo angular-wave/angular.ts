@@ -1,15 +1,12 @@
-export class SseProvider {
-  /** @type {ng.SseConfig} */
+import type { LogService } from "../log/interface.ts";
+import type { SseService } from "./interface.ts";
+export declare class SseProvider {
   defaults: ng.SseConfig;
-  $get: (
-    | string
-    | ((
-        log: ng.LogService,
-      ) => (
-        url: string,
-        config?: import("./interface.ts").SseConfig,
-      ) => import("./interface.ts").SseConnection)
-  )[];
-  _$log: import("../log/interface.ts").LogService;
-  #private;
+  _$log: LogService;
+  constructor();
+  $get: ("$log" | ((log: ng.LogService) => SseService))[];
+  /**
+   * Build URL with query parameters
+   */
+  private _buildUrl;
 }

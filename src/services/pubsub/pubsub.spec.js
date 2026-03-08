@@ -1,6 +1,6 @@
-import { PubSub } from "./pubsub.js";
+import { PubSub } from "./pubsub.ts";
 import { createInjector } from "../../core/di/injector.ts";
-import { Angular } from "../../angular.js";
+import { Angular } from "../../angular.ts";
 import { wait } from "../../shared/utils.js";
 
 describe("PubSubProvider", () => {

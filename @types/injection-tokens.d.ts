@@ -1,19 +1,84 @@
-/**
- * A helper list of tokens matching the standard injectables that come predefined in the core `ng` module.
- * These string tokens are commonly injected into services, directives, or components via `$inject`.
- *
- * Example:
- * ```js
- *
- * myDirective.$inject = [
- *   angular.$t.$animate,
- *   angular.$t.$templateRequest,
- * ];
- *
- * function myDirective($animate, $templateRequest) { ... }
- *
- * ```
- * @private
- * @type Readonly<Record<string, string>>
- */
-export const $injectTokens: Readonly<Record<string, string>>;
+export declare const $injectTokens: {
+  readonly _angular: "$angular";
+  readonly _attrs: "$attrs";
+  readonly _scope: "$scope";
+  readonly _element: "$element";
+  readonly _animateCssDriver: "$$animateCssDriver";
+  readonly _animateJs: "$$animateJs";
+  readonly _animateJsDriver: "$$animateJsDriver";
+  readonly _animateQueue: "$$animateQueue";
+  readonly _animation: "$$animation";
+  readonly _taskTrackerFactory: "$$taskTrackerFactory";
+  readonly _anchorScroll: "$anchorScroll";
+  readonly _animate: "$animate";
+  readonly _animateCss: "$animateCss";
+  readonly _aria: "$aria";
+  readonly _compile: "$compile";
+  readonly _cookie: "$cookie";
+  readonly _controller: "$controller";
+  readonly _document: "$document";
+  readonly _eventBus: "$eventBus";
+  readonly _exceptionHandler: "$exceptionHandler";
+  readonly _filter: "$filter";
+  readonly _http: "$http";
+  readonly _httpParamSerializer: "$httpParamSerializer";
+  readonly _interpolate: "$interpolate";
+  readonly _location: "$location";
+  readonly _log: "$log";
+  readonly _parse: "$parse";
+  readonly _rest: "$rest";
+  readonly _rootScope: "$rootScope";
+  readonly _rootElement: "$rootElement";
+  readonly _router: "$router";
+  readonly _sce: "$sce";
+  readonly _sceDelegate: "$sceDelegate";
+  readonly _state: "$state";
+  readonly _stateRegistry: "$stateRegistry";
+  readonly _sse: "$sse";
+  readonly _sanitizeUri: "$$sanitizeUri";
+  readonly _sanitizeUriProvider: "$$sanitizeUriProvider";
+  readonly _templateCache: "$templateCache";
+  readonly _templateFactory: "$templateFactory";
+  readonly _templateRequest: "$templateRequest";
+  readonly _transitions: "$transitions";
+  readonly _urlConfig: "$urlConfig";
+  readonly _url: "$url";
+  readonly _view: "$view";
+  readonly _window: "$window";
+  readonly _websocket: "$websocket";
+  readonly _provide: "$provide";
+  readonly _injector: "$injector";
+  readonly _angularProvider: "$angularProvider";
+  readonly _anchorScrollProvider: "$anchorScrollProvider";
+  readonly _animateCssProvider: "$animateCssProvider";
+  readonly _ariaProvider: "$ariaProvider";
+  readonly _compileProvider: "$compileProvider";
+  readonly _animateProvider: "$animateProvider";
+  readonly _cookieProvider: "$cookieProvider";
+  readonly _eventBusProvider: "$eventBusProvider";
+  readonly _exceptionHandlerProvider: "$exceptionHandlerProvider";
+  readonly _filterProvider: "$filterProvider";
+  readonly _httpProvider: "$httpProvider";
+  readonly _httpParamSerializerProvider: "$httpParamSerializerProvider";
+  readonly _interpolateProvider: "$interpolateProvider";
+  readonly _locationProvider: "$locationProvider";
+  readonly _logProvider: "$logProvider";
+  readonly _parseProvider: "$parseProvider";
+  readonly _restProvider: "$restProvider";
+  readonly _rootScopeProvider: "$rootScopeProvider";
+  readonly _routerProvider: "$routerProvider";
+  readonly _sceProvider: "$sceProvider";
+  readonly _sceDelegateProvider: "$sceDelegateProvider";
+  readonly _sseProvider: "$sseProvider";
+  readonly _stateProvider: "$stateProvider";
+  readonly _stateRegistryProvider: "$stateRegistryProvider";
+  readonly _templateCacheProvider: "$templateCacheProvider";
+  readonly _templateFactoryProvider: "$templateFactoryProvider";
+  readonly _templateRequestProvider: "$templateRequestProvider";
+  readonly _transitionsProvider: "$transitionsProvider";
+  readonly _urlConfigProvider: "$urlConfigProvider";
+  readonly _urlProvider: "$urlProvider";
+  readonly _viewProvider: "$viewProvider";
+  readonly _websocketProvider: "$websocketProvider";
+  readonly _controllerProvider: "$controllerProvider";
+};

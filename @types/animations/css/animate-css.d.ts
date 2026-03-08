@@ -9,8 +9,5 @@
  * @param {string} str A CSS time string (optionally comma-separated).
  * @returns {number} The maximum time value, expressed in **seconds**.
  */
-export function parseMaxTime(str: string): number;
-export function AnimateCssProvider(): void;
-export class AnimateCssProvider {
-  $get: (() => ng.AnimateCssService)[];
-}
+export declare function parseMaxTime(str: any): number;
+export declare function AnimateCssProvider(): void;

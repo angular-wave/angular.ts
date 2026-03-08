@@ -1,19 +1,7 @@
 /**
- * @param {import("./animate.js").AnimateProvider} $animateProvider
+ * @param {import("./animate.ts").AnimateProvider} $animateProvider
  */
-export function AnimateJsProvider(
-  $animateProvider: import("./animate.js").AnimateProvider,
-): void;
-export class AnimateJsProvider {
-  /**
-   * @param {import("./animate.js").AnimateProvider} $animateProvider
-   */
-  constructor($animateProvider: import("./animate.js").AnimateProvider);
-  $get: (
-    | string
-    | (($injector: ng.InjectorService) => import("./interface.ts").AnimateJsFn)
-  )[];
-}
-export namespace AnimateJsProvider {
-  let $inject: string[];
+export declare function AnimateJsProvider($animateProvider: any): void;
+export declare namespace AnimateJsProvider {
+  var $inject: "$animateProvider"[];
 }
