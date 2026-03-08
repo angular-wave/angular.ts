@@ -17,6 +17,9 @@ type SceLike = {
 
 const $interpolateMinErr = minErr("$interpolate");
 
+/**
+ * Throws when strict contextual escaping forbids concatenating trusted values.
+ */
 function throwNoconcat(text: string): never {
   throw $interpolateMinErr(
     "noconcat",
@@ -27,6 +30,9 @@ function throwNoconcat(text: string): never {
   );
 }
 
+/**
+ * Re-throws interpolation errors with the original template text attached.
+ */
 function interr(text: string, err: Error): never {
   throw $interpolateMinErr(
     "interr",
@@ -36,8 +42,18 @@ function interr(text: string, err: Error): never {
   );
 }
 
+/**
+ * Configures Angular interpolation delimiters and produces interpolation
+ * functions that evaluate embedded expressions against a scope/context.
+ */
 export class InterpolateProvider {
+  /**
+   * Start symbol used when parsing interpolation expressions.
+   */
   startSymbol: string;
+  /**
+   * End symbol used when parsing interpolation expressions.
+   */
   endSymbol: string;
   $get: [
     string,
@@ -45,6 +61,9 @@ export class InterpolateProvider {
     ($parse: ParseService, $sce: SceLike) => InterpolateService,
   ];
 
+  /**
+   * Creates the provider with the default `{{` / `}}` interpolation markers.
+   */
   constructor() {
     this.startSymbol = "{{";
     this.endSymbol = "}}";

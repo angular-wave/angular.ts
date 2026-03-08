@@ -2,15 +2,22 @@ import { isString, values } from "../../shared/utils.js";
 import type { StateObject } from "./state-object.ts";
 import type { StateOrName, StateStore } from "./interface.ts";
 
+/**
+ * Resolves absolute, relative, and glob state references against the state store.
+ */
 export class StateMatcher {
   _states: StateStore;
 
-  /** @param {StateStore} states */
+  /**
+   * @param states state store used for name, relative path, and glob lookups
+   */
   constructor(states: StateStore) {
     this._states = states;
   }
 
   /**
+   * Returns true when the provided state name is relative (`.` or `^` syntax).
+   *
    * @param {string} stateName
    */
   isRelative(stateName: string): boolean {
@@ -20,6 +27,8 @@ export class StateMatcher {
   }
 
   /**
+   * Finds a state by name, relative name, glob, or state object reference.
+   *
    * @param {StateOrName} stateOrName
    * @param {StateOrName | undefined} [base]
    * @returns {StateObject | undefined}
@@ -64,7 +73,8 @@ export class StateMatcher {
   }
 
   /**
-   * `
+   * Expands a relative state path such as `^` or `.child` against `base`.
+   *
    * @param {string} name
    * @param {StateOrName} base
    * @returns {string}

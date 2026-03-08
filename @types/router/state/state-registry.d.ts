@@ -48,6 +48,9 @@ export declare class StateRegistryProvider {
     globals: ng.RouterService,
     viewService: ng.ViewService,
   );
+  /**
+   * Wires the injector into the registry and state builder after bootstrap.
+   */
   $get: ("$injector" | (($injector: InjectorService) => this))[];
   /**
    * This is a [[StateBuilder.builder]] function for angular1 `onEnter`, `onExit`,
@@ -141,6 +144,7 @@ export declare class StateRegistryProvider {
    */
   getAll(): BuiltStateDeclaration[];
   /**
+   * Gets one registered state by name/object, or all states when no argument is provided.
    *
    * @param {StateOrName} [stateOrName]
    * @param {StateOrName} [base]

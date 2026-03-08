@@ -1,3 +1,8 @@
+/**
+ * Exposes the current element on `scope.$target` under the provided key.
+ *
+ * @returns {ng.Directive}
+ */
 export function ngElDirective(): ng.Directive {
   return {
     restrict: "A",

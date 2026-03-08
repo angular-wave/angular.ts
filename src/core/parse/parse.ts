@@ -8,9 +8,18 @@ import { Parser } from "./parser/parser.ts";
 
 const lexer = new Lexer();
 
+/**
+ * Provider for the `$parse` service.
+ *
+ * It compiles expressions once, caches the resulting functions, and
+ * optionally decorates them with interceptor logic.
+ */
 export class ParseProvider {
   $get: [string, ($filter: FilterService) => ParseService];
 
+  /**
+   * Creates the `$parse` provider and its shared expression cache.
+   */
   constructor() {
     const cache = nullObject() as Record<string, CompiledExpression>;
 
@@ -36,6 +45,9 @@ export class ParseProvider {
       },
     ];
 
+    /**
+     * Wraps a compiled expression with an optional post-processing interceptor.
+     */
     function addInterceptor(
       parsedExpression: CompiledExpression,
       interceptorFn?: (value: any) => any,

@@ -32,7 +32,13 @@ export declare class StateProvider {
   $injector: ng.InjectorService | undefined;
   invalidCallbacks: OnInvalidCallback[];
   _defaultErrorHandler: ng.ExceptionHandlerService;
+  /**
+   * Returns the initialized state registry or throws if it is unavailable.
+   */
   _getRegistry(): StateRegistryProvider;
+  /**
+   * Returns the initialized URL service or throws if it is unavailable.
+   */
   _getUrlService(): ng.UrlService;
   /**
    * The latest successful state parameters
@@ -64,6 +70,9 @@ export declare class StateProvider {
     transitionService: ng.TransitionProvider,
     exceptionHandlerProvider: ng.ExceptionHandlerProvider,
   );
+  /**
+   * Wires the injector and URL service into the state service instance.
+   */
   $get: (
     | "$url"
     | "$injector"
@@ -298,6 +307,9 @@ export declare class StateProvider {
    * @param {any} [options]
    */
   target(identifier: StateOrName, params?: any, options?: any): TargetState;
+  /**
+   * Returns the current successful path, or the root path if no transition succeeded yet.
+   */
   getCurrentPath(): PathNode[];
   /**
    * Low-level method for transitioning to a new state.

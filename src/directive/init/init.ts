@@ -1,6 +1,11 @@
 import { getController } from "../../shared/dom.ts";
 import type { DirectivePrePost } from "../../interface.ts";
 
+/**
+ * Evaluates an initialization expression during the pre-link phase.
+ *
+ * @returns {ng.Directive}
+ */
 export function ngInitDirective(): ng.Directive {
   return {
     priority: 450,

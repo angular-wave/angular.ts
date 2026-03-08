@@ -11,7 +11,7 @@ import type { TreeChanges } from "../transition/interface.ts";
 import type { StateRegistryProvider } from "../state/state-registry.ts";
 
 /**
- * This class contains functions which convert TargetStates, Nodes and paths from one type to another.
+ * Utility methods for converting and comparing target states, path nodes, and tree changes.
  */
 export class PathUtils {
   /**

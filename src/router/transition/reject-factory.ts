@@ -3,6 +3,9 @@ import { stringify } from "../../shared/strings.ts";
 import type { TargetState } from "../state/target-state.ts";
 import type { Transition } from "./transition.ts";
 
+/**
+ * Transition rejection categories used throughout the router pipeline.
+ */
 export const RejectType = {
   _SUPERSEDED: 2,
   _ABORTED: 3,
@@ -22,6 +25,9 @@ export type TransitionRejectionDetail =
 
 let id = 0;
 
+/**
+ * Normalized representation of a transition failure, abort, ignore, or redirect.
+ */
 export class Rejection {
   $id: number;
   type: RejectTypeValue;
@@ -108,6 +114,9 @@ export class Rejection {
     return `Transition Rejection($id: ${this.$id} type: ${this.type}, message: ${this.message}, detail: ${detailString(this.detail)})`;
   }
 
+  /**
+   * Returns a rejected promise tagged with this rejection instance.
+   */
   toPromise(): Promise<any> & { _transitionRejection: Rejection } {
     const promise = Promise.reject(this);
     promise.catch(() => 0);

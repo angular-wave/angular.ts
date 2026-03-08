@@ -14,6 +14,9 @@ const literals: Record<string, unknown> = {
   undefined,
 };
 
+/**
+ * Recursive-descent parser that converts lexer tokens into AST nodes for `$parse`.
+ */
 export class AST {
   _lexer: Lexer;
   _selfReferential: Record<string, ASTNode>;

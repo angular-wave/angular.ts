@@ -1,5 +1,8 @@
-// This worker receives messages via postMessage
-// and sends back a response after a short delay
+/**
+ * Demo worker used by the worker directive examples/tests.
+ *
+ * It echoes arbitrary payloads and can also compute Fibonacci values.
+ */
 
 self.onmessage = async (event) => {
   const { data } = event;

@@ -16,11 +16,31 @@ const NG_REMOVED = "$$NG_REMOVED";
 
 const ngRepeatMinErr = minErr("ngRepeat");
 
+/**
+ * Regular expression to match either:
+ * 1. A single variable name (optionally preceded by whitespace), e.g. "foo", "   $bar"
+ * 2. A pair of variable names inside parentheses separated by a comma (with optional whitespace), e.g. "(x, y)", "($foo, _bar123)"
+ *
+ * Capturing groups:
+ * - Group 1: The single variable name (if present)
+ * - Group 2: The first variable in the tuple (if present)
+ * - Group 3: The second variable in the tuple (if present)
+ *
+ * Examples:
+ *  - Matches: "foo", "   $var", "(x, y)", "($a, $b)"
+ *  - Does NOT match: "x,y", "(x)", "(x y)", ""
+ *
+ * @constant {RegExp}
+ */
 const VAR_OR_TUPLE_REGEX =
   /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
 
 ngRepeatDirective.$inject = [$injectTokens._animate];
 
+/**
+ * @param {ng.AnimateService}  $animate
+ * @returns {ng.Directive}
+ */
 export function ngRepeatDirective($animate) {
   function updateScope(
     scope,

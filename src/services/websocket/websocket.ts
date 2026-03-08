@@ -11,6 +11,9 @@ export class WebSocketProvider {
   defaults: ng.WebSocketConfig;
   _$log!: LogService;
 
+  /**
+   * Creates the WebSocket provider with default reconnect and message parsing behavior.
+   */
   constructor() {
     this.defaults = {
       protocols: [],
@@ -28,6 +31,9 @@ export class WebSocketProvider {
     };
   }
 
+  /**
+   * Returns the `$websocket` connection factory bound to the configured defaults.
+   */
   $get = [
     $injectTokens._log,
     (log: ng.LogService): WebSocketService => {

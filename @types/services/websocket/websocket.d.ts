@@ -7,6 +7,12 @@ import type { WebSocketService } from "./interface.ts";
 export declare class WebSocketProvider {
   defaults: ng.WebSocketConfig;
   _$log: LogService;
+  /**
+   * Creates the WebSocket provider with default reconnect and message parsing behavior.
+   */
   constructor();
+  /**
+   * Returns the `$websocket` connection factory bound to the configured defaults.
+   */
   $get: ("$log" | ((log: ng.LogService) => WebSocketService))[];
 }

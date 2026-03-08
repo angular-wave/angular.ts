@@ -138,6 +138,12 @@ import { TemplateCacheProvider } from "./services/template-cache/template-cache.
 import { TemplateRequestProvider } from "./services/template-request/template-request.ts";
 import { WebSocketProvider } from "./services/websocket/websocket.ts";
 
+/**
+ * Initializes and registers the core `ng` module.
+ *
+ * This wires together the built-in providers, directives, services, and
+ * router integrations that make up the default AngularTS runtime.
+ */
 export function registerNgModule(angular: ng.Angular): ng.NgModule {
   return angular
     .module(

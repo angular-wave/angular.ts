@@ -1,3 +1,6 @@
+/**
+ * Numeric AST node kind identifiers used by the parser and interpreter.
+ */
 export declare const ASTType: {
   readonly _Program: 1;
   readonly _ExpressionStatement: 2;
@@ -18,4 +21,7 @@ export declare const ASTType: {
   readonly _NGValueParameter: 17;
   readonly _UpdateExpression: 18;
 };
+/**
+ * Union of the parser's internal AST node kind identifiers.
+ */
 export type ASTType = (typeof ASTType)[keyof typeof ASTType];

@@ -1,3 +1,10 @@
+/**
+ * Canonical token names for the built-in injectables exposed by the core `ng`
+ * module.
+ *
+ * These constants keep runtime registration, JSDoc, and ambient type surfaces
+ * aligned around one source of truth for both service and provider names.
+ */
 export const $injectTokens = {
   _angular: "$angular",
   _attrs: "$attrs",

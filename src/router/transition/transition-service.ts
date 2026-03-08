@@ -57,6 +57,9 @@ export const defaultTransOpts: TransitionOptions = {
   source: "unknown",
 };
 
+/**
+ * Central registry and factory for transition events, hooks, and transition instances.
+ */
 export class TransitionProvider implements TransitionService {
   static $inject = [
     $t._routerProvider,
@@ -92,6 +95,10 @@ export class TransitionProvider implements TransitionService {
     globals._successfulTransitions.onEvict(treeChangesCleanup);
   }
 
+  /**
+   * Wires runtime services into the transition service and registers the
+   * hooks that depend on state/url/view services.
+   */
   $get = [
     $t._state,
     $t._url,
@@ -130,10 +137,16 @@ export class TransitionProvider implements TransitionService {
     },
   ] as const;
 
+  /**
+   * Creates a new transition from the current path to a target state.
+   */
   create(fromPath: PathNode[], targetState: TargetState): Transition {
     return new Transition(fromPath, targetState, this, this.globals);
   }
 
+  /**
+   * Defines the built-in transition lifecycle events and their execution order.
+   */
   _defineCoreEvents(): void {
     const TH = TransitionHook;
     const paths = this._criteriaPaths;
@@ -200,6 +213,9 @@ export class TransitionProvider implements TransitionService {
     this._definePathType("entering", STATE);
   }
 
+  /**
+   * Defines one transition event type and exposes its registration helper.
+   */
   _defineEvent(
     name: string,
     hookPhase: TransitionHookPhase,
@@ -225,6 +241,9 @@ export class TransitionProvider implements TransitionService {
     makeEvent(this, this, eventType);
   }
 
+  /**
+   * Returns known transition event types, optionally filtered by phase.
+   */
   _getEvents(phase?: TransitionHookPhase): TransitionEventType[] {
     const transitionHookTypes = isDefined(phase)
       ? this._eventTypes.filter((type) => type.hookPhase === phase)
@@ -237,18 +256,30 @@ export class TransitionProvider implements TransitionService {
     });
   }
 
+  /**
+   * Defines one path selector used by transition hook matching.
+   */
   _definePathType(name: keyof PathTypes, hookScope: number): void {
     this._criteriaPaths[name] = { name, scope: hookScope } as PathType;
   }
 
+  /**
+   * Returns the configured transition hook path selectors.
+   */
   _getPathTypes(): PathTypes {
     return this._criteriaPaths;
   }
 
+  /**
+   * Returns hooks registered for a specific transition event name.
+   */
   getHooks(hookName: string) {
     return this._registeredHooks[hookName] || [];
   }
 
+  /**
+   * Registers a transition hook by event name.
+   */
   on(
     eventName: string,
     matchCriteria: HookMatchCriteria,
@@ -267,6 +298,9 @@ export class TransitionProvider implements TransitionService {
     );
   }
 
+  /**
+   * Registers an `onCreate` transition hook.
+   */
   onCreate(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -275,6 +309,9 @@ export class TransitionProvider implements TransitionService {
     return this.on("onCreate", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onBefore` transition hook.
+   */
   onBefore(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -283,6 +320,9 @@ export class TransitionProvider implements TransitionService {
     return this.on("onBefore", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onStart` transition hook.
+   */
   onStart(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -291,6 +331,9 @@ export class TransitionProvider implements TransitionService {
     return this.on("onStart", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onEnter` transition hook.
+   */
   onEnter(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -299,6 +342,9 @@ export class TransitionProvider implements TransitionService {
     return this.on("onEnter", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onRetain` transition hook.
+   */
   onRetain(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -307,6 +353,9 @@ export class TransitionProvider implements TransitionService {
     return this.on("onRetain", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onExit` transition hook.
+   */
   onExit(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -315,6 +364,9 @@ export class TransitionProvider implements TransitionService {
     return this.on("onExit", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onFinish` transition hook.
+   */
   onFinish(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -323,6 +375,9 @@ export class TransitionProvider implements TransitionService {
     return this.on("onFinish", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onSuccess` transition hook.
+   */
   onSuccess(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -331,6 +386,9 @@ export class TransitionProvider implements TransitionService {
     return this.on("onSuccess", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onError` transition hook.
+   */
   onError(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -339,6 +397,9 @@ export class TransitionProvider implements TransitionService {
     return this.on("onError", matchCriteria, callback, options);
   }
 
+  /**
+   * Looks up one known transition event type by name.
+   */
   _getEventType(eventName: string): TransitionEventType {
     const eventType = this._eventTypes.find((type) => type.name === eventName);
 
@@ -349,6 +410,9 @@ export class TransitionProvider implements TransitionService {
     return eventType;
   }
 
+  /**
+   * Installs the built-in transition hooks that power router behavior.
+   */
   _registerCoreTransitionHooks(): void {
     const fns = this._deregisterHookFns;
 

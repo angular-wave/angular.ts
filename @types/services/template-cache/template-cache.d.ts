@@ -3,9 +3,12 @@
  */
 export declare class TemplateCacheProvider {
   cache: ng.TemplateCacheService;
+  /**
+   * Creates the in-memory template cache backing store.
+   */
   constructor();
   /**
-   * @returns {ng.TemplateCacheService}
+   * Returns the singleton template cache instance.
    */
   $get(): ng.TemplateCacheService;
 }

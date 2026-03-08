@@ -32,13 +32,22 @@ const ALL_WHENS: PolicyWhen[] = [
 ];
 const EAGER_WHENS: PolicyWhen[] = [resolvePolicies.when.EAGER];
 
+/**
+ * Provides resolve lookup and execution helpers for a specific transition path.
+ */
 export class ResolveContext {
   _path: PathNode[];
 
+  /**
+   * @param _path path of nodes whose resolvables are visible in this context
+   */
   constructor(_path: PathNode[]) {
     this._path = _path;
   }
 
+  /**
+   * Returns the unique tokens available from all resolvables in this path.
+   */
   getTokens(): any[] {
     return this._path
       .reduce(
@@ -49,6 +58,9 @@ export class ResolveContext {
       .reduce(uniqR, []);
   }
 
+  /**
+   * Returns the most local resolvable registered for the specified token.
+   */
   getResolvable(token: string): Resolvable {
     const matching = this._path
       .map((node) => node.resolvables)
@@ -58,12 +70,18 @@ export class ResolveContext {
     return tail(matching) as Resolvable;
   }
 
+  /**
+   * Computes the effective resolve policy for a resolvable in this context.
+   */
   getPolicy(resolvable: Resolvable): Required<ResolvePolicy> {
     const node = this.findNode(resolvable);
 
     return resolvable.getPolicy(node?.state);
   }
 
+  /**
+   * Returns a child resolve context scoped to the specified state.
+   */
   subContext(state: StateObject | BuiltStateDeclaration): ResolveContext {
     const subPath = PathUtils.subPath(
       this._path,
@@ -73,6 +91,9 @@ export class ResolveContext {
     return new ResolveContext((subPath || this._path) as PathNode[]);
   }
 
+  /**
+   * Adds or replaces resolvables for a specific state in this path.
+   */
   addResolvables(
     newResolvables: Array<Resolvable | ResolvableLiteral>,
     state: StateObject,
@@ -95,6 +116,9 @@ export class ResolveContext {
       .concat(resolvables);
   }
 
+  /**
+   * Resolves the path's resolvables for the requested policy timing.
+   */
   resolvePath(
     when: PolicyWhen = "LAZY",
     trans: Transition,
@@ -137,12 +161,19 @@ export class ResolveContext {
     return Promise.all(promises);
   }
 
+  /**
+   * Finds the path node that owns the provided resolvable.
+   */
   findNode(resolvable: Resolvable): PathNode | undefined {
     return find(this._path, (node: PathNode) =>
       node.resolvables.includes(resolvable),
     ) as PathNode | undefined;
   }
 
+  /**
+   * Resolves the dependency tokens required by a resolvable from either
+   * the current path or the injector fallback.
+   */
   getDependencies(resolvable: Resolvable): Resolvable[] {
     const node = this.findNode(resolvable);
     const subPath =

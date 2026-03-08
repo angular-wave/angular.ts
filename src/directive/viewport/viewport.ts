@@ -1,3 +1,8 @@
+/**
+ * Evaluates expressions when an element enters or leaves the viewport.
+ *
+ * @returns {ng.Directive}
+ */
 export function ngViewportDirective(): ng.Directive {
   return {
     restrict: "A",

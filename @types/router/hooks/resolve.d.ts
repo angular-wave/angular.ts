@@ -1,4 +1,7 @@
 import type { TransitionService } from "../transition/interface.ts";
+/**
+ * Base priority for resolve-related transition hooks.
+ */
 export declare const RESOLVE_HOOK_PRIORITY = 1000;
 export declare const registerEagerResolvePath: (
   transitionService: TransitionService,

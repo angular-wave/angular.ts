@@ -4,6 +4,9 @@ import type { StateDeclaration } from "./state/interface.ts";
 import type { StateObject } from "./state/state-object.ts";
 import type { Transition } from "./transition/transition.ts";
 
+/**
+ * Mutable router globals shared across state, URL, and transition services.
+ */
 export class RouterProvider {
   params: StateParams;
   _lastStartedTransitionId: number;
@@ -13,6 +16,9 @@ export class RouterProvider {
   $current: StateObject | undefined;
   transition: Transition | undefined;
 
+  /**
+   * Creates the shared mutable router globals container.
+   */
   constructor() {
     this.params = new StateParams();
     this._lastStartedTransitionId = -1;
@@ -23,5 +29,8 @@ export class RouterProvider {
     this.transition = undefined;
   }
 
+  /**
+   * Returns the singleton router globals instance.
+   */
   $get = (): RouterProvider => this;
 }

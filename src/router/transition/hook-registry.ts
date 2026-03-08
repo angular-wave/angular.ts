@@ -17,6 +17,9 @@ import type {
 import type { Transition } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
 
+/**
+ * Tests a state against one hook match criterion.
+ */
 export function matchState(
   state: StateObject,
   criterion: HookMatchCriterion,
@@ -49,6 +52,10 @@ export function matchState(
   return !!matchFn(state, transition);
 }
 
+/**
+ * Stores one registered transition hook and evaluates whether it matches
+ * a specific transition tree change set.
+ */
 export class RegisteredHook {
   tranSvc: TransitionService;
   eventType: TransitionEventType;
@@ -148,6 +155,9 @@ type HookSource = {
   _registeredHooks?: RegisteredHooks;
 } & Record<string, any>;
 
+/**
+ * Registers a hook on either the transition service or a single transition.
+ */
 export function registerHook(
   hookSource: HookSource,
   transitionService: TransitionService,
@@ -180,6 +190,9 @@ export function registerHook(
   return registeredHook.deregister.bind(registeredHook);
 }
 
+/**
+ * Creates a convenience `onX` registration function for a transition event.
+ */
 export function makeEvent(
   hookSource: HookSource,
   transitionService: TransitionService,

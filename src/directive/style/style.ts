@@ -1,3 +1,8 @@
+/**
+ * Watches an expression and applies the resulting CSS properties to the element.
+ *
+ * @returns {ng.Directive}
+ */
 export function ngStyleDirective(): ng.Directive {
   return {
     restrict: "A",

@@ -7,6 +7,9 @@ export declare const PURITY_ABSOLUTE = 1;
 export declare const PURITY_RELATIVE = 2;
 type LinkContext = object | boolean | undefined;
 type CreateFlag = boolean | 1 | undefined;
+/**
+ * Interprets AST nodes into executable scope-aware functions for `$parse`.
+ */
 export declare class ASTInterpreter {
   _$filter: ng.FilterService;
   /**

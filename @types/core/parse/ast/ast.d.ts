@@ -1,6 +1,9 @@
 import type { Lexer } from "../lexer/lexer.ts";
 import type { Token } from "../lexer/token.ts";
 import type { ASTNode } from "./ast-node.ts";
+/**
+ * Recursive-descent parser that converts lexer tokens into AST nodes for `$parse`.
+ */
 export declare class AST {
   _lexer: Lexer;
   _selfReferential: Record<string, ASTNode>;

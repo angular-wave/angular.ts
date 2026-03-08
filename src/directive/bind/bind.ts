@@ -8,6 +8,9 @@ import {
 } from "../../shared/utils.js";
 import { $injectTokens } from "../../injection-tokens.ts";
 
+/**
+ * @returns {ng.Directive}
+ */
 export function ngBindDirective(): ng.Directive {
   return {
     link(
@@ -28,6 +31,9 @@ export function ngBindDirective(): ng.Directive {
   };
 }
 
+/**
+ * @returns {ng.Directive}
+ */
 export function ngBindTemplateDirective(): ng.Directive {
   return {
     link(
@@ -43,6 +49,9 @@ export function ngBindTemplateDirective(): ng.Directive {
 }
 
 ngBindHtmlDirective.$inject = [$injectTokens._parse];
+/**
+ * @param {ng.ParseService} $parse
+ */
 export function ngBindHtmlDirective($parse: ng.ParseService): ng.Directive {
   return {
     restrict: "A",

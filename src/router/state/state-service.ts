@@ -63,12 +63,18 @@ export class StateProvider {
   invalidCallbacks: OnInvalidCallback[];
   _defaultErrorHandler: ng.ExceptionHandlerService;
 
+  /**
+   * Returns the initialized state registry or throws if it is unavailable.
+   */
   _getRegistry(): StateRegistryProvider {
     if (!this.stateRegistry)
       throw new Error("State registry is not initialized");
     return this.stateRegistry;
   }
 
+  /**
+   * Returns the initialized URL service or throws if it is unavailable.
+   */
   _getUrlService(): ng.UrlService {
     if (!this.urlService) throw new Error("Url service is not initialized");
     return this.urlService;
@@ -142,6 +148,9 @@ export class StateProvider {
     this._defaultErrorHandler = exceptionHandlerProvider.handler;
   }
 
+  /**
+   * Wires the injector and URL service into the state service instance.
+   */
   $get = [
     $injectTokens._injector,
     $injectTokens._url,
@@ -510,6 +519,9 @@ export class StateProvider {
     return new TargetState(this._getRegistry(), identifier, params, options);
   }
 
+  /**
+   * Returns the current successful path, or the root path if no transition succeeded yet.
+   */
   getCurrentPath(): PathNode[] {
     const { globals } = this;
 

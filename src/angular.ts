@@ -40,6 +40,12 @@ type WindowWithAngular = Window & typeof globalThis & { angular?: Angular };
 
 const moduleRegistry: ModuleRegistry = {};
 
+/**
+ * Main Angular runtime entry point.
+ *
+ * It owns module registration, application bootstrap, injector access,
+ * and the lightweight event-based invocation helpers exposed on `window.angular`.
+ */
 export class Angular extends EventTarget {
   private subapps: Angular[] = [];
   private _bootsrappedModules: Array<string | any> = [];
@@ -54,6 +60,11 @@ export class Angular extends EventTarget {
   public errorHandlingConfig = errorHandlingConfig;
   public $t: ng.InjectionTokens = {} as ng.InjectionTokens;
 
+  /**
+   * Creates the Angular runtime singleton or a sub-application instance.
+   *
+   * @param subapp when `true`, skips assigning the instance to `window.angular`
+   */
   constructor(subapp = false) {
     super();
 
@@ -68,6 +79,51 @@ export class Angular extends EventTarget {
     registerNgModule(this);
   }
 
+  /**
+   * The `angular.module` is a global place for creating, registering and retrieving AngularTS
+   * modules.
+   * All modules (AngularTS core or 3rd party) that should be available to an application must be
+   * registered using this mechanism.
+   *
+   * Passing one argument retrieves an existing ng.NgModule,
+   * whereas passing more than one argument creates a new ng.NgModule
+   *
+   * # Module
+   *
+   * A module is a collection of services, directives, controllers, filters, workers, WebAssembly modules, and configuration information.
+   * `angular.module` is used to configure the auto.$injector `$injector`.
+   *
+   * ```js
+   * // Create a new module
+   * let myModule = angular.module('myModule', []);
+   *
+   * // register a new service
+   * myModule.value('appName', 'MyCoolApp');
+   *
+   * // configure existing services inside initialization blocks.
+   * myModule.config(['$locationProvider', function($locationProvider) {
+   *   // Configure existing providers
+   *   $locationProvider.hashPrefix('!');
+   * }]);
+   * ```
+   *
+   * Then you can create an injector and load your modules like this:
+   *
+   * ```js
+   * let injector = angular.injector(['ng', 'myModule'])
+   * ```
+   *
+   * However it's more likely that you'll just use
+   * `ng-app` directive or
+   * {@link bootstrap} to simplify this process for you.
+   *
+   * @param name The name of the module to create or retrieve.
+   * @param requires If specified then new module is being created. If
+   * unspecified then the module is being retrieved for further configuration.
+   * @param configFn Optional configuration function for the module that gets
+   * passed to `NgModule.config()`.
+   * @returns A newly registered module.
+   */
   module(
     name: string,
     requires?: string[],
@@ -92,6 +148,12 @@ export class Angular extends EventTarget {
     });
   }
 
+  /**
+   * Dispatches an invocation event to either an injectable service or a named scope.
+   *
+   * The event `type` identifies the target and the payload contains the expression
+   * to evaluate against that target.
+   */
   dispatchEvent(event: Event): boolean {
     const customEvent = event as CustomEvent<string | InvocationDetail>;
     const $parse = this.$injector.get($t._parse);
@@ -135,11 +197,17 @@ export class Angular extends EventTarget {
     return true;
   }
 
+  /**
+   * Fire-and-forget. Accepts a single string: `"<target>.<expression>"`
+   */
   emit(input: string): void {
     const { type, expr } = this.splitInvocation(input);
     this.dispatchEvent(new CustomEvent(type, { detail: expr }));
   }
 
+  /**
+   * Await result. Accepts a single string: `"<target>.<expression>"`
+   */
   call(input: string): Promise<any> {
     const { type, expr } = this.splitInvocation(input);
 
@@ -156,6 +224,49 @@ export class Angular extends EventTarget {
     });
   }
 
+  /**
+   * Use this function to manually start up AngularTS application.
+   *
+   * AngularTS will detect if it has been loaded into the browser more than once and only allow the
+   * first loaded script to be bootstrapped and will report a warning to the browser console for
+   * each of the subsequent scripts. This prevents strange results in applications, where otherwise
+   * multiple instances of AngularTS try to work on the DOM.
+   *
+   * <div class="alert alert-warning">
+   * **Note:** Do not bootstrap the app on an element with a directive that uses {@link ng.$compile#transclusion transclusion},
+   * such as {@link ng.ngIf `ngIf`}, {@link ng.ngInclude `ngInclude`} and {@link ngRoute.ngView `ngView`}.
+   * Doing this misplaces the app {@link ng.$rootElement `$rootElement`} and the app's {@link auto.$injector injector},
+   * causing animations to stop working and making the injector inaccessible from outside the app.
+   * </div>
+   *
+   * ```html
+   * <!doctype html>
+   * <html>
+   * <body>
+   * <div ng-controller="WelcomeController">
+   *   {{greeting}}
+   * </div>
+   *
+   * <script src="angular.js"></script>
+   * <script>
+   *   let app = angular.module('demo', [])
+   *   .controller('WelcomeController', function($scope) {
+   *       $scope.greeting = 'Welcome!';
+   *   });
+   *   angular.bootstrap(document, ['demo']);
+   * </script>
+   * </body>
+   * </html>
+   * ```
+   *
+   * @param element DOM element which is the root of AngularTS application.
+   * @param modules an array of modules to load into the application.
+   *     Each item in the array should be the name of a predefined module or a (DI annotated)
+   *     function that will be invoked by the injector as a `config` block.
+   *     See: {@link angular.module modules}
+   * @param config
+   * @returns The created injector instance for this application.
+   */
   bootstrap(
     element: string | HTMLElement | HTMLDocument,
     modules?: Array<string | any>,
@@ -233,11 +344,17 @@ export class Angular extends EventTarget {
     return injector;
   }
 
+  /**
+   * Creates a standalone injector without bootstrapping the DOM.
+   */
   injector(modules: any[], strictDi?: boolean): ng.InjectorService {
     this.$injector = createInjector(modules, strictDi);
     return this.$injector;
   }
 
+  /**
+   * Finds `ng-app` roots under the provided element and bootstraps them.
+   */
   init(element: HTMLElement | HTMLDocument): void {
     const appElements: AppElement[] = [];
     let multimode = false;
@@ -284,6 +401,9 @@ export class Angular extends EventTarget {
     });
   }
 
+  /**
+   * Finds a scope by its registered `$scopename`.
+   */
   getScopeByName(name: string): ng.Scope | undefined {
     validateIsString(name, "name");
 
@@ -293,6 +413,9 @@ export class Angular extends EventTarget {
     return scope ? (scope.$proxy as unknown as ng.Scope) : undefined;
   }
 
+  /**
+   * Splits `"target.expression"` into the dispatch target and parse expression.
+   */
   private splitInvocation(input: string): { type: string; expr: string } {
     if (typeof input !== "string") {
       throw new TypeError("Invocation must be a string.");
@@ -320,6 +443,9 @@ export class Angular extends EventTarget {
   }
 }
 
+/**
+ * Returns the existing module instance for `name` or creates it via `factory`.
+ */
 function ensure(
   obj: ModuleRegistry,
   name: string,
@@ -328,6 +454,9 @@ function ensure(
   return obj[name] || (obj[name] = factory());
 }
 
+/**
+ * Narrows a custom event payload to the internal invocation shape.
+ */
 function isInvocationDetail(value: unknown): value is InvocationDetail {
   return (
     isObject(value) && typeof (value as InvocationDetail).expr === "string"

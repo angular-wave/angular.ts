@@ -9,6 +9,7 @@ ngIncludeDirective.$inject = [
 ];
 
 /**
+ * Loads external template content, transcludes it, and swaps it into the DOM.
  *
  * @param {ng.TemplateRequestService} $templateRequest
  * @param {ng.AnchorScrollService} $anchorScroll
@@ -168,6 +169,8 @@ export function ngIncludeDirective(
 ngIncludeFillContentDirective.$inject = [$t._compile];
 
 /**
+ * Fills the `ngInclude` element with the resolved template content and compiles it.
+ *
  * @param {ng.CompileService} $compile
  * @returns {ng.Directive}
  */
