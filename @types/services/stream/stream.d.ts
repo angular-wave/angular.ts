@@ -2,18 +2,7 @@
  * Shared Stream Connection Manager
  * Handles reconnect, heartbeat, and event callbacks for SSE or WebSocket
  */
-export class StreamConnection {
-  /**
-   * @param {() => EventSource | WebSocket} createFn - Function that creates a new EventSource or WebSocket.
-   * @param {ng.StreamConnectionConfig} config - Configuration object with callbacks, retries, heartbeat, transformMessage.
-   * @param {ng.LogService} log - Optional logger (default: console).
-   */
-  constructor(
-    createFn: () => EventSource | WebSocket,
-    config?: ng.StreamConnectionConfig,
-    log?: ng.LogService,
-  );
-  /** @private @type {() => EventSource | WebSocket} */
+export declare class StreamConnection {
   private _createFn;
   _config: {
     onOpen?: (event: Event) => void;
@@ -25,12 +14,21 @@ export class StreamConnection {
     heartbeatTimeout: number;
     transformMessage: (data: any) => any;
   };
-  _log: import("../log/interface.ts").LogService;
+  _log: ng.LogService;
   _retryCount: number;
   _closed: boolean;
-  _heartbeatTimer: number;
-  /** @type {EventSource | WebSocket | null} */
+  _heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
   _connection: EventSource | WebSocket | null;
+  /**
+   * @param {() => EventSource | WebSocket} createFn - Function that creates a new EventSource or WebSocket.
+   * @param {ng.StreamConnectionConfig} config - Configuration object with callbacks, retries, heartbeat, transformMessage.
+   * @param {ng.LogService} log - Optional logger (default: console).
+   */
+  constructor(
+    createFn: () => EventSource | WebSocket,
+    config?: ng.StreamConnectionConfig,
+    log?: ng.LogService,
+  );
   /**
    * Establishes a new connection using the provided createFn.
    * Closes any existing connection before creating a new one.

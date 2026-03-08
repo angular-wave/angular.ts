@@ -1,4 +1,4 @@
-import { NodeRef } from "./noderef.js";
+import { NodeRef } from "./noderef.ts";
 
 describe("NodeRef", () => {
   let div;

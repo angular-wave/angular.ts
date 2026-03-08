@@ -2,29 +2,25 @@
  * A type-safe wrapper around a DOM Node, HTMLElement, HTML string, NodeList, or an array of Nodes.
  * Provides guarantees around presence and access.
  */
-export class NodeRef {
+export declare class NodeRef {
   static $nonscope: boolean;
+  _node: Node | ChildNode | undefined;
+  _element: Element | undefined;
+  _nodes: Array<Node>;
+  _isList: boolean;
   /**
    * @param {Node | Element | string | NodeList | Node[]} element - The DOM node(s) or HTML string to wrap.
    * @throws {Error} If the argument is invalid or cannot be wrapped properly.
    */
   constructor(element: Node | Element | string | NodeList | Node[]);
-  /** @private @type {Node | ChildNode | undefined} */
-  private _node;
-  /** @type {Element | undefined} */
-  _element: Element | undefined;
-  /** @private @type {Array<Node>} a stable list on nodes */
-  private _nodes;
-  /** @type {boolean} */
-  _isList: boolean;
-  /** @param {Element} el */
-  set element(el: Element);
   /** @returns {Element} */
   get element(): Element;
-  /** @param {Node | ChildNode} node */
-  set node(node: Node | ChildNode);
+  /** @param {Element} el */
+  set element(el: Element);
   /** @returns {Node | ChildNode} */
   get node(): Node | ChildNode;
+  /** @param {Node | ChildNode} node */
+  set node(node: Node | ChildNode);
   /** @param {Array<Node>} nodes */
   set nodes(nodes: Array<Node>);
   /** @returns {Array<Node>} */
@@ -40,7 +36,7 @@ export class NodeRef {
   /** @returns {Element | Array<Node> | Node | ChildNode} */
   _getAll(): Element | Array<Node> | Node | ChildNode;
   /** @returns {Array<Element> | Array<Node>} */
-  _collection(): Array<Element> | Array<Node>;
+  _collection(): Array<Element | Node | ChildNode>;
   /**
    * @param {number} index
    * @returns {Element | Node | ChildNode}

@@ -12,7 +12,7 @@ export interface HttpRequestConfigHeaders {
   patch?: any;
 }
 
-// See the jsdoc for transformData() at https://github.com/angular/angular.js/blob/master/src/ng/http.js#L228
+// See the jsdoc for transformData() at https://github.com/angular/angular.ts/blob/master/src/ng/http.js#L228
 export interface HttpRequestTransformer {
   (data: any, headersGetter: HttpHeadersGetter): any;
 }

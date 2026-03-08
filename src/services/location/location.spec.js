@@ -10,8 +10,8 @@ import {
   stripFile,
   serverBase,
   urlsEqual,
-} from "./location.js";
-import { Angular } from "../../angular.js";
+} from "./location.ts";
+import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 
 describe("$location", () => {
@@ -1279,7 +1279,7 @@ describe("$location", () => {
   //     });
   //   });
 
-  //   // https://github.com/angular/angular.js/issues/16592
+  //   // https://github.com/angular/angular.ts/issues/16592
   //   it("should not infinitely digest when initial params contain a quote", () => {
   //     initService({ html5Mode: true, supportHistory: true });
   //     mockUpBrowser({
@@ -1293,7 +1293,7 @@ describe("$location", () => {
   //     });
   //   });
 
-  //   // https://github.com/angular/angular.js/issues/16592
+  //   // https://github.com/angular/angular.ts/issues/16592
   //   it("should not infinitely digest when initial params contain an escaped quote", () => {
   //     initService({ html5Mode: true, supportHistory: true });
   //     mockUpBrowser({
@@ -1307,7 +1307,7 @@ describe("$location", () => {
   //     });
   //   });
 
-  //   // https://github.com/angular/angular.js/issues/16592
+  //   // https://github.com/angular/angular.ts/issues/16592
   //   it("should not infinitely digest when updating params containing a quote (via $browser.url)", () => {
   //     initService({ html5Mode: true, supportHistory: true });
   //     mockUpBrowser({ initialUrl: "http://localhost:9876/", baseHref: "/" });
@@ -1320,7 +1320,7 @@ describe("$location", () => {
   //     });
   //   });
 
-  //   // https://github.com/angular/angular.js/issues/16592
+  //   // https://github.com/angular/angular.ts/issues/16592
   //   it("should not infinitely digest when updating params containing a quote (via window.location + popstate)", () => {
   //     initService({ html5Mode: true, supportHistory: true });
   //     mockUpBrowser({ initialUrl: "http://localhost:9876/", baseHref: "/" });
@@ -1572,7 +1572,7 @@ describe("$location", () => {
   //       });
   //     });
 
-  //     // https://github.com/angular/angular.js/issues/16592
+  //     // https://github.com/angular/angular.ts/issues/16592
   //     it("should not infinite $digest when going to base URL with trailing slash when $locationChangeSuccess watcher changes query params to contain quote", () => {
   //       initService({ html5Mode: true, supportHistory: true });
   //       mockUpBrowser({ initialUrl: "http://server/app/", baseHref: "/app/" });
@@ -1797,7 +1797,7 @@ describe("$location", () => {
   //     });
   //   });
 
-  //   // https://github.com/angular/angular.js/issues/16592
+  //   // https://github.com/angular/angular.ts/issues/16592
   //   it("should not infinite $digest on pushState() with quote in param", () => {
   //     initService({ html5Mode: true, supportHistory: true });
   //     mockUpBrowser({ initialUrl: "http://server/app/", baseHref: "/app/" });
@@ -1814,7 +1814,7 @@ describe("$location", () => {
   //     });
   //   });
 
-  //   // https://github.com/angular/angular.js/issues/16592
+  //   // https://github.com/angular/angular.ts/issues/16592
   //   it("should not infinite $digest on popstate event with quote in param", () => {
   //     initService({ html5Mode: true, supportHistory: true });
   //     mockUpBrowser({ initialUrl: "http://server/app/", baseHref: "/app/" });
@@ -2942,7 +2942,7 @@ describe("$location", () => {
   //     );
   //   });
 
-  //   // regression https://github.com/angular/angular.js/issues/1058
+  //   // regression https://github.com/angular/angular.ts/issues/1058
   //   it("should not throw if element was removed", inject((
   //
   //     $rootElement,

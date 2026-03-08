@@ -1,5 +1,5 @@
-import { arrayTuples, find, omit, pick, unnestR } from "../../shared/common.js";
-import { propEq } from "../../shared/hof.js";
+import { arrayTuples, find, omit, pick, unnestR } from "../../shared/common.ts";
+import { propEq } from "../../shared/hof.ts";
 import { values } from "../../shared/utils.js";
 import { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
@@ -269,7 +269,7 @@ export class PathUtils {
   ): PathNode[] | undefined {
     const node = find(path, predicate);
 
-    const elementIdx = path.indexOf(node);
+    const elementIdx = path.indexOf(node as PathNode);
 
     return elementIdx === -1 ? undefined : path.slice(0, elementIdx + 1);
   }

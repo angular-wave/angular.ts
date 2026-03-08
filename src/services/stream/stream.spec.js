@@ -1,4 +1,4 @@
-import { StreamConnection } from "./stream.js"; // adjust path
+import { StreamConnection } from "./stream.ts"; // adjust path
 
 describe("StreamConnection", () => {
   let listeners, log, EventSourceMock, WebSocketMock;

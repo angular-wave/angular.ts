@@ -74,7 +74,7 @@ export function rangeInputType(
  */
 export function inputDirective($parse: ng.ParseService): ng.Directive;
 export namespace inputDirective {
-  let $inject: string[];
+  let $inject: "$parse"[];
 }
 /**
  * @returns {ng.Directive}

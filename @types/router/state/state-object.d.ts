@@ -1,6 +1,6 @@
-import { Glob } from "../glob/glob.js";
+import { Glob } from "../glob/glob.ts";
 import type { Param } from "../params/param.ts";
-import type { Resolvable } from "../resolve/resolvable.js";
+import type { Resolvable } from "../resolve/resolvable.ts";
 import type { StateDeclaration } from "./interface.ts";
 /**
  * Internal representation of a ng-router state.

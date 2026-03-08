@@ -48,7 +48,11 @@ export declare class StateProvider {
    * The current [[StateObject]] (an internal API)
    */
   get $current(): StateObject | undefined;
-  static $inject: string[];
+  static $inject: (
+    | "$exceptionHandlerProvider"
+    | "$routerProvider"
+    | "$transitionsProvider"
+  )[];
   /**
    *
    * @param {ng.RouterProvider} globals
@@ -61,7 +65,8 @@ export declare class StateProvider {
     exceptionHandlerProvider: ng.ExceptionHandlerProvider,
   );
   $get: (
-    | string
+    | "$url"
+    | "$injector"
     | (($injector: ng.InjectorService, $url: ng.UrlService) => this)
   )[];
   /**
@@ -157,9 +162,9 @@ export declare class StateProvider {
     name: string,
     func: import("./interface.ts").BuilderFunction,
   ):
-    | this
     | import("./interface.ts").BuilderFunction
-    | import("./interface.ts").BuilderFunction[];
+    | import("./interface.ts").BuilderFunction[]
+    | this;
   /**
    *
    * @param {import("./interface.ts").StateDeclaration} definition

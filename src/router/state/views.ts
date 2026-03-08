@@ -1,14 +1,14 @@
-import { pick, tail } from "../../shared/common.js";
+import { pick, tail } from "../../shared/common.ts";
 import { entries, isArray, isDefined, isString } from "../../shared/utils.js";
 import { isInjectable } from "../../shared/predicates.ts";
-import { trace } from "../common/trace.js";
-import { ResolveContext } from "../resolve/resolve-context.js";
-import { Resolvable } from "../resolve/resolvable.js";
+import { trace } from "../common/trace.ts";
+import { ResolveContext } from "../resolve/resolve-context.ts";
+import { Resolvable } from "../resolve/resolvable.ts";
 import { annotate } from "../../core/di/di.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
-import type { TemplateFactoryProvider } from "../template-factory.js";
+import type { TemplateFactoryProvider } from "../template-factory.ts";
 
 /**
  * @return {(path: PathNode[], view: ViewDeclaration) => ViewConfig}

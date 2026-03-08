@@ -15,7 +15,7 @@ import type { ParamType } from "../params/param-type.ts";
  * This API is found at `router.urlService.config` (see: [[UIRouter.urlService]], [[URLService.config]])
  */
 export declare class UrlConfigProvider {
-  static $inject: string[];
+  static $inject: "$angularProvider"[];
   paramTypes: ParamTypes;
   _isCaseInsensitive: boolean;
   _isStrictMode: boolean;

@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import {
   deProxy,
   equals,

@@ -1,6 +1,6 @@
-import { Angular } from "../../angular.js";
+import { Angular } from "../../angular.ts";
 import { createInjector } from "./injector.ts";
-import { annotate } from "./di.js";
+import { annotate } from "./di.ts";
 import { extend } from "../../shared/utils.js";
 
 describe("injector.modules", () => {

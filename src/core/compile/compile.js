@@ -10,9 +10,9 @@ import {
   setIsolateScope,
   setScope,
   startingTag,
-} from "../../shared/dom.js";
+} from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
-import { NodeRef } from "../../shared/noderef.js";
+import { NodeRef } from "../../shared/noderef.ts";
 import { identifierForController } from "../controller/controller.ts";
 import {
   assertArg,
@@ -41,15 +41,15 @@ import {
   trim,
   values,
 } from "../../shared/utils.js";
-import { SCE_CONTEXTS } from "../../services/sce/sce.js";
+import { SCE_CONTEXTS } from "../../services/sce/sce.ts";
 import { PREFIX_REGEXP } from "../../shared/constants.ts";
 import {
   createEventDirective,
   createWindowEventDirective,
-} from "../../directive/events/events.js";
-import { Attributes } from "./attributes.js";
-import { ngObserveDirective } from "../../directive/observe/observe.js";
-import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
+} from "../../directive/events/events.ts";
+import { Attributes } from "./attributes.ts";
+import { ngObserveDirective } from "../../directive/observe/observe.ts";
+import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.ts";
 
 /** @typedef {import("./interface.ts").BoundTranscludeFn} BoundTranscludeFn */
 /** @typedef {import("./interface.ts").ChildTranscludeOrLinkFn} ChildTranscludeOrLinkFn */
@@ -1197,7 +1197,7 @@ export class CompileProvider {
                   );
                 } else {
                   // Update nName for cases where a prefix was removed
-                  // NOTE: the .toLowerCase() is unnecessary and causes https://github.com/angular/angular.js/issues/16624 for ng-attr-*
+                  // NOTE: the .toLowerCase() is unnecessary and causes https://github.com/angular/angular.ts/issues/16624 for ng-attr-*
                   nName = directiveNormalize(name.toLowerCase());
                   attrsMap[nName] = name;
 
@@ -1655,7 +1655,7 @@ export class CompileProvider {
               if (oldClasses !== "") {
                 delayedState._compileNodeRef.element.classList.forEach((cls) =>
                   /** @type {Element} */ (beforeTemplateLinkNode).classList.add(
-                    cls,
+                    /** @type {string} */ (cls),
                   ),
                 );
               }
@@ -2346,7 +2346,7 @@ export class CompileProvider {
                   //
                   // Clone childnodes before clearing contents on transcluded directives
                   // Create a temporary container to preserve separate text nodes without browser normalization
-                  // (see https://github.com/angular/angular.js/issues/14924)
+                  // (see https://github.com/angular/angular.ts/issues/14924)
                   const tempContainer = document.createElement("div");
 
                   const { childNodes } = compileNode;
@@ -2365,7 +2365,7 @@ export class CompileProvider {
                   // We have transclusion slots,
                   // collect them up, compile them and store their transclusion functions
                   // Use a temporary container to preserve separate text nodes without browser normalization
-                  // (see https://github.com/angular/angular.js/issues/14924)
+                  // (see https://github.com/angular/angular.ts/issues/14924)
                   const tempContainer = document.createElement("div");
 
                   const slotMap = nullObject();
@@ -2397,7 +2397,7 @@ export class CompileProvider {
 
                   // Clone childnodes before distributing to slots
                   // Clone each node individually to prevent browser DOM normalization
-                  // which can merge adjacent text nodes (see https://github.com/angular/angular.js/issues/14924)
+                  // which can merge adjacent text nodes (see https://github.com/angular/angular.ts/issues/14924)
                   const { childNodes } = compileNode;
 
                   // Add the matching elements into their slot
@@ -2887,7 +2887,7 @@ export class CompileProvider {
         // * if the directive has been pulled into a template because another directive with a higher priority
         // asked for element transclusion
         // * if the directive itself asks for transclusion but it is at the root of a template and the original
-        // element was replaced. See https://github.com/angular/angular.js/issues/12936
+        // element was replaced. See https://github.com/angular/angular.ts/issues/12936
         /**
          * @param {any[]} directives
          * @param {any} isolateScope

@@ -1,35 +1,27 @@
-/**
- * This class defines a type of hook, such as `onBefore` or `onEnter`.
- * Plugins can define custom hook types, such as sticky states does for `onInactive`.
- */
-export class TransitionEventType {
-  /**
-   * @param {string} name
-   * @param {number} hookPhase
-   * @param {number} hookOrder
-   * @param {any} criteriaMatchPath
-   */
+import { TransitionHook } from "./transition-hook.ts";
+import type { HookResult, PathType } from "./interface.ts";
+type GetResultHandler = (hook: TransitionHook) => (result: HookResult) => any;
+type GetErrorHandler = (hook?: {
+  logError: (error: any) => any;
+}) => (error: any) => any;
+export declare class TransitionEventType {
+  name: string;
+  hookPhase: number;
+  hookOrder: number;
+  criteriaMatchPath: PathType;
+  reverseSort: boolean;
+  getResultHandler: GetResultHandler;
+  getErrorHandler: GetErrorHandler;
+  synchronous: boolean;
   constructor(
     name: string,
     hookPhase: number,
     hookOrder: number,
-    criteriaMatchPath: any,
+    criteriaMatchPath: PathType,
     reverseSort?: boolean,
-    getResultHandler?: (
-      hook: TransitionHook,
-    ) => (result: import("./transition-hook.js").HookResult) => Promise<any>,
-    getErrorHandler?: () => (error: any) => Promise<never>,
+    getResultHandler?: GetResultHandler,
+    getErrorHandler?: GetErrorHandler,
     synchronous?: boolean,
   );
-  name: string;
-  hookPhase: number;
-  hookOrder: number;
-  criteriaMatchPath: any;
-  reverseSort: boolean;
-  getResultHandler: (
-    hook: TransitionHook,
-  ) => (result: import("./transition-hook.js").HookResult) => Promise<any>;
-  getErrorHandler: () => (error: any) => Promise<never>;
-  synchronous: boolean;
 }
-import { TransitionHook } from "./transition-hook.js";
+export {};

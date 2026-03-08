@@ -1,4 +1,4 @@
-import { allTrueR, filter, find, map } from "../../shared/common.js";
+import { allTrueR, filter, find, map } from "../../shared/common.ts";
 import { isInjectable } from "../../shared/predicates.ts";
 import {
   isArray,
@@ -72,7 +72,7 @@ function unwrapShorthand(cfg: ParamDeclaration | any): ParamDeclaration {
  * @param {ParamType | null} urlType
  * @param {DefType} location
  * @param {string} id
- * @param {import("./param-types.js").ParamTypes} paramTypes
+ * @param {import("./param-types.ts").ParamTypes} paramTypes
  */
 function getType(
   cfg: ParamDeclaration,
@@ -159,9 +159,11 @@ function getReplace(
 
   const configuredKeys = map(replace, (x: Replace) => x.from) as string[];
 
-  return filter(
-    defaultPolicy,
-    (item) => configuredKeys.indexOf(/** @type {string} */ item.from) === -1,
+  return (
+    filter(
+      defaultPolicy,
+      (item) => configuredKeys.indexOf(item.from as string) === -1,
+    ) as Replace[]
   ).concat(replace);
 }
 
@@ -185,7 +187,7 @@ export class Param {
    * @param {string} id
    * @param {ParamType | null} type
    * @param {DefType} location
-   * @param {import("../url/url-config.js").UrlConfigProvider} urlConfig
+   * @param {import("../url/url-config.ts").UrlConfigProvider} urlConfig
    * @param {ng.StateDeclaration} state
    */
   constructor(

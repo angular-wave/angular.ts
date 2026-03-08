@@ -2,9 +2,9 @@
  * Service provider that creates a {@link CookieService $cookie} service.
  * @type {ng.ServiceProvider}
  */
-export class CookieProvider {
-  /** @type {ng.CookieOptions} */
+export declare class CookieProvider {
   defaults: ng.CookieOptions;
+  constructor();
   $get: () => CookieService;
 }
 /**
@@ -14,14 +14,13 @@ export class CookieProvider {
  *  - JSON serialization helpers
  *  - Global defaults supplied by $cookiesProvider
  */
-export class CookieService {
+export declare class CookieService {
+  private _defaults;
   /**
    * @param {ng.CookieOptions} defaults
    *   Default cookie attributes defined by `$cookiesProvider.defaults`.
    */
   constructor(defaults: ng.CookieOptions);
-  /** @private @type {ng.CookieOptions} */
-  private _defaults;
   /**
    * Retrieves a raw cookie value.
    *

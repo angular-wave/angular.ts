@@ -2,33 +2,27 @@
  * Configurable provider for an injectable event bus
  * @extends {ng.ServiceProvider}
  */
-export class PubSubProvider {
-  static $inject: string[];
+export declare class PubSubProvider {
+  static $inject: ("$angularProvider" | "$exceptionHandlerProvider")[];
   /**
    * @param {ng.ExceptionHandlerProvider} $exceptionHandler
    * @param {ng.AngularServiceProvider} angularProvider
    */
+  eventBus: PubSub;
   constructor(
     $exceptionHandler: ng.ExceptionHandlerProvider,
     angularProvider: ng.AngularServiceProvider,
   );
-  /**
-   * @type {PubSub}
-   */
-  eventBus: PubSub;
   $get: () => PubSub;
 }
-export class PubSub {
+export declare class PubSub {
+  private _topics;
+  private _disposed;
+  $exceptionHandler: ng.ExceptionHandlerService;
   /**
    * @param {ng.ExceptionHandlerService} $exceptionHandler
    */
   constructor($exceptionHandler: ng.ExceptionHandlerService);
-  /** @private {Object<string, Array<{fn: Function, context: any}>>} */
-  private _topics;
-  /** @private */
-  private _disposed;
-  /** @public @type {ng.ExceptionHandlerService} */
-  public $exceptionHandler: ng.ExceptionHandlerService;
   /**
    * Set instance to initial state
    */

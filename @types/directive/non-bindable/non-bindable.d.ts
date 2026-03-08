@@ -1,4 +1,1 @@
-/**
- * @returns {ng.Directive}
- */
-export function ngNonBindableDirective(): ng.Directive;
+export declare function ngNonBindableDirective(): ng.Directive;

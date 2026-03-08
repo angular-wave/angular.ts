@@ -1,17 +1,17 @@
-import { defaults, removeFrom } from "../../shared/common.js";
+import { defaults, removeFrom } from "../../shared/common.ts";
 import { isDefined, isObject, isString, minErr } from "../../shared/utils.js";
-import { Queue } from "../../shared/queue.js";
+import { Queue } from "../../shared/queue.ts";
 import { makeTargetState } from "../path/path-utils.ts";
 import { PathNode } from "../path/path-node.ts";
-import { defaultTransOpts } from "../transition/transition-service.js";
-import { RejectType, Rejection } from "../transition/reject-factory.js";
+import { defaultTransOpts } from "../transition/transition-service.ts";
+import { RejectType, Rejection } from "../transition/reject-factory.ts";
 import { TargetState } from "./target-state.ts";
 import { Param } from "../params/param.ts";
-import { Glob } from "../glob/glob.js";
-import { lazyLoadState } from "../hooks/lazy-load.js";
-import { $injectTokens } from "../../injection-tokens.js";
+import { Glob } from "../glob/glob.ts";
+import { lazyLoadState } from "../hooks/lazy-load.ts";
+import { $injectTokens } from "../../injection-tokens.ts";
 import type { RawParams } from "../params/interface.ts";
-import type { Transition } from "../transition/transition.js";
+import type { Transition } from "../transition/transition.ts";
 import type { HookResult, TransitionOptions } from "../transition/interface.ts";
 import type {
   HrefOptions,

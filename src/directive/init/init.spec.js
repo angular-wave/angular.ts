@@ -1,7 +1,7 @@
-import { createElementFromHTML, dealoc } from "../../shared/dom.js";
-import { Angular } from "../../angular.js";
+import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
+import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
-import { wait } from "../../shared/test-utils.js";
+import { wait } from "../../shared/test-utils.ts";
 
 describe("ngInit", () => {
   let element;

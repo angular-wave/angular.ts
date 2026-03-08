@@ -1,16 +1,16 @@
+import type { LogServiceFactory } from "./interface.ts";
 /**
  * Configuration provider for `$log` service
  */
-export class LogProvider {
-  /** @type {boolean} */
+export declare class LogProvider {
   debug: boolean;
-  /** @private @type {import("./interface.ts").LogServiceFactory | null} */
   private _override;
+  /** @private */
+  constructor();
   /**
    * Override the default {@link LogService} implemenation
-   * @param {import("./interface.ts").LogServiceFactory} fn
    */
-  setLogger(fn: import("./interface.ts").LogServiceFactory): void;
+  setLogger(fn: LogServiceFactory): void;
   /**
    * @private
    * @param {unknown} arg

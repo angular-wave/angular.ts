@@ -1,7 +1,7 @@
-import { Angular } from "../angular.js";
+import { Angular } from "../angular.ts";
 import { createInjector } from "../core/di/injector.ts";
 import { isString, includes } from "../shared/utils.js";
-import { createElementFromHTML } from "../shared/dom.js";
+import { createElementFromHTML } from "../shared/dom.ts";
 
 describe("Filter: filter", () => {
   let filter;

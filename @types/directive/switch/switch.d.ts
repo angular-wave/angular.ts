@@ -1,32 +1,4 @@
-/**
- * @param {ng.AnimateService} $animate
- * @returns {ng.Directive<NgSwitchController>}
- */
-export function ngSwitchDirective(
-  $animate: ng.AnimateService,
-): ng.Directive<NgSwitchController>;
-export namespace ngSwitchDirective {
-  let $inject: string[];
-}
-/**
- * @returns {ng.Directive<NgSwitchController>}
- */
-export function ngSwitchWhenDirective(): ng.Directive<NgSwitchController>;
-/**
- * @returns {ng.Directive<NgSwitchController>}
- */
-export function ngSwitchDefaultDirective(): ng.Directive<NgSwitchController>;
-export type NgSwitchBlock = {
-  _clone: Node;
-  _comment: Comment;
-};
-/**
- * @typedef {object} NgSwitchBlock
- * @property {Node} _clone
- * @property {Comment} _comment
- */
 declare class NgSwitchController {
-  /** @type {Record<string, { transclude: ng.TranscludeFn; element: Element;}[]>} */
   _cases: Record<
     string,
     {
@@ -34,5 +6,39 @@ declare class NgSwitchController {
       element: Element;
     }[]
   >;
+  constructor();
 }
+export declare function ngSwitchDirective(
+  $animate: ng.AnimateService,
+): ng.Directive<NgSwitchController>;
+export declare namespace ngSwitchDirective {
+  var $inject: "$animate"[];
+}
+export declare function ngSwitchWhenDirective(): {
+  transclude: string;
+  terminal: boolean;
+  priority: number;
+  require: string;
+  link(
+    scope: ng.Scope,
+    element: Element,
+    attrs: import("../../core/compile/attributes.ts").Attributes &
+      Record<string, string>,
+    ctrl: NgSwitchController,
+    $transclude?: ng.TranscludeFn,
+  ): void;
+};
+export declare function ngSwitchDefaultDirective(): {
+  transclude: string;
+  terminal: boolean;
+  priority: number;
+  require: string;
+  link(
+    _scope: ng.Scope,
+    element: Element,
+    _attr: import("../../core/compile/attributes.ts").Attributes,
+    ctrl: NgSwitchController,
+    $transclude?: ng.TranscludeFn,
+  ): void;
+};
 export {};

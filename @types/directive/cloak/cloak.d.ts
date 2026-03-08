@@ -1,4 +1,1 @@
-/**
- * @returns {ng.Directive}
- */
-export function ngCloakDirective(): ng.Directive;
+export declare function ngCloakDirective(): ng.Directive;

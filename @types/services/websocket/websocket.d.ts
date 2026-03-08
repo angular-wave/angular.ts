@@ -1,20 +1,12 @@
+import type { LogService } from "../log/interface.ts";
+import type { WebSocketService } from "./interface.ts";
 /**
  * WebSocketProvider
  * Provides a pre-configured WebSocket connection as an injectable.
  */
-export class WebSocketProvider {
-  /** @type {ng.WebSocketConfig} */
+export declare class WebSocketProvider {
   defaults: ng.WebSocketConfig;
-  $get: (
-    | string
-    | ((
-        log: ng.LogService,
-      ) => (
-        url: string,
-        protocols?: string[],
-        config?: import("./interface.ts").WebSocketConfig,
-      ) => StreamConnection)
-  )[];
-  _$log: import("../log/interface.ts").LogService;
+  _$log: LogService;
+  constructor();
+  $get: ("$log" | ((log: ng.LogService) => WebSocketService))[];
 }
-import { StreamConnection } from "../stream/stream.js";

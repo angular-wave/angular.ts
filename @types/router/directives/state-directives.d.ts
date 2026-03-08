@@ -4,13 +4,13 @@
  * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
-export function StateRefDirective(
+export declare function StateRefDirective(
   $stateService: ng.StateService,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
 ): ng.Directive;
-export namespace StateRefDirective {
-  let $inject: string[];
+export declare namespace StateRefDirective {
+  var $inject: ("$state" | "$stateRegistry" | "$transitions")[];
 }
 /**
  * @param {ng.StateService} $state
@@ -18,14 +18,13 @@ export namespace StateRefDirective {
  * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
-export function StateRefDynamicDirective(
+export declare function StateRefDynamicDirective(
   $state: ng.StateService,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
 ): ng.Directive;
-export namespace StateRefDynamicDirective {
-  let $inject_1: string[];
-  export { $inject_1 as $inject };
+export declare namespace StateRefDynamicDirective {
+  var $inject: ("$state" | "$stateRegistry" | "$transitions")[];
 }
 /**
  * @param {ng.StateService} $state
@@ -35,14 +34,19 @@ export namespace StateRefDynamicDirective {
  * @param {ng.TransitionService} $transitions
  * @returns {ng.Directive}
  */
-export function StateRefActiveDirective(
+export declare function StateRefActiveDirective(
   $state: ng.StateService,
   $router: ng.RouterService,
   $interpolate: ng.InterpolateService,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
 ): ng.Directive;
-export namespace StateRefActiveDirective {
-  let $inject_2: string[];
-  export { $inject_2 as $inject };
+export declare namespace StateRefActiveDirective {
+  var $inject: (
+    | "$interpolate"
+    | "$router"
+    | "$state"
+    | "$stateRegistry"
+    | "$transitions"
+  )[];
 }

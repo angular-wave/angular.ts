@@ -8,7 +8,7 @@
  * @param {string} str the input string
  * @returns {string}
  */
-export function maxLength(max: number, str: string): string;
+export declare function maxLength(max: number, str: string): string;
 /**
  * Returns a string, with spaces added to the end, up to a desired str length
  *
@@ -18,27 +18,28 @@ export function maxLength(max: number, str: string): string;
  * @param {number} length the desired length of the string to return
  * @param {string} str the input string
  */
-export function padString(length: number, str: string): string;
+export declare function padString(length: number, str: string): string;
 /**
  * @param {string} camelCase
  * @returns {string}
  */
-export function kebobString(camelCase: string): string;
+export declare function kebobString(camelCase: string): string;
 /**
  * @param {Function} fn
  * @returns {string}
  */
-export function functionToString(fn: Function): string;
+export declare function functionToString(fn: Function): string;
 /**
  * @param {[]|Function} fn
  * @returns {string}
  */
-export function fnToString(fn: [] | Function): string;
+export declare function fnToString(fn: [] | Function): string;
 /**
  * @param {any} value
  * @returns {string|*|string}
  */
-export function stringify(value: any): string | any | string;
+export declare function stringify(value: any): string;
+export declare const stripLastPathElement: (str: string) => string;
 /**
  * Splits on a delimiter, but returns the delimiters in the array
  *
@@ -50,9 +51,7 @@ export function stringify(value: any): string | any | string;
  * ```
  * @param {string} delim
  */
-export function splitOnDelim(
-  delim: string,
-): (/** @type {string} */ str: string) => string[];
+export declare function splitOnDelim(delim: string): (str: string) => string[];
 /**
  * Reduce fn that joins neighboring strings
  *
@@ -67,5 +66,4 @@ export function splitOnDelim(
  * @param {any[]} acc
  * @param {unknown} str
  */
-export function joinNeighborsR(acc: any[], str: unknown): any[];
-export function stripLastPathElement(str: string): string;
+export declare function joinNeighborsR(acc: any[], str: unknown): any[];

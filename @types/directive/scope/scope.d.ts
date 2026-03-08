@@ -1,4 +1,1 @@
-/**
- * @return {ng.Directive}
- */
-export function ngScopeDirective(): ng.Directive;
+export declare function ngScopeDirective(): ng.Directive;

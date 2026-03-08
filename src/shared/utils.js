@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PREFIX_REGEXP, SPECIAL_CHARS_REGEXP } from "./constants.ts";
 import { NodeType } from "./node.ts";
 

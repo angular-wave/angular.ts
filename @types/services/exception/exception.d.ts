@@ -46,9 +46,9 @@
  * Applications may replace the handler via by setting `errorHandler`property or by providing their own
  * `$exceptionHandler` factory.
  */
-export class ExceptionHandlerProvider {
-  /** @type {ng.ExceptionHandlerService} */
+export declare class ExceptionHandlerProvider {
   handler: ng.ExceptionHandlerService;
+  constructor();
   /**
    * @returns {ng.ExceptionHandlerService}
    */

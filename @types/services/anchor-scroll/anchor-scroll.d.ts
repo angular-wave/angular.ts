@@ -1,10 +1,12 @@
-export class AnchorScrollProvider {
+export declare class AnchorScrollProvider {
   autoScrollingEnabled: boolean;
+  constructor();
   $get: (
-    | string
+    | "$location"
+    | "$rootScope"
     | ((
         $location: ng.LocationService,
         $rootScope: ng.Scope,
-      ) => ng.AnchorScrollService)
+      ) => import("./interface.ts").AnchorScrollService)
   )[];
 }

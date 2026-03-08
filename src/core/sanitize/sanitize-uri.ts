@@ -1,5 +1,5 @@
 import { isDefined } from "../../shared/utils.js";
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import type { SanitizerFn } from "./interface.ts";
 
 export class SanitizeUriProvider {

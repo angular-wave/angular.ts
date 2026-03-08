@@ -1,7 +1,7 @@
-export { angular } from "./index.js";
+export { angular } from "./index.ts";
 
-import { Angular as TAngular } from "./angular.js";
-import { Attributes as TAttributes } from "./core/compile/attributes.js";
+import { Angular as TAngular } from "./angular.ts";
+import { Attributes as TAttributes } from "./core/compile/attributes.ts";
 import { Scope as TScope } from "./core/scope/scope.js";
 import { ProviderCache as TProviderCache } from "./core/di/interface.ts";
 import {
@@ -12,13 +12,13 @@ import {
 import { NgModule as TNgModule } from "./core/di/ng-module/ng-module.ts";
 import { InjectorService as TInjectorService } from "./core/di/internal-injector.ts";
 
-import { AnchorScrollProvider as TAnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
+import { AnchorScrollProvider as TAnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
 
 import { AnchorScrollService as TAnchorScrollService } from "./services/anchor-scroll/interface.ts";
 
 import { ControllerService as TControllerService } from "./core/controller/interface.ts";
 import { ExceptionHandler as TExceptionHandler } from "./services/exception/interface.ts";
-import { ExceptionHandlerProvider as TExceptionHandlerProvider } from "./services/exception/exception.js";
+import { ExceptionHandlerProvider as TExceptionHandlerProvider } from "./services/exception/exception.ts";
 import { ParseService as TParseService } from "./core/parse/interface.ts";
 import { TemplateRequestService as TTemplateRequestService } from "./services/template-request/interface.ts";
 
@@ -32,7 +32,7 @@ import {
   HttpPromise as THttpPromise,
   HttpResponse as THttpResponse,
 } from "./services/http/interface.ts";
-import { HttpParamSerializerProvider as THttpParamSerializerProvider } from "./services/http/http.js";
+import { HttpParamSerializerProvider as THttpParamSerializerProvider } from "./services/http/http.ts";
 import {
   FilterFactory as TFilterFactory,
   FilterService as TFilterService,
@@ -47,14 +47,14 @@ import { InterpolateProvider as TInterpolateProvider } from "./core/interpolate/
 import {
   SceProvider as TSceProvider,
   SceDelegateProvider as TSceDelegateProvider,
-} from "./services/sce/sce.js";
+} from "./services/sce/sce.ts";
 import { StateProvider as TStateProvider } from "./router/state/state-service.ts";
 import { HttpService as THttpService } from "./services/http/interface.ts";
 import { LogService as TLogService } from "./services/log/interface.ts";
 import {
   PubSubProvider as TPubSubProvider,
   PubSub as TPubSub,
-} from "./services/pubsub/pubsub.js";
+} from "./services/pubsub/pubsub.ts";
 import {
   AnnotatedFactory as TAnnotatedFactory,
   Directive as TDirective,
@@ -92,7 +92,7 @@ import {
   WorkerConfig as TWorkerConfig,
 } from "./directive/worker/interface.ts";
 import { Provider as TProvideService } from "./interface.ts";
-import { Location as TLocationService } from "./services/location/location.js";
+import { Location as TLocationService } from "./services/location/location.ts";
 import {
   AnimateService as TAnimateService,
   AnimationOptions as TAnimationOptions,
@@ -103,7 +103,7 @@ import {
   StorageType as TStorageType,
 } from "./services/storage/interface.ts";
 import { StreamConnectionConfig as TStreamConnectionConfig } from "./services/stream/interface.ts";
-import { CookieService as TCookieService } from "./services/cookie/cookie.js";
+import { CookieService as TCookieService } from "./services/cookie/cookie.ts";
 import {
   CookieStoreOptions as TCookieStoreOptions,
   CookieOptions as TCookieOptions,
@@ -112,15 +112,14 @@ import {
   RestDefinition as TRestDefinition,
   EntityClass as TEntityClass,
 } from "./services/rest/interface.ts";
-import { RestService as TRestService } from "./services/rest/rest.js";
+import { RestService as TRestService } from "./services/rest/rest.ts";
 import { ServiceProvider as TServiceProvider } from "./interface.ts";
 import { NgModelController as TNgModelController } from "./directive/model/model.js";
 import { RouterProvider as TRouterProvider } from "./router/router.ts";
-import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.js";
-import { AnimateProvider as TAnimateProvider } from "./animations/animate.js";
+import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.ts";
 import { UrlService as TUrlService } from "./router/url/url-service.ts";
-import { LocationProvider as TLocationProvider } from "./services/location/location.js";
-import { ViewService as TViewService } from "./router/view/view.js";
+import { LocationProvider as TLocationProvider } from "./services/location/location.ts";
+import { ViewService as TViewService } from "./router/view/view.ts";
 import {
   BuiltStateDeclaration as TBuiltStateDeclaration,
   StateDeclaration as TStateDeclaration,
@@ -135,9 +134,9 @@ import {
   WebSocketConfig as TWebSocketConfig,
   WebSocketService as TWebSocketService,
 } from "./services/websocket/interface.ts";
-import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.js";
-import { Transition as TTransition } from "./router/transition/transition.js";
-import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.js";
+import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.ts";
+import { Transition as TTransition } from "./router/transition/transition.ts";
+import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.ts";
 import { TransitionService as TTransitionService } from "./router/transition/interface.ts";
 import { UrlConfigProvider as TUrlConfigProvider } from "./router/url/url-config.ts";
 import { AriaService as TAriaService } from "./directive/aria/interface.ts";
@@ -175,14 +174,16 @@ declare global {
     // Providers
     export type AnchorScrollProvider = TAnchorScrollProvider;
     export type AngularServiceProvider = TAngularServiceProvider;
-    export type AnimateProvider = TAnimateProvider;
+    export type AnimateProvider =
+      typeof import("./animations/animate.ts").AnimateProvider;
     export type FilterProvider = TFilterProvider;
     export type ExceptionHandlerProvider = TExceptionHandlerProvider;
-    export type HttpParamSerializerProvider = THttpParamSerializerProvider;
+    export type HttpParamSerializerProvider =
+      typeof THttpParamSerializerProvider;
     export type InterpolateProvider = TInterpolateProvider;
     export type LocationProvider = TLocationProvider;
     export type SceDelegateProvider = TSceDelegateProvider;
-    export type SceProvider = TSceProvider;
+    export type SceProvider = typeof TSceProvider;
     export type TransitionProvider = TTransitionProvider;
     export type TransitionService = TTransitionService;
     export type RouterProvider = TRouterProvider;

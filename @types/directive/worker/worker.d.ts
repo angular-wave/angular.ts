@@ -1,27 +1,20 @@
+import type { WorkerConfig, WorkerConnection } from "./interface.ts";
 /**
- * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
- *
- * @param {ng.ParseService} $parse
- * @param {ng.LogService} $log
- * @param {ng.ExceptionHandlerService} $exceptionHandler
- * @returns {ng.Directive}
+ * Binds a DOM event to a module worker and routes its result back into the
+ * element or an Angular expression callback.
  */
-export function ngWorkerDirective(
+export declare function ngWorkerDirective(
   $parse: ng.ParseService,
   $log: ng.LogService,
   $exceptionHandler: ng.ExceptionHandlerService,
 ): ng.Directive;
-export namespace ngWorkerDirective {
-  let $inject: string[];
+export declare namespace ngWorkerDirective {
+  var $inject: ("$exceptionHandler" | "$log" | "$parse")[];
 }
 /**
- * Creates a managed Web Worker connection.
- *
- * @param {string | URL} scriptPath
- * @param {ng.WorkerConfig} [config]
- * @returns {ng.WorkerConnection}
+ * Creates a managed worker wrapper with restart and message transformation hooks.
  */
-export function createWorkerConnection(
+export declare function createWorkerConnection(
   scriptPath: string | URL,
-  config?: ng.WorkerConfig,
-): ng.WorkerConnection;
+  config?: WorkerConfig,
+): WorkerConnection;

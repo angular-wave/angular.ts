@@ -3,9 +3,9 @@ import {
   dealoc,
   getCacheData,
   setCacheData,
-} from "../../shared/dom.js";
-import { Angular } from "../../angular.js";
-import { wait } from "../../shared/test-utils.js";
+} from "../../shared/dom.ts";
+import { Angular } from "../../angular.ts";
+import { wait } from "../../shared/test-utils.ts";
 
 describe("ngIf", () => {
   describe("basic", () => {

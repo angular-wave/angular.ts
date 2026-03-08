@@ -6,16 +6,16 @@ import {
   isObject,
   isString,
 } from "../../shared/utils.js";
-import { is, pattern } from "../../shared/hof.js";
+import { is, pattern } from "../../shared/hof.ts";
 import { UrlRules } from "./url-rules.ts";
 import { TargetState } from "../state/target-state.ts";
-import { removeFrom } from "../../shared/common.js";
-import { stripLastPathElement } from "../../shared/strings.js";
+import { removeFrom } from "../../shared/common.ts";
+import { stripLastPathElement } from "../../shared/strings.ts";
 import { UrlMatcher } from "./url-matcher.ts";
 import { ParamFactory } from "../params/param-factory.ts";
 import { UrlRuleFactory } from "./url-rule.ts";
-import { getBaseHref } from "../../shared/dom.js";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+import { getBaseHref } from "../../shared/dom.ts";
+import { $injectTokens as $t } from "../../injection-tokens.ts";
 import type { MatchResult, UrlParts } from "./interface.ts";
 
 /**
@@ -56,13 +56,13 @@ export class UrlService {
   /**
    * @param {ng.LocationProvider} $locationProvider
    * @param {import("../../router/state/state-service.ts").StateProvider} stateProvider
-   * @param {import("../router.js").RouterProvider} globals
+   * @param {import("../router.ts").RouterProvider} globals
    * @param {import("../../router/url/url-config.ts").UrlConfigProvider} urlConfigProvider
    */
   constructor(
     $locationProvider: ng.LocationProvider,
     stateProvider: import("../../router/state/state-service.ts").StateProvider,
-    globals: import("../router.js").RouterProvider,
+    globals: import("../router.ts").RouterProvider,
     urlConfigProvider: import("../../router/url/url-config.ts").UrlConfigProvider,
   ) {
     this._locationProvider = $locationProvider;
@@ -83,7 +83,7 @@ export class UrlService {
     /**
      * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
      * @ignore
-     * @type {import("./url-config.js").UrlConfigProvider}
+     * @type {import("./url-config.ts").UrlConfigProvider}
      */
     this._config = urlConfigProvider;
 

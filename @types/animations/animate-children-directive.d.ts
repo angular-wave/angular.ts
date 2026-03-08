@@ -2,9 +2,9 @@
  * @param {ng.InterpolateService} $interpolate
  * @returns {ng.Directive}
  */
-export function $$AnimateChildrenDirective(
-  $interpolate: ng.InterpolateService,
-): ng.Directive;
-export namespace $$AnimateChildrenDirective {
-  let $inject: string[];
+export declare function $$AnimateChildrenDirective($interpolate: any): {
+  link(scope: any, element: any, attrs: any): void;
+};
+export declare namespace $$AnimateChildrenDirective {
+  var $inject: "$interpolate"[];
 }

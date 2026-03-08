@@ -1,11 +1,11 @@
-import { applyPairs, find } from "../../shared/common.js";
-import { propEq } from "../../shared/hof.js";
+import { applyPairs, find } from "../../shared/common.ts";
+import { propEq } from "../../shared/hof.ts";
 import { Param } from "../params/param.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { GetParamsFn } from "./interface.ts";
 import type { ViewConfig } from "../state/views.ts";
-import type { Resolvable } from "../resolve/resolvable.js";
+import type { Resolvable } from "../resolve/resolvable.ts";
 
 /**
  * A node in a [[TreeChanges]] path

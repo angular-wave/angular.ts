@@ -1,11 +1,11 @@
-import { Angular } from "../../angular.js";
+import { Angular } from "../../angular.ts";
 import {
   createElementFromHTML,
   dealoc,
   getCacheData,
   getController,
-} from "../../shared/dom.js";
-import { browserTrigger, wait } from "../../shared/test-utils.js";
+} from "../../shared/dom.ts";
+import { browserTrigger, wait } from "../../shared/test-utils.ts";
 import { assert } from "../../shared/utils.js";
 import { FormController } from "./form.js";
 

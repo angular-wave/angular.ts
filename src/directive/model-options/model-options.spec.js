@@ -1,7 +1,7 @@
-import { defaultModelOptions } from "./model-options.js";
-import { dealoc, getController } from "../../shared/dom.js";
-import { Angular } from "../../angular.js";
-import { bootstrap, ELEMENT, wait } from "../../shared/test-utils.js";
+import { defaultModelOptions } from "./model-options.ts";
+import { dealoc, getController } from "../../shared/dom.ts";
+import { Angular } from "../../angular.ts";
+import { bootstrap, ELEMENT, wait } from "../../shared/test-utils.ts";
 
 function changeGivenInputTo(inputElm, val) {
   inputElm.value = val;

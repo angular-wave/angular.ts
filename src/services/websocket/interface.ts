@@ -1,5 +1,5 @@
 import { StreamConnectionConfig } from "../stream/interface.ts";
-import { StreamConnection } from "../stream/stream.js";
+import { StreamConnection } from "../stream/stream.ts";
 
 /**
  * WebSocket-specific configuration

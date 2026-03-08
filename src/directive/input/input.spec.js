@@ -1,10 +1,10 @@
-import { Angular } from "../../angular.js";
+import { Angular } from "../../angular.ts";
 import {
   createElementFromHTML as $,
   dealoc,
   getController,
-} from "../../shared/dom.js";
-import { wait } from "../../shared/test-utils.js";
+} from "../../shared/dom.ts";
+import { wait } from "../../shared/test-utils.ts";
 import { EMAIL_REGEXP, ISO_DATE_REGEXP, URL_REGEXP } from "./input.js";
 
 describe("input", () => {

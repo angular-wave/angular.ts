@@ -1,7 +1,7 @@
-import { Angular } from "../../angular.js";
-import { dealoc } from "../../shared/dom.js";
-import { wait } from "../../shared/test-utils.js";
-import { arrayDifference, split, toClassString } from "./class.js";
+import { Angular } from "../../angular.ts";
+import { dealoc } from "../../shared/dom.ts";
+import { wait } from "../../shared/test-utils.ts";
+import { arrayDifference, split, toClassString } from "./class.ts";
 
 describe("ngClass", () => {
   let element;
@@ -487,7 +487,7 @@ describe("ngClass", () => {
     expect(element).not.toHaveClass("orange");
   });
 
-  // // https://github.com/angular/angular.js/issues/15905
+  // // https://github.com/angular/angular.ts/issues/15905
   it("should support a mixed literal-array/object variable", async () => {
     element = $compile('<div ng-class="[classVar]"></div>')($rootScope);
 
@@ -510,7 +510,7 @@ describe("ngClass", () => {
     expect(element).not.toHaveClass("orange");
   });
 
-  // https://github.com/angular/angular.js/issues/15960#issuecomment-299109412
+  // https://github.com/angular/angular.ts/issues/15960#issuecomment-299109412
   it("should always reevaluate filters with non-primitive inputs within literals", async () => {
     document.getElementById("app").ng = undefined;
     injector = window.angular.bootstrap(document.getElementById("app"), [

@@ -39,7 +39,24 @@
  * @param {Function} fn
  * @returns {*|function(): (*|any)}
  */
-export function curry(fn: Function): any | (() => any | any);
+export declare function curry<T extends (...args: any[]) => any>(fn: T): any;
+/**
+ * Given a property name and a value, returns a function that returns a boolean based on whether
+ * the passed object has a property that matches the value
+ * let obj = { foo: 1, name: "blarg" };
+ * let getName = propEq("name", "blarg");
+ * getName(obj) === true
+ */
+export declare const propEq: any;
+/**
+ * Given a dotted property name, returns a function that returns a nested property from an object, or undefined
+ * let obj = { id: 1, nestedObj: { foo: 1, name: "blarg" }, };
+ * let getName = prop("nestedObj.name");
+ * getName(obj) === "blarg"
+ * let propNotFound = prop("this.property.doesnt.exist");
+ * propNotFound(obj) === undefined
+ */
+export declare const parse: (path: string) => (obj: any) => any;
 /**
  * Given a class constructor, returns a predicate function that checks
  * whether a given object is an instance of that class.
@@ -47,7 +64,16 @@ export function curry(fn: Function): any | (() => any | any);
  * @param {new (...args: any[]) => any} ctor - The class constructor to check against.
  * @returns {(obj: any) => boolean} A predicate function that returns true if the object is of the given class.
  */
-export function is(ctor: new (...args: any[]) => any): (obj: any) => boolean;
+export declare function is<T>(
+  ctor: new (...args: any[]) => T,
+): (obj: any) => boolean;
+/**
+ * Given a value, returns a function which returns that value.
+ * @template T
+ * @param {T} value - The value to wrap in a function.
+ * @returns {() => T} A function that returns the given value.
+ */
+export declare const val: <T>(value: T) => () => T;
 /**
  * Sorta like Pattern Matching (a functional programming conditional construct)
  *
@@ -85,14 +111,6 @@ console.log(descriptionOf("foo")); // 'Here's your string foo'
 with a Predicate and a mapping/output function
  * @returns {function(any):*}
  */
-export function pattern(struct: string | any[]): (arg0: any) => any;
-/**
- * Given a property name and a value, returns a function that returns a boolean based on whether
- * the passed object has a property that matches the value
- * let obj = { foo: 1, name: "blarg" };
- * let getName = propEq("name", "blarg");
- * getName(obj) === true
- */
-export const propEq: any;
-export function parse(path: string): (/** @type {any} */ obj: any) => any;
-export function val<T>(value: T): () => T;
+export declare function pattern(
+  struct: Array<[(item: any) => boolean, (item: any) => any]>,
+): (item: any) => any;

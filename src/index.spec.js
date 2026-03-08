@@ -1,4 +1,4 @@
-import { angular } from "./index.js";
+import { angular } from "./index.ts";
 
 describe("index", () => {
   it("exports angular", () => {

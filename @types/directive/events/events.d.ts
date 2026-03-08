@@ -1,3 +1,4 @@
+export declare const ngEventDirectives: Record<string, ng.Injectable<any>>;
 /**
  *
  * @param {ng.ParseService} $parse
@@ -6,7 +7,7 @@
  * @param {string} eventName
  * @returns {ng.Directive}
  */
-export function createEventDirective(
+export declare function createEventDirective(
   $parse: ng.ParseService,
   $exceptionHandler: ng.ExceptionHandlerService,
   directiveName: string,
@@ -21,14 +22,10 @@ export function createEventDirective(
  * @param {string} eventName
  * @returns {ng.Directive}
  */
-export function createWindowEventDirective(
+export declare function createWindowEventDirective(
   $parse: ng.ParseService,
   $exceptionHandler: ng.ExceptionHandlerService,
-  $window: ng.WindowService,
+  $window: Window,
   directiveName: string,
   eventName: string,
 ): ng.Directive;
-/**
- * @type {Record<string, ng.Injectable<any>>}
- */
-export const ngEventDirectives: Record<string, ng.Injectable<any>>;

@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import { deProxy, isFunction, nullObject } from "../../shared/utils.js";
 import { validateRequired } from "../../shared/validate.ts";
 import type { FilterService } from "../../filters/interface.ts";

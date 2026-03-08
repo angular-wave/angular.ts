@@ -92,7 +92,7 @@ export function replaceWith(
 ): void;
 export const DirectiveSuffix: "Directive";
 export class CompileProvider {
-  static $inject: string[];
+  static $inject: ("$$sanitizeUriProvider" | "$provide")[];
   /**
    * @param {ng.ProvideService} $provide
    * @param {import('../sanitize/sanitize-uri.ts').SanitizeUriProvider} $sanitizeUriProvider
@@ -217,7 +217,14 @@ export class CompileProvider {
     ctx: string,
   ) => object;
   $get: (
-    | string
+    | "$animate"
+    | "$controller"
+    | "$exceptionHandler"
+    | "$interpolate"
+    | "$parse"
+    | "$sce"
+    | "$templateRequest"
+    | "$injector"
     | ((
         $injector: ng.InjectorService,
         $interpolate: ng.InterpolateService,
@@ -303,5 +310,5 @@ export type DelayedTemplateLinkState = {
   _origAsyncDirective: InternalDirective;
   _previousCompileContext: PreviousCompileContext;
 };
-import { NodeRef } from "../../shared/noderef.js";
-import { Attributes } from "./attributes.js";
+import { NodeRef } from "../../shared/noderef.ts";
+import { Attributes } from "./attributes.ts";

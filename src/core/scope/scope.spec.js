@@ -1,6 +1,6 @@
-import { wait } from "../../shared/test-utils.js";
+import { wait } from "../../shared/test-utils.ts";
 import { $postUpdateQueue, createScope, isNonScope } from "./scope.js";
-import { Angular } from "../../angular.js";
+import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
 import { isDefined, isProxy, sliceArgs } from "../../shared/utils.js";
 

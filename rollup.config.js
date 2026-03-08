@@ -15,7 +15,7 @@ const pkg = JSON.parse(
   readFileSync(path.resolve(__dirname, "package.json"), "utf-8"),
 );
 
-const baseInput = "src/index.js";
+const baseInput = "src/index.ts";
 
 function cssMinifyPlugin() {
   return {

@@ -1,16 +1,16 @@
 import { BuiltStateDeclaration, StateDeclaration } from "../state/interface.ts";
 import { PredicateBinary } from "../../shared/interface.ts";
-import { Transition } from "./transition.js";
+import { Transition } from "./transition.ts";
 import { StateObject } from "../state/state-object.ts";
 import { PathNode } from "../path/path-node.ts";
 import { TargetState } from "../state/target-state.ts";
-import { RegisteredHook } from "./hook-registry.js";
+import { RegisteredHook } from "./hook-registry.ts";
 import {
   TransitionHook,
   TransitionHookPhase,
   TransitionHookScope,
-} from "./transition-hook.js";
-import { TransitionEventType } from "./transition-event-type.js";
+} from "./transition-hook.ts";
+import { TransitionEventType } from "./transition-event-type.ts";
 
 /** Deregistration function returned by hook registrations */
 export type DeregisterFn = () => void;

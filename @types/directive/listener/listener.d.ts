@@ -1,4 +1,1 @@
-/**
- * @returns {ng.Directive}
- */
-export function ngListenerDirective(): ng.Directive;
+export declare function ngListenerDirective(): ng.Directive;

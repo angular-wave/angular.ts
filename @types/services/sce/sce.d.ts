@@ -1,41 +1,24 @@
+type SceMatcher = RegExp | "self";
+export declare const SCE_CONTEXTS: {
+  readonly HTML: "html";
+  readonly CSS: "css";
+  readonly MEDIA_URL: "mediaUrl";
+  readonly URL: "url";
+  readonly RESOURCE_URL: "resourceUrl";
+};
 /**
  * @param {string} str
  */
-export function escapeForRegexp(str: string): string;
+export declare function escapeForRegexp(str: string): string;
 /**
  * Adjusts a matcher string or RegExp into a proper RegExp.
  *
  * @param {string | RegExp | "self"} matcher
  * @returns {RegExp | "self"}
  */
-export function adjustMatcher(
+export declare function adjustMatcher(
   matcher: string | RegExp | "self",
-): RegExp | "self";
-export function SceProvider(): void;
-export class SceProvider {
-  /**
-   * @param {boolean=} value If provided, then enables/disables SCE application-wide.
-   * @return {boolean} True if SCE is enabled, false otherwise.
-   *
-   *
-   * Enables/disables SCE and returns the current value.
-   */
-  enabled: (value?: boolean | undefined, ...args: any[]) => boolean;
-  $get: (
-    | string
-    | ((
-        $parse: ng.ParseService,
-        $sceDelegate: ng.SceDelegateService,
-      ) => ng.SceService)
-  )[];
-}
-export namespace SCE_CONTEXTS {
-  let HTML: string;
-  let CSS: string;
-  let MEDIA_URL: string;
-  let URL: string;
-  let RESOURCE_URL: string;
-}
+): SceMatcher;
 /**
  * `$sceDelegate` is a service that is used by the `$sce` service to provide {@link ng.$sce Strict
  * Contextual Escaping (SCE)} services to AngularTS.
@@ -114,68 +97,11 @@ export namespace SCE_CONTEXTS {
  * from the trusted resource URL lsit. This helps to mitigate the security impact of certain types
  * of issues, like for instance attacker-controlled `ng-includes`.
  */
-export class SceDelegateProvider {
-  /**
-   *
-   * @param {(Array<RegExp | "self"> | null)=} value When provided, replaces the trustedResourceUrlList with
-   *     the value provided.  This must be an array or null.  A snapshot of this array is used so
-   *     further changes to the array are ignored.
-   *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
-   *     allowed in this array.
-   *
-   * @return {Array<RegExp | "self">} The currently set trusted resource URL array.
-   *
-   *
-   * Sets/Gets the list trusted of resource URLs.
-   *
-   * The **default value** when no `trustedResourceUrlList` has been explicitly set is `['self']`
-   * allowing only same origin resource requests.
-   *
-   * <div class="alert alert-warning">
-   * **Note:** the default `trustedResourceUrlList` of 'self' is not recommended if your app shares
-   * its origin with other apps! It is a good idea to limit it to only your application's directory.
-   * </div>
-   */
-  trustedResourceUrlList: (
-    value?: (Array<RegExp | "self"> | null) | undefined,
-    ...args: any[]
-  ) => Array<RegExp | "self">;
-  /**
-   *
-   * @param {(Array<RegExp | "self"> | null)=} value When provided, replaces the `bannedResourceUrlList` with
-   *     the value provided. This must be an array or null. A snapshot of this array is used so
-   *     further changes to the array are ignored.</p><p>
-   *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
-   *     allowed in this array.</p><p>
-   *     The typical usage for the `bannedResourceUrlList` is to **block
-   *     [open redirects](http://cwe.mitre.org/data/definitions/601.html)** served by your domain as
-   *     these would otherwise be trusted but actually return content from the redirected domain.
-   *     </p><p>
-   *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
-   *     the final say.
-   *
-   * @return {Array<RegExp | "self">} The currently set `bannedResourceUrlList` array.
-   *
-   *
-   * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
-   *
-   * The **default value** when no trusted resource URL list has been explicitly set is the empty
-   * array (i.e. there is no `bannedResourceUrlList`.)
-   */
-  bannedResourceUrlList: (
-    value?: (Array<RegExp | "self"> | null) | undefined,
-    ...args: any[]
-  ) => Array<RegExp | "self">;
-  $get: (
-    | string
-    | ((
-        $injector: ng.InjectorService,
-        $$sanitizeUri: import("../../core/sanitize/interface.ts").SanitizerFn,
-        $exceptionHandler: ng.ExceptionHandlerService,
-      ) => {
-        trustAs: (type: string, trustedValue: any) => any;
-        getTrusted: (type: string, maybeTrusted: any) => any;
-        valueOf: (maybeTrusted: any) => any;
-      })
-  )[];
+export declare class SceDelegateProvider {
+  trustedResourceUrlList: (value?: SceMatcher[] | null) => SceMatcher[];
+  bannedResourceUrlList: (value?: SceMatcher[] | null) => SceMatcher[];
+  $get: any[];
+  constructor();
 }
+export declare function SceProvider(this: any): void;
+export {};

@@ -1,10 +1,6 @@
-/**
- * @param {ng.CompileService} $compile
- * @returns {ng.Directive}
- */
-export function ngTranscludeDirective(
+export declare function ngTranscludeDirective(
   $compile: ng.CompileService,
 ): ng.Directive;
-export namespace ngTranscludeDirective {
-  let $inject: string[];
+export declare namespace ngTranscludeDirective {
+  var $inject: "$compile"[];
 }

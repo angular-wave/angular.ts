@@ -1,7 +1,7 @@
-import { Angular } from "../../angular.js";
+import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
-import { dealoc, createElementFromHTML } from "../../shared/dom.js";
-import { wait } from "../../shared/test-utils.js";
+import { dealoc, createElementFromHTML } from "../../shared/dom.ts";
+import { wait } from "../../shared/test-utils.ts";
 
 describe("ngShow / ngHide", () => {
   let $scope;
@@ -32,7 +32,7 @@ describe("ngShow / ngHide", () => {
       expect(element.classList.contains("ng-hide")).toBeFalse();
     });
 
-    // https://github.com/angular/angular.js/issues/5414
+    // https://github.com/angular/angular.ts/issues/5414
     it("should hide if the expression is a function with a no arguments", async () => {
       element = createElementFromHTML('<div ng-show="exp"></div>');
       element = $compile(element)($scope);

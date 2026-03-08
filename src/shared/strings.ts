@@ -1,0 +1,193 @@
+import { pushR, tail } from "./common.ts";
+import { pattern, val } from "./hof.ts";
+import { isInjectable, isPromise } from "./predicates.ts";
+import {
+  isArray,
+  isFunction,
+  isNull,
+  isObject,
+  isString,
+  isUndefined,
+} from "./utils.js";
+
+/**
+ * Functions that manipulate strings
+ */
+
+const DOTS = "...";
+
+/**
+ * Returns a string shortened to a maximum length
+ *
+ * If the string is already less than the `max` length, return the string.
+ * Else return the string, shortened to `max - 3` and append three dots ("...").
+ *
+ * @param {number} max the maximum length of the string to return
+ * @param {string} str the input string
+ * @returns {string}
+ */
+export function maxLength(max: number, str: string): string {
+  if (str.length <= max) return str;
+
+  return `${str.substring(0, max - DOTS.length)}${DOTS}`;
+}
+/**
+ * Returns a string, with spaces added to the end, up to a desired str length
+ *
+ * If the string is already longer than the desired length, return the string.
+ * Else returns the string, with extra spaces on the end, such that it reaches `length` characters.
+ *
+ * @param {number} length the desired length of the string to return
+ * @param {string} str the input string
+ */
+export function padString(length: number, str: string): string {
+  while (str.length < length) str += " ";
+
+  return str;
+}
+
+/**
+ * @param {string} camelCase
+ * @returns {string}
+ */
+export function kebobString(camelCase: string): string {
+  return camelCase
+    .replace(/^([A-Z])/, ($1: string) => $1.toLowerCase()) // replace first char
+    .replace(/([A-Z])/g, ($1: string) => `-${$1.toLowerCase()}`); // replace rest
+}
+
+const FN_LENGTH = 9;
+
+/**
+ * @param {Function} fn
+ * @returns {string}
+ */
+export function functionToString(fn: Function): string {
+  const fnStr = fnToString(fn);
+
+  const namedFunctionMatch = fnStr.match(/^(function [^ ]+\([^)]*\))/);
+
+  const toStr = namedFunctionMatch ? namedFunctionMatch[1] : fnStr;
+
+  const fnName = fn.name || "";
+
+  if (fnName && toStr.match(/function \(/)) {
+    return `function ${fnName}${toStr.substring(FN_LENGTH)}`;
+  }
+
+  return toStr;
+}
+
+/**
+ * @param {[]|Function} fn
+ * @returns {string}
+ */
+export function fnToString(fn: [] | Function): string {
+  const _fn = isArray(fn) ? fn.slice(-1)[0] : fn;
+
+  return (_fn && _fn.toString()) || "undefined";
+}
+
+/**
+ * @param {any} value
+ * @returns {string|*|string}
+ */
+export function stringify(value: any): string {
+  const seen: any[] = [];
+
+  const isRejection = (obj: Promise<any>) => {
+    return (
+      obj &&
+      typeof obj.then === "function" &&
+      obj.constructor.name === "Rejection"
+    );
+  };
+
+  const hasToString = (obj: {
+    constructor: ObjectConstructor;
+    toString: any;
+  }) =>
+    isObject(obj) &&
+    !isArray(obj) &&
+    obj.constructor !== Object &&
+    isFunction(obj.toString);
+
+  const stringifyPattern = pattern([
+    [isUndefined, val("undefined")],
+    [isNull, val("null")],
+    [isPromise, val("[Promise]")],
+    [
+      isRejection,
+      (reg: { _transitionRejection: { toString: () => any } }) =>
+        reg._transitionRejection.toString(),
+    ],
+    [hasToString, (str: { toString: () => any }) => str.toString()],
+    [isInjectable, functionToString],
+    [val(true), (bool: any) => bool],
+  ]);
+
+  /**
+   * @param {any} item
+   */
+  function format(item: any): any {
+    if (isObject(item)) {
+      if (seen.indexOf(item) !== -1) return "[circular ref]";
+      seen.push(item);
+    }
+
+    return stringifyPattern(item);
+  }
+
+  if (isUndefined(value)) {
+    // Workaround for IE & Edge Spec incompatibility where replacer function would not be called when JSON.stringify
+    // is given `undefined` as value. To work around that, we simply detect `undefined` and bail out early by
+    // manually stringifying it.
+    return format(value);
+  }
+
+  return JSON.stringify(value, (_key, item) => format(item)).replace(
+    /\\"/g,
+    '"',
+  );
+}
+
+export const stripLastPathElement = (str: string): string =>
+  str.replace(/\/[^/]*$/, "");
+
+/**
+ * Splits on a delimiter, but returns the delimiters in the array
+ *
+ * #### Example:
+ * ```js
+ * var splitOnSlashes = splitOnDelim('/');
+ * splitOnSlashes("/foo"); // ["/", "foo"]
+ * splitOnSlashes("/foo/"); // ["/", "foo", "/"]
+ * ```
+ * @param {string} delim
+ */
+export function splitOnDelim(delim: string): (str: string) => string[] {
+  const re = new RegExp(`(${delim})`, "g");
+
+  return (str: string) => str.split(re).filter(Boolean);
+}
+
+/**
+ * Reduce fn that joins neighboring strings
+ *
+ * Given an array of strings, returns a new array
+ * where all neighboring strings have been joined.
+ *
+ * #### Example:
+ * ```js
+ * let arr = ["foo", "bar", 1, "baz", "", "qux" ];
+ * arr.reduce(joinNeighborsR, []) // ["foobar", 1, "bazqux" ]
+ * ```
+ * @param {any[]} acc
+ * @param {unknown} str
+ */
+export function joinNeighborsR(acc: any[], str: unknown): any[] {
+  if (isString(tail(acc)) && isString(str))
+    return acc.slice(0, -1).concat(tail(acc) + str);
+
+  return pushR(acc, str);
+}

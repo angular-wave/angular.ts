@@ -1,6 +1,6 @@
 import { createInjector } from "../../core/di/injector.ts";
-import { dealoc, getController } from "../../shared/dom.js";
-import { Angular } from "../../angular.js";
+import { dealoc, getController } from "../../shared/dom.ts";
+import { Angular } from "../../angular.ts";
 import {
   isBoolean,
   hashKey,
@@ -8,7 +8,7 @@ import {
   isString,
   isFunction,
 } from "../../shared/utils.js";
-import { browserTrigger, wait } from "../../shared/test-utils.js";
+import { browserTrigger, wait } from "../../shared/test-utils.ts";
 
 describe("ngOptions", () => {
   let scope;
@@ -2704,7 +2704,7 @@ describe("ngOptions", () => {
       expect(scope.selected).toEqual(null);
     });
 
-    // Regression https://github.com/angular/angular.js/issues/7855
+    // Regression https://github.com/angular/angular.ts/issues/7855
     it("should update the model with ng-change", () => {
       createSelect({
         "ng-change": "change()",

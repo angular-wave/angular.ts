@@ -1,4 +1,4 @@
 /**
  * @returns {ng.FilterFn}
  */
-export function jsonFilter(): ng.FilterFn;
+export declare function jsonFilter(): (object: any, spacing?: number) => string;

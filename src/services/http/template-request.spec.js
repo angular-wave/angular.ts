@@ -1,6 +1,6 @@
 import { createInjector } from "../../core/di/injector.ts";
-import { Angular } from "../../angular.js";
-import { wait } from "../../shared/test-utils.js";
+import { Angular } from "../../angular.ts";
+import { wait } from "../../shared/test-utils.ts";
 
 describe("$templateRequest", () => {
   let module,

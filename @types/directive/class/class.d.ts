@@ -5,7 +5,10 @@
  * @param {string[]} tokens2
  * @returns {string[]}
  */
-export function arrayDifference(tokens1: string[], tokens2: string[]): string[];
+export declare function arrayDifference(
+  tokens1: string[],
+  tokens2: string[],
+): string[];
 /**
  * Split a class string into tokens.
  *
@@ -15,7 +18,7 @@ export function arrayDifference(tokens1: string[], tokens2: string[]): string[];
  * @param {string} classString
  * @return {string[]}
  */
-export function split(classString: string): string[];
+export declare function split(classString: string): string[];
 /**
  * Convert an `ngClass` expression value into a space-delimited class string.
  *
@@ -28,7 +31,7 @@ export function split(classString: string): string[];
  * @param {unknown} classValue
  * @returns {string}
  */
-export function toClassString(classValue: unknown): string;
-export const ngClassDirective: import("../../interface.ts").DirectiveFactory;
-export const ngClassOddDirective: import("../../interface.ts").DirectiveFactory;
-export const ngClassEvenDirective: import("../../interface.ts").DirectiveFactory;
+export declare function toClassString(classValue: unknown): string;
+export declare const ngClassDirective: import("../../interface.ts").DirectiveFactory;
+export declare const ngClassOddDirective: import("../../interface.ts").DirectiveFactory;
+export declare const ngClassEvenDirective: import("../../interface.ts").DirectiveFactory;

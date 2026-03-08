@@ -1,5 +1,5 @@
 import { Lexer } from "./lexer.ts";
-import { Angular } from "../../../angular.js";
+import { Angular } from "../../../angular.ts";
 import { createInjector } from "../../di/injector.ts";
 
 describe("lexer", () => {

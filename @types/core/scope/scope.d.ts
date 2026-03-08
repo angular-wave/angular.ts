@@ -25,7 +25,8 @@ export const $postUpdateQueue: Function[];
 export class RootScopeProvider {
   rootScope: any;
   $get: (
-    | string
+    | "$exceptionHandler"
+    | "$parse"
     | ((
         exceptionHandler: ng.ExceptionHandlerService,
         parse: ng.ParseService,

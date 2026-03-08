@@ -1,4 +1,4 @@
-import { Queue } from "./queue.js";
+import { Queue } from "./queue.ts";
 
 describe("Queue", () => {
   let queue;

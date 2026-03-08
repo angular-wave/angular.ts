@@ -1,5 +1,5 @@
-import { Angular } from "../angular.js";
-import { dealoc } from "../shared/dom.js";
+import { Angular } from "../angular.ts";
+import { dealoc } from "../shared/dom.ts";
 
 describe("router services", () => {
   let providers;

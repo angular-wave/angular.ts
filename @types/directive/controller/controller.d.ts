@@ -1,4 +1,1 @@
-/**
- * @returns {ng.Directive}
- */
-export function ngControllerDirective(): ng.Directive;
+export declare function ngControllerDirective(): ng.Directive;

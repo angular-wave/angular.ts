@@ -8,8 +8,8 @@ import {
   tail,
   unnest,
   unnestR,
-} from "../../shared/common.js";
-import { propEq } from "../../shared/hof.js";
+} from "../../shared/common.ts";
+import { propEq } from "../../shared/hof.ts";
 import {
   hasOwn,
   isArray,
@@ -18,7 +18,7 @@ import {
   isString,
 } from "../../shared/utils.js";
 import { DefType, Param } from "../params/param.ts";
-import { joinNeighborsR, splitOnDelim } from "../../shared/strings.js";
+import { joinNeighborsR, splitOnDelim } from "../../shared/strings.ts";
 import type {
   ParamDetails,
   UrlMatcherCache,
@@ -642,7 +642,7 @@ export class UrlMatcher {
       .reduce(unnestR, [])
       .map(getDetails);
 
-    const isInvalid = (param: ParamDetails) => param.isValid === false;
+    const isInvalid = (param: any) => param.isValid === false;
 
     if (pathSegmentsAndParams.concat(queryParams).filter(isInvalid).length) {
       return null;

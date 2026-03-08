@@ -3,7 +3,7 @@ import {
   urlIsSameOrigin,
   urlIsSameOriginAsBaseUrl,
   urlIsAllowedOriginFactory,
-} from "./url-utils.js";
+} from "./url-utils.ts";
 
 describe("urlUtils", () => {
   describe("urlResolve", () => {

@@ -1,4 +1,4 @@
-import { Resolvable } from "../resolve/resolvable.js";
+import { Resolvable } from "../resolve/resolvable.ts";
 import type {
   BuilderFunction,
   Builders,
