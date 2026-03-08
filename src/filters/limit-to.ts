@@ -4,7 +4,7 @@ import {
   isNumber,
   isNumberNaN,
   isString,
-} from "../shared/utils.js";
+} from "../shared/utils.ts";
 
 /**
  * @returns {ng.FilterFn}

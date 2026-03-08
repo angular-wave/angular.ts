@@ -7,13 +7,13 @@ import { AnimateProvider } from "./animations/animate.ts";
 import { AnimationProvider } from "./animations/animation.ts";
 import { AnimateCssProvider } from "./animations/css/animate-css.ts";
 import { AnimateQueueProvider } from "./animations/queue/animate-queue.ts";
-import { CompileProvider } from "./core/compile/compile.js";
+import { CompileProvider } from "./core/compile/compile.ts";
 import { ControllerProvider } from "./core/controller/controller.ts";
 import { FilterProvider } from "./core/filter/filter.ts";
 import { InterpolateProvider } from "./core/interpolate/interpolate.ts";
 import { ParseProvider } from "./core/parse/parse.ts";
 import { SanitizeUriProvider } from "./core/sanitize/sanitize-uri.ts";
-import { RootScopeProvider } from "./core/scope/scope.js";
+import { RootScopeProvider } from "./core/scope/scope.ts";
 import { $injectTokens as $t } from "./injection-tokens.ts";
 import {
   AriaProvider,
@@ -62,11 +62,11 @@ import {
   hiddenInputDirective,
   inputDirective,
   ngValueDirective,
-} from "./directive/input/input.js";
+} from "./directive/input/input.ts";
 import { ngInitDirective } from "./directive/init/init.ts";
 import { ngInjectDirective } from "./directive/inject/inject.ts";
 import { ngListenerDirective } from "./directive/listener/listener.ts";
-import { ngModelDirective } from "./directive/model/model.js";
+import { ngModelDirective } from "./directive/model/model.ts";
 import { ngModelOptionsDirective } from "./directive/model-options/model-options.ts";
 import {
   ngMessageDefaultDirective,

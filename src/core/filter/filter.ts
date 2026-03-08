@@ -5,7 +5,7 @@ import { jsonFilter } from "../../filters/json.ts";
 import { limitToFilter } from "../../filters/limit-to.ts";
 import { orderByFilter } from "../../filters/order-by.ts";
 import type { Provider } from "../../interface.ts";
-import { assert, entries, isDefined, isFunction } from "../../shared/utils.js";
+import { assert, entries, isDefined, isFunction } from "../../shared/utils.ts";
 import { validate, validateIsString } from "../../shared/validate.ts";
 
 const SUFFIX = "Filter";

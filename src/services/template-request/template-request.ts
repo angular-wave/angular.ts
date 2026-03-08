@@ -1,5 +1,5 @@
 import { defaultHttpResponseTransform } from "../http/http.ts";
-import { extend, isArray } from "../../shared/utils.js";
+import { extend, isArray } from "../../shared/utils.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 
 /**

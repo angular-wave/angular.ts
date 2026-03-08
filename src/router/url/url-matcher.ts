@@ -16,7 +16,7 @@ import {
   isDefined,
   isNullOrUndefined,
   isString,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { DefType, Param } from "../params/param.ts";
 import { joinNeighborsR, splitOnDelim } from "../../shared/strings.ts";
 import type {

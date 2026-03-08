@@ -10,7 +10,7 @@ import {
   getScope,
   getIsolateScope,
 } from "../../shared/dom.ts";
-import { isFunction, getNodeName, extend, assert } from "../../shared/utils.js";
+import { isFunction, getNodeName, extend, assert } from "../../shared/utils.ts";
 import { Cache } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
 import {
@@ -23,7 +23,7 @@ import {
   getDirectiveRestrict,
   replaceWith,
   wrapTemplate,
-} from "./compile.js";
+} from "./compile.ts";
 
 function isUnknownElement(el) {
   return !!el.toString().match(/Unknown/);

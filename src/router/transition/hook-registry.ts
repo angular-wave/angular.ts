@@ -1,5 +1,5 @@
 import { map, removeFrom, tail } from "../../shared/common.ts";
-import { isFunction, isString, values } from "../../shared/utils.js";
+import { isFunction, isString, values } from "../../shared/utils.ts";
 import { Glob } from "../glob/glob.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { StateObject } from "../state/state-object.ts";

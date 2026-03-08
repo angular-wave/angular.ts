@@ -6,7 +6,7 @@ import {
   getController,
 } from "../../shared/dom.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
-import { assert } from "../../shared/utils.js";
+import { assert } from "../../shared/utils.ts";
 import { FormController } from "./form.js";
 
 describe("form", () => {

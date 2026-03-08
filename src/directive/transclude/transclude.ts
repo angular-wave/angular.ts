@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { minErr } from "../../shared/utils.js";
+import { minErr } from "../../shared/utils.ts";
 import { emptyElement, startingTag } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
@@ -46,7 +45,7 @@ export function ngTranscludeDirective(
         $element: Element,
         $attrs: import("../../core/compile/attributes.ts").Attributes &
           Record<string, string>,
-        _controller,
+        _controller: unknown,
         $transclude?: ng.TranscludeFn,
       ): void {
         if (!$transclude) {
@@ -64,12 +63,19 @@ export function ngTranscludeDirective(
           $attrs.ngTransclude = "";
         }
         const slotName = $attrs.ngTransclude || $attrs.ngTranscludeSlot;
+        const controllersBoundTransclude =
+          $transclude as import("../../core/compile/interface.ts").ControllersBoundTranscludeFn;
 
         // If the slot is required and no transclusion content is provided then this call will throw an error
-        $transclude(ngTranscludeCloneAttachFn, null, slotName);
+        controllersBoundTransclude(
+          undefined,
+          ngTranscludeCloneAttachFn,
+          null,
+          slotName,
+        );
 
         // If the slot is optional and no transclusion content is provided then use the fallback content
-        if (slotName && !$transclude.isSlotFilled(slotName)) {
+        if (slotName && !controllersBoundTransclude.isSlotFilled?.(slotName)) {
           useFallbackContent();
         }
 
@@ -78,22 +84,26 @@ export function ngTranscludeDirective(
          * @param {ng.Scope} transcludedScope
          */
         function ngTranscludeCloneAttachFn(
-          clone,
-          transcludedScope: ng.Scope,
+          clone: Node | NodeList | Node[] | null | undefined,
+          transcludedScope?: ng.Scope | null,
         ): void {
           if (notWhitespace(clone)) {
             if (clone instanceof NodeList) {
               Array.from(clone).forEach((el) => {
                 $element.append(el);
               });
-            } else {
-              $element.append(/** @type {Node} */ clone);
+            } else if (Array.isArray(clone)) {
+              clone.forEach((el) => {
+                $element.append(el);
+              });
+            } else if (clone) {
+              $element.append(clone);
             }
           } else {
             useFallbackContent();
             // There is nothing linked against the transcluded scope since no content was available,
             // so it should be safe to clean up the generated scope.
-            transcludedScope.$destroy();
+            transcludedScope?.$destroy();
           }
         }
 
@@ -108,13 +118,24 @@ export function ngTranscludeDirective(
         /**
          * @param {Node | NodeList} node
          */
-        function notWhitespace(node: Node | NodeList): boolean {
-          if (node instanceof Array) {
+        function notWhitespace(
+          node?: Node | NodeList | Node[] | null,
+        ): boolean {
+          if (!node) {
             return false;
-          } else if (
-            /** @type {Node} */ node.nodeType !== NodeType._TEXT_NODE ||
-            /** @type {String} */ node/** @type {Node} */ .nodeValue
-              .trim()
+          }
+
+          if (Array.isArray(node)) {
+            return node.some((child) => notWhitespace(child));
+          }
+
+          if (node instanceof NodeList) {
+            return Array.from(node).some((child) => notWhitespace(child));
+          }
+
+          if (
+            node.nodeType !== NodeType._TEXT_NODE ||
+            (node.nodeValue || "").trim()
           ) {
             return true;
           }

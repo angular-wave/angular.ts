@@ -1,4 +1,4 @@
-import { isDefined } from "../../shared/utils.js";
+import { isDefined } from "../../shared/utils.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import type { SanitizerFn } from "./interface.ts";
 

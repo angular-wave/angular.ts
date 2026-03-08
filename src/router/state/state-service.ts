@@ -1,5 +1,5 @@
 import { defaults, removeFrom } from "../../shared/common.ts";
-import { isDefined, isObject, isString, minErr } from "../../shared/utils.js";
+import { isDefined, isObject, isString, minErr } from "../../shared/utils.ts";
 import { Queue } from "../../shared/queue.ts";
 import { makeTargetState } from "../path/path-utils.ts";
 import { PathNode } from "../path/path-node.ts";

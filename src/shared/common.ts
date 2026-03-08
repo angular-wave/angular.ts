@@ -5,7 +5,7 @@ import {
   isFunction,
   isRegExp,
   isString,
-} from "./utils.js";
+} from "./utils.ts";
 
 /**
  * @param {unknown} o1
@@ -42,7 +42,11 @@ export function equals(o1: any, o2: any): boolean {
 
   if (tup.every(isFunction)) return true; // meh
 
-  if ([isFunction, isArray, isDate, isRegExp].some((fn) => !!fn(tup))) {
+  if (
+    (
+      [isFunction, isArray, isDate, isRegExp] as Array<(value: any) => boolean>
+    ).some((fn) => !!fn(tup))
+  ) {
     return false;
   }
   /** @type {Record<string, any>} */

@@ -1,4 +1,5 @@
-// @ts-nocheck
+import type { AnimationOptions, AnimateService } from "./interface.ts";
+import type { AnimateQueueService } from "./queue/interface.ts";
 import {
   extend,
   hasAnimate,
@@ -8,12 +9,23 @@ import {
   mergeClasses,
   minErr,
   nullObject,
-} from "../shared/utils.js";
+} from "../shared/utils.ts";
 import { animatedomInsert, domInsert, removeElement } from "../shared/dom.ts";
 import { NG_ANIMATE_CLASSNAME } from "./shared.ts";
 import { $injectTokens } from "../injection-tokens.ts";
 
 const $animateMinErr = minErr("$animate");
+
+interface AnimateProviderInstance {
+  _registeredAnimations: Record<string, string>;
+  register: (
+    name: string,
+    factory: import("../interface.ts").Injectable<any>,
+  ) => void;
+  customFilter: (filterFn?: Function) => Function | null;
+  classNameFilter: (expression?: RegExp) => RegExp | null;
+  $get: [string, ($$animateQueue: AnimateQueueService) => AnimateService];
+}
 
 // if any other type of options value besides an Object value is
 // passed into the $animate.method() animation then this helper code
@@ -26,7 +38,7 @@ const $animateMinErr = minErr("$animate");
  * @param {import("./interface.ts").AnimationOptions | undefined} options
  * @returns {import("./interface.ts").AnimationOptions}
  */
-function prepareAnimateOptions(options) {
+function prepareAnimateOptions(options?: AnimationOptions): AnimationOptions {
   return isObject(options)
     ? options
     : /** @type {import("./interface.ts").AnimationOptions} */ {};
@@ -35,18 +47,21 @@ function prepareAnimateOptions(options) {
 AnimateProvider.$inject = [$injectTokens._provide];
 
 /** @param {ng.ProvideService} $provide */
-export function AnimateProvider($provide) {
+export function AnimateProvider(
+  this: AnimateProviderInstance,
+  $provide: ng.ProvideService,
+): void {
   const provider = this;
 
   /**
    * @type {RegExp | null}
    */
-  let classNameFilter;
+  let classNameFilter: RegExp | null = null;
 
   /**
    * @type {Function | null}
    */
-  let customFilter;
+  let customFilter: Function | null = null;
 
   this._registeredAnimations = nullObject();
 
@@ -85,7 +100,10 @@ export function AnimateProvider($provide) {
    * @param {import("../interface.ts").Injectable<any>} factory The factory function that will be executed to return the animation
    *                           object.
    */
-  this.register = function (name, factory) {
+  this.register = function (
+    name: string,
+    factory: import("../interface.ts").Injectable<any>,
+  ): void {
     if (name && name.charAt(0) !== ".") {
       throw $animateMinErr(
         "notcsel",
@@ -133,7 +151,7 @@ export function AnimateProvider($provide) {
    *   - **options** `{Object}` - A collection of options/styles used for the animation.
    * @return {Function | null} The current filter function or `null` if there is none set.
    */
-  this.customFilter = function (filterFn) {
+  this.customFilter = function (filterFn?: Function): Function | null {
     if (arguments.length === 1) {
       customFilter = isFunction(filterFn) ? filterFn : null;
     }
@@ -156,7 +174,7 @@ export function AnimateProvider($provide) {
    * @param {RegExp=} expression The className expression which will be checked against all animations
    * @return {RegExp | null} The current CSS className expression value. If null then there is no expression value
    */
-  this.classNameFilter = function (expression) {
+  this.classNameFilter = function (expression?: RegExp): RegExp | null {
     if (arguments.length === 1) {
       classNameFilter = expression instanceof RegExp ? expression : null;
 
@@ -185,7 +203,7 @@ export function AnimateProvider($provide) {
      * @param {import("./queue/interface.ts").AnimateQueueService} $$animateQueue
      * @returns {ng.AnimateService}
      */
-    function ($$animateQueue) {
+    function ($$animateQueue: AnimateQueueService): AnimateService {
       /**
        * The $animate service exposes a series of DOM utility methods that provide support
        * for animation hooks. The default behavior is the application of DOM operations, however,
@@ -318,14 +336,11 @@ export function AnimateProvider($provide) {
          *
          * @return {boolean} whether or not animations are enabled
          */
-        enabled: (element, enabled) => {
+        enabled: (element?: Element, enabled?: boolean): boolean => {
           if (enabled !== undefined) {
-            return hasAnimate(/** @type {Element} */ element);
+            return hasAnimate(element as Element);
           } else {
-            /** @type {Element} */ element.setAttribute(
-              "animate",
-              `${enabled}`,
-            );
+            (element as Element).setAttribute("animate", `${enabled}`);
           }
 
           return true;
@@ -338,7 +353,9 @@ export function AnimateProvider($provide) {
          *
          * @param {ng.AnimateRunner} runner An animation runner returned by an $animate function.
          */
-        cancel(runner) {
+        cancel(
+          runner: import("./runner/animate-runner.ts").AnimateRunner,
+        ): void {
           if (runner.cancel) {
             runner.cancel();
           }
@@ -356,7 +373,12 @@ export function AnimateProvider($provide) {
          * @param {import("./interface.ts").AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
          * @returns {ng.AnimateRunner} the animation runner
          */
-        enter(element, parent, after, options) {
+        enter(
+          element: Element,
+          parent?: Element | null,
+          after?: ChildNode | null,
+          options?: AnimationOptions,
+        ) {
           parent = parent || (after && after.parentElement);
 
           if (
@@ -365,7 +387,7 @@ export function AnimateProvider($provide) {
           ) {
             animatedomInsert(element, parent, after);
           } else {
-            domInsert(element, parent, after);
+            domInsert(element, parent as Element, after);
           }
 
           return $$animateQueue.push(
@@ -387,7 +409,12 @@ export function AnimateProvider($provide) {
          * @param {import("./interface.ts").AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
          * @returns {ng.AnimateRunner} the animation runner
          */
-        move(element, parent, after, options) {
+        move(
+          element: Element,
+          parent: Element | null,
+          after: Element,
+          options?: AnimationOptions,
+        ) {
           parent = parent || after.parentElement;
 
           if (
@@ -396,7 +423,7 @@ export function AnimateProvider($provide) {
           ) {
             animatedomInsert(element, parent, after);
           } else {
-            domInsert(element, parent, after);
+            domInsert(element, parent as Element, after);
           }
 
           return $$animateQueue.push(
@@ -415,7 +442,7 @@ export function AnimateProvider($provide) {
          * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
          * @returns {ng.AnimateRunner} the animation runner
          */
-        leave(element, options) {
+        leave(element: Element, options?: AnimationOptions) {
           return $$animateQueue.push(
             element,
             "leave",
@@ -439,7 +466,11 @@ export function AnimateProvider($provide) {
          * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
          * @return {ng.AnimateRunner}} animationRunner the animation runner
          */
-        addClass(element, className, options) {
+        addClass(
+          element: Element,
+          className: string,
+          options?: AnimationOptions,
+        ) {
           options = prepareAnimateOptions(options);
           options.addClass = mergeClasses(options.addClass, className);
 
@@ -459,7 +490,11 @@ export function AnimateProvider($provide) {
          * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.         *
          * @return {ng.AnimateRunner} animationRunner the animation runner
          */
-        removeClass(element, className, options) {
+        removeClass(
+          element: Element,
+          className: string,
+          options?: AnimationOptions,
+        ) {
           options = prepareAnimateOptions(options);
           options.removeClass = mergeClasses(options.removeClass, className);
 
@@ -481,7 +516,12 @@ export function AnimateProvider($provide) {
          *
          * @return {ng.AnimateRunner} the animation runner
          */
-        setClass(element, add, remove, options) {
+        setClass(
+          element: Element,
+          add: string,
+          remove: string,
+          options?: AnimationOptions,
+        ) {
           options = prepareAnimateOptions(options);
           options.addClass = mergeClasses(options.addClass, add);
           options.removeClass = mergeClasses(options.removeClass, remove);
@@ -516,7 +556,13 @@ export function AnimateProvider($provide) {
          * @param {import("./interface.ts").AnimationOptions=} options an optional collection of options/styles that will be applied to the element.
          * @return {ng.AnimateRunner} the animation runner
          */
-        animate(element, from, to, className, options) {
+        animate(
+          element: Element,
+          from: Record<string, string | number>,
+          to: Record<string, string | number>,
+          className?: string,
+          options?: AnimationOptions,
+        ) {
           options = prepareAnimateOptions(options);
           options.from = options.from
             ? /** @type {Record<string, string | number>} */ extend(

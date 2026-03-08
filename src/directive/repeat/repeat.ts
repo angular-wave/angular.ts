@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   callBackOnce,
   hasOwn,
@@ -8,13 +7,27 @@ import {
   minErr,
   nullObject,
   values,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { getBlockNodes, removeElement } from "../../shared/dom.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
+import type { RepeatScope } from "./interface.ts";
 
 const NG_REMOVED = "$$NG_REMOVED";
 
 const ngRepeatMinErr = minErr("ngRepeat");
+
+type RepeatValue = any;
+type RepeatKey = string | number;
+type RepeatClone = Array<Node> & {
+  remove: () => void;
+  parentNode?: Node | null;
+  [index: number]: Node & Record<string, any>;
+};
+type RepeatBlock = {
+  id: string;
+  scope?: RepeatScope;
+  clone?: RepeatClone;
+};
 
 /**
  * Regular expression to match either:
@@ -41,16 +54,18 @@ ngRepeatDirective.$inject = [$injectTokens._animate];
  * @param {ng.AnimateService}  $animate
  * @returns {ng.Directive}
  */
-export function ngRepeatDirective($animate) {
+export function ngRepeatDirective(
+  $animate: ng.AnimateService,
+): ng.Directive<any> {
   function updateScope(
-    scope,
-    index,
-    valueIdentifier,
-    value,
-    keyIdentifier,
-    key,
-    arrayLength,
-  ) {
+    scope: RepeatScope & Record<string, any>,
+    index: number,
+    valueIdentifier: string,
+    value: RepeatValue,
+    keyIdentifier: string | undefined,
+    key: RepeatKey,
+    arrayLength: number,
+  ): void {
     if (scope[valueIdentifier] !== value) {
       scope[valueIdentifier] = value;
     }
@@ -67,20 +82,24 @@ export function ngRepeatDirective($animate) {
     scope.$odd = !(scope.$even = (index & 1) === 0);
   }
 
-  function getBlockStart(block) {
-    return block.clone;
+  function getBlockStart(block: RepeatBlock): Node | undefined {
+    return block.clone?.[0];
   }
 
-  function getBlockEnd(block) {
-    return block.clone;
+  function getBlockEnd(block: RepeatBlock): Node | undefined {
+    return block.clone?.[block.clone.length - 1];
   }
 
-  function trackByIdArrayFn(_$scope, _key, value) {
+  function trackByIdArrayFn(
+    _$scope: ng.Scope,
+    _key: RepeatKey,
+    value: RepeatValue,
+  ): string {
     return hashKey(value);
   }
 
-  function trackByIdObjFn(_$scope, key) {
-    return key;
+  function trackByIdObjFn(_$scope: ng.Scope, key: RepeatKey): string {
+    return String(key);
   }
 
   return {
@@ -88,7 +107,7 @@ export function ngRepeatDirective($animate) {
     transclude: "element",
     priority: 1000,
     terminal: true,
-    compile(_$element, $attr) {
+    compile(_$element: Element, $attr: ng.Attributes) {
       const expression = $attr.ngRepeat;
 
       const hasAnimate = !!$attr.animate;
@@ -138,7 +157,9 @@ export function ngRepeatDirective($animate) {
         );
       }
 
-      let trackByIdExpFn;
+      let trackByIdExpFn:
+        | ((scope: ng.Scope, key: RepeatKey, value: RepeatValue) => string)
+        | undefined;
 
       const swap = callBackOnce(() => {
         if (isDefined($attr.lazy) && isDefined($attr.swap)) {
@@ -148,24 +169,35 @@ export function ngRepeatDirective($animate) {
         }
       });
 
-      function ngRepeatLink($scope, $element, attr, _ctrl, $transclude) {
-        let lastBlockMap = nullObject();
+      function ngRepeatLink(
+        $scope: RepeatScope & Record<string, any>,
+        $element: Element,
+        attr: ng.Attributes,
+        _ctrl: unknown,
+        $transclude: ng.TranscludeFn,
+      ): void {
+        let lastBlockMap: Record<string, RepeatBlock> = nullObject();
 
         $scope.$watch(
           rhs,
-          (collection) => {
+          (collection: any) => {
             swap();
-            let index;
-            let previousNode = $element;
-            let nextNode;
-            const nextBlockMap = nullObject();
-            let key;
-            let value;
-            let trackById;
-            let trackByIdFn;
-            let collectionKeys;
-            let block;
-            let elementsToRemove;
+            let index: number;
+            let previousNode: Node | Element = $element;
+            let nextNode: Node | Element | null | undefined;
+            const nextBlockMap: Record<string, RepeatBlock | true> =
+              nullObject();
+            let key: RepeatKey;
+            let value: RepeatValue;
+            let trackById: string;
+            let trackByIdFn: (
+              scope: ng.Scope,
+              key: RepeatKey,
+              value: RepeatValue,
+            ) => string;
+            let collectionKeys: any[] | RepeatKey[];
+            let block: RepeatBlock;
+            let elementsToRemove: RepeatClone;
 
             if (aliasAs) {
               $scope[aliasAs] = collection;
@@ -202,7 +234,7 @@ export function ngRepeatDirective($animate) {
                 nextBlockOrder[index] = block;
               } else if (nextBlockMap[trackById]) {
                 values(nextBlockOrder).forEach((x) => {
-                  if (x && x.scope) lastBlockMap[x.id] = block;
+                  if (x && x.scope) lastBlockMap[x.id] = x as RepeatBlock;
                 });
                 throw ngRepeatMinErr(
                   "dupes",
@@ -223,10 +255,10 @@ export function ngRepeatDirective($animate) {
 
             for (const blockKey in lastBlockMap) {
               block = lastBlockMap[blockKey];
-              elementsToRemove = block.clone;
+              elementsToRemove = block.clone as RepeatClone;
 
               if (hasAnimate) {
-                $animate.leave(elementsToRemove);
+                $animate.leave(elementsToRemove as any);
               } else {
                 elementsToRemove.remove();
               }
@@ -236,7 +268,7 @@ export function ngRepeatDirective($animate) {
                   elementsToRemove[i][NG_REMOVED] = true;
                 }
               }
-              block.scope.$destroy();
+              block.scope?.$destroy();
             }
 
             for (index = 0; index < collectionLength; index++) {
@@ -250,12 +282,19 @@ export function ngRepeatDirective($animate) {
 
                 do {
                   nextNode = nextNode.nextSibling;
-                } while (nextNode && nextNode[NG_REMOVED]);
+                } while (
+                  nextNode &&
+                  (nextNode as Record<string, any>)[NG_REMOVED]
+                );
 
                 if (getBlockStart(block) !== nextNode) {
-                  $animate.move(getBlockNodes(block.clone), null, previousNode);
+                  $animate.move(
+                    getBlockNodes(block.clone as unknown as Node[]) as any,
+                    null,
+                    previousNode as any,
+                  );
                 }
-                previousNode = getBlockEnd(block);
+                previousNode = getBlockEnd(block) as Node;
                 updateScope(
                   block.scope,
                   index,
@@ -267,17 +306,22 @@ export function ngRepeatDirective($animate) {
                 );
               } else {
                 $transclude((clone, scope) => {
-                  block.scope = scope;
-                  const endNode = clone;
+                  block.scope = scope as RepeatScope;
+                  const repeatClone = clone as unknown as RepeatClone;
+                  const endNode = repeatClone[repeatClone.length - 1] as Node;
 
                   if (hasAnimate) {
-                    $animate.enter(clone, null, previousNode);
+                    $animate.enter(
+                      repeatClone as any,
+                      null,
+                      previousNode as any,
+                    );
                   } else {
-                    previousNode.after(clone);
+                    (previousNode as any).after(repeatClone);
                   }
 
                   previousNode = endNode;
-                  block.clone = clone;
+                  block.clone = repeatClone;
                   nextBlockMap[block.id] = block;
                   updateScope(
                     block.scope,
@@ -291,13 +335,13 @@ export function ngRepeatDirective($animate) {
                 });
               }
             }
-            lastBlockMap = nextBlockMap;
+            lastBlockMap = nextBlockMap as Record<string, RepeatBlock>;
           },
           isDefined(attr.lazy),
         );
       }
 
-      return ngRepeatLink;
+      return ngRepeatLink as unknown as import("../../interface.ts").DirectiveLinkFn<any>;
     },
   };
 }

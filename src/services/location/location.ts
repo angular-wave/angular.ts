@@ -13,7 +13,7 @@ import {
   parseKeyValue,
   startsWith,
   toKeyValue,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { getBaseHref } from "../../shared/dom.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { validateRequired } from "../../shared/validate.ts";
@@ -716,7 +716,7 @@ export class LocationProvider {
             oldUrl,
             newState,
             oldState,
-          );
+          ) ?? { defaultPrevented: false };
 
           // if the location was changed by a `$locationChangeStart` handler then stop
           // processing this location change
@@ -760,7 +760,7 @@ export class LocationProvider {
                 oldUrl,
                 $location._state,
                 oldState,
-              );
+              ) ?? { defaultPrevented: false };
 
               // if the location was changed by a `$locationChangeStart` handler then stop
               // processing this location change

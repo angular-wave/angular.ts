@@ -1,5 +1,5 @@
-// @ts-nocheck
-import { isArray, isString } from "../shared/utils.js";
+import type { AnimationOptions } from "./interface.ts";
+import { isArray, isString } from "../shared/utils.ts";
 import { NodeType } from "../shared/node.ts";
 
 export const ADD_CLASS_SUFFIX = "-add";
@@ -11,10 +11,19 @@ export const PREPARE_CLASS_SUFFIX = "-prepare";
 export const NG_ANIMATE_CLASSNAME = "ng-animate";
 export const NG_ANIMATE_CHILDREN_DATA = "$$ngAnimateChildren";
 
+interface AnimationDetails {
+  options?: AnimationOptions;
+  addClass?: string;
+  removeClass?: string;
+  preparationClasses?: string;
+}
+
 /**
  * @param {ng.AnimationOptions} options
  */
-export function packageStyles(options) {
+export function packageStyles(
+  options?: AnimationOptions,
+): Pick<AnimationOptions, "to" | "from"> {
   return options?.to || options?.from
     ? { to: options.to, from: options.from }
     : {};
@@ -25,7 +34,11 @@ export function packageStyles(options) {
  * @param {string} fix
  * @param {boolean | undefined} [isPrefix]
  */
-export function pendClasses(classes, fix, isPrefix) {
+export function pendClasses(
+  classes: string | string[] | null | undefined,
+  fix: string,
+  isPrefix?: boolean,
+): string {
   const arrayClasses = isArray(classes)
     ? classes
     : classes && isString(classes)
@@ -43,7 +56,9 @@ export function pendClasses(classes, fix, isPrefix) {
  * @param {NodeList|Node} element
  * @returns {Node[]|Node|undefined}
  */
-export function stripCommentsFromElement(element) {
+export function stripCommentsFromElement(
+  element: NodeList | Node,
+): Node[] | Node | undefined {
   if (element instanceof NodeList) {
     return Array.from(element).filter(
       (x) => x.nodeType === NodeType._ELEMENT_NODE,
@@ -56,9 +71,9 @@ export function stripCommentsFromElement(element) {
 }
 
 export function applyAnimationClasses(
-  /** @type {HTMLElement} */ element,
-  /** @type {ng.AnimationOptions} */ options,
-) {
+  element: HTMLElement,
+  options: AnimationOptions,
+): void {
   if (options.addClass) {
     element.classList.add(...options.addClass.trim().split(" "));
     options.addClass = undefined;
@@ -73,8 +88,10 @@ export function applyAnimationClasses(
 /**
  * @param {ng.AnimationOptions | undefined} options
  */
-export function prepareAnimationOptions(options) {
-  const animateOptions = options || /** @type {ng.AnimationOptions} */ {};
+export function prepareAnimationOptions(
+  options?: AnimationOptions,
+): AnimationOptions {
+  const animateOptions = options || ({} as AnimationOptions);
 
   if (!animateOptions._prepared) {
     let domOperation =
@@ -100,7 +117,10 @@ export function prepareAnimationOptions(options) {
  * @param {HTMLElement} element
  * @param {ng.AnimationOptions | undefined} options
  */
-export function applyAnimationStyles(element, options) {
+export function applyAnimationStyles(
+  element: HTMLElement,
+  options?: AnimationOptions,
+): void {
   applyAnimationFromStyles(element, options);
   applyAnimationToStyles(element, options);
 }
@@ -114,7 +134,10 @@ export function applyAnimationStyles(element, options) {
  * @param {HTMLElement} element - The target DOM element to apply styles to.
  * @param {ng.AnimationOptions} [options] - options containing a `from` object with CSS property–value pairs.
  */
-export function applyAnimationFromStyles(element, options) {
+export function applyAnimationFromStyles(
+  element: HTMLElement,
+  options?: AnimationOptions,
+): void {
   if (options && options.from) {
     Object.assign(element.style, options.from);
     options.from = undefined;
@@ -130,7 +153,10 @@ export function applyAnimationFromStyles(element, options) {
  * @param {HTMLElement} element - The target DOM element to apply styles to.
  * @param {ng.AnimationOptions} [options] - options containing a `from` object with CSS property–value pairs.
  */
-export function applyAnimationToStyles(element, options) {
+export function applyAnimationToStyles(
+  element: HTMLElement,
+  options?: AnimationOptions,
+): void {
   if (options && options.to) {
     Object.assign(element.style, options.to);
     options.to = undefined;
@@ -146,11 +172,14 @@ export function applyAnimationToStyles(element, options) {
  * @param {{ options?: ng.AnimationOptions; addClass?: string; removeClass?: string; preparationClasses?: string }} newAnimation
  * @returns {ng.AnimationOptions} - The merged animation options.
  */
-export function mergeAnimationDetails(element, oldAnimation, newAnimation) {
-  const target = oldAnimation.options || /** @type {ng.AnimationOptions} */ {};
+export function mergeAnimationDetails(
+  element: HTMLElement,
+  oldAnimation: AnimationDetails,
+  newAnimation: AnimationDetails,
+): AnimationOptions {
+  const target = oldAnimation.options || ({} as AnimationOptions);
 
-  const newOptions =
-    newAnimation.options || /** @type {ng.AnimationOptions} */ {};
+  const newOptions = newAnimation.options || ({} as AnimationOptions);
 
   // Merge preparation classes if any
   if (newOptions.preparationClasses) {
@@ -184,17 +213,15 @@ export function mergeAnimationDetails(element, oldAnimation, newAnimation) {
   );
 
   // Compute final addClass and removeClass
-  /** @type {string[]} */
-  const finalAdd = [];
+  const finalAdd: string[] = [];
 
-  /** @type {string[]} */
-  const finalRemove = [];
+  const finalRemove: string[] = [];
 
-  addList.forEach(function (cls) {
+  addList.forEach(function (cls: string) {
     if (!existingSet.has(cls)) finalAdd.push(cls);
   });
 
-  removeList.forEach(function (cls) {
+  removeList.forEach(function (cls: string) {
     if (existingSet.has(cls)) finalRemove.push(cls);
   });
 
@@ -217,7 +244,11 @@ export function mergeAnimationDetails(element, oldAnimation, newAnimation) {
  * @param {string | null} event
  * @param {ng.AnimationOptions} options
  */
-export function applyGeneratedPreparationClasses(element, event, options) {
+export function applyGeneratedPreparationClasses(
+  element: HTMLElement,
+  event: string | null,
+  options: AnimationOptions,
+): void {
   let classes = "";
 
   if (event) {
@@ -248,18 +279,21 @@ export function applyGeneratedPreparationClasses(element, event, options) {
  * @param {HTMLElement} element
  * @param {ng.AnimationOptions} options
  */
-export function clearGeneratedClasses(element, options) {
+export function clearGeneratedClasses(
+  element: HTMLElement,
+  options: AnimationOptions,
+): void {
   if (options.preparationClasses) {
     options.preparationClasses
       .split(" ")
-      .forEach((cls) => element.classList.remove(cls));
+      .forEach((cls: string) => element.classList.remove(cls));
     options.preparationClasses = undefined;
   }
 
   if (options.activeClasses) {
     options.activeClasses
       .split(" ")
-      .forEach((cls) => element.classList.remove(cls));
+      .forEach((cls: string) => element.classList.remove(cls));
     options.activeClasses = undefined;
   }
 }
@@ -269,10 +303,13 @@ export function clearGeneratedClasses(element, options) {
  * @param {boolean} applyBlock
  * @returns {string[]}
  */
-export function _blockKeyframeAnimations(node, applyBlock) {
+export function _blockKeyframeAnimations(
+  node: HTMLElement,
+  applyBlock: boolean,
+): [string, string] {
   const value = applyBlock ? "paused" : "";
 
-  const key = `animationPlayState`;
+  const key = "animationPlayState";
 
   applyInlineStyle(node, [key, value]);
 
@@ -283,10 +320,13 @@ export function _blockKeyframeAnimations(node, applyBlock) {
  * @param {HTMLElement} node
  * @param {any[]} styleTuple
  */
-export function applyInlineStyle(node, styleTuple) {
+export function applyInlineStyle(
+  node: HTMLElement,
+  styleTuple: [string, string],
+): void {
   const prop = styleTuple[0];
 
-  node.style[prop] = styleTuple[1];
+  (node.style as unknown as Record<string, string>)[prop] = styleTuple[1];
 }
 
 /**
@@ -294,6 +334,6 @@ export function applyInlineStyle(node, styleTuple) {
  * @param {string} b
  * @returns {string}
  */
-export function concatWithSpace(a, b) {
+export function concatWithSpace(a: string, b: string): string {
   return [a, b].filter(Boolean).join(" ");
 }

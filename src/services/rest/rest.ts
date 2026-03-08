@@ -4,7 +4,7 @@ import {
   isArray,
   isNullOrUndefined,
   isString,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { BADARG } from "../../shared/validate.ts";
 import { expandUriTemplate } from "./rfc.ts";
 

@@ -1,6 +1,6 @@
 import { Angular } from "../../angular.ts";
 import { wait } from "../../shared/test-utils.ts";
-import { isString } from "../../shared/utils.js";
+import { isString } from "../../shared/utils.ts";
 import { dealoc, getController } from "../../shared/dom.ts";
 
 describe("ngMessages", () => {

@@ -77,8 +77,28 @@ jobs:
       - name: Run TypeScript check
         run: npx tsc
 
-  playwright:
+  package:
     needs: typescript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            deps-${{ runner.os }}-
+      - name: Verify package contents
+        run: npm pack --dry-run
+
+  playwright:
+    needs: package
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

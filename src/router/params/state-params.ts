@@ -1,4 +1,4 @@
-import { keys } from "../../shared/utils.js";
+import { keys } from "../../shared/utils.ts";
 import type { StateObject } from "../state/state-object.ts";
 
 export class StateParams {

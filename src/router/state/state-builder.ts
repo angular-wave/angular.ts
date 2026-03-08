@@ -13,7 +13,7 @@ import {
   isFunction,
   isString,
   values,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
 import { is, pattern, val } from "../../shared/hof.ts";
 import { Resolvable } from "../resolve/resolvable.ts";

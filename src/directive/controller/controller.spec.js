@@ -1,7 +1,7 @@
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { dealoc, createElementFromHTML } from "../../shared/dom.ts";
-import { bind } from "../../shared/utils.js";
+import { bind } from "../../shared/utils.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("ngController", () => {

@@ -11,7 +11,7 @@ import {
   isString,
   isUndefined,
   minErr,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { InjectorService, ProviderInjector } from "./internal-injector.ts";
 import { createPersistentProxy } from "../../services/storage/storage.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
@@ -401,7 +401,7 @@ function supportObject<V>(
 
       return undefined;
     } else {
-      return delegate(key, value as V);
+      return delegate(key as string, value as V);
     }
   };
 }

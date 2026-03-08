@@ -6,7 +6,7 @@ import {
   isNullOrUndefined,
   isString,
   isUndefined,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { ParamType } from "./param-type.ts";
 import type { ParamDeclaration, RawParams, Replace } from "./interface.ts";
 import type { ParamTypes } from "./param-types.ts";

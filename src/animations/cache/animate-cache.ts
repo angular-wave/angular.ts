@@ -1,4 +1,5 @@
-// @ts-nocheck
+import type { CacheEntry } from "./interface.ts";
+
 const KEY = "$animId";
 
 /**
@@ -13,8 +14,7 @@ const KEY = "$animId";
  * @internal
  */
 export class AnimateCache {
-  /** @type {Map<string, import("./interface.ts").CacheEntry>} */
-  _cache = new Map();
+  _cache: Map<string, CacheEntry> = new Map();
 
   /**
    * Monotonically increasing counter used to assign synthetic parent IDs.
@@ -47,10 +47,14 @@ export class AnimateCache {
    * @returns {string}
    *   A unique, deterministic cache key.
    */
-  _cacheKey(node, method, addClass, removeClass) {
-    const parent =
-      /** @type {HTMLElement & Record<string, number>} */ node.parentNode ??
-      node;
+  _cacheKey(
+    node: HTMLElement,
+    method: string,
+    addClass?: string,
+    removeClass?: string,
+  ): string {
+    const parent = (node.parentNode ?? node) as ParentNode &
+      Record<string, number>;
 
     const parentID = parent[KEY] ?? (parent[KEY] = ++this._parentCounter);
 
@@ -74,7 +78,7 @@ export class AnimateCache {
    * @returns {boolean}
    *   True if an invalid cache entry exists, false otherwise.
    */
-  _containsCachedAnimationWithoutDuration(key) {
+  _containsCachedAnimationWithoutDuration(key: string): boolean {
     const entry = this._cache.get(key);
 
     return !!entry && !entry.isValid;
@@ -87,7 +91,7 @@ export class AnimateCache {
    *
    * @returns {void}
    */
-  _flush() {
+  _flush(): void {
     this._cache.clear();
   }
 
@@ -99,7 +103,7 @@ export class AnimateCache {
    * @returns {number}
    *   Usage count, or 0 if the entry does not exist.
    */
-  _count(key) {
+  _count(key: string): number {
     return this._cache.get(key)?.total ?? 0;
   }
 
@@ -111,7 +115,7 @@ export class AnimateCache {
    * @returns {any}
    *   Cached value, or undefined if not present.
    */
-  _get(key) {
+  _get(key: string): CacheEntry["value"] | undefined {
     return this._cache.get(key)?.value;
   }
 
@@ -130,7 +134,7 @@ export class AnimateCache {
    *
    * @returns {void}
    */
-  _put(key, value, isValid) {
+  _put(key: string, value: CacheEntry["value"], isValid: boolean): void {
     const entry = this._cache.get(key);
 
     if (entry) {

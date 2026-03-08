@@ -13,7 +13,7 @@ import {
   isNullOrUndefined,
   isObject,
   isUndefined,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { is, propEq, val } from "../../shared/hof.ts";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import { registerHook } from "./hook-registry.ts";

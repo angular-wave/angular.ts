@@ -5,7 +5,7 @@ import {
   isNullOrUndefined,
   isUndefined,
   stringify,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 
 /**

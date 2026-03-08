@@ -3,7 +3,7 @@ import {
   isArray,
   isFunction,
   minErr,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import type { AnnotatedFactory } from "../../interface.ts";
 

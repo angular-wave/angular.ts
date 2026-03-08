@@ -1,4 +1,4 @@
-import { isError } from "../../shared/utils.js";
+import { isError } from "../../shared/utils.ts";
 import type { LogCall, LogServiceFactory } from "./interface.ts";
 
 /**

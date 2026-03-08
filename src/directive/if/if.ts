@@ -1,6 +1,6 @@
 import { $injectTokens } from "../../injection-tokens.ts";
 import { removeElement } from "../../shared/dom.ts";
-import { hasAnimate } from "../../shared/utils.js";
+import { hasAnimate } from "../../shared/utils.ts";
 
 ngIfDirective.$inject = [$injectTokens._animate];
 /**

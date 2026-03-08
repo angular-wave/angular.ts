@@ -1,4 +1,4 @@
-import { isArray, isString } from "./utils.js";
+import { isArray, isString } from "./utils.ts";
 import { createElementFromHTML } from "./dom.ts";
 import { NodeType } from "./node.ts";
 

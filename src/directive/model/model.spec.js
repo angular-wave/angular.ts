@@ -1,7 +1,7 @@
 import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
-import { NgModelController } from "./model.js";
-import { isDefined, isObject } from "../../shared/utils.js";
+import { NgModelController } from "./model.ts";
+import { isDefined, isObject } from "../../shared/utils.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
 
 describe("ngModel", () => {

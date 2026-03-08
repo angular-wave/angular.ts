@@ -8,7 +8,7 @@ import {
   minErr,
   ngAttrPrefixes,
   values,
-} from "./shared/utils.js";
+} from "./shared/utils.ts";
 import {
   getController,
   getInjector,

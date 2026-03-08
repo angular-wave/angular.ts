@@ -8,7 +8,7 @@ import {
   isObject,
   isString,
   isUndefined,
-} from "./utils.js";
+} from "./utils.ts";
 
 /**
  * Functions that manipulate strings

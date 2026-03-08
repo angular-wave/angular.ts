@@ -1,4 +1,4 @@
-import { isArray } from "../../shared/utils.js";
+import { isArray } from "../../shared/utils.ts";
 
 /**
  * RFC 6570 Level 4 URI Template expander

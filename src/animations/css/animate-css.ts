@@ -1,4 +1,10 @@
-// @ts-nocheck
+import type {
+  AnimationHost,
+  AnimationOptions,
+  Animator,
+  AnimateCssService,
+  InlineStyleEntry,
+} from "../interface.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import {
   getCacheData,
@@ -13,7 +19,7 @@ import {
   isString,
   keys,
   nullObject,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { AnimateRunner } from "../runner/animate-runner.ts";
 import {
   ACTIVE_CLASS_SUFFIX,
@@ -32,6 +38,30 @@ import {
 } from "../shared.ts";
 import { animateCache } from "../cache/animate-cache.ts";
 import { rafScheduler } from "../raf/raf-scheduler.ts";
+
+type AnimateCssOptions = Omit<AnimationOptions, "delay"> & {
+  delay?: string | boolean;
+  event?: string | string[];
+  stagger?: number | string;
+};
+
+interface CssTimings {
+  transitionDuration: number;
+  transitionDelay: number;
+  transitionProperty: string;
+  animationDuration: number;
+  animationDelay: number;
+  animationIterationCount: number;
+  maxDelay: number;
+  maxDuration: number;
+}
+
+interface StaggerTimings {
+  transitionDuration: number;
+  transitionDelay: number;
+  animationDuration: number;
+  animationDelay: number;
+}
 
 const ANIMATE_TIMER_KEY = $injectTokens._animateCss;
 
@@ -62,7 +92,9 @@ const DETECT_STAGGER_CSS_PROPERTIES = {
 /**
  * @param {any} duration
  */
-function getCssKeyframeDurationStyle(duration) {
+function getCssKeyframeDurationStyle(
+  duration: string | number | undefined,
+): InlineStyleEntry {
   return ["animationDuration", `${duration}s`];
 }
 
@@ -70,7 +102,10 @@ function getCssKeyframeDurationStyle(duration) {
  * @param {number | undefined} delay
  * @param {boolean | undefined} [isKeyframeAnimation]
  */
-function getCssDelayStyle(delay, isKeyframeAnimation) {
+function getCssDelayStyle(
+  delay: number | undefined,
+  isKeyframeAnimation?: boolean,
+): InlineStyleEntry {
   const prop = isKeyframeAnimation ? "animationDelay" : "transitionDelay";
 
   return [prop, `${delay}s`];
@@ -81,16 +116,18 @@ function getCssDelayStyle(delay, isKeyframeAnimation) {
  * @param {{ [s: string]: string } | ArrayLike<string>} properties
  * @returns {{ [s: string]: number | null }}
  */
-function computeCssStyles(element, properties) {
-  const styles = nullObject();
+function computeCssStyles(
+  element: Element,
+  properties: Record<string, string> | ArrayLike<string>,
+): Record<string, string | number | null> {
+  const styles: Record<string, string | number | null> = nullObject();
 
   const detectedStyles =
     /** @type {CSSStyleDeclaration & Record<string, string>} */
     window.getComputedStyle(element) || {};
 
   entries(properties).forEach(([actualStyleName, formalStyleName]) => {
-    /** @type {string | number | null} */
-    let val = detectedStyles[formalStyleName];
+    let val: string | number | null = detectedStyles[formalStyleName];
 
     if (val) {
       if (isString(val) && /^[+-]?\d/.test(val)) {
@@ -101,7 +138,7 @@ function computeCssStyles(element, properties) {
         val = null;
       }
 
-      styles[actualStyleName] = /** @type {number | null} */ val;
+      styles[actualStyleName] = val;
     }
   });
 
@@ -119,10 +156,10 @@ function computeCssStyles(element, properties) {
  * @param {string} str A CSS time string (optionally comma-separated).
  * @returns {number} The maximum time value, expressed in **seconds**.
  */
-export function parseMaxTime(str) {
+export function parseMaxTime(str: string): number {
   let max = 0;
 
-  str.split(/\s*,\s*/).forEach((token) => {
+  str.split(/\s*,\s*/).forEach((token: string) => {
     if (!token) return;
 
     // Computed styles usually return either "Xs" or "Yms"
@@ -150,7 +187,7 @@ export function parseMaxTime(str) {
 /**s
  * @param {unknown} val
  */
-function truthyTimingValue(val) {
+function truthyTimingValue(val: unknown): boolean {
   return val === 0 || !isNullOrUndefined(val);
 }
 
@@ -159,7 +196,10 @@ function truthyTimingValue(val) {
  * @param {boolean} applyOnlyDuration
  * @return {import("../interface.ts").InlineStyleEntry}
  */
-function getCssTransitionDurationStyle(duration, applyOnlyDuration) {
+function getCssTransitionDurationStyle(
+  duration: string | number | undefined,
+  applyOnlyDuration: boolean,
+): InlineStyleEntry {
   let style = "transition";
 
   let value = `${duration}s`;
@@ -187,25 +227,29 @@ function getCssTransitionDurationStyle(duration, applyOnlyDuration) {
  * @param {HTMLElement} node
  * @param {any[]} properties
  */
-function registerRestorableStyles(backup, node, properties) {
-  properties.forEach((prop) => {
+function registerRestorableStyles(
+  backup: Record<string, string | null | undefined>,
+  node: HTMLElement,
+  properties: string[],
+): void {
+  properties.forEach((prop: string) => {
     backup[prop] = isDefined(backup[prop])
       ? backup[prop]
       : node.style.getPropertyValue(prop);
   });
 }
 
-export function AnimateCssProvider() {
+export function AnimateCssProvider(this: { $get?: unknown }): void {
   /**
    * @type {string}
    */
-  let activeClasses;
+  let activeClasses = "";
 
   this.$get = [
     /**
      * @returns {ng.AnimateCssService}
      */
-    () => {
+    (): AnimateCssService => {
       /**
        * @param {any} node
        * @param {string} cacheKey
@@ -213,19 +257,31 @@ export function AnimateCssProvider() {
        * @param {{ transitionDuration: string; transitionDelay: string; transitionProperty: string; animationDuration: string; animationDelay: string; animationIterationCount: string; }} properties
        */
       function computeCachedCssStyles(
-        node,
-        cacheKey,
-        allowNoDuration,
-        properties,
-      ) {
-        let timings = animateCache._get(cacheKey);
+        node: HTMLElement,
+        cacheKey: string,
+        allowNoDuration: boolean,
+        properties: Record<string, string>,
+      ): CssTimings {
+        let timings = animateCache._get(cacheKey) as CssTimings | undefined;
 
         if (!timings) {
-          timings = computeCssStyles(node, properties);
-
-          if (timings.animationIterationCount === "infinite") {
-            timings.animationIterationCount = 1;
-          }
+          const computed = computeCssStyles(node, properties);
+          timings = {
+            transitionDuration: Number(computed.transitionDuration || 0),
+            transitionDelay: Number(computed.transitionDelay || 0),
+            transitionProperty:
+              typeof computed.transitionProperty === "string"
+                ? computed.transitionProperty
+                : "",
+            animationDuration: Number(computed.animationDuration || 0),
+            animationDelay: Number(computed.animationDelay || 0),
+            animationIterationCount:
+              computed.animationIterationCount === "infinite"
+                ? 1
+                : Number(computed.animationIterationCount || 1),
+            maxDelay: 0,
+            maxDuration: 0,
+          };
         }
 
         // if a css animation has no duration we
@@ -249,12 +305,12 @@ export function AnimateCssProvider() {
        * @param {{ [s: string]: string; } | ArrayLike<string>} properties
        */
       function computeCachedCssStaggerStyles(
-        node,
-        className,
-        cacheKey,
-        properties,
-      ) {
-        let stagger;
+        node: HTMLElement,
+        className: string | string[],
+        cacheKey: string,
+        properties: Record<string, string>,
+      ): Partial<StaggerTimings> {
+        let stagger: Partial<StaggerTimings> | undefined;
 
         const staggerCacheKey = `stagger-${cacheKey}`;
 
@@ -290,12 +346,12 @@ export function AnimateCssProvider() {
       }
 
       /** @type {Array<() => void>} */
-      const rafWaitQueue = [];
+      const rafWaitQueue: Array<() => void> = [];
 
       /**
        * @param {() => void} callback
        */
-      function waitUntilQuiet(callback) {
+      function waitUntilQuiet(callback: () => void): void {
         rafWaitQueue.push(callback);
         rafScheduler._waitUntilQuiet(() => {
           animateCache._flush();
@@ -318,7 +374,11 @@ export function AnimateCssProvider() {
        * @param {string} cacheKey
        * @param {boolean} allowNoDuration
        */
-      function computeTimings(node, cacheKey, allowNoDuration) {
+      function computeTimings(
+        node: HTMLElement,
+        cacheKey: string,
+        allowNoDuration: boolean,
+      ): CssTimings {
         const timings = computeCachedCssStyles(
           node,
           cacheKey,
@@ -344,19 +404,26 @@ export function AnimateCssProvider() {
        * @param {ng.AnimationOptions} [initialOptions]
        * @return {{_willAnimate: boolean, start(): AnimateRunner, end: function(): void}}
        */
-      function init(element, initialOptions) {
+      function init(
+        element: HTMLElement,
+        initialOptions?: AnimateCssOptions,
+      ): Animator {
         // all of the animation functions should create
         // a copy of the options data, however, if a
         // parent service has already created a copy then
-        let delayStyle;
+        let delayStyle: InlineStyleEntry | undefined;
 
         // we should stick to using that
-        let options = initialOptions || /** @type {ng.AnimationOptions} */ {
-          _skipPreparationClasses: false,
-        };
+        let options =
+          initialOptions ||
+          ({
+            _skipPreparationClasses: false,
+          } as AnimateCssOptions);
 
         if (!options._prepared) {
-          options = prepareAnimationOptions(structuredClone(options));
+          options = prepareAnimationOptions(
+            structuredClone(options) as AnimationOptions,
+          ) as AnimateCssOptions;
         }
 
         /** @type {Record<string, string | null | undefined>} */
@@ -370,68 +437,69 @@ export function AnimateCssProvider() {
         }
 
         /** @type {Array<Array<string>>} */
-        const temporaryStyles = [];
+        const temporaryStyles: InlineStyleEntry[] = [];
 
-        const styles = packageStyles(options);
-
-        /**
-         * @type {boolean}
-         */
-        let animationClosed;
+        const styles = packageStyles(options as AnimationOptions);
 
         /**
          * @type {boolean}
          */
-        let animationPaused;
+        let animationClosed = false;
 
         /**
          * @type {boolean}
          */
-        let animationCompleted;
+        let animationPaused = false;
+
+        /**
+         * @type {boolean}
+         */
+        let animationCompleted = false;
 
         /**
          * @type {AnimateRunner}
          */
-        let runner;
+        let runner: AnimateRunner | undefined;
 
         /** @type {import("../interface.ts").AnimationHost} */
-        let runnerHost = {};
+        let runnerHost: AnimationHost = {};
 
         /**
          * @type {number}
          */
-        let maxDelay;
+        let maxDelay = 0;
 
         /**
          * @type {number}
          */
-        let maxDelayTime;
+        let maxDelayTime = 0;
 
         /**
          * @type {number}
          */
-        let maxDuration;
+        let maxDuration = 0;
 
-        let maxDurationTime;
+        let maxDurationTime = 0;
 
         /**
          * @type {number}
          */
-        let startTime;
+        let startTime = 0;
 
         /** @type {string[]} */
-        const events = [];
+        const events: string[] = [];
+
+        const delayOption = options.delay as string | boolean | undefined;
 
         if (options.duration === 0) {
           return closeAndReturnNoopAnimator();
         }
 
-        const method =
-          /** @type {string} */ options.event && isArray(options.event)
-            ? options.event.join(" ")
-            : options.event;
+        const method = isArray(options.event)
+          ? options.event.join(" ")
+          : options.event || "";
 
-        const isStructural = method && options.structural;
+        const isStructural = !!(method && options.structural);
 
         let structuralClassName = "";
 
@@ -464,7 +532,7 @@ export function AnimateCssProvider() {
         // we need to apply the classes before the first rAF so we know to continue if
         // there actually is a detected transition or keyframe animation
         if (options.applyClassesEarly && addRemoveClassName.length) {
-          applyAnimationClasses(element, options);
+          applyAnimationClasses(element, options as AnimationOptions);
         }
 
         let preparationClasses = [structuralClassName, addRemoveClassName]
@@ -484,11 +552,11 @@ export function AnimateCssProvider() {
         }
 
         /** @type {{ animationDelay: number; animationDuration: number; transitionDuration: number; transitionDelay: number; }} */
-        let stagger;
+        let stagger: Partial<StaggerTimings>;
 
         let cacheKey = animateCache._cacheKey(
           node,
-          method,
+          method || "",
           options.addClass,
           options.removeClass,
         );
@@ -499,9 +567,13 @@ export function AnimateCssProvider() {
           return closeAndReturnNoopAnimator();
         }
 
-        if (/** @type {number} */ options.stagger > 0) {
-          const staggerVal = parseFloat(/** @type {string} */ options.stagger);
+        const staggerOption = options.stagger;
+        const staggerVal =
+          typeof staggerOption === "number"
+            ? staggerOption
+            : parseFloat(String(staggerOption));
 
+        if (!isNaN(staggerVal) && staggerVal > 0) {
           stagger = {
             transitionDelay: staggerVal,
             animationDelay: staggerVal,
@@ -526,16 +598,24 @@ export function AnimateCssProvider() {
         let applyOnlyDuration;
 
         if (options.transitionStyle) {
-          const transitionStyle = ["transition", options.transitionStyle];
+          const transitionStyle: InlineStyleEntry = [
+            "transition",
+            options.transitionStyle,
+          ];
 
           applyInlineStyle(node, transitionStyle);
           temporaryStyles.push(transitionStyle);
         }
 
-        if (/** @type {number} */ options.duration >= 0) {
+        const durationValue =
+          typeof options.duration === "number"
+            ? options.duration
+            : parseFloat(String(options.duration));
+
+        if (!isNaN(durationValue) && durationValue >= 0) {
           applyOnlyDuration = node.style.transition.length > 0;
           const durationStyle = getCssTransitionDurationStyle(
-            options.duration,
+            durationValue,
             applyOnlyDuration,
           );
 
@@ -546,7 +626,10 @@ export function AnimateCssProvider() {
         }
 
         if (options.keyframeStyle) {
-          const keyframeStyle = ["animation", options.keyframeStyle];
+          const keyframeStyle: InlineStyleEntry = [
+            "animation",
+            options.keyframeStyle,
+          ];
 
           applyInlineStyle(node, keyframeStyle);
           temporaryStyles.push(keyframeStyle);
@@ -621,7 +704,7 @@ export function AnimateCssProvider() {
 
         if (flags._applyTransitionDuration || flags._applyAnimationDuration) {
           maxDuration = options.duration
-            ? parseFloat(/** @type {string} */ options.duration)
+            ? parseFloat(String(options.duration))
             : maxDuration;
 
           if (flags._applyTransitionDuration) {
@@ -629,7 +712,7 @@ export function AnimateCssProvider() {
             timings.transitionDuration = maxDuration;
             applyOnlyDuration = node.style.transitionProperty.length > 0;
             temporaryStyles.push(
-              getCssTransitionDurationStyle(maxDuration, applyOnlyDuration),
+              getCssTransitionDurationStyle(maxDuration, !!applyOnlyDuration),
             );
           }
 
@@ -646,19 +729,28 @@ export function AnimateCssProvider() {
 
         activeClasses = pendClasses(preparationClasses, ACTIVE_CLASS_SUFFIX);
 
-        if (!isNullOrUndefined(options.delay)) {
-          if (typeof options.delay !== "boolean") {
-            delayStyle = parseFloat(options.delay);
+        if (!isNullOrUndefined(delayOption)) {
+          if (typeof delayOption !== "boolean") {
+            delayStyle = getCssDelayStyle(parseFloat(delayOption));
             // number in options.delay means we have to recalculate the delay for the closing timeout
-            maxDelay = Math.max(delayStyle, 0);
+            maxDelay = Math.max(parseFloat(delayOption), 0);
           }
 
           if (flags._applyTransitionDelay) {
-            temporaryStyles.push(getCssDelayStyle(delayStyle));
+            temporaryStyles.push(delayStyle || getCssDelayStyle(0));
           }
 
           if (flags._applyAnimationDelay) {
-            temporaryStyles.push(getCssDelayStyle(delayStyle, true));
+            temporaryStyles.push(
+              delayStyle
+                ? [
+                    delayStyle[0] === "transitionDelay"
+                      ? "animationDelay"
+                      : delayStyle[0],
+                    delayStyle[1],
+                  ]
+                : getCssDelayStyle(0, true),
+            );
           }
         }
 
@@ -679,8 +771,8 @@ export function AnimateCssProvider() {
         flags._blockTransition = timings.transitionDuration > 0;
         flags._blockKeyframeAnimation =
           timings.animationDuration > 0 &&
-          stagger.animationDelay > 0 &&
-          stagger.animationDuration === 0;
+          (stagger.animationDelay ?? 0) > 0 &&
+          (stagger.animationDuration ?? 0) === 0;
 
         if (options.from) {
           if (options.cleanupStyles) {
@@ -690,7 +782,7 @@ export function AnimateCssProvider() {
               Object.keys(options.from),
             );
           }
-          applyAnimationFromStyles(element, options);
+          applyAnimationFromStyles(element, options as AnimationOptions);
         }
 
         if (flags._blockTransition || flags._blockKeyframeAnimation) {
@@ -727,7 +819,7 @@ export function AnimateCssProvider() {
             // since it hasn't run yet. AnimateRunner will therefore
             // set noop functions for resume and pause and they will
             // later be overridden once the animation is triggered
-            return runner;
+            return runner!;
           },
         };
 
@@ -742,7 +834,7 @@ export function AnimateCssProvider() {
         /**
          * @param {boolean} [rejected]
          */
-        function close(rejected) {
+        function close(rejected?: boolean) {
           // if the promise has been called already then we shouldn't close
           // the animation again
           if (animationClosed || (animationCompleted && animationPaused))
@@ -769,8 +861,8 @@ export function AnimateCssProvider() {
             node.style.removeProperty(entry[0]);
           });
 
-          applyAnimationClasses(element, options);
-          applyAnimationStyles(element, options);
+          applyAnimationClasses(element, options as AnimationOptions);
+          applyAnimationStyles(element, options as AnimationOptions);
 
           if (keys(restoreStyles).length) {
             entries(restoreStyles).forEach(([prop, value]) => {
@@ -815,7 +907,7 @@ export function AnimateCssProvider() {
         /**
          * @param {number} duration
          */
-        function applyBlocking(duration) {
+        function applyBlocking(duration: number): void {
           if (flags._blockTransition) {
             blockTransitions(node, duration);
           }
@@ -840,7 +932,7 @@ export function AnimateCssProvider() {
           return {
             _willAnimate: false,
             start() {
-              return runner;
+              return runner!;
             },
             end: endFn,
           };
@@ -849,7 +941,9 @@ export function AnimateCssProvider() {
         /**
          * @param {Event & { originalEvent?: any }} event
          */
-        function onAnimationProgress(event) {
+        function onAnimationProgress(
+          event: Event & { originalEvent?: any },
+        ): void {
           event.stopPropagation();
           const ev = event.originalEvent || event;
 
@@ -900,7 +994,7 @@ export function AnimateCssProvider() {
           // will still happen when transitions are used. Only the transition will
           // not be paused since that is not possible. If the animation ends when
           // paused then it will not complete until unpaused or cancelled.
-          const playPause = function (/** @type {boolean} */ playAnimation) {
+          const playPause = function (playAnimation: boolean) {
             if (!animationCompleted) {
               animationPaused = !playAnimation;
 
@@ -930,7 +1024,7 @@ export function AnimateCssProvider() {
             itemIndex > 0 &&
             ((timings.transitionDuration && stagger.transitionDuration === 0) ||
               (timings.animationDuration && stagger.animationDuration === 0)) &&
-            Math.max(stagger.animationDelay, stagger.transitionDelay);
+            Math.max(stagger.animationDelay ?? 0, stagger.transitionDelay ?? 0);
 
           if (maxStagger) {
             setTimeout(
@@ -964,7 +1058,7 @@ export function AnimateCssProvider() {
               node.style.setProperty(key, entry[1]);
             });
 
-            applyAnimationClasses(element, options);
+            applyAnimationClasses(element, options as AnimationOptions);
             element.classList.add(
               ...activeClasses.split(" ").filter((x) => x !== ""),
             );
@@ -972,7 +1066,7 @@ export function AnimateCssProvider() {
             if (flags._recalculateTimingStyles) {
               cacheKey = animateCache._cacheKey(
                 node,
-                method,
+                method || "",
                 options.addClass,
                 options.removeClass,
               );
@@ -997,7 +1091,7 @@ export function AnimateCssProvider() {
               relativeDelay =
                 typeof options.delay !== "boolean" &&
                 truthyTimingValue(options.delay)
-                  ? parseFloat(options.delay)
+                  ? parseFloat(String(options.delay))
                   : relativeDelay;
 
               maxDelay = Math.max(relativeDelay, 0);
@@ -1084,7 +1178,7 @@ export function AnimateCssProvider() {
                   Object.keys(options.to),
                 );
               }
-              applyAnimationToStyles(element, options);
+              applyAnimationToStyles(element, options as AnimationOptions);
             }
           }
 
@@ -1114,7 +1208,10 @@ export function AnimateCssProvider() {
  * @param {number} duration
  * @returns {import("../interface.ts").InlineStyleEntry}
  */
-function blockTransitions(node, duration) {
+function blockTransitions(
+  node: HTMLElement,
+  duration: number,
+): InlineStyleEntry {
   // we use a negative delay value since it performs blocking
   // yet it doesn't kill any existing transitions running on the
   // same element which makes this safe for class-based animations

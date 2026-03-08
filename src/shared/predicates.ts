@@ -1,4 +1,4 @@
-import { isArray, isFunction, isString } from "./utils.js";
+import { isArray, isFunction, isString } from "./utils.ts";
 
 /**
  * A value is "injectable" if it is a function, or if it is an ng1

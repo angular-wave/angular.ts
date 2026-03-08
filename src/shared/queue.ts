@@ -1,4 +1,4 @@
-import { isArray } from "./utils.js";
+import { isArray } from "./utils.ts";
 
 /**
  * A simple bounded FIFO queue with optional eviction notifications.

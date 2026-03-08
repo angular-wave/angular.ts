@@ -107,7 +107,8 @@ with quickly:
 - **Suggest a Fix** - if you can't fix the bug yourself, perhaps you can point to what might be
   causing the problem (line of code or commit)
 
-Here is a great example of a well defined issue: https://github.com/angular/angular.js/issues/5069.
+Here is a great example of a well defined issue:
+https://github.com/angular-wave/angular.ts/issues/5069.
 
 **If you get help, help others. Good karma rulez!**
 
@@ -127,10 +128,19 @@ Before you submit your pull request consider the following guidelines:
 - Create your patch commit, **including appropriate test cases**.
 - Follow our [Coding Rules][developers.rules].
 - If the changes affect public APIs, change or add relevant [documentation][developers.documentation].
-- Run the AngularTS [unit][developers.tests-unit] and [E2E test][developers.tests-e2e] suites, and ensure that all tests
-  pass. It is generally sufficient to run the tests only on Chrome, as our continuous integration test will
-  run the tests on additional browsers.
-- Run `yarn grunt eslint` to check that you have followed the automatically enforced coding rules
+- Treat `src/**/*.ts` as the source of truth for types. The `@types/` tree is generated output,
+  emitted by `make types` locally and by `prepack` during packaging. Do not hand-edit files under
+  `@types/`.
+- Run the AngularTS validation commands and ensure they pass:
+
+  ```shell
+  make check
+  make test
+  make types
+  npm pack --dry-run
+  ```
+
+- Run `npx eslint ./src` to check that you have followed the automatically enforced coding rules.
 - Commit your changes using a descriptive commit message that follows our
   [commit message conventions][developers.commits]. Adherence to the
   [commit message conventions][developers.commits] is required, because release notes are
@@ -142,10 +152,13 @@ Before you submit your pull request consider the following guidelines:
 
   Note: the optional commit `-a` command line option will automatically "add" and "rm" edited files.
 
-- Before creating the Pull Request, package and run all tests a last time:
+- Before creating the Pull Request, run the full local verification pass one more time:
 
   ```shell
-  yarn grunt test
+  make check
+  make test
+  make types
+  npm pack --dry-run
   ```
 
 - Push your branch to GitHub:
@@ -154,7 +167,7 @@ Before you submit your pull request consider the following guidelines:
   git push origin my-fix-branch
   ```
 
-- In GitHub, send a pull request to `angular.js:master`. This will trigger the check of the
+- In GitHub, send a pull request to `angular-wave/angular.ts:master`. This will trigger the check of the
   [Contributor License Agreement](#cla) and the continuous integration tests.
 
 - If you find that the continuous integration tests have failed, look into the logs to find out
@@ -230,8 +243,8 @@ It's a quick process, we promise!
 [developers.setup]: DEVELOPERS.md#setup
 [developers.tests-e2e]: DEVELOPERS.md#e2e-tests
 [developers.tests-unit]: DEVELOPERS.md#unit-tests
-[github-issues]: https://github.com/angular/angular.js/issues
-[github-new-issue]: https://github.com/angular/angular.js/issues/new
+[github-issues]: https://github.com/angular-wave/angular.ts/issues
+[github-new-issue]: https://github.com/angular-wave/angular.ts/issues/new
 [github]: https://github.com/angular/angular.js
 [gitter]: https://gitter.im/angular/angular.js
 [Google Closure I18N library]: https://github.com/google/closure-library/tree/master/closure/goog/i18n

@@ -1,4 +1,4 @@
-import { hasOwn, isArray, isDefined, isObject, keys } from "./utils.js";
+import { hasOwn, isArray, isDefined, isObject, keys } from "./utils.ts";
 import { NodeType } from "./node.ts";
 import { $injectTokens } from "../injection-tokens.ts";
 

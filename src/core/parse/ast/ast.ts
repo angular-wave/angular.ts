@@ -1,6 +1,6 @@
 import { isAssignable } from "../interpreter.ts";
 import { ASTType } from "../ast-type.ts";
-import { hasOwn, isDefined, minErr } from "../../../shared/utils.js";
+import { hasOwn, isDefined, minErr } from "../../../shared/utils.ts";
 import type { Lexer } from "../lexer/lexer.ts";
 import type { Token } from "../lexer/token.ts";
 import type { ASTNode, ObjectPropertyNode } from "./ast-node.ts";
