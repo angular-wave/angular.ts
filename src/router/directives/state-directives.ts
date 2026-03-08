@@ -34,6 +34,9 @@ type StateRefActiveController = {
 };
 type WatchDeregFns = Record<string, () => void>;
 
+/**
+ * Parses an `ng-sref` expression into a target state name and parameter expression.
+ */
 function parseStateRef(ref: string): ParsedStateRef {
   const paramsOnly = ref.match(/^\s*({[^}]*})\s*$/);
 
@@ -48,6 +51,9 @@ function parseStateRef(ref: string): ParsedStateRef {
   return { state: parsed[1] || null, paramExpr: parsed[3] || null };
 }
 
+/**
+ * Resolves the relative state context for a state-ref-bearing element.
+ */
 function stateContext(el: Node): string | undefined {
   const $ngView = getInheritedData(el, "$ngView");
   const path = parse("$cfg.path")($ngView) as
@@ -59,6 +65,9 @@ function stateContext(el: Node): string | undefined {
     : undefined;
 }
 
+/**
+ * Computes the current state-ref definition, href, and navigation options.
+ */
 function processedDef(
   $state: ng.StateService,
   $element: HTMLElement,
@@ -76,6 +85,9 @@ function processedDef(
   return { ngState, ngStateParams: def.ngStateParams, ngStateOpts, href };
 }
 
+/**
+ * Returns the relevant DOM attribute and click behavior metadata for the element.
+ */
 function getTypeInfo(el: HTMLElement): TypeInfo {
   // SVGAElement does not use the href attribute, but rather the 'xlinkHref' attribute.
   const isSvg =
@@ -91,6 +103,9 @@ function getTypeInfo(el: HTMLElement): TypeInfo {
   };
 }
 
+/**
+ * Creates the click handler that triggers a state transition for a state ref.
+ */
 function clickHook(
   el: HTMLElement,
   $state: ng.StateService,
@@ -138,6 +153,9 @@ function clickHook(
   };
 }
 
+/**
+ * Produces default navigation options for a state-ref element.
+ */
 function defaultOpts(el: Node, $state: { $current: unknown }): any {
   return {
     relative: stateContext(el) || $state.$current,
@@ -146,6 +164,9 @@ function defaultOpts(el: Node, $state: { $current: unknown }): any {
   };
 }
 
+/**
+ * Binds the configured activation events and removes them on scope destroy.
+ */
 function bindEvents(
   element: HTMLElement,
   scope: ng.Scope,

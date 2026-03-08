@@ -3,6 +3,10 @@ import { TargetState } from "../state/target-state.ts";
 import type { TransitionService } from "../transition/interface.ts";
 import type { Transition } from "../transition/transition.ts";
 
+/**
+ * Registers support for state-level `redirectTo` declarations and converts
+ * their results into target states.
+ */
 export const registerRedirectToHook = (
   transitionService: TransitionService,
   stateService: ng.StateService,

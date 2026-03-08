@@ -1,3 +1,10 @@
+/**
+ * Public documentation barrel.
+ *
+ * This module re-exports the runtime and type surfaces that documentation
+ * examples, generated API references, and external consumers rely on, without
+ * forcing them to know the internal source layout.
+ */
 export * from "./animations/interface.ts";
 export { AnimateRunner } from "./animations/runner/animate-runner.ts";
 export { AnchorScrollService } from "./services/anchor-scroll/interface.ts";

@@ -17,6 +17,10 @@ function ignoredHook(trans: Transition) {
   return Rejection.ignored().toPromise();
 }
 
+/**
+ * Short-circuits transitions that the router determines are ignorable,
+ * such as no-op transitions to the current or pending state.
+ */
 export const registerIgnoredTransitionHook = (
   transitionService: TransitionService,
 ) => transitionService.onBefore({}, ignoredHook, { priority: -9999 });

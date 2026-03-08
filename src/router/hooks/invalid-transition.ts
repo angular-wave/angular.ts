@@ -7,6 +7,10 @@ function invalidTransitionHook(trans: Transition): void {
   }
 }
 
+/**
+ * Fails transitions that are already known to be invalid before any work runs.
+ * This keeps invalid targets from progressing into the rest of the hook pipeline.
+ */
 export const registerInvalidTransitionHook = (
   transitionService: TransitionService,
 ) =>

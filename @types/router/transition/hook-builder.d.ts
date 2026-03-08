@@ -3,6 +3,9 @@ import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import type { IMatchingNodes, TreeChanges } from "./interface.ts";
 import type { Transition } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
+/**
+ * Builds runnable `TransitionHook` instances for a transition phase.
+ */
 export declare class HookBuilder {
   transition: Transition;
   constructor(transition: Transition);

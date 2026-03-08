@@ -10,6 +10,9 @@ import type { RegisteredHook } from "./hook-registry.ts";
 import type { HookResult, TransitionHookOptions } from "./interface.ts";
 import type { Transition } from "./transition.ts";
 
+/**
+ * Transition lifecycle phases used to group and order hook execution.
+ */
 export const TransitionHookPhase = {
   _CREATE: 0,
   _BEFORE: 1,
@@ -20,6 +23,9 @@ export const TransitionHookPhase = {
 
 export type TransitionHookPhase = number;
 
+/**
+ * Declares whether a hook operates on a whole transition or on individual states.
+ */
 export const TransitionHookScope = {
   _TRANSITION: 0,
   _STATE: 1,
@@ -37,6 +43,9 @@ const defaultOptions: Partial<TransitionHookOptions> = {
   bind: null,
 };
 
+/**
+ * Runtime wrapper around one registered transition hook invocation.
+ */
 export class TransitionHook {
   static HANDLE_RESULT: (hook: TransitionHook) => HookResultHandler;
   static LOG_REJECTED_RESULT: (hook: TransitionHook) => HookResultHandler;
@@ -54,6 +63,9 @@ export class TransitionHook {
   isSuperseded: () => boolean;
   _exceptionHandler: ng.ExceptionHandlerService;
 
+  /**
+   * Runs hooks in sequence, waiting for each async hook before invoking the next.
+   */
   static chain(hooks: TransitionHook[], waitFor?: Promise<any>): Promise<any> {
     const createHookChainR = (
       prev: Promise<any>,
@@ -89,6 +101,9 @@ export class TransitionHook {
     hooks.forEach((hook) => hook.invokeHook());
   }
 
+  /**
+   * Creates one executable hook wrapper bound to a transition and state context.
+   */
   constructor(
     transition: Transition,
     stateContext: StateDeclaration | null,
@@ -107,10 +122,17 @@ export class TransitionHook {
     this._exceptionHandler = exceptionHandler;
   }
 
+  /**
+   * Sends hook execution errors to the configured exception handler.
+   */
   logError(err: unknown): void {
     this._exceptionHandler(err);
   }
 
+  /**
+   * Executes the underlying hook callback and normalizes its result into
+   * the router's rejection / redirect model.
+   */
   invokeHook(): Promise<any> | undefined {
     const hook = this.registeredHook;
 
@@ -157,6 +179,9 @@ export class TransitionHook {
     }
   }
 
+  /**
+   * Converts raw hook return values into transition outcomes.
+   */
   handleHookResult(result: HookResult): Promise<any> | undefined {
     const notCurrent = this.getNotCurrentRejection();
 
@@ -179,6 +204,9 @@ export class TransitionHook {
     return undefined;
   }
 
+  /**
+   * Returns a rejection when the transition was aborted or superseded.
+   */
   getNotCurrentRejection(): Promise<any> | undefined {
     if (this.transition._aborted) {
       return Rejection.aborted().toPromise();
@@ -191,6 +219,9 @@ export class TransitionHook {
     return undefined;
   }
 
+  /**
+   * Returns a readable trace label for this hook invocation.
+   */
   toString(): string {
     const { options, registeredHook } = this;
     const event = parse("traceData.hookType")(options) || "internal";

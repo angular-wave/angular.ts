@@ -28,6 +28,30 @@ type ObserverMap = Record<string, ObserverList>;
 export class Attributes {
   static $nonscope = true;
 
+  /**
+   * Creates an Attributes instance.
+   *
+   * There are two construction modes:
+   *
+   * 1. **Fresh instance** (no `attributesToCopy`):
+   *    - Used when compiling a DOM element for the first time.
+   *    - Initializes a new `$attr` map to track normalized -> DOM attribute names.
+   *
+   * 2. **Clone instance** (`attributesToCopy` provided):
+   *    - Used when cloning attributes for directive linking / child scopes.
+   *    - Performs a shallow copy of all properties from the source Attributes object,
+   *      including `$attr`, normalized attribute values, and internal fields
+   *      (e.g. `_observers`).
+   *    - `$attr` is intentionally **not reinitialized** in this case, because the
+   *      source object already contains the correct normalized -> DOM attribute mapping.
+   *
+   * @param {ng.AnimateService} $animate
+   * @param {ng.ExceptionHandlerService} $exceptionHandler
+   * @param {ng.SceService} $sce
+   * @param {import("../../shared/noderef.ts").NodeRef} [nodeRef]
+   * @param {Object & Record<string, any>} [attributesToCopy]
+   */
+
   _animate: ng.AnimateService;
   _exceptionHandler: ng.ExceptionHandlerService;
   _sce: ng.SceService;
@@ -60,10 +84,21 @@ export class Attributes {
     this._nodeRef = nodeRef;
   }
 
+  /** @ignore @returns {Node|Element} */
   _element(): Node | Element {
     return this._nodeRef?._getAny() as Node | Element;
   }
 
+  /**
+   * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `x-` or
+   * `data-`) to its normalized, camelCase form.
+   *
+   * Also there is special case for Moz prefix starting with upper case letter.
+   *
+   * For further information check out the guide on {@link guide/directive#matching-directives Matching Directives}
+   *
+   * @param {string} name Name to normalize
+   */
   $normalize = directiveNormalize;
 
   $addClass(classVal: string): void {
@@ -253,6 +288,14 @@ export class Attributes {
   }
 }
 
+/**
+ * Computes the difference between two space-separated token strings.
+ *
+ * @param {string} str1 - The first string containing space-separated tokens.
+ * @param {string} str2 - The second string containing space-separated tokens.
+ * @returns {string} A string containing tokens that are in str1 but not in str2, separated by spaces.
+ *
+ */
 function tokenDifference(str1: string, str2: string): string {
   const tokens1 = new Set(str1.split(/\s+/));
   const tokens2 = new Set(str2.split(/\s+/));

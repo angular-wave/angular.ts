@@ -11,6 +11,9 @@ import type { HookTuple, IMatchingNodes, TreeChanges } from "./interface.ts";
 import type { Transition } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
 
+/**
+ * Builds runnable `TransitionHook` instances for a transition phase.
+ */
 export class HookBuilder {
   transition: Transition;
 
@@ -109,6 +112,9 @@ export class HookBuilder {
   }
 }
 
+/**
+ * Sorts hooks first by state depth, then by explicit hook priority.
+ */
 function tupleSort(reverseDepthSort = false) {
   return function nodeDepthThenPriority(
     left: HookTuple,

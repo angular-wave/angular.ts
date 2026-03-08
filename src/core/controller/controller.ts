@@ -22,6 +22,10 @@ type ControllerInstance = Record<string, any>;
 const $controllerMinErr = minErr("$controller");
 const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
 
+/**
+ * Resolves the controller alias from either an explicit `ident` or
+ * a `FooController as foo` style controller expression.
+ */
 export function identifierForController(
   controller: string | InjectableController | undefined,
   ident?: string,
@@ -38,6 +42,9 @@ export function identifierForController(
   return undefined;
 }
 
+/**
+ * Normalizes a registered controller definition to an injectable constructor.
+ */
 function normalizeControllerDef(
   def: unknown,
   name: string,
@@ -72,10 +79,16 @@ function unwrapController(
   };
 }
 
+/**
+ * Provider for controller registration and runtime controller instantiation.
+ */
 export class ControllerProvider {
   controllers: Map<string, InjectableController>;
   $get: [string, ($injector: ng.InjectorService) => ControllerService];
 
+  /**
+   * Creates the controller registry and exposes the `$controller` service factory.
+   */
   constructor() {
     this.controllers = new Map();
     this.$get = [
@@ -180,10 +193,16 @@ export class ControllerProvider {
     ];
   }
 
+  /**
+   * Checks whether a controller has been registered under the provided name.
+   */
   has(name: string): boolean {
     return this.controllers.has(name);
   }
 
+  /**
+   * Registers controllers using either a single name/constructor pair or an object map.
+   */
   register(
     name: string | Record<string, unknown>,
     constructor?: unknown,
@@ -201,6 +220,14 @@ export class ControllerProvider {
     }
   }
 
+  /**
+   * Publishes a controller instance onto the target scope using `controllerAs`.
+   *
+   * @param locals controller locals, which must include `$scope`
+   * @param identifier alias exposed on the target scope
+   * @param instance controller instance to export
+   * @param name controller name used for error reporting
+   */
   addIdentifier(
     locals: ControllerLocals | undefined,
     identifier: string,

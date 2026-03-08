@@ -1,5 +1,10 @@
 import { isObject, isString } from "../../shared/utils.js";
 
+/**
+ * Listens for DOM custom events and projects their payload into the element or scope.
+ *
+ * @returns {ng.Directive}
+ */
 export function ngListenerDirective(): ng.Directive {
   return {
     scope: false,

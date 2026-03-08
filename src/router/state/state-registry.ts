@@ -90,6 +90,9 @@ export class StateRegistryProvider {
     globals.current = globals.$current.self;
   }
 
+  /**
+   * Wires the injector into the registry and state builder after bootstrap.
+   */
   $get = [
     $t._injector,
     /**
@@ -323,6 +326,7 @@ export class StateRegistryProvider {
   }
 
   /**
+   * Gets one registered state by name/object, or all states when no argument is provided.
    *
    * @param {StateOrName} [stateOrName]
    * @param {StateOrName} [base]

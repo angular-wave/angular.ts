@@ -48,9 +48,12 @@
  */
 export declare class ExceptionHandlerProvider {
   handler: ng.ExceptionHandlerService;
+  /**
+   * Creates the provider with the default rethrowing exception handler.
+   */
   constructor();
   /**
-   * @returns {ng.ExceptionHandlerService}
+   * Returns the currently configured exception handler wrapper.
    */
   $get(): ng.ExceptionHandlerService;
 }

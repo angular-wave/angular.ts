@@ -8,6 +8,10 @@ declare class NgSwitchController {
   >;
   constructor();
 }
+/**
+ * @param {ng.AnimateService} $animate
+ * @returns {ng.Directive<NgSwitchController>}
+ */
 export declare function ngSwitchDirective(
   $animate: ng.AnimateService,
 ): ng.Directive<NgSwitchController>;

@@ -16,6 +16,10 @@ type ViewConfigFactory = (
   decl: ViewDeclaration,
 ) => ViewConfig;
 
+/**
+ * Tracks active `ui-view` instances and matches them with registered
+ * view configs produced during state transitions.
+ */
 export class ViewService {
   _ngViews: ActiveUIView[];
   _viewConfigs: ViewConfig[];
@@ -23,6 +27,9 @@ export class ViewService {
   _viewConfigFactory: ViewConfigFactory | undefined;
   _rootContext: StateObject | null | undefined;
 
+  /**
+   * Creates an empty view registry ready to track active `ui-view` instances.
+   */
   constructor() {
     this._ngViews = [];
     this._viewConfigs = [];
@@ -31,14 +38,23 @@ export class ViewService {
     this._rootContext = undefined;
   }
 
+  /**
+   * Returns the singleton view service instance.
+   */
   $get = (): ViewService => this;
 
+  /**
+   * Gets or sets the root view context used for relative `ui-view` targeting.
+   */
   rootViewContext(
     context?: StateObject | null,
   ): StateObject | null | undefined {
     return (this._rootContext = context || this._rootContext);
   }
 
+  /**
+   * Builds a view config for one view declaration along the specified path.
+   */
   _createViewConfig(path: PathNode[], decl: ViewDeclaration): ViewConfig {
     const cfgFactory = this._viewConfigFactory;
 
@@ -49,16 +65,26 @@ export class ViewService {
     return cfgFactory(path, decl);
   }
 
+  /**
+   * Removes a view config from the active registry.
+   */
   deactivateViewConfig(viewConfig: ViewConfig): void {
     trace.traceViewServiceEvent("<- Removing", viewConfig);
     removeFrom(this._viewConfigs, viewConfig);
   }
 
+  /**
+   * Adds a view config to the active registry.
+   */
   activateViewConfig(viewConfig: ViewConfig): void {
     trace.traceViewServiceEvent("-> Registering", viewConfig);
     this._viewConfigs.push(viewConfig);
   }
 
+  /**
+   * Re-matches active `ui-view` instances against currently registered view configs
+   * and notifies both the views and registered listeners of the new assignments.
+   */
   sync(): void {
     const ngViewsByFqn: Record<string, ActiveUIView> = {};
 
@@ -167,6 +193,9 @@ export class ViewService {
     trace.traceViewSync(allTuples);
   }
 
+  /**
+   * Registers one active `ui-view` and returns a deregistration function.
+   */
   registerUIView(ngView: ActiveUIView): () => void {
     trace.traceViewServiceUIViewEvent("-> Registering", ngView);
     const ngViews = this._ngViews;
@@ -197,16 +226,25 @@ export class ViewService {
     };
   }
 
+  /**
+   * Returns the currently registered view configs.
+   */
   available(): ViewConfig[] {
     return this._viewConfigs;
   }
 
+  /**
+   * Subscribes to view/config synchronization updates.
+   */
   onSync(listener: (tuples: ViewTuple[]) => void): () => void {
     this._listeners.push(listener);
 
     return () => removeFrom(this._listeners, listener);
   }
 
+  /**
+   * Normalizes a relative `ui-view` target name into a fully-qualified target.
+   */
   static normalizeUIViewTarget(
     context?: ViewContext | null,
     rawViewName = "",
@@ -236,6 +274,10 @@ export class ViewService {
     return `${uiViewName}@${uiViewContextAnchor}`;
   }
 
+  /**
+   * Builds a predicate that determines whether a view config matches
+   * a specific active `ui-view`.
+   */
   static matches(
     ngViewsByFqn: Record<string, ActiveUIView>,
     uiView: ActiveUIView,

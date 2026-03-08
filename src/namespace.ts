@@ -1,3 +1,9 @@
+/**
+ * Global type namespace bridge for AngularTS.
+ *
+ * This module wires runtime source types into the ambient `ng` namespace so
+ * legacy JS, JSDoc, and declaration consumers share one source of truth.
+ */
 export { angular } from "./index.ts";
 
 import { Angular as TAngular } from "./angular.ts";
@@ -142,15 +148,24 @@ import { UrlConfigProvider as TUrlConfigProvider } from "./router/url/url-config
 import { AriaService as TAriaService } from "./directive/aria/interface.ts";
 
 declare global {
+  /**
+   * Legacy function metadata fields used by AngularTS dependency annotation.
+   */
   interface Function {
     $inject?: readonly string[] | undefined;
     $nonscope?: readonly string[] | boolean | undefined;
   }
 
+  /**
+   * Browser global populated by the default entrypoint.
+   */
   interface Window {
     angular: TAngular;
   }
 
+  /**
+   * Ambient namespace bridge kept for legacy JSDoc and declaration consumers.
+   */
   export namespace ng {
     // Core types (docs preserved)
     export type Angular = TAngular;

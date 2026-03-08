@@ -7,6 +7,9 @@ import type {
 import type { Transition } from "../transition/transition.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 
+/**
+ * Base priority for resolve-related transition hooks.
+ */
 export const RESOLVE_HOOK_PRIORITY = 1000;
 
 const eagerResolvePath = (trans: Transition) =>
@@ -23,6 +26,9 @@ export const registerEagerResolvePath = (
     priority: RESOLVE_HOOK_PRIORITY,
   });
 
+/**
+ * Resolves the entering state's lazy resolvables at `onEnter`.
+ */
 const lazyResolveState = (trans: Transition, state: StateDeclaration) =>
   new ResolveContext((trans.treeChanges() as TreeChanges).to)
     .subContext((state._state as Function)())
@@ -38,6 +44,9 @@ export const registerLazyResolveState = (
     priority: RESOLVE_HOOK_PRIORITY,
   });
 
+/**
+ * Resolves any remaining lazy resolvables before the transition finishes.
+ */
 const resolveRemaining = (trans: Transition) =>
   new ResolveContext((trans.treeChanges() as TreeChanges).to)
     .resolvePath("LAZY", trans)

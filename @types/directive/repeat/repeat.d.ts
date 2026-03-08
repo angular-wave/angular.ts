@@ -1,3 +1,7 @@
+/**
+ * @param {ng.AnimateService}  $animate
+ * @returns {ng.Directive}
+ */
 export declare function ngRepeatDirective($animate: any): {
   restrict: string;
   transclude: string;

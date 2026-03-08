@@ -2,6 +2,9 @@ import { $injectTokens } from "../../injection-tokens.ts";
 import { domInsert } from "../../shared/dom.ts";
 import { hasAnimate, values } from "../../shared/utils.js";
 
+/**
+ * @typedef {object} NgSwitchBlock
+ */
 type NgSwitchBlock = {
   _clone: Node;
   _comment: Comment;
@@ -17,6 +20,10 @@ class NgSwitchController {
 
 ngSwitchDirective.$inject = [$injectTokens._animate];
 
+/**
+ * @param {ng.AnimateService} $animate
+ * @returns {ng.Directive<NgSwitchController>}
+ */
 export function ngSwitchDirective(
   $animate: ng.AnimateService,
 ): ng.Directive<NgSwitchController> {

@@ -46,6 +46,12 @@ export type { PathNode } from "../path/path-node.ts";
 
 const REDIRECT_MAX = 20;
 
+/**
+ * Represents a single router transition from one path of states to another.
+ *
+ * It owns hook execution, resolvable resolution, path/tree change metadata,
+ * redirect handling, and the completion promise observed by router consumers.
+ */
 export class Transition {
   static diToken = Transition;
 
@@ -106,10 +112,16 @@ export class Transition {
     this.applyViewConfigs();
   }
 
+  /**
+   * Returns hooks registered directly on this transition for the given event name.
+   */
   getHooks(hookName: string): RegisteredHook[] {
     return this._registeredHooks[hookName] || [];
   }
 
+  /**
+   * Registers a hook on this transition instance.
+   */
   on(
     eventName: string,
     matchCriteria: HookMatchCriteria,
@@ -132,6 +144,9 @@ export class Transition {
     );
   }
 
+  /**
+   * Registers an `onBefore` hook on this transition.
+   */
   onBefore(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -140,6 +155,9 @@ export class Transition {
     return this.on("onBefore", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onStart` hook on this transition.
+   */
   onStart(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -148,6 +166,9 @@ export class Transition {
     return this.on("onStart", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onEnter` hook on this transition.
+   */
   onEnter(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -156,6 +177,9 @@ export class Transition {
     return this.on("onEnter", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onRetain` hook on this transition.
+   */
   onRetain(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -164,6 +188,9 @@ export class Transition {
     return this.on("onRetain", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onExit` hook on this transition.
+   */
   onExit(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -172,6 +199,9 @@ export class Transition {
     return this.on("onExit", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onFinish` hook on this transition.
+   */
   onFinish(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -180,6 +210,9 @@ export class Transition {
     return this.on("onFinish", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onSuccess` hook on this transition.
+   */
   onSuccess(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -188,6 +221,9 @@ export class Transition {
     return this.on("onSuccess", matchCriteria, callback, options);
   }
 
+  /**
+   * Registers an `onError` hook on this transition.
+   */
   onError(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
@@ -208,6 +244,9 @@ export class Transition {
     return eventType;
   }
 
+  /**
+   * Applies the entering path's view configs before the transition runs.
+   */
   applyViewConfigs(): void {
     const enteringStates = this._treeChanges.entering.map((node) => node.state);
 
@@ -218,26 +257,44 @@ export class Transition {
     );
   }
 
+  /**
+   * Returns the leaf `from` state object.
+   */
   $from(): StateObject {
     return this._treeChanges.from[this._treeChanges.from.length - 1]!.state;
   }
 
+  /**
+   * Returns the leaf `to` state object.
+   */
   $to(): StateObject {
     return this._treeChanges.to[this._treeChanges.to.length - 1]!.state;
   }
 
+  /**
+   * Returns the public `from` state declaration.
+   */
   from(): StateDeclaration {
     return this.$from().self;
   }
 
+  /**
+   * Returns the public `to` state declaration.
+   */
   to(): StateDeclaration {
     return this.$to().self;
   }
 
+  /**
+   * Returns the target state that seeded this transition.
+   */
   targetState(): TargetState {
     return this._targetState;
   }
 
+  /**
+   * Returns parameter values for one transition path (`to` by default).
+   */
   params(pathname: keyof TreeChanges | string = "to"): RawParams {
     return Object.freeze(
       (this._treeChanges[pathname] as PathNode[])
@@ -246,12 +303,18 @@ export class Transition {
     );
   }
 
+  /**
+   * Returns the resolve tokens visible on one transition path (`to` by default).
+   */
   getResolveTokens(pathname: keyof TreeChanges | string = "to"): any[] {
     return new ResolveContext(
       this._treeChanges[pathname] as PathNode[],
     ).getTokens();
   }
 
+  /**
+   * Adds a new resolvable to the target path, optionally scoped to one state.
+   */
   addResolvable(
     resolvable:
       | Resolvable
@@ -274,32 +337,53 @@ export class Transition {
     resolveContext.addResolvables([normalized], targetNode!.state);
   }
 
+  /**
+   * Returns the transition that redirected to this transition, if any.
+   */
   redirectedFrom(): Transition | null {
     return this._options.redirectedFrom || null;
   }
 
+  /**
+   * Returns the first transition in a redirect chain.
+   */
   originalTransition(): Transition {
     const rf = this.redirectedFrom();
 
     return (rf && rf.originalTransition()) || this;
   }
 
+  /**
+   * Returns the transition options.
+   */
   options(): TransitionOptions {
     return this._options;
   }
 
+  /**
+   * Returns declarations for states being entered.
+   */
   entering(): StateDeclaration[] {
     return this._treeChanges.entering.map((x) => x.state.self);
   }
 
+  /**
+   * Returns declarations for states being exited.
+   */
   exiting(): StateDeclaration[] {
     return this._treeChanges.exiting.map((x) => x.state.self).reverse();
   }
 
+  /**
+   * Returns declarations for states being retained.
+   */
   retained(): StateDeclaration[] {
     return this._treeChanges.retained.map((x) => x.state.self);
   }
 
+  /**
+   * Returns view configs for the selected path, optionally filtered to one state.
+   */
   views(
     pathname: keyof TreeChanges | string = "entering",
     state?: StateObject,
@@ -311,12 +395,18 @@ export class Transition {
     return path.map((x) => x.views || []).reduce(unnestR, []);
   }
 
+  /**
+   * Returns either the full tree changes object or one named path within it.
+   */
   treeChanges(pathname?: keyof TreeChanges | string): PathNode[] | TreeChanges {
     return pathname
       ? (this._treeChanges[pathname] as PathNode[])
       : this._treeChanges;
   }
 
+  /**
+   * Creates a redirected transition to a new target state.
+   */
   redirect(targetState: TargetState): Transition {
     let redirects = 1;
     let trans: Transition = this;
@@ -376,6 +466,10 @@ export class Transition {
     return newTransition;
   }
 
+  /**
+   * Returns the changed non-dynamic and dynamic params for this transition,
+   * or `undefined` when the transition structure changed in a larger way.
+   */
   _changedParams(): Param[] | undefined {
     const tc = this._treeChanges;
 
@@ -410,6 +504,9 @@ export class Transition {
       : changes.map((x: Param) => x.dynamic).reduce(anyTrueR, false);
   }
 
+  /**
+   * Returns true when this transition would be ignored by the router.
+   */
   ignored(): boolean {
     return !!this._ignoredReason();
   }
@@ -503,16 +600,25 @@ export class Transition {
     return this.promise;
   }
 
+  /**
+   * Returns true when the transition is valid or already completed.
+   */
   valid(): boolean {
     return !this.error() || this.success !== undefined;
   }
 
+  /**
+   * Aborts the transition before completion.
+   */
   abort(): void {
     if (isUndefined(this.success)) {
       this._aborted = true;
     }
   }
 
+  /**
+   * Returns the computed rejection, if any, that makes this transition invalid.
+   */
   error(): Rejection | undefined {
     const state = this.$to();
 

@@ -5,7 +5,7 @@
  */
 export declare function isInjectable(val: unknown): boolean;
 /**
- * It is probably a Promise if it's an object and it has a function `then`.
+ * Returns true when a value looks like a promise/thenable.
  */
 export declare function isPromise(obj: unknown): obj is {
   then: (...args: unknown[]) => unknown;

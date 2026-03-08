@@ -5,6 +5,10 @@ import { Transition } from "../transition/transition.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { TransitionService } from "../transition/interface.ts";
 
+/**
+ * Adds built-in transition-scoped resolvables such as `$transition$`,
+ * `$stateParams`, and `$state$` before the transition starts.
+ */
 export function registerAddCoreResolvables(
   transitionService: TransitionService,
 ) {
@@ -23,6 +27,10 @@ export function registerAddCoreResolvables(
 
 const TRANSITION_TOKENS = ["$transition$", Transition];
 
+/**
+ * Clears transition object references from cached resolvables once a transition
+ * falls out of router history, preventing stale retention.
+ */
 export function treeChangesCleanup(trans: Transition): void {
   const nodes = values(trans.treeChanges() as Record<string, PathNode[]>)
     .reduce(unnestR, [])

@@ -1,5 +1,8 @@
 import type { TargetState } from "../state/target-state.ts";
 import type { Transition } from "./transition.ts";
+/**
+ * Transition rejection categories used throughout the router pipeline.
+ */
 export declare const RejectType: {
   readonly _SUPERSEDED: 2;
   readonly _ABORTED: 3;
@@ -14,6 +17,9 @@ export type TransitionRejectionDetail =
   | Error
   | string
   | unknown;
+/**
+ * Normalized representation of a transition failure, abort, ignore, or redirect.
+ */
 export declare class Rejection {
   $id: number;
   type: RejectTypeValue;
@@ -38,6 +44,9 @@ export declare class Rejection {
   static errored(detail?: TransitionRejectionDetail): Rejection;
   static normalize(detail: TransitionRejectionDetail): Rejection;
   toString(): string;
+  /**
+   * Returns a rejected promise tagged with this rejection instance.
+   */
   toPromise(): Promise<any> & {
     _transitionRejection: Rejection;
   };

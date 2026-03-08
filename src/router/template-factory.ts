@@ -22,12 +22,18 @@ type TemplateResult =
   | Promise<{ template: string }>
   | Promise<{ component: string }>;
 
+/**
+ * Resolves route templates and components from state view declarations.
+ */
 export class TemplateFactoryProvider {
   $templateRequest: ng.TemplateRequestService | undefined;
   $http: ng.HttpService | undefined;
   $templateCache: ng.TemplateCacheService | undefined;
   $injector: ng.InjectorService | undefined;
 
+  /**
+   * Wires HTTP, template request, cache, and injector services into the factory.
+   */
   $get = [
     $t._http,
     $t._templateCache,
@@ -48,6 +54,9 @@ export class TemplateFactoryProvider {
     },
   ];
 
+  /**
+   * Resolves a state's view config into either concrete template HTML or a component name.
+   */
   fromConfig(
     config: any,
     params: any,
@@ -99,10 +108,16 @@ export class TemplateFactoryProvider {
     }
   }
 
+  /**
+   * Resolves a literal template string or template factory function.
+   */
   fromString(template: string | Function, params?: any): string | object {
     return isFunction(template) ? (template as Function)(params) : template;
   }
 
+  /**
+   * Fetches a template from a static URL or a URL factory.
+   */
   fromUrl(url: string | Function, params: object): Promise<string> | null {
     if (isFunction(url)) url = (url as Function)(params) as string;
     if (isNullOrUndefined(url)) return null;
@@ -124,6 +139,9 @@ export class TemplateFactoryProvider {
     return resolvable.get(context);
   }
 
+  /**
+   * Resolves a component name from an injectable provider in resolve context.
+   */
   fromComponentProvider(
     provider: import("../interface.ts").Injectable<any>,
     context: ResolveContext,
@@ -137,6 +155,9 @@ export class TemplateFactoryProvider {
     return resolvable.get(context);
   }
 
+  /**
+   * Builds the HTML for a routed component and binds resolve data to its inputs.
+   */
   makeComponentTemplate(
     ngView: Element,
     context: ResolveContext,
@@ -183,6 +204,9 @@ export class TemplateFactoryProvider {
   }
 }
 
+/**
+ * Reads the binding declarations for a named component directive.
+ */
 function getComponentBindings(
   $injector: ng.InjectorService | undefined,
   name: string,

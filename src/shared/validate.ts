@@ -45,22 +45,37 @@ export function validate<T>(fn: Validator, arg: T, name: string): T {
   throw new TypeError(`badarg:${getReason(fn)} ${name}=${serialized}`);
 }
 
+/**
+ * Validates that a value is neither `null` nor `undefined`.
+ */
 export function validateRequired<T>(arg: T, name: string): NonNullable<T> {
   return validate(notNullOrUndefined, arg, name) as NonNullable<T>;
 }
 
+/**
+ * Validates that a value is an array.
+ */
 export function validateArray<T>(arg: T[], name: string): T[] {
   return validate(isArray, arg, name);
 }
 
+/**
+ * Validates that a value is a string.
+ */
 export function validateIsString(arg: string, name: string): string {
   return validate(isString, arg, name);
 }
 
+/**
+ * Validates that a value is a number.
+ */
 export function validateIsNumber(arg: number, name: string): number {
   return validate(isNumber, arg, name);
 }
 
+/**
+ * Validates that a value is an instance of the provided constructor.
+ */
 export function validateInstanceOf<T>(
   arg: unknown,
   type: new (...args: any[]) => T,

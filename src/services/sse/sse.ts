@@ -8,6 +8,9 @@ export class SseProvider {
   defaults: ng.SseConfig;
   _$log!: LogService;
 
+  /**
+   * Creates the SSE provider with default reconnect and message parsing behavior.
+   */
   constructor() {
     this.defaults = {
       retryDelay: 1000,
@@ -23,6 +26,9 @@ export class SseProvider {
     };
   }
 
+  /**
+   * Returns the `$sse` connection factory bound to the configured defaults.
+   */
   $get = [
     $injectTokens._log,
     (log: ng.LogService): SseService => {
@@ -52,7 +58,7 @@ export class SseProvider {
   ];
 
   /**
-   * Build URL with query parameters
+   * Builds a URL with serialized query parameters.
    */
   private _buildUrl(url: string, params?: Record<string, any>): string {
     if (!params) return url;

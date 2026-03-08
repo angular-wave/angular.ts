@@ -10,8 +10,12 @@ import type {
 ngWorkerDirective.$inject = [$t._parse, $t._log, $t._exceptionHandler];
 
 /**
- * Binds a DOM event to a module worker and routes its result back into the
- * element or an Angular expression callback.
+ * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
+ *
+ * @param {ng.ParseService} $parse
+ * @param {ng.LogService} $log
+ * @param {ng.ExceptionHandlerService} $exceptionHandler
+ * @returns {ng.Directive}
  */
 export function ngWorkerDirective(
   $parse: ng.ParseService,
@@ -114,7 +118,10 @@ export function ngWorkerDirective(
 }
 
 /**
- * Swaps worker output into the target element using the configured insertion strategy.
+ * Swap result into DOM based on strategy
+ * @param {string} result
+ * @param {string} swap
+ * @param {HTMLElement} element
  */
 function handleSwap(result: string, swap: string, element: HTMLElement): void {
   switch (swap) {
@@ -154,7 +161,11 @@ function handleSwap(result: string, swap: string, element: HTMLElement): void {
 }
 
 /**
- * Creates a managed worker wrapper with restart and message transformation hooks.
+ * Creates a managed Web Worker connection.
+ *
+ * @param {string | URL} scriptPath
+ * @param {ng.WorkerConfig} [config]
+ * @returns {ng.WorkerConnection}
  */
 export function createWorkerConnection(
   scriptPath: string | URL,

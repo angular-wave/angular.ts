@@ -1,5 +1,10 @@
 import { instantiateWasm } from "../../shared/utils.js";
 
+/**
+ * Loads a WebAssembly module and exposes its exports on `scope.$target`.
+ *
+ * @return {ng.Directive}
+ */
 export function ngWasmDirective(): ng.Directive {
   return {
     async link(

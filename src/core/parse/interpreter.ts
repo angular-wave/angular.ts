@@ -34,6 +34,9 @@ type WatchNode = ASTNode & {
   watchId?: string;
 };
 
+/**
+ * Interprets AST nodes into executable scope-aware functions for `$parse`.
+ */
 export class ASTInterpreter {
   _$filter: ng.FilterService;
 

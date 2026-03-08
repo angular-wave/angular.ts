@@ -2,6 +2,15 @@ import { isObject, isString } from "../../shared/utils.js";
 import { $injectTokens } from "../../injection-tokens.ts";
 
 ngChannelDirective.$inject = [$injectTokens._eventBus];
+/**
+ * Subscribes an element to a pub/sub channel.
+ *
+ * If the element has inline template content, published object payloads are
+ * merged into the current scope. Otherwise, string payloads replace the
+ * element's HTML content directly.
+ *
+ * @param {ng.PubSubService} $eventBus
+ */
 export function ngChannelDirective($eventBus: ng.PubSubService): ng.Directive {
   return {
     scope: false,

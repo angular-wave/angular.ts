@@ -7,6 +7,9 @@ type GetErrorHandler = (hook?: {
   logError: (error: any) => any;
 }) => (error: any) => any;
 
+/**
+ * Immutable metadata describing one transition lifecycle event.
+ */
 export class TransitionEventType {
   name: string;
   hookPhase: number;
@@ -17,6 +20,9 @@ export class TransitionEventType {
   getErrorHandler: GetErrorHandler;
   synchronous: boolean;
 
+  /**
+   * Creates one immutable transition event descriptor.
+   */
   constructor(
     name: string,
     hookPhase: number,
