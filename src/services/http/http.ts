@@ -33,9 +33,130 @@ import { $injectTokens as $t } from "../../injection-tokens.ts";
 
 const APPLICATION_JSON = "application/json";
 
+export interface HttpHeadersGetter {
+  (): { [name: string]: string };
+  (headerName: string): string;
+}
+
+export interface HttpRequestConfigHeaders {
+  [requestType: string]: any;
+  common?: any;
+  get?: any;
+  post?: any;
+  put?: any;
+  patch?: any;
+}
+
+// See the jsdoc for transformData() at https://github.com/angular/angular.ts/blob/master/src/ng/http.js#L228
+export interface HttpRequestTransformer {
+  (data: any, headersGetter: HttpHeadersGetter): any;
+}
+
+// The definition of fields are the same as HttpResponse
+export interface HttpResponseTransformer {
+  (data: any, headersGetter: HttpHeadersGetter, status: number): any;
+}
+
+export interface HttpHeaderType {
+  [requestType: string]: string | ((config: RequestConfig) => string);
+}
+
+/**
+ * Default request settings exposed through `$httpProvider.defaults`.
+ *
+ * Not every `RequestShortcutConfig` field is supported here; this shape only includes the
+ * fields that the runtime reads from provider-level defaults.
+ *
+ * https://docs.angularjs.org/api/ng/service/$http#defaults
+ * https://docs.angularjs.org/api/ng/service/$http#usage
+ * https://docs.angularjs.org/api/ng/provider/$httpProvider The properties section
+ */
+export interface HttpProviderDefaults {
+  cache?: any;
+  transformRequest?: HttpRequestTransformer | HttpRequestTransformer[] | undefined;
+  transformResponse?:
+    | HttpResponseTransformer
+    | HttpResponseTransformer[]
+    | undefined;
+  headers?: HttpRequestConfigHeaders | undefined;
+  xsrfHeaderName?: string | undefined;
+  xsrfCookieName?: string | undefined;
+  withCredentials?: boolean | undefined;
+  paramSerializer?: string | ((obj: any) => string) | undefined;
+}
+
+/**
+ * Request options shared by the `$http` shortcut methods.
+ * See http://docs.angularjs.org/api/ng/service/$http#usage
+ */
+export interface RequestShortcutConfig extends HttpProviderDefaults {
+  params?: any;
+  data?: any;
+  timeout?: number | Promise<any> | undefined;
+  responseType?: string | undefined;
+}
+
+/**
+ * Full request configuration accepted by `$http(...)`.
+ * See http://docs.angularjs.org/api/ng/service/$http#usage
+ */
+export interface RequestConfig extends RequestShortcutConfig {
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS";
+  url: string;
+  eventHandlers?: Record<string, EventListenerOrEventListenerObject>;
+  uploadEventHandlers?: Record<string, EventListenerOrEventListenerObject>;
+}
+
+export type HttpMethod = RequestConfig["method"];
+
+export type HttpResponseStatus = "complete" | "error" | "timeout" | "abort";
+
+export interface HttpResponse<T> {
+  data: T;
+  status: number;
+  headers: HttpHeadersGetter;
+  config: RequestConfig;
+  statusText: string;
+  xhrStatus: HttpResponseStatus;
+}
+
+export type HttpPromise<T> = Promise<HttpResponse<T>>;
+
+/** Runtime surface of the `$http` service and its shorthand request methods. */
+export interface HttpService {
+  <T>(config: RequestConfig): HttpPromise<T>;
+  get<T>(url: string, config?: RequestShortcutConfig): HttpPromise<T>;
+  delete<T>(url: string, config?: RequestShortcutConfig): HttpPromise<T>;
+  head<T>(url: string, config?: RequestShortcutConfig): HttpPromise<T>;
+  post<T>(url: string, data: any, config?: RequestShortcutConfig): HttpPromise<T>;
+  put<T>(url: string, data: any, config?: RequestShortcutConfig): HttpPromise<T>;
+  patch<T>(url: string, data: any, config?: RequestShortcutConfig): HttpPromise<T>;
+  defaults: HttpProviderDefaults;
+  pendingRequests: RequestConfig[];
+}
+
+/** Query parameter bag that can be serialized into a URL query string. */
+export type HttpParams = Record<
+  string,
+  string | number | boolean | null | undefined | unknown[]
+>;
+
+/** Function that serializes query params into a URL-encoded string. */
+export type HttpParamSerializer = (params?: HttpParams) => string;
+
+export interface HttpInterceptor {
+  request?(config: RequestConfig): RequestConfig | Promise<RequestConfig>;
+  requestError?(rejection: any): RequestConfig | Promise<RequestConfig>;
+  response?<T>(
+    response: HttpResponse<T>,
+  ): Promise<HttpResponse<T>> | HttpResponse<T>;
+  responseError?<T>(rejection: any): Promise<HttpResponse<T>> | HttpResponse<T>;
+}
+
+export type HttpInterceptorFactory = () => HttpInterceptor;
+
 /**
  * @internal
- * @enum {number}
  */
 export const Http = {
   _OK: 200,
@@ -60,10 +181,7 @@ const JSON_PROTECTION_PREFIX = /^\)]\}',?\n/;
 
 const $httpMinErr = minErr("$http");
 
-/**
- * @param {string | number | boolean | Object | Date} v
- * @returns {string | number | boolean}
- */
+/** Serializes a request param value into a transport-safe primitive. */
 function serializeValue(
   v: string | number | boolean | Record<string, any> | Date,
 ): string | number | boolean {
@@ -88,11 +206,10 @@ function serializeValue(
  * Note that serializer will sort the request parameters alphabetically.
  */
 export function HttpParamSerializerProvider(this: {
-  $get?: () => import("./interface.ts").HttpParamSerializer;
+  $get?: () => import("./http.ts").HttpParamSerializer;
 }): void {
   /**
-   * @returns {import('./interface.ts').HttpParamSerializer}
-   * A function that serializes parameters into a query string.
+   * Returns the runtime query-parameter serializer.
    */
   this.$get = () => {
     return (params: Record<string, any> | null | undefined) => {
@@ -107,7 +224,7 @@ export function HttpParamSerializerProvider(this: {
           if (value === null || isUndefined(value) || isFunction(value)) return;
 
           if (isArray(value)) {
-            /** @type {any[]} */ value.forEach((v) => {
+            (value as any[]).forEach((v) => {
               if (v === null || isUndefined(v) || isFunction(v)) return;
 
               const serializedValue = serializeValue(
@@ -119,8 +236,12 @@ export function HttpParamSerializerProvider(this: {
               );
             });
           } else {
-            const sanitizedValue =
-              /** @type {string | number | boolean | Object | Date} */ value;
+            const sanitizedValue = value as
+              | string
+              | number
+              | boolean
+              | Record<string, any>
+              | Date;
 
             parts.push(
               `${encodeUriQuery(key as string)}=${encodeUriQuery(String(serializeValue(sanitizedValue)))}`,
@@ -133,10 +254,7 @@ export function HttpParamSerializerProvider(this: {
   };
 }
 
-/**
- * @param {unknown} data
- * @param {(arg0: string) => any} headers
- */
+/** Applies the default response transform, including JSON parsing. */
 export function defaultHttpResponseTransform(
   data: unknown,
   headers: (arg0: string) => any,
@@ -173,10 +291,7 @@ export function defaultHttpResponseTransform(
   return data;
 }
 
-/**
- * @param {string} str
- * @return {boolean}
- */
+/** Returns `true` when a string looks like a JSON payload. */
 function isJsonLike(str: string): boolean {
   const jsonStart = str.match(JSON_START);
 
@@ -184,21 +299,17 @@ function isJsonLike(str: string): boolean {
 }
 
 /**
- * Parse headers into key value object
+ * Parses headers into a key-value object.
  *
- * @param {string | Object} headers Raw headers as a string
- * @returns {Record<string, string>} Parsed headers as key value object
+ * @param headers - Raw headers as a string.
+ * @returns A normalized header map keyed by lowercase header name.
  */
 function parseHeaders(headers: string | object): Record<string, string> {
-  /** @type {Record<string, string>} */
   const parsed: Record<string, string> = nullObject();
 
   let i;
 
-  /**
-   * @param {string} key
-   * @param {any} val
-   */
+  /** Adds a parsed header entry to the result map. */
   function fillInParsed(key: string, val: any): void {
     if (key) {
       parsed[key] = parsed[key] ? `${parsed[key]}, ${val}` : val;
@@ -207,7 +318,7 @@ function parseHeaders(headers: string | object): Record<string, string> {
 
   if (isString(headers)) {
     headers.split("\n").forEach(
-      /** @param {string} line */
+      /** @param line */
       (line) => {
         i = line.indexOf(":");
         fillInParsed(
@@ -228,23 +339,20 @@ function parseHeaders(headers: string | object): Record<string, string> {
 }
 
 /**
- * Returns a function that provides access to parsed headers.
+ * Creates a function that provides access to parsed headers.
  *
  * Headers are lazy parsed when first requested.
  * @see parseHeaders
  *
- * @param {(string|Object)} headers Headers to provide access to.
- * @returns {import("./interface.ts").HttpHeadersGetter} Returns a getter function which if called with:
+ * @param headers - Headers to provide access to.
+ * @returns A getter function that, when called with:
  *
- *   - if called with an argument returns a single header value (empty string if missing)
- *   - if called with no arguments returns an object containing all headers.
+ *   - an argument, returns a single header value (empty string if missing)
+ *   - no arguments, returns an object containing all headers.
  */
 function headersGetter(
   headers: string | object,
-): import("./interface.ts").HttpHeadersGetter {
-  /**
-   * @type {Record<string, string> | undefined}
-   */
+): import("./http.ts").HttpHeadersGetter {
   let headersObj: Record<string, string> | undefined;
 
   const getter = ((name?: string) => {
@@ -257,25 +365,23 @@ function headersGetter(
     }
 
     return headersObj;
-  }) as import("./interface.ts").HttpHeadersGetter;
+  }) as import("./http.ts").HttpHeadersGetter;
 
   return getter;
 }
 
 /**
- * Chain all given functions
+ * Applies one or more transform functions to request or response data.
  *
- * This function is used for both request and response transforming
- *
- * @param {*} data Data to transform.
- * @param {import("./interface.ts").HttpHeadersGetter} headers HTTP headers getter fn.
- * @param {number=} status HTTP status code of the response.
- * @param {((...args: any[]) => any) | Array<(...args: any[]) => any>} [fns] Function or an array of functions.
- * @returns {*} Transformed data.
+ * @param data - Data to transform.
+ * @param headers - HTTP headers getter function.
+ * @param status - HTTP status code of the response.
+ * @param [fns] - Function or an array of functions.
+ * @returns The transformed value after all configured transforms run.
  */
 function transformData(
   data: any,
-  headers: import("./interface.ts").HttpHeadersGetter,
+  headers: import("./http.ts").HttpHeadersGetter,
   status?: number,
   fns?: ((...args: any[]) => any) | Array<(...args: any[]) => any>,
 ): any {
@@ -284,7 +390,7 @@ function transformData(
   }
 
   if (isArray(fns)) {
-    /** @type {Array<function(...any): any>} */ fns.forEach((fn) => {
+    (fns as Array<(...args: any[]) => any>).forEach((fn) => {
       data = fn(data, headers, status);
     });
   }
@@ -292,63 +398,20 @@ function transformData(
   return data;
 }
 
-/**
- * @param {number} status
- */
+/** Returns `true` when an HTTP status is in the success range. */
 function isSuccess(status: number): boolean {
   return status >= Http._OK && status < Http._MultipleChoices;
 }
 
-/**
- * Use `$httpProvider` to change the default behavior of the {@link ng.$http $http} service.
- */
+/** Configures the default behavior of the {@link ng.$http $http} service. */
 export function HttpProvider(this: any): void {
   /**
-   * Object containing default values for all {@link ng.$http $http} requests.
+   * Default values applied to all {@link ng.$http $http} requests unless a request overrides them.
    *
-   * - **`defaults.cache`** - {boolean|Object} - A boolean value or object created with
-   * {@link ng.$cacheFactory `$cacheFactory`} to enable or disable caching of HTTP responses
-   * by default. See {@link $http#caching $http Caching} for more information.
-   *
-   * - **`defaults.headers`** - {Object} - Default headers for all $http requests.
-   * Refer to {@link ng.$http#setting-http-headers $http} for documentation on
-   * setting default headers.
-   *     - **`defaults.headers.common`**
-   *     - **`defaults.headers.post`**
-   *     - **`defaults.headers.put`**
-   *     - **`defaults.headers.patch`**
-   *   *
-   * - **`defaults.paramSerializer`** - `{string|function(Object<string,string>):string}` - A function
-   *  used to the prepare string representation of request parameters (specified as an object).
-   *  If specified as string, it is interpreted as a function registered with the {@link auto.$injector $injector}.
-   *  Defaults to {@link ng.$httpParamSerializer $httpParamSerializer}.
-   *
-   * - **`defaults.transformRequest`** -
-   * `{Array<function(data, headersGetter)>|function(data, headersGetter)}` -
-   * An array of functions (or a single function) which are applied to the request data.
-   * By default, this is an array with one request transformation function:
-   *
-   *   - If the `data` property of the request configuration object contains an object, serialize it
-   *     into JSON format.
-   *
-   * - **`defaults.transformResponse`** -
-   * `{Array<function(data, headersGetter, status)>|function(data, headersGetter, status)}` -
-   * An array of functions (or a single function) which are applied to the response data. By default,
-   * this is an array which applies one response transformation function that does two things:
-   *
-   *  - If XSRF prefix is detected, strip it
-   *    (see {@link ng.$http#security-considerations Security Considerations in the $http docs}).
-   *  - If the `Content-Type` is `application/json` or the response looks like JSON,
-   *    deserialize it using a JSON parser.
-   *
-   * - **`defaults.xsrfCookieName`** - {string} - Name of cookie containing the XSRF token.
-   * Defaults value is `'XSRF-TOKEN'`.
-   *
-   * - **`defaults.xsrfHeaderName`** - {string} - Name of HTTP header to populate with the
-   * XSRF token. Defaults value is `'X-XSRF-TOKEN'`.
-   * @type {import("./interface.ts").HttpProviderDefaults}
+   * This includes cache behavior, default headers, request/response transforms, XSRF names,
+   * credentials defaults, and parameter serialization.
    */
-  const defaults = (this.defaults = {
+  const defaults: HttpProviderDefaults = (this.defaults = {
     // transform incoming response data
     transformResponse: [defaultHttpResponseTransform],
     // transform outgoing request data
@@ -386,12 +449,10 @@ export function HttpProvider(this: any): void {
    *
    * Defaults to false. If no value is specified, returns the current configured value.
    *
-   * @param {boolean=} value If true, when requests are loaded, they will schedule a deferred
-   *    "apply" on the next tick, giving time for subsequent requests in a roughly ~10ms window
-   *    to load and share the same digest cycle.
+   * @param value - If true, completed requests schedule a deferred apply on the next tick,
+   *   allowing nearby responses to share the same digest cycle.
    *
-   * @returns {boolean|Object} If a value is specified, returns the $httpProvider for chaining.
-   *    otherwise, returns the current configured value.
+   * @returns The `$httpProvider` for chaining when setting a value, otherwise the current flag.
    */
   this.useApplyAsync = function (value?: boolean) {
     if (isDefined(value)) {
@@ -411,9 +472,8 @@ export function HttpProvider(this: any): void {
    * array, on request, but reverse order, on response.
    *
    * {@link ng.$http#interceptors Interceptors detailed info}
-   * @type {Array<string | ng.Injectable<import("./interface.ts").HttpInterceptorFactory>>}
    */
-  this.interceptors = [];
+  this.interceptors = [] as Array<string | ng.Injectable<HttpInterceptorFactory>>;
 
   /**
    * Array containing URLs whose origins are trusted to receive the XSRF token. See the
@@ -423,7 +483,7 @@ export function HttpProvider(this: any): void {
    * **Note:** An "origin" consists of the [URI scheme](https://en.wikipedia.org/wiki/URI_scheme),
    * the [hostname](https://en.wikipedia.org/wiki/Hostname) and the
    * [port number](https://en.wikipedia.org/wiki/Port_(computer_networking). For `http:` and
-   * `https:`, the port number can be omitted if using th default ports (80 and 443 respectively).
+   * `https:`, the port number can be omitted when using the default ports (80 and 443 respectively).
    * Examples: `http://example.com`, `https://api.example.com:9876`
    *
    * <div class="alert alert-warning">
@@ -451,41 +511,31 @@ export function HttpProvider(this: any): void {
    *   }]);
    * ```
    *
-   * @type {string[]}
    */
-  this.xsrfTrustedOrigins = [];
+  this.xsrfTrustedOrigins = [] as string[];
 
   const that = this as {
     interceptors: Array<
-      string | ng.Injectable<import("./interface.ts").HttpInterceptorFactory>
+      string | ng.Injectable<import("./http.ts").HttpInterceptorFactory>
     >;
     xsrfTrustedOrigins: string[];
-    defaults: import("./interface.ts").HttpProviderDefaults;
+    defaults: import("./http.ts").HttpProviderDefaults;
   };
 
   this.$get = [
     $t._injector,
     $t._sce,
     $t._cookie,
-    /**
-     *
-     * @param {ng.InjectorService} $injector
-     * @param {ng.SceService} $sce
-     * @param {ng.CookieService} $cookie
-     * @returns {ng.HttpService}
-     */
+    /** Creates the runtime `$http` service. */
     function (
       $injector: ng.InjectorService,
       $sce: ng.SceService,
       $cookie: ng.CookieService,
     ) {
-      /**
-       * @type {Map<string, string>}
-       */
       const defaultCache = new Map<string, any>();
 
       /**
-       * Make sure that default param serializer is exposed as a function
+       * Resolves the configured default param serializer to a callable function.
        */
       defaults.paramSerializer = isString(defaults.paramSerializer)
         ? $injector.get(defaults.paramSerializer)
@@ -493,9 +543,7 @@ export function HttpProvider(this: any): void {
 
       /**
        * Interceptors stored in reverse order. Inner interceptors before outer interceptors.
-       * The reversal is needed so that we can build up the interception chain around the
-       * server request.
-       * @type {any[]}
+       * The reversal lets request interceptors wrap the server request in the expected order.
        */
       const reversedInterceptors: any[] = [];
 
@@ -508,17 +556,14 @@ export function HttpProvider(this: any): void {
       });
 
       /**
-       * A function to check request URLs against a list of allowed origins.
+       * Creates the origin check used for XSRF header inclusion.
        */
       const urlIsAllowedOrigin = urlIsAllowedOriginFactory(
         that.xsrfTrustedOrigins,
       );
 
       /**
-       * @property {Array.<Object>} requestConfig Array of config objects for currently pending
-       * requests. This is primarily meant to be used for debugging purposes.
-       * @param {ng.RequestConfig} requestConfig
-       * @returns {import("./interface.ts").HttpPromise<any>}
+       * Issues an HTTP request using the provider defaults and configured interceptors.
        */
       const $http = function (requestConfig: ng.RequestConfig) {
         if (!isObject(requestConfig)) {
@@ -553,20 +598,13 @@ export function HttpProvider(this: any): void {
           ? $injector.get(config.paramSerializer)
           : config.paramSerializer;
 
-        /**
-         * @type {Array<import("./interface.ts").HttpInterceptor["request"] | import("./interface.ts").HttpInterceptor["requestError"]>}
-         */
         const requestInterceptors: Array<((value: any) => any) | undefined> =
           [];
 
-        /**
-         * @type {Array<import("./interface.ts").HttpInterceptor["response"] | import("./interface.ts").HttpInterceptor["responseError"]>}
-         */
         const responseInterceptors: Array<((value: any) => any) | undefined> =
           [];
 
-        /** @type {Promise<any>} */
-        let promise = Promise.resolve(config);
+        let promise: Promise<any> = Promise.resolve(config);
 
         // apply interceptors
         reversedInterceptors.forEach((interceptor) => {
@@ -589,13 +627,9 @@ export function HttpProvider(this: any): void {
         promise = promise.then(serverRequest);
         promise = chainInterceptors(promise, responseInterceptors);
 
-        return /** @type {import("./interface.ts").HttpPromise<any>} */ promise;
+        return promise as import("./http.ts").HttpPromise<any>;
 
-        /**
-         * @param {Promise<any>} promiseParam
-         * @param {Array<((value: any) => any) | undefined>} interceptors
-         * @returns {Promise<any>}
-         */
+        /** Applies a list of interceptor success/error pairs to a promise chain. */
         function chainInterceptors(
           promiseParam: Promise<any>,
           interceptors: Array<((value: any) => any) | undefined>,
@@ -613,12 +647,9 @@ export function HttpProvider(this: any): void {
           return promiseParam;
         }
 
-        /**
-         * @param {import("./interface.ts").HttpHeaderType} headers
-         * @param {ng.RequestConfig} configParam
-         */
+        /** Resolves any header factory functions against the current request configuration. */
         function executeHeaderFns(
-          headers: import("./interface.ts").HttpHeaderType,
+          headers: import("./http.ts").HttpHeaderType,
           configParam: ng.RequestConfig,
         ): Record<string, string> {
           let headerContent: any;
@@ -640,19 +671,17 @@ export function HttpProvider(this: any): void {
           return processedHeaders;
         }
 
-        /**
-         * @param {ng.RequestConfig} configParam
-         */
+        /** Merges provider defaults with request-specific headers for a single request. */
         function mergeHeaders(
           configParam: ng.RequestConfig,
         ): Record<string, string> {
           let defHeaders = (defaults.headers ||
-            {}) as import("./interface.ts").HttpRequestConfigHeaders;
+            {}) as import("./http.ts").HttpRequestConfigHeaders;
 
           const reqHeaders = extend(
             {},
             configParam.headers || {},
-          ) as import("./interface.ts").HttpHeaderType;
+          ) as import("./http.ts").HttpHeaderType;
 
           defHeaders = extend(
             {},
@@ -676,9 +705,7 @@ export function HttpProvider(this: any): void {
           return executeHeaderFns(reqHeaders, shallowCopy(configParam));
         }
 
-        /**
-         * @param {ng.RequestConfig} configParam
-         */
+        /** Executes the request pipeline and attaches response transforms. */
         function serverRequest(configParam: ng.RequestConfig): Promise<any> {
           const headers = configParam.headers || {};
 
@@ -688,8 +715,10 @@ export function HttpProvider(this: any): void {
             configParam.data,
             headersGetter(headers),
             undefined,
-            /** @type {((...args: any[]) => any) | Array<(...args: any[]) => any>} */ configParam.transformRequest ||
-              [],
+            (configParam.transformRequest as
+              | ((...args: any[]) => any)
+              | Array<(...args: any[]) => any>
+              | undefined) || [],
           );
 
           // strip content-type if data is undefined
@@ -702,7 +731,7 @@ export function HttpProvider(this: any): void {
           }
 
           const providerDefaults =
-            defaults as import("./interface.ts").HttpProviderDefaults;
+            defaults as import("./http.ts").HttpProviderDefaults;
 
           if (
             isUndefined(configParam.withCredentials) &&
@@ -718,46 +747,42 @@ export function HttpProvider(this: any): void {
           );
         }
 
-        /**
-         * @param {import("./interface.ts").HttpResponse<any>} response
-         */
+        /** Applies response transforms and rejects responses outside the success range. */
         function transformResponse(response: any) {
-          const httpResponse =
-            /** @type {import("./interface.ts").HttpResponse<any>} */ response;
+          const httpResponse = response as import("./http.ts").HttpResponse<any>;
 
           // make a copy since the response must be cacheable
           const resp = extend(
             {},
             httpResponse,
-          ) as import("./interface.ts").HttpResponse<any>;
+          ) as import("./http.ts").HttpResponse<any>;
 
           resp.data = transformData(
             httpResponse.data,
             httpResponse.headers,
             httpResponse.status,
-            /** @type {((...args: any[]) => any) | Array<(...args: any[]) => any>} */ config.transformResponse ||
-              [],
+            (config.transformResponse as
+              | ((...args: any[]) => any)
+              | Array<(...args: any[]) => any>
+              | undefined) || [],
           );
 
           return isSuccess(httpResponse.status) ? resp : Promise.reject(resp);
         }
       } as unknown as ng.HttpService & {
         pendingRequests: ng.RequestConfig[];
-        defaults: import("./interface.ts").HttpProviderDefaults;
+        defaults: import("./http.ts").HttpProviderDefaults;
         [key: string]: any;
       };
 
-      /**
-       * @type {ng.RequestConfig[]}
-       */
       $http.pendingRequests = [];
 
       createShortMethods("get", "delete", "head");
       createShortMethodsWithData("post", "put", "patch");
 
       /**
-       * Runtime equivalent of the `$httpProvider.defaults` property. Allows configuration of
-       * default headers, withCredentials as well as request and response transformations.
+       * Exposes the runtime equivalent of `$httpProvider.defaults`.
+       * It allows configuration of default headers, `withCredentials`, and request/response transforms.
        *
        * See "Setting HTTP Headers" and "Transforming Requests and Responses" sections above.
        */
@@ -765,20 +790,14 @@ export function HttpProvider(this: any): void {
 
       return $http;
 
-      /**
-       * @param {...("get" | "delete" | "head")} names
-       */
+      /** Generates shorthand methods for requests that do not send a request body. */
       function createShortMethods(
         ...names: Array<"get" | "delete" | "head">
       ): void {
         names.forEach((name) => {
-          /**
-           * @param {string} url
-           * @param {import("./interface.ts").RequestShortcutConfig} [config]
-           */
           $http[name] = function (
             url: string,
-            config?: import("./interface.ts").RequestShortcutConfig,
+            config?: import("./http.ts").RequestShortcutConfig,
           ) {
             return $http(
               extend({}, config || {}, {
@@ -790,22 +809,15 @@ export function HttpProvider(this: any): void {
         });
       }
 
-      /**
-       * @param {...("post" | "put" | "patch")} names
-       */
+      /** Generates shorthand methods for requests that send a request body. */
       function createShortMethodsWithData(
         ...names: Array<"post" | "put" | "patch">
       ): void {
         names.forEach((name) => {
-          /**
-           * @param {string} url
-           * @param {string|Object} data
-           * @param {import("./interface.ts").RequestShortcutConfig} [config]
-           */
           $http[name] = function (
             url: string,
             data: string | object,
-            config?: import("./interface.ts").RequestShortcutConfig,
+            config?: import("./http.ts").RequestShortcutConfig,
           ) {
             return $http(
               extend({}, config || {}, {
@@ -818,10 +830,7 @@ export function HttpProvider(this: any): void {
         });
       }
 
-      /**
-       * @param {ng.RequestConfig} config
-       * @param {any} reqData
-       */
+      /** Sends the request through the low-level HTTP backend and cache layer. */
       function sendReq(config: ng.RequestConfig, reqData: any) {
         const { promise, resolve, reject } = withResolvers();
 
@@ -841,7 +850,7 @@ export function HttpProvider(this: any): void {
         }
 
         const paramSerializer =
-          config.paramSerializer as import("./interface.ts").HttpParamSerializer;
+          config.paramSerializer as import("./http.ts").HttpParamSerializer;
 
         url = buildUrl(url, paramSerializer(config.params));
 
@@ -850,13 +859,13 @@ export function HttpProvider(this: any): void {
 
         if (
           (config.cache ||
-            (defaults as import("./interface.ts").HttpProviderDefaults)
+            (defaults as import("./http.ts").HttpProviderDefaults)
               .cache) &&
           config.cache !== false &&
           config.method === "GET"
         ) {
           const providerDefaults =
-            defaults as import("./interface.ts").HttpProviderDefaults;
+            defaults as import("./http.ts").HttpProviderDefaults;
 
           cache = isObject(config.cache)
             ? config.cache
@@ -883,7 +892,7 @@ export function HttpProvider(this: any): void {
                   cachedResp[0] as number,
                   shallowCopy(cachedResp[2]) as Record<string, string>,
                   cachedResp[3] as string,
-                  cachedResp[4] as import("./interface.ts").HttpResponseStatus,
+                  cachedResp[4] as import("./http.ts").HttpResponseStatus,
                 );
               } else {
                 resolvePromise(cachedResp, Http._OK, {}, "OK", "complete");
@@ -923,9 +932,7 @@ export function HttpProvider(this: any): void {
             reqHeaders,
             config.timeout,
             config.withCredentials,
-            /** @type {XMLHttpRequestResponseType | undefined} */ config.responseType as
-              | XMLHttpRequestResponseType
-              | undefined,
+            config.responseType as XMLHttpRequestResponseType | undefined,
             createApplyHandlers(config.eventHandlers),
             createApplyHandlers(config.uploadEventHandlers),
           );
@@ -933,13 +940,7 @@ export function HttpProvider(this: any): void {
 
         return promise;
 
-        /**
-         * @param eventHandlers
-         * @return {Record<string, EventListener>}
-         */
-        /**
-         * @param {ng.RequestConfig["eventHandlers"] | ng.RequestConfig["uploadEventHandlers"]} eventHandlers
-         */
+        /** Wraps raw XHR event handlers so they execute within Angular's apply flow. */
         function createApplyHandlers(
           eventHandlers:
             | ng.RequestConfig["eventHandlers"]
@@ -970,31 +971,19 @@ export function HttpProvider(this: any): void {
               };
             });
 
-            return /** @type {Record<string, EventListener>} */ applyHandlers;
+            return applyHandlers;
           } else {
             return {};
           }
         }
 
-        /**
-         * Callback registered to http():
-         *  - caches the response if desired
-         *  - resolves the raw $http promise
-         *  - calls $apply
-         */
-        /**
-         * @param {number} status
-         * @param {any} response
-         * @param {string | null} headersString
-         * @param {string} statusText
-         * @param {import("./interface.ts").HttpResponseStatus} xhrStatus
-         */
+        /** Handles a low-level XHR completion, updates cache state, and settles the raw `$http` promise. */
         function done(
           status: number,
           response: any,
           headersString: string | null,
           statusText: string,
-          xhrStatus: import("./interface.ts").HttpResponseStatus,
+          xhrStatus: import("./http.ts").HttpResponseStatus,
         ): void {
           if (cache) {
             if (isSuccess(status)) {
@@ -1028,20 +1017,13 @@ export function HttpProvider(this: any): void {
           }
         }
 
-        /**
-         * Resolves the raw $http promise.
-         * @param {any} response
-         * @param {number} status
-         * @param {string | Record<string, string> | null} headers
-         * @param {string} statusText
-         * @param {import("./interface.ts").HttpResponseStatus} xhrStatus
-         */
+        /** Resolves or rejects the raw `$http` promise from a low-level XHR callback payload. */
         function resolvePromise(
           response: any,
           status: number,
           headers: string | Record<string, string> | null,
           statusText: string,
-          xhrStatus: import("./interface.ts").HttpResponseStatus,
+          xhrStatus: import("./http.ts").HttpResponseStatus,
         ): void {
           // status: HTTP response status code, 0, -1 (aborted by timeout / promise)
           status = status >= -1 ? status : 0;
@@ -1056,11 +1038,9 @@ export function HttpProvider(this: any): void {
           });
         }
 
-        /**
-         * @param {import("./interface.ts").HttpResponse<any>} result
-         */
+        /** Settles the raw `$http` promise from a cached or intercepted response object. */
         function resolvePromiseWithResult(
-          result: import("./interface.ts").HttpResponse<any>,
+          result: import("./http.ts").HttpResponse<any>,
         ): void {
           resolvePromise(
             result.data,
@@ -1071,6 +1051,7 @@ export function HttpProvider(this: any): void {
           );
         }
 
+        /** Removes the finished request config from `$http.pendingRequests`. */
         function removePendingReq() {
           const idx = $http.pendingRequests.indexOf(config);
 
@@ -1078,10 +1059,7 @@ export function HttpProvider(this: any): void {
         }
       }
 
-      /**
-       * @param {string} url
-       * @param {string} serializedParams
-       */
+      /** Appends a serialized query string to a URL when request parameters are present. */
       function buildUrl(url: string, serializedParams: string): string {
         if (serializedParams.length > 0) {
           url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
@@ -1094,19 +1072,18 @@ export function HttpProvider(this: any): void {
 }
 
 /**
- * Makes an HTTP request using XMLHttpRequest with flexible options.
+ * Sends a low-level `XMLHttpRequest` using AngularTS-compatible callback and timeout semantics.
  *
- * @param {string} method - The HTTP method (e.g., "GET", "POST").
- * @param {string} [url] - The URL to send the request to. Defaults to the current page URL.
- * @param {*} [post] - The body to send with the request, if any.
- * @param {(status: number, response: any, headersString: string|null, statusText: string, xhrStatus: import("./interface.ts").HttpResponseStatus) => void} [callback] - Callback invoked when the request completes.
- * @param {Object<string, string|undefined>} [headers] - Headers to set on the request.
- * @param {number|Promise<any>} [timeout] - Timeout in ms or a cancellable promise.
- * @param {boolean} [withCredentials] - Whether to send credentials with the request.
- * @param {XMLHttpRequestResponseType} [responseType] - The type of data expected in the response.
- * @param {ng.RequestConfig["eventHandlers"]} [eventHandlers] - Event listeners for the XMLHttpRequest object.
- * @param {ng.RequestConfig["uploadEventHandlers"]} [uploadEventHandlers] - Event listeners for the XMLHttpRequest.upload object.
- * @returns {void}
+ * @param method - The HTTP method (for example, `"GET"` or `"POST"`).
+ * @param [url] - The request URL. Defaults to the current page URL.
+ * @param [post] - Optional request body.
+ * @param [callback] - Completion callback invoked when the request settles.
+ * @param [headers] - Request headers to apply before sending.
+ * @param [timeout] - Timeout in milliseconds or a cancellable promise.
+ * @param [withCredentials] - Whether to send credentials with the request.
+ * @param [responseType] - The expected XHR response type.
+ * @param [eventHandlers] - Event listeners attached to the `XMLHttpRequest` instance.
+ * @param [uploadEventHandlers] - Event listeners attached to `XMLHttpRequest.upload`.
  */
 export function http(
   method: string,
@@ -1117,7 +1094,7 @@ export function http(
     response: any,
     headersString: string | null,
     statusText: string,
-    xhrStatus: import("./interface.ts").HttpResponseStatus,
+    xhrStatus: import("./http.ts").HttpResponseStatus,
   ) => void,
   headers?: Record<string, string | undefined>,
   timeout?: number | Promise<any>,
@@ -1132,9 +1109,6 @@ export function http(
 
   let abortedByTimeout = false;
 
-  /**
-   * @type {number | undefined}
-   */
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   xhr.open(method, url, true);
@@ -1213,9 +1187,7 @@ export function http(
     });
   }
 
-  /**
-   * @param {"timeout"|"abort"} reason
-   */
+  /** Aborts the underlying XHR due to timeout expiry or external cancellation. */
   function timeoutRequest(reason: "timeout" | "abort"): void {
     abortedByTimeout = reason === "timeout";
 
@@ -1223,18 +1195,20 @@ export function http(
   }
 
   /**
-   * @param {number} status - HTTP status code or -1 for network errors.
-   * @param {*} response - The parsed or raw response from the server.
-   * @param {string|null} headersString - The raw response headers as a string.
-   * @param {string} statusText - The status text returned by the server.
-   * @param {ng.HttpResponseStatus} xhrStatus - Final status of the request.
+   * Finalizes the request, clears timeout state, and notifies the caller.
+   *
+   * @param status - HTTP status code or `-1` for network errors.
+   * @param response - Parsed or raw response payload from the server.
+   * @param headersString - Raw response headers as a string.
+   * @param statusText - HTTP status text returned by the server.
+   * @param xhrStatus - Final transport status reported for the request.
    */
   function completeRequest(
     status: number,
     response: any,
     headersString: string | null,
     statusText: string,
-    xhrStatus: import("./interface.ts").HttpResponseStatus,
+    xhrStatus: import("./http.ts").HttpResponseStatus,
   ): void {
     if (isDefined(timeoutId)) {
       clearTimeout(timeoutId);

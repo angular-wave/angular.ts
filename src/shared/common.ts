@@ -8,8 +8,7 @@ import {
 } from "./utils.ts";
 
 /**
- * @param {unknown} o1
- * @param {unknown} o2
+ * Performs deep equality checks for plain objects, arrays, dates, and regexes.
  */
 export function equals(o1: any, o2: any): boolean {
   if (o1 === o2) return true;
@@ -23,22 +22,26 @@ export function equals(o1: any, o2: any): boolean {
   if (t1 !== t2 || t1 !== "object") return false;
   const tup = [o1, o2];
 
-  if (tup.every(isArray))
-    return _arraysEq(
-      /** @type {Array<any>} */ o1,
-      /** @type {Array<any>} */ o2,
-    );
+  if (tup.every(isArray)) {
+    const arr1 = o1 as Array<any>;
+    const arr2 = o2 as Array<any>;
 
-  if (tup.every(isDate))
-    return (
-      /** @type {Date} */ o1.getTime() === /** @type {Date} */ o2.getTime()
-    );
+    return _arraysEq(arr1, arr2);
+  }
 
-  if (tup.every(isRegExp))
-    return (
-      /** @type {RegExp} */ o1.toString() ===
-      /** @type {RegExp} */ o2.toString()
-    );
+  if (tup.every(isDate)) {
+    const date1 = o1 as Date;
+    const date2 = o2 as Date;
+
+    return date1.getTime() === date2.getTime();
+  }
+
+  if (tup.every(isRegExp)) {
+    const regExp1 = o1 as RegExp;
+    const regExp2 = o2 as RegExp;
+
+    return regExp1.toString() === regExp2.toString();
+  }
 
   if (tup.every(isFunction)) return true; // meh
 
@@ -49,21 +52,16 @@ export function equals(o1: any, o2: any): boolean {
   ) {
     return false;
   }
-  /** @type {Record<string, any>} */
   const keys: Record<string, boolean> = {};
+  const obj1 = o1 as Record<string, any>;
+  const obj2 = o2 as Record<string, any>;
 
-  for (const key in /** @type {Record<string, any>} */ o1) {
-    if (
-      !equals(
-        /** @type {Record<string, any>} */ o1[key],
-        /** @type {Record<string, any>} */ o2[key],
-      )
-    )
-      return false;
+  for (const key in obj1) {
+    if (!equals(obj1[key], obj2[key])) return false;
     keys[key] = true;
   }
 
-  for (const key in /** @type {Record<string, any>} */ o2) {
+  for (const key in obj2) {
     if (!keys[key]) return false;
   }
 
@@ -72,16 +70,7 @@ export function equals(o1: any, o2: any): boolean {
 
 /**
  * prototypal inheritance helper.
- * Creates a new object which has `parent` object as its prototype, and then copies the properties from `extra` onto it
- */
-
-/**
- * prototypal inheritance helper.
  * Creates a new object which has `parent` object as its prototype, and then copies the properties from `extra` onto it.
- *
- * @param {Object} parent - The object to be used as the prototype.
- * @param {Object} [extra] - The object containing additional properties to be copied.
- * @returns {Object} - A new object with `parent` as its prototype and properties from `extra`.
  */
 export function inherit<T extends object, U extends object>(
   parent: T,
@@ -98,10 +87,7 @@ export function inherit<T extends object, U extends object>(
 
 /**
  * Given an array, and an item, if the item is found in the array, it removes it (in-place).
- * The same array is returned
- * @param {Array<any>} array
- * @param {any} obj
- * @returns {Array<any>}
+ * The same array is returned.
  */
 export function removeFrom<T>(array: T[], obj: T): T[] {
   const i = array.indexOf(obj);
@@ -132,8 +118,6 @@ export function withResolvers<T>(): PromiseResolvers<T> {
  * Applies a set of defaults to an options object.  The options object is filtered
  * to only those properties of the objects in the defaultsList.
  * Earlier objects in the defaultsList take precedence when applying defaults.
- * @param {any} opts
- * @param {any} defaultsList
  */
 export function defaults(opts: any, ...defaultsList: any[]): any {
   const defaultVals = Object.assign({}, ...defaultsList.reverse());
@@ -152,8 +136,6 @@ export function defaults(opts: any, ...defaultsList: any[]): any {
  * var foo = { a: 1, b: 2, c: 3 };
  * var ab = pick(foo, ['a', 'b']); // { a: 1, b: 2 }
  * ```
- * @param {any} obj the source object
- * @param {string | any[]} propNames an Array of strings, which are the whitelisted property names
  */
 export function pick<T extends Record<string, any>>(
   obj: T,
@@ -177,8 +159,6 @@ export function pick<T extends Record<string, any>>(
 var foo = { a: 1, b: 2, c: 3 };
 var ab = omit(foo, ['a', 'b']); // { c: 3 }
 ```
- * @param {{ [x: string]: any; }} obj the source object
- * @param {string | any[]} propNames an Array of strings, which are the blacklisted property names
  */
 export function omit<T extends Record<string, any>>(
   obj: T,
@@ -187,18 +167,13 @@ export function omit<T extends Record<string, any>>(
   return Object.keys(obj)
     .filter((x) => !propNames.includes(x))
     .reduce(
-      /**
-       * @param {Record<string, any>} acc
-       * @param {string} key
-       * */ (acc, key) => ((acc[key] = obj[key]), acc),
+      (acc, key) => ((acc[key] = obj[key]), acc),
       {} as Record<string, any>,
     ) as Partial<T>;
 }
 
 /**
- * Filters an Array or an Object's properties based on a predicate
- * @param {Record<string, any> | ArrayLike<any>} collection
- * @param {{ (x: any): boolean; (item: any): boolean; (val: any, key: any): boolean; (arg0: any, arg1: string): any; }} callback
+ * Filters an array or an object's properties using a predicate.
  */
 export function filter<T>(
   collection: Record<string, T> | ArrayLike<T>,
@@ -221,9 +196,7 @@ export function filter<T>(
 }
 
 /**
- * Finds an object from an array, or a property of an object, that matches a predicate
- * @param {{ [s: string]: any; } | ArrayLike<any>} collection
- * @param {function} callback
+ * Finds the first array element or object property value matching a predicate.
  */
 export function find<T>(
   collection: { [s: string]: T } | ArrayLike<T>,
@@ -246,10 +219,6 @@ export function find<T>(
  *
  * @template T
  * @template R
- * @param {T[] | Record<string, T>} collection
- * @param {(value: T, key: string | number) => R} callback
- * @param {R[] | Record<string, R>} [target]
- * @returns {R[] | Record<string, R>}
  */
 export function map<T, R>(
   collection: T[] | Record<string, T>,
@@ -289,7 +258,7 @@ export const allTrueR = (memo: any, elem: any) => memo && elem;
 /**
  * Reduce function that returns true if any of the values are truthy.
  *
- *  * @example
+ * @example
  * ```
  *
  * let vals = [ 0, null, undefined ];
@@ -304,10 +273,6 @@ export const anyTrueR = (memo: any, elem: any) => memo || elem;
 /**
  * Reduce function which un-nests a single level of arrays
  *
- * @param {any} memo
- * @param {any} elem
- * @returns {any}
- *
  * @example
  * let input = [ [ "a", "b" ], [ "c", "d" ], [ [ "double", "nested" ] ] ];
  * input.reduce(unnestR, []) // [ "a", "b", "c", "d", [ "double", "nested" ] ]
@@ -318,9 +283,6 @@ export const unnestR = (memo: any[], elem: any): any[] => memo.concat(elem);
  * Reduce function which recursively un-nests all arrays
  *
  * @template T
- * @param {T[]} memo
- * @param {any} elem
- * @returns {T[]}
  *
  * @example
  * let input = [ [ "a", "b" ], [ "c", "d" ], [ [ "double", "nested" ] ] ];
@@ -334,8 +296,6 @@ export const flattenR = (memo: any[], elem: any): any[] =>
 /**
  * Reduce function that pushes an object to an array, then returns the array.
  * Mostly just for [[flattenR]] and [[uniqR]]
- * @param {any[]} arr
- * @param {unknown} obj
  */
 export function pushR<T>(arr: T[], obj: T): T[] {
   arr.push(obj);
@@ -375,9 +335,7 @@ export const unnest = (arr: any[]): any[] => arr.reduce(unnestR, []);
 export const assertPredicate = assertFn;
 
 /**
- * @param {(arg0: any) => any} predicateOrMap
- * @param {string} errMsg
- * @return {(obj:any) => any}
+ * Wraps a predicate and throws when an element does not satisfy it.
  */
 export function assertFn<T>(
   predicateOrMap: (arg0: T) => any,
@@ -405,7 +363,6 @@ let baz = [ 10, 30, 50, 70 ];
 arrayTuples(foo, bar);       // [ [0, 1], [2, 3], [4, 5], [6, 7] ]
 arrayTuples(foo, bar, baz);  // [ [0, 1, 10], [2, 3, 30], [4, 5, 50], [6, 7, 70] ]
 ```
- * @param {any[][]} args
  */
 export function arrayTuples(...args: any[][]): any[][] {
   if (args.length === 0) return [];
@@ -458,8 +415,6 @@ export function arrayTuples(...args: any[][]): any[][] {
     var pairsToObj = pairs.reduce(applyPairs, {})
     // pairsToObj == { fookey: "fooval", barkey: "barval" }
 ```
- * @param {{ [x: string]: any; }} memo
- * @param {any[]} keyValTuple
  */
 export function applyPairs(
   memo: Record<string, any>,
@@ -479,8 +434,8 @@ export function applyPairs(
 /**
  * Returns the last element of an array, or undefined if the array is empty.
  * @template T
- * @param {any[]|string} arr - The input array.
- * @returns {T | undefined} The last element or undefined.
+ * @param arr - The input array.
+ * @returns The last element or undefined.
  */
 export function tail<T>(arr: T[] | string): T | string | undefined {
   return arr.length > 0 ? arr[arr.length - 1] : undefined;
@@ -488,8 +443,6 @@ export function tail<T>(arr: T[] | string): T | string | undefined {
 
 /**
  * shallow copy from src to dest
- * @param {any} src
- * @param {any} dest
  */
 export function copy(
   src: Record<string, any>,
@@ -503,8 +456,7 @@ export function copy(
 }
 
 /**
- * @param {Array<any>} a1
- * @param {Array<any>} a2
+ * Compares two arrays element-by-element using `equals`.
  */
 function _arraysEq(a1: any[], a2: any[]): boolean {
   if (a1.length !== a2.length) return false;

@@ -201,10 +201,7 @@ StateRefDirective.$inject = [
 ];
 
 /**
- * @param {ng.StateService} $stateService
- * @param {ng.StateRegistryService} $stateRegistry
- * @param {ng.TransitionService} $transitions
- * @returns {ng.Directive}
+ * Generates `ui-sref` links and keeps their href/state data in sync.
  */
 export function StateRefDirective(
   $stateService: ng.StateService,
@@ -226,9 +223,6 @@ export function StateRefDirective(
 
       const active = ngSrefActive[1] || ngSrefActive[0];
 
-      /**
-       * @type {(() => void) | null}
-       */
       let unlinkInfoFn: (() => void) | undefined;
 
       const rawDef: Record<string, any> = {};
@@ -301,10 +295,7 @@ StateRefDynamicDirective.$inject = [
 ];
 
 /**
- * @param {ng.StateService} $state
- * @param {ng.StateRegistryService} $stateRegistry
- * @param {ng.TransitionService} $transitions
- * @returns {ng.Directive}
+ * Generates dynamic `ui-state` links whose target state is read from an expression.
  */
 export function StateRefDynamicDirective(
   $state: ng.StateService,
@@ -324,9 +315,6 @@ export function StateRefDynamicDirective(
 
       const active = ngSrefActive[1] || ngSrefActive[0];
 
-      /**
-       * @type {(() => void) | null}
-       */
       let unlinkInfoFn: (() => void) | undefined;
 
       const rawDef: Record<string, any> = {};
@@ -396,12 +384,7 @@ StateRefActiveDirective.$inject = [
 ];
 
 /**
- * @param {ng.StateService} $state
- * @param {ng.RouterService} $router
- * @param {ng.InterpolateService} $interpolate
- * @param {ng.StateRegistryService} $stateRegistry
- * @param {ng.TransitionService} $transitions
- * @returns {ng.Directive}
+ * Toggles active CSS classes based on the current router state.
  */
 export function StateRefActiveDirective(
   $state: ng.StateService,
@@ -462,7 +445,7 @@ export function StateRefActiveDirective(
         return deregister;
       };
       /**
-       * @param {ng.Transition} trans
+       * Updates active classes after a transition settles.
        */
       function updateAfterTransition(trans: ng.Transition): void {
         trans.promise.then(update, () => {
@@ -497,9 +480,7 @@ export function StateRefActiveDirective(
       function handleStatesChanged() {
         setStatesFromDefinitionObject(ngSrefActive);
       }
-      /**
-       * @param {{ [s: string]: any; } | ArrayLike<any>} statesDefinition
-       */
+      /** Updates the tracked state list from the directive definition object. */
       function setStatesFromDefinitionObject(statesDefinition: any): void {
         if (isObject(statesDefinition)) {
           states = [];

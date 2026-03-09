@@ -2,9 +2,6 @@ import { $injectTokens } from "../../injection-tokens.ts";
 import { domInsert } from "../../shared/dom.ts";
 import { hasAnimate, values } from "../../shared/utils.ts";
 
-/**
- * @typedef {object} NgSwitchBlock
- */
 type NgSwitchBlock = {
   _clone: Node;
   _comment: Comment;
@@ -20,10 +17,7 @@ class NgSwitchController {
 
 ngSwitchDirective.$inject = [$injectTokens._animate];
 
-/**
- * @param {ng.AnimateService} $animate
- * @returns {ng.Directive<NgSwitchController>}
- */
+/** Switches between transcluded case blocks and animates block entry/exit. */
 export function ngSwitchDirective(
   $animate: ng.AnimateService,
 ): ng.Directive<NgSwitchController> {
@@ -101,15 +95,14 @@ export function ngSwitchDirective(
                   selectedScopes.push(selectedScope);
                   const anchor = selectedTransclude.element;
 
-                  /** @type {NgSwitchBlock} */
                   const block = {
-                    _clone: /** @type {Node} */ caseElement,
+                    _clone: caseElement,
                     _comment: document.createComment(""),
                   };
 
                   selectedElements.push(block);
 
-                  if (hasAnimate(/** @type {Node} */ caseElement)) {
+                  if (hasAnimate(caseElement)) {
                     const parentElement = anchor.parentElement;
 
                     if (!parentElement) {
@@ -118,18 +111,10 @@ export function ngSwitchDirective(
 
                     if (runner) {
                       requestAnimationFrame(() => {
-                        $animate.enter(
-                          /** @type {HTMLElement} */ caseElement,
-                          parentElement,
-                          anchor,
-                        );
+                        $animate.enter(caseElement, parentElement, anchor);
                       });
                     } else {
-                      $animate.enter(
-                        /** @type {HTMLElement} */ caseElement,
-                        parentElement,
-                        anchor,
-                      );
+                      $animate.enter(caseElement, parentElement, anchor);
                     }
                   } else {
                     const parentElement = anchor.parentElement;
@@ -138,11 +123,7 @@ export function ngSwitchDirective(
                       return;
                     }
 
-                    domInsert(
-                      /** @type {HTMLElement} */ caseElement,
-                      parentElement,
-                      anchor,
-                    );
+                    domInsert(caseElement, parentElement, anchor);
                   }
                 },
               );

@@ -11,9 +11,6 @@ import { isArray } from "../../shared/utils.ts";
  *   expandUriTemplate("/search{?q,lang}", { q: "a b", lang: "en" }) === "/search?q=a%20b&lang=en"
  *   expandUriTemplate("/repos/{owner}/{repo}/issues{?labels*}", { labels: ["bug","ui"] }) === "/repos/x/y/issues?labels=bug&labels=ui"
  *
- * @param {string} template
- * @param {Object<string, any>} vars
- * @returns {string}
  */
 export function expandUriTemplate(
   template: string,
@@ -29,9 +26,6 @@ export function expandUriTemplate(
 
 /**
  * Helper: percent-encode a string. If allowReserved true, reserved chars are NOT encoded.
- * @param {string} str
- * @param {boolean} allowReserved
- * @returns {string}
  */
 export function pctEncode(str: string, allowReserved: boolean): string {
   // encodeURIComponent, then restore reserved if allowed
@@ -50,9 +44,6 @@ export function pctEncode(str: string, allowReserved: boolean): string {
 
 /**
  * Parse and expand a single expression (content between { and }).
- * @param {string} expression
- * @param {Object<string, any>} vars
- * @returns {string}
  */
 export function expandExpression(
   expression: string,
@@ -66,7 +57,6 @@ export function expandExpression(
   const varlist = op ? expression.slice(1) : expression;
 
   // operator configuration (separator, prefix, named, ifEmpty, allowReserved)
-  /** @type {Record<string, any>} */
   const OP: Record<
     string,
     {

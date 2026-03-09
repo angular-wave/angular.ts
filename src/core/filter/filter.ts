@@ -1,6 +1,5 @@
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { filterFilter } from "../../filters/filter.ts";
-import type { FilterFactory, FilterService } from "../../filters/interface.ts";
 import { jsonFilter } from "../../filters/json.ts";
 import { limitToFilter } from "../../filters/limit-to.ts";
 import { orderByFilter } from "../../filters/order-by.ts";
@@ -9,6 +8,23 @@ import { assert, entries, isDefined, isFunction } from "../../shared/utils.ts";
 import { validate, validateIsString } from "../../shared/validate.ts";
 
 const SUFFIX = "Filter";
+
+/**
+ * A filter function takes an input and optional arguments, and returns a transformed value.
+ */
+export type FilterFn = (input: any, ...args: any[]) => any;
+
+/**
+ * A filter factory function that returns a FilterFn.
+ */
+export type FilterFactory = (
+  ...args: any[]
+) => FilterFn & { $$moduleName: string };
+
+/**
+ * A filter service for retrieving filters functions
+ */
+export type FilterService = (name: string) => FilterFn;
 
 /**
  * $filterProvider - $filter - provider in module ng

@@ -8,8 +8,6 @@ ngChannelDirective.$inject = [$injectTokens._eventBus];
  * If the element has inline template content, published object payloads are
  * merged into the current scope. Otherwise, string payloads replace the
  * element's HTML content directly.
- *
- * @param {ng.PubSubService} $eventBus
  */
 export function ngChannelDirective($eventBus: ng.PubSubService): ng.Directive {
   return {

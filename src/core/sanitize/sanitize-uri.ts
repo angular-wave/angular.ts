@@ -1,6 +1,14 @@
 import { isDefined } from "../../shared/utils.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
-import type { SanitizerFn } from "./interface.ts";
+
+/**
+ * Sanitizer function that processes a URI string and optionally
+ * treats it as a media URL.
+ */
+export type SanitizerFn = (
+  uri: string | null | undefined,
+  isMediaUrl?: boolean,
+) => string | null | undefined;
 
 /**
  * Private service to sanitize uris for links and images. Used by $compile.

@@ -1,9 +1,8 @@
 import { equals, inherit, map, pick } from "../../shared/common.ts";
 import { hasOwn, isDefined, isNullOrUndefined } from "../../shared/utils.ts";
 import { is } from "../../shared/hof.ts";
-import { ParamType } from "./param-type.ts";
+import { ParamType, type ParamTypeDefinition } from "./param-type.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
-import type { ParamTypeDefinition } from "./interface.ts";
 /**
  * A registry for parameter types.
  *
@@ -38,9 +37,7 @@ export class ParamTypes {
   defaultTypes: Record<string, ParamTypeDefinition & Record<string, any>>;
   types: Record<string, ParamType>;
 
-  /**
-   * @param {ng.AngularService} $angular
-   */
+  /** Creates the parameter type registry and registers the built-in types. */
   constructor($angular: ng.AngularService) {
     this.$injector = $angular.$injector;
     this.enqueue = true;
@@ -70,9 +67,6 @@ export class ParamTypes {
    * Registers a parameter type
    *
    * End users should call [[UrlMatcherFactory.type]], which delegates to this method.
-   * @param {string} name
-   * @param {import("./interface.ts").ParamTypeDefinition} [definition]
-   * @param {() => import("../params/interface.ts").ParamTypeDefinition} [definitionFn]
    */
   type(name: string): ParamType | undefined;
   type(
@@ -89,7 +83,7 @@ export class ParamTypes {
 
     if (hasOwn(this.types, name))
       throw new Error(`A type named '${name}' has already been defined.`);
-    this.types[/** @type {string} */ name] = new ParamType(
+    this.types[name] = new ParamType(
       Object.assign({ name }, definition),
     );
 
@@ -147,9 +141,7 @@ function initDefaultTypes() {
     }),
     int: makeDefaultType({
       decode: (val: string) => parseInt(val, 10),
-      /**
-       * @param {unknown} val
-       */
+      /** Returns true when the value is an integer compatible with this type. */
       is(val) {
         return (
           !isNullOrUndefined(val) &&
@@ -165,9 +157,7 @@ function initDefaultTypes() {
       pattern: /[01]/,
     }),
     date: makeDefaultType({
-      /**
-       * @param {{ getFullYear: () => any; getMonth: () => number; getDate: () => any; }} val
-       */
+      /** Encodes a Date into the built-in yyyy-mm-dd form. */
       encode(val) {
         return !(this as any).is(val)
           ? ""
@@ -177,9 +167,7 @@ function initDefaultTypes() {
               `0${val.getDate()}`.slice(-2),
             ].join("-");
       },
-      /**
-       * @param {any} val
-       */
+      /** Decodes the built-in yyyy-mm-dd representation into a Date. */
       decode(val: any) {
         if ((this as any).is(val)) return val;
         const match = (this as any).capture.exec(val);
@@ -187,10 +175,7 @@ function initDefaultTypes() {
         return match ? new Date(match[1], match[2] - 1, match[3]) : undefined;
       },
       is: (val: any) => val instanceof Date && !isNaN(val.valueOf()),
-      /**
-       * @param {{ [x: string]: () => any; }} left
-       * @param {{ [x: string]: () => any; }} right
-       */
+      /** Returns true when two Date values share the same calendar day. */
       equals(left, right) {
         return ["getFullYear", "getMonth", "getDate"].reduce(
           (acc, fn) => acc && left[fn]() === right[fn](),

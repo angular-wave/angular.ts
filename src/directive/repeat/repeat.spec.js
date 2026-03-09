@@ -643,6 +643,22 @@ describe("ngRepeat", () => {
 
       expect(element.textContent).toBe("Build an AngularTS app false|");
     });
+
+    it("removes normalized repeat clones when a non-animated collection shrinks", async () => {
+      element = $compile(
+        '<ul><li ng-repeat="item in items">{{item}}|</li></ul>',
+      )(scope);
+      scope.items = ["a", "b", "c"];
+
+      await wait();
+      expect(element.textContent).toBe("a|b|c|");
+
+      scope.items = ["b"];
+      await wait();
+
+      expect(element.textContent).toBe("b|");
+      expect(element.querySelectorAll("li").length).toBe(1);
+    });
   });
 
   describe("nesting in replaced directive templates", () => {

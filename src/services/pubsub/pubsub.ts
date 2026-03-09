@@ -14,10 +14,6 @@ export class PubSubProvider {
     $injectTokens._angularProvider,
   ];
 
-  /**
-   * @param {ng.ExceptionHandlerProvider} $exceptionHandler
-   * @param {ng.AngularServiceProvider} angularProvider
-   */
   eventBus: PubSub;
 
   constructor(
@@ -37,9 +33,6 @@ export class PubSub {
   private _disposed: boolean;
   public $exceptionHandler: ng.ExceptionHandlerService;
 
-  /**
-   * @param {ng.ExceptionHandlerService} $exceptionHandler
-   */
   constructor($exceptionHandler: ng.ExceptionHandlerService) {
     this._topics = nullObject() as Record<string, ListenerEntry[]>;
     this._disposed = false;
@@ -56,7 +49,7 @@ export class PubSub {
 
   /**
    * Checks if instance has been disposed.
-   * @returns {boolean} True if disposed.
+   * @returns True if disposed.
    */
   isDisposed(): boolean {
     return this._disposed;
@@ -73,10 +66,10 @@ export class PubSub {
 
   /**
    * Subscribe a function to a topic.
-   * @param {string} topic - The topic to subscribe to.
-   * @param {Function} fn - The callback function to invoke when published.
-   * @param {*} [context] - Optional `this` context for the callback.
-   * @returns {() => boolean} A function that unsubscribes this listener.
+   * @param topic - The topic to subscribe to.
+   * @param fn - The callback function to invoke when published.
+   * @param [context] - Optional `this` context for the callback.
+   * @returns A function that unsubscribes this listener.
    */
   subscribe(
     topic: string,
@@ -98,10 +91,10 @@ export class PubSub {
   /**
    * Subscribe a function to a topic only once.
    * Listener is removed before the first invocation.
-   * @param {string} topic - The topic to subscribe to.
-   * @param {Function} fn - The callback function.
-   * @param {*} [context] - Optional `this` context for the callback.
-   * @returns {() => boolean} A function that unsubscribes this listener.
+   * @param topic - The topic to subscribe to.
+   * @param fn - The callback function.
+   * @param [context] - Optional `this` context for the callback.
+   * @returns A function that unsubscribes this listener.
    */
   subscribeOnce(
     topic: string,
@@ -128,10 +121,10 @@ export class PubSub {
   /**
    * Unsubscribe a specific function from a topic.
    * Matches by function reference and optional context.
-   * @param {string} topic - The topic to unsubscribe from.
-   * @param {Function} fn - The listener function.
-   * @param {*} [context] - Optional `this` context.
-   * @returns {boolean} True if the listener was found and removed.
+   * @param topic - The topic to unsubscribe from.
+   * @param fn - The listener function.
+   * @param [context] - Optional `this` context.
+   * @returns True if the listener was found and removed.
    */
   unsubscribe(topic: string, fn: Function, context: any = undefined): boolean {
     if (this._disposed) return false;
@@ -155,8 +148,6 @@ export class PubSub {
 
   /**
    * Get the number of subscribers for a topic.
-   * @param {string} topic
-   * @returns {number}
    */
   getCount(topic: string): number {
     const listeners = this._topics[topic];
@@ -167,9 +158,9 @@ export class PubSub {
   /**
    * Publish a value to a topic asynchronously.
    * All listeners are invoked in the order they were added.
-   * @param {string} topic - The topic to publish.
-   * @param {...*} args - Arguments to pass to listeners.
-   * @returns {boolean} True if any listeners exist for this topic.
+   * @param topic - The topic to publish.
+   * @param args - Arguments to pass to listeners.
+   * @returns True if any listeners exist for this topic.
    */
   publish(topic: string, ...args: any[]): boolean {
     if (this._disposed) return false;

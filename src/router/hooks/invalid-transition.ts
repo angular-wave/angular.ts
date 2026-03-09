@@ -1,4 +1,4 @@
-import type { TransitionService } from "../transition/interface.ts";
+import type { TransitionService } from "../transition/transition-service.ts";
 import type { Transition } from "../transition/transition.ts";
 
 function invalidTransitionHook(trans: Transition): void {

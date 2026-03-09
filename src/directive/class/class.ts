@@ -8,47 +8,38 @@ import {
   nullObject,
 } from "../../shared/utils.ts";
 
-/**
- * @param {string} name
- * @param {boolean|number} selector
- * @returns {ng.DirectiveFactory}
- */
+/** Creates the family of `ngClass*` directives. */
 function classDirective(
   name: string,
   selector: boolean | number,
 ): ng.DirectiveFactory {
   name = `ngClass${name}`;
 
-  /**
-   * @returns {ng.Directive}
-   */
+  /** Creates the concrete directive instance for the requested class mode. */
   return function (): ng.Directive {
     return {
-      /**
-       * @param {ng.Scope} scope
-       * @param {HTMLElement} element
-       * @param {ng.Attributes} attr
-       */
       link(
         scope: ng.Scope,
         element: HTMLElement,
         attr: import("../../core/compile/attributes.ts").Attributes &
           Record<string, string>,
       ): void {
-        /** @type {Record<string, number>} */
-        let classCounts = getCacheData(element, "$classCounts");
+        let classCounts = getCacheData(element, "$classCounts") as
+          | Record<string, number>
+          | undefined;
 
         // `ngClassOdd/ngClassEven` use `$index & 1` values (0/1). Plain `ngClass` uses `true`.
         let oldModulo: number | boolean = true;
 
-        /** @type {string} */
         let oldClassString = "";
 
         if (!classCounts) {
           // Use Object.create(null) to prevent assumptions involving Object.prototype keys.
-          classCounts = /** @type {Record<string, number>} */ nullObject();
+          classCounts = nullObject() as Record<string, number>;
           setCacheData(element, "$classCounts", classCounts);
         }
+
+        const counts = classCounts;
 
         // Cache once; `hasAnimate(element)` should be stable for this directive instance.
         const animate = hasAnimate(element);
@@ -63,9 +54,7 @@ function classDirective(
           ngClassWatchAction(toClassString(val));
         });
 
-        /**
-         * @param {string} classString
-         */
+        /** Increments class reference counts and applies newly active classes. */
         function addClasses(classString: string): void {
           const toAdd = digestClassCounts(split(classString), 1);
 
@@ -80,9 +69,7 @@ function classDirective(
           }
         }
 
-        /**
-         * @param {string} classString
-         */
+        /** Decrements class reference counts and removes classes that reach zero. */
         function removeClasses(classString: string): void {
           const toRemove = digestClassCounts(split(classString), -1);
 
@@ -97,10 +84,7 @@ function classDirective(
           }
         }
 
-        /**
-         * @param {string} oldClassStringParam
-         * @param {string} newClassStringParam
-         */
+        /** Applies the net class change between two class strings. */
         function updateClasses(
           oldClassStringParam: string,
           newClassStringParam: string,
@@ -131,16 +115,11 @@ function classDirective(
         /**
          * Updates reference-counts for classes and returns the classes that should be
          * applied/removed for this operation.
-         *
-         * @param {string[]} classArray
-         * @param {number} count
-         * @returns {string[]}
          */
         function digestClassCounts(
           classArray: string[],
           count: number,
         ): string[] {
-          /** @type {string[]} */
           const classesToUpdate = [];
 
           for (let i = 0; i < classArray.length; i++) {
@@ -150,10 +129,10 @@ function classDirective(
 
             // Only decrement if we have a count, otherwise we can go negative and
             // remove classes that were never added.
-            if (count > 0 || classCounts[className]) {
-              const next = (classCounts[className] || 0) + count;
+            if (count > 0 || counts[className]) {
+              const next = (counts[className] || 0) + count;
 
-              classCounts[className] = next;
+              counts[className] = next;
 
               // When adding: push when transitioning 0 -> 1.
               // When removing: push when transitioning 1 -> 0.
@@ -166,9 +145,7 @@ function classDirective(
           return classesToUpdate;
         }
 
-        /**
-         * @param {number | boolean} newModulo
-         */
+        /** Reacts to `$index` changes for `ngClassOdd` and `ngClassEven`. */
         function ngClassIndexWatchAction(newModulo: number | boolean): void {
           // Runs before `ngClassWatchAction()`: it adds/removes `oldClassString`.
           if (newModulo === selector) {
@@ -180,9 +157,7 @@ function classDirective(
           oldModulo = newModulo;
         }
 
-        /**
-         * @param {string} newClassString
-         */
+        /** Reacts to the watched class expression changing. */
         function ngClassWatchAction(newClassString: string): void {
           if (oldModulo === selector) {
             updateClasses(oldClassString, newClassString);
@@ -199,10 +174,6 @@ function classDirective(
 
 /**
  * Returns all items from `tokens1` that are not present in `tokens2`.
- *
- * @param {string[]} tokens1
- * @param {string[]} tokens2
- * @returns {string[]}
  */
 export function arrayDifference(
   tokens1: string[],
@@ -214,7 +185,6 @@ export function arrayDifference(
 
   const set2 = new Set(tokens2);
 
-  /** @type {string[]} */
   const out = [];
 
   for (let i = 0; i < tokens1.length; i++) {
@@ -231,9 +201,6 @@ export function arrayDifference(
  *
  * - Trims leading/trailing whitespace
  * - Collapses any whitespace runs (space/tab/newline) into token boundaries
- *
- * @param {string} classString
- * @return {string[]}
  */
 export function split(classString: string): string[] {
   if (!classString) return [];
@@ -250,9 +217,6 @@ export function split(classString: string): string[] {
  * - array: flattened and joined with spaces (falsy items are ignored)
  * - object: keys with truthy values are included
  * - other primitives: stringified
- *
- * @param {unknown} classValue
- * @returns {string}
  */
 export function toClassString(classValue: unknown): string {
   if (!classValue) return "";

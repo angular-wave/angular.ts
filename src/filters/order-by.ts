@@ -22,19 +22,9 @@ type PredicateDescriptor = {
   descending: number;
 };
 
-/**
- * @typedef {Object} ComparisonObject
- * @property {*} value
- * @property {{ value: number, type: string, index: number }} tieBreaker
- * @property {Array<{ value: any, type: string, index: number }>} predicateValues
- */
-
 orderByFilter.$inject = [$injectTokens._parse];
 
-/**
- * @param {ng.ParseService} $parse
- * @returns {ng.FilterFn}
- */
+/** Registers the built-in stable ordering filter. */
 export function orderByFilter($parse: ng.ParseService) {
   /**
    * Sorts an array or array-like collection based on one or more predicates.
@@ -48,17 +38,6 @@ export function orderByFilter($parse: ng.ParseService) {
    * - Property names (strings)
    * - Getter functions
    * - Strings with "+" or "-" prefix to indicate ascending/descending order
-   *
-   * @param {Array<any>|ArrayLike<any>|Function} array
-   *   The collection to be sorted.
-   * @param {string|Function|Array<string|Function>} [sortPredicate]
-   *   A single predicate or array of predicates used for sorting.
-   * @param {boolean} [reverseOrder=false]
-   *   If true, reverses the sort order.
-   * @param {Function} [compareFn]
-   *   Optional comparator function. Defaults to a type-aware comparison function.
-   * @returns {Array<any>|ArrayLike<any>}
-   *   A new array containing the sorted values.
    *
    * @throws {Error} Throws if `array` is not array-like.
    */
@@ -112,14 +91,9 @@ export function orderByFilter($parse: ng.ParseService) {
      * Creates a comparison object for a given value in the array.
      * This object is used to perform stable sorting with multiple predicates.
      *
-     * @param {*} value - The value from the array to wrap for comparison.
-     * @param {number} index - The index of the value in the original array.
-     * @returns {{
-     *   value: *,
-     *   tieBreaker: { value: number, type: string, index: number },
-     *   predicateValues: Array<{ value: *, type: string, index: number }>
-     * }}
-     *   An object containing:
+     * @param value - The value from the array to wrap for comparison.
+     * @param index - The index of the value in the original array.
+     * @returns An object containing:
      *     - `value`: the original value,
      *     - `tieBreaker`: a stable sort fallback using the original index,
      *     - `predicateValues`: an array of values derived from each sort predicate.
@@ -147,9 +121,6 @@ export function orderByFilter($parse: ng.ParseService) {
      * If all predicate comparisons are equal, a tie-breaker based on the
      * original index is used to guarantee a stable sort.
      *
-     * @param {ComparisonObject} v1 First decorated comparison object
-     * @param {ComparisonObject} v2 Second decorated comparison object
-     * @returns {number} -1 if v1 < v2, 1 if v1 > v2, 0 if equivalent
      */
     function doComparison(v1: ComparisonObject, v2: ComparisonObject): number {
       for (let i = 0, ii = predicates.length; i < ii; i++) {
@@ -175,9 +146,9 @@ export function orderByFilter($parse: ng.ParseService) {
    * - A string starting with `+` or `-` to indicate ascending or descending order.
    *   The remainder of the string is interpreted as a property path.
    *
-   * @param {(string|Function)[]} sortPredicates - Array of predicates to process. Each predicate
-   *   can be a string (property name, optionally prefixed with "+" or "-") or a function.
-   * @return {Array<{get: Function, descending: number}>} Array of objects, each containing:
+   * `sortPredicates` can contain strings (optionally prefixed with `+` or `-`) or functions.
+   *
+   * Returns an array of objects, each containing:
    *   - `get`: Function to extract the value from an item.
    *   - `descending`: `1` for ascending, `-1` for descending.
    */
@@ -190,7 +161,7 @@ export function orderByFilter($parse: ng.ParseService) {
       let get = (x: any) => x;
 
       if (isFunction(predicate)) {
-        get = /** @type {function(*): *} */ predicate;
+        get = predicate;
       } else if (isString(predicate)) {
         if (predicate.charAt(0) === "+" || predicate.charAt(0) === "-") {
           descending = predicate.charAt(0) === "-" ? -1 : 1;
@@ -214,10 +185,7 @@ export function orderByFilter($parse: ng.ParseService) {
     });
   }
 
-  /**
-   * @param {any} value
-   * @return {boolean}
-   */
+  /** Returns whether the provided value is a primitive sortable type. */
   function isPrimitive(value: any): boolean {
     switch (typeof value) {
       case "number": /* falls through */
@@ -236,8 +204,8 @@ export function orderByFilter($parse: ng.ParseService) {
    * - Otherwise, if the object has a custom `toString()` method, it uses that.
    * - If neither yields a primitive, returns the original object.
    *
-   * @param {*} value - The object to convert.
-   * @returns {*} The primitive representation of the object if possible; otherwise, the original object.
+   * @param value - The object to convert.
+   * @returns The primitive representation of the object if possible; otherwise, the original object.
    */
   function objectValue(value: any): any {
     // If `valueOf` is a valid function use that
@@ -261,14 +229,9 @@ export function orderByFilter($parse: ng.ParseService) {
    * Normalizes a value for sorting by determining its type and
    * converting objects to primitive representations when possible.
    *
-   * @param {*} value - The value to normalize for comparison.
-   * @param {number} index - The original index of the value in the array.
-   * @returns {{
-   *   value: *,
-   *   type: string,
-   *   index: number
-   * }}
-   *   An object containing:
+   * @param value - The value to normalize for comparison.
+   * @param index - The original index of the value in the array.
+   * @returns An object containing:
    *     - `value`: the normalized value (primitive if possible),
    *     - `type`: a string representing the type of the value (`number`, `string`, `boolean`, `null`, etc.),
    *     - `index`: the original index to maintain stable sorting.
@@ -295,12 +258,6 @@ export function orderByFilter($parse: ng.ParseService) {
    * - Objects fall back to their original index to preserve stability
    * - `undefined` and `null` are ordered last
    *
-   * @param {{ value: any, type: string, index: number }} v1
-   *   First comparison object.
-   * @param {{ value: any, type: string, index: number }} v2
-   *   Second comparison object.
-   * @returns {number}
-   *   Returns `-1` if `v1 < v2`, `1` if `v1 > v2`, or `0` if equal.
    */
   function defaultCompare(v1: PredicateValue, v2: PredicateValue): number {
     let result = 0;

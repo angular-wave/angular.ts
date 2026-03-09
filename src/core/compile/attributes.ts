@@ -44,12 +44,6 @@ export class Attributes {
    *      (e.g. `_observers`).
    *    - `$attr` is intentionally **not reinitialized** in this case, because the
    *      source object already contains the correct normalized -> DOM attribute mapping.
-   *
-   * @param {ng.AnimateService} $animate
-   * @param {ng.ExceptionHandlerService} $exceptionHandler
-   * @param {ng.SceService} $sce
-   * @param {import("../../shared/noderef.ts").NodeRef} [nodeRef]
-   * @param {Object & Record<string, any>} [attributesToCopy]
    */
 
   _animate: ng.AnimateService;
@@ -84,7 +78,7 @@ export class Attributes {
     this._nodeRef = nodeRef;
   }
 
-  /** @ignore @returns {Node|Element} */
+  /** @ignore Internal element accessor used by legacy attribute helpers. */
   _element(): Node | Element {
     return this._nodeRef?._getAny() as Node | Element;
   }
@@ -97,7 +91,7 @@ export class Attributes {
    *
    * For further information check out the guide on {@link guide/directive#matching-directives Matching Directives}
    *
-   * @param {string} name Name to normalize
+   * @param name Name to normalize
    */
   $normalize = directiveNormalize;
 
@@ -292,9 +286,9 @@ export class Attributes {
 /**
  * Computes the difference between two space-separated token strings.
  *
- * @param {string} str1 - The first string containing space-separated tokens.
- * @param {string} str2 - The second string containing space-separated tokens.
- * @returns {string} A string containing tokens that are in str1 but not in str2, separated by spaces.
+ * @param str1 - The first string containing space-separated tokens.
+ * @param str2 - The second string containing space-separated tokens.
+ * @returns A string containing tokens that are in str1 but not in str2, separated by spaces.
  *
  */
 function tokenDifference(str1: string, str2: string): string {

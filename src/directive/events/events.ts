@@ -17,9 +17,7 @@ export const ngEventDirectives: Record<string, ng.Injectable<any>> = {};
       $t._exceptionHandler,
 
       /**
-       * @param {ng.ParseService} $parse
-       * @param {ng.ExceptionHandlerService} $exceptionHandler
-       * @returns
+       * Creates the event directive factory for this DOM event name.
        */
       (
         $parse: ng.ParseService,
@@ -36,12 +34,7 @@ export const ngEventDirectives: Record<string, ng.Injectable<any>> = {};
   });
 
 /**
- *
- * @param {ng.ParseService} $parse
- * @param {ng.ExceptionHandlerService} $exceptionHandler
- * @param {string} directiveName
- * @param {string} eventName
- * @returns {ng.Directive}
+ * Creates a directive that evaluates an expression when the element event fires.
  */
 export function createEventDirective(
   $parse: ng.ParseService,
@@ -78,13 +71,7 @@ export function createEventDirective(
 }
 
 /**
- *
- * @param {ng.ParseService} $parse
- * @param {ng.ExceptionHandlerService} $exceptionHandler
- * @param {ng.WindowService} $window
- * @param {string} directiveName
- * @param {string} eventName
- * @returns {ng.Directive}
+ * Creates a directive that evaluates an expression when the window event fires.
  */
 export function createWindowEventDirective(
   $parse: ng.ParseService,

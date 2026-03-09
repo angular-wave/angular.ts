@@ -1,15 +1,21 @@
 import { assertPredicate, unnestR } from "../../shared/common.ts";
 import { isArray } from "../../shared/utils.ts";
 import type { StateDeclaration } from "../state/interface.ts";
-import type { RegisteredHook } from "./hook-registry.ts";
+import type { PathNode } from "../path/path-node.ts";
+import type { IMatchingNodes, RegisteredHook } from "./hook-registry.ts";
 import {
   TransitionHook,
   TransitionHookPhase,
   TransitionHookScope,
 } from "./transition-hook.ts";
-import type { HookTuple, IMatchingNodes, TreeChanges } from "./interface.ts";
-import type { Transition } from "./transition.ts";
+import type { Transition, TreeChanges } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
+
+export interface HookTuple {
+  hook: RegisteredHook;
+  node: PathNode;
+  transitionHook: TransitionHook;
+}
 
 /**
  * Builds runnable `TransitionHook` instances for a transition phase.

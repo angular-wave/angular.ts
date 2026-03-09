@@ -1,9 +1,6 @@
 import type {
-  AnimationHost,
   AnimationOptions,
   Animator,
-  AnimateCssService,
-  InlineStyleEntry,
 } from "../interface.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import {
@@ -38,6 +35,24 @@ import {
 } from "../shared.ts";
 import { animateCache } from "../cache/animate-cache.ts";
 import { rafScheduler } from "../raf/raf-scheduler.ts";
+import type { AnimationHost } from "../runner/animate-runner.ts";
+
+/**
+ * Tuple representation of an inline style entry (`[property, value]`).
+ *
+ * Used by style application utilities to preserve order while iterating.
+ */
+export type InlineStyleEntry = [string, string];
+
+/**
+ * Signature for the CSS-based animation service.
+ *
+ * This typically returns an {@link Animator} that wraps CSS detection and timing.
+ */
+export type AnimateCssService = (
+  element: HTMLElement,
+  options?: ng.AnimationOptions,
+) => Animator;
 
 type AnimateCssOptions = Omit<AnimationOptions, "delay"> & {
   delay?: string | boolean;
@@ -61,6 +76,19 @@ interface StaggerTimings {
   transitionDelay: number;
   animationDuration: number;
   animationDelay: number;
+}
+
+interface AnimationFlags {
+  _hasTransitions: boolean;
+  _hasAnimations: boolean;
+  _hasTransitionAll: boolean;
+  _applyTransitionDuration: boolean;
+  _applyAnimationDuration: boolean;
+  _applyTransitionDelay: boolean;
+  _applyAnimationDelay: boolean;
+  _recalculateTimingStyles: boolean;
+  _blockTransition: boolean;
+  _blockKeyframeAnimation: boolean;
 }
 
 const ANIMATE_TIMER_KEY = $injectTokens._animateCss;
@@ -90,7 +118,7 @@ const DETECT_STAGGER_CSS_PROPERTIES = {
 };
 
 /**
- * @param {any} duration
+ * Builds an inline keyframe-duration style entry.
  */
 function getCssKeyframeDurationStyle(
   duration: string | number | undefined,
@@ -99,8 +127,7 @@ function getCssKeyframeDurationStyle(
 }
 
 /**
- * @param {number | undefined} delay
- * @param {boolean | undefined} [isKeyframeAnimation]
+ * Builds an inline delay style entry for transitions or keyframes.
  */
 function getCssDelayStyle(
   delay: number | undefined,
@@ -112,9 +139,7 @@ function getCssDelayStyle(
 }
 
 /**
- * @param {Element} element
- * @param {{ [s: string]: string } | ArrayLike<string>} properties
- * @returns {{ [s: string]: number | null }}
+ * Reads and normalizes the requested computed CSS properties from an element.
  */
 function computeCssStyles(
   element: Element,
@@ -122,9 +147,8 @@ function computeCssStyles(
 ): Record<string, string | number | null> {
   const styles: Record<string, string | number | null> = nullObject();
 
-  const detectedStyles =
-    /** @type {CSSStyleDeclaration & Record<string, string>} */
-    window.getComputedStyle(element) || {};
+  const detectedStyles = window.getComputedStyle(element) as CSSStyleDeclaration &
+    Record<string, string>;
 
   entries(properties).forEach(([actualStyleName, formalStyleName]) => {
     let val: string | number | null = detectedStyles[formalStyleName];
@@ -153,8 +177,8 @@ function computeCssStyles(
  *
  * Invalid tokens are ignored. If no valid numeric token is found, the result is `0`.
  *
- * @param {string} str A CSS time string (optionally comma-separated).
- * @returns {number} The maximum time value, expressed in **seconds**.
+ * @param str A CSS time string (optionally comma-separated).
+ * @returns The maximum time value, expressed in **seconds**.
  */
 export function parseMaxTime(str: string): number {
   let max = 0;
@@ -184,17 +208,15 @@ export function parseMaxTime(str: string): number {
   return max;
 }
 
-/**s
- * @param {unknown} val
+/**
+ * Treats zero as a valid timing value while still filtering out nullish values.
  */
 function truthyTimingValue(val: unknown): boolean {
   return val === 0 || !isNullOrUndefined(val);
 }
 
 /**
- * @param {string | number | undefined} duration
- * @param {boolean} applyOnlyDuration
- * @return {import("../interface.ts").InlineStyleEntry}
+ * Builds an inline transition-duration style entry.
  */
 function getCssTransitionDurationStyle(
   duration: string | number | undefined,
@@ -223,9 +245,7 @@ function getCssTransitionDurationStyle(
 // is to be removed at the end of the animation). If we had a simple
 // "OR" statement then it would not be enough to catch that.
 /**
- * @param {{ [x: string]: any; }} backup
- * @param {HTMLElement} node
- * @param {any[]} properties
+ * Captures inline styles so they can be restored after the animation finishes.
  */
 function registerRestorableStyles(
   backup: Record<string, string | null | undefined>,
@@ -240,21 +260,15 @@ function registerRestorableStyles(
 }
 
 export function AnimateCssProvider(this: { $get?: unknown }): void {
-  /**
-   * @type {string}
-   */
   let activeClasses = "";
 
   this.$get = [
     /**
-     * @returns {ng.AnimateCssService}
+     * Creates the runtime `$animateCss` implementation.
      */
     (): AnimateCssService => {
       /**
-       * @param {any} node
-       * @param {string} cacheKey
-       * @param {any} allowNoDuration
-       * @param {{ transitionDuration: string; transitionDelay: string; transitionProperty: string; animationDuration: string; animationDelay: string; animationIterationCount: string; }} properties
+       * Computes and caches CSS timing data for an element.
        */
       function computeCachedCssStyles(
         node: HTMLElement,
@@ -299,10 +313,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
       }
 
       /**
-       * @param {Element} node
-       * @param {string | string[]} className
-       * @param {string} cacheKey
-       * @param {{ [s: string]: string; } | ArrayLike<string>} properties
+       * Computes and caches stagger timing data for class-based animations.
        */
       function computeCachedCssStaggerStyles(
         node: HTMLElement,
@@ -345,11 +356,10 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
         return stagger || {};
       }
 
-      /** @type {Array<() => void>} */
       const rafWaitQueue: Array<() => void> = [];
 
       /**
-       * @param {() => void} callback
+       * Defers animation startup until the DOM and style queues are settled.
        */
       function waitUntilQuiet(callback: () => void): void {
         rafWaitQueue.push(callback);
@@ -370,9 +380,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
       }
 
       /**
-       * @param {HTMLElement} node
-       * @param {string} cacheKey
-       * @param {boolean} allowNoDuration
+       * Computes the effective transition/keyframe timings for an element.
        */
       function computeTimings(
         node: HTMLElement,
@@ -400,9 +408,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
       }
 
       /**
-       * @param {HTMLElement} element
-       * @param {ng.AnimationOptions} [initialOptions]
-       * @return {{_willAnimate: boolean, start(): AnimateRunner, end: function(): void}}
+       * Creates an animator instance for the given element and options.
        */
       function init(
         element: HTMLElement,
@@ -426,67 +432,39 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
           ) as AnimateCssOptions;
         }
 
-        /** @type {Record<string, string | null | undefined>} */
         const restoreStyles = {};
 
-        const node = /** @type {HTMLElement} */ element;
+        const node = element;
 
         // Note: this had an additional  !$$animateQueue.enabled() check
         if (!node || !node.parentNode) {
           return closeAndReturnNoopAnimator();
         }
 
-        /** @type {Array<Array<string>>} */
         const temporaryStyles: InlineStyleEntry[] = [];
 
         const styles = packageStyles(options as AnimationOptions);
 
-        /**
-         * @type {boolean}
-         */
         let animationClosed = false;
 
-        /**
-         * @type {boolean}
-         */
         let animationPaused = false;
 
-        /**
-         * @type {boolean}
-         */
         let animationCompleted = false;
 
-        /**
-         * @type {AnimateRunner}
-         */
         let runner: AnimateRunner | undefined;
 
-        /** @type {import("../interface.ts").AnimationHost} */
         let runnerHost: AnimationHost = {};
 
-        /**
-         * @type {number}
-         */
         let maxDelay = 0;
 
-        /**
-         * @type {number}
-         */
         let maxDelayTime = 0;
 
-        /**
-         * @type {number}
-         */
         let maxDuration = 0;
 
         let maxDurationTime = 0;
 
-        /**
-         * @type {number}
-         */
         let startTime = 0;
 
-        /** @type {string[]} */
         const events: string[] = [];
 
         const delayOption = options.delay as string | boolean | undefined;
@@ -551,7 +529,6 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
           return closeAndReturnNoopAnimator();
         }
 
-        /** @type {{ animationDelay: number; animationDuration: number; transitionDuration: number; transitionDelay: number; }} */
         let stagger: Partial<StaggerTimings>;
 
         let cacheKey = animateCache._cacheKey(
@@ -663,19 +640,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
         // eslint-disable-next-line prefer-destructuring
         maxDuration = timings.maxDuration;
 
-        /** @type {{
-          _hasTransitions: boolean;
-          _hasAnimations: boolean;
-          _hasTransitionAll: boolean;
-          _applyTransitionDuration: boolean;
-          _applyAnimationDuration: boolean;
-          _applyTransitionDelay: boolean;
-          _applyAnimationDelay: boolean;
-          _recalculateTimingStyles: boolean;
-          _blockTransition: boolean;
-          _blockKeyframeAnimation: boolean;
-        }} */
-        const flags = {
+        const flags: AnimationFlags = {
           _hasTransitions: timings.transitionDuration > 0,
           _hasAnimations: timings.animationDuration > 0,
           _hasTransitionAll: false,
@@ -832,7 +797,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
         }
 
         /**
-         * @param {boolean} [rejected]
+         * Closes the active animation and resolves the runner.
          */
         function close(rejected?: boolean) {
           // if the promise has been called already then we shouldn't close
@@ -905,7 +870,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
         }
 
         /**
-         * @param {number} duration
+         * Applies temporary blocking styles for transitions and keyframes.
          */
         function applyBlocking(duration: number): void {
           if (flags._blockTransition) {
@@ -939,7 +904,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
         }
 
         /**
-         * @param {Event & { originalEvent?: any }} event
+         * Handles transition/keyframe progress events and completes the animation when done.
          */
         function onAnimationProgress(
           event: Event & { originalEvent?: any },
@@ -1204,9 +1169,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
 }
 
 /**
- * @param {HTMLElement} node
- * @param {number} duration
- * @returns {import("../interface.ts").InlineStyleEntry}
+ * Temporarily blocks transitions by applying a negative transition delay.
  */
 function blockTransitions(
   node: HTMLElement,

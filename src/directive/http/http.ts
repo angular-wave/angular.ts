@@ -25,10 +25,43 @@ type RequestShortcutConfigWithHeaders = ng.RequestShortcutConfig & {
 };
 
 /**
- * @param {"get" | "delete" | "post" | "put"} method - HTTP method applied to request
- * @param {string} [attrOverride] - Custom name to use for the attribute
- * @returns {ng.DirectiveFactory}
+ * Possible values for `data-swap` attribute
  */
+export const SwapMode = {
+  /** (default) Replaces the contents inside the element */
+  innerHTML: "innerHTML",
+
+  /** Replaces the entire element, including the tag itself */
+  outerHTML: "outerHTML",
+
+  /** Inserts plain text (without parsing HTML) */
+  textContent: "textContent",
+
+  /** Inserts HTML immediately before the element itself */
+  beforebegin: "beforebegin",
+
+  /** Inserts HTML inside the element, before its first child */
+  afterbegin: "afterbegin",
+
+  /** Inserts HTML inside the element, after its last child */
+  beforeend: "beforeend",
+
+  /** Inserts HTML immediately after the element itself */
+  afterend: "afterend",
+
+  /** Removes the element entirely */
+  delete: "delete",
+
+  /** Performs no insertion (no-op) */
+  none: "none",
+} as const;
+
+/**
+ * Union type representing all possible DOM insertion modes.
+ */
+export type SwapModeType = keyof typeof SwapMode;
+
+/** Creates a directive factory wrapper for one HTTP method attribute. */
 function defineDirective(
   method: HttpDirectiveMethod,
   attrOverride?: string,
@@ -56,26 +89,24 @@ function defineDirective(
   return directive;
 }
 
-/** @type {ng.DirectiveFactory} */
-export const ngGetDirective = defineDirective("get");
+export const ngGetDirective: ng.DirectiveFactory = defineDirective("get");
 
-/** @type {ng.DirectiveFactory} */
-export const ngDeleteDirective = defineDirective("delete");
+export const ngDeleteDirective: ng.DirectiveFactory = defineDirective("delete");
 
-/** @type {ng.DirectiveFactory} */
-export const ngPostDirective = defineDirective("post");
+export const ngPostDirective: ng.DirectiveFactory = defineDirective("post");
 
-/** @type {ng.DirectiveFactory} */
-export const ngPutDirective = defineDirective("put");
+export const ngPutDirective: ng.DirectiveFactory = defineDirective("put");
 
-/** @type {ng.DirectiveFactory} */
-export const ngSseDirective = defineDirective("get", "ngSse");
+export const ngSseDirective: ng.DirectiveFactory = defineDirective(
+  "get",
+  "ngSse",
+);
 
 /**
  * Selects DOM event to listen for based on the element type.
  *
- * @param {Element} element - The DOM element to inspect.
- * @returns {"click" | "change" | "submit"} The name of the event to listen for.
+ * @param element - The DOM element to inspect.
+ * @returns The name of the event to listen for.
  */
 export function getEventNameForElement(
   element: Element,
@@ -91,27 +122,12 @@ export function getEventNameForElement(
   return "click";
 }
 
-/**
- * Creates an HTTP directive factory that supports GET, DELETE, POST, PUT.
- *
- * @param {"get" | "delete" | "post" | "put"} method - HTTP method to use.
- * @param {string} attrName - Attribute name containing the URL.
- * @returns {ng.DirectiveFactory}
- */
+/** Creates an HTTP directive factory that supports GET, DELETE, POST, and PUT. */
 export function createHttpDirective(
   method: HttpDirectiveMethod,
   attrName: string,
 ): ng.DirectiveFactory {
-  /**
-   * @param {ng.HttpService} $http
-   * @param {ng.CompileService} $compile
-   * @param {ng.LogService} $log
-   * @param {ng.ParseService} $parse
-   * @param {ng.StateService} $state
-   * @param {ng.SseService} $sse
-   * @param {ng.AnimateService} $animate
-   * @returns {ng.Directive}
-   */
+  /** Builds the runtime directive instance with HTTP, SSE, compile, and routing helpers. */
   return function (
     $http: ng.HttpService,
     $compile: ng.CompileService,
@@ -121,25 +137,19 @@ export function createHttpDirective(
     $sse: ng.SseService,
     $animate: ng.AnimateService,
   ): ng.Directive {
-    /**
-     * Collects form data from the element or its associated form.
-     *
-     * @param {HTMLElement} element
-     * @returns {Object<string, any>}
-     */
+    /** Collects form data from the element or its associated form. */
     function collectFormData(
       element: HttpDirectiveElement,
     ): Record<string, any> {
-      /** @type {HTMLFormElement | null} */
-      let form = null;
+      let form: HTMLFormElement | null = null;
 
       const tag = element.tagName.toLowerCase();
 
       if (tag === "form") {
-        form = /** @type {HTMLFormElement} */ element;
+        form = element as HTMLFormElement;
       } else if ("form" in element && element.form) {
         // eslint-disable-next-line prefer-destructuring
-        form = /** @type {HTMLFormElement} */ element.form;
+        form = element.form;
       } else if (element.hasAttribute("form")) {
         const formId = element.getAttribute("form");
 
@@ -147,7 +157,7 @@ export function createHttpDirective(
           const maybeForm = document.getElementById(formId);
 
           if (maybeForm && maybeForm.tagName.toLowerCase() === "form") {
-            form = /** @type {HTMLFormElement} */ maybeForm;
+            form = maybeForm as HTMLFormElement;
           }
         }
       }
@@ -174,9 +184,8 @@ export function createHttpDirective(
         return {};
       }
 
-      const formData = new FormData(form as HTMLFormElement);
+      const formData = new FormData(form);
 
-      /** @type {Record<string, FormDataEntryValue>} */
       const data: Record<string, FormDataEntryValue> = {};
 
       formData.forEach((value, key) => {
@@ -186,7 +195,7 @@ export function createHttpDirective(
       return data;
     }
 
-    return /** @type {ng.Directive} */ {
+    return {
       restrict: "A",
       link(
         scope: ng.Scope,
@@ -197,10 +206,7 @@ export function createHttpDirective(
 
         const tag = element.tagName.toLowerCase();
 
-        /**
-         * @type {ChildNode | ChildNode[] | undefined}
-         */
-        let content: ChildNode | ChildNode[] | undefined = undefined;
+        let content: ChildNode | ChildNode[] | undefined;
 
         if (isDefined(attrs.latch)) {
           attrs.$observe(
@@ -225,16 +231,10 @@ export function createHttpDirective(
 
         /**
          * Handles DOM manipulation based on a swap strategy and server-rendered HTML.
-         *
-         * @param {string | Object} html - The HTML string or JSON object returned from the server.
-         * @param {import("./interface.ts").SwapModeType} swap
-         * @param {ng.Scope} scopeParam
-         * @param {ng.Attributes} attrsParam
-         * @param {Element} elementParam
          */
         function handleSwapResponse(
           html: string | object,
-          swap: import("./interface.ts").SwapModeType,
+          swap: SwapModeType,
           scopeParam: ng.Scope,
           attrsParam: ng.Attributes & Record<string, any>,
           elementParam: Element,
@@ -244,9 +244,6 @@ export function createHttpDirective(
           if (attrsParam.animate) {
             animationEnabled = true;
           }
-          /**
-           * @type {ChildNode[]|*[]}
-           */
           let nodes: SwapNodes = [];
 
           if (!["textcontent", "delete", "none"].includes(swap)) {
@@ -323,17 +320,17 @@ export function createHttpDirective(
             case "textContent":
               if (animationEnabled) {
                 $animate.leave(target).done(() => {
-                  target.textContent = /** @type {string} */ html;
+                  target.textContent = html;
                   $animate.enter(
                     target,
-                    /** @type {Element} */ target.parentNode,
+                    target.parentNode as Element,
                   );
                   scopeParam.$flushQueue();
                 });
 
                 scopeParam.$flushQueue();
               } else {
-                target.textContent = /** @type {string} */ html;
+                target.textContent = html;
               }
               break;
 
@@ -368,7 +365,7 @@ export function createHttpDirective(
                   $animate.enter(
                     node as Element,
                     target,
-                    /** @type {Element} */ firstChild,
+                    firstChild as Element,
                   ); // insert before first child
                 } else {
                   target.insertBefore(node, firstChild);
@@ -409,7 +406,7 @@ export function createHttpDirective(
                   $animate.enter(
                     node as Element,
                     parent as Element,
-                    /** @type {Element} */ nextSibling,
+                    nextSibling as Element,
                   ); // insert after target
                 } else {
                   parent.insertBefore(node, nextSibling);
@@ -474,9 +471,7 @@ export function createHttpDirective(
           if ((element as HTMLButtonElement).disabled) return;
 
           if (tag === "form") event.preventDefault();
-          const swap =
-            /** @type {import("./interface.ts").SwapModeType} */ attrs.swap ||
-            "innerHTML";
+          const swap = (attrs.swap as SwapModeType) || "innerHTML";
 
           const url = attrs[attrName];
 
@@ -573,8 +568,7 @@ export function createHttpDirective(
             if (method === "get" && attrs.ngSse) {
               const sseUrl = url;
 
-              /** @type {ng.SseConfig} */
-              const config = {
+              const config: ng.SseConfig = {
                 withCredentials: attrs.withCredentials === "true",
                 transformMessage: (data: string) => {
                   try {

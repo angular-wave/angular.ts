@@ -4,8 +4,7 @@ import { NodeType } from "./node.ts";
 export const isProxySymbol = Symbol("isProxy");
 
 /**
- * @param {any} value
- * @returns {value is ng.Scope}
+ * Returns whether a value is one of this scope proxy objects.
  */
 export function isProxy(value: any): value is ng.Scope {
   return !!(value && value[isProxySymbol]);
@@ -15,8 +14,8 @@ export function isProxy(value: any): value is ng.Scope {
  * Unwraps a proxy if the value is a proxy, otherwise returns the value as-is.
  *
  * @template T
- * @param {T | (T & { $target: T })} val - A value that might be a proxy.
- * @returns {T} The unproxied value.
+ * @param val - A value that might be a proxy.
+ * @returns The unproxied value.
  */
 export function deProxy<T>(val: T | (T & { $target: T })): T {
   return isProxy(val) ? (val as T & { $target: T }).$target : val;
@@ -24,13 +23,10 @@ export function deProxy<T>(val: T | (T & { $target: T })): T {
 
 const ngMinErr = minErr("ng");
 
-/**
- * @type {number}
- */
 let uid = 0;
 
 /**
- * @returns {number} an unique alpha-numeric string
+ * Returns a unique numeric identifier.
  */
 export function nextUid() {
   uid += 1;
@@ -39,29 +35,21 @@ export function nextUid() {
 }
 
 /**
- *
- *  Converts the specified string to lowercase.
- * @param {string} string String to be converted to lowercase.
- * @returns {string} Lowercased string.
+ * Converts the specified string to lowercase.
  */
 export function lowercase(string: any): any {
   return isString(string) ? string.toLowerCase() : string;
 }
 
 /**
- *
- *  Converts the specified string to uppercase.
- * @param {string} string String to be converted to uppercase.
- * @returns {string} Uppercased string.
+ * Converts the specified string to uppercase.
  */
 export function uppercase(string: any): any {
   return isString(string) ? string.toUpperCase() : string;
 }
 
 /**
- * @param {unknown} obj Reference to check.
- * @return {boolean} Returns true if `obj` is an array or array-like object (NodeList, Arguments,
- *                   String ...)
+ * Returns true if `obj` is an array or array-like object such as `NodeList` or `Arguments`.
  */
 export function isArrayLike(obj: any): boolean {
   // `null`, `undefined` and `window` are not array-like
@@ -72,22 +60,23 @@ export function isArrayLike(obj: any): boolean {
   //   via the forEach method when constructing the JQLite object in the first place
   if (isArray(obj) || obj instanceof Array || isString(obj)) return true;
 
-  const len = /** @type {ArrayLike<any>} */ obj.length;
+  const arrayLikeObj = obj as ArrayLike<any> & Object & Partial<NodeList>;
+  const len = arrayLikeObj.length;
 
   // NodeList objects (with `item` method) and
   // other objects with suitable length characteristics are array-like
   return (
     isNumber(len) &&
-    ((len >= 0 && len - 1 in /** @type {Object} */ obj) ||
-      typeof (/** @type {NodeList} */ obj.item) === "function")
+    ((len >= 0 && len - 1 in arrayLikeObj) ||
+      typeof arrayLikeObj.item === "function")
   );
 }
 
 /**
  * Determines if a reference is undefined.
  *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is undefined.
+ * @param value Reference to check.
+ * @returns True if `value` is undefined.
  */
 export function isUndefined(value: any): value is undefined {
   return typeof value === "undefined";
@@ -97,27 +86,22 @@ export function isUndefined(value: any): value is undefined {
  * Determines if a reference is defined (not `undefined`).
  *
  * @template T
- * @param {T | undefined} value - Reference to check.
- * @returns {value is T} True if `value` is defined.
+ * @param value - Reference to check.
+ * @returns True if `value` is defined.
  */
 export function isDefined<T>(value: T | undefined): value is T {
   return typeof value !== "undefined";
 }
 
 /**
- * @template T
- * @param {any} array
- * @returns {array is T[]} true if array is an Array
+ * Returns whether a value is a real array.
  */
 export function isArray<T = any>(array: any): array is T[] {
   return Array.isArray(array);
 }
 
 /**
- * @template T
- * @param {any} val
- * @param {new (...args: any[]) => T} type  The constructor to test against
- * @returns {val is T}
+ * Returns whether a value is an instance of the provided constructor.
  */
 export function isInstanceOf<T>(
   val: any,
@@ -131,8 +115,8 @@ export function isInstanceOf<T>(
  * considered to be objects. Note that JavaScript arrays are objects.
  *
  * @template T
- * @param {T} value - Reference to check.
- * @returns {value is T & object} True if `value` is an `Object` but not `null`.
+ * @param value - Reference to check.
+ * @returns True if `value` is an `Object` but not `null`.
  */
 export function isObject<T>(value: T): value is T & object {
   // http://jsperf.com/isobject4
@@ -142,8 +126,8 @@ export function isObject<T>(value: T): value is T & object {
 /**
  * Determines if a value is an object with a null prototype
  *
- * @param {*} value Reference to check.
- * @returns {boolean} True if `value` is an `Object` with a null prototype
+ * @param value Reference to check.
+ * @returns True if `value` is an `Object` with a null prototype
  */
 export function isBlankObject(value: any): boolean {
   return (
@@ -153,8 +137,8 @@ export function isBlankObject(value: any): boolean {
 
 /**
  * Determines if a reference is a `string`.
- * @param {unknown} value - The value to check.
- * @returns {value is string} True if `value` is a string.
+ * @param value - The value to check.
+ * @returns True if `value` is a string.
  */
 export function isString(value: unknown): value is string {
   return typeof value === "string";
@@ -163,8 +147,8 @@ export function isString(value: unknown): value is string {
 /**
  * Determines if a reference is a null.
  *
- * @param {unknown} value Reference to check.
- * @returns {value is null} True if `value` is a null.
+ * @param value Reference to check.
+ * @returns True if `value` is a null.
  */
 export function isNull(value: unknown): value is null {
   return value === null;
@@ -173,8 +157,8 @@ export function isNull(value: unknown): value is null {
 /**
  * Determines if a reference is null or undefined.
  *
- * @param {unknown} obj Reference to check.
- * @returns {obj is null | undefined} True if `value` is null or undefined.
+ * @param obj Reference to check.
+ * @returns True if `value` is null or undefined.
  */
 export function isNullOrUndefined(obj: unknown): obj is null | undefined {
   return obj === null || typeof obj === "undefined";
@@ -183,8 +167,8 @@ export function isNullOrUndefined(obj: unknown): obj is null | undefined {
 /**
  * Determines if a reference is not null or undefined.
  *
- * @param {*} obj Reference to check.
- * @returns {boolean} True if `value` is null or undefined.
+ * @param obj Reference to check.
+ * @returns True if `value` is null or undefined.
  */
 export function notNullOrUndefined(obj: any): boolean {
   return !isNullOrUndefined(obj);
@@ -199,8 +183,8 @@ export function notNullOrUndefined(obj: any): boolean {
  * [`isFinite'](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isFinite)
  * method.
  *
- * @param {unknown} value Reference to check.
- * @returns {value is number} True if `value` is a `Number`.
+ * @param value Reference to check.
+ * @returns True if `value` is a `Number`.
  */
 export function isNumber(value: unknown): value is number {
   return typeof value === "number";
@@ -210,8 +194,8 @@ export function isNumber(value: unknown): value is number {
  *
  * Determines if a value is a date.
  *
- * @param {*} value Reference to check.
- * @returns {value is Date} True if `value` is a `Date`.
+ * @param value Reference to check.
+ * @returns True if `value` is a `Date`.
  */
 export function isDate(value: any): value is Date {
   return toString.call(value) === "[object Date]";
@@ -221,8 +205,8 @@ export function isDate(value: any): value is Date {
  * Determines if a reference is an `Error`.
  * Loosely based on https://www.npmjs.com/package/iserror
  *
- * @param {*} value Reference to check.
- * @returns {value is Error} True if `value` is an `Error`.
+ * @param value Reference to check.
+ * @returns True if `value` is an `Error`.
  */
 export function isError(value: any): value is Error {
   const tag = toString.call(value);
@@ -242,8 +226,8 @@ export function isError(value: any): value is Error {
 /**
  * Determines if a reference is a `Function`.
  *
- * @param {*} value Reference to check.
- * @returns {value is Function} True if `value` is a `Function`.
+ * @param value Reference to check.
+ * @returns True if `value` is a `Function`.
  */
 export function isFunction<T extends Function = Function>(
   value: any,
@@ -254,8 +238,8 @@ export function isFunction<T extends Function = Function>(
 /**
  * Determines if a value is a regular expression object.
  *
- * @param {*} value Reference to check.
- * @returns {value is RegExp} True if `value` is a `RegExp`.
+ * @param value Reference to check.
+ * @returns True if `value` is a `RegExp`.
  */
 export function isRegExp(value: any): value is RegExp {
   return toString.call(value) === "[object RegExp]";
@@ -264,72 +248,64 @@ export function isRegExp(value: any): value is RegExp {
 /**
  * Checks if `obj` is a window object.
  *
- * @param {unknown} obj Object to check
- * @returns {obj is Window} True if `obj` is a window obj.
+ * @param obj Object to check
+ * @returns True if `obj` is a window obj.
  */
 export function isWindow(obj: any): obj is Window {
   return isInstanceOf(obj, Window);
 }
 
 /**
- * @param {*} obj
- * @returns {boolean}
+ * Returns whether a value looks like an Angular scope object.
  */
 export function isScope(obj: any): boolean {
   return obj && obj.$watch;
 }
 
 /**
- * @param {*} obj
- * @returns {boolean}
+ * Returns whether a value is a `File`.
  */
 export function isFile(obj: any): boolean {
   return toString.call(obj) === "[object File]";
 }
 
 /**
- * @param {*} obj
- * @returns {boolean}
+ * Returns whether a value is a `FormData` instance.
  */
 export function isFormData(obj: any): boolean {
   return toString.call(obj) === "[object FormData]";
 }
 
 /**
- * @param {*} obj
- * @returns {boolean}
+ * Returns whether a value is a `Blob`.
  */
 export function isBlob(obj: any): boolean {
   return toString.call(obj) === "[object Blob]";
 }
 
 /**
- * @param {*} value
- * @returns {boolean}
+ * Returns whether a value is boolean.
  */
 export function isBoolean(value: any): value is boolean {
   return typeof value === "boolean";
 }
 
 /**
- * @param {*} obj
- * @returns {boolean}
+ * Returns whether a value looks promise-like.
  */
 export function isPromiseLike(obj: any): boolean {
   return obj && isFunction(obj.then);
 }
 
 /**
- * @param {*} value
- * @returns {string | *}
+ * Trims a string value and leaves non-strings unchanged.
  */
 export function trim(value: any): any {
   return isString(value) ? value.trim() : value;
 }
 
 /**
- * @param {string} name
- * @param {string} separator
+ * Converts a camelCase or PascalCase name to snake case.
  */
 export function snakeCase(name: string, separator?: string): string {
   const modseparator = separator || "_";
@@ -343,8 +319,8 @@ export function snakeCase(name: string, separator?: string): string {
 
 /**
  * Set or clear the hashkey for an object.
- * @param {{ [x: string]: any; _hashKey?: any; }} obj object
- * @param {any} hashkey the hashkey (!truthy to delete the hashkey)
+ * @param obj object
+ * @param hashkey the hashkey (!truthy to delete the hashkey)
  */
 export function setHashKey(
   obj: { [x: string]: any; _hashKey?: any },
@@ -362,10 +338,10 @@ export function setHashKey(
  * Safely handles Dates, RegExps, DOM nodes, arrays, and nested objects.
  * Ignores the `__proto__` key to prevent prototype pollution.
  *
- * @param {Object<string, any>} dst - The destination object to extend.
- * @param {Array<Object<string, any>>} objs - Array of source objects to copy properties from.
- * @param {boolean} [deep=false] - Whether to perform a deep merge of nested objects.
- * @returns {Object<string, any>} The extended destination object.
+ * @param dst - The destination object to extend.
+ * @param objs - Array of source objects to copy properties from.
+ * @param [deep=false] - Whether to perform a deep merge of nested objects.
+ * @returns The extended destination object.
  */
 export function baseExtend(
   dst: Record<string, any>,
@@ -414,34 +390,30 @@ export function baseExtend(
  *
  * **Note:** Keep in mind that `angular.extend` does not support recursive merge (deep copy).
  *
- * @param {Object} dst Destination object.
- * @param {...Object} src Source object(s).
- * @returns {Object} Reference to `dst`.
+ * @param dst Destination object.
+ * @param src Source object(s).
+ * @returns Reference to `dst`.
  */
 export function extend(dst: any, ...src: any[]): any {
   return baseExtend(dst, src, false);
 }
 
 /**
- * @param {any} num
- * @returns {boolean}
+ * Returns whether a number is `NaN`.
  */
 export function isNumberNaN(num: any): boolean {
   return Number.isNaN(num);
 }
 
 /**
- * @param {any} parent
- * @param {any} extra
- * @returns {Object}
+ * Creates a new object that inherits from `parent` and extends it with `extra`.
  */
 export function inherit(parent: any, extra: any): any {
   return extend(Object.create(parent), extra);
 }
 
 /**
- * @param {{ toString: () => string; }} obj
- * @returns {boolean}
+ * Returns whether an object defines its own `toString` implementation.
  */
 export function hasCustomToString(obj: { toString: () => string }): boolean {
   return isFunction(obj.toString) && obj.toString !== toString;
@@ -451,17 +423,13 @@ export function hasCustomToString(obj: { toString: () => string }): boolean {
  * Returns a string appropriate for the type of node.
  *
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)
- *
- * @param {Element} element
- * @returns {string}
  */
 export function getNodeName(element: Element): string {
   return lowercase(element.nodeName);
 }
 
 /**
- * @param {any} array
- * @param {any} obj
+ * Returns whether an array-like collection contains a given value.
  */
 export function includes(array: any, obj: any): boolean {
   return Array.prototype.indexOf.call(array, obj) !== -1;
@@ -471,9 +439,9 @@ export function includes(array: any, obj: any): boolean {
  * Removes the first occurrence of a specified value from an array.
  *
  * @template T
- * @param {Array<T>} array - The array from which to remove the value.
- * @param {T} value - The value to remove.
- * @returns {number} - The index of the removed value, or -1 if the value was not found.
+ * @param array - The array from which to remove the value.
+ * @param value - The value to remove.
+ * @returns - The index of the removed value, or -1 if the value was not found.
  */
 export function arrayRemove<T>(array: T[], value: T): number {
   const index = array.indexOf(value);
@@ -486,8 +454,7 @@ export function arrayRemove<T>(array: T[], value: T): number {
 }
 
 /**
- * @param {unknown} val1
- * @param {unknown} val2
+ * Compares two values, treating `NaN` as equal to `NaN`.
  */
 export function simpleCompare(val1: unknown, val2: unknown): boolean {
   return val1 === val2 || (Number.isNaN(val1) && Number.isNaN(val2));
@@ -512,9 +479,9 @@ export function simpleCompare(val1: unknown, val2: unknown): boolean {
  *
  * Scope and DOMWindow objects are being compared only by identify (`===`).
  *
- * @param {*} o1 Object or value to compare.
- * @param {*} o2 Object or value to compare.
- * @returns {boolean} True if arguments are equal.
+ * @param o1 Object or value to compare.
+ * @param o2 Object or value to compare.
+ * @returns True if arguments are equal.
  *
  * @example
    <example module="equalsExample" name="equalsExample">
@@ -630,8 +597,8 @@ export function equals(o1: any, o2: any): boolean {
 
 /**
  * throw error if the name given is hasOwnProperty
- * @param  {string} name    the name to test
- * @param  {string} context the context in which the name is used, such as module or directive
+ * @param name the name to test
+ * @param context the context in which the name is used, such as module or directive
  */
 export function assertNotHasOwnProperty(name: string, context: string): void {
   if (name === "hasOwnProperty") {
@@ -644,8 +611,7 @@ export function assertNotHasOwnProperty(name: string, context: string): void {
 }
 
 /**
- * @param {unknown} value
- * @returns {string | unknown}
+ * Converts a value to a display string using AngularTS serialization rules.
  */
 export function stringify(value: unknown): string | unknown {
   if (isNull(value) || isUndefined(value)) {
@@ -658,14 +624,16 @@ export function stringify(value: unknown): string | unknown {
       value = `${value}`;
       break;
     default:
+      const objectValue = value as Object;
+
       if (
-        hasCustomToString(/** @type {Object} */ value) &&
+        hasCustomToString(objectValue) &&
         !isArray(value) &&
         !isDate(value)
       ) {
-        value = /** @type {Object} */ value.toString();
+        value = objectValue.toString();
       } else {
-        value = toJson(/** @type {any[]} */ value);
+        value = toJson(value);
       }
   }
 
@@ -673,25 +641,21 @@ export function stringify(value: unknown): string | unknown {
 }
 
 /**
- * @param {Number} maxDepth
- * @return {boolean}
+ * Returns whether an object traversal depth limit is valid.
  */
 export function isValidObjectMaxDepth(maxDepth: any): boolean {
   return isNumber(maxDepth) && maxDepth > 0;
 }
 
 /**
- * @param {any[]} array1
- * @param {IArguments | any[] | NodeListOf<ChildNode>} array2
- * @param {number | undefined} [index]
+ * Concatenates a real array with an array-like collection.
  */
 export function concat(array1: any[], array2: any, index?: number) {
   return array1.concat(Array.prototype.slice.call(array2, index));
 }
 
 /**
- * @param {IArguments | [string, ...any[]]} args
- * @param {number} startIndex
+ * Converts `arguments` or an array-like value into a real array.
  */
 export function sliceArgs(args: IArguments | any[], startIndex?: number) {
   return Array.prototype.slice.call(args, startIndex || 0);
@@ -703,9 +667,6 @@ export function sliceArgs(args: IArguments | any[], startIndex?: number) {
  * known as [partial application](http://en.wikipedia.org/wiki/Partial_application), as
  * distinguished from [function currying](http://en.wikipedia.org/wiki/Currying#Contrast_with_partial_function_application).
  *
- * @param {Object} context Context which `fn` should be evaluated in.
- * @param {*} fn Function to be bound.
- * @returns {Function} Function that wraps the `fn` with all the specified bindings.
  */
 export function bind(context: any, fn: any) {
   const curryArgs = arguments.length > 2 ? sliceArgs(arguments, 2) : [];
@@ -729,8 +690,7 @@ export function bind(context: any, fn: any) {
 }
 
 /**
- * @param {string} key
- * @param {unknown} value
+ * JSON replacer that strips AngularTS internals and special-cases window/document/scope values.
  */
 function toJsonReplacer(key: string, value: any): any {
   let val = value;
@@ -756,13 +716,6 @@ function toJsonReplacer(key: string, value: any): any {
  * Serializes input into a JSON-formatted string. Properties with leading `$$` characters
  * will be stripped since AngularTS uses this notation internally.
  *
- * @param {Object|Array<any>|Date|string|number|boolean} obj
- *   Input to be serialized into JSON.
- * @param {boolean|number} [pretty=2]
- *   If `true`, the JSON output will contain newlines and whitespace (2 spaces).
- *   If a number, the JSON output will contain that many spaces per indentation.
- * @returns {string|undefined}
- *   JSON-ified string representing `obj`, or `undefined` if `obj` is undefined.
  */
 export function toJson(obj: any, pretty?: boolean | number) {
   if (isUndefined(obj)) return undefined;
@@ -771,22 +724,18 @@ export function toJson(obj: any, pretty?: boolean | number) {
     pretty = pretty ? 2 : undefined;
   }
 
-  return JSON.stringify(obj, toJsonReplacer, /** @type {number} */ pretty);
+  return JSON.stringify(obj, toJsonReplacer, pretty);
 }
 
 /**
  * Deserializes a JSON string.
- *
- * @param {string} json JSON string to deserialize.
- * @returns {Object|Array<any>|string|number} Deserialized JSON string.
  */
 export function fromJson(json: any): any {
   return isString(json) ? JSON.parse(json) : json;
 }
 
 /**
- * @param {Date} date
- * @param {number} minutes
+ * Returns a new date offset by the specified number of minutes.
  */
 export function addDateMinutes(date: Date, minutes: number): Date {
   const newDate = new Date(date.getTime());
@@ -797,9 +746,7 @@ export function addDateMinutes(date: Date, minutes: number): Date {
 }
 
 /**
- * Parses an escaped url query string into key-value pairs.
- * @param {string} value
- * @returns {Object.<string,boolean|Array<any>>}
+ * Parses an escaped URL query string into key-value pairs.
  */
 export function parseKeyValue(value: string) {
   const obj: Record<string, boolean | string | Array<any>> = {};
@@ -824,26 +771,27 @@ export function parseKeyValue(value: string) {
       key = tryDecodeURIComponent(key);
 
       if (isDefined(key)) {
+        const decodedKey = key;
         const decodedVal: string | boolean | undefined = isDefined(val)
           ? tryDecodeURIComponent(val)
           : true;
 
-        if (!hasOwn(obj, /** @type {string} */ key)) {
-          obj[key] = decodedVal ?? true;
-        } else if (isArray(obj[key])) {
-          (obj[key] as Array<any>).push(decodedVal);
+        if (!hasOwn(obj, decodedKey)) {
+          obj[decodedKey] = decodedVal ?? true;
+        } else if (isArray(obj[decodedKey])) {
+          (obj[decodedKey] as Array<any>).push(decodedVal);
         } else {
-          obj[key] = [obj[key], decodedVal];
+          obj[decodedKey] = [obj[decodedKey], decodedVal];
         }
       }
     }
   });
 
-  return /** @type {Object.<string,boolean|Array<any>>} */ obj;
+  return obj;
 }
 
 /**
- * @param {string | { [s: string]: any; } | ArrayLike<any> | null} obj
+ * Serializes an object or array-like value into a query-string fragment.
  */
 export function toKeyValue(
   obj: string | { [s: string]: any } | ArrayLike<any> | null,
@@ -873,10 +821,7 @@ export function toKeyValue(
 }
 
 /**
- * Tries to decode the URI component without throwing an exception.
- *
- * @param  {string} value potential URI component to check.
- * @returns {string|undefined}
+ * Tries to decode a URI component without throwing.
  */
 export function tryDecodeURIComponent(value: string): string | undefined {
   try {
@@ -896,7 +841,6 @@ export function tryDecodeURIComponent(value: string): string | undefined {
  *    unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
  *    sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
  *                     / "*" / "+" / "," / ";" / "="
- * @param {string} val
  */
 export function encodeUriSegment(val: string): string {
   return encodeUriQuery(val, true)
@@ -915,8 +859,6 @@ export function encodeUriSegment(val: string): string {
  *    pct-encoded   = "%" HEXDIG HEXDIG
  *    sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
  *                     / "*" / "+" / "," / ";" / "="
- * @param {string | number | boolean} val
- * @param {boolean | undefined} [pctEncodeSpaces]
  */
 export function encodeUriQuery(
   val: string | number | boolean,
@@ -938,23 +880,18 @@ export const ngAttrPrefixes = ["ng-", "data-ng-"];
  *
  * Assumes there are no proto properties.
  *
- * @template T
- * @param {T} src
- * @param {T extends any[] ? T : Record<string, unknown>} [dst]
- * @returns {T}
  */
 export function shallowCopy<T>(src: T, dst?: any): T {
   if (isArray(src)) {
-    /** @type {any[]} */
-    const out = /** @type {any[]} */ dst || [];
+    const out: any[] = dst || [];
 
     out.push(...src);
 
-    return /** @type {T} */ out;
+    return out as T;
   }
 
   if (isObject(src)) {
-    const out = /** @type {Record<string, unknown>} */ dst || {};
+    const out: Record<string, unknown> = dst || {};
 
     for (const key in src) {
       // Copy all properties except $$-prefixed
@@ -963,16 +900,14 @@ export function shallowCopy<T>(src: T, dst?: any): T {
       }
     }
 
-    return /** @type {T} */ out;
+    return out as T;
   }
 
   return src;
 }
 
 /**
- * Throw error if the argument is false
- * @param {boolean} argument
- * @param {string} errorMsg
+ * Throws when the argument is false.
  */
 export function assert(argument: boolean, errorMsg = "Assertion failed"): void {
   if (!argument) {
@@ -981,10 +916,7 @@ export function assert(argument: boolean, errorMsg = "Assertion failed"): void {
 }
 
 /**
- * Throw error if the argument is falsy.
- * @param {string | boolean | Object} arg
- * @param {string} name
- * @param {string | undefined} [reason]
+ * Throws a typed AngularTS argument error when the argument is falsy.
  */
 export function assertArg<T>(arg: T, name: string, reason?: string): T {
   if (!arg) {
@@ -1000,9 +932,7 @@ export function assertArg<T>(arg: T, name: string, reason?: string): T {
 }
 
 /**
- * @param {string | Function | any[]} arg
- * @param {string} name
- * @param {boolean | undefined} [acceptArrayAnnotation]
+ * Asserts that a value is a function, optionally unwrapping array-annotation first.
  */
 export function assertArgFn(
   arg: string | Function | any[],
@@ -1026,24 +956,38 @@ export function assertArgFn(
   return arg;
 }
 
-/** @type {ng.ErrorHandlingConfig} */
 const minErrConfig = {
   objectMaxDepth: 5,
   urlErrorParamsEnabled: true,
 };
 
 /**
- * Configure several aspects of error handling if used as a setter or return the
- * current configuration if used as a getter.
+ * Error configuration object. May only contain the options that need to be updated.
+ */
+export interface ErrorHandlingConfig {
+  /**
+   * The max depth for stringifying objects.
+   * Setting to a non-positive or non-numeric value removes the max depth limit.
+   * Default: 5.
+   */
+  objectMaxDepth?: number;
+
+  /**
+   * Specifies whether the generated error URL will contain the parameters
+   * of the thrown error. Default: true.
+   * When used without argument, it returns the current value.
+   */
+  urlErrorParamsEnabled?: boolean;
+}
+
+/**
+ * Gets or updates the global error-handling configuration.
  *
- * Omitted or undefined options will leave the corresponding configuration values unchanged.
- *
- * @param {ng.ErrorHandlingConfig} [config]
- * @returns {ng.ErrorHandlingConfig}
+ * Omitted or undefined options leave the corresponding configuration values unchanged.
  */
 export function errorHandlingConfig(
-  config?: ng.ErrorHandlingConfig,
-): ng.ErrorHandlingConfig {
+  config?: ErrorHandlingConfig,
+): ErrorHandlingConfig {
   if (isObject(config)) {
     if (isDefined(config.objectMaxDepth)) {
       minErrConfig.objectMaxDepth = isValidObjectMaxDepth(config.objectMaxDepth)
@@ -1084,8 +1028,8 @@ export function errorHandlingConfig(
  * using minErr('namespace'). Error codes, namespaces and template strings
  * should all be static strings, not variables or general expressions.
  *
- * @param {string} module The namespace to use for the new minErr instance.
- * @returns {function(string, ...*): Error} minErr instance
+ * @param module The namespace to use for the new minErr instance.
+ * @returns minErr instance
  */
 export function minErr(module: string): (...args: any[]) => Error {
   return function (...args: any[]) {
@@ -1114,9 +1058,6 @@ export function minErr(module: string): (...args: any[]) => Error {
 /**
  * Converts a value into a simplified debug-friendly string.
  *
- * @template T
- * @param {T|ng.Scope} obj
- * @returns {string}
  */
 export function toDebugString(obj: any): string {
   if (typeof obj === "function") {
@@ -1128,12 +1069,9 @@ export function toDebugString(obj: any): string {
   }
 
   if (typeof obj !== "string") {
-    /** @type {object[]} */
     const seen: object[] = [];
 
-    const copyObj = structuredClone(
-      isProxy(obj) ? /** @type {ng.Scope} */ obj.$target : obj,
-    );
+    const copyObj = structuredClone(isProxy(obj) ? obj.$target : obj);
 
     return JSON.stringify(copyObj, (key, val) => {
       const replace = toJsonReplacer(key, val);
@@ -1158,10 +1096,6 @@ export function toDebugString(obj: any): string {
  *  number is number as string
  *  object is either result of calling _hashKey function on the object or uniquely generated id,
  *         that is also assigned to the _hashKey property of the object.
- *
- * @param {*} obj
- * @returns {string} hash string such that the same input will have the same hash string.
- *         The resulting string key is in 'type:hashKey' format.
  */
 export function hashKey(obj: any): string {
   const key = obj && obj._hashKey;
@@ -1194,9 +1128,9 @@ export function hashKey(obj: any): string {
  * Merges two class name values into a single space-separated string.
  * Accepts strings, arrays of strings, or null/undefined values.
  *
- * @param {string | string[] | null | undefined} firstClass - The first class name(s).
- * @param {string | string[] | null | undefined} secondClass - The second class name(s).
- * @returns {string} A single string containing all class names separated by spaces.
+ * @param firstClass - The first class name(s).
+ * @param secondClass - The second class name(s).
+ * @returns A single string containing all class names separated by spaces.
  */
 export function mergeClasses(
   firstClass: string | string[] | null | undefined,
@@ -1221,9 +1155,7 @@ export function mergeClasses(
 
 /**
  * Joins an array of strings into a single string, trimming each
- * element and ignoring empty strings, null, and undefined
- * @param {any[]} arr
- * @returns {string}
+ * element and ignoring empty strings, null, and undefined.
  */
 function normalizeStringArray(arr: any[]): string {
   const cleaned: string[] = [];
@@ -1240,11 +1172,8 @@ function normalizeStringArray(arr: any[]): string {
 }
 
 /**
- * Converts all accepted directives format into proper directive name.
- * @param {string} name Name to normalize
- * @returns {string}
+ * Converts all accepted directive formats into a normalized directive name.
  */
-
 export function directiveNormalize(name: string): string {
   return name
     .replace(PREFIX_REGEXP, "")
@@ -1256,18 +1185,14 @@ export function directiveNormalize(name: string): string {
 }
 
 /**
- * Whether element should be animated
- * @param {Node} node
- * @returns {boolean}
+ * Returns whether an element should participate in animation handling.
  */
 export function hasAnimate(node: Node): boolean {
   return hasCustomOrDataAttribute(node, "animate");
 }
 
 /**
- * @param {Node} node
- * @param {string} attr
- * @returns {boolean}
+ * Returns whether a node exposes a custom or `data-*` attribute set to `"true"`.
  */
 function hasCustomOrDataAttribute(node: Node, attr: string): boolean {
   if (node.nodeType !== NodeType._ELEMENT_NODE) return false;
@@ -1279,8 +1204,7 @@ function hasCustomOrDataAttribute(node: Node, attr: string): boolean {
 }
 
 /**
- * @param {Object|null|undefined} obj
- * @returns {boolean}
+ * Returns whether an object has no own enumerable keys.
  */
 export function isObjectEmpty(obj: Object | null | undefined): boolean {
   if (!obj) return true;
@@ -1294,9 +1218,9 @@ export function isObjectEmpty(obj: Object | null | undefined): boolean {
  * This is a safe version of `hasOwnProperty` that avoids issues with objects
  * that have it overridden or missing from their prototype chain.
  *
- * @param {object} obj - The object to check.
- * @param {string|number|symbol} key - The property key to look for.
- * @returns {boolean} True if the object has the property as its own; otherwise, false.
+ * @param obj - The object to check.
+ * @param key - The property key to look for.
+ * @returns True if the object has the property as its own; otherwise, false.
  *
  * @example
  * hasOwn({ foo: 123 }, 'foo'); // true
@@ -1307,25 +1231,21 @@ export function hasOwn(obj: any, key: string | number | symbol): boolean {
 }
 
 /**
- * @param {Object} obj
- * @returns {string[]}
+ * Returns the object's own enumerable keys.
  */
 export function keys(obj: any): string[] {
   return Object.keys(obj);
 }
 
 /**
- * @param {Object} obj
- * @returns {any[]}
+ * Returns the object's own enumerable values.
  */
 export function values(obj: any): any[] {
   return Object.values(obj);
 }
 
 /**
- * @template T
- * @param {{ [s: string]: T; } | ArrayLike<T>} obj
- * @returns {[string, T][]}
+ * Returns the object's own enumerable entries.
  */
 export function entries(obj: any): [string, any][] {
   return Object.entries(obj);
@@ -1335,9 +1255,6 @@ export function entries(obj: any): [string, any][] {
  * Wraps a function so it can only be called once.
  * Subsequent calls do nothing and return undefined.
  *
- * @template {(...args: any[]) => any} F
- * @param {F} fn - The function to wrap.
- * @returns {(this: ThisParameterType<F>, ...args: Parameters<F>) => ReturnType<F> | undefined}
  */
 export function callBackOnce<F extends (...args: any[]) => any>(fn: F) {
   let called = false;
@@ -1357,9 +1274,6 @@ export function callBackOnce<F extends (...args: any[]) => any>(fn: F) {
  * Wraps a function so it will only be called starting from the second invocation.
  * The first call does nothing and returns undefined.
  *
- * @template {(...args: any[]) => any} F
- * @param {F} fn - The function to wrap.
- * @returns {(this: ThisParameterType<F>, ...args: Parameters<F>) => ReturnType<F> | undefined}
  */
 export function callBackAfterFirst<F extends (...args: any[]) => any>(fn: F) {
   let calledOnce = false;
@@ -1377,8 +1291,8 @@ export function callBackAfterFirst<F extends (...args: any[]) => any>(fn: F) {
 /**
  * Delays execution for a specified number of milliseconds.
  *
- * @param {number} [timeout=0] - The number of milliseconds to wait. Defaults to 0.
- * @returns {Promise<void>} A promise that resolves after the delay.
+ * @param [timeout=0] - The number of milliseconds to wait. Defaults to 0.
+ * @returns A promise that resolves after the delay.
  */
 export function wait(timeout = 0) {
   return new Promise((resolve) => setTimeout(resolve, timeout));
@@ -1390,9 +1304,9 @@ export function wait(timeout = 0) {
  * This is a simple polyfill-like function that mimics the behavior of
  * `String.prototype.startsWith` without using the built-in method.
  *
- * @param {string} str - The full string to evaluate.
- * @param {string} search - The substring to test against the beginning of `str`.
- * @returns {boolean} `true` if `str` starts with `search`, otherwise `false`.
+ * @param str - The full string to evaluate.
+ * @param search - The substring to test against the beginning of `str`.
+ * @returns `true` if `str` starts with `search`, otherwise `false`.
  *
  * @example
  * startsWith("hello world", "hello");
@@ -1417,8 +1331,6 @@ export function startsWith(str: string, search: string): boolean {
 /**
  * Loads and instantiates a WebAssembly module.
  * Tries streaming first, then falls back.
- * @param {string} src
- * @param {WebAssembly.Imports} imports
  */
 export async function instantiateWasm(
   src: string,
@@ -1447,8 +1359,7 @@ export async function instantiateWasm(
 }
 
 /**
- * @param {*} fn
- * @returns {boolean}
+ * Returns whether a function is an arrow function.
  */
 export function isArrowFunction(fn: any): boolean {
   return typeof fn === "function" && !fn.prototype;
@@ -1461,8 +1372,6 @@ export function isArrowFunction(fn: any): boolean {
  * does not inherit from `Object.prototype` and therefore has no built-in
  * properties such as `toString` or `hasOwnProperty`.
  *
- * @template T
- * @returns {Record<string, T>} An object with a null prototype.
  */
 export function nullObject<T = any>(): Record<string, T> {
   return Object.create(null);

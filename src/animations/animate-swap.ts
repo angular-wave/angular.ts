@@ -1,9 +1,6 @@
 import { $injectTokens } from "../injection-tokens.ts";
 ngAnimateSwapDirective.$inject = [$injectTokens._animate];
-/**
- * @param {ng.AnimateService} $animate
- * @returns {ng.Directive}
- */
+/** Swaps a transcluded block with enter/leave animations as the watched value changes. */
 export function ngAnimateSwapDirective(
   $animate: ng.AnimateService,
 ): ng.Directive<any> {
@@ -20,14 +17,8 @@ export function ngAnimateSwapDirective(
       _ctrl: unknown,
       $transclude?: ng.TranscludeFn,
     ) {
-      /**
-       * @type {HTMLElement | undefined}
-       */
       let previousElement: HTMLElement | undefined;
 
-      /**
-       * @type {ng.Scope | undefined | null}
-       */
       let previousScope: ng.Scope | undefined | null;
 
       scope.$watch(attrs.ngAnimateSwap || attrs.for, (value: any) => {

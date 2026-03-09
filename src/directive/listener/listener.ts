@@ -1,10 +1,6 @@
 import { isObject, isString } from "../../shared/utils.ts";
 
-/**
- * Listens for DOM custom events and projects their payload into the element or scope.
- *
- * @returns {ng.Directive}
- */
+/** Listens for DOM custom events and projects their payload into the element or scope. */
 export function ngListenerDirective(): ng.Directive {
   return {
     scope: false,
@@ -20,7 +16,6 @@ export function ngListenerDirective(): ng.Directive {
 
       const hasTemplateContent = element.childNodes.length;
 
-      /** @type {EventListener} */
       const fn = (event: Event) => {
         const value = (event as CustomEvent).detail;
 

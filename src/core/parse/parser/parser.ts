@@ -1,5 +1,5 @@
-import type { FilterService } from "../../../filters/interface.ts";
-import type { CompiledExpression } from "../interface.ts";
+import type { FilterService } from "../../filter/filter.ts";
+import type { CompiledExpression } from "../parse.ts";
 import type { BodyNode, ExpressionNode } from "../ast/ast-node.ts";
 import { AST } from "../ast/ast.ts";
 import { ASTType } from "../ast-type.ts";

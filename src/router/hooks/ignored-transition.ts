@@ -1,6 +1,6 @@
 import { trace } from "../common/trace.ts";
 import { Rejection } from "../transition/reject-factory.ts";
-import type { TransitionService } from "../transition/interface.ts";
+import type { TransitionService } from "../transition/transition-service.ts";
 import type { Transition } from "../transition/transition.ts";
 
 function ignoredHook(trans: Transition) {

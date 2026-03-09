@@ -41,6 +41,14 @@
  */
 
 /**
+ * A callback type for handling errors.
+ *
+ * @param exception - The exception associated with the error.
+ * @throws {unknown}
+ */
+export type ExceptionHandler = (exception: unknown) => never;
+
+/**
  * Provider for the `$exceptionHandler` service.
  *
  * The default implementation rethrows exceptions, enabling strict fail-fast behavior.

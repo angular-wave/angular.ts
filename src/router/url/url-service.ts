@@ -16,7 +16,30 @@ import { ParamFactory } from "../params/param-factory.ts";
 import { UrlRuleFactory } from "./url-rule.ts";
 import { getBaseHref } from "../../shared/dom.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
-import type { MatchResult, UrlParts } from "./interface.ts";
+import type { UrlRule } from "./url-rule.ts";
+
+/**
+ * An object containing the three parts of a URL
+ */
+export interface UrlParts {
+  path: string;
+  search?: { [key: string]: any };
+  hash?: string;
+}
+
+/**
+ * A UrlRule match result
+ *
+ * The result of UrlRouter.match()
+ */
+export interface MatchResult {
+  /** The matched value from a [[UrlRule]] */
+  match: any;
+  /** The rule that matched */
+  rule: UrlRule;
+  /** The match result weight */
+  weight: number;
+}
 
 /**
  * API for URL management
@@ -54,10 +77,7 @@ export class UrlService {
   }
 
   /**
-   * @param {ng.LocationProvider} $locationProvider
-   * @param {import("../../router/state/state-service.ts").StateProvider} stateProvider
-   * @param {import("../router.ts").RouterProvider} globals
-   * @param {import("../../router/url/url-config.ts").UrlConfigProvider} urlConfigProvider
+   * Creates the URL service and wires its rule/config helpers.
    */
   constructor(
     $locationProvider: ng.LocationProvider,
@@ -69,7 +89,7 @@ export class UrlService {
     this.stateService = stateProvider;
 
     /**
-     * @type {UrlRuleFactory} Provides services related to the URL
+     * Provides services related to the URL.
      * @ignore
      */
     this._urlRuleFactory = new UrlRuleFactory(this, stateProvider, globals);
@@ -77,24 +97,22 @@ export class UrlService {
     /**
      * The nested [[UrlRules]] API for managing URL rules and rewrites
      * @ignore
-     * @type {UrlRules}
      */
     this._rules = new UrlRules(this._urlRuleFactory);
     /**
      * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
      * @ignore
-     * @type {import("./url-config.ts").UrlConfigProvider}
      */
     this._config = urlConfigProvider;
 
     /**
-     * @type {ParamFactory} Creates a new [[Param]] for a given location (DefType)
+     * Creates a new [[Param]] for a given location (DefType).
      * @ignore
      */
     this._paramFactory = new ParamFactory(this._config);
 
     /**
-     * @type {((evt: ng.ScopeEvent) => void)[]}
+     * Registered low-level URL listeners.
      * @ignore
      */
     this._urlListeners = [];
@@ -105,7 +123,7 @@ export class UrlService {
    *
    * If the current URL is `/some/path?query=value#anchor`, this returns `/some/path`
    *
-   * @return {string} the path portion of the url
+   * @returns the path portion of the url
    */
   getPath(): string {
     return this._getLocation().getPath();
@@ -116,7 +134,7 @@ export class UrlService {
    *
    * If the current URL is `/some/path?query=value#anchor`, this returns `{ query: 'value' }`
    *
-   * @return {Object} the search (query) portion of the url, as an object
+   * @returns the search (query) portion of the url, as an object
    */
   getSearch(): object {
     return this._getLocation().getSearch();
@@ -127,7 +145,7 @@ export class UrlService {
    *
    * If the current URL is `/some/path?query=value#anchor`, this returns `anchor`
    *
-   * @return {string} the hash (anchor) portion of the url
+   * @returns the hash (anchor) portion of the url
    */
   getHash(): string {
     return this._getLocation().getHash();
@@ -137,10 +155,7 @@ export class UrlService {
     $t._location,
     $t._rootScope,
     /**
-     *
-     * @param {ng.LocationService} $location
-     * @param {ng.RootScopeService} $rootScope
-     * @returns {ng.UrlService}
+     * Initializes the runtime location/root-scope wiring and starts URL listening.
      */
     ($location: ng.LocationService, $rootScope: ng.RootScopeService) => {
       this.$location = $location;
@@ -155,9 +170,7 @@ export class UrlService {
     },
   ];
 
-  /**
-   * @returns {string}
-   */
+  /** Returns the application's resolved base href. */
   baseHref(): string {
     return (
       this._baseHref ||
@@ -209,10 +222,10 @@ export class UrlService {
    * locationServices.url("/some/path?query=value#anchor", true);
    * ```
    *
-   * @param {string} [newUrl] The new value for the URL.
+   * @param [newUrl] The new value for the URL.
    *               This url should reflect only the new internal [[path]], [[search]], and [[hash]] values.
    *               It should not include the protocol, site, port, or base path of an absolute HREF.
-   * @param {any} [state] The history's state object, i.e., pushState (if the LocationServices implementation supports it)
+   * @param [state] The history's state object, i.e., pushState (if the LocationServices implementation supports it)
    *
    * @return the url (after potentially being processed)
    */
@@ -242,8 +255,8 @@ export class UrlService {
    * let deregisterFn = locationServices.onChange((evt) => console.log("url change", evt));
    * ```
    *
-   * @param {(evt: ng.ScopeEvent) => void} callback a function that will be called when the url is changing
-   * @return {() => void} a function that de-registers the callback
+   * @param callback a function that will be called when the url is changing
+   * @returns a function that de-registers the callback
    */
   onChange(callback: (evt: ng.ScopeEvent) => void): () => void {
     this._urlListeners.push(callback);
@@ -257,7 +270,7 @@ export class UrlService {
    * Returns an object with the `path`, `search`, and `hash` components
    * of the current browser location.
    *
-   * @returns {import("../../services/location/interface.ts").UrlParts} The current URL's path, search, and hash.
+   * @returns The current URL's path, search, and hash.
    */
   parts(): UrlParts {
     const location = this._getLocation();
@@ -287,28 +300,21 @@ export class UrlService {
    *   urlService.sync();
    * });
    * ```
-   * @param {import("../../core/scope/interface.ts").ScopeEvent | undefined} [evt]
+   * Skips work when the triggering location event was prevented.
    */
   sync(evt?: ng.ScopeEvent): void {
     if (evt && evt.defaultPrevented) return;
     const { stateService } = this;
     const url = this.parts();
 
-    /**
-     * @type {*}
-     */
     const best = this.match(url);
 
     const applyResult = pattern([
       [isString, (newurl: string | undefined) => this.url(newurl)],
       [
         TargetState.isDef,
-        (def: import("../state/interface.ts").TargetStateDef) =>
-          stateService.go(
-            /** @type {string} */ def.state,
-            def.params,
-            def.options,
-          ),
+        (def: import("../state/target-state.ts").TargetStateDef) =>
+          stateService.go(def.state, def.params, def.options),
       ],
       [
         is(TargetState),
@@ -344,7 +350,7 @@ export class UrlService {
    * });
    * ```
    *
-   * @param {boolean} enabled `true` or `false` to start or stop listening to URL changes
+   * @param enabled `true` or `false` to start or stop listening to URL changes
    */
   listen(enabled: boolean): (() => void) | undefined {
     if (enabled === false) {
@@ -362,19 +368,14 @@ export class UrlService {
   /**
    * Given a URL (as a [[UrlParts]] object), check all rules and determine the best matching rule.
    * Return the result as a [[MatchResult]].
-   * @param {import("../../docs.ts").UrlParts} url
-   * @returns {any}
    */
   match(url: UrlParts): MatchResult | undefined {
     url = Object.assign({ path: "", search: {}, hash: "" }, url);
     const rules = this._rules.rules();
 
     // Checks a single rule. Returns { rule: rule, match: match, weight: weight } if it matched, or undefined
-    /**
-     *
-     * @param {import("./interface.ts").UrlRule} rule
-     */
-    const checkRule = (rule: import("./interface.ts").UrlRule) => {
+    /** Evaluates one rule and returns its weighted match when it applies. */
+    const checkRule = (rule: import("./url-rule.ts").UrlRule) => {
       const match = rule.match(url);
 
       return match && { match, rule, weight: rule.matchPriority(match) };
@@ -399,9 +400,7 @@ export class UrlService {
     return best;
   }
 
-  /**
-   * @param {boolean | undefined} [read]
-   */
+  /** Updates the cached URL or refreshes it from the browser when `read` is truthy. */
   update(read?: boolean | undefined): void {
     if (read) {
       this.location = this.url();
@@ -410,7 +409,7 @@ export class UrlService {
     }
 
     if (this.url() === this.location) return;
-    this.url(/** @type {string} */ this.location, true);
+    this.url(this.location, true);
   }
 
   /**
@@ -418,9 +417,6 @@ export class UrlService {
    *
    * Pushes a new location to the browser history.
    * @internal
-   * @param {{ format: (arg0: any) => string | undefined; }} urlMatcher
-   * @param {import("../params/state-params.ts").StateParams} params
-   * @param {string} options
    */
   push(
     urlMatcher: { format: (arg0: any) => string | undefined },
@@ -442,9 +438,9 @@ export class UrlService {
      * $bob = $url.href(matcher, params);
      * // $bob == "/about/bob";
      * ```
-     * @param {{ format: (arg0: any) => any; }} urlMatcher The [[UrlMatcher]] object which is used as the template of the URL to generate.
-     * @param {Object} params An object of parameter values to fill the matcher's required parameters.
-     * @param {{ absolute: any; }} options Options object. The options are:
+     * @param urlMatcher The [[UrlMatcher]] object which is used as the template of the URL to generate.
+     * @param params An object of parameter values to fill the matcher's required parameters.
+     * @param options Options object. The options are:
 
     - **`absolute`** - {boolean=false},  If true will generate an absolute url, e.g. "http://www.example.com/fullurl".
      * @returns Returns the fully compiled URL, or `null` if `params` fail validation against `urlMatcher`
@@ -481,8 +477,8 @@ export class UrlService {
   /**
    * Creates a [[UrlMatcher]] for the specified pattern.
    *
-   * @param {string} urlPattern  The URL pattern.
-   * @param {*} [config]  The config object hash.
+   * @param urlPattern  The URL pattern.
+   * @param [config]  The config object hash.
    * @returns The UrlMatcher.
    */
   compile(urlPattern: string, config?: any) {
@@ -508,7 +504,7 @@ export class UrlService {
   /**
    * Returns true if the specified object is a [[UrlMatcher]], or false otherwise.
    *
-   * @param {UrlMatcher & Record<string, any>} object  The object to perform the type check against.
+   * @param object  The object to perform the type check against.
    * @returns `true` if the object matches the `UrlMatcher` interface, by
    *          implementing all the same methods.
    */
@@ -528,12 +524,7 @@ export class UrlService {
   }
 }
 
-/**
- * @param {string} url
- * @param {boolean} isHtml5
- * @param {any} absolute
- * @param {string} baseHref
- */
+/** Appends the application's base path to a generated URL when needed. */
 function appendBasePath(
   url: string,
   isHtml5: boolean,

@@ -1,7 +1,7 @@
 import { ParamTypes } from "../params/param-types.ts";
 import { isDefined, isNullOrUndefined, isString } from "../../shared/utils.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
-import type { ParamTypeDefinition } from "../params/interface.ts";
+import type { ParamTypeDefinition } from "../params/param-type.ts";
 import type { ParamType } from "../params/param-type.ts";
 /**
  * An API to customize the URL behavior and retrieve URL configuration
@@ -23,9 +23,6 @@ export class UrlConfigProvider {
   _isStrictMode: boolean;
   _defaultSquashPolicy: boolean | string;
 
-  /**
-   * @param {ng.AngularServiceProvider} $angularProvider
-   */
   constructor($angularProvider: ng.AngularServiceProvider) {
     this.paramTypes = new ParamTypes($angularProvider.$get());
     this._isCaseInsensitive = false;
@@ -42,7 +39,6 @@ export class UrlConfigProvider {
      * This code patches the `path` parameter type so it encoded/decodes slashes as ~2F
      *
      */
-    /** @type {import("../params/param-type.ts").ParamType} */
     const pathType = this.type("path") as ParamType;
 
     pathType.encode = (x: unknown) =>
@@ -72,8 +68,8 @@ export class UrlConfigProvider {
    * // Allow case insensitive url matches
    * urlService.config.caseInsensitive(true);
    * ```
-   * @param {boolean} [value] `false` to match URL in a case sensitive manner; otherwise `true`;
-   * @returns {boolean} the current value of caseInsensitive
+   * @param [value] `false` to match URL in a case sensitive manner; otherwise `true`;
+   * @returns the current value of caseInsensitive
    */
   caseInsensitive(value?: boolean): boolean {
     return (this._isCaseInsensitive = isDefined(value)
@@ -90,13 +86,13 @@ export class UrlConfigProvider {
    * urlService.config.defaultSquashPolicy(true);
    * ```
    *
-   * @param {boolean | string} [value] A string that defines the default parameter URL squashing behavior.
+   * @param [value] A string that defines the default parameter URL squashing behavior.
    *    - `nosquash`: When generating an href with a default parameter value, do not squash the parameter value from the URL
    *    - `slash`: When generating an href with a default parameter value, squash (remove) the parameter value, and, if the
    *      parameter is surrounded by slashes, squash (remove) one slash from the URL
    *    - any other string, e.g. "~": When generating an href with a default parameter value, squash (remove)
    *      the parameter value from the URL and replace it with this string.
-   * @returns {boolean | string} the current value of defaultSquashPolicy
+   * @returns the current value of defaultSquashPolicy
    */
   defaultSquashPolicy(value?: boolean | string): boolean | string {
     if (
@@ -123,8 +119,8 @@ export class UrlConfigProvider {
    * urlService.config.strictMode(false);
    * ```
    *
-   * @param {boolean} value `false` to match trailing slashes in URLs, otherwise `true`.
-   * @returns {boolean} the current value of strictMode
+   * @param value `false` to match trailing slashes in URLs, otherwise `true`.
+   * @returns the current value of strictMode
    */
   strictMode(value: boolean): boolean {
     return (this._isStrictMode = isDefined(value) ? value : this._isStrictMode);
@@ -151,14 +147,12 @@ export class UrlConfigProvider {
    *
    * See [[ParamTypeDefinition]] for more examples
    *
-   * @param {string} name The type name.
-   * @param {import("../params/interface.ts").ParamTypeDefinition} [definition] The type definition. See [[ParamTypeDefinition]] for information on the values accepted.
-   * @param {() => import("../params/interface.ts").ParamTypeDefinition} [definitionFn] A function that is injected before the app runtime starts.
+   * @param name The type name.
+   * @param [definition] The type definition. See [[ParamTypeDefinition]] for information on the values accepted.
+   * @param [definitionFn] A function that is injected before the app runtime starts.
    *        The result of this function should be a [[ParamTypeDefinition]].
    *        The result is merged into the existing `definition`.
    *        See [[ParamType]] for information on the values accepted.
-   *
-   * @returns {import("../params/param-type.ts").ParamType | UrlConfigProvider | undefined}
    */
   type(name: string): ParamType | undefined;
   type(
@@ -177,7 +171,7 @@ export class UrlConfigProvider {
 
     this.paramTypes.type(
       name,
-      /** @type {import("../params/interface.ts").ParamTypeDefinition} */ definition,
+      definition,
       definitionFn,
     );
 

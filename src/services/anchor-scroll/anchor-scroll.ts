@@ -7,6 +7,20 @@ import {
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { urlResolve } from "../../shared/url-utils/url-utils.ts";
 
+export interface AnchorScrollService {
+  /**
+   * Invoke anchor scrolling.
+   */
+  (hashOrElement?: string | number | HTMLElement): void;
+
+  /**
+   * Vertical scroll offset.
+   * Can be a number, a function returning a number,
+   * or an Element whose offsetTop will be used.
+   */
+  yOffset?: number | (() => number) | Element;
+}
+
 export class AnchorScrollProvider {
   autoScrollingEnabled: boolean;
 
@@ -17,20 +31,12 @@ export class AnchorScrollProvider {
   $get = [
     $t._location,
     $t._rootScope,
-    /**
-     *
-     * @param {ng.LocationService} $location
-     * @param {ng.Scope} $rootScope
-     * @returns {ng.AnchorScrollService}
-     */
+    /** Creates the runtime anchor-scroll service. */
     ($location: ng.LocationService, $rootScope: ng.Scope) => {
       // Helper function to get first anchor from a NodeList
       // (using `Array#some()` instead of `angular#forEach()` since it's more performant
       //  and working in all supported browsers.)
-      /**
-       * @param {NodeListOf<HTMLElement>} list
-       * @returns {HTMLAnchorElement | undefined}
-       */
+      /** Returns the first anchor element from a queried node list. */
       function getFirstAnchor(
         list: NodeListOf<HTMLElement>,
       ): HTMLAnchorElement | undefined {
@@ -66,9 +72,7 @@ export class AnchorScrollProvider {
         return offset;
       }
 
-      /**
-       * @param {HTMLElement} [elem]
-       */
+      /** Scrolls to a specific element or to the top of the page. */
       function scrollTo(elem?: HTMLElement): void {
         if (elem) {
           const rect = elem.getBoundingClientRect();
@@ -90,7 +94,6 @@ export class AnchorScrollProvider {
         }
       }
 
-      /** @type {ng.AnchorScrollService} */
       const scroll: ng.AnchorScrollService = (hashOrElement) => {
         // Direct element scrolling
         if (hashOrElement instanceof HTMLElement) {

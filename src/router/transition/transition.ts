@@ -31,18 +31,46 @@ import type {
   HookFn,
   HookMatchCriteria,
   HookRegOptions,
-  RegisteredHooks,
-  TransitionOptions,
-  TreeChanges,
 } from "./interface.ts";
 import type { StateDeclaration, StateOrName } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { TargetState } from "../state/target-state.ts";
 import type { TransitionProvider } from "./transition-service.ts";
 import type { ViewConfig } from "../state/views.ts";
-import type { RawParams } from "../params/interface.ts";
+import type { RawParams } from "../params/param.ts";
+import type { RegisteredHooks } from "./hook-registry.ts";
 
 export type { PathNode } from "../path/path-node.ts";
+
+/**
+ * The TransitionOptions object can be used to change the behavior of a transition.
+ */
+export interface TransitionOptions {
+  location?: boolean | "replace";
+  relative?: string | StateDeclaration | StateObject;
+  inherit?: boolean;
+  notify?: boolean;
+  reload?: boolean | string | StateDeclaration | StateObject;
+  custom?: unknown;
+  supercede?: boolean;
+  reloadState?: StateObject;
+  redirectedFrom?: Transition;
+  current?: () => Transition | null;
+  source?: "sref" | "url" | "redirect" | "otherwise" | "unknown";
+}
+
+/**
+ * TreeChanges encapsulates the path arrays involved in a transition.
+ */
+export interface TreeChanges {
+  [key: string]: PathNode[] | undefined;
+  from: PathNode[];
+  to: PathNode[];
+  retained: PathNode[];
+  retainedWithToParams: PathNode[];
+  exiting: PathNode[];
+  entering: PathNode[];
+}
 
 const REDIRECT_MAX = 20;
 
@@ -318,7 +346,7 @@ export class Transition {
   addResolvable(
     resolvable:
       | Resolvable
-      | import("../resolve/interface.ts").ResolvableLiteral,
+      | import("../resolve/resolvable.ts").ResolvableLiteral,
     state: StateOrName = "",
   ): void {
     const normalized = is(Resolvable)(resolvable)

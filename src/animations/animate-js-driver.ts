@@ -1,12 +1,12 @@
 import { $injectTokens } from "../injection-tokens.ts";
 import { AnimateRunner } from "./runner/animate-runner.ts";
-import type { AnimateJsFn, AnimationDetails, Animator } from "./interface.ts";
+import type { Animator } from "./interface.ts";
+import type { AnimateJsFn } from "./animate-js.ts";
+import type { AnimationDetails } from "./animation.ts";
 
 AnimateJsDriverProvider.$inject = ["$$animationProvider"];
 
-/**
- * @param {import("./animation.ts").AnimationProvider} $$animationProvider
- */
+/** Registers the JS animation driver with the animation provider. */
 export function AnimateJsDriverProvider(
   this: {
     $get: [
@@ -21,14 +21,8 @@ export function AnimateJsDriverProvider(
   $$animationProvider._drivers.push($injectTokens._animateJsDriver);
   this.$get = [
     $injectTokens._animateJs,
-    /**
-     *
-     * @param {import("./interface.ts").AnimateJsFn} $$animateJs
-     */
+    /** Creates the runtime driver factory around `$$animateJs`. */
     function ($$animateJs: AnimateJsFn) {
-      /**
-       * @param {import("./interface.ts").AnimationDetails} animationDetails
-       */
       function initDriverFn(
         animationDetails: AnimationDetails,
       ): Animator | undefined {
@@ -69,9 +63,6 @@ export function AnimateJsDriverProvider(
                 };
               }
 
-              /**
-               * @param {boolean} status
-               */
               function done(status: boolean) {
                 runner.complete(status);
               }
@@ -82,10 +73,6 @@ export function AnimateJsDriverProvider(
         return prepareAnimation(animationDetails);
       }
 
-      /**
-       * @param {import("./interface.ts").AnimationDetails} animationDetails
-       * @return {import("./interface.ts").Animator | undefined}
-       */
       function prepareAnimation(
         animationDetails: AnimationDetails,
       ): Animator | undefined {

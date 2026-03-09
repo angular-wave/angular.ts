@@ -2,8 +2,6 @@ import { instantiateWasm } from "../../shared/utils.ts";
 
 /**
  * Loads a WebAssembly module and exposes its exports on `scope.$target`.
- *
- * @return {ng.Directive}
  */
 export function ngWasmDirective(): ng.Directive {
   return {

@@ -1,14 +1,19 @@
 import { isObject, isString } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
-import type { RawParams } from "../params/interface.ts";
-import type { TransitionOptions } from "../transition/interface.ts";
+import type { RawParams } from "../params/param.ts";
+import type { TransitionOptions } from "../transition/transition.ts";
 import type {
   StateDeclaration,
   StateOrName,
-  TargetStateDef,
 } from "./interface.ts";
 import type { StateRegistryProvider } from "./state-registry.ts";
 import type { StateObject } from "./state-object.ts";
+
+export interface TargetStateDef {
+  state: StateOrName;
+  params?: RawParams;
+  options?: TransitionOptions;
+}
 /**
  * Encapsulate the target (destination) state/params/options of a [[Transition]].
  *
@@ -59,11 +64,11 @@ export class TargetState {
    * Note: Do not construct a `TargetState` manually.
    * To create a `TargetState`, use the [[StateService.target]] factory method.
    *
-   * @param {import("./state-service.ts").StateRegistryProvider} _stateRegistry The StateRegistry to use to look up the _definition
-   * @param {import("./interface.ts").StateOrName} _identifier An identifier for a state.
+   * @param _stateRegistry The StateRegistry to use to look up the _definition
+   * @param _identifier An identifier for a state.
    *    Either a fully-qualified state name, or the object used to define the state.
-   * @param {import("../params/interface.ts").RawParams} _params Parameters for the target state
-   * @param {import("../transition/interface.ts").TransitionOptions} _options Transition options.
+   * @param _params Parameters for the target state
+   * @param _options Transition options.
    *
    * @internal
    */
@@ -152,8 +157,8 @@ export class TargetState {
    * Returns a copy of this TargetState which targets a different state.
    * The new TargetState has the same parameter values and transition options.
    *
-   * @param {import("./interface.ts").StateOrName} state The new state that should be targeted
-   * @returns {TargetState} A new TargetState instance which targets the desired state
+   * @param state The new state that should be targeted
+   * @returns A new TargetState instance which targets the desired state
    */
   withState(state: StateOrName): TargetState {
     return new TargetState(
@@ -167,10 +172,10 @@ export class TargetState {
   /**
    * Returns a copy of this TargetState, using the specified parameter values.
    *
-   * @param {import("../params/interface.ts").RawParams} params the new parameter values to use
-   * @param {boolean} replace When false (default) the new parameter values will be merged with the current values.
+   * @param params the new parameter values to use
+   * @param replace When false (default) the new parameter values will be merged with the current values.
    *                When true the parameter values will be used instead of the current values.
-   * @returns {TargetState} A new TargetState instance which targets the same state with the desired parameters
+   * @returns A new TargetState instance which targets the same state with the desired parameters
    */
   withParams(params: RawParams, replace = false): TargetState {
     const newParams = replace
@@ -188,10 +193,10 @@ export class TargetState {
   /**
    * Returns a copy of this TargetState, using the specified Transition Options.
    *
-   * @param {import("../transition/interface.ts").TransitionOptions} options the new options to use
-   * @param {boolean} replace When false (default) the new options will be merged with the current options.
+   * @param options the new options to use
+   * @param replace When false (default) the new options will be merged with the current options.
    *                When true the options will be used instead of the current options.
-   * @returns {TargetState} A new TargetState instance which targets the same state with the desired options
+   * @returns A new TargetState instance which targets the same state with the desired options
    */
   withOptions(options: TransitionOptions, replace = false): TargetState {
     const newOpts = replace

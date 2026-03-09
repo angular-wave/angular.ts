@@ -4,8 +4,6 @@ ngSetterDirective.$inject = [$t._parse, $t._log];
 
 /**
  * Mirrors an element's HTML content into an assignable scope expression.
- *
- * @param {ng.ParseService} $parse
  */
 export function ngSetterDirective(
   $parse: ng.ParseService,

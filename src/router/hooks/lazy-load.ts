@@ -1,11 +1,27 @@
 import { isArray } from "../../shared/utils.ts";
 import type {
-  LazyLoadFn,
-  LazyLoadResult,
   StateDeclaration,
 } from "../state/interface.ts";
-import type { TransitionService } from "../transition/interface.ts";
+import type { TransitionService } from "../transition/transition-service.ts";
 import type { Transition } from "../transition/transition.ts";
+
+/**
+ * The return type of a [[StateDeclaration.lazyLoad]] function.
+ *
+ * If the promise resolves to an object with `states`, those states are
+ * automatically registered before the original transition is retried.
+ */
+export interface LazyLoadResult {
+  states?: StateDeclaration[];
+}
+
+/**
+ * Signature for a state-level lazy loader function.
+ */
+export type LazyLoadFn = (
+  transition: Transition,
+  state: StateDeclaration,
+) => Promise<LazyLoadResult>;
 
 /**
  * Registers the built-in hook that runs state `lazyLoad` callbacks before entry.

@@ -1,11 +1,6 @@
 import type {
-  AnimationDetails,
-  AnimationEntry,
   AnimationOptions,
-  AnimationService,
-  AnchorRefEntry,
   Animator,
-  SortedAnimationEntry,
 } from "./interface.ts";
 import {
   deleteCacheData,
@@ -30,6 +25,132 @@ const RUNNER_STORAGE_KEY = "$$animationRunner";
 
 const PREPARE_CLASSES_KEY = "$$animatePrepareClasses";
 
+/**
+ * Built-in animation method names used by the queue and drivers.
+ *
+ * These correspond to the public API methods on {@link AnimateService} that are
+ * class-based or structural.
+ */
+export type AnimationMethod =
+  | "enter"
+  | "leave"
+  | "move"
+  | "addClass"
+  | "setClass"
+  | "removeClass";
+
+/**
+ * Concrete animation description passed into drivers.
+ *
+ * `AnimationDetails` is a normalized execution plan:
+ * - includes the target element
+ * - the resolved event name
+ * - whether it is structural
+ * - normalized options
+ * - optional anchor pairs for shared-element transitions
+ */
+export interface AnimationDetails {
+  from?: AnimationDetails;
+  to?: AnimationDetails;
+  anchors?: Array<{ out: HTMLElement; in: HTMLElement }>;
+  element: HTMLElement;
+  event: AnimationMethod | string;
+  classes?: string | null;
+  structural: boolean;
+  options: AnimationOptions;
+}
+
+/**
+ * Low-level animation executor used by the animation queue.
+ *
+ * This is the "engine" entry point: given a concrete element, an event name,
+ * and normalized options, it starts an animation and returns an {@link AnimateRunner}
+ * that represents the running work.
+ *
+ * Notes:
+ * - `event` is intentionally `string` to support custom/internal events beyond the
+ *   built-in set (e.g. driver-specific events).
+ * - Callers typically pass normalized {@link AnimationOptions}.
+ */
+export type AnimationService = (
+  element: HTMLElement,
+  event: string,
+  options?: AnimationOptions,
+) => AnimateRunner;
+
+/**
+ * Internal entry used for parent-to-child sorting before scheduling with RAF.
+ *
+ * The queue sorts animation start functions by DOM ancestry to ensure:
+ * - parent preparation classes are applied before children start
+ * - child animations don't observe incorrect computed styles
+ */
+export interface SortedAnimationEntry {
+  /** DOM node used to compute parent/child relationships (often the same as `element`). */
+  domNode: Node;
+
+  /** The element being animated. */
+  element: Element;
+
+  /** Function that triggers the animation start for this element. */
+  fn: () => void;
+
+  /** Children entries in the sort graph. */
+  children: SortedAnimationEntry[];
+
+  /** Internal marker to avoid processing nodes multiple times. */
+  processed?: boolean;
+}
+
+/**
+ * Internal queue entry representing an animation that will be driven.
+ *
+ * Extends {@link AnimationDetails} with lifecycle hooks used by the queue:
+ * - `beforeStart()` applies preparation classes/styles before driver detection
+ * - `close()` finalizes the animation state and resolves/rejects the runner
+ */
+export type AnimationEntry = AnimationDetails & {
+  beforeStart: () => void;
+  close: (reject?: boolean) => void;
+};
+
+/**
+ * Reference to a structural animation participating in an anchor (shared element) pair.
+ *
+ * Stores the index into the current animation list and the anchor element node.
+ */
+export interface AnchorRef {
+  animationID: number;
+  element: Element;
+}
+
+/**
+ * Pairing information for anchor animations.
+ *
+ * During grouping, an anchor key may map to:
+ * - `from`: the leaving element
+ * - `to`: the entering element
+ *
+ * If either side is missing, the animation falls back to non-anchor behavior.
+ */
+export interface AnchorRefEntry {
+  from?: AnchorRef;
+  to?: AnchorRef;
+}
+
+/**
+ * Normalized animation factory signature used by the animation subsystem.
+ *
+ * Unlike {@link AnimateJsFn}, this always returns an {@link Animator} (never `undefined`),
+ * typically because it represents the selected driver pipeline.
+ */
+export type AnimateFn = (
+  element: HTMLElement,
+  event: string,
+  classes?: string | null,
+  options?: AnimationOptions,
+) => Animator;
+
 export class AnimationProvider {
   $get: [
     string,
@@ -40,20 +161,13 @@ export class AnimationProvider {
     ) => AnimationService,
   ];
 
-  /**
-   * @type {string[]}
-   */
   _drivers = [];
 
   constructor() {
     this.$get = [
       $t._rootScope,
       $t._injector,
-      /**
-       * @param {ng.RootScopeService} $rootScope
-       * @param {ng.InjectorService} $injector
-       * @return {import("./interface.ts").AnimationService}
-       */
+      /** Creates the runtime animation service. */
       ($rootScope: ng.RootScopeService, $injector: ng.InjectorService) => {
         return this._createAnimationService(
           $rootScope,
@@ -64,12 +178,7 @@ export class AnimationProvider {
     ];
   }
 
-  /**
-   * @param {ng.RootScopeService} $rootScope
-   * @param {ng.InjectorService} $injector
-   * @param {string[]} drivers
-   * @returns {import("./interface.ts").AnimationService}
-   */
+  /** Builds the animation runtime around the configured driver chain. */
   _createAnimationService(
     $rootScope: ng.RootScopeService,
     $injector: ng.InjectorService,
@@ -79,18 +188,14 @@ export class AnimationProvider {
 
     const animationQueue: AnimationEntry[] = [];
 
-    /**
-     * @param {Element} element
-     */
+    /** Retrieves the active runner associated with an element, if any. */
     const getRunner = (element: Element): AnimateRunner | undefined => {
       return getCacheData(element, RUNNER_STORAGE_KEY) as
         | AnimateRunner
         | undefined;
     };
 
-    /**
-     * @param {SortedAnimationEntry[]} animations
-     */
+    /** Sorts animations by DOM depth so parent/child ordering is stable. */
     const sortAnimations = (
       animations: SortedAnimationEntry[],
     ): SortedAnimationEntry[][] => {
@@ -125,9 +230,7 @@ export class AnimationProvider {
 
       return flatten(tree as SortedAnimationEntry);
 
-      /**
-       * @param {SortedAnimationEntry} entry
-       */
+      /** Places a node under its nearest queued parent entry. */
       function processNode(entry: SortedAnimationEntry): SortedAnimationEntry {
         if (entry.processed) return entry;
         entry.processed = true;
@@ -158,9 +261,7 @@ export class AnimationProvider {
         return entry;
       }
 
-      /**
-       * @param {SortedAnimationEntry} theeParam
-       */
+      /** Flattens the animation tree into depth-based execution rows. */
       function flatten(
         theeParam: SortedAnimationEntry,
       ): SortedAnimationEntry[][] {
@@ -203,12 +304,7 @@ export class AnimationProvider {
       }
     };
 
-    /**
-     * @param {HTMLElement} elementParam
-     * @param {string} event
-     * @param {AnimationOptions | undefined} optionsParam
-     * @returns {AnimateRunner}
-     */
+    /** Queues an animation request and returns the runner managing it. */
     return (
       elementParam: HTMLElement,
       event: string,
@@ -274,11 +370,10 @@ export class AnimationProvider {
       if (animationQueue.length > 1) return runner;
 
       $rootScope.$postUpdate(() => {
-        /** @type {AnimationEntry[]} */
         const animations: AnimationEntry[] = [];
 
         animationQueue.forEach((entry) => {
-          if (getRunner(/** @type {HTMLElement} */ entry.element)) {
+          if (getRunner(entry.element)) {
             animations.push(entry);
           } else {
             entry.close();
@@ -289,7 +384,6 @@ export class AnimationProvider {
 
         const groupedAnimations = groupAnimations(animations);
 
-        /** @type {SortedAnimationEntry[]} */
         const toBeSortedAnimations: SortedAnimationEntry[] = [];
 
         groupedAnimations.forEach((animationEntry) => {
@@ -358,8 +452,7 @@ export class AnimationProvider {
 
         const finalAnimations = sortAnimations(toBeSortedAnimations);
 
-        /** @type {Array<() => void>} */
-        const flatFinalAnimations = [];
+        const flatFinalAnimations: Array<() => void> = [];
 
         for (let i = 0; i < finalAnimations.length; i++) {
           const innerArray = finalAnimations[i];
@@ -389,9 +482,7 @@ export class AnimationProvider {
 
       return runner;
 
-      /**
-       * @param {HTMLElement} node
-       */
+      /** Collects anchor-ref nodes for a structural animation subtree. */
       function getAnchorNodes(node: HTMLElement): Element[] {
         const SELECTOR = `[${NG_ANIMATE_REF_ATTR}]`;
 
@@ -399,9 +490,6 @@ export class AnimationProvider {
           ? [node]
           : node.querySelectorAll(SELECTOR);
 
-        /**
-         * @type {(Element | HTMLElement)[]}
-         */
         const anchors: Element[] = [];
 
         items.forEach((nodeItem: Element) => {
@@ -415,10 +503,7 @@ export class AnimationProvider {
         return anchors;
       }
 
-      /**
-       * @param {AnimationEntry[]} animations
-       * @returns {AnimationEntry[]}
-       */
+      /** Groups paired anchor-ref animations into a single animation entry. */
       function groupAnimations(animations: AnimationEntry[]): AnimationEntry[] {
         const preparedAnimations: AnimationEntry[] = [];
 
@@ -455,7 +540,6 @@ export class AnimationProvider {
 
         const usedIndicesLookup: Record<string, boolean> = {};
 
-        /** @type {Record<string, AnimationEntry>} */
         const anchorGroups: Record<string, AnimationEntry> = {};
 
         values(refLookup).forEach((operations: AnchorRefEntry) => {
@@ -530,10 +614,7 @@ export class AnimationProvider {
         return preparedAnimations;
       }
 
-      /**
-       * @param {string | string[] | null | undefined} value
-       * @returns {string}
-       */
+      /** Normalizes class input into a space-delimited string. */
       function normalizeClassValue(
         value: string | string[] | null | undefined,
       ): string {
@@ -542,11 +623,7 @@ export class AnimationProvider {
         return value || "";
       }
 
-      /**
-       * @param {string | string[] | null | undefined} a
-       * @param {string | string[] | null | undefined} b
-       * @returns {string}
-       */
+      /** Returns the shared non-`ng-` CSS classes between two class sets. */
       function cssClassesIntersection(
         a: string | string[] | null | undefined,
         b: string | string[] | null | undefined,
@@ -571,9 +648,7 @@ export class AnimationProvider {
         return matches.join(" ");
       }
 
-      /**
-       * @param {import("./interface.ts").AnimationDetails} animationDetails
-       */
+      /** Selects the first animation driver willing to handle a request. */
       function invokeFirstDriver(
         animationDetails: AnimationDetails,
       ): Animator | undefined {
@@ -606,10 +681,7 @@ export class AnimationProvider {
         }
       }
 
-      /**
-       * @param {*} animation
-       * @param {*} newRunner
-       */
+      /** Rebinds any existing element runners to a newly created host runner. */
       function updateAnimationRunners(
         animation: AnimationEntry,
         newRunner: AnimateRunner,
@@ -621,9 +693,7 @@ export class AnimationProvider {
           update(animation.element);
         }
 
-        /**
-         * @param {Element} el
-         */
+        /** Updates the host runner associated with a single element. */
         function update(el: Element): void {
           getRunner(el)?.setHost(newRunner);
         }
@@ -634,9 +704,7 @@ export class AnimationProvider {
           getRunner(elementParam)?.end();
       }
 
-      /**
-       * @param {boolean | undefined} [rejected]
-       */
+      /** Finalizes the animation and applies DOM/class/style cleanup. */
       function close(rejected?: boolean) {
         deleteCacheData(elementParam, RUNNER_STORAGE_KEY);
 
@@ -649,7 +717,7 @@ export class AnimationProvider {
             ? tempClasses
             : tempClasses.split(" ");
 
-          classList.forEach((/** @type {string} */ cls) =>
+          classList.forEach((cls) =>
             elementParam.classList.remove(cls),
           );
         }

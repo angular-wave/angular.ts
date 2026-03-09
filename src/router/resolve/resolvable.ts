@@ -10,8 +10,139 @@ import {
 import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { Transition } from "../transition/transition.ts";
-import type { ResolvePolicy, ResolvableLiteral } from "./interface.ts";
 import type { ResolveContext } from "./resolve-context.ts";
+
+/**
+ * # The Resolve subsystem
+ *
+ * This subsystem is an asynchronous, hierarchical Dependency Injection system.
+ *
+ * Typically, resolve is configured on a state using a [[StateDeclaration.resolve]] declaration.
+ */
+
+/**
+ * An interface which is similar to an Angular 2 `Provider`
+ */
+export interface ProviderLike {
+  provide: any;
+  useClass?: any;
+  useFactory?: Function;
+  useValue?: any;
+  useExisting?: any;
+  deps?: any[];
+}
+
+/**
+ * A plain object used to describe a [[Resolvable]]
+ *
+ * These objects may be used in the [[StateDeclaration.resolve]] array to declare
+ * async data that the state or substates require.
+ *
+ * #### Example:
+ * ```js
+ *
+ * var state = {
+ *   name: 'main',
+ *   resolve: [
+ *     { token: 'myData', deps: [MyDataApi], resolveFn: (myDataApi) => myDataApi.getData() },
+ *   ],
+ * }
+ * ```
+ */
+export interface ResolvableLiteral {
+  /**
+   * A Dependency Injection token
+   *
+   * This Resolvable's DI token.
+   * The Resolvable will be injectable elsewhere using the token.
+   */
+  token: any;
+
+  /**
+   * A function which fetches the Resolvable's data
+   *
+   * A function which returns one of:
+   *
+   * - The resolved value (synchronously)
+   * - A promise for the resolved value
+   * - An Observable of the resolved value(s)
+   *
+   * This function will be provided the dependencies listed in [[deps]] as its arguments.
+   * The resolve system will asynchronously fetch the dependencies before invoking this function.
+   */
+  resolveFn: Function;
+
+  /**
+   * Defines the Resolve Policy
+   *
+   * A policy that defines when to invoke the resolve,
+   * and whether to wait for async and unwrap the data
+   */
+  policy?: ResolvePolicy;
+
+  /**
+   * The Dependency Injection tokens
+   *
+   * This is an array of Dependency Injection tokens for the dependencies of the [[resolveFn]].
+   *
+   * The DI tokens are references to other `Resolvables`, or to other
+   * services from the native DI system.
+   */
+  deps?: any[];
+
+  /** Pre-resolved data. */
+  data?: any;
+}
+
+/**
+ * Defines how a resolve is processed during a transition
+ *
+ * This object is the [[StateDeclaration.resolvePolicy]] property.
+ *
+ * #### Example:
+ * ```js
+ * // Fetched when the resolve's state is being entered.
+ * // Wait for the promise to resolve.
+ * var policy1 = { when: "LAZY", async: "WAIT" }
+ *
+ * // Fetched when the Transition is starting.
+ * // Do not wait for the returned promise to resolve.
+ * // Inject the raw promise/value
+ * var policy2 = { when: "EAGER", async: "NOWAIT" }
+ * ```
+ *
+ * The policy for a given Resolvable is merged from three sources (highest priority first):
+ *
+ * - 1) Individual resolve definition
+ * - 2) State definition
+ * - 3) Global default
+ */
+export interface ResolvePolicy {
+  /**
+   * Defines when a Resolvable is resolved (fetched) during a transition
+   *
+   * - `LAZY` (default)
+   *   - Resolved as the resolve's state is being entered
+   * - `EAGER`
+   *   - Resolved as the transition is starting
+   */
+  when?: PolicyWhen;
+
+  /**
+   * Determines the unwrapping behavior of asynchronous resolve values.
+   *
+   * - `WAIT` (default)
+   * - `NOWAIT`
+   * - {@link CustomAsyncPolicy}
+   */
+  async?: PolicyAsync;
+}
+
+export type PolicyWhen = "LAZY" | "EAGER";
+export type PolicyAsync = "WAIT" | "NOWAIT" | CustomAsyncPolicy;
+export interface CustomAsyncPolicy {
+  (data: any): Promise<any>;
+}
 
 /**
  * Default policy used when neither the resolvable nor the owning state

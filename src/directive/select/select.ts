@@ -11,6 +11,8 @@ import {
   isUndefined,
   shallowCopy,
 } from "../../shared/utils.ts";
+import type { InterpolationFunction } from "../../core/interpolate/interpolate.ts";
+import type { NgModelController } from "../model/model.ts";
 
 /**
  * The controller for the {@link ng.select select} directive.
@@ -25,9 +27,6 @@ class SelectController {
     "optionsMap",
   ];
 
-  /**
-   * @type {Array<string>}
-   */
   /* @ignore */ static $inject = [$injectTokens._element, $injectTokens._scope];
 
   _element: HTMLSelectElement;
@@ -56,8 +55,7 @@ class SelectController {
   _updateScheduled: boolean;
 
   /**
-   * @param {HTMLSelectElement} $element
-   * @param {ng.Scope} $scope
+   * Creates the select controller for one `<select>` element.
    */
   constructor(
     $element: HTMLSelectElement,
@@ -66,37 +64,16 @@ class SelectController {
       $postUpdate(fn: () => void): void;
     },
   ) {
-    /** @type {HTMLSelectElement} */
     this._element = $element;
-
-    /** @type {ng.Scope} */
     this._scope = $scope;
-
-    /** @type {Object<string, any>} */
     this._selectValueMap = {};
-
-    /** @type {any} */
     this._ngModelCtrl = {};
-
-    /** @type {boolean} */
     this._multiple = false;
-
-    /** @private @type {HTMLOptionElement} */
     this._unknownOption = document.createElement("option");
-
-    /** @type {boolean} */
     this._hasEmptyOption = false;
-
-    /** @type {HTMLOptionElement|undefined} */
     this._emptyOption = undefined;
-
-    /** @type {Map<any, number>} */
     this._optionsMap = new Map();
-
-    /** @type {boolean} */
     this._renderScheduled = false;
-
-    /** @type {boolean} */
     this._updateScheduled = false;
 
     $scope.$on("$destroy", () => {
@@ -108,8 +85,7 @@ class SelectController {
   }
 
   /**
-   * Render the unknown option when the viewValue doesn't match any options.
-   * @param {*} val
+   * Renders the unknown option when the view value doesn't match any option.
    */
   _renderUnknownOption(val: any) {
     const unknownVal = this._generateUnknownOptionValue(val);
@@ -122,8 +98,7 @@ class SelectController {
   }
 
   /**
-   * Update the unknown option if it's already rendered.
-   * @param {*} val
+   * Updates the already-rendered unknown option.
    */
   _updateUnknownOption(val: any) {
     const unknownVal = this._generateUnknownOptionValue(val);
@@ -135,9 +110,7 @@ class SelectController {
   }
 
   /**
-   * Generate a special value used for unknown options.
-   * @param {*} val
-   * @returns {string}
+   * Generates the sentinel value used for the unknown option.
    */
   _generateUnknownOptionValue(val: any): string {
     if (isUndefined(val)) {
@@ -175,8 +148,7 @@ class SelectController {
   }
 
   /**
-   * Read the current value from the select element.
-   * @returns {*|null}
+   * Reads the current value from the select element.
    */
   _readValue() {
     const val = this._element.value;
@@ -188,8 +160,7 @@ class SelectController {
   }
 
   /**
-   * Write a value to the select control.
-   * @param {*} value
+   * Writes a value to the select control.
    */
   _writeValue(value: any) {
     const currentlySelectedOption =
@@ -217,9 +188,7 @@ class SelectController {
   }
 
   /**
-   * Register a new option with the controller.
-   * @param {*} value
-   * @param {HTMLOptionElement} element
+   * Registers a new option with the controller.
    */
   _addOption(value: any, element: HTMLOptionElement) {
     if (element.nodeType === NodeType._COMMENT_NODE) return;
@@ -237,8 +206,7 @@ class SelectController {
   }
 
   /**
-   * Remove an option from the controller.
-   * @param {*} value
+   * Removes one option from the controller.
    */
   _removeOption(value: any) {
     const count = this._optionsMap.get(value);
@@ -258,30 +226,28 @@ class SelectController {
   }
 
   /**
-   * Check if an option exists for the given value.
-   * @param {*} value
-   * @returns {boolean}
+   * Returns whether an option exists for the given value.
    */
   _hasOption(value: any): boolean {
     return !!this._optionsMap.get(value);
   }
 
   /**
-   * @returns {boolean} Whether the select element currently has an empty option.
+   * @returns Whether the select element currently has an empty option.
    */
   $hasEmptyOption() {
     return this._hasEmptyOption;
   }
 
   /**
-   * @returns {boolean} Whether the unknown option is currently selected.
+   * @returns Whether the unknown option is currently selected.
    */
   $isUnknownOptionSelected() {
     return this._element.options[0] === this._unknownOption;
   }
 
   /**
-   * @returns {boolean} Whether the empty option is selected.
+   * @returns Whether the empty option is selected.
    */
   $isEmptyOptionSelected() {
     return (
@@ -291,8 +257,7 @@ class SelectController {
   }
 
   /**
-   * Select unknown or empty option depending on the value.
-   * @param {*} value
+   * Selects either the unknown option or the empty option for a value.
    */
   _selectUnknownOrEmptyOption(value: any) {
     if (isNullOrUndefined(value) && this._emptyOption) {
@@ -318,8 +283,7 @@ class SelectController {
   }
 
   /**
-   * Schedule a view value update at the end of the digest cycle.
-   * @param {boolean} [renderAfter=false]
+   * Schedules a view-value update at the end of the digest cycle.
    */
   _scheduleViewValueUpdate(renderAfter = false) {
     if (this._updateScheduled) return;
@@ -337,12 +301,7 @@ class SelectController {
   }
 
   /**
-   * Register an option with interpolation or dynamic value/text.
-   * @param {any} optionScope
-   * @param {HTMLOptionElement} optionElement
-   * @param {any} optionAttrs
-   * @param {Function} [interpolateValueFn]
-   * @param {Function} [interpolateTextFn]
+   * Registers an option with interpolation or dynamic value/text handling.
    */
   registerOption(
     optionScope: any,
@@ -351,14 +310,7 @@ class SelectController {
     interpolateValueFn?: ((scope: any) => any) | undefined,
     interpolateTextFn?: ((scope: any) => any) | undefined,
   ): void {
-    /**
-     * @type {any}
-     */
     let oldVal: any;
-
-    /**
-     * @type {string}
-     */
     let hashedVal: string | undefined;
 
     if (optionAttrs.$attr.ngValue) {
@@ -463,7 +415,7 @@ class SelectController {
 }
 
 /**
- * @returns {ng.Directive}
+ * Main `<select>` directive definition.
  */
 export function selectDirective() {
   return {
@@ -478,10 +430,7 @@ export function selectDirective() {
   };
 
   /**
-   * @param {ng.Scope} _scope
-   * @param {{ addEventListener: (arg0: string, arg1: () => void) => void; getElementsByTagName: (arg0: string) => HTMLCollection; }} element
-   * @param {ng.Attributes} attr
-   * @param {any[]} ctrls
+   * Wires the select controller before child options are linked.
    */
   function selectPreLink(
     _scope: ng.Scope,
@@ -492,11 +441,8 @@ export function selectDirective() {
     attr: ng.Attributes,
     ctrls: any[],
   ) {
-    /** @type {SelectController} */
-    const selectCtrl = /** @type {SelectController} */ ctrls[0];
-
-    /** @type {import("../model/model.ts").NgModelController} */
-    const ngModelCtrl = ctrls[1];
+    const selectCtrl = ctrls[0] as SelectController;
+    const ngModelCtrl = ctrls[1] as NgModelController | undefined;
 
     // if ngModel is not defined, we don't need to do anything but set the registerOption
     // function to noop, so options don't get added internally
@@ -529,10 +475,6 @@ export function selectDirective() {
       // Read value now needs to check each option to see if it is selected
       selectCtrl._readValue = function () {
         const array: any[] = [];
-
-        /**
-         * @type {HTMLCollection}
-         */
         const options = element.getElementsByTagName("option");
 
         Array.from(options).forEach((option: HTMLOptionElement) => {
@@ -552,9 +494,6 @@ export function selectDirective() {
 
       // Write value now needs to set the selected property of each matching option
       selectCtrl._writeValue = function (value: any[]) {
-        /**
-         * @type {HTMLCollection}
-         */
         const options = element.getElementsByTagName("option");
 
         Array.from(options).forEach((option: HTMLOptionElement) => {
@@ -602,10 +541,7 @@ export function selectDirective() {
   }
 
   /**
-   * @param {ng.Scope} _scope
-   * @param {HTMLElement} _element
-   * @param {ng.Attributes} _attrs
-   * @param {any[]} ctrls
+   * Installs the final `$render` bridge after child options have linked.
    */
   function selectPostLink(
     _scope: ng.Scope,
@@ -618,7 +554,7 @@ export function selectDirective() {
 
     if (!ngModelCtrl) return;
 
-    const selectCtrl = /** @type {SelectController} */ ctrls[0];
+    const selectCtrl = ctrls[0] as SelectController;
 
     // We delegate rendering to the `_writeValue` method, which can be changed
     // if the select can have multiple selected values or if the options are being
@@ -637,8 +573,7 @@ export function selectDirective() {
 
 optionDirective.$inject = [$injectTokens._interpolate];
 /**
- * @param {ng.InterpolateService} $interpolate
- * @returns {ng.Directive}
+ * `<option>` directive that coordinates dynamic options with the parent select controller.
  */
 export function optionDirective(
   $interpolate: ng.InterpolateService,
@@ -650,19 +585,8 @@ export function optionDirective(
       element: HTMLOptionElement,
       attr: ng.Attributes,
     ) {
-      /**
-       * @type {import("../../core/interpolate/interface.ts").InterpolationFunction | undefined}
-       */
-      let interpolateValueFn:
-        | import("../../core/interpolate/interface.ts").InterpolationFunction
-        | undefined;
-
-      /**
-       * @type {import("../../core/interpolate/interface.ts").InterpolationFunction | undefined}
-       */
-      let interpolateTextFn:
-        | import("../../core/interpolate/interface.ts").InterpolationFunction
-        | undefined;
+      let interpolateValueFn: InterpolationFunction | undefined;
+      let interpolateTextFn: InterpolationFunction | undefined;
 
       if (isDefined(attr.ngValue)) {
         // Will be handled by registerOption

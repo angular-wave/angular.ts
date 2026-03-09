@@ -12,7 +12,7 @@ import {
 } from "../../shared/dom.ts";
 import { getLocals } from "../state/state-registry.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
-import type { ActiveUIView, ViewContext } from "../view/interface.ts";
+import type { ActiveUIView, ViewContext } from "../view/view.ts";
 import type { PathNode } from "../path/path-node.ts";
 
 type Renderer = {
@@ -179,11 +179,7 @@ ViewDirective.$inject = [
 ];
 
 /**
- * @param {ng.ViewService} $view
- * @param {ng.AnimateService} $animate
- * @param {ng.AnchorScrollService} $anchorScroll
- * @param {ng.InterpolateService} $interpolate
- * @returns {ng.Directive}
+ * Renders and updates the currently active view configuration.
  */
 export function ViewDirective(
   $view: ng.ViewService,
@@ -218,8 +214,7 @@ export function ViewDirective(
     $ngView: {},
   };
 
-  /** @type {ng.Directive} */
-  const directive = {
+  const directive: ng.Directive & { count: number } = {
     count: 0,
     terminal: true,
     priority: 400,
@@ -356,8 +351,8 @@ export function ViewDirective(
           /**
            * Fired once the view **begins loading**, *before* the DOM is rendered.
            *
-           * @param {Object} event Event object.
-           * @param {string} viewName Name of the view.
+           * @param event Event object.
+           * @param viewName Name of the view.
            */
           newScope.$emit("$viewContentLoading", name);
           currentEl = transclude(newScope, (clone) => {
@@ -385,7 +380,7 @@ export function ViewDirective(
           /**
            * Fired once the view is **loaded**, *after* the DOM is rendered.
            *
-           * @param {Object} event Event object.
+           * @param event Event object.
            */
           currentScope!.$emit("$viewContentLoaded", config || viewConfig);
           currentScope!.$eval(onloadExp);
@@ -404,10 +399,7 @@ ViewDirectiveFill.$inject = [
 ];
 
 /**
- * @param {ng.CompileService} $compile
- * @param {ng.ControllerService} $controller
- * @param {ng.TransitionService} $transitions
- * @return {ng.Directive}
+ * Instantiates the active view template and wires its controller lifecycle.
  */
 export function ViewDirectiveFill(
   $compile: ng.CompileService,
@@ -535,10 +527,6 @@ let _uiCanExitId = 0;
 
 /**
  * @ignore TODO: move these callbacks to $view and/or `/hooks/components.ts` or something
- * @param {ng.TransitionService} $transitions
- * @param {any} controllerInstance
- * @param {ng.Scope} $scope
- * @param {{ viewDecl: { component: any; componentProvider: any; }; path: import("../transition/transition.ts").PathNode[]; }} cfg
  */
 function registerControllerCallbacks(
   $transitions: ng.TransitionService,
@@ -656,9 +644,7 @@ function registerControllerCallbacks(
     const cacheProp = "_uiCanExitIds";
 
     /**
-     * Returns true if any transition in the redirect chain already answered truthy
-     * @param {import("../transition/transition.ts").Transition | null | undefined} trans
-     * @returns {boolean}
+     * Returns true if any transition in the redirect chain already answered truthy.
      */
     const prevTruthyAnswer = (trans: UiCanExitTransition | null): boolean =>
       !!trans &&

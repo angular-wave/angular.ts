@@ -1,10 +1,8 @@
-import type { AnimationOptions, AnimationService } from "../interface.ts";
 import type {
-  AnimateEventCallback,
-  AnimateQueueService,
-  CallbackRegistry,
-  QueueAnimationData,
-} from "./interface.ts";
+  AnimationOptions,
+} from "../interface.ts";
+import type { AnimationEventData } from "../animate.ts";
+import type { AnimationService } from "../animation.ts";
 import {
   getOrSetCacheData,
   extractElementNode,
@@ -81,10 +79,71 @@ interface AnimateQueueProviderInstance {
   $get?: unknown;
 }
 
-/**
- * @param {import("../animate.ts").AnimateProvider} $animateProvider
- * @constructor
- */
+export type QueuePhase =
+  | "start"
+  | "close"
+  | "cancel"
+  | "progress"
+  | "dom"
+  | string;
+
+export type QueueAnimationData = AnimationEventData & {
+  [key: string]: any;
+};
+
+export interface AnimateQueueService {
+  on(
+    event: string,
+    container: Element,
+    callback?: (
+      el: Element,
+      phase: QueuePhase,
+      data: QueueAnimationData,
+    ) => void,
+  ): void;
+
+  off(
+    event: string | Element,
+    container?: Element,
+    callback?: (
+      el: Element,
+      phase: QueuePhase,
+      data: QueueAnimationData,
+    ) => void,
+  ): void;
+
+  pin(element: Element, parent: Element): void;
+
+  push(
+    element: Element,
+    event: string,
+    options: {
+      addClass?: string | null;
+      removeClass?: string | null;
+      from?: Record<string, any> | null;
+      to?: Record<string, any> | null;
+      tempClasses?: string | string[] | null;
+      domOperation?: () => void;
+      [key: string]: any;
+    },
+    domOperation?: () => void,
+  ): AnimateRunner;
+}
+
+export type AnimateEventCallback = (
+  el: Element,
+  phase: QueuePhase,
+  data: QueueAnimationData,
+) => void;
+
+export interface CallbackRegistryEntry {
+  node: Element;
+  callback: AnimateEventCallback;
+}
+
+export type CallbackRegistry = Record<string, CallbackRegistryEntry[] | null>;
+
+/** Configures the animation queue rule set and exposes the runtime queue service. */
 export function AnimateQueueProvider(
   this: AnimateQueueProviderInstance,
   $animateProvider: AnimateProviderLike,
@@ -101,10 +160,7 @@ export function AnimateQueueProvider(
     join: [],
   });
 
-  /**
-   * @param {AnimationOptions} options
-   * @return {import("../queue/interface.ts").QueueAnimationData}
-   */
+  /** Extracts event payload data from animation options. */
   function getEventData(options: AnimationOptions): QueueAnimationData {
     return {
       addClass: options.addClass,
@@ -114,10 +170,7 @@ export function AnimateQueueProvider(
     };
   }
 
-  /**
-   * @param {string} classString
-   * @return {Record<string, string>}
-   */
+  /** Builds a lookup map from a space-delimited class string. */
   function makeTruthyCssClassMap(classString: string): Record<string, boolean> {
     const keys = classString.split(ONE_SPACE);
 
@@ -130,10 +183,7 @@ export function AnimateQueueProvider(
     return map;
   }
 
-  /**
-   * @param {string} newClassString
-   * @param {string} currentClassString
-   */
+  /** Returns true when two class lists share at least one class name. */
   function hasMatchingClasses(
     newClassString?: string | null,
     currentClassString?: string | null,
@@ -149,11 +199,7 @@ export function AnimateQueueProvider(
     return undefined;
   }
 
-  /**
-   * @param {string} ruleType
-   * @param {AnimationOptions} currentAnimation
-   * @param {any} previousAnimation
-   */
+  /** Evaluates whether the current animation is allowed for a given rule type. */
   function isAllowed(
     ruleType: RuleType,
     currentAnimation: QueueAnimationState,
@@ -164,10 +210,7 @@ export function AnimateQueueProvider(
     );
   }
 
-  /**
-   * @param {AnimationOptions} animation
-   * @param {boolean | undefined} [and]
-   */
+  /** Checks whether an animation carries add/remove class work. */
   function hasAnimationClasses(
     animation: { addClass?: string | null; removeClass?: string | null },
     and = false,
@@ -180,13 +223,13 @@ export function AnimateQueueProvider(
   }
 
   rules.join.push(
-    (/** @type {AnimationOptions} */ newAnimation) =>
+    (newAnimation: QueueAnimationState) =>
       // if the new animation is class-based then we can just tack that on
       !newAnimation.structural && hasAnimationClasses(newAnimation),
   );
 
   rules.skip.push(
-    (/** @type {AnimationOptions} */ newAnimation) =>
+    (newAnimation: QueueAnimationState) =>
       // there is no need to animate anything if no classes are being added and
       // there is no structural animation that will be triggered
       !newAnimation.structural && !hasAnimationClasses(newAnimation),
@@ -258,13 +301,7 @@ export function AnimateQueueProvider(
     $t._rootScope,
     $t._injector,
     $t._animation,
-    /**
-     *
-     * @param {ng.RootScopeService} $rootScope
-     * @param {ng.InjectorService} $injector
-     * @param {import("../interface.ts").AnimationService} $$animation
-     * @returns {import("../queue/interface.ts").AnimateQueueService}
-     */
+    /** Creates the runtime animation queue service. */
     function (
       $rootScope: ng.RootScopeService,
       $injector: ng.InjectorService,
@@ -319,10 +356,7 @@ export function AnimateQueueProvider(
             return classNameFilter.test(className);
           };
 
-      /**
-       * @param {HTMLElement} element
-       * @param {import("../interface.ts").AnimationOptions} animation
-       */
+      /** Normalizes animation details before they are passed to drivers. */
       function normalizeAnimationDetails(
         element: HTMLElement,
         animation: QueueAnimationState,
@@ -330,12 +364,7 @@ export function AnimateQueueProvider(
         return mergeAnimationDetails(element, animation as any, {} as any);
       }
 
-      /**
-       * @param {Node | null} targetParentNode
-       * @param {Node} targetNode
-       * @param {string} event
-       * @returns {import("../queue/interface.ts").AnimateEventCallback[]}
-       */
+      /** Finds callbacks that match a target node or its leave parent. */
       function findCallbacks(
         targetParentNode: Node | null,
         targetNode: Node,
@@ -362,11 +391,7 @@ export function AnimateQueueProvider(
         return matches;
       }
 
-      /**
-       * @param {any[]} list
-       * @param {Node | NodeList | undefined} matchContainer
-       * @param {Function | undefined} [matchCallback]
-       */
+      /** Filters callback registry entries by container node and optional callback. */
       function filterFromRegistry(
         list: { node: Element; callback: AnimateEventCallback }[],
         matchContainer?: Node | NodeList,
@@ -385,10 +410,7 @@ export function AnimateQueueProvider(
         });
       }
 
-      /**
-       * @param {string} phase
-       * @param {Element} node
-       */
+      /** Cleans up event listeners after an animation phase completes. */
       function cleanupEventListeners(phase: string, node: Element): void {
         if (phase === "close" && !node.parentNode) {
           // If the element is not attached to a parentNode, it has been removed by
@@ -475,12 +497,7 @@ export function AnimateQueueProvider(
 
       return $animate;
 
-      /**
-       * @param {Element} originalElement
-       * @param {string} event
-       * @param {*} initialOptions
-       * @returns {AnimateRunner}
-       */
+      /** Queues an animation request and returns the runner for it. */
       function queueAnimation(
         originalElement: Element,
         event: string,
@@ -794,7 +811,7 @@ export function AnimateQueueProvider(
           runner.setHost(realRunner);
           notifyProgress(runner, event, "start", getEventData(options));
 
-          realRunner.done((status) => {
+          realRunner.done((status: boolean) => {
             close(!status);
 
             if (activeAnimationsLookup.get(node)?.counter === counter) {
@@ -809,12 +826,7 @@ export function AnimateQueueProvider(
 
         return runner;
 
-        /**
-         * @param {AnimateRunner} runnerParam
-         * @param {string} eventParam
-         * @param {string} phase
-         * @param {import("../queue/interface.ts").QueueAnimationData} data
-         */
+        /** Broadcasts animation progress to matching callbacks and the runner. */
         function notifyProgress(
           runnerParam: AnimateRunner,
           eventParam: string,
@@ -836,9 +848,7 @@ export function AnimateQueueProvider(
           runnerParam.progress(eventParam, phase, data);
         }
 
-        /**
-         * @param {boolean | undefined} [reject]
-         */
+        /** Completes an animation and applies its final DOM work. */
         function close(reject?: boolean) {
           clearGeneratedClasses(element as HTMLElement, options);
           applyAnimationClasses(element as HTMLElement, options);
@@ -855,10 +865,7 @@ export function AnimateQueueProvider(
        * animation state, ends running animations, and removes them from the
        * activeAnimationsLookup if appropriate.
        *
-       * @param {Element | ParentNode} node
-       *   The DOM node whose descendant animations should be closed.
-       *
-       * @returns {void}
+       * The DOM node whose descendant animations should be closed.
        */
       function closeChildAnimations(node: Element | ParentNode): void {
         const children = node.querySelectorAll(`[${NG_ANIMATE_ATTR_NAME}]`);
@@ -885,9 +892,7 @@ export function AnimateQueueProvider(
         });
       }
 
-      /**
-       * @param {Element} node
-       */
+      /** Clears the tracked animation state for an element. */
       function clearElementAnimationState(node: Element): void {
         node.removeAttribute(NG_ANIMATE_ATTR_NAME);
         activeAnimationsLookup.delete(node);
@@ -899,8 +904,6 @@ export function AnimateQueueProvider(
        * b) a parent element has an ongoing structural animation, and animateChildren is false
        * c) the element is not a child of the body
        * d) the element is not a child of the $rootElement
-       * @param {Element} node
-       * @param {Element} parentNode
        */
       function areAnimationsAllowed(
         node: Element,
@@ -1009,11 +1012,7 @@ export function AnimateQueueProvider(
         return allowAnimation && rootNodeDetected && bodyNodeDetected;
       }
 
-      /**
-       * @param {Element} node
-       * @param {number} state
-       * @param {AnimationOptions} [details]
-       */
+      /** Records the current animation state metadata on an element. */
       function markElementAnimationState(
         node: Element,
         state: number,

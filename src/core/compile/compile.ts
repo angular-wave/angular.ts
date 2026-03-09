@@ -51,6 +51,7 @@ import { Attributes } from "./attributes.ts";
 import { ngObserveDirective } from "../../directive/observe/observe.ts";
 import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.ts";
 import type { Component } from "../../interface.ts";
+import type { InterpolationFunction } from "../interpolate/interpolate.ts";
 import type { SanitizeUriProvider } from "../sanitize/sanitize-uri.ts";
 import type {
   AttrInterpolateLinkState,
@@ -91,6 +92,7 @@ import type {
   PublicLinkFn,
   RegisterComponentFn,
   RegisterDirectiveFn,
+  SimpleChange,
   StrictComponentBindingsAccessor,
   TemplateLinkingFunctionOptions,
   TextInterpolateLinkState,
@@ -98,10 +100,6 @@ import type {
   BoundTranscludeFn,
   StoredNodeLinkFn,
 } from "./interface.ts";
-
-/** @typedef {import("./interface.ts").NodeLinkFn} NodeLinkFn */
-/** @typedef {import("./interface.ts").StoredNodeLinkFn} StoredNodeLinkFn */
-/** @typedef {import("./interface.ts").TranscludedNodes} TranscludedNodes */
 
 const $compileMinErr = minErr("$compile");
 
@@ -140,32 +138,19 @@ export class CompileProvider {
   ) => this;
   $get: any;
 
-  /**
-   * @param {ng.ProvideService} $provide
-   * @param {import('../sanitize/sanitize-uri.ts').SanitizeUriProvider} $sanitizeUriProvider
-   */
+  /** Configures directive registration and compile-time provider behavior. */
   constructor(
     $provide: ng.ProvideService,
     $sanitizeUriProvider: SanitizeUriProvider,
   ) {
     const provider = this;
-
-    /**
-     * @type {Record<string, any>}
-     */
     const hasDirectives: DirectiveRegistry = {};
 
     const bindingCache = nullObject() as Record<string, IsolateBinding>;
 
-    /** @type {Record<string, any[] | undefined>} */
     const directiveLookupCache: DirectiveLookupCache = nullObject();
 
-    /**
-     * @param {Object} scope
-     * @param {string} directiveName
-     * @param {boolean} isController
-     * @returns {Object} a configuration object for attribute bindings
-     */
+    /** Parses isolate-scope or controller binding definitions for a directive. */
     function parseIsolateBindings(
       scope: Record<string, string>,
       directiveName: string,
@@ -214,10 +199,7 @@ export class CompileProvider {
       return bindings;
     }
 
-    /**
-     * @param {ng.Directive} directive
-     * @param {string} directiveName
-     */
+    /** Collects the parsed scope and controller binding configuration for a directive. */
     function parseDirectiveBindings(
       directive: ng.Directive,
       directiveName: string,
@@ -267,12 +249,12 @@ export class CompileProvider {
     /**
      * Register a new directive with the compiler.
      *
-     * @param {string|Object} name Name of the directive in camel-case (i.e. `ngBind` which will match
+     * @param name - Name of the directive in camel-case (i.e. `ngBind` which will match
      *    as `ng-bind`), or an object map of directives where the keys are the names and the values
      *    are the factories.
-     * @param {Function|Array<Function>} directiveFactory An injectable directive factory function. See the
+     * @param directiveFactory - An injectable directive factory function. See the
      *    {@link guide/directive directive guide} and the {@link $compile compile API} for more info.
-     * @returns {CompileProvider} Self for chaining.
+     * @returns Self for chaining.
      */
     const registerDirective = function registerDirective(
       this: CompileProvider,
@@ -293,10 +275,7 @@ export class CompileProvider {
           $provide.factory(name + DirectiveSuffix, [
             $injectTokens._injector,
             $injectTokens._exceptionHandler,
-            /**
-             * @param {ng.InjectorService} $injector
-             * @param {ng.ExceptionHandlerService} $exceptionHandler
-             */
+            /** Instantiates and normalizes the registered directive factories for one name. */
             function (
               $injector: ng.InjectorService,
               $exceptionHandler: ng.ExceptionHandlerService,
@@ -356,9 +335,9 @@ export class CompileProvider {
     this.directive = registerDirective;
 
     /**
-     * @param {string|Object} name Name of the component in camelCase (i.e. `myComp` which will match `<my-comp>`),
+     * @param name - Name of the component in camelCase (i.e. `myComp` which will match `<my-comp>`),
      *    or an object map of components where the keys are the names and the values are the component definition objects.
-     * @param {import("../../interface.ts").Component} options Component definition object (a simplified
+     * @param options - Component definition object (a simplified
      *    {directive definition object}),
      *    with the following properties (all optional):
      *
@@ -397,7 +376,7 @@ export class CompileProvider {
      *    - `$...` – additional properties to attach to the directive factory function and the controller
      *      constructor function. (This is used by the component router to annotate)
      *
-     * @returns {CompileProvider} the compile provider itself, for chaining of function calls.
+     * @returns The compile provider itself, for chaining of function calls.
      */
     const registerComponent = function registerComponent(
       this: CompileProvider,
@@ -420,13 +399,9 @@ export class CompileProvider {
           /* empty */
         };
 
-      /**
-       * @param {ng.InjectorService} $injector
-       */
+      /** Creates the component-backed directive definition factory. */
       function factory($injector: ng.InjectorService) {
-        /**
-         * @param {string | Function | ng.AnnotatedFactory<any> | undefined} fn
-         */
+        /** Wraps injectable component options so `$element` and `$attrs` are available. */
         const makeInjectable = (
           fn: string | Function | ng.AnnotatedFactory<any> | undefined,
         ) => {
@@ -506,8 +481,8 @@ export class CompileProvider {
      * regular expression. If a match is found, the original url is written into the dom. Otherwise,
      * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
      *
-     * @param {RegExp=} regexp New regexp to trust urls with.
-     * @returns {RegExp|import('../sanitize/sanitize-uri.ts').SanitizeUriProvider} Current RegExp if called without value or self for
+     * @param regexp - New regexp to trust urls with.
+     * @returns Current RegExp if called without value or self for
      *    chaining otherwise.
      */
     this.aHrefSanitizationTrustedUrlList = function (regexp?: RegExp) {
@@ -529,8 +504,8 @@ export class CompileProvider {
      * regular expression. If a match is found, the original url is written into the dom. Otherwise,
      * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
      *
-     * @param {RegExp=} regexp New regexp to trust urls with.
-     * @returns {RegExp|import('../sanitize/sanitize-uri.ts').SanitizeUriProvider | undefined} Current RegExp if called without value or self for
+     * @param regexp - New regexp to trust urls with.
+     * @returns Current RegExp if called without value or self for
      *    chaining otherwise.
      */
     this.imgSrcSanitizationTrustedUrlList = function (regexp?: RegExp) {
@@ -544,9 +519,9 @@ export class CompileProvider {
     };
 
     /**
-     * @param {boolean=} enabled update the strictComponentBindingsEnabled state if provided,
+     * @param enabled - Update the strictComponentBindingsEnabled state if provided,
      * otherwise return the current strictComponentBindingsEnabled state.
-     * @returns {*} current value if used as getter or itself (chaining) if used as setter
+     * @returns Current value if used as getter or itself (chaining) if used as setter.
      *
      * Call this method to enable / disable the strict component bindings check. If enabled, the
      * compiler will enforce that all scope / controller bindings of a
@@ -560,7 +535,8 @@ export class CompileProvider {
     let strictComponentBindingsEnabled = false;
 
     this.strictComponentBindingsEnabled =
-      /** @param {boolean} enabled */ function (enabled?: boolean) {
+      /** @param enabled */
+      function (enabled?: boolean) {
         if (isDefined(enabled)) {
           strictComponentBindingsEnabled = enabled;
 
@@ -578,10 +554,10 @@ export class CompileProvider {
     /**
      * Defines the security context for DOM properties bound by ng-prop-*.
      *
-     * @param {string} elementName The element name or '*' to match any element.
-     * @param {string} propertyName The DOM property name.
-     * @param {string} ctx The {@link _sce} security context in which this value is safe for use, e.g. `$sce.URL`
-     * @returns {object} `this` for chaining
+     * @param elementName - The element name or '*' to match any element.
+     * @param propertyName - The DOM property name.
+     * @param ctx - The {@link _sce} security context in which this value is safe for use, e.g. `$sce.URL`
+     * @returns `this` for chaining.
      */
     this.addPropertySecurityContext = function (
       elementName: string,
@@ -616,10 +592,7 @@ export class CompileProvider {
      * - *|formAction, form|action URL => RESOURCE_URL (like the attribute)
      */
     (function registerNativePropertyContexts() {
-      /**
-       * @param {string} ctx
-       * @param {any[]} items
-       */
+      /** Registers the same security context for a list of `element|property` keys. */
       function registerContext(ctx: string, items: string[]) {
         items.forEach((v) => {
           PROP_CONTEXTS[v.toLowerCase()] = ctx;
@@ -682,17 +655,7 @@ export class CompileProvider {
       $t._controller,
       $t._sce,
       $t._animate,
-      /**
-       * @param {ng.InjectorService} $injector
-       * @param {ng.InterpolateService} $interpolate
-       * @param {ng.ExceptionHandlerService} $exceptionHandler
-       * @param {ng.TemplateRequestService} $templateRequest
-       * @param {ng.ParseService} $parse
-       * @param {ng.ControllerService} $controller
-       * @param {ng.SceService} $sce
-       * @param {ng.AnimateService} $animate
-       * @returns {ng.CompileService}
-       */
+      /** Creates the runtime `$compile` service and its shared helper closures. */
       (
         $injector: ng.InjectorService,
         $interpolate: ng.InterpolateService,
@@ -705,9 +668,6 @@ export class CompileProvider {
       ) => {
         // The onChanges hooks should all be run together in a single digest
         // When changes occur, the call to trigger their hooks will be added to this queue
-        /**
-         * @type {(() => void)[]}
-         */
         const onChangesQueue: Array<() => void> = [];
 
         // This function is called in a $postUpdate to trigger all the onChanges hooks in a single digest
@@ -727,7 +687,6 @@ export class CompileProvider {
 
         const endSymbol = $interpolate.endSymbol();
 
-        /** @type {(x: string) => string} */
         const denormalizeTemplate =
           startSymbol === "{{" && endSymbol === "}}"
             ? (x: string) => x
@@ -736,9 +695,6 @@ export class CompileProvider {
 
         return compile;
 
-        /**
-         * @type {ng.CompileService}
-         */
         function compile(
           element: Parameters<CompileFn>[0],
           transcludeFn?: Parameters<CompileFn>[1],
@@ -746,13 +702,11 @@ export class CompileProvider {
           ignoreDirective?: Parameters<CompileFn>[3],
           previousCompileContext?: Parameters<CompileFn>[4],
         ): PublicLinkFn {
-          /** @type {NodeRef | null} */
           let nodeRef = element ? new NodeRef(element) : null;
 
           /**
            * The composite link function is a composite of individual node linking functions.
            * It will be invoke by the public link function below.
-           * @type {ng.CompositeLinkFn | null}
            */
           let compositeLinkFn = compileNodes(
             nodeRef,
@@ -762,9 +716,6 @@ export class CompileProvider {
             previousCompileContext,
           );
 
-          /**
-           * @type {string | null}
-           */
           let namespace: string | null = null;
 
           const publicLinkFn: PublicLinkFn = function (
@@ -817,7 +768,6 @@ export class CompileProvider {
             if (!namespace) {
               namespace = detectNamespaceForChildElements(_futureParentElement);
             }
-            /** @type {NodeRef} */
             let $linkNode;
 
             if (namespace !== "html") {
@@ -877,11 +827,6 @@ export class CompileProvider {
 
         /**
          * Runs node-level and child-level link functions for one compiled node list using precomputed mapping state.
-         *
-         * @param {CompositeLinkState} state
-         * @param {Node[]} stableNodeList
-         * @param {ng.Scope} scope
-         * @param {*} _parentBoundTranscludeFn
          */
         function linkCompositeNodes(
           state: CompositeLinkState,
@@ -946,55 +891,22 @@ export class CompileProvider {
         }
 
         /**
-         * Compiles a `NodeRef` (single node or node-list) into a composite linking function.
+         * Compiles a `NodeRef` into a composite linking function.
          *
-         * Walks each node in `nodeRefList`, collects and applies directives (including template/templateUrl
-         * and transclusion handling), then recursively compiles child nodes when appropriate. The result is
-         * a `CompositeLinkFn` that, when invoked, links all compiled nodes in a stable order and wires up
-         * any required bound transclusion functions.
-         *
-         * Notes:
-         * - If no directives (or child link fns) are found anywhere in the list, this returns `null`.
-         * - `previousCompileContext` is only applied to the first node in a “virtual group” and is cleared
-         *   for subsequent nodes.
-         *
-         * @param {NodeRef | null} nodeRefList
-         *   The compilation root: either a single node wrapper or a wrapper around a NodeList/array.
-         * @param {ChildTranscludeOrLinkFn | null | undefined} transcludeFn
-         *   Parent transclusion/link function propagated down during compilation. When compiling child nodes,
-         *   this may be replaced with a node-specific transclusion function (e.g. for element transclusion or
-         *   template compilation).
-         * @param {number | undefined} [maxPriority]
-         *   If provided, directives with priority >= `maxPriority` are ignored on the first node in the list.
-         *   (Used to stop further directive application when compiling a subset.)
-         * @param {string | undefined} [ignoreDirective]
-         *   Normalized directive name to ignore while collecting directives (used to prevent recursion when
-         *   compiling transcluded content).
-         * @param {PreviousCompileContext | null | undefined} [previousCompileContext]
-         *   Internal bookkeeping passed through compilation passes to coordinate replace/transclusion/templateUrl
-         *   and virtual-group indexing.
-         *
-         * @returns {CompositeLinkFn | null}
-         *   A composite linking function for the compiled node list, or `null` if nothing requires linking.
+         * Walks each node, applies directives, recursively compiles children when needed,
+         * and returns a stable composite linker for the whole node list.
          */
-        const compileNodes: CompileNodesFn = function compileNodes(
-          nodeRefList,
-          transcludeFn,
-          maxPriority,
-          ignoreDirective,
-          previousCompileContext,
-        ) {
+        function compileNodes(
+          nodeRefList: Parameters<CompileNodesFn>[0],
+          transcludeFn?: Parameters<CompileNodesFn>[1],
+          maxPriority?: Parameters<CompileNodesFn>[2],
+          ignoreDirective?: Parameters<CompileNodesFn>[3],
+          previousCompileContext?: Parameters<CompileNodesFn>[4],
+        ): ReturnType<CompileNodesFn> {
           if (!nodeRefList) return null;
-          /**
-           * Aggregates for the composite linking function, where a node in a node list is mapped
-           * to a corresponding link function. For single elements, the node should be mapped to
-           * a single node link function.
-           * @type {ng.LinkFnMapping[]}
-           */
           const linkFnsList: LinkFnMapping[] = []; // An array to hold node indices and their linkFns
 
-          /** @type {Function | undefined} */
-          let nodeLinkFnFound;
+          let nodeLinkFnFound: NodeLinkFn | StoredNodeLinkFn | undefined;
 
           let linkFnFound = false;
 
@@ -1008,7 +920,6 @@ export class CompileProvider {
               ignoreDirective,
             );
 
-            /** @type {ng.NodeLinkFnCtx | undefined} */
             let nodeLinkFnCtx: NodeLinkFnCtx | undefined;
 
             if (directives.length) {
@@ -1078,8 +989,7 @@ export class CompileProvider {
             return null;
           }
 
-          /** @type {CompositeLinkState} */
-          const compositeLinkState = {
+          const compositeLinkState: CompositeLinkState = {
             _linkFnsList: linkFnsList,
             _nodeRefList: nodeRefList,
             _nodeLinkFnFound: nodeLinkFnFound,
@@ -1105,18 +1015,10 @@ export class CompileProvider {
               _parentBoundTranscludeFn || null,
             );
           };
-        };
+        }
 
         /**
          * Prebinds a transclusion function to a parent scope and threads parent-bound transclusion context.
-         *
-         * @param {ng.Scope} scope
-         *   The parent scope used to derive transcluded scopes when one is not explicitly provided.
-         * @param {ng.TranscludeFn} transcludeFn
-         *   The underlying transclusion function to wrap (must expose `_slots` if slot transclusion is used).
-         * @param {BoundTranscludeFn | null | undefined} [previousBoundTranscludeFn]
-         *   Parent bound transclusion function (used to support nested transclusion).
-         * @returns {BoundTranscludeFn}
          */
         function createBoundTranscludeFn(
           scope: import("../scope/scope.ts").Scope,
@@ -1125,19 +1027,6 @@ export class CompileProvider {
         ): BoundTranscludeFn {
           /**
            * Scope-bound wrapper that ensures a transcluded scope exists and forwards to `transcludeFn`.
-           *
-           * @param {ng.Scope | null | undefined} transcludedScope
-           *   The scope to use for transcluded content; if omitted/falsey, a new one is created via
-           *   `scope.$transcluded(containingScope)`.
-           * @param {CloneAttachFn | undefined} cloneFn
-           *   Optional clone-attach callback for the transcluded DOM.
-           * @param {unknown} controllers
-           *   Controllers to expose to the transclusion (used for element transclusion cases).
-           * @param {Node | Element | null | undefined} _futureParentElement
-           *   The element that will ultimately contain the transcluded nodes.
-           * @param {ng.Scope | undefined} containingScope
-           *   The “anchor” scope at the transclusion point, used to derive the transcluded scope.
-           * @returns {TranscludedNodes | void}
            */
           function boundTranscludeFn(
             transcludedScope?: import("../scope/scope.ts").Scope | null,
@@ -1147,9 +1036,7 @@ export class CompileProvider {
             containingScope?: import("../scope/scope.ts").Scope,
           ) {
             if (!transcludedScope) {
-              transcludedScope = scope.$transcluded(
-                /** @type {ng.Scope} */ containingScope,
-              );
+              transcludedScope = scope.$transcluded(containingScope);
             }
 
             const transcludeRes = transcludeFn(transcludedScope, cloneFn, {
@@ -1184,11 +1071,10 @@ export class CompileProvider {
          * Looks for directives on the given node and adds them to the directive collection which is
          * sorted.
          *
-         * @param {Element} node Node to search.
-         * @param {Attributes|any} attrs The shared attrs object which is used to populate the normalized attributes.
-         * @param {number=} maxPriority Max directive priority.
-         * @param {string} [ignoreDirective]
-         * @return {InternalDirective[]} An array to which the directives are added to. This array is sorted before the function returns.
+         * @param node - Node to search.
+         * @param attrs - The shared attrs object which is used to populate the normalized attributes.
+         * @param maxPriority - Max directive priority.
+         * @returns An array to which the directives are added. This array is sorted before the function returns.
          */
         function collectDirectives(
           node: Element,
@@ -1352,13 +1238,6 @@ export class CompileProvider {
         /**
          * A function generator that is used to support both eager and lazy compilation
          * linking function.
-         * @param {boolean} eager
-         * @param {NodeList | Node | null} nodes
-         * @param {ChildTranscludeOrLinkFn | null | undefined} transcludeFn
-         * @param {number | undefined} maxPriority
-         * @param {string | undefined} ignoreDirective
-         * @param {{ _nonTlbTranscludeDirective?: any; _needsNewScope?: any; } | null | undefined} previousCompileContext
-         * @returns {ng.PublicLinkFn | ng.TranscludeFn}
          */
         function compilationGenerator(
           eager: boolean,
@@ -1371,11 +1250,10 @@ export class CompileProvider {
             _needsNewScope?: any;
           } | null,
         ): ng.PublicLinkFn | ng.TranscludeFn {
-          /** @type { ng.PublicLinkFn | undefined } */
           let compiled: ng.PublicLinkFn | undefined;
 
           if (eager) {
-            return /** @type {ng.PublicLinkFn} */ compile(
+            return compile(
               nodes,
               transcludeFn,
               maxPriority,
@@ -1384,10 +1262,7 @@ export class CompileProvider {
             );
           }
 
-          /**
-           * @param {Parameters<PublicLinkFn>} args
-           * @returns {ReturnType<PublicLinkFn>}
-           */
+          /** Defers compilation until the returned linker/transclude function is first invoked. */
           function lazyCompilation(...args: Parameters<PublicLinkFn>) {
             if (!compiled) {
               compiled = compile(
@@ -1404,18 +1279,11 @@ export class CompileProvider {
             return compiled(...args);
           }
 
-          return /** @type {ng.PublicLinkFn} */ lazyCompilation;
+          return lazyCompilation;
         }
 
         /**
          * Stores link metadata in a compact record so linking can use shared invokers instead of wrapped closures.
-         *
-         * @param {LinkFnRecord[]} linkFns
-         * @param {Function | null | undefined} linkFn
-         * @param {string | Array<any> | Record<string, any> | undefined} require
-         * @param {string} directiveName
-         * @param {boolean} isolateScope
-         * @param {any} [linkCtx]
          */
         function pushLinkFnRecord(
           linkFns: LinkFnRecord[],
@@ -1438,17 +1306,7 @@ export class CompileProvider {
           });
         }
 
-        /**
-         * Invokes a link record with consistent scope selection and argument ordering.
-         *
-         * @param {LinkFnRecord} linkFnRecord
-         * @param {import("../scope/scope.ts").Scope | undefined} isolateScope
-         * @param {import("../scope/scope.ts").Scope} scope
-         * @param {Node} node
-         * @param {Attributes} attrs
-         * @param {*} controllers
-         * @param {*} transcludeFn
-         */
+        /** Invokes a link record with consistent scope selection and argument ordering. */
         function invokeLinkFnRecord(
           linkFnRecord: LinkFnRecord,
           isolateScope: import("../scope/scope.ts").Scope | undefined,
@@ -1478,13 +1336,7 @@ export class CompileProvider {
           );
         }
 
-        /**
-         * Shared post-link executor for text interpolation directives.
-         *
-         * @param {TextInterpolateLinkState} linkState
-         * @param {import("../scope/scope.ts").Scope} scope
-         * @param {Node} node
-         */
+        /** Shared post-link executor for text interpolation directives. */
         function textInterpolateLinkFn(
           linkState: TextInterpolateLinkState,
           scope: import("../scope/scope.ts").Scope,
@@ -1503,10 +1355,6 @@ export class CompileProvider {
         /**
          * Applies the latest interpolated attribute value using the same class/srcset special cases
          * as the original inline pre-link closure.
-         *
-         * @param {AttrInterpolateLinkState} linkState
-         * @param {Attributes} attr
-         * @param {string} value
          */
         function applyInterpolatedAttrValue(
           linkState: AttrInterpolateLinkState,
@@ -1534,11 +1382,6 @@ export class CompileProvider {
         /**
          * Shared pre-link executor for interpolated attributes. The mutable link state keeps the
          * current interpolation function in sync if an earlier compile step rewrites the attribute.
-         *
-         * @param {AttrInterpolateLinkState} linkState
-         * @param {import("../scope/scope.ts").Scope} scope
-         * @param {Node} _element
-         * @param {Attributes} attr
          */
         function attrInterpolatePreLinkFn(
           linkState: AttrInterpolateLinkState,
@@ -1546,90 +1389,75 @@ export class CompileProvider {
           _element: Node,
           attr: Attributes,
         ) {
-          const typedLinkState = linkState as AttrInterpolateLinkState;
           const _observers =
             attr._observers || (attr._observers = nullObject());
 
           // Recompute interpolation if another compile step rewrote the attribute value.
-          const attrsAny = /** @type {Record<string, any>} */ attr;
+          const attrsAny = attr as Record<string, any>;
 
-          const newValue = attrsAny[typedLinkState._name];
+          const newValue = attrsAny[linkState._name];
 
-          if (newValue !== typedLinkState._value) {
-            typedLinkState._interpolateFn =
-              /** @type {import("../interpolate/interface.ts").InterpolationFunction | undefined} */ newValue &&
-              $interpolate(
+          if (newValue !== linkState._value) {
+            linkState._interpolateFn = newValue
+              ? ($interpolate(
                 newValue,
                 true,
-                typedLinkState._trustedContext,
-                typedLinkState._allOrNothing,
-              );
-            typedLinkState._value = newValue;
+                linkState._trustedContext,
+                linkState._allOrNothing,
+              ) as InterpolationFunction | undefined)
+              : undefined;
+            linkState._value = newValue;
           }
 
-          if (!typedLinkState._interpolateFn) {
+          if (!linkState._interpolateFn) {
             return;
           }
 
-          const interpolateFn = typedLinkState._interpolateFn;
+          const interpolateFn = linkState._interpolateFn;
 
-          attrsAny[typedLinkState._name] = interpolateFn(scope);
+          attrsAny[linkState._name] = interpolateFn(scope);
           (
-            _observers[typedLinkState._name] ||
-            (_observers[typedLinkState._name] = [])
+            _observers[linkState._name] ||
+            (_observers[linkState._name] = [])
           )._inter = true;
 
-          if (typedLinkState._interpolateFn.expressions.length > 0) {
+          if (linkState._interpolateFn.expressions.length > 0) {
             const targetScope =
-              (attr._observers &&
-                attr._observers[typedLinkState._name]._scope) ||
+              (attr._observers && attr._observers[linkState._name]._scope) ||
               scope;
 
             const watchExpression = buildInterpolationWatchExpression(
-              typedLinkState._interpolateFn.expressions,
+              linkState._interpolateFn.expressions,
             );
 
             targetScope.$watch(watchExpression, () => {
               applyInterpolatedAttrValue(
-                typedLinkState,
+                linkState,
                 attr,
                 interpolateFn(scope),
               );
             });
           }
 
-          if (typedLinkState._interpolateFn.expressions.length === 0) {
+          if (linkState._interpolateFn.expressions.length === 0) {
             applyInterpolatedAttrValue(linkState, attr, newValue);
           }
         }
 
-        /**
-         * Applies one property binding update using the parsed getter and sanitizer captured at compile time.
-         *
-         * @param {PropertyDirectiveLinkState} linkState
-         * @param {import("../scope/scope.ts").Scope} scope
-         * @param {{ [x: string]: any; }} $element
-         */
+        /** Applies one property binding update using the parsed getter and sanitizer captured at compile time. */
         function applyPropertyDirectiveValue(
           linkState: PropertyDirectiveLinkState,
           scope: import("../scope/scope.ts").Scope,
           $element: { [x: string]: any },
         ) {
-          const typedLinkState = linkState as PropertyDirectiveLinkState;
-          const propValue = typedLinkState._ngPropGetter(scope);
+          const propValue = linkState._ngPropGetter(scope);
 
-          $element[typedLinkState._propName] =
-            typedLinkState._sanitizer(propValue);
+          $element[linkState._propName] = linkState._sanitizer(propValue);
         }
 
         /**
          * Shared pre-link executor for `ng-prop-*` bindings. Watch callbacks still need per-link state,
          * but the compile-time getter/sanitizer wiring is now reused.
-         *
-         * @param {PropertyDirectiveLinkState} linkState
-         * @param {import("../scope/scope.ts").Scope} scope
-         * @param {{ [x: string]: any; }} $element
-         * @param {Attributes} attr
          */
         function propertyDirectivePreLinkFn(
           linkState: PropertyDirectiveLinkState,
@@ -1637,30 +1465,23 @@ export class CompileProvider {
           $element: { [x: string]: any },
           attr: Attributes,
         ) {
-          const typedLinkState = linkState as PropertyDirectiveLinkState;
-          const attrsAny = /** @type {Record<string, any>} */ attr;
+          const attrsAny = attr as Record<string, any>;
 
-          applyPropertyDirectiveValue(typedLinkState, scope, $element);
+          applyPropertyDirectiveValue(linkState, scope, $element);
 
-          scope.$watch(typedLinkState._propName, () => {
-            applyPropertyDirectiveValue(typedLinkState, scope, $element);
+          scope.$watch(linkState._propName, () => {
+            applyPropertyDirectiveValue(linkState, scope, $element);
           });
 
-          scope.$watch(attrsAny[typedLinkState._attrName], (val: any) => {
+          scope.$watch(attrsAny[linkState._attrName], (val: any) => {
             $sce.valueOf(val);
-            applyPropertyDirectiveValue(typedLinkState, scope, $element);
+            applyPropertyDirectiveValue(linkState, scope, $element);
           });
         }
 
         /**
          * Invokes node link functions that may either be direct link functions or shared executors
          * that read their per-node state from `nodeLinkFnCtx`.
-         *
-         * @param {NodeLinkFnCtx} nodeLinkFnCtx
-         * @param {ChildLinkFn | CompositeLinkFn | null | undefined} childLinkFn
-         * @param {import("../scope/scope.ts").Scope} scope
-         * @param {Node | Element} node
-         * @param {BoundTranscludeFn | null} boundTranscludeFn
          */
         function invokeNodeLinkFnCtx(
           nodeLinkFnCtx: NodeLinkFnCtx,
@@ -1690,11 +1511,6 @@ export class CompileProvider {
         /**
          * Links against a resolved async template using the already materialized node.
          * This is the direct path for links that happen after the template has loaded.
-         *
-         * @param {DelayedTemplateLinkState} delayedState
-         * @param {import("../scope/scope.ts").Scope} scope
-         * @param {Node | Element} node
-         * @param {BoundTranscludeFn | null | undefined} boundTranscludeFn
          */
         function invokeResolvedTemplateNodeLink(
           delayedState: DelayedTemplateLinkState,
@@ -1724,8 +1540,7 @@ export class CompileProvider {
             delayedState._afterTemplateChildLinkFn,
             scope,
             node,
-            /** @type {BoundTranscludeFn | null} */ childBoundTranscludeFn ||
-              null,
+            childBoundTranscludeFn || null,
           );
         }
 
@@ -1733,11 +1548,6 @@ export class CompileProvider {
          * Replays one queued link request after an async templateUrl has resolved.
          * Queued requests may need clone/class reconciliation because the template DOM did not
          * exist at the time the original link request was recorded.
-         *
-         * @param {DelayedTemplateLinkState} delayedState
-         * @param {import("../scope/scope.ts").Scope} scope
-         * @param {Node | Element} beforeTemplateLinkNode
-         * @param {BoundTranscludeFn | null | undefined} boundTranscludeFn
          */
         function replayResolvedTemplateNodeLink(
           delayedState: DelayedTemplateLinkState,
@@ -1799,12 +1609,6 @@ export class CompileProvider {
         /**
          * Shared delayed link executor for async `templateUrl` directives. Until the template resolves,
          * it stores link requests in a compact queue; afterwards it links directly against the resolved template.
-         *
-         * @param {DelayedTemplateLinkState} delayedState
-         * @param {any} _ignoreChildLinkFn
-         * @param {import("../scope/scope.ts").Scope} scope
-         * @param {Node | Element} node
-         * @param {BoundTranscludeFn | null | undefined} boundTranscludeFn
          */
         function invokeDelayedTemplateNodeLinkFn(
           delayedState: DelayedTemplateLinkState,
@@ -1831,15 +1635,7 @@ export class CompileProvider {
           );
         }
 
-        /**
-         * Handles `$transclude(...)` calls for the shared node-link executor.
-         *
-         * @param {ControllersBoundTranscludeState} transcludeState
-         * @param {import("../scope/scope.ts").Scope | CloneAttachFn | undefined} scopeParam
-         * @param {CloneAttachFn | Node | null | undefined} cloneAttachFn
-         * @param {Node | null | undefined} _futureParentElement
-         * @param {string | number | undefined} slotName
-         */
+        /** Handles `$transclude(...)` calls for the shared node-link executor. */
         function invokeControllersBoundTransclude(
           transcludeState: ControllersBoundTranscludeState,
           scopeParam?: import("../scope/scope.ts").Scope | CloneAttachFn,
@@ -1919,12 +1715,6 @@ export class CompileProvider {
         /**
          * Reuses one implementation for the standard node-link path by passing all compile-time
          * state explicitly instead of closing over it in a per-node function.
-         *
-         * @param {NodeLinkState} nodeLinkState
-         * @param {ChildLinkFn | CompositeLinkFn | null | undefined} childLinkFn
-         * @param {import("../scope/scope.ts").Scope} scope
-         * @param {Node | Element} linkNode
-         * @param {BoundTranscludeFn | null} boundTranscludeFn
          */
         function invokeStoredNodeLinkFn(
           nodeLinkState: NodeLinkState,
@@ -1941,10 +1731,8 @@ export class CompileProvider {
 
           let scopeToChild = scope;
 
-          /** @type {NodeRef} */
           let $element!: NodeRef;
 
-          /** @type {Attributes} */
           let attrs!: Attributes;
 
           let scopeBindingInfo;
@@ -1971,13 +1759,12 @@ export class CompileProvider {
             controllerScope = scope.$parent;
           }
 
-          controllerScope = /** @type {ng.Scope} */ controllerScope || scope;
+          controllerScope = controllerScope || scope;
 
           let transcludeFn: NodeLinkTranscludeFn = nodeLinkState._transcludeFn;
 
           if (boundTranscludeFn) {
-            /** @type {ControllersBoundTranscludeState} */
-            const transcludeState = {
+            const transcludeState: ControllersBoundTranscludeState = {
               _boundTranscludeFn: boundTranscludeFn,
               _elementControllers: elementControllers,
               _hasElementTranscludeDirective:
@@ -1988,10 +1775,10 @@ export class CompileProvider {
 
             const controllersBoundTransclude: ControllersBoundTranscludeFn =
               function (
-                /** @type {import("../scope/scope.ts").Scope | CloneAttachFn | undefined} */ scopeParam,
-                /** @type {CloneAttachFn | Node | null | undefined} */ cloneAttachFn,
-                /** @type {Node | null | undefined} */ _futureParentElement,
-                /** @type {string | number | undefined} */ slotName,
+                scopeParam,
+                cloneAttachFn,
+                _futureParentElement,
+                slotName,
               ) {
                 transcludeState._scopeToChild = scopeToChild;
                 transcludeState._elementRef = $element;
@@ -2029,7 +1816,7 @@ export class CompileProvider {
               attrs,
               transcludeFn as ng.TranscludeFn,
               nodeLinkState._controllerDirectives,
-              /** @type {ng.Scope} */ isolateScope || scope,
+              isolateScope || scope,
               scope,
               nodeLinkState._newIsolateScopeDirective,
             );
@@ -2037,7 +1824,7 @@ export class CompileProvider {
 
           if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
             isolateScope.$target._isolateBindings =
-              /** @type {any} */ nodeLinkState._newIsolateScopeDirective._isolateBindings;
+              nodeLinkState._newIsolateScopeDirective._isolateBindings as any;
             scopeBindingInfo = initializeDirectiveBindings(
               scope,
               attrs,
@@ -2057,7 +1844,7 @@ export class CompileProvider {
             const controller = elementControllers[name];
 
             const bindings =
-              /** @type {any} */ controllerDirective._bindings.bindToController;
+              controllerDirective._bindings.bindToController as any;
 
             const controllerInstance = controller();
 
@@ -2068,7 +1855,7 @@ export class CompileProvider {
               controller.instance,
             );
             controller.bindingInfo = initializeDirectiveBindings(
-              /** @type {ng.Scope} */ controllerScope,
+              controllerScope,
               attrs,
               controller.instance,
               bindings,
@@ -2123,7 +1910,7 @@ export class CompileProvider {
               }
 
               if (isFunction(controllerInstance.$onDestroy)) {
-                /** @type {ng.Scope} */ controllerScope.$on("$destroy", () => {
+                controllerScope.$on("$destroy", () => {
                   controllerInstance.$onDestroy();
                 });
               }
@@ -2131,8 +1918,7 @@ export class CompileProvider {
           }
 
           for (let i = 0, ii = nodeLinkState._preLinkFns.length; i < ii; i++) {
-            const preLinkFn =
-              /** @type {LinkFnRecord} */ nodeLinkState._preLinkFns[i];
+            const preLinkFn: LinkFnRecord = nodeLinkState._preLinkFns[i];
 
             const controllers =
               preLinkFn._require &&
@@ -2179,8 +1965,7 @@ export class CompileProvider {
           }
 
           for (let i = nodeLinkState._postLinkFns.length - 1; i >= 0; i--) {
-            const postLinkFn =
-              /** @type {LinkFnRecord} */ nodeLinkState._postLinkFns[i];
+            const postLinkFn: LinkFnRecord = nodeLinkState._postLinkFns[i];
 
             const controllers =
               postLinkFn._require &&
@@ -2228,26 +2013,6 @@ export class CompileProvider {
          * - Run directive `compile()` functions (and collect pre/post link fns).
          * - Inline templates / handle `replace`, `templateUrl`, and transclusion.
          * - Track terminal directives and scope requirements for later linking.
-         *
-         * @param {InternalDirective[]} directives
-         *   Collected directives for this node (must be pre-sorted by priority).
-         * @param {Node | Element} compileNode
-         *   The DOM node to apply directive compilation against (may be replaced during compilation).
-         * @param {Attributes} templateAttrs
-         *   Shared, normalized attributes for the node at compile-time.
-         * @param {ChildTranscludeOrLinkFn} transcludeFn
-         *   Parent transclusion/link function passed down during compilation.
-         * @param {InternalDirective | null | undefined} originalReplaceDirective
-         *   The original directive that triggered a `replace` (ignored when compiling transclusion/template).
-         * @param {Array<LinkFnRecord>} [preLinkFns]
-         *   Accumulator for pre-link functions (executed in registration order).
-         * @param {Array<LinkFnRecord>} [postLinkFns]
-         *   Accumulator for post-link functions (executed in reverse order).
-         * @param {PreviousCompileContext} [previousCompileContext]
-         *   Internal bookkeeping for replace/transclusion/templateUrl compilation passes.
-         *
-         * @returns {NodeLinkFnCtx}
-         *   The node link context (nodeLinkFn + flags + transclusion/template metadata).
          */
         function applyDirectivesToNode(
           directives: InternalDirective[],
@@ -2287,18 +2052,15 @@ export class CompileProvider {
           const { _index } = previousCompileContext;
 
           templateAttrs._nodeRef = compileNodeRef;
-          /** @type {InternalDirective} */
-          let directive;
+          let directive: InternalDirective;
 
-          /** @type {string} */
-          let directiveName;
+          let directiveName: string;
 
           let $template: any;
 
           let replaceDirective = originalReplaceDirective;
 
-          /** @type {import("./interface.ts").ChildTranscludeOrLinkFn} */
-          let childTranscludeFn = transcludeFn;
+          let childTranscludeFn: ChildTranscludeOrLinkFn = transcludeFn;
 
           let didScanForMultipleTransclusion = false;
 
@@ -2306,10 +2068,9 @@ export class CompileProvider {
 
           let directiveValue: any;
 
-          /** @type {NodeLinkFn | StoredNodeLinkFn | undefined} */
-          let nodeLinkFn;
+          let nodeLinkFn: NodeLinkFn | StoredNodeLinkFn | undefined;
 
-          let nodeLinkFnState: any;
+          let nodeLinkFnState: NodeLinkState | DelayedTemplateLinkState | undefined;
 
           // executes all directives on the current element
           for (let i = 0, ii = directives.length; i < ii; i++) {
@@ -2331,8 +2092,7 @@ export class CompileProvider {
                   // Check that there is no scope of any kind already
                   assertNoDuplicate(
                     "new/isolated scope",
-                    /** @type {any} */ _newIsolateScopeDirective ||
-                      _newScopeDirective,
+                    _newIsolateScopeDirective || _newScopeDirective,
                     directive,
                     compileNodeRef,
                   );
@@ -2342,7 +2102,7 @@ export class CompileProvider {
                   // Check that there is no isolated scope already
                   assertNoDuplicate(
                     "new/isolated scope",
-                    /** @type {any} */ _newIsolateScopeDirective,
+                    _newIsolateScopeDirective,
                     directive,
                     compileNodeRef,
                   );
@@ -2399,7 +2159,7 @@ export class CompileProvider {
               _controllerDirectives = _controllerDirectives || nullObject();
               assertNoDuplicate(
                 `'${directiveName}' controller`,
-                /** @type {any} */ _controllerDirectives[directiveName],
+                _controllerDirectives[directiveName],
                 directive,
                 compileNodeRef,
               );
@@ -2417,7 +2177,7 @@ export class CompileProvider {
               if (!EXCLUDED_DIRECTIVES.includes(directiveName)) {
                 assertNoDuplicate(
                   "transclusion",
-                  /** @type {any} */ _nonTlbTranscludeDirective,
+                  _nonTlbTranscludeDirective,
                   directive,
                   compileNodeRef,
                 );
@@ -2436,14 +2196,14 @@ export class CompileProvider {
                   _ctxNodeRef.node = compileNode;
                 }
                 replaceWith(
-                  new NodeRef(/** @type {Element} */ $template._element),
+                  new NodeRef($template._element as Element),
                   compileNode,
                   _index,
                 );
 
                 childTranscludeFn = compilationGenerator(
                   mightHaveMultipleTransclusionError,
-                  /** @type {Element} */ $template._element,
+                  $template._element as Element,
                   transcludeFn,
                   terminalPriority,
                   replaceDirective ? replaceDirective.name : undefined,
@@ -2461,8 +2221,7 @@ export class CompileProvider {
               } else {
                 const slots = nullObject();
 
-                /** @type {NodeList | DocumentFragment} */
-                let nodes;
+                let nodes: NodeList | DocumentFragment;
 
                 if (!isObject(directiveValue)) {
                   //
@@ -2590,8 +2349,7 @@ export class CompileProvider {
                   undefined,
                   {
                     _needsNewScope:
-                      /** @type {any} */ directive._isolateScope ||
-                      /** @type {any} */ directive._newScope,
+                      directive._isolateScope || directive._newScope,
                   },
                 );
                 (childTranscludeFn as ng.TranscludeFn)._slots = slots;
@@ -2602,7 +2360,7 @@ export class CompileProvider {
               hasTemplate = true;
               assertNoDuplicate(
                 "template",
-                /** @type {any} */ _templateDirective,
+                _templateDirective,
                 directive,
                 compileNodeRef,
               );
@@ -2651,10 +2409,7 @@ export class CompileProvider {
                 replaceWith(compileNodeRef, compileNode);
 
                 if (_parentNodeRef && _index !== undefined) {
-                  /** @type {NodeRef} */ _parentNodeRef._setIndex(
-                    _index,
-                    compileNode,
-                  );
+                  _parentNodeRef._setIndex(_index, compileNode);
                 }
 
                 const newTemplateAttrs = { $attr: {} } as Attributes;
@@ -2702,7 +2457,7 @@ export class CompileProvider {
               hasTemplate = true;
               assertNoDuplicate(
                 "template",
-                /** @type {any} */ _templateDirective,
+                _templateDirective,
                 directive,
                 compileNodeRef,
               );
@@ -2713,11 +2468,11 @@ export class CompileProvider {
               }
 
               ({ _nodeLinkFn: nodeLinkFn, _nodeLinkFnState: nodeLinkFnState } =
-                /** @type {any} */ compileTemplateUrl(
+                compileTemplateUrl(
                   directives.splice(i, directives.length - i),
                   compileNodeRef,
                   templateAttrs,
-                  /** @type {Element} */ compileNode,
+                  compileNode as Element,
                   (hasTranscludeDirective
                     ? childTranscludeFn
                     : transcludeFn) as ChildTranscludeOrLinkFn,
@@ -2771,10 +2526,10 @@ export class CompileProvider {
                   pushLinkFnRecord(
                     preLinkFns,
                     isDefined(preLinkCtx)
-                      ? /** @type {ng.PublicLinkFn} */ linkFn.pre
+                      ? linkFn.pre
                       : bind(
                           context,
-                          /** @type {ng.PublicLinkFn} */ linkFn.pre,
+                          linkFn.pre,
                         ),
                     directive.require,
                     directiveName,
@@ -2784,10 +2539,10 @@ export class CompileProvider {
                   pushLinkFnRecord(
                     postLinkFns,
                     isDefined(postLinkCtx)
-                      ? /** @type {ng.PublicLinkFn} */ linkFn.post
+                      ? linkFn.post
                       : bind(
                           context,
-                          /** @type {ng.PublicLinkFn} */ linkFn.post,
+                          linkFn.post,
                         ),
                     directive.require,
                     directiveName,
@@ -2810,7 +2565,7 @@ export class CompileProvider {
             _hasElementTranscludeDirective;
 
           if (!nodeLinkFn) {
-            nodeLinkFn = /** @type {StoredNodeLinkFn} */ invokeStoredNodeLinkFn;
+            nodeLinkFn = invokeStoredNodeLinkFn as StoredNodeLinkFn;
             nodeLinkFnState = {
               _compileNode: compileNode,
               _templateAttrs: templateAttrs,
@@ -2838,14 +2593,7 @@ export class CompileProvider {
           };
         }
 
-        /**
-         *
-         * @param {string} directiveName
-         * @param {string | Array<any> | Record<string, any>} require
-         * @param {Element | undefined} $element
-         * @param {*} elementControllers
-         * @returns {any}
-         */
+        /** Resolves required controllers from the current element or its ancestors. */
         function getControllers(
           directiveName: string,
           require: string | Array<any> | Record<string, any>,
@@ -2935,16 +2683,7 @@ export class CompileProvider {
           return value || null;
         }
 
-        /**
-         * @param {NodeRef} $element
-         * @param {Attributes} attrs
-         * @param {ng.TranscludeFn} transcludeFn
-         * @param {{ [x: string]: any; }} _controllerDirectives
-         * @param {ng.Scope} isolateScope
-         * @param {ng.Scope} scope
-         * @param {any} _newIsolateScopeDirective
-         * @returns {any}
-         */
+        /** Instantiates and stores directive controllers for the current node. */
         function setupControllers(
           $element: NodeRef,
           attrs: Attributes,
@@ -2973,7 +2712,7 @@ export class CompileProvider {
             let { controller } = directive;
 
             if (controller === "@") {
-              controller = /** @type {any} */ attrs[directive.name];
+              controller = attrs[directive.name];
             }
 
             const controllerInstance = $controller(
@@ -3007,11 +2746,7 @@ export class CompileProvider {
         // asked for element transclusion
         // * if the directive itself asks for transclusion but it is at the root of a template and the original
         // element was replaced. See https://github.com/angular/angular.ts/issues/12936
-        /**
-         * @param {any[]} directives
-         * @param {any} isolateScope
-         * @param {any} [newScope]
-         */
+        /** Marks a directive list with inherited isolate/new-scope metadata. */
         function markDirectiveScope(
           directives: InternalDirective[],
           isolateScope: any,
@@ -3026,17 +2761,10 @@ export class CompileProvider {
         }
 
         /**
-         * looks up the directive and decorates it with exception handling and proper parameters. We
-         * call this the boundDirective.
-         * @param {string} name name of the directive to look up.
-         * @param {string} location The directive must be found in specific format.
-        String containing any of these characters:
-        
-        * `E`: element name
-        * `A': attribute
-         * @returns {InternalDirective | false} true if directive was added.
-         * @param {InternalDirective[]} tDirectives
-         * @param {number | undefined} maxPriority
+         * Looks up a directive by normalized name and adds any matching definitions to the collection.
+         *
+         * `location` restricts which directive kinds are allowed, using the usual compile flags such as
+         * `E` for elements and `A` for attributes.
          */
         function addDirective(
           tDirectives: InternalDirective[],
@@ -3048,7 +2776,7 @@ export class CompileProvider {
 
           const maxPriorityValue = isUndefined(maxPriority)
             ? Number.MAX_VALUE
-            : /** @type {number} */ maxPriority;
+            : maxPriority;
 
           if (hasOwn(hasDirectives, name)) {
             const directives: InternalDirective[] =
@@ -3087,16 +2815,16 @@ export class CompileProvider {
          * on the template need to be merged with the existing attributes in the DOM.
          * The desired effect is to have both of the attributes present.
          *
-         * @param {Attributes} dst destination attributes (original DOM)
-         * @param {Attributes} src source attributes (from the directive template)
+         * @param dst - Destination attributes (original DOM).
+         * @param src - Source attributes (from the directive template).
          */
         function mergeTemplateAttributes(
           dst: Attributes,
           src: Attributes,
         ): void {
-          const dstAny = /** @type {any} */ dst;
+          const dstAny = dst as Record<string, any>;
 
-          const srcAny = /** @type {any} */ src;
+          const srcAny = src as Record<string, any>;
 
           const srcAttr = src.$attr;
 
@@ -3132,18 +2860,7 @@ export class CompileProvider {
           });
         }
 
-        /**
-         *
-         * @param {InternalDirective[]} directives
-         * @param {NodeRef} $compileNode
-         * @param {Attributes} tAttrs
-         * @param {any} $rootElement
-         * @param {*} childTranscludeFn
-         * @param {Array<any>} preLinkFns
-         * @param {Array<any>} postLinkFns
-         * @param {*} previousCompileContext
-         * @returns
-         */
+        /** Compiles an async `templateUrl` directive and returns a delayed node-link descriptor. */
         function compileTemplateUrl(
           directives: InternalDirective[],
           $compileNode: NodeRef,
@@ -3165,7 +2882,7 @@ export class CompileProvider {
             _previousCompileContext: previousCompileContext,
           };
 
-          const derivedSyncDirective = /** @type {InternalDirective} */ inherit(
+          const derivedSyncDirective = inherit(
             origAsyncDirective,
             {
               templateUrl: null,
@@ -3173,20 +2890,23 @@ export class CompileProvider {
               replace: null,
               _originalDirective: origAsyncDirective,
             },
-          );
+          ) as InternalDirective;
 
-          /** @type {string} */
-          let templateUrl;
+          let templateUrl: string;
 
           if (isFunction(origAsyncDirective.templateUrl)) {
-            templateUrl =
-              /** @type { ((element: Element, tAttrs: Attributes) => string) } */ origAsyncDirective.templateUrl(
-                $compileNode.element as HTMLElement,
-                tAttrs,
-              );
+            const templateUrlGetter = origAsyncDirective.templateUrl as (
+              element: Element,
+              tAttrs: Attributes,
+            ) => string;
+
+            templateUrl = templateUrlGetter(
+              $compileNode.element as HTMLElement,
+              tAttrs,
+            );
           } else {
             // eslint-disable-next-line prefer-destructuring
-            templateUrl = /** @type {string} */ origAsyncDirective.templateUrl;
+            templateUrl = origAsyncDirective.templateUrl || "";
           }
           const { templateNamespace } = origAsyncDirective;
 
@@ -3337,12 +3057,7 @@ export class CompileProvider {
           };
         }
 
-        /**
-         * @param {string} what
-         * @param {{ name: any; }} previousDirective
-         * @param {{ name: any; }} directive
-         * @param {NodeRef} element
-         */
+        /** Throws when multiple directives request an incompatible exclusive feature on the same node. */
         function assertNoDuplicate(
           what: string,
           previousDirective:
@@ -3360,15 +3075,12 @@ export class CompileProvider {
               previousDirective.name,
               directive.name,
               what,
-              startingTag(/** @tupe {NodeRef} */ element._getAny()),
+              startingTag(element._getAny()),
             );
           }
         }
 
-        /**
-         * @param {ng.Directive[]} directives
-         * @param {string} text
-         */
+        /** Adds a synthetic text-interpolation directive for a text node. */
         function addTextInterpolateDirective(
           directives: InternalDirective[],
           text: string,
@@ -3376,8 +3088,7 @@ export class CompileProvider {
           const interpolateFn = $interpolate(text, true);
 
           if (interpolateFn) {
-            /** @type {TextInterpolateLinkState} */
-            const linkState = {
+            const linkState: TextInterpolateLinkState = {
               _interpolateFn: interpolateFn,
               _watchExpression: buildInterpolationWatchExpression(
                 interpolateFn.expressions,
@@ -3400,11 +3111,7 @@ export class CompileProvider {
           }
         }
 
-        /**
-         * @param {string} nodeName
-         * @param {string} attrNormalizedName
-         * @returns {string|undefined}
-         */
+        /** Determines the SCE trust context required for a DOM attribute binding. */
         function getTrustedAttrContext(
           nodeName: string,
           attrNormalizedName: string,
@@ -3461,10 +3168,7 @@ export class CompileProvider {
           return undefined;
         }
 
-        /**
-         * @param {string} nodeName
-         * @param {string} propNormalizedName
-         */
+        /** Determines the SCE trust context required for a DOM property binding. */
         function getTrustedPropContext(
           nodeName: string,
           propNormalizedName: string,
@@ -3476,10 +3180,7 @@ export class CompileProvider {
           );
         }
 
-        /**
-         * @param {unknown} value
-         * @param {string} invokeType
-         */
+        /** Sanitizes a `srcset` string by trusting each URI entry individually. */
         function sanitizeSrcset(value: unknown, invokeType: string) {
           if (!value) {
             return value;
@@ -3490,7 +3191,7 @@ export class CompileProvider {
               "srcset",
               'Can\'t pass trusted values to `{0}`: "{1}"',
               invokeType,
-              /** @type {Object} */ value.toString(),
+              String(value),
             );
           }
 
@@ -3541,12 +3242,7 @@ export class CompileProvider {
           return result;
         }
 
-        /**
-         * @param {Element} node
-         * @param {ng.Directive<any>[] | { priority: number; compile: (_: any, attr: any) => { pre: (scope: any, $element: any) => void; }; }[]} directives
-         * @param {string} attrName
-         * @param {string} propName
-         */
+        /** Adds an `ng-prop-*` directive for the given property binding. */
         function addPropertyDirective(
           node: Element,
           directives: InternalDirective[],
@@ -3598,13 +3294,7 @@ export class CompileProvider {
           directives.push(directive);
         }
 
-        /**
-         * @param {Element} node
-         * @param {ng.Directive<any>[]} directives
-         * @param {string} value
-         * @param {string} name
-         * @param {boolean} isNgAttr
-         */
+        /** Adds an interpolated-attribute directive for the given attribute value. */
         function addAttrInterpolateDirective(
           node: Element,
           directives: InternalDirective[],
@@ -3620,13 +3310,12 @@ export class CompileProvider {
 
           const allOrNothing = ALL_OR_NOTHING_ATTRS.includes(name) || isNgAttr;
 
-          /** @type {import("../interpolate/interface.ts").InterpolationFunction | undefined} */
-          const interpolateFn = /** @type {any} */ $interpolate(
+          const interpolateFn = $interpolate(
             value,
             mustHaveExpression,
             trustedContext,
             allOrNothing,
-          );
+          ) as InterpolationFunction | undefined;
 
           // no interpolation found -> ignore
           if (!interpolateFn) {
@@ -3667,10 +3356,7 @@ export class CompileProvider {
           directives.push(directive);
         }
 
-        /**
-         * @param {string} attrName
-         * @param {string} directiveName
-         */
+        /** Enforces strict component binding requirements for required attributes. */
         function strictBindingsCheck(
           attrName: string,
           directiveName: string,
@@ -3685,15 +3371,8 @@ export class CompileProvider {
           }
         }
 
-        // Set up $watches for isolate scope and controller bindings.
         /**
-         *
-         * @param {ng.Scope} scope
-         * @param {*} attrs
-         * @param {ng.Scope}  destination - child scope or isolate scope
-         * @param {*} bindings
-         * @param {*} directive
-         * @returns
+         * Sets up `$watch` and `$observe` wiring for isolate-scope and controller bindings.
          */
         function initializeDirectiveBindings(
           scope: import("../scope/scope.ts").Scope,
@@ -3704,14 +3383,9 @@ export class CompileProvider {
         ): DirectiveBindingInfo {
           const removeWatchCollection: Array<Function | undefined> = [];
 
-          const initialChanges: Record<
-            string,
-            import("./interface.ts").SimpleChange
-          > = {};
+          const initialChanges: Record<string, SimpleChange> = {};
 
-          let changes:
-            | Record<string, import("./interface.ts").SimpleChange>
-            | undefined;
+          let changes: Record<string, SimpleChange> | undefined;
 
           const attrsAny = attrs as any;
 
@@ -3752,7 +3426,8 @@ export class CompileProvider {
 
                   removeWatch = attrs.$observe(
                     attrName,
-                    /** @param {any} value */ (value) => {
+                    /** @param value */
+                    (value) => {
                       if (isString(value) || isBoolean(value)) {
                         recordChanges(scopeName, value, firstChange);
 
@@ -3776,7 +3451,7 @@ export class CompileProvider {
                     destAny[scopeName] = (
                       $interpolate(
                         lastValue,
-                      ) as import("../interpolate/interface.ts").InterpolationFunction
+                      ) as import("../interpolate/interpolate.ts").InterpolationFunction
                     )(scope);
                   } else if (isBoolean(lastValue)) {
                     // If the attributes is one of the BOOLEAN_ATTR then AngularTS will have converted
@@ -3784,9 +3459,6 @@ export class CompileProvider {
                     destAny[scopeName] = lastValue;
                   }
 
-                  /**
-                   * @type {import("./interface.ts").SimpleChange}
-                   */
                   initialChanges[scopeName] = {
                     currentValue: destAny[scopeName],
                     firstChange: true,
@@ -3910,7 +3582,6 @@ export class CompileProvider {
                           });
                         } else {
                           parentSet(scopeTarget, (lastValue = val));
-                          /** @type {import("../scope/interface.ts").Listener[] | undefined} */
                           const attributeWatchers =
                             scope.$handler._watchers.get(attrsAny[attrName]);
 
@@ -3943,7 +3614,6 @@ export class CompileProvider {
 
                   destAny.$target[scopeName] =
                     parentGet && parentGet(scopeTarget);
-                  /** @type {import("./interface.ts").SimpleChange} */
                   initialChanges[scopeName] = {
                     currentValue: destAny.$target[scopeName],
                     firstChange,
@@ -3990,11 +3660,7 @@ export class CompileProvider {
             });
           }
 
-          /**
-           * @param {string} key
-           * @param {any} currentValue
-           * @param {boolean} initial
-           */
+          /** Records a binding change so `$onChanges` can be invoked once per digest. */
           function recordChanges(
             key: string,
             currentValue: any,
@@ -4047,10 +3713,7 @@ export class CompileProvider {
   }
 }
 
-/**
- * @param {String} name
- * @returns {void}
- */
+/** Validates a directive/component name before registration. */
 function assertValidDirectiveName(name: string): void {
   const letter = name.charAt(0);
 
@@ -4075,9 +3738,6 @@ function assertValidDirectiveName(name: string): void {
  * Normalizes the `require` declaration for a directive.
  * Object-form requires inherit their own key when the value omits the directive name
  * (e.g. `{ foo: "^^" }` becomes `{ foo: "^^foo" }`).
- *
- * @param {ng.Directive} directive
- * @returns {string | Array<any> | Record<string, string> | undefined}
  */
 export function getDirectiveRequire(
   directive: ng.Directive,
@@ -4107,10 +3767,6 @@ export function getDirectiveRequire(
 
 /**
  * Validates and normalizes a directive `restrict` value.
- *
- * @param {unknown} restrict
- * @param {string} name
- * @returns {string}
  */
 export function getDirectiveRestrict(restrict: unknown, name: string): string {
   if (restrict && !(isString(restrict) && /[EA]/.test(restrict))) {
@@ -4128,9 +3784,6 @@ export function getDirectiveRestrict(restrict: unknown, name: string): string {
 /**
  * Detects the namespace used when compiling child nodes beneath a parent element.
  * This is primarily used to decide whether template wrapping should happen in HTML or SVG mode.
- *
- * @param {Element | Node | null | undefined} parentElement
- * @returns {"html" | "svg"}
  */
 export function detectNamespaceForChildElements(
   parentElement: Element | Node | null | undefined,
@@ -4150,16 +3803,11 @@ export function detectNamespaceForChildElements(
 
 /**
  * Builds a stable node array for linking so index-based mappings stay valid even if DOM shape changes.
- *
- * @param {CompositeLinkState} state
- * @param {NodeRef} nodeRef
- * @returns {Node[]}
  */
 export function buildStableNodeList(
   state: CompositeLinkState,
   nodeRef: NodeRef,
 ): Node[] {
-  /** @type {Node[]} */
   let stableNodeList = [];
 
   if (state._nodeLinkFnFound) {
@@ -4192,9 +3840,6 @@ export function buildStableNodeList(
 /**
  * Serializes one or more interpolation inputs into the watch expression used by `$watch`.
  * Single expressions stay unchanged; multi-input interpolations are packed into an array expression.
- *
- * @param {string[]} expressions
- * @returns {string}
  */
 export function buildInterpolationWatchExpression(
   expressions: string[],
@@ -4206,10 +3851,6 @@ export function buildInterpolationWatchExpression(
 
 /**
  * Writes the interpolated text result to either an element node or a text node.
- *
- * @param {Node} node
- * @param {string} value
- * @returns {void}
  */
 export function applyTextInterpolationValue(node: Node, value: string): void {
   switch (node.nodeType) {
@@ -4224,10 +3865,6 @@ export function applyTextInterpolationValue(node: Node, value: string): void {
 /**
  * Sorts directives by priority, then name, then registration index.
  * This matches the compiler's directive application order.
- *
- * @param {InternalDirective} a
- * @param {InternalDirective} b
- * @returns {number}
  */
 export function byPriority(a: InternalDirective, b: InternalDirective): number {
   const diff = (b.priority || 0) - (a.priority || 0);
@@ -4245,10 +3882,6 @@ export function byPriority(a: InternalDirective, b: InternalDirective): number {
 
 /**
  * Wraps non-HTML templates in a temporary namespace container so the browser parses SVG/MathML correctly.
- *
- * @param {string | undefined} type
- * @param {string} template
- * @returns {string | NodeListOf<ChildNode>}
  */
 export function wrapTemplate(
   type: string | undefined,
@@ -4259,8 +3892,7 @@ export function wrapTemplate(
   switch (type) {
     case "svg":
     case "math": {
-      const wrapper =
-        /** @type {HTMLDivElement} */ document.createElement("div");
+      const wrapper = document.createElement("div");
 
       wrapper.innerHTML = `<${type}>${template}</${type}>`;
 
@@ -4274,11 +3906,6 @@ export function wrapTemplate(
 /**
  * Replaces the node currently represented by `elementsToRemove` while preserving the removed nodes
  * in a fragment so traversal and later queries continue to work during compilation.
- *
- * @param {NodeRef} elementsToRemove
- * @param {Node} newNode
- * @param {number} [index]
- * @returns {void}
  */
 export function replaceWith(
   elementsToRemove: NodeRef,

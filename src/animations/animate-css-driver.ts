@@ -1,8 +1,9 @@
 import type {
-  AnimationDetails,
   AnimationOptions,
   Animator,
 } from "./interface.ts";
+import type { AnimationDetails } from "./animation.ts";
+import type { AnimateCssService } from "./css/animate-css.ts";
 import { $injectTokens } from "../injection-tokens.ts";
 import { NodeType } from "../shared/node.ts";
 import { isString } from "../shared/utils.ts";
@@ -24,12 +25,8 @@ interface AnimationProviderShape {
   _drivers: string[];
 }
 
-interface AnimateCssService {
-  (element: HTMLElement, options: AnimationOptions): Animator;
-}
-
 /**
- * @param {import("./animation.ts").AnimationProvider} $$animationProvider
+ * Registers the CSS animation driver with the animation provider.
  */
 export function AnimateCssDriverProvider(
   this: { $get?: unknown },
@@ -38,24 +35,20 @@ export function AnimateCssDriverProvider(
   $$animationProvider._drivers.push($injectTokens._animateCssDriver);
 
   /**
-   * @param {Element} node
-   * @returns {boolean}
+   * Returns whether an element is attached inside a document fragment.
    */
   function isDocumentFragment(node: Element): boolean {
     return node.parentNode?.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE;
   }
 
   /**
-   * @returns {Function}
+   * Creates the runtime CSS animation driver factory.
    */
   this.$get = [
     $injectTokens._animateCss,
     $injectTokens._rootElement,
     /**
-     *
-     * @param {*} $animateCss
-     * @param {HTMLElement} $rootElement
-     * @returns
+     * Builds animation runners backed by `$animateCss`.
      */
     function (
       $animateCss: AnimateCssService,
@@ -88,9 +81,7 @@ export function AnimateCssDriverProvider(
       };
 
       /**
-       * @param {HTMLElement} outAnchor
-       * @param {HTMLElement} inAnchor
-       * @returns {{ start(): AnimateRunner } | null}
+       * Prepares the anchor animation that bridges one leaving element to one entering element.
        */
       function prepareAnchoredAnimation(
         outAnchor: HTMLElement,
@@ -107,7 +98,6 @@ export function AnimateCssDriverProvider(
 
         rootBodyElement.append(clone);
 
-        /** @type {ReturnType<typeof prepareInAnimation> | null} */
         let animatorIn: Animator | null = null;
 
         const animatorOut = prepareOutAnimation();
@@ -144,7 +134,7 @@ export function AnimateCssDriverProvider(
             let currentAnimation: AnimateRunner | null =
               startingAnimator.start();
 
-            currentAnimation.done(() => {
+            currentAnimation?.done(() => {
               currentAnimation = null;
 
               if (!animatorIn) {
@@ -152,7 +142,7 @@ export function AnimateCssDriverProvider(
 
                 if (animatorIn) {
                   currentAnimation = animatorIn.start();
-                  currentAnimation.done(() => {
+                  currentAnimation?.done(() => {
                     currentAnimation = null;
                     end();
                     runner.complete();
@@ -179,7 +169,7 @@ export function AnimateCssDriverProvider(
         };
 
         /**
-         * @param {HTMLElement} anchor
+         * Captures the current position and size of an anchor element.
          */
         function calculateAnchorStyles(
           anchor: HTMLElement,
@@ -193,7 +183,6 @@ export function AnimateCssDriverProvider(
 
           // we iterate directly since safari messes up and doesn't return
           // all the keys for the coords object when iterated
-          /** @type {Array<"width" | "height" | "top" | "left">} */
           const keys: Array<"width" | "height" | "top" | "left"> = [
             "width",
             "height",
@@ -259,9 +248,7 @@ export function AnimateCssDriverProvider(
       }
 
       /**
-       * @param {import("./interface.ts").AnimationDetails} from
-       * @param {import("./interface.ts").AnimationDetails} to
-       * @param {NonNullable<import("./interface.ts").AnimationDetails["anchors"]>} anchors
+       * Prepares a paired anchor animation between leaving and entering elements.
        */
       function prepareFromToAnchorAnimation(
         from: AnimationDetails,
@@ -272,7 +259,6 @@ export function AnimateCssDriverProvider(
 
         const toAnimation = prepareRegularAnimation(to);
 
-        /** @type {Array<{ start(): ng.AnimateRunner }>} */
         const anchorAnimations: Array<{ start(): AnimateRunner }> = [];
 
         anchors.forEach((anchor: { out: HTMLElement; in: HTMLElement }) => {
@@ -293,9 +279,6 @@ export function AnimateCssDriverProvider(
 
         return {
           start() {
-            /**
-             * @type {ng.AnimateRunner[]}
-             */
             const animationRunners: AnimateRunner[] = [];
 
             if (fromAnimation) {
@@ -331,7 +314,7 @@ export function AnimateCssDriverProvider(
       }
 
       /**
-       * @param {import("./interface.ts").AnimationDetails} animationDetails
+       * Prepares a normal CSS animation for one element.
        */
       function prepareRegularAnimation(
         animationDetails: AnimationDetails,
@@ -375,8 +358,7 @@ export function AnimateCssDriverProvider(
 }
 
 /**
- * @param {string | null} classes
- * @return {string}
+ * Removes Angular animation bookkeeping classes from a class string.
  */
 function filterCssClasses(classes: string | null): string {
   // remove all the `ng-` stuff
@@ -384,8 +366,7 @@ function filterCssClasses(classes: string | null): string {
 }
 
 /**
- * @param {string | string[]} a
- * @param {string | string[]} b
+ * Returns the values present in `a` but not in `b`.
  */
 function getUniqueValues(a: string | string[], b: string | string[]): string {
   const aList = isString(a) ? a.split(" ") : a;

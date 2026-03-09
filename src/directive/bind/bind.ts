@@ -8,9 +8,7 @@ import {
 } from "../../shared/utils.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 
-/**
- * @returns {ng.Directive}
- */
+/** Binds the watched expression as plain text content. */
 export function ngBindDirective(): ng.Directive {
   return {
     link(
@@ -31,9 +29,7 @@ export function ngBindDirective(): ng.Directive {
   };
 }
 
-/**
- * @returns {ng.Directive}
- */
+/** Binds the interpolated template value as plain text content. */
 export function ngBindTemplateDirective(): ng.Directive {
   return {
     link(
@@ -49,9 +45,7 @@ export function ngBindTemplateDirective(): ng.Directive {
 }
 
 ngBindHtmlDirective.$inject = [$injectTokens._parse];
-/**
- * @param {ng.ParseService} $parse
- */
+/** Binds trusted HTML into the element while still validating the expression. */
 export function ngBindHtmlDirective($parse: ng.ParseService): ng.Directive {
   return {
     restrict: "A",
@@ -63,10 +57,7 @@ export function ngBindHtmlDirective($parse: ng.ParseService): ng.Directive {
       $parse(tAttrs.ngBindHtml); // checks for interpolation errors
 
       return (
-        /**
-         * @param {ng.Scope} scope
-         * @param {Element} element
-         */
+        /** Watches the expression and writes the resulting HTML into the element. */
         (scope: ng.Scope, element: HTMLElement): void => {
           scope.$watch(tAttrs.ngBindHtml, (val: any) => {
             if (isUndefined(val) || isNull(val)) {

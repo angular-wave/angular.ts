@@ -10,24 +10,20 @@ export class Queue<T> {
   _evictListeners: Array<(item: T) => void>;
 
   /**
-   * @param {T[]} [items=[]] - Initial queue items.
-   * @param {number|null} [limit=null] - Maximum allowed items before eviction (null = unlimited).
+   * @param [items=[]] - Initial queue items.
+   * @param [limit=null] - Maximum allowed items before eviction (null = unlimited).
    */
   constructor(items: T[] = [], limit: number | null = null) {
-    /** @type {T[]} */
     this._items = isArray(items) ? [...items] : [];
 
-    /** @type {number|null} */
     this._limit =
       Number.isInteger(limit) && limit !== null && limit > 0 ? limit : null;
 
-    /** @type {Array<(item: T) => void>} */
     this._evictListeners = [];
   }
 
   /**
    * Register a listener that will be called with the evicted item.
-   * @param {(item: T) => void} listener
    */
   onEvict(listener: (item: T) => void): void {
     this._evictListeners.push(listener);
@@ -35,8 +31,6 @@ export class Queue<T> {
 
   /**
    * Adds an item to the end of the queue, evicting the head if over limit.
-   * @param {T} item
-   * @returns {T}
    */
   enqueue(item: T): T {
     this._items.push(item);
@@ -50,7 +44,6 @@ export class Queue<T> {
 
   /**
    * Removes the head item and notifies eviction listeners.
-   * @returns {T|undefined}
    */
   evict(): T | undefined {
     const item = this._items.shift();
@@ -64,7 +57,6 @@ export class Queue<T> {
 
   /**
    * Removes and returns the first item in the queue.
-   * @returns {T|undefined}
    */
   dequeue(): T | undefined {
     return this._items.length > 0 ? this._items.shift() : undefined;
@@ -72,7 +64,7 @@ export class Queue<T> {
 
   /**
    * Clears all items from the queue.
-   * @returns {T[]} The previously stored items.
+   * @returns The previously stored items.
    */
   clear(): T[] {
     const cleared = [...this._items];
@@ -84,7 +76,6 @@ export class Queue<T> {
 
   /**
    * Returns the current number of items.
-   * @returns {number}
    */
   size(): number {
     return this._items.length;
@@ -92,8 +83,7 @@ export class Queue<T> {
 
   /**
    * Removes a specific item from the queue.
-   * @param {T} item
-   * @returns {T|false} The removed item, or false if not found.
+   * @returns The removed item, or false if not found.
    */
   remove(item: T): T | false {
     const index = this._items.indexOf(item);
@@ -103,7 +93,6 @@ export class Queue<T> {
 
   /**
    * Returns the item at the tail (last).
-   * @returns {T|undefined}
    */
   peekTail(): T | undefined {
     return this._items[this._items.length - 1];
@@ -111,7 +100,6 @@ export class Queue<T> {
 
   /**
    * Returns the item at the head (first).
-   * @returns {T|undefined}
    */
   peekHead(): T | undefined {
     return this._items[0];

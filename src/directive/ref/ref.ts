@@ -21,12 +21,12 @@ import type { DirectiveLinkFn } from "../../interface.ts";
  *
  *
  * @element ANY
- * @param {string} ngRef property name - A valid AngularTS expression identifier to which the
- *                       controller or dom-wrapped DOM element will be bound.
- * @param {string=} ngRefRead read value - The name of a directive (or component) on this element,
- *                            or the special string `$element`. If a name is provided, `ngRef` will
- *                            assign the matching controller. If `$element` is provided, the element
- *                            itself is assigned (even if a controller is available).
+ * @param ngRef - A valid AngularTS expression identifier to which the controller or
+ *     dom-wrapped DOM element will be bound.
+ * @param ngRefRead - The name of a directive (or component) on this element, or the
+ *     special string `$element`. If a name is provided, `ngRef` assigns the matching
+ *     controller. If `$element` is provided, the element itself is assigned even if a
+ *     controller is available.
  */
 
 const ngRefMinErr = minErr("ngRef");

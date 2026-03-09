@@ -41,20 +41,18 @@ import {
   stringify,
 } from "../../shared/strings.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
-import type {
-  HookResult,
-  TransitionHookOptions,
-} from "../transition/interface.ts";
+import type { HookResult } from "../transition/interface.ts";
 import type { TransitionHook } from "../transition/transition-hook.ts";
+import type { TransitionHookOptions } from "../transition/transition-hook.ts";
 import type { PathNode } from "../path/path-node.ts";
-import type { PolicyWhen } from "../resolve/interface.ts";
+import type { PolicyWhen } from "../resolve/resolvable.ts";
 import type { Resolvable } from "../resolve/resolvable.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type {
   ActiveUIView,
   ViewContext,
   ViewTuple,
-} from "../view/interface.ts";
+} from "../view/view.ts";
 import type { ViewConfig } from "../view/view.ts";
 
 const MAX_PAD_LENGTH = 30;
@@ -106,9 +104,6 @@ function normalizedCat(input: TraceCategoryInput): string {
  * `trace.enable(1)`
  */
 
-/**
- * @type {Record<string, string>}
- */
 export const Category = {
   _RESOLVE: "RESOLVE",
   _TRANSITION: "TRANSITION",
@@ -165,8 +160,7 @@ export class Trace {
    * ```js
    * trace.enabled("VIEWCONFIG"); // true or false
    * ```
-   * @param {TraceCategoryInput} category
-   * @returns {boolean} true if the category is enabled
+   * @returns True if the category is enabled.
    */
   enabled(category: TraceCategoryInput): boolean {
     return !!this._enabled[normalizedCat(category)];
