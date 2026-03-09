@@ -321,10 +321,7 @@ export function createHttpDirective(
               if (animationEnabled) {
                 $animate.leave(target).done(() => {
                   target.textContent = html;
-                  $animate.enter(
-                    target,
-                    target.parentNode as Element,
-                  );
+                  $animate.enter(target, target.parentNode as Element);
                   scopeParam.$flushQueue();
                 });
 

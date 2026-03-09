@@ -1,7 +1,4 @@
-import type {
-  AnimationOptions,
-  Animator,
-} from "./interface.ts";
+import type { AnimationOptions, Animator } from "./interface.ts";
 import {
   deleteCacheData,
   getCacheData,
@@ -717,9 +714,7 @@ export class AnimationProvider {
             ? tempClasses
             : tempClasses.split(" ");
 
-          classList.forEach((cls) =>
-            elementParam.classList.remove(cls),
-          );
+          classList.forEach((cls) => elementParam.classList.remove(cls));
         }
 
         runner.complete(!rejected);

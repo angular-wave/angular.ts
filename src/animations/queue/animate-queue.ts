@@ -1,6 +1,4 @@
-import type {
-  AnimationOptions,
-} from "../interface.ts";
+import type { AnimationOptions } from "../interface.ts";
 import type { AnimationEventData } from "../animate.ts";
 import type { AnimationService } from "../animation.ts";
 import {

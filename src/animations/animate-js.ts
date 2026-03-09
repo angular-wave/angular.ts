@@ -1,7 +1,4 @@
-import type {
-  AnimationOptions,
-  Animator,
-} from "./interface.ts";
+import type { AnimationOptions, Animator } from "./interface.ts";
 import { isArray, isFunction, isObject } from "../shared/utils.ts";
 import {
   applyAnimationClasses,

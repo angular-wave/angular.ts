@@ -289,8 +289,11 @@ export function ngMessagesDirective(
   return {
     require: "ngMessages",
     restrict: "AE",
-    controller: ($element: HTMLElement, $scope: ng.Scope, $attrs: ng.Attributes) =>
-      new NgMessageCtrl($element, $scope, $attrs, $animate),
+    controller: (
+      $element: HTMLElement,
+      $scope: ng.Scope,
+      $attrs: ng.Attributes,
+    ) => new NgMessageCtrl($element, $scope, $attrs, $animate),
   };
 }
 

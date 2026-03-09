@@ -41,10 +41,7 @@ export interface SseConnection {
  * @param config - Optional configuration object
  * @throws {URIError} If the URL is invalid
  */
-export type SseService = (
-  url: string,
-  config?: SseConfig,
-) => SseConnection;
+export type SseService = (url: string, config?: SseConfig) => SseConnection;
 
 export class SseProvider {
   defaults: ng.SseConfig;

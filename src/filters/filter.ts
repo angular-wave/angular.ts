@@ -238,9 +238,7 @@ function deepCompare(
 
           const matchAnyProperty = key === anyPropertyKey;
 
-          const actualVal = matchAnyProperty
-            ? actual
-            : actualObj[key];
+          const actualVal = matchAnyProperty ? actual : actualObj[key];
 
           if (
             !deepCompare(

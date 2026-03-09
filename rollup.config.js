@@ -34,11 +34,7 @@ function cssMinifyPlugin() {
   };
 }
 
-const basePlugins = [
-  resolve(),
-  commonjs(),
-  versionInjector(),
-];
+const basePlugins = [resolve(), commonjs(), versionInjector()];
 
 export default [
   // ---- Minified UMD ----

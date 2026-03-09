@@ -163,10 +163,7 @@ function deregisterListenerKeys(
  * This keeps interpolation arrays reactive for both direct property changes
  * (`todo.done`) and object reassignments (`todo = nextTodo` in `ng-repeat`).
  */
-function collectWatchKeys(
-  node: any,
-  watchKeys: Set<string>,
-): void {
+function collectWatchKeys(node: any, watchKeys: Set<string>): void {
   if (!node) return;
 
   if (node.type === ASTType._Identifier) {
