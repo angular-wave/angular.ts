@@ -873,13 +873,22 @@ export class CompileProvider {
                 setScope(node, childScope);
               }
 
-              invokeNodeLinkFnCtx(
-                _nodeLinkFnCtx,
-                _childLinkFn,
-                childScope,
-                node,
-                childBoundTranscludeFn,
-              );
+              if (isDefined(_nodeLinkFnCtx._nodeLinkFnState)) {
+                (_nodeLinkFnCtx._nodeLinkFn as StoredNodeLinkFn)(
+                  _nodeLinkFnCtx._nodeLinkFnState,
+                  _childLinkFn,
+                  childScope,
+                  node,
+                  childBoundTranscludeFn,
+                );
+              } else {
+                (_nodeLinkFnCtx._nodeLinkFn as NodeLinkFn)(
+                  _childLinkFn,
+                  childScope,
+                  node,
+                  childBoundTranscludeFn,
+                );
+              }
             } else if (_childLinkFn) {
               _childLinkFn(
                 scope,
@@ -1342,12 +1351,10 @@ export class CompileProvider {
           scope: import("../scope/scope.ts").Scope,
           node: Node,
         ) {
-          const typedLinkState = linkState as TextInterpolateLinkState;
-
           scope.$watch(linkState._watchExpression, () => {
             applyTextInterpolationValue(
               node,
-              typedLinkState._interpolateFn(deProxy(scope)),
+              linkState._interpolateFn(deProxy(scope)),
             );
           });
         }
@@ -1361,9 +1368,7 @@ export class CompileProvider {
           attr: Attributes,
           value: string,
         ) {
-          const typedLinkState = linkState as AttrInterpolateLinkState;
-
-          if (typedLinkState._name === "class") {
+          if (linkState._name === "class") {
             const element = attr._element() as Element;
 
             attr.$updateClass(value, element.classList.value);
@@ -1372,8 +1377,8 @@ export class CompileProvider {
           }
 
           attr.$set(
-            typedLinkState._name,
-            typedLinkState._name === "srcset"
+            linkState._name,
+            linkState._name === "srcset"
               ? $sce.getTrustedMediaUrl(value)
               : value,
           );
@@ -1389,13 +1394,10 @@ export class CompileProvider {
           _element: Node,
           attr: Attributes,
         ) {
-          const _observers =
-            attr._observers || (attr._observers = nullObject());
-
           // Recompute interpolation if another compile step rewrote the attribute value.
           const attrsAny = attr as Record<string, any>;
-
-          const newValue = attrsAny[linkState._name];
+          const name = linkState._name;
+          const newValue = attrsAny[name];
 
           if (newValue !== linkState._value) {
             linkState._interpolateFn = newValue
@@ -1414,45 +1416,24 @@ export class CompileProvider {
           }
 
           const interpolateFn = linkState._interpolateFn;
+          const expressions = interpolateFn.expressions;
+          const observers = attr._observers || (attr._observers = nullObject());
+          const observer = observers[name] || (observers[name] = []);
 
-          attrsAny[linkState._name] = interpolateFn(scope);
-          (
-            _observers[linkState._name] ||
-            (_observers[linkState._name] = [])
-          )._inter = true;
+          attrsAny[name] = interpolateFn(scope);
+          observer._inter = true;
 
-          if (linkState._interpolateFn.expressions.length > 0) {
-            const targetScope =
-              (attr._observers && attr._observers[linkState._name]._scope) ||
-              scope;
-
-            const watchExpression = buildInterpolationWatchExpression(
-              linkState._interpolateFn.expressions,
-            );
+          if (expressions.length > 0) {
+            const targetScope = observer._scope || scope;
+            const watchExpression =
+              buildInterpolationWatchExpression(expressions);
 
             targetScope.$watch(watchExpression, () => {
-              applyInterpolatedAttrValue(
-                linkState,
-                attr,
-                interpolateFn(scope),
-              );
+              applyInterpolatedAttrValue(linkState, attr, interpolateFn(scope));
             });
-          }
-
-          if (linkState._interpolateFn.expressions.length === 0) {
+          } else {
             applyInterpolatedAttrValue(linkState, attr, newValue);
           }
-        }
-
-        /** Applies one property binding update using the parsed getter and sanitizer captured at compile time. */
-        function applyPropertyDirectiveValue(
-          linkState: PropertyDirectiveLinkState,
-          scope: import("../scope/scope.ts").Scope,
-          $element: { [x: string]: any },
-        ) {
-          const propValue = linkState._ngPropGetter(scope);
-
-          $element[linkState._propName] = linkState._sanitizer(propValue);
         }
 
         /**
@@ -1466,46 +1447,22 @@ export class CompileProvider {
           attr: Attributes,
         ) {
           const attrsAny = attr as Record<string, any>;
+          const update = () => {
+            $element[linkState._propName] = linkState._sanitizer(
+              linkState._ngPropGetter(scope),
+            );
+          };
 
-          applyPropertyDirectiveValue(linkState, scope, $element);
+          update();
 
           scope.$watch(linkState._propName, () => {
-            applyPropertyDirectiveValue(linkState, scope, $element);
+            update();
           });
 
           scope.$watch(attrsAny[linkState._attrName], (val: any) => {
             $sce.valueOf(val);
-            applyPropertyDirectiveValue(linkState, scope, $element);
+            update();
           });
-        }
-
-        /**
-         * Invokes node link functions that may either be direct link functions or shared executors
-         * that read their per-node state from `nodeLinkFnCtx`.
-         */
-        function invokeNodeLinkFnCtx(
-          nodeLinkFnCtx: NodeLinkFnCtx,
-          childLinkFn: ChildLinkFn | CompositeLinkFn | null | undefined,
-          scope: import("../scope/scope.ts").Scope,
-          node: Node | Element,
-          boundTranscludeFn: BoundTranscludeFn | null,
-        ) {
-          if (isDefined(nodeLinkFnCtx._nodeLinkFnState)) {
-            return (nodeLinkFnCtx._nodeLinkFn as StoredNodeLinkFn)(
-              nodeLinkFnCtx._nodeLinkFnState,
-              childLinkFn,
-              scope,
-              node,
-              boundTranscludeFn,
-            );
-          }
-
-          return (nodeLinkFnCtx._nodeLinkFn as NodeLinkFn)(
-            childLinkFn,
-            scope,
-            node,
-            boundTranscludeFn,
-          );
         }
 
         /**
@@ -1535,13 +1492,22 @@ export class CompileProvider {
             );
           }
 
-          invokeNodeLinkFnCtx(
-            afterTemplateNodeLinkFnCtx,
-            delayedState._afterTemplateChildLinkFn,
-            scope,
-            node,
-            childBoundTranscludeFn || null,
-          );
+          if (isDefined(afterTemplateNodeLinkFnCtx._nodeLinkFnState)) {
+            (afterTemplateNodeLinkFnCtx._nodeLinkFn as StoredNodeLinkFn)(
+              afterTemplateNodeLinkFnCtx._nodeLinkFnState,
+              delayedState._afterTemplateChildLinkFn,
+              scope,
+              node,
+              childBoundTranscludeFn || null,
+            );
+          } else {
+            (afterTemplateNodeLinkFnCtx._nodeLinkFn as NodeLinkFn)(
+              delayedState._afterTemplateChildLinkFn,
+              scope,
+              node,
+              childBoundTranscludeFn || null,
+            );
+          }
         }
 
         /**
@@ -1557,8 +1523,10 @@ export class CompileProvider {
         ): void {
           const afterTemplateNodeLinkFnCtx =
             delayedState._afterTemplateNodeLinkFnCtx;
+          const compiledNode = delayedState._compiledNode;
+          const compileNodeRef = delayedState._compileNodeRef;
 
-          if (!afterTemplateNodeLinkFnCtx || !delayedState._compiledNode) {
+          if (!afterTemplateNodeLinkFnCtx || !compiledNode) {
             return;
           }
 
@@ -1566,7 +1534,7 @@ export class CompileProvider {
             return;
           }
 
-          let linkNode = delayedState._compileNodeRef._getAny();
+          let linkNode = compileNodeRef._getAny();
 
           if (
             beforeTemplateLinkNode !== delayedState._beforeTemplateCompileNode
@@ -1581,16 +1549,14 @@ export class CompileProvider {
               )
             ) {
               // The linked node was cloned before the template arrived; clone the resolved template too.
-              linkNode = delayedState._compiledNode.cloneNode(true);
+              linkNode = compiledNode.cloneNode(true);
               beforeTemplateLinkNode.appendChild(linkNode);
             }
 
             try {
               if (oldClasses !== "") {
-                delayedState._compileNodeRef.element.classList.forEach((cls) =>
-                  (beforeTemplateLinkNode as Element).classList.add(
-                    cls as string,
-                  ),
+                compileNodeRef.element.classList.forEach((cls) =>
+                  (beforeTemplateLinkNode as Element).classList.add(cls),
                 );
               }
             } catch {
@@ -1643,48 +1609,38 @@ export class CompileProvider {
           _futureParentElement?: Node | null,
           slotName?: string | number,
         ) {
-          let _transcludeControllers;
-          let transcludedScope:
-            | import("../scope/scope.ts").Scope
-            | null
+          const hasScope = isScope(scopeParam);
+          const boundTranscludeFn = transcludeState._boundTranscludeFn;
+          const transcludeControllers = transcludeState
+            ._hasElementTranscludeDirective
+            ? transcludeState._elementControllers
+            : undefined;
+          const transcludedScope = hasScope
+            ? (scopeParam as import("../scope/scope.ts").Scope)
+            : undefined;
+          const attachFn = (hasScope ? cloneAttachFn : scopeParam) as
+            | CloneAttachFn
             | undefined;
-          let attachFn: CloneAttachFn | undefined;
-          let futureParentElement: Node | null | undefined =
-            _futureParentElement;
-          let requestedSlotName: string | number | undefined = slotName;
-
-          if (!isScope(scopeParam)) {
-            requestedSlotName = futureParentElement as unknown as
-              | string
-              | number
-              | undefined;
-            futureParentElement = cloneAttachFn as Node | null | undefined;
-            attachFn = scopeParam as CloneAttachFn | undefined;
-            transcludedScope = undefined;
-          } else {
-            transcludedScope = scopeParam as import("../scope/scope.ts").Scope;
-            attachFn = cloneAttachFn as CloneAttachFn | undefined;
-          }
-
-          if (transcludeState._hasElementTranscludeDirective) {
-            _transcludeControllers = transcludeState._elementControllers;
-          }
-
-          if (!futureParentElement) {
-            futureParentElement = transcludeState._hasElementTranscludeDirective
+          const requestedSlotName = (hasScope
+            ? slotName
+            : _futureParentElement) as string | number | undefined;
+          const futureParentElement =
+            ((hasScope ? _futureParentElement : cloneAttachFn) as
+              | Node
+              | null
+              | undefined) ||
+            (transcludeState._hasElementTranscludeDirective
               ? transcludeState._elementRef.node.parentElement
-              : transcludeState._elementRef.node;
-          }
+              : transcludeState._elementRef.node);
 
           if (requestedSlotName) {
-            const slotTranscludeFn =
-              transcludeState._boundTranscludeFn._slots[requestedSlotName];
+            const slotTranscludeFn = boundTranscludeFn._slots[requestedSlotName];
 
             if (slotTranscludeFn) {
               return slotTranscludeFn(
                 transcludedScope,
                 attachFn,
-                _transcludeControllers,
+                transcludeControllers,
                 futureParentElement,
                 transcludeState._scopeToChild,
               );
@@ -1703,10 +1659,10 @@ export class CompileProvider {
             return undefined;
           }
 
-          return transcludeState._boundTranscludeFn(
+          return boundTranscludeFn(
             transcludedScope,
             attachFn,
-            _transcludeControllers,
+            transcludeControllers,
             futureParentElement,
             transcludeState._scopeToChild,
           );
@@ -1773,36 +1729,32 @@ export class CompileProvider {
               _elementRef: $element,
             };
 
-            const controllersBoundTransclude: ControllersBoundTranscludeFn =
-              function (
+            const newTranscludeFn = (function (
+              scopeParam,
+              cloneAttachFn,
+              _futureParentElement,
+              slotName,
+            ) {
+              transcludeState._scopeToChild = scopeToChild;
+              transcludeState._elementRef = $element;
+              transcludeState._elementControllers = elementControllers;
+
+              return invokeControllersBoundTransclude(
+                transcludeState,
                 scopeParam,
                 cloneAttachFn,
                 _futureParentElement,
                 slotName,
-              ) {
-                transcludeState._scopeToChild = scopeToChild;
-                transcludeState._elementRef = $element;
-                transcludeState._elementControllers = elementControllers;
-
-                return invokeControllersBoundTransclude(
-                  transcludeState,
-                  scopeParam,
-                  cloneAttachFn,
-                  _futureParentElement,
-                  slotName,
-                );
-              };
-
-            const newTranscludeFn =
-              controllersBoundTransclude as ControllersBoundTranscludeFn & {
-                _boundTransclude?: BoundTranscludeFn;
-              };
+              );
+            }) as ControllersBoundTranscludeFn & {
+              _boundTransclude?: BoundTranscludeFn;
+            };
 
             newTranscludeFn._boundTransclude = boundTranscludeFn;
             newTranscludeFn.isSlotFilled = function (
               slotName: string | number,
             ) {
-              return !!this._boundTransclude?._slots[slotName];
+              return !!boundTranscludeFn._slots[slotName];
             };
             transcludeFn = newTranscludeFn;
           }
@@ -1894,7 +1846,7 @@ export class CompileProvider {
               if (isFunction(controllerInstance.$onChanges)) {
                 try {
                   controllerInstance.$onChanges(
-                    controller.bindingInfo.initialChanges,
+                    controller.bindingInfo!.initialChanges,
                   );
                 } catch (err) {
                   $exceptionHandler(err);

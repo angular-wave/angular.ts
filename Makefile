@@ -1,6 +1,7 @@
-.PHONY: build test types
+.PHONY: build build-ts test types
 
 BUILD_DIR 	= ./dist	
+TS_BUILD_DIR = ./.build
 MIN_JS      := dist/angular-ts.umd.min.js
 GZ_JS  		:= $(MIN_JS).gz
 
@@ -15,11 +16,22 @@ build:
 		echo "Removing $(BUILD_DIR)..."; \
 		rm -r "$(BUILD_DIR)"; \
 	fi
+	@if [ -d "$(TS_BUILD_DIR)" ]; then \
+		echo "Removing $(TS_BUILD_DIR)..."; \
+		rm -r "$(TS_BUILD_DIR)"; \
+	fi
 	@npm i
 	@npm run build
 
+build-ts:
+	@if [ -d "$(TS_BUILD_DIR)" ]; then \
+		echo "Removing $(TS_BUILD_DIR)..."; \
+		rm -r "$(TS_BUILD_DIR)"; \
+	fi
+	@./node_modules/.bin/tsc --project tsconfig.build.json
+
 size:
-	./node_modules/.bin/rollup -c --configName min --silent
+	@npm run build >/dev/null
 	@echo "Minified build output:  $$(stat -c %s dist/angular-ts.umd.min.js) ~ $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
 	@echo "Expected gzip:          $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"
 	@git checkout -q $(BUILD_DIR)
