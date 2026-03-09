@@ -1,8 +1,6 @@
 import type {
   AnimationOptions,
   Animator,
-  AnimateJsFn,
-  AnimateJsRunner,
 } from "./interface.ts";
 import { isArray, isFunction, isObject } from "../shared/utils.ts";
 import {
@@ -26,7 +24,34 @@ interface JsAnimationHandlerMap {
 }
 
 /**
- * @param {import("./animate.ts").AnimateProvider} $animateProvider
+ * Signature for a JavaScript animation factory function.
+ *
+ * Given an element + event (+ optional classes/options), returns an {@link Animator}
+ * handle when it intends to animate, or `undefined` when it cannot handle the request.
+ */
+export interface AnimateJsFn {
+  (
+    element: HTMLElement,
+    event: string,
+    classes?: string | null,
+    options?: AnimationOptions,
+  ): Animator | undefined;
+}
+
+/**
+ * Driver return type for JS-based animations.
+ *
+ * Some JS drivers expose a "runner-like" object with explicit `start()` and
+ * `end()` methods that return an {@link AnimateRunner}.
+ */
+export interface AnimateJsRunner {
+  _willAnimate: true;
+  start: () => AnimateRunner;
+  end: () => AnimateRunner;
+}
+
+/**
+ * Registers the JavaScript animation driver with the animation provider.
  */
 export function AnimateJsProvider(
   this: { $get?: unknown },
@@ -35,16 +60,11 @@ export function AnimateJsProvider(
   this.$get = [
     $injectTokens._injector,
     /**
-     * @param {ng.InjectorService} $injector
-     * @returns {import("./interface.ts").AnimateJsFn}
+     * Creates the runtime JavaScript animation driver.
      */
     ($injector: ng.InjectorService): AnimateJsFn => {
       /**
-       * @param {HTMLElement} element
-       * @param {string} event
-       * @param {string | string[] | null | undefined} classes
-       * @param {ng.AnimationOptions | undefined} options
-       * @returns {import("./interface.ts").Animator | undefined}
+       * Dispatches one animation request to the matching JS animation handlers.
        */
       return function (
         element: HTMLElement,
@@ -77,14 +97,8 @@ export function AnimateJsProvider(
         // Lookup animation objects
         const animations = lookupAnimations(classes);
 
-        /**
-         * @type {((done: () => void) => void) | undefined}
-         */
         let before: JsAnimationOperation | undefined;
 
-        /**
-         * @type {((done: () => void) => void) | undefined}
-         */
         let after: JsAnimationOperation | undefined;
 
         if (animations.length) {
@@ -135,7 +149,6 @@ export function AnimateJsProvider(
           applyAnimationStyles(element, animationOptions);
         }
 
-        /** @type {ng.AnimateRunner} */
         let runner: AnimateRunner | undefined;
 
         const animateJsRunner: AnimateJsRunner = {
@@ -160,7 +173,7 @@ export function AnimateJsProvider(
             }
 
             /**
-             * @param {boolean | undefined} success
+             * Finalizes the runner and applies any deferred DOM changes.
              */
             function finish(success?: boolean) {
               if (finished) return;
@@ -198,7 +211,7 @@ export function AnimateJsProvider(
 
         // ---- helpers ----
         /**
-         * @param {string | string[]} classList
+         * Looks up registered JS animation handlers for a class list.
          */
         function lookupAnimations(
           classList: string | string[],
@@ -209,7 +222,6 @@ export function AnimateJsProvider(
 
           const matches: JsAnimationHandlerMap[] = [];
 
-          /** @type {Record<string, boolean>} */
           const flagMap: Record<string, boolean> = {};
 
           for (let i = 0; i < normalized.length; i++) {
@@ -230,11 +242,7 @@ export function AnimateJsProvider(
         }
 
         /**
-         * @param {HTMLElement} elementParam
-         * @param {ng.AnimationOptions} optionsParam
-         * @param {Array<Record<string, any>>} animationsParam
-         * @param {string} fnName
-         * @param {{ add?: string; remove?: string; }} classNames
+         * Packages one phase of matching animation handlers into a runnable operation.
          */
         function packageAnimations(
           elementParam: HTMLElement,
@@ -291,7 +299,7 @@ export function AnimateJsProvider(
           if (!operations.length) return undefined;
 
           /**
-           * @param {() => void} done
+           * Runs all packaged operations and signals completion once all are done.
            */
           return (done: () => void) => {
             let completed = 0;

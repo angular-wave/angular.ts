@@ -16,20 +16,53 @@ import {
 } from "../../shared/utils.ts";
 import { ASTType } from "../parse/ast-type.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
-import type { Listener, NonScopeMarked, ScopeEvent } from "./interface.ts";
+import type { CompiledExpression } from "../parse/parse.ts";
+
+export type ListenerFn = (newValue?: any, originalTarget?: object) => void;
+
+export type NonScope = string[] | boolean;
+
+export interface NonScopeMarked {
+  $nonscope?: NonScope;
+  [key: string]: any;
+  constructor?: {
+    $nonscope?: NonScope;
+  };
+}
+
+export interface Listener {
+  originalTarget: any;
+  listenerFn: ListenerFn;
+  watchFn: CompiledExpression;
+  id: number;
+  scopeId: number;
+  property: string[];
+  watchProp?: string;
+}
+
+export interface ScopeEvent {
+  targetScope: typeof Proxy<ng.Scope>;
+  currentScope: typeof Proxy<ng.Scope> | null;
+  name: string;
+  stopPropagation?(): void;
+  preventDefault(): void;
+  stopped: boolean;
+  defaultPrevented: boolean;
+}
+
+export type ScopeProxied<T extends object> = T & {
+  $handler: ng.Scope;
+  $target: T;
+};
 
 type ScopeProxy = ng.Scope;
 type ScopeTarget = NonScopeMarked & Record<PropertyKey, any>;
 type ScopeEventListener = (...args: any[]) => any;
 
-/**
- * @type {number}
- */
 let uid = 0;
 
 /**
- * @private
- * @return {number}
+ * Returns the next generated scope/listener id.
  */
 function nextId() {
   uid += 1;
@@ -37,15 +70,10 @@ function nextId() {
   return uid;
 }
 
-/**
- * @type {ng.ParseService}
- */
 let $parse: ng.ParseService;
 
-/**@type {ng.ExceptionHandlerService} */
 let $exceptionHandler: ng.ExceptionHandlerService;
 
-/** @ignore @type {Function[]} */
 export const $postUpdateQueue: Array<() => void> = [];
 
 export class RootScopeProvider {
@@ -65,10 +93,7 @@ export class RootScopeProvider {
   ] = [
     $t._exceptionHandler,
     $t._parse,
-    /**
-     * @param {ng.ExceptionHandlerService} exceptionHandler
-     * @param {ng.ParseService} parse
-     */
+    /** Initializes the shared parse and exception services for root scope behavior. */
     (exceptionHandler, parse) => {
       $exceptionHandler = exceptionHandler;
       $parse = parse;
@@ -78,13 +103,9 @@ export class RootScopeProvider {
   ];
 }
 
-/** @type {WeakMap<Object, Set<string>>} Cache for nonscope property sets */
-const nonscopeSetsCache = new WeakMap();
+const nonscopeSetsCache = new WeakMap<object, Set<string>>();
 
-/**
- * @param {any} arr
- * @returns {Set<string> | null}
- */
+/** Returns a cached set for `$nonscope` arrays so repeated checks stay cheap. */
 function getNonscopeSet(arr: unknown): Set<string> | null {
   if (!isArray(arr)) return null;
 
@@ -102,19 +123,18 @@ function getNonscopeSet(arr: unknown): Set<string> | null {
  * Collects all keys that should trigger a grouped `$watch` expression.
  * This keeps interpolation arrays reactive for both direct property changes
  * (`todo.done`) and object reassignments (`todo = nextTodo` in `ng-repeat`).
- *
- * @param {import("../parse/ast/ast-node.ts").ASTNode | undefined} node
- * @param {Set<string>} watchKeys
- * @returns {Set<string>}
  */
 function collectWatchKeys(
   node: any,
   watchKeys: Set<string> = new Set<string>(),
 ): Set<string> {
   if (!node) return watchKeys;
+  const getName = (target: any): string | undefined => target?.name;
+  const getPropertyName = (target: any): string | undefined =>
+    target?.property?.name;
 
   if (node.type === ASTType._Identifier) {
-    const identifier = /** @type {LiteralNode} */ node.name;
+    const identifier = getName(node);
 
     if (identifier) watchKeys.add(identifier);
 
@@ -122,7 +142,7 @@ function collectWatchKeys(
   }
 
   if (node.type === ASTType._Literal) {
-    const literal = /** @type {LiteralNode} */ node;
+    const literal = node;
 
     if (isString(literal.value)) {
       watchKeys.add(literal.value);
@@ -134,9 +154,9 @@ function collectWatchKeys(
   }
 
   if (node.type === ASTType._MemberExpression) {
-    const member = /** @type {ExpressionNode} */ node;
+    const member = node;
 
-    const propertyKey = /** @type {LiteralNode} */ member.property?.name;
+    const propertyKey = getPropertyName(member);
 
     if (propertyKey) {
       watchKeys.add(propertyKey);
@@ -149,7 +169,7 @@ function collectWatchKeys(
     return watchKeys;
   }
 
-  const { toWatch } = /** @type {BodyNode} */ node;
+  const { toWatch } = node;
 
   if (toWatch?.length) {
     for (let i = 0, l = toWatch.length; i < l; i++) {
@@ -165,7 +185,7 @@ function collectWatchKeys(
     }
   }
 
-  const fallbackKey = /** @type {LiteralNode} */ node.name;
+  const fallbackKey = getName(node);
 
   if (fallbackKey) watchKeys.add(fallbackKey);
 
@@ -177,9 +197,9 @@ function collectWatchKeys(
  * Creates a deep proxy for the target object, intercepting property changes
  * and recursively applying proxies to nested objects.
  *
- * @param {Object & {$nonscope?: import("./interface.ts").NonScope} & Record<string, any>} target - The object to be wrapped in a proxy.
- * @param {Scope} [context] - The context for the handler, used to track listeners.
- * @returns {Scope|Object} - A proxy that intercepts operations on the target object,
+ * @param target - The object to be wrapped in a proxy.
+ * @param [context] - The context for the handler, used to track listeners.
+ * @returns - A proxy that intercepts operations on the target object,
  *                                     or the original value if the target is not an object.
  */
 export function createScope(target: any = {}, context?: Scope): any {
@@ -205,13 +225,11 @@ export function createScope(target: any = {}, context?: Scope): any {
 
 const global = globalThis;
 
-/** @type {Set<string>} */
 const arrayMutationMethods = new Set(["pop", "shift", "unshift"]);
 
 const wStr = "[object Window]";
 
-/** @type {Function[]} */
-const nonScopeConstructors = [
+const nonScopeConstructors: Function[] = [
   Window,
   Document,
   Element,
@@ -246,16 +264,12 @@ const nonScopeConstructors = [
   URLSearchParams,
 ];
 
-/** @type {WeakSet<Object>} Cache for objects already determined to be non-scope */
-const nonScopeCache = new WeakSet();
+const nonScopeCache = new WeakSet<object>();
 
-/** @type {WeakSet<Object>} Cache for objects already determined to be scope-eligible */
-const scopeCache = new WeakSet();
+const scopeCache = new WeakSet<object>();
 
 /**
- * Checks if a target should be excluded from scope observability
- * @param {any} target
- * @returns {boolean}
+ * Checks whether a target should be excluded from scope observability.
  */
 export function isNonScope(target: unknown): boolean {
   // 1. Null or primitive types are non-scope
@@ -299,7 +313,9 @@ export function isNonScope(target: unknown): boolean {
   // 5. Safe instanceof checks
   for (let i = 0, l = nonScopeConstructors.length; i < l; i++) {
     try {
-      if (objectTarget instanceof /** @type {any} */ nonScopeConstructors[i]) {
+      const ctor = nonScopeConstructors[i] as any;
+
+      if (objectTarget instanceof ctor) {
         nonScopeCache.add(objectTarget);
 
         return true;
@@ -331,115 +347,75 @@ export function isNonScope(target: unknown): boolean {
  * @extends {Record<string, any>}
  */
 export class Scope {
-  /** @type {Map<string, Array<import('./interface.ts').Listener>>} */
   _watchers: Map<string, Listener[]>;
 
-  /** @type {Map<String, Function[]>} */
   _listeners: Map<string, ScopeEventListener[]>;
 
-  /** @type {Map<string, Array<import('./interface.ts').Listener>>} */
   _foreignListeners: Map<string, Listener[]>;
 
-  /** @type {Set<Proxy<ng.Scope>>} */
   _foreignProxies: Set<ScopeProxy>;
 
-  /** @type {WeakMap<Object, Array<string>>} */
   _objectListeners: WeakMap<object, string[]>;
 
-  /** @type {Proxy<Scope>} */
   $proxy!: ScopeProxy;
 
-  /** @type {Scope} */
   $handler;
 
-  /** @type {*} */
   $target: any;
 
-  /** @type {Scope[]} */
   _children: ScopeProxy[];
 
-  /** @type {number} */
   $id;
 
-  /** @type {ng.RootScopeService} */
   $root: ng.RootScopeService;
 
-  /** @type {Scope | undefined} */
   $parent?: ng.Scope;
 
-  /** @type {boolean} */
   _destroyed;
 
-  /** @type {import("./interface.ts").Listener[]} */
   _scheduled: Listener[];
 
-  /** @type {string | undefined} */
   $scopename?: string;
 
-  /** @type {Record<any, any>} */
   propertyMap: Record<PropertyKey, any>;
 
   /**
    * Initializes the handler with the target object and a context.
    *
-   * @param {Scope} [context] - The context containing listeners.
-   * @param {Scope} [parent] - Custom parent.
+   * @param [context] - The context containing listeners.
+   * @param [parent] - Custom parent.
    */
   constructor(context?: Scope, parent?: ng.Scope) {
-    /** @ignore @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners */
     this._watchers = context?._watchers ?? new Map();
 
-    /** @private @type {Map<String, Function[]>} Event listeners */
     this._listeners = new Map();
 
-    /** @private @type {Map<string, Array<import('./interface.ts').Listener>>} Watch listeners from other proxies */
     this._foreignListeners = context?._foreignListeners ?? new Map();
 
-    /** @private @type {Set<Proxy<ng.Scope>>} */
     this._foreignProxies = context?._foreignProxies ?? new Set();
 
-    /** @private @type {WeakMap<Object, Array<string>>} */
     this._objectListeners = context?._objectListeners ?? new WeakMap();
 
-    /** @type {Proxy<Scope>} Current proxy being operated on */
     this.$proxy;
 
-    /** @type {Scope} This is the reference to the Scope object with acts as the actual proxy */
-    this.$handler = /** @type {Scope} */ this;
+    this.$handler = this;
 
-    /** @type {*} Current target being called on */
     this.$target = null;
 
-    /**
-     * @ignore @type {Scope[]}
-     */
     this._children = [];
 
-    /**
-     * @type {number} Unique model ID (monotonically increasing) useful for debugging.
-     */
     this.$id = nextId();
 
-    /**
-     * @type {ng.RootScopeService}
-     */
     this.$root = context ? context.$root : this;
 
-    /**
-     * @type {Scope | undefined}
-     */
     this.$parent = parent || (this.$root === this ? undefined : context);
 
-    /** @ignore @type {boolean} */
     this._destroyed = false;
 
-    /** @private @type {import("./interface.ts").Listener[]} A list of scheduled Event listeners */
     this._scheduled = [];
 
     this.$scopename = undefined;
 
-    /** @private */
-    /** @type {Record<any, any>} */
     this.propertyMap = {
       $apply: this.$apply.bind(this),
       $broadcast: this.$broadcast.bind(this),
@@ -449,7 +425,7 @@ export class Scope {
       $eval: this.$eval.bind(this),
       $flushQueue: this.$flushQueue.bind(this),
       $getById: this.$getById.bind(this),
-      $handler: /** @type {Scope} */ this,
+      $handler: this,
       $id: this.$id,
       $isRoot: this._isRoot.bind(this),
       $merge: this.$merge.bind(this),
@@ -471,11 +447,11 @@ export class Scope {
    * Intercepts and handles property assignments on the target object. If a new value is
    * an object, it will be recursively proxied.
    *
-   * @param {Object & Record<string, any>} target - The target object.
-   * @param {string} property - The name of the property being set.
-   * @param {*} value - The new value being assigned to the property.
-   * @param {Proxy<Scope>} proxy - The proxy intercepting property access
-   * @returns {boolean} - Returns true to indicate success of the operation.
+   * @param target - The target object.
+   * @param property - The name of the property being set.
+   * @param value - The new value being assigned to the property.
+   * @param proxy - The proxy intercepting property access.
+   * @returns Returns true to indicate success of the operation.
    */
   set(
     target: ScopeTarget,
@@ -632,7 +608,7 @@ export class Scope {
       return true;
     } else {
       if (isUndefined(target[property]) && isProxy(value)) {
-        this._foreignProxies.add(/** @type {Proxy<ng.Scope>} */ value);
+        this._foreignProxies.add(value as ScopeProxy);
         target[property] = value;
 
         if (!this._watchers.has(property)) {
@@ -770,10 +746,10 @@ export class Scope {
    * properties (`watch` and `sync`) and binds their methods. For other properties,
    * it returns the value directly.
    *
-   * @param {Object & Record<string, any>} target - The target object.
-   * @param {string|number|symbol} property - The name of the property being accessed.
-   * @param {Proxy<Scope>} proxy - The proxy object being invoked
-   * @returns {*} - The value of the property or a method if accessing `watch` or `sync`.
+   * @param target - The target object.
+   * @param property - The name of the property being accessed.
+   * @param proxy - The proxy object being invoked.
+   * @returns The value of the property or a method if accessing `watch` or `sync`.
    */
   get(
     target: ScopeTarget,
@@ -786,10 +762,11 @@ export class Scope {
 
     if (property === isProxySymbol) return true;
 
-    const targetProp = target[/** @type {string} */ property];
+    const targetProp =
+      typeof property === "string" ? target[property] : target[property];
 
     if (isProxy(targetProp)) {
-      this.$proxy = /** @type {Proxy<Scope>} */ targetProp;
+      this.$proxy = targetProp;
     } else {
       this.$proxy = proxy;
     }
@@ -839,8 +816,8 @@ export class Scope {
   }
 
   /**
-   * @param {Object & Record<string, any>} target - The target object.
-   * @param {string} property - The name of the property being deleted
+   * @param target - The target object.
+   * @param property - The name of the property being deleted.
    */
   deleteProperty(
     target: ScopeTarget,
@@ -903,9 +880,7 @@ export class Scope {
     return true;
   }
 
-  /**
-   * @param {Object & Record<string, any>} value
-   */
+  /** Recursively schedules listeners for every reachable object key in the value. */
   _checkListenersForAllKeys(value: ScopeTarget | undefined): void {
     if (isUndefined(value)) {
       return;
@@ -927,10 +902,7 @@ export class Scope {
     }
   }
 
-  /**
-   * @param {import('./interface.ts').Listener[]} listeners
-   * @param {(listeners: import('./interface').Listener[]) => import('./interface').Listener[]} [filter]
-   */
+  /** Queues listener notification for the next microtask, optionally filtering the list first. */
   _scheduleListener(
     listeners: Listener[],
     filter?: (listeners: Listener[]) => Listener[],
@@ -950,10 +922,10 @@ export class Scope {
    * Registers a watcher for a property along with a listener function. The listener
    * function is invoked when changes to that property are detected.
    *
-   * @param {string} watchProp - An expression to be watched in the context of this model.
-   * @param {ng.ListenerFn} [listenerFn] - A function to execute when changes are detected on watched context.
-   * @param {boolean} [lazy] - A flag to indicate if the listener should be invoked immediately. Defaults to false.
-   * @return {(() => void) | undefined} - A function to deregister the watcher, or undefined if no listener function is provided.
+   * @param watchProp - An expression to be watched in the context of this model.
+   * @param [listenerFn] - A function to execute when changes are detected on watched context.
+   * @param [lazy] - A flag to indicate if the listener should be invoked immediately. Defaults to false.
+   * @returns A function to deregister the watcher, or undefined if no listener function is provided.
    */
   $watch(watchProp: string, listenerFn?: ng.ListenerFn, lazy = false) {
     assert(isString(watchProp), "Watched property required");
@@ -994,7 +966,6 @@ export class Scope {
       return undefined;
     }
 
-    /** @type {ng.Listener} */
     const listener: Listener = {
       originalTarget: this.$target,
       listenerFn,
@@ -1004,12 +975,13 @@ export class Scope {
       property: [],
     };
 
-    // simplest case
-    let key = /** @type {LiteralNode} */ expr.name;
+    const getName = (node: any): string | undefined => node?.name;
+    const getPropertyName = (node: any): string | undefined =>
+      node?.property?.name;
 
-    /**
-     * @type {string[]}
-     */
+    // simplest case
+    let key = getName(expr);
+
     const keySet: string[] = [];
 
     const { type } = expr;
@@ -1018,25 +990,23 @@ export class Scope {
       // 3
       case ASTType._AssignmentExpression:
         // assignment calls without listener functions
-        key =
-          /** @type {LiteralNode} */ /** @type {ExpressionNode} */ expr.left
-            ?.name;
+        key = getName(expr.left);
         break;
       // 4
       case ASTType._ConditionalExpression: {
-        key =
-          /** @type {LiteralNode} */ /** @type {ExpressionNode} */ /** @type {BodyNode} */ expr
-            .toWatch[0]?.test?.name;
-        listener.property.push(/** @type {string} */ key);
+        key = getName(expr.toWatch?.[0]?.test);
+
+        if (!key) {
+          throw new Error("Unable to determine key");
+        }
+        listener.property.push(key);
         break;
       }
       // 5
       case ASTType._LogicalExpression: {
         const keyList = [
-          /** @type {LiteralNode} */ /** @type {BodyNode} */ /** @type {ExpressionNode} */ expr
-            .left.toWatch[0]?.name,
-          /** @type {LiteralNode} */ /** @type {BodyNode} */ /** @type {ExpressionNode} */ expr
-            .right.toWatch[0]?.name,
+          getName(expr.left?.toWatch?.[0]),
+          getName(expr.right?.toWatch?.[0]),
         ];
 
         for (let i = 0, l = keyList.length; i < l; i++) {
@@ -1049,22 +1019,18 @@ export class Scope {
           for (let i = 0, l = keyList.length; i < l; i++) {
             const deregisterKey = keyList[i];
 
-            this._deregisterKey(
-              /** @type {string} */ deregisterKey,
-              listener.id,
-            );
+            if (deregisterKey) {
+              this._deregisterKey(deregisterKey, listener.id);
+            }
           }
         };
       }
       // 6
       case ASTType._BinaryExpression: {
-        if (/** @type {ExpressionNode} */ expr.isPure) {
-          const watch = /** @type {BodyNode} */ expr.toWatch[0];
+        if (expr.isPure) {
+          const watch = expr.toWatch[0];
 
-          key = /** @type {ExpressionNode} */ watch.property
-            ? /** @type {LiteralNode} */ /** @type {ExpressionNode} */ watch
-                .property.name
-            : /** @type {LiteralNode} */ watch.name;
+          key = getPropertyName(watch) ?? getName(watch);
 
           if (!key) {
             throw new Error("Unable to determine key");
@@ -1072,15 +1038,12 @@ export class Scope {
           listener.property.push(key);
           break;
         } else {
-          const { toWatch } = /** @type {BodyNode} */ expr;
+          const { toWatch } = expr;
 
           for (let i = 0, l = toWatch.length; i < l; i++) {
             const x = toWatch[i];
 
-            const registerKey = /** @type {ExpressionNode} */ x.property
-              ? /** @type {LiteralNode} */ /** @type {ExpressionNode} */ x
-                  .property.name
-              : /** @type {LiteralNode} */ x.name;
+            const registerKey = getPropertyName(x) ?? getName(x);
 
             if (!registerKey) throw new Error("Unable to determine key");
 
@@ -1093,27 +1056,20 @@ export class Scope {
             for (let i = 0, l = toWatch.length; i < l; i++) {
               const x = toWatch[i];
 
-              const deregisterKey = /** @type {ExpressionNode} */ x.property
-                ? /** @type {LiteralNode} */ /** @type {ExpressionNode} */ x
-                    .property.name
-                : /** @type {LiteralNode} */ x.name;
+              const deregisterKey = getPropertyName(x) ?? getName(x);
 
-              this._deregisterKey(
-                /** @type {string} */ deregisterKey,
-                listener.id,
-              );
+              if (deregisterKey) {
+                this._deregisterKey(deregisterKey, listener.id);
+              }
             }
           };
         }
       }
       // 7
       case ASTType._UnaryExpression: {
-        const x = /** @type {BodyNode} */ expr.toWatch[0];
+        const x = expr.toWatch[0];
 
-        key = /** @type {ExpressionNode} */ x.property
-          ? /** @type {LiteralNode} */ /** @type {ExpressionNode} */ x.property
-              .name
-          : /** @type {LiteralNode} */ x.name;
+        key = getPropertyName(x) ?? getName(x);
 
         if (!key) {
           throw new Error("Unable to determine key");
@@ -1123,17 +1079,16 @@ export class Scope {
       }
       // 8 function
       case ASTType._CallExpression: {
-        const { toWatch } /** @type {BodyNode} */ =
-          /** @type {ExpressionNode} */ expr;
+        const { toWatch } = expr;
 
         for (let i = 0, l = toWatch.length; i < l; i++) {
           const x = toWatch[i];
 
           if (!isDefined(x)) continue;
-          this._registerKey(
-            /** @type {string} */ /** @type {LiteralNode} */ x.name,
-            listener,
-          );
+          const registerKey = getName(x);
+
+          if (!registerKey) continue;
+          this._registerKey(registerKey, listener);
           this._scheduleListener([listener]);
         }
 
@@ -1142,28 +1097,28 @@ export class Scope {
             const x = toWatch[i];
 
             if (!isDefined(x)) continue;
-            this._deregisterKey(
-              /** @type {string} */ /** @type {LiteralNode} */ x.name,
-              listener.id,
-            );
+            const deregisterKey = getName(x);
+
+            if (deregisterKey) {
+              this._deregisterKey(deregisterKey, listener.id);
+            }
           }
         };
       }
 
       // 9
       case ASTType._MemberExpression: {
-        key =
-          /** @type {LiteralNode} */ /** @type {ExpressionNode} */ expr.property
-            .name;
+        key = getPropertyName(expr);
 
         // array watcher
         if (!key) {
-          key =
-            /** @type {LiteralNode} */ /** @type {ExpressionNode} */ expr.object
-              .name;
+          key = getName(expr.object);
         }
 
-        listener.property.push(/** @type {string} */ key);
+        if (!key) {
+          throw new Error("Unable to determine key");
+        }
+        listener.property.push(key);
 
         if (watchProp !== key) {
           // Handle nested expression call
@@ -1171,7 +1126,7 @@ export class Scope {
 
           const potentialProxy = $parse(
             watchProp.split(".").slice(0, -1).join("."),
-          )(/** @type {Scope} */ listener.originalTarget);
+          )(listener.originalTarget);
 
           if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
             potentialProxy.$handler._registerForeignKey(key, listener);
@@ -1189,20 +1144,19 @@ export class Scope {
 
       // 10
       case ASTType._Identifier: {
-        listener.property.push(
-          /** @type {string} */ /** @type {LiteralNode} */ expr.name,
-        );
+        if (!key) {
+          throw new Error("Unable to determine key");
+        }
+        listener.property.push(key);
         break;
       }
 
       // 12
       case ASTType._ArrayExpression: {
-        const { elements } = /** @type {ArrayNode} */ expr;
+        const { elements } = expr;
 
         const keyList: string[] = [];
-
-        /** @type {Set<string>} */
-        const seenKeys = new Set();
+        const seenKeys = new Set<string>();
 
         for (let i = 0, l = elements.length; i < l; i++) {
           const elementKeys = collectWatchKeys(elements[i]);
@@ -1228,24 +1182,21 @@ export class Scope {
 
       // 14
       case ASTType._ObjectExpression: {
-        const { properties } = /** @type {ObjectNode} */ expr;
+        const { properties } = expr;
 
         for (let i = 0, l = properties.length; i < l; i++) {
-          const prop = /** @type {ObjectPropertyNode} */ properties[i];
+          const prop = properties[i];
 
-          let currentKey;
+          let currentKey: string | undefined;
 
           if (prop.key.isPure === false) {
-            currentKey = /** @type {LiteralNode} */ prop.key.name;
-          } else if (/** @type {LiteralNode} */ prop.value?.name) {
-            currentKey = /** @type {LiteralNode} */ prop.value.name;
+            currentKey = getName(prop.key);
+          } else if (getName(prop.value)) {
+            currentKey = getName(prop.value);
           } else {
-            const target = /** @type {BodyNode} */ expr.toWatch[0];
+            const target = expr.toWatch[0];
 
-            currentKey = /** @type {ExpressionNode} */ target.property
-              ? /** @type {LiteralNode} */ /** @type {ExpressionNode} */ target
-                  .property.name
-              : /** @type {LiteralNode} */ target.name;
+            currentKey = getPropertyName(target) ?? getName(target);
           }
 
           if (currentKey) {
@@ -1264,7 +1215,10 @@ export class Scope {
     const listenerObject = listener.watchFn(this.$target);
 
     if (isObject(listenerObject)) {
-      this._objectListeners.set(listenerObject, [/** @type {string} */ key]);
+      if (!key) {
+        throw new Error("Unable to determine key");
+      }
+      this._objectListeners.set(listenerObject, [key]);
     }
 
     if (keySet.length > 0) {
@@ -1272,7 +1226,10 @@ export class Scope {
         this._registerKey(keySet[i], listener);
       }
     } else {
-      this._registerKey(/** @type {string} */ key, listener);
+      if (!key) {
+        throw new Error("Unable to determine key");
+      }
+      this._registerKey(key, listener);
     }
 
     if (!lazy) {
@@ -1293,15 +1250,15 @@ export class Scope {
 
         return res;
       } else {
-        return this._deregisterKey(/** @type {string} */ key, listener.id);
+        if (!key) {
+          return false;
+        }
+        return this._deregisterKey(key, listener.id);
       }
     };
   }
 
-  /**
-   * @param {ng.Scope} [childInstance]
-   * @returns {Proxy<ng.Scope> & ng.Scope}
-   */
+  /** Creates a prototypically inherited child scope. */
   $new(childInstance?: ng.Scope): ng.Scope {
     let child: ng.Scope;
 
@@ -1331,10 +1288,7 @@ export class Scope {
     return proxy;
   }
 
-  /**
-   * @param {ng.Scope} [instance]
-   * @returns {Proxy<ng.Scope> & ng.Scope}
-   */
+  /** Creates an isolate child scope that does not inherit watchable properties directly. */
   $newIsolate(instance?: ng.Scope): ng.Scope {
     const child = instance ? Object.create(instance) : nullObject();
 
@@ -1348,10 +1302,7 @@ export class Scope {
     return proxy;
   }
 
-  /**
-   * @param {ng.Scope} parentInstance
-   * @returns {Proxy<ng.Scope> & ng.Scope}
-   */
+  /** Creates a transcluded child scope linked to this scope and an optional parent instance. */
   $transcluded(parentInstance?: ng.Scope): ng.Scope {
     const child = Object.create(this.$target);
 
@@ -1368,10 +1319,7 @@ export class Scope {
     return proxy;
   }
 
-  /**
-   * @param {string} key
-   * @param {import("./interface.ts").Listener} listener
-   */
+  /** Registers a listener under a watched key on this scope. */
   _registerKey(key: string, listener: Listener): void {
     const listeners = this._watchers.get(key);
 
@@ -1383,10 +1331,7 @@ export class Scope {
     this._watchers.set(key, [listener]);
   }
 
-  /**
-   * @param {string} key
-   * @param {import("./interface.ts").Listener} listener
-   */
+  /** Registers a listener under a watched key owned by a foreign proxied scope. */
   _registerForeignKey(key: string, listener: Listener): void {
     const listeners = this._foreignListeners.get(key);
 
@@ -1398,10 +1343,7 @@ export class Scope {
     this._foreignListeners.set(key, [listener]);
   }
 
-  /**
-   * @param {string} key
-   * @param {number} id
-   */
+  /** Removes a listener by id from the local watcher map. */
   _deregisterKey(key: string, id: number): boolean {
     const listenerList = this._watchers.get(key);
 
@@ -1429,10 +1371,7 @@ export class Scope {
     return false;
   }
 
-  /**
-   * @param {string} key
-   * @param {number} id
-   */
+  /** Removes a listener by id from the foreign watcher map. */
   _deregisterForeignKey(key: string, id: number): boolean {
     const listenerList = this._foreignListeners.get(key);
 
@@ -1458,13 +1397,7 @@ export class Scope {
     return false;
   }
 
-  /**
-   * Evaluates an Angular expression in the context of this scope.
-   *
-   * @param {string} expr - Angular expression to evaluate
-   * @param {Record<string, any>} [locals] - Optional local variables
-   * @returns {any}
-   */
+  /** Evaluates an Angular expression in the context of this scope. */
   $eval(expr: ng.Expression, locals?: Record<string, any>) {
     const fn = $parse(expr);
 
@@ -1489,9 +1422,7 @@ export class Scope {
     return res;
   }
 
-  /**
-   * @param {Object} newTarget
-   */
+  /** Merges enumerable properties from the provided object into the current scope target. */
   $merge(newTarget: object): void {
     const list = entries(newTarget);
 
@@ -1502,10 +1433,7 @@ export class Scope {
     }
   }
 
-  /**
-   * @param {ng.Expression} expr
-   * @returns {any}
-   */
+  /** Evaluates an expression and routes any thrown error through the exception handler. */
   $apply(expr: ng.Expression): any {
     try {
       return $parse(expr)(this.$proxy);
@@ -1514,11 +1442,7 @@ export class Scope {
     }
   }
 
-  /**
-   * @param {string} name
-   * @param {Function} listener
-   * @returns {(function(): void)|*}
-   */
+  /** Registers an event listener on this scope and returns a deregistration function. */
   $on(name: string, listener: ScopeEventListener): () => void {
     let namedListeners = this._listeners.get(name);
 
@@ -1541,11 +1465,7 @@ export class Scope {
     };
   }
 
-  /**
-   * @param {string} name
-   * @param  {...any} args
-   * @returns {ng.ScopeEvent | undefined}
-   */
+  /** Emits an event upward through the scope hierarchy. */
   $emit(name: string, ...args: any[]): ScopeEvent | undefined {
     return this._eventHelper(
       { name, event: undefined, broadcast: false },
@@ -1553,11 +1473,7 @@ export class Scope {
     );
   }
 
-  /**
-   * @param {string} name
-   * @param  {...any} args
-   * @returns {any}
-   */
+  /** Broadcasts an event downward through the scope hierarchy. */
   $broadcast(name: string, ...args: any[]): ScopeEvent | undefined {
     return this._eventHelper(
       { name, event: undefined, broadcast: true },
@@ -1566,10 +1482,10 @@ export class Scope {
   }
 
   /**
-   * Internal event propagation helper
-   * @param {{ name: string, event?: ng.ScopeEvent, broadcast: boolean }} param0 - Event info
-   * @param {...any} args - Additional arguments passed to listeners
-   * @returns {ng.ScopeEvent|undefined}
+   * Internal event propagation helper.
+   *
+   * Propagates either upward (`$emit`) or downward (`$broadcast`) and
+   * constructs the shared event object on first use.
    */
   _eventHelper(
     {
@@ -1679,17 +1595,12 @@ export class Scope {
     }
   }
 
-  /**
-   * @internal
-   * @returns {boolean}
-   */
+  /** Returns whether this scope instance is the root scope. */
   _isRoot() {
-    return this.$root === /** @type {Scope} */ this;
+    return this.$root === this;
   }
 
-  /**
-   * @param {Function} fn
-   */
+  /** Queues a callback to run after the current listener batch completes. */
   $postUpdate(fn: () => void): void {
     $postUpdateQueue.push(fn);
   }
@@ -1743,11 +1654,7 @@ export class Scope {
     this._destroyed = true;
   }
 
-  /**
-   * @internal
-   * @param {import('./interface.ts').Listener} listener - The property path that was changed.
-   * @param {Scope | typeof Proxy<Scope> | undefined} target
-   */
+  /** Resolves the watched value and notifies a single listener. */
   _notifyListener(
     listener: Listener,
     target: Scope | ScopeProxy | undefined,
@@ -1777,7 +1684,7 @@ export class Scope {
 
       if ($postUpdateQueue.length > 0) {
         for (let qi = 0; qi < $postUpdateQueue.length; qi++) {
-          /** @type {Function} */ $postUpdateQueue[qi]();
+          $postUpdateQueue[qi]();
         }
         $postUpdateQueue.length = 0;
       }
@@ -1789,20 +1696,15 @@ export class Scope {
   /* @ignore */
   $flushQueue() {
     for (let i = 0; i < $postUpdateQueue.length; i++) {
-      /** @type {Function} */ $postUpdateQueue[i]();
+      $postUpdateQueue[i]();
     }
     $postUpdateQueue.length = 0;
   }
 
-  /**
-   * Searches the scope instance
-   *
-   * @param {string|number}id
-   * @returns {Scope|undefined}
-   */
+  /** Searches this scope tree for a scope with the given id. */
   $getById(id: string | number): Scope | undefined {
     if (isString(id)) {
-      id = parseInt(/** @type {string} */ id, 10);
+      id = parseInt(id, 10);
     }
 
     if (this.$id === id) {
@@ -1823,10 +1725,7 @@ export class Scope {
     }
   }
 
-  /**
-   * @param {string} name
-   * @returns {ng.Scope|undefined}
-   */
+  /** Searches the scope tree for a scope registered under the provided name. */
   $searchByName(name: string): ng.Scope | undefined {
     const stack: ng.Scope[] = [this.$root];
 
@@ -1854,10 +1753,7 @@ export class Scope {
 
 /*------------- Private helpers -------------*/
 
-/**
- * @param {Scope} model
- * @returns {number}
- */
+/** Counts watchers belonging to a scope subtree. */
 function calculateWatcherCount(model: Scope): number {
   const childIds = collectChildIds(model);
 
@@ -1874,10 +1770,7 @@ function calculateWatcherCount(model: Scope): number {
   return count;
 }
 
-/**
- * @param {Scope} child
- * @returns {Set<number>}
- */
+/** Collects all scope ids reachable from the provided child scope. */
 function collectChildIds(child: Scope): Set<number> {
   const ids = new Set<number>();
 

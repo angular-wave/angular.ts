@@ -1,5 +1,44 @@
 import { isError } from "../../shared/utils.ts";
-import type { LogCall, LogServiceFactory } from "./interface.ts";
+
+/**
+ * A function that logs messages. Accepts any number of arguments.
+ */
+export type LogCall = (...args: any[]) => void;
+
+/**
+ * Service for logging messages at various levels.
+ */
+export interface LogService {
+  /**
+   * Log a debug message.
+   */
+  debug: LogCall;
+
+  /**
+   * Log an error message.
+   */
+  error: LogCall;
+
+  /**
+   * Log an info message.
+   */
+  info: LogCall;
+
+  /**
+   * Log a general message.
+   */
+  log: LogCall;
+
+  /**
+   * Log a warning message.
+   */
+  warn: LogCall;
+}
+
+/**
+ * A function that returns a LogService implementation.
+ */
+export type LogServiceFactory = (...args: any[]) => LogService;
 
 /**
  * Configuration provider for `$log` service
@@ -23,8 +62,7 @@ export class LogProvider {
 
   /**
    * @private
-   * @param {unknown} arg
-   *
+   * Normalizes `Error` objects into readable log output.
    */
   private _formatError(arg: unknown): unknown {
     if (isError(arg)) {
@@ -41,7 +79,7 @@ export class LogProvider {
 
   /**
    * @private
-   * @param {string} type
+   * Builds a console-backed logger for the requested method name.
    */
   private _consoleLog(type: string): LogCall {
     const console =
@@ -62,9 +100,7 @@ export class LogProvider {
     };
   }
 
-  /**
-   * @returns {ng.LogService}
-   */
+  /** Creates the runtime `$log` service. */
   $get(): ng.LogService {
     if (this._override) {
       return this._override();

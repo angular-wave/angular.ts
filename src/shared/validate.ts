@@ -1,5 +1,4 @@
 import { isInjectable } from "./predicates.ts";
-import type { Validator } from "./interface.ts";
 import {
   isArray,
   isDefined,
@@ -7,6 +6,8 @@ import {
   isString,
   notNullOrUndefined,
 } from "./utils.ts";
+
+export type Validator = (value: unknown) => boolean;
 
 export const BADARG = "badarg";
 export const BADARGKEY = "badarg: key";

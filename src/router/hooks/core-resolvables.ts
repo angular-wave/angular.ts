@@ -3,7 +3,7 @@ import { values } from "../../shared/utils.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { Transition } from "../transition/transition.ts";
 import type { PathNode } from "../path/path-node.ts";
-import type { TransitionService } from "../transition/interface.ts";
+import type { TransitionService } from "../transition/transition-service.ts";
 
 /**
  * Adds built-in transition-scoped resolvables such as `$transition$`,

@@ -158,7 +158,7 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
           });
           $provide.provider(
             $t._angular,
-            class Test {
+            class {
               $get = () => angular;
             },
           );
@@ -300,8 +300,7 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
     .factory("$stateParams", [
       $t._router,
       /**
-       * @param {ng.RouterService} globals
-       * @returns {import('./router/params/state-params.ts').StateParams }
+       * Exposes the router's current parameter bag as `$stateParams`.
        */
       (globals) => globals.params,
     ])

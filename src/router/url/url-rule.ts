@@ -8,16 +8,65 @@ import {
 } from "../../shared/utils.ts";
 import { is, pattern } from "../../shared/hof.ts";
 import { StateObject } from "../state/state-object.ts";
-import type {
-  MatcherUrlRule,
-  RegExpRule,
-  StateRule,
-  UrlParts,
-  UrlRule,
-  UrlRuleHandlerFn,
-  UrlRuleMatchFn,
-  UrlRuleType,
-} from "./interface.ts";
+import type { UrlParts } from "./url-service.ts";
+
+/**
+ * A function that matches the URL for a [[UrlRule]]
+ *
+ * Implementations should match against the provided [[UrlParts]] and return the matched value (truthy) if the rule matches.
+ * If this rule is selected, the matched value is passed to the [[UrlRuleHandlerFn]].
+ */
+export interface UrlRuleMatchFn {
+  (url: UrlParts, router?: ng.RouterService): any;
+}
+
+/**
+ * Handler invoked when a rule is matched
+ *
+ * The matched value from the rule's [[UrlRuleMatchFn]] is passed as the first argument.
+ * The handler should return a string (to redirect), a [[TargetState]]/[[TargetStateDef]], or void.
+ */
+export interface UrlRuleHandlerFn {
+  (
+    matchValue?: any,
+    url?: UrlParts,
+    router?: ng.RouterService,
+  ): string | import("../state/target-state.ts").TargetState | import("../state/target-state.ts").TargetStateDef | void;
+}
+
+/** @internal */
+export type UrlRuleType = "STATE" | "URLMATCHER" | "REGEXP" | "RAW" | "OTHER";
+
+/**
+ * The interface for a URL Rule
+ */
+export interface UrlRule {
+  $id: number;
+  priority: number;
+  _group: number;
+  type: UrlRuleType;
+  state?: StateObject;
+  urlMatcher?: UrlMatcher;
+  regexp?: RegExp;
+  match: UrlRuleMatchFn;
+  handler: UrlRuleHandlerFn;
+  matchPriority(match: any): number;
+}
+
+export interface MatcherUrlRule extends UrlRule {
+  type: "URLMATCHER" | "STATE";
+  urlMatcher: UrlMatcher;
+}
+
+export interface StateRule extends MatcherUrlRule {
+  type: "STATE";
+  state: StateObject;
+}
+
+export interface RegExpRule extends UrlRule {
+  type: "REGEXP";
+  regexp: RegExp;
+}
 /**
  * Creates a [[UrlRule]]
  *
@@ -46,9 +95,7 @@ export class UrlRuleFactory {
   }
 
   /**
-   * @param {ng.UrlService} urlService
-   * @param {ng.StateService} stateService
-   * @param {ng.RouterService} routerGlobals
+   * Creates a rule factory bound to the router services used to compile and execute rules.
    */
   constructor(
     urlService: ng.UrlService,
@@ -61,10 +108,7 @@ export class UrlRuleFactory {
   }
 
   /**
-   *
-   * @param {StateObject} what
-   * @param {*} [handler]
-   * @returns {import("./url-rules.ts").UrlRule}
+   * Creates a concrete UrlRule from a matcher source and optional handler.
    */
   create(
     what:
@@ -149,9 +193,6 @@ export class UrlRuleFactory {
    * var match = rule.match('/foo/123/456'); // results in { fooId: '123', barId: '456' }
    * var result = rule.handler(match); // '/home/123/456'
    * ```
-   * @param {UrlMatcher} urlMatcher
-   * @param {string | UrlMatcher | import("./interface.ts").UrlRuleHandlerFn} handler
-   * @returns {import("./interface.ts").MatcherUrlRule}
    */
   fromUrlMatcher(
     urlMatcher: UrlMatcher,
@@ -172,10 +213,7 @@ export class UrlRuleFactory {
     } else {
       resolvedHandler = handler as UrlRuleHandlerFn;
     }
-    /**
-     * @param {import("./interface.ts").UrlParts} url
-     * @returns {import("../params/interface.ts").RawParams | boolean | null}
-     */
+    /** Matches the current URL and returns validated matcher parameters when present. */
     function matchUrlParamters(url: UrlParts) {
       const params = urlMatcher.exec(url.path, url.search, url.hash || "");
 
@@ -186,11 +224,8 @@ export class UrlRuleFactory {
     // - No optional parameters in URL
     // - Some optional parameters, some matched
     // - Some optional parameters, all matched
-    /**
-     * @param {import("../params/interface.ts").RawParams} params
-     * @returns {number}
-     */
-    function matchPriority(params: import("../params/interface.ts").RawParams) {
+    /** Computes rule priority based on how many optional parameters matched. */
+    function matchPriority(params: import("../params/param.ts").RawParams) {
       const optional = urlMatcher
         .parameters()
         .filter((param) => param.isOptional);
@@ -200,7 +235,6 @@ export class UrlRuleFactory {
 
       return matched.length / optional.length;
     }
-    /** @type {{ urlMatcher: UrlMatcher; matchPriority: (params: import("../params/interface.ts").RawParams) => number; type: "URLMATCHER" }} */
     const details: Pick<
       MatcherUrlRule,
       "urlMatcher" | "matchPriority" | "type"
@@ -226,10 +260,7 @@ export class UrlRuleFactory {
    * var result = rule.handler(match);
    * // Starts a transition to 'foo' with params: { fooId: '123', barId: '456' }
    * ```
-   * @param {StateObject | import("../state/interface.ts").StateDeclaration} stateOrDecl
-   * @param {import("../state/state-service.ts").StateProvider} stateService
-   * @param {import("../router.ts").RouterProvider} globals
-   * @returns {import("./interface.ts").StateRule}
+   * Builds a rule that matches a state's UrlMatcher and transitions to that state.
    */
   fromState(
     stateOrDecl: StateObject | import("../state/interface.ts").StateDeclaration,
@@ -255,7 +286,7 @@ export class UrlRuleFactory {
      * A new transition is not required if the current state's URL
      * and the new URL are already identical
      */
-    const handler = (match: import("../params/interface.ts").RawParams) => {
+    const handler = (match: import("../params/param.ts").RawParams) => {
       const $state = stateService;
       const current = globals.current;
       const currentHref = current ? $state.href(current, globals.params) : null;
@@ -307,9 +338,7 @@ export class UrlRuleFactory {
    * var match = rule.match('/foo/bar'); // results in [ '/foo/bar', 'bar' ]
    * var result = rule.handler(match); // '/home/bar'
    * ```
-   * @param {RegExp} regexp
-   * @param {string | import("./interface.ts").UrlRuleHandlerFn} handler
-   * @returns {import("./interface.ts").RegExpRule}
+   * Builds a rule backed by a regular expression and redirect/handler target.
    */
   fromRegExp(regexp: RegExp, handler: string | UrlRuleHandlerFn): RegExpRule {
     if (regexp.global || regexp.sticky)
@@ -355,8 +384,7 @@ export class BaseUrlRule {
   handler: UrlRuleHandlerFn;
   priority: number | undefined;
   /**
-   * @param {import("./interface.ts").UrlRuleMatchFn} match
-   * @param {import("./interface.ts").UrlRuleHandlerFn} handler
+   * Creates a base rule from a match function and handler.
    */
   constructor(match: UrlRuleMatchFn, handler: UrlRuleHandlerFn) {
     this.match = match;
@@ -369,8 +397,6 @@ export class BaseUrlRule {
 
   /**
    * This function should be overridden
-   * @param {*} [params]
-   * @returns {number}
    */
   matchPriority(params?: any): number {
     assert(isUndefined(params));

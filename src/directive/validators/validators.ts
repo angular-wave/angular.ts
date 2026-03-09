@@ -14,7 +14,7 @@ type ValidatingNgModelController = ng.NgModelController & {
 
 /**
  *
- * @param {string} ngRequired AngularTS expression. If it evaluates to `true`, it sets the
+ * @param ngRequired AngularTS expression. If it evaluates to `true`, it sets the
  *                                `required` attribute to the element and adds the `required`
  *                                {@link ngModel.NgModelController#$validators `validator`}.
  *
@@ -40,21 +40,12 @@ export const requiredDirective: [
   ($parse: ng.ParseService) => ng.Directive<any>,
 ] = [
   $t._parse,
-  /**
-   * @param {import("../../core/parse/interface.ts").ParseService} $parse
-   * @returns {ng.Directive}
-   */
+  /** Creates the `required` validator directive. */
   ($parse: ng.ParseService) => ({
     restrict: "A",
     require: "?ngModel",
     link:
-      /**
-       * @param {ng.Scope} scope
-       * @param {Element} _elm
-       * @param {ng.Attributes} attr
-       * @param {ng.NgModelController} ctrl
-       * @returns
-       */
+      /** Wires required-state observation into the ngModel validator set. */
       (
         scope: ng.Scope,
         _elm: Element,
@@ -88,7 +79,7 @@ export const requiredDirective: [
 ];
 
 /**
- * @param {String|RegExp} ngPattern AngularTS expression that must evaluate to a `RegExp` or a `String`
+ * @param ngPattern AngularTS expression that must evaluate to a `RegExp` or a `String`
  *                                      parsable into a `RegExp`, or a `RegExp` literal. See above for
  *                                      more details.
  *
@@ -131,22 +122,13 @@ export const patternDirective: [
   ($parse: ng.ParseService) => ng.Directive<any>,
 ] = [
   $t._parse,
-  /**
-   * @param {ng.ParseService} $parse
-   * @returns {ng.Directive}
-   */
+  /** Creates the `pattern` validator directive. */
   ($parse: ng.ParseService) => ({
     restrict: "A",
     require: "?ngModel",
     compile: (_Elm: Element, tAttr: ng.Attributes) => {
-      /**
-       * @type {string}
-       */
       let patternExp = "";
 
-      /**
-       * @type {(() => any) | ((arg0: ng.Scope) => string)}
-       */
       let parseFn: (() => any) | ((scope: ng.Scope) => string) | undefined;
 
       if (tAttr.ngPattern) {
@@ -201,7 +183,7 @@ export const patternDirective: [
           return (
             ctrl.$isEmpty(viewValue) ||
             isUndefined(regexp) ||
-            /** @type {RegExp} */ regexp.test(viewValue)
+            regexp.test(viewValue)
           );
         };
       };
@@ -210,7 +192,7 @@ export const patternDirective: [
 ];
 
 /**
- * @param {string} ngMaxlength AngularTS expression that must evaluate to a `Number` or `String`
+ * @param ngMaxlength AngularTS expression that must evaluate to a `Number` or `String`
  *                                 parsable into a `Number`. Used as value for the `maxlength`
  *                                 {@link ngModel.NgModelController#$validators validator}.
  *
@@ -244,21 +226,12 @@ export const maxlengthDirective: [
   ($parse: ng.ParseService) => ng.Directive<any>,
 ] = [
   $t._parse,
-  /**
-   * @param {ng.ParseService} $parse
-   * @returns {ng.Directive}
-   */
+  /** Creates the `maxlength` validator directive. */
   ($parse: ng.ParseService) => ({
     restrict: "A",
     require: "?ngModel",
     link:
-      /**
-       * @param {ng.Scope} scope
-       * @param {Element} _elm
-       * @param {ng.Attributes} attr
-       * @param {ng.NgModelController} ctrl
-       * @returns
-       */
+      /** Watches maxlength changes and keeps the validator in sync. */
       (
         scope: ng.Scope,
         _elm: Element,
@@ -296,7 +269,7 @@ export const maxlengthDirective: [
 
 /**
  *
- * @param {string} ngMinlength AngularTS expression that must evaluate to a `Number` or `String`
+ * @param ngMinlength AngularTS expression that must evaluate to a `Number` or `String`
  *                                 parsable into a `Number`. Used as value for the `minlength`
  *                                 {@link ngModel.NgModelController#$validators validator}.
  *
@@ -330,7 +303,7 @@ export const minlengthDirective: [
   ($parse: ng.ParseService) => ng.Directive<any>,
 ] = [
   $t._parse,
-  /** @param {ng.ParseService} $parse @return {ng.Directive} */ (
+  /** Creates the `minlength` validator directive. */ (
     $parse: ng.ParseService,
   ) => ({
     restrict: "A",
@@ -366,19 +339,13 @@ export const minlengthDirective: [
   }),
 ];
 
-/**
- * @param {string | RegExp} input
- * @param {string} patternExp
- * @param {Element | Node} elm
- * @returns {RegExp}
- */
+/** Parses a pattern attribute value into a `RegExp` instance. */
 function parsePatternAttr(
   input: string | RegExp,
   patternExp: string,
   elm: Element | Node,
 ): RegExp {
-  /** @type {RegExp | string} */
-  let regex = input;
+  let regex: RegExp | string = input;
 
   if (typeof regex === "string") {
     const match = regex.match(/^\/(.*)\/([gimsuy]*)$/);
@@ -399,9 +366,7 @@ function parsePatternAttr(
   return regex;
 }
 
-/**
- * @param {string} val
- */
+/** Parses a numeric length attribute into an integer or `-1` when invalid. */
 function parseLength(val: any): number {
   const intVal = parseInt(val, 10);
 

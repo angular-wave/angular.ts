@@ -264,7 +264,7 @@ export class Angular extends EventTarget {
    *     Each item in the array should be the name of a predefined module or a (DI annotated)
    *     function that will be invoked by the injector as a `config` block.
    *     See: {@link angular.module modules}
-   * @param config
+   * `config` controls bootstrap behavior such as `strictDi`.
    * @returns The created injector instance for this application.
    */
   bootstrap(

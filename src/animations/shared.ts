@@ -19,7 +19,7 @@ interface AnimationDetails {
 }
 
 /**
- * @param {ng.AnimationOptions} options
+ * Returns only the `from`/`to` style portions of an animation options object.
  */
 export function packageStyles(
   options?: AnimationOptions,
@@ -30,9 +30,7 @@ export function packageStyles(
 }
 
 /**
- * @param {string | string[]} classes
- * @param {string} fix
- * @param {boolean | undefined} [isPrefix]
+ * Appends or prepends a suffix/prefix to each class name in a class list.
  */
 export function pendClasses(
   classes: string | string[] | null | undefined,
@@ -52,9 +50,7 @@ export function pendClasses(
 }
 
 /**
- *
- * @param {NodeList|Node} element
- * @returns {Node[]|Node|undefined}
+ * Removes comment nodes from a node or node list, returning only element nodes.
  */
 export function stripCommentsFromElement(
   element: NodeList | Node,
@@ -64,7 +60,7 @@ export function stripCommentsFromElement(
       (x) => x.nodeType === NodeType._ELEMENT_NODE,
     );
   } else if (element.nodeType === NodeType._ELEMENT_NODE) {
-    return /** @type {Node} */ element;
+    return element;
   } else {
     return undefined;
   }
@@ -86,7 +82,7 @@ export function applyAnimationClasses(
 }
 
 /**
- * @param {ng.AnimationOptions | undefined} options
+ * Ensures animation options are normalized and safe to mutate.
  */
 export function prepareAnimationOptions(
   options?: AnimationOptions,
@@ -114,8 +110,7 @@ export function prepareAnimationOptions(
 }
 
 /**
- * @param {HTMLElement} element
- * @param {ng.AnimationOptions | undefined} options
+ * Applies both `from` and `to` animation style blocks to an element.
  */
 export function applyAnimationStyles(
   element: HTMLElement,
@@ -131,8 +126,8 @@ export function applyAnimationStyles(
  * This function sets the element's inline styles using the properties
  * defined in `options.from`, then clears the property to prevent reuse.
  *
- * @param {HTMLElement} element - The target DOM element to apply styles to.
- * @param {ng.AnimationOptions} [options] - options containing a `from` object with CSS property–value pairs.
+ * @param element - The target DOM element to apply styles to.
+ * @param [options] - options containing a `from` object with CSS property–value pairs.
  */
 export function applyAnimationFromStyles(
   element: HTMLElement,
@@ -150,8 +145,8 @@ export function applyAnimationFromStyles(
  * This function sets the element's inline styles using the properties
  * defined in `options.to`, then clears the property to prevent reuse.
  *
- * @param {HTMLElement} element - The target DOM element to apply styles to.
- * @param {ng.AnimationOptions} [options] - options containing a `from` object with CSS property–value pairs.
+ * @param element - The target DOM element to apply styles to.
+ * @param [options] - options containing a `from` object with CSS property–value pairs.
  */
 export function applyAnimationToStyles(
   element: HTMLElement,
@@ -167,10 +162,6 @@ export function applyAnimationToStyles(
  * Merge old and new animation options for an element, computing
  * the final addClass and removeClass values.
  *
- * @param {HTMLElement} element - The DOM element being animated.
- * @param {{ options?: ng.AnimationOptions; addClass?: string; removeClass?: string }} oldAnimation
- * @param {{ options?: ng.AnimationOptions; addClass?: string; removeClass?: string; preparationClasses?: string }} newAnimation
- * @returns {ng.AnimationOptions} - The merged animation options.
  */
 export function mergeAnimationDetails(
   element: HTMLElement,
@@ -226,10 +217,10 @@ export function mergeAnimationDetails(
   });
 
   target.addClass = finalAdd.length
-    ? /** @type {string} */ finalAdd.join(" ")
+    ? finalAdd.join(" ")
     : undefined;
   target.removeClass = finalRemove.length
-    ? /** @type {string} */ finalRemove.join(" ")
+    ? finalRemove.join(" ")
     : undefined;
 
   // Update oldAnimation references
@@ -240,9 +231,7 @@ export function mergeAnimationDetails(
 }
 
 /**
- * @param {HTMLElement} element
- * @param {string | null} event
- * @param {ng.AnimationOptions} options
+ * Adds generated preparation classes used to bootstrap an animation.
  */
 export function applyGeneratedPreparationClasses(
   element: HTMLElement,
@@ -276,8 +265,7 @@ export function applyGeneratedPreparationClasses(
 }
 
 /**
- * @param {HTMLElement} element
- * @param {ng.AnimationOptions} options
+ * Removes generated preparation and active animation classes from an element.
  */
 export function clearGeneratedClasses(
   element: HTMLElement,
@@ -299,9 +287,7 @@ export function clearGeneratedClasses(
 }
 
 /**
- * @param {HTMLElement} node
- * @param {boolean} applyBlock
- * @returns {string[]}
+ * Pauses or unpauses keyframe animations on an element.
  */
 export function _blockKeyframeAnimations(
   node: HTMLElement,
@@ -317,8 +303,7 @@ export function _blockKeyframeAnimations(
 }
 
 /**
- * @param {HTMLElement} node
- * @param {any[]} styleTuple
+ * Applies one inline style tuple to an element.
  */
 export function applyInlineStyle(
   node: HTMLElement,
@@ -330,9 +315,7 @@ export function applyInlineStyle(
 }
 
 /**
- * @param {string} a
- * @param {string} b
- * @returns {string}
+ * Concatenates two strings with a single separating space.
  */
 export function concatWithSpace(a: string, b: string): string {
   return [a, b].filter(Boolean).join(" ");

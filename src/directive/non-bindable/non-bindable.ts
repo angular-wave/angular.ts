@@ -1,8 +1,4 @@
-/**
- * Prevents AngularTS from compiling or binding the contents of the element.
- *
- * @returns {ng.Directive}
- */
+/** Prevents AngularTS from compiling or binding the contents of the element. */
 export function ngNonBindableDirective(): ng.Directive {
   return {
     terminal: true,

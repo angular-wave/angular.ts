@@ -4,8 +4,6 @@ scriptDirective.$inject = [$injectTokens._templateCache];
 
 /**
  * Captures inline `text/ng-template` script contents into `$templateCache`.
- *
- * @param {ng.TemplateCacheService} $templateCache
  */
 export function scriptDirective(
   $templateCache: ng.TemplateCacheService,

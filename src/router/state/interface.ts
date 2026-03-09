@@ -1,35 +1,20 @@
-import { ParamDeclaration, RawParams } from "../params/interface.ts";
+import { ParamDeclaration, RawParams } from "../params/param.ts";
 import { StateObject } from "./state-object.ts";
-import { ViewContext } from "../view/interface.ts";
+import { ViewContext } from "../view/view.ts";
 import { Injectable } from "../../interface.ts";
 import { Transition } from "../transition/transition.ts";
-import {
-  TransitionStateHookFn,
-  TransitionOptions,
-  HookResult,
-} from "../transition/interface.ts";
+import { TransitionStateHookFn } from "../transition/interface.ts";
 import {
   ResolvePolicy,
   ResolvableLiteral,
   ProviderLike,
-} from "../resolve/interface.ts";
+} from "../resolve/resolvable.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { TargetState } from "./target-state.ts";
 import { Glob } from "../glob/glob.ts";
+import type { LazyLoadResult } from "../hooks/lazy-load.ts";
 
 export type StateOrName = string | StateDeclaration | StateObject;
-
-export type StateStore = Record<string, StateObject | BuiltStateDeclaration>;
-
-export interface TransitionPromise extends Promise<StateObject> {
-  transition: Transition;
-}
-
-export interface TargetStateDef {
-  state: StateOrName;
-  params?: RawParams;
-  options?: TransitionOptions;
-}
 
 export type ResolveTypes = Resolvable | ResolvableLiteral | ProviderLike;
 
@@ -999,103 +984,3 @@ export type BuiltStateDeclaration = StateDeclaration & {
 
   _stateObjectCache?: { nameGlob: Glob } | null;
 };
-
-/**
- * The return type of a [[StateDeclaration.lazyLoad]] function
- *
- * If your state has a `lazyLoad` function, it should return a promise.
- * If promise resolves to an object matching this interface, then the `states` array
- * of [[StateDeclaration]] objects will be automatically registered.
- */
-export interface LazyLoadResult {
-  states?: StateDeclaration[];
-}
-
-/**
- * An options object for [[StateService.href]]
- */
-export interface HrefOptions {
-  /**
-   * Defines what state to be "relative from"
-   *
-   * When a relative path is found (e.g `^` or `.bar`), defines which state to be relative from.
-   */
-  relative?: StateOrName;
-
-  /**
-   * If true, and if there is no url associated with the state provided in the
-   *    first parameter, then the constructed href url will be built from the first
-   *    ancestor which has a url.
-   */
-  lossy?: boolean;
-
-  /**
-   * If `true` will inherit parameters from the current parameter values.
-   */
-  inherit?: boolean;
-
-  /**
-   * If true will generate an absolute url, e.g. `http://www.example.com/fullurl`.
-   */
-  absolute?: boolean;
-}
-
-/**
- * Either a [[StateDeclaration]] or an ES6 class that implements [[StateDeclaration]]
- * The ES6 class constructor should have no arguments.
- */
-export type _StateDeclaration = StateDeclaration | { new (): StateDeclaration };
-
-/**
- * The signature for the callback function provided to [[StateRegistry.onStatesChanged]].
- *
- * This callback receives two parameters:
- *
- * @param event a string; either "registered" or "deregistered"
- * @param states the list of [[StateDeclaration]]s that were registered (or deregistered).
- */
-export type StateRegistryListener = (
-  event: "registered" | "deregistered",
-  states: StateDeclaration[],
-) => void;
-
-/**
- * A function that builds the final value for a specific field on a [[StateObject]].
- *
- * A series of builder functions for a given field are chained together.
- * The final value returned from the chain of builders is applied to the built [[StateObject]].
- * Builder functions should call the [[parent]] function either first or last depending on the desired composition behavior.
- *
- * @param state the _partially built_ [[StateObject]]. The [[StateDeclaration]] can be inspected via [[StateObject.self]]
- * @param parent the previous builder function in the series.
- */
-export type BuilderFunction = (
-  state: ng.StateObject & ng.BuiltStateDeclaration,
-  parent?: BuilderFunction,
-) => any;
-
-export type OnInvalidCallback = (
-  toState?: TargetState,
-  fromState?: TargetState,
-  injector?: ng.InjectorService,
-) => HookResult;
-
-export type LazyLoadFn = (
-  transition: Transition,
-  state: StateDeclaration,
-) => Promise<LazyLoadResult>;
-
-export interface Builders {
-  [key: string]: BuilderFunction[];
-
-  name: BuilderFunction[];
-  parent: BuilderFunction[];
-  data: BuilderFunction[];
-  url: BuilderFunction[];
-  navigable: BuilderFunction[];
-  params: BuilderFunction[];
-  views: BuilderFunction[];
-  path: BuilderFunction[];
-  includes: BuilderFunction[];
-  resolvables: BuilderFunction[];
-}

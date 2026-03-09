@@ -14,8 +14,7 @@ self.onmessage = async (event) => {
 
   if (data?.action === "fib") {
     /**
-     * @param {number} x
-     * @return {number}
+     * Computes a Fibonacci number recursively for demo purposes.
      */
     function fib(x: number): number {
       return x <= 1 ? x : fib(x - 1) + fib(x - 2);

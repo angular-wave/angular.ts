@@ -1,27 +1,25 @@
 import { hasOwn, isArray, isDefined, isObject, keys } from "./utils.ts";
 import { NodeType } from "./node.ts";
 import { $injectTokens } from "../injection-tokens.ts";
+import type { ExpandoStore } from "../interface.ts";
 
-/** @type {number} */
 let elId = 1;
 
 /**
- * Key for storing isolate scope data, attached to an element
+ * Key for storing isolate scope data attached to an element.
  */
 const ISOLATE_SCOPE_KEY = "$isolateScope";
 
 const EXPANDO = "ng";
 
 /**
- * Expando cache for adding properties to DOM nodes with JavaScript.
- * This used to be an Object in JQLite decorator, but swapped out for a Map
- *
- * @type {Map<number, import('../interface.ts').ExpandoStore>}
+ * Stores per-node expando metadata keyed by the generated expando id.
+ * This used to be an object in the JQLite decorator, but was swapped out for a `Map`.
  */
-export const Cache = new Map();
+export const Cache = new Map<number, ExpandoStore>();
 
 /**
- * Key for storing scope data, attached to an element
+ * Key for storing scope data attached to an element.
  */
 const SCOPE_KEY = $injectTokens._scope;
 
@@ -36,7 +34,6 @@ const UNDERSCORE_LOWERCASE_REGEXP = /_([a-z])/g;
 // this by omitting <tbody> or other required elements.
 /**
  * Map of HTML elements to their required wrapper elements.
- * @type {Object.<string, string[]>}
  */
 const wrapMap: Record<string, string[]> = {
   thead: ["table"],
@@ -53,8 +50,7 @@ wrapMap.tbody =
 wrapMap.th = wrapMap.td;
 
 /**
- * A list of boolean attributes in HTML.
- * @type {string[]}
+ * HTML attributes whose presence alone represents a truthy value.
  */
 export const BOOLEAN_ATTR = [
   "multiple",
@@ -66,10 +62,7 @@ export const BOOLEAN_ATTR = [
   "open",
 ];
 
-/**
- * A list of boolean attributes in HTML
- * @type {string[]}
- */
+/** Element names that support HTML boolean attributes. */
 const BOOLEAN_ELEMENTS = [
   "INPUT",
   "SELECT",
@@ -84,44 +77,39 @@ const BOOLEAN_ELEMENTS = [
 ////////////        HELPER FUNCTIONS      /////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-/**
- *
- * @returns {number} Next unique JQInstance id
- */
+/** Returns the next unique expando/cache identifier. */
 function elemNextId() {
   return ++elId;
 }
 
-/**
- * @param {string} _all
- * @param {string} letter
- * @returns {string}
- */
 function fnCamelCaseReplace(_all: string, letter: string): string {
   return letter.toUpperCase();
 }
 
 /**
  * Converts kebab-case to camelCase.
- * @param {string} name Name to normalize
- * @returns {string}
+ * @param name - Name to normalize.
+ * @returns The camel-cased name.
  */
 export function kebabToCamel(name: string): string {
   return name.replace(DASH_LOWERCASE_REGEXP, fnCamelCaseReplace);
 }
 
 /**
- * Converts sname to camelCase.
- * @param {string} name
- * @returns {string}
+ * Converts snake_case to camelCase.
+ *
+ * @param name - Name to normalize.
+ * @returns The camel-cased name.
  */
 export function snakeToCamel(name: string): string {
   return name.replace(UNDERSCORE_LOWERCASE_REGEXP, fnCamelCaseReplace);
 }
 
 /**
- * @param {Element & Record<string, any>} element
- * @param {string} [name]
+ * Removes expando-backed data from an element.
+ *
+ * @param element - The element whose stored data should be updated.
+ * @param [name] - Optional data key to remove. When omitted, all stored expando data is cleared.
  */
 export function removeElementData(
   element: Element & Record<string, any>,
@@ -145,11 +133,11 @@ export function removeElementData(
 /**
  * Stores data associated with an element inside the expando property of the DOM element.
  *
- * @see {@link https://developer.mozilla.org/en-US/docs/Glossary/Expando MDN Glossary: Expando}
+ * @param element - The element whose expando store should be read or created.
+ * @param createIfNecessary - When `true`, creates the expando store if it does not exist.
+ * @returns The existing or newly created expando store, or `undefined` when none exists and creation is disabled.
  *
- * @param {Element & Record<string, any> } element
- * @param {boolean} [createIfNecessary=false]
- * @returns {import("../interface.ts").ExpandoStore}
+ * @see {@link https://developer.mozilla.org/en-US/docs/Glossary/Expando MDN Glossary: Expando}
  */
 export function getExpando(
   element: Element & Record<string, any>,
@@ -172,18 +160,13 @@ export function getExpando(
 
 /**
  * Checks if the string contains HTML tags or entities.
- * @param {string} html
- * @returns {boolean} True if the string is plain text, false if it contains HTML tags or entities.
+ * @returns `true` when the string is plain text, otherwise `false`.
  */
 export function isTextNode(html: string): boolean {
   return !/<|&#?\w+;/.test(html);
 }
 
-/**
- * Check if element can accept expando data
- * @param {Element|Node} node
- * @returns {boolean}
- */
+/** Returns `true` when a node can hold expando-backed cache data. */
 function elementAcceptsData(node: Element | Node): boolean {
   // The window object can accept data but has no nodeType
   // Otherwise we are only interested in elements (1) and documents (9)
@@ -198,12 +181,7 @@ function elementAcceptsData(node: Element | Node): boolean {
   }
 }
 
-/**
- * @param {Element & Record<string, any>} element
- * @param {Element & Record<string, any>} element
- * @param {boolean} [onlyDescendants]
- * @returns {void}
- */
+/** Deallocates cached data for an element and its descendant tree. */
 export function dealoc(
   element:
     | (Element & Record<string, any>)
@@ -231,10 +209,9 @@ export function dealoc(
 }
 
 /**
- * If expando store data is empty, then delete it and set its expando id.
- * to undefined.
- * @param {Element & Record<string, any>} element
- * @param {Element & Record<string, any>} element
+ * Removes an element's expando bookkeeping when no cached data remains.
+ *
+ * @param element - The element whose expando store should be cleaned up.
  */
 function removeIfEmptyData(element: Element & Record<string, any>): void {
   const expandoId = element[EXPANDO];
@@ -250,10 +227,10 @@ function removeIfEmptyData(element: Element & Record<string, any>): void {
 /**
  * Gets or sets cache data for a given element.
  *
- * @param {Element} element - The DOM element to get or set data on.
- * @param {string|Object.<string, any>} key - The key to get/set or an object for mass-setting.
- * @param {*} [value] - The value to set. If not provided, the function acts as a getter.
- * @returns {*} - The retrieved data if acting as a getter. Otherwise, undefined.
+ * @param element - The DOM element to get or set data on.
+ * @param key - The key to get/set or an object for mass-setting.
+ * @param [value] - The value to set. If not provided, the function acts as a getter.
+ * @returns The stored value for keyed reads, the full expando data object for mass reads, or `undefined`.
  */
 export function getOrSetCacheData(
   element: Element,
@@ -295,10 +272,11 @@ export function getOrSetCacheData(
 /**
  * Sets cache data for a given element.
  *
- * @param {Element|Node} element - The DOM element to get or set data on.
- * @param {string} key - The key (as a string) to get/set or an object for mass-setting.
- * @param {*} [value] - The value to set. If not provided, the function acts as a getter.
- * @returns
+ * Walks up to the parent element when called on a node that cannot store expando data directly.
+ *
+ * @param element - The DOM element or node to set data on.
+ * @param key - The cache key to store.
+ * @param [value] - The value to store.
  */
 export function setCacheData(
   element: Element | Node,
@@ -324,9 +302,9 @@ export function setCacheData(
 /**
  * Gets cache data for a given element.
  *
- * @param {Element} element - The DOM element to get data from.
- * @param {string} [key] - The key (as a string) to retrieve. If not provided, returns all data.
- * @returns {*} - The retrieved data for the given key or all data if no key is provided.
+ * @param element - The DOM element to get data from.
+ * @param [key] - The key (as a string) to retrieve.
+ * @returns The stored value for the key, or `undefined` if no matching data exists.
  */
 export function getCacheData(element: Element, key?: string): any {
   if (elementAcceptsData(element)) {
@@ -347,9 +325,8 @@ export function getCacheData(element: Element, key?: string): any {
 /**
  * Deletes cache data for a given element for a particular key.
  *
- * @param {Element} element - The DOM element to delete data from.
- * @param {string} key - The key (as a string) to delete.
- * @returns void
+ * @param element - The DOM element to delete data from.
+ * @param key - The key (as a string) to delete.
  */
 export function deleteCacheData(element: Element, key?: string): void {
   if (!key) return;
@@ -365,20 +342,20 @@ export function deleteCacheData(element: Element, key?: string): void {
   }
 }
 /**
- * Gets scope for a given element.
+ * Gets the scope attached directly to an element.
  *
- * @param {Element} element - The DOM element to get data from.
- * @returns {ng.Scope} - The retrieved data for the given key or all data if no key is provided.
+ * @param element - The DOM element to get data from.
+ * @returns The scope stored on the element.
  */
 export function getScope(element: Element): ng.Scope {
   return getCacheData(element, SCOPE_KEY);
 }
 
 /**
- * Set scope for a given element.
+ * Sets the scope attached to a given element.
  *
- * @param {Element|Node|ChildNode} element - The DOM element to set data on.
- * @param {ng.Scope} scope - The Scope attached to this element
+ * @param element - The DOM element to set data on.
+ * @param scope - The scope to attach to this element.
  */
 export function setScope(
   element: Element | Node | ChildNode,
@@ -388,31 +365,33 @@ export function setScope(
 }
 
 /**
- * Gets isolate scope for a given element.
+ * Gets the isolate scope attached directly to an element.
  *
- * @param {Element} element - The DOM element to get data from.
- * @returns {*} - The retrieved data for the given key or all data if no key is provided.
+ * @param element - The DOM element to get data from.
+ * @returns The isolate scope stored on the element.
  */
 export function getIsolateScope(element: Element): any {
   return getCacheData(element, ISOLATE_SCOPE_KEY);
 }
 
 /**
- * Set isolate scope for a given element.
+ * Sets the isolate scope attached to a given element.
  *
- * @param {Element} element - The DOM element to set data on.
- * @param {ng.Scope} scope - The Scope attached to this element
+ * @param element - The DOM element to set data on.
+ * @param scope - The isolate scope to attach to this element.
  */
 export function setIsolateScope(element: Element, scope: ng.Scope): void {
   return setCacheData(element, ISOLATE_SCOPE_KEY, scope);
 }
 
 /**
- * Gets the controller instance for a given element, if exists. Defaults to "ngControllerController"
+ * Gets the controller instance for a given element.
  *
- * @param {Element} element - The DOM element to get data from.
- * @param {string} [name] - Controller name.
- * @returns {ng.Scope|undefined} - The retrieved data
+ * Defaults to `"ngControllerController"` when no controller name is provided.
+ *
+ * @param element - The DOM element to get data from.
+ * @param [name] - Controller name.
+ * @returns The nearest inherited controller instance if found.
  */
 export function getController(
   element: Element,
@@ -424,9 +403,9 @@ export function getController(
 /**
  * Walk up the DOM tree (including Shadow DOM) to get inherited data.
  *
- * @param {Node} element - The starting element (or document/document fragment)
- * @param {string} name - The data key to look up
- * @returns {any} - The found value, or undefined if not found
+ * @param element - The starting element (or document/document fragment).
+ * @param name - The data key to look up.
+ * @returns The first matching inherited value from the element tree, or `undefined` if none is found.
  */
 export function getInheritedData(element: Node, name: string): any {
   // if element is the document object work with the html element instead
@@ -456,11 +435,7 @@ export function getInheritedData(element: Node, name: string): any {
   return undefined;
 }
 
-/**
- *
- * @param {Element} element
- * @param {boolean} keepData
- */
+/** Removes an element from the DOM and optionally preserves its cached data. */
 export function removeElement(element: Element, keepData = false): void {
   if (!keepData) {
     dealoc(element);
@@ -475,8 +450,8 @@ const parser = new DOMParser();
 /**
  * Extracts the starting tag from an HTML string or DOM element.
  *
- * @param {string|Element|Node} elementOrStr - The HTML string or DOM element to process.
- * @returns {string} The starting tag or processed result.
+ * @param elementOrStr - The HTML string or DOM element to process.
+ * @returns The normalized opening tag or equivalent textual representation for the input.
  */
 export function startingTag(elementOrStr: string | Element | Node): string {
   let clone: Node;
@@ -526,9 +501,9 @@ export function startingTag(elementOrStr: string | Element | Node): string {
 }
 
 /**
- * Return the DOM siblings between the first and last node in the given array.
- * @param {Node[]} nodes
- * @returns {Node[]}
+ * Returns the DOM siblings between the first and last node in the given array.
+ *
+ * @returns The contiguous DOM block spanning from the first node to the last node.
  */
 export function getBlockNodes(nodes: Node[]): Node[] {
   let node = nodes[0];
@@ -559,9 +534,9 @@ export function getBlockNodes(nodes: Node[]): Node[] {
 /**
  * Gets the name of a boolean attribute if it exists on a given element.
  *
- * @param {Element} element - The DOM element to check.
- * @param {string} name - The name of the attribute.
- * @returns {string|false} - The attribute name if valid, otherwise false.
+ * @param element - The DOM element to check.
+ * @param name - The name of the attribute.
+ * @returns The normalized boolean attribute name, or `false` when the attribute is not boolean for the element.
  */
 export function getBooleanAttrName(
   element: Element,
@@ -576,30 +551,23 @@ export function getBooleanAttrName(
     : false;
 }
 
-/**
- * Takes an array of elements, calls any `$destroy` event handlers, removes any data in cache, and finally removes any
- * listeners.
- * @param {NodeListOf<Element>|Element[]} nodes
- */
+/** Removes cached data for each element in a node collection. */
 export function cleanElementData(nodes: NodeListOf<Element> | Element[]): void {
   for (let i = 0, ii = nodes.length; i < ii; i++) {
     removeElementData(nodes[i]);
   }
 }
 
-/**
- * Return instance of InjectorService attached to element
- * @param {Element} element
- * @returns {ng.InjectorService}
- */
+/** Returns the nearest injector service found while walking up the element tree. */
 export function getInjector(element: Element): ng.InjectorService {
   return getInheritedData(element, $injectTokens._injector);
 }
 
 /**
- * Parses an HTML string into a DocumentFragment.
- * @param {string} htmlString
- * @returns {DocumentFragment}
+ * Parses an HTML string into a detached `DocumentFragment`.
+ *
+ * @param htmlString - Markup to parse.
+ * @returns The parsed fragment.
  */
 function parseHTML(htmlString: string): DocumentFragment {
   const template = document.createElement("template");
@@ -610,11 +578,11 @@ function parseHTML(htmlString: string): DocumentFragment {
 }
 
 /**
- * Creates a DOM element from an HTML string.
- * Must have exactly one root node.
+ * Creates a single DOM element from an HTML string.
+ * The markup must contain exactly one root node.
  *
- * @param {string} htmlString - A string representing the HTML to parse.
- * @returns {Element}
+ * @param htmlString - Markup to parse.
+ * @returns The single root element parsed from the markup.
  */
 export function createElementFromHTML(htmlString: string): Element {
   const content = parseHTML(htmlString);
@@ -623,10 +591,10 @@ export function createElementFromHTML(htmlString: string): Element {
 }
 
 /**
- * Creates a NodeList from an HTML string.
+ * Creates a node list from an HTML fragment string.
  *
- * @param {string} htmlString - A string representing the HTML to parse.
- * @returns {NodeListOf<ChildNode>}
+ * @param htmlString - Markup to parse.
+ * @returns The child nodes parsed from the markup fragment.
  */
 export function createNodelistFromHTML(
   htmlString: string,
@@ -634,10 +602,7 @@ export function createNodelistFromHTML(
   return parseHTML(htmlString).childNodes;
 }
 
-/**
- * Remove element from the DOM and clear Cache data, associated with the node.
- * @param {Element} element
- */
+/** Removes all children from an element and clears cache data for the removed subtree. */
 export function emptyElement(element: Element): void {
   dealoc(element, true);
   switch (element.nodeType) {
@@ -650,20 +615,9 @@ export function emptyElement(element: Element): void {
 }
 
 /**
- * Inserts a DOM element before or at the beginning of a parent element.
- *
- * @param {HTMLElement | Element} element
- *   The element to insert into the DOM.
- *
- * @param {HTMLElement | Element} parentElement
- *   The parent element that will receive the inserted element.
- *
- * @param {ChildNode | Element | null} [afterElement]
- *   An optional sibling element — if present and valid, `element`
- *   will be inserted after it. If omitted or invalid, `element`
- *   is prepended to `parentElement`.
- *
- * @returns {void}
+ * Inserts a DOM element relative to a parent and optional sibling anchor.
+ * When `afterElement` is present and still attached, insertion happens after that node.
+ * Otherwise the element is prepended to `parentElement`.
  */
 export function domInsert(
   element: HTMLElement | Element,
@@ -689,9 +643,11 @@ export function domInsert(
 }
 
 /**
- * @param {HTMLElement} element
- * @param {HTMLElement} parent
- * @param {ChildNode | null | undefined} after
+ * Inserts a DOM element while temporarily hiding it to avoid visual flicker.
+ *
+ * @param element - The element to insert.
+ * @param parent - The parent element that receives the node.
+ * @param [after] - Optional sibling after which the node should be inserted.
  */
 export function animatedomInsert(
   element: HTMLElement,
@@ -720,9 +676,9 @@ export function animatedomInsert(
 }
 
 /**
- * Returns the base href of the document.
+ * Returns the base href of the current document.
  *
- * @returns {string} The base href.
+ * @returns The normalized base href path, or an empty string when no `<base>` is present.
  */
 export function getBaseHref(): string {
   const href = document.querySelector("base")?.getAttribute("href");
@@ -731,8 +687,9 @@ export function getBaseHref(): string {
 }
 
 /**
- * @param {NodeList|Node} element
- * @returns {Node | undefined}
+ * Returns the first element node from a node list, or the node itself when a single node is passed.
+ *
+ * @returns The extracted element node, the original node, or `undefined` when no element node exists.
  */
 export function extractElementNode(element: NodeList | Node): Node | undefined {
   if (!element || !isArray(element)) return element as Node;

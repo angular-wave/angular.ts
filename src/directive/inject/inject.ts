@@ -4,8 +4,6 @@ ngInjectDirective.$inject = [$t._log, $t._injector];
 
 /**
  * Injects named services from `$injector` onto the current scope.
- *
- * @param {ng.LogService} $log
  */
 export function ngInjectDirective(
   $log: ng.LogService,

@@ -17,9 +17,9 @@ import {
 
 import { snakeToCamel } from "../../shared/dom.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
-import type { ParsedUrl } from "../../shared/url-utils/interface.ts";
-import type { SanitizerFn } from "../../core/sanitize/interface.ts";
-import type { CompiledExpression } from "../../core/parse/interface.ts";
+import type { ParsedUrl } from "../../shared/url-utils/url-utils.ts";
+import type { SanitizerFn } from "../../core/sanitize/sanitize-uri.ts";
+import type { CompiledExpression } from "../../core/parse/parse.ts";
 
 const $sceMinErr = minErr("$sce");
 type SceMatcher = RegExp | "self";
@@ -31,6 +31,38 @@ type TrustedValueHolder = {
 type TrustedValueHolderConstructor = new (
   trustedValue?: string,
 ) => TrustedValueHolder;
+
+export interface SceService {
+  HTML: string;
+  CSS: string;
+  JS: string;
+  URL: string;
+  RESOURCE_URL: string;
+  MEDIA_URL: string;
+  getTrusted(type: string, mayBeTrusted: any): any;
+  getTrustedCss(value: any): any;
+  getTrustedHtml(value: any): any;
+  getTrustedResourceUrl(value: any): any;
+  getTrustedUrl(value: any): any;
+  getTrustedMediaUrl(value: any): any;
+  parse(type: string, expression: string): (context: any, locals: any) => any;
+  parseAsCss(expression: string): (context: any, locals: any) => any;
+  parseAsHtml(expression: string): (context: any, locals: any) => any;
+  parseAsResourceUrl(expression: string): (context: any, locals: any) => any;
+  parseAsUrl(expression: string): (context: any, locals: any) => any;
+  trustAs(type: string, value: any): any;
+  trustAsHtml(value: any): any;
+  trustAsResourceUrl(value: any): any;
+  trustAsUrl(value: any): any;
+  isEnabled(): boolean;
+  valueOf(value?: any): any;
+}
+
+export interface SceDelegateService {
+  getTrusted(type: string, mayBeTrusted: any): any;
+  trustAs(type: string, value: any): any;
+  valueOf(value?: any): any;
+}
 
 export const SCE_CONTEXTS = {
   // HTML is used when there's HTML rendered (e.g. ng-bind-html, iframe srcdoc binding).
@@ -57,17 +89,14 @@ export const SCE_CONTEXTS = {
 // http://docs.closure-library.googlecode.com/git/local_closure_goog_string_string.ts.source.html#line1021
 // Prereq: s is a string.
 /**
- * @param {string} str
+ * Escapes a string so it can be embedded safely inside a regular expression.
  */
 export function escapeForRegexp(str: string): string {
   return str.replace(/([-()[\]{}+?*.$^|,:#<!\\])/g, "\\$1");
 }
 
 /**
- * Adjusts a matcher string or RegExp into a proper RegExp.
- *
- * @param {string | RegExp | "self"} matcher
- * @returns {RegExp | "self"}
+ * Adjusts a matcher string or `RegExp` into the normalized SCE matcher form.
  */
 export function adjustMatcher(matcher: string | RegExp | "self"): SceMatcher {
   if (matcher === "self") {
@@ -197,13 +226,13 @@ export class SceDelegateProvider {
 
     /**
      *
-     * @param {(Array<RegExp | "self"> | null)=} value When provided, replaces the trustedResourceUrlList with
+     * @param value When provided, replaces the trustedResourceUrlList with
      *     the value provided.  This must be an array or null.  A snapshot of this array is used so
      *     further changes to the array are ignored.
      *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
      *     allowed in this array.
      *
-     * @return {Array<RegExp | "self">} The currently set trusted resource URL array.
+     * @returns The currently set trusted resource URL array.
      *
      *
      * Sets/Gets the list trusted of resource URLs.
@@ -228,7 +257,7 @@ export class SceDelegateProvider {
 
     /**
      *
-     * @param {(Array<RegExp | "self"> | null)=} value When provided, replaces the `bannedResourceUrlList` with
+     * @param value When provided, replaces the `bannedResourceUrlList` with
      *     the value provided. This must be an array or null. A snapshot of this array is used so
      *     further changes to the array are ignored.</p><p>
      *     Follow {@link ng.$sce#resourceUrlPatternItem this link} for a description of the items
@@ -240,7 +269,7 @@ export class SceDelegateProvider {
      *     Finally, **the banned resource URL list overrides the trusted resource URL list** and has
      *     the final say.
      *
-     * @return {Array<RegExp | "self">} The currently set `bannedResourceUrlList` array.
+     * @returns The currently set `bannedResourceUrlList` array.
      *
      *
      * Sets/Gets the `bannedResourceUrlList` of trusted resource URLs.
@@ -263,11 +292,7 @@ export class SceDelegateProvider {
       $t._sanitizeUri,
       $t._exceptionHandler,
       /**
-       *
-       * @param {ng.InjectorService} $injector
-       * @param {import("../../core/sanitize/interface.ts").SanitizerFn} $$sanitizeUri
-       * @param {ng.ExceptionHandlerService} $exceptionHandler
-       * @returns
+       * Creates the `$sceDelegate` service using the configured policies and sanitizers.
        */
       function (
         $injector: ng.InjectorService,
@@ -288,9 +313,7 @@ export class SceDelegateProvider {
         }
 
         /**
-         * @param {string|RegExp} matcher
-         * @param {import("../../shared/url-utils/interface.ts").ParsedUrl} parsedUrl
-         * @return {boolean}
+         * Tests whether a parsed URL matches one SCE allow/deny matcher.
          */
         function matchUrl(matcher: SceMatcher, parsedUrl: ParsedUrl): boolean {
           if (matcher === "self") {
@@ -300,12 +323,11 @@ export class SceDelegateProvider {
           }
 
           // definitely a regex.  See adjustMatchers()
-          return !!(/** @type {RegExp} */ matcher.exec(parsedUrl.href));
+          return !!matcher.exec(parsedUrl.href);
         }
 
         /**
-         * @param {string | Object} url
-         * @returns {boolean}
+         * Returns whether a resource URL is permitted by the current policy lists.
          */
         function isResourceUrlAllowedByPolicy(url: string | object): boolean {
           const parsedUrl = urlResolve(url.toString());
@@ -336,13 +358,12 @@ export class SceDelegateProvider {
         }
 
         /**
-         * @param {new (...args: any[]) => any=} Base
-         * @return {new (trustedValue: string) => { _unwrapTrustedValue(): string }}
+         * Creates one trusted-value holder constructor for a specific SCE context.
          */
         function generateHolderType(
           Base?: TrustedValueHolderConstructor,
         ): TrustedValueHolderConstructor {
-          /** @param {string} trustedValue */
+          /** @param trustedValue */
           const holderType = function TrustedValueHolderType(
             this: TrustedValueHolder,
             trustedValue = "",
@@ -397,11 +418,11 @@ export class SceDelegateProvider {
          * trusted values, and {@link ng.$sce $sce} for general documentation about strict contextual
          * escaping.
          *
-         * @param {string} type The context in which this value is safe for use, e.g. `$sce.URL`,
+         * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
          *     `$sce.RESOURCE_URL`, `$sce.HTML`, `$sce.JS` or `$sce.CSS`.
          *
-         * @param {*} trustedValue The value that should be considered trusted.
-         * @return {*} A trusted representation of value, that can be used in the given context.
+         * @param trustedValue The value that should be considered trusted.
+         * @returns A trusted representation of value, that can be used in the given context.
          */
         function trustAs(type: string, trustedValue: any): any {
           const Constructor =
@@ -455,9 +476,9 @@ export class SceDelegateProvider {
          * If the passed parameter is not a value that had been returned by {@link
          * ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}, it must be returned as-is.
          *
-         * @param {*} maybeTrusted The result of a prior {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}
+         * @param maybeTrusted The result of a prior {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs`}
          *     call or anything else.
-         * @return {*} The `value` that was originally provided to {@link ng.$sceDelegate#trustAs
+         * @returns The `value` that was originally provided to {@link ng.$sceDelegate#trustAs
          *     `$sceDelegate.trustAs`} if `value` is the result of such a call.  Otherwise, returns
          *     `value` unchanged.
          */
@@ -493,10 +514,10 @@ export class SceDelegateProvider {
          * (XSS) vulnerability in your application.
          * </div>
          *
-         * @param {string} type The context in which this value is to be used (such as `$sce.HTML`).
-         * @param {*} maybeTrusted The result of a prior {@link ng.$sceDelegate#trustAs
+         * @param type The context in which this value is to be used (such as `$sce.HTML`).
+         * @param maybeTrusted The result of a prior {@link ng.$sceDelegate#trustAs
          *     `$sceDelegate.trustAs`} call, or anything else (which will not be considered trusted.)
-         * @return {*} A version of the value that's safe to use in the given context, or throws an
+         * @returns A version of the value that's safe to use in the given context, or throws an
          *     exception if this is impossible.
          */
         function getTrusted(type: string, maybeTrusted: any): any {
@@ -571,8 +592,8 @@ export function SceProvider(this: any): void {
   let enabled = true;
 
   /**
-   * @param {boolean=} value If provided, then enables/disables SCE application-wide.
-   * @return {boolean} True if SCE is enabled, false otherwise.
+   * @param value If provided, then enables/disables SCE application-wide.
+   * @returns True if SCE is enabled, false otherwise.
    *
    *
    * Enables/disables SCE and returns the current value.
@@ -589,10 +610,7 @@ export function SceProvider(this: any): void {
     $t._parse,
     $t._sceDelegate,
     /**
-     *
-     * @param {ng.ParseService} $parse
-     * @param {ng.SceDelegateService} $sceDelegate
-     * @return {ng.SceService}
+     * Creates the runtime `$sce` service.
      */
     ($parse: ng.ParseService, $sceDelegate: ng.SceDelegateService) => {
       const sce = shallowCopy(SCE_CONTEXTS) as ng.SceService &
@@ -601,7 +619,7 @@ export function SceProvider(this: any): void {
         };
 
       /**
-       * @return {Boolean} True if SCE is enabled, false otherwise.  If you want to set the value, you
+       * @returns True if SCE is enabled, false otherwise.  If you want to set the value, you
        *     have to do it at module config time on {@link ng.$sceProvider $sceProvider}.
        *
        *
@@ -616,8 +634,7 @@ export function SceProvider(this: any): void {
 
       if (!enabled) {
         /**
-         * @param {string} type
-         * @param {*} value
+         * Disables trust enforcement when SCE is configured off.
          */
         sce.trustAs = sce.getTrusted = function (type: string, value: any) {
           return value;
@@ -631,9 +648,9 @@ export function SceProvider(this: any): void {
        * wraps the expression in a call to {@link ng.$sce#getTrusted $sce.getTrusted(*type*,
        * *result*)}
        *
-       * @param {string} type The SCE context in which this result will be used.
-       * @param {string} expr String expression to compile.
-       * @return {import("../../core/parse/interface.ts").CompiledExpression} A function which represents the compiled expression:
+       * @param type The SCE context in which this result will be used.
+       * @param expr String expression to compile.
+       * @returns A function which represents the compiled expression:
        *
        *    * `context` – `{object}` – an object against which any expressions embedded in the
        *      strings are evaluated against (typically a scope object).
@@ -657,11 +674,11 @@ export function SceProvider(this: any): void {
        * This is used in bindings for `ng-bind-html`, `ng-include`, and most `src` attribute
        * interpolations. See {@link ng.$sce $sce} for strict contextual escaping.
        *
-       * @param {string} type The context in which this value is safe for use, e.g. `$sce.URL`,
+       * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
        *     `$sce.RESOURCE_URL`, `$sce.HTML`, `$sce.JS` or `$sce.CSS`.
        *
-       * @param {*} value The value that that should be considered trusted.
-       * @return {*} A wrapped version of value that can be used as a trusted variant of your `value`
+       * @param value The value that that should be considered trusted.
+       * @returns A wrapped version of value that can be used as a trusted variant of your `value`
        *     in the context you specified.
        */
 
@@ -669,8 +686,8 @@ export function SceProvider(this: any): void {
        * Shorthand method.  `$sce.trustAsHtml(value)` →
        *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.HTML, value)`}
        *
-       * @param {*} value The value to mark as trusted for `$sce.HTML` context.
-       * @return {*} A wrapped version of value that can be used as a trusted variant of your `value`
+       * @param value The value to mark as trusted for `$sce.HTML` context.
+       * @returns A wrapped version of value that can be used as a trusted variant of your `value`
        *     in `$sce.HTML` context (like `ng-bind-html`).
        */
 
@@ -678,8 +695,8 @@ export function SceProvider(this: any): void {
        * Shorthand method.  `$sce.trustAsCss(value)` →
        *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.CSS, value)`}
        *
-       * @param {*} value The value to mark as trusted for `$sce.CSS` context.
-       * @return {*} A wrapped version of value that can be used as a trusted variant
+       * @param value The value to mark as trusted for `$sce.CSS` context.
+       * @returns A wrapped version of value that can be used as a trusted variant
        *     of your `value` in `$sce.CSS` context. This context is currently unused, so there are
        *     almost no reasons to use this function so far.
        */
@@ -688,8 +705,8 @@ export function SceProvider(this: any): void {
        * Shorthand method.  `$sce.trustAsUrl(value)` →
        *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.URL, value)`}
        *
-       * @param {*} value The value to mark as trusted for `$sce.URL` context.
-       * @return {*} A wrapped version of value that can be used as a trusted variant of your `value`
+       * @param value The value to mark as trusted for `$sce.URL` context.
+       * @returns A wrapped version of value that can be used as a trusted variant of your `value`
        *     in `$sce.URL` context. That context is currently unused, so there are almost no reasons
        *     to use this function so far.
        */
@@ -698,8 +715,8 @@ export function SceProvider(this: any): void {
        * Shorthand method.  `$sce.trustAsResourceUrl(value)` →
        *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.RESOURCE_URL, value)`}
        *
-       * @param {*} value The value to mark as trusted for `$sce.RESOURCE_URL` context.
-       * @return {*} A wrapped version of value that can be used as a trusted variant of your `value`
+       * @param value The value to mark as trusted for `$sce.RESOURCE_URL` context.
+       * @returns A wrapped version of value that can be used as a trusted variant of your `value`
        *     in `$sce.RESOURCE_URL` context (template URLs in `ng-include`, most `src` attribute
        *     bindings, ...)
        */
@@ -712,10 +729,10 @@ export function SceProvider(this: any): void {
        * as-is. Finally, this function can also throw when there is no way to turn `maybeTrusted` in a
        * safe value (e.g., no sanitization is available or possible.)
        *
-       * @param {string} type The context in which this value is to be used.
-       * @param {*} maybeTrusted The result of a prior {@link ng.$sce#trustAs
+       * @param type The context in which this value is to be used.
+       * @param maybeTrusted The result of a prior {@link ng.$sce#trustAs
        *     `$sce.trustAs`} call, or anything else (which will not be considered trusted.)
-       * @return {*} A version of the value that's safe to use in the given context, or throws an
+       * @returns A version of the value that's safe to use in the given context, or throws an
        *     exception if this is impossible.
        */
 
@@ -723,40 +740,40 @@ export function SceProvider(this: any): void {
        * Shorthand method.  `$sce.getTrustedHtml(value)` →
        *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.HTML, value)`}
        *
-       * @param {*} value The value to pass to `$sce.getTrusted`.
-       * @return {*} The return value of `$sce.getTrusted($sce.HTML, value)`
+       * @param value The value to pass to `$sce.getTrusted`.
+       * @returns The return value of `$sce.getTrusted($sce.HTML, value)`
        */
 
       /**
        * Shorthand method.  `$sce.getTrustedCss(value)` →
        *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.CSS, value)`}
        *
-       * @param {*} value The value to pass to `$sce.getTrusted`.
-       * @return {*} The return value of `$sce.getTrusted($sce.CSS, value)`
+       * @param value The value to pass to `$sce.getTrusted`.
+       * @returns The return value of `$sce.getTrusted($sce.CSS, value)`
        */
 
       /**
        * Shorthand method.  `$sce.getTrustedUrl(value)` →
        *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.URL, value)`}
        *
-       * @param {*} value The value to pass to `$sce.getTrusted`.
-       * @return {*} The return value of `$sce.getTrusted($sce.URL, value)`
+       * @param value The value to pass to `$sce.getTrusted`.
+       * @returns The return value of `$sce.getTrusted($sce.URL, value)`
        */
 
       /**
        * Shorthand method.  `$sce.getTrustedResourceUrl(value)` →
        *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.RESOURCE_URL, value)`}
        *
-       * @param {*} value The value to pass to `$sceDelegate.getTrusted`.
-       * @return {*} The return value of `$sce.getTrusted($sce.RESOURCE_URL, value)`
+       * @param value The value to pass to `$sceDelegate.getTrusted`.
+       * @returns The return value of `$sce.getTrusted($sce.RESOURCE_URL, value)`
        */
 
       /**
        * Shorthand method.  `$sce.parseAsHtml(expression string)` →
        *     {@link ng.$sceparseAs `$sce.parseAs($sce.HTML, value)`}
        *
-       * @param {string} expression String expression to compile.
-       * @return {function(context, locals)} A function which represents the compiled expression:
+       * @param expression String expression to compile.
+       * @returns A function which represents the compiled expression:
        *
        *    * `context` – `{object}` – an object against which any expressions embedded in the
        *      strings are evaluated against (typically a scope object).
@@ -768,8 +785,8 @@ export function SceProvider(this: any): void {
        * Shorthand method.  `$sce.parseAsCss(value)` →
        *     {@link ng.$sceparseAs `$sce.parseAs($sce.CSS, value)`}
        *
-       * @param {string} expression String expression to compile.
-       * @return {function(context, locals)} A function which represents the compiled expression:
+       * @param expression String expression to compile.
+       * @returns A function which represents the compiled expression:
        *
        *    * `context` – `{object}` – an object against which any expressions embedded in the
        *      strings are evaluated against (typically a scope object).
@@ -781,8 +798,8 @@ export function SceProvider(this: any): void {
        * Shorthand method.  `$sce.parseAsUrl(value)` →
        *     {@link ng.$sceparseAs `$sce.parseAs($sce.URL, value)`}
        *
-       * @param {string} expression String expression to compile.
-       * @return {function(context, locals)} A function which represents the compiled expression:
+       * @param expression String expression to compile.
+       * @returns A function which represents the compiled expression:
        *
        *    * `context` – `{object}` – an object against which any expressions embedded in the
        *      strings are evaluated against (typically a scope object).
@@ -794,8 +811,8 @@ export function SceProvider(this: any): void {
        * Shorthand method.  `$sce.parseAsResourceUrl(value)` →
        *     {@link ng.$sceparseAs `$sce.parseAs($sce.RESOURCE_URL, value)`}
        *
-       * @param {string} expression String expression to compile.
-       * @return {function(context, locals)} A function which represents the compiled expression:
+       * @param expression String expression to compile.
+       * @returns A function which represents the compiled expression:
        *
        *    * `context` – `{object}` – an object against which any expressions embedded in the
        *      strings are evaluated against (typically a scope object).
@@ -807,8 +824,8 @@ export function SceProvider(this: any): void {
        * Shorthand method.  `$sce.parseAsJs(value)` →
        *     {@link ng.$sceparseAs `$sce.parseAs($sce.JS, value)`}
        *
-       * @param {string} expression String expression to compile.
-       * @return {function(context, locals)} A function which represents the compiled expression:
+       * @param expression String expression to compile.
+       * @returns A function which represents the compiled expression:
        *
        *    * `context` – `{object}` – an object against which any expressions embedded in the
        *      strings are evaluated against (typically a scope object).
@@ -826,21 +843,21 @@ export function SceProvider(this: any): void {
       entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
         const lName = name.toLowerCase();
 
-        /** @param {string} expr */
+        /** @param expr */
         sce[snakeToCamel(`parse_as_${lName}`)] = function (expr: string) {
           return parse(enumValue, expr);
         };
-        /** @param {*} value */
+        /** @param value */
         sce[snakeToCamel(`get_trusted_${lName}`)] = function (value: any) {
           return getTrusted(enumValue, value);
         };
-        /** @param {*} value */
+        /** @param value */
         sce[snakeToCamel(`trust_as_${lName}`)] = function (value: any) {
           return trustAs(enumValue, value);
         };
       });
 
-      return /** @type {ng.SceService} */ sce;
+      return sce;
     },
   ];
 }

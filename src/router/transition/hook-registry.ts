@@ -9,13 +9,20 @@ import type {
   HookFn,
   HookMatchCriteria,
   HookMatchCriterion,
-  IMatchingNodes,
-  RegisteredHooks,
-  TransitionService,
-  TreeChanges,
 } from "./interface.ts";
-import type { Transition } from "./transition.ts";
+import type { TransitionService } from "./transition-service.ts";
+import type { Transition, TreeChanges } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
+
+export interface IMatchingNodes {
+  [key: string]: PathNode[];
+
+  to: PathNode[];
+  from: PathNode[];
+  exiting: PathNode[];
+  retained: PathNode[];
+  entering: PathNode[];
+}
 
 /**
  * Tests a state against one hook match criterion.
@@ -149,6 +156,11 @@ export class RegisteredHook {
     this.removeHookFromRegistry(this);
     this._deregistered = true;
   }
+}
+
+/** @internal */
+export interface RegisteredHooks {
+  [key: string]: RegisteredHook[];
 }
 
 type HookSource = {

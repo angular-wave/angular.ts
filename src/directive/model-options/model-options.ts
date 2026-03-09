@@ -1,16 +1,17 @@
 import { $injectTokens } from "../../injection-tokens.ts";
 import { entries, isDefined, keys, trim } from "../../shared/utils.ts";
-import type { NgModelOptions } from "../model/interface.ts";
+import type { NgModelOptions } from "../model/model.ts";
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
 
 /**
- * @typedef {Object & Record<string, any>} ModelOptionsConfig
- * @property {string} [updateOn] - A string specifying which events the input should be bound to. Multiple events can be set using a space-delimited list. The special event 'default' matches the default events belonging to the control.
- * @property {number|Object.<string, number>} [debounce] - An integer specifying the debounce time in milliseconds. A value of 0 triggers an immediate update. If an object is supplied, custom debounce values can be set for each event.
- * @property {boolean} [allowInvalid] - Indicates whether the model can be set with values that did not validate correctly. Defaults to false, which sets the model to undefined on validation failure.
- * @property {boolean} [getterSetter] - Determines whether to treat functions bound to `ngModel` as getters/setters. Defaults to false.
- * @property {boolean} [updateOnDefault]
+ * Configuration object for ngModelOptions behavior.
+ *
+ * @property [updateOn] A string specifying which events the input should be bound to. Multiple events can be set using a space-delimited list. The special event `default` matches the default events belonging to the control.
+ * @property [debounce] An integer specifying the debounce time in milliseconds. A value of `0` triggers an immediate update. If an object is supplied, custom debounce values can be set for each event.
+ * @property [allowInvalid] Indicates whether the model can be set with values that did not validate correctly. Defaults to `false`, which sets the model to `undefined` on validation failure.
+ * @property [getterSetter] Determines whether to treat functions bound to `ngModel` as getters/setters. Defaults to `false`.
+ * @property [updateOnDefault]
  */
 export type ModelOptionsConfig = NgModelOptions & {
   [key: string]: any;
@@ -111,9 +112,7 @@ export const defaultModelOptions = new ModelOptions({
   allowInvalid: false,
 });
 
-/**
- * @returns {ng.Directive}
- */
+/** Registers the `ngModelOptions` directive controller. */
 export function ngModelOptionsDirective(): ng.Directive {
   return {
     restrict: "A",
@@ -125,10 +124,6 @@ export function ngModelOptionsDirective(): ng.Directive {
 }
 
 // Shallow-copy missing defaults from `src` into `dst`.
-/**
- * @param {ModelOptionsConfig} dst
- * @param {Object & Record<string, any>} src
- */
 function defaults(dst: ModelOptionsConfig, src: Record<string, any>): void {
   keys(src).forEach((key) => {
     if (!isDefined(dst[key])) {

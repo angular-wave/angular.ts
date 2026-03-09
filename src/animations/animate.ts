@@ -1,5 +1,6 @@
-import type { AnimationOptions, AnimateService } from "./interface.ts";
-import type { AnimateQueueService } from "./queue/interface.ts";
+import type { AnimationOptions } from "./interface.ts";
+import type { AnimateQueueService } from "./queue/animate-queue.ts";
+import type { QueuePhase } from "./queue/animate-queue.ts";
 import {
   extend,
   hasAnimate,
@@ -13,8 +14,148 @@ import {
 import { animatedomInsert, domInsert, removeElement } from "../shared/dom.ts";
 import { NG_ANIMATE_CLASSNAME } from "./shared.ts";
 import { $injectTokens } from "../injection-tokens.ts";
+import type { AnimateRunner } from "./runner/animate-runner.ts";
 
 const $animateMinErr = minErr("$animate");
+
+/**
+ * Data payload delivered to animation event callbacks (`AnimateService.on`).
+ *
+ * This is intentionally a small subset of animation information: it tells listeners
+ * which classes are being added/removed and which style maps are being applied.
+ *
+ * Values may be `null` when not applicable.
+ */
+export interface AnimationEventData {
+  addClass?: string | null;
+  removeClass?: string | null;
+  from?: Record<string, any> | null;
+  to?: Record<string, any> | null;
+}
+
+/**
+ * Public-facing animation orchestration API.
+ *
+ * This is the service used by higher-level code to:
+ * - register lifecycle callbacks (`on`/`off`)
+ * - issue animations (`enter`, `leave`, `addClass`, `animate`, ...)
+ * - control global/element-level enabling
+ * - cancel running work
+ *
+ * The service returns {@link AnimateRunner} instances for all animation requests.
+ */
+export interface AnimateService {
+  /**
+   * Register an animation callback for a given event name on a container.
+   *
+   * Callbacks fire for matching descendant elements during queue execution phases.
+   */
+  on(
+    event: string,
+    container: Element,
+    callback?: (
+      element: Element,
+      phase: QueuePhase,
+      data: AnimationEventData,
+    ) => void,
+  ): void;
+
+  /**
+   * Remove a previously registered callback.
+   *
+   * If only `event` is provided, removes all callbacks for that event.
+   * If `container` and/or `callback` are provided, filters removals accordingly.
+   */
+  off(event: string, container?: Element, callback?: Function): void;
+
+  /**
+   * Pin an element to a host parent for animation ancestry checks.
+   *
+   * This is used when the DOM parent relationship is not the effective "animation host"
+   * relationship (e.g. transclusion/moves).
+   */
+  pin(element: Element, parentElement: Element): void;
+
+  /**
+   * Enable/disable animations globally or for a specific element.
+   *
+   * - Called with no args: returns global enabled state.
+   * - Called with element: returns enabled state for that element.
+   * - Called with element + boolean: sets enabled state for that element.
+   */
+  enabled(element?: Element, enabled?: boolean): boolean;
+
+  /**
+   * Cancel a running animation by runner.
+   */
+  cancel(runner: AnimateRunner): void;
+
+  /**
+   * Structural animation: insert `element` into the DOM.
+   */
+  enter(
+    element: Element,
+    parent?: Element | null,
+    after?: Element,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+
+  /**
+   * Structural animation: move `element` within the DOM.
+   */
+  move(
+    element: Element,
+    parent: Element | null,
+    after?: Element,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+
+  /**
+   * Structural animation: remove `element` from the DOM.
+   */
+  leave(element: Element, options?: AnimationOptions): AnimateRunner;
+
+  /**
+   * Class-based animation: add classes to `element`.
+   */
+  addClass(
+    element: Element,
+    className: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+
+  /**
+   * Class-based animation: remove classes from `element`.
+   */
+  removeClass(
+    element: Element,
+    className: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+
+  /**
+   * Class-based animation: add and remove classes as a single atomic operation.
+   */
+  setClass(
+    element: Element,
+    add: string,
+    remove: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+
+  /**
+   * Inline-style animation: animate from `from` styles to `to` styles.
+   *
+   * `className` may be applied during the animation to help CSS-based drivers.
+   */
+  animate(
+    element: Element,
+    from: Record<string, string | number>,
+    to: Record<string, string | number>,
+    className?: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+}
 
 interface AnimateProviderInstance {
   _registeredAnimations: Record<string, string>;
@@ -35,32 +176,23 @@ interface AnimateProviderInstance {
 // that can be changed. This helper function ensures that the options
 // are wiped clean incase a callback function is provided.
 /**
- * @param {import("./interface.ts").AnimationOptions | undefined} options
- * @returns {import("./interface.ts").AnimationOptions}
+ * Normalizes animation options so non-object inputs become an empty options bag.
  */
 function prepareAnimateOptions(options?: AnimationOptions): AnimationOptions {
-  return isObject(options)
-    ? options
-    : /** @type {import("./interface.ts").AnimationOptions} */ {};
+  return isObject(options) ? options : ({} as AnimationOptions);
 }
 
 AnimateProvider.$inject = [$injectTokens._provide];
 
-/** @param {ng.ProvideService} $provide */
+/** @param $provide */
 export function AnimateProvider(
   this: AnimateProviderInstance,
   $provide: ng.ProvideService,
 ): void {
   const provider = this;
 
-  /**
-   * @type {RegExp | null}
-   */
   let classNameFilter: RegExp | null = null;
 
-  /**
-   * @type {Function | null}
-   */
   let customFilter: Function | null = null;
 
   this._registeredAnimations = nullObject();
@@ -96,8 +228,8 @@ export function AnimateProvider(
    *   }
    * ```
    *
-   * @param {string} name The name of the animation (this is what the class-based CSS value will be compared to).
-   * @param {import("../interface.ts").Injectable<any>} factory The factory function that will be executed to return the animation
+   * @param name The name of the animation (this is what the class-based CSS value will be compared to).
+   * @param factory The factory function that will be executed to return the animation
    *                           object.
    */
   this.register = function (
@@ -142,14 +274,14 @@ export function AnimateProvider(
    * **Note:** If present, `customFilter` will be checked before
    * {@link $animateProvider#classNameFilter classNameFilter}.
    *
-   * @param {Function=} filterFn - The filter function which will be used to filter all animations.
+   * @param filterFn - The filter function which will be used to filter all animations.
    *   If a falsy value is returned, no animation will be performed. The function will be called
    *   with the following arguments:
    *   - **node** `{Element}` - The DOM element to be animated.
    *   - **event** `{String}` - The name of the animation event (e.g. `enter`, `leave`, `addClass`
    *     etc).
    *   - **options** `{Object}` - A collection of options/styles used for the animation.
-   * @return {Function | null} The current filter function or `null` if there is none set.
+   * @returns The current filter function or `null` if there is none set.
    */
   this.customFilter = function (filterFn?: Function): Function | null {
     if (arguments.length === 1) {
@@ -171,8 +303,8 @@ export function AnimateProvider(
    * {@link $animateProvider#customFilter customFilter}. If `customFilter` is present and returns
    * false, `classNameFilter` will not be checked.
    *
-   * @param {RegExp=} expression The className expression which will be checked against all animations
-   * @return {RegExp | null} The current CSS className expression value. If null then there is no expression value
+   * @param expression The className expression which will be checked against all animations
+   * @returns The current CSS className expression value. If null then there is no expression value
    */
   this.classNameFilter = function (expression?: RegExp): RegExp | null {
     if (arguments.length === 1) {
@@ -200,8 +332,7 @@ export function AnimateProvider(
   this.$get = [
     $injectTokens._animateQueue,
     /**
-     * @param {import("./queue/interface.ts").AnimateQueueService} $$animateQueue
-     * @returns {ng.AnimateService}
+     * Creates the runtime `$animate` service facade.
      */
     function ($$animateQueue: AnimateQueueService): AnimateService {
       /**
@@ -250,10 +381,10 @@ export function AnimateProvider(
          *
          * </div>
          *
-         * @param {string} event the animation event that will be captured (e.g. enter, leave, move, addClass, removeClass, etc...)
-         * @param {Element} container the container element that will capture each of the animation events that are fired on itself
+         * @param event the animation event that will be captured (e.g. enter, leave, move, addClass, removeClass, etc...)
+         * @param container the container element that will capture each of the animation events that are fired on itself
          *     as well as among its children
-         * @param {Function} callback the callback function that will be fired when the listener is triggered.
+         * @param callback the callback function that will be fired when the listener is triggered.
          *
          * The arguments present in the callback function are:
          * * `element` - The captured DOM element that the animation was fired on.
@@ -288,11 +419,11 @@ export function AnimateProvider(
          * $animate.off('enter', container, callback);
          * ```
          *
-         * @param {string|Element} event|container the animation event (e.g. enter, leave, move,
+         * @param event|container the animation event (e.g. enter, leave, move,
          * addClass, removeClass, etc...), or the container element. If it is the element, all other
          * arguments are ignored.
-         * @param {Element=} container the container element the event listener was placed on
-         * @param {Function=} callback the callback function that was registered as the listener
+         * @param container the container element the event listener was placed on
+         * @param callback the callback function that was registered as the listener
          */
         off: $$animateQueue.off,
 
@@ -306,8 +437,8 @@ export function AnimateProvider(
          *
          *  Note that this feature is only active when the `ngAnimate` module is used.
          *
-         * @param {Element} element the external element that will be pinned
-         * @param {Element} parentElement the host parent element that will be associated with the external element
+         * @param element the external element that will be pinned
+         * @param parentElement the host parent element that will be associated with the external element
          */
         pin: $$animateQueue.pin,
 
@@ -331,10 +462,10 @@ export function AnimateProvider(
          * $animate.enabled(element, false);
          * ```
          *
-         * @param {Element=} element the element that will be considered for checking/setting the enabled state
-         * @param {boolean=} enabled whether or not the animations will be enabled for the element
+         * @param element the element that will be considered for checking/setting the enabled state
+         * @param enabled whether or not the animations will be enabled for the element
          *
-         * @return {boolean} whether or not animations are enabled
+         * @returns whether or not animations are enabled
          */
         enabled: (element?: Element, enabled?: boolean): boolean => {
           if (enabled !== undefined) {
@@ -351,7 +482,7 @@ export function AnimateProvider(
          * Note that this does not cancel the underlying operation, e.g. the setting of classes or
          * adding the element to the DOM.
          *
-         * @param {ng.AnimateRunner} runner An animation runner returned by an $animate function.
+         * @param runner An animation runner returned by an $animate function.
          */
         cancel(
           runner: import("./runner/animate-runner.ts").AnimateRunner,
@@ -367,11 +498,11 @@ export function AnimateProvider(
          * A promise is returned that will be resolved during the next digest once the animation
          * has completed.
          *
-         * @param {Element} element - the element which will be inserted into the DOM
-         * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
-         * @param {ChildNode | null | undefined} [after] - after the sibling element after which the element will be appended
-         * @param {import("./interface.ts").AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
-         * @returns {ng.AnimateRunner} the animation runner
+         * @param element - the element which will be inserted into the DOM
+         * @param parent - the parent element which will append the element as a child (so long as the after element is not present)
+         * @param [after] - after the sibling element after which the element will be appended
+         * @param [options] - an optional collection of options/styles that will be applied to the element.
+         * @returns the animation runner
          */
         enter(
           element: Element,
@@ -403,11 +534,11 @@ export function AnimateProvider(
          * and then triggers an animation. A promise is returned that will be resolved
          * during the next digest once the animation has completed.
          *
-         * @param {Element} element - the element which will be inserted into the DOM
-         * @param {Element} parent - the parent element which will append the element as a child (so long as the after element is not present)
-         * @param {Element} after - after the sibling element after which the element will be appended
-         * @param {import("./interface.ts").AnimationOptions} [options] - an optional collection of options/styles that will be applied to the element.
-         * @returns {ng.AnimateRunner} the animation runner
+         * @param element - the element which will be inserted into the DOM
+         * @param parent - the parent element which will append the element as a child (so long as the after element is not present)
+         * @param after - after the sibling element after which the element will be appended
+         * @param [options] - an optional collection of options/styles that will be applied to the element.
+         * @returns the animation runner
          */
         move(
           element: Element,
@@ -438,9 +569,9 @@ export function AnimateProvider(
          * When the function is called a promise is returned that will be resolved during the next
          * digest once the animation has completed.
          *
-         * @param {Element} element the element which will be removed from the DOM
-         * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
-         * @returns {ng.AnimateRunner} the animation runner
+         * @param element the element which will be removed from the DOM
+         * @param [options] an optional collection of options/styles that will be applied to the element.
+         * @returns the animation runner
          */
         leave(element: Element, options?: AnimationOptions) {
           return $$animateQueue.push(
@@ -461,10 +592,10 @@ export function AnimateProvider(
          * (like enter, move and leave) since the CSS classes may be added/removed at different points
          * depending if CSS or JavaScript animations are used.
          *
-         * @param {Element} element the element which the CSS classes will be applied to
-         * @param {string} className the CSS class(es) that will be added (multiple classes are separated via spaces)
-         * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
-         * @return {ng.AnimateRunner}} animationRunner the animation runner
+         * @param element the element which the CSS classes will be applied to
+         * @param className the CSS class(es) that will be added (multiple classes are separated via spaces)
+         * @param [options] an optional collection of options/styles that will be applied to the element.
+         * @returns The animation runner.
          */
         addClass(
           element: Element,
@@ -485,10 +616,10 @@ export function AnimateProvider(
          * (like enter, move and leave) since the CSS classes may be added/removed at different points
          * depending if CSS or JavaScript animations are used.
          *
-         * @param {Element} element the element which the CSS classes will be applied to
-         * @param {string} className the CSS class(es) that will be removed (multiple classes are separated via spaces)
-         * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.         *
-         * @return {ng.AnimateRunner} animationRunner the animation runner
+         * @param element the element which the CSS classes will be applied to
+         * @param className the CSS class(es) that will be removed (multiple classes are separated via spaces)
+         * @param [options] an optional collection of options/styles that will be applied to the element.
+         * @returns The animation runner.
          */
         removeClass(
           element: Element,
@@ -509,12 +640,12 @@ export function AnimateProvider(
          * (like enter, move and leave) since the CSS classes may be added/removed at different points
          * depending if CSS or JavaScript animations are used.
          *
-         * @param {Element} element the element which the CSS classes will be applied to
-         * @param {string} add the CSS class(es) that will be added (multiple classes are separated via spaces)
-         * @param {string} remove the CSS class(es) that will be removed (multiple classes are separated via spaces)
-         * @param {import("./interface.ts").AnimationOptions} [options] an optional collection of options/styles that will be applied to the element.
+         * @param element the element which the CSS classes will be applied to
+         * @param add the CSS class(es) that will be added (multiple classes are separated via spaces)
+         * @param remove the CSS class(es) that will be removed (multiple classes are separated via spaces)
+         * @param [options] an optional collection of options/styles that will be applied to the element.
          *
-         * @return {ng.AnimateRunner} the animation runner
+         * @returns the animation runner
          */
         setClass(
           element: Element,
@@ -549,12 +680,12 @@ export function AnimateProvider(
          * });
          * ```
          *
-         * @param {Element} element the element which will be animated
-         * @param {Record<string, string | number>} from the initial CSS styles for the animation
-         * @param {Record<string, string | number>} to the final CSS styles for the animation
-         * @param {string=} className an optional CSS class name to apply for the animation
-         * @param {import("./interface.ts").AnimationOptions=} options an optional collection of options/styles that will be applied to the element.
-         * @return {ng.AnimateRunner} the animation runner
+         * @param element the element which will be animated
+         * @param from the initial CSS styles for the animation
+         * @param to the final CSS styles for the animation
+         * @param className an optional CSS class name to apply for the animation
+         * @param options an optional collection of options/styles that will be applied to the element.
+         * @returns the animation runner
          */
         animate(
           element: Element,
@@ -565,16 +696,10 @@ export function AnimateProvider(
         ) {
           options = prepareAnimateOptions(options);
           options.from = options.from
-            ? /** @type {Record<string, string | number>} */ extend(
-                options.from,
-                from,
-              )
+            ? (extend(options.from, from) as Record<string, string | number>)
             : from;
           options.to = options.to
-            ? /** @type {Record<string, string | number>} */ extend(
-                options.to,
-                to,
-              )
+            ? (extend(options.to, to) as Record<string, string | number>)
             : to;
 
           className = className || "ng-inline-animate";

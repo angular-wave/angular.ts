@@ -18,20 +18,6 @@ import {
 } from "../../shared/constants.ts";
 import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.ts";
 
-/**
- * @type {{
- *   $nonscope: boolean,
- *   $addControl: Function,
- *   $getControls: () => any[],
- *   _renameControl: Function,
- *   $removeControl: Function,
- *   $setValidity: Function | ((key: any, isValid: boolean | undefined | null, control: any) => any),
- *   $setDirty: Function,
- *   $setPristine: Function,
- *   $setSubmitted: Function,
- *   _setSubmitted: Function
- * }}
- */
 export const nullFormCtrl = {
   $nonscope: true,
   $addControl: () => {
@@ -65,12 +51,12 @@ export const PENDING_CLASS = "ng-pending";
 const SUBMITTED_CLASS = "ng-submitted";
 
 /**
- * @property {boolean} $dirty True if user has already interacted with the form.
- * @property {boolean} $valid True if all of the containing forms and controls are valid.
- * @property {boolean} $invalid True if at least one containing control or form is invalid.
- * @property {boolean} $submitted True if user has submitted the form even if its invalid.
+ * @property $dirty True if user has already interacted with the form.
+ * @property $valid True if all of the containing forms and controls are valid.
+ * @property $invalid True if at least one containing control or form is invalid.
+ * @property $submitted True if user has submitted the form even if its invalid.
  *
- * @property {Object} $pending An object hash, containing references to controls or forms with
+ * @property $pending An object hash, containing references to controls or forms with
  *  pending validators, where:
  *
  *  - keys are validations tokens (error names).
@@ -78,7 +64,7 @@ const SUBMITTED_CLASS = "ng-submitted";
  *
  * See {@link form.FormController#$error $error} for a list of built-in validation tokens.
  *
- * @property {Object} $error An object hash, containing references to controls or forms with failing
+ * @property $error An object hash, containing references to controls or forms with failing
  *  validators, where:
  *
  *  - keys are validation tokens (error names),
@@ -152,11 +138,7 @@ export class FormController {
   $target: Record<string, any>;
 
   /**
-   * @param {HTMLFormElement} $element
-   * @param {ng.Attributes} $attrs
-   * @param {ng.Scope} $scope
-   * @param {ng.AnimateService} $animate
-   * @param {ng.InterpolateService} $interpolate
+   * Creates a form controller for a specific form element and its scope.
    */
   constructor(
     $element: HTMLFormElement,
@@ -165,12 +147,7 @@ export class FormController {
     $animate: ng.AnimateService,
     $interpolate: ng.InterpolateService,
   ) {
-    /** @type {boolean} */
     this._isAnimated = hasAnimate($element);
-
-    /**
-     * @type {FormController[]}
-     */
     this._controls = [];
 
     this.$name =
@@ -180,42 +157,27 @@ export class FormController {
           | undefined
       )?.($scope) || "";
 
-    /**
-     * @property {boolean} $dirty True if user has already interacted with the form.
-     */
+    /** True if user has already interacted with the form. */
     this.$dirty = false;
 
-    /**
-     * @propertys {boolean} $pristine - True if user has not interacted with the form yet.s
-     */
+    /** True if user has not interacted with the form yet. */
     this.$pristine = true;
-    /** @type {boolean | undefined} */
     this.$valid = true;
-    /** @type {boolean | undefined} */
     this.$invalid = false;
     this.$submitted = false;
-    /** @type {FormController|Object} */
     this._parentForm = nullFormCtrl;
 
     this._element = $element;
     this._animate = $animate;
-    /** @type {Record<string, any>} */
     this.$error = {};
-
-    /** @type {Record<string, any>} */
     this._success = {};
-    /**
-     * @type {Record<string, any>| undefined}
-     */
     this.$pending = undefined;
-    /** @type {Record<string, any>} */
     this._classCache = {};
     const isValid = this._element.classList.contains(VALID_CLASS);
 
     this._classCache[VALID_CLASS] = isValid;
     this._classCache[INVALID_CLASS] = !isValid;
 
-    /** @type {Record<string, any>} */
     this.$target = {};
   }
 
@@ -259,7 +221,6 @@ export class FormController {
    *
    * For example, if an input control is added that is already `$dirty` and has `$error` properties,
    * calling `$setDirty()` and `$validate()` afterwards will propagate the state to the parent form.
-   * @param {FormController} control
    */
   $addControl(control: any): void {
     // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
@@ -287,18 +248,14 @@ export class FormController {
    * Likewise, adding a control to, or removing a control from the form is not reflected
    * in the shallow copy. That means you should get a fresh copy from `$getControls()` every time
    * you need access to the controls.
-   * @returns {ReadonlyArray<FormController>}
    */
   $getControls(): ReadonlyArray<FormController> {
-    return /** @type {ReadonlyArray<FormController>} */ shallowCopy(
-      this._controls,
-    );
+    return shallowCopy(this._controls) as ReadonlyArray<FormController>;
   }
 
   // Private API: rename a form control
   /**
-   * @param {FormController} control
-   * @param {string | number} newName
+   * Renames a registered control on the form controller.
    */
   _renameControl(control: any, newName: string | number): void {
     const oldName = control.$name;
@@ -319,7 +276,6 @@ export class FormController {
    * form. `$dirty`, `$submitted` states will not be changed, because the expected behavior can be
    * different from case to case. For example, removing the only `$dirty` control from a form may or
    * may not mean that the form is still `$dirty`.
-   * @param {FormController } control
    */
   $removeControl(control: any): void {
     if (
@@ -363,7 +319,7 @@ export class FormController {
     }
     this.$dirty = true;
     this.$pristine = false;
-    /** @type {FormController} */ this._parentForm.$setDirty();
+    (this._parentForm as FormController).$setDirty();
   }
 
   /**
@@ -419,11 +375,10 @@ export class FormController {
    * parent forms of the form.
    */
   $setSubmitted(): void {
-    /** @type {FormController} */
-    let rootForm = this;
+    let rootForm: FormController = this;
 
     while (rootForm._parentForm && rootForm._parentForm !== nullFormCtrl) {
-      rootForm = /** @type {FormController} */ rootForm._parentForm;
+      rootForm = rootForm._parentForm as FormController;
     }
     rootForm._setSubmitted();
   }
@@ -443,9 +398,7 @@ export class FormController {
   }
 
   /**
-   * @param {Record<string, any>} object
-   * @param {string} property
-   * @param {FormController | import("../model/model.ts").NgModelController} controller
+   * Adds a controller reference to a named validity bucket.
    */
   set(object: Record<string, any>, property: string, controller: any): void {
     const list = object[property];
@@ -463,9 +416,7 @@ export class FormController {
   }
 
   /**
-   * @param {Record<string, any>} object
-   * @param {string} property
-   * @param {FormController | import("../model/model.ts").NgModelController} controller
+   * Removes a controller reference from a named validity bucket.
    */
   unset(object: Record<string, any>, property: string, controller: any): void {
     const list = object[property];
@@ -476,7 +427,7 @@ export class FormController {
     const index = arrayRemove(list, controller);
 
     if (index === -1) {
-      arrayRemove(list, /** @type {FormController} */ controller.$target);
+      arrayRemove(list, controller.$target as FormController);
     }
 
     if (list.length === 0) {
@@ -491,17 +442,17 @@ export class FormController {
    * {@link ngModel.NgModelController#$setValidity NgModelController.$setValidity()}, to propagate a
    * control's validity state to the parent `FormController`.
    *
-   * @param {string} validationErrorKey Name of the validator. The `validationErrorKey` will be
+   * @param validationErrorKey - Name of the validator. The `validationErrorKey` will be
    *        assigned to either `$error[validationErrorKey]` or `$pending[validationErrorKey]` (for
    *        unfulfilled `$asyncValidators`), so that it is available for data-binding. The
    *        `validationErrorKey` should be in camelCase and will get converted into dash-case for
    *        class name. Example: `myError` will result in `ng-valid-my-error` and
    *        `ng-invalid-my-error` classes and can be bound to as `{{ someForm.$error.myError }}`.
-   * @param {boolean | null | undefined} state Whether the current state is valid (true), invalid (false), pending
+   * @param state - Whether the current state is valid (true), invalid (false), pending
    *        (undefined),  or skipped (null). Pending is used for unfulfilled `$asyncValidators`.
    *        Skipped is used by AngularTS when validators do not run because of parse errors and when
    *        `$asyncValidators` do not run because any of the `$validators` failed.
-   * @param {import("../model/model.ts").NgModelController | FormController} controller - The controller whose validity state is
+   * @param controller - The controller whose validity state is
    *        triggering the change.
    */
   $setValidity(
@@ -556,17 +507,14 @@ export class FormController {
     }
 
     toggleValidationCss(this, validationErrorKey, combinedState);
-    /** @type {FormController} */ this._parentForm.$setValidity(
+    (this._parentForm as FormController).$setValidity(
       validationErrorKey,
       combinedState,
       this,
     );
 
     /**
-     * @param {FormController & Record<string, any>} ctrl
-     * @param {string} name
-     * @param {string} value
-     * @param {FormController | import("../model/model.ts").NgModelController} controllerParam
+     * Creates a controller bucket if needed and records a controller under the given key.
      */
     function createAndSet(
       ctrl: FormController & Record<string, any>,
@@ -583,10 +531,7 @@ export class FormController {
     }
 
     /**
-     * @param {FormController & Record<string, any>} ctrl
-     * @param {string} name
-     * @param {string} value
-     * @param {FormController | import("../model/model.ts").NgModelController} controllerParam
+     * Removes a controller from a bucket and cleans up empty containers.
      */
     function unsetAndCleanup(
       ctrl: FormController & Record<string, any>,
@@ -606,9 +551,7 @@ export class FormController {
     }
 
     /**
-     * @param {FormController | import("../model/model.ts").NgModelController} ctrl
-     * @param {string} validationErrorKeyParam
-     * @param {boolean | null | undefined} isValid
+     * Updates the CSS validity classes for the controller and validation key.
      */
     function toggleValidationCss(
       ctrl: FormController | import("../model/model.ts").NgModelController,
@@ -647,8 +590,8 @@ export class FormController {
  * {@link ng.directive:ngSubmit `ngSubmit`}.
  * </div>
  *
- * @param {string=} ngForm|name Name of the form. If specified, the form controller will
- *                              be published into the related scope, under this name.
+ * @param ngForm|name - Name of the form. If specified, the form controller will
+ *     be published into the related scope, under this name.
  *
  */
 
@@ -718,15 +661,14 @@ export class FormController {
  * they work in ngClass and animations can be hooked into using CSS transitions, keyframes as well
  * as JS animations.
  *
- * @param {string=} isNgForm Name of the form. If specified, the form controller will be published into
- *                       related scope, under this name.
+ * @param isNgForm - Name of the form. If specified, the form controller will be published into
+ *     related scope, under this name.
  */
 const formDirectiveFactory = function (isNgForm?: string) {
   return [
     $injectTokens._parse,
     /**
-     * @param {ng.ParseService} $parse
-     * @returns {ng.Directive}
+     * Builds the form/ngForm directive definition.
      */
     function ($parse: ng.ParseService) {
       return {
@@ -817,7 +759,7 @@ const formDirectiveFactory = function (isNgForm?: string) {
       };
 
       /**
-       * @param {string} expression
+       * Resolves an assign function for the given form expression.
        */
       function getSetter(expression: string) {
         if (expression === "") {
@@ -835,9 +777,7 @@ export const formDirective = formDirectiveFactory();
 export const ngFormDirective = formDirectiveFactory("ngForm");
 
 /**
- * @param {FormController|ng.NgModelController} ctrl
- * @param {string} className
- * @param {boolean} switchValue
+ * Adds or removes a cached validation class on a controller element.
  */
 export function cachedToggleClass(
   ctrl: any,

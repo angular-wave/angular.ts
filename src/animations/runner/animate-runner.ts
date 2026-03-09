@@ -1,4 +1,25 @@
-import type { AnimationHost } from "../interface.ts";
+/**
+ * Optional host controls that may be provided by a concrete animation runner implementation.
+ *
+ * A runner host represents the underlying “real” animation (CSS/JS/driver-based) and
+ * exposes lifecycle controls. The queue/runner wrapper can forward calls to this host.
+ */
+export interface AnimationHost {
+  /** Pause animation. */
+  pause?: () => void;
+
+  /** Resume animation. */
+  resume?: () => void;
+
+  /** End animation (finish immediately). */
+  end?: () => void;
+
+  /** Cancel animation (abort and rollback if applicable). */
+  cancel?: () => void;
+
+  /** Report animation progress; signature is driver-dependent. */
+  progress?: (...args: any[]) => void;
+}
 /**
  * Hybrid AnimateRunner
  * Supports both CSS animations (batched) and JS animations (per-Tick).
@@ -15,7 +36,6 @@ import type { AnimationHost } from "../interface.ts";
 /**
  * Internal runner states.
  * @internal
- * @enum {number}
  */
 const RunnerState = {
   /** Initial state before any completion logic started */
@@ -30,11 +50,9 @@ const RunnerState = {
 
 /**
  * Global queue used to batch CSS animation callbacks.
- * @type {Array<VoidFunction>}
  */
 let queue: VoidFunction[] = [];
 
-/** @type {boolean} */
 let scheduled = false;
 
 /**
@@ -55,8 +73,6 @@ function flush() {
 /**
  * Schedules a callback for next animation frame,
  * falling back to setTimeout(0) when RAF is unavailable.
- *
- * @param {VoidFunction} fn
  */
 function schedule(fn: VoidFunction): void {
   queue.push(fn);
@@ -76,10 +92,8 @@ export class AnimateRunner {
   _tick: (fn: VoidFunction) => void;
 
   /**
-   * @param {AnimationHost} [host] - Optional animation host callbacks.
-   * @param {boolean} [jsAnimation=false]
-   *        If true: use RAF/timer ticks.
-   *        If false: use batched CSS animation ticks.
+   * Accepts optional host callbacks.
+   * Set `jsAnimation` to `true` to use RAF/timer ticks instead of the batched CSS animation queue.
    */
   constructor(host: AnimationHost = {}, jsAnimation = false) {
     this._host = host;
@@ -119,7 +133,6 @@ export class AnimateRunner {
 
   /**
    * Sets or replaces the current host.
-   * @param {AnimationHost} host
    */
   setHost(host: AnimationHost): void {
     this._host = host || {};
@@ -128,8 +141,6 @@ export class AnimateRunner {
   /**
    * Register a completion callback.
    * Fires immediately if animation is already done.
-   *
-   * @param {(ok: boolean) => void} fn
    */
   done(fn: (ok: boolean) => void): void {
     if (this._state === RunnerState._DONE) {
@@ -141,7 +152,6 @@ export class AnimateRunner {
 
   /**
    * Reports progress to host.
-   * @param {...any} args
    */
   progress(...args: any[]): void {
     this._host.progress?.(...args);
@@ -176,8 +186,6 @@ export class AnimateRunner {
 
   /**
    * Schedule animation completion.
-   *
-   * @param {boolean} [status=true]
    */
   complete(status = true): void {
     if (this._state === RunnerState._INITIAL) {
@@ -188,7 +196,6 @@ export class AnimateRunner {
 
   /**
    * Completes the animation and invokes all done callbacks.
-   * @param {boolean} status
    * @private
    */
   _finish(status: boolean): void {
@@ -208,8 +215,6 @@ export class AnimateRunner {
   /**
    * Returns an internal promise that resolves on success,
    * and rejects on cancel.
-   *
-   * @returns {Promise<void>}
    */
   getPromise() {
     if (!this._promise) {
@@ -224,9 +229,6 @@ export class AnimateRunner {
   /**
    * Standard "thenable" interface
    * @template T
-   * @param {(value: void) => T|Promise<T>} onFulfilled
-   * @param {(reason: any) => any} [onRejected]
-   * @returns {Promise<T>}
    */
   then<T>(
     onFulfilled: (value: void) => T | PromiseLike<T>,
@@ -237,8 +239,6 @@ export class AnimateRunner {
 
   /**
    * Standard promise catcher.
-   * @param {(reason: any) => any} onRejected
-   * @returns {Promise<void>}
    */
   catch(onRejected: (reason: any) => any): Promise<void> {
     return this.getPromise().catch(onRejected);
@@ -246,8 +246,6 @@ export class AnimateRunner {
 
   /**
    * Standard promise finally.
-   * @param {() => any} onFinally
-   * @returns {Promise<void>}
    */
   finally(onFinally: () => any): Promise<void> {
     return this.getPromise().finally(onFinally);
@@ -260,9 +258,6 @@ export class AnimateRunner {
   /**
    * Executes a list of runners sequentially.
    * Each must complete before the next starts.
-   *
-   * @param {AnimateRunner[]} runners
-   * @param {(ok: boolean) => void} callback
    */
   static _chain(
     runners: AnimateRunner[],
@@ -284,9 +279,6 @@ export class AnimateRunner {
 
   /**
    * Waits until all runners complete.
-   *
-   * @param {AnimateRunner[]} runners
-   * @param {(ok: boolean) => void} callback
    */
   static _all(runners: AnimateRunner[], callback: (ok: boolean) => void): void {
     let remaining = runners.length;

@@ -1,21 +1,38 @@
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { callBackAfterFirst, isDefined, wait } from "../../shared/utils.ts";
 import { getEventNameForElement } from "../http/http.ts";
-import type {
-  DefultWorkerConfig,
-  WorkerConfig,
-  WorkerConnection,
-} from "./interface.ts";
+
+export interface WorkerConfig {
+  onMessage?: (data: any, event: MessageEvent) => void;
+  onError?: (err: ErrorEvent) => void;
+  autoRestart?: boolean;
+  autoTerminate?: boolean;
+  transformMessage?: (data: any) => any;
+  logger?: ng.LogService;
+  err?: ng.ExceptionHandlerService;
+}
+
+export interface DefultWorkerConfig {
+  onMessage: (data: any, event: MessageEvent) => void;
+  onError: (err: ErrorEvent) => void;
+  autoRestart: boolean;
+  autoTerminate: boolean;
+  transformMessage: (data: any) => any;
+  logger: ng.LogService;
+  err: ng.ExceptionHandlerService;
+}
+
+export interface WorkerConnection {
+  post(data: any): void;
+  terminate(): void;
+  restart(): void;
+  config: WorkerConfig;
+}
 
 ngWorkerDirective.$inject = [$t._parse, $t._log, $t._exceptionHandler];
 
 /**
  * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
- *
- * @param {ng.ParseService} $parse
- * @param {ng.LogService} $log
- * @param {ng.ExceptionHandlerService} $exceptionHandler
- * @returns {ng.Directive}
  */
 export function ngWorkerDirective(
   $parse: ng.ParseService,
@@ -119,9 +136,6 @@ export function ngWorkerDirective(
 
 /**
  * Swap result into DOM based on strategy
- * @param {string} result
- * @param {string} swap
- * @param {HTMLElement} element
  */
 function handleSwap(result: string, swap: string, element: HTMLElement): void {
   switch (swap) {
@@ -162,10 +176,6 @@ function handleSwap(result: string, swap: string, element: HTMLElement): void {
 
 /**
  * Creates a managed Web Worker connection.
- *
- * @param {string | URL} scriptPath
- * @param {ng.WorkerConfig} [config]
- * @returns {ng.WorkerConnection}
  */
 export function createWorkerConnection(
   scriptPath: string | URL,

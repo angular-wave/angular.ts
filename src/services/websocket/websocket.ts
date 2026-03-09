@@ -1,7 +1,24 @@
 import { $injectTokens } from "../../injection-tokens.ts";
 import { StreamConnection } from "../stream/stream.ts";
-import type { LogService } from "../log/interface.ts";
-import type { WebSocketConfig, WebSocketService } from "./interface.ts";
+import type { StreamConnectionConfig } from "../stream/stream.ts";
+import type { LogService } from "../log/log.ts";
+
+/**
+ * WebSocket-specific configuration
+ */
+export interface WebSocketConfig extends StreamConnectionConfig {
+  /** Optional WebSocket subprotocols */
+  protocols?: string[];
+
+  /** Called when the WebSocket connection closes */
+  onClose?: (event: CloseEvent) => void;
+}
+
+export type WebSocketService = (
+  url: string,
+  protocols?: string[],
+  config?: WebSocketConfig,
+) => StreamConnection;
 
 /**
  * WebSocketProvider

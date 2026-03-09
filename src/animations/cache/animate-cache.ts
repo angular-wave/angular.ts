@@ -1,4 +1,22 @@
-import type { CacheEntry } from "./interface.ts";
+/**
+ * Internal cache entry used to track animation results and usage.
+ */
+export interface CacheEntry {
+  /**
+   * Number of times this cache entry has been accessed or reused.
+   */
+  total: number;
+
+  /**
+   * Cached animation result (typically an animation runner or metadata).
+   */
+  value: any;
+
+  /**
+   * Whether the cached animation is considered valid (e.g. has a duration).
+   */
+  isValid: boolean;
+}
 
 const KEY = "$animId";
 
@@ -34,18 +52,6 @@ export class AnimateCache {
    *
    * If the node is not attached to the DOM, the node itself is used
    * as the parent scope to avoid key collisions.
-   *
-   * @param {HTMLElement} node
-   *   Target element being animated.
-   * @param {string} method
-   *   Animation method name.
-   * @param {string} [addClass]
-   *   CSS class scheduled to be added during the animation.
-   * @param {string} [removeClass]
-   *   CSS class scheduled to be removed during the animation.
-   *
-   * @returns {string}
-   *   A unique, deterministic cache key.
    */
   _cacheKey(
     node: HTMLElement,
@@ -72,11 +78,6 @@ export class AnimateCache {
    *
    * This is typically used to detect animations that were previously
    * cached but resolved without a duration.
-   *
-   * @param {string} key
-   *   Cache key to test.
-   * @returns {boolean}
-   *   True if an invalid cache entry exists, false otherwise.
    */
   _containsCachedAnimationWithoutDuration(key: string): boolean {
     const entry = this._cache.get(key);
@@ -88,8 +89,6 @@ export class AnimateCache {
    * Clears all cached animation entries.
    *
    * Does not reset parent IDs.
-   *
-   * @returns {void}
    */
   _flush(): void {
     this._cache.clear();
@@ -97,11 +96,6 @@ export class AnimateCache {
 
   /**
    * Returns the number of times a cache entry has been used.
-   *
-   * @param {string} key
-   *   Cache key to query.
-   * @returns {number}
-   *   Usage count, or 0 if the entry does not exist.
    */
   _count(key: string): number {
     return this._cache.get(key)?.total ?? 0;
@@ -109,11 +103,6 @@ export class AnimateCache {
 
   /**
    * Retrieves the cached value associated with a cache key.
-   *
-   * @param {string} key
-   *   Cache key to retrieve.
-   * @returns {any}
-   *   Cached value, or undefined if not present.
    */
   _get(key: string): CacheEntry["value"] | undefined {
     return this._cache.get(key)?.value;
@@ -124,15 +113,6 @@ export class AnimateCache {
    *
    * Existing entries will have their usage count incremented
    * and their value replaced.
-   *
-   * @param {string} key
-   *   Cache key.
-   * @param {any} value
-   *   Value to cache.
-   * @param {boolean} isValid
-   *   Whether the cached value is considered valid.
-   *
-   * @returns {void}
    */
   _put(key: string, value: CacheEntry["value"], isValid: boolean): void {
     const entry = this._cache.get(key);

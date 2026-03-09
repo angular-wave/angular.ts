@@ -1,5 +1,6 @@
 import { TransitionHook } from "./transition-hook.ts";
-import type { HookResult, PathType } from "./interface.ts";
+import type { HookResult } from "./interface.ts";
+import type { PathType } from "./transition-service.ts";
 
 type GetResultHandler = (hook: TransitionHook) => (result: HookResult) => any;
 

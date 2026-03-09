@@ -10,7 +10,42 @@ import {
 } from "../../shared/utils.ts";
 import { getBlockNodes, removeElement } from "../../shared/dom.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
-import type { RepeatScope } from "./interface.ts";
+
+/**
+ * $scope for ngRepeat directive.
+ * see https://docs.angularjs.org/api/ng/directive/ngRepeat
+ */
+export interface RepeatScope extends ng.Scope {
+  /**
+   * iterator offset of the repeated element (0..length-1).
+   */
+  $index: number;
+
+  /**
+   * true if the repeated element is first in the iterator.
+   */
+  $first: boolean;
+
+  /**
+   * true if the repeated element is between the first and last in the iterator.
+   */
+  $middle: boolean;
+
+  /**
+   * true if the repeated element is last in the iterator.
+   */
+  $last: boolean;
+
+  /**
+   * true if the iterator position $index is even (otherwise false).
+   */
+  $even: boolean;
+
+  /**
+   * true if the iterator position $index is odd (otherwise false).
+   */
+  $odd: boolean;
+}
 
 const NG_REMOVED = "$$NG_REMOVED";
 
@@ -50,10 +85,7 @@ const VAR_OR_TUPLE_REGEX =
 
 ngRepeatDirective.$inject = [$injectTokens._animate];
 
-/**
- * @param {ng.AnimateService}  $animate
- * @returns {ng.Directive}
- */
+/** Repeats a transcluded template for each item in a watched collection. */
 export function ngRepeatDirective(
   $animate: ng.AnimateService,
 ): ng.Directive<any> {
@@ -88,6 +120,34 @@ export function ngRepeatDirective(
 
   function getBlockEnd(block: RepeatBlock): Node | undefined {
     return block.clone?.[block.clone.length - 1];
+  }
+
+  function normalizeRepeatClone(
+    clone: Node | Node[] | NodeList | null | undefined,
+  ): RepeatClone {
+    if (!clone) {
+      return [] as unknown as RepeatClone;
+    }
+
+    if (Array.isArray(clone)) {
+      return clone as RepeatClone;
+    }
+
+    if (isArrayLike(clone)) {
+      return Array.from(clone as NodeListOf<Node>) as RepeatClone;
+    }
+
+    return [clone] as unknown as RepeatClone;
+  }
+
+  function removeRepeatClone(clone: RepeatClone): void {
+    clone.forEach((node) => {
+      if (node instanceof Element) {
+        removeElement(node);
+      } else {
+        node.parentNode?.removeChild(node);
+      }
+    });
   }
 
   function trackByIdArrayFn(
@@ -256,14 +316,17 @@ export function ngRepeatDirective(
             for (const blockKey in lastBlockMap) {
               block = lastBlockMap[blockKey];
               elementsToRemove = block.clone as RepeatClone;
+              const hadParentNode = elementsToRemove.some(
+                (node) => !!node.parentNode,
+              );
 
               if (hasAnimate) {
                 $animate.leave(elementsToRemove as any);
               } else {
-                elementsToRemove.remove();
+                removeRepeatClone(elementsToRemove);
               }
 
-              if (elementsToRemove.parentNode) {
+              if (hadParentNode) {
                 for (let i = 0, j = elementsToRemove.length; i < j; i++) {
                   elementsToRemove[i][NG_REMOVED] = true;
                 }
@@ -307,7 +370,7 @@ export function ngRepeatDirective(
               } else {
                 $transclude((clone, scope) => {
                   block.scope = scope as RepeatScope;
-                  const repeatClone = clone as unknown as RepeatClone;
+                  const repeatClone = normalizeRepeatClone(clone);
                   const endNode = repeatClone[repeatClone.length - 1] as Node;
 
                   if (hasAnimate) {
@@ -317,7 +380,7 @@ export function ngRepeatDirective(
                       previousNode as any,
                     );
                   } else {
-                    (previousNode as any).after(repeatClone);
+                    (previousNode as ChildNode).after(...repeatClone);
                   }
 
                   previousNode = endNode;

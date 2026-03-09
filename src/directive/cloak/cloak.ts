@@ -1,8 +1,4 @@
-/**
- * Removes the `ng-cloak` attribute during compilation so cloaked content can render.
- *
- * @returns {ng.Directive}
- */
+/** Removes the `ng-cloak` attribute during compilation so cloaked content can render. */
 export function ngCloakDirective(): ng.Directive {
   return {
     compile(

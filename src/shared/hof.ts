@@ -1,3 +1,6 @@
+export type Predicate<X> = (x?: X) => boolean;
+export type PredicateBinary<X, Y> = (x?: X, y?: Y) => boolean;
+
 /**
  * Returns a new function for [Partial Application](https://en.wikipedia.org/wiki/Partial_application) of the original function.
  *
@@ -36,8 +39,7 @@
  *
  * ```
  *
- * @param {Function} fn
- * @returns {*|function(): (*|any)}
+ * Returns a curried version of the supplied function.
  */
 export function curry<T extends (...args: any[]) => any>(fn: T): any {
   const curried = (...args: any[]) => {
@@ -81,15 +83,15 @@ export const parse = (path: string) => {
  * Given a class constructor, returns a predicate function that checks
  * whether a given object is an instance of that class.
  *
- * @param {new (...args: any[]) => any} ctor - The class constructor to check against.
- * @returns {(obj: any) => boolean} A predicate function that returns true if the object is of the given class.
+ * @param ctor - The class constructor to check against.
+ * @returns A predicate function that returns true if the object is of the given class.
  */
 export function is<T>(ctor: new (...args: any[]) => T): (obj: any) => boolean {
   /**
    * Checks if the provided object is an instance of the given constructor.
    *
-   * @param {any} obj - The object to test.
-   * @returns {boolean} True if the object is an instance of the given class.
+   * @param obj - The object to test.
+   * @returns True if the object is an instance of the given class.
    */
   return function (obj: any) {
     return (
@@ -102,8 +104,8 @@ export function is<T>(ctor: new (...args: any[]) => T): (obj: any) => boolean {
 /**
  * Given a value, returns a function which returns that value.
  * @template T
- * @param {T} value - The value to wrap in a function.
- * @returns {() => T} A function that returns the given value.
+ * @param value - The value to wrap in a function.
+ * @returns A function that returns the given value.
  */
 export const val =
   <T>(value: T) =>
@@ -143,9 +145,7 @@ console.log(descriptionOf(undefined)); // 'notdefined'
 console.log(descriptionOf(55)); // '(55) That's a number!'
 console.log(descriptionOf("foo")); // 'Here's your string foo'
 ```
- * @param {string | any[]} struct A 2D array.  Each element of the array should be an array, a 2-tuple,
-with a Predicate and a mapping/output function
- * @returns {function(any):*}
+ * `struct` is a 2D array of predicate/mapper tuples.
  */
 export function pattern(
   struct: Array<[(item: any) => boolean, (item: any) => any]>,

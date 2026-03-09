@@ -8,8 +8,6 @@ const NG_HIDE_IN_PROGRESS_CLASS = "ng-hide-animate";
 ngShowDirective.$inject = [$injectTokens._animate];
 /**
  * Removes the `ng-hide` class when the watched expression becomes truthy.
- *
- * @param {ng.AnimateService} $animate
  */
 export function ngShowDirective($animate: ng.AnimateService): ng.Directive {
   return {
@@ -44,8 +42,6 @@ export function ngShowDirective($animate: ng.AnimateService): ng.Directive {
 ngHideDirective.$inject = [$injectTokens._animate];
 /**
  * Adds the `ng-hide` class when the watched expression becomes truthy.
- *
- * @param {ng.AnimateService} $animate
  */
 export function ngHideDirective($animate: ng.AnimateService): ng.Directive {
   return {

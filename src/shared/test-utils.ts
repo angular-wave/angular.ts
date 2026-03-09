@@ -1,12 +1,7 @@
 import { dealoc } from "./dom.ts";
 
 /**
- * @typedef {(
- *   | ({ type: `key${string}` } & KeyboardEventInit)
- *   | ({ type: `mouse${string}` } & MouseEventInit)
- *   | ({ type: string } & EventInit)
- *   | string
- * )} BrowserTriggerOptions
+ * Browser event descriptor accepted by `browserTrigger`.
  */
 export type BrowserTriggerOptions =
   | (
@@ -16,10 +11,6 @@ export type BrowserTriggerOptions =
     )
   | string;
 
-/**
- * @param {HTMLElement} element
- * @param {BrowserTriggerOptions} options
- */
 export function browserTrigger(
   element: HTMLElement,
   options: BrowserTriggerOptions,
@@ -51,25 +42,18 @@ export function browserTrigger(
  * Delays execution for a specified number of milliseconds.
  * TODO remove
  *
- * @param {number} [timeout=0] - The number of milliseconds to wait. Defaults to 0.
- * @returns {Promise<void>} A promise that resolves after the delay.
+ * @param [timeout=0] - The number of milliseconds to wait. Defaults to 0.
+ * @returns A promise that resolves after the delay.
  */
 export function wait(timeout = 0): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, timeout));
 }
 
-/**
- * @type {HTMLElement}
- */
 export let ELEMENT: HTMLElement;
 
 /**
  * Helper for bootstraping content onto default element
  *
- * @param {string} htmlContent,
- * @param {string} moduleName
- *
- * @returns {ng.InjectorService}
  */
 export function bootstrap(
   htmlContent: string,

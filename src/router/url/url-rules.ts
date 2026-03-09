@@ -2,12 +2,9 @@ import { UrlMatcher } from "./url-matcher.ts";
 import { isDefined } from "../../shared/utils.ts";
 import { removeFrom } from "../../shared/common.ts";
 import { UrlRuleFactory } from "./url-rule.ts";
-import type { MatcherUrlRule, UrlRule } from "./interface.ts";
+import type { MatcherUrlRule, UrlRule } from "./url-rule.ts";
 
-/**
- * @param {{ priority: any; }} a
- * @param {{ priority: any; }} b
- */
+/** Sorts rules by explicit priority, highest first. */
 function prioritySort(a: { priority: any }, b: { priority: any }): number {
   return (b.priority || 0) - (a.priority || 0);
 }
@@ -58,8 +55,6 @@ const idSort = (
  * - Rule registration order (for rule types other than STATE and URLMATCHER)
  *   - Equally sorted State and UrlMatcher rules will each match the URL.
  *     Then, the *best* match is chosen based on how many parameter values were matched.
- * @param {UrlRule} a
- * @param {UrlRule} b
  */
 function defaultRuleSortFn(a: UrlRule, b: UrlRule): number {
   let cmp = prioritySort(a, b);
@@ -91,12 +86,9 @@ export class UrlRules {
   _id: number;
   _urlRuleFactory: UrlRuleFactory;
   _sorted = false;
-  /** @param {UrlRuleFactory} urlRuleFactory */
+  /** Creates the rule collection around a UrlRuleFactory. */
   constructor(urlRuleFactory: UrlRuleFactory) {
     this._sortFn = defaultRuleSortFn;
-    /**
-     * @type {UrlRule[]}
-     */
     this._rules = [];
     this._id = 0;
     this._urlRuleFactory = urlRuleFactory;
@@ -104,7 +96,7 @@ export class UrlRules {
 
   /**
    * Remove a rule previously registered
-   * @param {UrlRule} rule the matcher rule that was previously registered using [[rule]]
+   * @param rule the matcher rule that was previously registered using [[rule]]
    */
   removeRule(rule: UrlRule): void {
     removeFrom(this._rules, rule);
@@ -120,8 +112,8 @@ export class UrlRules {
    * A rule should have a `match` function which returns truthy if the rule matched.
    * It should also have a `handler` function which is invoked if the rule is the best match.
    *
-   * @param {UrlRule} rule the rule to register
-   * @returns {() => void } a function that deregisters the rule
+   * @param rule the rule to register
+   * @returns A function that deregisters the rule.
    */
   rule(rule: UrlRule): () => void {
     if (!UrlRuleFactory.isUrlRule(rule)) throw new Error("invalid rule");
@@ -136,7 +128,7 @@ export class UrlRules {
   /**
    * Gets all registered rules
    *
-   * @returns {import("./interface.ts").UrlRule[]} an array of all the registered rules
+   * @returns An array of all the registered rules.
    */
   rules(): UrlRule[] {
     this.ensureSorted();
@@ -176,7 +168,7 @@ export class UrlRules {
    *   return a.$id - b.$id;
    * }
    * ```
-   * @param {((a: UrlRule, b: UrlRule) => number) | undefined} [compareFn] a function that compares to [[UrlRule]] objects.
+   * @param [compareFn] a function that compares to [[UrlRule]] objects.
    * The `compareFn` should abide by the `Array.sort` compare function rules.
    * Given two rules, `a` and `b`, return a negative number if `a` should be higher priority.
    * Return a positive number if `b` should be higher priority.
@@ -211,10 +203,7 @@ export class UrlRules {
     this._sorted || this.sort();
   }
 
-  /**
-   * @param {any[]} arr
-   * @param {(arg0: any, arg1: any) => any} compareFn
-   */
+  /** Performs a stable sort using the provided comparison function. */
   stableSort(arr: any[], compareFn: (arg0: any, arg1: any) => any): any[] {
     const arrOfWrapper = arr.map((elem, idx) => ({ elem, idx }));
 
@@ -279,10 +268,10 @@ export class UrlRules {
    * ```
    *
    * Note: the `handler` may also invoke arbitrary code, such as `$state.go()`
-   * @param {import("../state/state-object.ts").StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
-   * @param {any} handler The path to redirect to, or a function that returns the path.
-   * @param {{ priority: any; }} options `{ priority: number }`
-   * @return {UrlRule} the registered [[UrlRule]]
+   * @param matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
+   * @param handler The path to redirect to, or a function that returns the path.
+   * @param options `{ priority: number }`
+   * @returns The registered [[UrlRule]].
    */
   when(
     matcher: import("../state/state-object.ts").StateObject,

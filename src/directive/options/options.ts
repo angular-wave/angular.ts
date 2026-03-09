@@ -13,11 +13,11 @@ import {
 
 const ngOptionsMinErr = minErr("ngOptions");
 
-/** @type {HTMLOptionElement} */
-const optionTemplate = document.createElement("option");
+const optionTemplate = document.createElement("option") as HTMLOptionElement;
 
-/** @type {HTMLOptGroupElement} */
-const optGroupTemplate = document.createElement("optgroup");
+const optGroupTemplate = document.createElement(
+  "optgroup",
+) as HTMLOptGroupElement;
 
 const NG_OPTIONS_REGEXP =
   /^\s*([\s\S]+?)(?:\s+as\s+([\s\S]+?))?(?:\s+group\s+by\s+([\s\S]+?))?(?:\s+disable\s+when\s+([\s\S]+?))?\s+for\s+(?:([$\w][$\w]*)|(?:\(\s*([$\w][$\w]*)\s*,\s*([$\w][$\w]*)\s*\)))\s+in\s+([\s\S]+?)(?:\s+track\s+by\s+([\s\S]+?))?$/;
@@ -45,13 +45,7 @@ class OptionItem {
 
   element: HTMLOptionElement | null = null;
 
-  /**
-   * @param {any} selectValue
-   * @param {any} viewValue
-   * @param {any} label
-   * @param {any} group
-   * @param {any} disabled
-   */
+  /** Stores one normalized option entry produced from the `ngOptions` expression. */
   constructor(
     selectValue: any,
     viewValue: any,
@@ -82,22 +76,12 @@ interface ParsedNgOptions {
 }
 
 ngOptionsDirective.$inject = [$injectTokens._compile, $injectTokens._parse];
-/**
- *
- * @param {ng.CompileService} $compile
- * @param {ng.ParseService} $parse
- * @returns {ng.Directive}
- */
+/** Parses `ngOptions` expressions and keeps the `<select>` options in sync with the model. */
 export function ngOptionsDirective(
   $compile: ng.CompileService,
   $parse: ng.ParseService,
 ): ng.Directive {
-  /**
-   * @param {import('../../interface.ts').Expression} optionsExp
-   * @param {HTMLSelectElement} selectElement
-   * @param {ng.Scope} scope
-   * @returns
-   */
+  /** Parses the `ngOptions` expression into reusable getters and option builders. */
   function parseOptionsExpression(
     optionsExp: string,
     selectElement: HTMLSelectElement,
@@ -143,10 +127,7 @@ export function ngOptionsDirective(
     // otherwise just hash the given viewValue
     const getTrackByValueFn = trackBy
       ? function (value: any, locals: Record<string, any>) {
-          return /** @type {import("../../docs.ts").CompiledExpression} */ trackByFn(
-            scope,
-            locals,
-          );
+          return trackByFn!(scope, locals);
         }
       : function getHashOfValue(value: any) {
           return hashKey(value);
@@ -164,7 +145,6 @@ export function ngOptionsDirective(
 
     const valuesFn = $parse(match[8]);
 
-    /** @type {Record<string, any>} */
     const locals: Record<string, any> = {};
 
     const getLocals = keyName
@@ -180,9 +160,7 @@ export function ngOptionsDirective(
           return locals;
         };
 
-    /**
-     * @param {any[]} optionValues
-     */
+    /** Returns the iteration keys used to traverse the option source collection. */
     function getOptionValuesKeys(
       optionValues: any[] | Record<string, any>,
     ): any[] {
@@ -209,10 +187,8 @@ export function ngOptionsDirective(
       getTrackByValue,
       getWatchables: valuesFn,
       getOptions() {
-        /** @type {OptionItem[]} */
-        const optionItems = [];
+        const optionItems: OptionItem[] = [];
 
-        /** @type {Object.<string, OptionItem>} */
         const selectValueMap: Record<string, OptionItem> = {};
 
         // The option values were already computed in the `getWatchables` fn,
@@ -256,15 +232,11 @@ export function ngOptionsDirective(
         return {
           items: optionItems,
           selectValueMap,
-          /**
-           * @param {any} value
-           */
+          /** Resolves the option entry that corresponds to a view value. */
           getOptionFromViewValue(value) {
             return selectValueMap[getTrackByValue(value, undefined)];
           },
-          /**
-           * @param {{ viewValue: any; }} option
-           */
+          /** Returns the model/view value represented by an option entry. */
           getViewValueFromOption(option) {
             // If the viewValue could be an object that may be mutated by the application,
             // we need to make a copy and not return the reference to the value on the option.
@@ -277,13 +249,7 @@ export function ngOptionsDirective(
     };
   }
 
-  /**
-   *
-   * @param {ng.Scope} scope
-   * @param {HTMLSelectElement} selectElement
-   * @param {ng.Attributes} attr
-   * @param {*} ctrls
-   */
+  /** Links `ngOptions` behavior onto a `<select>` and keeps options synchronized with the model. */
   function ngOptionsPostLink(
     scope: ng.Scope,
     selectElement: HTMLSelectElement,
@@ -322,9 +288,6 @@ export function ngOptionsDirective(
     // TODO double check
     unknownOption.nodeValue = "?";
 
-    /**
-     * @type {{ getOptionFromViewValue: any; selectValueMap: any; getViewValueFromOption: any; items: any; }}
-     */
     let options: NgOptionsResult | undefined;
 
     const ngOptions: ParsedNgOptions = parseOptionsExpression(
@@ -413,7 +376,7 @@ export function ngOptionsDirective(
           []) as OptionItem[];
 
         options.items.forEach(
-          /** @param {OptionItem} option */ (option) => {
+          /** @param  option */ (option) => {
             if (
               option.element?.selected &&
               !includes(selectedOptions, option)
@@ -508,18 +471,16 @@ export function ngOptionsDirective(
     // watchables.forEach((i) => {
     //   scope.$watch(i, updateOptions);
     // });
-    const prop /** @type {string} */ =
-      /** @type {import('../../core/parse/ast/ast-node.ts').LiteralNode} */ /** @type {import('../../core/parse/ast/ast-node.ts').ExpressionNode} */ ngOptions
-        .getWatchables._decoratedNode.body[0].expression?.name;
+    const decoratedExpression = ngOptions.getWatchables._decoratedNode.body[0]
+      .expression as import("../../core/parse/ast/ast-node.ts").ExpressionNode &
+      import("../../core/parse/ast/ast-node.ts").LiteralNode;
+    const prop = decoratedExpression.name as string;
 
     scope.$watch(prop, updateOptions);
 
     // ------------------------------------------------------------------ //
 
-    /**
-     * @param {OptionItem} option
-     * @param {DocumentFragment} parent
-     */
+    /** Creates and inserts one `<option>` element for the normalized option item. */
     function _addOptionElement(
       option: OptionItem,
       parent: DocumentFragment | HTMLOptGroupElement,
@@ -532,9 +493,7 @@ export function ngOptionsDirective(
       updateOptionElement(option, optionElement);
     }
 
-    /**
-     * @param {any} viewValue
-     */
+    /** Marks the option corresponding to the provided view value as selected. */
     function getAndUpdateSelectedOption(viewValue: any) {
       if (!options) return undefined;
 
@@ -547,10 +506,7 @@ export function ngOptionsDirective(
       return option;
     }
 
-    /**
-     * @param {OptionItem} option
-     * @param {HTMLOptionElement} element
-     */
+    /** Updates an `<option>` DOM element from the normalized option item state. */
     function updateOptionElement(
       option: OptionItem,
       element: HTMLOptionElement,
@@ -595,11 +551,10 @@ export function ngOptionsDirective(
 
       options = ngOptions.getOptions();
 
-      /** @type {Record<string, any>} */
       const groupElementMap: Record<string, HTMLOptGroupElement> = {};
 
       options.items.forEach(
-        /** @param {OptionItem} option */ (option) => {
+        /** @param  option */ (option) => {
           let groupElement: HTMLOptGroupElement | undefined;
 
           if (isDefined(option.group)) {
@@ -615,7 +570,6 @@ export function ngOptionsDirective(
 
               // Update the label on the group element
               // "null" is special cased because of Safari
-              /** @type {HTMLOptGroupElement} */
               groupElement.label =
                 option.group === null ? "null" : option.group;
 

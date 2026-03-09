@@ -2,6 +2,35 @@
  * Shared Stream Connection Manager
  * Handles reconnect, heartbeat, and event callbacks for SSE or WebSocket
  */
+
+export interface StreamConnectionConfig {
+  /** Called when the connection opens */
+  onOpen?: (event: Event) => void;
+
+  /** Called when a message is received */
+  onMessage?: (data: any, event: Event | MessageEvent) => void;
+
+  /** Called when an error occurs */
+  onError?: (err: any) => void;
+
+  /** Called when a reconnect attempt happens */
+  onReconnect?: (attempt: number) => void;
+
+  /** Delay between reconnect attempts in milliseconds */
+  retryDelay?: number;
+
+  /** Maximum number of reconnect attempts */
+  maxRetries?: number;
+
+  /** Timeout in milliseconds to detect heartbeat inactivity */
+  heartbeatTimeout?: number;
+
+  /** Function to transform incoming messages */
+  transformMessage?: (data: any) => any;
+
+  [key: string]: any;
+}
+
 export class StreamConnection {
   private _createFn: () => EventSource | WebSocket;
   _config: {
@@ -21,9 +50,9 @@ export class StreamConnection {
   _connection: EventSource | WebSocket | null;
 
   /**
-   * @param {() => EventSource | WebSocket} createFn - Function that creates a new EventSource or WebSocket.
-   * @param {ng.StreamConnectionConfig} config - Configuration object with callbacks, retries, heartbeat, transformMessage.
-   * @param {ng.LogService} log - Optional logger (default: console).
+   * @param createFn - Function that creates a new EventSource or WebSocket.
+   * @param config - Configuration object with callbacks, retries, heartbeat, transformMessage.
+   * @param log - Optional logger (default: console).
    */
   constructor(
     createFn: () => EventSource | WebSocket,
@@ -75,7 +104,7 @@ export class StreamConnection {
   /**
    * Sends data over a WebSocket connection.
    * Logs a warning if called on a non-WebSocket connection.
-   * @param {any} data - Data to send.
+   * @param data - Data to send.
    */
   send(data: any): void {
     if (this._connection instanceof WebSocket) {
@@ -122,7 +151,7 @@ export class StreamConnection {
   /**
    * @private
    * Handles the open event from the connection.
-   * @param {Event} event - The open event.
+   * @param event - The open event.
    */
   private _handleOpen(event: Event): void {
     this._retryCount = 0;
@@ -134,8 +163,8 @@ export class StreamConnection {
    * @private
    * Handles incoming messages, applies the transformMessage function,
    * and calls the onMessage callback.
-   * @param {any} data - Raw message data.
-   * @param {Event} event - The message event.
+   * @param data - Raw message data.
+   * @param event - The message event.
    */
   private _handleMessage(data: any, event: Event | MessageEvent): void {
     try {
@@ -151,7 +180,7 @@ export class StreamConnection {
    * @private
    * Handles errors emitted from the connection.
    * Calls onError callback and schedules a reconnect.
-   * @param {any} err - Error object or message.
+   * @param err - Error object or message.
    */
   private _handleError(err: any): void {
     this._config.onError?.(err);

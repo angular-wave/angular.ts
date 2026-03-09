@@ -13,25 +13,21 @@ export class NodeRef {
   _nodes: Array<Node>;
   _isList: boolean;
   /**
-   * @param {Node | Element | string | NodeList | Node[]} element - The DOM node(s) or HTML string to wrap.
+   * @param element - The DOM node(s) or HTML string to wrap.
    * @throws {Error} If the argument is invalid or cannot be wrapped properly.
    */
   constructor(element: Node | Element | string | NodeList | Node[]) {
-    /** @private @type {Node | ChildNode | undefined} */
     this._node = undefined;
 
-    /** @type {Element | undefined} */
     this._element = undefined;
 
-    /** @private @type {Array<Node>} a stable list on nodes */
     this._nodes = [];
 
-    /** @type {boolean} */
     this._isList = false;
 
     // Handle HTML string
     if (isString(element)) {
-      const res = createElementFromHTML(/** @type {string} */ element);
+      const res = createElementFromHTML(element);
 
       switch (true) {
         case res instanceof Element:
@@ -75,23 +71,23 @@ export class NodeRef {
     }
   }
 
-  /** @returns {Element} */
+  /** @returns The wrapped element. */
   get element(): Element {
     return this._element as Element;
   }
 
-  /** @param {Element} el */
+  /** @param el The element to wrap. */
   set element(el: Element) {
     this._element = el;
     this._isList = false;
   }
 
-  /** @returns {Node | ChildNode} */
+  /** @returns The wrapped node. */
   get node(): Node | ChildNode {
     return (this._node || this._element) as Node | ChildNode;
   }
 
-  /** @param {Node | ChildNode} node */
+  /** @param node The node to wrap. */
   set node(node: Node | ChildNode) {
     this._node = node;
 
@@ -102,18 +98,18 @@ export class NodeRef {
     }
   }
 
-  /** @param {Array<Node>} nodes */
+  /** @param nodes The node collection to wrap. */
   set nodes(nodes: Array<Node>) {
     this._nodes = nodes;
     this._isList = true;
   }
 
-  /** @returns {Array<Node>} */
+  /** @returns The wrapped node collection. */
   get nodes(): Array<Node> {
     return this._nodes;
   }
 
-  /** @returns {NodeList|Node[]} */
+  /** @returns A live node list view of the wrapped nodes. */
   get nodelist(): NodeList | Node[] {
     if (this._nodes.length === 0) return [];
 
@@ -126,18 +122,18 @@ export class NodeRef {
     return fragment.childNodes;
   }
 
-  /** @returns {Element | Node | ChildNode | NodeList | Node[]} */
+  /** @returns The wrapped DOM value. */
   get dom(): Element | Node | ChildNode | NodeList | Node[] {
     if (this._isList) return this.nodelist;
     else return this.node;
   }
 
-  /** @returns {number} */
+  /** @returns The number of wrapped nodes. */
   get size() {
     return this._isList ? this._nodes.length : 1;
   }
 
-  /** @returns {Element | Node | ChildNode} */
+  /** @returns The first wrapped node or element. */
   _getAny(): Element | Node | ChildNode {
     if (this._isList) {
       return this._nodes[0] as Element | Node | ChildNode;
@@ -146,7 +142,7 @@ export class NodeRef {
     }
   }
 
-  /** @returns {Element | Array<Node> | Node | ChildNode} */
+  /** @returns All wrapped nodes or the single wrapped node. */
   _getAll(): Element | Array<Node> | Node | ChildNode {
     if (this._isList) {
       return this._nodes;
@@ -155,7 +151,7 @@ export class NodeRef {
     }
   }
 
-  /** @returns {Array<Element> | Array<Node>} */
+  /** @returns A collection view of the wrapped nodes. */
   _collection(): Array<Element | Node | ChildNode> {
     if (this._isList) {
       return Array.from(this._nodes);
@@ -165,8 +161,7 @@ export class NodeRef {
   }
 
   /**
-   * @param {number} index
-   * @returns {Element | Node | ChildNode}
+   * Returns the node at a specific index from this reference.
    */
   _getIndex(index: number): Element | Node | ChildNode {
     if (this._isList) {
@@ -177,8 +172,7 @@ export class NodeRef {
   }
 
   /**
-   * @param {number} index
-   * @param {Element | Node | ChildNode} node
+   * Replaces the node at a specific index in this reference.
    */
   _setIndex(index: number, node: Element | Node | ChildNode) {
     if (this._isList) {
@@ -189,7 +183,7 @@ export class NodeRef {
   }
 
   /**
-   * @returns {NodeRef}
+   * Clones the referenced node or node list.
    */
   _clone(): NodeRef {
     const cloned = this._isList

@@ -6,9 +6,7 @@ import {
   isString,
 } from "../shared/utils.ts";
 
-/**
- * @returns {ng.FilterFn}
- */
+/** Creates the `limitTo` filter implementation. */
 export function limitToFilter() {
   /**
    * Limits the size of an array, array-like object, string, or number.
@@ -17,15 +15,7 @@ export function limitToFilter() {
    * - If `input` is a number, it will be converted to a string.
    * - Non–array-like values are returned unchanged.
    *
-   * @param {Array<any>|ArrayLike<any>|string|number} input
-   *   The value to limit.
-   * @param {string|number} limit
-   *   The maximum length of the returned value. Negative values limit from the end.
-   * @param {string|number} [begin]
-   *   Index at which to begin the limitation. A negative value is an offset from the end.
-   *   Defaults to `0`.
-   * @returns {Array<any>|ArrayLike<any>|string|number}
-   *   A limited array or string, or the original input if it cannot be limited.
+   * `begin` defaults to `0` and negative values are treated as offsets from the end.
    */
   return function (
     input: Array<any> | ArrayLike<any> | string | number | Function,
@@ -33,7 +23,7 @@ export function limitToFilter() {
     begin?: string | number,
   ) {
     if (isFunction(input)) {
-      input = /** @type {Function} */ input();
+      input = input();
     }
 
     let numericLimit: number;
@@ -87,14 +77,7 @@ export function limitToFilter() {
  * - For strings, this delegates to `String.prototype.slice`
  * - For array-like objects, this delegates to `Array.prototype.slice`
  *
- * @param {string|ArrayLike<any>} input
- *   The value to slice. Must be a string or array-like object.
- * @param {number} [begin]
- *   Zero-based index at which to begin extraction.
- * @param {number} [end]
- *   Zero-based index before which to end extraction.
- * @returns {string|Array<any>}
- *   A sliced string if input is a string, otherwise an array.
+ * Returns a sliced string if `input` is a string, otherwise an array.
  */
 function sliceFn(
   input: string | ArrayLike<any>,

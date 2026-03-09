@@ -10,18 +10,36 @@ import { Param } from "../params/param.ts";
 import { Glob } from "../glob/glob.ts";
 import { lazyLoadState } from "../hooks/lazy-load.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
-import type { RawParams } from "../params/interface.ts";
+import type { RawParams } from "../params/param.ts";
 import type { Transition } from "../transition/transition.ts";
-import type { HookResult, TransitionOptions } from "../transition/interface.ts";
+import type { HookResult } from "../transition/interface.ts";
+import type { TransitionOptions } from "../transition/transition.ts";
 import type {
-  HrefOptions,
-  OnInvalidCallback,
   StateDeclaration,
   StateOrName,
-  TransitionPromise,
 } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
 import type { StateRegistryProvider } from "./state-registry.ts";
+
+/**
+ * An options object for [[StateService.href]]
+ */
+export interface HrefOptions {
+  relative?: StateOrName;
+  lossy?: boolean;
+  inherit?: boolean;
+  absolute?: boolean;
+}
+
+export type OnInvalidCallback = (
+  toState?: TargetState,
+  fromState?: TargetState,
+  injector?: ng.InjectorService,
+) => HookResult;
+
+export interface TransitionPromise extends Promise<StateObject> {
+  transition: Transition;
+}
 
 const stdErr = minErr("$stateProvider");
 
@@ -30,8 +48,6 @@ const stdErr = minErr("$stateProvider");
  * while preserving the original promise.
  *
  * @template T
- * @param {Promise<T>} promise
- * @returns {Promise<T>}
  */
 const silenceUncaughtInPromise = <T>(promise: Promise<T>): Promise<T> => {
   promise.catch(() => undefined);
@@ -43,8 +59,6 @@ const silenceUncaughtInPromise = <T>(promise: Promise<T>): Promise<T> => {
  * Creates a rejected promise whose rejection is intentionally silenced.
  *
  * @template [E=unknown]
- * @param {E} error
- * @returns {Promise<never>}
  */
 export const silentRejection = <E = unknown>(error: E): Promise<never> =>
   silenceUncaughtInPromise(Promise.reject(error));
@@ -109,42 +123,18 @@ export class StateProvider {
     $injectTokens._exceptionHandlerProvider,
   ];
 
-  /**
-   *
-   * @param {ng.RouterProvider} globals
-   * @param {ng.TransitionProvider} transitionService
-   * @param {ng.ExceptionHandlerProvider} exceptionHandlerProvider
-   */
+  /** Creates the state service and wires the router globals and transition service. */
   constructor(
     globals: ng.RouterProvider,
     transitionService: ng.TransitionProvider,
     exceptionHandlerProvider: ng.ExceptionHandlerProvider,
   ) {
-    /**
-     * @type {ng.RouterProvider}
-     */
     this.globals = globals;
-    /**
-     * @type {ng.TransitionProvider}
-     */
     this.transitionService = transitionService;
-
-    /**
-     * @type {StateRegistryProvider | undefined}
-     */
     this.stateRegistry = undefined;
-
-    /** @type {ng.UrlService | undefined } */
     this.urlService = undefined;
-    /** @type {ng.InjectorService | undefined } */
     this.$injector = undefined;
-
-    /**
-     * @type {import("./interface.ts").OnInvalidCallback[]}
-     */
     this.invalidCallbacks = [];
-
-    /** @type {ng.ExceptionHandlerService} */
     this._defaultErrorHandler = exceptionHandlerProvider.handler;
   }
 
@@ -155,9 +145,7 @@ export class StateProvider {
     $injectTokens._injector,
     $injectTokens._url,
     /**
-     * @param {ng.InjectorService} $injector
-     * @param {ng.UrlService} $url
-     * @returns {StateProvider}
+     * Wires the injector and URL service into the state service instance.
      */
     ($injector: ng.InjectorService, $url: ng.UrlService) => {
       this.urlService = $url;
@@ -247,23 +235,20 @@ export class StateProvider {
    * $state.go('home');
    * ```
    *
-   * @param {string} name The name of the builder function to decorate.
-   * @param {import("./interface.ts").BuilderFunction} func A function that is responsible for decorating the original
+   * @param name - The name of the builder function to decorate.
+   * @param func - A function that is responsible for decorating the original
    * builder function. The function receives two parameters:
    *
    *   - `{object}` - state - The state urlConfig object.
    *   - `{object}` - super - The original builder function.
    *
-   * @return {object} $stateProvider - $stateProvider instance
+   * @returns The `$stateProvider` instance.
    */
-  decorator(name: string, func: import("./interface.ts").BuilderFunction) {
+  decorator(name: string, func: import("./state-builder.ts").BuilderFunction) {
     return this._getRegistry().decorator(name, func) || this;
   }
 
-  /**
-   *
-   * @param {import("./interface.ts").StateDeclaration} definition
-   */
+  /** Registers one state declaration with the state registry. */
   state(definition: StateDeclaration) {
     if (!definition.name) {
       throw stdErr("stateinvalid", `'name' required`);
@@ -287,8 +272,6 @@ export class StateProvider {
    *
    * If a callback returns an TargetState, then it is used as arguments to $state.transitionTo() and the result returned.
    * @internal
-   * @param {PathNode[]} fromPath
-   * @param {TargetState} toState
    */
   _handleInvalidTargetState(
     fromPath: PathNode[],
@@ -302,7 +285,6 @@ export class StateProvider {
 
     const latest = latestThing();
 
-    /** @type {Queue<import("./interface.ts").OnInvalidCallback>} */
     const callbackQueue = new Queue(this.invalidCallbacks.slice());
 
     const injector = this.$injector;
@@ -335,9 +317,7 @@ export class StateProvider {
       );
     };
 
-    /**
-     * @returns {Promise<any>}
-     */
+    /** Runs invalid-state callbacks until one redirects or the queue is exhausted. */
     function invokeNextCallback(): Promise<any> {
       const nextCallback = callbackQueue.dequeue();
 
@@ -372,12 +352,12 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param {import("./interface.ts").OnInvalidCallback} callback invoked when the toState is invalid
+   * @param callback - Invoked when the toState is invalid.
    *   This function receives the (invalid) toState, the fromState, and an injector.
    *   The function may optionally return a [[TargetState]] or a Promise for a TargetState.
    *   If one is returned, it is treated as a redirect.
    *
-   * @returns a function which deregisters the callback
+   * @returns A function which deregisters the callback.
    */
   onInvalid(callback: OnInvalidCallback): () => void {
     this.invalidCallbacks.push(callback);
@@ -412,7 +392,7 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param {string | StateDeclaration | StateObject} [reloadState] A state name or a state object.
+   * @param [reloadState] - A state name or a state object.
    *    If present, this state and all its children will be reloaded, but ancestors will not reload.
    *
    * #### Example:
@@ -429,7 +409,7 @@ export class StateProvider {
    * });
    * ```
    *
-   * @returns A promise representing the state of the new transition. See [[StateService.go]]
+   * @returns A promise representing the state of the new transition. See [[StateService.go]].
    */
   reload(reloadState?: string | StateDeclaration | StateObject) {
     const current = this.globals.current;
@@ -464,7 +444,7 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param {StateOrName} to Absolute state name, state object, or relative state path (relative to current state).
+   * @param to - Absolute state name, state object, or relative state path (relative to current state).
    *
    * Some examples:
    *
@@ -473,14 +453,14 @@ export class StateProvider {
    * - `$state.go('^.sibling')` - if current state is `home.child`, will go to the `home.sibling` state
    * - `$state.go('.child.grandchild')` - if current state is home, will go to the `home.child.grandchild` state
    *
-   * @param {*} [params] A map of the parameters that will be sent to the state, will populate $stateParams.
+   * @param [params] - A map of the parameters that will be sent to the state, will populate $stateParams.
    *
    *    Any parameters that are not specified will be inherited from current parameter values (because of `inherit: true`).
    *    This allows, for example, going to a sibling state that shares parameters defined by a parent state.
    *
-   * @param {*} [options] Transition options
+   * @param [options] - Transition options.
    *
-   * @returns {Promise<any>} A promise representing the state of the new transition.
+   * @returns A promise representing the state of the new transition.
    */
   go(to: StateOrName, params?: any, options?: any) {
     const defautGoOpts = { relative: this.$current, inherit: true };
@@ -496,9 +476,6 @@ export class StateProvider {
    * This is a factory method for creating a TargetState
    *
    * This may be returned from a Transition Hook to redirect a transition, for example.
-   * @param {string | import("./interface.ts").StateDeclaration | import("./state-object.ts").StateObject} identifier
-   * @param {{}} params
-   * @param {any} [options]
    */
   target(identifier: StateOrName, params: any = {}, options: any = {}) {
     // If we're reloading, find the state object to reload from
@@ -548,12 +525,12 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param {StateOrName} to State name or state object.
-   * @param {RawParams} toParams A map of the parameters that will be sent to the state,
+   * @param to - State name or state object.
+   * @param toParams - A map of the parameters that will be sent to the state,
    *      will populate $stateParams.
-   * @param {TransitionOptions} options Transition options
+   * @param options - Transition options.
    *
-   * @returns {TransitionPromise | Promise<any>} A promise representing the state of the new transition. See [[go]]
+   * @returns A promise representing the state of the new transition. See [[go]].
    */
   transitionTo(
     to: StateOrName,
@@ -586,10 +563,6 @@ export class StateProvider {
      * no error occurred.  Likewise, the transition.run() promise may be rejected because of
      * a Redirect, but the transitionTo() promise is chained to the new Transition's promise.
      */
-    /** @typedef {(error: any) => Promise<any>} RejectionHandler */
-    /** @typedef {(trans: Transition) => RejectionHandler} RejectedTransitionHandler */
-
-    /** @type {RejectedTransitionHandler} */
     const rejectedTransitionHandler =
       (trans: Transition) =>
       (error: any): Promise<any> => {
@@ -662,13 +635,13 @@ export class StateProvider {
      * ```html
      * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
      * ```
-     * @param {import("./state-matcher.ts").StateOrName} stateOrName The state name (absolute or relative) or state object you'd like to check.
-     * @param {import("../params/interface.ts").RawParams} [params] A param object, e.g. `{sectionId: section.id}`, that you'd like
-    to test against the current active state.
-     * @param {{ relative: import("./state-matcher.ts").StateOrName | undefined; } | undefined} [options] An options object. The options are:
-    - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
-    test relative to `options.relative` state (or name).
-     * @returns {boolean | undefined} Returns true if it is the state.
+     * @param stateOrName - The state name (absolute or relative) or state object you'd like to check.
+     * @param [params] - A param object, e.g. `{sectionId: section.id}`, that you'd like
+     *    to test against the current active state.
+     * @param [options] - An options object. The options are:
+     *    - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, `.is`
+     *      tests relative to `options.relative` state (or name).
+     * @returns True if it is the state.
      */
   is(
     stateOrName: StateOrName,
@@ -722,14 +695,14 @@ export class StateProvider {
      * $state.includes("*.details.*"); // returns false
      * $state.includes("item.**"); // returns false
      * ```
-     * @param {StateOrName} stateOrName A partial name, relative name, glob pattern,
-    or state object to be searched for within the current state name.
-     * @param {RawParams} [params] A param object, e.g. `{sectionId: section.id}`,
-    that you'd like to test against the current active state.
-     * @param {TransitionOptions} [options] An options object. The options are:
-    - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
-    test relative to `options.relative` state (or name).
-     * @returns {boolean | undefined} Returns true if it does include the state
+     * @param stateOrName - A partial name, relative name, glob pattern, or state object
+     *    to be searched for within the current state name.
+     * @param [params] - A param object, e.g. `{sectionId: section.id}`,
+     *    that you'd like to test against the current active state.
+     * @param [options] - An options object. The options are:
+     *    - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, `.is`
+     *      tests relative to `options.relative` state (or name).
+     * @returns True if it does include the state.
      */
   includes(
     stateOrName: StateOrName,
@@ -756,7 +729,7 @@ export class StateProvider {
     if (!isDefined(include[state.name])) return false;
 
     if (!params) return true;
-    const schema = /** @type {ng.StateObject} */ state.parameters({
+    const schema = state.parameters({
       inherit: true,
       matchingKeys: params,
     });
@@ -777,10 +750,10 @@ export class StateProvider {
    * ```js
    * expect($state.href("about.person", { person: "bob" })).toEqual("/about/bob");
    * ```
-   * @param {import("./state-matcher.ts").StateOrName} stateOrName The state name or state object you'd like to generate a url from.
-   * @param {import("../params/interface.ts").RawParams} params An object of parameter values to fill the state's required parameters.
-   * @param {import("./interface.ts").HrefOptions} [options] Options object. The options are:
-   * @returns {string | null} compiled state url
+   * @param stateOrName - The state name or state object you'd like to generate a url from.
+   * @param params - An object of parameter values to fill the state's required parameters.
+   * @param [options] - Options object. The options are:
+   * @returns The compiled state URL.
    */
   href(
     stateOrName: StateOrName,
@@ -840,17 +813,14 @@ export class StateProvider {
    *   // Do not log transitionTo errors
    * });
    * ```
-   * @param {import("../../docs.ts").ExceptionHandler | undefined} [handler] a global error handler function
-   * @returns the current global error handler
+   * @param [handler] - A global error handler function.
+   * @returns The current global error handler.
    */
   defaultErrorHandler(handler?: any) {
     return (this._defaultErrorHandler = handler || this._defaultErrorHandler);
   }
 
-  /**
-   * @param {import("./interface.ts").StateOrName} stateOrName
-   * @param {undefined} [base]
-   */
+  /** Looks up one state by name/object reference, or returns all states when omitted. */
   get(stateOrName?: StateOrName, base?: StateOrName) {
     const reg = this.stateRegistry;
 
@@ -863,11 +833,11 @@ export class StateProvider {
      * Lazy loads a state
      *
      * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
-     * @param {import("./interface.ts").StateOrName} stateOrName the state that should be lazy loaded
-     * @param {ng.Transition} transition the optional Transition context to use (if the lazyLoad function requires an injector, etc)
-    Note: If no transition is provided, a noop transition is created using the from the current state to the current state.
-    This noop transition is not actually run.
-     * @returns a promise to lazy load
+     * @param stateOrName - The state that should be lazy loaded.
+     * @param transition - The optional Transition context to use (if the lazyLoad function requires an injector, etc).
+     *    Note: If no transition is provided, a noop transition is created from the current state to the current state.
+     *    This noop transition is not actually run.
+     * @returns A promise to lazy load.
      */
   lazyLoad(stateOrName: StateOrName, transition?: ng.Transition) {
     const state = this.get(stateOrName) as StateDeclaration | null;

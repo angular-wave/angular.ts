@@ -1,7 +1,5 @@
 /**
  * Declares the built-in `ng-controller` attribute directive.
- *
- * @returns {ng.Directive}
  */
 export function ngControllerDirective(): ng.Directive {
   return {

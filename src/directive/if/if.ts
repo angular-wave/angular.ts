@@ -3,11 +3,7 @@ import { removeElement } from "../../shared/dom.ts";
 import { hasAnimate } from "../../shared/utils.ts";
 
 ngIfDirective.$inject = [$injectTokens._animate];
-/**
- * Conditionally includes or removes a transcluded block based on the watched expression.
- *
- * @param {ng.AnimateService} $animate
- */
+/** Conditionally includes or removes a transcluded block based on the watched expression. */
 export function ngIfDirective($animate: ng.AnimateService): ng.Directive {
   return {
     transclude: "element",
@@ -32,6 +28,11 @@ export function ngIfDirective($animate: ng.AnimateService): ng.Directive {
 
       $scope.$watch($attr.ngIf, (value: any) => {
         if (value) {
+          if (previousElements) {
+            removeElement(previousElements);
+            previousElements = null;
+          }
+
           if (!childScope) {
             $transclude((clone, newScope) => {
               childScope = newScope;

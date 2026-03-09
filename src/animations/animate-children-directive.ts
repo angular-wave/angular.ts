@@ -5,10 +5,7 @@ import { $injectTokens as $t } from "../injection-tokens.ts";
 
 $$AnimateChildrenDirective.$inject = [$t._interpolate];
 
-/**
- * @param {ng.InterpolateService} $interpolate
- * @returns {ng.Directive}
- */
+/** Propagates `ng-animate-children` state to the element cache for animation lookups. */
 export function $$AnimateChildrenDirective(
   $interpolate: ng.InterpolateService,
 ): ng.Directive<any> {
@@ -18,7 +15,7 @@ export function $$AnimateChildrenDirective(
       element: Element,
       attrs: ng.Attributes & Record<string, string>,
     ) {
-      const val = /** @type {string} */ attrs.ngAnimateChildren;
+      const val = attrs.ngAnimateChildren;
 
       if (isString(val) && val.length === 0) {
         // empty attribute
@@ -27,16 +24,13 @@ export function $$AnimateChildrenDirective(
         // Interpolate and set the value, so that it is available to
         // animations that run right after compilation
         const interpolateFn = $interpolate(val) as
-          | import("../core/interpolate/interface.ts").InterpolationFunction
+          | import("../core/interpolate/interpolate.ts").InterpolationFunction
           | undefined;
 
         setData(interpolateFn ? interpolateFn(scope) : undefined);
         attrs.$observe("ngAnimateChildren", setData);
       }
 
-      /**
-       * @param {string} [value]
-       */
       function setData(value?: string): void {
         const res = value === "on" || value === "true";
 

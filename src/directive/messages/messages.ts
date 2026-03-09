@@ -37,10 +37,7 @@ class NgMessageCtrl {
   _default: MessageInstance | undefined;
 
   /**
-   * @param {HTMLElement} $element
-   * @param {ng.Scope} $scope
-   * @param {ng.Attributes} $attrs
-   * @param {ng.AnimateService} $animate
+   * Creates a controller that manages message matching and attachment state.
    */
   constructor(
     $element: HTMLElement,
@@ -55,7 +52,6 @@ class NgMessageCtrl {
 
     this._latestKey = 0;
     this._nextAttachId = 0;
-    /** @type {Record<string, any>} */
     this._messages = {};
     this._renderLater = false;
     this._cachedCollection = null;
@@ -157,9 +153,7 @@ class NgMessageCtrl {
   }
 
   /**
-   * @param {{ _ngMessageNode: string; }} comment
-   * @param {any} messageCtrl
-   * @param {any} isDefault
+   * Registers a message instance with the controller.
    */
   register(
     comment: MessageNodeComment,
@@ -183,8 +177,7 @@ class NgMessageCtrl {
   }
 
   /**
-   * @param {{ _ngMessageNode: any; }} comment
-   * @param {any} isDefault
+   * Deregisters a message instance from the controller.
    */
   deregister(comment: MessageNodeComment, isDefault: boolean): void {
     if (isDefault) {
@@ -202,8 +195,7 @@ class NgMessageCtrl {
   }
 
   /**
-   * @param {any} parent
-   * @param {any} comment
+   * Finds the nearest previously registered message node before a comment marker.
    */
   findPreviousMessage(
     parent: Node,
@@ -239,9 +231,7 @@ class NgMessageCtrl {
   }
 
   /**
-   * @param {HTMLElement} parent
-   * @param {{ _ngMessageNode: string; }} comment
-   * @param {string} key
+   * Inserts a message node into the linked message list.
    */
   insertMessageNode(
     parent: HTMLElement,
@@ -267,9 +257,7 @@ class NgMessageCtrl {
   }
 
   /**
-   * @param {HTMLElement} parent
-   * @param {{ _ngMessageNode: any; }} comment
-   * @param {string | number} key
+   * Removes a message node from the linked message list.
    */
   removeMessageNode(
     parent: HTMLElement,
@@ -293,8 +281,7 @@ class NgMessageCtrl {
 
 ngMessagesDirective.$inject = [$injectTokens._animate];
 /**
- * @param {ng.AnimateService} $animate
- * @returns {ng.Directive<NgMessageCtrl>}
+ * Builds the root `ngMessages` directive.
  */
 export function ngMessagesDirective(
   $animate: ng.AnimateService,
@@ -302,21 +289,13 @@ export function ngMessagesDirective(
   return {
     require: "ngMessages",
     restrict: "AE",
-    controller:
-      /**
-       * @param {HTMLElement} $element
-       * @param {ng.Scope} $scope
-       * @param {ng.Attributes} $attrs
-       * @returns {NgMessageCtrl}
-       */
-      ($element: HTMLElement, $scope: ng.Scope, $attrs: ng.Attributes) =>
-        new NgMessageCtrl($element, $scope, $attrs, $animate),
+    controller: ($element: HTMLElement, $scope: ng.Scope, $attrs: ng.Attributes) =>
+      new NgMessageCtrl($element, $scope, $attrs, $animate),
   };
 }
 
 /**
- * @param {ng.Scope} scope
- * @param {string} attr
+ * Evaluates whether an `ngMessages` boolean-style attribute should be treated as enabled.
  */
 function isAttrTruthy(scope: ng.Scope, attr: string | undefined): boolean {
   return (
@@ -326,7 +305,7 @@ function isAttrTruthy(scope: ng.Scope, attr: string | undefined): boolean {
 }
 
 /**
- * @param {unknown} val
+ * Normalizes message values into a simple truthy check.
  */
 function truthy(val: unknown): boolean {
   return isString(val) ? val.length > 0 : !!val;
@@ -338,9 +317,7 @@ ngMessagesIncludeDirective.$inject = [
 ];
 
 /**
- * @param {ng.TemplateRequestService} $templateRequest
- * @param {ng.CompileService} $compile
- * @returns {ng.Directive}
+ * Builds the directive that inlines external message templates.
  */
 export function ngMessagesIncludeDirective(
   $templateRequest: ng.TemplateRequestService,
@@ -375,16 +352,14 @@ export const ngMessageExpDirective = ngMessageDirectiveFactory(false);
 export const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
 
 /**
- * @param {boolean} isDefault
- * @returns {($animate: ng.AnimateService) => ng.Directive}
+ * Creates the directive factory for `ngMessage` and `ngMessageDefault`.
  */
 function ngMessageDirectiveFactory(
   isDefault: boolean,
 ): ($animate: ng.AnimateService) => ng.Directive<any> {
   ngMessageDirectiveFn.$inject = [$injectTokens._animate];
   /**
-   * @param {ng.AnimateService} $animate
-   * @returns {ng.Directive}
+   * Builds a concrete `ngMessage` directive definition.
    */
   function ngMessageDirectiveFn(
     $animate: ng.AnimateService,
@@ -402,14 +377,8 @@ function ngMessageDirectiveFactory(
         ngMessagesCtrl: NgMessageCtrl,
         $transclude: ng.TranscludeFn,
       ) => {
-        /**
-         * @type {HTMLElement}
-         */
         let commentNode = element as unknown as MessageNodeComment;
 
-        /**
-         * @type {any}
-         */
         let records: string[] | null = null;
 
         let staticExp: string | undefined;
@@ -440,15 +409,9 @@ function ngMessageDirectiveFactory(
           }
         }
 
-        /**
-         * @type {HTMLElement & { _attachId?: number } | undefined | null}
-         */
         let currentElement: (HTMLElement & { _attachId?: number }) | null =
           null;
 
-        /**
-         * @type {{ detach: any; test?: (name: any) => boolean | undefined; attach?: () => void; }}
-         */
         let messageCtrl: MessageInstance;
 
         ngMessagesCtrl.register(
@@ -517,8 +480,7 @@ function ngMessageDirectiveFactory(
 }
 
 /**
- * @param {string | object | Array<any>} collection
- * @param {string | number | symbol} key
+ * Checks whether the given key exists in a message collection.
  */
 function contains(
   collection: string[] | object | Array<any> | null | undefined,
@@ -527,7 +489,7 @@ function contains(
   if (collection) {
     return isArray(collection)
       ? collection.indexOf(String(key)) >= 0
-      : hasOwn(/** @type {object} */ collection, key);
+      : hasOwn(collection, key);
   }
 
   return undefined;

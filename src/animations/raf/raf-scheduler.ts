@@ -8,14 +8,12 @@ export class RafScheduler {
   constructor() {
     /**
      * Internal task queue, where each item is an array of functions to run.
-     * @type {Array<() => void>}
      */
     this._queue = [];
 
     /**
      * ID of the currently scheduled animation frame (if any).
      * Used for cancellation and tracking.
-     * @type {number|null}
      */
     this._cancelFn = null;
   }
@@ -47,8 +45,6 @@ export class RafScheduler {
   /**
    * The main scheduler function.
    * Accepts an array of functions and schedules them to run in the next available frame(s).
-   *
-   * @param {Array<() => void>} tasks
    */
   _schedule(tasks: Array<() => void>): void {
     this._queue.push(...tasks);
@@ -59,7 +55,7 @@ export class RafScheduler {
    * Cancels any pending frame and runs the given function once the frame is idle.
    * Useful for debounced updates.
    *
-   * @param {Function} fn - Function to run when the animation frame is quiet.
+   * @param  fn - Function to run when the animation frame is quiet.
    */
   _waitUntilQuiet(fn: () => void): void {
     if (this._cancelFn !== null) {

@@ -22,9 +22,7 @@ const DOTS = "...";
  * If the string is already less than the `max` length, return the string.
  * Else return the string, shortened to `max - 3` and append three dots ("...").
  *
- * @param {number} max the maximum length of the string to return
- * @param {string} str the input string
- * @returns {string}
+ * `max` is the maximum length of the returned string.
  */
 export function maxLength(max: number, str: string): string {
   if (str.length <= max) return str;
@@ -37,8 +35,8 @@ export function maxLength(max: number, str: string): string {
  * If the string is already longer than the desired length, return the string.
  * Else returns the string, with extra spaces on the end, such that it reaches `length` characters.
  *
- * @param {number} length the desired length of the string to return
- * @param {string} str the input string
+ * @param length the desired length of the string to return
+ * @param str the input string
  */
 export function padString(length: number, str: string): string {
   while (str.length < length) str += " ";
@@ -46,10 +44,7 @@ export function padString(length: number, str: string): string {
   return str;
 }
 
-/**
- * @param {string} camelCase
- * @returns {string}
- */
+/** Converts a camelCase string into kebab-case. */
 export function kebobString(camelCase: string): string {
   return camelCase
     .replace(/^([A-Z])/, ($1: string) => $1.toLowerCase()) // replace first char
@@ -58,10 +53,7 @@ export function kebobString(camelCase: string): string {
 
 const FN_LENGTH = 9;
 
-/**
- * @param {Function} fn
- * @returns {string}
- */
+/** Returns a stable string representation for a function. */
 export function functionToString(fn: Function): string {
   const fnStr = fnToString(fn);
 
@@ -78,20 +70,14 @@ export function functionToString(fn: Function): string {
   return toStr;
 }
 
-/**
- * @param {[]|Function} fn
- * @returns {string}
- */
+/** Returns the raw `toString()` value for a function or injectable array. */
 export function fnToString(fn: [] | Function): string {
   const _fn = isArray(fn) ? fn.slice(-1)[0] : fn;
 
   return (_fn && _fn.toString()) || "undefined";
 }
 
-/**
- * @param {any} value
- * @returns {string|*|string}
- */
+/** Converts arbitrary values into short readable debug strings. */
 export function stringify(value: any): string {
   const seen: any[] = [];
 
@@ -126,9 +112,7 @@ export function stringify(value: any): string {
     [val(true), (bool: any) => bool],
   ]);
 
-  /**
-   * @param {any} item
-   */
+  /** Formats a single item while tracking circular references. */
   function format(item: any): any {
     if (isObject(item)) {
       if (seen.indexOf(item) !== -1) return "[circular ref]";
@@ -163,7 +147,7 @@ export const stripLastPathElement = (str: string): string =>
  * splitOnSlashes("/foo"); // ["/", "foo"]
  * splitOnSlashes("/foo/"); // ["/", "foo", "/"]
  * ```
- * @param {string} delim
+ * `delim` is kept in the output array.
  */
 export function splitOnDelim(delim: string): (str: string) => string[] {
   const re = new RegExp(`(${delim})`, "g");
@@ -182,8 +166,7 @@ export function splitOnDelim(delim: string): (str: string) => string[] {
  * let arr = ["foo", "bar", 1, "baz", "", "qux" ];
  * arr.reduce(joinNeighborsR, []) // ["foobar", 1, "bazqux" ]
  * ```
- * @param {any[]} acc
- * @param {unknown} str
+ * Joins neighboring string entries while leaving other values untouched.
  */
 export function joinNeighborsR(acc: any[], str: unknown): any[] {
   if (isString(tail(acc)) && isString(str))

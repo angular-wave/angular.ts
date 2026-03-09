@@ -8,6 +8,25 @@ import {
 import { BADARG } from "../../shared/validate.ts";
 import { expandUriTemplate } from "./rfc.ts";
 
+export interface RestDefinition<T = any> {
+  name: string;
+  url: string;
+  /** Constructor for mapping JSON to class instance */
+  entityClass?: EntityClass<T>;
+  options?: Record<string, any>;
+}
+
+/**
+ * A constructor type for mapping JSON objects to entity instances
+ */
+export interface EntityClass<T = any> {
+  /**
+   * Creates a new instance of the entity from a raw object
+   * @param data - Raw data (typically JSON) to map
+   */
+  new (data: any): T;
+}
+
 /**
  * @template T, ID
  */
@@ -22,10 +41,10 @@ export class RestService<T, ID> {
    * Core REST service for CRUD operations.
    * Safe, predictable, and optionally maps raw JSON to entity class instances.
    *
-   * @param {ng.HttpService} $http Angular-like $http service
-   * @param {string} baseUrl Base URL or URI template
-   * @param {ng.EntityClass<T>} [entityClass] Optional constructor to map JSON to objects
-   * @param {Object} [options] Optional settings (interceptors, headers, etc.)
+   * @param $http Angular-like $http service
+   * @param baseUrl Base URL or URI template
+   * @param [entityClass] Optional constructor to map JSON to objects
+   * @param [options] Optional settings (interceptors, headers, etc.)
    */
   constructor(
     $http: ng.HttpService,
@@ -47,9 +66,6 @@ export class RestService<T, ID> {
 
   /**
    * Build full URL from template and parameters
-   * @param {string} template
-   * @param {Record<string, any>} params
-   * @returns {string}
    */
   buildUrl(template: string, params: Record<string, any>): string {
     // Safe: ensure params is an object
@@ -58,8 +74,6 @@ export class RestService<T, ID> {
 
   /**
    * Map raw JSON to entity instance or return as-is
-   * @param {any} data
-   * @returns {T|any}
    */
   private _mapEntity(data: any): T | any {
     if (!data) return data;
@@ -69,8 +83,6 @@ export class RestService<T, ID> {
 
   /**
    * List entities
-   * @param {Record<string, any>=} params
-   * @returns {Promise<T[]>}
    */
   async list(params: Record<string, any> = {}): Promise<T[]> {
     const url = this.buildUrl(this._baseUrl, params);
@@ -84,9 +96,6 @@ export class RestService<T, ID> {
 
   /**
    * Read single entity by ID
-   * @param {ID} id
-   * @param {Record<string, any>=} params
-   * @returns {Promise<T|null>}
    */
   async read(id: ID, params: Record<string, any> = {}): Promise<T | null> {
     assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
@@ -99,8 +108,6 @@ export class RestService<T, ID> {
 
   /**
    * Create a new entity
-   * @param {T} item
-   * @returns {Promise<T>}
    */
   async create(item: T): Promise<T> {
     assert(!isNullOrUndefined(item), `${BADARG}:item ${item}`);
@@ -111,9 +118,6 @@ export class RestService<T, ID> {
 
   /**
    * Update entity by ID
-   * @param {ID} id
-   * @param {Partial<T>} item
-   * @returns {Promise<T|null>}
    */
   async update(id: ID, item: Partial<T>): Promise<T | null> {
     assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
@@ -130,8 +134,6 @@ export class RestService<T, ID> {
 
   /**
    * Delete entity by ID
-   * @param {ID} id
-   * @returns {Promise<boolean>}
    */
   async delete(id: ID): Promise<boolean> {
     assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
@@ -148,11 +150,6 @@ export class RestService<T, ID> {
 
   /**
    * Core HTTP request wrapper
-   * @param {ng.HttpMethod} method
-   * @param {string} url
-   * @param {any=} data
-   * @param {Record<string, any>=} params
-   * @returns {Promise<any>}
    */
   private async _request(
     method: ng.HttpMethod,
@@ -183,10 +180,10 @@ export class RestProvider {
   /**
    * Register a REST resource at config phase
    * @template T
-   * @param {string} name Service name
-   * @param {string} url Base URL or URI template
-   * @param {{new(data:any):T}=} entityClass Optional entity constructor
-   * @param {Object=} options Optional service options
+   * @param name Service name
+   * @param url Base URL or URI template
+   * @param entityClass Optional entity constructor
+   * @param options Optional service options
    */
   rest<T>(
     name: string,
@@ -199,7 +196,6 @@ export class RestProvider {
 
   /**
    * $get factory: returns a factory function and allows access to named services
-   * @returns {(baseUrl:string, entityClass?:Function, options?:object) => RestService & { get(name:string): RestService, listNames(): string[] }}
    */
   $get = [
     $injectTokens._http,
@@ -208,7 +204,7 @@ export class RestProvider {
 
       /**
        * @template T, ID
-       * @type {(baseUrl: string, entityClass?: ng.EntityClass<T>, options?: object) => RestService<T, ID>}
+       * Creates a typed REST service for the supplied base URL.
        */
       const factory = <T, ID>(
         baseUrl: string,

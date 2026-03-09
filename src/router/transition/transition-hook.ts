@@ -7,7 +7,7 @@ import { TargetState } from "../state/target-state.ts";
 import { Rejection } from "./reject-factory.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { RegisteredHook } from "./hook-registry.ts";
-import type { HookResult, TransitionHookOptions } from "./interface.ts";
+import type { HookResult } from "./interface.ts";
 import type { Transition } from "./transition.ts";
 
 /**
@@ -35,6 +35,19 @@ export type TransitionHookScope = number;
 
 type HookErrorHandler = (error: any) => any;
 type HookResultHandler = (result: HookResult) => any;
+
+export interface TransitionHookOptions {
+  current: () => Transition | void; // path?
+  transition?: Transition | null;
+  hookType?: string;
+  target?: unknown;
+  traceData?: {
+    hookType?: string;
+    context?: any;
+  };
+  bind?: unknown;
+  stateHook?: boolean;
+}
 
 const defaultOptions: Partial<TransitionHookOptions> = {
   current: () => undefined,

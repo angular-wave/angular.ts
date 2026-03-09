@@ -16,7 +16,7 @@ import { $injectTokens } from "../../injection-tokens.ts";
  *
  * @element ANY
  *
- * @param {string} ngTransclude|ngTranscludeSlot the name of the slot to insert at this point. If this is not provided, is empty
+ * @param ngTransclude|ngTranscludeSlot the name of the slot to insert at this point. If this is not provided, is empty
  *                                               or its value is the same as the name of the attribute then the default slot is used.
  */
 const ngTranscludeMinErr = minErr("ngTransclude");
@@ -32,14 +32,7 @@ export function ngTranscludeDirective(
 
       emptyElement(tElement);
 
-      /**
-       *
-       * @param {ng.Scope} $scope
-       * @param {Element} $element
-       * @param {ng.Attributes} $attrs
-       * @param {*} _controller
-       * @param {*} $transclude
-       */
+      /** Inserts transcluded content or fallback content into the target element. */
       function ngTranscludePostLink(
         $scope: ng.Scope,
         $element: Element,
@@ -79,10 +72,7 @@ export function ngTranscludeDirective(
           useFallbackContent();
         }
 
-        /**
-         * @param {NodeList | Node} clone
-         * @param {ng.Scope} transcludedScope
-         */
+        /** Attaches the transcluded clone or falls back to cached original content. */
         function ngTranscludeCloneAttachFn(
           clone: Node | NodeList | Node[] | null | undefined,
           transcludedScope?: ng.Scope | null,
@@ -115,9 +105,7 @@ export function ngTranscludeDirective(
           });
         }
 
-        /**
-         * @param {Node | NodeList} node
-         */
+        /** Returns true when the transcluded clone contains non-whitespace content. */
         function notWhitespace(
           node?: Node | NodeList | Node[] | null,
         ): boolean {

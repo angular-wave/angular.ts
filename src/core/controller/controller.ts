@@ -10,11 +10,22 @@ import {
   isString,
   minErr,
 } from "../../shared/utils.ts";
-import type {
-  ControllerExpression,
-  ControllerLocals,
-  ControllerService,
-} from "./interface.ts";
+/**
+ * The minimal local definitions required by $controller(ctrl, locals) calls.
+ */
+export interface ControllerLocals {
+  $scope: ng.Scope;
+  $element: Element;
+}
+
+export type ControllerExpression = string | Injectable<ControllerConstructor>;
+
+export type ControllerService = (
+  expression: ControllerExpression,
+  locals?: ControllerLocals,
+  later?: boolean,
+  ident?: string,
+) => any | (() => any);
 
 type InjectableController = Injectable<ControllerConstructor>;
 type ControllerInstance = Record<string, any>;
@@ -247,5 +258,3 @@ export class ControllerProvider {
     (locals.$scope as any).$controllerIdentifier = identifier;
   }
 }
-
-export type { ControllerExpression, ControllerLocals, ControllerService };

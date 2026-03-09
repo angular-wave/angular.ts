@@ -10,17 +10,15 @@ import {
   minErr,
 } from "../shared/utils.ts";
 
-/**
- * @returns {ng.FilterFn}
- */
+/** Registers the built-in collection filtering function. */
 export function filterFilter() {
   /**
-   * @param {Array<any>} array The source array.
-   * @param {string|Object|function(any, number, []):[]} expression The predicate to be used for selecting items from `array`.
-   * @param {function(any, any):boolean|boolean} [comparator] Comparator which is used in determining if values retrieved using `expression`
+   * @param array The source array.
+   * @param expression The predicate to be used for selecting items from `array`.
+   * @param [comparator] Comparator which is used in determining if values retrieved using `expression`
    * (when it is not a function) should be considered a match based on the expected value (from the filter expression) and actual value (from the object in the array).
-   * @param {string} [anyPropertyKey] The special property name that matches against any property.
-   * @return {Array<any>} Filtered array
+   * @param [anyPropertyKey] The special property name that matches against any property.
+   * @returns Filtered array
    */
   return function (
     array: Array<any> | ArrayLike<any> | null | undefined,
@@ -71,9 +69,7 @@ export function filterFilter() {
         return array;
     }
 
-    return Array.from(array as ArrayLike<any>).filter(
-      /** @type {(item: any) => boolean} */ predicateFn,
-    );
+    return Array.from(array as ArrayLike<any>).filter(predicateFn);
   };
 }
 
@@ -82,28 +78,21 @@ export function filterFilter() {
  * Creates a predicate function that can be used with `Array.prototype.filter`
  * to match items against a given filter expression.
  *
- * @param {string | Object & Record<string, any> | null} expression
- *   The filter expression to match items against. Can be:
+ * The filter expression can be:
  *     - `string`: matched as a case-insensitive substring
  *     - `object`: matched by property values (supports special `anyPropertyKey`)
  *     - `null`: treated as a literal match
  *
- * @param {boolean | ((actual: any, expected: any) => boolean)} [comparator=false]
- *   Comparator to determine equality between actual array values and expected values:
+ * `comparator` determines equality between actual array values and expected values:
  *     - `true` → uses strict equality (angular.equals)
  *     - `false` (default) → performs case-insensitive substring match for primitives
  *     - `function(actual, expected)` → custom comparator returning boolean
  *
- * @param {string} [anyPropertyKey="$"]
- *   Special property key that allows matching against any property of an object.
- *   Defaults to `$`.
+ * `anyPropertyKey` is the special property name that allows matching against any
+ * property of an object. It defaults to `$`.
  *
- * @param {boolean} [matchAgainstAnyProp=false]
- *   If true, allows matching against any property in the object.
- *   Typically true when filtering with primitive expressions.
- *
- * @returns {(item: any) => boolean}
- *   Predicate function that returns `true` if `item` matches the expression.
+ * `matchAgainstAnyProp` allows matching against any property in the object and
+ * is typically enabled when filtering with primitive expressions.
  */
 function createPredicateFn(
   expression: string | Record<string, any> | null,
@@ -171,15 +160,7 @@ function createPredicateFn(
   return predicateFn;
 }
 
-/**
- * @param {string | Object | null} actual
- * @param {string | Object | null} expected
- * @param {(arg0: any, arg1: any) => any} comparator
- * @param {string} anyPropertyKey
- * @param {boolean} matchAgainstAnyProp
- * @param {boolean | undefined} [dontMatchWholeObject]
- * @returns {boolean}
- */
+/** Recursively compares actual and expected values for the filter predicate. */
 function deepCompare(
   actual: any,
   expected: any,
@@ -192,13 +173,10 @@ function deepCompare(
 
   const expectedType = getTypeForFilter(expected);
 
-  if (
-    expectedType === "string" &&
-    /** @type {string} */ expected.charAt(0) === "!"
-  ) {
+  if (expectedType === "string" && expected.charAt(0) === "!") {
     return !deepCompare(
       actual,
-      /** @type {string} */ expected.substring(1),
+      expected.substring(1),
       comparator,
       anyPropertyKey,
       matchAgainstAnyProp,
@@ -222,14 +200,16 @@ function deepCompare(
   switch (actualType) {
     case "object":
       if (matchAgainstAnyProp) {
-        for (const key in /** @type {Record<string, any>} */ actual) {
+        const actualObj = actual as Record<string, any>;
+
+        for (const key in actualObj) {
           // Under certain, rare, circumstances, key may not be a string and `charAt` will be undefined
           // See: https://github.com/angular/angular.ts/issues/15644
           if (
             key.charAt &&
             key.charAt(0) !== "$" &&
             deepCompare(
-              /** @type {Record<string, any>} */ actual[key],
+              actualObj[key],
               expected,
               comparator,
               anyPropertyKey,
@@ -246,8 +226,11 @@ function deepCompare(
       }
 
       if (expectedType === "object") {
-        for (const key in /** @type {Record<string, any>} */ expected) {
-          const expectedVal = /** @type {Record<string, any>} */ expected[key];
+        const expectedObj = expected as Record<string, any>;
+        const actualObj = actual as Record<string, any>;
+
+        for (const key in expectedObj) {
+          const expectedVal = expectedObj[key];
 
           if (isFunction(expectedVal) || isUndefined(expectedVal)) {
             continue;
@@ -257,7 +240,7 @@ function deepCompare(
 
           const actualVal = matchAnyProperty
             ? actual
-            : /** @type {Record<string, any>} */ actual[key];
+            : actualObj[key];
 
           if (
             !deepCompare(
@@ -286,10 +269,7 @@ function deepCompare(
 }
 
 // Used for easily differentiating between `null` and actual `object`
-/**
- * @param {string | Object | null} val
- * @return {string}
- */
+/** Returns the filter classification used by the recursive comparison helpers. */
 function getTypeForFilter(val: any): string {
   return val === null ? "null" : typeof val;
 }

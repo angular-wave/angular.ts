@@ -36,41 +36,83 @@ import { $injectTokens as $t } from "../../injection-tokens.ts";
 
 export const ngModelMinErr = minErr("ngModel");
 
+export interface ModelValidators {
+  /**
+   * viewValue is any because it can be an object that is called in the view like $viewValue.name:$viewValue.subName
+   */
+  [index: string]: (modelValue: any, viewValue: any) => boolean;
+}
+
+export interface AsyncModelValidators {
+  [index: string]: (modelValue: any, viewValue: any) => Promise<any>;
+}
+
+export interface ModelParser {
+  (value: any): any;
+}
+
+export interface ModelFormatter {
+  (value: any): any;
+}
+
+export interface ModelViewChangeListener {
+  (): void;
+}
+
 /**
- * 
- * @property {*} $viewValue The actual value from the control's view.
+ * Configuration for ngModel behavior.
+ */
+export interface NgModelOptions {
+  /** Space-separated event names that trigger updates */
+  updateOn?: string;
+  /** Delay in milliseconds or event-specific debounce times */
+  debounce?: number | Record<string, number>;
+  /** Whether to allow invalid values */
+  allowInvalid?: boolean;
+  /** Enables getter/setter style ngModel */
+  getterSetter?: boolean;
+  /** Timezone used for Date objects */
+  timezone?: string;
+  /** Time display format including seconds */
+  timeSecondsFormat?: string;
+  /** Whether to remove trailing :00 seconds */
+  timeStripZeroSeconds?: boolean;
+}
+
+/**
+ * @property $viewValue The actual value from the control's view.
  *
- * @property {*} $modelValue The value in the model that the control is bound to.
- * @property {Array.<Function>} $parsers Array of functions to execute, as a pipeline, whenever
+ * @property $modelValue The value in the model that the control is bound to.
+ * @property $parsers Array of functions to execute, as a pipeline, whenever
  *  the control updates the ngModelController with a new `$viewValue` from the DOM, usually via user input.
  *
- * @property {Array.<Function>} $formatters Array of functions to execute, as a pipeline, whenever
+ * @property $formatters Array of functions to execute, as a pipeline, whenever
     the bound ngModel expression changes programmatically. The `$formatters` are not called when the
     value of the control is changed by user interaction.
  *
- * @property {Object.<string, (string, string) => boolean>} $validators A collection of validators that are applied whenever the model value changes. 
+ * @property $validators A collection of validators that are applied whenever the model value changes. 
  * The key value within the object refers to the name of the validator while the function refers to the validation operation. 
  * The validation operation is provided with the model value as an argument and must return a true or false value depending on the response of that validation.
  *
- * @property {Object.<string, function(string, string) => Promise>} $asyncValidators A collection of validations that are expected to perform an asynchronous validation (e.g. a HTTP request).
+ * @property $asyncValidators A collection of validations that are expected to perform an asynchronous validation (e.g. a HTTP request).
  *  The validation function that is provided is expected to return a promise when it is run during the model validation process
  *
- * @property {Array.<Function>} $viewChangeListeners Array of functions to execute whenever
+ * @property $viewChangeListeners Array of functions to execute whenever
  *     a change to {@link ngModel.NgModelController#$viewValue `$viewValue`} has caused a change
  *     to {@link ngModel.NgModelController#$modelValue `$modelValue`}.
  *     It is called with no arguments, and its return value is ignored.
  *     This can be used in place of additional $watches against the model value.
  *
- * @property {Object} $error An object hash with all failing validator ids as keys.
- * @property {Object} $pending An object hash with all pending validator ids as keys.
+ * @property $error An object hash with all failing validator ids as keys.
+ * @property $pending An object hash with all pending validator ids as keys.
  *
- * @property {boolean} $untouched True if control has not lost focus yet.
- * @property {boolean} $touched True if control has lost focus.
- * @property {boolean} $pristine True if user has not interacted with the control yet.
- * @property {boolean} $dirty True if user has already interacted with the control.
- * @property {boolean} $valid True if there is no error.
- * @property {boolean} $invalid True if at least one error on the control.
- * @property {string} $name The name attribute of the control.
+ * @property $untouched True if control has not lost focus yet.
+ * @property $touched True if control has lost focus.
+ * @property $pristine True if user has not interacted with the control yet.
+ * @property $dirty True if user has already interacted with the control.
+ * @property $valid True if there is no error.
+ * @property $invalid True if at least one error on the control.
+ * @property $name The name attribute of the control.
  */
 
 export class NgModelController {
@@ -166,13 +208,7 @@ export class NgModelController {
   _eventRemovers: Set<() => void>;
 
   /**
-   * @param {ng.Scope} $scope
-   * @param {ng.ExceptionHandlerService} $exceptionHandler
-   * @param {ng.Attributes} $attr
-   * @param {HTMLElement} $element
-   * @param {ng.ParseService} $parse
-   * @param {ng.AnimateService} $animate
-   * @param {ng.InterpolateService} $interpolate
+   * Creates a model controller bound to the element, scope, and ngModel expression.
    */
   constructor(
     $scope: ng.Scope,
@@ -183,57 +219,23 @@ export class NgModelController {
     $animate: ng.AnimateService,
     $interpolate: ng.InterpolateService,
   ) {
-    /** @type {boolean} */
     this._isAnimated = hasAnimate($element);
-    /** @type {any} The actual value from the control's view  */
     this.$viewValue = Number.NaN;
-
-    /** @type {any} The value in the model that the control is bound to. */
     this.$modelValue = Number.NaN;
-    /** @type {any} */
     this._rawModelValue = undefined; // stores the parsed modelValue / model set from scope regardless of validity.
-
-    /** @type {import("./interface.ts").ModelValidators} */
     this.$validators = {};
-
-    /** @type {import("./interface.ts").AsyncModelValidators} */
     this.$asyncValidators = {};
-
-    /** @type {Array<import("./interface.ts").ModelParser>} */
     this.$parsers = [];
-
-    /** @type {Array<import("./interface.ts").ModelFormatter>} */
     this.$formatters = [];
-
-    /** @type {Array<import("./interface.ts").ModelViewChangeListener>} */
     this.$viewChangeListeners = [];
-
-    /** @type {boolean} */
     this.$untouched = true;
-
-    /** @type {boolean} */
     this.$touched = false;
-
-    /** @type {boolean} */
     this.$pristine = true;
-
-    /** @type {boolean} */
     this.$dirty = false;
-
-    /** @type {boolean | undefined} */
     this.$valid = true;
-
-    /** @type {boolean | undefined} */
     this.$invalid = false;
-
-    /** @type {Record<string, boolean>} */
     this.$error = {}; // keep invalid keys here
-
-    /** @type {Record<string, boolean>} */
     this._success = {}; // keep valid keys here
-    /**
-     * @type {Record<string, any> | undefined}
-     */
     this.$pending = undefined; // keep pending keys here
     this.$name =
       (
@@ -249,24 +251,13 @@ export class NgModelController {
 
     this._parsedNgModel = $parse($attr.ngModel);
     this._parsedNgModelAssign =
-      /** @type {(context: any, value: any) => any} */ this._parsedNgModel._assign;
-
-    /**
-     * @type {import("../../core/parse/interface.ts").CompiledExpression |
-     *        (function(ng.Scope): any)}
-     */
+      this._parsedNgModel._assign as (context: any, value: any) => any;
     this._ngModelGet = this._parsedNgModel;
     this._ngModelSet = this._parsedNgModelAssign;
     this._pendingDebounce = undefined;
     this._parserValid = undefined;
-
-    /** @type {string} */
     this._parserName = "parse";
-
-    /** @type {number} */
     this._currentValidationRunId = 0;
-
-    /** @type {ng.Scope} */
     this._scope = $scope; // attempt to bind to nearest controller if present
     this._attr = $attr;
     this._element = $element;
@@ -275,8 +266,6 @@ export class NgModelController {
     this._exceptionHandler = $exceptionHandler;
 
     this._hasNativeValidators = false;
-
-    /** @type {Record<string, boolean>} */
     this._classCache = {};
     const isValid = this._element.classList.contains(VALID_CLASS);
 
@@ -289,24 +278,21 @@ export class NgModelController {
   }
 
   /**
-   * @param {{ [x: string]: boolean; }} object
-   * @param {string | number} property
+   * Marks a named validity bucket as present.
    */
   set(object: Record<string, any>, property: string | number): void {
     object[property] = true;
   }
 
   /**
-   * @param {{ [x: string]: any; }} object
-   * @param {string | number} property
+   * Removes a named validity bucket entry.
    */
   unset(object: Record<string, any>, property: string | number): void {
     delete object[property];
   }
 
   /**
-   * @param {string} validationErrorKey
-   * @param {boolean | undefined | null} state
+   * Updates the validation state of the control and propagates it to the parent form.
    */
   $setValidity(
     validationErrorKey: string,
@@ -315,9 +301,7 @@ export class NgModelController {
     const that = this;
 
     /**
-     * @param {NgModelController & Record<string, any>} ctrl
-     * @param {string} name
-     * @param {string} value
+     * Creates a validity bucket if needed and records the given key.
      */
     function createAndSet(
       ctrl: NgModelController & Record<string, any>,
@@ -331,9 +315,7 @@ export class NgModelController {
     }
 
     /**
-     * @param {NgModelController & Record<string, any>} ctrl
-     * @param {string} name
-     * @param {string} value
+     * Removes a validity key and clears empty buckets.
      */
     function unsetAndCleanup(
       ctrl: NgModelController & Record<string, any>,
@@ -350,9 +332,7 @@ export class NgModelController {
     }
 
     /**
-     * @param {NgModelController | import("../form/form.ts").FormController} ctrl
-     * @param {string} validationErrorKeyParam
-     * @param {boolean | null | undefined} isValid
+     * Updates the CSS validity classes for a specific validation key.
      */
     function toggleValidationCss(
       ctrl: NgModelController | import("../form/form.ts").FormController,
@@ -420,7 +400,7 @@ export class NgModelController {
     }
 
     toggleValidationCss(this, validationErrorKey, combinedState);
-    /** @type {any} */ this._parentForm.$setValidity(
+    this._parentForm.$setValidity(
       validationErrorKey,
       combinedState,
       this,
@@ -490,8 +470,8 @@ export class NgModelController {
    * default. The `checkboxInputType` directive does this because in its case a value of `false`
    * implies empty.
    *
-   * @param {*} value The value of the input to check for emptiness.
-   * @returns {boolean} True if `value` is "empty".
+   * @param  value The value of the input to check for emptiness.
+   * @returns True if `value` is "empty".
    */
   $isEmpty(value: any): boolean {
     return (
@@ -503,7 +483,7 @@ export class NgModelController {
   }
 
   /**
-   * @param {any} value
+   * Applies the correct empty/not-empty classes for the current view value.
    */
   _updateEmptyClasses(value: any): void {
     if (this.$isEmpty(value)) {
@@ -750,9 +730,7 @@ export class NgModelController {
   }
 
   /**
-   * @param {any} modelValue
-   * @param {any} viewValue
-   * @param {Function} doneCallback
+   * Runs synchronous and asynchronous validators for the pending model/view values.
    */
   _runValidators(
     modelValue: any,
@@ -824,9 +802,6 @@ export class NgModelController {
     }
 
     function processAsyncValidators() {
-      /**
-       * @type {any[]}
-       */
       const validatorPromises: Promise<void>[] = [];
 
       let allValid = true;
@@ -870,8 +845,7 @@ export class NgModelController {
     }
 
     /**
-     * @param {string} name
-     * @param {boolean | undefined | null} isValid
+     * Applies a validator result if this is still the active validation run.
      */
     function setValidity(name: string, isValid: boolean | undefined | null) {
       if (localValidationRunId === that._currentValidationRunId) {
@@ -880,7 +854,7 @@ export class NgModelController {
     }
 
     /**
-     * @param {boolean} allValid
+     * Finalizes the current validation run.
      */
     function validationDone(allValid: boolean) {
       if (localValidationRunId === that._currentValidationRunId) {
@@ -969,7 +943,7 @@ export class NgModelController {
     this._runValidators(
       modelValue,
       this._lastCommittedViewValue,
-      (/** @type {any} */ allValid) => {
+      (allValid: any) => {
         if (!allowInvalid) {
           // Note: Don't check this.$valid here, as we could have
           // external validators (e.g. calculated on the server),
@@ -1050,8 +1024,8 @@ export class NgModelController {
    * to update the DOM, and finally call `$validate` on it.
    * </div>
    *
-   * @param {*} value value from the view.
-   * @param {string} [trigger] Event that triggered the update.
+   * @param  value value from the view.
+   * @param  [trigger] Event that triggered the update.
    */
   $setViewValue(value: any, trigger?: string) {
     this.$viewValue = value;
@@ -1062,42 +1036,36 @@ export class NgModelController {
   }
 
   /**
-   * @param {string | undefined} trigger
+   * Schedules or commits the current view value based on the configured debounce settings.
    */
   _debounceViewValueCommit(trigger?: string) {
     let debounceDelay = this.$options.getOption("debounce");
+    const debounceDelayMap = debounceDelay as Record<string, any>;
+    const updateOn = this.$options.getOption("updateOn") as string;
 
     if (trigger) {
-      const debounceVal =
-        /** @type {Record<string, any>} */ debounceDelay[trigger];
+      const debounceVal = debounceDelayMap[trigger];
 
       if (isNumber(debounceVal)) {
         debounceDelay = debounceVal;
       } else if (
-        isNumber(
-          /** @type {Object.<string, number>} */ debounceDelay.default,
-        ) &&
-        /** @type {string} */ this.$options
-          .getOption("updateOn")
-          .indexOf(trigger) === -1
+        isNumber(debounceDelayMap.default) &&
+        updateOn.indexOf(trigger) === -1
       ) {
-        debounceDelay =
-          /** @type {Object.<string, number>} */ debounceDelay.default;
+        debounceDelay = debounceDelayMap.default;
       }
-    } else if (
-      isNumber(/** @type {Record<string, any>} */ debounceDelay["*"])
-    ) {
-      debounceDelay = /** @type {Record<string, any>} */ debounceDelay["*"];
+    } else if (isNumber(debounceDelayMap["*"])) {
+      debounceDelay = debounceDelayMap["*"];
     }
 
     this._pendingDebounce && clearTimeout(this._pendingDebounce);
     const that = this;
 
-    if (/** @type {number} */ debounceDelay > 0) {
+    if ((debounceDelay as number) > 0) {
       // this fails if debounceDelay is an object
       this._pendingDebounce = setTimeout(() => {
         that.$commitViewValue();
-      }, /** @type {number} */ debounceDelay);
+      }, debounceDelay as number);
     } else {
       this.$commitViewValue();
     }
@@ -1124,7 +1092,7 @@ export class NgModelController {
    * **Note:** it is not possible to override the `getterSetter` option.
    * </div>
    *
-   * @param {import("./interface.ts").NgModelOptions} options a hash of settings to override the previous options
+   * @param  options a hash of settings to override the previous options
    *
    */
   $overrideModelOptions(options: any) {
@@ -1272,7 +1240,6 @@ export class NgModelController {
 
   /**
    * @ignore This method is called internally when the bound scope value changes.
-   * @param {any} modelValue
    */
   _setModelValue(modelValue: any): void {
     this.$modelValue = this._rawModelValue = modelValue;
@@ -1300,8 +1267,7 @@ export class NgModelController {
       });
     }
 
-    this._updateEvents =
-      /** @type {string} */ this.$options.getOption("updateOn");
+    this._updateEvents = this.$options.getOption("updateOn") as string;
 
     if (this._updateEvents) {
       this._updateEvents.split(" ").forEach((ev: string) => {
@@ -1314,7 +1280,7 @@ export class NgModelController {
   }
 
   /**
-   * @param {Event} ev
+   * Handles configured update events by committing the staged view value.
    */
   _updateEventHandler(ev: Event) {
     this._debounceViewValueCommit(ev && ev.type);
@@ -1322,7 +1288,7 @@ export class NgModelController {
 }
 
 /**
- * @param {NgModelController} ctrl
+ * Watches the bound model expression and refreshes the controller when it changes externally.
  */
 function setupModelWatcher(
   ctrl: NgModelController & Record<string, any>,
@@ -1353,7 +1319,7 @@ function setupModelWatcher(
 }
 
 /**
- * @returns {ng.Directive}
+ * Builds the core `ngModel` directive definition.
  */
 export function ngModelDirective() {
   return {
@@ -1365,7 +1331,7 @@ export function ngModelDirective() {
     // before anyone else uses it.
     priority: 1,
     compile:
-      /** @param {Element} element  */
+      /** @param  element  */
       (element: Element) => {
         // Setup initial state of the control
         element.classList.add(PRISTINE_CLASS, UNTOUCHED_CLASS, VALID_CLASS);

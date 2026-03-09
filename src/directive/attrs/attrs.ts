@@ -5,9 +5,6 @@ import { $injectTokens } from "../../injection-tokens.ts";
 
 export const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
 
-/**
- * @type {Record<string, ng.DirectiveFactory>}
- */
 export const ngAttributeAliasDirectives: Record<string, ng.DirectiveFactory> =
   {};
 
@@ -16,11 +13,7 @@ BOOLEAN_ATTR.forEach((i) => {
   // binding to multiple is not supported
   if (i === "multiple") return;
 
-  /**
-   * @param {ng.Scope} scope
-   * @param {Element} _element
-   * @param {ng.Attributes} attr
-   */
+  /** Mirrors the watched scope expression into the underlying boolean attribute. */
   function defaultLinkFn(
     scope: ng.Scope,
     _element: Element,
@@ -96,10 +89,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
 
   ngAttributeAliasDirectives[normalized] = [
     $injectTokens._sce,
-    /**
-     * @param {ng.SceService} $sce
-     * @returns {ng.Directive}
-     */
+    /** Creates the alias directive for interpolated URL-like attributes. */
     function ($sce: ng.SceService): ng.Directive {
       return {
         priority: 99, // it needs to run after the attributes are interpolated

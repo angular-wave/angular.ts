@@ -31,11 +31,7 @@ import type {
   HookFn,
   HookMatchCriteria,
   HookRegOptions,
-  PathType,
-  PathTypes,
-  RegisteredHooks,
-  TransitionOptions,
-  TransitionService,
+  HookRegistry,
 } from "./interface.ts";
 import { TransitionEventType } from "./transition-event-type.ts";
 import {
@@ -43,7 +39,25 @@ import {
   TransitionHookPhase,
   TransitionHookScope,
 } from "./transition-hook.ts";
-import { Transition } from "./transition.ts";
+import { Transition, type TransitionOptions } from "./transition.ts";
+import type { RegisteredHooks } from "./hook-registry.ts";
+
+/** @internal */
+export interface PathType {
+  name: string;
+  scope: number;
+}
+
+/** @internal */
+export interface PathTypes {
+  [key: string]: PathType;
+
+  to: PathType;
+  from: PathType;
+  exiting: PathType;
+  retained: PathType;
+  entering: PathType;
+}
 
 export const defaultTransOpts: TransitionOptions = {
   location: true,
@@ -56,6 +70,48 @@ export const defaultTransOpts: TransitionOptions = {
   current: () => null,
   source: "unknown",
 };
+
+/**
+ * The runtime service instance returned from `TransitionProvider.$get`.
+ *
+ * Note: In this codebase, `$get` returns the provider instance (`return this;`),
+ * so the "service" surface includes both the public HookRegistry API and
+ * a set of internal fields/methods used by built-in hook registrations/plugins.
+ */
+export interface TransitionService extends HookRegistry {
+  /**
+   * Internal factory used by StateService.
+   */
+  create(fromPath: PathNode[], targetState: TargetState): Transition;
+
+  /** @internal incremented for each created Transition */
+  _transitionCount: number;
+
+  /** @internal hook event types (onBefore/onStart/...) */
+  _eventTypes: TransitionEventType[];
+
+  /** @internal path type metadata used for matching */
+  _criteriaPaths: PathTypes;
+
+  /** @internal stores deregistration fns for core hooks */
+  _deregisterHookFns: Record<string, DeregisterFn | undefined>;
+
+  /**
+   * @internal Return event types, optionally filtered by phase, sorted by phase/order.
+   */
+  _getEvents(phase?: TransitionHookPhase): TransitionEventType[];
+
+  /** @internal Return the defined path types */
+  _getPathTypes(): PathTypes;
+
+  /** @internal router globals */
+  globals: ng.RouterService;
+
+  /** @internal view service */
+  $view: ng.ViewService;
+
+  _exceptionHandler: ng.ExceptionHandlerService;
+}
 
 /**
  * Central registry and factory for transition events, hooks, and transition instances.

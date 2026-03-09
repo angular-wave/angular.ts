@@ -7,7 +7,7 @@ import type {
   DirectivePrePost,
 } from "../../interface.ts";
 import type { Attributes } from "./attributes.ts";
-import type { ControllerLocals } from "../controller/interface.ts";
+import type { ControllerLocals } from "../controller/controller.ts";
 
 export type TranscludedNodes = Node | Node[] | NodeList | null;
 export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
@@ -337,7 +337,7 @@ export type CompileDirectiveLinkResult =
 export interface CompositeLinkState {
   _linkFnsList: LinkFnMapping[];
   _nodeRefList: NodeRef;
-  _nodeLinkFnFound?: Function;
+  _nodeLinkFnFound?: NodeLinkFn | StoredNodeLinkFn;
   _transcludeFn: ChildTranscludeOrLinkFn | null | undefined;
 }
 
@@ -404,7 +404,7 @@ export type ControllersBoundTranscludeFn = {
  * Stored state for shared text-interpolation link functions.
  */
 export interface TextInterpolateLinkState {
-  _interpolateFn: import("../interpolate/interface.ts").InterpolationFunction;
+  _interpolateFn: import("../interpolate/interpolate.ts").InterpolationFunction;
   _watchExpression: string;
 }
 
@@ -416,7 +416,7 @@ export interface AttrInterpolateLinkState {
   _value: string;
   _trustedContext: string | undefined;
   _allOrNothing: boolean;
-  _interpolateFn?: import("../interpolate/interface.ts").InterpolationFunction;
+  _interpolateFn?: import("../interpolate/interpolate.ts").InterpolationFunction;
 }
 
 /**

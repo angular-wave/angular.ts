@@ -2,6 +2,22 @@ import { defaultHttpResponseTransform } from "../http/http.ts";
 import { extend, isArray } from "../../shared/utils.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 
+export interface TemplateRequestService {
+  /**
+   * Downloads a template using $http and, upon success, stores the
+   * contents inside of $templateCache.
+   *
+   * If the HTTP request fails or the response data of the HTTP request is
+   * empty then a $compile error will be thrown (unless
+   * {ignoreRequestError} is set to true).
+   *
+   * @param templateUrl The template URL.
+   *
+   * @returns A promise whose value is the template content.
+   */
+  (templateUrl: string): Promise<string>;
+}
+
 /**
  * Provider for the `$templateRequest` service.
  *
@@ -26,7 +42,6 @@ export class TemplateRequestProvider {
    * Use this to set template-specific defaults such as custom headers,
    * timeouts, credentials, etc.
    *
-   * @type {ng.RequestShortcutConfig}
    */
   httpOptions: ng.RequestShortcutConfig;
 
@@ -35,8 +50,6 @@ export class TemplateRequestProvider {
      * Default options for template requests.
      * Keeps behavior aligned with callers that previously used `$http` directly
      * and set `Accept: text/html`.
-     *
-     * @type {ng.RequestShortcutConfig}
      */
     this.httpOptions = {
       headers: {
@@ -49,16 +62,14 @@ export class TemplateRequestProvider {
     $injectTokens._templateCache,
     $injectTokens._http,
     /**
-     * @param {ng.TemplateCacheService} $templateCache
-     * @param {ng.HttpService} $http
-     * @returns {ng.TemplateRequestService}
+     * Creates the `$templateRequest` service.
      */
     ($templateCache: ng.TemplateCacheService, $http: ng.HttpService) => {
       /**
        * Fetch a template via HTTP and cache it.
        *
-       * @param {string} templateUrl URL of the template
-       * @returns {Promise<string>} Resolves with template content
+       * @param templateUrl URL of the template.
+       * @returns Resolves with template content.
        */
       const fetchTemplate = (templateUrl: string): Promise<string> => {
         // Filter out default transformResponse for template requests
@@ -72,14 +83,13 @@ export class TemplateRequestProvider {
           transformResponse = null;
         }
 
-        /** @type {ng.RequestShortcutConfig} */
         const config = extend(
           {
             cache: $templateCache,
             transformResponse,
           },
           this.httpOptions || {},
-        );
+        ) as ng.RequestShortcutConfig;
 
         return $http.get<string>(templateUrl, config).then(
           (response) => {

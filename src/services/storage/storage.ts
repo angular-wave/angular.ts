@@ -1,3 +1,24 @@
+export interface StorageBackend {
+  get(key: string): string | undefined;
+  set(key: string, value: string): void;
+  remove(key: string): void;
+}
+
+export interface StorageLike {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+export interface PersistentStoreConfig {
+  backend?: StorageLike;
+  serialize?: (value: unknown) => string;
+  deserialize?: (value: string) => unknown;
+  cookie?: Record<string, unknown>;
+}
+
+export type StorageType = "local" | "session" | "cookie" | "custom";
+
 /**
  * Creates a proxy that automatically persists an object's state
  * into a storage backend whenever a property is set.
@@ -8,7 +29,7 @@
 export function createPersistentProxy<T extends Record<PropertyKey, any>>(
   target: T,
   key: string,
-  storage: import("../../core/di/interface.ts").StorageLike & any,
+  storage: StorageLike & any,
   options: {
     serialize?: (value: T) => string;
     deserialize?: (value: string) => Partial<T>;

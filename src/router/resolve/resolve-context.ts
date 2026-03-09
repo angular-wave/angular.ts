@@ -13,7 +13,7 @@ import type {
   PolicyWhen,
   ResolvePolicy,
   ResolvableLiteral,
-} from "./interface.ts";
+} from "./resolvable.ts";
 
 export const resolvePolicies = {
   when: {
