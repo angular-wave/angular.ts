@@ -1,4 +1,4 @@
-/* Version: 0.20.1 - March 9, 2026 12:29:09 */
+/* Version: 0.21.0 - March 10, 2026 00:16:15 */
 /**
  * Shared CSS class names and attribute normalization constants used across directives.
  */
@@ -396,7 +396,7 @@ function hasCustomToString(obj) {
  *
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)
  */
-function getNodeName(element) {
+function getNodeName$1(element) {
     return lowercase(element.nodeName);
 }
 /**
@@ -572,9 +572,7 @@ function stringify$1(value) {
             break;
         default:
             const objectValue = value;
-            if (hasCustomToString(objectValue) &&
-                !isArray(value) &&
-                !isDate(value)) {
+            if (hasCustomToString(objectValue) && !isArray(value) && !isDate(value)) {
                 value = objectValue.toString();
             }
             else {
@@ -690,7 +688,7 @@ function parseKeyValue(value) {
                     ? tryDecodeURIComponent(val)
                     : true;
                 if (!hasOwn(obj, decodedKey)) {
-                    obj[decodedKey] = decodedVal !== null && decodedVal !== void 0 ? decodedVal : true;
+                    obj[decodedKey] = decodedVal ?? true;
                 }
                 else if (isArray(obj[decodedKey])) {
                     obj[decodedKey].push(decodedVal);
@@ -732,7 +730,7 @@ function tryDecodeURIComponent(value) {
     try {
         return decodeURIComponent(value);
     }
-    catch (_a) {
+    catch {
         return undefined;
     }
 }
@@ -958,7 +956,7 @@ function mergeClasses(firstClass, secondClass) {
     if (!firstClass)
         return isArray(secondClass)
             ? secondClass.join(" ").trim()
-            : (secondClass !== null && secondClass !== void 0 ? secondClass : "");
+            : (secondClass ?? "");
     if (!secondClass)
         return isArray(firstClass) ? firstClass.join(" ").trim() : firstClass;
     if (isArray(firstClass))
@@ -1128,7 +1126,7 @@ async function instantiateWasm(src, imports = {}) {
         const { instance, module } = await WebAssembly.instantiateStreaming(res.clone(), imports);
         return { instance, exports: instance.exports, module };
     }
-    catch (_a) {
+    catch {
         /* empty */
     }
     const bytes = await res.arrayBuffer();
@@ -1398,9 +1396,8 @@ function dealoc(element, onlyDescendants = false) {
  * @param element - The element whose expando store should be cleaned up.
  */
 function removeIfEmptyData(element) {
-    var _a;
     const expandoId = element[EXPANDO];
-    const data = expandoId ? (_a = Cache.get(expandoId)) === null || _a === void 0 ? void 0 : _a.data : undefined;
+    const data = expandoId ? Cache.get(expandoId)?.data : undefined;
     if (!data || !keys(data).length) {
         Cache.delete(expandoId);
         element[EXPANDO] = undefined; // don't delete DOM expandos. Chrome don't like it
@@ -1492,7 +1489,7 @@ function getCacheData(element, key) {
 function deleteCacheData(element, key) {
     if (elementAcceptsData(element)) {
         const expandoStore = getExpando(element, false); // Don't create if it doesn't exist
-        const data = expandoStore === null || expandoStore === void 0 ? void 0 : expandoStore.data;
+        const data = expandoStore?.data;
         if (data && hasOwn(data, kebabToCamel(key))) {
             delete data[kebabToCamel(key)];
         }
@@ -1618,7 +1615,7 @@ function startingTag(elementOrStr) {
             }
         }
     }
-    catch (_a) {
+    catch {
         return elemHtml.toLowerCase();
     }
     return elemHtml.toLowerCase();
@@ -1764,8 +1761,7 @@ function animatedomInsert(element, parent, after) {
  * @returns The normalized base href path, or an empty string when no `<base>` is present.
  */
 function getBaseHref() {
-    var _a;
-    const href = (_a = document.querySelector("base")) === null || _a === void 0 ? void 0 : _a.getAttribute("href");
+    const href = document.querySelector("base")?.getAttribute("href");
     return href ? href.replace(/^(https?:)?\/\/[^/]*/, "") : "";
 }
 /**
@@ -1816,17 +1812,16 @@ function isClass(func) {
  * @returns ordered dependency token names
  */
 function annotate(fn, strictDi = false, name) {
-    var _a;
     let inject = [];
     if (isFunction(fn)) {
-        inject = (_a = fn.$inject) !== null && _a !== void 0 ? _a : [];
+        inject = fn.$inject ?? [];
         if (!fn.$inject) {
             if (fn.length > 0) {
                 if (strictDi) {
                     throw $injectorMinErr$3("strictdi", "{0} is not using explicit annotation and cannot be invoked in strict mode", name);
                 }
                 const argDecl = extractArgs(fn);
-                argDecl === null || argDecl === void 0 ? void 0 : argDecl[1].split(/,/).forEach((arg) => {
+                argDecl?.[1].split(/,/).forEach((arg) => {
                     arg.replace(FN_ARG, (_all, _underscore, injName) => {
                         inject.push(injName);
                         return injName;
@@ -2065,8 +2060,7 @@ const reasons = new Map([
     [isString, "notstring"],
 ]);
 function getReason(val) {
-    var _a;
-    return (_a = reasons.get(val)) !== null && _a !== void 0 ? _a : "fail";
+    return reasons.get(val) ?? "fail";
 }
 /**
  * Validate a value using a predicate function.
@@ -2081,7 +2075,7 @@ function validate(fn, arg, name) {
     try {
         serialized = JSON.stringify(arg);
     }
-    catch (_a) {
+    catch {
         serialized = String(arg);
     }
     throw new TypeError(`badarg:${getReason(fn)} ${name}=${serialized}`);
@@ -2215,7 +2209,6 @@ function createInjector(modulesToLoad, strictDi = false) {
     function store(name, ctor, type, backendOrConfig) {
         return provider(name, {
             $get: ($injector) => {
-                var _a, _b, _c;
                 switch (type) {
                     case "session": {
                         const instance = $injector.instantiate(ctor);
@@ -2228,9 +2221,9 @@ function createInjector(modulesToLoad, strictDi = false) {
                     case "cookie": {
                         const instance = $injector.instantiate(ctor);
                         const $cookie = $injector.get($injectTokens._cookie);
-                        const serialize = (_a = backendOrConfig === null || backendOrConfig === void 0 ? void 0 : backendOrConfig.serialize) !== null && _a !== void 0 ? _a : JSON.stringify;
-                        const deserialize = (_b = backendOrConfig === null || backendOrConfig === void 0 ? void 0 : backendOrConfig.deserialize) !== null && _b !== void 0 ? _b : JSON.parse;
-                        const cookieOpts = (_c = backendOrConfig === null || backendOrConfig === void 0 ? void 0 : backendOrConfig.cookie) !== null && _c !== void 0 ? _c : {};
+                        const serialize = backendOrConfig?.serialize ?? JSON.stringify;
+                        const deserialize = backendOrConfig?.deserialize ?? JSON.parse;
+                        const cookieOpts = backendOrConfig?.cookie ?? {};
                         return createPersistentProxy(instance, name, {
                             getItem(key) {
                                 const raw = $cookie.get(key);
@@ -2818,7 +2811,7 @@ const $httpMinErr = minErr("$http");
 function serializeValue(v) {
     if (isObject(v)) {
         const jsonValue = isDate(v) ? v.toISOString() : toJson(v);
-        return jsonValue !== null && jsonValue !== void 0 ? jsonValue : "";
+        return jsonValue ?? "";
     }
     return v;
 }
@@ -2943,7 +2936,7 @@ function headersGetter(headers) {
             headersObj = parseHeaders(headers);
         if (name) {
             const value = headersObj[name.toLowerCase()];
-            return value !== null && value !== void 0 ? value : "";
+            return value ?? "";
         }
         return headersObj;
     });
@@ -3268,8 +3261,7 @@ function HttpProvider() {
                 $http.pendingRequests.push(config);
                 promise.then(removePendingReq, removePendingReq);
                 if ((config.cache ||
-                    defaults
-                        .cache) &&
+                    defaults.cache) &&
                     config.cache !== false &&
                     config.method === "GET") {
                     const providerDefaults = defaults;
@@ -3381,7 +3373,7 @@ function HttpProvider() {
                     (isSuccess(status) ? resolve : reject)({
                         data: response,
                         status,
-                        headers: headersGetter(headers !== null && headers !== void 0 ? headers : ""),
+                        headers: headersGetter(headers ?? ""),
                         config,
                         statusText,
                         xhrStatus,
@@ -3878,7 +3870,7 @@ function createHttpDirective(method, attrName) {
                                     try {
                                         return JSON.parse(data);
                                     }
-                                    catch (_a) {
+                                    catch {
                                         return data;
                                     }
                                 },
@@ -4064,12 +4056,12 @@ function createWorkerConnection(scriptPath, config) {
             try {
                 return JSON.parse(data);
             }
-            catch (_a) {
+            catch {
                 return data;
             }
         },
-        logger: ((config === null || config === void 0 ? void 0 : config.logger) || console),
-        err: ((config === null || config === void 0 ? void 0 : config.err) || (() => { })),
+        logger: (config?.logger || console),
+        err: (config?.err || (() => { })),
     };
     const cfg = Object.assign({}, defaults, config);
     let worker = new Worker(scriptPath, { type: "module" });
@@ -4080,7 +4072,7 @@ function createWorkerConnection(scriptPath, config) {
             try {
                 data = cfg.transformMessage(data);
             }
-            catch (_a) {
+            catch {
                 /* no-op */
             }
             cfg.onMessage(data, event);
@@ -4418,7 +4410,7 @@ const NG_ANIMATE_CHILDREN_DATA = "$$ngAnimateChildren";
  * Returns only the `from`/`to` style portions of an animation options object.
  */
 function packageStyles(options) {
-    return (options === null || options === void 0 ? void 0 : options.to) || (options === null || options === void 0 ? void 0 : options.from)
+    return options?.to || options?.from
         ? { to: options.to, from: options.from }
         : {};
 }
@@ -4560,12 +4552,8 @@ function mergeAnimationDetails(element, oldAnimation, newAnimation) {
         if (existingSet.has(cls))
             finalRemove.push(cls);
     });
-    target.addClass = finalAdd.length
-        ? finalAdd.join(" ")
-        : undefined;
-    target.removeClass = finalRemove.length
-        ? finalRemove.join(" ")
-        : undefined;
+    target.addClass = finalAdd.length ? finalAdd.join(" ") : undefined;
+    target.removeClass = finalRemove.length ? finalRemove.join(" ") : undefined;
     // Update oldAnimation references
     oldAnimation.addClass = target.addClass;
     oldAnimation.removeClass = target.removeClass;
@@ -4766,34 +4754,29 @@ class AnimateRunner {
      * Reports progress to host.
      */
     progress(...args) {
-        var _a, _b;
-        (_b = (_a = this._host).progress) === null || _b === void 0 ? void 0 : _b.call(_a, ...args);
+        this._host.progress?.(...args);
     }
     /** Pause underlying animation (if supported). */
     pause() {
-        var _a, _b;
-        (_b = (_a = this._host).pause) === null || _b === void 0 ? void 0 : _b.call(_a);
+        this._host.pause?.();
     }
     /** Resume underlying animation (if supported). */
     resume() {
-        var _a, _b;
-        (_b = (_a = this._host).resume) === null || _b === void 0 ? void 0 : _b.call(_a);
+        this._host.resume?.();
     }
     /**
      * Ends the animation successfully.
      * Equivalent to user choosing to finish it immediately.
      */
     end() {
-        var _a, _b;
-        (_b = (_a = this._host).end) === null || _b === void 0 ? void 0 : _b.call(_a);
+        this._host.end?.();
         this._finish(true);
     }
     /**
      * Cancels the animation.
      */
     cancel() {
-        var _a, _b;
-        (_b = (_a = this._host).cancel) === null || _b === void 0 ? void 0 : _b.call(_a);
+        this._host.cancel?.();
         this._finish(false);
     }
     /**
@@ -4899,8 +4882,7 @@ function AnimateCssDriverProvider($$animationProvider) {
      * Returns whether an element is attached inside a document fragment.
      */
     function isDocumentFragment(node) {
-        var _a;
-        return ((_a = node.parentNode) === null || _a === void 0 ? void 0 : _a.nodeType) === NodeType._DOCUMENT_FRAGMENT_NODE;
+        return node.parentNode?.nodeType === NodeType._DOCUMENT_FRAGMENT_NODE;
     }
     /**
      * Creates the runtime CSS animation driver factory.
@@ -4961,13 +4943,13 @@ function AnimateCssDriverProvider($$animationProvider) {
                             cancel: endFn,
                         });
                         let currentAnimation = startingAnimator.start();
-                        currentAnimation === null || currentAnimation === void 0 ? void 0 : currentAnimation.done(() => {
+                        currentAnimation?.done(() => {
                             currentAnimation = null;
                             if (!animatorIn) {
                                 animatorIn = prepareInAnimation();
                                 if (animatorIn) {
                                     currentAnimation = animatorIn.start();
-                                    currentAnimation === null || currentAnimation === void 0 ? void 0 : currentAnimation.done(() => {
+                                    currentAnimation?.done(() => {
                                         currentAnimation = null;
                                         end();
                                         runner.complete();
@@ -5096,7 +5078,6 @@ function AnimateCssDriverProvider($$animationProvider) {
              * Prepares a normal CSS animation for one element.
              */
             function prepareRegularAnimation(animationDetails) {
-                var _a;
                 const options = animationDetails.options || {};
                 if (animationDetails.structural) {
                     options.event = animationDetails.event;
@@ -5113,7 +5094,7 @@ function AnimateCssDriverProvider($$animationProvider) {
                 // the internals of $animateCss will just suffix the event token values
                 // with `-active` to trigger the animation.
                 if (options.preparationClasses) {
-                    options.event = concatWithSpace(String((_a = options.event) !== null && _a !== void 0 ? _a : ""), options.preparationClasses);
+                    options.event = concatWithSpace(String(options.event ?? ""), options.preparationClasses);
                 }
                 const animator = $animateCss(animationDetails.element, options);
                 // the driver lookup code inside of $$animation attempts to spawn a
@@ -5255,8 +5236,7 @@ function AnimateJsProvider($animateProvider) {
                 if (!before && !after)
                     return undefined;
                 function applyOptions() {
-                    var _a;
-                    (_a = animationOptions.domOperation) === null || _a === void 0 ? void 0 : _a.call(animationOptions);
+                    animationOptions.domOperation?.();
                     applyAnimationClasses(element, animationOptions);
                 }
                 function close() {
@@ -5920,9 +5900,8 @@ class AnimateCache {
      * as the parent scope to avoid key collisions.
      */
     _cacheKey(node, method, addClass, removeClass) {
-        var _a, _b;
-        const parent = ((_a = node.parentNode) !== null && _a !== void 0 ? _a : node);
-        const parentID = (_b = parent[KEY]) !== null && _b !== void 0 ? _b : (parent[KEY] = ++this._parentCounter);
+        const parent = (node.parentNode ?? node);
+        const parentID = parent[KEY] ?? (parent[KEY] = ++this._parentCounter);
         const parts = [parentID, method, node.getAttribute("class")];
         if (addClass)
             parts.push(addClass);
@@ -5952,15 +5931,13 @@ class AnimateCache {
      * Returns the number of times a cache entry has been used.
      */
     _count(key) {
-        var _a, _b;
-        return (_b = (_a = this._cache.get(key)) === null || _a === void 0 ? void 0 : _a.total) !== null && _b !== void 0 ? _b : 0;
+        return this._cache.get(key)?.total ?? 0;
     }
     /**
      * Retrieves the cached value associated with a cache key.
      */
     _get(key) {
-        var _a;
-        return (_a = this._cache.get(key)) === null || _a === void 0 ? void 0 : _a.value;
+        return this._cache.get(key)?.value;
     }
     /**
      * Inserts or updates a cache entry.
@@ -6351,7 +6328,7 @@ class AnimationProvider {
                         }
                     }
                     const group = anchorGroups[lookupKey];
-                    if (group === null || group === void 0 ? void 0 : group.anchors) {
+                    if (group?.anchors) {
                         group.anchors.push({
                             out: from.element,
                             in: to.element,
@@ -6417,22 +6394,19 @@ class AnimationProvider {
                 }
                 /** Updates the host runner associated with a single element. */
                 function update(el) {
-                    var _a;
-                    (_a = getRunner(el)) === null || _a === void 0 ? void 0 : _a.setHost(newRunner);
+                    getRunner(el)?.setHost(newRunner);
                 }
             }
             function handleDestroyedElement() {
-                var _a;
                 (event !== "leave" || !options._domOperationFired) &&
-                    ((_a = getRunner(elementParam)) === null || _a === void 0 ? void 0 : _a.end());
+                    getRunner(elementParam)?.end();
             }
             /** Finalizes the animation and applies DOM/class/style cleanup. */
             function close(rejected) {
-                var _a;
                 deleteCacheData(elementParam, RUNNER_STORAGE_KEY);
                 applyAnimationClasses(elementParam, options);
                 applyAnimationStyles(elementParam, options);
-                (_a = options.domOperation) === null || _a === void 0 ? void 0 : _a.call(options);
+                options.domOperation?.();
                 if (tempClasses) {
                     const classList = Array.isArray(tempClasses)
                         ? tempClasses
@@ -6669,7 +6643,6 @@ function AnimateCssProvider() {
              * Creates an animator instance for the given element and options.
              */
             function init(element, initialOptions) {
-                var _a, _b, _c;
                 // all of the animation functions should create
                 // a copy of the options data, however, if a
                 // parent service has already created a copy then
@@ -6797,7 +6770,7 @@ function AnimateCssProvider() {
                     applyInlineStyle(node, keyframeStyle);
                     temporaryStyles.push(keyframeStyle);
                 }
-                const staggerIndex = (_a = options.staggerIndex) !== null && _a !== void 0 ? _a : 0;
+                const staggerIndex = options.staggerIndex ?? 0;
                 const itemIndex = stagger
                     ? staggerIndex >= 0
                         ? staggerIndex
@@ -6896,8 +6869,8 @@ function AnimateCssProvider() {
                 flags._blockTransition = timings.transitionDuration > 0;
                 flags._blockKeyframeAnimation =
                     timings.animationDuration > 0 &&
-                        ((_b = stagger.animationDelay) !== null && _b !== void 0 ? _b : 0) > 0 &&
-                        ((_c = stagger.animationDuration) !== null && _c !== void 0 ? _c : 0) === 0;
+                        (stagger.animationDelay ?? 0) > 0 &&
+                        (stagger.animationDuration ?? 0) === 0;
                 if (options.from) {
                     if (options.cleanupStyles) {
                         registerRestorableStyles(restoreStyles, node, Object.keys(options.from));
@@ -7063,7 +7036,6 @@ function AnimateCssProvider() {
                     }
                 }
                 function start() {
-                    var _a, _b;
                     if (animationClosed)
                         return;
                     if (!node.parentNode) {
@@ -7101,7 +7073,7 @@ function AnimateCssProvider() {
                     const maxStagger = itemIndex > 0 &&
                         ((timings.transitionDuration && stagger.transitionDuration === 0) ||
                             (timings.animationDuration && stagger.animationDuration === 0)) &&
-                        Math.max((_a = stagger.animationDelay) !== null && _a !== void 0 ? _a : 0, (_b = stagger.transitionDelay) !== null && _b !== void 0 ? _b : 0);
+                        Math.max(stagger.animationDelay ?? 0, stagger.transitionDelay ?? 0);
                     if (maxStagger) {
                         setTimeout(triggerAnimationStart, Math.floor(maxStagger * itemIndex * ONE_SECOND), false);
                     }
@@ -7479,7 +7451,6 @@ function AnimateQueueProvider($animateProvider) {
             return $animate;
             /** Queues an animation request and returns the runner for it. */
             function queueAnimation(originalElement, event, initialOptions) {
-                var _a;
                 // we always make a copy of the options since
                 // there should never be any side effects on
                 // the input data when running `$animateCss`.
@@ -7530,12 +7501,12 @@ function AnimateQueueProvider($animateProvider) {
                 // to the user), because browsers slow down or do not flush calls to requestAnimationFrame
                 let skipAnimations = document.hidden || disabledElementsLookup.get(node);
                 const existingAnimation = (!skipAnimations ? activeAnimationsLookup.get(node) : undefined);
-                const hasExistingAnimation = !!(existingAnimation === null || existingAnimation === void 0 ? void 0 : existingAnimation.state);
+                const hasExistingAnimation = !!existingAnimation?.state;
                 // there is no point in traversing the same collection of parent ancestors if a followup
                 // animation will be run on the same element that already did all that checking work
                 if (!skipAnimations &&
                     (!hasExistingAnimation ||
-                        (existingAnimation === null || existingAnimation === void 0 ? void 0 : existingAnimation.state) !== PRE_DIGEST_STATE)) {
+                        existingAnimation?.state !== PRE_DIGEST_STATE)) {
                     skipAnimations = !areAnimationsAllowed(node, parentNode);
                 }
                 if (skipAnimations) {
@@ -7623,7 +7594,7 @@ function AnimateQueueProvider($animateProvider) {
                     // animate (from/to) can be quickly checked first, otherwise we check if any classes are present
                     isValidAnimation =
                         (newAnimation.event === "animate" &&
-                            Object.keys(((_a = newAnimation.options) === null || _a === void 0 ? void 0 : _a.to) || {}).length > 0) ||
+                            Object.keys(newAnimation.options?.to || {}).length > 0) ||
                             hasAnimationClasses(newAnimation);
                 }
                 if (!isValidAnimation) {
@@ -7632,7 +7603,7 @@ function AnimateQueueProvider($animateProvider) {
                     return runner;
                 }
                 // the counter keeps track of cancelled animations
-                const counter = ((existingAnimation === null || existingAnimation === void 0 ? void 0 : existingAnimation.counter) || 0) + 1;
+                const counter = (existingAnimation?.counter || 0) + 1;
                 newAnimation.counter = counter;
                 markElementAnimationState(node, PRE_DIGEST_STATE, newAnimation);
                 $rootScope.$postUpdate(() => {
@@ -7642,7 +7613,6 @@ function AnimateQueueProvider($animateProvider) {
                     // actual DOM nodes.
                     // Note: We still need to use the old `node` for certain things, such as looking up in
                     //       HashMaps where it was used as the key.
-                    var _a;
                     element = stripCommentsFromElement(originalElement);
                     const animationDetails = activeAnimationsLookup.get(node);
                     const animationCancelled = !animationDetails;
@@ -7673,7 +7643,7 @@ function AnimateQueueProvider($animateProvider) {
                         // it, otherwise if it's the same then the end result will be the same too
                         if (!animationDetails ||
                             (isStructural && animationDetails.event !== event)) {
-                            (_a = options.domOperation) === null || _a === void 0 ? void 0 : _a.call(options);
+                            options.domOperation?.();
                             runner.end();
                         }
                         // in the event that the element animation was not cancelled or a follow-up animation
@@ -7698,9 +7668,8 @@ function AnimateQueueProvider($animateProvider) {
                     runner.setHost(realRunner);
                     notifyProgress(runner, event, "start", getEventData(options));
                     realRunner.done((status) => {
-                        var _a;
                         close(!status);
-                        if (((_a = activeAnimationsLookup.get(node)) === null || _a === void 0 ? void 0 : _a.counter) === counter) {
+                        if (activeAnimationsLookup.get(node)?.counter === counter) {
                             clearElementAnimationState(node);
                         }
                         notifyProgress(runner, event, "close", getEventData(options));
@@ -7727,11 +7696,10 @@ function AnimateQueueProvider($animateProvider) {
                 }
                 /** Completes an animation and applies its final DOM work. */
                 function close(reject) {
-                    var _a;
                     clearGeneratedClasses(element, options);
                     applyAnimationClasses(element, options);
                     applyAnimationStyles(element, options);
-                    (_a = options.domOperation) === null || _a === void 0 ? void 0 : _a.call(options);
+                    options.domOperation?.();
                     runner.complete(!reject);
                 }
             }
@@ -7813,7 +7781,7 @@ function AnimateQueueProvider($animateProvider) {
                         else if (parentNodeDisabled === false) {
                             elementDisabled = false;
                         }
-                        parentAnimationDetected = !!(details === null || details === void 0 ? void 0 : details.structural);
+                        parentAnimationDetected = !!details?.structural;
                     }
                     if (isUndefined(animateChildren) || animateChildren === true) {
                         const value = getOrSetCacheData(parentElement, NG_ANIMATE_CHILDREN_DATA);
@@ -8056,7 +8024,7 @@ const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
 function identifierForController(controller, ident) {
     if (isString(controller)) {
         const match = CNTRL_REG.exec(controller);
-        return match === null || match === void 0 ? void 0 : match[3];
+        return match?.[3];
     }
     return undefined;
 }
@@ -8094,7 +8062,6 @@ class ControllerProvider {
             $injectTokens._injector,
             ($injector) => {
                 return (expression, locals, later, ident) => {
-                    var _a;
                     let instance;
                     let constructorName;
                     let identifier = ident && isString(ident) ? ident : null;
@@ -8122,7 +8089,7 @@ class ControllerProvider {
                             instance.$controllerIdentifier = identifier;
                             this.addIdentifier(locals, identifier, instance, exportName);
                         }
-                        if (((_a = instance === null || instance === void 0 ? void 0 : instance.constructor) === null || _a === void 0 ? void 0 : _a.$scopename) && (locals === null || locals === void 0 ? void 0 : locals.$scope)) {
+                        if (instance?.constructor?.$scopename && locals?.$scope) {
                             locals.$scope.$scopename =
                                 instance.constructor.$scopename;
                         }
@@ -8931,40 +8898,36 @@ class Attributes {
     }
     /** @ignore Internal element accessor used by legacy attribute helpers. */
     _element() {
-        var _a;
-        return (_a = this._nodeRef) === null || _a === void 0 ? void 0 : _a._getAny();
+        return this._nodeRef?._getAny();
     }
     $addClass(classVal) {
-        var _a;
         if (classVal && classVal.length > 0) {
             if (hasAnimate(this._element())) {
                 this._animate.addClass(this._element(), classVal);
             }
             else {
-                (_a = this._nodeRef) === null || _a === void 0 ? void 0 : _a.element.classList.add(classVal);
+                this._nodeRef?.element.classList.add(classVal);
             }
         }
     }
     $removeClass(classVal) {
-        var _a;
         if (classVal && classVal.length > 0) {
             if (hasAnimate(this._element())) {
                 this._animate.removeClass(this._element(), classVal);
             }
             else {
-                (_a = this._nodeRef) === null || _a === void 0 ? void 0 : _a.element.classList.remove(classVal);
+                this._nodeRef?.element.classList.remove(classVal);
             }
         }
     }
     $updateClass(newClasses, oldClasses) {
-        var _a, _b;
         const toAdd = tokenDifference(newClasses, oldClasses);
         if (toAdd && toAdd.length) {
             if (hasAnimate(this._element())) {
                 this._animate.addClass(this._element(), toAdd);
             }
             else {
-                (_a = this._nodeRef) === null || _a === void 0 ? void 0 : _a.element.classList.add(...toAdd.trim().split(/\s+/));
+                this._nodeRef?.element.classList.add(...toAdd.trim().split(/\s+/));
             }
         }
         const toRemove = tokenDifference(oldClasses, newClasses);
@@ -8973,12 +8936,11 @@ class Attributes {
                 this._animate.removeClass(this._element(), toRemove);
             }
             else {
-                (_b = this._nodeRef) === null || _b === void 0 ? void 0 : _b.element.classList.remove(...toRemove.trim().split(/\s+/));
+                this._nodeRef?.element.classList.remove(...toRemove.trim().split(/\s+/));
             }
         }
     }
     $set(key, value, writeAttr, attrName) {
-        var _a;
         const node = this._element();
         const booleanKey = getBooleanAttrName(node, key);
         const aliasedKey = ALIASED_ATTR[key];
@@ -9001,7 +8963,7 @@ class Attributes {
                 this.$attr[key] = attrName = snakeCase(key, "-");
             }
         }
-        const nodeName = (_a = this._nodeRef) === null || _a === void 0 ? void 0 : _a.node.nodeName.toLowerCase();
+        const nodeName = this._nodeRef?.node.nodeName.toLowerCase();
         let maybeSanitizedValue;
         if (nodeName === "img" && key === "srcset") {
             this[key] = maybeSanitizedValue = this.sanitizeSrcset(value, "$set('srcset', value)");
@@ -9059,7 +9021,7 @@ class Attributes {
         const { attributes } = specialAttrHolder.firstChild;
         const attribute = attributes[0];
         attributes.removeNamedItem(attribute.name);
-        attribute.value = value !== null && value !== void 0 ? value : "";
+        attribute.value = value ?? "";
         element.attributes.setNamedItem(attribute);
     }
     sanitizeSrcset(value, invokeType) {
@@ -9572,7 +9534,6 @@ class CompileProvider {
                     let compositeLinkFn = compileNodes(nodeRef, transcludeFn || undefined, maxPriority, ignoreDirective, previousCompileContext);
                     let namespace = null;
                     const publicLinkFn = function (scope, cloneConnectFn, options) {
-                        var _a;
                         if (!nodeRef) {
                             throw $compileMinErr("multilink", "This element has already been linked.");
                         }
@@ -9587,7 +9548,7 @@ class CompileProvider {
                             // for transclusion, which caused us to lose a layer of element on which
                             // we could hold the new transclusion scope, so we will create it manually
                             // here.
-                            scope = ((_a = scope.$parent) === null || _a === void 0 ? void 0 : _a.$new()) || scope.$new();
+                            scope = scope.$parent?.$new() || scope.$new();
                         }
                         options = options || {};
                         let { _parentBoundTranscludeFn } = options;
@@ -9652,7 +9613,7 @@ class CompileProvider {
                         node._stable = true;
                         let childScope;
                         let childBoundTranscludeFn;
-                        if (_nodeLinkFnCtx === null || _nodeLinkFnCtx === void 0 ? void 0 : _nodeLinkFnCtx._nodeLinkFn) {
+                        if (_nodeLinkFnCtx?._nodeLinkFn) {
                             childScope = _nodeLinkFnCtx._newScope ? scope.$new() : scope;
                             if (_nodeLinkFnCtx._transcludeOnThisElement) {
                                 childBoundTranscludeFn = createBoundTranscludeFn(scope, _nodeLinkFnCtx._transclude, _parentBoundTranscludeFn || null);
@@ -9667,10 +9628,15 @@ class CompileProvider {
                             else {
                                 childBoundTranscludeFn = null;
                             }
-                            if (_nodeLinkFnCtx === null || _nodeLinkFnCtx === void 0 ? void 0 : _nodeLinkFnCtx._newScope) {
+                            if (_nodeLinkFnCtx?._newScope) {
                                 setScope(node, childScope);
                             }
-                            invokeNodeLinkFnCtx(_nodeLinkFnCtx, _childLinkFn, childScope, node, childBoundTranscludeFn);
+                            if (isDefined(_nodeLinkFnCtx._nodeLinkFnState)) {
+                                _nodeLinkFnCtx._nodeLinkFn(_nodeLinkFnCtx._nodeLinkFnState, _childLinkFn, childScope, node, childBoundTranscludeFn);
+                            }
+                            else {
+                                _nodeLinkFnCtx._nodeLinkFn(_childLinkFn, childScope, node, childBoundTranscludeFn);
+                            }
                         }
                         else if (_childLinkFn) {
                             _childLinkFn(scope, new NodeRef(node.childNodes), _parentBoundTranscludeFn);
@@ -9694,25 +9660,25 @@ class CompileProvider {
                         const directives = collectDirectives(nodeRefList._getIndex(i), attrs, i === 0 ? maxPriority : undefined, ignoreDirective);
                         let nodeLinkFnCtx;
                         if (directives.length) {
-                            nodeLinkFnCtx = applyDirectivesToNode(directives, nodeRefList === null || nodeRefList === void 0 ? void 0 : nodeRefList._getIndex(i), attrs, transcludeFn, null, [], [], Object.assign({}, previousCompileContext, {
+                            nodeLinkFnCtx = applyDirectivesToNode(directives, nodeRefList?._getIndex(i), attrs, transcludeFn, null, [], [], Object.assign({}, previousCompileContext, {
                                 _index: i,
                                 _parentNodeRef: nodeRefList,
                                 _ctxNodeRef: nodeRefList,
                             }));
                         }
                         let childLinkFn;
-                        const nodeLinkFn = nodeLinkFnCtx === null || nodeLinkFnCtx === void 0 ? void 0 : nodeLinkFnCtx._nodeLinkFn;
+                        const nodeLinkFn = nodeLinkFnCtx?._nodeLinkFn;
                         const { childNodes } = nodeRefList._getIndex(i);
-                        if ((nodeLinkFn && (nodeLinkFnCtx === null || nodeLinkFnCtx === void 0 ? void 0 : nodeLinkFnCtx._terminal)) ||
+                        if ((nodeLinkFn && nodeLinkFnCtx?._terminal) ||
                             !childNodes ||
                             !childNodes.length) {
                             childLinkFn = null;
                         }
                         else {
                             const transcluded = nodeLinkFn
-                                ? (nodeLinkFnCtx === null || nodeLinkFnCtx === void 0 ? void 0 : nodeLinkFnCtx._transcludeOnThisElement) ||
-                                    !(nodeLinkFnCtx === null || nodeLinkFnCtx === void 0 ? void 0 : nodeLinkFnCtx._templateOnThisElement)
-                                    ? nodeLinkFnCtx === null || nodeLinkFnCtx === void 0 ? void 0 : nodeLinkFnCtx._transclude
+                                ? nodeLinkFnCtx?._transcludeOnThisElement ||
+                                    !nodeLinkFnCtx?._templateOnThisElement
+                                    ? nodeLinkFnCtx?._transclude
                                     : undefined
                                 : transcludeFn;
                             // recursive call
@@ -9787,7 +9753,6 @@ class CompileProvider {
                  * @returns An array to which the directives are added. This array is sorted before the function returns.
                  */
                 function collectDirectives(node, attrs, maxPriority, ignoreDirective) {
-                    var _a;
                     const directives = [];
                     const { nodeType } = node;
                     const attrsMap = attrs.$attr;
@@ -9801,7 +9766,7 @@ class CompileProvider {
                             }
                             // iterate over the attributes
                             const nodeAttributes = node.attributes;
-                            for (let j = 0, nodeAttributesLength = (nodeAttributes === null || nodeAttributes === void 0 ? void 0 : nodeAttributes.length) || 0; j < nodeAttributesLength; j++) {
+                            for (let j = 0, nodeAttributesLength = nodeAttributes?.length || 0; j < nodeAttributesLength; j++) {
                                 let isNgAttr = false;
                                 let isNgProp = false;
                                 let isNgEvent = false;
@@ -9869,7 +9834,7 @@ class CompileProvider {
                             break;
                         }
                         case NodeType._TEXT_NODE:
-                            addTextInterpolateDirective(directives, (_a = node.nodeValue) !== null && _a !== void 0 ? _a : "");
+                            addTextInterpolateDirective(directives, node.nodeValue ?? "");
                             break;
                     }
                     if (directives.length > 1) {
@@ -9920,9 +9885,8 @@ class CompileProvider {
                 }
                 /** Shared post-link executor for text interpolation directives. */
                 function textInterpolateLinkFn(linkState, scope, node) {
-                    const typedLinkState = linkState;
                     scope.$watch(linkState._watchExpression, () => {
-                        applyTextInterpolationValue(node, typedLinkState._interpolateFn(deProxy(scope)));
+                        applyTextInterpolationValue(node, linkState._interpolateFn(deProxy(scope)));
                     });
                 }
                 /**
@@ -9930,13 +9894,12 @@ class CompileProvider {
                  * as the original inline pre-link closure.
                  */
                 function applyInterpolatedAttrValue(linkState, attr, value) {
-                    const typedLinkState = linkState;
-                    if (typedLinkState._name === "class") {
+                    if (linkState._name === "class") {
                         const element = attr._element();
                         attr.$updateClass(value, element.classList.value);
                         return;
                     }
-                    attr.$set(typedLinkState._name, typedLinkState._name === "srcset"
+                    attr.$set(linkState._name, linkState._name === "srcset"
                         ? $sce.getTrustedMediaUrl(value)
                         : value);
                 }
@@ -9945,10 +9908,10 @@ class CompileProvider {
                  * current interpolation function in sync if an earlier compile step rewrites the attribute.
                  */
                 function attrInterpolatePreLinkFn(linkState, scope, _element, attr) {
-                    const _observers = attr._observers || (attr._observers = nullObject());
                     // Recompute interpolation if another compile step rewrote the attribute value.
                     const attrsAny = attr;
-                    const newValue = attrsAny[linkState._name];
+                    const name = linkState._name;
+                    const newValue = attrsAny[name];
                     if (newValue !== linkState._value) {
                         linkState._interpolateFn = newValue
                             ? $interpolate(newValue, true, linkState._trustedContext, linkState._allOrNothing)
@@ -9959,25 +9922,21 @@ class CompileProvider {
                         return;
                     }
                     const interpolateFn = linkState._interpolateFn;
-                    attrsAny[linkState._name] = interpolateFn(scope);
-                    (_observers[linkState._name] ||
-                        (_observers[linkState._name] = []))._inter = true;
-                    if (linkState._interpolateFn.expressions.length > 0) {
-                        const targetScope = (attr._observers && attr._observers[linkState._name]._scope) ||
-                            scope;
-                        const watchExpression = buildInterpolationWatchExpression(linkState._interpolateFn.expressions);
+                    const expressions = interpolateFn.expressions;
+                    const observers = attr._observers || (attr._observers = nullObject());
+                    const observer = observers[name] || (observers[name] = []);
+                    attrsAny[name] = interpolateFn(scope);
+                    observer._inter = true;
+                    if (expressions.length > 0) {
+                        const targetScope = observer._scope || scope;
+                        const watchExpression = buildInterpolationWatchExpression(expressions);
                         targetScope.$watch(watchExpression, () => {
                             applyInterpolatedAttrValue(linkState, attr, interpolateFn(scope));
                         });
                     }
-                    if (linkState._interpolateFn.expressions.length === 0) {
+                    else {
                         applyInterpolatedAttrValue(linkState, attr, newValue);
                     }
-                }
-                /** Applies one property binding update using the parsed getter and sanitizer captured at compile time. */
-                function applyPropertyDirectiveValue(linkState, scope, $element) {
-                    const propValue = linkState._ngPropGetter(scope);
-                    $element[linkState._propName] = linkState._sanitizer(propValue);
                 }
                 /**
                  * Shared pre-link executor for `ng-prop-*` bindings. Watch callbacks still need per-link state,
@@ -9985,24 +9944,17 @@ class CompileProvider {
                  */
                 function propertyDirectivePreLinkFn(linkState, scope, $element, attr) {
                     const attrsAny = attr;
-                    applyPropertyDirectiveValue(linkState, scope, $element);
+                    const update = () => {
+                        $element[linkState._propName] = linkState._sanitizer(linkState._ngPropGetter(scope));
+                    };
+                    update();
                     scope.$watch(linkState._propName, () => {
-                        applyPropertyDirectiveValue(linkState, scope, $element);
+                        update();
                     });
                     scope.$watch(attrsAny[linkState._attrName], (val) => {
                         $sce.valueOf(val);
-                        applyPropertyDirectiveValue(linkState, scope, $element);
+                        update();
                     });
-                }
-                /**
-                 * Invokes node link functions that may either be direct link functions or shared executors
-                 * that read their per-node state from `nodeLinkFnCtx`.
-                 */
-                function invokeNodeLinkFnCtx(nodeLinkFnCtx, childLinkFn, scope, node, boundTranscludeFn) {
-                    if (isDefined(nodeLinkFnCtx._nodeLinkFnState)) {
-                        return nodeLinkFnCtx._nodeLinkFn(nodeLinkFnCtx._nodeLinkFnState, childLinkFn, scope, node, boundTranscludeFn);
-                    }
-                    return nodeLinkFnCtx._nodeLinkFn(childLinkFn, scope, node, boundTranscludeFn);
                 }
                 /**
                  * Links against a resolved async template using the already materialized node.
@@ -10017,7 +9969,12 @@ class CompileProvider {
                     if (afterTemplateNodeLinkFnCtx._transcludeOnThisElement) {
                         childBoundTranscludeFn = createBoundTranscludeFn(scope, afterTemplateNodeLinkFnCtx._transclude, boundTranscludeFn);
                     }
-                    invokeNodeLinkFnCtx(afterTemplateNodeLinkFnCtx, delayedState._afterTemplateChildLinkFn, scope, node, childBoundTranscludeFn || null);
+                    if (isDefined(afterTemplateNodeLinkFnCtx._nodeLinkFnState)) {
+                        afterTemplateNodeLinkFnCtx._nodeLinkFn(afterTemplateNodeLinkFnCtx._nodeLinkFnState, delayedState._afterTemplateChildLinkFn, scope, node, childBoundTranscludeFn || null);
+                    }
+                    else {
+                        afterTemplateNodeLinkFnCtx._nodeLinkFn(delayedState._afterTemplateChildLinkFn, scope, node, childBoundTranscludeFn || null);
+                    }
                 }
                 /**
                  * Replays one queued link request after an async templateUrl has resolved.
@@ -10026,28 +9983,30 @@ class CompileProvider {
                  */
                 function replayResolvedTemplateNodeLink(delayedState, scope, beforeTemplateLinkNode, boundTranscludeFn) {
                     const afterTemplateNodeLinkFnCtx = delayedState._afterTemplateNodeLinkFnCtx;
-                    if (!afterTemplateNodeLinkFnCtx || !delayedState._compiledNode) {
+                    const compiledNode = delayedState._compiledNode;
+                    const compileNodeRef = delayedState._compileNodeRef;
+                    if (!afterTemplateNodeLinkFnCtx || !compiledNode) {
                         return;
                     }
                     if (scope._destroyed) {
                         return;
                     }
-                    let linkNode = delayedState._compileNodeRef._getAny();
+                    let linkNode = compileNodeRef._getAny();
                     if (beforeTemplateLinkNode !== delayedState._beforeTemplateCompileNode) {
                         const oldClasses = beforeTemplateLinkNode.className;
                         if (!(delayedState._previousCompileContext
                             ._hasElementTranscludeDirective &&
                             delayedState._origAsyncDirective.replace)) {
                             // The linked node was cloned before the template arrived; clone the resolved template too.
-                            linkNode = delayedState._compiledNode.cloneNode(true);
+                            linkNode = compiledNode.cloneNode(true);
                             beforeTemplateLinkNode.appendChild(linkNode);
                         }
                         try {
                             if (oldClasses !== "") {
-                                delayedState._compileNodeRef.element.classList.forEach((cls) => beforeTemplateLinkNode.classList.add(cls));
+                                compileNodeRef.element.classList.forEach((cls) => beforeTemplateLinkNode.classList.add(cls));
                             }
                         }
-                        catch (_a) {
+                        catch {
                             // Ignore read-only SVG className updates.
                         }
                     }
@@ -10069,33 +10028,24 @@ class CompileProvider {
                 }
                 /** Handles `$transclude(...)` calls for the shared node-link executor. */
                 function invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName) {
-                    let _transcludeControllers;
-                    let transcludedScope;
-                    let attachFn;
-                    let futureParentElement = _futureParentElement;
-                    let requestedSlotName = slotName;
-                    if (!isScope(scopeParam)) {
-                        requestedSlotName = futureParentElement;
-                        futureParentElement = cloneAttachFn;
-                        attachFn = scopeParam;
-                        transcludedScope = undefined;
-                    }
-                    else {
-                        transcludedScope = scopeParam;
-                        attachFn = cloneAttachFn;
-                    }
-                    if (transcludeState._hasElementTranscludeDirective) {
-                        _transcludeControllers = transcludeState._elementControllers;
-                    }
-                    if (!futureParentElement) {
-                        futureParentElement = transcludeState._hasElementTranscludeDirective
+                    const hasScope = isScope(scopeParam);
+                    const boundTranscludeFn = transcludeState._boundTranscludeFn;
+                    const transcludeControllers = transcludeState._hasElementTranscludeDirective
+                        ? transcludeState._elementControllers
+                        : undefined;
+                    const transcludedScope = hasScope
+                        ? scopeParam
+                        : undefined;
+                    const attachFn = (hasScope ? cloneAttachFn : scopeParam);
+                    const requestedSlotName = (hasScope ? slotName : _futureParentElement);
+                    const futureParentElement = (hasScope ? _futureParentElement : cloneAttachFn) ||
+                        (transcludeState._hasElementTranscludeDirective
                             ? transcludeState._elementRef.node.parentElement
-                            : transcludeState._elementRef.node;
-                    }
+                            : transcludeState._elementRef.node);
                     if (requestedSlotName) {
-                        const slotTranscludeFn = transcludeState._boundTranscludeFn._slots[requestedSlotName];
+                        const slotTranscludeFn = boundTranscludeFn._slots[requestedSlotName];
                         if (slotTranscludeFn) {
-                            return slotTranscludeFn(transcludedScope, attachFn, _transcludeControllers, futureParentElement, transcludeState._scopeToChild);
+                            return slotTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild);
                         }
                         if (isUndefined(slotTranscludeFn)) {
                             throw $compileMinErr("noslot", 'No parent directive that requires a transclusion with slot name "{0}". ' +
@@ -10103,7 +10053,7 @@ class CompileProvider {
                         }
                         return undefined;
                     }
-                    return transcludeState._boundTranscludeFn(transcludedScope, attachFn, _transcludeControllers, futureParentElement, transcludeState._scopeToChild);
+                    return boundTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild);
                 }
                 /**
                  * Reuses one implementation for the standard node-link path by passing all compile-time
@@ -10142,17 +10092,15 @@ class CompileProvider {
                             _scopeToChild: scopeToChild,
                             _elementRef: $element,
                         };
-                        const controllersBoundTransclude = function (scopeParam, cloneAttachFn, _futureParentElement, slotName) {
+                        const newTranscludeFn = function (scopeParam, cloneAttachFn, _futureParentElement, slotName) {
                             transcludeState._scopeToChild = scopeToChild;
                             transcludeState._elementRef = $element;
                             transcludeState._elementControllers = elementControllers;
                             return invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName);
                         };
-                        const newTranscludeFn = controllersBoundTransclude;
                         newTranscludeFn._boundTransclude = boundTranscludeFn;
                         newTranscludeFn.isSlotFilled = function (slotName) {
-                            var _a;
-                            return !!((_a = this._boundTransclude) === null || _a === void 0 ? void 0 : _a._slots[slotName]);
+                            return !!boundTranscludeFn._slots[slotName];
                         };
                         transcludeFn = newTranscludeFn;
                     }
@@ -10161,8 +10109,8 @@ class CompileProvider {
                         elementControllers = setupControllers($element, attrs, transcludeFn, nodeLinkState._controllerDirectives, isolateScope || scope, scope, nodeLinkState._newIsolateScopeDirective);
                     }
                     if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
-                        isolateScope.$target._isolateBindings =
-                            nodeLinkState._newIsolateScopeDirective._isolateBindings;
+                        isolateScope.$target._isolateBindings = nodeLinkState
+                            ._newIsolateScopeDirective._isolateBindings;
                         scopeBindingInfo = initializeDirectiveBindings(scope, attrs, isolateScope, isolateScope._isolateBindings, nodeLinkState._newIsolateScopeDirective);
                         if (scopeBindingInfo.removeWatches) {
                             isolateScope.$on("$destroy", scopeBindingInfo.removeWatches);
@@ -10171,7 +10119,8 @@ class CompileProvider {
                     for (const name in elementControllers) {
                         const controllerDirective = controllerDirectives[name];
                         const controller = elementControllers[name];
-                        const bindings = controllerDirective._bindings.bindToController;
+                        const bindings = controllerDirective._bindings
+                            .bindToController;
                         const controllerInstance = controller();
                         controller.instance = controllerScope.$new(controllerInstance);
                         setCacheData($element.node, `$${controllerDirective.name}Controller`, controller.instance);
@@ -10424,7 +10373,7 @@ class CompileProvider {
                                     for (let childIndex = 0, childCount = childNodes.length; childIndex < childCount; childIndex++) {
                                         const node = childNodes[childIndex].cloneNode(true);
                                         const slotName = node.nodeType === NodeType._ELEMENT_NODE
-                                            ? slotMap[directiveNormalize(getNodeName(node))]
+                                            ? slotMap[directiveNormalize(getNodeName$1(node))]
                                             : undefined;
                                         if (slotName) {
                                             filledSlots[slotName] = true;
@@ -10707,7 +10656,6 @@ class CompileProvider {
                  * `E` for elements and `A` for attributes.
                  */
                 function addDirective(tDirectives, name, location, maxPriority) {
-                    var _a;
                     let match = false;
                     const maxPriorityValue = isUndefined(maxPriority)
                         ? Number.MAX_VALUE
@@ -10719,7 +10667,7 @@ class CompileProvider {
                         for (let i = 0, ii = directives.length; i < ii; i++) {
                             const directive = directives[i];
                             if (maxPriorityValue > (directive.priority || 0) &&
-                                ((_a = directive.restrict) === null || _a === void 0 ? void 0 : _a.indexOf(location)) !== -1) {
+                                directive.restrict?.indexOf(location) !== -1) {
                                 if (!directive._bindings) {
                                     const bindings = (directive._bindings =
                                         parseDirectiveBindings(directive, directive.name));
@@ -10846,7 +10794,7 @@ class CompileProvider {
                             $compileNode.element.innerHTML = content;
                         }
                         directives.unshift(derivedSyncDirective);
-                        delayedState._afterTemplateNodeLinkFnCtx = applyDirectivesToNode(directives, compileNode, tAttrs, childTranscludeFn, origAsyncDirective, preLinkFns, postLinkFns, Object.assign(Object.assign({}, previousCompileContext), { _ctxNodeRef: $compileNode }));
+                        delayedState._afterTemplateNodeLinkFnCtx = applyDirectivesToNode(directives, compileNode, tAttrs, childTranscludeFn, origAsyncDirective, preLinkFns, postLinkFns, { ...previousCompileContext, _ctxNodeRef: $compileNode });
                         if ($rootElement) {
                             entries($rootElement).forEach(([i, node]) => {
                                 if (node === compileNode) {
@@ -10995,7 +10943,7 @@ class CompileProvider {
                     if (EVENT_HANDLER_ATTR_REGEXP.test(propName)) {
                         throw $compileMinErr("nodomevents", "Property bindings for HTML DOM event properties are disallowed");
                     }
-                    const nodeName = getNodeName(node);
+                    const nodeName = getNodeName$1(node);
                     const trustedContext = getTrustedPropContext(nodeName, propName);
                     let sanitizer = (x) => x;
                     // Sanitize img[srcset] + source[srcset] values.
@@ -11024,7 +10972,7 @@ class CompileProvider {
                 }
                 /** Adds an interpolated-attribute directive for the given attribute value. */
                 function addAttrInterpolateDirective(node, directives, value, name, isNgAttr) {
-                    const nodeName = getNodeName(node);
+                    const nodeName = getNodeName$1(node);
                     const trustedContext = getTrustedAttrContext(nodeName, name);
                     const mustHaveExpression = !isNgAttr;
                     const allOrNothing = ALL_OR_NOTHING_ATTRS.includes(name) || isNgAttr;
@@ -11208,7 +11156,7 @@ class CompileProvider {
                                             else {
                                                 parentSet(scopeTarget, (lastValue = val));
                                                 const attributeWatchers = scope.$handler._watchers.get(attrsAny[attrName]);
-                                                attributeWatchers === null || attributeWatchers === void 0 ? void 0 : attributeWatchers.forEach((watchFn) => {
+                                                attributeWatchers?.forEach((watchFn) => {
                                                     watchFn.listenerFn(val, scope.$target);
                                                 });
                                             }
@@ -11295,9 +11243,8 @@ class CompileProvider {
                         initialChanges,
                         removeWatches: removeWatchCollection.length > 0
                             ? function removeWatches() {
-                                var _a;
                                 for (let i = 0, ii = removeWatchCollection.length; i < ii; ++i) {
-                                    (_a = removeWatchCollection[i]) === null || _a === void 0 ? void 0 : _a.call(removeWatchCollection);
+                                    removeWatchCollection[i]?.();
                                 }
                             }
                             : undefined,
@@ -11359,7 +11306,7 @@ function detectNamespaceForChildElements(parentElement) {
         return "html";
     }
     return (node.nodeType !== NodeType._ELEMENT_NODE ||
-        getNodeName(node) !== "foreignobject") &&
+        getNodeName$1(node) !== "foreignobject") &&
         toString.call(node).match(/SVG/)
         ? "svg"
         : "html";
@@ -11368,7 +11315,6 @@ function detectNamespaceForChildElements(parentElement) {
  * Builds a stable node array for linking so index-based mappings stay valid even if DOM shape changes.
  */
 function buildStableNodeList(state, nodeRef) {
-    var _a;
     let stableNodeList = [];
     if (state._nodeLinkFnFound) {
         const stableLength = nodeRef._isList ? nodeRef.nodes.length : 1;
@@ -11380,7 +11326,7 @@ function buildStableNodeList(state, nodeRef) {
                     ? nodeRef.nodes[idx]
                     : nodeRef.node;
             }
-            else if ((_a = state._nodeRefList) === null || _a === void 0 ? void 0 : _a._getIndex(idx)) {
+            else if (state._nodeRefList?._getIndex(idx)) {
                 stableNodeList[idx] = nodeRef.nodes[idx];
             }
         }
@@ -11603,9 +11549,7 @@ function deepCompare(actual, expected, comparator, anyPropertyKey, matchAgainstA
                         continue;
                     }
                     const matchAnyProperty = key === anyPropertyKey;
-                    const actualVal = matchAnyProperty
-                        ? actual
-                        : actualObj[key];
+                    const actualVal = matchAnyProperty ? actual : actualObj[key];
                     if (!deepCompare(actualVal, expectedVal, comparator, anyPropertyKey, matchAnyProperty, matchAnyProperty)) {
                         return false;
                     }
@@ -11723,7 +11667,7 @@ function orderByFilter($parse) {
             throw minErr("orderBy")("notarray", "Expected array but received: {0}", array);
         }
         if (!isArray(sortPredicate)) {
-            sortPredicate = [sortPredicate !== null && sortPredicate !== void 0 ? sortPredicate : "+"]; // if undefined, default to "+"
+            sortPredicate = [sortPredicate ?? "+"]; // if undefined, default to "+"
         }
         if (sortPredicate.length === 0) {
             sortPredicate = ["+"];
@@ -12277,7 +12221,7 @@ class Lexer {
      * Throws a lexer error.
      */
     _throwError(error, start, end) {
-        const endIndex = end !== null && end !== void 0 ? end : this._index;
+        const endIndex = end ?? this._index;
         const colStr = isDefined(start)
             ? `s ${start}-${this._index} [${this._text.substring(start, endIndex)}]`
             : ` ${endIndex}`;
@@ -12542,7 +12486,7 @@ class ASTInterpreter {
                     }
                     : (scope, locals, assign) => {
                         const runtimeScope = scope;
-                        const rhs = right((runtimeScope === null || runtimeScope === void 0 ? void 0 : runtimeScope.$target) ? runtimeScope.$target : scope, locals, assign);
+                        const rhs = right(runtimeScope?.$target ? runtimeScope.$target : scope, locals, assign);
                         let value;
                         if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
                             const values = [];
@@ -12558,13 +12502,12 @@ class ASTInterpreter {
                 left = this._recurse(ast.left, true, 1);
                 right = this._recurse(ast.right);
                 return (scope, locals, assign) => {
-                    var _a;
                     const lhs = left(scope, locals, assign);
                     const rhs = right(scope, locals, assign);
                     // lhs.context[lhs.name] = rhs;
                     const ctx = isProxy(lhs.context)
                         ? lhs.context
-                        : ((_a = lhs.context.$proxy) !== null && _a !== void 0 ? _a : lhs.context);
+                        : (lhs.context.$proxy ?? lhs.context);
                     ctx[lhs.name] = rhs;
                     return context ? { value: rhs } : rhs;
                 };
@@ -12614,7 +12557,7 @@ class ASTInterpreter {
                     return context ? { value } : value;
                 };
             case ASTType._ThisExpression:
-                return (scope) => (context ? { value: scope } : scope === null || scope === void 0 ? void 0 : scope.$proxy);
+                return (scope) => (context ? { value: scope } : scope?.$proxy);
             case ASTType._LocalsExpression:
                 return (scope, locals) => (context ? { value: locals } : locals);
             case ASTType._NGValueParameter:
@@ -12626,11 +12569,10 @@ class ASTInterpreter {
                 const op = ast.operator;
                 const prefix = !!ast.prefix;
                 return (scope, locals, assign) => {
-                    var _a;
                     const lhs = ref(scope, locals, assign);
                     // No place to assign -> behave like JS (throw) rather than silently no-op
                     if (!lhs || isNullOrUndefined(lhs.context)) {
-                        throw new Error(`${op} operand is not assignable (context is ${lhs === null || lhs === void 0 ? void 0 : lhs.context})`);
+                        throw new Error(`${op} operand is not assignable (context is ${lhs?.context})`);
                     }
                     // JS-style numeric coercion
                     const oldNum = Number(lhs.value);
@@ -12638,7 +12580,7 @@ class ASTInterpreter {
                     // Write back (same proxy handling as AssignmentExpression)
                     const ctx = isProxy(lhs.context)
                         ? lhs.context
-                        : ((_a = lhs.context.$proxy) !== null && _a !== void 0 ? _a : lhs.context);
+                        : (lhs.context.$proxy ?? lhs.context);
                     ctx[lhs.name] = newNum;
                     const out = prefix ? newNum : oldNum;
                     return context ? { value: out } : out;
@@ -12930,11 +12872,10 @@ class ASTInterpreter {
      */
     identifier(name, context, create) {
         return (scope, locals) => {
-            var _a;
             const runtimeScope = scope;
             const base = locals && name in locals
                 ? locals
-                : ((_a = (runtimeScope && runtimeScope.$proxy)) !== null && _a !== void 0 ? _a : scope);
+                : ((runtimeScope && runtimeScope.$proxy) ?? scope);
             if (create && create !== 1 && base && isNullOrUndefined(base[name])) {
                 base[name] = {};
             }
@@ -13083,7 +13024,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
             }
             decoratedNode.constant =
                 decoratedObject.constant &&
-                    (!decoratedNode.computed || (decoratedProperty === null || decoratedProperty === void 0 ? void 0 : decoratedProperty.constant));
+                    (!decoratedNode.computed || decoratedProperty?.constant);
             decoratedNode.toWatch = decoratedNode.constant ? [] : [ast];
             return decoratedNode;
         case ASTType._CallExpression:
@@ -13159,7 +13100,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
 function assignableAST(ast) {
     const stmt = ast.body[0];
     if (ast.body.length === 1 &&
-        (stmt === null || stmt === void 0 ? void 0 : stmt.expression) &&
+        stmt?.expression &&
         isAssignable(stmt.expression)) {
         return {
             type: ASTType._AssignmentExpression,
@@ -13187,7 +13128,7 @@ function getInputs(body) {
     if (body.length !== 1)
         return undefined;
     const lastExpression = body[0].expression;
-    const candidate = (lastExpression === null || lastExpression === void 0 ? void 0 : lastExpression.toWatch) || [];
+    const candidate = lastExpression?.toWatch || [];
     if (candidate.length !== 1)
         return candidate;
     return candidate[0] !== lastExpression ? candidate : undefined;
@@ -13697,8 +13638,7 @@ class AST {
      * @param token - The token that caused the error.
      */
     _throwError(msg, token) {
-        var _a;
-        throw $parseMinErr("syntax", "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].", token.text, msg, token.index + 1, this._text, (_a = this._text) === null || _a === void 0 ? void 0 : _a.substring(token.index));
+        throw $parseMinErr("syntax", "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].", token.text, msg, token.index + 1, this._text, this._text?.substring(token.index));
     }
     /**
      * Consumes a token if it matches the expected type.
@@ -13793,12 +13733,11 @@ class Parser {
  * Determines whether the parsed program is a literal expression.
  */
 function isLiteral(ast) {
-    var _a;
     const { body } = ast;
     if (!body || body.length !== 1) {
         return true;
     }
-    switch ((_a = body[0].expression) === null || _a === void 0 ? void 0 : _a.type) {
+    switch (body[0].expression?.type) {
         case ASTType._Literal:
         case ASTType._ArrayExpression:
         case ASTType._ObjectExpression:
@@ -13846,7 +13785,7 @@ class ParseProvider {
                 return parsedExpression;
             }
             const fn = function interceptedExpression(scope, locals, assign) {
-                if (scope === null || scope === void 0 ? void 0 : scope.getter) {
+                if (scope?.getter) {
                     return undefined;
                 }
                 const value = parsedExpression(scope, locals, assign);
@@ -13953,21 +13892,45 @@ function getNonscopeSet(arr) {
     }
     return cached;
 }
+function getNodeName(node) {
+    return node?.name;
+}
+function getNodePropertyName(node) {
+    return node?.property?.name;
+}
+function resolveNodeWatchKey(node) {
+    return getNodePropertyName(node) ?? getNodeName(node);
+}
+function registerListenerKeys(scope, listener, keys, schedule = false) {
+    for (let i = 0, l = keys.length; i < l; i++) {
+        const key = keys[i];
+        if (!key)
+            continue;
+        scope._registerKey(key, listener);
+        if (schedule)
+            scope._scheduleListener([listener]);
+    }
+}
+function deregisterListenerKeys(scope, listenerId, keys) {
+    for (let i = 0, l = keys.length; i < l; i++) {
+        const key = keys[i];
+        if (key)
+            scope._deregisterKey(key, listenerId);
+    }
+}
 /**
  * Collects all keys that should trigger a grouped `$watch` expression.
  * This keeps interpolation arrays reactive for both direct property changes
  * (`todo.done`) and object reassignments (`todo = nextTodo` in `ng-repeat`).
  */
-function collectWatchKeys(node, watchKeys = new Set()) {
+function collectWatchKeys(node, watchKeys) {
     if (!node)
-        return watchKeys;
-    const getName = (target) => target === null || target === void 0 ? void 0 : target.name;
-    const getPropertyName = (target) => { var _a; return (_a = target === null || target === void 0 ? void 0 : target.property) === null || _a === void 0 ? void 0 : _a.name; };
+        return;
     if (node.type === ASTType._Identifier) {
-        const identifier = getName(node);
+        const identifier = getNodeName(node);
         if (identifier)
             watchKeys.add(identifier);
-        return watchKeys;
+        return;
     }
     if (node.type === ASTType._Literal) {
         const literal = node;
@@ -13977,11 +13940,11 @@ function collectWatchKeys(node, watchKeys = new Set()) {
         else if (literal.name) {
             watchKeys.add(literal.name);
         }
-        return watchKeys;
+        return;
     }
     if (node.type === ASTType._MemberExpression) {
         const member = node;
-        const propertyKey = getPropertyName(member);
+        const propertyKey = getNodePropertyName(member);
         if (propertyKey) {
             watchKeys.add(propertyKey);
         }
@@ -13989,10 +13952,10 @@ function collectWatchKeys(node, watchKeys = new Set()) {
             collectWatchKeys(member.property, watchKeys);
         }
         collectWatchKeys(member.object, watchKeys);
-        return watchKeys;
+        return;
     }
     const { toWatch } = node;
-    if (toWatch === null || toWatch === void 0 ? void 0 : toWatch.length) {
+    if (toWatch?.length) {
         for (let i = 0, l = toWatch.length; i < l; i++) {
             const watchTarget = toWatch[i];
             if (watchTarget !== node) {
@@ -14000,13 +13963,12 @@ function collectWatchKeys(node, watchKeys = new Set()) {
             }
         }
         if (watchKeys.size > 0) {
-            return watchKeys;
+            return;
         }
     }
-    const fallbackKey = getName(node);
+    const fallbackKey = getNodeName(node);
     if (fallbackKey)
         watchKeys.add(fallbackKey);
-    return watchKeys;
 }
 /**
  * @private
@@ -14019,16 +13981,15 @@ function collectWatchKeys(node, watchKeys = new Set()) {
  *                                     or the original value if the target is not an object.
  */
 function createScope(target = {}, context) {
-    var _a;
     if (!isObject(target) || isNonScope(target))
         return target;
     const proxy = new Proxy(target, context || new Scope());
     const keyList = keys(target);
-    const ctorNonScope = getNonscopeSet((_a = target.constructor) === null || _a === void 0 ? void 0 : _a.$nonscope);
+    const ctorNonScope = getNonscopeSet(target.constructor?.$nonscope);
     const instNonScope = getNonscopeSet(target.$nonscope);
     for (let i = 0, l = keyList.length; i < l; i++) {
         const key = keyList[i];
-        if ((ctorNonScope === null || ctorNonScope === void 0 ? void 0 : ctorNonScope.has(key)) || (instNonScope === null || instNonScope === void 0 ? void 0 : instNonScope.has(key)))
+        if (ctorNonScope?.has(key) || instNonScope?.has(key))
             continue;
         target[key] = createScope(target[key], proxy.$handler);
     }
@@ -14077,7 +14038,6 @@ const scopeCache = new WeakSet();
  * Checks whether a target should be excluded from scope observability.
  */
 function isNonScope(target) {
-    var _a;
     // 1. Null or primitive types are non-scope
     if (target === null || typeof target !== "object") {
         return true;
@@ -14092,7 +14052,7 @@ function isNonScope(target) {
     }
     // 3. Explicit non-scope flags
     if (objectTarget.$nonscope === true ||
-        ((_a = objectTarget === null || objectTarget === void 0 ? void 0 : objectTarget.constructor) === null || _a === void 0 ? void 0 : _a.$nonscope) === true) {
+        objectTarget?.constructor?.$nonscope === true) {
         nonScopeCache.add(objectTarget);
         return true;
     }
@@ -14113,7 +14073,7 @@ function isNonScope(target) {
                 return true;
             }
         }
-        catch (_b) {
+        catch {
             /* empty */
         }
     }
@@ -14123,7 +14083,7 @@ function isNonScope(target) {
             return true;
         }
     }
-    catch (_c) {
+    catch {
         return false;
     }
     scopeCache.add(objectTarget);
@@ -14143,12 +14103,11 @@ class Scope {
      * @param [parent] - Custom parent.
      */
     constructor(context, parent) {
-        var _a, _b, _c, _d;
-        this._watchers = (_a = context === null || context === void 0 ? void 0 : context._watchers) !== null && _a !== void 0 ? _a : new Map();
+        this._watchers = context?._watchers ?? new Map();
         this._listeners = new Map();
-        this._foreignListeners = (_b = context === null || context === void 0 ? void 0 : context._foreignListeners) !== null && _b !== void 0 ? _b : new Map();
-        this._foreignProxies = (_c = context === null || context === void 0 ? void 0 : context._foreignProxies) !== null && _c !== void 0 ? _c : new Set();
-        this._objectListeners = (_d = context === null || context === void 0 ? void 0 : context._objectListeners) !== null && _d !== void 0 ? _d : new WeakMap();
+        this._foreignListeners = context?._foreignListeners ?? new Map();
+        this._foreignProxies = context?._foreignProxies ?? new Set();
+        this._objectListeners = context?._objectListeners ?? new WeakMap();
         this.$proxy;
         this.$handler = this;
         this.$target = null;
@@ -14196,7 +14155,6 @@ class Scope {
      * @returns Returns true to indicate success of the operation.
      */
     set(target, property, value, proxy) {
-        var _a, _b, _c;
         if (property === "undefined") {
             return false;
         }
@@ -14204,9 +14162,9 @@ class Scope {
             this.$scopename = value;
             return true;
         }
-        const nonscopeProps = (_b = (_a = target.constructor) === null || _a === void 0 ? void 0 : _a.$nonscope) !== null && _b !== void 0 ? _b : target.$nonscope;
+        const nonscopeProps = target.constructor?.$nonscope ?? target.$nonscope;
         const nsSet = getNonscopeSet(nonscopeProps);
-        if (nsSet === null || nsSet === void 0 ? void 0 : nsSet.has(property)) {
+        if (nsSet?.has(property)) {
             target[property] = value;
             return true;
         }
@@ -14364,7 +14322,7 @@ class Scope {
                             }
                             const wrapperExpr = x.watchProp.split(".").slice(0, -1).join(".");
                             const expectedHandler = $parse(wrapperExpr)(x.originalTarget);
-                            if (expectedTarget === (expectedHandler === null || expectedHandler === void 0 ? void 0 : expectedHandler.$target)) {
+                            if (expectedTarget === expectedHandler?.$target) {
                                 scheduled.push(x);
                             }
                         }
@@ -14372,7 +14330,7 @@ class Scope {
                     });
                 }
                 let _foreignListeners = this._foreignListeners.get(property);
-                if (!_foreignListeners && ((_c = this.$parent) === null || _c === void 0 ? void 0 : _c._foreignListeners)) {
+                if (!_foreignListeners && this.$parent?._foreignListeners) {
                     _foreignListeners = this.$parent._foreignListeners.get(property);
                 }
                 if (_foreignListeners) {
@@ -14552,7 +14510,6 @@ class Scope {
      * @returns A function to deregister the watcher, or undefined if no listener function is provided.
      */
     $watch(watchProp, listenerFn, lazy = false) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         assert(isString(watchProp), "Watched property required");
         watchProp = watchProp.trim();
         const get = $parse(watchProp);
@@ -14571,7 +14528,7 @@ class Scope {
                 /* empty */
             };
         }
-        const expr = (_a = get._decoratedNode.body[0]) === null || _a === void 0 ? void 0 : _a.expression;
+        const expr = get._decoratedNode.body[0]?.expression;
         if (!expr) {
             throw new Error("Unable to determine watched expression");
         }
@@ -14590,21 +14547,19 @@ class Scope {
             id: nextUid(),
             property: [],
         };
-        const getName = (node) => node === null || node === void 0 ? void 0 : node.name;
-        const getPropertyName = (node) => { var _a; return (_a = node === null || node === void 0 ? void 0 : node.property) === null || _a === void 0 ? void 0 : _a.name; };
         // simplest case
-        let key = getName(expr);
+        let key = getNodeName(expr);
         const keySet = [];
         const { type } = expr;
         switch (type) {
             // 3
             case ASTType._AssignmentExpression:
                 // assignment calls without listener functions
-                key = getName(expr.left);
+                key = getNodeName(expr.left);
                 break;
             // 4
             case ASTType._ConditionalExpression: {
-                key = getName((_c = (_b = expr.toWatch) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.test);
+                key = getNodeName(expr.toWatch?.[0]?.test);
                 if (!key) {
                     throw new Error("Unable to determine key");
                 }
@@ -14614,28 +14569,19 @@ class Scope {
             // 5
             case ASTType._LogicalExpression: {
                 const keyList = [
-                    getName((_e = (_d = expr.left) === null || _d === void 0 ? void 0 : _d.toWatch) === null || _e === void 0 ? void 0 : _e[0]),
-                    getName((_g = (_f = expr.right) === null || _f === void 0 ? void 0 : _f.toWatch) === null || _g === void 0 ? void 0 : _g[0]),
+                    getNodeName(expr.left?.toWatch?.[0]),
+                    getNodeName(expr.right?.toWatch?.[0]),
                 ];
-                for (let i = 0, l = keyList.length; i < l; i++) {
-                    const registerKey = keyList[i];
-                    if (registerKey)
-                        this._registerKey(registerKey, listener);
-                }
+                registerListenerKeys(this, listener, keyList);
                 return () => {
-                    for (let i = 0, l = keyList.length; i < l; i++) {
-                        const deregisterKey = keyList[i];
-                        if (deregisterKey) {
-                            this._deregisterKey(deregisterKey, listener.id);
-                        }
-                    }
+                    deregisterListenerKeys(this, listener.id, keyList);
                 };
             }
             // 6
             case ASTType._BinaryExpression: {
                 if (expr.isPure) {
                     const watch = expr.toWatch[0];
-                    key = (_h = getPropertyName(watch)) !== null && _h !== void 0 ? _h : getName(watch);
+                    key = resolveNodeWatchKey(watch);
                     if (!key) {
                         throw new Error("Unable to determine key");
                     }
@@ -14644,31 +14590,24 @@ class Scope {
                 }
                 else {
                     const { toWatch } = expr;
+                    const keyList = new Array(toWatch.length);
                     for (let i = 0, l = toWatch.length; i < l; i++) {
-                        const x = toWatch[i];
-                        const registerKey = (_j = getPropertyName(x)) !== null && _j !== void 0 ? _j : getName(x);
+                        const registerKey = resolveNodeWatchKey(toWatch[i]);
                         if (!registerKey)
                             throw new Error("Unable to determine key");
-                        this._registerKey(registerKey, listener);
-                        this._scheduleListener([listener]);
+                        keyList[i] = registerKey;
                     }
+                    registerListenerKeys(this, listener, keyList, true);
                     // Return deregistration function
                     return () => {
-                        var _a;
-                        for (let i = 0, l = toWatch.length; i < l; i++) {
-                            const x = toWatch[i];
-                            const deregisterKey = (_a = getPropertyName(x)) !== null && _a !== void 0 ? _a : getName(x);
-                            if (deregisterKey) {
-                                this._deregisterKey(deregisterKey, listener.id);
-                            }
-                        }
+                        deregisterListenerKeys(this, listener.id, keyList);
                     };
                 }
             }
             // 7
             case ASTType._UnaryExpression: {
                 const x = expr.toWatch[0];
-                key = (_k = getPropertyName(x)) !== null && _k !== void 0 ? _k : getName(x);
+                key = resolveNodeWatchKey(x);
                 if (!key) {
                     throw new Error("Unable to determine key");
                 }
@@ -14678,34 +14617,24 @@ class Scope {
             // 8 function
             case ASTType._CallExpression: {
                 const { toWatch } = expr;
+                const keyList = new Array(toWatch.length);
                 for (let i = 0, l = toWatch.length; i < l; i++) {
                     const x = toWatch[i];
                     if (!isDefined(x))
                         continue;
-                    const registerKey = getName(x);
-                    if (!registerKey)
-                        continue;
-                    this._registerKey(registerKey, listener);
-                    this._scheduleListener([listener]);
+                    keyList[i] = getNodeName(x);
                 }
+                registerListenerKeys(this, listener, keyList, true);
                 return () => {
-                    for (let i = 0, l = toWatch.length; i < l; i++) {
-                        const x = toWatch[i];
-                        if (!isDefined(x))
-                            continue;
-                        const deregisterKey = getName(x);
-                        if (deregisterKey) {
-                            this._deregisterKey(deregisterKey, listener.id);
-                        }
-                    }
+                    deregisterListenerKeys(this, listener.id, keyList);
                 };
             }
             // 9
             case ASTType._MemberExpression: {
-                key = getPropertyName(expr);
+                key = getNodePropertyName(expr);
                 // array watcher
                 if (!key) {
-                    key = getName(expr.object);
+                    key = getNodeName(expr.object);
                 }
                 if (!key) {
                     throw new Error("Unable to determine key");
@@ -14740,14 +14669,11 @@ class Scope {
                 const keyList = [];
                 const seenKeys = new Set();
                 for (let i = 0, l = elements.length; i < l; i++) {
-                    const elementKeys = collectWatchKeys(elements[i]);
-                    elementKeys.forEach((registerKey) => {
-                        if (seenKeys.has(registerKey))
-                            return;
-                        seenKeys.add(registerKey);
-                        keyList.push(registerKey);
-                    });
+                    collectWatchKeys(elements[i], seenKeys);
                 }
+                seenKeys.forEach((registerKey) => {
+                    keyList.push(registerKey);
+                });
                 for (let i = 0, l = keyList.length; i < l; i++) {
                     this._registerKey(keyList[i], listener);
                     this._scheduleListener([listener]);
@@ -14765,14 +14691,14 @@ class Scope {
                     const prop = properties[i];
                     let currentKey;
                     if (prop.key.isPure === false) {
-                        currentKey = getName(prop.key);
+                        currentKey = getNodeName(prop.key);
                     }
-                    else if (getName(prop.value)) {
-                        currentKey = getName(prop.value);
+                    else if (getNodeName(prop.value)) {
+                        currentKey = getNodeName(prop.value);
                     }
                     else {
                         const target = expr.toWatch[0];
-                        currentKey = (_l = getPropertyName(target)) !== null && _l !== void 0 ? _l : getName(target);
+                        currentKey = resolveNodeWatchKey(target);
                     }
                     if (currentKey) {
                         keySet.push(currentKey);
@@ -15173,7 +15099,6 @@ class Scope {
     }
     /** Searches the scope tree for a scope registered under the provided name. */
     $searchByName(name) {
-        var _a;
         const stack = [this.$root];
         while (stack.length) {
             const scope = stack.pop();
@@ -15183,7 +15108,7 @@ class Scope {
             if (scope.$scopename === name) {
                 return scope;
             }
-            if ((_a = scope._children) === null || _a === void 0 ? void 0 : _a.length) {
+            if (scope._children?.length) {
                 for (let i = scope._children.length - 1; i >= 0; i--) {
                     stack.push(scope._children[i]);
                 }
@@ -15471,12 +15396,12 @@ function ngModelAriaDirective($aria) {
                                 const needsAriaValuenow = !elem.hasAttribute("aria-valuenow");
                                 if (needsAriaValuemin) {
                                     attrPost.$observe("min", (newVal) => {
-                                        elem.setAttribute("aria-valuemin", String(newVal !== null && newVal !== void 0 ? newVal : ""));
+                                        elem.setAttribute("aria-valuemin", String(newVal ?? ""));
                                     });
                                 }
                                 if (needsAriaValuemax) {
                                     attrPost.$observe("max", (newVal) => {
-                                        elem.setAttribute("aria-valuemax", String(newVal !== null && newVal !== void 0 ? newVal : ""));
+                                        elem.setAttribute("aria-valuemax", String(newVal ?? ""));
                                     });
                                 }
                                 if (needsAriaValuenow) {
@@ -15999,11 +15924,10 @@ class FormController {
      * Creates a form controller for a specific form element and its scope.
      */
     constructor($element, $attrs, $scope, $animate, $interpolate) {
-        var _a;
         this._isAnimated = hasAnimate($element);
         this._controls = [];
         this.$name =
-            ((_a = $interpolate($attrs.name || $attrs.ngForm || "")) === null || _a === void 0 ? void 0 : _a($scope)) || "";
+            $interpolate($attrs.name || $attrs.ngForm || "")?.($scope) || "";
         /** True if user has already interacted with the form. */
         this.$dirty = false;
         /** True if user has not interacted with the form yet. */
@@ -16571,7 +16495,6 @@ function ngIfDirective($animate) {
             let childScope;
             let previousElements;
             $scope.$watch($attr.ngIf, (value) => {
-                var _a;
                 if (value) {
                     if (previousElements) {
                         removeElement(previousElements);
@@ -16615,7 +16538,7 @@ function ngIfDirective($animate) {
                             });
                         }
                         else {
-                            (_a = $element.nextElementSibling) === null || _a === void 0 ? void 0 : _a.remove();
+                            $element.nextElementSibling?.remove();
                         }
                         block = null;
                     }
@@ -16887,7 +16810,6 @@ class NgModelController {
      * Creates a model controller bound to the element, scope, and ngModel expression.
      */
     constructor($scope, $exceptionHandler, $attr, $element, $parse, $animate, $interpolate) {
-        var _a;
         this._isAnimated = hasAnimate($element);
         this.$viewValue = Number.NaN;
         this.$modelValue = Number.NaN;
@@ -16907,15 +16829,14 @@ class NgModelController {
         this._success = {}; // keep valid keys here
         this.$pending = undefined; // keep pending keys here
         this.$name =
-            ((_a = $interpolate($attr.name || "", false)) === null || _a === void 0 ? void 0 : _a($scope)) || "";
+            $interpolate($attr.name || "", false)?.($scope) || "";
         this._parentForm = nullFormCtrl;
         this.$options = defaultModelOptions;
         this._updateEvents = "";
         // Attach the correct context to the event handler function for updateOn
         this._updateEventHandler = this._updateEventHandler.bind(this);
         this._parsedNgModel = $parse($attr.ngModel);
-        this._parsedNgModelAssign =
-            this._parsedNgModel._assign;
+        this._parsedNgModelAssign = this._parsedNgModel._assign;
         this._ngModelGet = this._parsedNgModel;
         this._ngModelSet = this._parsedNgModelAssign;
         this._pendingDebounce = undefined;
@@ -17561,9 +17482,8 @@ class NgModelController {
      * @param  [trigger] Event that triggered the update.
      */
     $setViewValue(value, trigger) {
-        var _a;
         this.$viewValue = value;
-        if ((_a = this.$options) === null || _a === void 0 ? void 0 : _a.getOption("updateOnDefault")) {
+        if (this.$options?.getOption("updateOnDefault")) {
             this._debounceViewValueCommit(trigger);
         }
     }
@@ -18061,7 +17981,7 @@ function createStringDateInputType(type, regexp) {
         });
         // Optional min/max
         if (isDefined(attr.min) || attr.ngMin) {
-            let minVal = attr.min || ($parse === null || $parse === void 0 ? void 0 : $parse(attr.ngMin)(scope));
+            let minVal = attr.min || $parse?.(attr.ngMin)(scope);
             ctrl.$validators.min = (_modelValue, viewValue) => ctrl.$isEmpty(viewValue) || viewValue >= minVal;
             attr.$observe("min", (val) => {
                 minVal = val;
@@ -18069,7 +17989,7 @@ function createStringDateInputType(type, regexp) {
             });
         }
         if (isDefined(attr.max) || attr.ngMax) {
-            let maxVal = attr.max || ($parse === null || $parse === void 0 ? void 0 : $parse(attr.ngMax)(scope));
+            let maxVal = attr.max || $parse?.(attr.ngMax)(scope);
             ctrl.$validators.max = (_modelValue, viewValue) => ctrl.$isEmpty(viewValue) || viewValue <= maxVal;
             attr.$observe("max", (val) => {
                 maxVal = val;
@@ -18160,7 +18080,7 @@ function isValidForStep(viewValue, stepBase, step) {
     let value = Number(viewValue);
     const isNonIntegerValue = !isNumberInteger(value);
     const isNonIntegerStepBase = !isNumberInteger(stepBase);
-    const numericStep = step !== null && step !== void 0 ? step : 0;
+    const numericStep = step ?? 0;
     const isNonIntegerStep = !isNumberInteger(numericStep);
     // Due to limitations in Floating Point Arithmetic (e.g. `0.3 - 0.2 !== 0.1` or
     // `0.5 % 0.1 !== 0`), we need to convert all numbers to integers.
@@ -18180,7 +18100,7 @@ function isValidForStep(viewValue, stepBase, step) {
         if (isNonIntegerStep)
             step = Math.round(step);
     }
-    return (value - stepBase) % (step !== null && step !== void 0 ? step : numericStep) === 0;
+    return (value - stepBase) % (step ?? numericStep) === 0;
 }
 /**
  * Configures validation and parsing for numeric inputs.
@@ -18492,9 +18412,8 @@ function inputDirective($parse) {
         require: ["?ngModel"],
         link: {
             pre(scope, element, attr, ctrls) {
-                var _a;
                 if (ctrls[0]) {
-                    const typeName = (_a = attr.type) === null || _a === void 0 ? void 0 : _a.toLowerCase();
+                    const typeName = attr.type?.toLowerCase();
                     (inputType[typeName || "text"] || inputType.text)(scope, element, attr, ctrls[0], $parse);
                 }
             },
@@ -18508,14 +18427,12 @@ function hiddenInputDirective() {
     return {
         restrict: "E",
         compile(_, attr) {
-            var _a;
-            if (((_a = attr.type) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== "hidden")
+            if (attr.type?.toLowerCase() !== "hidden")
                 return undefined;
             return {
                 pre(_scope, element) {
-                    var _a;
                     element.value =
-                        (_a = element.getAttribute("value")) !== null && _a !== void 0 ? _a : "";
+                        element.getAttribute("value") ?? "";
                 },
             };
         },
@@ -18531,7 +18448,7 @@ function ngValueDirective() {
      * Updating both keeps `ngValue` behaving like a one-way binding.
      */
     function updateElementValue(element, attr, value) {
-        element.value = deProxy(value !== null && value !== void 0 ? value : "");
+        element.value = deProxy(value ?? "");
         attr.$set("value", value);
     }
     return {
@@ -18934,7 +18851,7 @@ function ngMessageDirectiveFactory(isDefault) {
                                         ngMessagesCtrl.deregister(commentNode, isDefault);
                                         messageCtrl.detach();
                                     }
-                                    newScope === null || newScope === void 0 ? void 0 : newScope.$destroy();
+                                    newScope?.$destroy();
                                 });
                             });
                         }
@@ -19206,8 +19123,7 @@ function ngOptionsDirective($compile, $parse) {
                     []);
                 options.items.forEach(
                 /** @param  option */ (option) => {
-                    var _a;
-                    if (((_a = option.element) === null || _a === void 0 ? void 0 : _a.selected) &&
+                    if (option.element?.selected &&
                         !includes(selectedOptions, option)) {
                         option.element.selected = false;
                     }
@@ -19296,7 +19212,7 @@ function ngOptionsDirective($compile, $parse) {
             if (!options)
                 return undefined;
             const option = options.getOptionFromViewValue(viewValue);
-            const element = option === null || option === void 0 ? void 0 : option.element;
+            const element = option?.element;
             if (element && !element.selected)
                 element.selected = true;
             return option;
@@ -19318,7 +19234,6 @@ function ngOptionsDirective($compile, $parse) {
             element.value = option.selectValue;
         }
         function updateOptions() {
-            var _a;
             const previousValue = options && selectCtrl._readValue();
             // We must remove all current options, but cannot simply set innerHTML = null
             // since the providedEmptyOption might have an ngIf on it that inserts comments which we
@@ -19329,7 +19244,7 @@ function ngOptionsDirective($compile, $parse) {
                 for (let i = options.items.length - 1; i >= 0; i--) {
                     const option = options.items[i];
                     if (isDefined(option.group)) {
-                        if ((_a = option.element) === null || _a === void 0 ? void 0 : _a.parentNode) {
+                        if (option.element?.parentNode) {
                             removeElement(option.element.parentNode);
                         }
                     }
@@ -19898,7 +19813,7 @@ function ngRefDirective($parse) {
         restrict: "A",
         compile(tElement, tAttrs) {
             // Get the expected controller name, converts <data-some-thing> into "someThing"
-            const controllerName = directiveNormalize(getNodeName(tElement));
+            const controllerName = directiveNormalize(getNodeName$1(tElement));
             // Get the expression for value binding
             const getter = $parse(tAttrs.ngRef);
             const setter = getter._assign ||
@@ -19974,12 +19889,10 @@ function ngRepeatDirective($animate) {
         scope.$odd = !(scope.$even = (index & 1) === 0);
     }
     function getBlockStart(block) {
-        var _a;
-        return (_a = block.clone) === null || _a === void 0 ? void 0 : _a[0];
+        return block.clone?.[0];
     }
     function getBlockEnd(block) {
-        var _a;
-        return (_a = block.clone) === null || _a === void 0 ? void 0 : _a[block.clone.length - 1];
+        return block.clone?.[block.clone.length - 1];
     }
     function normalizeRepeatClone(clone) {
         if (!clone) {
@@ -19995,12 +19908,11 @@ function ngRepeatDirective($animate) {
     }
     function removeRepeatClone(clone) {
         clone.forEach((node) => {
-            var _a;
             if (node instanceof Element) {
                 removeElement(node);
             }
             else {
-                (_a = node.parentNode) === null || _a === void 0 ? void 0 : _a.removeChild(node);
+                node.parentNode?.removeChild(node);
             }
         });
     }
@@ -20046,7 +19958,6 @@ function ngRepeatDirective($animate) {
             function ngRepeatLink($scope, $element, attr, _ctrl, $transclude) {
                 let lastBlockMap = nullObject();
                 $scope.$watch(rhs, (collection) => {
-                    var _a;
                     swap();
                     let index;
                     let previousNode = $element;
@@ -20119,7 +20030,7 @@ function ngRepeatDirective($animate) {
                                 elementsToRemove[i][NG_REMOVED] = true;
                             }
                         }
-                        (_a = block.scope) === null || _a === void 0 ? void 0 : _a.$destroy();
+                        block.scope?.$destroy();
                     }
                     for (index = 0; index < collectionLength; index++) {
                         key =
@@ -20308,7 +20219,7 @@ function ngStyleDirective() {
             const attrMap = attr;
             let oldStyles = null;
             scope.$watch(attrMap.ngStyle, (newStyles) => {
-                const target = (newStyles === null || newStyles === void 0 ? void 0 : newStyles.$target) || newStyles;
+                const target = newStyles?.$target || newStyles;
                 if (oldStyles) {
                     for (const key in oldStyles) {
                         element.style.removeProperty(key);
@@ -20488,7 +20399,6 @@ function ngTranscludeDirective($compile) {
             emptyElement(tElement);
             /** Inserts transcluded content or fallback content into the target element. */
             function ngTranscludePostLink($scope, $element, $attrs, _controller, $transclude) {
-                var _a;
                 if (!$transclude) {
                     throw ngTranscludeMinErr("orphan", "Illegal use of ngTransclude directive in the template! " +
                         "No parent directive that requires a transclusion found. " +
@@ -20503,7 +20413,7 @@ function ngTranscludeDirective($compile) {
                 // If the slot is required and no transclusion content is provided then this call will throw an error
                 controllersBoundTransclude(undefined, ngTranscludeCloneAttachFn, null, slotName);
                 // If the slot is optional and no transclusion content is provided then use the fallback content
-                if (slotName && !((_a = controllersBoundTransclude.isSlotFilled) === null || _a === void 0 ? void 0 : _a.call(controllersBoundTransclude, slotName))) {
+                if (slotName && !controllersBoundTransclude.isSlotFilled?.(slotName)) {
                     useFallbackContent();
                 }
                 /** Attaches the transcluded clone or falls back to cached original content. */
@@ -20527,7 +20437,7 @@ function ngTranscludeDirective($compile) {
                         useFallbackContent();
                         // There is nothing linked against the transcluded scope since no content was available,
                         // so it should be safe to clean up the generated scope.
-                        transcludedScope === null || transcludedScope === void 0 ? void 0 : transcludedScope.$destroy();
+                        transcludedScope?.$destroy();
                     }
                 }
                 function useFallbackContent() {
@@ -20682,7 +20592,7 @@ const patternDirective = [
                     return;
                 let attrVal = attr.pattern;
                 if (attr.ngPattern) {
-                    attrVal = parseFn === null || parseFn === void 0 ? void 0 : parseFn(scope);
+                    attrVal = parseFn?.(scope);
                 }
                 else {
                     patternExp = attr.pattern;
@@ -21213,9 +21123,8 @@ function ngViewString(ngView) {
     return `[ng-view#${ngView.id}:${ngView.fqn} (${ngView.name}@${state})]`;
 }
 const viewConfigString = (viewConfig) => {
-    var _a;
     const view = viewConfig.viewDecl;
-    const state = ((_a = view.$context) === null || _a === void 0 ? void 0 : _a.name) || "(root)";
+    const state = view.$context?.name || "(root)";
     return `[View#${viewConfig.$id} from '${state}' state]: target ng-view: '${view.$ngViewName}@${view.$ngViewContextAnchor}'`;
 };
 function normalizedCat(input) {
@@ -21258,11 +21167,10 @@ function transLbl(trans) {
  */
 class Trace {
     constructor() {
-        var _a, _b;
         this._enabled = {};
         this.approximateDigests = 0;
         this.$logger =
-            ((_b = (_a = window.angular) === null || _a === void 0 ? void 0 : _a.$injector) === null || _b === void 0 ? void 0 : _b.get($injectTokens._log)) || console;
+            window.angular?.$injector?.get($injectTokens._log) || console;
     }
     _set(enabled, categories) {
         if (!categories.length) {
@@ -21366,10 +21274,9 @@ class Trace {
         const cfgheader = "view config state (view name)";
         const mapping = pairs
             .map(({ ngView, viewConfig }) => {
-            var _a;
             const uiv = ngView && ngView.fqn;
             const cfg = viewConfig &&
-                `${(_a = viewConfig.viewDecl.$context) === null || _a === void 0 ? void 0 : _a.name}: (${viewConfig.viewDecl.$name})`;
+                `${viewConfig.viewDecl.$context?.name}: (${viewConfig.viewDecl.$name})`;
             return { [uivheader]: uiv, [cfgheader]: cfg };
         })
             .sort((a, b) => (a[uivheader] || "").localeCompare(b[uivheader] || ""));
@@ -21427,8 +21334,7 @@ function stateContext(el) {
  * Computes the current state-ref definition, href, and navigation options.
  */
 function processedDef($state, $element, def) {
-    var _a;
-    const ngState = def.ngState || ((_a = $state.current) === null || _a === void 0 ? void 0 : _a.name);
+    const ngState = def.ngState || $state.current?.name;
     const ngStateOpts = Object.assign(defaultOpts($element, $state), def.ngStateOpts || {});
     const href = $state.href(ngState, def.ngStateParams, ngStateOpts);
     return { ngState, ngStateParams: def.ngStateParams, ngStateOpts, href };
@@ -21542,14 +21448,13 @@ function StateRefDirective($stateService, $stateRegistry, $transitions) {
                 ? scope.$eval(attrs.ngSrefOpts)
                 : {};
             function update() {
-                var _a;
                 rawDef.ngStateParams = Object.assign({}, ref.paramExpr && scope.$eval(ref.paramExpr));
                 const def = getDef();
                 if (unlinkInfoFn) {
                     unlinkInfoFn();
                 }
                 if (active) {
-                    unlinkInfoFn = (_a = active === null || active === void 0 ? void 0 : active._addStateInfo) === null || _a === void 0 ? void 0 : _a.call(active, def.ngState, def.ngStateParams);
+                    unlinkInfoFn = active?._addStateInfo?.(def.ngState, def.ngStateParams);
                 }
                 if (!isNullOrUndefined(def.href)) {
                     attrs.$set(type.attr, def.href);
@@ -21596,13 +21501,12 @@ function StateRefDynamicDirective($state, $stateRegistry, $transitions) {
             }),
                 acc), {});
             function update() {
-                var _a;
                 const def = getDef();
                 if (unlinkInfoFn) {
                     unlinkInfoFn();
                 }
                 if (active) {
-                    unlinkInfoFn = (_a = active === null || active === void 0 ? void 0 : active._addStateInfo) === null || _a === void 0 ? void 0 : _a.call(active, def.ngState, def.ngStateParams);
+                    unlinkInfoFn = active?._addStateInfo?.(def.ngState, def.ngStateParams);
                 }
                 if (!isNullOrUndefined(def.href)) {
                     attrs.$set(type.attr, def.href);
@@ -21654,7 +21558,7 @@ function StateRefActiveDirective($state, $router, $interpolate, $stateRegistry, 
             try {
                 ngSrefActive = $scope.$eval($attrs.ngSrefActive);
             }
-            catch (_a) {
+            catch {
                 // Do nothing. ngSrefActive is not a valid expression.
                 // Fall back to using $interpolate below
             }
@@ -21726,7 +21630,7 @@ function StateRefActiveDirective($state, $router, $interpolate, $stateRegistry, 
                 const state = $state.get(stateName, stateContext($element));
                 const stateInfo = {
                     state: {
-                        name: (state === null || state === void 0 ? void 0 : state.name) || String((stateName === null || stateName === void 0 ? void 0 : stateName.name) || stateName),
+                        name: state?.name || String(stateName?.name || stateName),
                     },
                     params: stateParams,
                     activeClass,
@@ -22057,12 +21961,11 @@ const DefType = {
 };
 /** Resolves the parameter declaration for one state parameter name/location pair. */
 function getParamDeclaration(paramName, location, state) {
-    var _a;
     const noReloadOnSearch = (state.reloadOnSearch === false && location === DefType._SEARCH) ||
         undefined;
     const dynamic = find([state.dynamic, noReloadOnSearch], isDefined);
     const defaultConfig = isDefined(dynamic) ? { dynamic } : {};
-    const paramConfig = unwrapShorthand((_a = state === null || state === void 0 ? void 0 : state.params) === null || _a === void 0 ? void 0 : _a[paramName]);
+    const paramConfig = unwrapShorthand(state?.params?.[paramName]);
     return Object.assign(defaultConfig, paramConfig);
 }
 /** Normalizes shorthand parameter config into a full ParamDeclaration object. */
@@ -22269,7 +22172,6 @@ class Param {
 class PathNode {
     /** Creates a path node from either an existing node or a state object. */
     constructor(stateOrNode) {
-        var _a;
         if (stateOrNode instanceof PathNode) {
             const node = stateOrNode;
             this.state = node.state;
@@ -22287,7 +22189,7 @@ class PathNode {
                 inherit: false,
             });
             this.paramValues = {};
-            this.resolvables = ((_a = state.resolvables) === null || _a === void 0 ? void 0 : _a.map((res) => res.clone())) || [];
+            this.resolvables = state.resolvables?.map((res) => res.clone()) || [];
         }
     }
     clone() {
@@ -22342,10 +22244,9 @@ class PathNode {
 class PathUtils {
     /** Builds a path of `PathNode`s from a target state and its parameter values. */
     static buildPath(targetState) {
-        var _a;
         const toParams = targetState.params();
         const stateObject = targetState.$state();
-        return (((_a = stateObject.path) === null || _a === void 0 ? void 0 : _a.map((state) => new PathNode(state).applyRawParams(toParams))) || []);
+        return (stateObject.path?.map((state) => new PathNode(state).applyRawParams(toParams)) || []);
     }
     /**
      * Given a fromPath: PathNode[] and a TargetState, builds a toPath: PathNode[]
@@ -22501,7 +22402,7 @@ function makeTargetState(registry, path) {
         throw new Error("Cannot create TargetState from an empty path");
     return new TargetState(registry, tailNode.state, path
         .map((x) => x.paramValues)
-        .reduce((acc, obj) => (Object.assign(Object.assign({}, acc), obj)), {}), {});
+        .reduce((acc, obj) => ({ ...acc, ...obj }), {}), {});
 }
 
 /**
@@ -22572,7 +22473,7 @@ class Resolvable {
         const getResolvableDependencies = () => Promise.all(resolveContext
             .getDependencies(this)
             .map((resolvable) => resolvable.get(resolveContext, trans)));
-        const invokeResolveFn = (resolvedDeps) => { var _a; return (_a = this.resolveFn) === null || _a === void 0 ? void 0 : _a.apply(null, resolvedDeps); };
+        const invokeResolveFn = (resolvedDeps) => this.resolveFn?.apply(null, resolvedDeps);
         const node = resolveContext.findNode(this);
         const state = node && node.state;
         const asyncPolicy = this.getPolicy(state).async;
@@ -22663,13 +22564,13 @@ class ResolveContext {
      */
     getPolicy(resolvable) {
         const node = this.findNode(resolvable);
-        return resolvable.getPolicy(node === null || node === void 0 ? void 0 : node.state);
+        return resolvable.getPolicy(node?.state);
     }
     /**
      * Returns a child resolve context scoped to the specified state.
      */
     subContext(state) {
-        const subPath = PathUtils.subPath(this._path, (node) => (node === null || node === void 0 ? void 0 : node.state.name) === state.name);
+        const subPath = PathUtils.subPath(this._path, (node) => node?.state.name === state.name);
         return new ResolveContext((subPath || this._path));
     }
     /**
@@ -22966,7 +22867,7 @@ class StateMatcher {
         }
         else if (isStr && matchGlob) {
             const states = values(this._states);
-            const matches = states.filter((stateObj) => { var _a, _b; return (_b = (_a = stateObj._stateObjectCache) === null || _a === void 0 ? void 0 : _a.nameGlob) === null || _b === void 0 ? void 0 : _b.matches(name); });
+            const matches = states.filter((stateObj) => stateObj._stateObjectCache?.nameGlob?.matches(name));
             if (matches.length > 1) {
                 throw new Error(`stateMatcher.find: Found multiple matches for ${name} using glob: ${matches.map((match) => match.name)}`);
             }
@@ -22990,15 +22891,15 @@ class StateMatcher {
                 continue;
             }
             if (splitName[i] === "^") {
-                if (!(current === null || current === void 0 ? void 0 : current.parent))
-                    throw new Error(`Path '${name}' not valid for state '${baseState === null || baseState === void 0 ? void 0 : baseState.name}'`);
+                if (!current?.parent)
+                    throw new Error(`Path '${name}' not valid for state '${baseState?.name}'`);
                 current = current.parent;
                 continue;
             }
             break;
         }
         const relName = splitName.slice(i).join(".");
-        return (((current === null || current === void 0 ? void 0 : current.name) || "") + ((current === null || current === void 0 ? void 0 : current.name) && relName ? "." : "") + relName);
+        return ((current?.name || "") + (current?.name && relName ? "." : "") + relName);
     }
 }
 
@@ -23045,7 +22946,7 @@ function getUrlBuilder($url, root) {
             throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
         return parsed && parsed.root
             ? url
-            : ((parent && (parent === null || parent === void 0 ? void 0 : parent.navigable)) ||
+            : ((parent && parent?.navigable) ||
                 root()).url.append(url);
     };
 }
@@ -24229,7 +24130,6 @@ function registerControllerCallbacks($transitions, controllerInstance, $scope, c
             .data;
         // Fire callback on any successful transition
         const paramsUpdated = ($transition$) => {
-            var _a, _b;
             if (!$transition$)
                 return;
             // Exit early if the $transition$ is the same as the view was created within.
@@ -24243,10 +24143,10 @@ function registerControllerCallbacks($transitions, controllerInstance, $scope, c
             const getNodeSchema = (node) => node.paramSchema;
             const treeChanges = $transition$ && $transition$.treeChanges;
             const toNodes = isFunction(treeChanges)
-                ? ((_a = treeChanges.call($transition$, "to")) !== null && _a !== void 0 ? _a : [])
+                ? (treeChanges.call($transition$, "to") ?? [])
                 : [];
             const fromNodes = isFunction(treeChanges)
-                ? ((_b = treeChanges.call($transition$, "from")) !== null && _b !== void 0 ? _b : [])
+                ? (treeChanges.call($transition$, "from") ?? [])
                 : [];
             const toSchema = toNodes
                 .map(getNodeSchema)
@@ -24485,7 +24385,7 @@ class Rejection {
     }
     static superseded(detail, options) {
         const rejection = new Rejection(RejectType._SUPERSEDED, "The transition has been superseded by a different transition", detail);
-        if (options === null || options === void 0 ? void 0 : options.redirected) {
+        if (options?.redirected) {
             rejection.redirected = true;
         }
         return rejection;
@@ -24589,11 +24489,8 @@ class TransitionHook {
         this.registeredHook = registeredHook;
         this.options = defaults$1(options, defaultOptions);
         this.type = registeredHook.eventType;
-        this.isSuperseded = () => {
-            var _a;
-            return this.type.hookPhase === TransitionHookPhase._RUN &&
-                !((_a = this.options.transition) === null || _a === void 0 ? void 0 : _a.isActive());
-        };
+        this.isSuperseded = () => this.type.hookPhase === TransitionHookPhase._RUN &&
+            !this.options.transition?.isActive();
         this._exceptionHandler = exceptionHandler;
     }
     /**
@@ -24691,7 +24588,7 @@ TransitionHook.LOG_REJECTED_RESULT =
         return undefined;
     };
 TransitionHook.LOG_ERROR =
-    (hook) => (error) => hook === null || hook === void 0 ? void 0 : hook.logError(error);
+    (hook) => (error) => hook?.logError(error);
 TransitionHook.REJECT_ERROR =
     () => (error) => {
         const promise = Promise.reject(error);
@@ -24829,7 +24726,7 @@ class HookBuilder {
             return [];
         const baseHookOptions = {
             transition,
-            current: () => { var _a, _b; return ((_b = (_a = transition.options()).current) === null || _b === void 0 ? void 0 : _b.call(_a)) || undefined; },
+            current: () => transition.options().current?.() || undefined,
         };
         const makeTransitionHooks = (item) => {
             const { hook, matches } = item;
@@ -25031,7 +24928,7 @@ class Transition {
     params(pathname = "to") {
         return Object.freeze(this._treeChanges[pathname]
             .map((x) => x.paramValues)
-            .reduce((acc, obj) => (Object.assign(Object.assign({}, acc), obj)), {}));
+            .reduce((acc, obj) => ({ ...acc, ...obj }), {}));
     }
     /**
      * Returns the resolve tokens visible on one transition path (`to` by default).
@@ -25279,7 +25176,7 @@ class Transition {
             : fromStateOrName;
         const fromParams = stringify(avoidEmptyHash(this._treeChanges.from
             .map((x) => x.paramValues)
-            .reduce((acc, obj) => (Object.assign(Object.assign({}, acc), obj)), {})));
+            .reduce((acc, obj) => ({ ...acc, ...obj }), {})));
         const toValid = this.valid() ? "" : "(X) ";
         const to = isObject(toStateOrName)
             ? toStateOrName.name
@@ -25339,9 +25236,8 @@ function ignoredHook(trans) {
 const registerIgnoredTransitionHook = (transitionService) => transitionService.onBefore({}, ignoredHook, { priority: -9999 });
 
 function invalidTransitionHook(trans) {
-    var _a;
     if (!trans.valid()) {
-        throw new Error((_a = trans.error()) === null || _a === void 0 ? void 0 : _a.toString());
+        throw new Error(trans.error()?.toString());
     }
 }
 /**
@@ -25362,14 +25258,14 @@ function registerLazyLoadHook(transitionService, stateService, urlService, state
                 const orig = transition.targetState();
                 return stateService.target(orig.identifier(), orig.params(), orig.options());
             }
-            const result = urlService === null || urlService === void 0 ? void 0 : urlService.match(urlService.parts());
+            const result = urlService?.match(urlService.parts());
             const rule = result && result.rule;
             if (rule && rule.type === "STATE" && rule.state) {
                 const { state } = rule;
                 const params = result.match;
-                return stateService === null || stateService === void 0 ? void 0 : stateService.target(state, params, transition.options());
+                return stateService?.target(state, params, transition.options());
             }
-            urlService === null || urlService === void 0 ? void 0 : urlService.sync();
+            urlService?.sync();
             return undefined;
         }
         const promises = transition
@@ -25430,19 +25326,19 @@ const onEnterHook = makeEnterExitRetainHook("onEnter");
  * Registers state `onExit` callbacks.
  */
 const registerOnExitHook = (transitionService) => transitionService.onExit({
-    exiting: (state) => !!(state === null || state === void 0 ? void 0 : state.onExit),
+    exiting: (state) => !!state?.onExit,
 }, onExitHook);
 /**
  * Registers state `onRetain` callbacks.
  */
 const registerOnRetainHook = (transitionService) => transitionService.onRetain({
-    retained: (state) => !!(state === null || state === void 0 ? void 0 : state.onRetain),
+    retained: (state) => !!state?.onRetain,
 }, onRetainHook);
 /**
  * Registers state `onEnter` callbacks.
  */
 const registerOnEnterHook = (transitionService) => transitionService.onEnter({
-    entering: (state) => !!(state === null || state === void 0 ? void 0 : state.onEnter),
+    entering: (state) => !!state?.onEnter,
 }, onEnterHook);
 
 /**
@@ -25781,12 +25677,11 @@ TransitionProvider.$inject = [
 ];
 function registerUpdateUrl(transitionService, stateService, urlService) {
     const updateUrl = (transition) => {
-        var _a;
         const options = transition.options();
         const $state = stateService;
         if (options.source !== "url" &&
             options.location &&
-            ((_a = $state.$current) === null || _a === void 0 ? void 0 : _a.navigable)) {
+            $state.$current?.navigable) {
             const urlOptions = {
                 replace: options.location === "replace",
             };
@@ -26286,38 +26181,37 @@ class StateProvider {
         return Object.assign(transitionToPromise, { transition });
     }
     /**
-       * Checks if the current state *is* the provided state
-       *
-       * Similar to [[includes]] but only checks for the full state name.
-       * If params is supplied then it will be tested for strict equality against the current
-       * active params object, so all params must match with none missing and no extras.
-       *
-       * #### Example:
-       * ```js
-       * $state.$current.name = 'contacts.details.item';
-       *
-       * // absolute name
-       * $state.is('contact.details.item'); // returns true
-       * $state.is(contactDetailItemStateObject); // returns true
-       * ```
-       *
-       * // relative name (. and ^), typically from a template
-       * // E.g. from the 'contacts.details' template
-       * ```html
-       * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
-       * ```
-       * @param stateOrName - The state name (absolute or relative) or state object you'd like to check.
-       * @param [params] - A param object, e.g. `{sectionId: section.id}`, that you'd like
-       *    to test against the current active state.
-       * @param [options] - An options object. The options are:
-       *    - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, `.is`
-       *      tests relative to `options.relative` state (or name).
-       * @returns True if it is the state.
-       */
+     * Checks if the current state *is* the provided state
+     *
+     * Similar to [[includes]] but only checks for the full state name.
+     * If params is supplied then it will be tested for strict equality against the current
+     * active params object, so all params must match with none missing and no extras.
+     *
+     * #### Example:
+     * ```js
+     * $state.$current.name = 'contacts.details.item';
+     *
+     * // absolute name
+     * $state.is('contact.details.item'); // returns true
+     * $state.is(contactDetailItemStateObject); // returns true
+     * ```
+     *
+     * // relative name (. and ^), typically from a template
+     * // E.g. from the 'contacts.details' template
+     * ```html
+     * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
+     * ```
+     * @param stateOrName - The state name (absolute or relative) or state object you'd like to check.
+     * @param [params] - A param object, e.g. `{sectionId: section.id}`, that you'd like
+     *    to test against the current active state.
+     * @param [options] - An options object. The options are:
+     *    - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, `.is`
+     *      tests relative to `options.relative` state (or name).
+     * @returns True if it is the state.
+     */
     is(stateOrName, params, options) {
-        var _a;
         options = defaults$1(options, { relative: this.$current });
-        const state = (_a = this.stateRegistry) === null || _a === void 0 ? void 0 : _a.matcher.find(stateOrName, options === null || options === void 0 ? void 0 : options.relative);
+        const state = this.stateRegistry?.matcher.find(stateOrName, options?.relative);
         if (!isDefined(state))
             return undefined;
         if (this.$current !== state)
@@ -26328,53 +26222,52 @@ class StateProvider {
         return Param.equals(schema, Param.values(schema, params), this.globals.params);
     }
     /**
-       * Checks if the current state *includes* the provided state
-       *
-       * A method to determine if the current active state is equal to or is the child of the
-       * state stateName. If any params are passed then they will be tested for a match as well.
-       * Not all the parameters need to be passed, just the ones you'd like to test for equality.
-       *
-       * #### Example when `$state.$current.name === 'contacts.details.item'`
-       * ```js
-       * // Using partial names
-       * $state.includes("contacts"); // returns true
-       * $state.includes("contacts.details"); // returns true
-       * $state.includes("contacts.details.item"); // returns true
-       * $state.includes("contacts.list"); // returns false
-       * $state.includes("about"); // returns false
-       * ```
-       *
-       * #### Glob Examples when `* $state.$current.name === 'contacts.details.item.url'`:
-       * ```js
-       * $state.includes("*.details.*.*"); // returns true
-       * $state.includes("*.details.**"); // returns true
-       * $state.includes("**.item.**"); // returns true
-       * $state.includes("*.details.item.url"); // returns true
-       * $state.includes("*.details.*.url"); // returns true
-       * $state.includes("*.details.*"); // returns false
-       * $state.includes("item.**"); // returns false
-       * ```
-       * @param stateOrName - A partial name, relative name, glob pattern, or state object
-       *    to be searched for within the current state name.
-       * @param [params] - A param object, e.g. `{sectionId: section.id}`,
-       *    that you'd like to test against the current active state.
-       * @param [options] - An options object. The options are:
-       *    - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, `.is`
-       *      tests relative to `options.relative` state (or name).
-       * @returns True if it does include the state.
-       */
+     * Checks if the current state *includes* the provided state
+     *
+     * A method to determine if the current active state is equal to or is the child of the
+     * state stateName. If any params are passed then they will be tested for a match as well.
+     * Not all the parameters need to be passed, just the ones you'd like to test for equality.
+     *
+     * #### Example when `$state.$current.name === 'contacts.details.item'`
+     * ```js
+     * // Using partial names
+     * $state.includes("contacts"); // returns true
+     * $state.includes("contacts.details"); // returns true
+     * $state.includes("contacts.details.item"); // returns true
+     * $state.includes("contacts.list"); // returns false
+     * $state.includes("about"); // returns false
+     * ```
+     *
+     * #### Glob Examples when `* $state.$current.name === 'contacts.details.item.url'`:
+     * ```js
+     * $state.includes("*.details.*.*"); // returns true
+     * $state.includes("*.details.**"); // returns true
+     * $state.includes("**.item.**"); // returns true
+     * $state.includes("*.details.item.url"); // returns true
+     * $state.includes("*.details.*.url"); // returns true
+     * $state.includes("*.details.*"); // returns false
+     * $state.includes("item.**"); // returns false
+     * ```
+     * @param stateOrName - A partial name, relative name, glob pattern, or state object
+     *    to be searched for within the current state name.
+     * @param [params] - A param object, e.g. `{sectionId: section.id}`,
+     *    that you'd like to test against the current active state.
+     * @param [options] - An options object. The options are:
+     *    - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, `.is`
+     *      tests relative to `options.relative` state (or name).
+     * @returns True if it does include the state.
+     */
     includes(stateOrName, params, options) {
-        var _a, _b, _c;
         options = defaults$1(options, { relative: this.$current });
         const glob = isString(stateOrName) && Glob.fromString(stateOrName);
         if (glob) {
-            const currentName = (_a = this.$current) === null || _a === void 0 ? void 0 : _a.name;
+            const currentName = this.$current?.name;
             if (!currentName || !glob.matches(currentName))
                 return false;
             stateOrName = currentName;
         }
-        const state = (_b = this.stateRegistry) === null || _b === void 0 ? void 0 : _b.matcher.find(stateOrName, options === null || options === void 0 ? void 0 : options.relative);
-        const include = (_c = this.$current) === null || _c === void 0 ? void 0 : _c.includes;
+        const state = this.stateRegistry?.matcher.find(stateOrName, options?.relative);
+        const include = this.$current?.includes;
         if (!isDefined(state))
             return undefined;
         if (!isDefined(include[state.name]))
@@ -26402,7 +26295,6 @@ class StateProvider {
      * @returns The compiled state URL.
      */
     href(stateOrName, params, options) {
-        var _a;
         const defaultHrefOpts = {
             lossy: true,
             inherit: true,
@@ -26411,17 +26303,17 @@ class StateProvider {
         };
         options = defaults$1(options, defaultHrefOpts);
         params = params || {};
-        const state = (_a = this.stateRegistry) === null || _a === void 0 ? void 0 : _a.matcher.find(stateOrName, options === null || options === void 0 ? void 0 : options.relative);
+        const state = this.stateRegistry?.matcher.find(stateOrName, options?.relative);
         if (!isDefined(state))
             return null;
-        if (options === null || options === void 0 ? void 0 : options.inherit)
+        if (options?.inherit)
             params = this.globals.params.$inherit(params, this.$current, state);
-        const nav = state && (options === null || options === void 0 ? void 0 : options.lossy) ? state.navigable : state;
+        const nav = state && options?.lossy ? state.navigable : state;
         if (!nav || nav.url === undefined || nav.url === null) {
             return null;
         }
         return this._getUrlService().href(nav.url, params, {
-            absolute: options === null || options === void 0 ? void 0 : options.absolute,
+            absolute: options?.absolute,
         });
     }
     /**
@@ -26454,19 +26346,19 @@ class StateProvider {
     get(stateOrName, base) {
         const reg = this.stateRegistry;
         if (arguments.length === 0)
-            return reg === null || reg === void 0 ? void 0 : reg.get();
-        return reg === null || reg === void 0 ? void 0 : reg.get(stateOrName, base || this.$current);
+            return reg?.get();
+        return reg?.get(stateOrName, base || this.$current);
     }
     /**
-       * Lazy loads a state
-       *
-       * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
-       * @param stateOrName - The state that should be lazy loaded.
-       * @param transition - The optional Transition context to use (if the lazyLoad function requires an injector, etc).
-       *    Note: If no transition is provided, a noop transition is created from the current state to the current state.
-       *    This noop transition is not actually run.
-       * @returns A promise to lazy load.
-       */
+     * Lazy loads a state
+     *
+     * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
+     * @param stateOrName - The state that should be lazy loaded.
+     * @param transition - The optional Transition context to use (if the lazyLoad function requires an injector, etc).
+     *    Note: If no transition is provided, a noop transition is created from the current state to the current state.
+     *    This noop transition is not actually run.
+     * @returns A promise to lazy load.
+     */
     lazyLoad(stateOrName, transition) {
         const state = this.get(stateOrName);
         if (!state || !state.lazyLoad)
@@ -26612,7 +26504,7 @@ class TemplateFactoryProvider {
  * Reads the binding declarations for a named component directive.
  */
 function getComponentBindings($injector, name) {
-    const cmpDefs = $injector === null || $injector === void 0 ? void 0 : $injector.get(name + DirectiveSuffix);
+    const cmpDefs = $injector?.get(name + DirectiveSuffix);
     if (!cmpDefs || !cmpDefs.length) {
         throw new Error(`Unable to find component named '${name}'`);
     }
@@ -28572,7 +28464,7 @@ class AnchorScrollProvider {
                 function getFirstAnchor(list) {
                     for (let i = 0; i < list.length; i++) {
                         const el = list[i];
-                        if (getNodeName(el) === "a") {
+                        if (getNodeName$1(el) === "a") {
                             return el;
                         }
                     }
@@ -28692,7 +28584,7 @@ class CookieService {
      * Accepts the default cookie attributes defined by `$cookiesProvider.defaults`.
      */
     constructor(defaults) {
-        this._defaults = Object.freeze(Object.assign({}, defaults));
+        this._defaults = Object.freeze({ ...defaults });
     }
     /**
      * Retrieves a raw cookie value.
@@ -28735,7 +28627,10 @@ class CookieService {
         validateIsString(value, "value");
         const encodedKey = encodeURIComponent(key);
         const encodedVal = encodeURIComponent(value);
-        document.cookie = `${encodedKey}=${encodedVal}${buildOptions(Object.assign(Object.assign({}, this._defaults), options))}`;
+        document.cookie = `${encodedKey}=${encodedVal}${buildOptions({
+            ...this._defaults,
+            ...options,
+        })}`;
     }
     /**
      * Serializes an object as JSON and stores it as a cookie.
@@ -28754,7 +28649,11 @@ class CookieService {
      */
     remove(key, options = {}) {
         validateIsString(key, "key");
-        this.put(key, "", Object.assign(Object.assign(Object.assign({}, this._defaults), options), { expires: new Date(0) }));
+        this.put(key, "", {
+            ...this._defaults,
+            ...options,
+            expires: new Date(0),
+        });
     }
 }
 /*----------Helpers----------*/
@@ -29291,12 +29190,11 @@ class LocationProvider {
                         return;
                     }
                     queueMicrotask(() => {
-                        var _a;
                         const oldUrl = $location.absUrl;
                         const oldState = $location._state;
                         $location.parse(newUrl);
                         $location._state = newState;
-                        const { defaultPrevented } = (_a = $rootScope.$broadcast("$locationChangeStart", newUrl, oldUrl, newState, oldState)) !== null && _a !== void 0 ? _a : { defaultPrevented: false };
+                        const { defaultPrevented } = $rootScope.$broadcast("$locationChangeStart", newUrl, oldUrl, newState, oldState) ?? { defaultPrevented: false };
                         // if the location was changed by a `$locationChangeStart` handler then stop
                         // processing this location change
                         if ($location.absUrl !== newUrl)
@@ -29324,9 +29222,8 @@ class LocationProvider {
                         if (initializing || urlOrStateChanged) {
                             initializing = false;
                             setTimeout(() => {
-                                var _a;
                                 newUrl = $location.absUrl;
-                                const { defaultPrevented } = (_a = $rootScope.$broadcast("$locationChangeStart", $location.absUrl, oldUrl, $location._state, oldState)) !== null && _a !== void 0 ? _a : { defaultPrevented: false };
+                                const { defaultPrevented } = $rootScope.$broadcast("$locationChangeStart", $location.absUrl, oldUrl, $location._state, oldState) ?? { defaultPrevented: false };
                                 // if the location was changed by a `$locationChangeStart` handler then stop
                                 // processing this location change
                                 if ($location.absUrl !== newUrl)
@@ -29416,8 +29313,7 @@ class LocationProvider {
      * @private
      */
     cacheState() {
-        var _a;
-        const currentState = (_a = history.state) !== null && _a !== void 0 ? _a : null;
+        const currentState = history.state ?? null;
         if (!equals$1(currentState, this.lastCachedState)) {
             this._cachedState = currentState;
             this.lastCachedState = currentState;
@@ -29547,7 +29443,7 @@ function decodePath(path, html5Mode) {
  * // returns "user%20profile/images"
  */
 function normalizePath(pathValue, searchValue, hashValue) {
-    const search = toKeyValue(searchValue !== null && searchValue !== void 0 ? searchValue : null);
+    const search = toKeyValue(searchValue ?? null);
     const hash = hashValue ? `#${encodeUriSegment(hashValue)}` : "";
     const path = encodePath(pathValue);
     return path + (search ? `?${search}` : "") + hash;
@@ -30224,7 +30120,7 @@ class RestService {
             const resp = await this._request("PUT", url, item);
             return this._mapEntity(resp.data);
         }
-        catch (_a) {
+        catch {
             return null;
         }
     }
@@ -30238,7 +30134,7 @@ class RestService {
             await this._request("DELETE", url);
             return true;
         }
-        catch (_a) {
+        catch {
             return false;
         }
     }
@@ -30246,10 +30142,13 @@ class RestService {
      * Core HTTP request wrapper
      */
     async _request(method, url, data = null, params = {}) {
-        return this._$http(Object.assign({ method,
+        return this._$http({
+            method,
             url,
             data,
-            params }, this._options));
+            params,
+            ...this._options,
+        });
     }
 }
 RestService.$nonscope = true;
@@ -30307,14 +30206,20 @@ class StreamConnection {
      */
     constructor(createFn, config = {}, log = console) {
         this._createFn = createFn;
-        this._config = Object.assign({ retryDelay: 1000, maxRetries: Infinity, heartbeatTimeout: 15000, transformMessage: (data) => {
+        this._config = {
+            retryDelay: 1000,
+            maxRetries: Infinity,
+            heartbeatTimeout: 15000,
+            transformMessage: (data) => {
                 try {
                     return JSON.parse(data);
                 }
-                catch (_a) {
+                catch {
                     return data;
                 }
-            } }, config);
+            },
+            ...config,
+        };
         this._log = log;
         this._retryCount = 0;
         this._closed = false;
@@ -30386,9 +30291,8 @@ class StreamConnection {
      * @param event - The open event.
      */
     _handleOpen(event) {
-        var _a, _b;
         this._retryCount = 0;
-        (_b = (_a = this._config).onOpen) === null || _b === void 0 ? void 0 : _b.call(_a, event);
+        this._config.onOpen?.(event);
         this._resetHeartbeat();
     }
     /**
@@ -30399,14 +30303,13 @@ class StreamConnection {
      * @param event - The message event.
      */
     _handleMessage(data, event) {
-        var _a, _b, _c, _d, _e;
         try {
-            data = (_c = (_b = (_a = this._config).transformMessage) === null || _b === void 0 ? void 0 : _b.call(_a, data)) !== null && _c !== void 0 ? _c : data;
+            data = this._config.transformMessage?.(data) ?? data;
         }
-        catch (_f) {
+        catch {
             /* empty */
         }
-        (_e = (_d = this._config).onMessage) === null || _e === void 0 ? void 0 : _e.call(_d, data, event);
+        this._config.onMessage?.(data, event);
         this._resetHeartbeat();
     }
     /**
@@ -30416,8 +30319,7 @@ class StreamConnection {
      * @param err - Error object or message.
      */
     _handleError(err) {
-        var _a, _b;
-        (_b = (_a = this._config).onError) === null || _b === void 0 ? void 0 : _b.call(_a, err);
+        this._config.onError?.(err);
         this._scheduleReconnect();
     }
     /**
@@ -30434,12 +30336,11 @@ class StreamConnection {
      * Calls onReconnect callback if reconnecting.
      */
     _scheduleReconnect() {
-        var _a, _b;
         if (this._closed)
             return;
         if (this._retryCount < this._config.maxRetries) {
             this._retryCount++;
-            (_b = (_a = this._config).onReconnect) === null || _b === void 0 ? void 0 : _b.call(_a, this._retryCount);
+            this._config.onReconnect?.(this._retryCount);
             setTimeout(() => this.connect(), this._config.retryDelay);
         }
         else {
@@ -30456,11 +30357,10 @@ class StreamConnection {
             return;
         clearTimeout(this._heartbeatTimer);
         this._heartbeatTimer = setTimeout(() => {
-            var _a, _b;
             this._log.warn("StreamConnection: heartbeat timeout, reconnecting...");
             this._closeInternal();
             this._retryCount++;
-            (_b = (_a = this._config).onReconnect) === null || _b === void 0 ? void 0 : _b.call(_a, this._retryCount);
+            this._config.onReconnect?.(this._retryCount);
             this.connect();
         }, this._config.heartbeatTimeout);
     }
@@ -30468,9 +30368,8 @@ class StreamConnection {
      * @private
      */
     _closeInternal() {
-        var _a;
         clearTimeout(this._heartbeatTimer);
-        (_a = this._connection) === null || _a === void 0 ? void 0 : _a.close();
+        this._connection?.close();
     }
 }
 
@@ -30487,15 +30386,17 @@ class SseProvider {
             (log) => {
                 this._$log = log;
                 return (url, config = {}) => {
-                    const mergedConfig = Object.assign(Object.assign({}, this.defaults), config);
+                    const mergedConfig = { ...this.defaults, ...config };
                     const finalUrl = this._buildUrl(url, mergedConfig.params);
                     return new StreamConnection(() => new EventSource(finalUrl, {
                         withCredentials: !!mergedConfig.withCredentials,
-                    }), Object.assign(Object.assign({}, mergedConfig), { onMessage: (data, event) => {
-                            var _a;
+                    }), {
+                        ...mergedConfig,
+                        onMessage: (data, event) => {
                             // Cast Event -> MessageEvent safely
-                            (_a = mergedConfig.onMessage) === null || _a === void 0 ? void 0 : _a.call(mergedConfig, data, event);
-                        } }), this._$log);
+                            mergedConfig.onMessage?.(data, event);
+                        },
+                    }, this._$log);
                 };
             },
         ];
@@ -30507,7 +30408,7 @@ class SseProvider {
                 try {
                     return JSON.parse(data);
                 }
-                catch (_a) {
+                catch {
                     return data;
                 }
             },
@@ -30573,9 +30474,8 @@ class TemplateRequestProvider {
                  * @returns Resolves with template content.
                  */
                 const fetchTemplate = (templateUrl) => {
-                    var _a, _b;
                     // Filter out default transformResponse for template requests
-                    let transformResponse = (_b = (_a = $http.defaults) === null || _a === void 0 ? void 0 : _a.transformResponse) !== null && _b !== void 0 ? _b : null;
+                    let transformResponse = $http.defaults?.transformResponse ?? null;
                     if (isArray(transformResponse)) {
                         transformResponse = transformResponse.filter((x) => x !== defaultHttpResponseTransform);
                     }
@@ -30626,23 +30526,25 @@ class WebSocketProvider {
             (log) => {
                 this._$log = log;
                 return (url, protocols = [], config = {}) => {
-                    const mergedConfig = Object.assign(Object.assign({}, this.defaults), config);
+                    const mergedConfig = { ...this.defaults, ...config };
                     mergedConfig.protocols = protocols.length
                         ? protocols
                         : mergedConfig.protocols;
-                    return new StreamConnection(() => new WebSocket(url, mergedConfig.protocols), Object.assign(Object.assign({}, mergedConfig), { onMessage: (data, event) => {
-                            var _a;
-                            (_a = mergedConfig.onMessage) === null || _a === void 0 ? void 0 : _a.call(mergedConfig, data, event);
-                        }, onOpen: (event) => {
-                            var _a;
-                            (_a = mergedConfig.onOpen) === null || _a === void 0 ? void 0 : _a.call(mergedConfig, event);
-                        }, onClose: (event) => {
-                            var _a;
-                            (_a = mergedConfig.onClose) === null || _a === void 0 ? void 0 : _a.call(mergedConfig, event);
-                        }, onError: (event) => {
-                            var _a;
-                            (_a = mergedConfig.onError) === null || _a === void 0 ? void 0 : _a.call(mergedConfig, event);
-                        } }), this._$log);
+                    return new StreamConnection(() => new WebSocket(url, mergedConfig.protocols), {
+                        ...mergedConfig,
+                        onMessage: (data, event) => {
+                            mergedConfig.onMessage?.(data, event);
+                        },
+                        onOpen: (event) => {
+                            mergedConfig.onOpen?.(event);
+                        },
+                        onClose: (event) => {
+                            mergedConfig.onClose?.(event);
+                        },
+                        onError: (event) => {
+                            mergedConfig.onError?.(event);
+                        },
+                    }, this._$log);
                 };
             },
         ];
@@ -30656,7 +30558,7 @@ class WebSocketProvider {
                 try {
                     return JSON.parse(data);
                 }
-                catch (_a) {
+                catch {
                     return data;
                 }
             },
@@ -30830,7 +30732,6 @@ function registerNgModule(angular) {
 
 const ngMinErr = minErr("ng");
 const $injectorMinErr = minErr("$injector");
-const STRICT_DI = "strict-di";
 const moduleRegistry = {};
 /**
  * Main Angular runtime entry point.
@@ -30848,7 +30749,7 @@ class Angular extends EventTarget {
         super();
         this.subapps = [];
         this._bootsrappedModules = [];
-        this.version = "0.20.1";
+        this.version = "0.21.0";
         this.getController = getController;
         this.getInjector = getInjector;
         this.getScope = getScope;
@@ -31103,8 +31004,8 @@ class Angular extends EventTarget {
             });
         });
         appElements.forEach((app) => {
-            const strictDi = app._element.hasAttribute(STRICT_DI) ||
-                app._element.hasAttribute(`data-${STRICT_DI}`);
+            const strictDi = app._element.hasAttribute("strict-di") ||
+                app._element.hasAttribute("data-strict-di");
             if (multimode) {
                 const submodule = new Angular(true);
                 this.subapps.push(submodule);
