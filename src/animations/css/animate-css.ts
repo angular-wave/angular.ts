@@ -1,7 +1,4 @@
-import type {
-  AnimationOptions,
-  Animator,
-} from "../interface.ts";
+import type { AnimationOptions, Animator } from "../interface.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import {
   getCacheData,
@@ -147,8 +144,9 @@ function computeCssStyles(
 ): Record<string, string | number | null> {
   const styles: Record<string, string | number | null> = nullObject();
 
-  const detectedStyles = window.getComputedStyle(element) as CSSStyleDeclaration &
-    Record<string, string>;
+  const detectedStyles = window.getComputedStyle(
+    element,
+  ) as CSSStyleDeclaration & Record<string, string>;
 
   entries(properties).forEach(([actualStyleName, formalStyleName]) => {
     let val: string | number | null = detectedStyles[formalStyleName];
