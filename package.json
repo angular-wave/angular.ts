@@ -2,7 +2,7 @@
   "name": "@angular-wave/angular.ts",
   "description": "A modern, optimized and type-safe version of AngularJS",
   "license": "MIT",
-  "version": "0.20.1",
+  "version": "0.21.0",
   "type": "module",
   "main": "dist/angular-ts.esm.js",
   "module": "dist/angular-ts.esm.js",
@@ -22,9 +22,6 @@
     "AngularJS",
     "AngularTS"
   ],
-  "engines": {
-    "node": ">=24.0.0"
-  },
   "scripts": {
     "build": "rm -rf .build dist && ./node_modules/.bin/tsc --project tsconfig.build.json && ./node_modules/.bin/rollup -c && rm -rf .build",
     "playwright": "./node_modules/.bin/playwright test",
