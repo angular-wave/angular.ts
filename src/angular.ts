@@ -32,7 +32,6 @@ import type { Resolvable } from "./router/resolve/resolvable.ts";
 
 const ngMinErr = minErr("ng");
 const $injectorMinErr = minErr("$injector");
-const STRICT_DI = "strict-di";
 
 type ModuleRegistry = Record<string, NgModule | null>;
 type AppElement = { _element: HTMLElement; _module: string | null };
@@ -382,8 +381,8 @@ export class Angular extends EventTarget {
 
     appElements.forEach((app) => {
       const strictDi =
-        app._element.hasAttribute(STRICT_DI) ||
-        app._element.hasAttribute(`data-${STRICT_DI}`);
+        app._element.hasAttribute("strict-di") ||
+        app._element.hasAttribute("data-strict-di");
 
       if (multimode) {
         const submodule = new Angular(true);

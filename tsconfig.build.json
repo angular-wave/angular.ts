@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "target": "ES2020",
+    "sourceMap": true,
+    "outDir": ".build",
+    "rootDir": "src",
+    "tsBuildInfoFile": ".build/tsconfig.build.tsbuildinfo",
+    "rewriteRelativeImportExtensions": true
+  }
+}

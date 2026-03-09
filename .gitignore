@@ -11,3 +11,4 @@ tsconfig.tsbuildinfo
 .vscode
 angular.ts.iml
 /@types/
+/.build/
