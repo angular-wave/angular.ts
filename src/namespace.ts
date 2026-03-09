@@ -101,9 +101,7 @@ import { Provider as TProvideService } from "./interface.ts";
 import { Location as TLocationService } from "./services/location/location.ts";
 import { AnimateService as TAnimateService } from "./animations/animate.ts";
 import { AnimateCssService as TAnimateCssService } from "./animations/css/animate-css.ts";
-import {
-  AnimationOptions as TAnimationOptions,
-} from "./animations/interface.ts";
+import { AnimationOptions as TAnimationOptions } from "./animations/interface.ts";
 import {
   StorageBackend as TStorageBackend,
   StorageType as TStorageType,

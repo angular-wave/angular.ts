@@ -1402,11 +1402,11 @@ export class CompileProvider {
           if (newValue !== linkState._value) {
             linkState._interpolateFn = newValue
               ? ($interpolate(
-                newValue,
-                true,
-                linkState._trustedContext,
-                linkState._allOrNothing,
-              ) as InterpolationFunction | undefined)
+                  newValue,
+                  true,
+                  linkState._trustedContext,
+                  linkState._allOrNothing,
+                ) as InterpolationFunction | undefined)
               : undefined;
             linkState._value = newValue;
           }
@@ -1611,19 +1611,19 @@ export class CompileProvider {
         ) {
           const hasScope = isScope(scopeParam);
           const boundTranscludeFn = transcludeState._boundTranscludeFn;
-          const transcludeControllers = transcludeState
-            ._hasElementTranscludeDirective
-            ? transcludeState._elementControllers
-            : undefined;
+          const transcludeControllers =
+            transcludeState._hasElementTranscludeDirective
+              ? transcludeState._elementControllers
+              : undefined;
           const transcludedScope = hasScope
             ? (scopeParam as import("../scope/scope.ts").Scope)
             : undefined;
           const attachFn = (hasScope ? cloneAttachFn : scopeParam) as
             | CloneAttachFn
             | undefined;
-          const requestedSlotName = (hasScope
-            ? slotName
-            : _futureParentElement) as string | number | undefined;
+          const requestedSlotName = (
+            hasScope ? slotName : _futureParentElement
+          ) as string | number | undefined;
           const futureParentElement =
             ((hasScope ? _futureParentElement : cloneAttachFn) as
               | Node
@@ -1634,7 +1634,8 @@ export class CompileProvider {
               : transcludeState._elementRef.node);
 
           if (requestedSlotName) {
-            const slotTranscludeFn = boundTranscludeFn._slots[requestedSlotName];
+            const slotTranscludeFn =
+              boundTranscludeFn._slots[requestedSlotName];
 
             if (slotTranscludeFn) {
               return slotTranscludeFn(
@@ -1729,7 +1730,7 @@ export class CompileProvider {
               _elementRef: $element,
             };
 
-            const newTranscludeFn = (function (
+            const newTranscludeFn = function (
               scopeParam,
               cloneAttachFn,
               _futureParentElement,
@@ -1746,7 +1747,7 @@ export class CompileProvider {
                 _futureParentElement,
                 slotName,
               );
-            }) as ControllersBoundTranscludeFn & {
+            } as ControllersBoundTranscludeFn & {
               _boundTransclude?: BoundTranscludeFn;
             };
 
@@ -1775,8 +1776,8 @@ export class CompileProvider {
           }
 
           if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
-            isolateScope.$target._isolateBindings =
-              nodeLinkState._newIsolateScopeDirective._isolateBindings as any;
+            isolateScope.$target._isolateBindings = nodeLinkState
+              ._newIsolateScopeDirective._isolateBindings as any;
             scopeBindingInfo = initializeDirectiveBindings(
               scope,
               attrs,
@@ -1795,8 +1796,8 @@ export class CompileProvider {
 
             const controller = elementControllers[name];
 
-            const bindings =
-              controllerDirective._bindings.bindToController as any;
+            const bindings = controllerDirective._bindings
+              .bindToController as any;
 
             const controllerInstance = controller();
 
@@ -2022,7 +2023,10 @@ export class CompileProvider {
 
           let nodeLinkFn: NodeLinkFn | StoredNodeLinkFn | undefined;
 
-          let nodeLinkFnState: NodeLinkState | DelayedTemplateLinkState | undefined;
+          let nodeLinkFnState:
+            | NodeLinkState
+            | DelayedTemplateLinkState
+            | undefined;
 
           // executes all directives on the current element
           for (let i = 0, ii = directives.length; i < ii; i++) {
@@ -2479,10 +2483,7 @@ export class CompileProvider {
                     preLinkFns,
                     isDefined(preLinkCtx)
                       ? linkFn.pre
-                      : bind(
-                          context,
-                          linkFn.pre,
-                        ),
+                      : bind(context, linkFn.pre),
                     directive.require,
                     directiveName,
                     isolateScope,
@@ -2492,10 +2493,7 @@ export class CompileProvider {
                     postLinkFns,
                     isDefined(postLinkCtx)
                       ? linkFn.post
-                      : bind(
-                          context,
-                          linkFn.post,
-                        ),
+                      : bind(context, linkFn.post),
                     directive.require,
                     directiveName,
                     isolateScope,
@@ -2834,15 +2832,12 @@ export class CompileProvider {
             _previousCompileContext: previousCompileContext,
           };
 
-          const derivedSyncDirective = inherit(
-            origAsyncDirective,
-            {
-              templateUrl: null,
-              transclude: null,
-              replace: null,
-              _originalDirective: origAsyncDirective,
-            },
-          ) as InternalDirective;
+          const derivedSyncDirective = inherit(origAsyncDirective, {
+            templateUrl: null,
+            transclude: null,
+            replace: null,
+            _originalDirective: origAsyncDirective,
+          }) as InternalDirective;
 
           let templateUrl: string;
 

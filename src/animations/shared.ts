@@ -216,12 +216,8 @@ export function mergeAnimationDetails(
     if (existingSet.has(cls)) finalRemove.push(cls);
   });
 
-  target.addClass = finalAdd.length
-    ? finalAdd.join(" ")
-    : undefined;
-  target.removeClass = finalRemove.length
-    ? finalRemove.join(" ")
-    : undefined;
+  target.addClass = finalAdd.length ? finalAdd.join(" ") : undefined;
+  target.removeClass = finalRemove.length ? finalRemove.join(" ") : undefined;
 
   // Update oldAnimation references
   oldAnimation.addClass = target.addClass;

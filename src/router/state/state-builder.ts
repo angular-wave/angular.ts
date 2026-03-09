@@ -26,10 +26,7 @@ import type {
   ResolvableLiteral,
   ProviderLike,
 } from "../resolve/resolvable.ts";
-import type {
-  BuiltStateDeclaration,
-  StateDeclaration,
-} from "./interface.ts";
+import type { BuiltStateDeclaration, StateDeclaration } from "./interface.ts";
 import type { StateMatcher } from "./state-matcher.ts";
 import type { StateObject } from "./state-object.ts";
 import type { UrlMatcher } from "../url/url-matcher.ts";

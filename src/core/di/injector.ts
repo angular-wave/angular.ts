@@ -346,7 +346,9 @@ export function createInjector(
           moduleRunBlocks.push(providerInjector.invoke(module));
         } else if (isArray(module)) {
           moduleRunBlocks.push(
-            providerInjector.invoke(module as Function | ng.AnnotatedFactory<any>),
+            providerInjector.invoke(
+              module as Function | ng.AnnotatedFactory<any>,
+            ),
           );
         } else {
           assertArgFn(module, "module");
@@ -368,11 +370,11 @@ export function createInjector(
   }
 }
 
-  /**
-   * Wraps a delegate function to support object-style arguments.
-   *
-   * @template V
-   */
+/**
+ * Wraps a delegate function to support object-style arguments.
+ *
+ * @template V
+ */
 function supportObject<V>(
   delegate: (key: string, value: V) => any,
 ): (key: string | Record<string, V>, value?: V) => any {

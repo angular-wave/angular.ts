@@ -73,7 +73,10 @@ export interface HttpHeaderType {
  */
 export interface HttpProviderDefaults {
   cache?: any;
-  transformRequest?: HttpRequestTransformer | HttpRequestTransformer[] | undefined;
+  transformRequest?:
+    | HttpRequestTransformer
+    | HttpRequestTransformer[]
+    | undefined;
   transformResponse?:
     | HttpResponseTransformer
     | HttpResponseTransformer[]
@@ -128,9 +131,21 @@ export interface HttpService {
   get<T>(url: string, config?: RequestShortcutConfig): HttpPromise<T>;
   delete<T>(url: string, config?: RequestShortcutConfig): HttpPromise<T>;
   head<T>(url: string, config?: RequestShortcutConfig): HttpPromise<T>;
-  post<T>(url: string, data: any, config?: RequestShortcutConfig): HttpPromise<T>;
-  put<T>(url: string, data: any, config?: RequestShortcutConfig): HttpPromise<T>;
-  patch<T>(url: string, data: any, config?: RequestShortcutConfig): HttpPromise<T>;
+  post<T>(
+    url: string,
+    data: any,
+    config?: RequestShortcutConfig,
+  ): HttpPromise<T>;
+  put<T>(
+    url: string,
+    data: any,
+    config?: RequestShortcutConfig,
+  ): HttpPromise<T>;
+  patch<T>(
+    url: string,
+    data: any,
+    config?: RequestShortcutConfig,
+  ): HttpPromise<T>;
   defaults: HttpProviderDefaults;
   pendingRequests: RequestConfig[];
 }
@@ -473,7 +488,9 @@ export function HttpProvider(this: any): void {
    *
    * {@link ng.$http#interceptors Interceptors detailed info}
    */
-  this.interceptors = [] as Array<string | ng.Injectable<HttpInterceptorFactory>>;
+  this.interceptors = [] as Array<
+    string | ng.Injectable<HttpInterceptorFactory>
+  >;
 
   /**
    * Array containing URLs whose origins are trusted to receive the XSRF token. See the
@@ -749,7 +766,8 @@ export function HttpProvider(this: any): void {
 
         /** Applies response transforms and rejects responses outside the success range. */
         function transformResponse(response: any) {
-          const httpResponse = response as import("./http.ts").HttpResponse<any>;
+          const httpResponse =
+            response as import("./http.ts").HttpResponse<any>;
 
           // make a copy since the response must be cacheable
           const resp = extend(
@@ -859,8 +877,7 @@ export function HttpProvider(this: any): void {
 
         if (
           (config.cache ||
-            (defaults as import("./http.ts").HttpProviderDefaults)
-              .cache) &&
+            (defaults as import("./http.ts").HttpProviderDefaults).cache) &&
           config.cache !== false &&
           config.method === "GET"
         ) {

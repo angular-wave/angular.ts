@@ -1,7 +1,5 @@
 import { isArray } from "../../shared/utils.ts";
-import type {
-  StateDeclaration,
-} from "../state/interface.ts";
+import type { StateDeclaration } from "../state/interface.ts";
 import type { TransitionService } from "../transition/transition-service.ts";
 import type { Transition } from "../transition/transition.ts";
 

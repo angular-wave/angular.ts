@@ -250,8 +250,10 @@ export class NgModelController {
     this._updateEventHandler = this._updateEventHandler.bind(this);
 
     this._parsedNgModel = $parse($attr.ngModel);
-    this._parsedNgModelAssign =
-      this._parsedNgModel._assign as (context: any, value: any) => any;
+    this._parsedNgModelAssign = this._parsedNgModel._assign as (
+      context: any,
+      value: any,
+    ) => any;
     this._ngModelGet = this._parsedNgModel;
     this._ngModelSet = this._parsedNgModelAssign;
     this._pendingDebounce = undefined;
@@ -400,11 +402,7 @@ export class NgModelController {
     }
 
     toggleValidationCss(this, validationErrorKey, combinedState);
-    this._parentForm.$setValidity(
-      validationErrorKey,
-      combinedState,
-      this,
-    );
+    this._parentForm.$setValidity(validationErrorKey, combinedState, this);
   }
 
   _initGetterSetters() {

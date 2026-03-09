@@ -25,10 +25,7 @@ import { validateRequired } from "../../shared/validate.ts";
  * @param state - The new history state associated with the URL (`history.state`).
  * @returns Nothing.
  */
-export type UrlChangeListener = (
-  url: string,
-  state: History["state"],
-) => void;
+export type UrlChangeListener = (url: string, state: History["state"]) => void;
 
 /**
  * Represents the configuration options for HTML5 mode.

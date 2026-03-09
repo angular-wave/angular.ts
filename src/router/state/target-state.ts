@@ -2,10 +2,7 @@ import { isObject, isString } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
 import type { RawParams } from "../params/param.ts";
 import type { TransitionOptions } from "../transition/transition.ts";
-import type {
-  StateDeclaration,
-  StateOrName,
-} from "./interface.ts";
+import type { StateDeclaration, StateOrName } from "./interface.ts";
 import type { StateRegistryProvider } from "./state-registry.ts";
 import type { StateObject } from "./state-object.ts";
 

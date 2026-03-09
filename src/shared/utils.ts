@@ -626,11 +626,7 @@ export function stringify(value: unknown): string | unknown {
     default:
       const objectValue = value as Object;
 
-      if (
-        hasCustomToString(objectValue) &&
-        !isArray(value) &&
-        !isDate(value)
-      ) {
+      if (hasCustomToString(objectValue) && !isArray(value) && !isDate(value)) {
         value = objectValue.toString();
       } else {
         value = toJson(value);

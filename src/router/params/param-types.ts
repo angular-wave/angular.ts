@@ -83,9 +83,7 @@ export class ParamTypes {
 
     if (hasOwn(this.types, name))
       throw new Error(`A type named '${name}' has already been defined.`);
-    this.types[name] = new ParamType(
-      Object.assign({ name }, definition),
-    );
+    this.types[name] = new ParamType(Object.assign({ name }, definition));
 
     if (definitionFn) {
       this.typeQueue.push({ name, def: definitionFn });

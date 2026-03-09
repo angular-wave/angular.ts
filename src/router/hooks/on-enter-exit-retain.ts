@@ -1,6 +1,4 @@
-import type {
-  TransitionStateHookFn,
-} from "../transition/interface.ts";
+import type { TransitionStateHookFn } from "../transition/interface.ts";
 import type { TransitionService } from "../transition/transition-service.ts";
 
 /**

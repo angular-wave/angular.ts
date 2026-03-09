@@ -48,11 +48,7 @@ import type { PathNode } from "../path/path-node.ts";
 import type { PolicyWhen } from "../resolve/resolvable.ts";
 import type { Resolvable } from "../resolve/resolvable.ts";
 import type { StateObject } from "../state/state-object.ts";
-import type {
-  ActiveUIView,
-  ViewContext,
-  ViewTuple,
-} from "../view/view.ts";
+import type { ActiveUIView, ViewContext, ViewTuple } from "../view/view.ts";
 import type { ViewConfig } from "../view/view.ts";
 
 const MAX_PAD_LENGTH = 30;

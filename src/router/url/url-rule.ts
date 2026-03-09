@@ -31,7 +31,11 @@ export interface UrlRuleHandlerFn {
     matchValue?: any,
     url?: UrlParts,
     router?: ng.RouterService,
-  ): string | import("../state/target-state.ts").TargetState | import("../state/target-state.ts").TargetStateDef | void;
+  ):
+    | string
+    | import("../state/target-state.ts").TargetState
+    | import("../state/target-state.ts").TargetStateDef
+    | void;
 }
 
 /** @internal */
