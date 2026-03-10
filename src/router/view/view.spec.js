@@ -96,4 +96,108 @@ describe("view", () => {
       expect(ctrlExpression).toEqual("FooController as foo");
     });
   });
+
+  describe("matching", () => {
+    it("matches root default ng-view targets using the active ui-view fqn format", () => {
+      const uiView = {
+        fqn: "$default",
+        name: "$default",
+        creationContext: root,
+      };
+      const viewConfig = {
+        viewDecl: {
+          $ngViewName: "$default",
+          $ngViewContextAnchor: "",
+          $context: root,
+        },
+      };
+
+      expect(ViewService.matches({}, uiView)(viewConfig)).toBe(true);
+    });
+
+    it("matches named child ng-views using context.name fqn format", () => {
+      const parentContext = register({ name: "parent", parent: root });
+      const childContext = register({
+        name: "parent.child",
+        parent: parentContext,
+      });
+      const uiView = {
+        fqn: "parent.sidebar",
+        name: "sidebar",
+        creationContext: parentContext,
+      };
+      const viewConfig = {
+        viewDecl: {
+          $ngViewName: "sidebar",
+          $ngViewContextAnchor: "parent",
+          $context: childContext,
+        },
+      };
+
+      expect(ViewService.matches({}, uiView)(viewConfig)).toBe(true);
+    });
+
+    it("does not match a parent config when a more specific child ng-view exists", () => {
+      const parentContext = register({ name: "parent", parent: root });
+      const childContext = register({
+        name: "parent.child",
+        parent: parentContext,
+      });
+      const uiView = {
+        fqn: "parent.sidebar",
+        name: "sidebar",
+        creationContext: parentContext,
+      };
+      const viewConfig = {
+        viewDecl: {
+          $ngViewName: "sidebar",
+          $ngViewContextAnchor: "parent",
+          $context: childContext,
+        },
+      };
+      const childNgViewsByFqn = {
+        "parent.sidebar.sidebar": {
+          fqn: "parent.sidebar.sidebar",
+        },
+      };
+
+      expect(ViewService.matches(childNgViewsByFqn, uiView)(viewConfig)).toBe(
+        false,
+      );
+    });
+  });
+
+  describe("service helpers", () => {
+    it("normalizes relative ui-view targets", () => {
+      const parentContext = register({ name: "parent", parent: root });
+      const childContext = register({
+        name: "parent.child",
+        parent: parentContext,
+      });
+
+      expect(ViewService.normalizeUIViewTarget(childContext, "sidebar@^")).toBe(
+        "sidebar@parent",
+      );
+    });
+
+    it("notifies onSync listeners when views are synchronized", () => {
+      const tuplesSeen = [];
+      const deregister = $view.onSync((tuples) => tuplesSeen.push(tuples));
+      const uiView = {
+        id: 1,
+        fqn: "$default",
+        name: "$default",
+        creationContext: root,
+        config: null,
+        configUpdated: () => {},
+      };
+
+      const unregister = $view.registerUIView(uiView);
+
+      expect(tuplesSeen.length).toBeGreaterThan(0);
+
+      unregister();
+      deregister();
+    });
+  });
 });

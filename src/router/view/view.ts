@@ -172,7 +172,7 @@ export class ViewService {
     for (let i = 0; i < this._ngViews.length; i++) {
       const ngView = this._ngViews[i];
       const matches = ViewService.matches(ngViewsByFqn, ngView);
-      let bestMatch: ViewConfig | undefined;
+      let selectedViewConfig: ViewConfig | undefined = undefined;
       let bestDepth = Number.NEGATIVE_INFINITY;
 
       for (let j = 0; j < this._viewConfigs.length; j++) {
@@ -182,17 +182,17 @@ export class ViewService {
 
         const candidateDepth = viewConfigDepth(candidate);
 
-        if (!bestMatch || candidateDepth > bestDepth) {
-          bestMatch = candidate;
+        if (!selectedViewConfig || candidateDepth > bestDepth) {
+          selectedViewConfig = candidate;
           bestDepth = candidateDepth;
         }
       }
 
-      if (bestMatch) {
-        matchedViewConfigs.add(bestMatch);
+      if (selectedViewConfig) {
+        matchedViewConfigs.add(selectedViewConfig);
       }
 
-      ngViewTuples.push({ ngView, viewConfig: bestMatch });
+      ngViewTuples.push({ ngView, viewConfig: selectedViewConfig });
     }
 
     const unmatchedConfigTuples: ViewTuple[] = [];
@@ -260,47 +260,6 @@ export class ViewService {
   }
 
   /**
-   * Subscribes to view/config synchronization updates.
-   */
-  onSync(listener: (tuples: ViewTuple[]) => void): () => void {
-    this._listeners.push(listener);
-
-    return () => removeFrom(this._listeners, listener);
-  }
-
-  /**
-   * Normalizes a relative `ui-view` target name into a fully-qualified target.
-   */
-  static normalizeUIViewTarget(
-    context?: ViewContext | null,
-    rawViewName = "",
-  ): string {
-    const viewAtContext = rawViewName.split("@");
-    let uiViewName = viewAtContext[0] || "$default";
-    let uiViewContextAnchor = viewAtContext[1] || "^";
-
-    const relativeMatch = /^\^(\^(\.)?)*/.exec(uiViewContextAnchor);
-
-    if (relativeMatch) {
-      const anchorTail = uiViewContextAnchor.replace(relativeMatch[0], "");
-      const upLevels = relativeMatch[0].split("^").length - 1;
-      let anchor = context;
-
-      for (let i = 0; i < upLevels && anchor; i++) {
-        anchor = anchor.parent;
-      }
-
-      uiViewContextAnchor = (anchor && anchor.name) || "";
-      if (anchorTail) {
-        uiViewContextAnchor =
-          uiViewContextAnchor + (uiViewContextAnchor && ".") + anchorTail;
-      }
-    }
-
-    return `${uiViewName}@${uiViewContextAnchor}`;
-  }
-
-  /**
    * Builds a predicate that determines whether a view config matches
    * a specific active `ui-view`.
    */
@@ -315,10 +274,7 @@ export class ViewService {
       if (!viewConfig || !viewConfig.viewDecl) return false;
       const vcName = viewConfig.viewDecl.$ngViewName || "$default";
       const vcContext = viewConfig.viewDecl.$ngViewContextAnchor || "";
-      const normalizedTarget = ViewService.normalizeUIViewTarget(
-        viewConfig.viewDecl.$context as ViewContext,
-        `${vcName}@${vcContext}`,
-      );
+      const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
 
       if (normalizedTarget !== uiViewFqn) return false;
       if (vcName !== uiView.name) return false;
@@ -332,7 +288,9 @@ export class ViewService {
         return false;
       }
 
-      return !ngViewsByFqn[`${vcName}@${vcContext}.${uiView.name}`];
+      const childViewFqn = `${normalizedTarget}.${uiView.name}`;
+
+      return !ngViewsByFqn[childViewFqn];
     };
   }
 }
