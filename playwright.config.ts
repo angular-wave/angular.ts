@@ -13,6 +13,7 @@ const baseUrl = "http://localhost:4000";
 export default defineConfig({
   testDir: "./",
   testMatch: "**/*.test.js",
+  testIgnore: ["docs/public/**"],
   /* Run tests in files in parallel */
   fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
