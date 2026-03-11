@@ -1,4 +1,4 @@
-.PHONY: build build-ts test types
+.PHONY: build build-ts test types coverage coverage-check coverage-open
 
 BUILD_DIR 	= ./dist	
 TS_BUILD_DIR = ./.build
@@ -21,7 +21,9 @@ build:
 		rm -r "$(TS_BUILD_DIR)"; \
 	fi
 	@npm i
-	@npm run build
+	@./node_modules/.bin/tsc --project tsconfig.build.json
+	@./node_modules/.bin/rollup -c
+	@rm -rf .build
 
 build-ts:
 	@if [ -d "$(TS_BUILD_DIR)" ]; then \
@@ -31,7 +33,7 @@ build-ts:
 	@./node_modules/.bin/tsc --project tsconfig.build.json
 
 size:
-	@npm run build >/dev/null
+	@$(MAKE) build >/dev/null
 	@echo "Minified build output:  $$(stat -c %s dist/angular-ts.umd.min.js) ~ $$(stat -c %s dist/angular-ts.umd.min.js | numfmt --to=iec)"
 	@echo "Expected gzip:          $$(gzip -c dist/angular-ts.umd.min.js | wc -c) ~ $$(gzip -c dist/angular-ts.umd.min.js | wc -c | numfmt --to=iec)"
 	@git checkout -q $(BUILD_DIR)
@@ -66,7 +68,9 @@ check:
 
 types:
 	@echo "Generating *.d.ts"
-	@npm run types
+	@rm -rf @types
+	@./node_modules/.bin/tsc --project tsconfig.types.json
+	@npx prettier ./@types --write --cache --log-level=silent
 
 TYPEDOC_DIR = docs/static/typedoc
 doc: 
@@ -92,5 +96,18 @@ test-ui:
 	@echo $(INFO) "Playwright test JS with ui"
 	@$(PLAYWRIGHT_TEST) --ui
 
+coverage:
+	@echo $(INFO) "Playwright coverage"
+	@node ./utils/run-coverage.mjs
+
+coverage-check:
+	@echo $(INFO) "Playwright coverage threshold check"
+	@node ./utils/run-coverage.mjs --check
+
+coverage-open:
+	@echo $(INFO) "Open coverage report"
+	@node ./utils/open-coverage.mjs
+
 hugo:
 	hugo server --source=docs --disableFastRender
+

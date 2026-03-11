@@ -1,10 +1,16 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect } from "@playwright/test";
-
 const DEFAULT_TIMEOUT = 120_000;
 const MAX_FAILURES = 10;
 const MAX_MESSAGES = 3;
 const MAX_LOG_LINES = 10;
-
+const COVERAGE_ENABLED = process.env.PW_COVERAGE === "1";
+const COVERAGE_TEMP_DIR = fileURLToPath(
+  new URL("./.coverage/tmp/", import.meta.url),
+);
+let coverageArtifactId = 0;
 /**
  * Runs a Jasmine HTML runner from an existing Playwright test and reports
  * explicit spec failures when the suite finishes.
@@ -21,7 +27,6 @@ export async function expectNoJasmineFailures(page, url, options = {}) {
     formatJasmineFailureReport(url, diagnostics),
   ).toEqual([]);
 }
-
 /**
  * Waits for the browser-side Jasmine runner to finish and collects failures.
  *
@@ -34,7 +39,6 @@ export async function runJasminePage(page, url, options = {}) {
   const pageErrors = [];
   const consoleErrors = [];
   const timeout = options.timeout ?? DEFAULT_TIMEOUT;
-
   page.on("pageerror", (error) => {
     pageErrors.push(error.stack || error.message);
   });
@@ -43,31 +47,39 @@ export async function runJasminePage(page, url, options = {}) {
       consoleErrors.push(message.text());
     }
   });
-
   await page.goto(url);
-
   try {
-    await page.waitForFunction(
-      () =>
-        typeof window.jsApiReporter?.status === "function" &&
-        window.jsApiReporter.status() === "done",
-      { timeout },
-    );
-  } catch (error) {
+    try {
+      await page.waitForFunction(
+        () =>
+          typeof window.jsApiReporter?.status === "function" &&
+          window.jsApiReporter.status() === "done",
+        { timeout },
+      );
+    } catch (error) {
+      const diagnostics = await collectJasmineDiagnostics(page);
+      diagnostics.pageErrors = pageErrors;
+      diagnostics.consoleErrors = consoleErrors;
+      throw new Error(formatJasmineFailureReport(url, diagnostics), {
+        cause: error,
+      });
+    }
     const diagnostics = await collectJasmineDiagnostics(page);
     diagnostics.pageErrors = pageErrors;
     diagnostics.consoleErrors = consoleErrors;
-    throw new Error(formatJasmineFailureReport(url, diagnostics), {
-      cause: error,
-    });
+    return diagnostics;
+  } finally {
+    await savePageCoverage(page, url);
   }
-
-  const diagnostics = await collectJasmineDiagnostics(page);
-  diagnostics.pageErrors = pageErrors;
-  diagnostics.consoleErrors = consoleErrors;
-  return diagnostics;
 }
-
+// noinspection JSUnusedGlobalSymbols
+export async function withPageCoverage(page, label, action) {
+  try {
+    return await action();
+  } finally {
+    await savePageCoverage(page, label);
+  }
+}
 /**
  * Reads Jasmine reporter output from the page and normalizes it into a small
  * object the Playwright wrapper can assert on.
@@ -93,7 +105,6 @@ async function collectJasmineDiagnostics(page) {
           (expectation) => expectation.message,
         ),
       }));
-
     return {
       failedSpecs,
       overallText,
@@ -104,7 +115,6 @@ async function collectJasmineDiagnostics(page) {
     };
   });
 }
-
 /**
  * Builds a human-readable assertion message with the failed spec names and
  * expectation messages pulled from Jasmine.
@@ -115,7 +125,6 @@ async function collectJasmineDiagnostics(page) {
  */
 function formatJasmineFailureReport(url, diagnostics) {
   const lines = [`Jasmine failures for ${url}`];
-
   if (diagnostics.status && diagnostics.status !== "done") {
     lines.push(`Status: ${diagnostics.status}`);
   }
@@ -125,17 +134,14 @@ function formatJasmineFailureReport(url, diagnostics) {
   if (diagnostics.totalSpecs) {
     lines.push(`Total specs: ${diagnostics.totalSpecs}`);
   }
-
   if (diagnostics.failedSpecs.length > 0) {
     lines.push("Failed specs:");
-
     diagnostics.failedSpecs.slice(0, MAX_FAILURES).forEach((spec, index) => {
       lines.push(`${index + 1}. ${spec.fullName}`);
       spec.failedExpectations.slice(0, MAX_MESSAGES).forEach((message) => {
         lines.push(`   - ${message}`);
       });
     });
-
     if (diagnostics.failedSpecs.length > MAX_FAILURES) {
       lines.push(
         `... ${diagnostics.failedSpecs.length - MAX_FAILURES} more failed specs`,
@@ -144,13 +150,10 @@ function formatJasmineFailureReport(url, diagnostics) {
   } else {
     lines.push("No failed specs were reported.");
   }
-
   appendLogSection(lines, "Page errors", diagnostics.pageErrors);
   appendLogSection(lines, "Console errors", diagnostics.consoleErrors);
-
   return lines.join("\n");
 }
-
 /**
  * Adds captured browser-side errors to the failure report without letting the
  * output become excessively large.
@@ -164,17 +167,43 @@ function appendLogSection(lines, label, values) {
   if (values.length === 0) {
     return;
   }
-
   lines.push(`${label}:`);
   values.slice(0, MAX_LOG_LINES).forEach((value) => {
     lines.push(`- ${value}`);
   });
-
   if (values.length > MAX_LOG_LINES) {
     lines.push(`... ${values.length - MAX_LOG_LINES} more`);
   }
 }
-
+async function savePageCoverage(page, label) {
+  if (!COVERAGE_ENABLED) {
+    return;
+  }
+  const coverage = await page
+    .evaluate(() => globalThis.__coverage__ || window.__coverage__ || null)
+    .catch(() => null);
+  if (!coverage || Object.keys(coverage).length === 0) {
+    return;
+  }
+  coverageArtifactId += 1;
+  await mkdir(COVERAGE_TEMP_DIR, { recursive: true });
+  await writeFile(
+    path.join(
+      COVERAGE_TEMP_DIR,
+      `${process.pid}-${coverageArtifactId}-${sanitizeCoverageLabel(label)}.json`,
+    ),
+    JSON.stringify(coverage),
+    "utf8",
+  );
+}
+function sanitizeCoverageLabel(label) {
+  return (
+    String(label)
+      .replace(/[^a-z0-9]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "page"
+  );
+}
 /**
  * @typedef {{
  *   failedSpecs: Array<{
