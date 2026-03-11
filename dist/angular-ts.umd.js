@@ -1,4 +1,4 @@
-/* Version: 0.21.0 - March 10, 2026 00:16:12 */
+/* Version: 0.22.0 - March 11, 2026 10:48:40 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -28336,22 +28336,22 @@
             for (let i = 0; i < this._ngViews.length; i++) {
                 const ngView = this._ngViews[i];
                 const matches = ViewService.matches(ngViewsByFqn, ngView);
-                let bestMatch;
+                let selectedViewConfig = undefined;
                 let bestDepth = Number.NEGATIVE_INFINITY;
                 for (let j = 0; j < this._viewConfigs.length; j++) {
                     const candidate = this._viewConfigs[j];
                     if (!matches(candidate))
                         continue;
                     const candidateDepth = viewConfigDepth(candidate);
-                    if (!bestMatch || candidateDepth > bestDepth) {
-                        bestMatch = candidate;
+                    if (!selectedViewConfig || candidateDepth > bestDepth) {
+                        selectedViewConfig = candidate;
                         bestDepth = candidateDepth;
                     }
                 }
-                if (bestMatch) {
-                    matchedViewConfigs.add(bestMatch);
+                if (selectedViewConfig) {
+                    matchedViewConfigs.add(selectedViewConfig);
                 }
-                ngViewTuples.push({ ngView, viewConfig: bestMatch });
+                ngViewTuples.push({ ngView, viewConfig: selectedViewConfig });
             }
             const unmatchedConfigTuples = [];
             for (let i = 0; i < this._viewConfigs.length; i++) {
@@ -28400,36 +28400,6 @@
             return this._viewConfigs;
         }
         /**
-         * Subscribes to view/config synchronization updates.
-         */
-        onSync(listener) {
-            this._listeners.push(listener);
-            return () => removeFrom(this._listeners, listener);
-        }
-        /**
-         * Normalizes a relative `ui-view` target name into a fully-qualified target.
-         */
-        static normalizeUIViewTarget(context, rawViewName = "") {
-            const viewAtContext = rawViewName.split("@");
-            let uiViewName = viewAtContext[0] || "$default";
-            let uiViewContextAnchor = viewAtContext[1] || "^";
-            const relativeMatch = /^\^(\^(\.)?)*/.exec(uiViewContextAnchor);
-            if (relativeMatch) {
-                const anchorTail = uiViewContextAnchor.replace(relativeMatch[0], "");
-                const upLevels = relativeMatch[0].split("^").length - 1;
-                let anchor = context;
-                for (let i = 0; i < upLevels && anchor; i++) {
-                    anchor = anchor.parent;
-                }
-                uiViewContextAnchor = (anchor && anchor.name) || "";
-                if (anchorTail) {
-                    uiViewContextAnchor =
-                        uiViewContextAnchor + (uiViewContextAnchor && ".") + anchorTail;
-                }
-            }
-            return `${uiViewName}@${uiViewContextAnchor}`;
-        }
-        /**
          * Builds a predicate that determines whether a view config matches
          * a specific active `ui-view`.
          */
@@ -28441,7 +28411,7 @@
                     return false;
                 const vcName = viewConfig.viewDecl.$ngViewName || "$default";
                 const vcContext = viewConfig.viewDecl.$ngViewContextAnchor || "";
-                const normalizedTarget = ViewService.normalizeUIViewTarget(viewConfig.viewDecl.$context, `${vcName}@${vcContext}`);
+                const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
                 if (normalizedTarget !== uiViewFqn)
                     return false;
                 if (vcName !== uiView.name)
@@ -28451,7 +28421,8 @@
                     vcContext !== uiViewContext.name) {
                     return false;
                 }
-                return !ngViewsByFqn[`${vcName}@${vcContext}.${uiView.name}`];
+                const childViewFqn = `${normalizedTarget}.${uiView.name}`;
+                return !ngViewsByFqn[childViewFqn];
             };
         }
     }
@@ -30755,7 +30726,7 @@
             super();
             this.subapps = [];
             this._bootsrappedModules = [];
-            this.version = "0.21.0";
+            this.version = "0.22.0";
             this.getController = getController;
             this.getInjector = getInjector;
             this.getScope = getScope;
