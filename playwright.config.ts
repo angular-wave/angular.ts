@@ -77,6 +77,6 @@ export default defineConfig({
   webServer: {
     command: "make serve",
     url: baseUrl,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
   },
 });

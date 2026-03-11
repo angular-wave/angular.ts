@@ -15,6 +15,7 @@ export default defineConfig({
     : [],
   server: {
     port: 4000,
+    strictPort: true,
     proxy: {
       "/mock": {
         target: "http://localhost:3000/",

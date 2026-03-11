@@ -23,9 +23,19 @@ let coverageArtifactId = 0;
 export async function expectNoJasmineFailures(page, url, options = {}) {
   const diagnostics = await runJasminePage(page, url, options);
   expect(
-    diagnostics.failedSpecs,
+    {
+      overallStatus: diagnostics.overallStatus,
+      failedSpecs: diagnostics.failedSpecs,
+      failedSuites: diagnostics.failedSuites,
+      globalFailures: diagnostics.globalFailures,
+    },
     formatJasmineFailureReport(url, diagnostics),
-  ).toEqual([]);
+  ).toEqual({
+    overallStatus: "passed",
+    failedSpecs: [],
+    failedSuites: [],
+    globalFailures: [],
+  });
 }
 /**
  * Waits for the browser-side Jasmine runner to finish and collects failures.
@@ -97,6 +107,14 @@ async function collectJasmineDiagnostics(page) {
       typeof reporter?.status === "function" ? reporter.status() : null;
     const specs =
       typeof reporter?.specResults === "function" ? reporter.specResults() : [];
+    const suites =
+      typeof reporter?.suiteResults === "function"
+        ? reporter.suiteResults()
+        : [];
+    const runDetails =
+      reporter && typeof reporter.runDetails === "object"
+        ? reporter.runDetails
+        : {};
     const failedSpecs = specs
       .filter((spec) => spec.status === "failed")
       .map((spec) => ({
@@ -105,9 +123,26 @@ async function collectJasmineDiagnostics(page) {
           (expectation) => expectation.message,
         ),
       }));
+    const failedSuites = suites
+      .filter((suite) => suite.status === "failed")
+      .map((suite) => ({
+        fullName: suite.fullName,
+        failedExpectations: (suite.failedExpectations || []).map(
+          (expectation) => expectation.message,
+        ),
+      }));
+    const globalFailures = (runDetails.failedExpectations || []).map(
+      (expectation) => expectation.message,
+    );
     return {
       failedSpecs,
+      failedSuites,
+      globalFailures,
       overallText,
+      overallStatus:
+        typeof runDetails.overallStatus === "string"
+          ? runDetails.overallStatus
+          : null,
       status,
       totalSpecs: specs.length,
       pageErrors: [],
@@ -128,6 +163,9 @@ function formatJasmineFailureReport(url, diagnostics) {
   if (diagnostics.status && diagnostics.status !== "done") {
     lines.push(`Status: ${diagnostics.status}`);
   }
+  if (diagnostics.overallStatus) {
+    lines.push(`Overall status: ${diagnostics.overallStatus}`);
+  }
   if (diagnostics.overallText) {
     lines.push(`Summary: ${diagnostics.overallText}`);
   }
@@ -147,8 +185,38 @@ function formatJasmineFailureReport(url, diagnostics) {
         `... ${diagnostics.failedSpecs.length - MAX_FAILURES} more failed specs`,
       );
     }
-  } else {
-    lines.push("No failed specs were reported.");
+  }
+  if (diagnostics.failedSuites.length > 0) {
+    lines.push("Failed suites:");
+    diagnostics.failedSuites.slice(0, MAX_FAILURES).forEach((suite, index) => {
+      lines.push(`${index + 1}. ${suite.fullName}`);
+      suite.failedExpectations.slice(0, MAX_MESSAGES).forEach((message) => {
+        lines.push(`   - ${message}`);
+      });
+    });
+    if (diagnostics.failedSuites.length > MAX_FAILURES) {
+      lines.push(
+        `... ${diagnostics.failedSuites.length - MAX_FAILURES} more failed suites`,
+      );
+    }
+  }
+  if (diagnostics.globalFailures.length > 0) {
+    lines.push("Global failures:");
+    diagnostics.globalFailures.slice(0, MAX_FAILURES).forEach((message) => {
+      lines.push(`- ${message}`);
+    });
+    if (diagnostics.globalFailures.length > MAX_FAILURES) {
+      lines.push(
+        `... ${diagnostics.globalFailures.length - MAX_FAILURES} more global failures`,
+      );
+    }
+  }
+  if (
+    diagnostics.failedSpecs.length === 0 &&
+    diagnostics.failedSuites.length === 0 &&
+    diagnostics.globalFailures.length === 0
+  ) {
+    lines.push("No failed specs, suites, or global failures were reported.");
   }
   appendLogSection(lines, "Page errors", diagnostics.pageErrors);
   appendLogSection(lines, "Console errors", diagnostics.consoleErrors);
@@ -210,7 +278,13 @@ function sanitizeCoverageLabel(label) {
  *     fullName: string,
  *     failedExpectations: string[],
  *   }>,
+ *   failedSuites: Array<{
+ *     fullName: string,
+ *     failedExpectations: string[],
+ *   }>,
+ *   globalFailures: string[],
  *   overallText: string,
+ *   overallStatus: string | null,
  *   status: string | null,
  *   totalSpecs: number,
  *   pageErrors: string[],
