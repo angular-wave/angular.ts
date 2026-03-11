@@ -60,3 +60,13 @@ or a source of inspiration for new ideas.
 ## Documentation
 
 Go to https://angular-wave.github.io/angular.ts/
+
+## Development
+
+- Run the Playwright suite: `make test`
+- Generate browser coverage for `src/` tests only: `make coverage`
+- Generate browser coverage with threshold enforcement for `src/` tests only: `make coverage-check`
+- Open the HTML report at `coverage/index.html`
+- Open the HTML report automatically: `make coverage-open`
+- Docs example tests under `docs/` are excluded from coverage runs
+- `coverage-check` currently enforces minimums of 80% statements, 80% lines, 80% functions, and 70% branches

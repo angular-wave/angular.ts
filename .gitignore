@@ -6,6 +6,8 @@ tsconfig.tsbuildinfo
 /test-results/
 /playwright-report/
 /blob-report/
+/.coverage/
+/coverage/
 /playwright/.cache/
 .idea
 .vscode

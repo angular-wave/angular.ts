@@ -23,11 +23,8 @@
     "AngularTS"
   ],
   "scripts": {
-    "build": "rm -rf .build dist && ./node_modules/.bin/tsc --project tsconfig.build.json && ./node_modules/.bin/rollup -c && rm -rf .build",
-    "playwright": "./node_modules/.bin/playwright test",
-    "types": "rm -rf @types && ./node_modules/.bin/tsc --project tsconfig.types.json && npx prettier ./@types --write --cache --log-level=silent",
     "prepare": "husky",
-    "prepack": "rm -rf .build dist @types && npm run build && npm run types"
+    "prepack": "rm -rf .build dist @types && make build types"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
@@ -46,6 +43,7 @@
     "globals": "^16.2.0",
     "husky": "^9.1.7",
     "jasmine-core": "latest",
+    "nyc": "^18.0.0",
     "playwright": "latest",
     "postcss": "^8.5.6",
     "prettier": "latest",
@@ -53,6 +51,7 @@
     "rollup-plugin-version-injector": "latest",
     "typedoc": "^0.28.17",
     "typescript": "latest",
-    "vite": "latest"
+    "vite": "latest",
+    "vite-plugin-istanbul": "^8.0.0"
   }
 }
