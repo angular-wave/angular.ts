@@ -116,11 +116,11 @@ import { RestService as TRestService } from "./services/rest/rest.js";
 import { ServiceProvider as TServiceProvider } from "./interface.ts";
 import { NgModelController as TNgModelController } from "./directive/model/model.ts";
 import { RouterProvider as TRouterProvider } from "./router/router.ts";
-import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.js";
+import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.ts";
 import { AnimateProvider as TAnimateProvider } from "./animations/animate.ts";
 import { UrlService as TUrlService } from "./router/url/url-service.ts";
 import { LocationProvider as TLocationProvider } from "./services/location/location.ts";
-import { ViewService as TViewService } from "./router/view/view.js";
+import { ViewService as TViewService } from "./router/view/view.ts";
 import {
   BuiltStateDeclaration as TBuiltStateDeclaration,
   StateDeclaration as TStateDeclaration,
@@ -137,7 +137,7 @@ import type {
 } from "./services/websocket/websocket.ts";
 import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.ts";
 import { Transition as TTransition } from "./router/transition/transition.js";
-import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.js";
+import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.ts";
 import { TransitionService as TTransitionService } from "./router/transition/interface.ts";
 import { UrlConfigProvider as TUrlConfigProvider } from "./router/url/url-config.ts";
 import { AriaService as TAriaService } from "./directive/aria/aria.ts";

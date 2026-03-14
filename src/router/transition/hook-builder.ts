@@ -8,7 +8,7 @@ import {
   TransitionHookPhase,
   TransitionHookScope,
 } from "./transition-hook.ts";
-import type { Transition, TreeChanges } from "./transition.ts";
+import type { Transition, TreeChanges } from "./transition.js";
 import type { TransitionEventType } from "./transition-event-type.ts";
 
 export interface HookTuple {

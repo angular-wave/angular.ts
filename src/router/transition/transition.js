@@ -1,4 +1,4 @@
-import { trace } from "../common/trace.js";
+import { trace } from "../common/trace.ts";
 import { stringify } from "../../shared/strings.js";
 import {
   anyTrueR,
@@ -16,14 +16,14 @@ import {
   isUndefined,
 } from "../../shared/utils.js";
 import { is, propEq, val } from "../../shared/hof.js";
-import { TransitionHook, TransitionHookPhase } from "./transition-hook.js";
-import { registerHook } from "./hook-registry.js";
-import { HookBuilder } from "./hook-builder.js";
+import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
+import { registerHook } from "./hook-registry.ts";
+import { HookBuilder } from "./hook-builder.ts";
 import { PathUtils } from "../path/path-utils.ts";
 import { Param } from "../params/param.ts";
-import { Resolvable } from "../resolve/resolvable.js";
-import { ResolveContext } from "../resolve/resolve-context.js";
-import { Rejection } from "./reject-factory.js";
+import { Resolvable } from "../resolve/resolvable.ts";
+import { ResolveContext } from "../resolve/resolve-context.ts";
+import { Rejection } from "./reject-factory.ts";
 
 /** @typedef {import('./interface.ts').DeregisterFn} DeregisterFn */
 /** @typedef {import('./interface.ts').HookFn} HookFn */
@@ -57,7 +57,7 @@ export class Transition {
    * @param {Array<PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
    *        encapsulates the "from state".
    * @param {TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
-   * @param {import("./transition-service.js").TransitionProvider} transitionService
+   * @param {import("./transition-service.ts").TransitionProvider} transitionService
    * @param {ng.RouterService} globals
    */
   constructor(fromPath, targetState, transitionService, globals) {

@@ -1,4 +1,4 @@
-import { removeFrom, tail, uniqR, unnestR } from "../../shared/common.ts";
+import { removeFrom, tail, uniqR, unnestR } from "../../shared/common.js";
 import {
   entries,
   isArray,
@@ -6,8 +6,8 @@ import {
   isObject,
   isString,
 } from "../../shared/utils.js";
-import { parse } from "../../shared/hof.ts";
-import { getInheritedData } from "../../shared/dom.ts";
+import { parse } from "../../shared/hof.js";
+import { getInheritedData } from "../../shared/dom.js";
 import { $injectTokens } from "../../injection-tokens.js";
 type ParsedStateRef = { state: string | null; paramExpr: string | null };
 type ProcessedDef = {

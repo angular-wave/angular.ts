@@ -1,4 +1,4 @@
-import { Glob, hasGlobs } from "./glob.js";
+import { Glob, hasGlobs } from "./glob.ts";
 
 describe("hasGlobs", () => {
   it("should return true for strings containing asterisk (*)", () => {

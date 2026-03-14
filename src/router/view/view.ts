@@ -69,6 +69,12 @@ export class ViewService {
    */
   $get = (): ViewService => this;
 
+  onSync(listener: (tuples: ViewTuple[]) => void): () => void {
+    this._listeners.push(listener);
+
+    return () => removeFrom(this._listeners, listener);
+  }
+
   /**
    * Gets or sets the root view context used for relative `ui-view` targeting.
    */
@@ -259,6 +265,22 @@ export class ViewService {
     return this._viewConfigs;
   }
 
+  static normalizeUIViewTarget(
+    context: ViewContext,
+    rawViewName = "$default",
+  ): string {
+    const [uiViewName, uiViewContextAnchor = "^"] = rawViewName.split("@");
+    let anchor = uiViewContextAnchor;
+
+    if (anchor === "") {
+      anchor = "";
+    } else if (anchor === "^") {
+      anchor = context.parent ? context.parent.name : "";
+    }
+
+    return `${uiViewName || "$default"}@${anchor}`;
+  }
+
   /**
    * Builds a predicate that determines whether a view config matches
    * a specific active `ui-view`.
@@ -277,7 +299,6 @@ export class ViewService {
       const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
 
       if (normalizedTarget !== uiViewFqn) return false;
-      if (vcName !== uiView.name) return false;
 
       const viewContext = viewConfig.viewDecl.$context as ViewContext;
 

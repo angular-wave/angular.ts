@@ -1,5 +1,5 @@
 import type { TransitionService } from "../transition/transition-service.ts";
-import type { Transition } from "../transition/transition.ts";
+import type { Transition } from "../transition/transition.js";
 
 function invalidTransitionHook(trans: Transition): void {
   if (!trans.valid()) {

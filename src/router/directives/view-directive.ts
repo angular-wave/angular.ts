@@ -1,6 +1,6 @@
-import { tail, unnestR, withResolvers } from "../../shared/common.ts";
+import { tail, unnestR } from "../../shared/common.js";
 import { hasAnimate, isDefined, isFunction } from "../../shared/utils.js";
-import { parse } from "../../shared/hof.ts";
+import { parse } from "../../shared/hof.js";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { trace } from "../common/trace.ts";
 import { ViewConfig } from "../state/views.ts";
@@ -9,7 +9,7 @@ import {
   getCacheData,
   getInheritedData,
   setCacheData,
-} from "../../shared/dom.ts";
+} from "../../shared/dom.js";
 import { getLocals } from "../state/state-registry.ts";
 import { $injectTokens } from "../../injection-tokens.js";
 import type { ActiveUIView, ViewContext } from "../view/view.ts";
@@ -44,6 +44,18 @@ type UiCanExitTransition = ng.Transition &
   Record<string, any> & {
     redirectedFrom(): UiCanExitTransition | null;
   };
+
+function withResolvers<T>() {
+  let resolve: (value?: T) => void;
+  let reject: (reason?: any) => void;
+
+  const promise = new Promise<T>((resolveParam, rejectParam) => {
+    resolve = resolveParam;
+    reject = rejectParam;
+  });
+
+  return { promise, resolve: resolve!, reject: reject! };
+}
 
 /**
  * `ng-view`: A viewport directive which is filled in by a view from the active state.
@@ -246,12 +258,15 @@ export function ViewDirective(
         let currentScope: ng.Scope | null = null;
         let viewConfig: ViewConfig | undefined;
 
+        const parentFqn =
+          (parse("$cfg.viewDecl.$context.name")(inherited) as
+            | string
+            | undefined) || inherited.$ngView.fqn;
+
         const activeUIView = {
           id: directive.count++, // Global sequential ID for ng-view tags added to DOM
           name, // ng-view name (<div ng-view="name"></div>
-          fqn: inherited.$ngView.fqn
-            ? `${inherited.$ngView.fqn}.${name}`
-            : name, // fully qualified name, describes location in DOM
+          fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
           config: null, // The ViewConfig loaded (from a state.views definition)
           configUpdated: configUpdatedCallback, // Called when the matching ViewConfig changes
           get creationContext(): ViewContext {
@@ -284,6 +299,7 @@ export function ViewDirective(
             activeUIView,
             config && config.viewDecl && config.viewDecl.$context,
           );
+          activeUIView.config = config || null;
           viewConfig = config;
           updateView(config);
         }

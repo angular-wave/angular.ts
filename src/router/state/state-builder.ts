@@ -16,7 +16,7 @@ import {
 } from "../../shared/utils.js";
 import { stringify } from "../../shared/strings.js";
 import { is, pattern, val } from "../../shared/hof.js";
-import { Resolvable } from "../resolve/resolvable.js";
+import { Resolvable } from "../resolve/resolvable.ts";
 import { ng1ViewsBuilder } from "./views.ts";
 import { annotate } from "../../core/di/di.ts";
 import type { ParamDeclaration } from "../params/interface.ts";
