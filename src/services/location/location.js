@@ -266,7 +266,9 @@ export class Location {
    * @return {Object|Location}
    */
   search(search, paramValue) {
-    return arguments.length ? this.setSearch(search, paramValue) : this.getSearch();
+    return arguments.length
+      ? this.setSearch(search, paramValue)
+      : this.getSearch();
   }
 
   /**

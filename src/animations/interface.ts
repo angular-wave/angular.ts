@@ -1,4 +1,4 @@
-import { AnimateRunner } from "./runner/animate-runner.js";
+import { AnimateRunner } from "./runner/animate-runner.ts";
 import { QueuePhase } from "./queue/interface.ts";
 
 /**

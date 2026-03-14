@@ -3,19 +3,19 @@ import {
   getCacheData,
   removeElementData,
   setCacheData,
-} from "../shared/dom.js";
-import { mergeClasses, values } from "../shared/utils.js";
+} from "../shared/dom.ts";
+import { mergeClasses, values } from "../shared/utils.ts";
 import {
   NG_ANIMATE_CLASSNAME,
   PREPARE_CLASS_SUFFIX,
   applyAnimationClasses,
   applyAnimationStyles,
   prepareAnimationOptions,
-} from "./shared.js";
-import { $injectTokens as $t } from "../injection-tokens.js";
-import { AnimateRunner } from "./runner/animate-runner.js";
+} from "./shared.ts";
+import { $injectTokens as $t } from "../injection-tokens.ts";
+import { AnimateRunner } from "./runner/animate-runner.ts";
 import { animateCache } from "./cache/animate-cache.ts";
-import { rafScheduler } from "./raf/raf-scheduler.js";
+import { rafScheduler } from "./raf/raf-scheduler.ts";
 
 /** @typedef {import("./interface.ts").SortedAnimationEntry} SortedAnimationEntry */
 /** @typedef {import("./interface.ts").AnimationOptions} AnimationOptions */
@@ -76,9 +76,9 @@ export class AnimationProvider {
      * @param {SortedAnimationEntry[]} animations
      */
     const sortAnimations = (animations) => {
-      const tree = /** @type {Partial<SortedAnimationEntry>} */ ({
+      const tree = /** @type {Partial<SortedAnimationEntry>} */ {
         children: [],
-      });
+      };
 
       let i;
 
@@ -105,7 +105,7 @@ export class AnimationProvider {
         processNode(animations[i]);
       }
 
-      return flatten(/** @type {SortedAnimationEntry} */ (tree));
+      return flatten(/** @type {SortedAnimationEntry} */ tree);
 
       /**
        * @param {SortedAnimationEntry} entry
@@ -192,8 +192,8 @@ export class AnimationProvider {
     return (elementParam, event, optionsParam) => {
       /** @type {AnimationOptions & { domOperation: () => void }} */
       const options =
-        /** @type {AnimationOptions & { domOperation: () => void }} */ (
-          prepareAnimationOptions(optionsParam)
+        /** @type {AnimationOptions & { domOperation: () => void }} */ prepareAnimationOptions(
+          optionsParam,
         );
 
       const isStructural = ["enter", "move", "leave"].indexOf(event) >= 0;
@@ -254,12 +254,10 @@ export class AnimationProvider {
         const animations = [];
 
         animationQueue.forEach((entry) => {
-          if (getRunner(/** @type {HTMLElement} */ (entry.element))) {
+          if (getRunner(/** @type {HTMLElement} */ entry.element)) {
             animations.push(entry);
           } else {
-            /** @type {(reject?: boolean | undefined) => void} */ (
-              entry.close
-            )();
+            /** @type {(reject?: boolean | undefined) => void} */ entry.close();
           }
         });
 
@@ -470,7 +468,7 @@ export class AnimationProvider {
           if (!anchorGroups[lookupKey]) {
             const group = (anchorGroups[lookupKey] = {
               structural: true,
-              element: /** @type {HTMLElement} */ (from.element),
+              element: /** @type {HTMLElement} */ from.element,
               event: fromAnimation.event,
               options: fromAnimation.options,
               beforeStart() {
@@ -502,8 +500,8 @@ export class AnimationProvider {
 
           if (group?.anchors) {
             group.anchors.push({
-              out: /** @type {HTMLElement} */ (from.element),
-              in: /** @type {HTMLElement} */ (to.element),
+              out: /** @type {HTMLElement} */ from.element,
+              in: /** @type {HTMLElement} */ to.element,
             });
           }
         });
