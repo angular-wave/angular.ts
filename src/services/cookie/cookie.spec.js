@@ -1,5 +1,5 @@
 import { Angular } from "../../angular.js";
-import { CookieProvider, CookieService } from "./cookie.js";
+import { CookieProvider, CookieService } from "./cookie.ts";
 
 describe("$cookie service", () => {
   let $injector, $cookie, el, cookieProvider;

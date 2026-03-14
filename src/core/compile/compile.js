@@ -41,7 +41,7 @@ import {
   trim,
   values,
 } from "../../shared/utils.js";
-import { SCE_CONTEXTS } from "../../services/sce/sce.js";
+import { SCE_CONTEXTS } from "../../services/sce/sce.ts";
 import { PREFIX_REGEXP } from "../../shared/constants.ts";
 import {
   createEventDirective,

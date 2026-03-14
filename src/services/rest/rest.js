@@ -6,7 +6,7 @@ import {
   isString,
 } from "../../shared/utils.js";
 import { BADARG } from "../../shared/validate.ts";
-import { expandUriTemplate } from "./rfc.js";
+import { expandUriTemplate } from "./rfc.ts";
 
 /**
  * @template T, ID

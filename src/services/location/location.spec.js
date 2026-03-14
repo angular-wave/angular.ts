@@ -10,7 +10,7 @@ import {
   stripFile,
   serverBase,
   urlsEqual,
-} from "./location.js";
+} from "./location.ts";
 import { Angular } from "../../angular.js";
 import { createInjector } from "../../core/di/injector.ts";
 

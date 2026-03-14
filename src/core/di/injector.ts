@@ -13,7 +13,7 @@ import {
   minErr,
 } from "../../shared/utils.js";
 import { InjectorService, ProviderInjector } from "./internal-injector.ts";
-import { createPersistentProxy } from "../../services/storage/storage.js";
+import { createPersistentProxy } from "../../services/storage/storage.ts";
 import { $injectTokens } from "../../injection-tokens.js";
 import { validateArray } from "../../shared/validate.ts";
 import type {

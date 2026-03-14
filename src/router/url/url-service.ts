@@ -257,7 +257,7 @@ export class UrlService {
    * Returns an object with the `path`, `search`, and `hash` components
    * of the current browser location.
    *
-   * @returns {import("../../services/location/interface.ts").UrlParts} The current URL's path, search, and hash.
+   * @returns {import("../../services/location/location.ts").UrlParts} The current URL's path, search, and hash.
    */
   parts(): UrlParts {
     const location = this._getLocation();

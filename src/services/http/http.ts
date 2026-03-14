@@ -2,7 +2,6 @@ import {
   trimEmptyHash,
   urlIsAllowedOriginFactory,
 } from "../../shared/url-utils/url-utils.ts";
-import { withResolvers } from "../../shared/common.ts";
 import {
   encodeUriQuery,
   entries,
@@ -32,6 +31,17 @@ import {
 import { $injectTokens as $t } from "../../injection-tokens.js";
 
 const APPLICATION_JSON = "application/json";
+
+function withResolvers<T>() {
+  let resolve: (value: T | PromiseLike<T>) => void;
+  let reject: (reason?: any) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return { promise, resolve: resolve!, reject: reject! };
+}
 
 export interface HttpHeadersGetter {
   (): { [name: string]: string };
