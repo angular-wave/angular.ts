@@ -37,7 +37,7 @@ import {
   FilterFactory as TFilterFactory,
   FilterService as TFilterService,
   FilterFn as TFilterFn,
-} from "./filters/interface.ts";
+} from "./filters/filter.ts";
 import { FilterProvider as TFilterProvider } from "./core/filter/filter.ts";
 import {
   InterpolateService as TInterpolateService,

@@ -1,4 +1,4 @@
-import type { FilterService } from "../../../filters/interface.ts";
+import type { FilterService } from "../../../filters/filter.ts";
 import type { CompiledExpression } from "../interface.ts";
 import type { BodyNode, ExpressionNode } from "../ast/ast-node.ts";
 import { AST } from "../ast/ast.ts";
