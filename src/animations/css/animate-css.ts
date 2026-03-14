@@ -1,7 +1,4 @@
-import type {
-  AnimationOptions,
-  Animator,
-} from "../interface.ts";
+import type { AnimationOptions, Animator } from "../interface.ts";
 import { $injectTokens } from "../../injection-tokens.js";
 import {
   getCacheData,

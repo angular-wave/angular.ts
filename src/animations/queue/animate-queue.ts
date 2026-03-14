@@ -165,8 +165,7 @@ export function AnimateQueueProvider($animateProvider) {
     (
       /** @type {AnimationOptions} */ newAnimation,
       /** @type {AnimationOptions} */ currentAnimation,
-    ) =>
-      currentAnimation.state === RUNNING_STATE && newAnimation.structural,
+    ) => currentAnimation.state === RUNNING_STATE && newAnimation.structural,
   );
 
   rules.cancel.push(
@@ -189,8 +188,11 @@ export function AnimateQueueProvider($animateProvider) {
       }
 
       return (
-        hasMatchingClasses(/** @type {string} */ (nA), /** @type {string} */ (cR)) ||
-        hasMatchingClasses(/** @type {string} */ (nR), /** @type {string} */ (cA))
+        hasMatchingClasses(
+          /** @type {string} */ nA,
+          /** @type {string} */ cR,
+        ) ||
+        hasMatchingClasses(/** @type {string} */ nR, /** @type {string} */ cA)
       );
     },
   );
