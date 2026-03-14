@@ -303,7 +303,8 @@ export function ngOptionsDirective($compile, $parse) {
       }
     }
 
-    const prop = ngOptions.getWatchables._decoratedNode.body[0].expression?.name;
+    const prop =
+      ngOptions.getWatchables._decoratedNode.body[0].expression?.name;
 
     scope.$watch(prop, updateOptions);
 

@@ -1,9 +1,12 @@
 import { $injectTokens as $t } from "../../injection-tokens.js";
-import { filterFilter } from "../../filters/filter.js";
-import type { FilterFactory, FilterService } from "../../filters/interface.ts";
-import { jsonFilter } from "../../filters/json.js";
-import { limitToFilter } from "../../filters/limit-to.js";
-import { orderByFilter } from "../../filters/order-by.js";
+import {
+  filterFilter,
+  type FilterFactory,
+  type FilterService,
+} from "../../filters/filter.ts";
+import { jsonFilter } from "../../filters/json.ts";
+import { limitToFilter } from "../../filters/limit-to.ts";
+import { orderByFilter } from "../../filters/order-by.ts";
 import type { Provider } from "../../interface.ts";
 import { assert, entries, isDefined, isFunction } from "../../shared/utils.js";
 import { validate, validateIsString } from "../../shared/validate.ts";

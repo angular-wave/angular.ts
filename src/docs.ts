@@ -17,5 +17,5 @@ export * from "./services/cookie/cookie.js";
 export * from "./services/exception/exception.ts";
 export * from "./core/parse/interface.ts";
 
-export * from "./filters/interface.ts";
+export * from "./filters/filter.ts";
 export * from "./core/filter/filter.ts";

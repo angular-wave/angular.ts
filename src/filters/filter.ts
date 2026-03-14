@@ -10,6 +10,14 @@ import {
   minErr,
 } from "../shared/utils.js";
 
+export type FilterFn = (input: any, ...args: any[]) => any;
+
+export type FilterFactory = (...args: any[]) => FilterFn & {
+  $$moduleName: string;
+};
+
+export type FilterService = (name: string) => FilterFn;
+
 /** Registers the built-in collection filtering function. */
 export function filterFilter() {
   /**
