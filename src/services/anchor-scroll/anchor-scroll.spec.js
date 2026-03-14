@@ -1,5 +1,5 @@
-import { Angular } from "../../angular.ts";
-import { AnchorScrollProvider } from "./anchor-scroll.ts";
+import { Angular } from "../../angular.js";
+import { AnchorScrollProvider } from "./anchor-scroll.js";
 
 describe("AnchorScrollProvider", () => {
   it("should exist", () => {

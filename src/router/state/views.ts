@@ -1,20 +1,23 @@
-import { pick, tail } from "../../shared/common.ts";
-import { entries, isArray, isDefined, isString } from "../../shared/utils.ts";
+import { pick, tail } from "../../shared/common.js";
+import { entries, isArray, isDefined, isString } from "../../shared/utils.js";
 import { isInjectable } from "../../shared/predicates.ts";
-import { trace } from "../common/trace.ts";
-import { ResolveContext } from "../resolve/resolve-context.ts";
-import { Resolvable } from "../resolve/resolvable.ts";
+import { trace } from "../common/trace.js";
+import { ResolveContext } from "../resolve/resolve-context.js";
+import { Resolvable } from "../resolve/resolvable.js";
 import { annotate } from "../../core/di/di.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
-import type { TemplateFactoryProvider } from "../template-factory.ts";
+import type { TemplateFactoryProvider } from "../template-factory.js";
 
-/** Returns a lazily resolved factory for view configurations. */
+/**
+ * @return {(path: PathNode[], view: ViewDeclaration) => ViewConfig}
+ */
 export function getViewConfigFactory() {
   /**
    * Lazily resolved to avoid a direct bootstrap-time dependency on the ng1 injector.
    * The factory is cached after first use.
+   * @type {TemplateFactoryProvider | null}
    */
   let templateFactory: TemplateFactoryProvider | null = null;
 
@@ -41,6 +44,7 @@ const hasAnyKey = (keys: string[], obj: Record<string, any>): boolean =>
  *
  * If no `views: {}` property exists on the [[StateDeclaration]], then it creates the `views` object
  * and applies the state-level configuration to a view named `$default`.
+ * @param {ng.StateObject & Record<string, any>} state
  */
 export function ng1ViewsBuilder(
   state: StateObject & Record<string, any>,
@@ -115,6 +119,9 @@ export function ng1ViewsBuilder(
   return views;
 }
 
+/**
+ * @type {Number}
+ */
 let id = 0;
 
 export class ViewConfig {
@@ -131,6 +138,9 @@ export class ViewConfig {
   /**
    * Stores the declarative view definition plus the runtime path/context needed
    * to resolve templates and controllers when the view is activated.
+   * @param {PathNode[]} path
+   * @param {ViewDeclaration} viewDecl
+   * @param {TemplateFactoryProvider} factory
    */
   constructor(
     path: PathNode[],
@@ -157,7 +167,10 @@ export class ViewConfig {
         : this.template;
   }
 
-  /** Loads the template/controller details for this view configuration. */
+  /**
+   *
+   * @returns {Promise<ViewConfig>}
+   */
   async load(): Promise<ViewConfig> {
     const context = new ResolveContext(this.path);
 
@@ -182,7 +195,8 @@ export class ViewConfig {
 
   /**
    * Gets the controller for a view configuration.
-   * Returns a controller, or a promise that resolves to a controller.
+   * @returns {Function | Promise<Function>} Returns a controller, or a promise that resolves to a controller.
+   * @param {ResolveContext} context
    */
   getController(context: ResolveContext): Function | Promise<Function> {
     const provider = this.viewDecl.controllerProvider;
@@ -205,8 +219,8 @@ export class ViewConfig {
    * This calculates the values for
    * [[_ViewDeclaration.$ngViewName]] and [[_ViewDeclaration.$ngViewContextAnchor]].
    *
-   * @param  context the context object (state declaration) that the view belongs to
-   * @param  rawViewName the name of the view, as declared in the [[StateDeclaration.views]]
+   * @param {StateObject} context the context object (state declaration) that the view belongs to
+   * @param {string} rawViewName the name of the view, as declared in the [[StateDeclaration.views]]
    *
    * @returns the normalized ngViewName and ngViewContextAnchor that the view targets
    */

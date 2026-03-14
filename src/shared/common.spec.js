@@ -1,7 +1,7 @@
-import { defaults, filter, map, pick, tail } from "./common.ts";
-import { is, pattern, val } from "./hof.ts";
-import { isInjectable } from "./predicates.ts";
-import { Queue } from "./queue.ts";
+import { defaults, filter, map, pick, tail } from "./common.js";
+import { is, pattern, val } from "./hof.js";
+import { isInjectable } from "./predicates.js";
+import { Queue } from "./queue.js";
 
 describe("common", function () {
   describe("filter", function () {

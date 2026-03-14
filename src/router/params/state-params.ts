@@ -1,4 +1,4 @@
-import { keys } from "../../shared/utils.ts";
+import { keys } from "../../shared/utils.js";
 import type { StateObject } from "../state/state-object.ts";
 
 export class StateParams {
@@ -12,9 +12,9 @@ export class StateParams {
    * Merges a set of parameters with all parameters inherited between the common parents of the
    * current state and a given destination state.
    *
-   * @param newParams The set of parameters which will be composited with inherited params.
-   * @param $current Internal definition of object representing the current state.
-   * @param $to Internal definition of object representing state to transition to.
+   * @param {Object} newParams The set of parameters which will be composited with inherited params.
+   * @param {StateObject} $current Internal definition of object representing the current state.
+   * @param {StateObject} $to Internal definition of object representing state to transition to.
    */
   $inherit(
     newParams: Record<string, any>,
@@ -25,6 +25,7 @@ export class StateParams {
 
     const inherited: Record<string, any> = {};
 
+    /** @type {string[]} */
     const inheritList = [];
 
     for (const parent of parents) {
@@ -34,6 +35,7 @@ export class StateParams {
         { inherit?: boolean }
       >;
 
+      /** @type {string[]} */
       const parentParamsKeys = keys(parentParams);
 
       if (!parentParamsKeys.length) continue;
@@ -58,9 +60,9 @@ export class StateParams {
 /**
  * Finds the common ancestor path between two states.
  *
- * @param first The first state.
- * @param second The second state.
- * @returns Returns an array of state names in descending order, not including the root.
+ * @param {StateObject} first The first state.
+ * @param {StateObject} second The second state.
+ * @return {Array<StateObject>} Returns an array of state names in descending order, not including the root.
  */
 function ancestors(first: StateObject, second: StateObject): StateObject[] {
   const path: StateObject[] = [];

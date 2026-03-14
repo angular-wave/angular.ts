@@ -1,6 +1,6 @@
-import { Angular } from "../angular.ts";
+import { Angular } from "../angular.js";
 import { createInjector } from "../core/di/injector.ts";
-import { createElementFromHTML } from "../shared/dom.ts";
+import { createElementFromHTML } from "../shared/dom.js";
 
 describe("Filter: limitTo", () => {
   let items;

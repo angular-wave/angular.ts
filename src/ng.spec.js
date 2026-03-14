@@ -1,5 +1,5 @@
 import { createInjector } from "./core/di/injector.ts";
-import { Angular } from "./angular.ts";
+import { Angular } from "./angular.js";
 
 describe("public", () => {
   beforeEach(() => {

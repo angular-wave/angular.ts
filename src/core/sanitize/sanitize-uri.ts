@@ -1,26 +1,12 @@
-import { isDefined } from "../../shared/utils.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+import { isDefined } from "../../shared/utils.js";
+import { $injectTokens } from "../../injection-tokens.js";
+import type { SanitizerFn } from "./interface.ts";
 
-/**
- * Sanitizer function that processes a URI string and optionally
- * treats it as a media URL.
- */
-export type SanitizerFn = (
-  uri: string | null | undefined,
-  isMediaUrl?: boolean,
-) => string | null | undefined;
-
-/**
- * Private service to sanitize uris for links and images. Used by $compile.
- */
 export class SanitizeUriProvider {
   _aHrefSanitizationTrustedUrlList: RegExp;
   _imgSrcSanitizationTrustedUrlList: RegExp;
   $get: [string, ($window: Window) => SanitizerFn];
 
-  /**
-   * Creates the URI sanitizer provider with the default trusted URL patterns.
-   */
   constructor() {
     this._aHrefSanitizationTrustedUrlList =
       /^\s*(https?|s?ftp|mailto|tel|file):/;
@@ -50,9 +36,6 @@ export class SanitizeUriProvider {
     ];
   }
 
-  /**
-   * Gets or sets the trusted URL whitelist used for anchor `href` values.
-   */
   aHrefSanitizationTrustedUrlList(
     regexp?: RegExp,
   ): RegExp | SanitizeUriProvider {
@@ -64,9 +47,6 @@ export class SanitizeUriProvider {
     return this._aHrefSanitizationTrustedUrlList;
   }
 
-  /**
-   * Gets or sets the trusted URL whitelist used for image/media sources.
-   */
   imgSrcSanitizationTrustedUrlList(
     regexp?: RegExp,
   ): RegExp | SanitizeUriProvider {

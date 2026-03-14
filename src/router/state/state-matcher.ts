@@ -1,22 +1,17 @@
-import { isString, values } from "../../shared/utils.ts";
+import { isString, values } from "../../shared/utils.js";
 import type { StateObject } from "./state-object.ts";
-import type { BuiltStateDeclaration, StateOrName } from "./interface.ts";
+import type { StateOrName, StateStore } from "./interface.ts";
 
-export type StateStore = Record<string, StateObject | BuiltStateDeclaration>;
-
-/**
- * Resolves absolute, relative, and glob state references against the state store.
- */
 export class StateMatcher {
   _states: StateStore;
 
-  /** Creates a matcher over the current state store. */
+  /** @param {StateStore} states */
   constructor(states: StateStore) {
     this._states = states;
   }
 
   /**
-   * Returns true when the provided state name is relative (`.` or `^` syntax).
+   * @param {string} stateName
    */
   isRelative(stateName: string): boolean {
     stateName = stateName || "";
@@ -25,7 +20,9 @@ export class StateMatcher {
   }
 
   /**
-   * Finds a state by name, relative name, glob, or state object reference.
+   * @param {StateOrName} stateOrName
+   * @param {StateOrName | undefined} [base]
+   * @returns {StateObject | undefined}
    */
   find(
     stateOrName: StateOrName,
@@ -67,7 +64,10 @@ export class StateMatcher {
   }
 
   /**
-   * Expands a relative state path such as `^` or `.child` against `base`.
+   * `
+   * @param {string} name
+   * @param {StateOrName} base
+   * @returns {string}
    */
   resolvePath(name: string, base: StateOrName): string {
     if (!base) throw new Error(`No reference point given for path '${name}'`);
@@ -104,4 +104,4 @@ export class StateMatcher {
   }
 }
 
-export type { StateObject, StateOrName };
+export type { StateObject, StateOrName, StateStore };

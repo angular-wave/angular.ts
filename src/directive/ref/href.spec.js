@@ -1,8 +1,8 @@
-import { Angular } from "../../angular.ts";
+import { Angular } from "../../angular.js";
 import { createInjector } from "../../core/di/injector.ts";
-import { dealoc } from "../../shared/dom.ts";
-import { isDefined } from "../../shared/utils.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { dealoc } from "../../shared/dom.js";
+import { isDefined } from "../../shared/utils.js";
+import { wait } from "../../shared/test-utils.js";
 
 describe("ngHref", () => {
   let $rootScope;

@@ -1,6 +1,6 @@
 import { createInjector } from "../../core/di/injector.ts";
-import { Angular } from "../../angular.ts";
-import { createElementFromHTML } from "../../shared/dom.ts";
+import { Angular } from "../../angular.js";
+import { createElementFromHTML } from "../../shared/dom.js";
 
 describe("ngRef", () => {
   describe("on a component", () => {

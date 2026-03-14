@@ -1,4 +1,4 @@
-import { Attributes } from "./core/compile/attributes.ts";
+import { Attributes } from "./core/compile/attributes.js";
 import type {
   BoundTranscludeFn,
   CloneAttachFn,
@@ -193,6 +193,7 @@ export interface Provider {
 
   /**
    * Register multiple directives
+   * @param obj
    */
   directive(obj: Record<string, DirectiveFactory>): Provider;
 
@@ -205,6 +206,7 @@ export interface Provider {
 
   /**
    * Register multiple service providers
+   * @param obj
    */
   provider(obj: Record<string, Function>): Provider;
 

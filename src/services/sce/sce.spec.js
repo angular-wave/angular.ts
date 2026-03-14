@@ -1,7 +1,7 @@
 import { createInjector } from "../../core/di/injector.ts";
-import { Angular } from "../../angular.ts";
-import { adjustMatcher } from "./sce.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { Angular } from "../../angular.js";
+import { adjustMatcher } from "./sce.js";
+import { wait } from "../../shared/test-utils.js";
 
 describe("SCE", () => {
   let $sce, $rootScope;

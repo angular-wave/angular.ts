@@ -1,7 +1,7 @@
-import { Angular } from "../angular.ts";
+import { Angular } from "../angular.js";
 import { createInjector } from "./di/injector.ts";
-import { dealoc } from "../shared/dom.ts";
-import { wait } from "../shared/test-utils.ts";
+import { dealoc } from "../shared/dom.js";
+import { wait } from "../shared/test-utils.js";
 
 describe("ngProp*", () => {
   let $compile, $rootScope, compileProvider, $sce;
@@ -693,7 +693,7 @@ describe("ngProp*", () => {
       });
 
       it("should not cause infinite recursion for trustAsHtml object watches", async () => {
-        // Ref: https://github.com/angular/angular.ts/issues/3932
+        // Ref: https://github.com/angular/angular.js/issues/3932
         // If the binding is a function that creates a new value on every call via trustAs, we'll
         // trigger an infinite digest if we don't take care of it.
         const element = $compile(
@@ -733,7 +733,7 @@ describe("ngProp*", () => {
           $sce = _$sce_;
         });
 
-        // Ref: https://github.com/angular/angular.ts/issues/14526
+        // Ref: https://github.com/angular/angular.js/issues/14526
         // Previous code used toString for change detection, which fails for custom objects
         // that don't override toString.
         let html = "hello";

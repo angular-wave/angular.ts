@@ -1,4 +1,4 @@
-import { Angular } from "../angular.ts";
+import { Angular } from "../angular.js";
 import { createInjector } from "../core/di/injector.ts";
 
 describe("Filter: orderBy", () => {

@@ -1,12 +1,11 @@
-import { applyPairs, find } from "../../shared/common.ts";
-import { propEq } from "../../shared/hof.ts";
+import { applyPairs, find } from "../../shared/common.js";
+import { propEq } from "../../shared/hof.js";
 import { Param } from "../params/param.ts";
-import type { RawParams } from "../params/param.ts";
+import type { RawParams } from "../params/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
+import type { GetParamsFn } from "./interface.ts";
 import type { ViewConfig } from "../state/views.ts";
-import type { Resolvable } from "../resolve/resolvable.ts";
-
-export type GetParamsFn = (pathNode: PathNode) => Param[];
+import type { Resolvable } from "../resolve/resolvable.js";
 
 /**
  * A node in a [[TreeChanges]] path
@@ -22,7 +21,9 @@ export class PathNode {
   resolvables: Resolvable[];
   views?: ViewConfig[];
 
-  /** Creates a path node from either an existing node or a state object. */
+  /**
+   * @param {PathNode | ng.StateObject | undefined} stateOrNode
+   */
   constructor(stateOrNode?: PathNode | StateObject) {
     if (stateOrNode instanceof PathNode) {
       const node = stateOrNode;
@@ -50,6 +51,8 @@ export class PathNode {
 
   /**
    * Sets [[paramValues]] for the node, from the values of an object hash
+   * @param {import("../params/interface.ts").RawParams} params
+   * @returns {PathNode}
    */
   applyRawParams(params: RawParams): PathNode {
     const getParamVal = (paramDef: Param): [string, any] => [
@@ -67,13 +70,18 @@ export class PathNode {
 
   /**
    * Gets a specific [[Param]] metadata that belongs to the node
+   * @param {string} name
+   * @returns {Param | undefined}
    */
   parameter(name: string): Param | undefined {
     return find(this.paramSchema, propEq("id", name));
   }
 
   /**
-   * Returns true when another node has the same state and equivalent parameter values.
+   * @param {PathNode} node
+   * @param {import("./interface.ts").GetParamsFn} paramsFn
+   * @returns {boolean} true if the state and parameter values for another PathNode are
+  equal to the state and param values for this PathNode
    */
   equals(node: PathNode, paramsFn?: GetParamsFn): boolean {
     const diff = this.diff(node, paramsFn);
@@ -87,10 +95,10 @@ export class PathNode {
    * Given another node (of the same state), finds the parameter values which differ.
    * Returns the [[Param]] (schema objects) whose parameter values differ.
    *
-   * Given another node for a different state, returns `false`.
-   * @param node - The node to compare to.
-   * @param paramsFn - A function that returns which parameters should be compared.
-   * @returns The [[Param]]s which differ, or `false` if the two nodes are for different states.
+   * Given another node for a different state, returns `false`
+   * @param {PathNode} node The node to compare to
+   * @param {import("./interface.ts").GetParamsFn} paramsFn A function that returns which parameters should be compared.
+   * @returns { Param[] | false} The [[Param]]s which differ, or null if the two nodes are for different states
    */
   diff(node: PathNode, paramsFn?: GetParamsFn): Param[] | false {
     if (this.state !== node.state) return false;

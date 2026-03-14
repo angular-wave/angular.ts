@@ -1,5 +1,5 @@
-import { $injectTokens as $t } from "../../../injection-tokens.ts";
-import { createWorkerConnection } from "../../../directive/worker/worker.ts";
+import { $injectTokens as $t } from "../../../injection-tokens.js";
+import { createWorkerConnection } from "../../../directive/worker/worker.js";
 import {
   instantiateWasm,
   isFunction,
@@ -7,7 +7,7 @@ import {
   isDefined,
   isObject,
   isArray,
-} from "../../../shared/utils.ts";
+} from "../../../shared/utils.js";
 import { isInjectable } from "../../../shared/predicates.ts";
 import { validate, validateRequired } from "../../../shared/validate.ts";
 import type { Injectable } from "../../../interface.ts";
@@ -31,7 +31,9 @@ export class NgModule {
   _restDefinitions: Array<ng.RestDefinition<any>>;
 
   /**
-   * Creates a module definition and optionally registers an initial config block.
+   * @param {string} name - Name of the module
+   * @param {Array<string>} requires - List of modules which the injector will load before the current module
+   * @param {ng.Injectable<any>} [configFn]
    */
   constructor(
     name: string,
@@ -40,22 +42,51 @@ export class NgModule {
   ) {
     validate(isString, name, "name");
     validate(isArray, requires, "requires");
+    /**
+     * @public
+     * Name of the current module.
+     * @type {string}
+     */
     this.name = name;
+
+    /**
+     * Array of module names that this module depends on.
+     * @ignore
+     * @type {string[]}
+     */
     this._requires = requires;
+
+    /**
+     * Holds a collection of tasks, required to instantiate an angular component
+     * @ignore
+     * @type {!Array<Array<*>>}
+     */
     this._invokeQueue = [];
+
+    /**
+     * @ignore
+     * @type {!Array<Array<*>>}
+     */
     this._configBlocks = [];
+
+    /** @ignore @type {!Array.<ng.Injectable<any>>} */
     this._runBlocks = [];
 
     if (configFn) {
       this.config(configFn);
     }
 
+    /** @ignore @type {!Array.<ng.Injectable<any>>} */
     this._services = [];
+
+    /** @ignore @type {!Array.<ng.RestDefinition<any>>} */
     this._restDefinitions = [];
   }
 
   /**
-   * Registers a mutable value on the module.
+   * @param {string} name
+   * @param {any} object - Allows undefined
+   * @returns {NgModule}
    */
   value(name: string, object: any): NgModule {
     validate(isString, name, "name");
@@ -66,7 +97,9 @@ export class NgModule {
   }
 
   /**
-   * Registers a constant that is available during configuration.
+   * @param {string} name
+   * @param {Object|string|number} object
+   * @returns {NgModule}
    */
   constant(name: string, object: object | string | number): NgModule {
     validate(isString, name, "name");
@@ -78,7 +111,9 @@ export class NgModule {
   }
 
   /**
-   * Adds a config block to run while the injector is being configured.
+   *
+   * @param {ng.Injectable<any>} configFn
+   * @returns {NgModule}
    */
   config(configFn: Injectable<(...args: any[]) => any>): NgModule {
     validate(isInjectable, configFn, "configFn");
@@ -89,7 +124,8 @@ export class NgModule {
   }
 
   /**
-   * Adds a run block to execute after the injector is created.
+   * @param {ng.Injectable<any>} block
+   * @returns {NgModule}
    */
   run(block: Injectable<(...args: any[]) => any>): NgModule {
     validate(isInjectable, block, "block");
@@ -100,7 +136,9 @@ export class NgModule {
   }
 
   /**
-   * Registers a component definition with the compile provider.
+   * @param {string} name
+   * @param {ng.Component} options
+   * @returns {NgModule}
    */
   component(name: string, options: ng.Component): NgModule {
     validate(isString, name, "name");
@@ -112,7 +150,9 @@ export class NgModule {
   }
 
   /**
-   * Registers a factory function with `$provide`.
+   * @param {string} name
+   * @param {ng.Injectable<any>} providerFunction
+   * @returns {NgModule}
    */
   factory(
     name: string,
@@ -126,7 +166,9 @@ export class NgModule {
   }
 
   /**
-   * Registers a service constructor with `$provide`.
+   * @param {string} name
+   * @param {ng.Injectable<any>} serviceFunction
+   * @returns {NgModule}
    */
   service(
     name: string,
@@ -141,7 +183,9 @@ export class NgModule {
   }
 
   /**
-   * Registers a provider constructor with `$provide`.
+   * @param {string} name
+   * @param {ng.Injectable<any>} providerType
+   * @returns {NgModule}
    */
   provider(
     name: string,
@@ -155,7 +199,9 @@ export class NgModule {
   }
 
   /**
-   * Registers a decorator for an existing service.
+   * @param {string} name
+   * @param {ng.Injectable<any>} decorFn
+   * @returns {NgModule}
    */
   decorator(
     name: string,
@@ -169,7 +215,9 @@ export class NgModule {
   }
 
   /**
-   * Registers a directive factory with the compile provider.
+   * @param {string} name
+   * @param {ng.Injectable<any>} directiveFactory
+   * @returns {NgModule}
    */
   directive(
     name: string,
@@ -187,7 +235,9 @@ export class NgModule {
   }
 
   /**
-   * Registers an animation factory with the animation provider.
+   * @param {string} name
+   * @param {ng.Injectable<any>} animationFactory
+   * @returns {NgModule}
    */
   animation(
     name: string,
@@ -205,7 +255,9 @@ export class NgModule {
   }
 
   /**
-   * Registers a filter factory with the filter provider.
+   * @param {string} name
+   * @param {ng.FilterFactory} filterFn
+   * @return {NgModule}
    */
   filter(name: string, filterFn: ng.FilterFactory): NgModule {
     validate(isString, name, "name");
@@ -218,6 +270,10 @@ export class NgModule {
   /**
    * The $controller service is used by Angular to create new controllers.
    * This provider allows controller registration via the register method.
+   *
+   * @param {string} name Controller name
+   * @param {ng.Injectable<ng.ControllerConstructor>} ctlFn Controller constructor fn (optionally decorated with DI annotations in the array notation)
+   * @returns {NgModule}
    */
   controller(
     name: string,
@@ -233,13 +289,13 @@ export class NgModule {
   /**
    * Register a named WebAssembly module that will be instantiated via $provide.
    *
-   * @param name - The injectable name used to access the instantiated WebAssembly module.
+   * @param {string} name - The injectable name used to access the instantiated WebAssembly module.
    *
-   * @param src - URL of the `.wasm` file to fetch and instantiate.
+   * @param {string} src - URL of the `.wasm` file to fetch and instantiate.
    *
-   * @param [imports] WebAssembly import object, passed to `WebAssembly.instantiate` or  `WebAssembly.instantiateStreaming`.
+   * @param {Object<string, any>} [imports] WebAssembly import object, passed to `WebAssembly.instantiate` or  `WebAssembly.instantiateStreaming`.
    *
-   * @param [opts] - Configuration object.
+   * @param {Object<string, any>} [opts] - Configuration object.
    *
    *   Supported keys:
    *   - **raw**: `boolean`
@@ -248,6 +304,8 @@ export class NgModule {
    *       - `true`: the injectable resolves to the full instantiation result:
    *         `{ instance, exports, module }`
    *         (required for runtimes such as Go, Emscripten, wasm-bindgen, etc).
+   *
+   * @returns {NgModule}
    */
   wasm(
     name: string,
@@ -279,6 +337,11 @@ export class NgModule {
 
   /**
    * Register a named worker that will be instantiated via $provide.
+   *
+   * @param {string} name
+   * @param {string | URL} scriptPath
+   * @param {ng.WorkerConfig} [config]
+   * @returns {NgModule}
    */
   worker(
     name: string,
@@ -302,7 +365,11 @@ export class NgModule {
   }
 
   /**
-   * Registers a service backed by one of the supported persistent storage backends.
+   * @param {string} name
+   * @param {Function|Object} ctor - A regular function, an arrow function or an object
+   * @param {ng.StorageType} type
+   * @param {ng.StorageBackend} [backendOrConfig]
+   * @returns {NgModule}
    */
   store(
     name: string,
@@ -324,10 +391,11 @@ export class NgModule {
   /**
    * @template T, ID
    * Register a REST resource during module configuration.
-   * @param name - Service name
-   * @param url - Base URL or URI template
-   * @param entityClass - Optional constructor for mapping JSON
-   * @param options - Optional RestService options (interceptors, etc)
+   * @param {string} name - Service name
+   * @param {string} url - Base URL or URI template
+   * @param {ng.EntityClass<T>} entityClass - Optional constructor for mapping JSON
+   * @param {Object=} options - Optional RestService options (interceptors, etc)
+   * @returns {NgModule}
    */
   rest<T, ID>(
     name: string,
@@ -338,7 +406,8 @@ export class NgModule {
     validate(isString, name, "name");
     validate(isString, url, "url");
     validate(isFunction, entityClass, "entityClass");
-    const def: ng.RestDefinition<T> = { name, url, entityClass, options };
+    /** @type {ng.RestDefinition<T>} */
+    const def = { name, url, entityClass, options };
 
     this._restDefinitions.push(def);
 
@@ -366,6 +435,11 @@ export class NgModule {
 
   /**
    * Register a pre-configured SSE connection during module configuration.
+   *
+   * @param {string} name - Injectable name
+   * @param {string} url - SSE endpoint
+   * @param {ng.SseConfig} [options] - Optional SSE config
+   * @returns {NgModule}
    */
   sse(name: string, url: string, options: ng.SseConfig = {}): NgModule {
     validate(isString, name, "name");
@@ -382,6 +456,12 @@ export class NgModule {
 
   /**
    * Register a pre-configured WebSocket connection during module configuration.
+   *
+   * @param {string} name - Injectable name
+   * @param {string} url - WebSocket endpoint
+   * @param {string[]} [protocols] - Optional subprotocols
+   * @param {ng.WebSocketConfig} [options] - Optional WebSocket configuration
+   * @returns {NgModule}
    */
   websocket(
     name: string,

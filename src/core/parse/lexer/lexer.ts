@@ -1,6 +1,6 @@
 /* eslint-disable id-length */
 /* eslint-disable no-magic-numbers */
-import { isDefined, minErr } from "../../../shared/utils.ts";
+import { isDefined, minErr } from "../../../shared/utils.js";
 import type { Token } from "./token.ts";
 
 export type { Token } from "./token.ts";
@@ -33,6 +33,8 @@ export class Lexer {
   /**
    * The optional parameter is ignored and only exists to preserve current JS
    * call sites that still instantiate the lexer with an unused config object.
+   *
+   * @param _options
    */
   constructor(_options?: unknown) {
     this._text = "";
@@ -42,6 +44,8 @@ export class Lexer {
 
   /**
    * Tokenizes the input text.
+   * @param text
+   * @returns Array of tokens.
    */
   _lex(text: string): Token[] {
     this._text = text;

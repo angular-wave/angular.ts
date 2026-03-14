@@ -1,11 +1,198 @@
 import { BuiltStateDeclaration, StateDeclaration } from "../state/interface.ts";
-import { PredicateBinary } from "../../shared/hof.ts";
-import type { Transition } from "./transition.ts";
+import { PredicateBinary } from "../../shared/interface.ts";
+import { Transition } from "./transition.js";
+import { StateObject } from "../state/state-object.ts";
+import { PathNode } from "../path/path-node.ts";
 import { TargetState } from "../state/target-state.ts";
-import { RegisteredHook } from "./hook-registry.ts";
+import { RegisteredHook } from "./hook-registry.js";
+import {
+  TransitionHook,
+  TransitionHookPhase,
+  TransitionHookScope,
+} from "./transition-hook.js";
+import { TransitionEventType } from "./transition-event-type.js";
 
 /** Deregistration function returned by hook registrations */
 export type DeregisterFn = () => void;
+
+/**
+ * The TransitionOptions object can be used to change the behavior of a transition.
+ *
+ * It is passed as the third argument to [[StateService.go]], [[StateService.transitionTo]].
+ * It can also be used with a `uiSref`.
+ */
+export interface TransitionOptions {
+  /**
+   * This option changes how the Transition interacts with the browser's location bar (URL).
+   *
+   * - If `true`, it will update the url in the location bar.
+   * - If `false`, it will not update the url in the location bar.
+   * - If it is the string `"replace"`, it will update the url and also replace the last history record.
+   *
+   * @default `true`
+   */
+  location?: boolean | "replace";
+
+  /**
+   * When transitioning to relative path (e.g '`^`'), this option defines which state to be relative from.
+   * @default `$state.current`
+   */
+  relative?: string | StateDeclaration | StateObject;
+
+  /**
+   * This option sets whether or not the transition's parameter values should be inherited from
+   * the current parameter values.
+   *
+   * - If `true`, it will inherit parameter values from the current parameter values.
+   * - If `false`, only the parameters which are provided to `transitionTo` will be used.
+   *
+   * @default `true`
+   */
+  inherit?: boolean;
+
+  /**
+   * @deprecated
+   */
+  notify?: boolean;
+
+  /**
+   * This option may be used to force states which are currently active to reload.
+   *
+   * During a normal transition, a state is "retained" if:
+   * - It was previously active
+   * - The state's parameter values have not changed
+   * - All the parent states' parameter values have not changed
+   *
+   * Forcing a reload of a state will cause it to be exited and entered, which will:
+   * - Refetch that state's resolve data
+   * - Exit the state (onExit hook)
+   * - Re-enter the state (onEnter hook)
+   * - Re-render the views (controllers and templates)
+   *
+   * - When `true`, the destination state (and all parent states) will be reloaded.
+   * - When it is a string and is the name of a state, or when it is a State object,
+   *   that state and any children states will be reloaded.
+   *
+   * @default `false`
+   */
+  reload?: boolean | string | StateDeclaration | StateObject;
+
+  /**
+   * You can define your own Transition Options inside this property and use them, e.g., from a Transition Hook
+   */
+  custom?: unknown;
+
+  /**
+   * This option may be used to cancel the active transition (if one is active) in favour of the this one.
+   * This is the default behaviour or ui-router.
+   *
+   *
+   * - When `true`, the active transition will be canceled and new transition will begin.
+   * - when `false`, the transition will be canceled if a transition is already running. This can be useful in cases where
+   * you only want to navigate to a different state if you are not already navigating somewhere.
+   *
+   * @default `true`
+   */
+  supercede?: boolean;
+
+  /** @internal */
+  reloadState?: StateObject;
+
+  /** @internal
+   * If this transition is a redirect, this property should be the original Transition (which was redirected to this one)
+   */
+  redirectedFrom?: Transition;
+
+  /** @internal */
+  current?: () => Transition | null;
+
+  /** @internal */
+  source?: "sref" | "url" | "redirect" | "otherwise" | "unknown";
+}
+
+export interface TransitionHookOptions {
+  current: () => Transition | void; // path?
+  transition?: Transition | null;
+  hookType?: string;
+  target?: unknown;
+  traceData?: {
+    hookType?: string;
+    context?: any;
+  };
+  bind?: unknown;
+  stateHook?: boolean;
+}
+
+/**
+ * TreeChanges encapsulates the various Paths that are involved in a Transition.
+ *
+ * Get a TreeChanges object using [[Transition.treeChanges]]
+ *
+ * A UI-Router Transition is from one Path in a State Tree to another Path.  For a given Transition,
+ * this object stores the "to" and "from" paths, as well as subsets of those: the "retained",
+ * "exiting" and "entering" paths.
+ *
+ * Each path in TreeChanges is an array of [[PathNode]] objects. Each PathNode in the array corresponds to a portion
+ * of a nested state.
+ *
+ * For example, if you had a nested state named `foo.bar.baz`, it would have three
+ * portions, `foo, bar, baz`.  If you transitioned **to** `foo.bar.baz` and inspected the [[TreeChanges.to]]
+ * Path, you would find a node in the array for each portion: `foo`, `bar`, and `baz`.
+ *
+ * ---
+ *
+ * @todo show visual state tree
+ */
+export interface TreeChanges {
+  /** @nodoc */
+  [key: string]: PathNode[] | undefined;
+
+  /** The path of nodes in the state tree that the transition is coming *from* */
+  from: PathNode[];
+
+  /** The path of nodes in the state tree that the transition is going *to* */
+  to: PathNode[];
+
+  /**
+   * The path of active nodes that the transition is retaining.
+   *
+   * These nodes are neither exited, nor entered.
+   * Before and after the transition is successful, these nodes are active.
+   */
+  retained: PathNode[];
+
+  /**
+   * The path of active nodes that the transition is retaining with updated "to params" applied.
+   *
+   * These nodes are neither exited, nor entered.
+   * Before and after the transition is successful, these nodes are active.
+   *
+   * This is a shallow copy of [[retained]], but with new (dynamic) parameter values from [[to]] applied.
+   */
+  retainedWithToParams: PathNode[];
+
+  /**
+   * The path of previously active nodes that the transition is exiting.
+   *
+   * After the Transition is successful, these nodes are no longer active.
+   *
+   * Note that a state that is being reloaded (due to parameter values changing, or `reload: true`) may be in both the
+   * `exiting` and `entering` paths.
+   */
+  exiting: PathNode[];
+
+  /**
+   * The path of nodes that the transition is entering.
+   *
+   * After the Transition is successful, these nodes will be active.
+   * Because they are entering, they have their resolves fetched, `onEnter` hooks run, and their views
+   * (component(s) or controller(s)+template(s)) refreshed.
+   *
+   * Note that a state that is reloaded (due to parameter values changing, or `reload: true`) may be in both the
+   * `exiting` and `entering` paths.
+   */
+  entering: PathNode[];
+}
 
 /**
  * The signature for Transition Hooks.
@@ -233,12 +420,47 @@ export interface HookMatchCriteria {
   entering?: HookMatchCriterion;
 }
 
+export interface IMatchingNodes {
+  [key: string]: PathNode[];
+
+  to: PathNode[];
+  from: PathNode[];
+  exiting: PathNode[];
+  retained: PathNode[];
+  entering: PathNode[];
+}
+
+/** @internal */
+export interface RegisteredHooks {
+  [key: string]: RegisteredHook[];
+}
+
+/** @internal */
+export interface PathType {
+  name: string;
+  scope: TransitionHookScope;
+}
+
+/** @internal */
+export interface PathTypes {
+  [key: string]: PathType;
+
+  to: PathType;
+  from: PathType;
+  exiting: PathType;
+  retained: PathType;
+  entering: PathType;
+}
+
 /**
  * This interface specifies the api for registering Transition Hooks.  Both the
  * [[TransitionService]] and also the [[Transition]] object itself implement this interface.
  * Note: the Transition object only allows hooks to be registered before the Transition is started.
  */
 export interface HookRegistry {
+  /** @internal place to store the hooks */
+  _registeredHooks: RegisteredHooks;
+
   /**
    * Registers a [[TransitionCreateHookFn]], called *while a transition is being constructed*.
    *
@@ -723,4 +945,57 @@ export interface HookRegistry {
    * ```
    */
   getHooks(hookName: string): RegisteredHook[];
+}
+
+/**
+ * TODO: unite with TransitionProvider
+ * The runtime service instance returned from `TransitionProvider.$get`.
+ *
+ * Note: In this codebase, `$get` returns the provider instance (`return this;`),
+ * so the "service" surface includes both the public HookRegistry API and
+ * a set of internal fields/methods used by built-in hook registrations/plugins.
+ */
+export interface TransitionService extends HookRegistry {
+  /* -------------------- Transition factory -------------------- */
+
+  /**
+   * Internal factory used by StateService.
+   */
+  create(fromPath: PathNode[], targetState: TargetState): Transition;
+
+  /* -------------------- Internal surface used by built-in hooks/plugins -------------------- */
+
+  /** @internal incremented for each created Transition */
+  _transitionCount: number;
+
+  /** @internal hook event types (onBefore/onStart/...) */
+  _eventTypes: TransitionEventType[];
+
+  /** @internal path type metadata used for matching */
+  _criteriaPaths: PathTypes;
+
+  /** @internal stores deregistration fns for core hooks */
+  _deregisterHookFns: Record<string, DeregisterFn | undefined>;
+
+  /**
+   * @internal Return event types, optionally filtered by phase, sorted by phase/order.
+   */
+  _getEvents(phase?: TransitionHookPhase): TransitionEventType[];
+
+  /** @internal Return the defined path types */
+  _getPathTypes(): PathTypes;
+
+  /** @internal router globals */
+  globals: ng.RouterService;
+
+  /** @internal view service */
+  $view: ng.ViewService;
+
+  _exceptionHandler: ng.ExceptionHandlerService;
+}
+
+export interface HookTuple {
+  hook: RegisteredHook;
+  node: PathNode;
+  transitionHook: TransitionHook;
 }

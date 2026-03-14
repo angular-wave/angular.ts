@@ -6,7 +6,7 @@ import {
   isNullOrUndefined,
   isObject,
   isProxy,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import { ASTType } from "./ast-type.ts";
 import type {
   ASTNode,
@@ -19,7 +19,7 @@ import type {
 import type {
   CompiledExpression,
   CompiledExpressionFunction,
-} from "./parse.ts";
+} from "./interface.ts";
 
 export const PURITY_ABSOLUTE = 1;
 export const PURITY_RELATIVE = 2;
@@ -34,21 +34,20 @@ type WatchNode = ASTNode & {
   watchId?: string;
 };
 
-/**
- * Interprets AST nodes into executable scope-aware functions for `$parse`.
- */
 export class ASTInterpreter {
   _$filter: ng.FilterService;
 
   /**
-   * Creates the AST interpreter with access to registered filters.
+   * @param {ng.FilterService} $filter
    */
   constructor($filter: ng.FilterService) {
     this._$filter = $filter;
   }
 
   /**
-   * Compiles the AST into an executable expression function.
+   * Compiles the AST into a function.
+   * @param {ASTNode} ast - The AST to compile.
+   * @returns {CompiledExpression}
    */
   compile(ast: ASTNode): CompiledExpression {
     const decoratedNode = findConstantAndWatchExpressions(ast, this._$filter);
@@ -60,7 +59,7 @@ export class ASTInterpreter {
     let assign: CompiledExpressionFunction | undefined;
 
     if (assignable) {
-      assign = this._recurse(assignable);
+      assign = /** @type {CompiledExpression} */ this._recurse(assignable);
     }
 
     const toWatch = getInputs(body);
@@ -92,7 +91,7 @@ export class ASTInterpreter {
             /* empty */
           }
         : body.length === 1
-          ? expressions[0]
+          ? /** @type {CompiledExpression} */ expressions[0]
           : (function (scope?: ng.Scope, locals?: object) {
               let lastValue;
 
@@ -120,10 +119,10 @@ export class ASTInterpreter {
 
   /**
    * Recurses the AST nodes.
-   * @param ast - The AST node.
-   * @param [context] - The context.
-   * @param [create] - The create flag.
-   * @returns The recursive function.
+   * @param {ExpressionNode & LiteralNode} ast - The AST node.
+   * @param {Object} [context] - The context.
+   * @param {boolean|1} [create] - The create flag.
+   * @returns {CompiledExpressionFunction} The recursive function.
    */
   _recurse(
     ast: ASTNode,
@@ -343,7 +342,7 @@ export class ASTInterpreter {
           1,
         );
 
-        const op = ast.operator as "++" | "--";
+        const op = /** @type {"++"|"--"} */ ast.operator;
 
         const prefix = !!ast.prefix;
 
@@ -381,9 +380,9 @@ export class ASTInterpreter {
 
   /**
    * Unary plus operation.
-   * @param argument - The argument function.
-   * @param [context] - The context.
-   * @returns The unary plus function.
+   * @param {function} argument - The argument function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The unary plus function.
    */
   "unary+"(
     argument: CompiledExpressionFunction,
@@ -404,9 +403,9 @@ export class ASTInterpreter {
 
   /**
    * Unary minus operation.
-   * @param argument - The argument function.
-   * @param [context] - The context.
-   * @returns The unary minus function.
+   * @param {function} argument - The argument function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The unary minus function.
    */
   "unary-"(
     argument: CompiledExpressionFunction,
@@ -427,9 +426,9 @@ export class ASTInterpreter {
 
   /**
    * Unary negation operation.
-   * @param argument - The argument function.
-   * @param [context] - The context.
-   * @returns The unary negation function.
+   * @param {function} argument - The argument function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The unary negation function.
    */
   "unary!"(
     argument: CompiledExpressionFunction,
@@ -444,10 +443,10 @@ export class ASTInterpreter {
 
   /**
    * Binary plus operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary plus function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary plus function.
    */
   "binary+"(
     left: CompiledExpressionFunction,
@@ -467,10 +466,10 @@ export class ASTInterpreter {
 
   /**
    * Binary minus operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary minus function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary minus function.
    */
   "binary-"(
     left: CompiledExpressionFunction,
@@ -490,10 +489,10 @@ export class ASTInterpreter {
 
   /**
    * Binary multiplication operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary multiplication function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary multiplication function.
    */
   "binary*"(
     left: CompiledExpressionFunction,
@@ -509,10 +508,10 @@ export class ASTInterpreter {
 
   /**
    * Binary division operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary division function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary division function.
    */
   "binary/"(
     left: CompiledExpressionFunction,
@@ -528,10 +527,10 @@ export class ASTInterpreter {
 
   /**
    * Binary modulo operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary division function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary division function.
    */
   "binary%"(
     left: CompiledExpressionFunction,
@@ -547,10 +546,10 @@ export class ASTInterpreter {
 
   /**
    * Binary strict equality operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary strict equality function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary strict equality function.
    */
   "binary==="(
     left: CompiledExpressionFunction,
@@ -566,10 +565,10 @@ export class ASTInterpreter {
 
   /**
    * Binary strict inequality operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary strict inequality function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary strict inequality function.
    */
   "binary!=="(
     left: CompiledExpressionFunction,
@@ -585,10 +584,10 @@ export class ASTInterpreter {
 
   /**
    * Binary equality operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary equality function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary equality function.
    */
   "binary=="(
     left: CompiledExpressionFunction,
@@ -605,10 +604,10 @@ export class ASTInterpreter {
 
   /**
    * Binary inequality operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary inequality function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary inequality function.
    */
   "binary!="(
     left: CompiledExpressionFunction,
@@ -625,10 +624,10 @@ export class ASTInterpreter {
 
   /**
    * Binary less-than operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary less-than function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary less-than function.
    */
   "binary<"(
     left: CompiledExpressionFunction,
@@ -644,10 +643,10 @@ export class ASTInterpreter {
 
   /**
    * Binary greater-than operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary greater-than function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary greater-than function.
    */
   "binary>"(
     left: CompiledExpressionFunction,
@@ -663,10 +662,10 @@ export class ASTInterpreter {
 
   /**
    * Binary less-than-or-equal-to operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary less-than-or-equal-to function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary less-than-or-equal-to function.
    */
   "binary<="(
     left: CompiledExpressionFunction,
@@ -682,10 +681,10 @@ export class ASTInterpreter {
 
   /**
    * Binary greater-than-or-equal-to operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary greater-than-or-equal-to function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary greater-than-or-equal-to function.
    */
   "binary>="(
     left: CompiledExpressionFunction,
@@ -701,10 +700,10 @@ export class ASTInterpreter {
 
   /**
    * Binary logical AND operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary logical AND function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary logical AND function.
    */
   "binary&&"(
     left: CompiledExpressionFunction,
@@ -720,10 +719,10 @@ export class ASTInterpreter {
 
   /**
    * Binary logical OR operation.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @returns The binary logical OR function.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The binary logical OR function.
    */
   "binary||"(
     left: CompiledExpressionFunction,
@@ -739,11 +738,11 @@ export class ASTInterpreter {
 
   /**
    * Ternary conditional operation.
-   * @param test - The test function.
-   * @param alternate - The alternate function.
-   * @param consequent - The consequent function.
-   * @param [context] - The context.
-   * @returns The ternary conditional function.
+   * @param {function} test - The test function.
+   * @param {function} alternate - The alternate function.
+   * @param {function} consequent - The consequent function.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The ternary conditional function.
    */
   "ternary?:"(
     test: CompiledExpressionFunction,
@@ -762,9 +761,9 @@ export class ASTInterpreter {
 
   /**
    * Returns the value of a literal.
-   * @param value - The literal value.
-   * @param [context] - The context.
-   * @returns The function returning the literal value.
+   * @param {*} value - The literal value.
+   * @param {Object} [context] - The context.
+   * @returns {CompiledExpressionFunction} The function returning the literal value.
    */
   value(value: any, context?: LinkContext): CompiledExpressionFunction {
     return () =>
@@ -773,10 +772,10 @@ export class ASTInterpreter {
 
   /**
    * Returns the value of an identifier.
-   * @param name - The identifier name.
-   * @param [context] - The context.
-   * @param [create] - Whether to create the identifier if it does not exist.
-   * @returns The function returning the identifier value.
+   * @param {string} name - The identifier name.
+   * @param {Object} [context] - The context.
+   * @param {boolean|1} [create] - Whether to create the identifier if it does not exist.
+   *  @returns {CompiledExpressionFunction}  The function returning the identifier value.
    */
   identifier(
     name: string,
@@ -796,7 +795,7 @@ export class ASTInterpreter {
       let value = undefined;
 
       if (base) {
-        value = (deProxy(base) as Record<string, any>)[name];
+        value = /** @type {Record<string, any>} */ deProxy(base)[name];
       }
 
       if (context) {
@@ -809,11 +808,11 @@ export class ASTInterpreter {
 
   /**
    * Returns the value of a computed member expression.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @param [create] - Whether to create the member if it does not exist.
-   * @returns The function returning the computed member value.
+   * @param {function} left - The left operand function.
+   * @param {function} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @param {boolean|1} [create] - Whether to create the member if it does not exist.
+   * @returns {CompiledExpressionFunction}  The function returning the computed member value.
    */
   _computedMember(
     left: CompiledExpressionFunction,
@@ -850,11 +849,11 @@ export class ASTInterpreter {
 
   /**
    * Returns the value of a non-computed member expression.
-   * @param left - The left operand function.
-   * @param right - The right operand function.
-   * @param [context] - The context.
-   * @param [create] - Whether to create the member if it does not exist.
-   * @returns The function returning the non-computed member value.
+   * @param {function} left - The left operand function.
+   * @param {string} right - The right operand function.
+   * @param {Object} [context] - The context.
+   * @param {boolean|1} [create] - Whether to create the member if it does not exist.
+   * @returns {CompiledExpressionFunction}  The function returning the non-computed member value.
    */
   nonComputedMember(
     left: CompiledExpressionFunction,
@@ -889,10 +888,10 @@ export class ASTInterpreter {
  * - `toWatch` → list of expressions to observe for changes
  * - `isPure` → whether the expression is pure (Angular-specific)
  *
- * @param ast - The AST node to decorate.
- * @param $filter - Angular filter service.
- * @param [parentIsPure] - Optional flag indicating purity of the parent node.
- * @returns The same node, now decorated.
+ * @param {ASTNode} ast - The AST node to decorate
+ * @param {ng.FilterService} $filter - Angular filter service
+ * @param {boolean|1|2} [parentIsPure] - Optional flag indicating purity of the parent node
+ * @returns {ASTNode} The same node, now decorated
  * @throws {Error} If the AST type is unknown
  */
 function findConstantAndWatchExpressions(
@@ -1018,7 +1017,7 @@ function findConstantAndWatchExpressions(
         astIsPure,
       );
 
-      if ((ast as ExpressionNode).computed) {
+      if (/** @type {ExpressionNode} */ ast.computed) {
         decoratedProperty = findConstantAndWatchExpressions(
           (ast as ExpressionNode).property as ASTNode,
           $filter,
@@ -1139,8 +1138,10 @@ function findConstantAndWatchExpressions(
 }
 
 /**
- * Converts a single expression AST node into an assignment expression if the
- * expression is assignable.
+ * Converts a single expression AST node into an assignment expression if the expression is assignable.
+ *
+ * @param {import("./ast/ast-node.ts").BodyNode} ast
+ * @returns {import("./ast/ast-node.ts").ExpressionNode | undefined}
  */
 function assignableAST(ast: BodyNode): ExpressionNode | undefined {
   const stmt = ast.body[0] as ExpressionNode;
@@ -1162,7 +1163,8 @@ function assignableAST(ast: BodyNode): ExpressionNode | undefined {
 }
 
 /**
- * Adds two values while preserving AngularJS-style undefined/object behavior.
+ * @param {string | number} left
+ * @param {string | number} right
  */
 function plusFn(
   left: string | number,
@@ -1176,7 +1178,9 @@ function plusFn(
 }
 
 /**
- * Returns the set of watch input nodes for a parsed program body.
+ *
+ * @param {ASTNode[]} body
+ * @returns {any}
  */
 function getInputs(body: ASTNode[]): ASTNode[] | undefined {
   if (body.length !== 1) return undefined;
@@ -1189,7 +1193,10 @@ function getInputs(body: ASTNode[]): ASTNode[] | undefined {
 }
 
 /**
- * Detects nodes which could depend on non-shallow state of objects.
+ * Detect nodes which could depend on non-shallow state of objects
+ * @param {ASTNode} node
+ * @param {boolean|PURITY_ABSOLUTE|PURITY_RELATIVE} [parentIsPure]
+ * @returns {number|boolean}
  */
 function isPure(
   node: ASTNode,
@@ -1198,7 +1205,7 @@ function isPure(
   switch (node.type) {
     // Computed members might invoke a stateful toString()
     case ASTType._MemberExpression:
-      if ((node as ExpressionNode).computed) {
+      if (/** @type {ExpressionNode} */ node.computed) {
         return false;
       }
       break;
@@ -1209,7 +1216,7 @@ function isPure(
 
     // The binary + operator can invoke a stateful toString().
     case ASTType._BinaryExpression:
-      return (node as ExpressionNode).operator !== "+"
+      return /** @type {ExpressionNode} */ node.operator !== "+"
         ? PURITY_ABSOLUTE
         : false;
 
@@ -1224,16 +1231,20 @@ function isPure(
 }
 
 /**
- * Converts a value into a string property name for use as an object key.
- * Any non-string object, including a number, is stringified via `toString()`.
+ * Converts parameter to  strings property name for use  as keys in an object.
+ * Any non-string object, including a number, is typecasted into a string via the toString method.
  * {@link https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Property_accessors#Property_names}
+ *
+ * @param {!any} name
+ * @returns {string}
  */
 function getStringValue(name: any): string {
   return `${name}`;
 }
 
 /**
- * Returns whether an AST node can appear on the left side of an assignment.
+ * @param {import("./ast/ast").ASTNode} ast
+ * @returns {boolean}
  */
 export function isAssignable(ast: ASTNode): boolean {
   return (

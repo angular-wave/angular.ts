@@ -3,31 +3,10 @@ import {
   isUndefined,
   minErr,
   stringify,
-} from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
-import type { ParseService } from "../parse/parse.ts";
-
-export interface InterpolationFunction {
-  expressions: any[];
-  /**
-   * Evaluate the interpolation.
-   * @param context - The scope/context
-   * @param cb - Optional callback when expressions change
-   */
-  (context: any, cb?: (val: any) => void): any;
-  exp: string;
-}
-
-export interface InterpolateService {
-  (
-    text: string,
-    mustHaveExpression?: boolean,
-    trustedContext?: string,
-    allOrNothing?: boolean,
-  ): InterpolationFunction | undefined;
-  endSymbol(): string;
-  startSymbol(): string;
-}
+} from "../../shared/utils.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
+import type { ParseService } from "../parse/interface.ts";
+import type { InterpolateService, InterpolationFunction } from "./interface.ts";
 
 type SceLike = {
   URL: string;
@@ -38,9 +17,6 @@ type SceLike = {
 
 const $interpolateMinErr = minErr("$interpolate");
 
-/**
- * Throws when strict contextual escaping forbids concatenating trusted values.
- */
 function throwNoconcat(text: string): never {
   throw $interpolateMinErr(
     "noconcat",
@@ -51,9 +27,6 @@ function throwNoconcat(text: string): never {
   );
 }
 
-/**
- * Re-throws interpolation errors with the original template text attached.
- */
 function interr(text: string, err: Error): never {
   throw $interpolateMinErr(
     "interr",
@@ -63,18 +36,8 @@ function interr(text: string, err: Error): never {
   );
 }
 
-/**
- * Configures Angular interpolation delimiters and produces interpolation
- * functions that evaluate embedded expressions against a scope/context.
- */
 export class InterpolateProvider {
-  /**
-   * Start symbol used when parsing interpolation expressions.
-   */
   startSymbol: string;
-  /**
-   * End symbol used when parsing interpolation expressions.
-   */
   endSymbol: string;
   $get: [
     string,
@@ -82,9 +45,6 @@ export class InterpolateProvider {
     ($parse: ParseService, $sce: SceLike) => InterpolateService,
   ];
 
-  /**
-   * Creates the provider with the default `{{` / `}}` interpolation markers.
-   */
   constructor() {
     this.startSymbol = "{{";
     this.endSymbol = "}}";

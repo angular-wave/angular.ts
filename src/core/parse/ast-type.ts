@@ -1,6 +1,3 @@
-/**
- * Numeric AST node kind identifiers used by the parser and interpreter.
- */
 export const ASTType = {
   _Program: 1,
   _ExpressionStatement: 2,
@@ -22,7 +19,4 @@ export const ASTType = {
   _UpdateExpression: 18,
 } as const;
 
-/**
- * Union of the parser's internal AST node kind identifiers.
- */
 export type ASTType = (typeof ASTType)[keyof typeof ASTType];

@@ -3,11 +3,11 @@ import {
   isArray,
   isArrowFunction,
   minErr,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import type { AnnotatedFactory } from "../../interface.ts";
 import { annotate, isClass } from "./di.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
-import type { ProviderCache } from "./injector.ts";
+import { $injectTokens } from "../../injection-tokens.js";
+import type { ProviderCache } from "./interface.ts";
 import type { NgModule } from "./ng-module/ng-module.ts";
 
 const $injectorMinErr = minErr($injectTokens._injector);
@@ -24,7 +24,7 @@ class AbstractInjector {
   _modules: Record<string, NgModule>;
 
   /**
-   * Creates the base injector state shared by provider and instance injectors.
+   * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
    */
   constructor(strictDi: boolean) {
     this._cache = {};
@@ -35,6 +35,9 @@ class AbstractInjector {
 
   /**
    * Get a service by name.
+   *
+   * @param {string} serviceName
+   * @returns {any}
    */
   get(serviceName: string): any {
     if (hasOwn(this._cache, serviceName)) {
@@ -65,6 +68,11 @@ class AbstractInjector {
 
   /**
    * Get the injection arguments for a function.
+   *
+   * @param {Function|ng.AnnotatedFactory<any>} fn
+   * @param {Object & Record<string, any>} [locals]
+   * @param {string} [serviceName]
+   * @returns
    */
   _injectionArgs(
     fn: InjectableFn,
@@ -93,6 +101,12 @@ class AbstractInjector {
 
   /**
    * Invoke a function with optional context and locals.
+   *
+   * @param {Function|String|ng.AnnotatedFactory<any>} fn
+   * @param {*} [self]
+   * @param {Object} [locals]
+   * @param {string} [serviceName]
+   * @returns {*}
    */
   invoke(
     fn: InjectableFn | string,
@@ -127,6 +141,9 @@ class AbstractInjector {
 
   /**
    * Instantiate a type constructor with optional locals.
+   * @param {Function|ng.AnnotatedFactory<any>} type
+   * @param {*} [locals]
+   * @param {string} [serviceName]
    */
   instantiate(
     type: InjectableFn,
@@ -156,7 +173,8 @@ class AbstractInjector {
 
   /**
    * @abstract
-   * Resolves one service name from the injector-specific backing store.
+   * @param {string} _serviceName
+   * @returns {any}
    */
   // eslint-disable-next-line no-unused-vars
   factory(_serviceName: string): any {
@@ -169,7 +187,8 @@ class AbstractInjector {
  */
 export class ProviderInjector extends AbstractInjector {
   /**
-   * Creates the provider injector over the shared provider cache.
+   * @param {import('./interface.ts').ProviderCache} cache
+   * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
    */
   constructor(cache: ProviderCache, strictDi: boolean) {
     super(strictDi);
@@ -178,7 +197,7 @@ export class ProviderInjector extends AbstractInjector {
 
   /**
    * Factory method for creating services.
-   * @param caller - The name of the caller requesting the service.
+   * @param {string} caller - The name of the caller requesting the service.
    * @throws {Error} If the provider is unknown.
    */
   factory(caller: string): never {
@@ -204,17 +223,21 @@ export class InjectorService extends AbstractInjector {
   _providerInjector: ProviderInjector;
 
   /**
-   * Creates the runtime injector backed by the provider injector.
+   * @param {ProviderInjector} providerInjector
+   * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
    */
   constructor(providerInjector: ProviderInjector, strictDi: boolean) {
     super(strictDi);
 
+    /** @private @type {ProviderInjector} */
     this._providerInjector = providerInjector;
+    /** @private @type {Object.<string, ng.NgModule>} */
     this._modules = providerInjector._modules;
   }
 
   /**
-   * Instantiates one runtime service from its provider.
+   * @param {string} serviceName
+   * @returns {*}
    */
   factory(serviceName: string): any {
     const provider = this._providerInjector.get(serviceName + providerSuffix);
@@ -223,7 +246,9 @@ export class InjectorService extends AbstractInjector {
   }
 
   /**
-   * Returns whether the injector can provide a service by this name.
+   *
+   * @param {string} name
+   * @returns {boolean}
    */
   has(name: string): boolean {
     const hasProvider = hasOwn(
