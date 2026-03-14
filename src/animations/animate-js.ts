@@ -1,9 +1,4 @@
-import type {
-  AnimateJsFn,
-  AnimateJsRunner,
-  AnimationOptions,
-  Animator,
-} from "./interface.ts";
+import type { AnimationOptions, Animator } from "./interface.ts";
 import { isArray, isFunction, isObject } from "../shared/utils.js";
 import {
   applyAnimationClasses,
@@ -23,6 +18,33 @@ interface AnimateProviderShape {
 
 interface JsAnimationHandlerMap {
   [key: string]: ((...args: any[]) => unknown) | undefined;
+}
+
+/**
+ * Signature for a JavaScript animation factory function.
+ *
+ * Given an element + event (+ optional classes/options), returns an {@link Animator}
+ * handle when it intends to animate, or `undefined` when it cannot handle the request.
+ */
+export interface AnimateJsFn {
+  (
+    element: HTMLElement,
+    event: string,
+    classes?: string | null,
+    options?: AnimationOptions,
+  ): Animator | undefined;
+}
+
+/**
+ * Driver return type for JS-based animations.
+ *
+ * Some JS drivers expose a "runner-like" object with explicit `start()` and
+ * `end()` methods that return an {@link AnimateRunner}.
+ */
+export interface AnimateJsRunner {
+  _willAnimate: true;
+  start: () => AnimateRunner;
+  end: () => AnimateRunner;
 }
 
 /**

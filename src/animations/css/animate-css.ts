@@ -1,5 +1,4 @@
 import type {
-  AnimationHost,
   AnimationOptions,
   Animator,
 } from "../interface.ts";
@@ -18,7 +17,7 @@ import {
   keys,
   nullObject,
 } from "../../shared/utils.js";
-import { AnimateRunner } from "../runner/animate-runner.ts";
+import { AnimateRunner, AnimationHost } from "../runner/animate-runner.ts";
 import {
   ACTIVE_CLASS_SUFFIX,
   ADD_CLASS_SUFFIX,

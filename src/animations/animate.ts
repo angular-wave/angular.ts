@@ -1,5 +1,6 @@
-import type { AnimateService, AnimationOptions } from "./interface.ts";
-import type { AnimateQueueService } from "./queue/interface.ts";
+import type { AnimationOptions } from "./interface.ts";
+import type { AnimateQueueService } from "./queue/animate-queue.ts";
+import type { QueuePhase } from "./queue/animate-queue.ts";
 import {
   extend,
   hasAnimate,
@@ -11,11 +12,150 @@ import {
   nullObject,
 } from "../shared/utils.js";
 import { animatedomInsert, domInsert, removeElement } from "../shared/dom.ts";
-import { NG_ANIMATE_CLASSNAME } from "./shared.ts";
+import { NG_ANIMATE_CLASSNAME } from "./shared.js";
 import { $injectTokens } from "../injection-tokens.js";
 import type { AnimateRunner } from "./runner/animate-runner.ts";
 
 const $animateMinErr = minErr("$animate");
+
+/**
+ * Data payload delivered to animation event callbacks (`AnimateService.on`).
+ *
+ * This is intentionally a small subset of animation information: it tells listeners
+ * which classes are being added/removed and which style maps are being applied.
+ *
+ * Values may be `null` when not applicable.
+ */
+export interface AnimationEventData {
+  addClass?: string | null;
+  removeClass?: string | null;
+  from?: Record<string, any> | null;
+  to?: Record<string, any> | null;
+}
+
+/**
+ * Public-facing animation orchestration API.
+ *
+ * This is the service used by higher-level code to:
+ * - register lifecycle callbacks (`on`/`off`)
+ * - issue animations (`enter`, `leave`, `addClass`, `animate`, ...)
+ * - control global/element-level enabling
+ * - cancel running work
+ *
+ * The service returns {@link AnimateRunner} instances for all animation requests.
+ */
+export interface AnimateService {
+  /**
+   * Register an animation callback for a given event name on a container.
+   *
+   * Callbacks fire for matching descendant elements during queue execution phases.
+   */
+  on(
+    event: string,
+    container: Element,
+    callback?: (
+      element: Element,
+      phase: QueuePhase,
+      data: AnimationEventData,
+    ) => void,
+  ): void;
+
+  /**
+   * Remove a previously registered callback.
+   *
+   * If only `event` is provided, removes all callbacks for that event.
+   * If `container` and/or `callback` are provided, filters removals accordingly.
+   */
+  off(event: string, container?: Element, callback?: Function): void;
+
+  /**
+   * Pin an element to a host parent for animation ancestry checks.
+   *
+   * This is used when the DOM parent relationship is not the effective "animation host"
+   * relationship (e.g. transclusion/moves).
+   */
+  pin(element: Element, parentElement: Element): void;
+
+  /**
+   * Enable/disable animations globally or for a specific element.
+   *
+   * - Called with no args: returns global enabled state.
+   * - Called with element: returns enabled state for that element.
+   * - Called with element + boolean: sets enabled state for that element.
+   */
+  enabled(element?: Element, enabled?: boolean): boolean;
+
+  /**
+   * Cancel a running animation by runner.
+   */
+  cancel(runner: AnimateRunner): void;
+
+  /**
+   * Structural animation: insert `element` into the DOM.
+   */
+  enter(
+    element: Element,
+    parent?: Element | null,
+    after?: Element,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+
+  /**
+   * Structural animation: move `element` within the DOM.
+   */
+  move(
+    element: Element,
+    parent: Element | null,
+    after?: Element,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+
+  /**
+   * Structural animation: remove `element` from the DOM.
+   */
+  leave(element: Element, options?: AnimationOptions): AnimateRunner;
+
+  /**
+   * Class-based animation: add classes to `element`.
+   */
+  addClass(
+    element: Element,
+    className: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+
+  /**
+   * Class-based animation: remove classes from `element`.
+   */
+  removeClass(
+    element: Element,
+    className: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+
+  /**
+   * Class-based animation: add and remove classes as a single atomic operation.
+   */
+  setClass(
+    element: Element,
+    add: string,
+    remove: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+
+  /**
+   * Inline-style animation: animate from `from` styles to `to` styles.
+   *
+   * `className` may be applied during the animation to help CSS-based drivers.
+   */
+  animate(
+    element: Element,
+    from: Record<string, string | number>,
+    to: Record<string, string | number>,
+    className?: string,
+    options?: AnimationOptions,
+  ): AnimateRunner;
+}
 
 interface AnimateProviderInstance {
   _registeredAnimations: Record<string, string>;

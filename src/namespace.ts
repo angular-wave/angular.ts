@@ -117,7 +117,7 @@ import { ServiceProvider as TServiceProvider } from "./interface.ts";
 import { NgModelController as TNgModelController } from "./directive/model/model.js";
 import { RouterProvider as TRouterProvider } from "./router/router.ts";
 import { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.js";
-import { AnimateProvider as TAnimateProvider } from "./animations/animate.js";
+import { AnimateProvider as TAnimateProvider } from "./animations/animate.ts";
 import { UrlService as TUrlService } from "./router/url/url-service.ts";
 import { LocationProvider as TLocationProvider } from "./services/location/location.js";
 import { ViewService as TViewService } from "./router/view/view.js";
@@ -135,7 +135,7 @@ import {
   WebSocketConfig as TWebSocketConfig,
   WebSocketService as TWebSocketService,
 } from "./services/websocket/interface.ts";
-import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.js";
+import { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.ts";
 import { Transition as TTransition } from "./router/transition/transition.js";
 import { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.js";
 import { TransitionService as TTransitionService } from "./router/transition/interface.ts";
