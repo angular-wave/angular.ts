@@ -1,7 +1,7 @@
 import { createInjector } from "../../core/di/injector.ts";
-import { Angular } from "../../angular.ts";
-import { dealoc, getController } from "../../shared/dom.ts";
-import { browserTrigger, wait } from "../../shared/test-utils.ts";
+import { Angular } from "../../angular.js";
+import { dealoc, getController } from "../../shared/dom.js";
+import { browserTrigger, wait } from "../../shared/test-utils.js";
 
 describe("$aria", () => {
   let scope;

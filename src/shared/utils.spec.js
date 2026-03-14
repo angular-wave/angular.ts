@@ -23,9 +23,9 @@ import {
   toKeyValue,
   uppercase,
   baseExtend,
-} from "./utils.ts";
-import { createElementFromHTML, dealoc, startingTag } from "./dom.ts";
-import { Angular } from "../angular.ts";
+} from "./utils.js";
+import { createElementFromHTML, dealoc, startingTag } from "./dom.js";
+import { Angular } from "../angular.js";
 import { createInjector } from "../core/di/injector.ts";
 
 describe("utility functions", () => {

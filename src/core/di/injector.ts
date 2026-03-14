@@ -11,20 +11,21 @@ import {
   isString,
   isUndefined,
   minErr,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import { InjectorService, ProviderInjector } from "./internal-injector.ts";
-import {
-  createPersistentProxy,
-  PersistentStoreConfig,
-  StorageLike,
-} from "../../services/storage/storage.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+import { createPersistentProxy } from "../../services/storage/storage.js";
+import { $injectTokens } from "../../injection-tokens.js";
 import { validateArray } from "../../shared/validate.ts";
 import type {
   Constructor,
   Injectable,
   ServiceProvider,
 } from "../../interface.ts";
+import type {
+  PersistentStoreConfig,
+  ProviderCache,
+  StorageLike,
+} from "./interface.ts";
 import type { NgModule } from "./ng-module/ng-module.ts";
 
 const $injectorMinErr = minErr($injectTokens._injector);
@@ -32,25 +33,11 @@ const $injectorMinErr = minErr($injectTokens._injector);
 const providerSuffix = "Provider";
 type ModuleLike = string | Function | Injectable<(...args: any[]) => any>;
 
-export interface ProviderCache {
-  [key: string]: any;
-  $provide: {
-    provider: Function;
-    factory: Function;
-    service: Function;
-    value: Function;
-    constant: Function;
-    store: Function;
-    decorator: Function;
-  };
-  $injectorProvider?: {
-    $get: () => InjectorService;
-  };
-  $injector?: ProviderInjector;
-}
-
 /**
- * Creates the AngularTS injector, loads modules, and runs their config/run blocks.
+ *
+ * @param {Array<String|Function>} modulesToLoad
+ * @param {boolean} [strictDi]
+ * @returns {InjectorService}
  */
 export function createInjector(
   modulesToLoad: ModuleLike[],
@@ -58,8 +45,10 @@ export function createInjector(
 ): InjectorService {
   assert(isArray(modulesToLoad), "modules required");
 
-  const loadedModules = new Map<string | Function, boolean>();
+  /** @type {Map<String|Function, boolean>} */
+  const loadedModules = new Map(); // Keep track of loaded modules to avoid circular dependencies
 
+  /** @type {ng.ProviderCache} */
   const providerCache: ProviderCache = {
     $provide: {
       provider: supportObject(provider),
@@ -103,6 +92,9 @@ export function createInjector(
 
   /**
    * Registers a provider.
+   * @param {string} name
+   * @param {import('../../interface.ts').ServiceProvider | import('../../interface.ts').Injectable<any>} provider
+   * @returns {import('../../interface.ts').ServiceProvider}
    */
   // eslint-disable-next-line no-shadow
   function provider(
@@ -132,6 +124,9 @@ export function createInjector(
 
   /**
    * Registers a factory.
+   * @param {string} name
+   * @param {ng.AnnotatedFactory<any>} factoryFn
+   * @returns {import('../../interface.ts').ServiceProvider}
    */
   function factory(
     name: string,
@@ -156,6 +151,9 @@ export function createInjector(
 
   /**
    * Registers a service constructor.
+   * @param {string} name
+   * @param {Function} constructor
+   * @returns {import('../../interface.ts').ServiceProvider}
    */
   function service(name: string, constructor: Function): ServiceProvider {
     return factory(name, [
@@ -166,6 +164,9 @@ export function createInjector(
 
   /**
    * Register a fixed value as a service.
+   * @param {String} name
+   * @param {any} val
+   * @returns {ng.ServiceProvider}
    */
   function value(name: string, val: any): ServiceProvider {
     return (providerCache[name + providerSuffix] = { $get: () => val });
@@ -173,6 +174,9 @@ export function createInjector(
 
   /**
    * Register a constant value (available during config).
+   * @param {string} name
+   * @param {any} value
+   * @returns {void}
    */
   // eslint-disable-next-line no-shadow
   function constant(name: string, value: any): void {
@@ -183,6 +187,9 @@ export function createInjector(
 
   /**
    * Register a decorator function to modify or replace an existing service.
+   * @param {string} serviceName - The name of the service to decorate.
+   * @param {Function} decorFn - A function that takes `$delegate` and returns a decorated service.
+   * @returns {void}
    */
   function decorator(
     serviceName: string,
@@ -202,7 +209,12 @@ export function createInjector(
   }
 
   /**
-   * Registers a service persisted in one of the supported storage backends.
+   * Registers a service persisted in a storage
+   *
+   * @param {string} name - Service name
+   * @param {import("../../interface.ts").Constructor} ctor - Constructor for the service
+   * @param {ng.StorageType} type - Type of storage to be instantiated
+   * @param {import("./interface.ts").StorageLike & import("./interface.ts").PersistentStoreConfig} [backendOrConfig]
    */
   function store(
     name: string,
@@ -235,17 +247,17 @@ export function createInjector(
             const cookieOpts = backendOrConfig?.cookie ?? {};
 
             return createPersistentProxy(instance, name, {
-              getItem(key: string) {
+              getItem(key) {
                 const raw = $cookie.get(key);
 
                 return isNullOrUndefined(raw) ? null : raw;
               },
 
-              setItem(k: string, v: string) {
+              setItem(k, v) {
                 $cookie.put(k, v, cookieOpts);
               },
 
-              removeItem(k: string) {
+              removeItem(k) {
                 $cookie.remove(k, cookieOpts);
               },
 
@@ -303,8 +315,8 @@ export function createInjector(
   /**
    * Loads and instantiates AngularJS modules with proper type handling.
    *
-   * @param modules - Modules to load.
-   * @returns Array of run block results.
+   * @param {Array<string | Function | ng.AnnotatedFactory<any>>} modules - Modules to load
+   * @returns {Array<any>} - Array of run block results
    */
   function loadModules(modules: ModuleLike[]): any[] {
     validateArray(modules, "modules");
@@ -313,7 +325,8 @@ export function createInjector(
 
     modules.forEach((module: ModuleLike) => {
       // Determine a key suitable for Map: string | Function
-      const moduleKey: string | Function = Array.isArray(module)
+      /** @type {string | Function} */
+      const moduleKey = Array.isArray(module)
         ? module[module.length - 1]
         : module;
 
@@ -347,7 +360,7 @@ export function createInjector(
         } else if (isArray(module)) {
           moduleRunBlocks.push(
             providerInjector.invoke(
-              module as Function | ng.AnnotatedFactory<any>,
+              /** @type {Function | ng.AnnotatedFactory<any>} */ module,
             ),
           );
         } else {
@@ -374,6 +387,8 @@ export function createInjector(
  * Wraps a delegate function to support object-style arguments.
  *
  * @template V
+ * @param {(key: string, value: V) => any} delegate - The original function accepting (key, value)
+ * @returns {(key: string | Record<string, V>, value?: V) => any}
  */
 function supportObject<V>(
   delegate: (key: string, value: V) => any,
@@ -386,7 +401,7 @@ function supportObject<V>(
 
       return undefined;
     } else {
-      return delegate(key as string, value as V);
+      return delegate(key, value as V);
     }
   };
 }

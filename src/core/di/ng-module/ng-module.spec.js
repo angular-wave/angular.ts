@@ -1,5 +1,5 @@
-import { NgModule } from "./ng-module.ts";
-import { $injectTokens as $t } from "../../../injection-tokens.ts";
+import { NgModule } from "./ng-module.js";
+import { $injectTokens as $t } from "../../../injection-tokens.js";
 
 describe("NgModule", () => {
   /** @type {NgModule} */

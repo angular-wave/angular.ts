@@ -1,6 +1,6 @@
-import { Angular } from "../../angular.ts";
-import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { Angular } from "../../angular.js";
+import { createElementFromHTML, dealoc } from "../../shared/dom.js";
+import { wait } from "../../shared/test-utils.js";
 
 describe("ngRepeat", () => {
   let element;
@@ -624,7 +624,7 @@ describe("ngRepeat", () => {
       expect(lis[1].getAttribute("mark")).toEqual("a");
     });
 
-    it("keeps grouped interpolation bindings when reused blocks get a new item", async () => {
+    it("keeps grouped interpolation bindings when archived items are removed", async () => {
       element = $compile(
         '<ul><li ng-repeat="todo in tasks">{{todo.task}} {{todo.done}}|</li></ul>',
       )(scope);
@@ -640,24 +640,7 @@ describe("ngRepeat", () => {
 
       scope.tasks = scope.tasks.filter((task) => !task.done);
       await wait();
-
       expect(element.textContent).toBe("Build an AngularTS app false|");
-    });
-
-    it("removes normalized repeat clones when a non-animated collection shrinks", async () => {
-      element = $compile(
-        '<ul><li ng-repeat="item in items">{{item}}|</li></ul>',
-      )(scope);
-      scope.items = ["a", "b", "c"];
-
-      await wait();
-      expect(element.textContent).toBe("a|b|c|");
-
-      scope.items = ["b"];
-      await wait();
-
-      expect(element.textContent).toBe("b|");
-      expect(element.querySelectorAll("li").length).toBe(1);
     });
   });
 

@@ -1,0 +1,361 @@
+/**
+ * # Transition tracing (debug)
+ *
+ * Enable transition tracing to print transition information to the console,
+ * in order to help debug your application.
+ * Tracing logs detailed information about each Transition to your console.
+ *
+ * To enable tracing, import the [[Trace]] singleton and enable one or more categories.
+ *
+ * ### ES6
+ * ```js
+ * import {trace} from "@uirouter/core/index";
+ * trace.enable(1, 5); // TRANSITION and VIEWCONFIG
+ * ```
+ *
+ * ### CJS
+ * ```js
+ * let trace = require("@uirouter/core").trace;
+ * trace.enable("TRANSITION", "VIEWCONFIG");
+ * ```
+ *
+ * ### Globals
+ * ```js
+ * let trace = window["@uirouter/core"].trace;
+ * trace.enable(); // Trace everything (very verbose)
+ * ```
+ *
+ * ### Angular 1:
+ * ```js
+ * app.run($trace => $trace.enable());
+ * ```
+ *
+ * @packageDocumentation
+ */
+import { parse } from "../../shared/hof.js";
+import { isNumber, keys } from "../../shared/utils.js";
+import {
+  functionToString,
+  maxLength,
+  padString,
+  stringify,
+} from "../../shared/strings.js";
+import { $injectTokens } from "../../injection-tokens.js";
+
+/** @typedef {import("../transition/interface.ts").HookResult} HookResult */
+/** @typedef {import("../transition/transition-hook.js").TransitionHook} TransitionHook */
+
+const MAX_PAD_LENGTH = 30;
+
+/**
+ * @param {import("../view/interface.ts").ActiveUIView} ngView
+ * @return {string}
+ */
+function ngViewString(ngView) {
+  if (!ngView) return "ng-view (defunct)";
+  const state = ngView.creationContext
+    ? ngView.creationContext.name || "(root)"
+    : "(none)";
+
+  return `[ng-view#${ngView.id}:${ngView.fqn} (${ngView.name}@${state})]`;
+}
+
+const viewConfigString =
+  /** @param {import("../view/view.js").ViewConfig} viewConfig */ (
+    viewConfig,
+  ) => {
+    const view = viewConfig.viewDecl;
+
+    const state = view.$context?.name || "(root)";
+
+    return `[View#${viewConfig.$id} from '${state}' state]: target ng-view: '${view.$ngViewName}@${view.$ngViewContextAnchor}'`;
+  };
+
+/**
+ * @param {Category | string} input
+ * @return {string}
+ */
+function normalizedCat(input) {
+  return isNumber(input)
+    ? Category[input]
+    : Category[Category[/** @type {string} */ (input)]];
+}
+/**
+ * Trace categories Enum
+ *
+ * Enable or disable a category using [[Trace.enable]] or [[Trace.disable]]
+ *
+ * `trace.enable(Category.TRANSITION)`
+ *
+ * These can also be provided using a matching string, or position ordinal
+ *
+ * `trace.enable("TRANSITION")`
+ *
+ * `trace.enable(1)`
+ */
+
+/**
+ * @type {Record<string, string>}
+ */
+export const Category = {
+  _RESOLVE: "RESOLVE",
+  _TRANSITION: "TRANSITION",
+  _HOOK: "HOOK",
+  _UIVIEW: "UIVIEW",
+  _VIEWCONFIG: "VIEWCONFIG",
+};
+
+const _tid = parse("$id");
+
+const _rid = parse("router.$id");
+
+/**
+ * @param {ng.Transition} trans
+ * @return {string}
+ */
+function transLbl(trans) {
+  return `Transition #${_tid(trans)}-${_rid(trans)}`;
+}
+
+/**
+ * Prints ng-router Transition trace information to the console.
+ */
+export class Trace {
+  constructor() {
+    /** @type {Record<string, boolean> } */
+    this._enabled = {};
+    this.approximateDigests = 0;
+    this.$logger = window.angular?.$injector?.get($injectTokens._log);
+  }
+
+  /**
+   * @param {boolean} enabled
+   * @param {string[]} categories
+   */
+  _set(enabled, categories) {
+    if (!categories.length) {
+      categories = keys(Category)
+        .map((k) => parseInt(k, 10))
+        .filter((k) => !isNaN(k))
+        .map((key) => Category[key]);
+    }
+    categories
+      .map(normalizedCat)
+      .forEach((category) => (this._enabled[category] = enabled));
+  }
+
+  /**
+   * @param {string[]} categories
+   */
+  enable(...categories) {
+    this._set(true, categories);
+  }
+
+  /**
+   * @param {string[]} categories
+   */
+  disable(...categories) {
+    this._set(false, categories);
+  }
+
+  /**
+   * Retrieves the enabled stateus of a [[Category]]
+   *
+   * ```js
+   * trace.enabled("VIEWCONFIG"); // true or false
+   * ```
+   * @param {string} category
+   * @returns {boolean} true if the category is enabled
+   */
+  enabled(category) {
+    return !!this._enabled[normalizedCat(category)];
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {ng.Transition} trans
+   */
+  traceTransitionStart(trans) {
+    if (!this.enabled(Category._TRANSITION)) return;
+    this.$logger.log(`${transLbl(trans)}: Started  -> ${stringify(trans)}`);
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {ng.Transition} trans
+   */
+  traceTransitionIgnored(trans) {
+    if (!this.enabled(Category._TRANSITION)) return;
+    this.$logger.log(`${transLbl(trans)}: Ignored  <> ${stringify(trans)}`);
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {import("../transition/transition-hook.js").TransitionHook} step
+   * @param {ng.Transition} trans
+   * @param {import("../transition/interface.ts").TransitionHookOptions} options
+   */
+  traceHookInvocation(step, trans, options) {
+    if (!this.enabled(Category._HOOK)) return;
+    const event = parse("traceData.hookType")(options) || "internal",
+      context =
+        parse("traceData.context.state.name")(options) ||
+        parse("traceData.context")(options) ||
+        "unknown",
+      name = functionToString(step.registeredHook.callback);
+
+    this.$logger.log(
+      `${transLbl(trans)}:   Hook -> ${event} context: ${context}, ${maxLength(200, name)}`,
+    );
+  }
+
+  /** @internal called by ng-router code */
+  /**
+   * @param {HookResult} hookResult
+   * @param {ng.Transition} trans
+   */
+  traceHookResult(hookResult, trans) {
+    if (!this.enabled(Category._HOOK)) return;
+    this.$logger.log(
+      `${transLbl(trans)}:   <- Hook returned: ${maxLength(200, stringify(hookResult))}`,
+    );
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {import("../path/path-node.ts").PathNode[]} path
+   * @param {import("../resolve/interface.ts").PolicyWhen} when
+   * @param {ng.Transition} trans
+   */
+  traceResolvePath(path, when, trans) {
+    if (!this.enabled(Category._RESOLVE)) return;
+    this.$logger.log(`${transLbl(trans)}:         Resolving ${path} (${when})`);
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {import("../resolve/resolvable.js").Resolvable} resolvable
+   * @param {ng.Transition} trans
+   */
+  traceResolvableResolved(resolvable, trans) {
+    if (!this.enabled(Category._RESOLVE)) return;
+    this.$logger.log(
+      `${transLbl(trans)}:               <- Resolved  ${resolvable} to: ${maxLength(200, stringify(resolvable.data))}`,
+    );
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {any} reason
+   * @param {ng.Transition} trans
+   */
+  traceError(reason, trans) {
+    if (!this.enabled(Category._TRANSITION)) return;
+    this.$logger.log(
+      `${transLbl(trans)}: <- Rejected ${stringify(trans)}, reason: ${reason}`,
+    );
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {import("../state/state-object.ts").StateObject} finalState
+   * @param {ng.Transition} trans
+   */
+  traceSuccess(finalState, trans) {
+    if (!this.enabled(Category._TRANSITION)) return;
+    this.$logger.log(
+      `${transLbl(trans)}: <- Success  ${stringify(trans)}, final state: ${finalState.name}`,
+    );
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {string} event
+   * @param {import("../view/interface.ts").ActiveUIView} viewData
+   */
+  traceUIViewEvent(event, viewData, extra = "") {
+    if (!this.enabled(Category._UIVIEW)) return;
+    this.$logger.log(
+      `ng-view: ${padString(MAX_PAD_LENGTH, event)} ${ngViewString(viewData)}${extra}`,
+    );
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {import("../view/interface.ts").ActiveUIView} viewData
+   * @param {import("../view/interface.ts").ViewContext | undefined} context
+   */
+  traceUIViewConfigUpdated(viewData, context) {
+    if (!this.enabled(Category._UIVIEW)) return;
+    this.traceUIViewEvent(
+      "Updating",
+      viewData,
+      ` with ViewConfig from context='${context}'`,
+    );
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {import("../view/interface.ts").ActiveUIView} viewData
+   * @param {string} html
+   */
+  traceUIViewFill(viewData, html) {
+    if (!this.enabled(Category._UIVIEW)) return;
+    this.traceUIViewEvent("Fill", viewData, ` with: ${maxLength(200, html)}`);
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {import("../view/interface.ts").ViewTuple[]} pairs
+   */
+  traceViewSync(pairs) {
+    if (!this.enabled(Category._VIEWCONFIG)) return;
+    const uivheader = "uiview component fqn";
+
+    const cfgheader = "view config state (view name)";
+
+    const mapping = pairs
+      .map(({ ngView, viewConfig }) => {
+        const uiv = ngView && ngView.fqn;
+
+        const cfg =
+          viewConfig &&
+          `${viewConfig.viewDecl.$context?.name}: (${viewConfig.viewDecl.$name})`;
+
+        return { [uivheader]: uiv, [cfgheader]: cfg };
+      })
+      .sort((a, b) => (a[uivheader] || "").localeCompare(b[uivheader] || ""));
+
+    this.$logger.table(mapping);
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {string} event
+   * @param {import("../view/view.js").ViewConfig} viewConfig
+   */
+  traceViewServiceEvent(event, viewConfig) {
+    if (!this.enabled(Category._VIEWCONFIG)) return;
+    this.$logger.log(`VIEWCONFIG: ${event} ${viewConfigString(viewConfig)}`);
+  }
+
+  /**
+   * @internal called by ng-router code
+   * @param {string} event
+   * @param {import("../view/interface.ts").ActiveUIView} viewData
+   */
+  traceViewServiceUIViewEvent(event, viewData) {
+    if (!this.enabled(Category._VIEWCONFIG)) return;
+    this.$logger.log(`VIEWCONFIG: ${event} ${ngViewString(viewData)}`);
+  }
+}
+/**
+ * The [[Trace]] singleton
+ *
+ * #### Example:
+ * ```js
+ * import {trace} from "@uirouter/core/index";
+ * trace.enable(1, 5);
+ * ```
+ */
+export const trace = new Trace();

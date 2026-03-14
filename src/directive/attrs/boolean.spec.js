@@ -1,7 +1,7 @@
-import { Angular } from "../../angular.ts";
+import { Angular } from "../../angular.js";
 import { createInjector } from "../../core/di/injector.ts";
-import { dealoc } from "../../shared/dom.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { dealoc } from "../../shared/dom.js";
+import { wait } from "../../shared/test-utils.js";
 
 describe("boolean attr directives", () => {
   let element, $rootScope, $compile, $rootElement;
@@ -62,7 +62,7 @@ describe("boolean attr directives", () => {
   });
 
   it("should not bind checked when ngModel is present", async () => {
-    // test for https://github.com/angular/angular.ts/issues/10662
+    // test for https://github.com/angular/angular.js/issues/10662
     element = $compile(
       '<input type="checkbox" ng-model="value" ng-false-value="\'false\'" ' +
         'ng-true-value="\'true\'" ng-checked="value" />',

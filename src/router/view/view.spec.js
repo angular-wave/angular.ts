@@ -1,14 +1,14 @@
-import { dealoc } from "../../shared/dom.ts";
-import { Angular } from "../../angular.ts";
-import { curry } from "../../shared/hof.ts";
-import { StateMatcher } from "../state/state-matcher.ts";
-import { StateBuilder } from "../state/state-builder.ts";
-import { StateObject } from "../state/state-object.ts";
-import { ViewService } from "./view.ts";
-import { PathNode } from "../path/path-node.ts";
-import { PathUtils } from "../path/path-utils.ts";
-import { tail } from "../../shared/common.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { dealoc } from "../../shared/dom.js";
+import { Angular } from "../../angular.js";
+import { curry } from "../../shared/hof.js";
+import { StateMatcher } from "../state/state-matcher.js";
+import { StateBuilder } from "../state/state-builder.js";
+import { StateObject } from "../state/state-object.js";
+import { ViewService } from "./view.js";
+import { PathNode } from "../path/path-node.js";
+import { PathUtils } from "../path/path-utils.js";
+import { tail } from "../../shared/common.js";
+import { wait } from "../../shared/test-utils.js";
 
 describe("view", () => {
   let scope,
@@ -118,7 +118,7 @@ describe("view", () => {
     it("matches named child ng-views using context.name fqn format", () => {
       const parentContext = register({ name: "parent", parent: root });
       const childContext = register({
-        name: "parent.child",
+        name: "child",
         parent: parentContext,
       });
       const uiView = {
@@ -140,7 +140,7 @@ describe("view", () => {
     it("does not match a parent config when a more specific child ng-view exists", () => {
       const parentContext = register({ name: "parent", parent: root });
       const childContext = register({
-        name: "parent.child",
+        name: "child",
         parent: parentContext,
       });
       const uiView = {
@@ -171,7 +171,7 @@ describe("view", () => {
     it("normalizes relative ui-view targets", () => {
       const parentContext = register({ name: "parent", parent: root });
       const childContext = register({
-        name: "parent.child",
+        name: "child",
         parent: parentContext,
       });
 

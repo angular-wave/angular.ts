@@ -1,4 +1,4 @@
-import { allTrueR, filter, find, map } from "../../shared/common.ts";
+import { allTrueR, filter, find, map } from "../../shared/common.js";
 import { isInjectable } from "../../shared/predicates.ts";
 import {
   isArray,
@@ -6,71 +6,11 @@ import {
   isNullOrUndefined,
   isString,
   isUndefined,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import { ParamType } from "./param-type.ts";
+import type { ParamDeclaration, RawParams, Replace } from "./interface.ts";
 import type { ParamTypes } from "./param-types.ts";
 import type { UrlConfigProvider } from "../url/url-config.ts";
-
-/**
- * Parameter values
- *
- * An object containing state parameter key/value pairs
- *
- * #### Example:
- * ```js
- * {
- *   userId: 353474,
- *   folderId: 'inbox'
- * }
- * ```
- */
-export interface RawParams {
-  [key: string]: any;
-}
-
-/**
- * Configuration for a single Parameter
- *
- * In a [[StateDeclaration.params]], each `ParamDeclaration`
- * defines how a single State Parameter should work.
- */
-export interface ParamDeclaration {
-  value?: any;
-  type?: string | ParamType;
-  array?: boolean;
-  squash?: boolean | string;
-  replace?: Replace[];
-  isOptional?: boolean;
-  dynamic?: boolean;
-  raw?: boolean;
-  inherit?: boolean;
-  _fn?: any;
-}
-
-/**
- * String replacement
- *
- * Represents an exact match string replacement.
- *
- * Note: `to` or `from` may be null or undefined, and will be tested using `===`.
- */
-export interface Replace {
-  /**
-   * The value to replace.
-   *
-   * May be `null` or `undefined`.
-   * The entire value must match using `===`.
-   * When found, the [[to]] value is used instead.
-   */
-  from: string;
-
-  /**
-   * The new value
-   *
-   * Used instead of the [[from]] value.
-   */
-  to: string | undefined;
-}
 
 type DefTypeValue = (typeof DefType)[keyof typeof DefType];
 
@@ -79,13 +19,21 @@ const isShorthand = (cfg: ParamDeclaration | any): boolean =>
     Object.prototype.hasOwnProperty.bind(cfg || {}),
   ).length === 0;
 
+/**
+ * @enum {number}
+ */
 export const DefType = {
   _PATH: 0,
   _SEARCH: 1,
   _CONFIG: 2,
 } as const;
 
-/** Resolves the parameter declaration for one state parameter name/location pair. */
+/**
+ * @param {string} paramName
+ * @param {DefType} location
+ * @param {ng.StateDeclaration} state
+ * @return {import("./interface.ts").ParamDeclaration}
+ */
 function getParamDeclaration(
   paramName: string,
   location: DefTypeValue,
@@ -104,7 +52,10 @@ function getParamDeclaration(
   return Object.assign(defaultConfig, paramConfig);
 }
 
-/** Normalizes shorthand parameter config into a full ParamDeclaration object. */
+/**
+ * @param {ParamDeclaration} cfg
+ * @return {ParamDeclaration}
+ */
 function unwrapShorthand(cfg: ParamDeclaration | any): ParamDeclaration {
   cfg = isShorthand(cfg) ? { value: cfg } : cfg;
   getStaticDefaultValue._cacheable = true;
@@ -116,7 +67,13 @@ function unwrapShorthand(cfg: ParamDeclaration | any): ParamDeclaration {
   return Object.assign(cfg, { _fn });
 }
 
-/** Resolves the effective parameter type from config, URL hints, and registered types. */
+/**
+ * @param {ParamDeclaration} cfg
+ * @param {ParamType | null} urlType
+ * @param {DefType} location
+ * @param {string} id
+ * @param {import("./param-types.js").ParamTypes} paramTypes
+ */
 function getType(
   cfg: ParamDeclaration,
   urlType: ParamType | null,
@@ -156,7 +113,12 @@ function getType(
     : (paramTypes.type(cfg.type as string) as ParamType);
 }
 
-/** Returns the squash policy to use for the parameter's default value handling. */
+/**
+ * returns false, true, or the squash value to indicate the "default parameter url squash policy".
+ * @param {ParamDeclaration} config
+ * @param {boolean} isOptional
+ * @param {boolean | string} defaultPolicy
+ */
 function getSquashPolicy(
   config: ParamDeclaration,
   isOptional: boolean,
@@ -174,7 +136,12 @@ function getSquashPolicy(
   );
 }
 
-/** Builds the replacement table applied before encoding or after decoding a value. */
+/**
+ * @param {ParamDeclaration} config
+ * @param {boolean} arrayMode
+ * @param {boolean} isOptional
+ * @param {string | boolean} squash
+ */
 function getReplace(
   config: ParamDeclaration,
   arrayMode: boolean | "auto",
@@ -192,11 +159,9 @@ function getReplace(
 
   const configuredKeys = map(replace, (x: Replace) => x.from) as string[];
 
-  return (
-    filter(
-      defaultPolicy,
-      (item) => configuredKeys.indexOf(item.from as string) === -1,
-    ) as Replace[]
+  return filter(
+    defaultPolicy,
+    (item) => configuredKeys.indexOf(/** @type {string} */ item.from) === -1,
   ).concat(replace);
 }
 
@@ -215,7 +180,14 @@ export class Param {
   matchingKeys: RawParams | undefined;
   _defaultValueCache?: { defaultValue: any };
 
-  /** Creates one Param definition from the state declaration and URL config. */
+  /**
+   *
+   * @param {string} id
+   * @param {ParamType | null} type
+   * @param {DefType} location
+   * @param {import("../url/url-config.js").UrlConfigProvider} urlConfig
+   * @param {ng.StateDeclaration} state
+   */
   constructor(
     id: string,
     type: ParamType | null,
@@ -228,7 +200,7 @@ export class Param {
     type = getType(config, type, location, id, urlConfig.paramTypes);
     const arrayMode = getArrayMode();
 
-    type = arrayMode
+    type = /** @type {ParamType} */ arrayMode
       ? type && type.$asArray(arrayMode, location === DefType._SEARCH)
       : type;
     const isOptional =
@@ -274,7 +246,9 @@ export class Param {
     this.matchingKeys = undefined;
   }
 
-  /** Returns true when the provided value is this parameter's default value. */
+  /**
+   * @param {any} value
+   */
   isDefaultValue(value: any): boolean {
     return this.isOptional && this.type.equals(this.value(), value);
   }
@@ -282,6 +256,7 @@ export class Param {
   /**
    * [Internal] Gets the decoded representation of a value if the value is defined, otherwise, returns the
    * default value, which may be the result of an injectable function.
+   * @param {undefined} [value]
    */
   value(value?: any): any {
     /**
@@ -329,7 +304,9 @@ export class Param {
     return this.location === DefType._SEARCH;
   }
 
-  /** Returns true when the value validates against this parameter's type. */
+  /**
+   * @param {null} value
+   */
   validates(value: any): boolean {
     // There was no parameter value, but the param is optional
     if ((isUndefined(value) || value === null) && this.isOptional) return true;
@@ -347,7 +324,11 @@ export class Param {
     return `{Param:${this.id} ${this.type} squash: '${this.squash}' optional: ${this.isOptional}}`;
   }
 
-  /** Returns normalized values for the provided params from a raw value map. */
+  /**
+   * @param {Param[]} params
+   * @param {Record<string, any>} values
+   * @return {import("./interface.ts").RawParams}
+   */
   static values(params: Param[], values: Record<string, any> = {}): RawParams {
     const paramValues: RawParams = {};
 
@@ -361,11 +342,11 @@ export class Param {
   /**
    * Finds [[Param]] objects which have different param values
    *
-   * Filters a list of [[Param]] objects to only those whose parameter values differ in two param value objects.
-   * @param params - The list of [[Param]] objects to filter.
-   * @param values1 - The first set of parameter values.
-   * @param values2 - The second set of parameter values.
-   * @returns Any [[Param]] objects whose values differ between `values1` and `values2`.
+   * Filters a list of [[Param]] objects to only those whose parameter values differ in two param value objects
+   * @param {Param[]} params : The list of Param objects to filter
+   * @param {Record<string, any>} values1 : The first set of parameter values
+   * @param {Record<string, any>} values2 : the second set of parameter values
+   * @returns {Param[]} any Param objects whose values were different between values1 and values2
    */
   static changed(
     params: Param[],
@@ -378,11 +359,11 @@ export class Param {
   }
 
   /**
-   * Checks if two param value objects are equal for a set of [[Param]] objects.
-   * @param params - The list of [[Param]] objects to check.
-   * @param values1 - The first set of param values.
-   * @param values2 - The second set of param values.
-   * @returns `true` if the param values in `values1` and `values2` are equal.
+   * Checks if two param value objects are equal (for a set of [[Param]] objects)
+   * @param {any[]} params The list of [[Param]] objects to check
+   * @param values1 The first set of param values
+   * @param values2 The second set of param values
+   * @returns true if the param values in values1 and values2 are equal
    */
   static equals(
     params: Param[],
@@ -394,7 +375,9 @@ export class Param {
 
   /**
    * Returns true if a the parameter values are valid, according to the Param definitions
-   * Validates a full parameter value map against the provided Param definitions.
+   * @param {any[]} params
+   * @param {Record<string, any>} values
+   * @return {boolean}
    */
   static validates(params: Param[], values: Record<string, any> = {}): boolean {
     return params

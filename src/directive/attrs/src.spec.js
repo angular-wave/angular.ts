@@ -1,6 +1,6 @@
-import { Angular } from "../../angular.ts";
+import { Angular } from "../../angular.js";
 import { createInjector } from "../../core/di/injector.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { wait } from "../../shared/test-utils.js";
 
 describe("ngSrc", () => {
   let $scope;

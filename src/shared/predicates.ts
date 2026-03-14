@@ -1,4 +1,4 @@
-import { isArray, isFunction, isString } from "./utils.ts";
+import { isArray, isFunction, isString } from "./utils.js";
 
 /**
  * A value is "injectable" if it is a function, or if it is an ng1
@@ -20,7 +20,7 @@ export function isInjectable(val: unknown): boolean {
 }
 
 /**
- * Returns true when a value looks like a promise/thenable.
+ * It is probably a Promise if it's an object and it has a function `then`.
  */
 export function isPromise(
   obj: unknown,

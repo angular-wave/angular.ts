@@ -1,5 +1,5 @@
-import { dealoc } from "../../shared/dom.ts";
-import { Angular } from "../../angular.ts";
+import { dealoc } from "../../shared/dom.js";
+import { Angular } from "../../angular.js";
 import { createInjector } from "../../core/di/injector.ts";
 
 describe("ngClick", () => {

@@ -3,8 +3,8 @@ import {
   isArray,
   isFunction,
   minErr,
-} from "../../shared/utils.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+} from "../../shared/utils.js";
+import { $injectTokens } from "../../injection-tokens.js";
 import type { AnnotatedFactory } from "../../interface.ts";
 
 const $injectorMinErr = minErr($injectTokens._injector);
@@ -23,24 +23,10 @@ function extractArgs(fn: Function): RegExpMatchArray | null {
   return fnText.match(ARROW_ARG) || fnText.match(FN_ARGS);
 }
 
-/**
- * Returns true when the function source appears to be an ES class.
- */
 export function isClass(func: Function): boolean {
   return /^class\b/.test(stringifyFn(func));
 }
 
-/**
- * Returns the dependency injection annotation for a function or array-annotated factory.
- *
- * In non-strict mode this will infer argument names when explicit `$inject`
- * metadata is absent, then cache the result on `fn.$inject`.
- *
- * @param fn function or array-annotated factory to inspect
- * @param strictDi when true, throws if explicit annotation is missing
- * @param name optional name used in strict-di error messages
- * @returns ordered dependency token names
- */
 export function annotate(
   fn: unknown,
   strictDi = false,

@@ -1,20 +1,22 @@
-import { arrayTuples, find, omit, pick, unnestR } from "../../shared/common.ts";
-import { propEq } from "../../shared/hof.ts";
-import { values } from "../../shared/utils.ts";
+import { arrayTuples, find, omit, pick, unnestR } from "../../shared/common.js";
+import { propEq } from "../../shared/hof.js";
+import { values } from "../../shared/utils.js";
 import { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
 import type { Param } from "../params/param.ts";
-import type { GetParamsFn } from "./path-node.ts";
+import type { GetParamsFn } from "./interface.ts";
 import type { StateObject } from "../state/state-object.ts";
-import type { RawParams } from "../params/param.ts";
-import type { TreeChanges } from "../transition/transition.ts";
+import type { RawParams } from "../params/interface.ts";
+import type { TreeChanges } from "../transition/interface.ts";
 import type { StateRegistryProvider } from "../state/state-registry.ts";
 
 /**
- * Utility methods for converting and comparing target states, path nodes, and tree changes.
+ * This class contains functions which convert TargetStates, Nodes and paths from one type to another.
  */
 export class PathUtils {
-  /** Builds a path of `PathNode`s from a target state and its parameter values. */
+  /**
+   * @param {TargetState} targetState
+   */
   static buildPath(targetState: TargetState): PathNode[] {
     const toParams = targetState.params();
     const stateObject = targetState.$state() as StateObject;
@@ -28,6 +30,8 @@ export class PathUtils {
 
   /**
    * Given a fromPath: PathNode[] and a TargetState, builds a toPath: PathNode[]
+   * @param {PathNode[]} fromPath
+   * @param {TargetState} targetState
    */
   static buildToPath(
     fromPath: PathNode[],
@@ -50,6 +54,9 @@ export class PathUtils {
    * Creates ViewConfig objects and adds to nodes.
    *
    * On each [[PathNode]], creates ViewConfig objects from the views: property of the node's state
+   * @param {ng.ViewService} $view
+   * @param {PathNode[]} path
+   * @param {StateObject[]} states
    */
   static applyViewConfigs(
     $view: ng.ViewService,
@@ -82,14 +89,21 @@ export class PathUtils {
    * Note: the keys provided in toKeys are intended to be those param keys explicitly specified by some
    * caller, for instance, $state.transitionTo(..., toParams).  If a key was found in toParams,
    * it is not inherited from the fromPath.
-   * `toKeys` contains the parameter names that were explicitly provided and should not be inherited.
+   * @param {PathNode[]} fromPath
+   * @param {PathNode[]} toPath
+   * @param {string[]} [toKeys]
+   * @returns {PathNode[]}
    */
   static inheritParams(
     fromPath: PathNode[],
     toPath: PathNode[],
     toKeys: string[] = [],
   ): PathNode[] {
-    /** Returns the parameter values for the node matching a state in a path. */
+    /**
+     * @param {PathNode[]} path
+     * @param {StateObject} state
+     * @returns {RawParams}
+     */
     function nodeParamVals(path: PathNode[], state: StateObject): RawParams {
       const node = find(path, propEq("state", state)) as PathNode | undefined;
 
@@ -103,7 +117,9 @@ export class PathUtils {
 
     /**
      * Given an [[PathNode]] "toNode", return a new [[PathNode]] with param values inherited from the
-     * matching node in fromPath. Only inherit keys that aren't found in `toKeys`.
+     * matching node in fromPath.  Only inherit keys that aren't found in "toKeys" from the node in "fromPath""
+     * @param {PathNode} toNode
+     * @return {PathNode}
      */
     function makeInheritedParamsNode(toNode: PathNode): PathNode {
       // All param values for the node (may include default key/vals, when key was not found in toParams)
@@ -134,6 +150,10 @@ export class PathUtils {
 
   /**
    * Computes the tree changes (entering, exiting) between a fromPath and toPath.
+   * @param {PathNode[]} fromPath
+   * @param {PathNode[]} toPath
+   * @param {StateObject} reloadState
+   * @returns {import("../transition/interface.ts").TreeChanges}
    */
   static treeChanges(
     fromPath: PathNode[],
@@ -155,7 +175,11 @@ export class PathUtils {
       keep++;
     }
 
-    /** Rebuilds a retained node using the parameter values from the corresponding target node. */
+    /**
+     * Given a retained node, return a new node which uses the to node's param values
+     * @param {PathNode} retainedNode
+     * @param {number} idx
+     */
     function applyToParams(retainedNode: PathNode, idx: number): PathNode {
       const cloned = retainedNode.clone();
 
@@ -189,7 +213,11 @@ export class PathUtils {
    * Nodes are compared using their state property and their parameter values.
    * If a `paramsFn` is provided, only the [[Param]] returned by the function will be considered when comparing nodes.
    *
-   * @returns An array of PathNodes from the first path which match the nodes in the second path.
+   * @param {PathNode[]} pathA the first path
+   * @param {PathNode[]} pathB the second path
+   * @param {GetParamsFn} [paramsFn] a function which returns the parameters to consider when comparing
+   *
+   * @returns {PathNode[]} an array of PathNodes from the first path which match the nodes in the second path
    */
   static matching(
     pathA: PathNode[],
@@ -210,7 +238,10 @@ export class PathUtils {
   /**
    * Returns true if two paths are identical.
    *
-   * @returns True if the states and parameter values for both paths are identical.
+   * @param {PathNode[]} pathA
+   * @param {PathNode[]} pathB
+   * @param {GetParamsFn} [paramsFn] a function which returns the parameters to consider when comparing
+   * @returns true if the the states and parameter values for both paths are identical
    */
   static equals(
     pathA: PathNode[],
@@ -228,27 +259,35 @@ export class PathUtils {
    *
    * Given an array of nodes, returns a subset of the array starting from the first node,
    * stopping when the first node matches the predicate.
-   * @returns A subpath up to the matching node, or undefined if no match is found.
+   * @param {PathNode[]} path a path of [[PathNode]]s
+   * @param {import("../../shared/interface.ts").Predicate<PathNode>} predicate a [[Predicate]] fn that matches [[PathNode]]s
+   * @returns {PathNode[] | undefined} a subpath up to the matching node, or undefined if no match is found
    */
   static subPath(
     path: PathNode[],
-    predicate: import("../../shared/hof.ts").Predicate<PathNode>,
+    predicate: import("../../shared/interface.ts").Predicate<PathNode>,
   ): PathNode[] | undefined {
     const node = find(path, predicate);
 
-    const elementIdx = path.indexOf(node as PathNode);
+    const elementIdx = path.indexOf(node);
 
     return elementIdx === -1 ? undefined : path.slice(0, elementIdx + 1);
   }
 
-  /** Returns the non-dynamic parameters for a path node. */
+  /**
+   * @param {PathNode} node
+   * @return {Param[]}
+   */
   static nonDynamicParams(node: PathNode): Param[] {
     return node.state
       .parameters({ inherit: false })
       .filter((param) => !param.dynamic);
   }
 
-  /** Gets the merged raw parameter values from a path. */
+  /**
+   * Gets the raw parameter values from a path
+   * @param {PathNode[]} path
+   */
   static paramValues(path: PathNode[]): RawParams {
     return path.reduce(
       (acc: RawParams, node) => Object.assign(acc, node.paramValues),
@@ -257,7 +296,11 @@ export class PathUtils {
   }
 }
 
-/** Creates a `TargetState` from a path of `PathNode`s. */
+/** Given a PathNode[], create an TargetState
+ * @param {import("../state/state-registry.ts").StateRegistryProvider} registry
+ * @param {Array<PathNode>} path
+ * @returns {TargetState}
+ */
 export function makeTargetState(
   registry: StateRegistryProvider,
   path: PathNode[],

@@ -5,22 +5,36 @@ import type { UrlConfigProvider } from "../url/url-config.ts";
 export class ParamFactory {
   urlServiceConfig: UrlConfigProvider;
 
-  /** Creates a parameter factory tied to the router's URL configuration. */
+  /**
+   * @param {import("../url/url-config.js").UrlConfigProvider} urlServiceConfig
+   */
   constructor(urlServiceConfig: UrlConfigProvider) {
     this.urlServiceConfig = urlServiceConfig;
   }
 
-  /** Builds a parameter from explicit state configuration. */
+  /**
+   * @param {string} id
+   * @param {ParamType | null} type
+   * @param {ng.StateDeclaration} state
+   */
   fromConfig(id: string, type: ParamType | null, state: ng.StateDeclaration) {
     return new Param(id, type, DefType._CONFIG, this.urlServiceConfig, state);
   }
 
-  /** Builds a path parameter definition. */
+  /**
+   * @param {string} id
+   * @param {ParamType} type
+   * @param {ng.StateDeclaration} state
+   */
   fromPath(id: string, type: ParamType, state: ng.StateDeclaration) {
     return new Param(id, type, DefType._PATH, this.urlServiceConfig, state);
   }
 
-  /** Builds a search/query parameter definition. */
+  /**
+   * @param {string} id
+   * @param {ParamType} type
+   * @param {ng.StateDeclaration} state
+   */
   fromSearch(id: string, type: ParamType, state: ng.StateDeclaration) {
     return new Param(id, type, DefType._SEARCH, this.urlServiceConfig, state);
   }

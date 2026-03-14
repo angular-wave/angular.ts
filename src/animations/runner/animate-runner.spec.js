@@ -1,4 +1,4 @@
-import { AnimateRunner } from "./animate-runner.ts";
+import { AnimateRunner } from "./animate-runner.js";
 
 describe("AnimateRunner", () => {
   let runner;

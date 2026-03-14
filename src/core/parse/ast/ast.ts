@@ -1,6 +1,6 @@
 import { isAssignable } from "../interpreter.ts";
 import { ASTType } from "../ast-type.ts";
-import { hasOwn, isDefined, minErr } from "../../../shared/utils.ts";
+import { hasOwn, isDefined, minErr } from "../../../shared/utils.js";
 import type { Lexer } from "../lexer/lexer.ts";
 import type { Token } from "../lexer/token.ts";
 import type { ASTNode, ObjectPropertyNode } from "./ast-node.ts";
@@ -14,9 +14,6 @@ const literals: Record<string, unknown> = {
   undefined,
 };
 
-/**
- * Recursive-descent parser that converts lexer tokens into AST nodes for `$parse`.
- */
 export class AST {
   _lexer: Lexer;
   _selfReferential: Record<string, ASTNode>;
@@ -25,7 +22,7 @@ export class AST {
   _tokens: Token[] = [];
 
   /**
-   * @param lexer - The lexer instance for tokenizing input.
+   * @param {Lexer} lexer - The lexer instance for tokenizing input
    */
   constructor(lexer: Lexer) {
     this._lexer = lexer;
@@ -38,8 +35,8 @@ export class AST {
 
   /**
    * Parses the input text and generates an AST.
-   * @param text - The input text to parse.
-   * @returns The root node of the AST.
+   * @param {string} text - The input text to parse.
+   * @returns {ASTNode} The root node of the AST.
    */
   _ast(text: string): ASTNode {
     this._text = text;
@@ -56,7 +53,7 @@ export class AST {
 
   /**
    * Parses a program.
-   * @returns The program node.
+   * @returns {ASTNode} The program node.
    */
   _program(): ASTNode {
     const body: ASTNode[] = [];
@@ -81,7 +78,7 @@ export class AST {
 
   /**
    * Parses an expression statement.
-   * @returns The expression statement node.
+   * @returns {ASTNode} The expression statement node.
    */
   _expressionStatement(): ASTNode {
     return {
@@ -92,7 +89,7 @@ export class AST {
 
   /**
    * Parses a filter chain.
-   * @returns The filter chain node.
+   * @returns {ASTNode} The filter chain node.
    */
   _filterChain(): ASTNode {
     let left: ASTNode = this._assignment();
@@ -106,7 +103,7 @@ export class AST {
 
   /**
    * Parses an assignment expression.
-   * @returns The assignment expression node.
+   * @returns {ASTNode} The assignment expression node.
    */
   _assignment(): ASTNode {
     let result: ASTNode = this._ternary();
@@ -129,7 +126,7 @@ export class AST {
 
   /**
    * Parses a ternary expression.
-   * @returns The ternary expression node.
+   * @returns {ASTNode} The ternary expression node.
    */
   _ternary(): ASTNode {
     const test: ASTNode = this._logicalOR();
@@ -154,7 +151,7 @@ export class AST {
 
   /**
    * Parses a logical OR expression.
-   * @returns The logical OR expression node.
+   * @returns {ASTNode} The logical OR expression node.
    */
   _logicalOR(): ASTNode {
     let left: ASTNode = this._logicalAND();
@@ -173,7 +170,7 @@ export class AST {
 
   /**
    * Parses a logical AND expression.
-   * @returns The logical AND expression node.
+   * @returns {ASTNode} The logical AND expression node.
    */
   _logicalAND(): ASTNode {
     let left: ASTNode = this._equality();
@@ -192,7 +189,7 @@ export class AST {
 
   /**
    * Parses an equality expression.
-   * @returns The equality expression node.
+   * @returns {ASTNode} The equality expression node.
    */
   _equality(): ASTNode {
     let left: ASTNode = this._relational();
@@ -202,7 +199,7 @@ export class AST {
     while ((token = this._expect("==", "!=", "===", "!=="))) {
       left = {
         type: ASTType._BinaryExpression,
-        operator: token.text,
+        operator: /** @type {Token} */ token.text,
         left,
         right: this._relational(),
       };
@@ -213,7 +210,7 @@ export class AST {
 
   /**
    * Parses a relational expression.
-   * @returns The relational expression node.
+   * @returns {ASTNode} The relational expression node.
    */
   _relational(): ASTNode {
     let left: ASTNode = this._additive();
@@ -223,7 +220,7 @@ export class AST {
     while ((token = this._expect("<", ">", "<=", ">="))) {
       left = {
         type: ASTType._BinaryExpression,
-        operator: token.text,
+        operator: /** @type {Token} */ token.text,
         left,
         right: this._additive(),
       };
@@ -234,7 +231,7 @@ export class AST {
 
   /**
    * Parses an additive expression.
-   * @returns The additive expression node.
+   * @returns {ASTNode} The additive expression node.
    */
   _additive(): ASTNode {
     let left: ASTNode = this._multiplicative();
@@ -244,7 +241,7 @@ export class AST {
     while ((token = this._expect("+", "-"))) {
       left = {
         type: ASTType._BinaryExpression,
-        operator: token.text,
+        operator: /** @type {Token} */ token.text,
         left,
         right: this._multiplicative(),
       };
@@ -255,7 +252,7 @@ export class AST {
 
   /**
    * Parses a multiplicative expression.
-   * @returns The multiplicative expression node.
+   * @returns {ASTNode} The multiplicative expression node.
    */
   _multiplicative(): ASTNode {
     let left: ASTNode = this._unary();
@@ -265,7 +262,7 @@ export class AST {
     while ((token = this._expect("*", "/", "%"))) {
       left = {
         type: ASTType._BinaryExpression,
-        operator: token.text,
+        operator: /** @type {import("../lexer/lexer.ts").Token} */ token.text,
         left,
         right: this._unary(),
       };
@@ -275,7 +272,12 @@ export class AST {
   }
 
   /**
-   * Parses a unary or prefix-update expression.
+   * Parses a unary expression.
+   * @returns {ASTNode} The unary expression node.
+   */
+  /**
+   * Parses a unary / prefix update expression.
+   * @returns {ASTNode}
    */
   _unary(): ASTNode {
     let token: Token | false;
@@ -293,7 +295,7 @@ export class AST {
 
       return {
         type: ASTType._UpdateExpression,
-        operator: token.text,
+        operator: /** @type {Token} */ token.text,
         prefix: true,
         argument,
       };
@@ -303,7 +305,7 @@ export class AST {
     if ((token = this._expect("+", "-", "!"))) {
       return {
         type: ASTType._UnaryExpression,
-        operator: token.text,
+        operator: /** @type {Token} */ token.text,
         prefix: true,
         argument: this._unary(),
       };
@@ -315,6 +317,7 @@ export class AST {
 
   /**
    * Parses a postfix update expression.
+   * @returns {ASTNode}
    */
   _postfix(): ASTNode {
     let expr: ASTNode = this._primary();
@@ -332,7 +335,7 @@ export class AST {
 
       expr = {
         type: ASTType._UpdateExpression,
-        operator: token.text,
+        operator: /** @type {Token} */ token.text,
         prefix: false,
         argument: expr,
       };
@@ -343,7 +346,7 @@ export class AST {
 
   /**
    * Parses a primary expression.
-   * @returns The primary expression node.
+   * @returns {ASTNode} The primary expression node.
    */
   _primary(): ASTNode {
     let primary: ASTNode;
@@ -374,14 +377,16 @@ export class AST {
     let next: Token | false;
 
     while ((next = this._expect("(", "[", "."))) {
-      if (next.text === "(") {
+      if (/** @type {import("../lexer/lexer.ts").Token} */ next.text === "(") {
         primary = {
           type: ASTType._CallExpression,
           callee: primary,
           arguments: this._parseArguments(),
         };
         this._consume(")");
-      } else if (next.text === "[") {
+      } else if (
+        /** @type {import("../lexer/lexer.ts").Token} */ next.text === "["
+      ) {
         primary = {
           type: ASTType._MemberExpression,
           object: primary,
@@ -389,7 +394,9 @@ export class AST {
           computed: true,
         };
         this._consume("]");
-      } else if (next.text === ".") {
+      } else if (
+        /** @type {import("../lexer/lexer.ts").Token} */ next.text === "."
+      ) {
         primary = {
           type: ASTType._MemberExpression,
           object: primary,
@@ -406,8 +413,8 @@ export class AST {
 
   /**
    * Parses a filter.
-   * @param baseExpression - The base expression to apply the filter to.
-   * @returns The filter node.
+   * @param {ASTNode} baseExpression - The base expression to apply the filter to.
+   * @returns {ASTNode} The filter node.
    */
   _filter(baseExpression: ASTNode): ASTNode {
     const args: ASTNode[] = [baseExpression];
@@ -428,7 +435,7 @@ export class AST {
 
   /**
    * Parses function arguments.
-   * @returns The arguments array.
+   * @returns {ASTNode[]} The arguments array.
    */
   _parseArguments(): ASTNode[] {
     const args: ASTNode[] = [];
@@ -444,7 +451,7 @@ export class AST {
 
   /**
    * Parses an identifier.
-   * @returns The identifier node.
+   * @returns {ASTNode} The identifier node.
    */
   _identifier(): ASTNode {
     const token = this._consume();
@@ -458,7 +465,7 @@ export class AST {
 
   /**
    * Parses a constant.
-   * @returns The constant node.
+   * @returns {ASTNode} The constant node.
    */
   _constant(): ASTNode {
     // TODO check that it is a constant
@@ -467,7 +474,7 @@ export class AST {
 
   /**
    * Parses an array declaration.
-   * @returns The array declaration node.
+   * @returns {ASTNode} The array declaration node.
    */
   _arrayDeclaration(): ASTNode {
     const elements: ASTNode[] = [];
@@ -488,7 +495,7 @@ export class AST {
 
   /**
    * Parses an object.
-   * @returns The object node.
+   * @returns {ASTNode} The object node.
    */
   _object(): ASTNode {
     const properties: ASTNode[] = [];
@@ -545,8 +552,8 @@ export class AST {
 
   /**
    * Throws a syntax error.
-   * @param msg - The error message.
-   * @param token - The token that caused the error.
+   * @param {string} msg - The error message.
+   * @param {import("../lexer/lexer.ts").Token} token - The token that caused the error.
    */
   _throwError(msg: string, token: Token): never {
     throw $parseMinErr(
@@ -562,8 +569,8 @@ export class AST {
 
   /**
    * Consumes a token if it matches the expected type.
-   * @param [e1] - The expected token type.
-   * @returns The consumed token.
+   * @param {string} [e1] - The expected token type.
+   * @returns {import("../lexer/lexer.ts").Token} The consumed token.
    */
   _consume(e1?: string): Token {
     if (this._tokens && this._tokens.length === this._index) {
@@ -585,7 +592,7 @@ export class AST {
 
   /**
    * Returns the next token without consuming it.
-   * @returns The next token.
+   * @returns {import("../lexer/lexer.ts").Token} The next token.
    */
   _peekToken(): Token {
     if (!this._tokens || this._tokens.length === this._index) {
@@ -601,8 +608,8 @@ export class AST {
 
   /**
    * Checks if the next token matches any of the expected types.
-   * @param expected - The expected token types.
-   * @returns The next token if it matches, otherwise false.
+   * @param {...string} expected - The expected token types.
+   * @returns {import('../lexer/lexer.ts').Token|boolean} The next token if it matches, otherwise false.
    */
   _peek(...expected: string[]): Token | false {
     const token = this._tokens && this._tokens[this._index];
@@ -626,8 +633,8 @@ export class AST {
 
   /**
    * Consumes the next token if it matches any of the expected types.
-   * @param expected - The expected token types.
-   * @returns The consumed token if it matches, otherwise false.
+   * @param {...string} expected - The expected token types.
+   * @returns {import("../lexer/lexer.ts").Token|boolean} The consumed token if it matches, otherwise false.
    */
   _expect(...expected: string[]): Token | false {
     const token = this._peek(...expected);

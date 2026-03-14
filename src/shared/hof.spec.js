@@ -1,4 +1,4 @@
-import { curry } from "./hof.ts";
+import { curry } from "./hof.js";
 
 describe("curry", () => {
   let original;

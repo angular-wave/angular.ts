@@ -1,5 +1,5 @@
-import { Angular } from "../../angular.ts";
-import { browserTrigger, wait } from "../../shared/test-utils.ts";
+import { Angular } from "../../angular.js";
+import { browserTrigger, wait } from "../../shared/test-utils.js";
 import { createInjector } from "../../core/di/injector.ts";
 
 describe("ngOn* event binding", () => {

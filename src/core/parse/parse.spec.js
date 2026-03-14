@@ -1,7 +1,7 @@
-import { isFunction } from "../../shared/utils.ts";
+import { isFunction } from "../../shared/utils.js";
 import { createInjector } from "../di/injector.ts";
-import { Angular } from "../../angular.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { Angular } from "../../angular.js";
+import { wait } from "../../shared/test-utils.js";
 
 describe("parser", () => {
   let $rootScope;
@@ -728,7 +728,7 @@ describe("parser", () => {
         ).toEqual("abc\td\r\n\n");
       });
 
-      // https://github.com/angular/angular.ts/issues/10968
+      // https://github.com/angular/angular.js/issues/10968
       it("should evaluate arrays literals initializers left-to-right", () => {
         const s = {
           c() {

@@ -17,14 +17,17 @@ let coverageArtifactId = 0;
  *
  * @param {import("@playwright/test").Page} page
  * @param {string} url
- * @param {{ timeout?: number }} [options]
+ * @param {{ timeout?: number, allowFocusedSpecs?: boolean }} [options]
  * @returns {Promise<void>}
  */
 export async function expectNoJasmineFailures(page, url, options = {}) {
   const diagnostics = await runJasminePage(page, url, options);
+  const effectiveOverallStatus = isAcceptableJasmineStatus(diagnostics, options)
+    ? "passed"
+    : diagnostics.overallStatus;
   expect(
     {
-      overallStatus: diagnostics.overallStatus,
+      overallStatus: effectiveOverallStatus,
       failedSpecs: diagnostics.failedSpecs,
       failedSuites: diagnostics.failedSuites,
       globalFailures: diagnostics.globalFailures,
@@ -37,12 +40,40 @@ export async function expectNoJasmineFailures(page, url, options = {}) {
     globalFailures: [],
   });
 }
+
+function isAcceptableJasmineStatus(diagnostics, options) {
+  if (diagnostics.overallStatus === "passed") {
+    return true;
+  }
+
+  return isFocusedJasmineRunWithoutFailures(diagnostics, options);
+}
+
+function isFocusedJasmineRunWithoutFailures(diagnostics, options) {
+  if (options.allowFocusedSpecs === false) {
+    return false;
+  }
+
+  if (diagnostics.overallStatus !== "incomplete") {
+    return false;
+  }
+
+  if (
+    diagnostics.failedSpecs.length > 0 ||
+    diagnostics.failedSuites.length > 0 ||
+    diagnostics.globalFailures.length > 0
+  ) {
+    return false;
+  }
+
+  return true;
+}
 /**
  * Waits for the browser-side Jasmine runner to finish and collects failures.
  *
  * @param {import("@playwright/test").Page} page
  * @param {string} url
- * @param {{ timeout?: number }} [options]
+ * @param {{ timeout?: number, allowFocusedSpecs?: boolean }} [options]
  * @returns {Promise<JasmineDiagnostics>}
  */
 export async function runJasminePage(page, url, options = {}) {

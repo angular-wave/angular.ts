@@ -1,7 +1,7 @@
-import { Angular } from "../../angular.ts";
+import { Angular } from "../../angular.js";
 import { createInjector } from "../../core/di/injector.ts";
-import { dealoc } from "../../shared/dom.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { dealoc } from "../../shared/dom.js";
+import { wait } from "../../shared/test-utils.js";
 
 describe("ngSrcset", () => {
   let $scope;

@@ -1,7 +1,7 @@
-import { PubSub } from "./pubsub.ts";
+import { PubSub } from "./pubsub.js";
 import { createInjector } from "../../core/di/injector.ts";
-import { Angular } from "../../angular.ts";
-import { wait } from "../../shared/utils.ts";
+import { Angular } from "../../angular.js";
+import { wait } from "../../shared/utils.js";
 
 describe("PubSubProvider", () => {
   it("should be injectable", () => {

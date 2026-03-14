@@ -5,7 +5,7 @@ import {
   map,
   omit,
   tail,
-} from "../../shared/common.ts";
+} from "../../shared/common.js";
 import {
   hasOwn,
   isArray,
@@ -13,50 +13,32 @@ import {
   isFunction,
   isString,
   values,
-} from "../../shared/utils.ts";
-import { stringify } from "../../shared/strings.ts";
-import { is, pattern, val } from "../../shared/hof.ts";
-import { Resolvable } from "../resolve/resolvable.ts";
+} from "../../shared/utils.js";
+import { stringify } from "../../shared/strings.js";
+import { is, pattern, val } from "../../shared/hof.js";
+import { Resolvable } from "../resolve/resolvable.js";
 import { ng1ViewsBuilder } from "./views.ts";
 import { annotate } from "../../core/di/di.ts";
-import type { ParamDeclaration } from "../params/param.ts";
+import type { ParamDeclaration } from "../params/interface.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
 import type {
   ResolvePolicy,
   ResolvableLiteral,
   ProviderLike,
-} from "../resolve/resolvable.ts";
-import type { BuiltStateDeclaration, StateDeclaration } from "./interface.ts";
+} from "../resolve/interface.ts";
+import type {
+  BuilderFunction,
+  Builders,
+  BuiltStateDeclaration,
+  StateDeclaration,
+} from "./interface.ts";
 import type { StateMatcher } from "./state-matcher.ts";
 import type { StateObject } from "./state-object.ts";
 import type { UrlMatcher } from "../url/url-matcher.ts";
 
 /**
- * A function that builds the final value for a specific field on a [[StateObject]].
- *
- * Builder functions are chained for a given field and applied to the built state.
+ * @param {unknown} url
  */
-export type BuilderFunction = (
-  state: ng.StateObject & ng.BuiltStateDeclaration,
-  parent?: BuilderFunction,
-) => any;
-
-export interface Builders {
-  [key: string]: BuilderFunction[];
-
-  name: BuilderFunction[];
-  parent: BuilderFunction[];
-  data: BuilderFunction[];
-  url: BuilderFunction[];
-  navigable: BuilderFunction[];
-  params: BuilderFunction[];
-  views: BuilderFunction[];
-  path: BuilderFunction[];
-  includes: BuilderFunction[];
-  resolvables: BuilderFunction[];
-}
-
-/** Parses a state url declaration and records whether it is rooted. */
 function parseUrl(url: unknown): false | { val: string; root: boolean } {
   if (!isString(url)) return false;
   const root = url.charAt(0) === "^";
@@ -64,14 +46,21 @@ function parseUrl(url: unknown): false | { val: string; root: boolean } {
   return { val: root ? url.substring(1) : url, root };
 }
 
-/** Returns the original state declaration and links it back to the built state. */
+/**
+ *
+ * @param {ng.BuiltStateDeclaration} state
+ * @returns {ng.StateDeclaration}
+ */
 function selfBuilder(state: BuiltStateDeclaration): StateDeclaration {
   state.self._state = () => state;
 
   return state.self;
 }
 
-/** Inherits data from the parent state when present. */
+/**
+ * @param {ng.BuiltStateDeclaration} state
+ * @returns {any}
+ */
 function dataBuilder(state: BuiltStateDeclaration): any {
   if (state.parent && state.parent.data) {
     state.data = state.self.data = inherit(state.parent.data, state.data);
@@ -80,7 +69,10 @@ function dataBuilder(state: BuiltStateDeclaration): any {
   return state.data;
 }
 
-/** Creates the builder that compiles and appends a state's URL matcher. */
+/**
+ * @param {ng.UrlService} $url
+ * @param {() => ng.StateObject | ng.BuiltStateDeclaration | undefined} root
+ */
 function getUrlBuilder(
   $url: ng.UrlService,
   root: () => StateObject | BuiltStateDeclaration | undefined,
@@ -124,7 +116,9 @@ function getUrlBuilder(
   };
 }
 
-/** Creates the builder that tracks the nearest navigable ancestor. */
+/**
+ * @param {{ (state: ng.StateObject): boolean; (arg0: any): any; }} rootFn
+ */
 function getNavigableBuilder(
   rootFn: (state: StateObject) => boolean,
 ): BuilderFunction {
@@ -137,7 +131,9 @@ function getNavigableBuilder(
   };
 }
 
-/** Creates the builder that merges URL and config params for a state. */
+/**
+ * @param {ParamFactory} paramFactory
+ */
 function getParamsBuilder(paramFactory: ParamFactory): BuilderFunction {
   return function (state: BuiltStateDeclaration) {
     const makeConfigParam = (_config: ParamDeclaration, id: string | number) =>
@@ -163,12 +159,16 @@ function getParamsBuilder(paramFactory: ParamFactory): BuilderFunction {
   };
 }
 
-/** Builds the full ancestry path for a state. */
+/**
+ * @param {ng.StateObject} state
+ */
 function pathBuilder(state: StateObject): StateObject[] {
   return state.parent ? (state.parent.path || []).concat(state) : [state];
 }
 
-/** Builds the includes lookup used by `$state.includes()`. */
+/**
+ * @param {ng.StateObject} state
+ */
 function includesBuilder(state: StateObject): Record<string, boolean> {
   const includes = state.parent ? Object.assign({}, state.parent.includes) : {};
 
@@ -217,6 +217,8 @@ function includesBuilder(state: StateObject): Record<string, boolean> {
  *   new Resolvable("myBarResolve", function(dep) { return dep.fetchSomethingAsPromise() }, [ "DependencyName" ]),
  *   { provide: "myBazResolve", useFactory: function(dep) { dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
  * ]
+ * @param {ng.StateObject & ng.StateDeclaration} state
+ * @param {boolean | undefined} strictDi
  */
 export function resolvablesBuilder(
   state: StateObject & StateDeclaration,
@@ -377,7 +379,8 @@ export class StateBuilder {
   _builders: Builders;
 
   /**
-   * Creates a StateBuilder bound to the matcher and URL service.
+   * @param {StateMatcher} matcher
+   * @param {ng.UrlService} urlService
    */
   constructor(matcher: StateMatcher, urlService: ng.UrlService) {
     this._matcher = matcher;
@@ -386,12 +389,15 @@ export class StateBuilder {
 
     const root = () => matcher.find("");
 
-    /** Resolves the parent state for the current state object. */
+    /**
+     * @param {ng.StateObject} state
+     */
     function parentBuilder(state: StateObject) {
       if (isRoot(state)) return null;
 
       return matcher.find(self.parentName(state)) || root();
     }
+    /** @type {Builders} */
     this._builders = {
       name: [(state: StateObject) => state.name],
       self: [selfBuilder],
@@ -419,7 +425,9 @@ export class StateBuilder {
   }
 
   /**
-   * Gets or registers a builder function chain for a state property.
+   * @param {string} name
+   * @param {*} fn
+   * @returns {BuilderFunction | BuilderFunction[] | null | undefined}
    */
   builder(
     name: string,
@@ -447,8 +455,8 @@ export class StateBuilder {
    * Builds all of the properties on an essentially blank State object, returning a State object which has all its
    * properties and API built.
    *
-   * @param state an uninitialized State object
-   * @returns the built State object
+   * @param {ng.StateObject} state an uninitialized State object
+   * @returns {ng.StateObject | null} the built State object
    */
   build(state: StateObject): StateObject | null {
     const { _matcher: matcher, _builders: builders } = this;
@@ -477,7 +485,11 @@ export class StateBuilder {
     return state;
   }
 
-  /** Resolves the parent state's name from either the state's name or parent reference. */
+  /**
+   *
+   * @param {ng.StateObject} state
+   * @returns {string}
+   */
   parentName(state: StateObject): string {
     // name = 'foo.bar.baz.**'
     const name = state.name || "";
@@ -507,7 +519,7 @@ export class StateBuilder {
     return isString(state.parent) ? state.parent : state.parent.name;
   }
 
-  /** Returns the fully qualified state name. */
+  /** @param {ng.StateObject} state*/
   name(state: StateObject): string {
     const { name } = state;
 
@@ -520,12 +532,18 @@ export class StateBuilder {
   }
 }
 
-/** Returns true when the state is the synthetic root state. */
+/**
+ * @param {ng.StateObject} state
+ * @returns {boolean}
+ */
 function isRoot(state: StateObject): boolean {
   return state.name === "";
 }
 
-/** Extracts the token from a provider literal. */
+/**
+ * extracts the token from a Provider or provide literal
+ * @param {{ provide: any; token: any; }} provider
+ */
 function getToken(provider: { provide?: any; token?: any }) {
   return provider.provide || provider.token;
 }

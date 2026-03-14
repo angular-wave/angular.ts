@@ -1,9 +1,9 @@
-import { defaults, find } from "../../shared/common.ts";
-import { propEq } from "../../shared/hof.ts";
-import { Glob } from "../glob/glob.ts";
-import { hasOwn, isFunction, isObject, values } from "../../shared/utils.ts";
+import { defaults, find } from "../../shared/common.js";
+import { propEq } from "../../shared/hof.js";
+import { Glob } from "../glob/glob.js";
+import { hasOwn, isFunction, isObject, values } from "../../shared/utils.js";
 import type { Param } from "../params/param.ts";
-import type { Resolvable } from "../resolve/resolvable.ts";
+import type { Resolvable } from "../resolve/resolvable.js";
 import type { StateDeclaration } from "./interface.ts";
 
 /**
@@ -41,7 +41,7 @@ export class StateObject {
   _stateObjectCache: { nameGlob: Glob | null };
 
   /**
-   * Creates the internal state object from a registered state declaration.
+   * @param {import('./interface.ts').StateDeclaration} config
    */
   constructor(config: StateDeclaration) {
     Object.assign(this, config);
@@ -52,7 +52,7 @@ export class StateObject {
     this._stateObjectCache = { nameGlob };
   }
 
-  /** @returns This state object. */
+  /** @returns {StateObject} */
   _state(): StateObject {
     return this;
   }
@@ -64,9 +64,9 @@ export class StateObject {
    * reference to the actual `State` instance, the original definition object passed to
    * `$stateProvider.state()`, or the fully-qualified name.
    *
-   * @param ref - Can be one of (a) a `State` instance, (b) an object that was passed
+   * @param {any} ref Can be one of (a) a `State` instance, (b) an object that was passed
    *        into `$stateProvider.state()`, (c) the fully-qualified name of a state as a string.
-   * @returns `true` if `ref` matches the current `State` instance.
+   * @returns Returns `true` if `ref` matches the current `State` instance.
    */
   is(ref: any): boolean {
     return this === ref || this.self === ref || this.fqn() === ref;
@@ -74,7 +74,7 @@ export class StateObject {
 
   /**
    * @deprecated this does not properly handle dot notation
-   * @returns A dot-separated name of the state.
+   * @returns {string} Returns a dot-separated name of the state.
    */
   fqn(): string {
     if (!this.parent || !(this.parent instanceof this.constructor))
@@ -87,7 +87,7 @@ export class StateObject {
   /**
    * Returns the root node of this state's tree.
    *
-   * @returns The root of this state's tree.
+   * @returns {StateObject} The root of this state's tree.
    */
   root(): StateObject {
     return (this.parent && this.parent.root()) || this;
@@ -100,8 +100,8 @@ export class StateObject {
    * If `opts.inherit` is true, it also includes the ancestor states' [[Param]] objects.
    * If `opts.matchingKeys` exists, returns only `Param`s whose `id` is a key on the `matchingKeys` object
    *
-   * @param [opts] - Options.
-   * @returns The list of [[Param]] objects.
+   * @param {Partial<Param>} [opts] options
+   * @returns {Param[]} the list of [[Param]] objects
    */
   parameters(opts?: Partial<Param>): Param[] {
     const params = defaults(opts, {
@@ -124,9 +124,9 @@ export class StateObject {
    * Returns a single [[Param]] that is owned by the state
    *
    * If `opts.inherit` is true, it also searches the ancestor states` [[Param]]s.
-   * @param id - The name of the [[Param]] to return.
-   * @param [opts] - Options.
-   * @returns The [[Param]] object, or undefined if it does not exist.
+   * @param {string} id the name of the [[Param]] to return
+   * @param {Param} [opts] options
+   * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
    */
   parameter(id: string, opts: Partial<Param> = {}): Param | undefined {
     return (

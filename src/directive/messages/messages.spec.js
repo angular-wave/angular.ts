@@ -1,7 +1,7 @@
-import { Angular } from "../../angular.ts";
-import { wait } from "../../shared/test-utils.ts";
-import { isString } from "../../shared/utils.ts";
-import { dealoc, getController } from "../../shared/dom.ts";
+import { Angular } from "../../angular.js";
+import { wait } from "../../shared/test-utils.js";
+import { isString } from "../../shared/utils.js";
+import { dealoc, getController } from "../../shared/dom.js";
 
 describe("ngMessages", () => {
   let $rootScope, $compile, $templateCache, el;

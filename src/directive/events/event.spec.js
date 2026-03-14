@@ -1,8 +1,8 @@
-import { Angular } from "../../angular.ts";
+import { Angular } from "../../angular.js";
 import { createInjector } from "../../core/di/injector.ts";
-import { dealoc } from "../../shared/dom.ts";
-import { browserTrigger, wait } from "../../shared/test-utils.ts";
-import { createWindowEventDirective } from "./events.ts";
+import { dealoc } from "../../shared/dom.js";
+import { browserTrigger, wait } from "../../shared/test-utils.js";
+import { createWindowEventDirective } from "./events.js";
 
 describe("event directives", () => {
   let angular;

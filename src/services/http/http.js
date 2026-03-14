@@ -1,0 +1,1193 @@
+import {
+  trimEmptyHash,
+  urlIsAllowedOriginFactory,
+} from "../../shared/url-utils/url-utils.js";
+import {
+  encodeUriQuery,
+  entries,
+  extend,
+  fromJson,
+  isArray,
+  isBlob,
+  isDate,
+  isDefined,
+  isFile,
+  isFormData,
+  isFunction,
+  isNullOrUndefined,
+  isObject,
+  isPromiseLike,
+  isString,
+  isUndefined,
+  keys,
+  lowercase,
+  minErr,
+  nullObject,
+  shallowCopy,
+  toJson,
+  trim,
+  uppercase,
+} from "../../shared/utils.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
+
+const APPLICATION_JSON = "application/json";
+
+/**
+ * @internal
+ * @enum {number}
+ */
+export const Http = {
+  _OK: 200,
+  _MultipleChoices: 300,
+  _BadRequest: 400,
+  _NotFound: 404,
+  _ErrorMax: 599,
+};
+
+const CONTENT_TYPE_APPLICATION_JSON = {
+  "Content-Type": `${APPLICATION_JSON};charset=utf-8`,
+};
+
+const JSON_START = /^\[|^\{(?!\{)/;
+
+/** @type {Record<string, any>} */
+const JSON_ENDS = {
+  "[": /]$/,
+  "{": /}$/,
+};
+
+const JSON_PROTECTION_PREFIX = /^\)]\}',?\n/;
+
+const $httpMinErr = minErr("$http");
+
+/**
+ * @param {string | number | boolean | Object | Date} v
+ * @returns {string | number | boolean}
+ */
+function serializeValue(v) {
+  if (isObject(v)) {
+    return isDate(v) ? v.toISOString() : /** @type {string} */ (toJson(v));
+  }
+
+  return v;
+}
+
+/**
+ * Default params serializer that converts objects to strings
+ * according to the following rules:
+ *
+ * * `{'foo': 'bar'}` results in `foo=bar`
+ * * `{'foo': Date.now()}` results in `foo=2015-04-01T09%3A50%3A49.262Z` (`toISOString()` and encoded representation of a Date object)
+ * * `{'foo': ['bar', 'baz']}` results in `foo=bar&foo=baz` (repeated key for each array element)
+ * * `{'foo': {'bar':'baz'}}` results in `foo=%7B%22bar%22%3A%22baz%22%7D` (stringified and encoded representation of an object)
+ *
+ * Note that serializer will sort the request parameters alphabetically.
+ */
+export function HttpParamSerializerProvider() {
+  /**
+   * @returns {import('./interface.ts').HttpParamSerializer}
+   * A function that serializes parameters into a query string.
+   */
+  this.$get = () => {
+    return (params) => {
+      if (!params) return "";
+      /**
+       * @type {string[]}
+       */
+      const parts = [];
+
+      keys(params)
+        .sort()
+        .forEach((key) => {
+          const value = params[key];
+
+          if (value === null || isUndefined(value) || isFunction(value)) return;
+
+          if (isArray(value)) {
+            /** @type {any[]} */ (value).forEach((v) => {
+              if (v === null || isUndefined(v) || isFunction(v)) return;
+
+              const serializedValue = serializeValue(
+                /** @type {string | number | boolean | Object | Date} */ (v),
+              );
+
+              parts.push(
+                `${encodeUriQuery(key)}=${encodeUriQuery(serializedValue)}`,
+              );
+            });
+          } else {
+            const sanitizedValue =
+              /** @type {string | number | boolean | Object | Date} */ (value);
+
+            parts.push(
+              `${encodeUriQuery(key)}=${encodeUriQuery(serializeValue(sanitizedValue))}`,
+            );
+          }
+        });
+
+      return parts.join("&");
+    };
+  };
+}
+
+/**
+ * @param {unknown} data
+ * @param {(arg0: string) => any} headers
+ */
+export function defaultHttpResponseTransform(data, headers) {
+  if (isString(data)) {
+    // Strip json vulnerability protection prefix and trim whitespace
+    const tempData = data.replace(JSON_PROTECTION_PREFIX, "").trim();
+
+    if (tempData) {
+      const contentType = headers("Content-Type");
+
+      const hasJsonContentType =
+        contentType && contentType.indexOf(APPLICATION_JSON) === 0;
+
+      if (hasJsonContentType || isJsonLike(tempData)) {
+        try {
+          data = fromJson(tempData);
+        } catch (err) {
+          if (!hasJsonContentType) {
+            return data;
+          }
+          throw $httpMinErr(
+            "baddata",
+            'Data must be a valid JSON object. Received: "{0}". ' +
+              'Parse error: "{1}"',
+            data,
+            err,
+          );
+        }
+      }
+    }
+  }
+
+  return data;
+}
+
+/**
+ * @param {string} str
+ * @return {boolean}
+ */
+function isJsonLike(str) {
+  const jsonStart = str.match(JSON_START);
+
+  return jsonStart && JSON_ENDS[jsonStart[0]].test(str);
+}
+
+/**
+ * Parse headers into key value object
+ *
+ * @param {string | Object} headers Raw headers as a string
+ * @returns {Record<string, string>} Parsed headers as key value object
+ */
+function parseHeaders(headers) {
+  /** @type {Record<string, string>} */
+  const parsed = nullObject();
+
+  let i;
+
+  /**
+   * @param {string} key
+   * @param {any} val
+   */
+  function fillInParsed(key, val) {
+    if (key) {
+      parsed[key] = parsed[key] ? `${parsed[key]}, ${val}` : val;
+    }
+  }
+
+  if (isString(headers)) {
+    headers.split("\n").forEach(
+      /** @param {string} line */
+      (line) => {
+        i = line.indexOf(":");
+        fillInParsed(
+          line.substring(0, i).trim().toLowerCase(),
+          trim(line.substring(i + 1)),
+        );
+      },
+    );
+  } else if (isObject(headers)) {
+    entries(headers).forEach(([headerKey, headerVal]) => {
+      fillInParsed(headerKey.toLowerCase(), trim(headerVal));
+    });
+  }
+
+  return parsed;
+}
+
+/**
+ * Returns a function that provides access to parsed headers.
+ *
+ * Headers are lazy parsed when first requested.
+ * @see parseHeaders
+ *
+ * @param {(string|Object)} headers Headers to provide access to.
+ * @returns {import("./interface.ts").HttpHeadersGetter} Returns a getter function which if called with:
+ *
+ *   - if called with an argument returns a single header value (empty string if missing)
+ *   - if called with no arguments returns an object containing all headers.
+ */
+function headersGetter(headers) {
+  /**
+   * @type {Record<string, string> | undefined}
+   */
+  let headersObj;
+
+  const getter = /** @type {import("./interface.ts").HttpHeadersGetter} */ (
+    function (name) {
+      if (!headersObj) headersObj = parseHeaders(headers);
+
+      if (name) {
+        const value = headersObj[name.toLowerCase()];
+
+        return value ?? "";
+      }
+
+      return headersObj;
+    }
+  );
+
+  return getter;
+}
+
+/**
+ * Chain all given functions
+ *
+ * This function is used for both request and response transforming
+ *
+ * @param {*} data Data to transform.
+ * @param {import("./interface.ts").HttpHeadersGetter} headers HTTP headers getter fn.
+ * @param {number=} status HTTP status code of the response.
+ * @param {((...args: any[]) => any) | Array<(...args: any[]) => any>} [fns] Function or an array of functions.
+ * @returns {*} Transformed data.
+ */
+function transformData(data, headers, status, fns) {
+  if (isFunction(fns)) {
+    return fns(data, headers, status);
+  }
+
+  if (isArray(fns)) {
+    /** @type {Array<function(...any): any>} */ (fns).forEach((fn) => {
+      data = fn(data, headers, status);
+    });
+  }
+
+  return data;
+}
+
+/**
+ * @param {number} status
+ */
+function isSuccess(status) {
+  return status >= Http._OK && status < Http._MultipleChoices;
+}
+
+/**
+ * Use `$httpProvider` to change the default behavior of the {@link ng.$http $http} service.
+ */
+export function HttpProvider() {
+  /**
+   * Object containing default values for all {@link ng.$http $http} requests.
+   *
+   * - **`defaults.cache`** - {boolean|Object} - A boolean value or object created with
+   * {@link ng.$cacheFactory `$cacheFactory`} to enable or disable caching of HTTP responses
+   * by default. See {@link $http#caching $http Caching} for more information.
+   *
+   * - **`defaults.headers`** - {Object} - Default headers for all $http requests.
+   * Refer to {@link ng.$http#setting-http-headers $http} for documentation on
+   * setting default headers.
+   *     - **`defaults.headers.common`**
+   *     - **`defaults.headers.post`**
+   *     - **`defaults.headers.put`**
+   *     - **`defaults.headers.patch`**
+   *   *
+   * - **`defaults.paramSerializer`** - `{string|function(Object<string,string>):string}` - A function
+   *  used to the prepare string representation of request parameters (specified as an object).
+   *  If specified as string, it is interpreted as a function registered with the {@link auto.$injector $injector}.
+   *  Defaults to {@link ng.$httpParamSerializer $httpParamSerializer}.
+   *
+   * - **`defaults.transformRequest`** -
+   * `{Array<function(data, headersGetter)>|function(data, headersGetter)}` -
+   * An array of functions (or a single function) which are applied to the request data.
+   * By default, this is an array with one request transformation function:
+   *
+   *   - If the `data` property of the request configuration object contains an object, serialize it
+   *     into JSON format.
+   *
+   * - **`defaults.transformResponse`** -
+   * `{Array<function(data, headersGetter, status)>|function(data, headersGetter, status)}` -
+   * An array of functions (or a single function) which are applied to the response data. By default,
+   * this is an array which applies one response transformation function that does two things:
+   *
+   *  - If XSRF prefix is detected, strip it
+   *    (see {@link ng.$http#security-considerations Security Considerations in the $http docs}).
+   *  - If the `Content-Type` is `application/json` or the response looks like JSON,
+   *    deserialize it using a JSON parser.
+   *
+   * - **`defaults.xsrfCookieName`** - {string} - Name of cookie containing the XSRF token.
+   * Defaults value is `'XSRF-TOKEN'`.
+   *
+   * - **`defaults.xsrfHeaderName`** - {string} - Name of HTTP header to populate with the
+   * XSRF token. Defaults value is `'X-XSRF-TOKEN'`.
+   * @type {import("./interface.ts").HttpProviderDefaults}
+   */
+  const defaults = (this.defaults = {
+    // transform incoming response data
+    transformResponse: [defaultHttpResponseTransform],
+    // transform outgoing request data
+    transformRequest: [
+      function (data) {
+        return isObject(data) &&
+          !isFile(data) &&
+          !isBlob(data) &&
+          !isFormData(data)
+          ? toJson(data)
+          : data;
+      },
+    ],
+    // default headers
+    headers: {
+      common: {
+        Accept: "application/json, text/plain, */*",
+      },
+      post: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
+      put: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
+      patch: shallowCopy(CONTENT_TYPE_APPLICATION_JSON),
+    },
+    xsrfCookieName: "XSRF-TOKEN",
+    xsrfHeaderName: "X-XSRF-TOKEN",
+    paramSerializer: $t._httpParamSerializer,
+  });
+
+  let useApplyAsync = false;
+
+  /**
+   * Configure $http service to combine processing of multiple http responses received at around
+   * the same time via {@link ng.$rootScope.Scope#$applyAsync $rootScope.$applyAsync}. This can result in
+   * significant performance improvement for bigger applications that make many HTTP requests
+   * concurrently (common during application bootstrap).
+   *
+   * Defaults to false. If no value is specified, returns the current configured value.
+   *
+   * @param {boolean=} value If true, when requests are loaded, they will schedule a deferred
+   *    "apply" on the next tick, giving time for subsequent requests in a roughly ~10ms window
+   *    to load and share the same digest cycle.
+   *
+   * @returns {boolean|Object} If a value is specified, returns the $httpProvider for chaining.
+   *    otherwise, returns the current configured value.
+   */
+  this.useApplyAsync = function (value) {
+    if (isDefined(value)) {
+      useApplyAsync = !!value;
+
+      return this;
+    }
+
+    return useApplyAsync;
+  };
+
+  /**
+   * Array containing service factories for all synchronous or asynchronous {@link ng.$http $http}
+   * pre-processing of request or postprocessing of responses.
+   *
+   * These service factories are ordered by request, i.e. they are applied in the same order as the
+   * array, on request, but reverse order, on response.
+   *
+   * {@link ng.$http#interceptors Interceptors detailed info}
+   * @type {Array<string | ng.Injectable<import("./interface.ts").HttpInterceptorFactory>>}
+   */
+  this.interceptors = [];
+
+  /**
+   * Array containing URLs whose origins are trusted to receive the XSRF token. See the
+   * {@link ng.$http#security-considerations Security Considerations} sections for more details on
+   * XSRF.
+   *
+   * **Note:** An "origin" consists of the [URI scheme](https://en.wikipedia.org/wiki/URI_scheme),
+   * the [hostname](https://en.wikipedia.org/wiki/Hostname) and the
+   * [port number](https://en.wikipedia.org/wiki/Port_(computer_networking). For `http:` and
+   * `https:`, the port number can be omitted if using th default ports (80 and 443 respectively).
+   * Examples: `http://example.com`, `https://api.example.com:9876`
+   *
+   * <div class="alert alert-warning">
+   *   It is not possible to trust specific URLs/paths. The `path`, `query` and `fragment` parts
+   *   of a URL will be ignored. For example, `https://foo.com/path/bar?query=baz#fragment` will be
+   *   treated as `https://foo.com`, meaning that **all** requests to URLs starting with
+   *   `https://foo.com/` will include the XSRF token.
+   * </div>
+   *
+   * @example
+   *
+   * ```js
+   * // App served from `https://example.com/`.
+   * angular.
+   *   module('xsrfTrustedOriginsExample', []).
+   *   config(['$httpProvider', function($httpProvider) {
+   *     $httpProvider.xsrfTrustedOrigins.push('https://api.example.com');
+   *   }]).
+   *   run(['$http', function($http) {
+   *     // The XSRF token will be sent.
+   *     $http.get('https://api.example.com/preferences').then(...);
+   *
+   *     // The XSRF token will NOT be sent.
+   *     $http.get('https://stats.example.com/activity').then(...);
+   *   }]);
+   * ```
+   *
+   * @type {string[]}
+   */
+  this.xsrfTrustedOrigins = [];
+
+  const that = this;
+
+  this.$get = [
+    $t._injector,
+    $t._sce,
+    $t._cookie,
+    /**
+     *
+     * @param {ng.InjectorService} $injector
+     * @param {ng.SceService} $sce
+     * @param {ng.CookieService} $cookie
+     * @returns {ng.HttpService}
+     */
+    function ($injector, $sce, $cookie) {
+      /**
+       * @type {Map<string, string>}
+       */
+      const defaultCache = new Map();
+
+      /**
+       * Make sure that default param serializer is exposed as a function
+       */
+      defaults.paramSerializer = isString(defaults.paramSerializer)
+        ? $injector.get(defaults.paramSerializer)
+        : defaults.paramSerializer;
+
+      /**
+       * Interceptors stored in reverse order. Inner interceptors before outer interceptors.
+       * The reversal is needed so that we can build up the interception chain around the
+       * server request.
+       * @type {any[]}
+       */
+      const reversedInterceptors = [];
+
+      that.interceptors.forEach((interceptorFactory) => {
+        reversedInterceptors.unshift(
+          isString(interceptorFactory)
+            ? $injector.get(interceptorFactory)
+            : $injector.invoke(interceptorFactory),
+        );
+      });
+
+      /**
+       * A function to check request URLs against a list of allowed origins.
+       */
+      const urlIsAllowedOrigin = urlIsAllowedOriginFactory(
+        that.xsrfTrustedOrigins,
+      );
+
+      /**
+       * @property {Array.<Object>} requestConfig Array of config objects for currently pending
+       * requests. This is primarily meant to be used for debugging purposes.
+       * @param {ng.RequestConfig} requestConfig
+       * @returns {import("./interface.ts").HttpPromise<any>}
+       */
+      const $http = /** @type {import("./interface.ts").HttpService} */ (
+        function (requestConfig) {
+          if (!isObject(requestConfig)) {
+            throw minErr("$http")(
+              "badreq",
+              "Http request configuration must be an object.  Received: {0}",
+              requestConfig,
+            );
+          }
+
+          if (!isString($sce.valueOf(requestConfig.url))) {
+            throw minErr("$http")(
+              "badreq",
+              "Http request configuration url must be a string or a $sce trusted object.  Received: {0}",
+              requestConfig.url,
+            );
+          }
+
+          const config = /** @type {ng.RequestConfig} */ (
+            extend(
+              {
+                method: "get",
+                transformRequest: defaults.transformRequest,
+                transformResponse: defaults.transformResponse,
+                paramSerializer: defaults.paramSerializer,
+              },
+              requestConfig,
+            )
+          );
+
+          config.headers = mergeHeaders(requestConfig);
+          config.method = /** @type {ng.HttpMethod} */ (
+            uppercase(config.method)
+          );
+          config.paramSerializer = isString(config.paramSerializer)
+            ? $injector.get(config.paramSerializer)
+            : config.paramSerializer;
+
+          /**
+           * @type {Array<import("./interface.ts").HttpInterceptor["request"] | import("./interface.ts").HttpInterceptor["requestError"]>}
+           */
+          const requestInterceptors = [];
+
+          /**
+           * @type {Array<import("./interface.ts").HttpInterceptor["response"] | import("./interface.ts").HttpInterceptor["responseError"]>}
+           */
+          const responseInterceptors = [];
+
+          /** @type {Promise<any>} */
+          let promise = Promise.resolve(config);
+
+          // apply interceptors
+          reversedInterceptors.forEach((interceptor) => {
+            if (interceptor.request || interceptor.requestError) {
+              requestInterceptors.unshift(
+                interceptor.request,
+                interceptor.requestError,
+              );
+            }
+
+            if (interceptor.response || interceptor.responseError) {
+              responseInterceptors.push(
+                interceptor.response,
+                interceptor.responseError,
+              );
+            }
+          });
+
+          promise = chainInterceptors(promise, requestInterceptors);
+          promise = promise.then(serverRequest);
+          promise = chainInterceptors(promise, responseInterceptors);
+
+          return /** @type {import("./interface.ts").HttpPromise<any>} */ (
+            promise
+          );
+
+          /**
+           * @param {Promise<any>} promiseParam
+           * @param {Array<((value: any) => any) | undefined>} interceptors
+           * @returns {Promise<any>}
+           */
+          function chainInterceptors(promiseParam, interceptors) {
+            for (let i = 0, ii = interceptors.length; i < ii; ) {
+              const thenFn = interceptors[i++];
+
+              const rejectFn = interceptors[i++];
+
+              promiseParam = promiseParam.then(thenFn, rejectFn);
+            }
+
+            interceptors.length = 0;
+
+            return promiseParam;
+          }
+
+          /**
+           * @param {import("./interface.ts").HttpHeaderType} headers
+           * @param {ng.RequestConfig} configParam
+           */
+          function executeHeaderFns(headers, configParam) {
+            let headerContent;
+
+            /** @type {Record<string, string>} */
+            const processedHeaders = {};
+
+            entries(headers).forEach(([header, headerFn]) => {
+              if (isFunction(headerFn)) {
+                headerContent = headerFn(configParam);
+
+                if (!isNullOrUndefined(headerContent)) {
+                  processedHeaders[header] = headerContent;
+                }
+              } else {
+                processedHeaders[header] = headerFn;
+              }
+            });
+
+            return processedHeaders;
+          }
+
+          /**
+           * @param {ng.RequestConfig} configParam
+           */
+          function mergeHeaders(configParam) {
+            /** @type {import("./interface.ts").HttpRequestConfigHeaders} */
+            let defHeaders = defaults.headers || {};
+
+            const reqHeaders =
+              /** @type {import("./interface.ts").HttpHeaderType} */ (
+                extend({}, configParam.headers || {})
+              );
+
+            defHeaders = extend(
+              {},
+              defHeaders.common || {},
+              defHeaders[lowercase(configParam.method)] || {},
+            );
+
+            keys(defHeaders).forEach((defHeaderName) => {
+              const lowercaseDefHeaderName = lowercase(defHeaderName);
+
+              const hasMatchingHeader = keys(reqHeaders).some(
+                (reqHeaderName) => {
+                  return lowercase(reqHeaderName) === lowercaseDefHeaderName;
+                },
+              );
+
+              if (!hasMatchingHeader) {
+                reqHeaders[defHeaderName] = defHeaders[defHeaderName];
+              }
+            });
+
+            // execute if header value is a function for merged headers
+            return executeHeaderFns(reqHeaders, shallowCopy(configParam));
+          }
+
+          /**
+           * @param {ng.RequestConfig} configParam
+           */
+          function serverRequest(configParam) {
+            const headers = configParam.headers || {};
+
+            configParam.headers = headers;
+
+            const reqData = transformData(
+              configParam.data,
+              headersGetter(headers),
+              undefined,
+              /** @type {((...args: any[]) => any) | Array<(...args: any[]) => any>} */ (
+                configParam.transformRequest || []
+              ),
+            );
+
+            // strip content-type if data is undefined
+            if (isUndefined(reqData)) {
+              keys(headers).forEach((header) => {
+                if (lowercase(header) === "content-type") {
+                  delete headers[header];
+                }
+              });
+            }
+
+            if (
+              isUndefined(configParam.withCredentials) &&
+              !isUndefined(defaults.withCredentials)
+            ) {
+              configParam.withCredentials = defaults.withCredentials;
+            }
+
+            // send request
+            return sendReq(configParam, reqData).then(
+              transformResponse,
+              transformResponse,
+            );
+          }
+
+          /**
+           * @param {import("./interface.ts").HttpResponse<any>} response
+           */
+          function transformResponse(response) {
+            const httpResponse =
+              /** @type {import("./interface.ts").HttpResponse<any>} */ (
+                response
+              );
+
+            // make a copy since the response must be cacheable
+            const resp =
+              /** @type {import("./interface.ts").HttpResponse<any>} */ (
+                extend({}, httpResponse)
+              );
+
+            resp.data = transformData(
+              httpResponse.data,
+              httpResponse.headers,
+              httpResponse.status,
+              /** @type {((...args: any[]) => any) | Array<(...args: any[]) => any>} */ (
+                config.transformResponse || []
+              ),
+            );
+
+            return isSuccess(httpResponse.status) ? resp : Promise.reject(resp);
+          }
+        }
+      );
+
+      /**
+       * @type {ng.RequestConfig[]}
+       */
+      $http.pendingRequests = [];
+
+      createShortMethods("get", "delete", "head");
+      createShortMethodsWithData("post", "put", "patch");
+
+      /**
+       * Runtime equivalent of the `$httpProvider.defaults` property. Allows configuration of
+       * default headers, withCredentials as well as request and response transformations.
+       *
+       * See "Setting HTTP Headers" and "Transforming Requests and Responses" sections above.
+       */
+      $http.defaults = defaults;
+
+      return $http;
+
+      /**
+       * @param {...("get" | "delete" | "head")} names
+       */
+      function createShortMethods(...names) {
+        names.forEach((name) => {
+          /**
+           * @param {string} url
+           * @param {import("./interface.ts").RequestShortcutConfig} [config]
+           */
+          $http[name] = function (url, config) {
+            return $http(
+              /** @type {ng.RequestConfig} */ (
+                extend({}, config || {}, {
+                  method: name,
+                  url,
+                })
+              ),
+            );
+          };
+        });
+      }
+
+      /**
+       * @param {...("post" | "put" | "patch")} names
+       */
+      function createShortMethodsWithData(...names) {
+        names.forEach((name) => {
+          /**
+           * @param {string} url
+           * @param {string|Object} data
+           * @param {import("./interface.ts").RequestShortcutConfig} [config]
+           */
+          $http[name] = function (url, data, config) {
+            return $http(
+              /** @type {ng.RequestConfig} */ (
+                extend({}, config || {}, {
+                  method: name,
+                  url,
+                  data,
+                })
+              ),
+            );
+          };
+        });
+      }
+
+      /**
+       * @param {ng.RequestConfig} config
+       * @param {any} reqData
+       */
+      function sendReq(config, reqData) {
+        const { promise, resolve, reject } = Promise.withResolvers();
+
+        /** @type {any} */
+        let cache;
+
+        let cachedResp;
+
+        const reqHeaders = config.headers || {};
+
+        config.headers = reqHeaders;
+
+        let { url } = config;
+
+        if (!isString(url)) {
+          // If it is not a string then the URL must be a $sce trusted object
+          url = $sce.valueOf(url);
+        }
+
+        url = buildUrl(
+          url,
+          /** @type {(obj: any) => string} */ (config.paramSerializer)(
+            config.params,
+          ),
+        );
+
+        $http.pendingRequests.push(config);
+        promise.then(removePendingReq, removePendingReq);
+
+        if (
+          (config.cache || defaults.cache) &&
+          config.cache !== false &&
+          config.method === "GET"
+        ) {
+          cache = isObject(config.cache)
+            ? config.cache
+            : isObject(/** @type {?} */ (defaults).cache)
+              ? /** @type {?} */ (defaults).cache
+              : defaultCache;
+        }
+
+        if (cache) {
+          cachedResp = cache.get(url);
+
+          if (isDefined(cachedResp)) {
+            if (isPromiseLike(cachedResp)) {
+              // cached request has already been sent, but there is no response yet
+              cachedResp.then(
+                resolvePromiseWithResult,
+                resolvePromiseWithResult,
+              );
+            } else {
+              // serving from cache
+              if (isArray(cachedResp)) {
+                resolvePromise(
+                  cachedResp[1],
+                  cachedResp[0],
+                  shallowCopy(cachedResp[2]),
+                  cachedResp[3],
+                  cachedResp[4],
+                );
+              } else {
+                resolvePromise(cachedResp, Http._OK, {}, "OK", "complete");
+              }
+            }
+          } else {
+            // put the promise for the non-transformed response into cache as a placeholder
+            cache.set(url, promise);
+          }
+        }
+
+        // if we won't have the response in cache, set the xsrf headers and
+        // send the request to the backend
+        if (isUndefined(cachedResp)) {
+          const xsrfCookieName =
+            config.xsrfCookieName || defaults.xsrfCookieName;
+
+          const xsrfValue =
+            xsrfCookieName && urlIsAllowedOrigin(config.url)
+              ? $cookie.getAll()[xsrfCookieName]
+              : undefined;
+
+          if (xsrfValue) {
+            const xsrfHeaderName =
+              config.xsrfHeaderName || defaults.xsrfHeaderName;
+
+            if (xsrfHeaderName) {
+              reqHeaders[xsrfHeaderName] = xsrfValue;
+            }
+          }
+
+          http(
+            config.method,
+            url,
+            reqData,
+            done,
+            reqHeaders,
+            config.timeout,
+            config.withCredentials,
+            /** @type {XMLHttpRequestResponseType | undefined} */ (
+              config.responseType
+            ),
+            createApplyHandlers(config.eventHandlers),
+            createApplyHandlers(config.uploadEventHandlers),
+          );
+        }
+
+        return promise;
+
+        /**
+         * @param eventHandlers
+         * @return {Record<string, EventListener>}
+         */
+        /**
+         * @param {ng.RequestConfig["eventHandlers"] | ng.RequestConfig["uploadEventHandlers"]} eventHandlers
+         */
+        function createApplyHandlers(eventHandlers) {
+          if (eventHandlers) {
+            /** @type {Record<string, EventListener>} */
+            const applyHandlers = {};
+
+            entries(eventHandlers).forEach(([key, eventHandler]) => {
+              applyHandlers[key] = function (event) {
+                if (useApplyAsync) {
+                  setTimeout(() => callEventHandler());
+                } else {
+                  callEventHandler();
+                }
+
+                function callEventHandler() {
+                  if (typeof eventHandler === "function") {
+                    eventHandler(event);
+                  } else if (
+                    eventHandler &&
+                    typeof eventHandler === "object" &&
+                    "handleEvent" in eventHandler
+                  ) {
+                    eventHandler.handleEvent(event);
+                  }
+                }
+              };
+            });
+
+            return /** @type {Record<string, EventListener>} */ (applyHandlers);
+          } else {
+            return {};
+          }
+        }
+
+        /**
+         * Callback registered to http():
+         *  - caches the response if desired
+         *  - resolves the raw $http promise
+         *  - calls $apply
+         */
+        /**
+         * @param {number} status
+         * @param {any} response
+         * @param {string | null} headersString
+         * @param {string} statusText
+         * @param {import("./interface.ts").HttpResponseStatus} xhrStatus
+         */
+        function done(status, response, headersString, statusText, xhrStatus) {
+          if (cache) {
+            if (isSuccess(status)) {
+              cache.set(url, [
+                status,
+                response,
+                parseHeaders(headersString || ""),
+                statusText,
+                xhrStatus,
+              ]);
+            } else {
+              // remove promise from the cache
+              cache.delete(url);
+            }
+          }
+
+          function resolveHttpPromise() {
+            resolvePromise(
+              response,
+              status,
+              headersString,
+              statusText,
+              xhrStatus,
+            );
+          }
+
+          if (useApplyAsync) {
+            setTimeout(resolveHttpPromise);
+          } else {
+            resolveHttpPromise();
+          }
+        }
+
+        /**
+         * Resolves the raw $http promise.
+         * @param {any} response
+         * @param {number} status
+         * @param {string | Record<string, string> | null} headers
+         * @param {string} statusText
+         * @param {import("./interface.ts").HttpResponseStatus} xhrStatus
+         */
+        function resolvePromise(
+          response,
+          status,
+          headers,
+          statusText,
+          xhrStatus,
+        ) {
+          // status: HTTP response status code, 0, -1 (aborted by timeout / promise)
+          status = status >= -1 ? status : 0;
+
+          (isSuccess(status) ? resolve : reject)({
+            data: response,
+            status,
+            headers: headersGetter(headers ?? ""),
+            config,
+            statusText,
+            xhrStatus,
+          });
+        }
+
+        /**
+         * @param {import("./interface.ts").HttpResponse<any>} result
+         */
+        function resolvePromiseWithResult(result) {
+          resolvePromise(
+            result.data,
+            result.status,
+            shallowCopy(result.headers()),
+            result.statusText,
+            result.xhrStatus,
+          );
+        }
+
+        function removePendingReq() {
+          const idx = $http.pendingRequests.indexOf(config);
+
+          if (idx !== -1) $http.pendingRequests.splice(idx, 1);
+        }
+      }
+
+      /**
+       * @param {string} url
+       * @param {string} serializedParams
+       */
+      function buildUrl(url, serializedParams) {
+        if (serializedParams.length > 0) {
+          url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
+        }
+
+        return url;
+      }
+    },
+  ];
+}
+
+/**
+ * Makes an HTTP request using XMLHttpRequest with flexible options.
+ *
+ * @param {string} method - The HTTP method (e.g., "GET", "POST").
+ * @param {string} [url] - The URL to send the request to. Defaults to the current page URL.
+ * @param {*} [post] - The body to send with the request, if any.
+ * @param {(status: number, response: any, headersString: string|null, statusText: string, xhrStatus: import("./interface.ts").HttpResponseStatus) => void} [callback] - Callback invoked when the request completes.
+ * @param {Object<string, string|undefined>} [headers] - Headers to set on the request.
+ * @param {number|Promise<any>} [timeout] - Timeout in ms or a cancellable promise.
+ * @param {boolean} [withCredentials] - Whether to send credentials with the request.
+ * @param {XMLHttpRequestResponseType} [responseType] - The type of data expected in the response.
+ * @param {ng.RequestConfig["eventHandlers"]} [eventHandlers] - Event listeners for the XMLHttpRequest object.
+ * @param {ng.RequestConfig["uploadEventHandlers"]} [uploadEventHandlers] - Event listeners for the XMLHttpRequest.upload object.
+ * @returns {void}
+ */
+export function http(
+  method,
+  url,
+  post,
+  callback,
+  headers,
+  timeout,
+  withCredentials,
+  responseType,
+  eventHandlers,
+  uploadEventHandlers,
+) {
+  url = url || trimEmptyHash(window.location.href);
+
+  const xhr = new XMLHttpRequest();
+
+  let abortedByTimeout = false;
+
+  /**
+   * @type {number | undefined}
+   */
+  let timeoutId;
+
+  xhr.open(method, url, true);
+
+  if (headers) {
+    for (const [key, value] of entries(headers)) {
+      if (isDefined(value)) {
+        xhr.setRequestHeader(key, value);
+      }
+    }
+  }
+
+  xhr.onload = () => {
+    let status = xhr.status || 0;
+
+    const statusText = xhr.statusText || "";
+
+    if (status === 0) {
+      status = xhr.response
+        ? Http._OK
+        : new URL(url).protocol === "file:"
+          ? Http._NotFound
+          : 0;
+    }
+
+    completeRequest(
+      status,
+      xhr.response,
+      xhr.getAllResponseHeaders(),
+      statusText,
+      "complete",
+    );
+  };
+
+  xhr.onerror = () => completeRequest(-1, null, null, "", "error");
+  xhr.ontimeout = () => completeRequest(-1, null, null, "", "timeout");
+
+  xhr.onabort = () => {
+    completeRequest(-1, null, null, "", abortedByTimeout ? "timeout" : "abort");
+  };
+
+  if (eventHandlers) {
+    for (const [key, handler] of entries(eventHandlers)) {
+      xhr.addEventListener(key, handler);
+    }
+  }
+
+  if (uploadEventHandlers) {
+    for (const [key, handler] of entries(uploadEventHandlers)) {
+      xhr.upload.addEventListener(key, handler);
+    }
+  }
+
+  if (withCredentials) {
+    xhr.withCredentials = true;
+  }
+
+  if (responseType) {
+    try {
+      xhr.responseType = responseType;
+    } catch (err) {
+      if (responseType !== "json") throw err;
+    }
+  }
+
+  xhr.send(isUndefined(post) ? null : post);
+
+  if (typeof timeout === "number" && timeout > 0) {
+    timeoutId = setTimeout(() => timeoutRequest("timeout"), timeout);
+  } else if (isPromiseLike(timeout)) {
+    /** @type {Promise<any>} */ (timeout).then(() => {
+      timeoutRequest("abort");
+    });
+  }
+
+  /**
+   * @param {"timeout"|"abort"} reason
+   */
+  function timeoutRequest(reason) {
+    abortedByTimeout = reason === "timeout";
+
+    if (xhr) xhr.abort();
+  }
+
+  /**
+   * @param {number} status - HTTP status code or -1 for network errors.
+   * @param {*} response - The parsed or raw response from the server.
+   * @param {string|null} headersString - The raw response headers as a string.
+   * @param {string} statusText - The status text returned by the server.
+   * @param {ng.HttpResponseStatus} xhrStatus - Final status of the request.
+   */
+  function completeRequest(
+    status,
+    response,
+    headersString,
+    statusText,
+    xhrStatus,
+  ) {
+    if (isDefined(timeoutId)) {
+      clearTimeout(timeoutId);
+    }
+
+    if (callback) {
+      callback(status, response, headersString, statusText, xhrStatus);
+    }
+  }
+}

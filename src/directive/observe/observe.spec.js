@@ -1,6 +1,6 @@
-import { Angular } from "../../angular.ts";
-import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { Angular } from "../../angular.js";
+import { createElementFromHTML, dealoc } from "../../shared/dom.js";
+import { wait } from "../../shared/test-utils.js";
 
 describe("observe", () => {
   let $compile, $scope, $rootScope, element, observerSpy;

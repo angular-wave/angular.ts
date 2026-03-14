@@ -1,6 +1,6 @@
-import { dealoc } from "../shared/dom.ts";
-import { Angular } from "../angular.ts";
-import { wait } from "../shared/test-utils.ts";
+import { dealoc } from "../shared/dom.js";
+import { Angular } from "../angular.js";
+import { wait } from "../shared/test-utils.js";
 
 describe("view hooks", () => {
   let app,

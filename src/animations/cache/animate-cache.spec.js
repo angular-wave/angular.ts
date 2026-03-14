@@ -1,4 +1,4 @@
-import { AnimateCache } from "./animate-cache.ts";
+import { AnimateCache } from "./animate-cache.js";
 
 describe("AnimateCache", () => {
   let cache;
