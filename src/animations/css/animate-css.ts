@@ -3,7 +3,7 @@ import type {
   AnimationOptions,
   Animator,
 } from "../interface.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+import { $injectTokens } from "../../injection-tokens.js";
 import {
   getCacheData,
   removeElementData,
@@ -17,7 +17,7 @@ import {
   isString,
   keys,
   nullObject,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import { AnimateRunner } from "../runner/animate-runner.ts";
 import {
   ACTIVE_CLASS_SUFFIX,

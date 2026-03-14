@@ -4,9 +4,9 @@ import type {
   Animator,
 } from "./interface.ts";
 import type { AnimateCssService } from "./css/animate-css.ts";
-import { $injectTokens } from "../injection-tokens.ts";
+import { $injectTokens } from "../injection-tokens.js";
 import { NodeType } from "../shared/node.ts";
-import { isString } from "../shared/utils.ts";
+import { isString } from "../shared/utils.js";
 
 import { AnimateRunner } from "./runner/animate-runner.ts";
 import { concatWithSpace } from "./shared.ts";

@@ -1,4 +1,4 @@
-import { isError } from "../../shared/utils.ts";
+import { isError } from "../../shared/utils.js";
 
 /**
  * A function that logs messages. Accepts any number of arguments.

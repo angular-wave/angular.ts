@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { $injectTokens } from "../../injection-tokens.js";
 import { getCacheData } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import {
@@ -10,7 +10,7 @@ import {
   isNullOrUndefined,
   isUndefined,
   shallowCopy,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import type { InterpolationFunction } from "../../core/interpolate/interpolate.ts";
 import type { NgModelController } from "../model/model.ts";
 

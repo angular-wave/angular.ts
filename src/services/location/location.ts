@@ -13,9 +13,9 @@ import {
   parseKeyValue,
   startsWith,
   toKeyValue,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import { getBaseHref } from "../../shared/dom.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 import { validateRequired } from "../../shared/validate.ts";
 
 /**

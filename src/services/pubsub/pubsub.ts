@@ -1,5 +1,5 @@
-import { $injectTokens } from "../../injection-tokens.ts";
-import { nullObject } from "../../shared/utils.ts";
+import { $injectTokens } from "../../injection-tokens.js";
+import { nullObject } from "../../shared/utils.js";
 
 type ListenerEntry = { fn: Function; context: any };
 let eventBusInstance: PubSub | undefined;

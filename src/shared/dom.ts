@@ -1,6 +1,6 @@
-import { hasOwn, isArray, isDefined, isObject, keys } from "./utils.ts";
+import { hasOwn, isArray, isDefined, isObject, keys } from "./utils.js";
 import { NodeType } from "./node.ts";
-import { $injectTokens } from "../injection-tokens.ts";
+import { $injectTokens } from "../injection-tokens.js";
 import type { ExpandoStore } from "../interface.ts";
 
 let elId = 1;

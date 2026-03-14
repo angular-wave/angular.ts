@@ -24,7 +24,7 @@ import {
   minErr,
   snakeCase,
   values,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import {
   PENDING_CLASS,
   cachedToggleClass,
@@ -32,7 +32,7 @@ import {
 } from "../form/form.ts";
 import { defaultModelOptions } from "../model-options/model-options.ts";
 import { startingTag } from "../../shared/dom.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 
 export const ngModelMinErr = minErr("ngModel");
 

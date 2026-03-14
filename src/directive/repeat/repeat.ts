@@ -7,9 +7,9 @@ import {
   minErr,
   nullObject,
   values,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import { getBlockNodes, removeElement } from "../../shared/dom.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+import { $injectTokens } from "../../injection-tokens.js";
 
 /**
  * $scope for ngRepeat directive.

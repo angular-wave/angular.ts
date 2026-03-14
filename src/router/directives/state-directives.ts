@@ -5,10 +5,10 @@ import {
   isNullOrUndefined,
   isObject,
   isString,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import { parse } from "../../shared/hof.ts";
 import { getInheritedData } from "../../shared/dom.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+import { $injectTokens } from "../../injection-tokens.js";
 type ParsedStateRef = { state: string | null; paramExpr: string | null };
 type ProcessedDef = {
   ngState: unknown;

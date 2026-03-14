@@ -3,10 +3,10 @@ import {
   isNumberNaN,
   isUndefined,
   minErr,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import { REGEX_STRING_REGEXP } from "./../attrs/attrs.ts";
 import { startingTag } from "../../shared/dom.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 
 type ValidatingNgModelController = ng.NgModelController & {
   $validators: Record<string, (modelValue: any, viewValue: any) => boolean>;

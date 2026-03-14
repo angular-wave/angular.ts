@@ -8,7 +8,7 @@ import {
   isObject,
   isUndefined,
   minErr,
-} from "../shared/utils.ts";
+} from "../shared/utils.js";
 
 /** Registers the built-in collection filtering function. */
 export function filterFilter() {

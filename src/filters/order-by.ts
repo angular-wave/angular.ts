@@ -7,8 +7,8 @@ import {
   isObject,
   isString,
   minErr,
-} from "../shared/utils.ts";
-import { $injectTokens } from "../injection-tokens.ts";
+} from "../shared/utils.js";
+import { $injectTokens } from "../injection-tokens.js";
 
 type PredicateValue = { value: any; type: string; index: number };
 type ComparisonObject = {

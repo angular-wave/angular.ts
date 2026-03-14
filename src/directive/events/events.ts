@@ -1,5 +1,5 @@
-import { directiveNormalize } from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { directiveNormalize } from "../../shared/utils.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
  * AngularTS expressions and are compiled and executed within the current scope.

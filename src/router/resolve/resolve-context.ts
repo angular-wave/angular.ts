@@ -1,7 +1,7 @@
 import { find, tail, uniqR, unnestR } from "../../shared/common.ts";
 import { propEq } from "../../shared/hof.ts";
 import { stringify } from "../../shared/strings.ts";
-import { isUndefined } from "../../shared/utils.ts";
+import { isUndefined } from "../../shared/utils.js";
 import { PathUtils } from "../path/path-utils.ts";
 import { trace } from "../common/trace.ts";
 import type { PathNode } from "../path/path-node.ts";

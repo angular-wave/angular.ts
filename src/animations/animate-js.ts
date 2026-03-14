@@ -4,13 +4,13 @@ import type {
   AnimationOptions,
   Animator,
 } from "./interface.ts";
-import { isArray, isFunction, isObject } from "../shared/utils.ts";
+import { isArray, isFunction, isObject } from "../shared/utils.js";
 import {
   applyAnimationClasses,
   applyAnimationStyles,
   prepareAnimationOptions,
 } from "./shared.ts";
-import { $injectTokens } from "../injection-tokens.ts";
+import { $injectTokens } from "../injection-tokens.js";
 import { AnimateRunner } from "./runner/animate-runner.ts";
 
 AnimateJsProvider.$inject = [$injectTokens._animateProvider];

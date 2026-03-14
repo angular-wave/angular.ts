@@ -1,4 +1,4 @@
-import { parseMaxTime } from "./animate-css.js";
+import { parseMaxTime } from "./animate-css.ts";
 
 describe("parseMaxTime", () => {
   it("returns 0 for empty string", () => {

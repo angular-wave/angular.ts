@@ -5,7 +5,7 @@ import { AnimateJsProvider } from "./animations/animate-js.js";
 import { ngAnimateSwapDirective } from "./animations/animate-swap.js";
 import { AnimateProvider } from "./animations/animate.js";
 import { AnimationProvider } from "./animations/animation.js";
-import { AnimateCssProvider } from "./animations/css/animate-css.js";
+import { AnimateCssProvider } from "./animations/css/animate-css.ts";
 import { AnimateQueueProvider } from "./animations/queue/animate-queue.js";
 import { CompileProvider } from "./core/compile/compile.js";
 import { ControllerProvider } from "./core/controller/controller.ts";

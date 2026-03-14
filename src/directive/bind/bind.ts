@@ -5,8 +5,8 @@ import {
   isNullOrUndefined,
   isUndefined,
   stringify,
-} from "../../shared/utils.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+} from "../../shared/utils.js";
+import { $injectTokens } from "../../injection-tokens.js";
 
 /** Binds the watched expression as plain text content. */
 export function ngBindDirective(): ng.Directive {

@@ -1,4 +1,4 @@
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 
 ngInjectDirective.$inject = [$t._log, $t._injector];
 

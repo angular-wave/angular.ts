@@ -11,7 +11,7 @@ import {
   nullObject,
   snakeCase,
   trim,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 import type { NodeRef } from "../../shared/noderef.ts";
 

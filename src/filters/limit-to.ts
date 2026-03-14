@@ -4,7 +4,7 @@ import {
   isNumber,
   isNumberNaN,
   isString,
-} from "../shared/utils.ts";
+} from "../shared/utils.js";
 
 /** Creates the `limitTo` filter implementation. */
 export function limitToFilter() {

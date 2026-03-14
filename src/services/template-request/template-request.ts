@@ -1,6 +1,6 @@
 import { defaultHttpResponseTransform } from "../http/http.ts";
-import { extend, isArray } from "../../shared/utils.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+import { extend, isArray } from "../../shared/utils.js";
+import { $injectTokens } from "../../injection-tokens.js";
 
 export interface TemplateRequestService {
   /**

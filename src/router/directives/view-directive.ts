@@ -1,5 +1,5 @@
 import { tail, unnestR, withResolvers } from "../../shared/common.ts";
-import { hasAnimate, isDefined, isFunction } from "../../shared/utils.ts";
+import { hasAnimate, isDefined, isFunction } from "../../shared/utils.js";
 import { parse } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { trace } from "../common/trace.ts";
@@ -11,7 +11,7 @@ import {
   setCacheData,
 } from "../../shared/dom.ts";
 import { getLocals } from "../state/state-registry.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+import { $injectTokens } from "../../injection-tokens.js";
 import type { ActiveUIView, ViewContext } from "../view/view.ts";
 import type { PathNode } from "../path/path-node.ts";
 

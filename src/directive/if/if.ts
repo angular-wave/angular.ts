@@ -1,6 +1,6 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { $injectTokens } from "../../injection-tokens.js";
 import { removeElement } from "../../shared/dom.ts";
-import { hasAnimate } from "../../shared/utils.ts";
+import { hasAnimate } from "../../shared/utils.js";
 
 ngIfDirective.$inject = [$injectTokens._animate];
 /** Conditionally includes or removes a transcluded block based on the watched expression. */

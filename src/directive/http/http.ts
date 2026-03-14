@@ -1,4 +1,4 @@
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 import { Http } from "../../services/http/http.ts";
 import { NodeType } from "../../shared/node.ts";
 import {
@@ -9,7 +9,7 @@ import {
   isString,
   toKeyValue,
   wait,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 
 type HttpDirectiveMethod = "get" | "delete" | "post" | "put";
 type HttpDirectiveElement = HTMLElement & {

@@ -1,7 +1,7 @@
-import { isString } from "../shared/utils.ts";
+import { isString } from "../shared/utils.js";
 import { NG_ANIMATE_CHILDREN_DATA } from "./shared.ts";
 import { setCacheData } from "../shared/dom.ts";
-import { $injectTokens as $t } from "../injection-tokens.ts";
+import { $injectTokens as $t } from "../injection-tokens.js";
 
 $$AnimateChildrenDirective.$inject = [$t._interpolate];
 

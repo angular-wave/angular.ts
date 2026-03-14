@@ -5,11 +5,11 @@ import {
   isFunction,
   isNullOrUndefined,
   isObject,
-} from "../shared/utils.ts";
+} from "../shared/utils.js";
 import { annotate } from "../core/di/di.ts";
 import { DirectiveSuffix } from "../core/compile/compile.ts";
 import { kebobString } from "../shared/strings.ts";
-import { $injectTokens as $t } from "../injection-tokens.ts";
+import { $injectTokens as $t } from "../injection-tokens.js";
 import { Resolvable } from "./resolve/resolvable.ts";
 import type { ResolveContext } from "./resolve/resolve-context.ts";
 
