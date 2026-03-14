@@ -121,22 +121,22 @@ import { TransitionProvider } from "./router/transition/transition-service.js";
 import { UrlConfigProvider } from "./router/url/url-config.ts";
 import { UrlService } from "./router/url/url-service.ts";
 import { ViewService } from "./router/view/view.js";
-import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.js";
-import { CookieProvider } from "./services/cookie/cookie.js";
-import { ExceptionHandlerProvider } from "./services/exception/exception.js";
+import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
+import { CookieProvider } from "./services/cookie/cookie.ts";
+import { ExceptionHandlerProvider } from "./services/exception/exception.ts";
 import {
   HttpParamSerializerProvider,
   HttpProvider,
-} from "./services/http/http.js";
-import { LocationProvider } from "./services/location/location.js";
-import { LogProvider } from "./services/log/log.js";
-import { PubSubProvider } from "./services/pubsub/pubsub.js";
+} from "./services/http/http.ts";
+import { LocationProvider } from "./services/location/location.ts";
+import { LogProvider } from "./services/log/log.ts";
+import { PubSubProvider } from "./services/pubsub/pubsub.ts";
 import { RestProvider } from "./services/rest/rest.js";
-import { SceDelegateProvider, SceProvider } from "./services/sce/sce.js";
-import { SseProvider } from "./services/sse/sse.js";
-import { TemplateCacheProvider } from "./services/template-cache/template-cache.js";
-import { TemplateRequestProvider } from "./services/template-request/template-request.js";
-import { WebSocketProvider } from "./services/websocket/websocket.js";
+import { SceDelegateProvider, SceProvider } from "./services/sce/sce.ts";
+import { SseProvider } from "./services/sse/sse.ts";
+import { TemplateCacheProvider } from "./services/template-cache/template-cache.ts";
+import { TemplateRequestProvider } from "./services/template-request/template-request.ts";
+import { WebSocketProvider } from "./services/websocket/websocket.ts";
 
 /**
  * Initializes core `ng` module.

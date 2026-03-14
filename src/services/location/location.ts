@@ -115,7 +115,7 @@ export class Location {
   absUrl: string;
   _url = "";
   _updateBrowser?: () => void;
-  _state: History["state"] = null;
+  _state: History["state"] = undefined;
   /**
    * @param appBase application base URL
    * @param appBaseNoFile application base URL stripped of any filename
@@ -181,6 +181,12 @@ export class Location {
     return this._url;
   }
 
+  url(): string;
+  url(url: string): this;
+  url(url?: string) {
+    return arguments.length ? this.setUrl(url as string) : this.getUrl();
+  }
+
   /**
    * Changes the path parameter and returns `$location`.
    *
@@ -206,6 +212,12 @@ export class Location {
     return _path;
   }
 
+  path(): string;
+  path(path: string | number | null): this;
+  path(path?: string | number | null) {
+    return arguments.length ? this.setPath(path ?? null) : this.getPath();
+  }
+
   /**
    * Changes the hash fragment when called with a parameter and returns `$location`.
    * @param hash - New hash fragment.
@@ -225,6 +237,12 @@ export class Location {
    */
   getHash() {
     return _hash;
+  }
+
+  hash(): string;
+  hash(hash: string | number | null): this;
+  hash(hash?: string | number | null) {
+    return arguments.length ? this.setHash(hash ?? null) : this.getHash();
   }
 
   /**
@@ -285,6 +303,21 @@ export class Location {
     return _search;
   }
 
+  search(): Record<string, any>;
+  search(search: string | number | Record<string, any>): this;
+  search(
+    search: string | number | Record<string, any>,
+    paramValue?: string | number | Array<string> | boolean | null,
+  ): this;
+  search(
+    search?: string | number | Record<string, any>,
+    paramValue?: string | number | Array<string> | boolean | null,
+  ) {
+    return arguments.length
+      ? this.setSearch(search as string | number | Record<string, any>, paramValue)
+      : this.getSearch();
+  }
+
   /**
    * @private
    * Compose url and update `url` and `absUrl` property
@@ -319,7 +352,7 @@ export class Location {
     // The user might modify `stateObject` after invoking `$location.setState(stateObject)`
     // but we're changing the _statereference to $browser.state() during the $digest
     // so the modification window is narrow.
-    this._state = isUndefined(state) ? null : state;
+    this._state = state;
     urlUpdatedByLocation = true;
 
     return this;
@@ -330,6 +363,12 @@ export class Location {
    */
   getState(): History["state"] {
     return this._state;
+  }
+
+  state(): History["state"];
+  state(state: any): this;
+  state(state?: any) {
+    return arguments.length ? this.setState(state) : this.getState();
   }
 
   /** Attempts to parse a clicked link into an app-relative URL update. */

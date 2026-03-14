@@ -1,6 +1,6 @@
 import { createInjector } from "../../core/di/injector.ts";
 import { Angular } from "../../angular.js";
-import { adjustMatcher } from "./sce.js";
+import { adjustMatcher } from "./sce.ts";
 import { wait } from "../../shared/test-utils.js";
 
 describe("SCE", () => {

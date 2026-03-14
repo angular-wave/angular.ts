@@ -1,5 +1,5 @@
 import { $injectTokens as $t } from "../../injection-tokens.js";
-import { Http } from "../../services/http/http.js";
+import { Http } from "../../services/http/http.ts";
 import { NodeType } from "../../shared/node.ts";
 import {
   callBackAfterFirst,

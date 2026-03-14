@@ -2,7 +2,7 @@ import { createInjector } from "../../core/di/injector.ts";
 import { isObject } from "../../shared/utils.js";
 import { Angular } from "../../angular.js";
 import { wait } from "../../shared/test-utils.js";
-import { http } from "./http.js";
+import { http } from "./http.ts";
 
 describe("$http", function () {
   let $http, $injector, requests, response, $rootScope;
