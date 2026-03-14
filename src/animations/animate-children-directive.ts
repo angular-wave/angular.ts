@@ -2,6 +2,7 @@ import { isString } from "../shared/utils.js";
 import { NG_ANIMATE_CHILDREN_DATA } from "./shared.ts";
 import { setCacheData } from "../shared/dom.ts";
 import { $injectTokens as $t } from "../injection-tokens.js";
+import { InterpolationFunction } from "../core/interpolate/interface.ts";
 
 $$AnimateChildrenDirective.$inject = [$t._interpolate];
 
@@ -24,7 +25,7 @@ export function $$AnimateChildrenDirective(
         // Interpolate and set the value, so that it is available to
         // animations that run right after compilation
         const interpolateFn = $interpolate(val) as
-          | import("../core/interpolate/interpolate.ts").InterpolationFunction
+          | InterpolationFunction
           | undefined;
 
         setData(interpolateFn ? interpolateFn(scope) : undefined);

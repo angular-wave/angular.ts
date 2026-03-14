@@ -1,4 +1,4 @@
-import type { AnimationDetails, AnimationOptions } from "./interface.ts";
+import type { AnimationOptions } from "./interface.ts";
 import { isArray, isString } from "../shared/utils.js";
 import { NodeType } from "../shared/node.ts";
 
@@ -10,6 +10,13 @@ export const PREPARE_CLASS_SUFFIX = "-prepare";
 
 export const NG_ANIMATE_CLASSNAME = "ng-animate";
 export const NG_ANIMATE_CHILDREN_DATA = "$$ngAnimateChildren";
+
+interface AnimationDetails {
+  options?: AnimationOptions;
+  addClass?: string;
+  removeClass?: string;
+  preparationClasses?: string;
+}
 
 /**
  * Returns only the `from`/`to` style portions of an animation options object.

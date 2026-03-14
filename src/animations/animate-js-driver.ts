@@ -1,7 +1,8 @@
 import { $injectTokens } from "../injection-tokens.js";
 import { AnimateRunner } from "./runner/animate-runner.ts";
 import type { Animator } from "./interface.ts";
-import type { AnimateJsFn, AnimationDetails } from "./interface.ts";
+import type { AnimateJsFn } from "./animate-js.ts";
+import type { AnimationDetails } from "./animation.ts";
 
 AnimateJsDriverProvider.$inject = ["$$animationProvider"];
 

@@ -449,7 +449,9 @@ export class Scope {
       if (isObject(value)) {
         if (hasOwn(target, property)) {
           const keyList = keys(oldValue);
+
           const nextValue = isProxy(value) ? value.$target : value;
+
           const nextKeys = new Set(keys(nextValue));
 
           for (const k of keyList) {

@@ -56,12 +56,14 @@ export class ViewService {
 
     for (let i = 0; i < this._ngViews.length; i++) {
       const ngView = this._ngViews[i];
+
       ngViewsByFqn[ngView.fqn] = ngView;
     }
 
     /** @param {ViewContext} context */
     const contextDepth = (context) => {
       let cursor = context;
+
       let depth = 1;
 
       while (cursor && cursor.parent) {
@@ -100,6 +102,7 @@ export class ViewService {
       if (cached !== undefined) return cached;
 
       let context = /** @type {ViewContext} */ (config.viewDecl.$context);
+
       let count = 0;
 
       while (++count && context.parent) {
@@ -115,14 +118,18 @@ export class ViewService {
 
     /** @type {Set<ViewConfigType>} */
     const matchedViewConfigs = new Set();
+
     /** @type {ViewTuple[]} */
     const ngViewTuples = [];
 
     for (let i = 0; i < this._ngViews.length; i++) {
       const ngView = this._ngViews[i];
+
       const matches = ViewService.matches(ngViewsByFqn, ngView);
+
       /** @type {ViewConfigType | undefined} */
       let selectedViewConfig = undefined;
+
       let bestDepth = Number.NEGATIVE_INFINITY;
 
       for (let j = 0; j < this._viewConfigs.length; j++) {
@@ -173,6 +180,7 @@ export class ViewService {
   registerUIView(ngView) {
     trace.traceViewServiceUIViewEvent("-> Registering", ngView);
     const ngViews = this._ngViews;
+
     const fqnMatches = (uiv) => uiv.fqn === ngView.fqn;
 
     if (ngViews.filter(fqnMatches).length) {
@@ -190,6 +198,7 @@ export class ViewService {
           "Tried removing non-registered ngView",
           ngView,
         );
+
         return;
       }
 
@@ -219,16 +228,20 @@ ViewService.matches = (
   /** @type {ActiveUIView} */ uiView,
 ) => {
   const uiViewFqn = uiView.fqn;
+
   const uiViewContext = uiView.creationContext;
 
   return (/** @type {ViewConfigType} */ viewConfig) => {
     if (!viewConfig || !viewConfig.viewDecl) return false;
 
     const vcName = viewConfig.viewDecl.$ngViewName || "$default";
+
     const vcContext = viewConfig.viewDecl.$ngViewContextAnchor || "";
+
     const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
 
     if (normalizedTarget !== uiViewFqn) return false;
+
     if (vcName !== uiView.name) return false;
 
     const viewContext = /** @type {ViewContext} */ (

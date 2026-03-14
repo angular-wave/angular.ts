@@ -463,6 +463,7 @@ export function ViewDirectiveFill($compile, $controller, $transitions) {
         const resolveAs = getResolveAs(cfg);
 
         const locals = resolveCtx ? getLocals(resolveCtx) : undefined;
+
         const targetScope = scope.$target;
 
         if (resolveAs) {
@@ -477,6 +478,7 @@ export function ViewDirectiveFill($compile, $controller, $transitions) {
 
           if (controllerAs) {
             targetScope[controllerAs] = controllerInstance;
+
             if (resolveAs) {
               targetScope[controllerAs][resolveAs] = locals;
             }
@@ -562,6 +564,7 @@ function registerControllerCallbacks(
   // Add component-level hook for onUiParamsChanged
   if (isFunction(controllerInstance.uiOnParamsChanged)) {
     const onParamsChanged = controllerInstance.uiOnParamsChanged;
+
     const resolveContext = new ResolveContext(cfg.path);
 
     const viewCreationTrans = resolveContext.getResolvable("$transition$").data;
@@ -652,7 +655,8 @@ function registerControllerCallbacks(
 
   // Add component-level hook for uiCanExit
   if (isFunction(controllerInstance.uiCanExit)) {
-    const uiCanExit = controllerInstance.uiCanExit;
+    const { uiCanExit } = controllerInstance;
+
     const id = _uiCanExitId++;
 
     const cacheProp = "_uiCanExitIds";

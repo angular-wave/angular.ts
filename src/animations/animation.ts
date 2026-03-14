@@ -1,3 +1,4 @@
+import type { AnimationOptions, Animator } from "./interface.ts";
 import {
   deleteCacheData,
   getCacheData,
@@ -17,34 +18,155 @@ import { AnimateRunner } from "./runner/animate-runner.ts";
 import { animateCache } from "./cache/animate-cache.ts";
 import { rafScheduler } from "./raf/raf-scheduler.ts";
 
-/** @typedef {import("./interface.ts").SortedAnimationEntry} SortedAnimationEntry */
-/** @typedef {import("./interface.ts").AnimationOptions} AnimationOptions */
-/** @typedef {import("./interface.ts").AnimationDetails} AnimationDetails */
-/** @typedef {import("./interface.ts").AnimationEntry} AnimationEntry */
-/** @typedef {import("./interface.ts").AnchorRef} AnchorRef */
-/** @typedef {import("./interface.ts").AnchorRefEntry} AnchorRefEntry */
-
 const RUNNER_STORAGE_KEY = "$$animationRunner";
 
 const PREPARE_CLASSES_KEY = "$$animatePrepareClasses";
 
+/**
+ * Built-in animation method names used by the queue and drivers.
+ *
+ * These correspond to the public API methods on {@link AnimateService} that are
+ * class-based or structural.
+ */
+export type AnimationMethod =
+  | "enter"
+  | "leave"
+  | "move"
+  | "addClass"
+  | "setClass"
+  | "removeClass";
+
+/**
+ * Concrete animation description passed into drivers.
+ *
+ * `AnimationDetails` is a normalized execution plan:
+ * - includes the target element
+ * - the resolved event name
+ * - whether it is structural
+ * - normalized options
+ * - optional anchor pairs for shared-element transitions
+ */
+export interface AnimationDetails {
+  from?: AnimationDetails;
+  to?: AnimationDetails;
+  anchors?: Array<{ out: HTMLElement; in: HTMLElement }>;
+  element: HTMLElement;
+  event: AnimationMethod | string;
+  classes?: string | null;
+  structural: boolean;
+  options: AnimationOptions;
+}
+
+/**
+ * Low-level animation executor used by the animation queue.
+ *
+ * This is the "engine" entry point: given a concrete element, an event name,
+ * and normalized options, it starts an animation and returns an {@link AnimateRunner}
+ * that represents the running work.
+ *
+ * Notes:
+ * - `event` is intentionally `string` to support custom/internal events beyond the
+ *   built-in set (e.g. driver-specific events).
+ * - Callers typically pass normalized {@link AnimationOptions}.
+ */
+export type AnimationService = (
+  element: HTMLElement,
+  event: string,
+  options?: AnimationOptions,
+) => AnimateRunner;
+
+/**
+ * Internal entry used for parent-to-child sorting before scheduling with RAF.
+ *
+ * The queue sorts animation start functions by DOM ancestry to ensure:
+ * - parent preparation classes are applied before children start
+ * - child animations don't observe incorrect computed styles
+ */
+export interface SortedAnimationEntry {
+  /** DOM node used to compute parent/child relationships (often the same as `element`). */
+  domNode: Node;
+
+  /** The element being animated. */
+  element: Element;
+
+  /** Function that triggers the animation start for this element. */
+  fn: () => void;
+
+  /** Children entries in the sort graph. */
+  children: SortedAnimationEntry[];
+
+  /** Internal marker to avoid processing nodes multiple times. */
+  processed?: boolean;
+}
+
+/**
+ * Internal queue entry representing an animation that will be driven.
+ *
+ * Extends {@link AnimationDetails} with lifecycle hooks used by the queue:
+ * - `beforeStart()` applies preparation classes/styles before driver detection
+ * - `close()` finalizes the animation state and resolves/rejects the runner
+ */
+export type AnimationEntry = AnimationDetails & {
+  beforeStart: () => void;
+  close: (reject?: boolean) => void;
+};
+
+/**
+ * Reference to a structural animation participating in an anchor (shared element) pair.
+ *
+ * Stores the index into the current animation list and the anchor element node.
+ */
+export interface AnchorRef {
+  animationID: number;
+  element: Element;
+}
+
+/**
+ * Pairing information for anchor animations.
+ *
+ * During grouping, an anchor key may map to:
+ * - `from`: the leaving element
+ * - `to`: the entering element
+ *
+ * If either side is missing, the animation falls back to non-anchor behavior.
+ */
+export interface AnchorRefEntry {
+  from?: AnchorRef;
+  to?: AnchorRef;
+}
+
+/**
+ * Normalized animation factory signature used by the animation subsystem.
+ *
+ * Unlike {@link AnimateJsFn}, this always returns an {@link Animator} (never `undefined`),
+ * typically because it represents the selected driver pipeline.
+ */
+export type AnimateFn = (
+  element: HTMLElement,
+  event: string,
+  classes?: string | null,
+  options?: AnimationOptions,
+) => Animator;
+
 export class AnimationProvider {
-  /**
-   * @type {string[]}
-   */
+  $get: [
+    string,
+    string,
+    (
+      rootScope: ng.RootScopeService,
+      injector: ng.InjectorService,
+    ) => AnimationService,
+  ];
+
   _drivers = [];
 
   constructor() {
     this.$get = [
       $t._rootScope,
       $t._injector,
-      /**
-       * @param {ng.RootScopeService} $rootScope
-       * @param {ng.InjectorService} $injector
-       * @return {import("./interface.ts").AnimationService}
-       */
-      ($rootScope, $injector) => {
-        return this.#createAnimationService(
+      /** Creates the runtime animation service. */
+      ($rootScope: ng.RootScopeService, $injector: ng.InjectorService) => {
+        return this._createAnimationService(
           $rootScope,
           $injector,
           this._drivers,
@@ -53,36 +175,34 @@ export class AnimationProvider {
     ];
   }
 
-  /**
-   * @param {ng.RootScopeService} $rootScope
-   * @param {ng.InjectorService} $injector
-   * @param {string[]} drivers
-   * @returns {import("./interface.ts").AnimationService}
-   */
-  #createAnimationService($rootScope, $injector, drivers) {
+  /** Builds the animation runtime around the configured driver chain. */
+  _createAnimationService(
+    $rootScope: ng.RootScopeService,
+    $injector: ng.InjectorService,
+    drivers: string[],
+  ): AnimationService {
     const NG_ANIMATE_REF_ATTR = "ng-animate-ref";
 
-    /** @type {AnimationEntry[]} */
-    const animationQueue = [];
+    const animationQueue: AnimationEntry[] = [];
 
-    /**
-     * @param {Element} element
-     */
-    const getRunner = (element) => {
-      return getCacheData(element, RUNNER_STORAGE_KEY);
+    /** Retrieves the active runner associated with an element, if any. */
+    const getRunner = (element: Element): AnimateRunner | undefined => {
+      return getCacheData(element, RUNNER_STORAGE_KEY) as
+        | AnimateRunner
+        | undefined;
     };
 
-    /**
-     * @param {SortedAnimationEntry[]} animations
-     */
-    const sortAnimations = (animations) => {
-      const tree = /** @type {Partial<SortedAnimationEntry>} */ {
+    /** Sorts animations by DOM depth so parent/child ordering is stable. */
+    const sortAnimations = (
+      animations: SortedAnimationEntry[],
+    ): SortedAnimationEntry[][] => {
+      const tree: Partial<SortedAnimationEntry> = {
         children: [],
       };
 
       let i;
 
-      const lookup = new Map();
+      const lookup = new Map<Node, SortedAnimationEntry>();
 
       // this is done first beforehand so that the map
       // is filled with a list of the elements that will be animated
@@ -105,12 +225,10 @@ export class AnimationProvider {
         processNode(animations[i]);
       }
 
-      return flatten(/** @type {SortedAnimationEntry} */ tree);
+      return flatten(tree as SortedAnimationEntry);
 
-      /**
-       * @param {SortedAnimationEntry} entry
-       */
-      function processNode(entry) {
+      /** Places a node under its nearest queued parent entry. */
+      function processNode(entry: SortedAnimationEntry): SortedAnimationEntry {
         if (entry.processed) return entry;
         entry.processed = true;
 
@@ -120,7 +238,7 @@ export class AnimationProvider {
 
         lookup.set(elementNode, entry);
 
-        let parentEntry;
+        let parentEntry: SortedAnimationEntry | undefined;
 
         while (parentNode) {
           parentEntry = lookup.get(parentNode);
@@ -135,18 +253,18 @@ export class AnimationProvider {
           parentNode = parentNode.parentNode;
         }
 
-        (parentEntry || tree).children.push(entry);
+        (parentEntry || tree).children!.push(entry);
 
         return entry;
       }
 
-      /**
-       * @param {SortedAnimationEntry} theeParam
-       */
-      function flatten(theeParam) {
-        const result = [];
+      /** Flattens the animation tree into depth-based execution rows. */
+      function flatten(
+        theeParam: SortedAnimationEntry,
+      ): SortedAnimationEntry[][] {
+        const result: SortedAnimationEntry[][] = [];
 
-        const queue = [];
+        const queue: SortedAnimationEntry[] = [];
 
         for (i = 0; i < theeParam.children.length; i++) {
           queue.push(theeParam.children[i]);
@@ -156,7 +274,7 @@ export class AnimationProvider {
 
         let nextLevelEntries = 0;
 
-        let row = [];
+        let row: SortedAnimationEntry[] = [];
 
         for (let j = 0; j < queue.length; j++) {
           const entry = queue[j];
@@ -168,7 +286,7 @@ export class AnimationProvider {
             row = [];
           }
           row.push(entry);
-          entry.children.forEach((childEntry) => {
+          entry.children.forEach((childEntry: SortedAnimationEntry) => {
             nextLevelEntries++;
             queue.push(childEntry);
           });
@@ -183,18 +301,17 @@ export class AnimationProvider {
       }
     };
 
-    /**
-     * @param {HTMLElement} elementParam
-     * @param {string} event
-     * @param {AnimationOptions | undefined} optionsParam
-     * @returns {AnimateRunner}
-     */
-    return (elementParam, event, optionsParam) => {
-      /** @type {AnimationOptions & { domOperation: () => void }} */
-      const options =
-        /** @type {AnimationOptions & { domOperation: () => void }} */ prepareAnimationOptions(
-          optionsParam,
-        );
+    /** Queues an animation request and returns the runner managing it. */
+    return (
+      elementParam: HTMLElement,
+      event: string,
+      optionsParam?: AnimationOptions,
+    ): AnimateRunner => {
+      const options = prepareAnimationOptions(
+        optionsParam,
+      ) as AnimationOptions & {
+        domOperation: () => void;
+      };
 
       const isStructural = ["enter", "move", "leave"].indexOf(event) >= 0;
 
@@ -250,14 +367,13 @@ export class AnimationProvider {
       if (animationQueue.length > 1) return runner;
 
       $rootScope.$postUpdate(() => {
-        /** @type {AnimationEntry[]} */
-        const animations = [];
+        const animations: AnimationEntry[] = [];
 
         animationQueue.forEach((entry) => {
-          if (getRunner(/** @type {HTMLElement} */ entry.element)) {
+          if (getRunner(entry.element)) {
             animations.push(entry);
           } else {
-            /** @type {(reject?: boolean | undefined) => void} */ entry.close();
+            entry.close();
           }
         });
 
@@ -265,8 +381,7 @@ export class AnimationProvider {
 
         const groupedAnimations = groupAnimations(animations);
 
-        /** @type {SortedAnimationEntry[]} */
-        const toBeSortedAnimations = [];
+        const toBeSortedAnimations: SortedAnimationEntry[] = [];
 
         groupedAnimations.forEach((animationEntry) => {
           const fromElement = animationEntry.from
@@ -288,7 +403,7 @@ export class AnimationProvider {
             element: fromElement,
             domNode: fromElement,
             fn: function triggerAnimationStart() {
-              let startAnimationFn;
+              let startAnimationFn: (() => AnimateRunner) | undefined;
 
               const closeFn = animationEntry.close;
 
@@ -322,7 +437,7 @@ export class AnimationProvider {
               } else {
                 const animationRunner = startAnimationFn();
 
-                animationRunner.done((/** @type {any} */ status) => {
+                animationRunner.done((status: boolean) => {
                   closeFn(!status);
                 });
                 updateAnimationRunners(animationEntry, animationRunner);
@@ -334,8 +449,7 @@ export class AnimationProvider {
 
         const finalAnimations = sortAnimations(toBeSortedAnimations);
 
-        /** @type {Array<() => void>} */
-        const flatFinalAnimations = [];
+        const flatFinalAnimations: Array<() => void> = [];
 
         for (let i = 0; i < finalAnimations.length; i++) {
           const innerArray = finalAnimations[i];
@@ -365,22 +479,17 @@ export class AnimationProvider {
 
       return runner;
 
-      /**
-       * @param {HTMLElement} node
-       */
-      function getAnchorNodes(node) {
+      /** Collects anchor-ref nodes for a structural animation subtree. */
+      function getAnchorNodes(node: HTMLElement): Element[] {
         const SELECTOR = `[${NG_ANIMATE_REF_ATTR}]`;
 
         const items = node.hasAttribute(NG_ANIMATE_REF_ATTR)
           ? [node]
           : node.querySelectorAll(SELECTOR);
 
-        /**
-         * @type {(Element | HTMLElement)[]}
-         */
-        const anchors = [];
+        const anchors: Element[] = [];
 
-        items.forEach((nodeItem) => {
+        items.forEach((nodeItem: Element) => {
           const attr = nodeItem.getAttribute(NG_ANIMATE_REF_ATTR);
 
           if (attr && attr.length) {
@@ -391,18 +500,13 @@ export class AnimationProvider {
         return anchors;
       }
 
-      /**
-       * @param {AnimationEntry[]} animations
-       * @returns {AnimationEntry[]}
-       */
-      function groupAnimations(animations) {
-        /** @type {AnimationEntry[]} */
-        const preparedAnimations = [];
+      /** Groups paired anchor-ref animations into a single animation entry. */
+      function groupAnimations(animations: AnimationEntry[]): AnimationEntry[] {
+        const preparedAnimations: AnimationEntry[] = [];
 
-        /** @type {Record<string, AnchorRefEntry>} */
-        const refLookup = {};
+        const refLookup: Record<string, AnchorRefEntry> = {};
 
-        animations.forEach((animation, index) => {
+        animations.forEach((animation: AnimationEntry, index: number) => {
           // eslint-disable-next-line no-shadow
           const { element, event } = animation;
 
@@ -415,12 +519,12 @@ export class AnimationProvider {
           if (anchorNodes.length) {
             const direction = enterOrMove ? "to" : "from";
 
-            anchorNodes.forEach((anchor) => {
+            anchorNodes.forEach((anchor: Element) => {
               const key = anchor.getAttribute(NG_ANIMATE_REF_ATTR);
 
               if (!key) return;
 
-              refLookup[key] = refLookup[key] || {};
+              refLookup[key] = refLookup[key] || ({} as AnchorRefEntry);
               refLookup[key][direction] = {
                 animationID: index,
                 element: anchor,
@@ -431,13 +535,11 @@ export class AnimationProvider {
           }
         });
 
-        /** @type {Record<string, boolean>} */
-        const usedIndicesLookup = {};
+        const usedIndicesLookup: Record<string, boolean> = {};
 
-        /** @type {Record<string, AnimationEntry>} */
-        const anchorGroups = {};
+        const anchorGroups: Record<string, AnimationEntry> = {};
 
-        values(refLookup).forEach((operations) => {
+        values(refLookup).forEach((operations: AnchorRefEntry) => {
           const { from, to } = operations;
 
           if (!from || !to) {
@@ -468,7 +570,7 @@ export class AnimationProvider {
           if (!anchorGroups[lookupKey]) {
             const group = (anchorGroups[lookupKey] = {
               structural: true,
-              element: /** @type {HTMLElement} */ from.element,
+              element: from.element as HTMLElement,
               event: fromAnimation.event,
               options: fromAnimation.options,
               beforeStart() {
@@ -486,9 +588,9 @@ export class AnimationProvider {
               from: fromAnimation,
               to: toAnimation,
               anchors: [], // TODO(matsko): change to reference nodes
-            });
+            } as AnimationEntry);
 
-            if (group.classes.length) {
+            if ((group.classes || "").length) {
               preparedAnimations.push(group);
             } else {
               preparedAnimations.push(fromAnimation);
@@ -500,8 +602,8 @@ export class AnimationProvider {
 
           if (group?.anchors) {
             group.anchors.push({
-              out: /** @type {HTMLElement} */ from.element,
-              in: /** @type {HTMLElement} */ to.element,
+              out: from.element as HTMLElement,
+              in: to.element as HTMLElement,
             });
           }
         });
@@ -509,25 +611,23 @@ export class AnimationProvider {
         return preparedAnimations;
       }
 
-      /**
-       * @param {string | string[] | null | undefined} value
-       * @returns {string}
-       */
-      function normalizeClassValue(value) {
+      /** Normalizes class input into a space-delimited string. */
+      function normalizeClassValue(
+        value: string | string[] | null | undefined,
+      ): string {
         if (Array.isArray(value)) return value.join(" ");
 
         return value || "";
       }
 
-      /**
-       * @param {string | string[] | null | undefined} a
-       * @param {string | string[] | null | undefined} b
-       * @returns {string}
-       */
-      function cssClassesIntersection(a, b) {
+      /** Returns the shared non-`ng-` CSS classes between two class sets. */
+      function cssClassesIntersection(
+        a: string | string[] | null | undefined,
+        b: string | string[] | null | undefined,
+      ): string {
         a = normalizeClassValue(a).split(" ");
         b = normalizeClassValue(b).split(" ");
-        const matches = [];
+        const matches: string[] = [];
 
         for (let i = 0; i < a.length; i++) {
           const aa = a[i];
@@ -545,14 +645,16 @@ export class AnimationProvider {
         return matches.join(" ");
       }
 
-      /**
-       * @param {import("./interface.ts").AnimationDetails} animationDetails
-       */
-      function invokeFirstDriver(animationDetails) {
+      /** Selects the first animation driver willing to handle a request. */
+      function invokeFirstDriver(
+        animationDetails: AnimationDetails,
+      ): Animator | undefined {
         for (let i = drivers.length - 1; i >= 0; i--) {
           const driverName = drivers[i];
 
-          const factory = $injector.get(driverName);
+          const factory = $injector.get(driverName) as (
+            details: AnimationDetails,
+          ) => Animator | undefined;
 
           const driver = factory(animationDetails);
 
@@ -576,11 +678,11 @@ export class AnimationProvider {
         }
       }
 
-      /**
-       * @param {*} animation
-       * @param {*} newRunner
-       */
-      function updateAnimationRunners(animation, newRunner) {
+      /** Rebinds any existing element runners to a newly created host runner. */
+      function updateAnimationRunners(
+        animation: AnimationEntry,
+        newRunner: AnimateRunner,
+      ): void {
         if (animation.from && animation.to) {
           update(animation.from.element);
           update(animation.to.element);
@@ -588,11 +690,9 @@ export class AnimationProvider {
           update(animation.element);
         }
 
-        /**
-         * @param {Element} el
-         */
-        function update(el) {
-          getRunner(el).setHost(newRunner);
+        /** Updates the host runner associated with a single element. */
+        function update(el: Element): void {
+          getRunner(el)?.setHost(newRunner);
         }
       }
 
@@ -601,24 +701,20 @@ export class AnimationProvider {
           getRunner(elementParam)?.end();
       }
 
-      /**
-       * @param {boolean | undefined} [rejected]
-       */
-      function close(rejected) {
+      /** Finalizes the animation and applies DOM/class/style cleanup. */
+      function close(rejected?: boolean) {
         deleteCacheData(elementParam, RUNNER_STORAGE_KEY);
 
         applyAnimationClasses(elementParam, options);
         applyAnimationStyles(elementParam, options);
-        options.domOperation();
+        options.domOperation?.();
 
         if (tempClasses) {
           const classList = Array.isArray(tempClasses)
             ? tempClasses
             : tempClasses.split(" ");
 
-          classList.forEach((/** @type {string} */ cls) =>
-            elementParam.classList.remove(cls),
-          );
+          classList.forEach((cls) => elementParam.classList.remove(cls));
         }
 
         runner.complete(!rejected);
