@@ -2,7 +2,7 @@ import { Angular } from "../../angular.js";
 import { createInjector } from "../../core/di/injector.ts";
 import { dealoc } from "../../shared/dom.js";
 import { browserTrigger, wait } from "../../shared/test-utils.js";
-import { createWindowEventDirective } from "./events.js";
+import { createWindowEventDirective } from "./events.ts";
 
 describe("event directives", () => {
   let angular;

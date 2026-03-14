@@ -1,7 +1,7 @@
 import { Angular } from "../../angular.js";
 import { dealoc } from "../../shared/dom.js";
 import { wait } from "../../shared/test-utils.js";
-import { arrayDifference, split, toClassString } from "./class.js";
+import { arrayDifference, split, toClassString } from "./class.ts";
 
 describe("ngClass", () => {
   let element;

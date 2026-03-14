@@ -28,81 +28,81 @@ import {
   ngRequiredAriaDirective,
   ngShowAriaDirective,
   ngValueAriaDirective,
-} from "./directive/aria/aria.js";
-import { ngAttributeAliasDirectives } from "./directive/attrs/attrs.js";
+} from "./directive/aria/aria.ts";
+import { ngAttributeAliasDirectives } from "./directive/attrs/attrs.ts";
 import {
   ngBindDirective,
   ngBindHtmlDirective,
   ngBindTemplateDirective,
-} from "./directive/bind/bind.js";
-import { ngChannelDirective } from "./directive/channel/channel.js";
+} from "./directive/bind/bind.ts";
+import { ngChannelDirective } from "./directive/channel/channel.ts";
 import {
   ngClassDirective,
   ngClassEvenDirective,
   ngClassOddDirective,
-} from "./directive/class/class.js";
-import { ngCloakDirective } from "./directive/cloak/cloak.js";
-import { ngControllerDirective } from "./directive/controller/controller.js";
-import { ngElDirective } from "./directive/el/el.js";
-import { ngEventDirectives } from "./directive/events/events.js";
-import { formDirective, ngFormDirective } from "./directive/form/form.js";
+} from "./directive/class/class.ts";
+import { ngCloakDirective } from "./directive/cloak/cloak.ts";
+import { ngControllerDirective } from "./directive/controller/controller.ts";
+import { ngElDirective } from "./directive/el/el.ts";
+import { ngEventDirectives } from "./directive/events/events.ts";
+import { formDirective, ngFormDirective } from "./directive/form/form.ts";
 import {
   ngDeleteDirective,
   ngGetDirective,
   ngPostDirective,
   ngPutDirective,
   ngSseDirective,
-} from "./directive/http/http.js";
-import { ngIfDirective } from "./directive/if/if.js";
+} from "./directive/http/http.ts";
+import { ngIfDirective } from "./directive/if/if.ts";
 import {
   ngIncludeDirective,
   ngIncludeFillContentDirective,
-} from "./directive/include/include.js";
+} from "./directive/include/include.ts";
 import {
   hiddenInputDirective,
   inputDirective,
   ngValueDirective,
-} from "./directive/input/input.js";
-import { ngInitDirective } from "./directive/init/init.js";
-import { ngInjectDirective } from "./directive/inject/inject.js";
-import { ngListenerDirective } from "./directive/listener/listener.js";
-import { ngModelDirective } from "./directive/model/model.js";
-import { ngModelOptionsDirective } from "./directive/model-options/model-options.js";
+} from "./directive/input/input.ts";
+import { ngInitDirective } from "./directive/init/init.ts";
+import { ngInjectDirective } from "./directive/inject/inject.ts";
+import { ngListenerDirective } from "./directive/listener/listener.ts";
+import { ngModelDirective } from "./directive/model/model.ts";
+import { ngModelOptionsDirective } from "./directive/model-options/model-options.ts";
 import {
   ngMessageDefaultDirective,
   ngMessageDirective,
   ngMessageExpDirective,
   ngMessagesDirective,
   ngMessagesIncludeDirective,
-} from "./directive/messages/messages.js";
-import { ngNonBindableDirective } from "./directive/non-bindable/non-bindable.js";
-import { ngOptionsDirective } from "./directive/options/options.js";
-import { optionDirective, selectDirective } from "./directive/select/select.js";
-import { ngRefDirective } from "./directive/ref/ref.js";
-import { ngRepeatDirective } from "./directive/repeat/repeat.js";
-import { ngScopeDirective } from "./directive/scope/scope.js";
-import { scriptDirective } from "./directive/script/script.js";
-import { ngSetterDirective } from "./directive/setter/setter.js";
+} from "./directive/messages/messages.ts";
+import { ngNonBindableDirective } from "./directive/non-bindable/non-bindable.ts";
+import { ngOptionsDirective } from "./directive/options/options.ts";
+import { optionDirective, selectDirective } from "./directive/select/select.ts";
+import { ngRefDirective } from "./directive/ref/ref.ts";
+import { ngRepeatDirective } from "./directive/repeat/repeat.ts";
+import { ngScopeDirective } from "./directive/scope/scope.ts";
+import { scriptDirective } from "./directive/script/script.ts";
+import { ngSetterDirective } from "./directive/setter/setter.ts";
 import {
   ngHideDirective,
   ngShowDirective,
-} from "./directive/show-hide/show-hide.js";
-import { ngStyleDirective } from "./directive/style/style.js";
+} from "./directive/show-hide/show-hide.ts";
+import { ngStyleDirective } from "./directive/style/style.ts";
 import {
   ngSwitchDefaultDirective,
   ngSwitchDirective,
   ngSwitchWhenDirective,
-} from "./directive/switch/switch.js";
-import { ngTranscludeDirective } from "./directive/transclude/transclude.js";
+} from "./directive/switch/switch.ts";
+import { ngTranscludeDirective } from "./directive/transclude/transclude.ts";
 import {
   maxlengthDirective,
   minlengthDirective,
   patternDirective,
   requiredDirective,
-} from "./directive/validators/validators.js";
-import { ngViewportDirective } from "./directive/viewport/viewport.js";
-import { ngWasmDirective } from "./directive/wasm/wasm.js";
-import { ngWorkerDirective } from "./directive/worker/worker.js";
+} from "./directive/validators/validators.ts";
+import { ngViewportDirective } from "./directive/viewport/viewport.ts";
+import { ngWasmDirective } from "./directive/wasm/wasm.ts";
+import { ngWorkerDirective } from "./directive/worker/worker.ts";
 import { trace } from "./router/common/trace.js";
 import {
   StateRefActiveDirective,

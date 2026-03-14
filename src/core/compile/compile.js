@@ -46,9 +46,9 @@ import { PREFIX_REGEXP } from "../../shared/constants.ts";
 import {
   createEventDirective,
   createWindowEventDirective,
-} from "../../directive/events/events.js";
+} from "../../directive/events/events.ts";
 import { Attributes } from "./attributes.js";
-import { ngObserveDirective } from "../../directive/observe/observe.js";
+import { ngObserveDirective } from "../../directive/observe/observe.ts";
 import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
 
 /** @typedef {import("./interface.ts").BoundTranscludeFn} BoundTranscludeFn */
