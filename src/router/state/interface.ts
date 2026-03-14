@@ -1,6 +1,6 @@
 import { ParamDeclaration, RawParams } from "../params/interface.ts";
 import { StateObject } from "./state-object.ts";
-import { ViewContext } from "../view/interface.ts";
+import { ViewContext } from "../view/view.ts";
 import { Injectable } from "../../interface.ts";
 import { Transition } from "../transition/transition.js";
 import {
@@ -13,9 +13,9 @@ import {
   ResolvableLiteral,
   ProviderLike,
 } from "../resolve/interface.ts";
-import { Resolvable } from "../resolve/resolvable.js";
+import { Resolvable } from "../resolve/resolvable.ts";
 import { TargetState } from "./target-state.ts";
-import { Glob } from "../glob/glob.js";
+import { Glob } from "../glob/glob.ts";
 
 export type StateOrName = string | StateDeclaration | StateObject;
 

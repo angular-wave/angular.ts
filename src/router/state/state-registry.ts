@@ -3,7 +3,7 @@ import { StateBuilder } from "./state-builder.ts";
 import { StateQueueManager } from "./state-queue-manager.ts";
 import { applyPairs, removeFrom } from "../../shared/common.js";
 import { propEq } from "../../shared/hof.js";
-import { ResolveContext } from "../resolve/resolve-context.js";
+import { ResolveContext } from "../resolve/resolve-context.ts";
 import { isString, keys } from "../../shared/utils.js";
 import { $injectTokens as $t } from "../../injection-tokens.js";
 import type { InjectorService } from "../../core/di/internal-injector.ts";

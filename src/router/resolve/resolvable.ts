@@ -9,7 +9,7 @@ import {
 } from "../../shared/utils.js";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
-import type { Transition } from "../transition/transition.ts";
+import type { Transition } from "../transition/transition.js";
 import type { ResolveContext } from "./resolve-context.ts";
 
 /**

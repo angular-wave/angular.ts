@@ -7,7 +7,7 @@ import { trace } from "../common/trace.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
-import type { Transition } from "../transition/transition.ts";
+import type { Transition } from "../transition/transition.js";
 import { Resolvable } from "./resolvable.ts";
 import type {
   PolicyWhen,

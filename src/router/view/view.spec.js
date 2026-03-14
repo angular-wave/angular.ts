@@ -1,12 +1,12 @@
 import { dealoc } from "../../shared/dom.js";
 import { Angular } from "../../angular.js";
 import { curry } from "../../shared/hof.js";
-import { StateMatcher } from "../state/state-matcher.js";
-import { StateBuilder } from "../state/state-builder.js";
-import { StateObject } from "../state/state-object.js";
-import { ViewService } from "./view.js";
-import { PathNode } from "../path/path-node.js";
-import { PathUtils } from "../path/path-utils.js";
+import { StateMatcher } from "../state/state-matcher.ts";
+import { StateBuilder } from "../state/state-builder.ts";
+import { StateObject } from "../state/state-object.ts";
+import { ViewService } from "./view.ts";
+import { PathNode } from "../path/path-node.ts";
+import { PathUtils } from "../path/path-utils.ts";
 import { tail } from "../../shared/common.js";
 import { wait } from "../../shared/test-utils.js";
 

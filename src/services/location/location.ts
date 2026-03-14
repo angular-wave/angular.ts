@@ -314,7 +314,10 @@ export class Location {
     paramValue?: string | number | Array<string> | boolean | null,
   ) {
     return arguments.length
-      ? this.setSearch(search as string | number | Record<string, any>, paramValue)
+      ? this.setSearch(
+          search as string | number | Record<string, any>,
+          paramValue,
+        )
       : this.getSearch();
   }
 

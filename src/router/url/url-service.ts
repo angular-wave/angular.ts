@@ -56,13 +56,13 @@ export class UrlService {
   /**
    * @param {ng.LocationProvider} $locationProvider
    * @param {import("../../router/state/state-service.ts").StateProvider} stateProvider
-   * @param {import("../router.js").RouterProvider} globals
+   * @param {import("../router.ts").RouterProvider} globals
    * @param {import("../../router/url/url-config.ts").UrlConfigProvider} urlConfigProvider
    */
   constructor(
     $locationProvider: ng.LocationProvider,
     stateProvider: import("../../router/state/state-service.ts").StateProvider,
-    globals: import("../router.js").RouterProvider,
+    globals: import("../router.ts").RouterProvider,
     urlConfigProvider: import("../../router/url/url-config.ts").UrlConfigProvider,
   ) {
     this._locationProvider = $locationProvider;

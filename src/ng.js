@@ -103,24 +103,24 @@ import {
 import { ngViewportDirective } from "./directive/viewport/viewport.ts";
 import { ngWasmDirective } from "./directive/wasm/wasm.ts";
 import { ngWorkerDirective } from "./directive/worker/worker.ts";
-import { trace } from "./router/common/trace.js";
+import { trace } from "./router/common/trace.ts";
 import {
   StateRefActiveDirective,
   StateRefDirective,
   StateRefDynamicDirective,
-} from "./router/directives/state-directives.js";
+} from "./router/directives/state-directives.ts";
 import {
   ViewDirectiveFill,
   ViewDirective,
-} from "./router/directives/view-directive.js";
-import { RouterProvider } from "./router/router.js";
+} from "./router/directives/view-directive.ts";
+import { RouterProvider } from "./router/router.ts";
 import { StateProvider } from "./router/state/state-service.ts";
 import { StateRegistryProvider } from "./router/state/state-registry.ts";
-import { TemplateFactoryProvider } from "./router/template-factory.js";
-import { TransitionProvider } from "./router/transition/transition-service.js";
+import { TemplateFactoryProvider } from "./router/template-factory.ts";
+import { TransitionProvider } from "./router/transition/transition-service.ts";
 import { UrlConfigProvider } from "./router/url/url-config.ts";
 import { UrlService } from "./router/url/url-service.ts";
-import { ViewService } from "./router/view/view.js";
+import { ViewService } from "./router/view/view.ts";
 import { AnchorScrollProvider } from "./services/anchor-scroll/anchor-scroll.ts";
 import { CookieProvider } from "./services/cookie/cookie.ts";
 import { ExceptionHandlerProvider } from "./services/exception/exception.ts";
