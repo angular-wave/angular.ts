@@ -29,7 +29,7 @@ import {
   pendClasses,
   prepareAnimationOptions,
 } from "../shared.js";
-import { animateCache } from "../cache/animate-cache.js";
+import { animateCache } from "../cache/animate-cache.ts";
 import { rafScheduler } from "../raf/raf-scheduler.js";
 
 const ANIMATE_TIMER_KEY = $injectTokens._animateCss;

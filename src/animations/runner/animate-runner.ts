@@ -1,25 +1,5 @@
-/**
- * Optional host controls that may be provided by a concrete animation runner implementation.
- *
- * A runner host represents the underlying “real” animation (CSS/JS/driver-based) and
- * exposes lifecycle controls. The queue/runner wrapper can forward calls to this host.
- */
-export interface AnimationHost {
-  /** Pause animation. */
-  pause?: () => void;
+import type { AnimationHost } from "../interface.ts";
 
-  /** Resume animation. */
-  resume?: () => void;
-
-  /** End animation (finish immediately). */
-  end?: () => void;
-
-  /** Cancel animation (abort and rollback if applicable). */
-  cancel?: () => void;
-
-  /** Report animation progress; signature is driver-dependent. */
-  progress?: (...args: any[]) => void;
-}
 /**
  * Hybrid AnimateRunner
  * Supports both CSS animations (batched) and JS animations (per-Tick).

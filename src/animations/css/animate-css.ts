@@ -1,4 +1,8 @@
-import type { AnimationOptions, Animator } from "../interface.ts";
+import type {
+  AnimationHost,
+  AnimationOptions,
+  Animator,
+} from "../interface.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import {
   getCacheData,
@@ -32,7 +36,6 @@ import {
 } from "../shared.ts";
 import { animateCache } from "../cache/animate-cache.ts";
 import { rafScheduler } from "../raf/raf-scheduler.ts";
-import type { AnimationHost } from "../runner/animate-runner.ts";
 
 /**
  * Tuple representation of an inline style entry (`[property, value]`).

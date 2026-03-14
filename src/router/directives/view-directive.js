@@ -245,7 +245,8 @@ export function ViewDirective($view, $animate, $anchorScroll, $interpolate) {
         let viewConfig;
 
         const parentFqn =
-          parse("$cfg.viewDecl.$context.name")(inherited) || inherited.$ngView.fqn;
+          parse("$cfg.viewDecl.$context.name")(inherited) ||
+          inherited.$ngView.fqn;
 
         /** @type {import("../view/interface.ts").ActiveUIView} */
         const activeUIView = {

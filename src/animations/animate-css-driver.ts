@@ -1,5 +1,8 @@
-import type { AnimationOptions, Animator } from "./interface.ts";
-import type { AnimationDetails } from "./animation.ts";
+import type {
+  AnimationDetails,
+  AnimationOptions,
+  Animator,
+} from "./interface.ts";
 import type { AnimateCssService } from "./css/animate-css.ts";
 import { $injectTokens } from "../injection-tokens.ts";
 import { NodeType } from "../shared/node.ts";
