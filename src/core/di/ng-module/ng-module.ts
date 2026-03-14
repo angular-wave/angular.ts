@@ -1,5 +1,5 @@
 import { $injectTokens as $t } from "../../../injection-tokens.js";
-import { createWorkerConnection } from "../../../directive/worker/worker.js";
+import { createWorkerConnection } from "../../../directive/worker/worker.ts";
 import {
   instantiateWasm,
   isFunction,

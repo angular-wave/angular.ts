@@ -28,11 +28,6 @@ export function ngIfDirective($animate: ng.AnimateService): ng.Directive {
 
       $scope.$watch($attr.ngIf, (value: any) => {
         if (value) {
-          if (previousElements) {
-            removeElement(previousElements);
-            previousElements = null;
-          }
-
           if (!childScope) {
             $transclude((clone, newScope) => {
               childScope = newScope;
@@ -42,13 +37,11 @@ export function ngIfDirective($animate: ng.AnimateService): ng.Directive {
               block = clone as Element;
 
               if (hasAnimate(clone as Node)) {
-                const parentElement = $element.parentElement;
-
-                if (!parentElement) {
-                  return;
-                }
-
-                $animate.enter(clone as Element, parentElement, $element);
+                $animate.enter(
+                  clone as Element,
+                  $element.parentElement as Element,
+                  $element,
+                );
               } else {
                 $element.after(clone as Node);
               }

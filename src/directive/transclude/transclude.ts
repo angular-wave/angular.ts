@@ -1,46 +1,28 @@
+// @ts-nocheck
+
 import { minErr } from "../../shared/utils.js";
-import { emptyElement, startingTag } from "../../shared/dom.ts";
+import { emptyElement, startingTag } from "../../shared/dom.js";
 import { NodeType } from "../../shared/node.ts";
 import { $injectTokens } from "../../injection-tokens.js";
 
-/**
- * Directive that marks the insertion point for the transcluded DOM of the nearest parent directive that uses transclusion.
- *
- * You can specify that you want to insert a named transclusion slot, instead of the default slot, by providing the slot name
- * as the value of the `ng-transclude` or `ng-transclude-slot` attribute.
- *
- * If the transcluded content is not empty (i.e. contains one or more DOM nodes, including whitespace text nodes), any existing
- * content of this element will be removed before the transcluded content is inserted.
- * If the transcluded content is empty (or only whitespace), the existing content is left intact. This lets you provide fallback
- * content in the case that no transcluded content is provided.
- *
- * @element ANY
- *
- * @param ngTransclude|ngTranscludeSlot the name of the slot to insert at this point. If this is not provided, is empty
- *                                               or its value is the same as the name of the attribute then the default slot is used.
- */
 const ngTranscludeMinErr = minErr("ngTransclude");
 
 ngTranscludeDirective.$inject = [$injectTokens._compile];
-export function ngTranscludeDirective(
-  $compile: ng.CompileService,
-): ng.Directive {
+
+export function ngTranscludeDirective($compile) {
   return {
-    compile: function ngTranscludeCompile(tElement: Element) {
-      // Remove and cache any original content to act as a fallback
+    compile: function ngTranscludeCompile(tElement) {
       const fallbackLinkFn = $compile(tElement.childNodes);
 
       emptyElement(tElement);
 
-      /** Inserts transcluded content or fallback content into the target element. */
       function ngTranscludePostLink(
-        $scope: ng.Scope,
-        $element: Element,
-        $attrs: import("../../core/compile/attributes.ts").Attributes &
-          Record<string, string>,
-        _controller: unknown,
-        $transclude?: ng.TranscludeFn,
-      ): void {
+        $scope,
+        $element,
+        $attrs,
+        _controller,
+        $transclude,
+      ) {
         if (!$transclude) {
           throw ngTranscludeMinErr(
             "orphan",
@@ -51,79 +33,44 @@ export function ngTranscludeDirective(
           );
         }
 
-        // If the attribute is of the form: `ng-transclude="ng-transclude"` then treat it like the default
         if ($attrs.ngTransclude === $attrs.$attr.ngTransclude) {
           $attrs.ngTransclude = "";
         }
         const slotName = $attrs.ngTransclude || $attrs.ngTranscludeSlot;
-        const controllersBoundTransclude =
-          $transclude as import("../../core/compile/interface.ts").ControllersBoundTranscludeFn;
 
-        // If the slot is required and no transclusion content is provided then this call will throw an error
-        controllersBoundTransclude(
-          undefined,
-          ngTranscludeCloneAttachFn,
-          null,
-          slotName,
-        );
+        $transclude(ngTranscludeCloneAttachFn, null, slotName);
 
-        // If the slot is optional and no transclusion content is provided then use the fallback content
-        if (slotName && !controllersBoundTransclude.isSlotFilled?.(slotName)) {
+        if (slotName && !$transclude.isSlotFilled(slotName)) {
           useFallbackContent();
         }
 
-        /** Attaches the transcluded clone or falls back to cached original content. */
-        function ngTranscludeCloneAttachFn(
-          clone: Node | NodeList | Node[] | null | undefined,
-          transcludedScope?: ng.Scope | null,
-        ): void {
+        function ngTranscludeCloneAttachFn(clone, transcludedScope) {
           if (notWhitespace(clone)) {
             if (clone instanceof NodeList) {
               Array.from(clone).forEach((el) => {
                 $element.append(el);
               });
-            } else if (Array.isArray(clone)) {
-              clone.forEach((el) => {
-                $element.append(el);
-              });
-            } else if (clone) {
+            } else {
               $element.append(clone);
             }
           } else {
             useFallbackContent();
-            // There is nothing linked against the transcluded scope since no content was available,
-            // so it should be safe to clean up the generated scope.
-            transcludedScope?.$destroy();
+            transcludedScope.$destroy();
           }
         }
 
         function useFallbackContent() {
-          // Since this is the fallback content rather than the transcluded content,
-          // we link against the scope of this directive rather than the transcluded scope
           fallbackLinkFn($scope, (clone) => {
-            $element.append(clone as Node);
+            $element.append(clone);
           });
         }
 
-        /** Returns true when the transcluded clone contains non-whitespace content. */
-        function notWhitespace(
-          node?: Node | NodeList | Node[] | null,
-        ): boolean {
-          if (!node) {
+        function notWhitespace(node) {
+          if (node instanceof Array) {
             return false;
-          }
-
-          if (Array.isArray(node)) {
-            return node.some((child) => notWhitespace(child));
-          }
-
-          if (node instanceof NodeList) {
-            return Array.from(node).some((child) => notWhitespace(child));
-          }
-
-          if (
+          } else if (
             node.nodeType !== NodeType._TEXT_NODE ||
-            (node.nodeValue || "").trim()
+            node.nodeValue.trim()
           ) {
             return true;
           }
