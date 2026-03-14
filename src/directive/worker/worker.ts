@@ -1,5 +1,5 @@
-import { $injectTokens as $t } from "../../injection-tokens.ts";
-import { callBackAfterFirst, isDefined, wait } from "../../shared/utils.ts";
+import { $injectTokens as $t } from "../../injection-tokens.js";
+import { callBackAfterFirst, isDefined, wait } from "../../shared/utils.js";
 import { getEventNameForElement } from "../http/http.ts";
 
 export interface WorkerConfig {

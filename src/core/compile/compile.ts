@@ -40,7 +40,7 @@ import {
   simpleCompare,
   trim,
   values,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import { SCE_CONTEXTS } from "../../services/sce/sce.ts";
 import { PREFIX_REGEXP } from "../../shared/constants.ts";
 import {
@@ -49,7 +49,7 @@ import {
 } from "../../directive/events/events.ts";
 import { Attributes } from "./attributes.ts";
 import { ngObserveDirective } from "../../directive/observe/observe.ts";
-import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.ts";
+import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
 import type { Component } from "../../interface.ts";
 import type { InterpolationFunction } from "../interpolate/interpolate.ts";
 import type { SanitizeUriProvider } from "../sanitize/sanitize-uri.ts";

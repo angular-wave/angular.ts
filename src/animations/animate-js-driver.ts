@@ -1,4 +1,4 @@
-import { $injectTokens } from "../injection-tokens.ts";
+import { $injectTokens } from "../injection-tokens.js";
 import { AnimateRunner } from "./runner/animate-runner.ts";
 import type { Animator } from "./interface.ts";
 import type { AnimateJsFn, AnimationDetails } from "./interface.ts";

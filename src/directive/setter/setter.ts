@@ -1,4 +1,4 @@
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 
 ngSetterDirective.$inject = [$t._parse, $t._log];
 

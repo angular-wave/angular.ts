@@ -3,9 +3,9 @@ import {
   getNodeName,
   hasOwn,
   minErr,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import { getCacheData } from "../../shared/dom.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+import { $injectTokens } from "../../injection-tokens.js";
 import type { DirectiveLinkFn } from "../../interface.ts";
 
 /**

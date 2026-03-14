@@ -3,8 +3,8 @@ import {
   isFunction,
   isNumber,
   isString,
-} from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+} from "../../shared/utils.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 import { urlResolve } from "../../shared/url-utils/url-utils.ts";
 
 export interface AnchorScrollService {

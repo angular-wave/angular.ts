@@ -1,4 +1,4 @@
-import { $injectTokens } from "../injection-tokens.ts";
+import { $injectTokens } from "../injection-tokens.js";
 ngAnimateSwapDirective.$inject = [$injectTokens._animate];
 /** Swaps a transcluded block with enter/leave animations as the watched value changes. */
 export function ngAnimateSwapDirective(

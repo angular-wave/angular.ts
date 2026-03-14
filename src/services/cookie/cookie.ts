@@ -4,7 +4,7 @@ import {
   isNumber,
   isString,
   nullObject,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import {
   validateIsString,
   validateRequired,

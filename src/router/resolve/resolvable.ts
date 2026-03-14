@@ -6,7 +6,7 @@ import {
   isFunction,
   isNullOrUndefined,
   isObject,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { Transition } from "../transition/transition.ts";

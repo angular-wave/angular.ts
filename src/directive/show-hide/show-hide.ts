@@ -1,5 +1,5 @@
-import { $injectTokens } from "../../injection-tokens.ts";
-import { hasAnimate } from "../../shared/utils.ts";
+import { $injectTokens } from "../../injection-tokens.js";
+import { hasAnimate } from "../../shared/utils.js";
 
 const NG_HIDE_CLASS = "ng-hide";
 

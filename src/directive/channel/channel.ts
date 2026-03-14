@@ -1,5 +1,5 @@
-import { isObject, isString } from "../../shared/utils.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+import { isObject, isString } from "../../shared/utils.js";
+import { $injectTokens } from "../../injection-tokens.js";
 
 ngChannelDirective.$inject = [$injectTokens._eventBus];
 /**

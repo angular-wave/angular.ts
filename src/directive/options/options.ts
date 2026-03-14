@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { $injectTokens } from "../../injection-tokens.js";
 import { emptyElement, removeElement, startingTag } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import {
@@ -9,7 +9,7 @@ import {
   isArrayLike,
   isDefined,
   minErr,
-} from "../../shared/utils.ts";
+} from "../../shared/utils.js";
 
 const ngOptionsMinErr = minErr("ngOptions");
 

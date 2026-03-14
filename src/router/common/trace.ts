@@ -33,14 +33,14 @@
  * @packageDocumentation
  */
 import { parse } from "../../shared/hof.ts";
-import { isNumber, keys } from "../../shared/utils.ts";
+import { isNumber, keys } from "../../shared/utils.js";
 import {
   functionToString,
   maxLength,
   padString,
   stringify,
 } from "../../shared/strings.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
+import { $injectTokens } from "../../injection-tokens.js";
 import type { HookResult } from "../transition/interface.ts";
 import type { TransitionHook } from "../transition/transition-hook.ts";
 import type { TransitionHookOptions } from "../transition/transition-hook.ts";

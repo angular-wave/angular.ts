@@ -1,5 +1,5 @@
 import { assertPredicate, unnestR } from "../../shared/common.ts";
-import { isArray } from "../../shared/utils.ts";
+import { isArray } from "../../shared/utils.js";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { IMatchingNodes, RegisteredHook } from "./hook-registry.ts";

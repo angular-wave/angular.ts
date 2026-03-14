@@ -28,8 +28,8 @@ import {
   toJson,
   trim,
   uppercase,
-} from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+} from "../../shared/utils.js";
+import { $injectTokens as $t } from "../../injection-tokens.js";
 
 const APPLICATION_JSON = "application/json";
 

@@ -1,4 +1,4 @@
-import { instantiateWasm } from "../../shared/utils.ts";
+import { instantiateWasm } from "../../shared/utils.js";
 
 /**
  * Loads a WebAssembly module and exposes its exports on `scope.$target`.

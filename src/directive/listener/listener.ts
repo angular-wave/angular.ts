@@ -1,4 +1,4 @@
-import { isObject, isString } from "../../shared/utils.ts";
+import { isObject, isString } from "../../shared/utils.js";
 
 /** Listens for DOM custom events and projects their payload into the element or scope. */
 export function ngListenerDirective(): ng.Directive {
