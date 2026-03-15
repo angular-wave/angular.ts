@@ -1,4 +1,4 @@
-import { getBooleanAttrName } from "../../shared/dom.js";
+import { getBooleanAttrName } from "../../shared/dom.ts";
 import {
   arrayRemove,
   directiveNormalize,
@@ -11,7 +11,7 @@ import {
   nullObject,
   snakeCase,
   trim,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 import type { NodeRef } from "../../shared/noderef.ts";
 

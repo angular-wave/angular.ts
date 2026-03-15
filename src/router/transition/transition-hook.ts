@@ -8,7 +8,7 @@ import { Rejection } from "./reject-factory.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { RegisteredHook } from "./hook-registry.ts";
 import type { HookResult } from "./interface.ts";
-import type { Transition } from "./transition.js";
+import type { Transition } from "./transition.ts";
 
 /**
  * Transition lifecycle phases used to group and order hook execution.

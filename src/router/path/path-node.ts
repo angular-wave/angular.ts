@@ -1,5 +1,5 @@
-import { applyPairs, find } from "../../shared/common.js";
-import { propEq } from "../../shared/hof.js";
+import { applyPairs, find } from "../../shared/common.ts";
+import { propEq } from "../../shared/hof.ts";
 import { Param } from "../params/param.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { StateObject } from "../state/state-object.ts";

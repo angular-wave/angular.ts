@@ -745,7 +745,7 @@ export function addDateMinutes(date: Date, minutes: number): Date {
  * Parses an escaped URL query string into key-value pairs.
  */
 export function parseKeyValue(value: string) {
-  const obj: Record<string, boolean | string | Array<any>> = {};
+  const obj: Record<string, boolean | string | undefined | Array<any>> = {};
 
   const res = value || "";
 
@@ -773,7 +773,7 @@ export function parseKeyValue(value: string) {
           : true;
 
         if (!hasOwn(obj, decodedKey)) {
-          obj[decodedKey] = decodedVal ?? true;
+          obj[decodedKey] = decodedVal;
         } else if (isArray(obj[decodedKey])) {
           (obj[decodedKey] as Array<any>).push(decodedVal);
         } else {

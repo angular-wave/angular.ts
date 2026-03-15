@@ -1,6 +1,6 @@
 /* eslint-disable id-length */
 /* eslint-disable no-magic-numbers */
-import { isDefined, minErr } from "../../../shared/utils.js";
+import { isDefined, minErr } from "../../../shared/utils.ts";
 import type { Token } from "./token.ts";
 
 export type { Token } from "./token.ts";

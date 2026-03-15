@@ -1,5 +1,5 @@
 import { RafScheduler } from "./raf-scheduler.ts";
-import { wait } from "../../shared/utils.js";
+import { wait } from "../../shared/utils.ts";
 
 describe("RafScheduler", function () {
   let scheduler;

@@ -13,10 +13,10 @@ import {
   isUndefined,
   minErr,
   shallowCopy,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 
 import { snakeToCamel } from "../../shared/dom.ts";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+import { $injectTokens as $t } from "../../injection-tokens.ts";
 import type { ParsedUrl } from "../../shared/url-utils/url-utils.ts";
 import type { SanitizerFn } from "../../core/sanitize/sanitize-uri.ts";
 import type { CompiledExpression } from "../../core/parse/interface.ts";

@@ -1,4 +1,4 @@
-import { isString } from "../../shared/utils.js";
+import { isString } from "../../shared/utils.ts";
 
 /**
  * A normalized representation of a parsed URL.

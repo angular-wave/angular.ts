@@ -1,9 +1,9 @@
 // @ts-nocheck
 
-import { minErr } from "../../shared/utils.js";
-import { emptyElement, startingTag } from "../../shared/dom.js";
+import { minErr } from "../../shared/utils.ts";
+import { emptyElement, startingTag } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 
 const ngTranscludeMinErr = minErr("ngTransclude");
 

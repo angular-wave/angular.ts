@@ -1,6 +1,6 @@
 import { BuiltStateDeclaration, StateDeclaration } from "../state/interface.ts";
 import { PredicateBinary } from "../../shared/interface.ts";
-import { Transition } from "./transition.js";
+import { Transition } from "./transition.ts";
 import { StateObject } from "../state/state-object.ts";
 import { PathNode } from "../path/path-node.ts";
 import { TargetState } from "../state/target-state.ts";

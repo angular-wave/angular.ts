@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import type { NgModelController } from "../model/model.ts";
 import type { ScopeProxied } from "../../core/scope/scope.ts";
 import {
@@ -13,7 +13,7 @@ import {
   isUndefined,
   nextUid,
   trim,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { ngModelMinErr } from "./../model/model.ts";
 
 export type NgModelControllerProxied = ScopeProxied<NgModelController>;

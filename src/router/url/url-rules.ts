@@ -1,6 +1,6 @@
 import { UrlMatcher } from "./url-matcher.ts";
-import { isDefined } from "../../shared/utils.js";
-import { removeFrom } from "../../shared/common.js";
+import { isDefined } from "../../shared/utils.ts";
+import { removeFrom } from "../../shared/common.ts";
 import { UrlRuleFactory } from "./url-rule.ts";
 import type { MatcherUrlRule, UrlRule } from "./interface.ts";
 

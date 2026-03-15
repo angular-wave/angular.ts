@@ -1,5 +1,9 @@
 import type { Scope } from "../scope/scope.ts";
-import type { NodeRef } from "../../shared/noderef.js";
+import type { NodeRef } from "../../shared/noderef.ts";
+import type { Attributes } from "./attributes.ts";
+import type { InterpolationFunction } from "../interpolate/interface.ts";
+import type { CompiledExpression } from "../parse/interface.ts";
+import type { Component } from "../../interface.ts";
 
 export type TranscludedNodes = Node | Node[] | NodeList | null;
 export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
@@ -123,7 +127,7 @@ export type CompileFn = (
 export interface LinkFnMapping {
   _index: number;
   _nodeLinkFnCtx?: NodeLinkFnCtx;
-  _childLinkFn?: CompositeLinkFn | null;
+  _childLinkFn?: ChildLinkFn | CompositeLinkFn | null;
 }
 
 /**
@@ -351,4 +355,180 @@ export interface InternalDirective extends ng.Directive {
    * non-HTML content.
    */
   templateNamespace?: string;
+}
+
+export interface IsolateBinding {
+  mode: string;
+  collection: boolean;
+  optional: boolean;
+  attrName: string;
+}
+
+export type IsolateBindingMap = Record<string, IsolateBinding>;
+
+export interface ParsedDirectiveBindings {
+  isolateScope: IsolateBindingMap | null;
+  bindToController: IsolateBindingMap | null;
+}
+
+export type DirectiveRegistry = Record<string, ng.DirectiveFactory[]>;
+
+export type DirectiveLookupCache = Record<string, InternalDirective[]>;
+
+export type RegisterDirectiveFn = (
+  name: string | Record<string, ng.DirectiveFactory>,
+  directiveFactory?: ng.DirectiveFactory,
+) => any;
+
+export type RegisterComponentFn = (
+  name: string | Record<string, Component>,
+  options?: Component,
+) => any;
+
+export type TrustedUrlListAccessor = (regexp?: RegExp) => RegExp | undefined;
+
+export type StrictComponentBindingsAccessor = (
+  enabled?: boolean,
+) => boolean | any;
+
+export interface DirectiveBindingInfo {
+  initialChanges: Record<string, SimpleChange>;
+  removeWatches?: () => void;
+}
+
+export interface CompileControllerLocals {
+  $scope: Scope;
+  $element: Node;
+  $attrs: Attributes;
+  $transclude: ng.TranscludeFn;
+}
+
+export type ControllerInstanceRef = (() => any) & {
+  instance: any;
+  bindingInfo?: DirectiveBindingInfo;
+};
+
+export type ElementControllers = Record<string, ControllerInstanceRef>;
+
+export type NodeLinkTranscludeFn =
+  | ChildTranscludeOrLinkFn
+  | ControllersBoundTranscludeFn
+  | ng.TranscludeFn;
+
+export interface TextInterpolateLinkState {
+  _interpolateFn: InterpolationFunction;
+  _watchExpression: string;
+}
+
+export interface AttrInterpolateLinkState {
+  _name: string;
+  _value: string;
+  _trustedContext?: string;
+  _allOrNothing: boolean;
+  _interpolateFn?: InterpolationFunction;
+}
+
+export interface PropertyDirectiveLinkState {
+  _attrName: string;
+  _propName: string;
+  _ngPropGetter: CompiledExpression;
+  _sanitizer: (value: any) => any;
+}
+
+export type ContextualLinkFn<TLinkCtx = unknown> = ((...args: any[]) => any) & {
+  _linkCtx?: TLinkCtx;
+};
+
+export interface ContextualDirectivePrePost<
+  TPreLinkCtx = unknown,
+  TPostLinkCtx = TPreLinkCtx,
+> {
+  pre?: (...args: any[]) => any;
+  post?: (...args: any[]) => any;
+  _linkCtx?: unknown;
+  _preLinkCtx?: TPreLinkCtx;
+  _postLinkCtx?: TPostLinkCtx;
+}
+
+export type CompileDirectiveLinkResult =
+  | ContextualLinkFn
+  | ContextualDirectivePrePost<any, any>
+  | null
+  | undefined;
+
+export interface LinkFnRecord {
+  _fn: Function;
+  _require: string | Array<any> | Record<string, any> | undefined;
+  _directiveName: string;
+  _isolateScope: boolean;
+  _linkCtx?: unknown;
+}
+
+export interface ControllersBoundTranscludeState {
+  _boundTranscludeFn: BoundTranscludeFn;
+  _elementControllers: ElementControllers;
+  _hasElementTranscludeDirective: boolean;
+  _scopeToChild: Scope;
+  _elementRef: NodeRef;
+}
+
+export interface ControllersBoundTranscludeFn {
+  (
+    scopeParam?: Scope | CloneAttachFn | null,
+    cloneAttachFn?: CloneAttachFn | Node | null,
+    futureParentElement?: Node | null,
+    slotName?: string | number,
+  ): TranscludedNodes | void;
+  isSlotFilled?: (slotName: string | number) => boolean;
+  _boundTransclude?: BoundTranscludeFn;
+}
+
+export interface NodeLinkState {
+  _compileNode: Node | Element;
+  _templateAttrs: Attributes;
+  _transcludeFn: NodeLinkTranscludeFn;
+  _controllerDirectives?: Record<string, InternalDirective> | null;
+  _newIsolateScopeDirective?: InternalDirective | null;
+  _newScopeDirective?: InternalDirective | null;
+  _hasElementTranscludeDirective: boolean;
+  _preLinkFns: LinkFnRecord[];
+  _postLinkFns: LinkFnRecord[];
+}
+
+export interface DelayedTemplateReplacementState {
+  _templateNodes: Element[];
+  _templateAttrs: Attributes;
+}
+
+export type DelayedTemplateLinkQueueEntry = [
+  Scope,
+  Node | Element,
+  BoundTranscludeFn | null | undefined,
+];
+
+export type DelayedTemplateLinkQueue = Array<
+  Scope | Node | Element | BoundTranscludeFn | null | undefined
+>;
+
+export interface DelayedTemplateLinkState {
+  _linkQueue: DelayedTemplateLinkQueue | null;
+  _afterTemplateNodeLinkFnCtx?: NodeLinkFnCtx;
+  _afterTemplateChildLinkFn: CompositeLinkFn | ChildLinkFn | null;
+  _beforeTemplateCompileNode: Node | Element;
+  _compileNodeRef: NodeRef;
+  _origAsyncDirective: InternalDirective;
+  _previousCompileContext: PreviousCompileContext;
+  _compiledNode?: Element;
+}
+
+export interface DelayedTemplateNodeLinkResult {
+  _nodeLinkFn: StoredNodeLinkFn;
+  _nodeLinkFnState: DelayedTemplateLinkState;
+}
+
+export interface CompositeLinkState {
+  _linkFnsList: LinkFnMapping[];
+  _nodeRefList: NodeRef;
+  _nodeLinkFnFound?: NodeLinkFn | StoredNodeLinkFn;
+  _transcludeFn?: ChildTranscludeOrLinkFn;
 }

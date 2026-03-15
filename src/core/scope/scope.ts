@@ -13,10 +13,10 @@ import {
   keys,
   nextUid,
   nullObject,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { ASTType } from "../parse/ast-type.ts";
-import { $injectTokens as $t } from "../../injection-tokens.js";
-import type { CompiledExpression } from "../parse/parse.ts";
+import { $injectTokens as $t } from "../../injection-tokens.ts";
+import type { CompiledExpression } from "../parse/interface.ts";
 
 export type ListenerFn = (newValue?: any, originalTarget?: object) => void;
 

@@ -1,7 +1,7 @@
 // @ts-nocheck
 
-import { $injectTokens } from "../../injection-tokens.js";
-import { emptyElement, removeElement, startingTag } from "../../shared/dom.js";
+import { $injectTokens } from "../../injection-tokens.ts";
+import { emptyElement, removeElement, startingTag } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import {
   equals,
@@ -11,7 +11,7 @@ import {
   isArrayLike,
   isDefined,
   minErr,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 
 const ngOptionsMinErr = minErr("ngOptions");
 

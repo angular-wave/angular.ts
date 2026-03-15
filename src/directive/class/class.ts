@@ -6,7 +6,7 @@ import {
   isString,
   keys,
   nullObject,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 
 /** Creates the family of `ngClass*` directives. */
 function classDirective(

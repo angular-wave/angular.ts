@@ -1,5 +1,5 @@
-import { filter, map } from "../../shared/common.js";
-import { isArray, isDefined } from "../../shared/utils.js";
+import { filter, map } from "../../shared/common.ts";
+import { isArray, isDefined } from "../../shared/utils.ts";
 import type { ParamTypeDefinition } from "./interface.ts";
 /**
  * An internal class which implements [[ParamTypeDefinition]].

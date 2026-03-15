@@ -1,5 +1,5 @@
-import { isDefined } from "../../shared/utils.js";
-import { $injectTokens } from "../../injection-tokens.js";
+import { isDefined } from "../../shared/utils.ts";
+import { $injectTokens } from "../../injection-tokens.ts";
 
 export type SanitizerFn = (
   uri: string | null | undefined,

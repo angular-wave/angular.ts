@@ -1,7 +1,7 @@
-import { createElementFromHTML, dealoc } from "../shared/dom.js";
-import { Angular } from "../angular.js";
-import { isObject } from "../shared/utils.js";
-import { isFunction, wait } from "../shared/utils.js";
+import { createElementFromHTML, dealoc } from "../shared/dom.ts";
+import { Angular } from "../angular.ts";
+import { isObject } from "../shared/utils.ts";
+import { isFunction, wait } from "../shared/utils.ts";
 import { createInjector } from "../core/di/injector.ts";
 
 describe("$animate", () => {

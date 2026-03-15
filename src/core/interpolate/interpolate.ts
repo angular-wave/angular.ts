@@ -3,8 +3,8 @@ import {
   isUndefined,
   minErr,
   stringify,
-} from "../../shared/utils.js";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+} from "../../shared/utils.ts";
+import { $injectTokens as $t } from "../../injection-tokens.ts";
 import type { ParseService } from "../parse/interface.ts";
 import type { InterpolateService, InterpolationFunction } from "./interface.ts";
 

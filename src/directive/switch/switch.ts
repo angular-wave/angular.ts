@@ -1,6 +1,6 @@
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import { domInsert } from "../../shared/dom.ts";
-import { hasAnimate, values } from "../../shared/utils.js";
+import { hasAnimate, values } from "../../shared/utils.ts";
 
 type NgSwitchBlock = {
   _clone: Node;

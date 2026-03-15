@@ -2,7 +2,7 @@ import { AST } from "./ast.ts";
 import { Lexer } from "../lexer/lexer.ts";
 import { createInjector } from "../../di/injector.ts";
 import { ASTType } from "../ast-type.ts";
-import { Angular } from "../../../angular.js";
+import { Angular } from "../../../angular.ts";
 
 describe("ast", () => {
   let $rootScope;

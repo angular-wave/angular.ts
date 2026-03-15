@@ -1,4 +1,4 @@
-import { allTrueR, filter, find, map } from "../../shared/common.js";
+import { allTrueR, filter, find, map } from "../../shared/common.ts";
 import { isInjectable } from "../../shared/predicates.ts";
 import {
   isArray,
@@ -6,7 +6,7 @@ import {
   isNullOrUndefined,
   isString,
   isUndefined,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { ParamType } from "./param-type.ts";
 import type { ParamDeclaration, RawParams, Replace } from "./interface.ts";
 import type { ParamTypes } from "./param-types.ts";
@@ -157,11 +157,15 @@ function getReplace(
 
   if (isString(squash)) replace.push({ from: squash, to: undefined });
 
-  const configuredKeys = map(replace, (x: Replace) => x.from) as string[];
+  const configuredKeys = map(replace, (x: Replace) => x.from) as Array<
+    string | null
+  >;
 
-  return filter(
-    defaultPolicy,
-    (item) => configuredKeys.indexOf(/** @type {string} */ item.from) === -1,
+  return (
+    filter(
+      defaultPolicy,
+      (item) => configuredKeys.indexOf(item.from) === -1,
+    ) as Replace[]
   ).concat(replace);
 }
 

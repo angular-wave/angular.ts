@@ -1,13 +1,13 @@
 import { find, tail, uniqR, unnestR } from "../../shared/common.ts";
 import { propEq } from "../../shared/hof.ts";
 import { stringify } from "../../shared/strings.ts";
-import { isUndefined } from "../../shared/utils.js";
+import { isUndefined } from "../../shared/utils.ts";
 import { PathUtils } from "../path/path-utils.ts";
 import { trace } from "../common/trace.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
-import type { Transition } from "../transition/transition.js";
+import type { Transition } from "../transition/transition.ts";
 import { Resolvable } from "./resolvable.ts";
 import type {
   PolicyWhen,

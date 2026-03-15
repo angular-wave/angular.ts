@@ -1,5 +1,5 @@
-import { extend, hasOwn } from "../../shared/utils.js";
-import { $injectTokens } from "../../injection-tokens.js";
+import { extend, hasOwn } from "../../shared/utils.ts";
+import { $injectTokens } from "../../injection-tokens.ts";
 
 export interface AriaService {
   config(key: string | number): any;

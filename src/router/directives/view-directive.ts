@@ -1,6 +1,6 @@
-import { tail, unnestR } from "../../shared/common.js";
-import { hasAnimate, isDefined, isFunction } from "../../shared/utils.js";
-import { parse } from "../../shared/hof.js";
+import { tail, unnestR } from "../../shared/common.ts";
+import { hasAnimate, isDefined, isFunction } from "../../shared/utils.ts";
+import { parse } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { trace } from "../common/trace.ts";
 import { ViewConfig } from "../state/views.ts";
@@ -9,9 +9,9 @@ import {
   getCacheData,
   getInheritedData,
   setCacheData,
-} from "../../shared/dom.js";
+} from "../../shared/dom.ts";
 import { getLocals } from "../state/state-registry.ts";
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import type { ActiveUIView, ViewContext } from "../view/view.ts";
 import type { PathNode } from "../path/path-node.ts";
 
@@ -45,8 +45,10 @@ type UiCanExitTransition = ng.Transition &
     redirectedFrom(): UiCanExitTransition | null;
   };
 
-function withResolvers<T>() {
-  let resolve: (value?: T) => void;
+function withResolvers<
+  T,
+>(): import("../../shared/common.ts").PromiseResolvers<T> {
+  let resolve!: (value: T | PromiseLike<T>) => void;
   let reject: (reason?: any) => void;
 
   const promise = new Promise<T>((resolveParam, rejectParam) => {
@@ -54,7 +56,7 @@ function withResolvers<T>() {
     reject = rejectParam;
   });
 
-  return { promise, resolve: resolve!, reject: reject! };
+  return { promise, resolve, reject: reject! };
 }
 
 /**
@@ -263,7 +265,7 @@ export function ViewDirective(
             | string
             | undefined) || inherited.$ngView.fqn;
 
-        const activeUIView = {
+        const activeUIView: ActiveUIView = {
           id: directive.count++, // Global sequential ID for ng-view tags added to DOM
           name, // ng-view name (<div ng-view="name"></div>
           fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
@@ -287,7 +289,7 @@ export function ViewDirective(
               rootData.$cfg.viewDecl.$context
             );
           },
-        } satisfies ActiveUIView;
+        };
 
         trace.traceUIViewEvent("Linking", activeUIView);
 

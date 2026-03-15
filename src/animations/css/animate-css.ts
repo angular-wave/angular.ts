@@ -1,5 +1,5 @@
 import type { AnimationOptions, Animator } from "../interface.ts";
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import {
   getCacheData,
   removeElementData,
@@ -13,7 +13,7 @@ import {
   isString,
   keys,
   nullObject,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { AnimateRunner, AnimationHost } from "../runner/animate-runner.ts";
 import {
   ACTIVE_CLASS_SUFFIX,

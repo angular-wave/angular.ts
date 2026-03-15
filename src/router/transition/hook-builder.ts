@@ -1,5 +1,5 @@
 import { assertPredicate, unnestR } from "../../shared/common.ts";
-import { isArray } from "../../shared/utils.js";
+import { isArray } from "../../shared/utils.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { IMatchingNodes, RegisteredHook } from "./hook-registry.ts";
@@ -8,7 +8,7 @@ import {
   TransitionHookPhase,
   TransitionHookScope,
 } from "./transition-hook.ts";
-import type { Transition, TreeChanges } from "./transition.js";
+import type { Transition, TreeChanges } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
 
 export interface HookTuple {
@@ -30,7 +30,7 @@ export class HookBuilder {
   buildHooksForPhase(phase: TransitionHookPhase): TransitionHook[] {
     return this.transition._transitionService
       ._getEvents(phase)
-      .map((type) => this.buildHooks(type))
+      .map((type: TransitionEventType) => this.buildHooks(type))
       .reduce(unnestR, [])
       .filter(Boolean);
   }

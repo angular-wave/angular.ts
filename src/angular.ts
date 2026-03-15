@@ -8,7 +8,7 @@ import {
   minErr,
   ngAttrPrefixes,
   values,
-} from "./shared/utils.js";
+} from "./shared/utils.ts";
 import {
   getController,
   getInjector,
@@ -24,7 +24,7 @@ import { createInjector } from "./core/di/injector.ts";
 import { NgModule } from "./core/di/ng-module/ng-module.ts";
 import { registerNgModule } from "./ng.ts";
 import { unnestR } from "./shared/common.ts";
-import { $injectTokens as $t } from "./injection-tokens.js";
+import { $injectTokens as $t } from "./injection-tokens.ts";
 import { annotate } from "./core/di/di.ts";
 import { validateIsString } from "./shared/validate.ts";
 import type { StateRegistryProvider } from "./router/state/state-registry.ts";
@@ -35,7 +35,6 @@ const $injectorMinErr = minErr("$injector");
 
 type ModuleRegistry = Record<string, NgModule | null>;
 type AppElement = { _element: HTMLElement; _module: string | null };
-type WindowWithAngular = Window & typeof globalThis & { angular?: Angular };
 
 const moduleRegistry: ModuleRegistry = {};
 
@@ -46,8 +45,9 @@ const moduleRegistry: ModuleRegistry = {};
  * and the lightweight event-based invocation helpers exposed on `window.angular`.
  */
 export class Angular extends EventTarget {
-  private subapps: Angular[] = [];
-  private _bootsrappedModules: Array<string | any> = [];
+  public subapps: Angular[] = [];
+  public _subapp: boolean;
+  public _bootsrappedModules: Array<string | any> = [];
 
   public $eventBus!: ng.PubSubService;
   public $injector!: ng.InjectorService;
@@ -66,16 +66,17 @@ export class Angular extends EventTarget {
    */
   constructor(subapp = false) {
     super();
+    this._subapp = subapp;
 
     values($t).forEach((token) => {
       (this.$t as Record<string, string>)[token] = token;
     });
 
     if (!subapp) {
-      (window as WindowWithAngular).angular = this;
+      (window as any).angular = this;
     }
 
-    registerNgModule(this);
+    registerNgModule(this as unknown as ng.Angular);
   }
 
   /**
@@ -271,7 +272,10 @@ export class Angular extends EventTarget {
     modules?: Array<string | any>,
     config: AngularBootstrapConfig = { strictDi: false },
   ): ng.InjectorService {
-    if (element instanceof Element && getInjector(element)) {
+    if (
+      (element instanceof Element || element instanceof Document) &&
+      getInjector(element as unknown as Element)
+    ) {
       throw ngMinErr("btstrpd", "App already bootstrapped");
     }
 

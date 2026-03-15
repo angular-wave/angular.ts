@@ -10,10 +10,10 @@ import {
   mergeClasses,
   minErr,
   nullObject,
-} from "../shared/utils.js";
+} from "../shared/utils.ts";
 import { animatedomInsert, domInsert, removeElement } from "../shared/dom.ts";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
-import { $injectTokens } from "../injection-tokens.js";
+import { $injectTokens } from "../injection-tokens.ts";
 import type { AnimateRunner } from "./runner/animate-runner.ts";
 
 const $animateMinErr = minErr("$animate");

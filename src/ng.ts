@@ -14,7 +14,7 @@ import { InterpolateProvider } from "./core/interpolate/interpolate.ts";
 import { ParseProvider } from "./core/parse/parse.ts";
 import { SanitizeUriProvider } from "./core/sanitize/sanitize-uri.ts";
 import { RootScopeProvider } from "./core/scope/scope.ts";
-import { $injectTokens as $t } from "./injection-tokens.js";
+import { $injectTokens as $t } from "./injection-tokens.ts";
 import {
   AriaProvider,
   ngCheckedAriaDirective,

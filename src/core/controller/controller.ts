@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import type { ControllerConstructor, Injectable } from "../../interface.ts";
 import {
   assertArgFn,
@@ -9,16 +9,14 @@ import {
   isObject,
   isString,
   minErr,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 
 export interface ControllerLocals {
   $scope: ng.Scope;
-  $element: Element;
+  $element: Node;
 }
 
-export type ControllerExpression =
-  | string
-  | Injectable<ControllerConstructor>;
+export type ControllerExpression = string | Injectable<ControllerConstructor>;
 
 export type ControllerService = (
   expression: ControllerExpression,
@@ -231,5 +229,3 @@ export class ControllerProvider {
     (locals.$scope as any).$controllerIdentifier = identifier;
   }
 }
-
-export type { ControllerExpression, ControllerLocals, ControllerService };

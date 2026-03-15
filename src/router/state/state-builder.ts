@@ -5,7 +5,7 @@ import {
   map,
   omit,
   tail,
-} from "../../shared/common.js";
+} from "../../shared/common.ts";
 import {
   hasOwn,
   isArray,
@@ -13,9 +13,9 @@ import {
   isFunction,
   isString,
   values,
-} from "../../shared/utils.js";
-import { stringify } from "../../shared/strings.js";
-import { is, pattern, val } from "../../shared/hof.js";
+} from "../../shared/utils.ts";
+import { stringify } from "../../shared/strings.ts";
+import { is, pattern, val } from "../../shared/hof.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { ng1ViewsBuilder } from "./views.ts";
 import { annotate } from "../../core/di/di.ts";

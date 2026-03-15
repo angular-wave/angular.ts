@@ -1,14 +1,14 @@
-import { removeFrom, tail, uniqR, unnestR } from "../../shared/common.js";
+import { removeFrom, tail, uniqR, unnestR } from "../../shared/common.ts";
 import {
   entries,
   isArray,
   isNullOrUndefined,
   isObject,
   isString,
-} from "../../shared/utils.js";
-import { parse } from "../../shared/hof.js";
-import { getInheritedData } from "../../shared/dom.js";
-import { $injectTokens } from "../../injection-tokens.js";
+} from "../../shared/utils.ts";
+import { parse } from "../../shared/hof.ts";
+import { getInheritedData } from "../../shared/dom.ts";
+import { $injectTokens } from "../../injection-tokens.ts";
 type ParsedStateRef = { state: string | null; paramExpr: string | null };
 type ProcessedDef = {
   ngState: unknown;

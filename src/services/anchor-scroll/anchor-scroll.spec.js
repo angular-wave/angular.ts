@@ -1,4 +1,4 @@
-import { Angular } from "../../angular.js";
+import { Angular } from "../../angular.ts";
 import { AnchorScrollProvider } from "./anchor-scroll.ts";
 
 describe("AnchorScrollProvider", () => {

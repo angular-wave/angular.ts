@@ -9,14 +9,14 @@ import {
   isUndefined,
   shallowCopy,
   snakeCase,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import {
   DIRTY_CLASS,
   INVALID_CLASS,
   PRISTINE_CLASS,
   VALID_CLASS,
 } from "../../shared/constants.ts";
-import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
+import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.ts";
 
 export const nullFormCtrl = {
   $nonscope: true,

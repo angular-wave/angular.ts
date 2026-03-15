@@ -1,4 +1,4 @@
-import { hasOwn, isString } from "../../shared/utils.js";
+import { hasOwn, isString } from "../../shared/utils.ts";
 import { StateObject } from "./state-object.ts";
 import type { StateRegistryProvider } from "./state-registry.ts";
 import type { StateRegistryListener, StateStore } from "./interface.ts";

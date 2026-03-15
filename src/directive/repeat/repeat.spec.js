@@ -1,6 +1,6 @@
-import { Angular } from "../../angular.js";
-import { createElementFromHTML, dealoc } from "../../shared/dom.js";
-import { wait } from "../../shared/test-utils.js";
+import { Angular } from "../../angular.ts";
+import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
+import { wait } from "../../shared/test-utils.ts";
 
 describe("ngRepeat", () => {
   let element;

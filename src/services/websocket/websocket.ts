@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import { StreamConnection } from "../stream/stream.ts";
 import type { StreamConnectionConfig } from "../stream/stream.ts";
 import type { LogService } from "../log/log.ts";
