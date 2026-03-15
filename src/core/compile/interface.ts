@@ -1,4 +1,4 @@
-import type { Scope } from "../scope/scope.js";
+import type { Scope } from "../scope/scope.ts";
 import type { NodeRef } from "../../shared/noderef.js";
 
 export type TranscludedNodes = Node | Node[] | NodeList | null;

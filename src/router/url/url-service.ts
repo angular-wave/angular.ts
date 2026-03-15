@@ -287,7 +287,7 @@ export class UrlService {
    *   urlService.sync();
    * });
    * ```
-   * @param {import("../../core/scope/interface.ts").ScopeEvent | undefined} [evt]
+   * @param {import("../../core/scope/scope.ts").ScopeEvent | undefined} [evt]
    */
   sync(evt?: ng.ScopeEvent): void {
     if (evt && evt.defaultPrevented) return;

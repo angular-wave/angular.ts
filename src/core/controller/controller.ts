@@ -10,11 +10,22 @@ import {
   isString,
   minErr,
 } from "../../shared/utils.js";
-import type {
-  ControllerExpression,
-  ControllerLocals,
-  ControllerService,
-} from "./interface.ts";
+
+export interface ControllerLocals {
+  $scope: ng.Scope;
+  $element: Element;
+}
+
+export type ControllerExpression =
+  | string
+  | Injectable<ControllerConstructor>;
+
+export type ControllerService = (
+  expression: ControllerExpression,
+  locals?: ControllerLocals,
+  later?: boolean,
+  ident?: string,
+) => any | (() => any);
 
 type InjectableController = Injectable<ControllerConstructor>;
 type ControllerInstance = Record<string, any>;

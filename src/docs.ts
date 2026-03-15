@@ -12,7 +12,7 @@ export type { SceService, SceDelegateService } from "./services/sce/sce.ts";
 export * from "./index.js";
 export * from "./angular.js";
 export * from "./core/di/internal-injector.ts";
-export * from "./core/scope/scope.js";
+export * from "./core/scope/scope.ts";
 export * from "./services/cookie/cookie.ts";
 export * from "./services/exception/exception.ts";
 export * from "./core/parse/interface.ts";

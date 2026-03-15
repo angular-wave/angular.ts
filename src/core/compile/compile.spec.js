@@ -23,7 +23,7 @@ import {
   getDirectiveRestrict,
   replaceWith,
   wrapTemplate,
-} from "./compile.js";
+} from "./compile.ts";
 
 function isUnknownElement(el) {
   return !!el.toString().match(/Unknown/);

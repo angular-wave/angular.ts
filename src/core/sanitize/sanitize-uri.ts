@@ -1,6 +1,10 @@
 import { isDefined } from "../../shared/utils.js";
 import { $injectTokens } from "../../injection-tokens.js";
-import type { SanitizerFn } from "./interface.ts";
+
+export type SanitizerFn = (
+  uri: string | null | undefined,
+  isMediaUrl?: boolean,
+) => string | null | undefined;
 
 export class SanitizeUriProvider {
   _aHrefSanitizationTrustedUrlList: RegExp;

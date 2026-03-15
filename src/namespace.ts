@@ -1,14 +1,14 @@
 export { angular } from "./index.js";
 
 import { Angular as TAngular } from "./angular.js";
-import { Attributes as TAttributes } from "./core/compile/attributes.js";
-import { Scope as TScope } from "./core/scope/scope.js";
-import { ProviderCache as TProviderCache } from "./core/di/interface.ts";
+import { Attributes as TAttributes } from "./core/compile/attributes.ts";
 import {
+  Scope as TScope,
   ListenerFn as TListenerFn,
   Listener as TListener,
   ScopeEvent as TScopeEvent,
-} from "./core/scope/interface.ts";
+} from "./core/scope/scope.ts";
+import { ProviderCache as TProviderCache } from "./core/di/interface.ts";
 import { NgModule as TNgModule } from "./core/di/ng-module/ng-module.ts";
 import { InjectorService as TInjectorService } from "./core/di/internal-injector.ts";
 
@@ -16,7 +16,7 @@ import { AnchorScrollProvider as TAnchorScrollProvider } from "./services/anchor
 
 import type { AnchorScrollService as TAnchorScrollService } from "./services/anchor-scroll/anchor-scroll.ts";
 
-import { ControllerService as TControllerService } from "./core/controller/interface.ts";
+import { ControllerService as TControllerService } from "./core/controller/controller.ts";
 import type { ExceptionHandler as TExceptionHandler } from "./services/exception/exception.ts";
 import { ExceptionHandlerProvider as TExceptionHandlerProvider } from "./services/exception/exception.ts";
 import { ParseService as TParseService } from "./core/parse/interface.ts";
