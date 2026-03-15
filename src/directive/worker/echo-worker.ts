@@ -12,14 +12,14 @@ self.onmessage = async (event) => {
 
   let result;
 
-  if (data?.action === "fib") {
-    /**
-     * Computes a Fibonacci number recursively for demo purposes.
-     */
-    function fib(x: number): number {
-      return x <= 1 ? x : fib(x - 1) + fib(x - 2);
-    }
+  /**
+   * Computes a Fibonacci number recursively for demo purposes.
+   */
+  function fib(x: number): number {
+    return x <= 1 ? x : fib(x - 1) + fib(x - 2);
+  }
 
+  if (data?.action === "fib") {
     result = fib(data.n);
   } else {
     result = { echo: data };

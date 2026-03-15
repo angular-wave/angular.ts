@@ -1,4 +1,4 @@
-import { tail, unnestR } from "../../shared/common.ts";
+import { PromiseResolvers, tail, unnestR } from "../../shared/common.ts";
 import { hasAnimate, isDefined, isFunction } from "../../shared/utils.ts";
 import { parse } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
@@ -14,24 +14,29 @@ import { getLocals } from "../state/state-registry.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import type { ActiveUIView, ViewContext } from "../view/view.ts";
 import type { PathNode } from "../path/path-node.ts";
+import { TargetState } from "../state/target-state.ts";
 
 type Renderer = {
   enter: (element: HTMLElement, target: HTMLElement, cb: () => void) => void;
   leave: (element: HTMLElement, cb: () => void) => void;
 };
+
 type NgViewAnimData = {
   $animEnter: Promise<void>;
   $animLeave: Promise<void>;
-  $$animLeave: import("../../shared/common.ts").PromiseResolvers<void>;
+  $$animLeave: PromiseResolvers<void>;
 };
+
 type NgViewData = {
   $cfg?: ViewConfig;
   $ngView: ActiveUIView;
 };
+
 type ActiveUIViewRootData = {
   $cfg: { viewDecl: { $context: ViewContext } };
   $ngView: Partial<ActiveUIView>;
 };
+
 type ViewControllerInstance = Record<string, any> & {
   $onInit?: () => void;
   uiOnParamsChanged?: (
@@ -40,14 +45,13 @@ type ViewControllerInstance = Record<string, any> & {
   ) => void;
   uiCanExit?: (trans: ng.Transition) => unknown;
 };
+
 type UiCanExitTransition = ng.Transition &
   Record<string, any> & {
     redirectedFrom(): UiCanExitTransition | null;
   };
 
-function withResolvers<
-  T,
->(): import("../../shared/common.ts").PromiseResolvers<T> {
+function withResolvers<T>(): PromiseResolvers<T> {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject: (reason?: any) => void;
 
@@ -678,7 +682,7 @@ function registerControllerCallbacks(
   if (isFunction(controllerInstance.uiCanExit)) {
     const uiCanExit = controllerInstance.uiCanExit as (
       trans: ng.Transition,
-    ) => boolean | void | import("../state/target-state.ts").TargetState;
+    ) => boolean | void | TargetState;
     const id = _uiCanExitId++;
 
     const cacheProp = "_uiCanExitIds";
