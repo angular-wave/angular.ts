@@ -3878,7 +3878,7 @@ export function replaceWith(
         parent.replaceChild(newNode, oldChild);
       }
     } else {
-      parent.insertBefore(newNode, parent.firstChild);
+      parent.replaceChild(newNode, firstElementToRemove);
     }
   }
 

@@ -186,22 +186,32 @@ export function dealoc(
   element:
     | (Element & Record<string, any>)
     | (Element & Record<string, any>)[]
+    | NodeListOf<Element>
+    | HTMLCollectionOf<Element>
     | null
     | undefined,
   onlyDescendants = false,
 ): void {
-  if (!element || element instanceof Comment) return;
+  if (!element || typeof element !== "object" || element instanceof Comment) {
+    return;
+  }
 
-  if (isArray(element)) {
-    /* @ts-ignore */
-    element.forEach((item) => dealoc(item, onlyDescendants));
+  if (
+    isArray(element) ||
+    element instanceof NodeList ||
+    element instanceof HTMLCollection
+  ) {
+    Array.from(element).forEach((item) => dealoc(item, onlyDescendants));
+    return;
   } else {
-    if (!onlyDescendants && elementAcceptsData(element)) {
-      cleanElementData([element]);
+    const domElement = element as Element & Record<string, any>;
+
+    if (!onlyDescendants && elementAcceptsData(domElement)) {
+      cleanElementData([domElement]);
     }
 
-    if (elementAcceptsData(element)) {
-      cleanElementData(element.querySelectorAll("*"));
+    if (elementAcceptsData(domElement)) {
+      cleanElementData(domElement.querySelectorAll("*"));
     }
   }
   delete (element as Element & Record<string, any>)[EXPANDO];

@@ -506,35 +506,57 @@ export function ViewDirectiveFill(
             cfg as Pick<ViewConfig, "viewDecl" | "path">,
           );
         }
-        // Wait for the component to appear in the DOM
-        // if (isString(cfg.component)) {
-        //const kebobName = kebobString(cfg.component);
-        // const tagRegexp = new RegExp(`^(x-|data-)?${kebobName}$`, "i");
-        // const getComponentController = () => {
-        //   const directiveEl = [].slice
-        //     .call($element.children)
-        //     .filter((el) => el && el.tagName && tagRegexp.exec(el.tagName));
-        //   return (
-        //     directiveEl &&
-        //     getCacheData(directiveEl, `$${cfg.component}Controller`)
-        //   );
-        // };
-        //console.error(getComponentController());
-        // const deregisterWatch = scope.$watch(
-        //   getComponentController,
-        //   function (ctrlInstance) {
-        //     if (!ctrlInstance) return;
-        //     registerControllerCallbacks(
-        //       $transitions,
-        //       ctrlInstance,
-        //       scope,
-        //       cfg,
-        //     );
-        //     deregisterWatch();
-        //   },
-        // );
-        // }
         link(scope);
+
+        const componentName = (cfg as ViewConfig & { component?: string })
+          .component;
+        const callbackConfig = cfg as Pick<ViewConfig, "viewDecl" | "path">;
+
+        if (typeof componentName === "string") {
+          const kebobName = componentName
+            .replace(/([A-Z])/g, "-$1")
+            .replace(/^-/, "")
+            .toLowerCase();
+          const tagRegexp = new RegExp(`^(x-|data-)?${kebobName}$`, "i");
+          const getComponentController = () => {
+            const directiveEl = Array.from($element.children).find(
+              (el) => el.tagName && tagRegexp.exec(el.tagName),
+            );
+
+            return directiveEl
+              ? (getCacheData(directiveEl, `$${componentName}Controller`) as
+                  | ViewControllerInstance
+                  | undefined)
+              : undefined;
+          };
+
+          const componentCtrl = getComponentController();
+
+          if (componentCtrl) {
+            registerControllerCallbacks(
+              $transitions,
+              componentCtrl,
+              scope,
+              callbackConfig,
+            );
+          } else {
+            let deregisterWatch: (() => void) | undefined;
+
+            deregisterWatch = scope.$watch(
+              getComponentController as any,
+              (ctrlInstance: ViewControllerInstance | undefined) => {
+                if (!ctrlInstance) return;
+                registerControllerCallbacks(
+                  $transitions,
+                  ctrlInstance,
+                  scope,
+                  callbackConfig,
+                );
+                deregisterWatch?.();
+              },
+            ) as (() => void) | undefined;
+          }
+        }
       };
     },
   };
@@ -642,7 +664,7 @@ function registerControllerCallbacks(
         changedKeys.forEach((key: string | number) => {
           if (key in toParams) newValues[key] = toParams[key];
         });
-        onParamsChanged(newValues, $transition$);
+        onParamsChanged.call(controllerInstance, newValues, $transition$);
       }
     };
 
@@ -680,7 +702,7 @@ function registerControllerCallbacks(
       const ids = (trans[cacheProp] = trans[cacheProp] || {});
 
       if (!prevTruthyAnswer(trans)) {
-        promise = Promise.resolve(uiCanExit(trans));
+        promise = Promise.resolve(uiCanExit.call(controllerInstance, trans));
         promise.then((val) => (ids[id] = val !== false));
       }
 

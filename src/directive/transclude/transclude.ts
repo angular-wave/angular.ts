@@ -1,27 +1,30 @@
-// @ts-nocheck
-
 import { minErr } from "../../shared/utils.ts";
 import { emptyElement, startingTag } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
+import type {
+  CloneAttachFn,
+  TranscludeFn,
+  TranscludedNodes,
+} from "../../core/compile/interface.ts";
 
 const ngTranscludeMinErr = minErr("ngTransclude");
 
 ngTranscludeDirective.$inject = [$injectTokens._compile];
 
-export function ngTranscludeDirective($compile) {
+export function ngTranscludeDirective($compile: ng.CompileService) {
   return {
-    compile: function ngTranscludeCompile(tElement) {
+    compile: function ngTranscludeCompile(tElement: Element) {
       const fallbackLinkFn = $compile(tElement.childNodes);
 
       emptyElement(tElement);
 
       function ngTranscludePostLink(
-        $scope,
-        $element,
-        $attrs,
-        _controller,
-        $transclude,
+        $scope: ng.Scope,
+        $element: Element,
+        $attrs: ng.Attributes,
+        _controller: unknown,
+        $transclude?: TranscludeFn,
       ) {
         if (!$transclude) {
           throw ngTranscludeMinErr(
@@ -40,39 +43,67 @@ export function ngTranscludeDirective($compile) {
 
         $transclude(ngTranscludeCloneAttachFn, null, slotName);
 
-        if (slotName && !$transclude.isSlotFilled(slotName)) {
+        if (slotName && !$transclude.isSlotFilled?.(slotName)) {
           useFallbackContent();
         }
 
-        function ngTranscludeCloneAttachFn(clone, transcludedScope) {
-          if (notWhitespace(clone)) {
-            if (clone instanceof NodeList) {
-              Array.from(clone).forEach((el) => {
-                $element.append(el);
+        function ngTranscludeCloneAttachFn(
+          clone?: TranscludedNodes,
+          transcludedScope?: ng.Scope | null,
+        ) {
+          const nodes = normalizeNodes(clone);
+
+          if (hasRenderableContent(nodes)) {
+            const destroyScope = () => {
+              transcludedScope?.$destroy();
+            };
+
+            const lastNode = nodes[nodes.length - 1];
+
+            if (
+              transcludedScope &&
+              lastNode &&
+              "addEventListener" in lastNode &&
+              typeof lastNode.addEventListener === "function"
+            ) {
+              lastNode.addEventListener("$destroy", destroyScope, {
+                once: true,
               });
-            } else {
-              $element.append(clone);
             }
+
+            nodes.forEach((node) => {
+              $element.append(node);
+            });
           } else {
             useFallbackContent();
-            transcludedScope.$destroy();
+            transcludedScope?.$destroy();
           }
         }
 
         function useFallbackContent() {
-          fallbackLinkFn($scope, (clone) => {
-            $element.append(clone);
-          });
+          fallbackLinkFn($scope, ((clone?: TranscludedNodes) => {
+            normalizeNodes(clone).forEach((node) => $element.append(node));
+          }) as CloneAttachFn);
         }
 
-        function notWhitespace(node) {
-          if (node instanceof Array) {
-            return false;
-          } else if (
-            node.nodeType !== NodeType._TEXT_NODE ||
-            node.nodeValue.trim()
-          ) {
-            return true;
+        function normalizeNodes(node?: TranscludedNodes): Node[] {
+          if (!node) {
+            return [];
+          }
+
+          return node instanceof NodeList || Array.isArray(node)
+            ? Array.from(node)
+            : [node];
+        }
+
+        function hasRenderableContent(nodes: Node[]) {
+          for (const currentNode of nodes) {
+            if (
+              currentNode.nodeType !== NodeType._TEXT_NODE ||
+              currentNode.nodeValue?.trim()
+            ) {
+              return true;
+            }
           }
 
           return false;

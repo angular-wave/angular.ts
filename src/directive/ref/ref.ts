@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import {
   directiveNormalize,
   getNodeName,
@@ -13,11 +11,11 @@ const ngRefMinErr = minErr("ngRef");
 
 ngRefDirective.$inject = [$injectTokens._parse];
 
-export function ngRefDirective($parse) {
+export function ngRefDirective($parse: ng.ParseService) {
   return {
     priority: -1,
     restrict: "A",
-    compile(tElement, tAttrs) {
+    compile(tElement: Element, tAttrs: ng.Attributes) {
       const controllerName = directiveNormalize(getNodeName(tElement));
 
       const getter = $parse(tAttrs.ngRef);
@@ -32,7 +30,7 @@ export function ngRefDirective($parse) {
           );
         };
 
-      return (scope, element, attrs) => {
+      return (scope: ng.Scope, element: Element, attrs: ng.Attributes) => {
         let refValue;
 
         if (hasOwn(attrs, "ngRefRead")) {

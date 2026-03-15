@@ -530,7 +530,7 @@ function registerUpdateGlobalState(
 
       globals._successfulTransitions.enqueue(trans);
       globals.$current = current;
-      globals.current = current.self;
+      globals.current = current?.self;
       copy(trans.params(), globals.params);
     };
 

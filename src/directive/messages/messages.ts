@@ -15,7 +15,7 @@ type MessageCollection = Record<string, any>;
 type MessageNodeComment = Comment & { _ngMessageNode?: string };
 type LinkedMessageCtrl = {
   message: MessageInstance;
-  next?: LinkedMessageCtrl;
+  comment: MessageNodeComment;
 };
 type MessageInstance = {
   attach: () => void;
@@ -33,7 +33,6 @@ class NgMessageCtrl {
   _messages: Record<string, LinkedMessageCtrl>;
   _renderLater: boolean;
   _cachedCollection: MessageCollection | null;
-  _head: LinkedMessageCtrl | undefined;
   _default: MessageInstance | undefined;
 
   /**
@@ -56,7 +55,6 @@ class NgMessageCtrl {
     this._renderLater = false;
     this._cachedCollection = null;
 
-    this._head = undefined;
     this._default = undefined;
 
     this._scope.$watch(
@@ -83,13 +81,17 @@ class NgMessageCtrl {
 
     let truthyKeys = 0;
 
-    let messageItem = this._head;
+    const messageItems = Object.values(this._messages).sort((a, b) => {
+      const position = a.comment.compareDocumentPosition(b.comment);
+
+      return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
 
     let messageFound = false;
 
     let totalMessages = 0;
 
-    while (messageItem) {
+    messageItems.forEach((messageItem) => {
       totalMessages++;
       const messageCtrl = messageItem.message;
 
@@ -116,9 +118,7 @@ class NgMessageCtrl {
       } else {
         unmatchedMessages.push(messageCtrl);
       }
-
-      messageItem = messageItem.next;
-    }
+    });
 
     unmatchedMessages.forEach((messageCtrl) => {
       messageCtrl.detach();
@@ -167,8 +167,8 @@ class NgMessageCtrl {
 
       this._messages[nextKey] = {
         message: messageCtrl,
+        comment,
       };
-      this.insertMessageNode(this._element, comment, nextKey);
       comment._ngMessageNode = nextKey;
       this._latestKey++;
     }
@@ -187,95 +187,10 @@ class NgMessageCtrl {
 
       delete comment._ngMessageNode;
       if (key) {
-        this.removeMessageNode(this._element, comment, key);
         delete this._messages[key];
       }
     }
     this.reRender();
-  }
-
-  /**
-   * Finds the nearest previously registered message node before a comment marker.
-   */
-  findPreviousMessage(
-    parent: Node,
-    comment: Node & { _ngMessageNode?: string },
-  ): LinkedMessageCtrl | undefined {
-    let prevNode: (Node & { _ngMessageNode?: string }) | null = comment;
-
-    const parentLookup: Node[] = [];
-
-    while (prevNode && prevNode !== parent) {
-      const prevKey = prevNode._ngMessageNode;
-
-      if (prevKey && prevKey.length) {
-        return this._messages[prevKey];
-      }
-
-      if (prevNode.childNodes.length && parentLookup.indexOf(prevNode) === -1) {
-        parentLookup.push(prevNode);
-        prevNode = prevNode.childNodes[prevNode.childNodes.length - 1];
-      } else if (prevNode.previousSibling) {
-        prevNode = prevNode.previousSibling;
-      } else {
-        prevNode = prevNode.parentNode as
-          | (Node & { _ngMessageNode?: string })
-          | null;
-        if (prevNode) {
-          parentLookup.push(prevNode);
-        }
-      }
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Inserts a message node into the linked message list.
-   */
-  insertMessageNode(
-    parent: HTMLElement,
-    comment: MessageNodeComment,
-    key: string,
-  ): void {
-    void parent;
-    const messageNode = this._messages[key];
-
-    if (!this._head) {
-      this._head = messageNode;
-    } else {
-      const match = this.findPreviousMessage(parent, comment);
-
-      if (match) {
-        messageNode.next = match.next;
-        match.next = messageNode;
-      } else {
-        messageNode.next = this._head;
-        this._head = messageNode;
-      }
-    }
-  }
-
-  /**
-   * Removes a message node from the linked message list.
-   */
-  removeMessageNode(
-    parent: HTMLElement,
-    comment: MessageNodeComment,
-    key: string | number,
-  ): void {
-    void parent;
-    const messageNode = this._messages[key];
-
-    if (!messageNode) return;
-
-    const match = this.findPreviousMessage(parent, comment);
-
-    if (match) {
-      match.next = messageNode.next;
-    } else {
-      this._head = messageNode.next;
-    }
   }
 }
 

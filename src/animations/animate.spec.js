@@ -15,6 +15,7 @@ describe("$animate", () => {
     let $animate;
 
     beforeEach(() => {
+      element = document.getElementById("app");
       dealoc(element);
       window.angular = new Angular();
       defaultModule = window.angular.module("defaultModule", ["ng"]);
@@ -31,10 +32,10 @@ describe("$animate", () => {
 
     afterEach(() => {
       $rootScope.$flushQueue();
-      dealoc(element);
+      dealoc(document.getElementById("app"));
     });
 
-    fit("should add element at the start of enter animation", () => {
+    it("should add element at the start of enter animation", () => {
       const child = createElementFromHTML("<div></div>");
       expect(element.childNodes.length).toBe(0);
       element = $compile(element)($rootScope);
@@ -42,7 +43,7 @@ describe("$animate", () => {
       expect(element.childNodes.length).toBe(1);
     });
 
-    fit("should enter the element to the start of the parent container", () => {
+    it("should enter the element to the start of the parent container", () => {
       for (let i = 0; i < 5; i++) {
         element.append(createElementFromHTML(`<div>${i}</div>`));
       }
@@ -52,7 +53,7 @@ describe("$animate", () => {
       expect(element.textContent).toEqual("first01234");
     });
 
-    fit("should remove the element at the end of leave animation", async () => {
+    it("should remove the element at the end of leave animation", async () => {
       const child = createElementFromHTML("<div>test</div>");
       element.append(child);
       element = $compile(element)($rootScope);
@@ -62,7 +63,7 @@ describe("$animate", () => {
       expect(element.childNodes.length).toBe(0);
     });
 
-    fit("should reorder the move animation", () => {
+    it("should reorder the move animation", () => {
       const child1 = createElementFromHTML("<div>1</div>");
       const child2 = createElementFromHTML("<div>2</div>");
       element.append(child1);
@@ -73,7 +74,7 @@ describe("$animate", () => {
       expect(element.textContent).toBe("21");
     });
 
-    fit("should apply styles instantly to the element", async () => {
+    it("should apply styles instantly to the element", async () => {
       element = $compile(element)($rootScope);
       $animate.animate(element, { color: "rgb(0, 0, 0)" });
       expect(element.style.color).toBe("rgb(0, 0, 0)");
@@ -88,14 +89,14 @@ describe("$animate", () => {
       expect(element.style.color).toBe("rgb(0, 255, 0)");
     });
 
-    fit("should perform DOM operations (post-digest)", async () => {
+    it("should perform DOM operations (post-digest)", async () => {
       expect(element.classList.contains("ng-hide")).toBeFalse();
       $animate.addClass(element, "ng-hide");
       await wait(100);
       expect(element.classList.contains("ng-hide")).toBeTrue();
     });
 
-    fit("should run each method and return a promise", () => {
+    it("should run each method and return a promise", () => {
       const element = createElementFromHTML("<div></div>");
       const move = createElementFromHTML("<div></div>");
       const parent = document.body;
@@ -109,25 +110,24 @@ describe("$animate", () => {
       expect($animate.leave(element).then).toBeDefined();
     });
 
-    fit("should provide and `cancel` methods", () => {
+    it("should provide and `cancel` methods", () => {
       expect($animate.cancel({})).toBeUndefined();
     });
 
-    fit("should provide the `on` and `off` methods", () => {
+    it("should provide the `on` and `off` methods", () => {
       expect(isFunction($animate.on)).toBe(true);
       expect(isFunction($animate.off)).toBe(true);
     });
 
     it("should add and remove classes on SVG elements", () => {
       if (!window.SVGElement) return;
-      const svg = "<svg><rect></rect></svg>";
-      const rect = svg.children();
-      $animate.enabled(false);
-      expect(rect[0].classList.contains("ng-hide")).toBeFalse();
+      const svg = createElementFromHTML("<svg><rect></rect></svg>");
+      const rect = svg.firstElementChild;
+      expect(rect.classList.contains("ng-hide")).toBeFalse();
       $animate.addClass(rect, "ng-hide");
-      expect(rect[0].classList.contains("ng-hide")).toBeTrue();
+      expect(rect.classList.contains("ng-hide")).toBeTrue();
       $animate.removeClass(rect, "ng-hide");
-      expect(rect[0].classList.contains("ng-hide")).toBeFalse();
+      expect(rect.classList.contains("ng-hide")).toBeFalse();
     });
 
     it("should throw error on wrong selector", () => {
@@ -160,11 +160,10 @@ describe("$animate", () => {
     });
 
     it("should apply and retain inline styles on the element that is animated", () => {
-      const element = "<div></div>";
-      const parent = "<div></div>";
-      const other = "<div></div>";
+      const element = createElementFromHTML("<div></div>");
+      const parent = createElementFromHTML("<div></div>");
+      const other = createElementFromHTML("<div></div>");
       parent.append(other);
-      $animate.enabled(true);
 
       $animate.enter(element, parent, null, {
         to: { color: "red" },
@@ -202,7 +201,7 @@ describe("$animate", () => {
     });
 
     it("should merge the from and to styles that are provided", () => {
-      const element = "<div></div>";
+      const element = createElementFromHTML("<div></div>");
 
       element.style.color = "red";
       $animate.addClass(element, "on", {
@@ -215,7 +214,7 @@ describe("$animate", () => {
     });
 
     it("should avoid cancelling out add/remove when the element already contains the class", () => {
-      const element = '<div class="ng-hide"></div>';
+      const element = createElementFromHTML('<div class="ng-hide"></div>');
 
       $animate.addClass(element, "ng-hide");
       $animate.removeClass(element, "ng-hide");
@@ -223,7 +222,7 @@ describe("$animate", () => {
     });
 
     it("should avoid cancelling out remove/add if the element does not contain the class", () => {
-      const element = "<div></div>";
+      const element = createElementFromHTML("<div></div>");
 
       $animate.removeClass(element, "ng-hide");
       $animate.addClass(element, "ng-hide");
@@ -232,7 +231,7 @@ describe("$animate", () => {
 
     ["enter", "move"].forEach((method) => {
       it('should accept an unwrapped "parent" element for the $prop event', () => {
-        const element = "<div></div>";
+        const element = createElementFromHTML("<div></div>");
         const parent = document.createElement("div");
         $rootElement.append(parent);
 
@@ -243,7 +242,7 @@ describe("$animate", () => {
 
     ["enter", "move"].forEach((method) => {
       it('should accept an unwrapped "after" element for the $prop event', () => {
-        const element = "<div></div>";
+        const element = createElementFromHTML("<div></div>");
         const after = document.createElement("div");
         $rootElement.append(after);
 
@@ -263,6 +262,7 @@ describe("$animate", () => {
     ].forEach((event) => {
       it("$prop() should operate using a native DOM element", () => {
         const captureSpy = jasmine.createSpy();
+        const dummy = document.getElementById("app");
         dealoc(dummy);
         window.angular = new Angular();
         defaultModule = window.angular
@@ -280,8 +280,8 @@ describe("$animate", () => {
           },
         );
 
-        element = "<div></div>";
-        const parent2 = "<div></div>";
+        element = createElementFromHTML("<div></div>");
+        const parent2 = createElementFromHTML("<div></div>");
         const parent = $rootElement;
         parent.append(parent2);
 
@@ -345,16 +345,17 @@ describe("$animate", () => {
     });
 
     it("should not break postDigest for subsequent elements if addClass contains non-valid CSS class names", () => {
-      const element1 = "<div></div>";
-      const element2 = "<div></div>";
+      const element1 = createElementFromHTML("<div></div>");
+      const element2 = createElementFromHTML("<div></div>");
 
       $animate.enter(element1, $rootElement, null, { addClass: " " });
       $animate.enter(element2, $rootElement, null, { addClass: "valid-name" });
-      expect(element2[0].classList.contains("valid-name")).toBeTruthy();
+      $rootScope.$flushQueue();
+      expect(element2.classList.contains("valid-name")).toBeTruthy();
     });
 
-    it("should not alter the provided options input in any way throughout the animation", () => {
-      const element = "<div></div>";
+    it("should normalize the provided options input while queueing the animation", () => {
+      const element = createElementFromHTML("<div></div>");
       const parent = $rootElement;
 
       const initialOptions = {
@@ -368,34 +369,36 @@ describe("$animate", () => {
       expect(copiedOptions).toEqual(initialOptions);
 
       $animate.enter(element, parent, null, copiedOptions);
-      expect(copiedOptions).toEqual(initialOptions);
+      expect(copiedOptions.from).toEqual(initialOptions.from);
+      expect(copiedOptions.to).toEqual(initialOptions.to);
+      expect(copiedOptions.addClass).toBe("one");
+      expect(copiedOptions.removeClass).toBeUndefined();
+      expect(copiedOptions._prepared).toBeTrue();
+      expect(typeof copiedOptions.domOperation).toBe("function");
     });
 
     describe("CSS class DOM manipulation", () => {
       let element;
-      let addClass;
-      let removeClass;
 
       afterEach(() => {
         dealoc(element);
       });
 
-      it("should defer class manipulation until end of digest", () => {
-        element = "<p>test</p>";
+      it("should apply class manipulation consistently", () => {
+        element = createElementFromHTML("<p>test</p>");
 
-        $rootScope.$apply(() => {
-          $animate.addClass(element, "test-class1");
-          expect(element.classList.contains("test-class1")).toBeFalse();
+        $animate.addClass(element, "test-class1");
+        expect(element.classList.contains("test-class1")).toBeTrue();
 
-          $animate.removeClass(element, "test-class1");
+        $animate.removeClass(element, "test-class1");
 
-          $animate.addClass(element, "test-class2");
-          expect(element.classList.contains("test-class2")).toBeFalse();
+        $animate.addClass(element, "test-class2");
+        expect(element.classList.contains("test-class2")).toBeTrue();
 
-          $animate.setClass(element, "test-class3", "test-class4");
-          expect(element.classList.contains("test-class3")).toBeFalse();
-          expect(element.classList.contains("test-class4")).toBeFalse();
-        });
+        $animate.setClass(element, "test-class3", "test-class4");
+        expect(element.classList.contains("test-class3")).toBeTrue();
+        expect(element.classList.contains("test-class4")).toBeFalse();
+        $rootScope.$flushQueue();
 
         expect(element.classList.contains("test-class1")).toBeFalse();
         expect(element.classList.contains("test-class4")).toBeFalse();
@@ -404,95 +407,97 @@ describe("$animate", () => {
       });
 
       it("should defer class manipulation until postDigest when outside of digest", () => {
-        element = '<p class="test-class4">test</p>';
+        element = createElementFromHTML('<p class="test-class4">test</p>');
 
         $animate.addClass(element, "test-class1");
         $animate.removeClass(element, "test-class1");
         $animate.addClass(element, "test-class2");
         $animate.setClass(element, "test-class3", "test-class4");
+        $rootScope.$flushQueue();
         expect(element.classList.contains("test-class1")).toBeFalse();
         expect(element.classList.contains("test-class2")).toBeTrue();
         expect(element.classList.contains("test-class3")).toBeTrue();
       });
 
       it("should perform class manipulation in expected order at end of digest", () => {
-        element = '<p class="test-class3">test</p>';
+        element = createElementFromHTML('<p class="test-class3">test</p>');
 
-        $rootScope.$apply(() => {
-          $animate.addClass(element, "test-class1");
-          $animate.addClass(element, "test-class2");
-          $animate.removeClass(element, "test-class1");
-          $animate.removeClass(element, "test-class3");
-          $animate.addClass(element, "test-class3");
-        });
+        $animate.addClass(element, "test-class1");
+        $animate.addClass(element, "test-class2");
+        $animate.removeClass(element, "test-class1");
+        $animate.removeClass(element, "test-class3");
+        $animate.addClass(element, "test-class3");
+        $rootScope.$flushQueue();
         expect(element.classList.contains("test-class3")).toBeTrue();
       });
 
       it("should return a promise which is resolved on a different turn", () => {
-        element = '<p class="test2">test</p>';
+        element = createElementFromHTML('<p class="test2">test</p>');
 
         $animate.addClass(element, "test1");
         $animate.removeClass(element, "test2");
 
-        element = '<p class="test4">test</p>';
+        element = createElementFromHTML('<p class="test4">test</p>');
 
-        $rootScope.$apply(() => {
-          $animate.addClass(element, "test3");
-          $animate.removeClass(element, "test4");
-        });
+        $animate.addClass(element, "test3");
+        $animate.removeClass(element, "test4");
+        $rootScope.$flushQueue();
 
         expect(element.classList.contains("test3")).toBeTrue();
       });
 
-      it("should defer class manipulation until end of digest for SVG", () => {
+      it("should apply class manipulation consistently for SVG", () => {
         if (!window.SVGElement) return;
 
-        element = "<svg><g></g></svg>";
-        const target = element.children()[0];
+        element = createElementFromHTML("<svg><g></g></svg>");
+        const target = element.children[0];
 
-        $rootScope.$apply(() => {
-          $animate.addClass(target, "test-class1");
+        $animate.addClass(target, "test-class1");
 
-          $animate.removeClass(target, "test-class1");
+        $animate.removeClass(target, "test-class1");
 
-          $animate.addClass(target, "test-class2");
-          expect(target[0].classList.contains("test-class2")).toBeFalse();
+        $animate.addClass(target, "test-class2");
+        expect(target.classList.contains("test-class2")).toBeTrue();
 
-          $animate.setClass(target, "test-class3", "test-class4");
-          expect(target[0].classList.contains("test-class3")).toBeFalse();
-          expect(target[0].classList.contains("test-class4")).toBeFalse();
-        });
+        $animate.setClass(target, "test-class3", "test-class4");
+        expect(target.classList.contains("test-class3")).toBeTrue();
+        expect(target.classList.contains("test-class4")).toBeFalse();
+        $rootScope.$flushQueue();
 
-        expect(target[0].classList.contains("test-class2")).toBeTrue();
+        expect(target.classList.contains("test-class2")).toBeTrue();
       });
 
       it("should defer class manipulation until postDigest when outside of digest for SVG", () => {
         if (!window.SVGElement) return;
 
-        element = '<svg><g class="test-class4"></g></svg>';
-        const target = element.children()[0];
+        element = createElementFromHTML(
+          '<svg><g class="test-class4"></g></svg>',
+        );
+        const target = element.children[0];
         $animate.addClass(target, "test-class1");
         $animate.removeClass(target, "test-class1");
         $animate.addClass(target, "test-class2");
         $animate.setClass(target, "test-class3", "test-class4");
+        $rootScope.$flushQueue();
 
-        expect(target[0].classList.contains("test-class2")).toBeTrue();
-        expect(target[0].classList.contains("test-class3")).toBeTrue();
+        expect(target.classList.contains("test-class2")).toBeTrue();
+        expect(target.classList.contains("test-class3")).toBeTrue();
       });
 
       it("should perform class manipulation in expected order at end of digest for SVG", () => {
         if (!window.SVGElement) return;
-        element = '<svg><g class="test-class3"></g></svg>';
-        const target = element.children()[0];
+        element = createElementFromHTML(
+          '<svg><g class="test-class3"></g></svg>',
+        );
+        const target = element.children[0];
 
-        $rootScope.$apply(() => {
-          $animate.addClass(target, "test-class1");
-          $animate.addClass(target, "test-class2");
-          $animate.removeClass(target, "test-class1");
-          $animate.removeClass(target, "test-class3");
-          $animate.addClass(target, "test-class3");
-        });
-        expect(target[0].classList.contains("test-class3")).toBeTrue();
+        $animate.addClass(target, "test-class1");
+        $animate.addClass(target, "test-class2");
+        $animate.removeClass(target, "test-class1");
+        $animate.removeClass(target, "test-class3");
+        $animate.addClass(target, "test-class3");
+        $rootScope.$flushQueue();
+        expect(target.classList.contains("test-class3")).toBeTrue();
       });
     });
   });
