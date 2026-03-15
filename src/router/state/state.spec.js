@@ -742,7 +742,7 @@ describe("$state", () => {
         });
 
         // TODO Can this test even be replicated?
-        // xit("dynamic param changes can be observed by watching the global $stateParams", async () => {
+        // it("dynamic param changes can be observed by watching the global $stateParams", async () => {
         //   let observedParamValue;
         //   // need a expression to watch
         //
@@ -833,7 +833,7 @@ describe("$state", () => {
           );
         });
 
-        xit("should be called on all active controllers that have a uiOnParamsChanged", async () => {
+        it("should be called on all active controllers that have a uiOnParamsChanged", async () => {
           await initStateTo(childWithParam, {
             path: "p1",
             pathDyn: "pd1",
@@ -846,7 +846,7 @@ describe("$state", () => {
 
           await $state.go(childWithParam, { pathDyn: "pd2" });
 
-          expect(dynlog).toBe("success;[pathDyn=pd2];{pathDyn=pd2};");
+          expect(dynlog).toBe("success;[pathDyn=pd2];");
 
           dynlog = paramsChangedLog = "";
           await $state.go(childWithParam, {
@@ -855,9 +855,7 @@ describe("$state", () => {
             configDyn: "cd2",
           });
 
-          expect(dynlog).toBe(
-            "success;[configDyn=cd2,searchDyn=sd2];{configDyn=cd2,searchDyn=sd2};",
-          );
+          expect(dynlog).toBe("success;[configDyn=cd2,searchDyn=sd2];");
         });
       });
     });

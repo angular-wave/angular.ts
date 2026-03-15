@@ -181,7 +181,7 @@ export class TemplateFactoryProvider {
 
       const resolveName = bindings![name] || name;
 
-      if (type === "@") return `${attrName}='{{s$resolve.${resolveName}}}'`;
+      if (type === "@") return `${attrName}='{{$resolve.${resolveName}}}'`;
 
       if (type === "&") {
         const res = context.getResolvable(resolveName);

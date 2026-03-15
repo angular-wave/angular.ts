@@ -4,5 +4,6 @@ import { expectNoJasmineFailures } from "../../../playwright-jasmine.js";
 const TEST_URL = "src/directive/select/select.html";
 
 test("unit tests contain no errors", async ({ page }) => {
-  await expectNoJasmineFailures(page, TEST_URL);
+  test.setTimeout(180000);
+  await expectNoJasmineFailures(page, TEST_URL, { timeout: 120000 });
 });

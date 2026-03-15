@@ -1,13 +1,11 @@
-// @ts-nocheck
-
 import { getController } from "../../shared/dom.ts";
 
-export function ngInitDirective() {
+export function ngInitDirective(): ng.Directive {
   return {
     priority: 450,
     compile() {
       return {
-        pre(scope, element, attrs) {
+        pre(scope: ng.Scope, element: Element, attrs: ng.Attributes) {
           const controller = getController(element);
 
           if (controller) {

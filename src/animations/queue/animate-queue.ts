@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import {
   getOrSetCacheData,
   extractElementNode,
@@ -24,13 +22,55 @@ import {
   prepareAnimationOptions,
   stripCommentsFromElement,
 } from "../shared.ts";
+import type { AnimationOptions } from "../interface.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { AnimateRunner } from "../runner/animate-runner.ts";
 import { NodeType } from "../../shared/node.ts";
 
 export type QueuePhase = string;
 export type QueueAnimationData = Record<string, any>;
-export type AnimateQueueService = any;
+type AnimationRuleType = "skip" | "cancel" | "join";
+type AnimationRule = (
+  newAnimation: AnimationOptions,
+  currentAnimation: AnimationOptions,
+) => boolean;
+type AnimationCallback = (
+  element: Element,
+  phase: string,
+  data: QueueAnimationData,
+) => void;
+type CallbackEntry = { node: Element; callback: AnimationCallback };
+type RootScopeLike = ng.RootScopeService & {
+  $postUpdate(fn: () => void): void;
+  $flushQueue(): void;
+};
+type AnimateQueueProviderInstance = {
+  rules: Record<AnimationRuleType, AnimationRule[]>;
+  $get: any[];
+};
+type QueueAnimationRecord = AnimationOptions & {
+  element: HTMLElement;
+  event: string;
+  close: (reject?: boolean) => void;
+  options: AnimationOptions;
+  runner: AnimateRunner;
+  counter?: number;
+};
+export type AnimateQueueService = {
+  on(event: string, container: Element, callback: AnimationCallback): void;
+  off(
+    eventOrContainer: string | Element | NodeList,
+    container?: Element | NodeList,
+    callback?: AnimationCallback,
+  ): void;
+  pin(element: Element, parentElement: Element): void;
+  push(
+    element: Element | Element[],
+    event: string,
+    options?: AnimationOptions,
+    domOperation?: () => void,
+  ): AnimateRunner;
+};
 
 const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 
@@ -38,21 +78,21 @@ const NG_ANIMATE_PIN_DATA = "$ngAnimatePin";
 
 AnimateQueueProvider.$inject = [$t._animateProvider];
 
-/** @typedef {import("../interface.ts").AnimationOptions} AnimationOptions */
-
 /**
  * @param {any} $animateProvider
  * @constructor
  */
-export function AnimateQueueProvider($animateProvider) {
+export function AnimateQueueProvider(
+  this: AnimateQueueProviderInstance,
+  $animateProvider: any,
+) {
   const PRE_DIGEST_STATE = 1;
 
   const RUNNING_STATE = 2;
 
   const ONE_SPACE = " ";
 
-  /** @type {Record<string, any>} */
-  const rules = (this.rules = {
+  const rules: Record<AnimationRuleType, AnimationRule[]> = (this.rules = {
     skip: [],
     cancel: [],
     join: [],
@@ -62,7 +102,7 @@ export function AnimateQueueProvider($animateProvider) {
    * @param {AnimationOptions} options
    * @return {QueueAnimationData}
    */
-  function getEventData(options) {
+  function getEventData(options: AnimationOptions): QueueAnimationData {
     return {
       addClass: options.addClass,
       removeClass: options.removeClass,
@@ -75,12 +115,12 @@ export function AnimateQueueProvider($animateProvider) {
    * @param {string} classString
    * @return {Record<string, string>}
    */
-  function makeTruthyCssClassMap(classString) {
+  function makeTruthyCssClassMap(classString: string): Record<string, boolean> {
     const keys = classString.split(ONE_SPACE);
 
-    const map = nullObject();
+    const map: Record<string, boolean> = nullObject();
 
-    keys.forEach((key) => {
+    keys.forEach((key: string) => {
       map[key] = true;
     });
 
@@ -91,13 +131,16 @@ export function AnimateQueueProvider($animateProvider) {
    * @param {string} newClassString
    * @param {string} currentClassString
    */
-  function hasMatchingClasses(newClassString, currentClassString) {
+  function hasMatchingClasses(
+    newClassString: string,
+    currentClassString: string,
+  ) {
     if (newClassString && currentClassString) {
       const currentClassMap = makeTruthyCssClassMap(currentClassString);
 
       return newClassString
         .split(ONE_SPACE)
-        .some((className) => currentClassMap[className]);
+        .some((className: string) => currentClassMap[className]);
     }
 
     return undefined;
@@ -108,10 +151,13 @@ export function AnimateQueueProvider($animateProvider) {
    * @param {AnimationOptions} currentAnimation
    * @param {any} previousAnimation
    */
-  function isAllowed(ruleType, currentAnimation, previousAnimation) {
-    return rules[ruleType].some(
-      (/** @type {(arg0: AnimationOptions, arg1: any) => any} */ fn) =>
-        fn(currentAnimation, previousAnimation),
+  function isAllowed(
+    ruleType: AnimationRuleType,
+    currentAnimation: AnimationOptions,
+    previousAnimation: AnimationOptions,
+  ) {
+    return rules[ruleType].some((fn: AnimationRule) =>
+      fn(currentAnimation, previousAnimation),
     );
   }
 
@@ -119,7 +165,10 @@ export function AnimateQueueProvider($animateProvider) {
    * @param {AnimationOptions} animation
    * @param {boolean | undefined} [and]
    */
-  function hasAnimationClasses(animation, and) {
+  function hasAnimationClasses(
+    animation: AnimationOptions,
+    and?: boolean,
+  ): boolean {
     const a = (animation.addClass || "").length > 0;
 
     const b = (animation.removeClass || "").length > 0;
@@ -141,7 +190,7 @@ export function AnimateQueueProvider($animateProvider) {
     (
       /** @type {AnimationOptions} */ newAnimation,
       /** @type {AnimationOptions} */ currentAnimation,
-    ) => currentAnimation.event === "leave" && newAnimation.structural,
+    ) => currentAnimation.event === "leave" && !!newAnimation.structural,
   );
 
   rules.skip.push(
@@ -149,7 +198,7 @@ export function AnimateQueueProvider($animateProvider) {
       /** @type {AnimationOptions} */ newAnimation,
       /** @type {AnimationOptions} */ currentAnimation,
     ) =>
-      currentAnimation.structural &&
+      !!currentAnimation.structural &&
       currentAnimation.state === RUNNING_STATE &&
       !newAnimation.structural,
   );
@@ -158,14 +207,14 @@ export function AnimateQueueProvider($animateProvider) {
     (
       /** @type {AnimationOptions} */ newAnimation,
       /** @type {AnimationOptions} */ currentAnimation,
-    ) => currentAnimation.structural && newAnimation.structural,
+    ) => !!currentAnimation.structural && !!newAnimation.structural,
   );
 
   rules.cancel.push(
     (
       /** @type {AnimationOptions} */ newAnimation,
       /** @type {AnimationOptions} */ currentAnimation,
-    ) => currentAnimation.state === RUNNING_STATE && newAnimation.structural,
+    ) => currentAnimation.state === RUNNING_STATE && !!newAnimation.structural,
   );
 
   rules.cancel.push(
@@ -188,11 +237,8 @@ export function AnimateQueueProvider($animateProvider) {
       }
 
       return (
-        hasMatchingClasses(
-          /** @type {string} */ nA,
-          /** @type {string} */ cR,
-        ) ||
-        hasMatchingClasses(/** @type {string} */ nR, /** @type {string} */ cA)
+        !!hasMatchingClasses(nA || "", cR || "") ||
+        !!hasMatchingClasses(nR || "", cA || "")
       );
     },
   );
@@ -207,14 +253,22 @@ export function AnimateQueueProvider($animateProvider) {
      * @param {any} $$animation
      * @returns {AnimateQueueService}
      */
-    function ($rootScope, $injector, $$animation) {
-      const activeAnimationsLookup = new Map();
-      const disabledElementsLookup = new Map();
+    function (
+      $rootScope: RootScopeLike,
+      $injector: ng.InjectorService,
+      $$animation: (
+        element: Element,
+        event: string,
+        options: AnimationOptions,
+      ) => AnimateRunner,
+    ) {
+      const activeAnimationsLookup = new Map<HTMLElement, AnimationOptions>();
+      const disabledElementsLookup = new Map<HTMLElement, boolean>();
 
       function postDigestTaskFactory() {
         let postDigestCalled = false;
 
-        return function (/** @type {() => void} */ fn) {
+        return function (fn: () => void) {
           if (postDigestCalled) {
             fn();
           } else {
@@ -226,8 +280,7 @@ export function AnimateQueueProvider($animateProvider) {
         };
       }
 
-      /** @type {Record<string, any>} */
-      const callbackRegistry = nullObject();
+      const callbackRegistry: Record<string, CallbackEntry[]> = nullObject();
 
       const customFilter = $animateProvider.customFilter();
       const classNameFilter = $animateProvider.classNameFilter();
@@ -240,10 +293,7 @@ export function AnimateQueueProvider($animateProvider) {
 
       const isAnimatableClassName = !classNameFilter
         ? returnTrue
-        : function (
-            /** @type {HTMLElement} */ node,
-            /** @type {AnimationOptions} */ options,
-          ) {
+        : function (node: HTMLElement, options: AnimationOptions): boolean {
             const className = [
               node.getAttribute("class"),
               options.addClass,
@@ -257,7 +307,10 @@ export function AnimateQueueProvider($animateProvider) {
        * @param {HTMLElement} element
        * @param {AnimationOptions} animation
        */
-      function normalizeAnimationDetails(element, animation) {
+      function normalizeAnimationDetails(
+        element: HTMLElement,
+        animation: AnimationOptions,
+      ) {
         return mergeAnimationDetails(element, animation, {});
       }
 
@@ -267,13 +320,17 @@ export function AnimateQueueProvider($animateProvider) {
        * @param {string} event
        * @returns {Function[]}
        */
-      function findCallbacks(targetParentNode, targetNode, event) {
-        const matches = [];
+      function findCallbacks(
+        targetParentNode: Node | null,
+        targetNode: Node,
+        event: string,
+      ): AnimationCallback[] {
+        const matches: AnimationCallback[] = [];
 
         const entries = callbackRegistry[event];
 
         if (entries) {
-          entries.forEach((entry) => {
+          entries.forEach((entry: CallbackEntry) => {
             if (entry.node.contains(targetNode)) {
               matches.push(entry.callback);
             } else if (
@@ -294,12 +351,16 @@ export function AnimateQueueProvider($animateProvider) {
        * @param {Node | NodeList | undefined} matchContainer
        * @param {Function | undefined} [matchCallback]
        */
-      function filterFromRegistry(list, matchContainer, matchCallback) {
+      function filterFromRegistry(
+        list: CallbackEntry[],
+        matchContainer?: Node | NodeList,
+        matchCallback?: AnimationCallback,
+      ): CallbackEntry[] {
         const containerNode = matchContainer
           ? extractElementNode(matchContainer)
           : undefined;
 
-        return list.filter((entry) => {
+        return list.filter((entry: CallbackEntry) => {
           const isMatch =
             entry.node === containerNode &&
             (!matchCallback || entry.callback === matchCallback);
@@ -312,7 +373,7 @@ export function AnimateQueueProvider($animateProvider) {
        * @param {string} phase
        * @param {Element} node
        */
-      function cleanupEventListeners(phase, node) {
+      function cleanupEventListeners(phase: string, node: Element) {
         if (phase === "close" && !node.parentNode) {
           $animate.off(node);
         }
@@ -320,8 +381,8 @@ export function AnimateQueueProvider($animateProvider) {
 
       /** @type {AnimateQueueService} */
       const $animate = {
-        on(event, container, callback) {
-          const node = extractElementNode(container);
+        on(event: string, container: Element, callback: AnimationCallback) {
+          const node = extractElementNode(container) as HTMLElement | undefined;
 
           if (!node || !(node instanceof Element) || !callback) return;
 
@@ -340,9 +401,13 @@ export function AnimateQueueProvider($animateProvider) {
           });
         },
 
-        off(event, container, callback) {
+        off(
+          event: string | Element | NodeList,
+          container?: Element | NodeList,
+          callback?: AnimationCallback,
+        ) {
           if (arguments.length === 1 && !isString(arguments[0])) {
-            container = arguments[0];
+            container = arguments[0] as Element | NodeList;
 
             for (const eventType in callbackRegistry) {
               callbackRegistry[eventType] = filterFromRegistry(
@@ -362,15 +427,20 @@ export function AnimateQueueProvider($animateProvider) {
 
           callbackRegistry[event] =
             arguments.length === 1
-              ? null
+              ? []
               : filterFromRegistry(entries, container, callback);
         },
 
-        pin(element, parentElement) {
+        pin(element: Element, parentElement: Element) {
           setCacheData(element, NG_ANIMATE_PIN_DATA, parentElement);
         },
 
-        push(element, event, options, domOperation) {
+        push(
+          element: Element | Element[],
+          event: string,
+          options: AnimationOptions = {},
+          domOperation?: () => void,
+        ) {
           options = options || {};
           options.domOperation = domOperation;
 
@@ -386,17 +456,26 @@ export function AnimateQueueProvider($animateProvider) {
        * @param {*} initialOptions
        * @returns {AnimateRunner}
        */
-      function queueAnimation(originalElement, event, initialOptions) {
-        let options = initialOptions;
+      function queueAnimation(
+        originalElement: Element | Element[],
+        event: string,
+        initialOptions: AnimationOptions = {},
+      ) {
+        let options: AnimationOptions = initialOptions;
 
-        let element = isArray(originalElement)
-          ? originalElement.filter((x) => x.nodeName !== "#comment")[0]
-          : originalElement;
+        let element: HTMLElement = isArray(originalElement)
+          ? (originalElement.filter(
+              (x: Element) => x.nodeName !== "#comment",
+            )[0] as HTMLElement)
+          : (originalElement as HTMLElement);
 
-        const node = element;
-        const parentNode = node && node.parentNode;
+        const node: HTMLElement = element;
+        const parentNode: HTMLElement | null = node?.parentElement || null;
 
-        options = prepareAnimationOptions(options);
+        options = prepareAnimationOptions(options) as AnimationOptions;
+        options.domOperation ||= () => {
+          /* empty */
+        };
 
         const runner = new AnimateRunner();
         const runInNextPostDigestOrNow = postDigestTaskFactory();
@@ -406,7 +485,7 @@ export function AnimateQueueProvider($animateProvider) {
         }
 
         if (options.addClass && !isString(options.addClass)) {
-          options.addClass = null;
+          options.addClass = undefined;
         }
 
         if (isArray(options.removeClass)) {
@@ -414,15 +493,15 @@ export function AnimateQueueProvider($animateProvider) {
         }
 
         if (options.removeClass && !isString(options.removeClass)) {
-          options.removeClass = null;
+          options.removeClass = undefined;
         }
 
         if (options.from && !isObject(options.from)) {
-          options.from = null;
+          options.from = undefined;
         }
 
         if (options.to && !isObject(options.to)) {
-          options.to = null;
+          options.to = undefined;
         }
 
         if (
@@ -439,8 +518,9 @@ export function AnimateQueueProvider($animateProvider) {
         let skipAnimations =
           document.hidden || disabledElementsLookup.get(node);
 
-        const existingAnimation =
-          (!skipAnimations && activeAnimationsLookup.get(node)) || {};
+        const existingAnimation = ((!skipAnimations &&
+          activeAnimationsLookup.get(node)) ||
+          {}) as AnimationOptions;
 
         const hasExistingAnimation = !!existingAnimation.state;
 
@@ -471,7 +551,7 @@ export function AnimateQueueProvider($animateProvider) {
         }
 
         /** @type {AnimationOptions} */
-        const newAnimation = {
+        const newAnimation: QueueAnimationRecord = {
           structural: isStructural,
           element,
           event,
@@ -496,7 +576,7 @@ export function AnimateQueueProvider($animateProvider) {
             }
 
             mergeAnimationDetails(element, existingAnimation, newAnimation);
-            return existingAnimation.runner;
+            return existingAnimation.runner!;
           }
 
           const cancelAnimationFlag = isAllowed(
@@ -507,12 +587,12 @@ export function AnimateQueueProvider($animateProvider) {
 
           if (cancelAnimationFlag) {
             if (existingAnimation.state === RUNNING_STATE) {
-              existingAnimation.runner.end();
+              existingAnimation.runner!.end();
             } else if (existingAnimation.structural) {
-              existingAnimation.close();
+              existingAnimation.close!();
             } else {
               mergeAnimationDetails(element, existingAnimation, newAnimation);
-              return existingAnimation.runner;
+              return existingAnimation.runner!;
             }
           } else {
             const joinAnimationFlag = isAllowed(
@@ -531,14 +611,14 @@ export function AnimateQueueProvider($animateProvider) {
                   options,
                 );
 
-                event = newAnimation.event = existingAnimation.event;
+                event = newAnimation.event = existingAnimation.event as string;
                 options = mergeAnimationDetails(
                   element,
                   existingAnimation,
                   newAnimation,
                 );
 
-                return existingAnimation.runner;
+                return existingAnimation.runner!;
               }
             }
           }
@@ -566,12 +646,14 @@ export function AnimateQueueProvider($animateProvider) {
 
         markElementAnimationState(node, PRE_DIGEST_STATE, newAnimation);
         $rootScope.$postUpdate(() => {
-          element = stripCommentsFromElement(originalElement);
+          element = stripCommentsFromElement(
+            originalElement as any,
+          ) as HTMLElement;
 
           let animationDetails = activeAnimationsLookup.get(node);
           const animationCancelled = !animationDetails;
 
-          animationDetails = animationDetails || {};
+          animationDetails = animationDetails || ({} as AnimationOptions);
 
           const parentElement = element.parentElement || null;
           const isCurrentAnimationValid =
@@ -594,7 +676,7 @@ export function AnimateQueueProvider($animateProvider) {
               animationCancelled ||
               (isStructural && animationDetails.event !== event)
             ) {
-              options.domOperation();
+              options.domOperation!();
               runner.end();
             }
 
@@ -609,19 +691,19 @@ export function AnimateQueueProvider($animateProvider) {
             !animationDetails.structural &&
             hasAnimationClasses(animationDetails, true)
               ? "setClass"
-              : animationDetails.event;
+              : (animationDetails.event as string) || event;
 
           markElementAnimationState(node, RUNNING_STATE);
           const realRunner = $$animation(
             element,
             event,
-            animationDetails.options,
+            animationDetails.options || animationDetails,
           );
 
           runner.setHost(realRunner);
           notifyProgress(runner, event, "start", getEventData(options));
 
-          realRunner.done((status) => {
+          realRunner.done((status: boolean) => {
             close(!status);
 
             if (activeAnimationsLookup.get(node)?.counter === counter) {
@@ -642,12 +724,17 @@ export function AnimateQueueProvider($animateProvider) {
          * @param {string} phase
          * @param {QueueAnimationData} data
          */
-        function notifyProgress(runnerParam, eventParam, phase, data) {
+        function notifyProgress(
+          runnerParam: AnimateRunner,
+          eventParam: string,
+          phase: string,
+          data: QueueAnimationData,
+        ) {
           runInNextPostDigestOrNow(() => {
             const callbacks = findCallbacks(parentNode, node, eventParam);
 
             if (callbacks.length) {
-              callbacks.forEach((callback) => {
+              callbacks.forEach((callback: AnimationCallback) => {
                 callback(element, phase, data);
               });
               cleanupEventListeners(phase, node);
@@ -662,11 +749,11 @@ export function AnimateQueueProvider($animateProvider) {
         /**
          * @param {boolean | undefined} [reject]
          */
-        function close(reject) {
+        function close(reject?: boolean) {
           clearGeneratedClasses(element, options);
           applyAnimationClasses(element, options);
           applyAnimationStyles(element, options);
-          options.domOperation();
+          options.domOperation!();
           runner.complete(!reject);
         }
       }
@@ -674,21 +761,25 @@ export function AnimateQueueProvider($animateProvider) {
       /**
        * @param {Element | ParentNode} node
        */
-      function closeChildAnimations(node) {
+      function closeChildAnimations(node: HTMLElement | ParentNode) {
         const children = node.querySelectorAll(`[${NG_ANIMATE_ATTR_NAME}]`);
 
         children.forEach((child) => {
-          const state = parseInt(child.getAttribute(NG_ANIMATE_ATTR_NAME), 10);
-          const animationDetails = activeAnimationsLookup.get(child);
+          const childElement = child as HTMLElement;
+          const state = parseInt(
+            childElement.getAttribute(NG_ANIMATE_ATTR_NAME) || "0",
+            10,
+          );
+          const animationDetails = activeAnimationsLookup.get(childElement);
 
           if (animationDetails) {
             switch (state) {
               case RUNNING_STATE:
-                animationDetails.runner.end();
-                activeAnimationsLookup.delete(child);
+                animationDetails.runner?.end();
+                activeAnimationsLookup.delete(childElement);
                 break;
               case PRE_DIGEST_STATE:
-                activeAnimationsLookup.delete(child);
+                activeAnimationsLookup.delete(childElement);
                 break;
             }
           }
@@ -698,7 +789,7 @@ export function AnimateQueueProvider($animateProvider) {
       /**
        * @param {Element} node
        */
-      function clearElementAnimationState(node) {
+      function clearElementAnimationState(node: HTMLElement) {
         node.removeAttribute(NG_ANIMATE_ATTR_NAME);
         activeAnimationsLookup.delete(node);
       }
@@ -707,16 +798,21 @@ export function AnimateQueueProvider($animateProvider) {
        * @param {Element} node
        * @param {Element} parentNode
        */
-      function areAnimationsAllowed(node, parentNode) {
+      function areAnimationsAllowed(
+        node: HTMLElement,
+        parentNode: HTMLElement | null,
+      ) {
         const bodyNode = document.body;
-        const rootNode = $injector.get("$rootElement");
+        const rootNode = $injector.get("$rootElement") as HTMLElement;
 
         let bodyNodeDetected = node === bodyNode || node.nodeName === "HTML";
         let rootNodeDetected = node === rootNode;
         let parentAnimationDetected = false;
         let elementDisabled = disabledElementsLookup.get(node);
-        let animateChildren;
-        let parentHost = getOrSetCacheData(node, NG_ANIMATE_PIN_DATA);
+        let animateChildren: boolean | undefined;
+        let parentHost = getOrSetCacheData(node, NG_ANIMATE_PIN_DATA) as
+          | HTMLElement
+          | undefined;
 
         if (parentHost) {
           parentNode = parentHost;
@@ -731,7 +827,8 @@ export function AnimateQueueProvider($animateProvider) {
             break;
           }
 
-          const details = activeAnimationsLookup.get(parentNode) || {};
+          const details =
+            activeAnimationsLookup.get(parentNode) || ({} as AnimationOptions);
 
           if (!parentAnimationDetected) {
             const parentNodeDisabled = disabledElementsLookup.get(parentNode);
@@ -743,14 +840,14 @@ export function AnimateQueueProvider($animateProvider) {
               elementDisabled = false;
             }
 
-            parentAnimationDetected = details.structural;
+            parentAnimationDetected = !!details.structural;
           }
 
           if (isUndefined(animateChildren) || animateChildren === true) {
             const value = getOrSetCacheData(
               parentNode,
               NG_ANIMATE_CHILDREN_DATA,
-            );
+            ) as boolean | undefined;
 
             if (isDefined(value)) {
               animateChildren = value;
@@ -768,7 +865,9 @@ export function AnimateQueueProvider($animateProvider) {
           }
 
           if (!rootNodeDetected) {
-            parentHost = getOrSetCacheData(parentNode, NG_ANIMATE_PIN_DATA);
+            parentHost = getOrSetCacheData(parentNode, NG_ANIMATE_PIN_DATA) as
+              | HTMLElement
+              | undefined;
 
             if (parentHost) {
               parentNode = parentHost;
@@ -776,11 +875,11 @@ export function AnimateQueueProvider($animateProvider) {
             }
           }
 
-          parentNode = parentNode.parentNode;
+          parentNode = parentNode.parentElement;
         }
 
         const allowAnimation =
-          (!parentAnimationDetected || animateChildren) &&
+          (!parentAnimationDetected || animateChildren === true) &&
           elementDisabled !== true;
 
         return allowAnimation && rootNodeDetected && bodyNodeDetected;
@@ -791,8 +890,11 @@ export function AnimateQueueProvider($animateProvider) {
        * @param {number} state
        * @param {AnimationOptions} [details]
        */
-      function markElementAnimationState(node, state, details) {
-        details = details || {};
+      function markElementAnimationState(
+        node: HTMLElement,
+        state: number,
+        details: AnimationOptions = {},
+      ) {
         details.state = state;
 
         node.setAttribute(NG_ANIMATE_ATTR_NAME, state.toString());

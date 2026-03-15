@@ -3,7 +3,12 @@ import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("observe", () => {
-  let $compile, $scope, $rootScope, element, observerSpy;
+  let $compile,
+    $scope,
+    $rootScope,
+    element,
+    observerInstances,
+    observerCallbacks;
 
   beforeEach(() => {
     dealoc(document.getElementById("app"));
@@ -17,11 +22,18 @@ describe("observe", () => {
         $scope = $rootScope.$new();
       });
 
-    observerSpy = jasmine.createSpyObj("MutationObserver", [
-      "observe",
-      "disconnect",
-    ]);
-    spyOn(window, "MutationObserver").and.returnValue(observerSpy); // Replace with a spy
+    observerInstances = [];
+    observerCallbacks = [];
+    spyOn(window, "MutationObserver").and.callFake(function (callback) {
+      observerCallbacks.push(callback);
+      const instance = jasmine.createSpyObj("MutationObserver", [
+        "observe",
+        "disconnect",
+      ]);
+      observerInstances.push(instance);
+
+      return instance;
+    });
   });
 
   async function createDirective(attributeValue, updateProp) {
@@ -44,10 +56,9 @@ describe("observe", () => {
 
   it("should observe attribute changes and update the scope property", async () => {
     $scope.myProp = "";
-    createDirective("test-attribute", "myProp");
+    await createDirective("test-attribute", "myProp");
 
-    const mutationObserverCallback =
-      MutationObserver.calls.mostRecent().args[0];
+    const mutationObserverCallback = observerCallbacks.at(-1);
     const mutationRecord = {
       target: element,
       attributeName: "test-attribute",
@@ -60,11 +71,10 @@ describe("observe", () => {
     expect($scope.myProp).toBe("newValue");
   });
 
-  it("should not update the model if the attribute value is unchanged", () => {
+  it("should not update the model if the attribute value is unchanged", async () => {
     $scope.myProp = "existingValue";
-    createDirective("test-attribute", "myProp");
-    const mutationObserverCallback =
-      MutationObserver.calls.mostRecent().args[0];
+    await createDirective("test-attribute", "myProp");
+    const mutationObserverCallback = observerCallbacks.at(-1);
     const mutationRecord = {
       target: element,
       attributeName: "test-attribute",
@@ -77,11 +87,11 @@ describe("observe", () => {
     expect($scope.myProp).toBe("existingValue");
   });
 
-  it("should disconnect the observer on scope destruction", () => {
-    createDirective("test-attribute", "myProp");
+  it("should disconnect the observer on scope destruction", async () => {
+    await createDirective("test-attribute", "myProp");
     $scope.$destroy();
 
-    expect(observerSpy.disconnect).toHaveBeenCalled();
+    expect(observerInstances.at(-1).disconnect).toHaveBeenCalled();
   });
 
   it("should observe attribute changes and update the same scope name if attribute definition is absent", async () => {
@@ -90,8 +100,7 @@ describe("observe", () => {
     element = $compile(template)($scope);
     await wait();
 
-    const mutationObserverCallback =
-      MutationObserver.calls.mostRecent().args[0];
+    const mutationObserverCallback = observerCallbacks.at(-1);
     const mutationRecord = {
       target: element,
       attributeName: "test-attribute",

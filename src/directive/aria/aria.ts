@@ -166,7 +166,7 @@ ngClickAriaDirective.$inject = [$injectTokens._aria, $injectTokens._parse];
 export function ngClickAriaDirective(
   $aria: AriaService,
   $parse: ng.ParseService,
-) {
+): ng.Directive {
   return {
     restrict: "A",
     compile(_elem: HTMLElement, attr: ng.Attributes) {

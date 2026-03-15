@@ -672,7 +672,7 @@ describe("form", () => {
     });
 
     // TODO These tests relied on JQ lite to call destroy on the elements being removed
-    // xit("should deregister a child form when its DOM is removed", async () => {
+    // it("should deregister a child form when its DOM is removed", async () => {
     //   doc = createElementFromHTML(
     //     '<form name="parent">' +
     //       '<div ng-form name="child">' +
@@ -696,7 +696,7 @@ describe("form", () => {
     //   expect(parent.$error.required).toBeFalsy();
     // });
     //
-    // xit("should deregister a child form whose name is an expression when its DOM is removed", async () => {
+    // it("should deregister a child form whose name is an expression when its DOM is removed", async () => {
     //   doc = createElementFromHTML(
     //     '<form name="parent">' +
     //       '<div ng-form name="child.form">' +
@@ -1384,7 +1384,7 @@ describe("form", () => {
   });
 
   // TODO After animations
-  xdescribe("form animations", () => {
+  describe("form animations", () => {
     function assertValidAnimation(
       animation,
       event,
@@ -1399,21 +1399,20 @@ describe("form", () => {
     let form;
     let $animate;
     let myModule;
+    let dummy;
 
     beforeEach(() => {
-      let dummy = document.getElementById("app");
-      doc = '<form name="myForm"></form>';
-      dummy.append(doc);
-      dealoc(document.getElementById("app"));
-      let angular = new Angular();
+      dummy = document.getElementById("app");
+      dealoc(dummy);
       window.angular = new Angular();
       myModule = window.angular.module("myModule", []);
 
-      injector = angular.bootstrap(dummy, ["myModule"]);
+      injector = window.angular.bootstrap(dummy, ["myModule"]);
       injector.invoke((_$compile_, $rootScope, _$animate_) => {
         $compile = _$compile_;
         scope = $rootScope.$new();
         $animate = _$animate_;
+        doc = $compile('<form name="myForm"></form>')(scope);
       });
       form = scope.myForm;
     });
@@ -1421,18 +1420,14 @@ describe("form", () => {
     afterEach(() => {
       dealoc(doc);
       dealoc(dummy);
-      document.getElementById("app").innerHTML = "";
     });
 
     it("should trigger an animation when invalid", (done) => {
       form.$setValidity("required", false);
       setTimeout(() => {
-        // assertValidAnimation($animate.queue[0], "removeClass", "ng-valid");
-        // assertValidAnimation($animate.queue[1], "addClass", "ng-invalid");
-        // assertValidAnimation($animate.queue[2], "addClass", "ng-invalid-required");
-        expect(doc.classList.contains("ng-valid")).toBeTrue();
-        expect(doc.classList.contains("ng-invalid-add")).toBeTrue();
-        expect(doc.classList.contains("ng-invalid-required-add")).toBeTrue();
+        expect(doc.classList.contains("ng-invalid")).toBeTrue();
+        expect(doc.classList.contains("ng-invalid-required")).toBeTrue();
+        expect(doc.classList.contains("ng-valid")).toBeFalse();
         done();
       }, 100);
     });
@@ -1443,12 +1438,9 @@ describe("form", () => {
       form.$setValidity("required", true);
 
       setTimeout(() => {
-        // assertValidAnimation($animate.queue[0], "addClass", "ng-valid");
-        // assertValidAnimation($animate.queue[1], "removeClass", "ng-invalid");
-        // assertValidAnimation($animate.queue[2], "addClass", "ng-valid-required");
         expect(doc.classList.contains("ng-valid")).toBeTrue();
-        expect(doc.classList.contains("ng-invalid-add")).toBeTrue();
-        expect(doc.classList.contains("ng-invalid-required-add")).toBeTrue();
+        expect(doc.classList.contains("ng-invalid")).toBeFalse();
+        expect(doc.classList.contains("ng-valid-required")).toBeTrue();
         done();
       }, 100);
     });
@@ -1456,10 +1448,8 @@ describe("form", () => {
     it("should trigger an animation when dirty", (done) => {
       form.$setDirty();
       setTimeout(() => {
-        // assertValidAnimation($animate.queue[0], "removeClass", "ng-pristine");
-        // assertValidAnimation($animate.queue[1], "addClass", "ng-dirty");
-        expect(doc.classList.contains("ng-pristine")).toBeTrue();
-        expect(doc.classList.contains("ng-dirty-add")).toBeTrue();
+        expect(doc.classList.contains("ng-pristine")).toBeFalse();
+        expect(doc.classList.contains("ng-dirty")).toBeTrue();
         done();
       }, 100);
     });
@@ -1468,10 +1458,8 @@ describe("form", () => {
       form.$setDirty();
       form.$setPristine();
       setTimeout(() => {
-        // assertValidAnimation($animate.queue[0], "removeClass", "ng-pristine");
-        // assertValidAnimation($animate.queue[1], "addClass", "ng-dirty");
         expect(doc.classList.contains("ng-pristine")).toBeTrue();
-        expect(doc.classList.contains("ng-dirty-add")).toBeTrue();
+        expect(doc.classList.contains("ng-dirty")).toBeFalse();
         done();
       }, 100);
     });
@@ -1480,36 +1468,18 @@ describe("form", () => {
       form.$setValidity("custom-error", false);
 
       setTimeout(() => {
-        // assertValidAnimation($animate.queue[0], "removeClass", "ng-valid");
-        // assertValidAnimation($animate.queue[1], "addClass", "ng-invalid");
-        // assertValidAnimation(
-        //   $animate.queue[2],
-        //   "addClass",
-        //   "ng-invalid-custom-error",
-        // );
-        expect(doc.classList.contains("ng-valid")).toBeTrue();
-        expect(doc.classList.contains("ng-invalid-add")).toBeTrue();
-        expect(
-          doc.classList.contains("ng-invalid-custom-error-add"),
-        ).toBeTrue();
+        expect(doc.classList.contains("ng-valid")).toBeFalse();
+        expect(doc.classList.contains("ng-invalid")).toBeTrue();
+        expect(doc.classList.contains("ng-invalid-custom-error")).toBeTrue();
+        form.$setValidity("custom-error", true);
+
+        setTimeout(() => {
+          expect(doc.classList.contains("ng-valid")).toBeTrue();
+          expect(doc.classList.contains("ng-invalid")).toBeFalse();
+          expect(doc.classList.contains("ng-valid-custom-error")).toBeTrue();
+          done();
+        }, 100);
       }, 100);
-
-      // $animate.queue = [];
-      form.$setValidity("custom-error", true);
-
-      setTimeout(() => {
-        // assertValidAnimation($animate.queue[0], "removeClass", "ng-valid");
-        // assertValidAnimation($animate.queue[1], "addClass", "ng-invalid");
-        // assertValidAnimation(
-        //   $animate.queue[2],
-        //   "addClass",
-        //   "ng-invalid-custom-error",
-        // );
-        expect(doc.classList.contains("ng-valid")).toBeTrue();
-        expect(doc.classList.contains("ng-invalid-add")).toBeTrue();
-        expect(doc.classList.contains("ng-valid-custom-error-add")).toBeTrue();
-        done();
-      }, 300);
     });
   });
 });
