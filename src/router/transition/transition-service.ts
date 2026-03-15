@@ -1,6 +1,6 @@
 import { copy } from "../../shared/common.ts";
 import { isDefined } from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+import { $injectTokens as $t } from "../../injection-tokens.ts";
 import {
   registerAddCoreResolvables,
   treeChangesCleanup,
@@ -32,6 +32,7 @@ import type {
   HookMatchCriteria,
   HookRegOptions,
   HookRegistry,
+  TransitionOptions,
 } from "./interface.ts";
 import { TransitionEventType } from "./transition-event-type.ts";
 import {
@@ -39,7 +40,7 @@ import {
   TransitionHookPhase,
   TransitionHookScope,
 } from "./transition-hook.ts";
-import { Transition, type TransitionOptions } from "./transition.js";
+import { Transition } from "./transition.ts";
 import type { RegisteredHooks } from "./hook-registry.ts";
 
 /** @internal */
@@ -525,9 +526,11 @@ function registerUpdateGlobalState(
     const globals = trans._globals;
 
     const transitionSuccessful = (): void => {
+      const current = trans.$to();
+
       globals._successfulTransitions.enqueue(trans);
-      globals.$current = trans.$to();
-      globals.current = globals.$current.self;
+      globals.$current = current;
+      globals.current = current.self;
       copy(trans.params(), globals.params);
     };
 

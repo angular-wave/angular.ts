@@ -10,9 +10,9 @@ import {
   setIsolateScope,
   setScope,
   startingTag,
-} from "../../shared/dom.js";
+} from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
-import { NodeRef } from "../../shared/noderef.js";
+import { NodeRef } from "../../shared/noderef.ts";
 import { identifierForController } from "../controller/controller.ts";
 import { createScope } from "../scope/scope.ts";
 import {
@@ -41,7 +41,7 @@ import {
   simpleCompare,
   trim,
   values,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { SCE_CONTEXTS } from "../../services/sce/sce.ts";
 import { PREFIX_REGEXP } from "../../shared/constants.ts";
 import {
@@ -50,9 +50,9 @@ import {
 } from "../../directive/events/events.ts";
 import { Attributes } from "./attributes.ts";
 import { ngObserveDirective } from "../../directive/observe/observe.ts";
-import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.js";
+import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.ts";
 import type { Component } from "../../interface.ts";
-import type { InterpolationFunction } from "../interpolate/interpolate.ts";
+import type { InterpolationFunction } from "../interpolate/interface.ts";
 import type { SanitizeUriProvider } from "../sanitize/sanitize-uri.ts";
 import type {
   AttrInterpolateLinkState,
@@ -62,8 +62,6 @@ import type {
   DirectiveBindingInfo,
   CompileDirectiveLinkResult,
   ContextualDirectivePrePost,
-  DelayedTemplateLinkQueue,
-  DelayedTemplateLinkQueueEntry,
   DelayedTemplateLinkState,
   DelayedTemplateNodeLinkResult,
   DelayedTemplateReplacementState,
@@ -491,7 +489,7 @@ export class CompileProvider {
         $sanitizeUriProvider.aHrefSanitizationTrustedUrlList(regexp);
       }
 
-      return $sanitizeUriProvider.aHrefSanitizationTrustedUrlList();
+      return $sanitizeUriProvider.aHrefSanitizationTrustedUrlList() as RegExp;
     };
 
     /**
@@ -516,7 +514,7 @@ export class CompileProvider {
         return undefined;
       }
 
-      return $sanitizeUriProvider.imgSrcSanitizationTrustedUrlList();
+      return $sanitizeUriProvider.imgSrcSanitizationTrustedUrlList() as RegExp;
     };
 
     /**
@@ -1605,7 +1603,7 @@ export class CompileProvider {
         /** Handles `$transclude(...)` calls for the shared node-link executor. */
         function invokeControllersBoundTransclude(
           transcludeState: ControllersBoundTranscludeState,
-          scopeParam?: import("../scope/scope.ts").Scope | CloneAttachFn,
+          scopeParam?: import("../scope/scope.ts").Scope | CloneAttachFn | null,
           cloneAttachFn?: CloneAttachFn | Node | null,
           _futureParentElement?: Node | null,
           slotName?: string | number,
@@ -2842,10 +2840,12 @@ export class CompileProvider {
           let templateUrl: string;
 
           if (isFunction(origAsyncDirective.templateUrl)) {
-            templateUrl = (origAsyncDirective.templateUrl as (
-              element: Element,
-              tAttrs: Attributes,
-            ) => string).call(
+            templateUrl = (
+              origAsyncDirective.templateUrl as (
+                element: Element,
+                tAttrs: Attributes,
+              ) => string
+            ).call(
               origAsyncDirective,
               $compileNode.element as HTMLElement,
               tAttrs,
@@ -3400,9 +3400,7 @@ export class CompileProvider {
                     // If the attribute has been provided then we trigger an interpolation to ensure
                     // the value is there for use in the link fn
                     destAny[scopeName] = (
-                      $interpolate(
-                        lastValue,
-                      ) as import("../interpolate/interpolate.ts").InterpolationFunction
+                      $interpolate(lastValue) as InterpolationFunction
                     )(scope);
                   } else if (isBoolean(lastValue)) {
                     // If the attributes is one of the BOOLEAN_ATTR then AngularTS will have converted

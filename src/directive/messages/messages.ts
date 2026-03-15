@@ -1,11 +1,11 @@
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 import {
   entries,
   hasOwn,
   isArray,
   isInstanceOf,
   isString,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 
 const ACTIVE_CLASS = "ng-active";
 

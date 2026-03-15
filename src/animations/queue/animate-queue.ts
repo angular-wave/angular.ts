@@ -13,7 +13,7 @@ import {
   isString,
   isUndefined,
   nullObject,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import {
   NG_ANIMATE_CHILDREN_DATA,
   applyAnimationClasses,
@@ -24,7 +24,7 @@ import {
   prepareAnimationOptions,
   stripCommentsFromElement,
 } from "../shared.ts";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { AnimateRunner } from "../runner/animate-runner.ts";
 import { NodeType } from "../../shared/node.ts";
 

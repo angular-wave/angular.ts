@@ -1,7 +1,7 @@
-import { isArray } from "../../shared/utils.js";
+import { isArray } from "../../shared/utils.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { TransitionService } from "../transition/transition-service.ts";
-import type { Transition } from "../transition/transition.js";
+import type { Transition } from "../transition/transition.ts";
 
 /**
  * The return type of a [[StateDeclaration.lazyLoad]] function.
@@ -32,7 +32,7 @@ export function registerLazyLoadHook(
 ) {
   return transitionService.onBefore(
     {
-      entering: (state) => !!(state as ng.BuiltStateDeclaration).lazyLoad,
+      entering: (state?: ng.BuiltStateDeclaration) => !!state?.lazyLoad,
     },
     (transition: Transition) => {
       function retryTransition() {
@@ -63,8 +63,13 @@ export function registerLazyLoadHook(
 
       const promises = transition
         .entering()
-        .filter((state) => state._state && !!state._state().lazyLoad)
-        .map((state) => lazyLoadState(transition, state, stateRegistry));
+        .filter(
+          (state: ng.StateDeclaration) =>
+            state._state && !!state._state().lazyLoad,
+        )
+        .map((state: ng.StateDeclaration) =>
+          lazyLoadState(transition, state, stateRegistry),
+        );
 
       return Promise.all(promises).then(retryTransition);
     },

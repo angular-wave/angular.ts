@@ -1,6 +1,6 @@
-import { equals, inherit, map, pick } from "../../shared/common.js";
-import { hasOwn, isDefined, isNullOrUndefined } from "../../shared/utils.js";
-import { is } from "../../shared/hof.js";
+import { equals, inherit, map, pick } from "../../shared/common.ts";
+import { hasOwn, isDefined, isNullOrUndefined } from "../../shared/utils.ts";
+import { is } from "../../shared/hof.ts";
 import { ParamType } from "./param-type.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type { ParamTypeDefinition } from "./interface.ts";
@@ -55,7 +55,7 @@ export class ParamTypes {
       "date",
       "json",
       "any",
-    ]);
+    ]) as Record<string, ParamTypeDefinition & Record<string, any>>;
     // Register default types. Store them in the prototype of this.types.
     const makeType = (definition: ParamTypeDefinition, name: string | number) =>
       new ParamType(Object.assign({ name }, definition));

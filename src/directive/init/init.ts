@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import { getController } from "../../shared/dom.js";
+import { getController } from "../../shared/dom.ts";
 
 export function ngInitDirective() {
   return {

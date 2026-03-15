@@ -1,5 +1,5 @@
 import type { TransitionService } from "../transition/transition-service.ts";
-import type { Transition } from "../transition/transition.js";
+import type { Transition } from "../transition/transition.ts";
 import type { ViewConfig } from "../state/views.ts";
 
 /**

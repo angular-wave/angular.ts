@@ -1,6 +1,6 @@
-import { Angular } from "../../angular.js";
+import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
-import { NodeRef } from "../../shared/noderef.js";
+import { NodeRef } from "../../shared/noderef.ts";
 import {
   dealoc,
   getCacheData,
@@ -9,10 +9,10 @@ import {
   getController,
   getScope,
   getIsolateScope,
-} from "../../shared/dom.js";
-import { isFunction, getNodeName, extend, assert } from "../../shared/utils.js";
-import { Cache } from "../../shared/dom.js";
-import { wait } from "../../shared/test-utils.js";
+} from "../../shared/dom.ts";
+import { isFunction, getNodeName, extend, assert } from "../../shared/utils.ts";
+import { Cache } from "../../shared/dom.ts";
+import { wait } from "../../shared/test-utils.ts";
 import {
   applyTextInterpolationValue,
   buildInterpolationWatchExpression,

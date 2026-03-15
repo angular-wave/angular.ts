@@ -1,7 +1,7 @@
 // @ts-nocheck
 
-import { $injectTokens } from "../../injection-tokens.js";
-import { getCacheData } from "../../shared/dom.js";
+import { $injectTokens } from "../../injection-tokens.ts";
+import { getCacheData } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import {
   assertNotHasOwnProperty,
@@ -12,7 +12,7 @@ import {
   isNullOrUndefined,
   isUndefined,
   shallowCopy,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 
 class SelectController {
   static $nonscope = [

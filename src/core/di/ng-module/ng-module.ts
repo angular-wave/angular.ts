@@ -1,4 +1,4 @@
-import { $injectTokens as $t } from "../../../injection-tokens.js";
+import { $injectTokens as $t } from "../../../injection-tokens.ts";
 import { createWorkerConnection } from "../../../directive/worker/worker.ts";
 import {
   instantiateWasm,
@@ -7,7 +7,7 @@ import {
   isDefined,
   isObject,
   isArray,
-} from "../../../shared/utils.js";
+} from "../../../shared/utils.ts";
 import { isInjectable } from "../../../shared/predicates.ts";
 import { validate, validateRequired } from "../../../shared/validate.ts";
 import type { Injectable } from "../../../interface.ts";

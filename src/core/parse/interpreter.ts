@@ -6,7 +6,7 @@ import {
   isNullOrUndefined,
   isObject,
   isProxy,
-} from "../../shared/utils.js";
+} from "../../shared/utils.ts";
 import { ASTType } from "./ast-type.ts";
 import type {
   ASTNode,

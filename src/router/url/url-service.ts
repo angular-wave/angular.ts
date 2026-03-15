@@ -5,17 +5,17 @@ import {
   isNull,
   isObject,
   isString,
-} from "../../shared/utils.js";
-import { is, pattern } from "../../shared/hof.js";
+} from "../../shared/utils.ts";
+import { is, pattern } from "../../shared/hof.ts";
 import { UrlRules } from "./url-rules.ts";
 import { TargetState } from "../state/target-state.ts";
-import { removeFrom } from "../../shared/common.js";
-import { stripLastPathElement } from "../../shared/strings.js";
+import { removeFrom } from "../../shared/common.ts";
+import { stripLastPathElement } from "../../shared/strings.ts";
 import { UrlMatcher } from "./url-matcher.ts";
 import { ParamFactory } from "../params/param-factory.ts";
 import { UrlRuleFactory } from "./url-rule.ts";
-import { getBaseHref } from "../../shared/dom.js";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+import { getBaseHref } from "../../shared/dom.ts";
+import { $injectTokens as $t } from "../../injection-tokens.ts";
 import type { MatchResult, UrlParts } from "./interface.ts";
 
 /**

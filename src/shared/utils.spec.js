@@ -25,7 +25,7 @@ import {
   baseExtend,
 } from "./utils.js";
 import { createElementFromHTML, dealoc, startingTag } from "./dom.js";
-import { Angular } from "../angular.js";
+import { Angular } from "../angular.ts";
 import { createInjector } from "../core/di/injector.ts";
 
 describe("utility functions", () => {

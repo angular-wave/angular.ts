@@ -1,11 +1,11 @@
-import { Angular } from "../../angular.js";
+import { Angular } from "../../angular.ts";
 import {
   createElementFromHTML,
   dealoc,
   getController,
-} from "../../shared/dom.js";
-import { hashKey, equals, isNumberNaN } from "../../shared/utils.js";
-import { browserTrigger, wait } from "../../shared/test-utils.js";
+} from "../../shared/dom.ts";
+import { hashKey, equals, isNumberNaN } from "../../shared/utils.ts";
+import { browserTrigger, wait } from "../../shared/test-utils.ts";
 
 describe("select", () => {
   let scope;

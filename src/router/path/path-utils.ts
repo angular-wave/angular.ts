@@ -1,6 +1,6 @@
-import { arrayTuples, find, omit, pick, unnestR } from "../../shared/common.js";
-import { propEq } from "../../shared/hof.js";
-import { values } from "../../shared/utils.js";
+import { arrayTuples, find, omit, pick, unnestR } from "../../shared/common.ts";
+import { propEq } from "../../shared/hof.ts";
+import { values } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
 import type { Param } from "../params/param.ts";
@@ -268,6 +268,7 @@ export class PathUtils {
     predicate: import("../../shared/interface.ts").Predicate<PathNode>,
   ): PathNode[] | undefined {
     const node = find(path, predicate);
+    if (!node) return undefined;
 
     const elementIdx = path.indexOf(node);
 

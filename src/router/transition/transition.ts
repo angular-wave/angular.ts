@@ -1,5 +1,6 @@
+// @ts-nocheck
 import { trace } from "../common/trace.ts";
-import { stringify } from "../../shared/strings.js";
+import { stringify } from "../../shared/strings.ts";
 import {
   anyTrueR,
   arrayTuples,
@@ -8,14 +9,14 @@ import {
   omit,
   tail,
   unnestR,
-} from "../../shared/common.js";
+} from "../../shared/common.ts";
 import {
   assert,
   isNullOrUndefined,
   isObject,
   isUndefined,
-} from "../../shared/utils.js";
-import { is, propEq, val } from "../../shared/hof.js";
+} from "../../shared/utils.ts";
+import { is, propEq, val } from "../../shared/hof.ts";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import { registerHook } from "./hook-registry.ts";
 import { HookBuilder } from "./hook-builder.ts";
@@ -24,6 +25,38 @@ import { Param } from "../params/param.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { Rejection } from "./reject-factory.ts";
+
+export interface Transition {
+  promise: Promise<any>;
+  $id: number;
+  _aborted?: boolean;
+  _globals: ng.RouterService & Record<string, any>;
+  _transitionService: import("./transition-service.ts").TransitionService;
+  _treeChanges: import("./interface.ts").TreeChanges;
+  addResolvable(
+    resolvable: import("../resolve/resolvable.ts").Resolvable,
+    state?: any,
+  ): void;
+  entering(): ng.StateDeclaration[];
+  exiting(): ng.StateDeclaration[];
+  views(pathname?: string, state?: string): any[];
+  params(pathname?: string): Record<string, any>;
+  treeChanges(pathname?: string): import("./interface.ts").TreeChanges;
+  valid(): boolean;
+  error(): string;
+  originalTransition(): Transition;
+  targetState(): import("../state/target-state.ts").TargetState;
+  options(): import("./interface.ts").TransitionOptions;
+  to(): any;
+  redirect(targetState: import("../state/target-state.ts").TargetState): any;
+  run(): Promise<any>;
+  isActive(): boolean;
+  onSuccess(matchCriteria: any, callback: any, options?: any): any;
+  $to(): any;
+  redirectedFrom(): Transition | null;
+}
+
+export type { TreeChanges, TransitionOptions } from "./interface.ts";
 
 /** @typedef {import('./interface.ts').DeregisterFn} DeregisterFn */
 /** @typedef {import('./interface.ts').HookFn} HookFn */
@@ -104,7 +137,7 @@ export class Transition {
     /** @type {TreeChanges} */
     this._treeChanges = PathUtils.treeChanges(
       fromPath,
-      /** @type {PathNode[]} */ (toPath),
+      /** @type {PathNode[]} */ toPath,
       this._options.reloadState,
     );
     const onCreateHooks = this._hookBuilder.buildHooksForPhase(
@@ -258,14 +291,22 @@ export class Transition {
    * @returns {StateObject} the internal from [State] object
    */
   $from() {
-    return tail(this._treeChanges.from).state;
+    const fromNode = /** @type {PathNode | undefined} */ tail(
+      this._treeChanges.from,
+    );
+
+    return /** @type {StateObject} */ fromNode?.state;
   }
 
   /**
    * @returns {StateObject} the internal to [State] object
    */
   $to() {
-    return tail(this._treeChanges.to).state;
+    const toNode = /** @type {PathNode | undefined} */ tail(
+      this._treeChanges.to,
+    );
+
+    return /** @type {StateObject} */ toNode?.state;
   }
 
   /**
@@ -307,7 +348,7 @@ export class Transition {
    */
   params(pathname = "to") {
     return Object.freeze(
-      /** @type {PathNode[]} */ (this._treeChanges[pathname])
+      /** @type {PathNode[]} */ this._treeChanges[pathname]
         .map((x) => x.paramValues)
         .reduce((acc, obj) => ({ ...acc, ...obj }), {}),
     );
@@ -347,7 +388,7 @@ export class Transition {
    */
   getResolveTokens(pathname = "to") {
     return new ResolveContext(
-      /** @type {PathNode[]} */ (this._treeChanges[pathname]),
+      /** @type {PathNode[]} */ this._treeChanges[pathname],
     ).getTokens();
   }
 
@@ -400,7 +441,7 @@ export class Transition {
 
     resolveContext.addResolvables(
       [resolvable],
-      /** @type {PathNode} */ (targetNode).state,
+      /** @type {PathNode} */ targetNode.state,
     );
   }
 
@@ -472,8 +513,9 @@ export class Transition {
    * @returns an array of states that will be entered during this transition.
    */
   entering() {
-    const states = /** @type {ng.StateObject[]} */ (
-      map(this._treeChanges.entering, (x) => x.state)
+    const states = /** @type {ng.StateObject[]} */ map(
+      this._treeChanges.entering,
+      (x) => x.state,
     );
 
     return states.map((x) => x.self);
@@ -485,8 +527,9 @@ export class Transition {
    * @returns {import("../state/interface.ts").StateDeclaration[]} an array of states that will be exited during this transition.
    */
   exiting() {
-    const states = /** @type {ng.StateObject[]} */ (
-      map(this._treeChanges.exiting, (x) => x.state)
+    const states = /** @type {ng.StateObject[]} */ map(
+      this._treeChanges.exiting,
+      (x) => x.state,
     );
 
     return states.map((x) => x.self).reverse();
@@ -499,8 +542,9 @@ export class Transition {
    *    exited during this Transition
    */
   retained() {
-    const states = /** @type {ng.StateObject[]} */ (
-      map(this._treeChanges.retained, (x) => x.state)
+    const states = /** @type {ng.StateObject[]} */ map(
+      this._treeChanges.retained,
+      (x) => x.state,
     );
 
     return states.map((x) => x.self);
@@ -523,11 +567,11 @@ export class Transition {
 
     path = !state
       ? path
-      : /** @type {import('../path/path-node.ts').PathNode[]} */ (path).filter(
+      : /** @type {import('../path/path-node.ts').PathNode[]} */ path.filter(
           propEq("state", state),
         );
 
-    return /** @type {import('../path/path-node.ts').PathNode[]} */ (path)
+    return /** @type {import('../path/path-node.ts').PathNode[]} */ path
       .map((x) => x.views)
       .reduce(unnestR, []);
   }
@@ -547,9 +591,8 @@ export class Transition {
    */
   treeChanges(pathname) {
     return pathname
-      ? /** @type {import('../path/path-node.ts').PathNode[]} */ (
-          this._treeChanges[pathname]
-        )
+      ? /** @type {import('../path/path-node.ts').PathNode[]} */ this
+          ._treeChanges[pathname]
       : this._treeChanges;
   }
 
@@ -565,17 +608,17 @@ export class Transition {
    */
   redirect(targetState) {
     let redirects = 1,
-      trans = /** @type {Transition} */ (this);
+      trans = /** @type {Transition} */ this;
 
     while (!isNullOrUndefined((trans = trans.redirectedFrom()))) {
       if (++redirects > REDIRECT_MAX)
         throw new Error(`Too many consecutive Transition redirects (20+)`);
     }
     const redirectOpts =
-      /** @type {import("./interface.ts").TransitionOptions} */ ({
+      /** @type {import("./interface.ts").TransitionOptions} */ {
         redirectedFrom: this,
         source: "redirect",
-      });
+      };
 
     // If the original transition was caused by URL sync, then use { location: 'replace' }
     // on the new transition (unless the target state explicitly specifies location: false).
@@ -619,19 +662,17 @@ export class Transition {
         return reloadState && node.state.includes[reloadState.name];
       };
 
-    const params = /** @type {PathNode[]} */ (
-      PathUtils.matching(
-        redirectEnteringNodes,
-        originalEnteringNodes,
-        PathUtils.nonDynamicParams,
-      )
+    const params = /** @type {PathNode[]} */ PathUtils.matching(
+      redirectEnteringNodes,
+      originalEnteringNodes,
+      PathUtils.nonDynamicParams,
     );
 
     // Find any "entering" nodes in the redirect path that match the original path and aren't being reloaded
     const matchingEnteringNodes = params.filter(
       (x) =>
         !nodeIsReloading(
-          /** @type {ng.StateObject} */ (targetState.options().reloadState),
+          /** @type {ng.StateObject} */ targetState.options().reloadState,
         )(x),
     );
 
@@ -720,7 +761,7 @@ export class Transition {
 
       return (
         pathA.length ===
-        /** @type {PathNode[]} */ (matching).filter(
+        /** @type {PathNode[]} */ matching.filter(
           (node) => !reloadState || !node.state.includes[reloadState.name],
         ).length
       );

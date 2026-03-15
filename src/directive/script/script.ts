@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.js";
+import { $injectTokens } from "../../injection-tokens.ts";
 
 scriptDirective.$inject = [$injectTokens._templateCache];
 

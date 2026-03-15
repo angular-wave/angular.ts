@@ -5,8 +5,8 @@ import {
   isFunction,
   isString,
   isUndefined,
-} from "../../shared/utils.js";
-import { is, pattern } from "../../shared/hof.js";
+} from "../../shared/utils.ts";
+import { is, pattern } from "../../shared/hof.ts";
 import { StateObject } from "../state/state-object.ts";
 import type {
   MatcherUrlRule,

@@ -5,7 +5,7 @@ import {
   removeElementData,
   setCacheData,
 } from "../shared/dom.ts";
-import { mergeClasses, values } from "../shared/utils.js";
+import { mergeClasses, values } from "../shared/utils.ts";
 import {
   NG_ANIMATE_CLASSNAME,
   PREPARE_CLASS_SUFFIX,
@@ -13,7 +13,7 @@ import {
   applyAnimationStyles,
   prepareAnimationOptions,
 } from "./shared.ts";
-import { $injectTokens as $t } from "../injection-tokens.js";
+import { $injectTokens as $t } from "../injection-tokens.ts";
 import { AnimateRunner } from "./runner/animate-runner.ts";
 import { animateCache } from "./cache/animate-cache.ts";
 import { rafScheduler } from "./raf/raf-scheduler.ts";

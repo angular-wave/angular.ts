@@ -1,7 +1,7 @@
 import { val } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import type { TransitionService } from "../transition/transition-service.ts";
-import type { Transition, TreeChanges } from "../transition/transition.js";
+import type { Transition, TreeChanges } from "../transition/transition.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 
 /**

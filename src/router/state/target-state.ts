@@ -1,5 +1,5 @@
-import { isObject, isString } from "../../shared/utils.js";
-import { stringify } from "../../shared/strings.js";
+import { isObject, isString } from "../../shared/utils.ts";
+import { stringify } from "../../shared/strings.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { TransitionOptions } from "../transition/interface.ts";
 import type {

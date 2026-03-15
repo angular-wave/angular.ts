@@ -2,7 +2,7 @@ import { ParamDeclaration, RawParams } from "../params/interface.ts";
 import { StateObject } from "./state-object.ts";
 import { ViewContext } from "../view/view.ts";
 import { Injectable } from "../../interface.ts";
-import { Transition } from "../transition/transition.js";
+import type { Transition } from "../transition/transition.ts";
 import {
   TransitionStateHookFn,
   TransitionOptions,

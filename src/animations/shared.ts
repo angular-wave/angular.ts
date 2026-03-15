@@ -1,5 +1,5 @@
 import type { AnimationOptions } from "./interface.ts";
-import { isArray, isString } from "../shared/utils.js";
+import { isArray, isString } from "../shared/utils.ts";
 import { NodeType } from "../shared/node.ts";
 
 export const ADD_CLASS_SUFFIX = "-add";

@@ -9,9 +9,9 @@ import {
   minErr,
   nullObject,
   values,
-} from "../../shared/utils.js";
-import { getBlockNodes, removeElement } from "../../shared/dom.js";
-import { $injectTokens } from "../../injection-tokens.js";
+} from "../../shared/utils.ts";
+import { getBlockNodes, removeElement } from "../../shared/dom.ts";
+import { $injectTokens } from "../../injection-tokens.ts";
 
 const NG_REMOVED = "$$NG_REMOVED";
 

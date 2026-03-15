@@ -5,9 +5,9 @@ import {
   getNodeName,
   hasOwn,
   minErr,
-} from "../../shared/utils.js";
-import { getCacheData } from "../../shared/dom.js";
-import { $injectTokens } from "../../injection-tokens.js";
+} from "../../shared/utils.ts";
+import { getCacheData } from "../../shared/dom.ts";
+import { $injectTokens } from "../../injection-tokens.ts";
 
 const ngRefMinErr = minErr("ngRef");
 

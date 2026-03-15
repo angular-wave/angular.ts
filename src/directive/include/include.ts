@@ -1,5 +1,5 @@
-import { isDefined, hasAnimate } from "../../shared/utils.js";
-import { $injectTokens as $t } from "../../injection-tokens.js";
+import { isDefined, hasAnimate } from "../../shared/utils.ts";
+import { $injectTokens as $t } from "../../injection-tokens.ts";
 
 ngIncludeDirective.$inject = [
   $t._templateRequest,
