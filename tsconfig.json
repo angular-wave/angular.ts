@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "checkJs": true,
-    "allowJs": true,
     "noEmit": true,
     "strict": true,
     "noImplicitAny": true,
@@ -12,7 +11,6 @@
     "strictBindCallApply": true,
     "useUnknownInCatchVariables": true,
     "module": "ESNext",
-    "target": "ES2017",
     "moduleResolution": "Bundler",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,

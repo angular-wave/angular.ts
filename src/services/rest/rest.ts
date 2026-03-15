@@ -38,7 +38,7 @@ export class RestService<T = any, ID = any> {
     return expandUriTemplate(template, params || {});
   }
 
-  #mapEntity(data: unknown): T | unknown {
+  private mapEntity(data: unknown): T | unknown {
     if (!data) return data;
 
     return this._entityClass ? new this._entityClass(data) : data;
@@ -46,11 +46,11 @@ export class RestService<T = any, ID = any> {
 
   async list(params: Record<string, any> = {}): Promise<T[]> {
     const url = this.buildUrl(this._baseUrl, params);
-    const resp = await this.#request<unknown[]>("GET", url, null, params);
+    const resp = await this.request<unknown[]>("GET", url, null, params);
 
     if (!isArray(resp.data)) return [];
 
-    return resp.data.map((data) => this.#mapEntity(data) as T);
+    return resp.data.map((data) => this.mapEntity(data) as T);
   }
 
   async read(
@@ -59,16 +59,16 @@ export class RestService<T = any, ID = any> {
   ): Promise<T | unknown | null> {
     assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
     const url = this.buildUrl(`${this._baseUrl}/${id}`, params);
-    const resp = await this.#request<unknown>("GET", url, null, params);
+    const resp = await this.request<unknown>("GET", url, null, params);
 
-    return this.#mapEntity(resp.data) ?? null;
+    return this.mapEntity(resp.data) ?? null;
   }
 
   async create(item: T): Promise<T | unknown> {
     assert(!isNullOrUndefined(item), `${BADARG}:item ${item}`);
-    const resp = await this.#request<unknown>("POST", this._baseUrl, item);
+    const resp = await this.request<unknown>("POST", this._baseUrl, item);
 
-    return this.#mapEntity(resp.data);
+    return this.mapEntity(resp.data);
   }
 
   async update(id: ID, item: Partial<T>): Promise<T | unknown | null> {
@@ -76,9 +76,9 @@ export class RestService<T = any, ID = any> {
     const url = `${this._baseUrl}/${id}`;
 
     try {
-      const resp = await this.#request<unknown>("PUT", url, item);
+      const resp = await this.request<unknown>("PUT", url, item);
 
-      return this.#mapEntity(resp.data) ?? null;
+      return this.mapEntity(resp.data) ?? null;
     } catch {
       return null;
     }
@@ -89,7 +89,7 @@ export class RestService<T = any, ID = any> {
     const url = `${this._baseUrl}/${id}`;
 
     try {
-      await this.#request("DELETE", url);
+      await this.request("DELETE", url);
 
       return true;
     } catch {
@@ -97,7 +97,7 @@ export class RestService<T = any, ID = any> {
     }
   }
 
-  async #request<R>(
+  private async request<R>(
     method: HttpMethod,
     url: string,
     data: unknown = null,
