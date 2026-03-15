@@ -27,8 +27,8 @@ export class AST {
   constructor(lexer: Lexer) {
     this._lexer = lexer;
     this._selfReferential = {
-      this: { type: ASTType._ThisExpression },
-      $locals: { type: ASTType._LocalsExpression },
+      this: { _type: ASTType._ThisExpression },
+      $locals: { _type: ASTType._LocalsExpression },
     };
     this._index = 0;
   }
@@ -73,7 +73,7 @@ export class AST {
       }
     }
 
-    return { type: ASTType._Program, body };
+    return { _type: ASTType._Program, _body: body };
   }
 
   /**
@@ -82,8 +82,8 @@ export class AST {
    */
   _expressionStatement(): ASTNode {
     return {
-      type: ASTType._ExpressionStatement,
-      expression: this._filterChain(),
+      _type: ASTType._ExpressionStatement,
+      _expression: this._filterChain(),
     };
   }
 
@@ -114,10 +114,10 @@ export class AST {
       }
 
       result = {
-        type: ASTType._AssignmentExpression,
-        left: result,
-        right: this._assignment(),
-        operator: "=",
+        _type: ASTType._AssignmentExpression,
+        _left: result,
+        _right: this._assignment(),
+        _operator: "=",
       };
     }
 
@@ -138,10 +138,10 @@ export class AST {
         const consequent: ASTNode = this._assignment();
 
         return {
-          type: ASTType._ConditionalExpression,
-          test,
-          alternate,
-          consequent,
+          _type: ASTType._ConditionalExpression,
+          _test: test,
+          _alternate: alternate,
+          _consequent: consequent,
         };
       }
     }
@@ -158,10 +158,10 @@ export class AST {
 
     while (this._expect("||")) {
       left = {
-        type: ASTType._LogicalExpression,
-        operator: "||",
-        left,
-        right: this._logicalAND(),
+        _type: ASTType._LogicalExpression,
+        _operator: "||",
+        _left: left,
+        _right: this._logicalAND(),
       };
     }
 
@@ -177,10 +177,10 @@ export class AST {
 
     while (this._expect("&&")) {
       left = {
-        type: ASTType._LogicalExpression,
-        operator: "&&",
-        left,
-        right: this._equality(),
+        _type: ASTType._LogicalExpression,
+        _operator: "&&",
+        _left: left,
+        _right: this._equality(),
       };
     }
 
@@ -198,10 +198,10 @@ export class AST {
 
     while ((token = this._expect("==", "!=", "===", "!=="))) {
       left = {
-        type: ASTType._BinaryExpression,
-        operator: /** @type {Token} */ token.text,
-        left,
-        right: this._relational(),
+        _type: ASTType._BinaryExpression,
+        _operator: /** @type {Token} */ token.text,
+        _left: left,
+        _right: this._relational(),
       };
     }
 
@@ -219,10 +219,10 @@ export class AST {
 
     while ((token = this._expect("<", ">", "<=", ">="))) {
       left = {
-        type: ASTType._BinaryExpression,
-        operator: /** @type {Token} */ token.text,
-        left,
-        right: this._additive(),
+        _type: ASTType._BinaryExpression,
+        _operator: /** @type {Token} */ token.text,
+        _left: left,
+        _right: this._additive(),
       };
     }
 
@@ -240,10 +240,10 @@ export class AST {
 
     while ((token = this._expect("+", "-"))) {
       left = {
-        type: ASTType._BinaryExpression,
-        operator: /** @type {Token} */ token.text,
-        left,
-        right: this._multiplicative(),
+        _type: ASTType._BinaryExpression,
+        _operator: /** @type {Token} */ token.text,
+        _left: left,
+        _right: this._multiplicative(),
       };
     }
 
@@ -261,10 +261,10 @@ export class AST {
 
     while ((token = this._expect("*", "/", "%"))) {
       left = {
-        type: ASTType._BinaryExpression,
-        operator: /** @type {import("../lexer/lexer.ts").Token} */ token.text,
-        left,
-        right: this._unary(),
+        _type: ASTType._BinaryExpression,
+        _operator: /** @type {import("../lexer/lexer.ts").Token} */ token.text,
+        _left: left,
+        _right: this._unary(),
       };
     }
 
@@ -294,20 +294,20 @@ export class AST {
       }
 
       return {
-        type: ASTType._UpdateExpression,
-        operator: /** @type {Token} */ token.text,
-        prefix: true,
-        argument,
+        _type: ASTType._UpdateExpression,
+        _operator: /** @type {Token} */ token.text,
+        _prefix: true,
+        _argument: argument,
       };
     }
 
     // Existing unary: + - !
     if ((token = this._expect("+", "-", "!"))) {
       return {
-        type: ASTType._UnaryExpression,
-        operator: /** @type {Token} */ token.text,
-        prefix: true,
-        argument: this._unary(),
+        _type: ASTType._UnaryExpression,
+        _operator: /** @type {Token} */ token.text,
+        _prefix: true,
+        _argument: this._unary(),
       };
     }
 
@@ -334,10 +334,10 @@ export class AST {
       }
 
       expr = {
-        type: ASTType._UpdateExpression,
-        operator: /** @type {Token} */ token.text,
-        prefix: false,
-        argument: expr,
+        _type: ASTType._UpdateExpression,
+        _operator: /** @type {Token} */ token.text,
+        _prefix: false,
+        _argument: expr,
       };
     }
 
@@ -363,8 +363,8 @@ export class AST {
       primary = structuredClone(this._selfReferential[this._consume().text]);
     } else if (hasOwn(literals, (peekToken as Token).text)) {
       primary = {
-        type: ASTType._Literal,
-        value: literals[this._consume().text as keyof typeof literals],
+        _type: ASTType._Literal,
+        _value: literals[this._consume().text as keyof typeof literals],
       };
     } else if ((peekToken as Token).identifier) {
       primary = this._identifier();
@@ -379,29 +379,29 @@ export class AST {
     while ((next = this._expect("(", "[", "."))) {
       if (/** @type {import("../lexer/lexer.ts").Token} */ next.text === "(") {
         primary = {
-          type: ASTType._CallExpression,
-          callee: primary,
-          arguments: this._parseArguments(),
+          _type: ASTType._CallExpression,
+          _callee: primary,
+          _arguments: this._parseArguments(),
         };
         this._consume(")");
       } else if (
         /** @type {import("../lexer/lexer.ts").Token} */ next.text === "["
       ) {
         primary = {
-          type: ASTType._MemberExpression,
-          object: primary,
-          property: this._assignment(),
-          computed: true,
+          _type: ASTType._MemberExpression,
+          _object: primary,
+          _property: this._assignment(),
+          _computed: true,
         };
         this._consume("]");
       } else if (
         /** @type {import("../lexer/lexer.ts").Token} */ next.text === "."
       ) {
         primary = {
-          type: ASTType._MemberExpression,
-          object: primary,
-          property: this._identifier(),
-          computed: false,
+          _type: ASTType._MemberExpression,
+          _object: primary,
+          _property: this._identifier(),
+          _computed: false,
         };
       } else {
         throw new Error("IMPOSSIBLE");
@@ -420,10 +420,10 @@ export class AST {
     const args: ASTNode[] = [baseExpression];
 
     const result = {
-      type: ASTType._CallExpression,
-      callee: this._identifier(),
-      arguments: args,
-      filter: true,
+      _type: ASTType._CallExpression,
+      _callee: this._identifier(),
+      _arguments: args,
+      _filter: true,
     };
 
     while (this._expect(":")) {
@@ -460,7 +460,7 @@ export class AST {
       this._throwError("is not a valid identifier", token);
     }
 
-    return { type: ASTType._Identifier, name: token.text };
+    return { _type: ASTType._Identifier, _name: token.text };
   }
 
   /**
@@ -469,7 +469,7 @@ export class AST {
    */
   _constant(): ASTNode {
     // TODO check that it is a constant
-    return { type: ASTType._Literal, value: this._consume().value };
+    return { _type: ASTType._Literal, _value: this._consume().value };
   }
 
   /**
@@ -490,7 +490,7 @@ export class AST {
     }
     this._consume("]");
 
-    return { type: ASTType._ArrayExpression, elements };
+    return { _type: ASTType._ArrayExpression, _elements: elements };
   }
 
   /**
@@ -510,35 +510,34 @@ export class AST {
         }
         const nextToken = this._peekToken();
         property = {
-          type: ASTType._Property,
-          kind: "init",
-          key: { type: ASTType._Literal, value: undefined },
-          value: { type: ASTType._Literal, value: undefined },
-          computed: false,
+          _type: ASTType._Property,
+          _key: { _type: ASTType._Literal, _value: undefined },
+          _value: { _type: ASTType._Literal, _value: undefined },
+          _computed: false,
         };
 
         if (nextToken.constant) {
-          property.key = this._constant();
-          property.computed = false;
+          property._key = this._constant();
+          property._computed = false;
           this._consume(":");
-          property.value = this._assignment();
+          property._value = this._assignment();
         } else if (nextToken.identifier) {
-          property.key = this._identifier();
-          property.computed = false;
+          property._key = this._identifier();
+          property._computed = false;
 
           if (this._peek(":")) {
             this._consume(":");
-            property.value = this._assignment();
+            property._value = this._assignment();
           } else {
-            property.value = property.key;
+            property._value = property._key;
           }
         } else if (this._peek("[")) {
           this._consume("[");
-          property.key = this._assignment();
+          property._key = this._assignment();
           this._consume("]");
-          property.computed = true;
+          property._computed = true;
           this._consume(":");
-          property.value = this._assignment();
+          property._value = this._assignment();
         } else {
           this._throwError("invalid key", this._peek() as Token);
         }
@@ -547,7 +546,7 @@ export class AST {
     }
     this._consume("}");
 
-    return { type: ASTType._ObjectExpression, properties };
+    return { _type: ASTType._ObjectExpression, _properties: properties };
   }
 
   /**

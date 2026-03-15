@@ -20,20 +20,20 @@ export class Parser {
     const fn = this._astCompiler.compile(ast);
 
     fn._literal = isLiteral(ast as BodyNode);
-    fn.constant = !!ast.constant;
+    fn.constant = !!ast._constant;
 
     return fn;
   }
 }
 
 function isLiteral(ast: BodyNode): boolean {
-  const { body } = ast;
+  const { _body: body } = ast;
 
   if (!body || body.length !== 1) {
     return true;
   }
 
-  switch ((body[0] as ExpressionNode).expression?.type) {
+  switch ((body[0] as ExpressionNode)._expression?._type) {
     case ASTType._Literal:
     case ASTType._ArrayExpression:
     case ASTType._ObjectExpression:
