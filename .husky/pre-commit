@@ -1,3 +1,4 @@
-make pretty
 make lint
 make check
+make pretty
+git add ./
