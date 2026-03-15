@@ -33,16 +33,16 @@ describe("ast", () => {
   });
 
   it("should handle an empty list of tokens", () => {
-    expect(createAst("")).toEqual({ type: ASTType._Program, body: [] });
+    expect(createAst("")).toEqual({ _type: ASTType._Program, _body: [] });
   });
 
   it("should understand identifiers", () => {
     expect(createAst("foo")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: { type: ASTType._Identifier, name: "foo" },
+          _type: ASTType._ExpressionStatement,
+          _expression: { _type: ASTType._Identifier, _name: "foo" },
         },
       ],
     });
@@ -50,15 +50,15 @@ describe("ast", () => {
 
   it("should understand non-computed member expressions", () => {
     expect(createAst("foo.bar")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._MemberExpression,
-            object: { type: ASTType._Identifier, name: "foo" },
-            property: { type: ASTType._Identifier, name: "bar" },
-            computed: false,
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._MemberExpression,
+            _object: { _type: ASTType._Identifier, _name: "foo" },
+            _property: { _type: ASTType._Identifier, _name: "bar" },
+            _computed: false,
           },
         },
       ],
@@ -67,20 +67,20 @@ describe("ast", () => {
 
   it("should associate non-computed member expressions left-to-right", () => {
     expect(createAst("foo.bar.baz")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._MemberExpression,
-            object: {
-              type: ASTType._MemberExpression,
-              object: { type: ASTType._Identifier, name: "foo" },
-              property: { type: ASTType._Identifier, name: "bar" },
-              computed: false,
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._MemberExpression,
+            _object: {
+              _type: ASTType._MemberExpression,
+              _object: { _type: ASTType._Identifier, _name: "foo" },
+              _property: { _type: ASTType._Identifier, _name: "bar" },
+              _computed: false,
             },
-            property: { type: ASTType._Identifier, name: "baz" },
-            computed: false,
+            _property: { _type: ASTType._Identifier, _name: "baz" },
+            _computed: false,
           },
         },
       ],
@@ -89,15 +89,15 @@ describe("ast", () => {
 
   it("should understand computed member expressions", () => {
     expect(createAst("foo[bar]")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._MemberExpression,
-            object: { type: ASTType._Identifier, name: "foo" },
-            property: { type: ASTType._Identifier, name: "bar" },
-            computed: true,
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._MemberExpression,
+            _object: { _type: ASTType._Identifier, _name: "foo" },
+            _property: { _type: ASTType._Identifier, _name: "bar" },
+            _computed: true,
           },
         },
       ],
@@ -106,20 +106,20 @@ describe("ast", () => {
 
   it("should associate computed member expressions left-to-right", () => {
     expect(createAst("foo[bar][baz]")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._MemberExpression,
-            object: {
-              type: ASTType._MemberExpression,
-              object: { type: ASTType._Identifier, name: "foo" },
-              property: { type: ASTType._Identifier, name: "bar" },
-              computed: true,
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._MemberExpression,
+            _object: {
+              _type: ASTType._MemberExpression,
+              _object: { _type: ASTType._Identifier, _name: "foo" },
+              _property: { _type: ASTType._Identifier, _name: "bar" },
+              _computed: true,
             },
-            property: { type: ASTType._Identifier, name: "baz" },
-            computed: true,
+            _property: { _type: ASTType._Identifier, _name: "baz" },
+            _computed: true,
           },
         },
       ],
@@ -128,14 +128,14 @@ describe("ast", () => {
 
   it("should understand call expressions", () => {
     expect(createAst("foo()")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._CallExpression,
-            callee: { type: ASTType._Identifier, name: "foo" },
-            arguments: [],
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._CallExpression,
+            _callee: { _type: ASTType._Identifier, _name: "foo" },
+            _arguments: [],
           },
         },
       ],
@@ -144,16 +144,16 @@ describe("ast", () => {
 
   it("should parse call expression arguments", () => {
     expect(createAst("foo(bar, baz)")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._CallExpression,
-            callee: { type: ASTType._Identifier, name: "foo" },
-            arguments: [
-              { type: ASTType._Identifier, name: "bar" },
-              { type: ASTType._Identifier, name: "baz" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._CallExpression,
+            _callee: { _type: ASTType._Identifier, _name: "foo" },
+            _arguments: [
+              { _type: ASTType._Identifier, _name: "bar" },
+              { _type: ASTType._Identifier, _name: "baz" },
             ],
           },
         },
@@ -163,23 +163,23 @@ describe("ast", () => {
 
   it("should parse call expression left-to-right", () => {
     expect(createAst("foo(bar, baz)(man, shell)")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._CallExpression,
-            callee: {
-              type: ASTType._CallExpression,
-              callee: { type: ASTType._Identifier, name: "foo" },
-              arguments: [
-                { type: ASTType._Identifier, name: "bar" },
-                { type: ASTType._Identifier, name: "baz" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._CallExpression,
+            _callee: {
+              _type: ASTType._CallExpression,
+              _callee: { _type: ASTType._Identifier, _name: "foo" },
+              _arguments: [
+                { _type: ASTType._Identifier, _name: "bar" },
+                { _type: ASTType._Identifier, _name: "baz" },
               ],
             },
-            arguments: [
-              { type: ASTType._Identifier, name: "man" },
-              { type: ASTType._Identifier, name: "shell" },
+            _arguments: [
+              { _type: ASTType._Identifier, _name: "man" },
+              { _type: ASTType._Identifier, _name: "shell" },
             ],
           },
         },
@@ -189,16 +189,16 @@ describe("ast", () => {
 
   it("should keep the context when having superfluous parenthesis", () => {
     expect(createAst("(foo)(bar, baz)")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._CallExpression,
-            callee: { type: ASTType._Identifier, name: "foo" },
-            arguments: [
-              { type: ASTType._Identifier, name: "bar" },
-              { type: ASTType._Identifier, name: "baz" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._CallExpression,
+            _callee: { _type: ASTType._Identifier, _name: "foo" },
+            _arguments: [
+              { _type: ASTType._Identifier, _name: "bar" },
+              { _type: ASTType._Identifier, _name: "baz" },
             ],
           },
         },
@@ -208,70 +208,70 @@ describe("ast", () => {
 
   it("should treat member expressions and call expression with the same precedence", () => {
     expect(createAst("foo.bar[baz]()")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._CallExpression,
-            callee: {
-              type: ASTType._MemberExpression,
-              object: {
-                type: ASTType._MemberExpression,
-                object: { type: ASTType._Identifier, name: "foo" },
-                property: { type: ASTType._Identifier, name: "bar" },
-                computed: false,
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._CallExpression,
+            _callee: {
+              _type: ASTType._MemberExpression,
+              _object: {
+                _type: ASTType._MemberExpression,
+                _object: { _type: ASTType._Identifier, _name: "foo" },
+                _property: { _type: ASTType._Identifier, _name: "bar" },
+                _computed: false,
               },
-              property: { type: ASTType._Identifier, name: "baz" },
-              computed: true,
+              _property: { _type: ASTType._Identifier, _name: "baz" },
+              _computed: true,
             },
-            arguments: [],
+            _arguments: [],
           },
         },
       ],
     });
     expect(createAst("foo[bar]().baz")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._MemberExpression,
-            object: {
-              type: ASTType._CallExpression,
-              callee: {
-                type: ASTType._MemberExpression,
-                object: { type: ASTType._Identifier, name: "foo" },
-                property: { type: ASTType._Identifier, name: "bar" },
-                computed: true,
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._MemberExpression,
+            _object: {
+              _type: ASTType._CallExpression,
+              _callee: {
+                _type: ASTType._MemberExpression,
+                _object: { _type: ASTType._Identifier, _name: "foo" },
+                _property: { _type: ASTType._Identifier, _name: "bar" },
+                _computed: true,
               },
-              arguments: [],
+              _arguments: [],
             },
-            property: { type: ASTType._Identifier, name: "baz" },
-            computed: false,
+            _property: { _type: ASTType._Identifier, _name: "baz" },
+            _computed: false,
           },
         },
       ],
     });
     expect(createAst("foo().bar[baz]")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._MemberExpression,
-            object: {
-              type: ASTType._MemberExpression,
-              object: {
-                type: ASTType._CallExpression,
-                callee: { type: ASTType._Identifier, name: "foo" },
-                arguments: [],
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._MemberExpression,
+            _object: {
+              _type: ASTType._MemberExpression,
+              _object: {
+                _type: ASTType._CallExpression,
+                _callee: { _type: ASTType._Identifier, _name: "foo" },
+                _arguments: [],
               },
-              property: { type: ASTType._Identifier, name: "bar" },
-              computed: false,
+              _property: { _type: ASTType._Identifier, _name: "bar" },
+              _computed: false,
             },
-            property: { type: ASTType._Identifier, name: "baz" },
-            computed: true,
+            _property: { _type: ASTType._Identifier, _name: "baz" },
+            _computed: true,
           },
         },
       ],
@@ -289,11 +289,11 @@ describe("ast", () => {
       undefined: undefined,
     }).forEach(([expression, value]) => {
       expect(createAst(expression)).toEqual({
-        type: ASTType._Program,
-        body: [
+        _type: ASTType._Program,
+        _body: [
           {
-            type: ASTType._ExpressionStatement,
-            expression: { type: ASTType._Literal, value },
+            _type: ASTType._ExpressionStatement,
+            _expression: { _type: ASTType._Literal, _value: value },
           },
         ],
       });
@@ -302,11 +302,11 @@ describe("ast", () => {
 
   it("should understand the `this` expression", () => {
     expect(createAst("this")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: { type: ASTType._ThisExpression },
+          _type: ASTType._ExpressionStatement,
+          _expression: { _type: ASTType._ThisExpression },
         },
       ],
     });
@@ -314,11 +314,11 @@ describe("ast", () => {
 
   it("should understand the `$locals` expression", () => {
     expect(createAst("$locals")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: { type: ASTType._LocalsExpression },
+          _type: ASTType._ExpressionStatement,
+          _expression: { _type: ASTType._LocalsExpression },
         },
       ],
     });
@@ -328,15 +328,15 @@ describe("ast", () => {
     ["this", "$locals", "undefined", "true", "false", "null"].forEach(
       (identifier) => {
         expect(createAst(`foo.${identifier}`)).toEqual({
-          type: ASTType._Program,
-          body: [
+          _type: ASTType._Program,
+          _body: [
             {
-              type: ASTType._ExpressionStatement,
-              expression: {
-                type: ASTType._MemberExpression,
-                object: { type: ASTType._Identifier, name: "foo" },
-                property: { type: ASTType._Identifier, name: identifier },
-                computed: false,
+              _type: ASTType._ExpressionStatement,
+              _expression: {
+                _type: ASTType._MemberExpression,
+                _object: { _type: ASTType._Identifier, _name: "foo" },
+                _property: { _type: ASTType._Identifier, _name: identifier },
+                _computed: false,
               },
             },
           ],
@@ -360,15 +360,15 @@ describe("ast", () => {
   it("should understand the unary operators `-`, `+` and `!`", () => {
     ["-", "+", "!"].forEach((operator) => {
       expect(createAst(`${operator}foo`)).toEqual({
-        type: ASTType._Program,
-        body: [
+        _type: ASTType._Program,
+        _body: [
           {
-            type: ASTType._ExpressionStatement,
-            expression: {
-              type: ASTType._UnaryExpression,
-              operator,
-              prefix: true,
-              argument: { type: ASTType._Identifier, name: "foo" },
+            _type: ASTType._ExpressionStatement,
+            _expression: {
+              _type: ASTType._UnaryExpression,
+              _operator: operator,
+              _prefix: true,
+              _argument: { _type: ASTType._Identifier, _name: "foo" },
             },
           },
         ],
@@ -383,23 +383,23 @@ describe("ast", () => {
       ["!", "+", "-"],
     ].forEach((operators) => {
       expect(createAst(`${operators.join("")}foo`)).toEqual({
-        type: ASTType._Program,
-        body: [
+        _type: ASTType._Program,
+        _body: [
           {
-            type: ASTType._ExpressionStatement,
-            expression: {
-              type: ASTType._UnaryExpression,
-              operator: operators[0],
-              prefix: true,
-              argument: {
-                type: ASTType._UnaryExpression,
-                operator: operators[1],
-                prefix: true,
-                argument: {
-                  type: ASTType._UnaryExpression,
-                  operator: operators[2],
-                  prefix: true,
-                  argument: { type: ASTType._Identifier, name: "foo" },
+            _type: ASTType._ExpressionStatement,
+            _expression: {
+              _type: ASTType._UnaryExpression,
+              _operator: operators[0],
+              _prefix: true,
+              _argument: {
+                _type: ASTType._UnaryExpression,
+                _operator: operators[1],
+                _prefix: true,
+                _argument: {
+                  _type: ASTType._UnaryExpression,
+                  _operator: operators[2],
+                  _prefix: true,
+                  _argument: { _type: ASTType._Identifier, _name: "foo" },
                 },
               },
             },
@@ -426,15 +426,15 @@ describe("ast", () => {
       "!==",
     ].forEach((operator) => {
       expect(createAst(`foo${operator}bar`)).toEqual({
-        type: ASTType._Program,
-        body: [
+        _type: ASTType._Program,
+        _body: [
           {
-            type: ASTType._ExpressionStatement,
-            expression: {
-              type: ASTType._BinaryExpression,
-              operator,
-              left: { type: ASTType._Identifier, name: "foo" },
-              right: { type: ASTType._Identifier, name: "bar" },
+            _type: ASTType._ExpressionStatement,
+            _expression: {
+              _type: ASTType._BinaryExpression,
+              _operator: operator,
+              _left: { _type: ASTType._Identifier, _name: "foo" },
+              _right: { _type: ASTType._Identifier, _name: "bar" },
             },
           },
         ],
@@ -453,20 +453,20 @@ describe("ast", () => {
       operators.forEach((op1) => {
         operators.forEach((op2) => {
           expect(createAst(`foo${op1}bar${op2}baz`)).toEqual({
-            type: ASTType._Program,
-            body: [
+            _type: ASTType._Program,
+            _body: [
               {
-                type: ASTType._ExpressionStatement,
-                expression: {
-                  type: ASTType._BinaryExpression,
-                  operator: op2,
-                  left: {
-                    type: ASTType._BinaryExpression,
-                    operator: op1,
-                    left: { type: ASTType._Identifier, name: "foo" },
-                    right: { type: ASTType._Identifier, name: "bar" },
+                _type: ASTType._ExpressionStatement,
+                _expression: {
+                  _type: ASTType._BinaryExpression,
+                  _operator: op2,
+                  _left: {
+                    _type: ASTType._BinaryExpression,
+                    _operator: op1,
+                    _left: { _type: ASTType._Identifier, _name: "foo" },
+                    _right: { _type: ASTType._Identifier, _name: "bar" },
                   },
-                  right: { type: ASTType._Identifier, name: "baz" },
+                  _right: { _type: ASTType._Identifier, _name: "baz" },
                 },
               },
             ],
@@ -479,56 +479,56 @@ describe("ast", () => {
   it("should give higher precedence to member calls than to unary expressions", () => {
     ["!", "+", "-"].forEach((operator) => {
       expect(createAst(`${operator}foo()`)).toEqual({
-        type: ASTType._Program,
-        body: [
+        _type: ASTType._Program,
+        _body: [
           {
-            type: ASTType._ExpressionStatement,
-            expression: {
-              type: ASTType._UnaryExpression,
-              operator,
-              prefix: true,
-              argument: {
-                type: ASTType._CallExpression,
-                callee: { type: ASTType._Identifier, name: "foo" },
-                arguments: [],
+            _type: ASTType._ExpressionStatement,
+            _expression: {
+              _type: ASTType._UnaryExpression,
+              _operator: operator,
+              _prefix: true,
+              _argument: {
+                _type: ASTType._CallExpression,
+                _callee: { _type: ASTType._Identifier, _name: "foo" },
+                _arguments: [],
               },
             },
           },
         ],
       });
       expect(createAst(`${operator}foo.bar`)).toEqual({
-        type: ASTType._Program,
-        body: [
+        _type: ASTType._Program,
+        _body: [
           {
-            type: ASTType._ExpressionStatement,
-            expression: {
-              type: ASTType._UnaryExpression,
-              operator,
-              prefix: true,
-              argument: {
-                type: ASTType._MemberExpression,
-                object: { type: ASTType._Identifier, name: "foo" },
-                property: { type: ASTType._Identifier, name: "bar" },
-                computed: false,
+            _type: ASTType._ExpressionStatement,
+            _expression: {
+              _type: ASTType._UnaryExpression,
+              _operator: operator,
+              _prefix: true,
+              _argument: {
+                _type: ASTType._MemberExpression,
+                _object: { _type: ASTType._Identifier, _name: "foo" },
+                _property: { _type: ASTType._Identifier, _name: "bar" },
+                _computed: false,
               },
             },
           },
         ],
       });
       expect(createAst(`${operator}foo[bar]`)).toEqual({
-        type: ASTType._Program,
-        body: [
+        _type: ASTType._Program,
+        _body: [
           {
-            type: ASTType._ExpressionStatement,
-            expression: {
-              type: ASTType._UnaryExpression,
-              operator,
-              prefix: true,
-              argument: {
-                type: ASTType._MemberExpression,
-                object: { type: ASTType._Identifier, name: "foo" },
-                property: { type: ASTType._Identifier, name: "bar" },
-                computed: true,
+            _type: ASTType._ExpressionStatement,
+            _expression: {
+              _type: ASTType._UnaryExpression,
+              _operator: operator,
+              _prefix: true,
+              _argument: {
+                _type: ASTType._MemberExpression,
+                _object: { _type: ASTType._Identifier, _name: "foo" },
+                _property: { _type: ASTType._Identifier, _name: "bar" },
+                _computed: true,
               },
             },
           },
@@ -541,24 +541,24 @@ describe("ast", () => {
     ["!", "+", "-"].forEach((op1) => {
       ["*", "/", "%"].forEach((op2) => {
         expect(createAst(`${op1}foo${op2}${op1}bar`)).toEqual({
-          type: ASTType._Program,
-          body: [
+          _type: ASTType._Program,
+          _body: [
             {
-              type: ASTType._ExpressionStatement,
-              expression: {
-                type: ASTType._BinaryExpression,
-                operator: op2,
-                left: {
-                  type: ASTType._UnaryExpression,
-                  operator: op1,
-                  prefix: true,
-                  argument: { type: ASTType._Identifier, name: "foo" },
+              _type: ASTType._ExpressionStatement,
+              _expression: {
+                _type: ASTType._BinaryExpression,
+                _operator: op2,
+                _left: {
+                  _type: ASTType._UnaryExpression,
+                  _operator: op1,
+                  _prefix: true,
+                  _argument: { _type: ASTType._Identifier, _name: "foo" },
                 },
-                right: {
-                  type: ASTType._UnaryExpression,
-                  operator: op1,
-                  prefix: true,
-                  argument: { type: ASTType._Identifier, name: "bar" },
+                _right: {
+                  _type: ASTType._UnaryExpression,
+                  _operator: op1,
+                  _prefix: true,
+                  _argument: { _type: ASTType._Identifier, _name: "bar" },
                 },
               },
             },
@@ -579,24 +579,24 @@ describe("ast", () => {
       operatorsByPrecedence[i].forEach((op1) => {
         operatorsByPrecedence[i + 1].forEach((op2) => {
           expect(createAst(`foo${op1}bar${op2}baz${op1}man`)).toEqual({
-            type: ASTType._Program,
-            body: [
+            _type: ASTType._Program,
+            _body: [
               {
-                type: ASTType._ExpressionStatement,
-                expression: {
-                  type: ASTType._BinaryExpression,
-                  operator: op2,
-                  left: {
-                    type: ASTType._BinaryExpression,
-                    operator: op1,
-                    left: { type: ASTType._Identifier, name: "foo" },
-                    right: { type: ASTType._Identifier, name: "bar" },
+                _type: ASTType._ExpressionStatement,
+                _expression: {
+                  _type: ASTType._BinaryExpression,
+                  _operator: op2,
+                  _left: {
+                    _type: ASTType._BinaryExpression,
+                    _operator: op1,
+                    _left: { _type: ASTType._Identifier, _name: "foo" },
+                    _right: { _type: ASTType._Identifier, _name: "bar" },
                   },
-                  right: {
-                    type: ASTType._BinaryExpression,
-                    operator: op1,
-                    left: { type: ASTType._Identifier, name: "baz" },
-                    right: { type: ASTType._Identifier, name: "man" },
+                  _right: {
+                    _type: ASTType._BinaryExpression,
+                    _operator: op1,
+                    _left: { _type: ASTType._Identifier, _name: "baz" },
+                    _right: { _type: ASTType._Identifier, _name: "man" },
                   },
                 },
               },
@@ -610,15 +610,15 @@ describe("ast", () => {
   it("should understand logical operators", () => {
     ["||", "&&"].forEach((operator) => {
       expect(createAst(`foo${operator}bar`)).toEqual({
-        type: ASTType._Program,
-        body: [
+        _type: ASTType._Program,
+        _body: [
           {
-            type: ASTType._ExpressionStatement,
-            expression: {
-              type: ASTType._LogicalExpression,
-              operator,
-              left: { type: ASTType._Identifier, name: "foo" },
-              right: { type: ASTType._Identifier, name: "bar" },
+            _type: ASTType._ExpressionStatement,
+            _expression: {
+              _type: ASTType._LogicalExpression,
+              _operator: operator,
+              _left: { _type: ASTType._Identifier, _name: "foo" },
+              _right: { _type: ASTType._Identifier, _name: "bar" },
             },
           },
         ],
@@ -629,20 +629,20 @@ describe("ast", () => {
   it("should associate logical operators left-to-right", () => {
     ["||", "&&"].forEach((op) => {
       expect(createAst(`foo${op}bar${op}baz`)).toEqual({
-        type: ASTType._Program,
-        body: [
+        _type: ASTType._Program,
+        _body: [
           {
-            type: ASTType._ExpressionStatement,
-            expression: {
-              type: ASTType._LogicalExpression,
-              operator: op,
-              left: {
-                type: ASTType._LogicalExpression,
-                operator: op,
-                left: { type: ASTType._Identifier, name: "foo" },
-                right: { type: ASTType._Identifier, name: "bar" },
+            _type: ASTType._ExpressionStatement,
+            _expression: {
+              _type: ASTType._LogicalExpression,
+              _operator: op,
+              _left: {
+                _type: ASTType._LogicalExpression,
+                _operator: op,
+                _left: { _type: ASTType._Identifier, _name: "foo" },
+                _right: { _type: ASTType._Identifier, _name: "bar" },
               },
-              right: { type: ASTType._Identifier, name: "baz" },
+              _right: { _type: ASTType._Identifier, _name: "baz" },
             },
           },
         ],
@@ -652,15 +652,15 @@ describe("ast", () => {
 
   it("should understand ternary operators", () => {
     expect(createAst("foo?bar:baz")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ConditionalExpression,
-            test: { type: ASTType._Identifier, name: "foo" },
-            alternate: { type: ASTType._Identifier, name: "bar" },
-            consequent: { type: ASTType._Identifier, name: "baz" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ConditionalExpression,
+            _test: { _type: ASTType._Identifier, _name: "foo" },
+            _alternate: { _type: ASTType._Identifier, _name: "bar" },
+            _consequent: { _type: ASTType._Identifier, _name: "baz" },
           },
         },
       ],
@@ -669,28 +669,28 @@ describe("ast", () => {
 
   it("should associate the conditional operator right-to-left", () => {
     expect(createAst("foo0?foo1:foo2?bar0?bar1:bar2:man0?man1:man2")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ConditionalExpression,
-            test: { type: ASTType._Identifier, name: "foo0" },
-            alternate: { type: ASTType._Identifier, name: "foo1" },
-            consequent: {
-              type: ASTType._ConditionalExpression,
-              test: { type: ASTType._Identifier, name: "foo2" },
-              alternate: {
-                type: ASTType._ConditionalExpression,
-                test: { type: ASTType._Identifier, name: "bar0" },
-                alternate: { type: ASTType._Identifier, name: "bar1" },
-                consequent: { type: ASTType._Identifier, name: "bar2" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ConditionalExpression,
+            _test: { _type: ASTType._Identifier, _name: "foo0" },
+            _alternate: { _type: ASTType._Identifier, _name: "foo1" },
+            _consequent: {
+              _type: ASTType._ConditionalExpression,
+              _test: { _type: ASTType._Identifier, _name: "foo2" },
+              _alternate: {
+                _type: ASTType._ConditionalExpression,
+                _test: { _type: ASTType._Identifier, _name: "bar0" },
+                _alternate: { _type: ASTType._Identifier, _name: "bar1" },
+                _consequent: { _type: ASTType._Identifier, _name: "bar2" },
               },
-              consequent: {
-                type: ASTType._ConditionalExpression,
-                test: { type: ASTType._Identifier, name: "man0" },
-                alternate: { type: ASTType._Identifier, name: "man1" },
-                consequent: { type: ASTType._Identifier, name: "man2" },
+              _consequent: {
+                _type: ASTType._ConditionalExpression,
+                _test: { _type: ASTType._Identifier, _name: "man0" },
+                _alternate: { _type: ASTType._Identifier, _name: "man1" },
+                _consequent: { _type: ASTType._Identifier, _name: "man2" },
               },
             },
           },
@@ -702,15 +702,15 @@ describe("ast", () => {
   it("should understand assignment operator", () => {
     // Currently, only `=` is supported
     expect(createAst("foo=bar")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._AssignmentExpression,
-            left: { type: ASTType._Identifier, name: "foo" },
-            right: { type: ASTType._Identifier, name: "bar" },
-            operator: "=",
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._AssignmentExpression,
+            _left: { _type: ASTType._Identifier, _name: "foo" },
+            _right: { _type: ASTType._Identifier, _name: "bar" },
+            _operator: "=",
           },
         },
       ],
@@ -720,20 +720,20 @@ describe("ast", () => {
   it("should associate assignments right-to-left", () => {
     // Currently, only `=` is supported
     expect(createAst("foo=bar=man")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._AssignmentExpression,
-            left: { type: ASTType._Identifier, name: "foo" },
-            right: {
-              type: ASTType._AssignmentExpression,
-              left: { type: ASTType._Identifier, name: "bar" },
-              right: { type: ASTType._Identifier, name: "man" },
-              operator: "=",
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._AssignmentExpression,
+            _left: { _type: ASTType._Identifier, _name: "foo" },
+            _right: {
+              _type: ASTType._AssignmentExpression,
+              _left: { _type: ASTType._Identifier, _name: "bar" },
+              _right: { _type: ASTType._Identifier, _name: "man" },
+              _operator: "=",
             },
-            operator: "=",
+            _operator: "=",
           },
         },
       ],
@@ -743,24 +743,24 @@ describe("ast", () => {
   it("should give higher precedence to equality than to the logical `and` operator", () => {
     ["==", "!=", "===", "!=="].forEach((operator) => {
       expect(createAst(`foo${operator}bar && man${operator}shell`)).toEqual({
-        type: ASTType._Program,
-        body: [
+        _type: ASTType._Program,
+        _body: [
           {
-            type: ASTType._ExpressionStatement,
-            expression: {
-              type: ASTType._LogicalExpression,
-              operator: "&&",
-              left: {
-                type: ASTType._BinaryExpression,
-                operator,
-                left: { type: ASTType._Identifier, name: "foo" },
-                right: { type: ASTType._Identifier, name: "bar" },
+            _type: ASTType._ExpressionStatement,
+            _expression: {
+              _type: ASTType._LogicalExpression,
+              _operator: "&&",
+              _left: {
+                _type: ASTType._BinaryExpression,
+                _operator: operator,
+                _left: { _type: ASTType._Identifier, _name: "foo" },
+                _right: { _type: ASTType._Identifier, _name: "bar" },
               },
-              right: {
-                type: ASTType._BinaryExpression,
-                operator,
-                left: { type: ASTType._Identifier, name: "man" },
-                right: { type: ASTType._Identifier, name: "shell" },
+              _right: {
+                _type: ASTType._BinaryExpression,
+                _operator: operator,
+                _left: { _type: ASTType._Identifier, _name: "man" },
+                _right: { _type: ASTType._Identifier, _name: "shell" },
               },
             },
           },
@@ -771,24 +771,24 @@ describe("ast", () => {
 
   it("should give higher precedence to logical `and` than to logical `or`", () => {
     expect(createAst("foo&&bar||man&&shell")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._LogicalExpression,
-            operator: "||",
-            left: {
-              type: ASTType._LogicalExpression,
-              operator: "&&",
-              left: { type: ASTType._Identifier, name: "foo" },
-              right: { type: ASTType._Identifier, name: "bar" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._LogicalExpression,
+            _operator: "||",
+            _left: {
+              _type: ASTType._LogicalExpression,
+              _operator: "&&",
+              _left: { _type: ASTType._Identifier, _name: "foo" },
+              _right: { _type: ASTType._Identifier, _name: "bar" },
             },
-            right: {
-              type: ASTType._LogicalExpression,
-              operator: "&&",
-              left: { type: ASTType._Identifier, name: "man" },
-              right: { type: ASTType._Identifier, name: "shell" },
+            _right: {
+              _type: ASTType._LogicalExpression,
+              _operator: "&&",
+              _left: { _type: ASTType._Identifier, _name: "man" },
+              _right: { _type: ASTType._Identifier, _name: "shell" },
             },
           },
         },
@@ -798,20 +798,20 @@ describe("ast", () => {
 
   it("should give higher precedence to the logical `or` than to the conditional operator", () => {
     expect(createAst("foo||bar?man:shell")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ConditionalExpression,
-            test: {
-              type: ASTType._LogicalExpression,
-              operator: "||",
-              left: { type: ASTType._Identifier, name: "foo" },
-              right: { type: ASTType._Identifier, name: "bar" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ConditionalExpression,
+            _test: {
+              _type: ASTType._LogicalExpression,
+              _operator: "||",
+              _left: { _type: ASTType._Identifier, _name: "foo" },
+              _right: { _type: ASTType._Identifier, _name: "bar" },
             },
-            alternate: { type: ASTType._Identifier, name: "man" },
-            consequent: { type: ASTType._Identifier, name: "shell" },
+            _alternate: { _type: ASTType._Identifier, _name: "man" },
+            _consequent: { _type: ASTType._Identifier, _name: "shell" },
           },
         },
       ],
@@ -820,20 +820,20 @@ describe("ast", () => {
 
   it("should give higher precedence to the conditional operator than to assignment operators", () => {
     expect(createAst("foo=bar?man:shell")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._AssignmentExpression,
-            left: { type: ASTType._Identifier, name: "foo" },
-            right: {
-              type: ASTType._ConditionalExpression,
-              test: { type: ASTType._Identifier, name: "bar" },
-              alternate: { type: ASTType._Identifier, name: "man" },
-              consequent: { type: ASTType._Identifier, name: "shell" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._AssignmentExpression,
+            _left: { _type: ASTType._Identifier, _name: "foo" },
+            _right: {
+              _type: ASTType._ConditionalExpression,
+              _test: { _type: ASTType._Identifier, _name: "bar" },
+              _alternate: { _type: ASTType._Identifier, _name: "man" },
+              _consequent: { _type: ASTType._Identifier, _name: "shell" },
             },
-            operator: "=",
+            _operator: "=",
           },
         },
       ],
@@ -842,70 +842,70 @@ describe("ast", () => {
 
   it("should understand array literals", () => {
     expect(createAst("[]")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ArrayExpression,
-            elements: [],
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ArrayExpression,
+            _elements: [],
           },
         },
       ],
     });
     expect(createAst("[foo]")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ArrayExpression,
-            elements: [{ type: ASTType._Identifier, name: "foo" }],
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ArrayExpression,
+            _elements: [{ _type: ASTType._Identifier, _name: "foo" }],
           },
         },
       ],
     });
     expect(createAst("[foo,]")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ArrayExpression,
-            elements: [{ type: ASTType._Identifier, name: "foo" }],
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ArrayExpression,
+            _elements: [{ _type: ASTType._Identifier, _name: "foo" }],
           },
         },
       ],
     });
     expect(createAst("[foo,bar,man,shell]")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ArrayExpression,
-            elements: [
-              { type: ASTType._Identifier, name: "foo" },
-              { type: ASTType._Identifier, name: "bar" },
-              { type: ASTType._Identifier, name: "man" },
-              { type: ASTType._Identifier, name: "shell" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ArrayExpression,
+            _elements: [
+              { _type: ASTType._Identifier, _name: "foo" },
+              { _type: ASTType._Identifier, _name: "bar" },
+              { _type: ASTType._Identifier, _name: "man" },
+              { _type: ASTType._Identifier, _name: "shell" },
             ],
           },
         },
       ],
     });
     expect(createAst("[foo,bar,man,shell,]")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ArrayExpression,
-            elements: [
-              { type: ASTType._Identifier, name: "foo" },
-              { type: ASTType._Identifier, name: "bar" },
-              { type: ASTType._Identifier, name: "man" },
-              { type: ASTType._Identifier, name: "shell" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ArrayExpression,
+            _elements: [
+              { _type: ASTType._Identifier, _name: "foo" },
+              { _type: ASTType._Identifier, _name: "bar" },
+              { _type: ASTType._Identifier, _name: "man" },
+              { _type: ASTType._Identifier, _name: "shell" },
             ],
           },
         },
@@ -915,31 +915,31 @@ describe("ast", () => {
 
   it("should understand objects", () => {
     expect(createAst("{}")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ObjectExpression,
-            properties: [],
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ObjectExpression,
+            _properties: [],
           },
         },
       ],
     });
     expect(createAst("{foo: bar}")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ObjectExpression,
-            properties: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ObjectExpression,
+            _properties: [
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Identifier, name: "foo" },
-                computed: false,
-                value: { type: ASTType._Identifier, name: "bar" },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Identifier, _name: "foo" },
+                _computed: false,
+                _value: { _type: ASTType._Identifier, _name: "bar" },
               },
             ],
           },
@@ -947,19 +947,19 @@ describe("ast", () => {
       ],
     });
     expect(createAst("{foo: bar,}")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ObjectExpression,
-            properties: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ObjectExpression,
+            _properties: [
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Identifier, name: "foo" },
-                computed: false,
-                value: { type: ASTType._Identifier, name: "bar" },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Identifier, _name: "foo" },
+                _computed: false,
+                _value: { _type: ASTType._Identifier, _name: "bar" },
               },
             ],
           },
@@ -967,33 +967,33 @@ describe("ast", () => {
       ],
     });
     expect(createAst('{foo: bar, "man": "shell", 42: 23}')).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ObjectExpression,
-            properties: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ObjectExpression,
+            _properties: [
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Identifier, name: "foo" },
-                computed: false,
-                value: { type: ASTType._Identifier, name: "bar" },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Identifier, _name: "foo" },
+                _computed: false,
+                _value: { _type: ASTType._Identifier, _name: "bar" },
               },
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Literal, value: "man" },
-                computed: false,
-                value: { type: ASTType._Literal, value: "shell" },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Literal, _value: "man" },
+                _computed: false,
+                _value: { _type: ASTType._Literal, _value: "shell" },
               },
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Literal, value: 42 },
-                computed: false,
-                value: { type: ASTType._Literal, value: 23 },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Literal, _value: 42 },
+                _computed: false,
+                _value: { _type: ASTType._Literal, _value: 23 },
               },
             ],
           },
@@ -1001,33 +1001,33 @@ describe("ast", () => {
       ],
     });
     expect(createAst('{foo: bar, "man": "shell", 42: 23,}')).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ObjectExpression,
-            properties: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ObjectExpression,
+            _properties: [
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Identifier, name: "foo" },
-                computed: false,
-                value: { type: ASTType._Identifier, name: "bar" },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Identifier, _name: "foo" },
+                _computed: false,
+                _value: { _type: ASTType._Identifier, _name: "bar" },
               },
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Literal, value: "man" },
-                computed: false,
-                value: { type: ASTType._Literal, value: "shell" },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Literal, _value: "man" },
+                _computed: false,
+                _value: { _type: ASTType._Literal, _value: "shell" },
               },
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Literal, value: 42 },
-                computed: false,
-                value: { type: ASTType._Literal, value: 23 },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Literal, _value: 42 },
+                _computed: false,
+                _value: { _type: ASTType._Literal, _value: 23 },
               },
             ],
           },
@@ -1039,33 +1039,33 @@ describe("ast", () => {
   it("should understand ES6 object initializer", () => {
     // Shorthand properties definitions.
     expect(createAst("{x, y, z}")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ObjectExpression,
-            properties: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ObjectExpression,
+            _properties: [
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Identifier, name: "x" },
-                computed: false,
-                value: { type: ASTType._Identifier, name: "x" },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Identifier, _name: "x" },
+                _computed: false,
+                _value: { _type: ASTType._Identifier, _name: "x" },
               },
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Identifier, name: "y" },
-                computed: false,
-                value: { type: ASTType._Identifier, name: "y" },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Identifier, _name: "y" },
+                _computed: false,
+                _value: { _type: ASTType._Identifier, _name: "y" },
               },
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Identifier, name: "z" },
-                computed: false,
-                value: { type: ASTType._Identifier, name: "z" },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Identifier, _name: "z" },
+                _computed: false,
+                _value: { _type: ASTType._Identifier, _name: "z" },
               },
             ],
           },
@@ -1078,19 +1078,19 @@ describe("ast", () => {
 
     // Computed properties
     expect(createAst("{[x]: x}")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ObjectExpression,
-            properties: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ObjectExpression,
+            _properties: [
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Identifier, name: "x" },
-                computed: true,
-                value: { type: ASTType._Identifier, name: "x" },
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Identifier, _name: "x" },
+                _computed: true,
+                _value: { _type: ASTType._Identifier, _name: "x" },
               },
             ],
           },
@@ -1098,24 +1098,24 @@ describe("ast", () => {
       ],
     });
     expect(createAst("{[x + 1]: x}")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ObjectExpression,
-            properties: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ObjectExpression,
+            _properties: [
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: {
-                  type: ASTType._BinaryExpression,
-                  operator: "+",
-                  left: { type: ASTType._Identifier, name: "x" },
-                  right: { type: ASTType._Literal, value: 1 },
+                _type: ASTType._Property,
+
+                _key: {
+                  _type: ASTType._BinaryExpression,
+                  _operator: "+",
+                  _left: { _type: ASTType._Identifier, _name: "x" },
+                  _right: { _type: ASTType._Literal, _value: 1 },
                 },
-                computed: true,
-                value: { type: ASTType._Identifier, name: "x" },
+                _computed: true,
+                _value: { _type: ASTType._Identifier, _name: "x" },
               },
             ],
           },
@@ -1126,24 +1126,24 @@ describe("ast", () => {
 
   it("should understand multiple expressions", () => {
     expect(createAst("foo = bar; man = shell")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._AssignmentExpression,
-            left: { type: ASTType._Identifier, name: "foo" },
-            right: { type: ASTType._Identifier, name: "bar" },
-            operator: "=",
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._AssignmentExpression,
+            _left: { _type: ASTType._Identifier, _name: "foo" },
+            _right: { _type: ASTType._Identifier, _name: "bar" },
+            _operator: "=",
           },
         },
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._AssignmentExpression,
-            left: { type: ASTType._Identifier, name: "man" },
-            right: { type: ASTType._Identifier, name: "shell" },
-            operator: "=",
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._AssignmentExpression,
+            _left: { _type: ASTType._Identifier, _name: "man" },
+            _right: { _type: ASTType._Identifier, _name: "shell" },
+            _operator: "=",
           },
         },
       ],
@@ -1153,15 +1153,15 @@ describe("ast", () => {
   // This is non-standard syntax
   it("should understand filters", () => {
     expect(createAst("foo | bar")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._CallExpression,
-            callee: { type: ASTType._Identifier, name: "bar" },
-            arguments: [{ type: ASTType._Identifier, name: "foo" }],
-            filter: true,
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._CallExpression,
+            _callee: { _type: ASTType._Identifier, _name: "bar" },
+            _arguments: [{ _type: ASTType._Identifier, _name: "foo" }],
+            _filter: true,
           },
         },
       ],
@@ -1170,18 +1170,18 @@ describe("ast", () => {
 
   it("should understand filters with extra parameters", () => {
     expect(createAst("foo | bar:baz")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._CallExpression,
-            callee: { type: ASTType._Identifier, name: "bar" },
-            arguments: [
-              { type: ASTType._Identifier, name: "foo" },
-              { type: ASTType._Identifier, name: "baz" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._CallExpression,
+            _callee: { _type: ASTType._Identifier, _name: "bar" },
+            _arguments: [
+              { _type: ASTType._Identifier, _name: "foo" },
+              { _type: ASTType._Identifier, _name: "baz" },
             ],
-            filter: true,
+            _filter: true,
           },
         },
       ],
@@ -1190,25 +1190,25 @@ describe("ast", () => {
 
   it("should associate filters right-to-left", () => {
     expect(createAst("foo | bar:man | shell")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._CallExpression,
-            callee: { type: ASTType._Identifier, name: "shell" },
-            arguments: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._CallExpression,
+            _callee: { _type: ASTType._Identifier, _name: "shell" },
+            _arguments: [
               {
-                type: ASTType._CallExpression,
-                callee: { type: ASTType._Identifier, name: "bar" },
-                arguments: [
-                  { type: ASTType._Identifier, name: "foo" },
-                  { type: ASTType._Identifier, name: "man" },
+                _type: ASTType._CallExpression,
+                _callee: { _type: ASTType._Identifier, _name: "bar" },
+                _arguments: [
+                  { _type: ASTType._Identifier, _name: "foo" },
+                  { _type: ASTType._Identifier, _name: "man" },
                 ],
-                filter: true,
+                _filter: true,
               },
             ],
-            filter: true,
+            _filter: true,
           },
         },
       ],
@@ -1217,22 +1217,22 @@ describe("ast", () => {
 
   it("should give higher precedence to assignments over filters", () => {
     expect(createAst("foo=bar | man")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._CallExpression,
-            callee: { type: ASTType._Identifier, name: "man" },
-            arguments: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._CallExpression,
+            _callee: { _type: ASTType._Identifier, _name: "man" },
+            _arguments: [
               {
-                type: ASTType._AssignmentExpression,
-                left: { type: ASTType._Identifier, name: "foo" },
-                right: { type: ASTType._Identifier, name: "bar" },
-                operator: "=",
+                _type: ASTType._AssignmentExpression,
+                _left: { _type: ASTType._Identifier, _name: "foo" },
+                _right: { _type: ASTType._Identifier, _name: "bar" },
+                _operator: "=",
               },
             ],
-            filter: true,
+            _filter: true,
           },
         },
       ],
@@ -1241,23 +1241,23 @@ describe("ast", () => {
 
   it("should accept expression as filters parameters", () => {
     expect(createAst("foo | bar:baz=man")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._CallExpression,
-            callee: { type: ASTType._Identifier, name: "bar" },
-            arguments: [
-              { type: ASTType._Identifier, name: "foo" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._CallExpression,
+            _callee: { _type: ASTType._Identifier, _name: "bar" },
+            _arguments: [
+              { _type: ASTType._Identifier, _name: "foo" },
               {
-                type: ASTType._AssignmentExpression,
-                left: { type: ASTType._Identifier, name: "baz" },
-                right: { type: ASTType._Identifier, name: "man" },
-                operator: "=",
+                _type: ASTType._AssignmentExpression,
+                _left: { _type: ASTType._Identifier, _name: "baz" },
+                _right: { _type: ASTType._Identifier, _name: "man" },
+                _operator: "=",
               },
             ],
-            filter: true,
+            _filter: true,
           },
         },
       ],
@@ -1266,20 +1266,20 @@ describe("ast", () => {
 
   it("should accept expression as computer members", () => {
     expect(createAst("foo[a = 1]")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._MemberExpression,
-            object: { type: ASTType._Identifier, name: "foo" },
-            property: {
-              type: ASTType._AssignmentExpression,
-              left: { type: ASTType._Identifier, name: "a" },
-              right: { type: ASTType._Literal, value: 1 },
-              operator: "=",
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._MemberExpression,
+            _object: { _type: ASTType._Identifier, _name: "foo" },
+            _property: {
+              _type: ASTType._AssignmentExpression,
+              _left: { _type: ASTType._Identifier, _name: "a" },
+              _right: { _type: ASTType._Literal, _value: 1 },
+              _operator: "=",
             },
-            computed: true,
+            _computed: true,
           },
         },
       ],
@@ -1288,19 +1288,19 @@ describe("ast", () => {
 
   it("should accept expression in function arguments", () => {
     expect(createAst("foo(a = 1)")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._CallExpression,
-            callee: { type: ASTType._Identifier, name: "foo" },
-            arguments: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._CallExpression,
+            _callee: { _type: ASTType._Identifier, _name: "foo" },
+            _arguments: [
               {
-                type: ASTType._AssignmentExpression,
-                left: { type: ASTType._Identifier, name: "a" },
-                right: { type: ASTType._Literal, value: 1 },
-                operator: "=",
+                _type: ASTType._AssignmentExpression,
+                _left: { _type: ASTType._Identifier, _name: "a" },
+                _right: { _type: ASTType._Literal, _value: 1 },
+                _operator: "=",
               },
             ],
           },
@@ -1311,29 +1311,29 @@ describe("ast", () => {
 
   it("should accept expression as part of ternary operators", () => {
     expect(createAst("foo || bar ? man = 1 : shell = 1")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ConditionalExpression,
-            test: {
-              type: ASTType._LogicalExpression,
-              operator: "||",
-              left: { type: ASTType._Identifier, name: "foo" },
-              right: { type: ASTType._Identifier, name: "bar" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ConditionalExpression,
+            _test: {
+              _type: ASTType._LogicalExpression,
+              _operator: "||",
+              _left: { _type: ASTType._Identifier, _name: "foo" },
+              _right: { _type: ASTType._Identifier, _name: "bar" },
             },
-            alternate: {
-              type: ASTType._AssignmentExpression,
-              left: { type: ASTType._Identifier, name: "man" },
-              right: { type: ASTType._Literal, value: 1 },
-              operator: "=",
+            _alternate: {
+              _type: ASTType._AssignmentExpression,
+              _left: { _type: ASTType._Identifier, _name: "man" },
+              _right: { _type: ASTType._Literal, _value: 1 },
+              _operator: "=",
             },
-            consequent: {
-              type: ASTType._AssignmentExpression,
-              left: { type: ASTType._Identifier, name: "shell" },
-              right: { type: ASTType._Literal, value: 1 },
-              operator: "=",
+            _consequent: {
+              _type: ASTType._AssignmentExpression,
+              _left: { _type: ASTType._Identifier, _name: "shell" },
+              _right: { _type: ASTType._Literal, _value: 1 },
+              _operator: "=",
             },
           },
         },
@@ -1343,18 +1343,18 @@ describe("ast", () => {
 
   it("should accept expression as part of array literals", () => {
     expect(createAst("[foo = 1]")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ArrayExpression,
-            elements: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ArrayExpression,
+            _elements: [
               {
-                type: ASTType._AssignmentExpression,
-                left: { type: ASTType._Identifier, name: "foo" },
-                right: { type: ASTType._Literal, value: 1 },
-                operator: "=",
+                _type: ASTType._AssignmentExpression,
+                _left: { _type: ASTType._Identifier, _name: "foo" },
+                _right: { _type: ASTType._Literal, _value: 1 },
+                _operator: "=",
               },
             ],
           },
@@ -1365,23 +1365,23 @@ describe("ast", () => {
 
   it("should accept expression as part of object literals", () => {
     expect(createAst("{foo: bar = 1}")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._ObjectExpression,
-            properties: [
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._ObjectExpression,
+            _properties: [
               {
-                type: ASTType._Property,
-                kind: "init",
-                key: { type: ASTType._Identifier, name: "foo" },
-                computed: false,
-                value: {
-                  type: ASTType._AssignmentExpression,
-                  left: { type: ASTType._Identifier, name: "bar" },
-                  right: { type: ASTType._Literal, value: 1 },
-                  operator: "=",
+                _type: ASTType._Property,
+
+                _key: { _type: ASTType._Identifier, _name: "foo" },
+                _computed: false,
+                _value: {
+                  _type: ASTType._AssignmentExpression,
+                  _left: { _type: ASTType._Identifier, _name: "bar" },
+                  _right: { _type: ASTType._Literal, _value: 1 },
+                  _operator: "=",
                 },
               },
             ],
@@ -1393,20 +1393,20 @@ describe("ast", () => {
 
   it("should be possible to use parenthesis to indicate precedence", () => {
     expect(createAst("(foo + bar).man")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: {
-            type: ASTType._MemberExpression,
-            object: {
-              type: ASTType._BinaryExpression,
-              operator: "+",
-              left: { type: ASTType._Identifier, name: "foo" },
-              right: { type: ASTType._Identifier, name: "bar" },
+          _type: ASTType._ExpressionStatement,
+          _expression: {
+            _type: ASTType._MemberExpression,
+            _object: {
+              _type: ASTType._BinaryExpression,
+              _operator: "+",
+              _left: { _type: ASTType._Identifier, _name: "foo" },
+              _right: { _type: ASTType._Identifier, _name: "bar" },
             },
-            property: { type: ASTType._Identifier, name: "man" },
-            computed: false,
+            _property: { _type: ASTType._Identifier, _name: "man" },
+            _computed: false,
           },
         },
       ],
@@ -1415,37 +1415,37 @@ describe("ast", () => {
 
   it("should skip empty expressions", () => {
     expect(createAst("foo;;;;bar")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: { type: ASTType._Identifier, name: "foo" },
+          _type: ASTType._ExpressionStatement,
+          _expression: { _type: ASTType._Identifier, _name: "foo" },
         },
         {
-          type: ASTType._ExpressionStatement,
-          expression: { type: ASTType._Identifier, name: "bar" },
+          _type: ASTType._ExpressionStatement,
+          _expression: { _type: ASTType._Identifier, _name: "bar" },
         },
       ],
     });
     expect(createAst(";foo")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: { type: ASTType._Identifier, name: "foo" },
+          _type: ASTType._ExpressionStatement,
+          _expression: { _type: ASTType._Identifier, _name: "foo" },
         },
       ],
     });
     expect(createAst("foo;")).toEqual({
-      type: ASTType._Program,
-      body: [
+      _type: ASTType._Program,
+      _body: [
         {
-          type: ASTType._ExpressionStatement,
-          expression: { type: ASTType._Identifier, name: "foo" },
+          _type: ASTType._ExpressionStatement,
+          _expression: { _type: ASTType._Identifier, _name: "foo" },
         },
       ],
     });
-    expect(createAst(";;;;")).toEqual({ type: ASTType._Program, body: [] });
-    expect(createAst("")).toEqual({ type: ASTType._Program, body: [] });
+    expect(createAst(";;;;")).toEqual({ _type: ASTType._Program, _body: [] });
+    expect(createAst("")).toEqual({ _type: ASTType._Program, _body: [] });
   });
 });

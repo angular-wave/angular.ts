@@ -1,146 +1,139 @@
 import { ASTType } from "../ast-type.ts";
 
-/** The kind of an object property */
-export type PropertyKind = "init" | "get" | "set";
-
 /** Base properties for all AST nodes */
 interface BaseNode {
   /** The type of the AST node. */
-  type: ASTType;
+  _type: ASTType;
 
   /** Indicates whether the node depends on non-shallow state. */
-  isPure?: boolean;
+  _isPure?: boolean;
 
   /** Indicates whether the expression is a constant. */
-  constant?: boolean;
+  _constant?: boolean;
 
   /** Watch targets collected during AST decoration. */
-  toWatch?: ASTNode[];
+  _toWatch?: ASTNode[];
 
   /** Generic expression payload fields used across legacy node shapes. */
-  expression?: ASTNode;
-  left?: ASTNode;
-  right?: ASTNode;
-  argument?: ASTNode;
-  test?: ASTNode;
-  alternate?: ASTNode;
-  consequent?: ASTNode;
-  callee?: ASTNode;
-  arguments?: ASTNode[];
-  object?: ASTNode;
-  property?: ASTNode;
-  computed?: boolean;
-  operator?: string;
-  filter?: boolean;
-  prefix?: boolean;
-  name?: string;
-  value?: any;
-  elements?: ASTNode[];
-  properties?: ASTNode[];
-  body?: ASTNode[];
-  key?: ASTNode;
-  kind?: PropertyKind;
-  input?: any;
-  watchId?: string;
+  _expression?: ASTNode;
+  _left?: ASTNode;
+  _right?: ASTNode;
+  _argument?: ASTNode;
+  _test?: ASTNode;
+  _alternate?: ASTNode;
+  _consequent?: ASTNode;
+  _callee?: ASTNode;
+  _arguments?: ASTNode[];
+  _object?: ASTNode;
+  _property?: ASTNode;
+  _computed?: boolean;
+  _operator?: string;
+  _filter?: boolean;
+  _prefix?: boolean;
+  _name?: string;
+  _value?: any;
+  _elements?: ASTNode[];
+  _properties?: ASTNode[];
+  _body?: ASTNode[];
+  _key?: ASTNode;
+  _input?: any;
+  _watchId?: string;
 }
 
 /** A node that contains a list of statements, e.g., Program or BlockStatement */
 export interface BodyNode extends BaseNode {
   /** The body of the program or block. Always present; empty if no statements. */
-  body: ASTNode[];
+  _body: ASTNode[];
 
   /** Optional list of expressions to observe for changes (Angular-specific). */
-  toWatch: ASTNode[];
+  _toWatch: ASTNode[];
 }
 
 /** Expression nodes, e.g., BinaryExpression, UnaryExpression, ConditionalExpression, CallExpression, MemberExpression */
 export interface ExpressionNode extends BaseNode {
   /** The single expression contained by an ExpressionStatement. */
-  expression?: ASTNode;
+  _expression?: ASTNode;
 
   /** The left-hand side of a binary or logical expression. */
-  left?: ASTNode;
+  _left?: ASTNode;
 
   /** The right-hand side of a binary or logical expression. */
-  right?: ASTNode;
+  _right?: ASTNode;
 
   /** The argument of a unary expression. */
-  argument?: ASTNode;
+  _argument?: ASTNode;
 
   /** The test expression of a conditional expression. */
-  test?: ASTNode;
+  _test?: ASTNode;
 
   /** The alternate expression of a conditional expression. */
-  alternate?: ASTNode;
+  _alternate?: ASTNode;
 
   /** The consequent expression of a conditional expression. */
-  consequent?: ASTNode;
+  _consequent?: ASTNode;
 
   /** The callee of a function or method call expression. */
-  callee?: ASTNode;
+  _callee?: ASTNode;
 
   /** The arguments of a function or method call expression. */
-  arguments?: ASTNode[];
+  _arguments?: ASTNode[];
 
   /** The object of a member expression (e.g., `obj` in `obj.prop`). */
-  object?: ASTNode;
+  _object?: ASTNode;
 
   /** The property of a member expression (e.g., `prop` in `obj.prop`). */
-  property?: ASTNode;
+  _property?: ASTNode;
 
   /** Indicates if the member expression is computed (`obj[prop]` vs `obj.prop`). */
-  computed?: boolean;
+  _computed?: boolean;
 
   /** The operator of a binary or logical expression, e.g., "+", "*", "&&". */
-  operator?: string;
+  _operator?: string;
 
   /** Indicates if the expression should be filtered (Angular-specific). */
-  filter?: boolean;
+  _filter?: boolean;
 
   /** Indicates if the unary operator is a prefix, e.g., `++i` vs `i++`. */
-  prefix?: boolean;
+  _prefix?: boolean;
 }
 
 /** Leaf node representing a literal or identifier */
 export interface LiteralNode extends BaseNode {
   /** The value of a literal node, e.g., number, string, boolean. */
-  value?: any;
+  _value?: any;
 
   /** The name of an identifier node. */
-  name?: string;
+  _name?: string;
 }
 
 /** Node representing an array literal */
 export interface ArrayNode extends BaseNode {
   /** The elements of the array. */
-  elements: ASTNode[];
+  _elements: ASTNode[];
 }
 
 /** Node representing an object literal */
 export interface ObjectNode extends BaseNode {
   /** The properties of the object. */
-  properties: ASTNode[];
+  _properties: ASTNode[];
 }
 
 /** Node representing a single property of an object literal */
 export interface ObjectPropertyNode extends BaseNode {
-  /** Property kind (only "init" is used in Angular expressions) */
-  kind: "init";
-
   /** Property key: identifier, literal, or expression */
-  key: ASTNode;
+  _key: ASTNode;
 
   /** Property value expression */
-  value: ASTNode;
+  _value: ASTNode;
 
   /** Whether the property key is computed (`{ [expr]: value }`) */
-  computed: boolean;
+  _computed: boolean;
 }
 
 /** Statement node that wraps an expression */
 export interface ExpressionStatementNode extends BaseNode {
   /** The expression contained in this statement. */
-  expression: ASTNode;
+  _expression: ASTNode;
 }
 
 /** The union type covering all AST nodes */

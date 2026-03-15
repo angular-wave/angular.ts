@@ -121,11 +121,11 @@ function getNonscopeSet(arr: unknown): Set<string> | null {
 }
 
 function getNodeName(node: any): string | undefined {
-  return node?.name;
+  return node?._name;
 }
 
 function getNodePropertyName(node: any): string | undefined {
-  return node?.property?.name;
+  return node?._property?._name;
 }
 
 function resolveNodeWatchKey(node: any): string | undefined {
@@ -135,15 +135,15 @@ function resolveNodeWatchKey(node: any): string | undefined {
 function resolveWatchKey(node: any): string | undefined {
   if (!node) return undefined;
 
-  if (node.type === ASTType._Identifier) {
+  if (node._type === ASTType._Identifier) {
     return getNodeName(node);
   }
 
-  if (node.type === ASTType._MemberExpression) {
-    return getNodePropertyName(node) ?? resolveWatchKey(node.object);
+  if (node._type === ASTType._MemberExpression) {
+    return getNodePropertyName(node) ?? resolveWatchKey(node._object);
   }
 
-  const { toWatch } = node;
+  const { _toWatch: toWatch } = node;
 
   if (toWatch?.length) {
     const [firstWatchTarget] = toWatch;
@@ -191,7 +191,7 @@ function deregisterListenerKeys(
 function collectWatchKeys(node: any, watchKeys: Set<string>): void {
   if (!node) return;
 
-  if (node.type === ASTType._Identifier) {
+  if (node._type === ASTType._Identifier) {
     const identifier = getNodeName(node);
 
     if (identifier) watchKeys.add(identifier);
@@ -199,19 +199,19 @@ function collectWatchKeys(node: any, watchKeys: Set<string>): void {
     return;
   }
 
-  if (node.type === ASTType._Literal) {
+  if (node._type === ASTType._Literal) {
     const literal = node;
 
-    if (isString(literal.value)) {
-      watchKeys.add(literal.value);
-    } else if (literal.name) {
-      watchKeys.add(literal.name);
+    if (isString(literal._value)) {
+      watchKeys.add(literal._value);
+    } else if (literal._name) {
+      watchKeys.add(literal._name);
     }
 
     return;
   }
 
-  if (node.type === ASTType._MemberExpression) {
+  if (node._type === ASTType._MemberExpression) {
     const member = node;
 
     const propertyKey = getNodePropertyName(member);
@@ -219,15 +219,15 @@ function collectWatchKeys(node: any, watchKeys: Set<string>): void {
     if (propertyKey) {
       watchKeys.add(propertyKey);
     } else {
-      collectWatchKeys(member.property, watchKeys);
+      collectWatchKeys(member._property, watchKeys);
     }
 
-    collectWatchKeys(member.object, watchKeys);
+    collectWatchKeys(member._object, watchKeys);
 
     return;
   }
 
-  const { toWatch } = node;
+  const { _toWatch: toWatch } = node;
 
   if (toWatch?.length) {
     for (let i = 0, l = toWatch.length; i < l; i++) {
@@ -1007,7 +1007,7 @@ export class Scope {
       };
     }
 
-    const expr = get._decoratedNode.body[0]?.expression as any;
+    const expr = get._decoratedNode._body[0]?._expression as any;
 
     if (!expr) {
       throw new Error("Unable to determine watched expression");
@@ -1037,17 +1037,17 @@ export class Scope {
 
     const keySet: string[] = [];
 
-    const { type } = expr;
+    const { _type: type } = expr;
 
     switch (type) {
       // 3
       case ASTType._AssignmentExpression:
         // assignment calls without listener functions
-        key = getNodeName(expr.left);
+        key = getNodeName(expr._left);
         break;
       // 4
       case ASTType._ConditionalExpression: {
-        key = getNodeName(expr.toWatch?.[0]?.test);
+        key = getNodeName(expr._toWatch?.[0]?._test);
 
         if (!key) {
           throw new Error("Unable to determine key");
@@ -1058,8 +1058,8 @@ export class Scope {
       // 5
       case ASTType._LogicalExpression: {
         const keyList = [
-          getNodeName(expr.left?.toWatch?.[0]),
-          getNodeName(expr.right?.toWatch?.[0]),
+          getNodeName(expr._left?._toWatch?.[0]),
+          getNodeName(expr._right?._toWatch?.[0]),
         ];
 
         registerListenerKeys(this, listener, keyList);
@@ -1070,8 +1070,8 @@ export class Scope {
       }
       // 6
       case ASTType._BinaryExpression: {
-        if (expr.isPure) {
-          const watch = expr.toWatch[0];
+        if (expr._isPure) {
+          const watch = expr._toWatch[0];
 
           key = resolveNodeWatchKey(watch);
 
@@ -1081,7 +1081,7 @@ export class Scope {
           listener.property.push(key);
           break;
         } else {
-          const { toWatch } = expr;
+          const { _toWatch: toWatch } = expr;
           const keyList = new Array<string | undefined>(toWatch.length);
 
           for (let i = 0, l = toWatch.length; i < l; i++) {
@@ -1101,7 +1101,7 @@ export class Scope {
       }
       // 7
       case ASTType._UnaryExpression: {
-        const x = expr.toWatch[0];
+        const x = expr._toWatch[0];
 
         key = resolveNodeWatchKey(x);
 
@@ -1113,7 +1113,7 @@ export class Scope {
       }
       // 8 function
       case ASTType._CallExpression: {
-        const { toWatch } = expr;
+        const { _toWatch: toWatch } = expr;
         const keyList = new Array<string | undefined>(toWatch.length);
         let hasRegisteredKey = false;
 
@@ -1142,7 +1142,7 @@ export class Scope {
 
         // array watcher
         if (!key) {
-          key = getNodeName(expr.object);
+          key = getNodeName(expr._object);
         }
 
         if (!key) {
@@ -1184,7 +1184,7 @@ export class Scope {
 
       // 12
       case ASTType._ArrayExpression: {
-        const { elements } = expr;
+        const { _elements: elements } = expr;
         const keyList: string[] = [];
 
         for (let i = 0, l = elements.length; i < l; i++) {
@@ -1208,7 +1208,7 @@ export class Scope {
 
       // 14
       case ASTType._ObjectExpression: {
-        const { properties } = expr;
+        const { _properties: properties } = expr;
         const collectedKeys = new Set<string>();
 
         for (let i = 0, l = properties.length; i < l; i++) {
@@ -1216,16 +1216,16 @@ export class Scope {
 
           let currentKey: string | undefined;
 
-          if (prop.key.isPure === false) {
-            currentKey = resolveNodeWatchKey(prop.key);
+          if (prop._key._isPure === false) {
+            currentKey = resolveNodeWatchKey(prop._key);
 
             if (!currentKey) {
-              collectWatchKeys(prop.key, collectedKeys);
+              collectWatchKeys(prop._key, collectedKeys);
             }
-          } else if (getNodeName(prop.value)) {
-            currentKey = getNodeName(prop.value);
+          } else if (getNodeName(prop._value)) {
+            currentKey = getNodeName(prop._value);
           } else {
-            const target = expr.toWatch[0];
+            const target = expr._toWatch[0];
 
             currentKey = resolveNodeWatchKey(target);
 
