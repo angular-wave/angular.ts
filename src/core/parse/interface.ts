@@ -1,4 +1,4 @@
-import type { Scope } from "../scope/scope.js";
+import type { Scope } from "../scope/scope.ts";
 import { BodyNode } from "./ast/ast-node.ts";
 
 /**

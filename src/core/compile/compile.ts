@@ -10,10 +10,11 @@ import {
   setIsolateScope,
   setScope,
   startingTag,
-} from "../../shared/dom.ts";
+} from "../../shared/dom.js";
 import { NodeType } from "../../shared/node.ts";
-import { NodeRef } from "../../shared/noderef.ts";
+import { NodeRef } from "../../shared/noderef.js";
 import { identifierForController } from "../controller/controller.ts";
+import { createScope } from "../scope/scope.ts";
 import {
   assertArg,
   assertNotHasOwnProperty,
@@ -1588,7 +1589,7 @@ export class CompileProvider {
           }
 
           if (delayedState._linkQueue) {
-            delayedState._linkQueue.push([scope, node, boundTranscludeFn]);
+            delayedState._linkQueue.push(scope, node, boundTranscludeFn);
 
             return;
           }
@@ -1925,7 +1926,7 @@ export class CompileProvider {
               getControllers(
                 postLinkFn._directiveName,
                 postLinkFn._require,
-                $element.element,
+                $element.node as Element,
                 elementControllers,
               );
 
@@ -2429,9 +2430,8 @@ export class CompileProvider {
                   compileNodeRef,
                   templateAttrs,
                   compileNode as Element,
-                  (hasTranscludeDirective
-                    ? childTranscludeFn
-                    : transcludeFn) as ChildTranscludeOrLinkFn,
+                  (hasTranscludeDirective &&
+                    childTranscludeFn) as ChildTranscludeOrLinkFn,
                   preLinkFns,
                   postLinkFns,
                   {
@@ -2452,7 +2452,7 @@ export class CompileProvider {
             } else if (directive.compile) {
               try {
                 const linkFn = directive.compile(
-                  compileNodeRef.element as HTMLElement,
+                  compileNodeRef._getAny() as HTMLElement,
                   templateAttrs,
                   childTranscludeFn,
                 ) as CompileDirectiveLinkResult;
@@ -2654,7 +2654,7 @@ export class CompileProvider {
                 directive._isolateScope
                   ? isolateScope
                   : scope,
-              $element: $element.element,
+              $element: $element.node,
               $attrs: attrs,
               $transclude: transcludeFn,
             };
@@ -2824,7 +2824,7 @@ export class CompileProvider {
           const origAsyncDirective = directives.shift() as InternalDirective;
 
           const delayedState: DelayedTemplateLinkState = {
-            _linkQueue: [] as DelayedTemplateLinkQueue,
+            _linkQueue: [] as any,
             _afterTemplateChildLinkFn: null,
             _beforeTemplateCompileNode: $compileNode._getAny(),
             _compileNodeRef: $compileNode,
@@ -2842,12 +2842,11 @@ export class CompileProvider {
           let templateUrl: string;
 
           if (isFunction(origAsyncDirective.templateUrl)) {
-            const templateUrlGetter = origAsyncDirective.templateUrl as (
+            templateUrl = (origAsyncDirective.templateUrl as (
               element: Element,
               tAttrs: Attributes,
-            ) => string;
-
-            templateUrl = templateUrlGetter(
+            ) => string).call(
+              origAsyncDirective,
               $compileNode.element as HTMLElement,
               tAttrs,
             );
@@ -2970,12 +2969,17 @@ export class CompileProvider {
                 let queueIndex = 0;
                 delayedState._linkQueue &&
                 queueIndex < delayedState._linkQueue.length;
-                queueIndex++
+                queueIndex += 3
               ) {
-                const [scope, beforeTemplateLinkNode, boundTranscludeFn] =
-                  delayedState._linkQueue[
-                    queueIndex
-                  ] as DelayedTemplateLinkQueueEntry;
+                const scope = delayedState._linkQueue[queueIndex] as
+                  | ng.Scope
+                  | undefined;
+                const beforeTemplateLinkNode = delayedState._linkQueue[
+                  queueIndex + 1
+                ] as Node | Element;
+                const boundTranscludeFn = delayedState._linkQueue[
+                  queueIndex + 2
+                ] as BoundTranscludeFn | null | undefined;
 
                 if (!scope) {
                   continue;
@@ -3450,8 +3454,13 @@ export class CompileProvider {
                       );
                     };
                   // store the value that the parent scope had after the last check:
-                  lastValue = destinationTarget[scopeName] =
-                    parentGet && parentGet(scopeTarget);
+                  const initialValue = parentGet && parentGet(scopeTarget);
+
+                  lastValue = destinationTarget[scopeName] = isArray(
+                    initialValue,
+                  )
+                    ? createScope(initialValue, destination.$handler)
+                    : initialValue;
 
                   const parentValueWatch = function parentValueWatch(
                     parentValue: any,

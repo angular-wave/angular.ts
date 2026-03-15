@@ -1,4 +1,4 @@
-import { getBooleanAttrName } from "../../shared/dom.ts";
+import { getBooleanAttrName } from "../../shared/dom.js";
 import {
   arrayRemove,
   directiveNormalize,
