@@ -1,4 +1,5 @@
 import {
+  type ParsedUrl,
   urlIsSameOrigin,
   urlIsSameOriginAsBaseUrl,
   urlResolve,
@@ -17,17 +18,19 @@ import {
 
 import { snakeToCamel } from "../../shared/dom.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
-import type { ParsedUrl } from "../../shared/url-utils/url-utils.ts";
 import type { SanitizerFn } from "../../core/sanitize/sanitize-uri.ts";
-import type { CompiledExpression } from "../../core/parse/interface.ts";
+import type { CompiledExpression } from "../../core/parse/parse.ts";
 
 const $sceMinErr = minErr("$sce");
+
 type SceMatcher = RegExp | "self";
+
 type TrustedValueHolder = {
   _unwrapTrustedValue(): string;
   valueOf(): string;
   toString(): string;
 };
+
 type TrustedValueHolderConstructor = new (
   trustedValue?: string,
 ) => TrustedValueHolder;
@@ -333,7 +336,9 @@ export class SceDelegateProvider {
           const parsedUrl = urlResolve(url.toString());
 
           let i: number;
+
           let j: number;
+
           let allowed = false;
 
           // Ensure that at least one item from the trusted resource URL list allows this url.

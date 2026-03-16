@@ -15,6 +15,7 @@ const $injectorMinErr = minErr($injectTokens._injector);
 const providerSuffix = "Provider";
 
 const INSTANTIATING = true;
+
 type InjectableFn = Function | AnnotatedFactory<(...args: any[]) => any>;
 
 class AbstractInjector {
@@ -120,6 +121,7 @@ class AbstractInjector {
     }
 
     const invocationLocals = locals as Record<string, any> | undefined;
+
     const args = this._injectionArgs(
       fn as InjectableFn,
       invocationLocals,
@@ -176,9 +178,11 @@ class AbstractInjector {
    * @param {string} _serviceName
    * @returns {any}
    */
-  // eslint-disable-next-line no-unused-vars
-  factory(_serviceName: string): any {
-    /* empty */
+
+  factory(serviceName: string): any {
+    void serviceName;
+
+    return undefined;
   }
 }
 
@@ -220,6 +224,7 @@ export class InjectorService extends AbstractInjector {
   ) => void = () => {
     /* empty */
   };
+
   _providerInjector: ProviderInjector;
 
   /**

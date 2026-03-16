@@ -10,8 +10,11 @@ import type { AnnotatedFactory } from "../../interface.ts";
 const $injectorMinErr = minErr($injectTokens._injector);
 
 const ARROW_ARG = /^([^(]+?)=>/;
+
 const FN_ARGS = /^[^(]*\(\s*([^)]*)\)/m;
+
 const FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
+
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
 
 function stringifyFn(fn: Function): string {
@@ -20,6 +23,7 @@ function stringifyFn(fn: Function): string {
 
 function extractArgs(fn: Function): RegExpMatchArray | null {
   const fnText = stringifyFn(fn).replace(STRIP_COMMENTS, "");
+
   return fnText.match(ARROW_ARG) || fnText.match(FN_ARGS);
 }
 
@@ -52,6 +56,7 @@ export function annotate(
         argDecl?.[1].split(/,/).forEach((arg) => {
           arg.replace(FN_ARG, (_all, _underscore, injName) => {
             inject.push(injName);
+
             return injName;
           });
         });
@@ -61,6 +66,7 @@ export function annotate(
     }
   } else if (isArray<string | Function>(fn)) {
     const last = fn.length - 1;
+
     assertArgFn(fn[last], "fn");
     inject = (fn as AnnotatedFactory<(...args: any[]) => any>).slice(
       0,

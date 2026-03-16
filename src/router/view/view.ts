@@ -1,10 +1,9 @@
 import { equals, removeFrom } from "../../shared/common.ts";
 import { trace } from "../common/trace.ts";
-import { getViewConfigFactory } from "../state/views.ts";
+import { getViewConfigFactory, type ViewConfig } from "../state/views.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
-import type { ViewConfig } from "../state/views.ts";
 
 /** The context ref can be anything that has a `name` and a `parent` reference to another IContextRef */
 export interface ViewContext {
@@ -122,11 +121,13 @@ export class ViewService {
 
     for (let i = 0; i < this._ngViews.length; i++) {
       const ngView = this._ngViews[i];
+
       ngViewsByFqn[ngView.fqn] = ngView;
     }
 
     const contextDepth = (context: ViewContext): number => {
       let cursor: ViewContext | undefined = context;
+
       let depth = 1;
 
       while (cursor && cursor.parent) {
@@ -138,6 +139,7 @@ export class ViewService {
     };
 
     const ngViewDepthCache = new Map<ActiveUIView, number>();
+
     const ngViewDepth = (ngView: ActiveUIView): number => {
       const cached = ngViewDepthCache.get(ngView);
 
@@ -153,12 +155,14 @@ export class ViewService {
     };
 
     const viewConfigDepthCache = new Map<ViewConfig, number>();
+
     const viewConfigDepth = (config: ViewConfig): number => {
       const cached = viewConfigDepthCache.get(config);
 
       if (cached !== undefined) return cached;
 
       let context = config.viewDecl.$context as ViewContext;
+
       let count = 0;
 
       while (++count && context.parent) {
@@ -173,12 +177,16 @@ export class ViewService {
     this._ngViews.sort((left, right) => ngViewDepth(left) - ngViewDepth(right));
 
     const matchedViewConfigs = new Set<ViewConfig>();
+
     const ngViewTuples: ViewTuple[] = [];
 
     for (let i = 0; i < this._ngViews.length; i++) {
       const ngView = this._ngViews[i];
+
       const matches = ViewService.matches(ngViewsByFqn, ngView);
+
       let selectedViewConfig: ViewConfig | undefined = undefined;
+
       let bestDepth = Number.NEGATIVE_INFINITY;
 
       for (let j = 0; j < this._viewConfigs.length; j++) {
@@ -231,6 +239,7 @@ export class ViewService {
   registerUIView(ngView: ActiveUIView): () => void {
     trace.traceViewServiceUIViewEvent("-> Registering", ngView);
     const ngViews = this._ngViews;
+
     const fqnAndTypeMatches = (uiv: ActiveUIView): boolean =>
       uiv.fqn === ngView.fqn;
 
@@ -249,6 +258,7 @@ export class ViewService {
           "Tried removing non-registered ngView",
           ngView,
         );
+
         return;
       }
 
@@ -270,6 +280,7 @@ export class ViewService {
     rawViewName = "$default",
   ): string {
     const [uiViewName, uiViewContextAnchor = "^"] = rawViewName.split("@");
+
     let anchor = uiViewContextAnchor;
 
     if (anchor === "") {
@@ -290,12 +301,15 @@ export class ViewService {
     uiView: ActiveUIView,
   ): (viewConfig: ViewConfig) => boolean {
     const uiViewFqn = uiView.fqn;
+
     const uiViewContext = uiView.creationContext;
 
     return (viewConfig: ViewConfig): boolean => {
       if (!viewConfig || !viewConfig.viewDecl) return false;
       const vcName = viewConfig.viewDecl.$ngViewName || "$default";
+
       const vcContext = viewConfig.viewDecl.$ngViewContextAnchor || "";
+
       const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
 
       if (normalizedTarget !== uiViewFqn) return false;

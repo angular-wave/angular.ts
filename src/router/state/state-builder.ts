@@ -447,6 +447,7 @@ export class StateBuilder {
 
     return () => {
       builders[name].splice(builders[name].indexOf(fn, 1));
+
       return null;
     };
   }

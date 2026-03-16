@@ -13,6 +13,7 @@ import { validate, validateRequired } from "../../../shared/validate.ts";
 import type { Injectable } from "../../../interface.ts";
 
 type InvokeQueueItem = [string, string, any[]];
+
 type WasmOptions = { raw?: boolean; [key: string]: any };
 
 /**

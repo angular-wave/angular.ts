@@ -10,6 +10,7 @@ export function ngViewportDirective(): ng.Directive {
       const attrMap =
         attrs as import("../../core/compile/attributes.ts").Attributes &
           Record<string, string>;
+
       const enterExpr = attrMap.onEnter;
 
       const leaveExpr = attrMap.onLeave;
@@ -43,6 +44,7 @@ export function ngViewportDirective(): ng.Directive {
             Array.from(mutation.removedNodes).forEach((removedNode: Node) => {
               if (removedNode === element) {
                 observer.disconnect();
+
                 if (mutationObserver) {
                   mutationObserver.disconnect();
                 }

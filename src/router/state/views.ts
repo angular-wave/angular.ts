@@ -87,6 +87,7 @@ export function ng1ViewsBuilder(
 
   entries(viewsObject).forEach(([entryName, entryConfig]) => {
     let name = entryName as string;
+
     let config = entryConfig as Record<string, any> | string;
 
     // Account for views: { "": { template... } }

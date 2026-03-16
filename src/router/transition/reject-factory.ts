@@ -119,6 +119,7 @@ export class Rejection {
    */
   toPromise(): Promise<any> & { _transitionRejection: Rejection } {
     const promise = Promise.reject(this);
+
     promise.catch(() => 0);
 
     return Object.assign(promise, {

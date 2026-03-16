@@ -68,6 +68,7 @@ export class ModelOptions {
 
   createChild(options: ModelOptionsConfig = {}): ModelOptions {
     let inheritAll = false;
+
     const mergedOptions = Object.assign({}, options);
 
     entries(mergedOptions).forEach(([key, option]) => {

@@ -34,7 +34,9 @@ const APPLICATION_JSON = "application/json";
 
 function withResolvers<T>() {
   let resolve: (value: T | PromiseLike<T>) => void;
+
   let reject: (reason?: any) => void;
+
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;

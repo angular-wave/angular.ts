@@ -213,6 +213,7 @@ export function expandExpression(
     // PROCESS objects (associative arrays)
     if (typeof value === "object") {
       const objectValue = value as Record<string, any>;
+
       const keys = Object.keys(objectValue);
 
       if (keys.length === 0) {

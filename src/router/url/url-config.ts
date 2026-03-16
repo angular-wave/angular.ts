@@ -166,6 +166,7 @@ export class UrlConfigProvider {
     definition: ParamTypeDefinition,
     definitionFn?: () => ParamTypeDefinition,
   ): UrlConfigProvider;
+
   type(
     name: string,
     definition?: ParamTypeDefinition,

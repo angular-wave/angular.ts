@@ -40,7 +40,9 @@ export function ngSwitchDirective(
         | undefined = [];
 
       const selectedElements: NgSwitchBlock[] = [];
+
       const previousLeaveAnimations: ng.AnimateRunner[] = [];
+
       const selectedScopes: ng.Scope[] = [];
 
       const spliceFactory = function (array: unknown[], index: number) {
@@ -91,7 +93,9 @@ export function ngSwitchDirective(
               selectedTransclude.transclude(
                 (caseElementParam, selectedScopeParam) => {
                   const caseElement = caseElementParam as HTMLElement;
+
                   const selectedScope = selectedScopeParam as ng.Scope;
+
                   selectedScopes.push(selectedScope);
                   const anchor = selectedTransclude.element;
 
@@ -103,7 +107,7 @@ export function ngSwitchDirective(
                   selectedElements.push(block);
 
                   if (hasAnimate(caseElement)) {
-                    const parentElement = anchor.parentElement;
+                    const { parentElement } = anchor;
 
                     if (!parentElement) {
                       return;
@@ -117,7 +121,7 @@ export function ngSwitchDirective(
                       $animate.enter(caseElement, parentElement, anchor);
                     }
                   } else {
-                    const parentElement = anchor.parentElement;
+                    const { parentElement } = anchor;
 
                     if (!parentElement) {
                       return;

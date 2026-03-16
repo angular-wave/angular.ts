@@ -47,10 +47,12 @@ export function registerLazyLoadHook(
         }
 
         const result = urlService?.match(urlService.parts());
+
         const rule = result && result.rule;
 
         if (rule && rule.type === "STATE" && rule.state) {
           const { state } = rule;
+
           const params = result.match;
 
           return stateService?.target(state, params, transition.options());
@@ -87,11 +89,13 @@ export function lazyLoadState(
   stateRegistry?: ng.StateRegistryService,
 ): Promise<LazyLoadResult | undefined> {
   const lazyLoadFn = (state._state && state._state().lazyLoad) as LazyLoadFn;
+
   let promise = lazyLoadPromiseCache.get(lazyLoadFn);
 
   if (!promise) {
     const success = (result: LazyLoadResult | undefined) => {
       delete state.lazyLoad;
+
       if (state._state) delete state._state().lazyLoad;
       lazyLoadPromiseCache.delete(lazyLoadFn);
 

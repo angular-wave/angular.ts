@@ -21,6 +21,7 @@ export function ngBindDirective(): ng.Directive {
         attr.ngBind,
         (value: any) => {
           const text = stringify(deProxy(value));
+
           element.textContent = isNullOrUndefined(text) ? "" : String(text);
         },
         isDefined(attr.lazy),

@@ -277,6 +277,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
 
         if (!timings) {
           const computed = computeCssStyles(node, properties);
+
           timings = {
             transitionDuration: Number(computed.transitionDuration || 0),
             transitionDelay: Number(computed.transitionDelay || 0),
@@ -542,6 +543,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
         }
 
         const staggerOption = options.stagger;
+
         const staggerVal =
           typeof staggerOption === "number"
             ? staggerOption
@@ -634,8 +636,8 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
         let relativeDelay = timings.maxDelay;
 
         maxDelay = Math.max(relativeDelay, 0);
-        // eslint-disable-next-line prefer-destructuring
-        maxDuration = timings.maxDuration;
+
+        ({ maxDuration } = timings);
 
         const flags: AnimationFlags = {
           _hasTransitions: timings.transitionDuration > 0,
@@ -1036,8 +1038,8 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
               timings = computeTimings(node, cacheKey, false);
               relativeDelay = timings.maxDelay;
               maxDelay = Math.max(relativeDelay, 0);
-              // eslint-disable-next-line prefer-destructuring
-              maxDuration = timings.maxDuration;
+
+              ({ maxDuration } = timings);
 
               if (maxDuration === 0) {
                 close();

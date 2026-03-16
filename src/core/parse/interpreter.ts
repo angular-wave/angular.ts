@@ -19,13 +19,15 @@ import type {
 import type {
   CompiledExpression,
   CompiledExpressionFunction,
-} from "./interface.ts";
+} from "./parse.ts";
 
 export const PURITY_ABSOLUTE = 1;
 export const PURITY_RELATIVE = 2;
 
 type LinkContext = object | boolean | undefined;
+
 type CreateFlag = boolean | 1 | undefined;
+
 type WatchNode = ASTNode & {
   _constant?: boolean;
   _toWatch?: ASTNode[];
@@ -130,13 +132,16 @@ export class ASTInterpreter {
     create?: CreateFlag,
   ): CompiledExpressionFunction {
     let left!: CompiledExpressionFunction;
+
     let right:
       | string
       | CompiledExpressionFunction
       | ((...args: any[]) => any)
       | undefined;
+
     const self = this as unknown as ASTInterpreter &
       Record<string, (...args: any[]) => CompiledExpressionFunction>;
+
     let args: any[];
 
     switch (ast._type) {
@@ -229,6 +234,7 @@ export class ASTInterpreter {
             }
           : (scope, locals, assign) => {
               const runtimeScope = scope as any;
+
               const rhs = (right as Function)(
                 runtimeScope?.$target ? runtimeScope.$target : scope,
                 locals,
@@ -595,6 +601,7 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
+      // Expression parser must preserve JavaScript loose equality semantics.
       // eslint-disable-next-line eqeqeq
       const arg = left(scope, locals, assign) == right(scope, locals, assign);
 
@@ -615,6 +622,7 @@ export class ASTInterpreter {
     context?: LinkContext,
   ): CompiledExpressionFunction {
     return (scope, locals, assign) => {
+      // Expression parser must preserve JavaScript loose inequality semantics.
       // eslint-disable-next-line eqeqeq
       const arg = left(scope, locals, assign) != right(scope, locals, assign);
 
@@ -784,6 +792,7 @@ export class ASTInterpreter {
   ): CompiledExpressionFunction {
     return (scope, locals) => {
       const runtimeScope = scope as any;
+
       const base =
         locals && name in locals
           ? locals
@@ -900,18 +909,27 @@ function findConstantAndWatchExpressions(
   parentIsPure?: boolean | 1 | 2,
 ): WatchNode {
   let allConstants: boolean | undefined;
+
   let argsToWatch: ASTNode[] = [];
+
   let isFilter: boolean | undefined;
 
   const decoratedNode = ast as WatchNode;
 
   let decoratedLeft: WatchNode;
+
   let decoratedRight: WatchNode;
+
   let decoratedTest: WatchNode;
+
   let decoratedAlternate: WatchNode;
+
   let decoratedConsequent: WatchNode;
+
   let decoratedObject: WatchNode;
+
   let decoratedProperty: WatchNode | undefined;
+
   let decoratedKey: WatchNode;
 
   const astIsPure = (decoratedNode._isPure = !!isPure(ast, parentIsPure));
@@ -1185,6 +1203,7 @@ function plusFn(
 function getInputs(body: ASTNode[]): ASTNode[] | undefined {
   if (body.length !== 1) return undefined;
   const lastExpression = (body[0] as ExpressionNode)._expression;
+
   const candidate = (lastExpression as WatchNode)?._toWatch || [];
 
   if (candidate.length !== 1) return candidate;

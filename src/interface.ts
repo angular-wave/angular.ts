@@ -4,7 +4,7 @@ import type {
   CloneAttachFn,
   PublicLinkFn,
   TemplateLinkingFunctionOptions as CompileTemplateLinkingFunctionOptions,
-} from "./core/compile/interface.ts";
+} from "./core/compile/compile.ts";
 
 export interface Constructor<T = any> {
   new (...args: any[]): T;
@@ -454,7 +454,7 @@ export type DirectiveCompileFn = (
 /**
  * Defines the structure of an AngularTS directive.
  */
-export interface Directive<TController = any> {
+export interface Directive<TCtrl = any> {
   /** Optional name (usually inferred) */
   name?: string;
   /** Restrict option: 'A' and/or 'E'. Defaults to 'EA' if not defined */
@@ -468,7 +468,7 @@ export interface Directive<TController = any> {
   /** Whether to bind scope to controller */
   bindToController?: boolean | Record<string, string>;
   /** Link function(s) executed during linking */
-  link?: DirectiveLinkFn<TController> | DirectivePrePost;
+  link?: DirectiveLinkFn<TCtrl> | DirectivePrePost;
   /** Priority of the directive */
   priority?: number;
   /** Stops further directive processing if true */

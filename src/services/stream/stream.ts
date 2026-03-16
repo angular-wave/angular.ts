@@ -43,6 +43,7 @@ export class StreamConnection {
     heartbeatTimeout: number;
     transformMessage: (data: any) => any;
   };
+
   _log: ng.LogService;
   _retryCount: number;
   _closed: boolean;

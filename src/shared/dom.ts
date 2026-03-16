@@ -202,6 +202,7 @@ export function dealoc(
     element instanceof HTMLCollection
   ) {
     Array.from(element).forEach((item) => dealoc(item, onlyDescendants));
+
     return;
   } else {
     const domElement = element as Element & Record<string, any>;
@@ -298,7 +299,8 @@ export function setCacheData(
       element as Element & Record<string, any>,
       true,
     );
-    const data = expandoStore!.data;
+
+    const { data } = expandoStore!;
 
     data[kebabToCamel(key)] = value;
   } else {

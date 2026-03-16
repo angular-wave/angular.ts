@@ -24,6 +24,7 @@ export function equals(o1: any, o2: any): boolean {
 
   if (tup.every(isArray)) {
     const arr1 = o1 as Array<any>;
+
     const arr2 = o2 as Array<any>;
 
     return _arraysEq(arr1, arr2);
@@ -31,6 +32,7 @@ export function equals(o1: any, o2: any): boolean {
 
   if (tup.every(isDate)) {
     const date1 = o1 as Date;
+
     const date2 = o2 as Date;
 
     return date1.getTime() === date2.getTime();
@@ -38,6 +40,7 @@ export function equals(o1: any, o2: any): boolean {
 
   if (tup.every(isRegExp)) {
     const regExp1 = o1 as RegExp;
+
     const regExp2 = o2 as RegExp;
 
     return regExp1.toString() === regExp2.toString();
@@ -53,7 +56,9 @@ export function equals(o1: any, o2: any): boolean {
     return false;
   }
   const keys: Record<string, boolean> = {};
+
   const obj1 = o1 as Record<string, any>;
+
   const obj2 = o2 as Record<string, any>;
 
   for (const key in obj1) {
@@ -105,7 +110,9 @@ export interface PromiseResolvers<T> {
 
 export function withResolvers<T>(): PromiseResolvers<T> {
   let resolve!: (value: T | PromiseLike<T>) => void;
+
   let reject!: (reason?: any) => void;
+
   const promise = new Promise<T>((resolveParam, rejectParam) => {
     resolve = resolveParam;
     reject = rejectParam;
@@ -421,6 +428,7 @@ export function applyPairs(
   keyValTuple: any[],
 ): Record<string, any> {
   let key: string | undefined;
+
   let value: any = undefined;
 
   if (isArray(keyValTuple)) [key, value] = keyValTuple as [string, any];

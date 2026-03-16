@@ -66,11 +66,13 @@ export class StateProvider {
   _getRegistry(): StateRegistryProvider {
     if (!this.stateRegistry)
       throw new Error("State registry is not initialized");
+
     return this.stateRegistry;
   }
 
   _getUrlService(): ng.UrlService {
     if (!this.urlService) throw new Error("Url service is not initialized");
+
     return this.urlService;
   }
 
@@ -423,7 +425,8 @@ export class StateProvider {
    * @returns A promise representing the state of the new transition. See [[StateService.go]]
    */
   reload(reloadState?: string | StateDeclaration | StateObject) {
-    const current = this.globals.current;
+    const { current } = this.globals;
+
     if (!current) throw new Error("No current state");
 
     return this.transitionTo(current, this.globals.params, {
@@ -729,6 +732,7 @@ export class StateProvider {
 
     if (glob) {
       const currentName = this.$current?.name;
+
       if (!currentName || !glob.matches(currentName)) return false;
       stateOrName = currentName;
     }

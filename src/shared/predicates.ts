@@ -8,6 +8,7 @@ import { isArray, isFunction, isString } from "./utils.js";
 export function isInjectable(val: unknown): boolean {
   if (isArray<unknown>(val) && val.length > 0) {
     const head = val.slice(0, -1);
+
     const tail = val.slice(-1);
 
     return !(

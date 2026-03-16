@@ -1038,7 +1038,9 @@ export class NgModelController {
    */
   _debounceViewValueCommit(trigger?: string) {
     let debounceDelay = this.$options.getOption("debounce");
+
     const debounceDelayMap = debounceDelay as Record<string, any>;
+
     const updateOn = this.$options.getOption("updateOn") as string;
 
     if (trigger) {

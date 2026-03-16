@@ -37,7 +37,9 @@ export class HookBuilder {
 
   buildHooks(hookType: TransitionEventType): TransitionHook[] {
     const { transition } = this;
+
     const treeChanges = transition.treeChanges() as TreeChanges;
+
     const matchingHooks = this.getMatchingHooks(
       hookType,
       treeChanges,
@@ -56,6 +58,7 @@ export class HookBuilder {
       matches: IMatchingNodes;
     }): HookTuple[] => {
       const { hook, matches } = item;
+
       const matchingNodes = matches[hookType.criteriaMatchPath.name];
 
       return matchingNodes.map((node) => {
@@ -66,10 +69,12 @@ export class HookBuilder {
           },
           baseHookOptions,
         );
+
         const state: StateDeclaration | null =
           hookType.criteriaMatchPath.scope === TransitionHookScope._STATE
             ? node.state.self
             : null;
+
         const transitionHook = new TransitionHook(
           transition,
           state,
@@ -95,7 +100,9 @@ export class HookBuilder {
     transition: Transition,
   ): Array<{ hook: RegisteredHook; matches: IMatchingNodes }> {
     const isCreate = hookType.hookPhase === TransitionHookPhase._CREATE;
+
     const $transitions = this.transition._transitionService;
+
     const registries = isCreate
       ? [$transitions]
       : [this.transition, $transitions];
@@ -127,6 +134,7 @@ function tupleSort(reverseDepthSort = false) {
     right: HookTuple,
   ): number {
     const factor = reverseDepthSort ? -1 : 1;
+
     const depthDelta =
       ((left.node.state.path || []).length -
         (right.node.state.path || []).length) *

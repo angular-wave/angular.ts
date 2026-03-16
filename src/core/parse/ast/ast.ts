@@ -350,6 +350,7 @@ export class AST {
    */
   _primary(): ASTNode {
     let primary: ASTNode;
+
     const peekToken = this._peek();
 
     if (this._expect("(")) {
@@ -509,6 +510,7 @@ export class AST {
           break;
         }
         const nextToken = this._peekToken();
+
         property = {
           _type: ASTType._Property,
           _key: { _type: ASTType._Literal, _value: undefined },
@@ -583,10 +585,13 @@ export class AST {
     const token = isDefined(e1) ? this._expect(e1) : this._expect();
 
     if (!token) {
-      this._throwError(`is unexpected, expecting [${e1}]`, this._peekToken());
-    } else {
-      return token;
+      return this._throwError(
+        `is unexpected, expecting [${e1}]`,
+        this._peekToken(),
+      );
     }
+
+    return token;
   }
 
   /**

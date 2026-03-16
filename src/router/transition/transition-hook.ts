@@ -34,6 +34,7 @@ export const TransitionHookScope = {
 export type TransitionHookScope = number;
 
 type HookErrorHandler = (error: any) => any;
+
 type HookResultHandler = (result: HookResult) => any;
 
 export interface TransitionHookOptions {
@@ -65,6 +66,7 @@ export class TransitionHook {
   static LOG_ERROR: (hook?: {
     logError: (error: any) => any;
   }) => HookErrorHandler;
+
   static REJECT_ERROR: () => HookErrorHandler;
   static THROW_ERROR: () => HookErrorHandler;
 
@@ -152,9 +154,11 @@ export class TransitionHook {
     if (hook._deregistered) return undefined;
 
     const notCurrent = this.getNotCurrentRejection();
+
     if (notCurrent) return notCurrent;
 
     const { options } = this;
+
     trace.traceHookInvocation(this, this.transition, options);
 
     const invokeCallback = (): HookResult =>
@@ -237,11 +241,14 @@ export class TransitionHook {
    */
   toString(): string {
     const { options, registeredHook } = this;
+
     const event = parse("traceData.hookType")(options) || "internal";
+
     const context =
       parse("traceData.context.state.name")(options) ||
       parse("traceData.context")(options) ||
       "unknown";
+
     const name = fnToString(registeredHook.callback);
 
     return `${event} context: ${context}, ${maxLength(200, name)}`;
@@ -274,6 +281,7 @@ TransitionHook.REJECT_ERROR =
   () =>
   (error: any): Promise<any> => {
     const promise = Promise.reject(error);
+
     promise.catch(() => 0);
 
     return promise;

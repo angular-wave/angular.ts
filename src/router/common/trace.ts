@@ -42,18 +42,26 @@ import {
 } from "../../shared/strings.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import type { HookResult } from "../transition/interface.ts";
-import type { TransitionHook } from "../transition/transition-hook.ts";
-import type { TransitionHookOptions } from "../transition/transition-hook.ts";
+import type {
+  TransitionHook,
+  TransitionHookOptions,
+} from "../transition/transition-hook.ts";
 import type { PathNode } from "../path/path-node.ts";
-import type { PolicyWhen } from "../resolve/resolvable.ts";
-import type { Resolvable } from "../resolve/resolvable.ts";
+import type { PolicyWhen, Resolvable } from "../resolve/resolvable.ts";
 import type { StateObject } from "../state/state-object.ts";
-import type { ActiveUIView, ViewContext, ViewTuple } from "../view/view.ts";
-import type { ViewConfig } from "../view/view.ts";
+import type {
+  ActiveUIView,
+  ViewConfig,
+  ViewContext,
+  ViewTuple,
+} from "../view/view.ts";
 
 const MAX_PAD_LENGTH = 30;
+
 type CategoryValue = (typeof Category)[keyof typeof Category];
+
 type TraceCategoryInput = CategoryValue | string | number;
+
 type TraceLogger = Pick<Console, "log" | "table">;
 
 function ngViewString(ngView: ActiveUIView | null | undefined): string {
@@ -67,6 +75,7 @@ function ngViewString(ngView: ActiveUIView | null | undefined): string {
 
 const viewConfigString = (viewConfig: ViewConfig): string => {
   const view = viewConfig.viewDecl;
+
   const state = view.$context?.name || "(root)";
 
   return `[View#${viewConfig.$id} from '${state}' state]: target ng-view: '${view.$ngViewName}@${view.$ngViewContextAnchor}'`;
@@ -78,6 +87,7 @@ function normalizedCat(input: TraceCategoryInput): string {
   }
 
   const normalized = String(input);
+
   const categoryKey = keys(Category).find(
     (key) => Category[key as keyof typeof Category] === normalized,
   );

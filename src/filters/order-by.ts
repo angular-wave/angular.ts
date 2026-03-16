@@ -11,12 +11,15 @@ import {
 import { $injectTokens } from "../injection-tokens.ts";
 
 type PredicateValue = { value: any; type: string; index: number };
+
 type ComparisonObject = {
   value: any;
   tieBreaker: PredicateValue;
   predicateValues: PredicateValue[];
 };
+
 type SortPredicate = string | ((value: any) => any);
+
 type PredicateDescriptor = {
   get: (value: any) => any;
   descending: number;

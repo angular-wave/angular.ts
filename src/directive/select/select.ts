@@ -19,7 +19,9 @@ type SelectScope = ng.Scope &
   };
 
 type NgModelController = ng.NgModelController & Record<string, any>;
+
 type SelectAttributes = ng.Attributes & Record<string, any>;
+
 type InterpolateFn = ((scope: ng.Scope) => any) | null | undefined;
 
 class SelectController {
@@ -237,7 +239,9 @@ class SelectController {
     interpolateTextFn: InterpolateFn,
   ) {
     let oldVal: any;
+
     let hashedVal: string | undefined;
+
     let registeredValue = optionAttrs.value;
 
     if (optionAttrs.$attr.ngValue) {
@@ -327,6 +331,7 @@ class SelectController {
 
     optionElement.addEventListener("$destroy", () => {
       const currentValue = this._readValue();
+
       const removeValue = oldVal ?? registeredValue;
 
       this._removeOption(removeValue);
@@ -363,7 +368,9 @@ export function selectDirective() {
     ctrls: [SelectController, NgModelController?],
   ) {
     const selectElement = element as HTMLSelectElement;
+
     const selectCtrl = ctrls[0];
+
     const ngModelCtrl = ctrls[1];
 
     if (!ngModelCtrl) {
@@ -387,6 +394,7 @@ export function selectDirective() {
 
       selectCtrl._readValue = function () {
         const array: any[] = [];
+
         const options = selectElement.getElementsByTagName("option");
 
         Array.from(options).forEach((option: HTMLOptionElement) => {
@@ -422,6 +430,7 @@ export function selectDirective() {
       };
 
       let lastView: any;
+
       let lastViewRef = NaN;
 
       _scope.$watch(attr.ngModel, () => {
@@ -467,7 +476,9 @@ export function optionDirective($interpolate: ng.InterpolateService) {
     priority: 100,
     compile(element: Element, attr: SelectAttributes) {
       const optionElement = element as HTMLOptionElement;
+
       let interpolateValueFn: InterpolateFn;
+
       let interpolateTextFn: InterpolateFn;
 
       if (isDefined(attr.ngValue)) {
@@ -487,6 +498,7 @@ export function optionDirective($interpolate: ng.InterpolateService) {
         attrParam: SelectAttributes,
       ) {
         const optionElementParam = elemParam as HTMLOptionElement;
+
         const selectCtrlName = "$selectController";
 
         const parent = optionElementParam.parentElement;

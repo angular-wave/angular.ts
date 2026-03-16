@@ -33,6 +33,7 @@ export const registerActivateViews = (
 ) => {
   const activateViews = (transition: Transition) => {
     const enteringViews = transition.views("entering");
+
     const exitingViews = transition.views("exiting");
 
     if (!enteringViews.length && !exitingViews.length) return;

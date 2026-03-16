@@ -367,6 +367,7 @@ function filterCssClasses(classes: string | null): string {
  */
 function getUniqueValues(a: string | string[], b: string | string[]): string {
   const aList = isString(a) ? a.split(" ") : a;
+
   const bList = isString(b) ? b.split(" ") : b;
 
   return aList.filter((val: string) => bList.indexOf(val) === -1).join(" ");

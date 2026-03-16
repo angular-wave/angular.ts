@@ -19,6 +19,7 @@ export function ngSetterDirective(
       const attrMap =
         attrs as import("../../core/compile/attributes.ts").Attributes &
           Record<string, string>;
+
       const modelExpression = attrMap.ngSetter;
 
       if (!modelExpression) {

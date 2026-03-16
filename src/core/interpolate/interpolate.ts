@@ -5,8 +5,29 @@ import {
   stringify,
 } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
-import type { ParseService } from "../parse/interface.ts";
-import type { InterpolateService, InterpolationFunction } from "./interface.ts";
+import type { ParseService } from "../parse/parse.ts";
+
+export interface InterpolationFunction {
+  expressions: any[];
+  /**
+   * Evaluate the interpolation.
+   * @param context - The scope/context
+   * @param cb - Optional callback when expressions change
+   */
+  (context: any, cb?: (val: any) => void): any;
+  exp: string;
+}
+
+export interface InterpolateService {
+  (
+    text: string,
+    mustHaveExpression?: boolean,
+    trustedContext?: string,
+    allOrNothing?: boolean,
+  ): InterpolationFunction | undefined;
+  endSymbol(): string;
+  startSymbol(): string;
+}
 
 type SceLike = {
   URL: string;
@@ -54,12 +75,16 @@ export class InterpolateProvider {
       $t._sce,
       ($parse: ParseService, $sce: SceLike): InterpolateService => {
         const provider = this;
+
         const startSymbolLength = this.startSymbol.length;
+
         const endSymbolLength = this.endSymbol.length;
+
         const escapedStartRegexp = new RegExp(
           provider.startSymbol.replace(/./g, escape),
           "g",
         );
+
         const escapedEndRegexp = new RegExp(
           provider.endSymbol.replace(/./g, escape),
           "g",
@@ -97,18 +122,26 @@ export class InterpolateProvider {
 
             const constantInterp = (() =>
               unescapedText) as unknown as InterpolationFunction;
+
             constantInterp.exp = text;
             constantInterp.expressions = [];
+
             return constantInterp;
           }
 
           allOrNothing = !!allOrNothing;
           let startIndex: number;
+
           let endIndex: number;
+
           let index = 0;
+
           const expressions: string[] = [];
+
           const textLength = text.length;
+
           const concat: any[] = [];
+
           const expressionPositions: number[] = [];
 
           while (index < textLength) {
@@ -130,6 +163,7 @@ export class InterpolateProvider {
                 startIndex + startSymbolLength,
                 endIndex,
               );
+
               expressions.push(exp);
               index = endIndex + endSymbolLength;
               expressionPositions.push(concat.length);
@@ -144,10 +178,12 @@ export class InterpolateProvider {
 
           const singleExpression =
             concat.length === 1 && expressionPositions.length === 1;
+
           const interceptor =
             contextAllowsConcatenation && singleExpression
               ? undefined
               : parseStringifyInterceptor;
+
           const parseFns = expressions.map((expression) =>
             $parse(expression, interceptor),
           );

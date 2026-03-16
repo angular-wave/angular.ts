@@ -1,5 +1,3 @@
-/* eslint-disable id-length */
-/* eslint-disable no-magic-numbers */
 import { isDefined, minErr } from "../../../shared/utils.ts";
 import type { Token } from "./token.ts";
 
@@ -7,6 +5,7 @@ export type { Token } from "./token.ts";
 
 const $parseMinErr = minErr("$parse");
 
+/* eslint-disable id-length */
 const ESCAPE: Record<string, string> = {
   n: "\n",
   f: "\f",
@@ -16,6 +15,7 @@ const ESCAPE: Record<string, string> = {
   "'": "'",
   '"': '"',
 };
+/* eslint-enable id-length */
 
 const OPERATORS = new Set<string>(
   "+ - * / % ++ -- === !== == != < > <= >= && || ! = |".split(" "),
@@ -36,7 +36,9 @@ export class Lexer {
    *
    * @param _options
    */
-  constructor(_options?: unknown) {
+  constructor(options?: unknown) {
+    void options;
+
     this._text = "";
     this._index = 0;
     this._tokens = [];
@@ -54,6 +56,7 @@ export class Lexer {
 
     while (this._index < this._text.length) {
       const ch = this._text.charAt(this._index);
+
       const peek = this._peek();
 
       if (ch === '"' || ch === "'") {
@@ -69,9 +72,13 @@ export class Lexer {
         this._index++;
       } else {
         const ch2 = ch + (peek || "");
+
         const ch3 = ch2 + (this._peek(2) || "");
+
         const op1 = OPERATORS.has(ch);
+
         const op2 = OPERATORS.has(ch2);
+
         const op3 = OPERATORS.has(ch3);
 
         if (op1 || op2 || op3) {
@@ -158,6 +165,7 @@ export class Lexer {
    */
   _peekMultichar(): string {
     const ch = this._text.charAt(this._index);
+
     const peek = this._peek();
 
     if (!peek) {
@@ -165,8 +173,10 @@ export class Lexer {
     }
 
     const cp1 = ch.charCodeAt(0);
+
     const cp2 = peek.charCodeAt(0);
 
+    // eslint-disable-next-line no-magic-numbers
     if (cp1 >= 0xd800 && cp1 <= 0xdbff && cp2 >= 0xdc00 && cp2 <= 0xdfff) {
       return ch + peek;
     }
@@ -186,6 +196,7 @@ export class Lexer {
    */
   _throwError(error: string, start?: number, end?: number): never {
     const endIndex = end ?? this._index;
+
     const colStr = isDefined(start)
       ? `s ${start}-${this._index} [${this._text.substring(start, endIndex)}]`
       : ` ${endIndex}`;
@@ -201,6 +212,7 @@ export class Lexer {
    */
   _readNumber(): void {
     let number = "";
+
     const start = this._index;
 
     while (this._index < this._text.length) {
@@ -269,7 +281,9 @@ export class Lexer {
    */
   _readString(quote: string): void {
     const start = this._index;
+
     let string = "";
+
     let escape = false;
 
     this._index++;

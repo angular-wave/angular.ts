@@ -235,6 +235,7 @@ function deepCompare(
 
       if (expectedType === "object") {
         const expectedObj = expected as Record<string, any>;
+
         const actualObj = actual as Record<string, any>;
 
         for (const key in expectedObj) {

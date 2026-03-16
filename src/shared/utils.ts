@@ -61,6 +61,7 @@ export function isArrayLike(obj: any): boolean {
   if (isArray(obj) || obj instanceof Array || isString(obj)) return true;
 
   const arrayLikeObj = obj as ArrayLike<any> & Object & Partial<NodeList>;
+
   const len = arrayLikeObj.length;
 
   // NodeList objects (with `item` method) and
@@ -768,6 +769,7 @@ export function parseKeyValue(value: string) {
 
       if (isDefined(key)) {
         const decodedKey = key;
+
         const decodedVal: string | boolean | undefined = isDefined(val)
           ? tryDecodeURIComponent(val)
           : true;

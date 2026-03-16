@@ -12,11 +12,14 @@ const ACTIVE_CLASS = "ng-active";
 const INACTIVE_CLASS = "ng-inactive";
 
 type MessageCollection = Record<string, any>;
+
 type MessageNodeComment = Comment & { _ngMessageNode?: string };
+
 type LinkedMessageCtrl = {
   message: MessageInstance;
   comment: MessageNodeComment;
 };
+
 type MessageInstance = {
   attach: () => void;
   detach: () => void;
@@ -186,6 +189,7 @@ class NgMessageCtrl {
       const key = comment._ngMessageNode;
 
       delete comment._ngMessageNode;
+
       if (key) {
         delete this._messages[key];
       }

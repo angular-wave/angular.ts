@@ -19,6 +19,7 @@ export function ngInjectDirective(
       const attrMap =
         attrs as import("../../core/compile/attributes.ts").Attributes &
           Record<string, string>;
+
       const expr = attrMap.ngInject;
 
       if (!expr) return;

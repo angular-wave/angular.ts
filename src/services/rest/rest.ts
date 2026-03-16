@@ -8,7 +8,25 @@ import {
 import { BADARG } from "../../shared/validate.ts";
 import { expandUriTemplate } from "./rfc.ts";
 import type { HttpMethod, HttpResponse, HttpService } from "../http/http.ts";
-import type { EntityClass, RestDefinition } from "./interface.ts";
+
+export interface RestDefinition<T = any> {
+  name: string;
+  url: string;
+  /** Constructor for mapping JSON to class instance */
+  entityClass?: EntityClass<T>;
+  options?: Record<string, any>;
+}
+
+/**
+ * A constructor type for mapping JSON objects to entity instances
+ */
+export interface EntityClass<T = any> {
+  /**
+   * Creates a new instance of the entity from a raw object
+   * @param data - Raw data (typically JSON) to map
+   */
+  new (data: any): T;
+}
 
 type RestOptions = Record<string, any>;
 
@@ -46,6 +64,7 @@ export class RestService<T = any, ID = any> {
 
   async list(params: Record<string, any> = {}): Promise<T[]> {
     const url = this.buildUrl(this._baseUrl, params);
+
     const resp = await this.request<unknown[]>("GET", url, null, params);
 
     if (!isArray(resp.data)) return [];
@@ -59,6 +78,7 @@ export class RestService<T = any, ID = any> {
   ): Promise<T | unknown | null> {
     assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
     const url = this.buildUrl(`${this._baseUrl}/${id}`, params);
+
     const resp = await this.request<unknown>("GET", url, null, params);
 
     return this.mapEntity(resp.data) ?? null;

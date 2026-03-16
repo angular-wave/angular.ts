@@ -10,6 +10,7 @@ function makeEnterExitRetainHook(
 ): TransitionStateHookFn {
   return (transition, state) => {
     const _state = (state._state && state._state()) as Record<string, any>;
+
     const hookFn = _state[hookName];
 
     return hookFn(transition, state);
@@ -17,7 +18,9 @@ function makeEnterExitRetainHook(
 }
 
 const onExitHook = makeEnterExitRetainHook("onExit");
+
 const onRetainHook = makeEnterExitRetainHook("onRetain");
+
 const onEnterHook = makeEnterExitRetainHook("onEnter");
 
 /**

@@ -124,8 +124,11 @@ export class RegisteredHook {
 
     return values(this.tranSvc._getPathTypes()).reduce((mn, pathType) => {
       const isStateHook = pathType.scope === TransitionHookScope._STATE;
+
       const path = (treeChanges[pathType.name] || []) as PathNode[];
+
       const transitionNode = tail(path) as PathNode | undefined;
+
       const nodes: PathNode[] = isStateHook
         ? path
         : transitionNode
@@ -147,6 +150,7 @@ export class RegisteredHook {
     transition: Transition,
   ): IMatchingNodes | null {
     const matches = this._getMatchingNodes(treeChanges, transition);
+
     const allMatched = values(matches).every((x) => x);
 
     return allMatched ? matches : null;

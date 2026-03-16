@@ -333,6 +333,7 @@ export const minlengthDirective: [
         viewValue: string | any[],
       ) {
         void modelValue;
+
         return ctrl.$isEmpty(viewValue) || viewValue.length >= minlengthParsed;
       };
     },

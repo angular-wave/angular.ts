@@ -27,6 +27,7 @@ export class PathNode {
   constructor(stateOrNode?: PathNode | StateObject) {
     if (stateOrNode instanceof PathNode) {
       const node = stateOrNode;
+
       this.state = node.state;
       this.paramSchema = node.paramSchema.slice();
       this.paramValues = Object.assign({}, node.paramValues);
@@ -34,6 +35,7 @@ export class PathNode {
       this.views = node.views && node.views.slice();
     } else {
       const state = stateOrNode;
+
       if (!state) throw new Error("PathNode requires a state");
 
       this.state = state;

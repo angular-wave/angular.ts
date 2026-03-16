@@ -6,7 +6,7 @@ import type {
   CloneAttachFn,
   TranscludeFn,
   TranscludedNodes,
-} from "../../core/compile/interface.ts";
+} from "../../core/compile/compile.ts";
 
 const ngTranscludeMinErr = minErr("ngTransclude");
 

@@ -16,12 +16,13 @@ export function browserTrigger(
   options: BrowserTriggerOptions,
 ): void {
   let type: string;
+
   let eventProps: EventInit | KeyboardEventInit | MouseEventInit = {};
 
   if (typeof options === "string") {
     type = options;
   } else {
-    type = options.type;
+    ({ type } = options);
     eventProps = options;
   }
 

@@ -14,6 +14,7 @@ import {
 const ngOptionsMinErr = minErr("ngOptions");
 
 const optionTemplate = document.createElement("option");
+
 const optGroupTemplate = document.createElement("optgroup");
 
 const NG_OPTIONS_REGEXP =
@@ -76,12 +77,19 @@ export function ngOptionsDirective(
     }
 
     const valueName = match[5] || match[7];
+
     const keyName = match[6];
+
     const selectAs = / as /.test(match[0]) && match[1];
+
     const trackBy = match[9];
+
     const valueFn = $parse(match[2] ? match[1] : valueName);
+
     const selectAsFn = selectAs && $parse(selectAs);
+
     const viewValueFn = selectAsFn || valueFn;
+
     const trackByFn = trackBy ? $parse(trackBy) : undefined;
 
     const getTrackByValueFn = trackBy
@@ -97,8 +105,11 @@ export function ngOptionsDirective(
     };
 
     const displayFn = $parse(match[2] || match[1]);
+
     const groupByFn = $parse(match[3] || "");
+
     const disableWhenFn = $parse(match[4] || "");
+
     const valuesFn = $parse(match[8]);
 
     const locals: Record<string, any> = {};
@@ -140,9 +151,13 @@ export function ngOptionsDirective(
       getWatchables: match[8],
       getOptions() {
         const optionItems = [];
+
         const selectValueMap: Record<string, OptionItem> = {};
+
         const optionValues = valuesFn(scope) || [];
+
         const optionValuesKeys = getOptionValuesKeys(optionValues);
+
         const optionValuesLength = optionValuesKeys.length;
 
         for (let index = 0; index < optionValuesLength; index++) {
@@ -150,12 +165,19 @@ export function ngOptionsDirective(
             optionValues === optionValuesKeys ? index : optionValuesKeys[index];
 
           const value = optionValues[key];
+
           const updatedLocals = getLocals(value, key);
+
           const viewValue = viewValueFn(scope, updatedLocals);
+
           const selectValue = getTrackByValueFn(viewValue, updatedLocals);
+
           const label = displayFn(scope, updatedLocals);
+
           const group = groupByFn(scope, updatedLocals);
+
           const disabled = disableWhenFn(scope, updatedLocals);
+
           const optionItem = new OptionItem(
             selectValue,
             viewValue,
@@ -191,8 +213,11 @@ export function ngOptionsDirective(
     ctrls: [SelectControllerLike, ng.NgModelController & Record<string, any>],
   ) {
     const selectNode = selectElement as HTMLSelectElement;
+
     const selectCtrl = ctrls[0];
+
     const ngModelCtrl = ctrls[1];
+
     const { multiple } = attr;
 
     for (
@@ -212,6 +237,7 @@ export function ngOptionsDirective(
     const providedEmptyOption = !!selectCtrl.emptyOption;
 
     const unknownOption = optionTemplate.cloneNode(false) as HTMLOptionElement;
+
     unknownOption.nodeValue = "?";
 
     let options: NgOptionsCollection | undefined;
@@ -283,6 +309,7 @@ export function ngOptionsDirective(
         if (!options) return [];
 
         const selections: any[] = [];
+
         const optionsEls = selectNode.options;
 
         for (let i = 0; i < optionsEls.length; i++) {
@@ -354,6 +381,7 @@ export function ngOptionsDirective(
 
     function getAndUpdateSelectedOption(viewValue: any) {
       const option = options?.getOptionFromViewValue(viewValue);
+
       const element = option && option.element;
 
       if (element && !element.selected) element.selected = true;
@@ -425,6 +453,7 @@ export function ngOptionsDirective(
 
       if (!ngModelCtrl.$isEmpty(previousValue)) {
         const nextValue = selectCtrl._readValue();
+
         const isNotPrimitive = ngOptions.trackBy || multiple;
 
         if (
