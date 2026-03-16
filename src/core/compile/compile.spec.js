@@ -5756,6 +5756,24 @@ describe("$compile", () => {
       let $sce, errors;
       // let module, log, $compile, $rootScope, $sce, $templateCache, errors;
 
+      async function waitForTemplateCloneResolution(
+        predicate,
+        timeout = 1000,
+        interval = 10,
+      ) {
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < timeout) {
+          if (predicate()) {
+            return;
+          }
+
+          await wait(interval);
+        }
+
+        expect(predicate()).toBeTrue();
+      }
+
       beforeEach(() => {
         errors = [];
         myModule
@@ -5871,6 +5889,7 @@ describe("$compile", () => {
             $rootScope = _$rootScope_;
             $templateCache = _$templateCache_;
             $sce = _$sce_;
+            $templateCache.set("error.html", "<div></div>");
           },
         );
       });
@@ -6004,11 +6023,16 @@ describe("$compile", () => {
           /* empty */
         }); // clone
         expect(e2.innerText).toEqual("");
-        await wait(100);
+        await waitForTemplateCloneResolution(
+          () =>
+            e1.innerText === "HelloElvis  " &&
+            e2.innerText === "HelloElvis  " &&
+            errors.length === 2,
+        );
+        await wait(50);
         expect(e1.innerText).toEqual("HelloElvis  ");
         expect(e2.innerText).toEqual("HelloElvis  ");
-        expect(errors[0]).toEqual("cError");
-        expect(errors[1]).toEqual("lError");
+        expect(errors).toEqual(["cError", "lError"]);
 
         dealoc(e1);
         dealoc(e2);
@@ -6054,11 +6078,17 @@ describe("$compile", () => {
         let e2 = template($rootScope.$new(), () => {
           /* empty */
         }); // clone
-        await wait(100);
+        await waitForTemplateCloneResolution(
+          () =>
+            e1.innerText === "HelloElvis" &&
+            e2.innerText === "HelloElvis" &&
+            errors.length === 2,
+        );
+        await wait(50);
         expect(e1.innerText).toEqual("HelloElvis");
         expect(e2.innerText).toEqual("HelloElvis");
 
-        expect(errors.length).toEqual(2);
+        expect(errors).toEqual(["cError", "lError"]);
         dealoc(e1);
         dealoc(e2);
       });
