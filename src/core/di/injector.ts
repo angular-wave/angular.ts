@@ -31,6 +31,7 @@ import type { NgModule } from "./ng-module/ng-module.ts";
 const $injectorMinErr = minErr($injectTokens._injector);
 
 const providerSuffix = "Provider";
+
 type ModuleLike = string | Function | Injectable<(...args: any[]) => any>;
 
 /**
@@ -96,18 +97,18 @@ export function createInjector(
    * @param {import('../../interface.ts').ServiceProvider | import('../../interface.ts').Injectable<any>} provider
    * @returns {import('../../interface.ts').ServiceProvider}
    */
-  // eslint-disable-next-line no-shadow
+
   function provider(
     name: string,
-    provider: ServiceProvider | Injectable<(...args: any[]) => any>,
+    providerDefinition: ServiceProvider | Injectable<(...args: any[]) => any>,
   ): ServiceProvider {
     assertNotHasOwnProperty(name, "service");
     let newProvider: ServiceProvider;
 
-    if (isFunction(provider) || isArray(provider)) {
-      newProvider = providerInjector.instantiate(provider as any);
+    if (isFunction(providerDefinition) || isArray(providerDefinition)) {
+      newProvider = providerInjector.instantiate(providerDefinition as any);
     } else {
-      newProvider = provider;
+      newProvider = providerDefinition;
     }
 
     if (!newProvider.$get) {
@@ -178,11 +179,11 @@ export function createInjector(
    * @param {any} value
    * @returns {void}
    */
-  // eslint-disable-next-line no-shadow
-  function constant(name: string, value: any): void {
+
+  function constant(name: string, constantValue: any): void {
     assertNotHasOwnProperty(name, "constant");
-    providerInjector._cache[name] = value;
-    protoInstanceInjector._cache[name] = value;
+    providerInjector._cache[name] = constantValue;
+    protoInstanceInjector._cache[name] = constantValue;
   }
 
   /**
@@ -281,14 +282,14 @@ export function createInjector(
               } else if (isObject(backendOrConfig)) {
                 backend =
                   (backendOrConfig.backend as StorageLike) || localStorage;
+                const {
+                  serialize: configSerialize,
+                  deserialize: configDeserialize,
+                } = backendOrConfig;
 
-                if (backendOrConfig.serialize)
-                  // eslint-disable-next-line prefer-destructuring
-                  serialize = backendOrConfig.serialize;
+                if (configSerialize) serialize = configSerialize;
 
-                if (backendOrConfig.deserialize)
-                  // eslint-disable-next-line prefer-destructuring
-                  deserialize = backendOrConfig.deserialize;
+                if (configDeserialize) deserialize = configDeserialize;
               }
             } else {
               // fallback default

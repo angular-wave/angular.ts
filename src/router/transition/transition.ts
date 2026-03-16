@@ -11,14 +11,17 @@ import {
 import { assert, isObject, isUndefined } from "../../shared/utils.ts";
 import { is, propEq, val } from "../../shared/hof.ts";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
-import { registerHook } from "./hook-registry.ts";
+import {
+  registerHook,
+  type RegisteredHook,
+  type RegisteredHooks,
+} from "./hook-registry.ts";
 import { HookBuilder } from "./hook-builder.ts";
 import { PathUtils } from "../path/path-utils.ts";
 import { Param } from "../params/param.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { Rejection } from "./reject-factory.ts";
-import type { RegisteredHook, RegisteredHooks } from "./hook-registry.ts";
 import type {
   DeregisterFn,
   HookFn,
@@ -90,7 +93,9 @@ type DeferredPromise<T> = {
 
 function createDeferredPromise<T>(): DeferredPromise<T> {
   let resolve!: DeferredPromise<T>["resolve"];
+
   let reject!: DeferredPromise<T>["reject"];
+
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -670,6 +675,7 @@ export class Transition {
    */
   redirect(targetState: TargetState) {
     let redirects = 1;
+
     let trans: Transition | null = this;
 
     while ((trans = trans.redirectedFrom())) {

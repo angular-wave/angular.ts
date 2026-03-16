@@ -28,26 +28,34 @@ import { AnimateRunner } from "../runner/animate-runner.ts";
 import { NodeType } from "../../shared/node.ts";
 
 export type QueuePhase = string;
+
 export type QueueAnimationData = Record<string, any>;
+
 type AnimationRuleType = "skip" | "cancel" | "join";
+
 type AnimationRule = (
   newAnimation: AnimationOptions,
   currentAnimation: AnimationOptions,
 ) => boolean;
+
 type AnimationCallback = (
   element: Element,
   phase: string,
   data: QueueAnimationData,
 ) => void;
+
 type CallbackEntry = { node: Element; callback: AnimationCallback };
+
 type RootScopeLike = ng.RootScopeService & {
   $postUpdate(fn: () => void): void;
   $flushQueue(): void;
 };
+
 type AnimateQueueProviderInstance = {
   rules: Record<AnimationRuleType, AnimationRule[]>;
   $get: any[];
 };
+
 type QueueAnimationRecord = AnimationOptions & {
   element: HTMLElement;
   event: string;
@@ -56,6 +64,7 @@ type QueueAnimationRecord = AnimationOptions & {
   runner: AnimateRunner;
   counter?: number;
 };
+
 export type AnimateQueueService = {
   on(event: string, container: Element, callback: AnimationCallback): void;
   off(
@@ -225,8 +234,11 @@ export function AnimateQueueProvider(
       if (currentAnimation.structural) return false;
 
       const nA = newAnimation.addClass;
+
       const nR = newAnimation.removeClass;
+
       const cA = currentAnimation.addClass;
+
       const cR = currentAnimation.removeClass;
 
       if (
@@ -263,6 +275,7 @@ export function AnimateQueueProvider(
       ) => AnimateRunner,
     ) {
       const activeAnimationsLookup = new Map<HTMLElement, AnimationOptions>();
+
       const disabledElementsLookup = new Map<HTMLElement, boolean>();
 
       function postDigestTaskFactory() {
@@ -283,6 +296,7 @@ export function AnimateQueueProvider(
       const callbackRegistry: Record<string, CallbackEntry[]> = nullObject();
 
       const customFilter = $animateProvider.customFilter();
+
       const classNameFilter = $animateProvider.classNameFilter();
 
       const returnTrue = function () {
@@ -470,6 +484,7 @@ export function AnimateQueueProvider(
           : (originalElement as HTMLElement);
 
         const node: HTMLElement = element;
+
         const parentNode: HTMLElement | null = node?.parentElement || null;
 
         options = prepareAnimationOptions(options) as AnimationOptions;
@@ -478,6 +493,7 @@ export function AnimateQueueProvider(
         };
 
         const runner = new AnimateRunner();
+
         const runInNextPostDigestOrNow = postDigestTaskFactory();
 
         if (isArray(options.addClass)) {
@@ -510,6 +526,7 @@ export function AnimateQueueProvider(
           !isAnimatableClassName(node, options)
         ) {
           close();
+
           return runner;
         }
 
@@ -572,10 +589,12 @@ export function AnimateQueueProvider(
           if (skipAnimationFlag) {
             if (existingAnimation.state === RUNNING_STATE) {
               close();
+
               return runner;
             }
 
             mergeAnimationDetails(element, existingAnimation, newAnimation);
+
             return existingAnimation.runner!;
           }
 
@@ -592,6 +611,7 @@ export function AnimateQueueProvider(
               existingAnimation.close!();
             } else {
               mergeAnimationDetails(element, existingAnimation, newAnimation);
+
               return existingAnimation.runner!;
             }
           } else {
@@ -638,10 +658,12 @@ export function AnimateQueueProvider(
         if (!isValidAnimation) {
           close();
           clearElementAnimationState(node);
+
           return runner;
         }
 
         const counter = (existingAnimation.counter || 0) + 1;
+
         newAnimation.counter = counter;
 
         markElementAnimationState(node, PRE_DIGEST_STATE, newAnimation);
@@ -651,11 +673,13 @@ export function AnimateQueueProvider(
           ) as HTMLElement;
 
           let animationDetails = activeAnimationsLookup.get(node);
+
           const animationCancelled = !animationDetails;
 
           animationDetails = animationDetails || ({} as AnimationOptions);
 
           const parentElement = element.parentElement || null;
+
           const isCurrentAnimationValid =
             parentElement &&
             (animationDetails.event === "animate" ||
@@ -766,10 +790,12 @@ export function AnimateQueueProvider(
 
         children.forEach((child) => {
           const childElement = child as HTMLElement;
+
           const state = parseInt(
             childElement.getAttribute(NG_ANIMATE_ATTR_NAME) || "0",
             10,
           );
+
           const animationDetails = activeAnimationsLookup.get(childElement);
 
           if (animationDetails) {
@@ -803,13 +829,19 @@ export function AnimateQueueProvider(
         parentNode: HTMLElement | null,
       ) {
         const bodyNode = document.body;
+
         const rootNode = $injector.get("$rootElement") as HTMLElement;
 
         let bodyNodeDetected = node === bodyNode || node.nodeName === "HTML";
+
         let rootNodeDetected = node === rootNode;
+
         let parentAnimationDetected = false;
+
         let elementDisabled = disabledElementsLookup.get(node);
+
         let animateChildren: boolean | undefined;
+
         let parentHost = getOrSetCacheData(node, NG_ANIMATE_PIN_DATA) as
           | HTMLElement
           | undefined;
@@ -900,6 +932,7 @@ export function AnimateQueueProvider(
         node.setAttribute(NG_ANIMATE_ATTR_NAME, state.toString());
 
         const oldValue = activeAnimationsLookup.get(node);
+
         const newValue = oldValue ? extend(oldValue, details) : details;
 
         activeAnimationsLookup.set(node, newValue);

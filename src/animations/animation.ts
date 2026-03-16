@@ -249,8 +249,8 @@ export class AnimationProvider {
             }
             break;
           }
-          // eslint-disable-next-line prefer-destructuring
-          parentNode = parentNode.parentNode;
+
+          ({ parentNode } = parentNode);
         }
 
         (parentEntry || tree).children!.push(entry);
@@ -388,7 +388,7 @@ export class AnimationProvider {
             ? animationEntry.from.element
             : animationEntry.element;
 
-          let extraClasses = options.addClass;
+          let { addClass: extraClasses } = options;
 
           extraClasses =
             (extraClasses ? `${extraClasses} ` : "") + NG_ANIMATE_CLASSNAME;
@@ -507,12 +507,11 @@ export class AnimationProvider {
         const refLookup: Record<string, AnchorRefEntry> = {};
 
         animations.forEach((animation: AnimationEntry, index: number) => {
-          // eslint-disable-next-line no-shadow
-          const { element, event } = animation;
+          const { element, event: animationEvent } = animation;
 
           const node = element;
 
-          const enterOrMove = ["enter", "move"].indexOf(event) >= 0;
+          const enterOrMove = ["enter", "move"].indexOf(animationEvent) >= 0;
 
           const anchorNodes = animation.structural ? getAnchorNodes(node) : [];
 

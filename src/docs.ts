@@ -15,7 +15,7 @@ export * from "./core/di/internal-injector.ts";
 export * from "./core/scope/scope.ts";
 export * from "./services/cookie/cookie.ts";
 export * from "./services/exception/exception.ts";
-export * from "./core/parse/interface.ts";
+export * from "./core/parse/parse.ts";
 
 export * from "./filters/filter.ts";
 export * from "./core/filter/filter.ts";

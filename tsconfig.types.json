@@ -1,13 +1,15 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "declaration": true,
     "allowJs": true,
-    "allowImportingTsExtensions": true,
     "emitDeclarationOnly": true,
     "stripInternal": true,
     "outDir": "@types",
+    "noEmit": false,
+    "incremental": false,
     "target": "ES2023"
   },
   "include": ["src/namespace.ts"],

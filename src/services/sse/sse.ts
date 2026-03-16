@@ -1,7 +1,9 @@
 import { $injectTokens } from "../../injection-tokens.ts";
 import { entries } from "../../shared/utils.ts";
-import { StreamConnection } from "../stream/stream.ts";
-import type { StreamConnectionConfig } from "../stream/stream.ts";
+import {
+  StreamConnection,
+  type StreamConnectionConfig,
+} from "../stream/stream.ts";
 import type { LogService } from "../log/log.ts";
 
 /**

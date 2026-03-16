@@ -328,6 +328,7 @@ export class UrlMatcher {
     const matchDetails = (match: RegExpExecArray, isSearch: boolean) => {
       // IE[78] returns '' for unmatched groups instead of null
       const id = match[2] || match[3];
+
       const defaultType = paramTypes.type(isSearch ? "query" : "path");
 
       const regexp = isSearch
@@ -481,6 +482,7 @@ export class UrlMatcher {
    */
   exec(path: string, search: any = {}, hash: string): RawParams | null {
     const pathMatchers = this._cache.path || [this];
+
     const match = memoizeTo(this._cache, "pattern", () => {
       return new RegExp(
         [
@@ -522,6 +524,7 @@ export class UrlMatcher {
 
     for (let i = 0; i < nPathSegments; i++) {
       const param = pathParams[i];
+
       if (!param) continue;
 
       let value = match[i + 1];

@@ -264,6 +264,7 @@ export class Location {
           _search = parseKeyValue(search);
         } else if (isObject(search)) {
           const clonedSearch = structuredClone(search) as Record<string, any>;
+
           // remove object undefined or null properties
           entries(clonedSearch).forEach(([key, value]) => {
             if (isNull(value)) delete clonedSearch[key];
@@ -309,6 +310,7 @@ export class Location {
     search: string | number | Record<string, any>,
     paramValue?: string | number | Array<string> | boolean | null,
   ): this;
+
   search(
     search?: string | number | Record<string, any>,
     paramValue?: string | number | Array<string> | boolean | null,

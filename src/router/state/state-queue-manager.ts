@@ -41,6 +41,7 @@ export class StateQueueManager {
    */
   register(stateDecl: ng.StateDeclaration): StateObject {
     const state = new StateObject(stateDecl);
+
     const { name } = state;
 
     if (!isString(name)) throw new Error("State must have a valid name");
@@ -60,6 +61,7 @@ export class StateQueueManager {
     const { queue, states, builder } = this;
 
     const registered: StateObject[] = []; // states that got registered
+
     const orphans: StateObject[] = []; // states that don't yet have a parent registered
 
     const previousQueueLength: Record<string, number> = {}; // keep track of how long the queue when an orphan was first encountered
@@ -80,6 +82,7 @@ export class StateQueueManager {
 
     while (queue.length > 0) {
       const state = queue.shift();
+
       if (!state) continue;
 
       const { name } = state;

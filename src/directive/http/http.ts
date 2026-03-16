@@ -12,14 +12,18 @@ import {
 } from "../../shared/utils.ts";
 
 type HttpDirectiveMethod = "get" | "delete" | "post" | "put";
+
 type HttpDirectiveElement = HTMLElement & {
   form?: HTMLFormElement | null;
   name?: string;
   value?: string;
   disabled?: boolean;
 };
+
 type HttpResponsePayload = string | object;
+
 type SwapNodes = Array<Node | ChildNode>;
+
 type RequestShortcutConfigWithHeaders = ng.RequestShortcutConfig & {
   headers?: Record<string, string>;
 };
@@ -148,8 +152,9 @@ export function createHttpDirective(
       if (tag === "form") {
         form = element as HTMLFormElement;
       } else if ("form" in element && element.form) {
-        // eslint-disable-next-line prefer-destructuring
-        form = element.form;
+        const { form: associatedForm } = element;
+
+        form = associatedForm;
       } else if (element.hasAttribute("form")) {
         const formId = element.getAttribute("form");
 

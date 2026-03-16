@@ -1,6 +1,5 @@
 import type { AnimationOptions } from "./interface.ts";
-import type { AnimateQueueService } from "./queue/animate-queue.ts";
-import type { QueuePhase } from "./queue/animate-queue.ts";
+import type { AnimateQueueService, QueuePhase } from "./queue/animate-queue.ts";
 import {
   extend,
   hasAnimate,

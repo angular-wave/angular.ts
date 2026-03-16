@@ -36,6 +36,7 @@ export class FilterProvider {
       $t._injector,
       ($injector) => (name: string) => {
         validateIsString(name, "name");
+
         return $injector.get(name + SUFFIX) as ReturnType<FilterService>;
       },
     ];

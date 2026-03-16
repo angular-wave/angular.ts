@@ -23,7 +23,9 @@ export function ngIfDirective($animate: ng.AnimateService): ng.Directive {
       }
 
       let block: Element | null | undefined;
+
       let childScope: ng.Scope | null | undefined;
+
       let previousElements: Element | null | undefined;
 
       $scope.$watch($attr.ngIf, (value: any) => {

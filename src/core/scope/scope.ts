@@ -16,7 +16,7 @@ import {
 } from "../../shared/utils.ts";
 import { ASTType } from "../parse/ast-type.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
-import type { CompiledExpression } from "../parse/interface.ts";
+import type { CompiledExpression } from "../parse/parse.ts";
 
 export type ListenerFn = (newValue?: any, originalTarget?: object) => void;
 
@@ -57,7 +57,9 @@ export type ScopeProxied<T extends object> = T & {
 };
 
 type ScopeProxy = ng.Scope;
+
 type ScopeTarget = NonScopeMarked & Record<PropertyKey, any>;
+
 type ScopeEventListener = (...args: any[]) => any;
 
 let uid = 0;
@@ -159,14 +161,15 @@ function resolveWatchKey(node: any): string | undefined {
 function registerListenerKeys(
   scope: Scope,
   listener: Listener,
-  keys: Array<string | undefined>,
+  watchKeys: Array<string | undefined>,
   schedule = false,
 ): void {
-  for (let i = 0, l = keys.length; i < l; i++) {
-    const key = keys[i];
+  for (let i = 0, l = watchKeys.length; i < l; i++) {
+    const key = watchKeys[i];
 
     if (!key) continue;
     scope._registerKey(key, listener);
+
     if (schedule) scope._scheduleListener([listener]);
   }
 }
@@ -174,10 +177,10 @@ function registerListenerKeys(
 function deregisterListenerKeys(
   scope: Scope,
   listenerId: number,
-  keys: Array<string | undefined>,
+  watchKeys: Array<string | undefined>,
 ): void {
-  for (let i = 0, l = keys.length; i < l; i++) {
-    const key = keys[i];
+  for (let i = 0, l = watchKeys.length; i < l; i++) {
+    const key = watchKeys[i];
 
     if (key) scope._deregisterKey(key, listenerId);
   }
@@ -260,6 +263,7 @@ function collectWatchKeys(node: any, watchKeys: Set<string>): void {
  */
 export function createScope(target: any = {}, context?: Scope): any {
   if (!isObject(target) || isNonScope(target)) return target;
+
   if (isProxy(target)) return target;
 
   const proxy = new Proxy(target, context || new Scope());
@@ -1082,6 +1086,7 @@ export class Scope {
           break;
         } else {
           const { _toWatch: toWatch } = expr;
+
           const keyList = new Array<string | undefined>(toWatch.length);
 
           for (let i = 0, l = toWatch.length; i < l; i++) {
@@ -1114,7 +1119,9 @@ export class Scope {
       // 8 function
       case ASTType._CallExpression: {
         const { _toWatch: toWatch } = expr;
+
         const keyList = new Array<string | undefined>(toWatch.length);
+
         let hasRegisteredKey = false;
 
         for (let i = 0, l = toWatch.length; i < l; i++) {
@@ -1185,6 +1192,7 @@ export class Scope {
       // 12
       case ASTType._ArrayExpression: {
         const { _elements: elements } = expr;
+
         const keyList: string[] = [];
 
         for (let i = 0, l = elements.length; i < l; i++) {
@@ -1209,6 +1217,7 @@ export class Scope {
       // 14
       case ASTType._ObjectExpression: {
         const { _properties: properties } = expr;
+
         const collectedKeys = new Set<string>();
 
         for (let i = 0, l = properties.length; i < l; i++) {
@@ -1298,6 +1307,7 @@ export class Scope {
         if (!key) {
           return false;
         }
+
         return this._deregisterKey(key, listener.id);
       }
     };
@@ -1370,6 +1380,7 @@ export class Scope {
 
     if (listeners) {
       listeners.push(listener);
+
       return;
     }
 
@@ -1382,6 +1393,7 @@ export class Scope {
 
     if (listeners) {
       listeners.push(listener);
+
       return;
     }
 

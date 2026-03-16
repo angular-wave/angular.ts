@@ -35,6 +35,7 @@ export class ParamTypes {
     def: () => ParamTypeDefinition;
     pattern?: unknown;
   }[];
+
   defaultTypes: Record<string, ParamTypeDefinition & Record<string, any>>;
   types: Record<string, ParamType>;
 
@@ -80,6 +81,7 @@ export class ParamTypes {
     definition: ParamTypeDefinition,
     definitionFn?: () => ParamTypeDefinition,
   ): ParamTypes;
+
   type(
     name: string,
     definition?: ParamTypeDefinition,

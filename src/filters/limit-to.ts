@@ -42,6 +42,7 @@ export function limitToFilter() {
 
     const numericBegin =
       !begin || isNaN(begin as any) ? 0 : parseInt(String(begin), 10);
+
     const normalizedBegin =
       numericBegin < 0
         ? Math.max(0, (input as ArrayLike<any>).length + numericBegin)

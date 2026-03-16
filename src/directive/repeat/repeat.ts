@@ -100,7 +100,9 @@ export function ngRepeatDirective($animate: any) {
       }
 
       const lhs = match[1];
+
       const rhs = match[2];
+
       const aliasAs = match[3];
 
       match = lhs.match(VAR_OR_TUPLE_REGEX);
@@ -113,6 +115,7 @@ export function ngRepeatDirective($animate: any) {
         );
       }
       const valueIdentifier = match[3] || match[1];
+
       const keyIdentifier = match[2];
 
       if (
@@ -153,18 +156,28 @@ export function ngRepeatDirective($animate: any) {
           (collection: any) => {
             swap();
             let index = 0;
+
             let previousNode = $element;
+
             let nextNode: any;
+
             const nextBlockMap: Record<string, RepeatBlock | true> =
               nullObject();
+
             let key: any;
+
             let value: any;
+
             let trackById: any;
+
             let trackByIdFn:
               | ((scope: RepeatScope, key: any, value: any) => any)
               | undefined;
+
             let collectionKeys: any[] = [];
+
             let block: RepeatBlock;
+
             let elementsToRemove: any;
 
             if (aliasAs) {
@@ -186,6 +199,7 @@ export function ngRepeatDirective($animate: any) {
             }
 
             const collectionLength = collectionKeys.length;
+
             const nextBlockOrder: RepeatBlock[] = new Array(collectionLength);
 
             for (index = 0; index < collectionLength; index++) {

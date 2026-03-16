@@ -12,6 +12,7 @@ export function ngElDirective(): ng.Directive {
       const attrMap =
         attrs as import("../../core/compile/attributes.ts").Attributes &
           Record<string, string>;
+
       const expr = attrMap.ngEl;
 
       const key = !expr ? element.id : expr;

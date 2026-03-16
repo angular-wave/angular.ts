@@ -25,7 +25,11 @@ import {
 } from "../hooks/views.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { TargetState } from "../state/target-state.ts";
-import { makeEvent, registerHook } from "./hook-registry.ts";
+import {
+  makeEvent,
+  registerHook,
+  type RegisteredHooks,
+} from "./hook-registry.ts";
 import type {
   DeregisterFn,
   HookFn,
@@ -41,7 +45,6 @@ import {
   TransitionHookScope,
 } from "./transition-hook.ts";
 import { Transition } from "./transition.ts";
-import type { RegisteredHooks } from "./hook-registry.ts";
 
 /** @internal */
 export interface PathType {
@@ -206,9 +209,13 @@ export class TransitionProvider implements TransitionService {
    */
   _defineCoreEvents(): void {
     const TH = TransitionHook;
+
     const paths = this._criteriaPaths;
+
     const NORMAL_SORT = false;
+
     const REVERSE_SORT = true;
+
     const SYNCHRONOUS = true;
 
     this._defineEvent(
@@ -495,6 +502,7 @@ function registerUpdateUrl(
 ): DeregisterFn {
   const updateUrl = (transition: Transition): void => {
     const options = transition.options();
+
     const $state = stateService;
 
     if (

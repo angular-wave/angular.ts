@@ -16,13 +16,16 @@ import { ALIASED_ATTR } from "../../shared/constants.ts";
 import type { NodeRef } from "../../shared/noderef.ts";
 
 const $compileMinErr = minErr("$compile");
+
 const SIMPLE_ATTR_NAME = /^\w/;
+
 const specialAttrHolder = document.createElement("div");
 
 type ObserverList = Array<(value?: unknown) => void> & {
   _inter?: boolean;
   _scope?: ng.Scope;
 };
+
 type ObserverMap = Record<string, ObserverList>;
 
 export class Attributes {
@@ -71,6 +74,7 @@ export class Attributes {
 
       for (let i = 0, l = attributeKeys.length; i < l; i++) {
         const key = attributeKeys[i];
+
         this[key] = attributesToCopy[key];
       }
     }
@@ -146,8 +150,11 @@ export class Attributes {
     attrName?: string,
   ): void {
     const node = this._element();
+
     const booleanKey = getBooleanAttrName(node as Element, key);
+
     const aliasedKey = ALIASED_ATTR[key as keyof typeof ALIASED_ATTR];
+
     let observer = key;
 
     if (booleanKey) {
@@ -171,6 +178,7 @@ export class Attributes {
     }
 
     const nodeName = this._nodeRef?.node.nodeName.toLowerCase();
+
     let maybeSanitizedValue: string | boolean | null | unknown;
 
     if (nodeName === "img" && key === "srcset") {
@@ -216,6 +224,7 @@ export class Attributes {
 
   $observe<T>(key: string, fn: (value?: T) => any): Function {
     const _observers = this._observers || (this._observers = nullObject());
+
     const listeners = _observers[key] || (_observers[key] = [] as ObserverList);
 
     listeners.push(fn as (value?: unknown) => void);
@@ -236,6 +245,7 @@ export class Attributes {
   ): void {
     specialAttrHolder.innerHTML = `<span ${attrName}>`;
     const { attributes } = specialAttrHolder.firstChild as Element;
+
     const attribute = attributes[0];
 
     attributes.removeNamedItem(attribute.name);
@@ -260,19 +270,26 @@ export class Attributes {
     }
 
     let result = "";
+
     const trimmedSrcset = trim(value);
+
     const srcPattern = /(\s+\d+x\s*,|\s+\d+w\s*,|\s+,|,\s+)/;
+
     const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
+
     const rawUris = trimmedSrcset.split(pattern);
+
     const nbrUrisWith2parts = Math.floor(rawUris.length / 2);
 
     for (i = 0; i < nbrUrisWith2parts; i++) {
       const innerIdx = i * 2;
+
       result += this._sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
       result += ` ${trim(rawUris[innerIdx + 1])}`;
     }
 
     const lastTuple = trim(rawUris[i * 2]).split(/\s/);
+
     result += this._sce.getTrustedMediaUrl(trim(lastTuple[0]));
 
     if (lastTuple.length === 2) {
@@ -293,7 +310,9 @@ export class Attributes {
  */
 function tokenDifference(str1: string, str2: string): string {
   const tokens1 = new Set(str1.split(/\s+/));
+
   const tokens2 = new Set(str2.split(/\s+/));
+
   const difference = Array.from(tokens1).filter((token) => !tokens2.has(token));
 
   return difference.join(" ");

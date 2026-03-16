@@ -10,29 +10,36 @@ import { parse } from "../../shared/hof.ts";
 import { getInheritedData } from "../../shared/dom.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 type ParsedStateRef = { state: string | null; paramExpr: string | null };
+
 type ProcessedDef = {
   ngState: unknown;
   ngStateParams: any;
   ngStateOpts: any;
   href: string | null | undefined;
 };
+
 type TypeInfo = {
   attr: string;
   isAnchor: boolean;
   clickable: boolean;
 };
+
 type ActiveClassState = {
   state: { name: string };
   params: unknown;
   activeClass: string;
 };
+
 type StateRefActiveController = {
   _addStateInfo?: (
     newState: unknown,
     newParams: unknown,
   ) => (() => void) | undefined;
 };
+
 type WatchDeregFns = Record<string, () => void>;
+
+const noopDeregister = () => undefined;
 
 /**
  * Parses an `ng-sref` expression into a target state name and parameter expression.
@@ -56,6 +63,7 @@ function parseStateRef(ref: string): ParsedStateRef {
  */
 function stateContext(el: Node): string | undefined {
   const $ngView = getInheritedData(el, "$ngView");
+
   const path = parse("$cfg.path")($ngView) as
     | Array<{ state: { name: string } }>
     | undefined;
@@ -115,6 +123,7 @@ function clickHook(
 ): EventListener {
   return function (event: Event): void {
     const mouseEvent = event as MouseEvent;
+
     const button = mouseEvent.which || mouseEvent.button,
       target = getDef();
 
@@ -355,12 +364,13 @@ export function StateRefDynamicDirective(
         rawDef[field] = attrs[field] ? scope.$eval(attrs[field]) : null;
         attrs.$observe(field, (expr) => {
           watchDeregFns[field]();
+
           if (!expr) return;
           watchDeregFns[field] =
             scope.$watch(expr as string, (newval) => {
               rawDef[field] = newval;
               update();
-            }) || (() => {});
+            }) || noopDeregister;
         });
       });
       update();
@@ -395,13 +405,14 @@ export function StateRefActiveDirective(
 ): ng.Directive {
   return {
     restrict: "A",
-    controller: function (
+    controller(
       this: StateRefActiveController,
       $scope: ng.Scope,
       $element: HTMLElement,
       $attrs: ng.Attributes,
     ): void {
       let states: ActiveClassState[] = [];
+
       let ngSrefActive: unknown;
 
       // There probably isn't much point in $observing this

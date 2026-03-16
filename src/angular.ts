@@ -31,9 +31,11 @@ import type { StateRegistryProvider } from "./router/state/state-registry.ts";
 import type { Resolvable } from "./router/resolve/resolvable.ts";
 
 const ngMinErr = minErr("ng");
+
 const $injectorMinErr = minErr("$injector");
 
 type ModuleRegistry = Record<string, NgModule | null>;
+
 type AppElement = { _element: HTMLElement; _module: string | null };
 
 const moduleRegistry: ModuleRegistry = {};
@@ -156,8 +158,11 @@ export class Angular extends EventTarget {
    */
   dispatchEvent(event: Event): boolean {
     const customEvent = event as CustomEvent<string | InvocationDetail>;
+
     const $parse = this.$injector.get($t._parse);
+
     const injectable = customEvent.type;
+
     const target = this.$injector.has(injectable)
       ? this.$injector.get(injectable)
       : this.getScopeByName(injectable);
@@ -173,6 +178,7 @@ export class Angular extends EventTarget {
     }
 
     const { detail } = customEvent;
+
     const expr = isString(detail)
       ? detail
       : isInvocationDetail(detail)
@@ -202,6 +208,7 @@ export class Angular extends EventTarget {
    */
   emit(input: string): void {
     const { type, expr } = this.splitInvocation(input);
+
     this.dispatchEvent(new CustomEvent(type, { detail: expr }));
   }
 
@@ -311,6 +318,7 @@ export class Angular extends EventTarget {
         setCacheData(el, $t._injector, $injector);
 
         const compileFn = compile(el);
+
         compileFn(scope);
 
         if (!hasOwn($injector, "strictDi")) {
@@ -352,6 +360,7 @@ export class Angular extends EventTarget {
    */
   injector(modules: any[], strictDi?: boolean): ng.InjectorService {
     this.$injector = createInjector(modules, strictDi);
+
     return this.$injector;
   }
 
@@ -360,10 +369,12 @@ export class Angular extends EventTarget {
    */
   init(element: HTMLElement | HTMLDocument): void {
     const appElements: AppElement[] = [];
+
     let multimode = false;
 
     ngAttrPrefixes.forEach((prefix) => {
       const name = `${prefix}app`;
+
       let candidates: HTMLElement[] | NodeListOf<Element>;
 
       if (
@@ -390,6 +401,7 @@ export class Angular extends EventTarget {
 
       if (multimode) {
         const submodule = new Angular(true);
+
         this.subapps.push(submodule);
         submodule.bootstrap(app._element, app._module ? [app._module] : [], {
           strictDi,
@@ -411,6 +423,7 @@ export class Angular extends EventTarget {
     validateIsString(name, "name");
 
     const $rootScope = this.$injector.get($t._rootScope) as ng.RootScopeService;
+
     const scope = $rootScope.$searchByName(name);
 
     return scope ? (scope.$proxy as unknown as ng.Scope) : undefined;
@@ -425,6 +438,7 @@ export class Angular extends EventTarget {
     }
 
     const trimmed = input.trim();
+
     const parts = trimmed.split(".");
 
     if (parts.length < 2) {
@@ -434,6 +448,7 @@ export class Angular extends EventTarget {
     }
 
     const type = String(parts.shift()).trim();
+
     const expr = parts.join(".").trim();
 
     if (!type || !expr) {

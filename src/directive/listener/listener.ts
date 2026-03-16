@@ -12,6 +12,7 @@ export function ngListenerDirective(): ng.Directive {
       const attrMap =
         attrs as import("../../core/compile/attributes.ts").Attributes &
           Record<string, string>;
+
       const channel = attrMap.ngListener || element.id;
 
       const hasTemplateContent = element.childNodes.length;

@@ -319,13 +319,14 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive<any> {
     restrict: "A",
     require: "ngModel",
     priority: 200, // Make sure watches are fired after any other directives that affect the ngModel value
-    compile(_: unknown, attr: ng.Attributes) {
+    compile(compileElement: unknown, attr: ng.Attributes) {
+      void compileElement;
+
       if (hasOwn(attr, ARIA_DISABLE_ATTR)) return undefined;
 
       const shape = getShape(attr);
 
       return {
-        // eslint-disable-next-line no-shadow
         post(
           _: unknown,
           elem: HTMLElement,
@@ -343,6 +344,8 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive<any> {
             // Strict comparison would cause a BC
             elem.setAttribute(
               "aria-checked",
+
+              // Strict comparison would cause a BC.
               // eslint-disable-next-line eqeqeq
               (attrPost.value == ngModel.$viewValue).toString(),
             );

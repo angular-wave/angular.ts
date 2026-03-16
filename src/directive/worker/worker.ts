@@ -51,7 +51,9 @@ export function ngWorkerDirective(
       }
 
       const eventName = attrs.trigger || getEventNameForElement(element);
+
       let throttled = false;
+
       let intervalId: ReturnType<typeof setInterval> | undefined;
 
       if (isDefined(attrs.latch)) {
@@ -204,11 +206,13 @@ export function createWorkerConnection(
       }
     },
     logger: (config?.logger || console) as ng.LogService,
-    err: (config?.err || (() => {})) as ng.ExceptionHandlerService,
+    err: (config?.err || (() => undefined)) as ng.ExceptionHandlerService,
   };
 
   const cfg = Object.assign({}, defaults, config) as DefultWorkerConfig;
+
   let worker = new Worker(scriptPath, { type: "module" });
+
   let terminated = false;
 
   const wire = (workerParam: Worker) => {

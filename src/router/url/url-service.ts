@@ -292,6 +292,7 @@ export class UrlService {
   sync(evt?: ng.ScopeEvent): void {
     if (evt && evt.defaultPrevented) return;
     const { stateService } = this;
+
     const url = this.parts();
 
     /**

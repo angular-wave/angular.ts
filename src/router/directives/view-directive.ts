@@ -53,6 +53,7 @@ type UiCanExitTransition = ng.Transition &
 
 function withResolvers<T>(): PromiseResolvers<T> {
   let resolve!: (value: T | PromiseLike<T>) => void;
+
   let reject: (reason?: any) => void;
 
   const promise = new Promise<T>((resolveParam, rejectParam) => {
@@ -260,8 +261,11 @@ export function ViewDirective(
             )(scope) || "$default";
 
         let previousEl: HTMLElement | null = null;
+
         let currentEl: HTMLElement | null = null;
+
         let currentScope: ng.Scope | null = null;
+
         let viewConfig: ViewConfig | undefined;
 
         const parentFqn =
@@ -357,6 +361,7 @@ export function ViewDirective(
           const newScope = scope.$new();
 
           const animEnter = withResolvers<void>();
+
           const animLeave = withResolvers<void>();
 
           const $ngViewData: NgViewData = {
@@ -477,6 +482,7 @@ export function ViewDirectiveFill(
         const resolveAs = getResolveAs(cfg);
 
         const locals = resolveCtx ? getLocals(resolveCtx) : undefined;
+
         const targetScope = scope.$target as Record<string, any>;
 
         if (resolveAs) {
@@ -491,6 +497,7 @@ export function ViewDirectiveFill(
 
           if (controllerAs) {
             targetScope[controllerAs as string] = controllerInstance;
+
             if (resolveAs) {
               targetScope[controllerAs as string][resolveAs as string] = locals;
             }
@@ -514,6 +521,7 @@ export function ViewDirectiveFill(
 
         const componentName = (cfg as ViewConfig & { component?: string })
           .component;
+
         const callbackConfig = cfg as Pick<ViewConfig, "viewDecl" | "path">;
 
         if (typeof componentName === "string") {
@@ -521,7 +529,9 @@ export function ViewDirectiveFill(
             .replace(/([A-Z])/g, "-$1")
             .replace(/^-/, "")
             .toLowerCase();
+
           const tagRegexp = new RegExp(`^(x-|data-)?${kebobName}$`, "i");
+
           const getComponentController = () => {
             const directiveEl = Array.from($element.children).find(
               (el) => el.tagName && tagRegexp.exec(el.tagName),
@@ -544,9 +554,7 @@ export function ViewDirectiveFill(
               callbackConfig,
             );
           } else {
-            let deregisterWatch: (() => void) | undefined;
-
-            deregisterWatch = scope.$watch(
+            const deregisterWatch = scope.$watch(
               getComponentController as any,
               (ctrlInstance: ViewControllerInstance | undefined) => {
                 if (!ctrlInstance) return;
@@ -580,6 +588,7 @@ function registerControllerCallbacks(
 ): void {
   // Call $onInit() ASAP
   const onInit = controllerInstance.$onInit;
+
   if (
     isFunction(onInit) &&
     !(cfg.viewDecl.component || cfg.viewDecl.componentProvider)
@@ -596,6 +605,7 @@ function registerControllerCallbacks(
       params: Record<string, unknown>,
       trans: ng.Transition,
     ) => void;
+
     const resolveContext = new ResolveContext(cfg.path);
 
     const viewCreationTrans = resolveContext.getResolvable("$transition$")
@@ -683,6 +693,7 @@ function registerControllerCallbacks(
     const uiCanExit = controllerInstance.uiCanExit as (
       trans: ng.Transition,
     ) => boolean | void | TargetState;
+
     const id = _uiCanExitId++;
 
     const cacheProp = "_uiCanExitIds";

@@ -100,6 +100,7 @@ export function AnimateJsProvider(
 
         if (animations.length) {
           let beforeFn: string;
+
           let afterFn: string;
 
           if (event === "leave") {

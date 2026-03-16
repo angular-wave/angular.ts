@@ -104,6 +104,7 @@ const inputType = {
 };
 
 type InputCtrl = NgModelControllerProxied & Record<string, any>;
+
 type ModelCtrl = NgModelController & Record<string, any>;
 
 /**
@@ -407,6 +408,7 @@ export function isValidForStep(
   const isNonIntegerStepBase = !isNumberInteger(stepBase);
 
   const numericStep = step ?? 0;
+
   const isNonIntegerStep = !isNumberInteger(numericStep);
 
   // Due to limitations in Floating Point Arithmetic (e.g. `0.3 - 0.2 !== 0.1` or

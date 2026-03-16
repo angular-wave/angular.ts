@@ -77,6 +77,7 @@ export class UrlRuleFactory {
     handler?: any,
   ): UrlRule {
     const { isState, isStateDeclaration } = StateObject;
+
     const isStateLike = (
       value: unknown,
     ): value is
@@ -245,6 +246,7 @@ export class UrlRuleFactory {
       : (stateOrDecl as StateObject);
 
     if (!state) throw new Error("State rule could not resolve state object");
+
     if (!(state.url instanceof UrlMatcher))
       throw new Error(`State '${state.name}' does not have a UrlMatcher`);
 
@@ -257,7 +259,9 @@ export class UrlRuleFactory {
      */
     const handler = (match: import("../params/interface.ts").RawParams) => {
       const $state = stateService;
-      const current = globals.current;
+
+      const { current } = globals;
+
       const currentHref = current ? $state.href(current, globals.params) : null;
 
       if ($state.href(state, match) !== currentHref) {

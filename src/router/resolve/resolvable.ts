@@ -139,7 +139,9 @@ export interface ResolvePolicy {
 }
 
 export type PolicyWhen = "LAZY" | "EAGER";
+
 export type PolicyAsync = "WAIT" | "NOWAIT" | CustomAsyncPolicy;
+
 export interface CustomAsyncPolicy {
   (data: any): Promise<any>;
 }
@@ -200,6 +202,7 @@ export class Resolvable {
       (hasOwn(arg1, "resolveFn") || hasOwn(arg1, "data"))
     ) {
       const literal = arg1 as ResolvableLiteral;
+
       this.token = literal.token;
       this.resolveFn = literal.resolveFn;
       this.deps = literal.deps || [];
@@ -217,6 +220,7 @@ export class Resolvable {
     state: BuiltStateDeclaration | StateObject | undefined,
   ): Required<ResolvePolicy> {
     const thisPolicy = this.policy || {};
+
     const statePolicy =
       (state && "resolvePolicy" in state && state.resolvePolicy) || {};
 
@@ -243,8 +247,11 @@ export class Resolvable {
       this.resolveFn?.apply(null, resolvedDeps);
 
     const node = resolveContext.findNode(this);
+
     const state = node && node.state;
+
     const asyncPolicy = this.getPolicy(state).async;
+
     const customAsyncPolicy = isFunction(asyncPolicy)
       ? asyncPolicy
       : (x: any) => x;

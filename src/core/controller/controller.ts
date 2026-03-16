@@ -26,9 +26,11 @@ export type ControllerService = (
 ) => any | (() => any);
 
 type InjectableController = Injectable<ControllerConstructor>;
+
 type ControllerInstance = Record<string, any>;
 
 const $controllerMinErr = minErr("$controller");
+
 const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
 
 export function identifierForController(
@@ -41,6 +43,7 @@ export function identifierForController(
 
   if (isString(controller)) {
     const match = CNTRL_REG.exec(controller);
+
     return match?.[3];
   }
 
@@ -92,7 +95,9 @@ export class ControllerProvider {
       ($injector): ControllerService => {
         return (expression, locals, later, ident) => {
           let instance: any;
+
           let constructorName: string | undefined;
+
           let identifier = ident && isString(ident) ? ident : null;
 
           later = later === true;
@@ -126,6 +131,7 @@ export class ControllerProvider {
           }
 
           const injectable = expression as InjectableController;
+
           const meta = unwrapController(injectable, constructorName);
 
           if (later) {
@@ -200,6 +206,7 @@ export class ControllerProvider {
     if (isString(name)) {
       assertNotHasOwnProperty(name, "controller");
       this.controllers.set(name, normalizeControllerDef(constructor, name));
+
       return;
     }
 

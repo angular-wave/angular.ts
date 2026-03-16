@@ -12,6 +12,7 @@ export function ngStyleDirective(): ng.Directive {
       const attrMap =
         attr as import("../../core/compile/attributes.ts").Attributes &
           Record<string, string>;
+
       let oldStyles: Record<string, string> | null = null;
 
       scope.$watch(

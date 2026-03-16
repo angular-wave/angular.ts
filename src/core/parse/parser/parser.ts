@@ -1,5 +1,5 @@
 import type { FilterService } from "../../../filters/filter.ts";
-import type { CompiledExpression } from "../interface.ts";
+import type { CompiledExpression } from "../parse.ts";
 import type { BodyNode, ExpressionNode } from "../ast/ast-node.ts";
 import { AST } from "../ast/ast.ts";
 import { ASTType } from "../ast-type.ts";
@@ -17,6 +17,7 @@ export class Parser {
 
   _parse(exp: string): CompiledExpression {
     const ast = this._ast._ast(exp.trim());
+
     const fn = this._astCompiler.compile(ast);
 
     fn._literal = isLiteral(ast as BodyNode);

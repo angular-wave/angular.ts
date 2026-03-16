@@ -8,11 +8,11 @@ import type { PathNode } from "../path/path-node.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { Transition } from "../transition/transition.ts";
-import { Resolvable } from "./resolvable.ts";
-import type {
-  PolicyWhen,
-  ResolvePolicy,
-  ResolvableLiteral,
+import {
+  Resolvable,
+  type PolicyWhen,
+  type ResolvePolicy,
+  type ResolvableLiteral,
 } from "./resolvable.ts";
 
 export const resolvePolicies = {
@@ -30,6 +30,7 @@ const ALL_WHENS: PolicyWhen[] = [
   resolvePolicies.when.EAGER,
   resolvePolicies.when.LAZY,
 ];
+
 const EAGER_WHENS: PolicyWhen[] = [resolvePolicies.when.EAGER];
 
 /**
@@ -109,6 +110,7 @@ export class ResolveContext {
     const resolvables = newResolvables.map((resolve) =>
       resolve instanceof Resolvable ? resolve : new Resolvable(resolve),
     );
+
     const keys = resolvables.map((resolve) => resolve.token);
 
     node.resolvables = node.resolvables
@@ -124,6 +126,7 @@ export class ResolveContext {
     trans: Transition,
   ): Promise<any> | any {
     const whenOption = ALL_WHENS.includes(when) ? when : "LAZY";
+
     const matchedWhens =
       whenOption === resolvePolicies.when.EAGER ? EAGER_WHENS : ALL_WHENS;
 
@@ -139,13 +142,17 @@ export class ResolveContext {
         const nodeResolvables = node.resolvables.filter(
           matchesPolicy(matchedWhens, "when"),
         );
+
         const nowait = nodeResolvables.filter(
           matchesPolicy(["NOWAIT"], "async"),
         );
+
         const wait = nodeResolvables.filter(
           (resolvable) => !matchesPolicy(["NOWAIT"], "async")(resolvable),
         );
+
         const subContext = this.subContext(node.state);
+
         const getResult = (resolve: Resolvable) =>
           resolve
             .get(subContext, trans)
@@ -176,8 +183,10 @@ export class ResolveContext {
    */
   getDependencies(resolvable: Resolvable): Resolvable[] {
     const node = this.findNode(resolvable);
+
     const subPath =
       PathUtils.subPath(this._path, (x) => x === node) || this._path;
+
     const availableResolvables: Resolvable[] = [];
 
     for (let i = 0; i < subPath.length; i++) {

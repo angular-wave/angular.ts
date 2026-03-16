@@ -28,6 +28,7 @@ export class SanitizeUriProvider {
           const regex = isMediaUrl
             ? this._imgSrcSanitizationTrustedUrlList
             : this._aHrefSanitizationTrustedUrlList;
+
           const normalizedVal = new URL(uri.trim(), $window.location.href).href;
 
           if (normalizedVal !== "" && !normalizedVal.match(regex)) {
@@ -45,6 +46,7 @@ export class SanitizeUriProvider {
   ): RegExp | SanitizeUriProvider {
     if (isDefined(regexp)) {
       this._aHrefSanitizationTrustedUrlList = regexp;
+
       return this;
     }
 
@@ -56,6 +58,7 @@ export class SanitizeUriProvider {
   ): RegExp | SanitizeUriProvider {
     if (isDefined(regexp)) {
       this._imgSrcSanitizationTrustedUrlList = regexp;
+
       return this;
     }
 

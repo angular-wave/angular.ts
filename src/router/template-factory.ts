@@ -63,8 +63,10 @@ export class TemplateFactoryProvider {
     context: ResolveContext,
   ): TemplateResult {
     const defaultTemplate = "<ng-view></ng-view>";
+
     const asTemplate = (result: string | Promise<string>) =>
       Promise.resolve(result).then((str) => ({ template: str }));
+
     const asComponent = (result: string | Promise<string>) =>
       Promise.resolve(result).then((str) => ({ component: str }));
 
@@ -78,9 +80,13 @@ export class TemplateFactoryProvider {
       | "componentProvider"
       | "default" => {
       if (isDefined(configParam.template)) return "template";
+
       if (isDefined(configParam.templateUrl)) return "templateUrl";
+
       if (isDefined(configParam.templateProvider)) return "templateProvider";
+
       if (isDefined(configParam.component)) return "component";
+
       if (isDefined(configParam.componentProvider)) return "componentProvider";
 
       return "default";
@@ -120,6 +126,7 @@ export class TemplateFactoryProvider {
    */
   fromUrl(url: string | Function, params: object): Promise<string> | null {
     if (isFunction(url)) url = (url as Function)(params) as string;
+
     if (isNullOrUndefined(url)) return null;
 
     return this.$templateRequest!(url as string);
@@ -131,9 +138,11 @@ export class TemplateFactoryProvider {
     context: ResolveContext,
   ): string | Promise<string> {
     const deps = annotate(provider);
+
     const providerFn = isArray(provider)
       ? (tail(provider) as Function)
       : provider;
+
     const resolvable = new Resolvable("", providerFn, deps);
 
     return resolvable.get(context);
@@ -147,9 +156,11 @@ export class TemplateFactoryProvider {
     context: ResolveContext,
   ): Promise<any> {
     const deps = annotate(provider);
+
     const providerFn = (
       isArray(provider) ? tail(provider) : provider
     ) as Function;
+
     const resolvable = new Resolvable("", providerFn, deps);
 
     return resolvable.get(context);
@@ -173,6 +184,7 @@ export class TemplateFactoryProvider {
 
     const attributeTpl = (input: BindingTuple): string => {
       const { name, type } = input;
+
       const attrName = kebob(name);
 
       if (ngView.getAttribute(attrName) && !bindings![name]) {
@@ -185,8 +197,11 @@ export class TemplateFactoryProvider {
 
       if (type === "&") {
         const res = context.getResolvable(resolveName);
+
         const fn = res && res.data;
+
         const args = (fn && annotate(fn)) || [];
+
         const arrayIdxStr = isArray(fn) ? `[${fn.length - 1}]` : "";
 
         return `${attrName}='$resolve.${resolveName}${arrayIdxStr}(${args.join(",")})'`;
@@ -198,6 +213,7 @@ export class TemplateFactoryProvider {
     const attrs = getComponentBindings(this.$injector, component)
       .map(attributeTpl)
       .join(" ");
+
     const kebobName = kebob(component);
 
     return `<${kebobName} ${attrs}></${kebobName}>`;

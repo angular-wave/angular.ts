@@ -19,6 +19,7 @@ export class PathUtils {
    */
   static buildPath(targetState: TargetState): PathNode[] {
     const toParams = targetState.params();
+
     const stateObject = targetState.$state() as StateObject;
 
     return (
@@ -268,6 +269,7 @@ export class PathUtils {
     predicate: import("../../shared/interface.ts").Predicate<PathNode>,
   ): PathNode[] | undefined {
     const node = find(path, predicate);
+
     if (!node) return undefined;
 
     const elementIdx = path.indexOf(node);
@@ -307,6 +309,7 @@ export function makeTargetState(
   path: PathNode[],
 ): TargetState {
   const tailNode = path.at(-1);
+
   if (!tailNode)
     throw new Error("Cannot create TargetState from an empty path");
 

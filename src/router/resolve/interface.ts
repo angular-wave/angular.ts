@@ -202,7 +202,9 @@ export interface ResolvePolicy {
 }
 
 export type PolicyWhen = "LAZY" | "EAGER";
+
 export type PolicyAsync = "WAIT" | "NOWAIT" | CustomAsyncPolicy;
+
 export interface CustomAsyncPolicy {
   (data: any): Promise<any>;
 }
