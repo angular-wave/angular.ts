@@ -3469,7 +3469,7 @@ describe("Scope optimizations", () => {
       // Remaining watcher should belong to child2
       const remaining = scope.$handler._watchers.get("a")[0];
 
-      expect(remaining.scopeId).toBe(child2.$id);
+      expect(remaining._scopeId).toBe(child2.$id);
     });
 
     it("should not destroy twice", () => {

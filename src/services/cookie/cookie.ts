@@ -52,7 +52,7 @@ export class CookieService {
    * Accepts the default cookie attributes defined by `$cookiesProvider.defaults`.
    */
   constructor(defaults: ng.CookieOptions) {
-    this._defaults = Object.freeze({ ...defaults });
+    this._defaults = defaults;
   }
 
   /**

@@ -31,12 +31,12 @@ export interface NonScopeMarked {
 }
 
 export interface Listener {
-  originalTarget: any;
-  listenerFn: ListenerFn;
-  watchFn: CompiledExpression;
-  id: number;
-  scopeId: number;
-  property: string[];
+  _originalTarget: any;
+  _listenerFn: ListenerFn;
+  _watchFn: CompiledExpression;
+  _id: number;
+  _scopeId: number;
+  _property: string[];
   watchProp?: string;
   invokeWatchFn?: CompiledExpression;
 }
@@ -741,7 +741,7 @@ export class Scope {
 
               const wrapperExpr = x.watchProp.split(".").slice(0, -1).join(".");
 
-              const expectedHandler = $parse(wrapperExpr)(x.originalTarget);
+              const expectedHandler = $parse(wrapperExpr)(x._originalTarget);
 
               if (expectedTarget === expectedHandler?.$target) {
                 scheduled.push(x);
@@ -770,7 +770,7 @@ export class Scope {
             for (let i = 0, l = _foreignListeners.length; i < l; i++) {
               const listener = _foreignListeners[i];
 
-              if (listener.originalTarget._hashKey === hashKey) {
+              if (listener._originalTarget._hashKey === hashKey) {
                 scheduled.push(listener);
               }
             }
@@ -1028,12 +1028,12 @@ export class Scope {
     }
 
     const listener: Listener = {
-      originalTarget: this.$target,
-      listenerFn,
-      watchFn: get,
-      scopeId: this.$id,
-      id: nextUid(),
-      property: [],
+      _originalTarget: this.$target,
+      _listenerFn: listenerFn,
+      _watchFn: get,
+      _scopeId: this.$id,
+      _id: nextUid(),
+      _property: [],
     };
 
     // simplest case
@@ -1056,7 +1056,7 @@ export class Scope {
         if (!key) {
           throw new Error("Unable to determine key");
         }
-        listener.property.push(key);
+        listener._property.push(key);
         break;
       }
       // 5
@@ -1069,7 +1069,7 @@ export class Scope {
         registerListenerKeys(this, listener, keyList);
 
         return () => {
-          deregisterListenerKeys(this, listener.id, keyList);
+          deregisterListenerKeys(this, listener._id, keyList);
         };
       }
       // 6
@@ -1082,7 +1082,7 @@ export class Scope {
           if (!key) {
             throw new Error("Unable to determine key");
           }
-          listener.property.push(key);
+          listener._property.push(key);
           break;
         } else {
           const { _toWatch: toWatch } = expr;
@@ -1100,7 +1100,7 @@ export class Scope {
 
           // Return deregistration function
           return () => {
-            deregisterListenerKeys(this, listener.id, keyList);
+            deregisterListenerKeys(this, listener._id, keyList);
           };
         }
       }
@@ -1113,7 +1113,7 @@ export class Scope {
         if (!key) {
           throw new Error("Unable to determine key");
         }
-        listener.property.push(key);
+        listener._property.push(key);
         break;
       }
       // 8 function
@@ -1139,7 +1139,7 @@ export class Scope {
         }
 
         return () => {
-          deregisterListenerKeys(this, listener.id, keyList);
+          deregisterListenerKeys(this, listener._id, keyList);
         };
       }
 
@@ -1155,7 +1155,7 @@ export class Scope {
         if (!key) {
           throw new Error("Unable to determine key");
         }
-        listener.property.push(key);
+        listener._property.push(key);
 
         if (watchProp !== key) {
           // Handle nested expression call
@@ -1164,16 +1164,16 @@ export class Scope {
 
           const potentialProxy = $parse(
             watchProp.split(".").slice(0, -1).join("."),
-          )(listener.originalTarget);
+          )(listener._originalTarget);
 
           if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
             potentialProxy.$handler._registerForeignKey(key, listener);
             potentialProxy.$handler._scheduleListener([listener]);
 
             return () => {
-              potentialProxy.$handler._deregisterForeignKey(key, listener.id);
+              potentialProxy.$handler._deregisterForeignKey(key, listener._id);
 
-              return potentialProxy.$handler._deregisterKey(key, listener.id);
+              return potentialProxy.$handler._deregisterKey(key, listener._id);
             };
           }
         }
@@ -1185,7 +1185,7 @@ export class Scope {
         if (!key) {
           throw new Error("Unable to determine key");
         }
-        listener.property.push(key);
+        listener._property.push(key);
         break;
       }
 
@@ -1209,7 +1209,7 @@ export class Scope {
 
         return () => {
           for (let i = 0, l = keyList.length; i < l; i++) {
-            this._deregisterKey(keyList[i], listener.id);
+            this._deregisterKey(keyList[i], listener._id);
           }
         };
       }
@@ -1245,14 +1245,14 @@ export class Scope {
 
           if (currentKey) {
             keySet.push(currentKey);
-            listener.property.push(currentKey);
+            listener._property.push(currentKey);
           }
         }
 
         collectedKeys.forEach((collectedKey) => {
           if (!keySet.includes(collectedKey)) {
             keySet.push(collectedKey);
-            listener.property.push(collectedKey);
+            listener._property.push(collectedKey);
           }
         });
         break;
@@ -1263,7 +1263,7 @@ export class Scope {
     }
 
     // if the target is an object, then start observing it
-    const listenerObject = listener.watchFn(this.$target);
+    const listenerObject = listener._watchFn(this.$target);
 
     if (isObject(listenerObject)) {
       if (!key && keySet.length > 0) {
@@ -1295,7 +1295,7 @@ export class Scope {
         let res = true;
 
         for (let i = 0, l = keySet.length; i < l; i++) {
-          const success = this._deregisterKey(keySet[i], listener.id);
+          const success = this._deregisterKey(keySet[i], listener._id);
 
           if (!success) {
             res = false;
@@ -1308,7 +1308,7 @@ export class Scope {
           return false;
         }
 
-        return this._deregisterKey(key, listener.id);
+        return this._deregisterKey(key, listener._id);
       }
     };
   }
@@ -1411,7 +1411,7 @@ export class Scope {
     const len = listenerList.length;
 
     for (let i = 0; i < len; i++) {
-      if (listenerList[i].id === id) {
+      if (listenerList[i]._id === id) {
         if (len === 1) {
           // Last element — just delete the key entirely
           this._watchers.delete(key);
@@ -1439,7 +1439,7 @@ export class Scope {
     const len = listenerList.length;
 
     for (let i = 0; i < len; i++) {
-      if (listenerList[i].id === id) {
+      if (listenerList[i]._id === id) {
         if (len === 1) {
           this._foreignListeners.delete(key);
         } else {
@@ -1672,7 +1672,7 @@ export class Scope {
     for (const [key, val] of this._watchers) {
       // Reverse iterate with swap-pop for O(n) instead of O(n²)
       for (let i = val.length - 1; i >= 0; i--) {
-        if (val[i].scopeId === scopeId) {
+        if (val[i]._scopeId === scopeId) {
           val[i] = val[val.length - 1];
           val.length--;
         }
@@ -1716,30 +1716,30 @@ export class Scope {
     listener: Listener,
     target: Scope | ScopeProxy | undefined,
   ): void {
-    const { originalTarget, listenerFn, watchFn } = listener;
+    const { _originalTarget, _listenerFn, _watchFn } = listener;
 
     try {
-      let newVal = watchFn(originalTarget);
+      let newVal = _watchFn(_originalTarget);
 
       if (isUndefined(newVal)) {
-        newVal = watchFn(target);
+        newVal = _watchFn(target);
       }
 
       if (isFunction(newVal)) {
         newVal = listener.invokeWatchFn
-          ? listener.invokeWatchFn(originalTarget)
-          : newVal(originalTarget);
+          ? listener.invokeWatchFn(_originalTarget)
+          : newVal(_originalTarget);
       }
 
       if (isArray(newVal)) {
         for (let i = 0, l = newVal.length; i < l; i++) {
           if (isFunction(newVal[i])) {
-            newVal[i] = newVal[i](originalTarget);
+            newVal[i] = newVal[i](_originalTarget);
           }
         }
       }
 
-      listenerFn(newVal, originalTarget);
+      _listenerFn(newVal, _originalTarget);
 
       if ($postUpdateQueue.length > 0) {
         for (let qi = 0; qi < $postUpdateQueue.length; qi++) {
@@ -1820,7 +1820,7 @@ function calculateWatcherCount(model: Scope): number {
 
   for (const watchers of model._watchers.values()) {
     for (let i = 0, l = watchers.length; i < l; i++) {
-      if (childIds.has(watchers[i].scopeId)) {
+      if (childIds.has(watchers[i]._scopeId)) {
         count++;
       }
     }

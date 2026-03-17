@@ -1,17 +1,13 @@
+import { Attributes } from "../../core/compile/attributes.ts";
+
 /**
  * Exposes the current element on `scope.$target` under the provided key.
  */
 export function ngElDirective(): ng.Directive {
   return {
     restrict: "A",
-    link(
-      scope: ng.Scope,
-      element: HTMLElement,
-      attrs: import("../../core/compile/attributes.ts").Attributes,
-    ): void {
-      const attrMap =
-        attrs as import("../../core/compile/attributes.ts").Attributes &
-          Record<string, string>;
+    link(scope: ng.Scope, element: HTMLElement, attrs: Attributes): void {
+      const attrMap = attrs as Attributes & Record<string, string>;
 
       const expr = attrMap.ngEl;
 

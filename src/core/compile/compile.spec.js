@@ -73,13 +73,8 @@ describe("$compile", () => {
     errorLog = [],
     $sce;
 
-  /** @type {import("../di/ng-module.js").NgModule} */
   let myModule;
-
-  /** @type {import("../di/ng-module.js").NgModule} */
   let module;
-
-  /** @type {Angular} */
   let angular;
 
   beforeEach(() => {

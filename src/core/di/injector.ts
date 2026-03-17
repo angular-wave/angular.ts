@@ -93,11 +93,7 @@ export function createInjector(
 
   /**
    * Registers a provider.
-   * @param {string} name
-   * @param {import('../../interface.ts').ServiceProvider | import('../../interface.ts').Injectable<any>} provider
-   * @returns {import('../../interface.ts').ServiceProvider}
    */
-
   function provider(
     name: string,
     providerDefinition: ServiceProvider | Injectable<(...args: any[]) => any>,
@@ -125,13 +121,10 @@ export function createInjector(
 
   /**
    * Registers a factory.
-   * @param {string} name
-   * @param {ng.AnnotatedFactory<any>} factoryFn
-   * @returns {import('../../interface.ts').ServiceProvider}
    */
   function factory(
     name: string,
-    factoryFn: Injectable<(...args: any[]) => any>,
+    factoryFn: ng.AnnotatedFactory<any>,
   ): ServiceProvider {
     return provider(name, {
       $get() {
@@ -175,11 +168,7 @@ export function createInjector(
 
   /**
    * Register a constant value (available during config).
-   * @param {string} name
-   * @param {any} value
-   * @returns {void}
    */
-
   function constant(name: string, constantValue: any): void {
     assertNotHasOwnProperty(name, "constant");
     providerInjector._cache[name] = constantValue;
@@ -188,9 +177,8 @@ export function createInjector(
 
   /**
    * Register a decorator function to modify or replace an existing service.
-   * @param {string} serviceName - The name of the service to decorate.
-   * @param {Function} decorFn - A function that takes `$delegate` and returns a decorated service.
-   * @returns {void}
+   * @param serviceName - The name of the service to decorate.
+   * @param decorFn - A function that takes `$delegate` and returns a decorated service.
    */
   function decorator(
     serviceName: string,
@@ -212,10 +200,9 @@ export function createInjector(
   /**
    * Registers a service persisted in a storage
    *
-   * @param {string} name - Service name
-   * @param {import("../../interface.ts").Constructor} ctor - Constructor for the service
-   * @param {ng.StorageType} type - Type of storage to be instantiated
-   * @param {import("./interface.ts").StorageLike & import("./interface.ts").PersistentStoreConfig} [backendOrConfig]
+   * @param name - Service name
+   * @param ctor - Constructor for the service
+   * @param type - Type of storage to be instantiated
    */
   function store(
     name: string,
