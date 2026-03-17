@@ -3918,7 +3918,7 @@ export class CompileProvider {
                             scope.$handler._watchers.get(attrsAny[attrName]);
 
                           attributeWatchers?.forEach((watchFn) => {
-                            watchFn.listenerFn(val, scope.$target);
+                            watchFn._listenerFn(val, scope.$target);
                           });
                         }
                       }

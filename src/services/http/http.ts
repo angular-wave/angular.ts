@@ -233,7 +233,7 @@ function serializeValue(
  * Note that serializer will sort the request parameters alphabetically.
  */
 export function HttpParamSerializerProvider(this: {
-  $get?: () => import("./http.ts").HttpParamSerializer;
+  $get?: () => HttpParamSerializer;
 }): void {
   /**
    * Returns the runtime query-parameter serializer.
@@ -377,9 +377,7 @@ function parseHeaders(headers: string | object): Record<string, string> {
  *   - an argument, returns a single header value (empty string if missing)
  *   - no arguments, returns an object containing all headers.
  */
-function headersGetter(
-  headers: string | object,
-): import("./http.ts").HttpHeadersGetter {
+function headersGetter(headers: string | object): HttpHeadersGetter {
   let headersObj: Record<string, string> | undefined;
 
   const getter = ((name?: string) => {
@@ -392,7 +390,7 @@ function headersGetter(
     }
 
     return headersObj;
-  }) as import("./http.ts").HttpHeadersGetter;
+  }) as HttpHeadersGetter;
 
   return getter;
 }
@@ -408,7 +406,7 @@ function headersGetter(
  */
 function transformData(
   data: any,
-  headers: import("./http.ts").HttpHeadersGetter,
+  headers: HttpHeadersGetter,
   status?: number,
   fns?: ((...args: any[]) => any) | Array<(...args: any[]) => any>,
 ): any {
@@ -544,11 +542,9 @@ export function HttpProvider(this: any): void {
   this.xsrfTrustedOrigins = [] as string[];
 
   const that = this as {
-    interceptors: Array<
-      string | ng.Injectable<import("./http.ts").HttpInterceptorFactory>
-    >;
+    interceptors: Array<string | ng.Injectable<HttpInterceptorFactory>>;
     xsrfTrustedOrigins: string[];
-    defaults: import("./http.ts").HttpProviderDefaults;
+    defaults: HttpProviderDefaults;
   };
 
   this.$get = [
@@ -656,7 +652,7 @@ export function HttpProvider(this: any): void {
         promise = promise.then(serverRequest);
         promise = chainInterceptors(promise, responseInterceptors);
 
-        return promise as import("./http.ts").HttpPromise<any>;
+        return promise as HttpPromise<any>;
 
         /** Applies a list of interceptor success/error pairs to a promise chain. */
         function chainInterceptors(
@@ -678,7 +674,7 @@ export function HttpProvider(this: any): void {
 
         /** Resolves any header factory functions against the current request configuration. */
         function executeHeaderFns(
-          headers: import("./http.ts").HttpHeaderType,
+          headers: HttpHeaderType,
           configParam: ng.RequestConfig,
         ): Record<string, string> {
           let headerContent: any;
@@ -704,13 +700,12 @@ export function HttpProvider(this: any): void {
         function mergeHeaders(
           configParam: ng.RequestConfig,
         ): Record<string, string> {
-          let defHeaders = (defaults.headers ||
-            {}) as import("./http.ts").HttpRequestConfigHeaders;
+          let defHeaders = (defaults.headers || {}) as HttpRequestConfigHeaders;
 
           const reqHeaders = extend(
             {},
             configParam.headers || {},
-          ) as import("./http.ts").HttpHeaderType;
+          ) as HttpHeaderType;
 
           defHeaders = extend(
             {},
@@ -759,8 +754,7 @@ export function HttpProvider(this: any): void {
             });
           }
 
-          const providerDefaults =
-            defaults as import("./http.ts").HttpProviderDefaults;
+          const providerDefaults = defaults as HttpProviderDefaults;
 
           if (
             isUndefined(configParam.withCredentials) &&
@@ -778,14 +772,10 @@ export function HttpProvider(this: any): void {
 
         /** Applies response transforms and rejects responses outside the success range. */
         function transformResponse(response: any) {
-          const httpResponse =
-            response as import("./http.ts").HttpResponse<any>;
+          const httpResponse = response as HttpResponse<any>;
 
           // make a copy since the response must be cacheable
-          const resp = extend(
-            {},
-            httpResponse,
-          ) as import("./http.ts").HttpResponse<any>;
+          const resp = extend({}, httpResponse) as HttpResponse<any>;
 
           resp.data = transformData(
             httpResponse.data,
@@ -801,7 +791,7 @@ export function HttpProvider(this: any): void {
         }
       } as unknown as ng.HttpService & {
         pendingRequests: ng.RequestConfig[];
-        defaults: import("./http.ts").HttpProviderDefaults;
+        defaults: HttpProviderDefaults;
         [key: string]: any;
       };
 
@@ -825,10 +815,7 @@ export function HttpProvider(this: any): void {
         ...names: Array<"get" | "delete" | "head">
       ): void {
         names.forEach((name) => {
-          $http[name] = function (
-            url: string,
-            config?: import("./http.ts").RequestShortcutConfig,
-          ) {
+          $http[name] = function (url: string, config?: RequestShortcutConfig) {
             return $http(
               extend({}, config || {}, {
                 method: name,
@@ -847,7 +834,7 @@ export function HttpProvider(this: any): void {
           $http[name] = function (
             url: string,
             data: string | object,
-            config?: import("./http.ts").RequestShortcutConfig,
+            config?: RequestShortcutConfig,
           ) {
             return $http(
               extend({}, config || {}, {
@@ -879,8 +866,7 @@ export function HttpProvider(this: any): void {
           url = $sce.valueOf(url);
         }
 
-        const paramSerializer =
-          config.paramSerializer as import("./http.ts").HttpParamSerializer;
+        const paramSerializer = config.paramSerializer as HttpParamSerializer;
 
         url = buildUrl(url, paramSerializer(config.params));
 
@@ -888,13 +874,11 @@ export function HttpProvider(this: any): void {
         promise.then(removePendingReq, removePendingReq);
 
         if (
-          (config.cache ||
-            (defaults as import("./http.ts").HttpProviderDefaults).cache) &&
+          (config.cache || (defaults as HttpProviderDefaults).cache) &&
           config.cache !== false &&
           config.method === "GET"
         ) {
-          const providerDefaults =
-            defaults as import("./http.ts").HttpProviderDefaults;
+          const providerDefaults = defaults as HttpProviderDefaults;
 
           cache = isObject(config.cache)
             ? config.cache
@@ -921,7 +905,7 @@ export function HttpProvider(this: any): void {
                   cachedResp[0] as number,
                   shallowCopy(cachedResp[2]) as Record<string, string>,
                   cachedResp[3] as string,
-                  cachedResp[4] as import("./http.ts").HttpResponseStatus,
+                  cachedResp[4] as HttpResponseStatus,
                 );
               } else {
                 resolvePromise(cachedResp, Http._OK, {}, "OK", "complete");
@@ -1012,7 +996,7 @@ export function HttpProvider(this: any): void {
           response: any,
           headersString: string | null,
           statusText: string,
-          xhrStatus: import("./http.ts").HttpResponseStatus,
+          xhrStatus: HttpResponseStatus,
         ): void {
           if (cache) {
             if (isSuccess(status)) {
@@ -1052,7 +1036,7 @@ export function HttpProvider(this: any): void {
           status: number,
           headers: string | Record<string, string> | null,
           statusText: string,
-          xhrStatus: import("./http.ts").HttpResponseStatus,
+          xhrStatus: HttpResponseStatus,
         ): void {
           // status: HTTP response status code, 0, -1 (aborted by timeout / promise)
           status = status >= -1 ? status : 0;
@@ -1068,9 +1052,7 @@ export function HttpProvider(this: any): void {
         }
 
         /** Settles the raw `$http` promise from a cached or intercepted response object. */
-        function resolvePromiseWithResult(
-          result: import("./http.ts").HttpResponse<any>,
-        ): void {
+        function resolvePromiseWithResult(result: HttpResponse<any>): void {
           resolvePromise(
             result.data,
             result.status,
@@ -1123,7 +1105,7 @@ export function http(
     response: any,
     headersString: string | null,
     statusText: string,
-    xhrStatus: import("./http.ts").HttpResponseStatus,
+    xhrStatus: HttpResponseStatus,
   ) => void,
   headers?: Record<string, string | undefined>,
   timeout?: number | Promise<any>,
@@ -1237,7 +1219,7 @@ export function http(
     response: any,
     headersString: string | null,
     statusText: string,
-    xhrStatus: import("./http.ts").HttpResponseStatus,
+    xhrStatus: HttpResponseStatus,
   ): void {
     if (isDefined(timeoutId)) {
       clearTimeout(timeoutId);

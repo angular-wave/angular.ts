@@ -1,15 +1,11 @@
+import { Attributes } from "../../core/compile/attributes.ts";
+
 /** Evaluates expressions when an element enters or leaves the viewport. */
 export function ngViewportDirective(): ng.Directive {
   return {
     restrict: "A",
-    link(
-      scope: ng.Scope,
-      element: HTMLElement,
-      attrs: import("../../core/compile/attributes.ts").Attributes,
-    ): void {
-      const attrMap =
-        attrs as import("../../core/compile/attributes.ts").Attributes &
-          Record<string, string>;
+    link(scope: ng.Scope, element: HTMLElement, attrs: Attributes): void {
+      const attrMap = attrs as Attributes & Record<string, string>;
 
       const enterExpr = attrMap.onEnter;
 

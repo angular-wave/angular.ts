@@ -1,17 +1,12 @@
 import { isObject, isString } from "../../shared/utils.ts";
+import { Attributes } from "../../core/compile/attributes.ts";
 
 /** Listens for DOM custom events and projects their payload into the element or scope. */
 export function ngListenerDirective(): ng.Directive {
   return {
     scope: false,
-    link: (
-      scope: ng.Scope,
-      element: HTMLElement,
-      attrs: import("../../core/compile/attributes.ts").Attributes,
-    ): void => {
-      const attrMap =
-        attrs as import("../../core/compile/attributes.ts").Attributes &
-          Record<string, string>;
+    link: (scope: ng.Scope, element: HTMLElement, attrs: Attributes): void => {
+      const attrMap = attrs as Attributes & Record<string, string>;
 
       const channel = attrMap.ngListener || element.id;
 
