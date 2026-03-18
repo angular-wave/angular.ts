@@ -1,4 +1,4 @@
-/* Version: 0.23.0 - March 17, 2026 00:59:53 */
+/* Version: 0.23.1 - March 19, 2026 01:29:40 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -1945,7 +1945,7 @@
      */
     class ProviderInjector extends AbstractInjector {
         /**
-         * @param {import('./interface.ts').ProviderCache} cache
+         * @param {ProviderCache} cache
          * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
          */
         constructor(cache, strictDi) {
@@ -2133,9 +2133,6 @@
         ////////////////////////////////////
         /**
          * Registers a provider.
-         * @param {string} name
-         * @param {import('../../interface.ts').ServiceProvider | import('../../interface.ts').Injectable<any>} provider
-         * @returns {import('../../interface.ts').ServiceProvider}
          */
         function provider(name, providerDefinition) {
             assertNotHasOwnProperty(name, "service");
@@ -2154,9 +2151,6 @@
         }
         /**
          * Registers a factory.
-         * @param {string} name
-         * @param {ng.AnnotatedFactory<any>} factoryFn
-         * @returns {import('../../interface.ts').ServiceProvider}
          */
         function factory(name, factoryFn) {
             return provider(name, {
@@ -2173,7 +2167,7 @@
          * Registers a service constructor.
          * @param {string} name
          * @param {Function} constructor
-         * @returns {import('../../interface.ts').ServiceProvider}
+         * @returns {ServiceProvider}
          */
         function service(name, constructor) {
             return factory(name, [
@@ -2192,9 +2186,6 @@
         }
         /**
          * Register a constant value (available during config).
-         * @param {string} name
-         * @param {any} value
-         * @returns {void}
          */
         function constant(name, constantValue) {
             assertNotHasOwnProperty(name, "constant");
@@ -2203,9 +2194,8 @@
         }
         /**
          * Register a decorator function to modify or replace an existing service.
-         * @param {string} serviceName - The name of the service to decorate.
-         * @param {Function} decorFn - A function that takes `$delegate` and returns a decorated service.
-         * @returns {void}
+         * @param serviceName - The name of the service to decorate.
+         * @param decorFn - A function that takes `$delegate` and returns a decorated service.
          */
         function decorator(serviceName, decorFn) {
             const origProvider = providerInjector.get(serviceName + providerSuffix);
@@ -2220,10 +2210,9 @@
         /**
          * Registers a service persisted in a storage
          *
-         * @param {string} name - Service name
-         * @param {import("../../interface.ts").Constructor} ctor - Constructor for the service
-         * @param {ng.StorageType} type - Type of storage to be instantiated
-         * @param {import("./interface.ts").StorageLike & import("./interface.ts").PersistentStoreConfig} [backendOrConfig]
+         * @param name - Service name
+         * @param ctor - Constructor for the service
+         * @param type - Type of storage to be instantiated
          */
         function store(name, ctor, type, backendOrConfig) {
             return provider(name, {
@@ -2847,8 +2836,7 @@
                     }
                     /** Merges provider defaults with request-specific headers for a single request. */
                     function mergeHeaders(configParam) {
-                        let defHeaders = (defaults.headers ||
-                            {});
+                        let defHeaders = (defaults.headers || {});
                         const reqHeaders = extend({}, configParam.headers || {});
                         defHeaders = extend({}, defHeaders.common || {}, defHeaders[lowercase(configParam.method)] || {});
                         keys(defHeaders).forEach((defHeaderName) => {
@@ -2943,8 +2931,7 @@
                     url = buildUrl(url, paramSerializer(config.params));
                     $http.pendingRequests.push(config);
                     promise.then(removePendingReq, removePendingReq);
-                    if ((config.cache ||
-                        defaults.cache) &&
+                    if ((config.cache || defaults.cache) &&
                         config.cache !== false &&
                         config.method === "GET") {
                         const providerDefaults = defaults;
@@ -8325,7 +8312,7 @@
                                     continue;
                                 }
                                 const wrapperExpr = x.watchProp.split(".").slice(0, -1).join(".");
-                                const expectedHandler = $parse(wrapperExpr)(x.originalTarget);
+                                const expectedHandler = $parse(wrapperExpr)(x._originalTarget);
                                 if (expectedTarget === expectedHandler?.$target) {
                                     scheduled.push(x);
                                 }
@@ -8345,7 +8332,7 @@
                             scheduled = [];
                             for (let i = 0, l = _foreignListeners.length; i < l; i++) {
                                 const listener = _foreignListeners[i];
-                                if (listener.originalTarget._hashKey === hashKey) {
+                                if (listener._originalTarget._hashKey === hashKey) {
                                     scheduled.push(listener);
                                 }
                             }
@@ -8544,12 +8531,12 @@
                 return undefined;
             }
             const listener = {
-                originalTarget: this.$target,
-                listenerFn,
-                watchFn: get,
-                scopeId: this.$id,
-                id: nextUid(),
-                property: [],
+                _originalTarget: this.$target,
+                _listenerFn: listenerFn,
+                _watchFn: get,
+                _scopeId: this.$id,
+                _id: nextUid(),
+                _property: [],
             };
             // simplest case
             let key = getNodeName(expr);
@@ -8567,7 +8554,7 @@
                     if (!key) {
                         throw new Error("Unable to determine key");
                     }
-                    listener.property.push(key);
+                    listener._property.push(key);
                     break;
                 }
                 // 5
@@ -8578,7 +8565,7 @@
                     ];
                     registerListenerKeys(this, listener, keyList);
                     return () => {
-                        deregisterListenerKeys(this, listener.id, keyList);
+                        deregisterListenerKeys(this, listener._id, keyList);
                     };
                 }
                 // 6
@@ -8589,7 +8576,7 @@
                         if (!key) {
                             throw new Error("Unable to determine key");
                         }
-                        listener.property.push(key);
+                        listener._property.push(key);
                         break;
                     }
                     else {
@@ -8604,7 +8591,7 @@
                         registerListenerKeys(this, listener, keyList, true);
                         // Return deregistration function
                         return () => {
-                            deregisterListenerKeys(this, listener.id, keyList);
+                            deregisterListenerKeys(this, listener._id, keyList);
                         };
                     }
                 }
@@ -8615,7 +8602,7 @@
                     if (!key) {
                         throw new Error("Unable to determine key");
                     }
-                    listener.property.push(key);
+                    listener._property.push(key);
                     break;
                 }
                 // 8 function
@@ -8635,7 +8622,7 @@
                         this._scheduleListener([listener]);
                     }
                     return () => {
-                        deregisterListenerKeys(this, listener.id, keyList);
+                        deregisterListenerKeys(this, listener._id, keyList);
                     };
                 }
                 // 9
@@ -8648,18 +8635,18 @@
                     if (!key) {
                         throw new Error("Unable to determine key");
                     }
-                    listener.property.push(key);
+                    listener._property.push(key);
                     if (watchProp !== key) {
                         // Handle nested expression call
                         listener.watchProp = watchProp;
                         listener.invokeWatchFn = $parse(`${watchProp}()`);
-                        const potentialProxy = $parse(watchProp.split(".").slice(0, -1).join("."))(listener.originalTarget);
+                        const potentialProxy = $parse(watchProp.split(".").slice(0, -1).join("."))(listener._originalTarget);
                         if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
                             potentialProxy.$handler._registerForeignKey(key, listener);
                             potentialProxy.$handler._scheduleListener([listener]);
                             return () => {
-                                potentialProxy.$handler._deregisterForeignKey(key, listener.id);
-                                return potentialProxy.$handler._deregisterKey(key, listener.id);
+                                potentialProxy.$handler._deregisterForeignKey(key, listener._id);
+                                return potentialProxy.$handler._deregisterKey(key, listener._id);
                             };
                         }
                     }
@@ -8670,7 +8657,7 @@
                     if (!key) {
                         throw new Error("Unable to determine key");
                     }
-                    listener.property.push(key);
+                    listener._property.push(key);
                     break;
                 }
                 // 12
@@ -8689,7 +8676,7 @@
                     }
                     return () => {
                         for (let i = 0, l = keyList.length; i < l; i++) {
-                            this._deregisterKey(keyList[i], listener.id);
+                            this._deregisterKey(keyList[i], listener._id);
                         }
                     };
                 }
@@ -8718,13 +8705,13 @@
                         }
                         if (currentKey) {
                             keySet.push(currentKey);
-                            listener.property.push(currentKey);
+                            listener._property.push(currentKey);
                         }
                     }
                     collectedKeys.forEach((collectedKey) => {
                         if (!keySet.includes(collectedKey)) {
                             keySet.push(collectedKey);
-                            listener.property.push(collectedKey);
+                            listener._property.push(collectedKey);
                         }
                     });
                     break;
@@ -8734,7 +8721,7 @@
                 }
             }
             // if the target is an object, then start observing it
-            const listenerObject = listener.watchFn(this.$target);
+            const listenerObject = listener._watchFn(this.$target);
             if (isObject(listenerObject)) {
                 if (!key && keySet.length > 0) {
                     key = keySet[0];
@@ -8761,7 +8748,7 @@
                 if (keySet.length > 0) {
                     let res = true;
                     for (let i = 0, l = keySet.length; i < l; i++) {
-                        const success = this._deregisterKey(keySet[i], listener.id);
+                        const success = this._deregisterKey(keySet[i], listener._id);
                         if (!success) {
                             res = false;
                         }
@@ -8772,7 +8759,7 @@
                     if (!key) {
                         return false;
                     }
-                    return this._deregisterKey(key, listener.id);
+                    return this._deregisterKey(key, listener._id);
                 }
             };
         }
@@ -8838,7 +8825,7 @@
             }
             const len = listenerList.length;
             for (let i = 0; i < len; i++) {
-                if (listenerList[i].id === id) {
+                if (listenerList[i]._id === id) {
                     if (len === 1) {
                         // Last element — just delete the key entirely
                         this._watchers.delete(key);
@@ -8861,7 +8848,7 @@
             }
             const len = listenerList.length;
             for (let i = 0; i < len; i++) {
-                if (listenerList[i].id === id) {
+                if (listenerList[i]._id === id) {
                     if (len === 1) {
                         this._foreignListeners.delete(key);
                     }
@@ -9032,7 +9019,7 @@
             for (const [key, val] of this._watchers) {
                 // Reverse iterate with swap-pop for O(n) instead of O(n²)
                 for (let i = val.length - 1; i >= 0; i--) {
-                    if (val[i].scopeId === scopeId) {
+                    if (val[i]._scopeId === scopeId) {
                         val[i] = val[val.length - 1];
                         val.length--;
                     }
@@ -9066,25 +9053,25 @@
         }
         /** Resolves the watched value and notifies a single listener. */
         _notifyListener(listener, target) {
-            const { originalTarget, listenerFn, watchFn } = listener;
+            const { _originalTarget, _listenerFn, _watchFn } = listener;
             try {
-                let newVal = watchFn(originalTarget);
+                let newVal = _watchFn(_originalTarget);
                 if (isUndefined(newVal)) {
-                    newVal = watchFn(target);
+                    newVal = _watchFn(target);
                 }
                 if (isFunction(newVal)) {
                     newVal = listener.invokeWatchFn
-                        ? listener.invokeWatchFn(originalTarget)
-                        : newVal(originalTarget);
+                        ? listener.invokeWatchFn(_originalTarget)
+                        : newVal(_originalTarget);
                 }
                 if (isArray(newVal)) {
                     for (let i = 0, l = newVal.length; i < l; i++) {
                         if (isFunction(newVal[i])) {
-                            newVal[i] = newVal[i](originalTarget);
+                            newVal[i] = newVal[i](_originalTarget);
                         }
                     }
                 }
-                listenerFn(newVal, originalTarget);
+                _listenerFn(newVal, _originalTarget);
                 if ($postUpdateQueue.length > 0) {
                     for (let qi = 0; qi < $postUpdateQueue.length; qi++) {
                         $postUpdateQueue[qi]();
@@ -9150,7 +9137,7 @@
         let count = 0;
         for (const watchers of model._watchers.values()) {
             for (let i = 0, l = watchers.length; i < l; i++) {
-                if (childIds.has(watchers[i].scopeId)) {
+                if (childIds.has(watchers[i]._scopeId)) {
                     count++;
                 }
             }
@@ -11058,9 +11045,7 @@
                         const transcludeControllers = transcludeState._hasElementTranscludeDirective
                             ? transcludeState._elementControllers
                             : undefined;
-                        const transcludedScope = hasScope
-                            ? scopeParam
-                            : undefined;
+                        const transcludedScope = hasScope ? scopeParam : undefined;
                         const attachFn = (hasScope ? cloneAttachFn : scopeParam);
                         const requestedSlotName = (hasScope ? slotName : _futureParentElement);
                         const futureParentElement = (hasScope ? _futureParentElement : cloneAttachFn) ||
@@ -12183,7 +12168,7 @@
                                                     parentSet(scopeTarget, (lastValue = val));
                                                     const attributeWatchers = scope.$handler._watchers.get(attrsAny[attrName]);
                                                     attributeWatchers?.forEach((watchFn) => {
-                                                        watchFn.listenerFn(val, scope.$target);
+                                                        watchFn._listenerFn(val, scope.$target);
                                                     });
                                                 }
                                             }
@@ -14082,8 +14067,8 @@
     /**
      * Converts a single expression AST node into an assignment expression if the expression is assignable.
      *
-     * @param {import("./ast/ast-node.ts").BodyNode} ast
-     * @returns {import("./ast/ast-node.ts").ExpressionNode | undefined}
+     * @param {BodyNode} ast
+     * @returns {ExpressionNode | undefined}
      */
     function assignableAST(ast) {
         const stmt = ast._body[0];
@@ -14166,7 +14151,7 @@
         return `${name}`;
     }
     /**
-     * @param {import("./ast/ast").ASTNode} ast
+     * @param {ASTNode} ast
      * @returns {boolean}
      */
     function isAssignable(ast) {
@@ -14379,7 +14364,7 @@
             while ((token = this._expect("*", "/", "%"))) {
                 left = {
                     _type: ASTType._BinaryExpression,
-                    _operator: /** @type {import("../lexer/lexer.ts").Token} */ token.text,
+                    _operator: token.text,
                     _left: left,
                     _right: this._unary(),
                 };
@@ -14479,7 +14464,7 @@
             }
             let next;
             while ((next = this._expect("(", "[", "."))) {
-                if ( /** @type {import("../lexer/lexer.ts").Token} */next.text === "(") {
+                if (next.text === "(") {
                     primary = {
                         _type: ASTType._CallExpression,
                         _callee: primary,
@@ -14487,8 +14472,7 @@
                     };
                     this._consume(")");
                 }
-                else if (
-                /** @type {import("../lexer/lexer.ts").Token} */ next.text === "[") {
+                else if (next.text === "[") {
                     primary = {
                         _type: ASTType._MemberExpression,
                         _object: primary,
@@ -14497,8 +14481,7 @@
                     };
                     this._consume("]");
                 }
-                else if (
-                /** @type {import("../lexer/lexer.ts").Token} */ next.text === ".") {
+                else if (next.text === ".") {
                     primary = {
                         _type: ASTType._MemberExpression,
                         _object: primary,
@@ -14637,7 +14620,7 @@
         /**
          * Throws a syntax error.
          * @param {string} msg - The error message.
-         * @param {import("../lexer/lexer.ts").Token} token - The token that caused the error.
+         * @param {Token} token - The token that caused the error.
          */
         _throwError(msg, token) {
             throw $parseMinErr("syntax", "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].", token.text, msg, token.index + 1, this._text, this._text?.substring(token.index));
@@ -14645,7 +14628,7 @@
         /**
          * Consumes a token if it matches the expected type.
          * @param {string} [e1] - The expected token type.
-         * @returns {import("../lexer/lexer.ts").Token} The consumed token.
+         * @returns {Token} The consumed token.
          */
         _consume(e1) {
             if (this._tokens && this._tokens.length === this._index) {
@@ -14659,7 +14642,7 @@
         }
         /**
          * Returns the next token without consuming it.
-         * @returns {import("../lexer/lexer.ts").Token} The next token.
+         * @returns {Token} The next token.
          */
         _peekToken() {
             if (!this._tokens || this._tokens.length === this._index) {
@@ -14672,7 +14655,7 @@
         /**
          * Checks if the next token matches any of the expected types.
          * @param {...string} expected - The expected token types.
-         * @returns {import('../lexer/lexer.ts').Token|boolean} The next token if it matches, otherwise false.
+         * @returns {Token|boolean} The next token if it matches, otherwise false.
          */
         _peek(...expected) {
             const token = this._tokens && this._tokens[this._index];
@@ -14693,7 +14676,7 @@
         /**
          * Consumes the next token if it matches any of the expected types.
          * @param {...string} expected - The expected token types.
-         * @returns {import("../lexer/lexer.ts").Token|boolean} The consumed token if it matches, otherwise false.
+         * @returns {Token|boolean} The consumed token if it matches, otherwise false.
          */
         _expect(...expected) {
             const token = this._peek(...expected);
@@ -14894,12 +14877,18 @@
     ngDisabledAriaDirective.$inject = [$injectTokens._aria];
     /** Mirrors `ngDisabled` into `aria-disabled` when needed. */
     function ngDisabledAriaDirective($aria) {
-        return $aria._watchExpr("ngDisabled", "aria-disabled", nativeAriaNodeNames, false);
+        return {
+            restrict: "A",
+            link: $aria._watchExpr("ngDisabled", "aria-disabled", nativeAriaNodeNames, false),
+        };
     }
     ngShowAriaDirective.$inject = [$injectTokens._aria];
     /** Mirrors `ngShow` into `aria-hidden` when needed. */
     function ngShowAriaDirective($aria) {
-        return $aria._watchExpr("ngShow", "aria-hidden", [], true);
+        return {
+            restrict: "A",
+            link: $aria._watchExpr("ngShow", "aria-hidden", [], true),
+        };
     }
     /** Adds `aria-live` to `ngMessages` containers when not already present. */
     function ngMessagesAriaDirective() {
@@ -14961,27 +14950,42 @@
     ngRequiredAriaDirective.$inject = [$injectTokens._aria];
     /** Mirrors `ngRequired` into `aria-required` when needed. */
     function ngRequiredAriaDirective($aria) {
-        return $aria._watchExpr("ngRequired", "aria-required", nativeAriaNodeNames, false);
+        return {
+            restrict: "A",
+            link: $aria._watchExpr("ngRequired", "aria-required", nativeAriaNodeNames, false),
+        };
     }
     ngCheckedAriaDirective.$inject = [$injectTokens._aria];
     /** Mirrors `ngChecked` into `aria-checked` when needed. */
     function ngCheckedAriaDirective($aria) {
-        return $aria._watchExpr("ngChecked", "aria-checked", nativeAriaNodeNames, false);
+        return {
+            restrict: "A",
+            link: $aria._watchExpr("ngChecked", "aria-checked", nativeAriaNodeNames, false),
+        };
     }
     ngValueAriaDirective.$inject = [$injectTokens._aria];
     /** Mirrors `ngValue` into `aria-checked` for non-native controls when needed. */
     function ngValueAriaDirective($aria) {
-        return $aria._watchExpr("ngValue", "aria-checked", nativeAriaNodeNames, false);
+        return {
+            restrict: "A",
+            link: $aria._watchExpr("ngValue", "aria-checked", nativeAriaNodeNames, false),
+        };
     }
     ngHideAriaDirective.$inject = [$injectTokens._aria];
     /** Mirrors `ngHide` into `aria-hidden` when needed. */
     function ngHideAriaDirective($aria) {
-        return $aria._watchExpr("ngHide", "aria-hidden", [], false);
+        return {
+            restrict: "A",
+            link: $aria._watchExpr("ngHide", "aria-hidden", [], false),
+        };
     }
     ngReadonlyAriaDirective.$inject = [$injectTokens._aria];
     /** Mirrors `ngReadonly` into `aria-readonly` when needed. */
     function ngReadonlyAriaDirective($aria) {
-        return $aria._watchExpr("ngReadonly", "aria-readonly", nativeAriaNodeNames, false);
+        return {
+            restrict: "A",
+            link: $aria._watchExpr("ngReadonly", "aria-readonly", nativeAriaNodeNames, false),
+        };
     }
     ngModelAriaDirective.$inject = [$injectTokens._aria];
     /** Adds ARIA validity, checked, and range metadata for `ngModel` controls. */
@@ -15100,14 +15104,17 @@
     ngDblclickAriaDirective.$inject = [$injectTokens._aria];
     /** Adds focusability for `ngDblclick` on non-native interactive controls. */
     function ngDblclickAriaDirective($aria) {
-        return function (_scope, elem, attr) {
-            if (hasOwn(attr, ARIA_DISABLE_ATTR))
-                return;
-            if ($aria.config("tabindex") &&
-                !elem.hasAttribute("tabindex") &&
-                !isNodeOneOf(elem, nativeAriaNodeNames)) {
-                elem.setAttribute("tabindex", "0");
-            }
+        return {
+            restrict: "A",
+            link(_scope, elem, attr) {
+                if (hasOwn(attr, ARIA_DISABLE_ATTR))
+                    return;
+                if ($aria.config("tabindex") &&
+                    !elem.hasAttribute("tabindex") &&
+                    !isNodeOneOf(elem, nativeAriaNodeNames)) {
+                    elem.setAttribute("tabindex", "0");
+                }
+            },
         };
     }
 
@@ -21332,11 +21339,11 @@
          * Note: Do not construct a `TargetState` manually.
          * To create a `TargetState`, use the [[StateService.target]] factory method.
          *
-         * @param {import("./state-service.ts").StateRegistryProvider} _stateRegistry The StateRegistry to use to look up the _definition
-         * @param {import("./interface.ts").StateOrName} _identifier An identifier for a state.
+         * @param {StateRegistryProvider} _stateRegistry The StateRegistry to use to look up the _definition
+         * @param {StateOrName} _identifier An identifier for a state.
          *    Either a fully-qualified state name, or the object used to define the state.
-         * @param {import("../params/interface.ts").RawParams} _params Parameters for the target state
-         * @param {import("../transition/interface.ts").TransitionOptions} _options Transition options.
+         * @param {RawParams} _params Parameters for the target state
+         * @param {TransitionOptions} _options Transition options.
          *
          * @internal
          */
@@ -21401,7 +21408,7 @@
          * Returns a copy of this TargetState which targets a different state.
          * The new TargetState has the same parameter values and transition options.
          *
-         * @param {import("./interface.ts").StateOrName} state The new state that should be targeted
+         * @param {StateOrName} state The new state that should be targeted
          * @returns {TargetState} A new TargetState instance which targets the desired state
          */
         withState(state) {
@@ -21410,7 +21417,7 @@
         /**
          * Returns a copy of this TargetState, using the specified parameter values.
          *
-         * @param {import("../params/interface.ts").RawParams} params the new parameter values to use
+         * @param {RawParams} params the new parameter values to use
          * @param {boolean} replace When false (default) the new parameter values will be merged with the current values.
          *                When true the parameter values will be used instead of the current values.
          * @returns {TargetState} A new TargetState instance which targets the same state with the desired parameters
@@ -21424,7 +21431,7 @@
         /**
          * Returns a copy of this TargetState, using the specified Transition Options.
          *
-         * @param {import("../transition/interface.ts").TransitionOptions} options the new options to use
+         * @param {TransitionOptions} options the new options to use
          * @param {boolean} replace When false (default) the new options will be merged with the current options.
          *                When true the options will be used instead of the current options.
          * @returns {TargetState} A new TargetState instance which targets the same state with the desired options
@@ -21616,7 +21623,7 @@
      * @param {string} paramName
      * @param {DefType} location
      * @param {ng.StateDeclaration} state
-     * @return {import("./interface.ts").ParamDeclaration}
+     * @return {ParamDeclaration}
      */
     function getParamDeclaration(paramName, location, state) {
         const noReloadOnSearch = (state.reloadOnSearch === false && location === DefType._SEARCH) ||
@@ -21644,7 +21651,7 @@
      * @param {ParamType | null} urlType
      * @param {DefType} location
      * @param {string} id
-     * @param {import("./param-types.js").ParamTypes} paramTypes
+     * @param {ParamTypes} paramTypes
      */
     function getType(cfg, urlType, location, id, paramTypes) {
         if (cfg.type && urlType && urlType.name !== "string")
@@ -21710,7 +21717,7 @@
          * @param {string} id
          * @param {ParamType | null} type
          * @param {DefType} location
-         * @param {import("../url/url-config.js").UrlConfigProvider} urlConfig
+         * @param {UrlConfigProvider} urlConfig
          * @param {ng.StateDeclaration} state
          */
         constructor(id, type, location, urlConfig, state) {
@@ -21813,7 +21820,7 @@
         /**
          * @param {Param[]} params
          * @param {Record<string, any>} values
-         * @return {import("./interface.ts").RawParams}
+         * @return {RawParams}
          */
         static values(params, values = {}) {
             const paramValues = {};
@@ -21894,7 +21901,7 @@
         }
         /**
          * Sets [[paramValues]] for the node, from the values of an object hash
-         * @param {import("../params/interface.ts").RawParams} params
+         * @param {RawParams} params
          * @returns {PathNode}
          */
         applyRawParams(params) {
@@ -21915,7 +21922,7 @@
         }
         /**
          * @param {PathNode} node
-         * @param {import("./interface.ts").GetParamsFn} paramsFn
+         * @param {GetParamsFn} paramsFn
          * @returns {boolean} true if the state and parameter values for another PathNode are
         equal to the state and param values for this PathNode
          */
@@ -21931,7 +21938,7 @@
          *
          * Given another node for a different state, returns `false`
          * @param {PathNode} node The node to compare to
-         * @param {import("./interface.ts").GetParamsFn} paramsFn A function that returns which parameters should be compared.
+         * @param {GetParamsFn} paramsFn A function that returns which parameters should be compared.
          * @returns { Param[] | false} The [[Param]]s which differ, or null if the two nodes are for different states
          */
         diff(node, paramsFn) {
@@ -22042,7 +22049,7 @@
          * @param {PathNode[]} fromPath
          * @param {PathNode[]} toPath
          * @param {StateObject} reloadState
-         * @returns {import("../transition/interface.ts").TreeChanges}
+         * @returns {TreeChanges}
          */
         static treeChanges(fromPath, toPath, reloadState) {
             const max = Math.min(fromPath.length, toPath.length);
@@ -22113,7 +22120,7 @@
          * Given an array of nodes, returns a subset of the array starting from the first node,
          * stopping when the first node matches the predicate.
          * @param {PathNode[]} path a path of [[PathNode]]s
-         * @param {import("../../shared/interface.ts").Predicate<PathNode>} predicate a [[Predicate]] fn that matches [[PathNode]]s
+         * @param {Predicate<PathNode>} predicate a [[Predicate]] fn that matches [[PathNode]]s
          * @returns {PathNode[] | undefined} a subpath up to the matching node, or undefined if no match is found
          */
         static subPath(path, predicate) {
@@ -22141,7 +22148,7 @@
         }
     }
     /** Given a PathNode[], create an TargetState
-     * @param {import("../state/state-registry.ts").StateRegistryProvider} registry
+     * @param {StateRegistryProvider} registry
      * @param {Array<PathNode>} path
      * @returns {TargetState}
      */
@@ -23124,7 +23131,7 @@
             return isObject(obj._stateObjectCache);
         }
         /**
-         * @param {import('./interface.ts').StateDeclaration} config
+         * @param {StateDeclaration} config
          */
         constructor(config) {
             Object.assign(this, config);
@@ -23209,10 +23216,10 @@
 
     class StateQueueManager {
         /**
-         * @param {import("./state-registry.ts").StateRegistryProvider} stateRegistry
-         * @param {import("../url/url-rules.js").UrlRules} urlServiceRules
-         * @param {import("./interface.ts").StateStore} states
-         * @param {import("./state-builder.ts").StateBuilder} builder
+         * @param {StateRegistryProvider} stateRegistry
+         * @param {UrlRules} urlServiceRules
+         * @param {StateStore} states
+         * @param {StateBuilder} builder
          * @param {StateRegistryListener[]} listeners
          */
         constructor(stateRegistry, urlServiceRules, states, builder, listeners) {
@@ -23358,7 +23365,7 @@
         getStateHookBuilder(hookName) {
             const that = this;
             /**
-             * @param {import("./state-object").StateObject & Record<string, any>} stateObject
+             * @param {StateObject & Record<string, any>} stateObject
              * @returns {((trans: ng.Transition, state: ng.BuiltStateDeclaration) => any) | undefined}
              */
             return function stateHookBuilder(stateObject) {
@@ -23422,7 +23429,7 @@
          * });
          * ```
          *
-         * @param {import("./interface.ts").StateRegistryListener} listener a callback function invoked when the registered states changes.
+         * @param {StateRegistryListener} listener a callback function invoked when the registered states changes.
          *        The function receives two parameters, `event` and `state`.
          *        See [[StateRegistryListener]]
          * @return a function that deregisters the listener
@@ -23452,7 +23459,7 @@
          *
          * Note: a state will be queued if the state's parent isn't yet registered.
          *
-         * @param {import("./interface.ts")._StateDeclaration} stateDefinition the definition of the state to register.
+         * @param {_StateDeclaration} stateDefinition the definition of the state to register.
          * @returns the internal [[StateObject]] object.
          *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
          *          If the state was only queued, then the object is not fully built.
@@ -23514,7 +23521,7 @@
          *
          * @param {StateOrName} [stateOrName]
          * @param {StateOrName} [base]
-         * @returns {import("./state-service.ts").StateDeclaration | import("./state-service.ts").StateDeclaration[] | null}
+         * @returns {StateDeclaration | StateDeclaration[] | null}
          */
         get(stateOrName, base) {
             if (arguments.length === 0)
@@ -23529,7 +23536,7 @@
          * The BuilderFunction(s) will be used to define the property on any subsequently built [[StateObject]] objects.
          *
          * @param {string} property The name of the State property being registered for.
-         * @param {import("./interface.ts").BuilderFunction} builderFunction The BuilderFunction which will be used to build the State property
+         * @param {BuilderFunction} builderFunction The BuilderFunction which will be used to build the State property
          * @returns a function which deregisters the BuilderFunction
          */
         decorator(property, builderFunction) {
@@ -24614,18 +24621,6 @@
         };
     }
 
-    /** @typedef {import('./interface.ts').DeregisterFn} DeregisterFn */
-    /** @typedef {import('./interface.ts').HookFn} HookFn */
-    /** @typedef {import('./interface.ts').HookMatchCriteria} HookMatchCriteria */
-    /** @typedef {import('./interface.ts').HookRegOptions} HookRegOptions */
-    /** @typedef {import("../state/interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
-    /** @typedef {import("./interface.ts").RegisteredHooks} RegisteredHooks */
-    /** @typedef {import("./hook-registry.js").RegisteredHook} RegisteredHook */
-    /** @typedef {import('../state/target-state.ts').TargetState} TargetState */
-    /** @typedef {import("../transition/interface.ts").TreeChanges} TreeChanges */
-    /** @typedef {import("../path/path-node.ts").PathNode} PathNode */
-    /** @typedef {import("../state/state-object.ts").StateObject} StateObject */
-    /** @typedef {import("../state/interface.ts").StateDeclaration} StateDeclaration */
     const REDIRECT_MAX = 20;
     function createDeferredPromise() {
         let resolve;
@@ -24653,13 +24648,10 @@
          * @param {Array<PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
          *        encapsulates the "from state".
          * @param {TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
-         * @param {import("./transition-service.ts").TransitionProvider} transitionService
+         * @param {TransitionService} transitionService
          * @param {ng.RouterService} globals
          */
         constructor(fromPath, targetState, transitionService, globals) {
-            /**
-             * @type {import('../router.js').RouterProvider}
-             */
             this._globals = globals;
             this._transitionService = transitionService;
             /** @type {DeferredPromise<any>} */
@@ -24789,7 +24781,7 @@
         }
         /**
          * @param {string} eventName
-         * @returns {import("./transition-event-type.js").TransitionEventType}
+         * @returns {TransitionEventType}
          */
         _getEventType(eventName) {
             const eventType = this._transitionService
@@ -24919,8 +24911,8 @@
          * });
          * ```
          *
-         * @param {Resolvable | import("../resolve/interface.ts").ResolvableLiteral} resolvable a [[ResolvableLiteral]] object (or a [[Resolvable]])
-         * @param {import("../state/interface.ts").StateOrName} state the state in the "to path" which should receive the new resolve (otherwise, the root state)
+         * @param {Resolvable | ResolvableLiteral} resolvable a [[ResolvableLiteral]] object (or a [[Resolvable]])
+         * @param {StateOrName} state the state in the "to path" which should receive the new resolve (otherwise, the root state)
          */
         addResolvable(resolvable, state) {
             if (state === void 0) {
@@ -24991,7 +24983,7 @@
         /**
          * Get the transition options
          *
-         * @returns {import("./interface.ts").TransitionOptions} the options for this Transition.
+         * @returns {TransitionOptions} the options for this Transition.
          */
         options() {
             return this._options;
@@ -25007,7 +24999,7 @@
         /**
          * Gets the states being exited.
          *
-         * @returns {import("../state/interface.ts").StateDeclaration[]} an array of states that will be exited during this transition.
+         * @returns {StateDeclaration[]} an array of states that will be exited during this transition.
          */
         exiting() {
             return this._treeChanges.exiting.map((node) => node.state.self).reverse();
@@ -25015,7 +25007,7 @@
         /**
          * Gets the states being retained.
          *
-         * @returns {import("../state/interface.ts").StateDeclaration[]} an array of states that are already entered from a previous Transition, that will not be
+         * @returns {StateDeclaration[]} an array of states that are already entered from a previous Transition, that will not be
          *    exited during this Transition
          */
         retained() {
@@ -25031,7 +25023,7 @@
          *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
          * @param {ng.StateObject} [state] If provided, only returns the `ViewConfig`s for a single state in the path
          *
-         * @returns {import("../state/views.ts").ViewConfig[]} a list of ViewConfig objects for the given path.
+         * @returns {ViewConfig[]} a list of ViewConfig objects for the given path.
          */
         views(pathname = "entering", state) {
             let path = (this._treeChanges[pathname] || []);
@@ -25049,7 +25041,7 @@
          *
          * @param {string} [pathname] The name of the tree changes path to get:
          *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
-         * @returns {import('../path/path-node.ts').PathNode[] | import("./interface.ts").TreeChanges}
+         * @returns {PathNode[] | TreeChanges}
          */
         treeChanges(pathname) {
             return pathname
@@ -25924,7 +25916,7 @@
             /** @type {ng.InjectorService | undefined } */
             this.$injector = undefined;
             /**
-             * @type {import("./interface.ts").OnInvalidCallback[]}
+             * @type {OnInvalidCallback[]}
              */
             this.invalidCallbacks = [];
             /** @type {ng.ExceptionHandlerService} */
@@ -26011,7 +26003,7 @@
          * ```
          *
          * @param {string} name The name of the builder function to decorate.
-         * @param {import("./interface.ts").BuilderFunction} func A function that is responsible for decorating the original
+         * @param {BuilderFunction} func A function that is responsible for decorating the original
          * builder function. The function receives two parameters:
          *
          *   - `{object}` - state - The state urlConfig object.
@@ -26024,7 +26016,7 @@
         }
         /**
          *
-         * @param {import("./interface.ts").StateDeclaration} definition
+         * @param {StateDeclaration} definition
          */
         state(definition) {
             if (!definition.name) {
@@ -26055,7 +26047,7 @@
             const { globals } = this;
             const latestThing = () => globals._transitionHistory.peekTail();
             const latest = latestThing();
-            /** @type {Queue<import("./interface.ts").OnInvalidCallback>} */
+            /** @type {Queue<OnInvalidCallback>} */
             const callbackQueue = new Queue(this.invalidCallbacks.slice());
             const injector = this.$injector;
             const checkForRedirect = (result) => {
@@ -26104,7 +26096,7 @@
          * });
          * ```
          *
-         * @param {import("./interface.ts").OnInvalidCallback} callback invoked when the toState is invalid
+         * @param {OnInvalidCallback} callback invoked when the toState is invalid
          *   This function receives the (invalid) toState, the fromState, and an injector.
          *   The function may optionally return a [[TargetState]] or a Promise for a TargetState.
          *   If one is returned, it is treated as a redirect.
@@ -26222,7 +26214,7 @@
          * This is a factory method for creating a TargetState
          *
          * This may be returned from a Transition Hook to redirect a transition, for example.
-         * @param {string | import("./interface.ts").StateDeclaration | import("./state-object.ts").StateObject} identifier
+         * @param {string | StateDeclaration | StateObject} identifier
          * @param {{}} params
          * @param {any} [options]
          */
@@ -26348,10 +26340,10 @@
            * ```html
            * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
            * ```
-           * @param {import("./state-matcher.ts").StateOrName} stateOrName The state name (absolute or relative) or state object you'd like to check.
-           * @param {import("../params/interface.ts").RawParams} [params] A param object, e.g. `{sectionId: section.id}`, that you'd like
+           * @param {StateOrName} stateOrName The state name (absolute or relative) or state object you'd like to check.
+           * @param {RawParams} [params] A param object, e.g. `{sectionId: section.id}`, that you'd like
           to test against the current active state.
-           * @param {{ relative: import("./state-matcher.ts").StateOrName | undefined; } | undefined} [options] An options object. The options are:
+           * @param {{ relative: StateOrName | undefined; } | undefined} [options] An options object. The options are:
           - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
           test relative to `options.relative` state (or name).
            * @returns {boolean | undefined} Returns true if it is the state.
@@ -26436,9 +26428,9 @@
          * ```js
          * expect($state.href("about.person", { person: "bob" })).toEqual("/about/bob");
          * ```
-         * @param {import("./state-matcher.ts").StateOrName} stateOrName The state name or state object you'd like to generate a url from.
-         * @param {import("../params/interface.ts").RawParams} params An object of parameter values to fill the state's required parameters.
-         * @param {import("./interface.ts").HrefOptions} [options] Options object. The options are:
+         * @param {StateOrName} stateOrName The state name or state object you'd like to generate a url from.
+         * @param {RawParams} params An object of parameter values to fill the state's required parameters.
+         * @param {HrefOptions} [options] Options object. The options are:
          * @returns {string | null} compiled state url
          */
         href(stateOrName, params, options) {
@@ -26483,14 +26475,14 @@
          *   // Do not log transitionTo errors
          * });
          * ```
-         * @param {import("../../docs.ts").ExceptionHandler | undefined} [handler] a global error handler function
+         * @param {ng.ExceptionHandlerService | undefined} [handler] a global error handler function
          * @returns the current global error handler
          */
         defaultErrorHandler(handler) {
             return (this._defaultErrorHandler = handler || this._defaultErrorHandler);
         }
         /**
-         * @param {import("./interface.ts").StateOrName} stateOrName
+         * @param {StateOrName} stateOrName
          * @param {undefined} [base]
          */
         get(stateOrName, base) {
@@ -26503,7 +26495,7 @@
            * Lazy loads a state
            *
            * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
-           * @param {import("./interface.ts").StateOrName} stateOrName the state that should be lazy loaded
+           * @param {StateOrName} stateOrName the state that should be lazy loaded
            * @param {ng.Transition} transition the optional Transition context to use (if the lazyLoad function requires an injector, etc)
           Note: If no transition is provided, a noop transition is created using the from the current state to the current state.
           This noop transition is not actually run.
@@ -26869,7 +26861,7 @@
              * This code patches the `path` parameter type so it encoded/decodes slashes as ~2F
              *
              */
-            /** @type {import("../params/param-type.ts").ParamType} */
+            /** @type {ParamType} */
             const pathType = this.type("path");
             pathType.encode = (x) => !isNullOrUndefined(x)
                 ? x
@@ -26947,7 +26939,7 @@
                 return this.paramTypes.type(name);
             }
             this.paramTypes.type(name, 
-            /** @type {import("../params/interface.ts").ParamTypeDefinition} */ definition, definitionFn);
+            /** @type {ParamTypeDefinition} */ definition, definitionFn);
             return this;
         }
     }
@@ -27139,9 +27131,9 @@
         }
         /**
          * @param {string} pattern The pattern to compile into a matcher.
-         * @param {import("../params/param-types.ts").ParamTypes} paramTypes The [[ParamTypes]] registry
-         * @param {import("../params/param-factory.ts").ParamFactory} paramFactory A [[ParamFactory]] object
-         * @param {import("./interface.ts").UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
+         * @param {ParamTypes} paramTypes The [[ParamTypes]] registry
+         * @param {ParamFactory} paramFactory A [[ParamFactory]] object
+         * @param {UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
          */
         constructor(pattern, paramTypes, paramFactory, config) {
             this._cache = {
@@ -27290,7 +27282,7 @@
          * @param {string} path The URL path to match, e.g. `$location.getPath()`.
          * @param {any} search URL search parameters, e.g. `$location.getSearch()`.
          * @param {string} hash URL hash e.g. `$location.getHash()`.
-         * @returns {import("../params/interface.ts").RawParams | null} The captured parameter values.
+         * @returns {RawParams | null} The captured parameter values.
          */
         exec(path, search = {}, hash) {
             const pathMatchers = this._cache.path || [this];
@@ -27383,7 +27375,7 @@
          *
          * Checks an object hash of parameters to validate their correctness according to the parameter
          * types of this `UrlMatcher`.
-         * @param {import("../params/interface.ts").RawParams} params The object hash of parameters to validate.
+         * @param {RawParams} params The object hash of parameters to validate.
          * @returns {boolean} Returns `true` if `params` validates, otherwise `false`.
          */
         validates(params) {
@@ -27407,7 +27399,7 @@
          * // returns '/user/bob?q=yes'
          * ```
          *
-         * @param {import("../params/interface.ts").RawParams} values  the values to substitute for the parameters in this pattern.
+         * @param {RawParams} values  the values to substitute for the parameters in this pattern.
          * @returns the formatted URL (path and optionally search part).
          */
         format(values = {}) {
@@ -27431,7 +27423,7 @@
             /**
              * Given a Param, applies the parameter value, then returns detailed information about it
              * @param {Param} param
-             * @returns {import("./interface.ts").ParamDetails}
+             * @returns {ParamDetails}
              */
             function getDetails(param) {
                 // Normalize to typed value
@@ -27535,7 +27527,7 @@
          *
          * @param {StateObject} what
          * @param {*} [handler]
-         * @returns {import("./url-rules.js").UrlRule}
+         * @returns {UrlRule}
          */
         create(what, handler) {
             const { isState, isStateDeclaration } = StateObject;
@@ -27597,8 +27589,8 @@
          * var result = rule.handler(match); // '/home/123/456'
          * ```
          * @param {UrlMatcher} urlMatcher
-         * @param {string | UrlMatcher | import("./interface.ts").UrlRuleHandlerFn} handler
-         * @returns {import("./interface.ts").MatcherUrlRule}
+         * @param {string | UrlMatcher | UrlRuleHandlerFn} handler
+         * @returns {MatcherUrlRule}
          */
         fromUrlMatcher(urlMatcher, handler = (x) => x) {
             let resolvedHandler;
@@ -27615,8 +27607,8 @@
                 resolvedHandler = handler;
             }
             /**
-             * @param {import("./interface.ts").UrlParts} url
-             * @returns {import("../params/interface.ts").RawParams | boolean | null}
+             * @param {UrlParts} url
+             * @returns {RawParams | boolean | null}
              */
             function matchUrlParamters(url) {
                 const params = urlMatcher.exec(url.path, url.search, url.hash || "");
@@ -27628,7 +27620,7 @@
             // - Some optional parameters, some matched
             // - Some optional parameters, all matched
             /**
-             * @param {import("../params/interface.ts").RawParams} params
+             * @param {RawParams} params
              * @returns {number}
              */
             function matchPriority(params) {
@@ -27640,7 +27632,7 @@
                 const matched = optional.filter((param) => params[param.id]);
                 return matched.length / optional.length;
             }
-            /** @type {{ urlMatcher: UrlMatcher; matchPriority: (params: import("../params/interface.ts").RawParams) => number; type: "URLMATCHER" }} */
+            /** @type {{ urlMatcher: UrlMatcher; matchPriority: (params: RawParams) => number; type: "URLMATCHER" }} */
             const details = {
                 urlMatcher,
                 matchPriority,
@@ -27658,10 +27650,10 @@
          * var result = rule.handler(match);
          * // Starts a transition to 'foo' with params: { fooId: '123', barId: '456' }
          * ```
-         * @param {StateObject | import("../state/interface.ts").StateDeclaration} stateOrDecl
-         * @param {import("../state/state-service.ts").StateProvider} stateService
-         * @param {import("../router.ts").RouterProvider} globals
-         * @returns {import("./interface.ts").StateRule}
+         * @param {StateObject | StateDeclaration} stateOrDecl
+         * @param {StateProvider} stateService
+         * @param {RouterProvider} globals
+         * @returns {StateRule}
          */
         fromState(stateOrDecl, stateService, globals) {
             const state = StateObject.isStateDeclaration(stateOrDecl)
@@ -27726,8 +27718,8 @@
          * var result = rule.handler(match); // '/home/bar'
          * ```
          * @param {RegExp} regexp
-         * @param {string | import("./interface.ts").UrlRuleHandlerFn} handler
-         * @returns {import("./interface.ts").RegExpRule}
+         * @param {string | UrlRuleHandlerFn} handler
+         * @returns {RegExpRule}
          */
         fromRegExp(regexp, handler) {
             if (regexp.global || regexp.sticky)
@@ -27756,8 +27748,8 @@
      */
     class BaseUrlRule {
         /**
-         * @param {import("./interface.ts").UrlRuleMatchFn} match
-         * @param {import("./interface.ts").UrlRuleHandlerFn} handler
+         * @param {UrlRuleMatchFn} match
+         * @param {UrlRuleHandlerFn} handler
          */
         constructor(match, handler) {
             this.match = match;
@@ -27887,7 +27879,7 @@
         /**
          * Gets all registered rules
          *
-         * @returns {import("./interface.ts").UrlRule[]} an array of all the registered rules
+         * @returns {UrlRule[]} an array of all the registered rules
          */
         rules() {
             this.ensureSorted();
@@ -28014,7 +28006,7 @@
          * ```
          *
          * Note: the `handler` may also invoke arbitrary code, such as `$state.go()`
-         * @param {import("../state/state-object.ts").StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
+         * @param {StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
          * @param {any} handler The path to redirect to, or a function that returns the path.
          * @param {{ priority: any; }} options `{ priority: number }`
          * @return {UrlRule} the registered [[UrlRule]]
@@ -28030,7 +28022,7 @@
 
     class ParamFactory {
         /**
-         * @param {import("../url/url-config.js").UrlConfigProvider} urlServiceConfig
+         * @param {UrlConfigProvider} urlServiceConfig
          */
         constructor(urlServiceConfig) {
             this.urlServiceConfig = urlServiceConfig;
@@ -28077,9 +28069,9 @@
         }
         /**
          * @param {ng.LocationProvider} $locationProvider
-         * @param {import("../../router/state/state-service.ts").StateProvider} stateProvider
-         * @param {import("../router.ts").RouterProvider} globals
-         * @param {import("../../router/url/url-config.ts").UrlConfigProvider} urlConfigProvider
+         * @param {StateProvider} stateProvider
+         * @param {RouterProvider} globals
+         * @param {UrlConfigProviderType} urlConfigProvider
          */
         constructor($locationProvider, stateProvider, globals, urlConfigProvider) {
             this.$get = [
@@ -28118,7 +28110,7 @@
             /**
              * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
              * @ignore
-             * @type {import("./url-config.js").UrlConfigProvider}
+             * @type {UrlConfigProvider}
              */
             this._config = urlConfigProvider;
             /**
@@ -28255,7 +28247,7 @@
          * Returns an object with the `path`, `search`, and `hash` components
          * of the current browser location.
          *
-         * @returns {import("../../services/location/location.ts").UrlParts} The current URL's path, search, and hash.
+         * @returns {UrlParts} The current URL's path, search, and hash.
          */
         parts() {
             const location = this._getLocation();
@@ -28283,7 +28275,7 @@
          *   urlService.sync();
          * });
          * ```
-         * @param {import("../../core/scope/scope.ts").ScopeEvent | undefined} [evt]
+         * @param {ng.ScopeEvent | undefined} [evt]
          */
         sync(evt) {
             if (evt && evt.defaultPrevented)
@@ -28349,7 +28341,7 @@
         /**
          * Given a URL (as a [[UrlParts]] object), check all rules and determine the best matching rule.
          * Return the result as a [[MatchResult]].
-         * @param {import("../../docs.ts").UrlParts} url
+         * @param {UrlParts} url
          * @returns {any}
          */
         match(url) {
@@ -28358,7 +28350,7 @@
             // Checks a single rule. Returns { rule: rule, match: match, weight: weight } if it matched, or undefined
             /**
              *
-             * @param {import("./interface.ts").UrlRule} rule
+             * @param {UrlRule} rule
              */
             const checkRule = (rule) => {
                 const match = rule.match(url);
@@ -28398,7 +28390,7 @@
          * Pushes a new location to the browser history.
          * @internal
          * @param {{ format: (arg0: any) => string | undefined; }} urlMatcher
-         * @param {import("../params/state-params.ts").StateParams} params
+         * @param {StateParams} params
          * @param {string} options
          */
         push(urlMatcher, params, options) {
@@ -28838,7 +28830,7 @@
          * Accepts the default cookie attributes defined by `$cookiesProvider.defaults`.
          */
         constructor(defaults) {
-            this._defaults = Object.freeze({ ...defaults });
+            this._defaults = defaults;
         }
         /**
          * Retrieves a raw cookie value.
@@ -30957,7 +30949,7 @@
             super();
             this.subapps = [];
             this._bootsrappedModules = [];
-            this.version = "0.23.0";
+            this.version = "0.23.1";
             this.getController = getController;
             this.getInjector = getInjector;
             this.getScope = getScope;
