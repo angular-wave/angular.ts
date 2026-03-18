@@ -1075,7 +1075,7 @@ export class CompileProvider {
           let namespace: string | null = null;
 
           const publicLinkFn: PublicLinkFn = function (
-            scope: import("../scope/scope.ts").Scope,
+            scope: Scope,
             cloneConnectFn?: CloneAttachFn,
             options?: TemplateLinkingFunctionOptions,
           ) {
@@ -1187,7 +1187,7 @@ export class CompileProvider {
         function linkCompositeNodes(
           state: CompositeLinkState,
           stableNodeList: Node[],
-          scope: import("../scope/scope.ts").Scope,
+          scope: Scope,
           _parentBoundTranscludeFn: BoundTranscludeFn | null,
         ): void {
           for (let i = 0, l = state._linkFnsList.length; i < l; i++) {
@@ -1198,7 +1198,7 @@ export class CompileProvider {
 
             (node as Node & { _stable?: boolean })._stable = true;
 
-            let childScope: import("../scope/scope.ts").Scope;
+            let childScope: Scope;
 
             let childBoundTranscludeFn: BoundTranscludeFn | null;
 
@@ -1387,7 +1387,7 @@ export class CompileProvider {
          * Prebinds a transclusion function to a parent scope and threads parent-bound transclusion context.
          */
         function createBoundTranscludeFn(
-          scope: import("../scope/scope.ts").Scope,
+          scope: Scope,
           transcludeFn: ng.TranscludeFn,
           previousBoundTranscludeFn: BoundTranscludeFn | null = null,
         ): BoundTranscludeFn {
@@ -1395,11 +1395,11 @@ export class CompileProvider {
            * Scope-bound wrapper that ensures a transcluded scope exists and forwards to `transcludeFn`.
            */
           function boundTranscludeFn(
-            transcludedScope?: import("../scope/scope.ts").Scope | null,
+            transcludedScope?: Scope | null,
             cloneFn?: CloneAttachFn,
             controllers?: unknown,
             _futureParentElement?: Node | Element | null,
-            containingScope?: import("../scope/scope.ts").Scope,
+            containingScope?: Scope,
           ) {
             if (!transcludedScope) {
               transcludedScope = scope.$transcluded(containingScope);
@@ -1675,8 +1675,8 @@ export class CompileProvider {
         /** Invokes a link record with consistent scope selection and argument ordering. */
         function invokeLinkFnRecord(
           linkFnRecord: LinkFnRecord,
-          isolateScope: import("../scope/scope.ts").Scope | undefined,
-          scope: import("../scope/scope.ts").Scope,
+          isolateScope: Scope | undefined,
+          scope: Scope,
           node: Node,
           attrs: Attributes,
           controllers: any,
@@ -1705,7 +1705,7 @@ export class CompileProvider {
         /** Shared post-link executor for text interpolation directives. */
         function textInterpolateLinkFn(
           linkState: TextInterpolateLinkState,
-          scope: import("../scope/scope.ts").Scope,
+          scope: Scope,
           node: Node,
         ) {
           scope.$watch(linkState._watchExpression, () => {
@@ -1747,7 +1747,7 @@ export class CompileProvider {
          */
         function attrInterpolatePreLinkFn(
           linkState: AttrInterpolateLinkState,
-          scope: import("../scope/scope.ts").Scope,
+          scope: Scope,
           _element: Node,
           attr: Attributes,
         ) {
@@ -1805,7 +1805,7 @@ export class CompileProvider {
          */
         function propertyDirectivePreLinkFn(
           linkState: PropertyDirectiveLinkState,
-          scope: import("../scope/scope.ts").Scope,
+          scope: Scope,
           $element: { [x: string]: any },
           attr: Attributes,
         ) {
@@ -1835,7 +1835,7 @@ export class CompileProvider {
          */
         function invokeResolvedTemplateNodeLink(
           delayedState: DelayedTemplateLinkState,
-          scope: import("../scope/scope.ts").Scope,
+          scope: Scope,
           node: Node | Element,
           boundTranscludeFn?: BoundTranscludeFn | null,
         ): void {
@@ -1881,7 +1881,7 @@ export class CompileProvider {
          */
         function replayResolvedTemplateNodeLink(
           delayedState: DelayedTemplateLinkState,
-          scope: import("../scope/scope.ts").Scope,
+          scope: Scope,
           beforeTemplateLinkNode: Node | Element,
           boundTranscludeFn?: BoundTranscludeFn | null,
         ): void {
@@ -1945,7 +1945,7 @@ export class CompileProvider {
         function invokeDelayedTemplateNodeLinkFn(
           delayedState: DelayedTemplateLinkState,
           _ignoreChildLinkFn: unknown,
-          scope: import("../scope/scope.ts").Scope,
+          scope: Scope,
           node: Node | Element,
           boundTranscludeFn?: BoundTranscludeFn | null,
         ): void {
@@ -1970,7 +1970,7 @@ export class CompileProvider {
         /** Handles `$transclude(...)` calls for the shared node-link executor. */
         function invokeControllersBoundTransclude(
           transcludeState: ControllersBoundTranscludeState,
-          scopeParam?: import("../scope/scope.ts").Scope | CloneAttachFn | null,
+          scopeParam?: Scope | CloneAttachFn | null,
           cloneAttachFn?: CloneAttachFn | Node | null,
           _futureParentElement?: Node | null,
           slotName?: string | number,
@@ -1984,9 +1984,7 @@ export class CompileProvider {
               ? transcludeState._elementControllers
               : undefined;
 
-          const transcludedScope = hasScope
-            ? (scopeParam as import("../scope/scope.ts").Scope)
-            : undefined;
+          const transcludedScope = hasScope ? (scopeParam as Scope) : undefined;
 
           const attachFn = (hasScope ? cloneAttachFn : scopeParam) as
             | CloneAttachFn
@@ -2048,7 +2046,7 @@ export class CompileProvider {
         function invokeStoredNodeLinkFn(
           nodeLinkState: NodeLinkState,
           childLinkFn: ChildLinkFn | CompositeLinkFn | null | undefined,
-          scope: import("../scope/scope.ts").Scope,
+          scope: Scope,
           linkNode: Node | Element,
           boundTranscludeFn: BoundTranscludeFn | null,
         ) {
@@ -3701,9 +3699,9 @@ export class CompileProvider {
          * Sets up `$watch` and `$observe` wiring for isolate-scope and controller bindings.
          */
         function initializeDirectiveBindings(
-          scope: import("../scope/scope.ts").Scope,
+          scope: Scope,
           attrs: Attributes,
-          destination: import("../scope/scope.ts").Scope,
+          destination: Scope,
           bindings: IsolateBindingMap | null | undefined,
           directive: InternalDirective,
         ): DirectiveBindingInfo {

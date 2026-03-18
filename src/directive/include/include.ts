@@ -1,5 +1,6 @@
 import { isDefined, hasAnimate } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 ngIncludeDirective.$inject = [
   $t._templateRequest,
@@ -24,11 +25,7 @@ export function ngIncludeDirective(
     controller: () => {
       /* empty */
     },
-    compile(
-      _element: Element,
-      attr: import("../../core/compile/attributes.ts").Attributes &
-        Record<string, string>,
-    ) {
+    compile(_element: Element, attr: Attributes & Record<string, string>) {
       const srcExp = attr.ngInclude || attr.src;
 
       const onloadExp = attr.onload || "";
@@ -38,7 +35,7 @@ export function ngIncludeDirective(
       return (
         scope: ng.Scope & Record<string, any>,
         $element: Element,
-        _$attr: import("../../core/compile/attributes.ts").Attributes,
+        _$attr: Attributes,
         ctrl: { template: string | null },
         $transclude?: ng.TranscludeFn,
       ): void => {
@@ -170,7 +167,7 @@ export function ngIncludeFillContentDirective(
     link(
       scope: ng.Scope,
       $element: HTMLElement,
-      _$attr: import("../../core/compile/attributes.ts").Attributes,
+      _$attr: Attributes,
       ctrl: { template: string | null },
     ): void {
       $element.innerHTML = ctrl.template || "";

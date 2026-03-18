@@ -1,5 +1,6 @@
 import { $injectTokens } from "../../injection-tokens.ts";
 import { hasAnimate } from "../../shared/utils.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 const NG_HIDE_CLASS = "ng-hide";
 
@@ -15,8 +16,7 @@ export function ngShowDirective($animate: ng.AnimateService): ng.Directive {
     link(
       scope: ng.Scope,
       element: Element,
-      $attr: import("../../core/compile/attributes.ts").Attributes &
-        Record<string, string>,
+      $attr: Attributes & Record<string, string>,
     ): void {
       scope.$watch($attr.ngShow, (value: boolean) => {
         // we're adding a temporary, animation-specific class for ng-hide since this way
@@ -49,8 +49,7 @@ export function ngHideDirective($animate: ng.AnimateService): ng.Directive {
     link(
       scope: ng.Scope,
       element: Element,
-      attr: import("../../core/compile/attributes.ts").Attributes &
-        Record<string, string>,
+      attr: Attributes & Record<string, string>,
     ): void {
       scope.$watch(attr.ngHide, (value: boolean) => {
         // The comment inside of the ngShowDirective explains why we add and

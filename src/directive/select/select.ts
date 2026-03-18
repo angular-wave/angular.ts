@@ -349,7 +349,7 @@ class SelectController {
   }
 }
 
-export function selectDirective() {
+export function selectDirective(): ng.Directive {
   return {
     restrict: "E",
     require: ["select", "?ngModel"],
@@ -470,7 +470,9 @@ export function selectDirective() {
 
 optionDirective.$inject = [$injectTokens._interpolate];
 
-export function optionDirective($interpolate: ng.InterpolateService) {
+export function optionDirective(
+  $interpolate: ng.InterpolateService,
+): ng.Directive {
   return {
     restrict: "E",
     priority: 100,

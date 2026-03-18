@@ -1,4 +1,5 @@
 import { instantiateWasm } from "../../shared/utils.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 /**
  * Loads a WebAssembly module and exposes its exports on `scope.$target`.
@@ -8,8 +9,7 @@ export function ngWasmDirective(): ng.Directive {
     async link(
       $scope: ng.Scope,
       _: Element,
-      $attrs: import("../../core/compile/attributes.ts").Attributes &
-        Record<string, string>,
+      $attrs: Attributes & Record<string, string>,
     ): Promise<void> {
       $scope.$target[$attrs.as || "wasm"] = (
         await instantiateWasm($attrs.src)

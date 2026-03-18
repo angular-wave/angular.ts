@@ -262,7 +262,7 @@ export class AST {
     while ((token = this._expect("*", "/", "%"))) {
       left = {
         _type: ASTType._BinaryExpression,
-        _operator: /** @type {import("../lexer/lexer.ts").Token} */ token.text,
+        _operator: token.text,
         _left: left,
         _right: this._unary(),
       };
@@ -378,16 +378,14 @@ export class AST {
     let next: Token | false;
 
     while ((next = this._expect("(", "[", "."))) {
-      if (/** @type {import("../lexer/lexer.ts").Token} */ next.text === "(") {
+      if (next.text === "(") {
         primary = {
           _type: ASTType._CallExpression,
           _callee: primary,
           _arguments: this._parseArguments(),
         };
         this._consume(")");
-      } else if (
-        /** @type {import("../lexer/lexer.ts").Token} */ next.text === "["
-      ) {
+      } else if (next.text === "[") {
         primary = {
           _type: ASTType._MemberExpression,
           _object: primary,
@@ -395,9 +393,7 @@ export class AST {
           _computed: true,
         };
         this._consume("]");
-      } else if (
-        /** @type {import("../lexer/lexer.ts").Token} */ next.text === "."
-      ) {
+      } else if (next.text === ".") {
         primary = {
           _type: ASTType._MemberExpression,
           _object: primary,
@@ -554,7 +550,7 @@ export class AST {
   /**
    * Throws a syntax error.
    * @param {string} msg - The error message.
-   * @param {import("../lexer/lexer.ts").Token} token - The token that caused the error.
+   * @param {Token} token - The token that caused the error.
    */
   _throwError(msg: string, token: Token): never {
     throw $parseMinErr(
@@ -571,7 +567,7 @@ export class AST {
   /**
    * Consumes a token if it matches the expected type.
    * @param {string} [e1] - The expected token type.
-   * @returns {import("../lexer/lexer.ts").Token} The consumed token.
+   * @returns {Token} The consumed token.
    */
   _consume(e1?: string): Token {
     if (this._tokens && this._tokens.length === this._index) {
@@ -596,7 +592,7 @@ export class AST {
 
   /**
    * Returns the next token without consuming it.
-   * @returns {import("../lexer/lexer.ts").Token} The next token.
+   * @returns {Token} The next token.
    */
   _peekToken(): Token {
     if (!this._tokens || this._tokens.length === this._index) {
@@ -613,7 +609,7 @@ export class AST {
   /**
    * Checks if the next token matches any of the expected types.
    * @param {...string} expected - The expected token types.
-   * @returns {import('../lexer/lexer.ts').Token|boolean} The next token if it matches, otherwise false.
+   * @returns {Token|boolean} The next token if it matches, otherwise false.
    */
   _peek(...expected: string[]): Token | false {
     const token = this._tokens && this._tokens[this._index];
@@ -638,7 +634,7 @@ export class AST {
   /**
    * Consumes the next token if it matches any of the expected types.
    * @param {...string} expected - The expected token types.
-   * @returns {import("../lexer/lexer.ts").Token|boolean} The consumed token if it matches, otherwise false.
+   * @returns {Token|boolean} The consumed token if it matches, otherwise false.
    */
   _expect(...expected: string[]): Token | false {
     const token = this._peek(...expected);

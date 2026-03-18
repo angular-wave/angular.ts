@@ -41,7 +41,7 @@ export class StateObject {
   _stateObjectCache: { nameGlob: Glob | null };
 
   /**
-   * @param {import('./interface.ts').StateDeclaration} config
+   * @param {StateDeclaration} config
    */
   constructor(config: StateDeclaration) {
     Object.assign(this, config);

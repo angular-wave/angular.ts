@@ -9,6 +9,7 @@ import type {
   HookFn,
   HookMatchCriteria,
   HookMatchCriterion,
+  HookRegOptions,
 } from "./interface.ts";
 import type { TransitionService } from "./transition-service.ts";
 import type { Transition, TreeChanges } from "./transition.ts";
@@ -81,7 +82,7 @@ export class RegisteredHook {
     callback: HookFn,
     matchCriteria: HookMatchCriteria,
     removeHookFromRegistry: (hook: RegisteredHook) => void,
-    options: import("./interface.ts").HookRegOptions = {},
+    options: HookRegOptions = {},
   ) {
     this.tranSvc = tranSvc;
     this.eventType = eventType;
@@ -180,7 +181,7 @@ export function registerHook(
   eventType: TransitionEventType,
   matchCriteria: HookMatchCriteria,
   callback: HookFn,
-  options: import("./interface.ts").HookRegOptions = {},
+  options: HookRegOptions = {},
 ): DeregisterFn {
   const _registeredHooks = (hookSource._registeredHooks =
     hookSource._registeredHooks || ({} as RegisteredHooks));
@@ -216,7 +217,7 @@ export function makeEvent(
 ): (
   matchObject: HookMatchCriteria,
   callback: HookFn,
-  options?: import("./interface.ts").HookRegOptions,
+  options?: HookRegOptions,
 ) => DeregisterFn {
   const _registeredHooks = (hookSource._registeredHooks =
     hookSource._registeredHooks || ({} as RegisteredHooks));
@@ -230,7 +231,7 @@ export function makeEvent(
   function hookRegistrationFn(
     matchObject: HookMatchCriteria,
     callback: HookFn,
-    options: import("./interface.ts").HookRegOptions = {},
+    options: HookRegOptions = {},
   ): DeregisterFn {
     const registeredHook = new RegisteredHook(
       transitionService,

@@ -9,6 +9,7 @@ import type { StateDeclaration } from "../state/interface.ts";
 import type { RegisteredHook } from "./hook-registry.ts";
 import type { HookResult } from "./interface.ts";
 import type { Transition } from "./transition.ts";
+import type { TransitionEventType } from "./transition-event-type.ts";
 
 /**
  * Transition lifecycle phases used to group and order hook execution.
@@ -74,7 +75,7 @@ export class TransitionHook {
   stateContext: StateDeclaration | null;
   registeredHook: RegisteredHook;
   options: TransitionHookOptions;
-  type: import("./transition-event-type.ts").TransitionEventType;
+  type: TransitionEventType;
   isSuperseded: () => boolean;
   _exceptionHandler: ng.ExceptionHandlerService;
 

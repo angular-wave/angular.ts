@@ -18,6 +18,10 @@ import type {
   UrlRuleMatchFn,
   UrlRuleType,
 } from "./interface.ts";
+import type { StateDeclaration } from "../state/interface.ts";
+import type { RawParams } from "../params/interface.ts";
+import type { StateProvider } from "../state/state-service.ts";
+import type { RouterProvider } from "../router.ts";
 /**
  * Creates a [[UrlRule]]
  *
@@ -64,12 +68,12 @@ export class UrlRuleFactory {
    *
    * @param {StateObject} what
    * @param {*} [handler]
-   * @returns {import("./url-rules.js").UrlRule}
+   * @returns {UrlRule}
    */
   create(
     what:
       | StateObject
-      | import("../state/interface.ts").StateDeclaration
+      | StateDeclaration
       | string
       | UrlMatcher
       | RegExp
@@ -80,9 +84,7 @@ export class UrlRuleFactory {
 
     const isStateLike = (
       value: unknown,
-    ): value is
-      | StateObject
-      | import("../state/interface.ts").StateDeclaration =>
+    ): value is StateObject | StateDeclaration =>
       isState(value as any) || isStateDeclaration(value as any);
 
     const makeRule = pattern([
@@ -93,9 +95,8 @@ export class UrlRuleFactory {
       ],
       [
         isStateLike,
-        (
-          _what: StateObject | import("../state/interface.ts").StateDeclaration,
-        ) => this.fromState(_what, this.stateService, this.routerGlobals),
+        (_what: StateObject | StateDeclaration) =>
+          this.fromState(_what, this.stateService, this.routerGlobals),
       ],
       [is(RegExp), (_what: RegExp) => this.fromRegExp(_what, handler)],
       [
@@ -151,8 +152,8 @@ export class UrlRuleFactory {
    * var result = rule.handler(match); // '/home/123/456'
    * ```
    * @param {UrlMatcher} urlMatcher
-   * @param {string | UrlMatcher | import("./interface.ts").UrlRuleHandlerFn} handler
-   * @returns {import("./interface.ts").MatcherUrlRule}
+   * @param {string | UrlMatcher | UrlRuleHandlerFn} handler
+   * @returns {MatcherUrlRule}
    */
   fromUrlMatcher(
     urlMatcher: UrlMatcher,
@@ -174,8 +175,8 @@ export class UrlRuleFactory {
       resolvedHandler = handler as UrlRuleHandlerFn;
     }
     /**
-     * @param {import("./interface.ts").UrlParts} url
-     * @returns {import("../params/interface.ts").RawParams | boolean | null}
+     * @param {UrlParts} url
+     * @returns {RawParams | boolean | null}
      */
     function matchUrlParamters(url: UrlParts) {
       const params = urlMatcher.exec(url.path, url.search, url.hash || "");
@@ -188,10 +189,10 @@ export class UrlRuleFactory {
     // - Some optional parameters, some matched
     // - Some optional parameters, all matched
     /**
-     * @param {import("../params/interface.ts").RawParams} params
+     * @param {RawParams} params
      * @returns {number}
      */
-    function matchPriority(params: import("../params/interface.ts").RawParams) {
+    function matchPriority(params: RawParams) {
       const optional = urlMatcher
         .parameters()
         .filter((param) => param.isOptional);
@@ -201,7 +202,7 @@ export class UrlRuleFactory {
 
       return matched.length / optional.length;
     }
-    /** @type {{ urlMatcher: UrlMatcher; matchPriority: (params: import("../params/interface.ts").RawParams) => number; type: "URLMATCHER" }} */
+    /** @type {{ urlMatcher: UrlMatcher; matchPriority: (params: RawParams) => number; type: "URLMATCHER" }} */
     const details: Pick<
       MatcherUrlRule,
       "urlMatcher" | "matchPriority" | "type"
@@ -227,15 +228,15 @@ export class UrlRuleFactory {
    * var result = rule.handler(match);
    * // Starts a transition to 'foo' with params: { fooId: '123', barId: '456' }
    * ```
-   * @param {StateObject | import("../state/interface.ts").StateDeclaration} stateOrDecl
-   * @param {import("../state/state-service.ts").StateProvider} stateService
-   * @param {import("../router.ts").RouterProvider} globals
-   * @returns {import("./interface.ts").StateRule}
+   * @param {StateObject | StateDeclaration} stateOrDecl
+   * @param {StateProvider} stateService
+   * @param {RouterProvider} globals
+   * @returns {StateRule}
    */
   fromState(
-    stateOrDecl: StateObject | import("../state/interface.ts").StateDeclaration,
-    stateService: import("../state/state-service.ts").StateProvider,
-    globals: import("../router.ts").RouterProvider,
+    stateOrDecl: StateObject | StateDeclaration,
+    stateService: StateProvider,
+    globals: RouterProvider,
   ): StateRule {
     const state: StateObject | undefined = StateObject.isStateDeclaration(
       stateOrDecl,
@@ -257,7 +258,7 @@ export class UrlRuleFactory {
      * A new transition is not required if the current state's URL
      * and the new URL are already identical
      */
-    const handler = (match: import("../params/interface.ts").RawParams) => {
+    const handler = (match: RawParams) => {
       const $state = stateService;
 
       const { current } = globals;
@@ -312,8 +313,8 @@ export class UrlRuleFactory {
    * var result = rule.handler(match); // '/home/bar'
    * ```
    * @param {RegExp} regexp
-   * @param {string | import("./interface.ts").UrlRuleHandlerFn} handler
-   * @returns {import("./interface.ts").RegExpRule}
+   * @param {string | UrlRuleHandlerFn} handler
+   * @returns {RegExpRule}
    */
   fromRegExp(regexp: RegExp, handler: string | UrlRuleHandlerFn): RegExpRule {
     if (regexp.global || regexp.sticky)
@@ -359,8 +360,8 @@ export class BaseUrlRule {
   handler: UrlRuleHandlerFn;
   priority: number | undefined;
   /**
-   * @param {import("./interface.ts").UrlRuleMatchFn} match
-   * @param {import("./interface.ts").UrlRuleHandlerFn} handler
+   * @param {UrlRuleMatchFn} match
+   * @param {UrlRuleHandlerFn} handler
    */
   constructor(match: UrlRuleMatchFn, handler: UrlRuleHandlerFn) {
     this.match = match;

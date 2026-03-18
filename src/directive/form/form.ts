@@ -17,6 +17,8 @@ import {
   VALID_CLASS,
 } from "../../shared/constants.ts";
 import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.ts";
+import type { NgModelController } from "../model/model.ts";
+import type { DirectiveCompileFn, DirectiveLinkFn } from "../../interface.ts";
 
 export const nullFormCtrl = {
   $nonscope: true,
@@ -520,9 +522,7 @@ export class FormController {
       ctrl: FormController & Record<string, any>,
       name: string,
       value: string,
-      controllerParam:
-        | FormController
-        | import("../model/model.ts").NgModelController,
+      controllerParam: FormController | NgModelController,
     ) {
       if (!ctrl[name]) {
         ctrl[name] = {};
@@ -537,9 +537,7 @@ export class FormController {
       ctrl: FormController & Record<string, any>,
       name: string,
       value: string,
-      controllerParam:
-        | FormController
-        | import("../model/model.ts").NgModelController,
+      controllerParam: FormController | NgModelController,
     ) {
       if (ctrl[name]) {
         that.unset(ctrl[name], value, controllerParam);
@@ -554,7 +552,7 @@ export class FormController {
      * Updates the CSS validity classes for the controller and validation key.
      */
     function toggleValidationCss(
-      ctrl: FormController | import("../model/model.ts").NgModelController,
+      ctrl: FormController | NgModelController,
       validationErrorKeyParam: string,
       isValid: boolean | null | undefined,
     ) {
@@ -664,13 +662,15 @@ export class FormController {
  * @param isNgForm - Name of the form. If specified, the form controller will be published into
  *     related scope, under this name.
  */
-const formDirectiveFactory = function (isNgForm?: string) {
+const formDirectiveFactory = function (
+  isNgForm?: string,
+): ng.AnnotatedDirectiveFactory {
   return [
     $injectTokens._parse,
     /**
      * Builds the form/ngForm directive definition.
      */
-    function ($parse: ng.ParseService) {
+    function ($parse: ng.ParseService): ng.Directive {
       return {
         name: "form",
         restrict: isNgForm ? "EA" : "E",
@@ -753,9 +753,9 @@ const formDirectiveFactory = function (isNgForm?: string) {
                 setter(scope, undefined);
                 extend(controller, nullFormCtrl); // stop propagating child destruction handlers upwards
               });
-            } as unknown as import("../../interface.ts").DirectiveLinkFn<any>,
+            } as unknown as DirectiveLinkFn<any>,
           };
-        } as unknown as import("../../interface.ts").DirectiveCompileFn,
+        } as unknown as DirectiveCompileFn,
       };
 
       /**

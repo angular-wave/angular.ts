@@ -918,7 +918,7 @@ export function inputDirective($parse: ng.ParseService): ng.Directive {
 /**
  * Initializes hidden inputs with their static `value` attribute.
  */
-export function hiddenInputDirective() {
+export function hiddenInputDirective(): ng.Directive {
   return {
     restrict: "E",
     compile(_: HTMLElement, attr: ng.Attributes) {
@@ -939,7 +939,7 @@ const CONSTANT_VALUE_REGEXP = /^(true|false|\d+)$/;
 /**
  * Keeps an input element's `value` attribute and property synchronized with `ngValue`.
  */
-export function ngValueDirective() {
+export function ngValueDirective(): ng.Directive {
   /**
    * Inputs use the `value` attribute as their default value until the property is set.
    * Updating both keeps `ngValue` behaving like a one-way binding.

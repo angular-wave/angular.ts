@@ -12,7 +12,9 @@ const ngTranscludeMinErr = minErr("ngTransclude");
 
 ngTranscludeDirective.$inject = [$injectTokens._compile];
 
-export function ngTranscludeDirective($compile: ng.CompileService) {
+export function ngTranscludeDirective(
+  $compile: ng.CompileService,
+): ng.Directive {
   return {
     compile: function ngTranscludeCompile(tElement: Element) {
       const fallbackLinkFn = $compile(tElement.childNodes);

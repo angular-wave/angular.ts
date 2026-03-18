@@ -1,6 +1,7 @@
 import { $injectTokens } from "../../injection-tokens.ts";
 import { domInsert } from "../../shared/dom.ts";
 import { hasAnimate, values } from "../../shared/utils.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 type NgSwitchBlock = {
   _clone: Node;
@@ -29,8 +30,7 @@ export function ngSwitchDirective(
     link(
       scope: ng.Scope,
       _element: Element,
-      attr: import("../../core/compile/attributes.ts").Attributes &
-        Record<string, string>,
+      attr: Attributes & Record<string, string>,
       ngSwitchController: NgSwitchController,
     ): void {
       const watchExpr = attr.ngSwitch || attr.on;
@@ -139,7 +139,7 @@ export function ngSwitchDirective(
   };
 }
 
-export function ngSwitchWhenDirective() {
+export function ngSwitchWhenDirective(): ng.Directive {
   return {
     transclude: "element",
     terminal: true,
@@ -148,8 +148,7 @@ export function ngSwitchWhenDirective() {
     link(
       scope: ng.Scope,
       element: Element,
-      attrs: import("../../core/compile/attributes.ts").Attributes &
-        Record<string, string>,
+      attrs: Attributes & Record<string, string>,
       ctrl: NgSwitchController,
       $transclude?: ng.TranscludeFn,
     ): void {
@@ -176,7 +175,7 @@ export function ngSwitchWhenDirective() {
   };
 }
 
-export function ngSwitchDefaultDirective() {
+export function ngSwitchDefaultDirective(): ng.Directive {
   return {
     transclude: "element",
     terminal: true,
@@ -185,7 +184,7 @@ export function ngSwitchDefaultDirective() {
     link(
       _scope: ng.Scope,
       element: Element,
-      _attr: import("../../core/compile/attributes.ts").Attributes,
+      _attr: Attributes,
       ctrl: NgSwitchController,
       $transclude?: ng.TranscludeFn,
     ): void {

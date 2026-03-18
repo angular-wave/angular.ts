@@ -12,6 +12,7 @@ import { kebobString } from "../shared/strings.ts";
 import { $injectTokens as $t } from "../injection-tokens.ts";
 import { Resolvable } from "./resolve/resolvable.ts";
 import type { ResolveContext } from "./resolve/resolve-context.ts";
+import type { Injectable } from "../interface.ts";
 
 type BindingTuple = {
   name: string;
@@ -133,7 +134,7 @@ export class TemplateFactoryProvider {
   }
 
   fromProvider(
-    provider: import("../interface.ts").Injectable<any>,
+    provider: Injectable<any>,
     _params: Function,
     context: ResolveContext,
   ): string | Promise<string> {
@@ -152,7 +153,7 @@ export class TemplateFactoryProvider {
    * Resolves a component name from an injectable provider in resolve context.
    */
   fromComponentProvider(
-    provider: import("../interface.ts").Injectable<any>,
+    provider: Injectable<any>,
     context: ResolveContext,
   ): Promise<any> {
     const deps = annotate(provider);

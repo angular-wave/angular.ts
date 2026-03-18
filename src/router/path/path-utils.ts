@@ -9,6 +9,7 @@ import type { StateObject } from "../state/state-object.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { TreeChanges } from "../transition/interface.ts";
 import type { StateRegistryProvider } from "../state/state-registry.ts";
+import type { Predicate } from "../../shared/interface.ts";
 
 /**
  * This class contains functions which convert TargetStates, Nodes and paths from one type to another.
@@ -154,7 +155,7 @@ export class PathUtils {
    * @param {PathNode[]} fromPath
    * @param {PathNode[]} toPath
    * @param {StateObject} reloadState
-   * @returns {import("../transition/interface.ts").TreeChanges}
+   * @returns {TreeChanges}
    */
   static treeChanges(
     fromPath: PathNode[],
@@ -261,12 +262,12 @@ export class PathUtils {
    * Given an array of nodes, returns a subset of the array starting from the first node,
    * stopping when the first node matches the predicate.
    * @param {PathNode[]} path a path of [[PathNode]]s
-   * @param {import("../../shared/interface.ts").Predicate<PathNode>} predicate a [[Predicate]] fn that matches [[PathNode]]s
+   * @param {Predicate<PathNode>} predicate a [[Predicate]] fn that matches [[PathNode]]s
    * @returns {PathNode[] | undefined} a subpath up to the matching node, or undefined if no match is found
    */
   static subPath(
     path: PathNode[],
-    predicate: import("../../shared/interface.ts").Predicate<PathNode>,
+    predicate: Predicate<PathNode>,
   ): PathNode[] | undefined {
     const node = find(path, predicate);
 
@@ -300,7 +301,7 @@ export class PathUtils {
 }
 
 /** Given a PathNode[], create an TargetState
- * @param {import("../state/state-registry.ts").StateRegistryProvider} registry
+ * @param {StateRegistryProvider} registry
  * @param {Array<PathNode>} path
  * @returns {TargetState}
  */

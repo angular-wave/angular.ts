@@ -35,7 +35,7 @@ type RepeatBlock = {
 
 type RepeatBlockMap = Record<string, RepeatBlock>;
 
-export function ngRepeatDirective($animate: any) {
+export function ngRepeatDirective($animate: any): ng.Directive {
   function updateScope(
     scope: RepeatScope,
     index: number,

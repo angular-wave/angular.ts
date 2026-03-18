@@ -2,6 +2,7 @@ import { BOOLEAN_ATTR } from "../../shared/dom.ts";
 import { directiveNormalize, entries } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 export const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
 
@@ -17,8 +18,7 @@ BOOLEAN_ATTR.forEach((i) => {
   function defaultLinkFn(
     scope: ng.Scope,
     _element: Element,
-    attr: import("../../core/compile/attributes.ts").Attributes &
-      Record<string, string>,
+    attr: Attributes & Record<string, string>,
   ): void {
     scope.$watch(attr[normalized], (value) => {
       attr.$set(i, !!value);
@@ -33,8 +33,7 @@ BOOLEAN_ATTR.forEach((i) => {
     linkFn = function (
       scope: ng.Scope,
       element: Element,
-      attr: import("../../core/compile/attributes.ts").Attributes &
-        Record<string, string>,
+      attr: Attributes & Record<string, string>,
     ): void {
       // ensuring ngChecked doesn't interfere with ngModel when both are set on the same input
       if (attr.ngModel !== attr[normalized]) {
@@ -60,8 +59,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
       link(
         scope: ng.Scope,
         element: Element,
-        attr: import("../../core/compile/attributes.ts").Attributes &
-          Record<string, string>,
+        attr: Attributes & Record<string, string>,
       ): void {
         // special case ngPattern when a literal regular expression value
         // is used as the expression (this way we don't have to watch anything).
@@ -96,8 +94,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
         link(
           _scope: ng.Scope,
           element: Element,
-          attr: import("../../core/compile/attributes.ts").Attributes &
-            Record<string, string>,
+          attr: Attributes & Record<string, string>,
         ): void {
           let name = attrName;
 

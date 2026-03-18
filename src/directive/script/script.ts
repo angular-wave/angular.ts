@@ -1,4 +1,5 @@
 import { $injectTokens } from "../../injection-tokens.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 scriptDirective.$inject = [$injectTokens._templateCache];
 
@@ -11,13 +12,8 @@ export function scriptDirective(
   return {
     restrict: "E",
     terminal: true,
-    compile(
-      element: HTMLElement,
-      attr: import("../../core/compile/attributes.ts").Attributes,
-    ): void {
-      const attrMap =
-        attr as import("../../core/compile/attributes.ts").Attributes &
-          Record<string, string>;
+    compile(element: HTMLElement, attr: Attributes): void {
+      const attrMap = attr as Attributes & Record<string, string>;
 
       if (attrMap.type === "text/ng-template") {
         $templateCache.set(attrMap.id, element.innerText);

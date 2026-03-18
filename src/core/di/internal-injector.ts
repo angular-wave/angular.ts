@@ -191,7 +191,7 @@ class AbstractInjector {
  */
 export class ProviderInjector extends AbstractInjector {
   /**
-   * @param {import('./interface.ts').ProviderCache} cache
+   * @param {ProviderCache} cache
    * @param {boolean} strictDi - Indicates if strict dependency injection is enforced.
    */
   constructor(cache: ProviderCache, strictDi: boolean) {

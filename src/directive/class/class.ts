@@ -7,6 +7,7 @@ import {
   keys,
   nullObject,
 } from "../../shared/utils.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 /** Creates the family of `ngClass*` directives. */
 function classDirective(
@@ -21,8 +22,7 @@ function classDirective(
       link(
         scope: ng.Scope,
         element: HTMLElement,
-        attr: import("../../core/compile/attributes.ts").Attributes &
-          Record<string, string>,
+        attr: Attributes & Record<string, string>,
       ): void {
         let classCounts = getCacheData(element, "$classCounts") as
           | Record<string, number>

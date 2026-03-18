@@ -1,5 +1,6 @@
 import { isObject, isString } from "../../shared/utils.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 ngChannelDirective.$inject = [$injectTokens._eventBus];
 /**
@@ -15,8 +16,7 @@ export function ngChannelDirective($eventBus: ng.PubSubService): ng.Directive {
     link: (
       scope: ng.Scope,
       element: HTMLElement,
-      attrs: import("../../core/compile/attributes.ts").Attributes &
-        Record<string, string>,
+      attrs: Attributes & Record<string, string>,
     ): void => {
       const channel = attrs.ngChannel;
 

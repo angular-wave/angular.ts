@@ -25,16 +25,17 @@ import type {
 import type { ParseService as TParseService } from "./core/parse/parse.ts";
 import type { TemplateRequestService as TTemplateRequestService } from "./services/template-request/template-request.ts";
 
-import type {
-  HttpService as THttpService,
-  HttpParamSerializer as THttpParamSerializer,
-  HttpProviderDefaults as THttpProviderDefaults,
-  HttpPromise as THttpPromise,
-  HttpResponse as THttpResponse,
-  HttpResponseStatus as THttpResponseStatus,
-  HttpMethod as THttpMethod,
-  RequestConfig as TRequestConfig,
-  RequestShortcutConfig as TRequestShortcutConfig,
+import {
+  HttpParamSerializerProvider,
+  type HttpMethod as THttpMethod,
+  type HttpParamSerializer as THttpParamSerializer,
+  type HttpPromise as THttpPromise,
+  type HttpProviderDefaults as THttpProviderDefaults,
+  type HttpResponse as THttpResponse,
+  type HttpResponseStatus as THttpResponseStatus,
+  type HttpService as THttpService,
+  type RequestConfig as TRequestConfig,
+  type RequestShortcutConfig as TRequestShortcutConfig,
 } from "./services/http/http.ts";
 import {
   FilterFactory as TFilterFactory,
@@ -47,10 +48,11 @@ import type {
   InterpolationFunction as TInterpolationFunction,
   InterpolateProvider as TInterpolateProvider,
 } from "./core/interpolate/interpolate.ts";
-import type {
-  SceDelegateProvider as TSceDelegateProvider,
-  SceService as TSceService,
-  SceDelegateService as TSceDelegateService,
+import {
+  SceProvider,
+  type SceDelegateProvider as TSceDelegateProvider,
+  type SceDelegateService as TSceDelegateService,
+  type SceService as TSceService,
 } from "./services/sce/sce.ts";
 import type { StateProvider as TStateProvider } from "./router/state/state-service.ts";
 import type { LogService as TLogService } from "./services/log/log.ts";
@@ -101,7 +103,10 @@ import type {
   LocationProvider as TLocationProvider,
 } from "./services/location/location.ts";
 import { AnimationOptions as TAnimationOptions } from "./animations/interface.ts";
-import type { AnimateService as TAnimateService } from "./animations/animate.ts";
+import {
+  AnimateProvider,
+  type AnimateService as TAnimateService,
+} from "./animations/animate.ts";
 import type { AnimateCssService as TAnimateCssService } from "./animations/css/animate-css.ts";
 import type {
   StorageBackend as TStorageBackend,
@@ -191,16 +196,14 @@ declare global {
 
     export type AngularServiceProvider = TAngularServiceProvider;
 
-    export type AnimateProvider = ThisParameterType<
-      typeof import("./animations/animate.ts").AnimateProvider
-    >;
+    export type AnimateProvider = ThisParameterType<typeof AnimateProvider>;
 
     export type FilterProvider = TFilterProvider;
 
     export type ExceptionHandlerProvider = TExceptionHandlerProvider;
 
     export type HttpParamSerializerProvider = ThisParameterType<
-      typeof import("./services/http/http.ts").HttpParamSerializerProvider
+      typeof HttpParamSerializerProvider
     >;
 
     export type InterpolateProvider = TInterpolateProvider;
@@ -209,9 +212,7 @@ declare global {
 
     export type SceDelegateProvider = TSceDelegateProvider;
 
-    export type SceProvider = ThisParameterType<
-      typeof import("./services/sce/sce.ts").SceProvider
-    >;
+    export type SceProvider = ThisParameterType<typeof SceProvider>;
 
     export type TransitionProvider = TTransitionProvider;
 

@@ -708,11 +708,7 @@ function registerControllerCallbacks(
 
     // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
     const wrappedHook = (trans: UiCanExitTransition) => {
-      let promise:
-        | Promise<
-            boolean | void | import("../state/target-state.ts").TargetState
-          >
-        | undefined;
+      let promise: Promise<boolean | void | TargetState> | undefined;
 
       const ids = (trans[cacheProp] = trans[cacheProp] || {});
 

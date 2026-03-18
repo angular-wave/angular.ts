@@ -27,28 +27,27 @@ import type {
   HookFn,
   HookMatchCriteria,
   HookRegOptions,
-  TreeChanges,
   TransitionOptions,
+  TreeChanges,
 } from "./interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { TargetState } from "../state/target-state.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
 import type { TransitionService } from "./transition-service.ts";
+import type { ResolvableLiteral } from "../resolve/interface.ts";
+import type { StateDeclaration, StateOrName } from "../state/interface.ts";
+import type { ViewConfig } from "../state/views.ts";
+import type { RawParams } from "../params/interface.ts";
 
 export interface Transition {
   promise: Promise<any>;
   $id: number;
   _aborted?: boolean;
   _globals: ng.RouterService & Record<string, any>;
-  _transitionService: import("./transition-service.ts").TransitionService;
-  _treeChanges: import("./interface.ts").TreeChanges;
-  addResolvable(
-    resolvable:
-      | import("../resolve/resolvable.ts").Resolvable
-      | import("../resolve/interface.ts").ResolvableLiteral,
-    state?: any,
-  ): void;
+  _transitionService: TransitionService;
+  _treeChanges: TreeChanges;
+  addResolvable(resolvable: Resolvable | ResolvableLiteral, state?: any): void;
   entering(): ng.StateDeclaration[];
   exiting(): ng.StateDeclaration[];
   views(pathname?: string, state?: any): any[];
@@ -57,10 +56,10 @@ export interface Transition {
   valid(): boolean;
   error(): any;
   originalTransition(): Transition;
-  targetState(): import("../state/target-state.ts").TargetState;
-  options(): import("./interface.ts").TransitionOptions;
+  targetState(): TargetState;
+  options(): TransitionOptions;
   to(): any;
-  redirect(targetState: import("../state/target-state.ts").TargetState): any;
+  redirect(targetState: TargetState): any;
   run(): Promise<any>;
   isActive(): boolean;
   onSuccess(matchCriteria: any, callback: any, options?: any): any;
@@ -69,20 +68,6 @@ export interface Transition {
 }
 
 export type { TreeChanges, TransitionOptions } from "./interface.ts";
-
-/** @typedef {import('./interface.ts').DeregisterFn} DeregisterFn */
-/** @typedef {import('./interface.ts').HookFn} HookFn */
-/** @typedef {import('./interface.ts').HookMatchCriteria} HookMatchCriteria */
-/** @typedef {import('./interface.ts').HookRegOptions} HookRegOptions */
-/** @typedef {import("../state/interface.ts").BuiltStateDeclaration} BuiltStateDeclaration */
-/** @typedef {import("./interface.ts").RegisteredHooks} RegisteredHooks */
-/** @typedef {import("./hook-registry.js").RegisteredHook} RegisteredHook */
-/** @typedef {import('../state/target-state.ts').TargetState} TargetState */
-/** @typedef {import("../transition/interface.ts").TreeChanges} TreeChanges */
-/** @typedef {import("../path/path-node.ts").PathNode} PathNode */
-/** @typedef {import("../state/state-object.ts").StateObject} StateObject */
-/** @typedef {import("../state/interface.ts").StateDeclaration} StateDeclaration */
-
 const REDIRECT_MAX = 20;
 
 type DeferredPromise<T> = {
@@ -137,7 +122,7 @@ export class Transition {
    * @param {Array<PathNode>} fromPath The path of [[PathNode]]s from which the transition is leaving.  The last node in the `fromPath`
    *        encapsulates the "from state".
    * @param {TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
-   * @param {import("./transition-service.ts").TransitionProvider} transitionService
+   * @param {TransitionService} transitionService
    * @param {ng.RouterService} globals
    */
   constructor(
@@ -146,9 +131,6 @@ export class Transition {
     transitionService: TransitionService,
     globals: ng.RouterService & Record<string, any>,
   ) {
-    /**
-     * @type {import('../router.js').RouterProvider}
-     */
     this._globals = globals;
 
     this._transitionService = transitionService;
@@ -352,7 +334,7 @@ export class Transition {
 
   /**
    * @param {string} eventName
-   * @returns {import("./transition-event-type.js").TransitionEventType}
+   * @returns {TransitionEventType}
    */
   _getEventType(eventName: string): TransitionEventType {
     const eventType = this._transitionService
@@ -505,14 +487,12 @@ export class Transition {
    * });
    * ```
    *
-   * @param {Resolvable | import("../resolve/interface.ts").ResolvableLiteral} resolvable a [[ResolvableLiteral]] object (or a [[Resolvable]])
-   * @param {import("../state/interface.ts").StateOrName} state the state in the "to path" which should receive the new resolve (otherwise, the root state)
+   * @param {Resolvable | ResolvableLiteral} resolvable a [[ResolvableLiteral]] object (or a [[Resolvable]])
+   * @param {StateOrName} state the state in the "to path" which should receive the new resolve (otherwise, the root state)
    */
   addResolvable(
-    resolvable:
-      | Resolvable
-      | import("../resolve/interface.ts").ResolvableLiteral,
-    state?: import("../state/interface.ts").StateOrName,
+    resolvable: Resolvable | ResolvableLiteral,
+    state?: StateOrName,
   ) {
     if (state === void 0) {
       state = "";
@@ -590,7 +570,7 @@ export class Transition {
   /**
    * Get the transition options
    *
-   * @returns {import("./interface.ts").TransitionOptions} the options for this Transition.
+   * @returns {TransitionOptions} the options for this Transition.
    */
   options() {
     return this._options;
@@ -608,19 +588,19 @@ export class Transition {
   /**
    * Gets the states being exited.
    *
-   * @returns {import("../state/interface.ts").StateDeclaration[]} an array of states that will be exited during this transition.
+   * @returns {StateDeclaration[]} an array of states that will be exited during this transition.
    */
-  exiting() {
+  exiting(): StateDeclaration[] {
     return this._treeChanges.exiting.map((node) => node.state.self).reverse();
   }
 
   /**
    * Gets the states being retained.
    *
-   * @returns {import("../state/interface.ts").StateDeclaration[]} an array of states that are already entered from a previous Transition, that will not be
+   * @returns {StateDeclaration[]} an array of states that are already entered from a previous Transition, that will not be
    *    exited during this Transition
    */
-  retained() {
+  retained(): StateDeclaration[] {
     return this._treeChanges.retained.map((node) => node.state.self);
   }
 
@@ -634,9 +614,9 @@ export class Transition {
    *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
    * @param {ng.StateObject} [state] If provided, only returns the `ViewConfig`s for a single state in the path
    *
-   * @returns {import("../state/views.ts").ViewConfig[]} a list of ViewConfig objects for the given path.
+   * @returns {ViewConfig[]} a list of ViewConfig objects for the given path.
    */
-  views(pathname = "entering", state?: ng.StateObject) {
+  views(pathname = "entering", state?: ng.StateObject): ViewConfig[] {
     let path = (this._treeChanges[pathname] || []) as PathNode[];
 
     path = !state ? path : (path.filter(propEq("state", state)) as PathNode[]);
@@ -655,7 +635,7 @@ export class Transition {
    *
    * @param {string} [pathname] The name of the tree changes path to get:
    *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
-   * @returns {import('../path/path-node.ts').PathNode[] | import("./interface.ts").TreeChanges}
+   * @returns {PathNode[] | TreeChanges}
    */
   treeChanges(pathname?: string) {
     return pathname
@@ -989,9 +969,7 @@ export class Transition {
 
     const toStateOrName = this.to();
 
-    const avoidEmptyHash = (
-      params: import("../params/interface.ts").RawParams,
-    ) =>
+    const avoidEmptyHash = (params: RawParams) =>
       params["#"] !== null && params["#"] !== undefined
         ? params
         : omit(params, ["#"]);

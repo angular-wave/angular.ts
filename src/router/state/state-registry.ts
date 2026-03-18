@@ -18,6 +18,7 @@ import type {
 } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
 import type { UrlRules } from "../url/url-rules.ts";
+import type { PathNode } from "../path/path-node.ts";
 
 /**
  * A registry for all of the application's [[StateDeclaration]]s
@@ -120,7 +121,7 @@ export class StateRegistryProvider {
     const that = this;
 
     /**
-     * @param {import("./state-object").StateObject & Record<string, any>} stateObject
+     * @param {StateObject & Record<string, any>} stateObject
      * @returns {((trans: ng.Transition, state: ng.BuiltStateDeclaration) => any) | undefined}
      */
     return function stateHookBuilder(
@@ -140,9 +141,7 @@ export class StateRegistryProvider {
         state: BuiltStateDeclaration,
       ) {
         const resolveContext = new ResolveContext(
-          trans.treeChanges(
-            pathname,
-          ) as import("../path/path-node.ts").PathNode[],
+          trans.treeChanges(pathname) as PathNode[],
         );
 
         const subContext = resolveContext.subContext(state._state());
@@ -206,7 +205,7 @@ export class StateRegistryProvider {
    * });
    * ```
    *
-   * @param {import("./interface.ts").StateRegistryListener} listener a callback function invoked when the registered states changes.
+   * @param {StateRegistryListener} listener a callback function invoked when the registered states changes.
    *        The function receives two parameters, `event` and `state`.
    *        See [[StateRegistryListener]]
    * @return a function that deregisters the listener
@@ -239,7 +238,7 @@ export class StateRegistryProvider {
    *
    * Note: a state will be queued if the state's parent isn't yet registered.
    *
-   * @param {import("./interface.ts")._StateDeclaration} stateDefinition the definition of the state to register.
+   * @param {_StateDeclaration} stateDefinition the definition of the state to register.
    * @returns the internal [[StateObject]] object.
    *          If the state was successfully registered, then the object is fully built (See: [[StateBuilder]]).
    *          If the state was only queued, then the object is not fully built.
@@ -326,7 +325,7 @@ export class StateRegistryProvider {
    *
    * @param {StateOrName} [stateOrName]
    * @param {StateOrName} [base]
-   * @returns {import("./state-service.ts").StateDeclaration | import("./state-service.ts").StateDeclaration[] | null}
+   * @returns {StateDeclaration | StateDeclaration[] | null}
    */
   get(
     stateOrName?: StateOrName,
@@ -346,7 +345,7 @@ export class StateRegistryProvider {
    * The BuilderFunction(s) will be used to define the property on any subsequently built [[StateObject]] objects.
    *
    * @param {string} property The name of the State property being registered for.
-   * @param {import("./interface.ts").BuilderFunction} builderFunction The BuilderFunction which will be used to build the State property
+   * @param {BuilderFunction} builderFunction The BuilderFunction which will be used to build the State property
    * @returns a function which deregisters the BuilderFunction
    */
   decorator(property: string, builderFunction: BuilderFunction) {

@@ -14,6 +14,7 @@ import { animatedomInsert, domInsert, removeElement } from "../shared/dom.ts";
 import { NG_ANIMATE_CLASSNAME } from "./shared.js";
 import { $injectTokens } from "../injection-tokens.ts";
 import type { AnimateRunner } from "./runner/animate-runner.ts";
+import type { Injectable } from "../interface.ts";
 
 const $animateMinErr = minErr("$animate");
 
@@ -158,10 +159,7 @@ export interface AnimateService {
 
 interface AnimateProviderInstance {
   _registeredAnimations: Record<string, string>;
-  register: (
-    name: string,
-    factory: import("../interface.ts").Injectable<any>,
-  ) => void;
+  register: (name: string, factory: Injectable<any>) => void;
   customFilter: (filterFn?: Function) => Function | null;
   classNameFilter: (expression?: RegExp) => RegExp | null;
   $get: [string, ($$animateQueue: AnimateQueueService) => AnimateService];
@@ -231,10 +229,7 @@ export function AnimateProvider(
    * @param factory The factory function that will be executed to return the animation
    *                           object.
    */
-  this.register = function (
-    name: string,
-    factory: import("../interface.ts").Injectable<any>,
-  ): void {
+  this.register = function (name: string, factory: Injectable<any>): void {
     if (name && name.charAt(0) !== ".") {
       throw $animateMinErr(
         "notcsel",
@@ -483,9 +478,7 @@ export function AnimateProvider(
          *
          * @param runner An animation runner returned by an $animate function.
          */
-        cancel(
-          runner: import("./runner/animate-runner.ts").AnimateRunner,
-        ): void {
+        cancel(runner: AnimateRunner): void {
           if (runner.cancel) {
             runner.cancel();
           }
