@@ -36,40 +36,12 @@ export type ResolveTypes = Resolvable | ResolvableLiteral | ProviderLike;
 export type RawViewConfig = ViewDeclaration | string;
 
 /**
- * Interface for declaring a view
+ * Public view options shared by state-level single-view shorthand and named view declarations.
  *
- * This interface defines the basic data that a normalized view declaration will have on it.
+ * States may declare these properties directly when targeting the implicit `$default` view.
+ * Named views declared inside `views` use the same option surface.
  */
-export interface ViewDeclaration {
-  /**
-   * The raw name for the view declaration, i.e., the [[StateDeclaration.views]] property name.
-   */
-  $name?: string;
-
-  /**
-   * The normalized address for the `ng-view` which this ViewConfig targets.
-   *
-   * A ViewConfig targets a `ng-view` in the DOM (relative to the `ngVIewContextAnchor`) which has
-   * a specific name.
-   * @example `header` or `$default`
-   *
-   * The `ngVIewName` can also target a _nested view_ by providing a dot-notation address
-   * @example `foo.bar` or `foo.$default.bar`
-   */
-  $ngViewName?: string;
-
-  /**
-   * The normalized context anchor (state name) for the `ngVIewName`
-   *
-   * When targeting a `ng-view`, the `ngVIewName` address is anchored to a context name (state name).
-   */
-  $ngViewContextAnchor?: string;
-
-  /**
-   * The context that this view is declared within.
-   */
-  $context?: ViewContext;
-
+export interface ViewDeclarationCommon {
   /**
    * The name of the component to use for this view.
    *
@@ -320,6 +292,42 @@ export interface ViewDeclaration {
 }
 
 /**
+ * Interface for declaring a view
+ *
+ * This interface defines the basic data that a normalized view declaration will have on it.
+ */
+export interface ViewDeclaration extends ViewDeclarationCommon {
+  /**
+   * The raw name for the view declaration, i.e., the [[StateDeclaration.views]] property name.
+   */
+  $name?: string;
+
+  /**
+   * The normalized address for the `ng-view` which this ViewConfig targets.
+   *
+   * A ViewConfig targets a `ng-view` in the DOM (relative to the `ngVIewContextAnchor`) which has
+   * a specific name.
+   * @example `header` or `$default`
+   *
+   * The `ngVIewName` can also target a _nested view_ by providing a dot-notation address
+   * @example `foo.bar` or `foo.$default.bar`
+   */
+  $ngViewName?: string;
+
+  /**
+   * The normalized context anchor (state name) for the `ngVIewName`
+   *
+   * When targeting a `ng-view`, the `ngVIewName` address is anchored to a context name (state name).
+   */
+  $ngViewContextAnchor?: string;
+
+  /**
+   * The context that this view is declared within.
+   */
+  $context?: ViewContext;
+}
+
+/**
  * The return value of a [[redirectTo]] function
  *
  * - string: a state name
@@ -353,7 +361,7 @@ export type RedirectToResult =
  * registry.register(foldersState);
  * ```
  */
-export interface StateDeclaration {
+export interface StateDeclaration extends ViewDeclarationCommon {
   /**
    * The state name (required)
    *
