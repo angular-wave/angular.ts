@@ -147,7 +147,7 @@ export function createInjector(
    * Registers a service constructor.
    * @param {string} name
    * @param {Function} constructor
-   * @returns {import('../../interface.ts').ServiceProvider}
+   * @returns {ServiceProvider}
    */
   function service(name: string, constructor: Function): ServiceProvider {
     return factory(name, [

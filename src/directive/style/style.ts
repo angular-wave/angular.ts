@@ -1,17 +1,12 @@
+import type { Attributes } from "../../core/compile/attributes.ts";
 /**
  * Watches an expression and applies the resulting CSS properties to the element.
  */
 export function ngStyleDirective(): ng.Directive {
   return {
     restrict: "A",
-    link(
-      scope: ng.Scope,
-      element: HTMLElement,
-      attr: import("../../core/compile/attributes.ts").Attributes,
-    ): void {
-      const attrMap =
-        attr as import("../../core/compile/attributes.ts").Attributes &
-          Record<string, string>;
+    link(scope: ng.Scope, element: HTMLElement, attr: Attributes): void {
+      const attrMap = attr as Attributes & Record<string, string>;
 
       let oldStyles: Record<string, string> | null = null;
 

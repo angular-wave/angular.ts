@@ -1,4 +1,5 @@
 import { $injectTokens as $t } from "../../injection-tokens.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 ngSetterDirective.$inject = [$t._parse, $t._log];
 
@@ -11,14 +12,8 @@ export function ngSetterDirective(
 ): ng.Directive {
   return {
     restrict: "A",
-    link(
-      scope: ng.Scope,
-      element: HTMLElement,
-      attrs: import("../../core/compile/attributes.ts").Attributes,
-    ): void {
-      const attrMap =
-        attrs as import("../../core/compile/attributes.ts").Attributes &
-          Record<string, string>;
+    link(scope: ng.Scope, element: HTMLElement, attrs: Attributes): void {
+      const attrMap = attrs as Attributes & Record<string, string>;
 
       const modelExpression = attrMap.ngSetter;
 

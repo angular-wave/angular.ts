@@ -16,7 +16,13 @@ import { ParamFactory } from "../params/param-factory.ts";
 import { UrlRuleFactory } from "./url-rule.ts";
 import { getBaseHref } from "../../shared/dom.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
-import type { MatchResult, UrlParts } from "./interface.ts";
+import type { MatchResult, UrlParts, UrlRule } from "./interface.ts";
+import type { StateProvider } from "../../router/state/state-service.ts";
+import type { UrlConfigProvider } from "./url-config.ts";
+import type { RouterProvider } from "../router.ts";
+import type { UrlConfigProvider as UrlConfigProviderType } from "../../router/url/url-config.ts";
+import type { TargetStateDef } from "../state/interface.ts";
+import type { StateParams } from "../params/state-params.ts";
 
 /**
  * API for URL management
@@ -31,10 +37,10 @@ export class UrlService {
 
   $location: ng.LocationService | undefined;
   _locationProvider: ng.LocationProvider;
-  stateService: import("../../router/state/state-service.ts").StateProvider;
+  stateService: StateProvider;
   _urlRuleFactory: UrlRuleFactory;
   _rules: UrlRules;
-  _config: import("./url-config.ts").UrlConfigProvider;
+  _config: UrlConfigProvider;
   _paramFactory: ParamFactory;
   _urlListeners: ((evt: ng.ScopeEvent) => void)[];
   _baseHref!: string;
@@ -55,15 +61,15 @@ export class UrlService {
 
   /**
    * @param {ng.LocationProvider} $locationProvider
-   * @param {import("../../router/state/state-service.ts").StateProvider} stateProvider
-   * @param {import("../router.ts").RouterProvider} globals
-   * @param {import("../../router/url/url-config.ts").UrlConfigProvider} urlConfigProvider
+   * @param {StateProvider} stateProvider
+   * @param {RouterProvider} globals
+   * @param {UrlConfigProviderType} urlConfigProvider
    */
   constructor(
     $locationProvider: ng.LocationProvider,
-    stateProvider: import("../../router/state/state-service.ts").StateProvider,
-    globals: import("../router.ts").RouterProvider,
-    urlConfigProvider: import("../../router/url/url-config.ts").UrlConfigProvider,
+    stateProvider: StateProvider,
+    globals: RouterProvider,
+    urlConfigProvider: UrlConfigProviderType,
   ) {
     this._locationProvider = $locationProvider;
     this.stateService = stateProvider;
@@ -83,7 +89,7 @@ export class UrlService {
     /**
      * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
      * @ignore
-     * @type {import("./url-config.js").UrlConfigProvider}
+     * @type {UrlConfigProvider}
      */
     this._config = urlConfigProvider;
 
@@ -257,7 +263,7 @@ export class UrlService {
    * Returns an object with the `path`, `search`, and `hash` components
    * of the current browser location.
    *
-   * @returns {import("../../services/location/location.ts").UrlParts} The current URL's path, search, and hash.
+   * @returns {UrlParts} The current URL's path, search, and hash.
    */
   parts(): UrlParts {
     const location = this._getLocation();
@@ -287,7 +293,7 @@ export class UrlService {
    *   urlService.sync();
    * });
    * ```
-   * @param {import("../../core/scope/scope.ts").ScopeEvent | undefined} [evt]
+   * @param {ng.ScopeEvent | undefined} [evt]
    */
   sync(evt?: ng.ScopeEvent): void {
     if (evt && evt.defaultPrevented) return;
@@ -304,7 +310,7 @@ export class UrlService {
       [isString, (newurl: string | undefined) => this.url(newurl)],
       [
         TargetState.isDef,
-        (def: import("../state/interface.ts").TargetStateDef) =>
+        (def: TargetStateDef) =>
           stateService.go(
             /** @type {string} */ def.state,
             def.params,
@@ -363,7 +369,7 @@ export class UrlService {
   /**
    * Given a URL (as a [[UrlParts]] object), check all rules and determine the best matching rule.
    * Return the result as a [[MatchResult]].
-   * @param {import("../../docs.ts").UrlParts} url
+   * @param {UrlParts} url
    * @returns {any}
    */
   match(url: UrlParts): MatchResult | undefined {
@@ -373,9 +379,9 @@ export class UrlService {
     // Checks a single rule. Returns { rule: rule, match: match, weight: weight } if it matched, or undefined
     /**
      *
-     * @param {import("./interface.ts").UrlRule} rule
+     * @param {UrlRule} rule
      */
-    const checkRule = (rule: import("./interface.ts").UrlRule) => {
+    const checkRule = (rule: UrlRule) => {
       const match = rule.match(url);
 
       return match && { match, rule, weight: rule.matchPriority(match) };
@@ -420,12 +426,12 @@ export class UrlService {
    * Pushes a new location to the browser history.
    * @internal
    * @param {{ format: (arg0: any) => string | undefined; }} urlMatcher
-   * @param {import("../params/state-params.ts").StateParams} params
+   * @param {StateParams} params
    * @param {string} options
    */
   push(
     urlMatcher: { format: (arg0: any) => string | undefined },
-    params: import("../params/state-params.ts").StateParams,
+    params: StateParams,
     options: { replace?: boolean },
   ): void {
     const replace = options && !!options.replace;

@@ -142,7 +142,7 @@ export function removeElementData(
 export function getExpando(
   element: Element & Record<string, any>,
   createIfNecessary = false,
-): import("../interface.ts").ExpandoStore | undefined {
+): ExpandoStore | undefined {
   let expandoId = element[EXPANDO];
 
   let expandoStore = expandoId && Cache.get(expandoId);

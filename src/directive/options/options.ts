@@ -57,7 +57,7 @@ type SelectControllerLike = Record<string, any>;
 export function ngOptionsDirective(
   $compile: ng.CompileService,
   $parse: ng.ParseService,
-) {
+): ng.Directive {
   function parseOptionsExpression(
     optionsExp: string,
     selectElement: HTMLSelectElement,

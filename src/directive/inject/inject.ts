@@ -1,4 +1,5 @@
 import { $injectTokens as $t } from "../../injection-tokens.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 ngInjectDirective.$inject = [$t._log, $t._injector];
 
@@ -14,11 +15,9 @@ export function ngInjectDirective(
     link(
       scope: ng.Scope & Record<string, any>,
       _element: Element,
-      attrs: import("../../core/compile/attributes.ts").Attributes,
+      attrs: Attributes,
     ): void {
-      const attrMap =
-        attrs as import("../../core/compile/attributes.ts").Attributes &
-          Record<string, string>;
+      const attrMap = attrs as Attributes & Record<string, string>;
 
       const expr = attrMap.ngInject;
 

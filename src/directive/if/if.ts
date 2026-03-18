@@ -1,6 +1,7 @@
 import { $injectTokens } from "../../injection-tokens.ts";
 import { removeElement } from "../../shared/dom.ts";
 import { hasAnimate } from "../../shared/utils.ts";
+import type { Attributes } from "../../core/compile/attributes.ts";
 
 ngIfDirective.$inject = [$injectTokens._animate];
 /** Conditionally includes or removes a transcluded block based on the watched expression. */
@@ -13,8 +14,7 @@ export function ngIfDirective($animate: ng.AnimateService): ng.Directive {
     link(
       $scope: ng.Scope,
       $element: Element,
-      $attr: import("../../core/compile/attributes.ts").Attributes &
-        Record<string, string>,
+      $attr: Attributes & Record<string, string>,
       _ctrl: unknown,
       $transclude?: ng.TranscludeFn,
     ): void {

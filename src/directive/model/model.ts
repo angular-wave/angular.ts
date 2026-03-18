@@ -26,9 +26,10 @@ import {
   values,
 } from "../../shared/utils.ts";
 import {
-  PENDING_CLASS,
   cachedToggleClass,
+  type FormController,
   nullFormCtrl,
+  PENDING_CLASS,
 } from "../form/form.ts";
 import { defaultModelOptions } from "../model-options/model-options.ts";
 import { startingTag } from "../../shared/dom.ts";
@@ -337,7 +338,7 @@ export class NgModelController {
      * Updates the CSS validity classes for a specific validation key.
      */
     function toggleValidationCss(
-      ctrl: NgModelController | import("../form/form.ts").FormController,
+      ctrl: NgModelController | FormController,
       validationErrorKeyParam: string,
       isValid: any,
     ) {
@@ -1321,7 +1322,7 @@ function setupModelWatcher(
 /**
  * Builds the core `ngModel` directive definition.
  */
-export function ngModelDirective() {
+export function ngModelDirective(): ng.Directive {
   return {
     restrict: "A",
     require: ["ngModel", "^?form", "^?ngModelOptions"],

@@ -252,9 +252,9 @@ export class UrlMatcher {
 
   /**
    * @param {string} pattern The pattern to compile into a matcher.
-   * @param {import("../params/param-types.ts").ParamTypes} paramTypes The [[ParamTypes]] registry
-   * @param {import("../params/param-factory.ts").ParamFactory} paramFactory A [[ParamFactory]] object
-   * @param {import("./interface.ts").UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
+   * @param {ParamTypes} paramTypes The [[ParamTypes]] registry
+   * @param {ParamFactory} paramFactory A [[ParamFactory]] object
+   * @param {UrlMatcherCompileConfig} config A [[UrlMatcherCompileConfig]] configuration object
    */
   constructor(
     pattern: string,
@@ -478,7 +478,7 @@ export class UrlMatcher {
    * @param {string} path The URL path to match, e.g. `$location.getPath()`.
    * @param {any} search URL search parameters, e.g. `$location.getSearch()`.
    * @param {string} hash URL hash e.g. `$location.getHash()`.
-   * @returns {import("../params/interface.ts").RawParams | null} The captured parameter values.
+   * @returns {RawParams | null} The captured parameter values.
    */
   exec(path: string, search: any = {}, hash: string): RawParams | null {
     const pathMatchers = this._cache.path || [this];
@@ -596,7 +596,7 @@ export class UrlMatcher {
    *
    * Checks an object hash of parameters to validate their correctness according to the parameter
    * types of this `UrlMatcher`.
-   * @param {import("../params/interface.ts").RawParams} params The object hash of parameters to validate.
+   * @param {RawParams} params The object hash of parameters to validate.
    * @returns {boolean} Returns `true` if `params` validates, otherwise `false`.
    */
   validates(params: RawParams): boolean {
@@ -625,7 +625,7 @@ export class UrlMatcher {
    * // returns '/user/bob?q=yes'
    * ```
    *
-   * @param {import("../params/interface.ts").RawParams} values  the values to substitute for the parameters in this pattern.
+   * @param {RawParams} values  the values to substitute for the parameters in this pattern.
    * @returns the formatted URL (path and optionally search part).
    */
   format(values: RawParams = {} as RawParams) {
@@ -654,7 +654,7 @@ export class UrlMatcher {
     /**
      * Given a Param, applies the parameter value, then returns detailed information about it
      * @param {Param} param
-     * @returns {import("./interface.ts").ParamDetails}
+     * @returns {ParamDetails}
      */
     function getDetails(param: Param): ParamDetails {
       // Normalize to typed value

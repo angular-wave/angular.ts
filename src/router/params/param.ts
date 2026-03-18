@@ -32,7 +32,7 @@ export const DefType = {
  * @param {string} paramName
  * @param {DefType} location
  * @param {ng.StateDeclaration} state
- * @return {import("./interface.ts").ParamDeclaration}
+ * @return {ParamDeclaration}
  */
 function getParamDeclaration(
   paramName: string,
@@ -72,7 +72,7 @@ function unwrapShorthand(cfg: ParamDeclaration | any): ParamDeclaration {
  * @param {ParamType | null} urlType
  * @param {DefType} location
  * @param {string} id
- * @param {import("./param-types.js").ParamTypes} paramTypes
+ * @param {ParamTypes} paramTypes
  */
 function getType(
   cfg: ParamDeclaration,
@@ -189,7 +189,7 @@ export class Param {
    * @param {string} id
    * @param {ParamType | null} type
    * @param {DefType} location
-   * @param {import("../url/url-config.js").UrlConfigProvider} urlConfig
+   * @param {UrlConfigProvider} urlConfig
    * @param {ng.StateDeclaration} state
    */
   constructor(
@@ -331,7 +331,7 @@ export class Param {
   /**
    * @param {Param[]} params
    * @param {Record<string, any>} values
-   * @return {import("./interface.ts").RawParams}
+   * @return {RawParams}
    */
   static values(params: Param[], values: Record<string, any> = {}): RawParams {
     const paramValues: RawParams = {};

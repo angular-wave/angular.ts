@@ -42,7 +42,7 @@ export class UrlConfigProvider {
      * This code patches the `path` parameter type so it encoded/decodes slashes as ~2F
      *
      */
-    /** @type {import("../params/param-type.ts").ParamType} */
+    /** @type {ParamType} */
     const pathType = this.type("path") as ParamType;
 
     pathType.encode = (x: unknown) =>
@@ -152,13 +152,13 @@ export class UrlConfigProvider {
    * See [[ParamTypeDefinition]] for more examples
    *
    * @param {string} name The type name.
-   * @param {import("../params/interface.ts").ParamTypeDefinition} [definition] The type definition. See [[ParamTypeDefinition]] for information on the values accepted.
-   * @param {() => import("../params/interface.ts").ParamTypeDefinition} [definitionFn] A function that is injected before the app runtime starts.
+   * @param {ParamTypeDefinition} [definition] The type definition. See [[ParamTypeDefinition]] for information on the values accepted.
+   * @param {() => ParamTypeDefinition} [definitionFn] A function that is injected before the app runtime starts.
    *        The result of this function should be a [[ParamTypeDefinition]].
    *        The result is merged into the existing `definition`.
    *        See [[ParamType]] for information on the values accepted.
    *
-   * @returns {import("../params/param-type.ts").ParamType | UrlConfigProvider | undefined}
+   * @returns {ParamType | UrlConfigProvider | undefined}
    */
   type(name: string): ParamType | undefined;
   type(
@@ -178,7 +178,7 @@ export class UrlConfigProvider {
 
     this.paramTypes.type(
       name,
-      /** @type {import("../params/interface.ts").ParamTypeDefinition} */ definition,
+      /** @type {ParamTypeDefinition} */ definition,
       definitionFn,
     );
 

@@ -11,7 +11,7 @@ const ngRefMinErr = minErr("ngRef");
 
 ngRefDirective.$inject = [$injectTokens._parse];
 
-export function ngRefDirective($parse: ng.ParseService) {
+export function ngRefDirective($parse: ng.ParseService): ng.Directive {
   return {
     priority: -1,
     restrict: "A",

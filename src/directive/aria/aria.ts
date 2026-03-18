@@ -130,23 +130,29 @@ export function AriaProvider(this: AriaProviderInstance): void {
 
 ngDisabledAriaDirective.$inject = [$injectTokens._aria];
 /** Mirrors `ngDisabled` into `aria-disabled` when needed. */
-export function ngDisabledAriaDirective($aria: AriaService) {
-  return $aria._watchExpr(
-    "ngDisabled",
-    "aria-disabled",
-    nativeAriaNodeNames,
-    false,
-  );
+export function ngDisabledAriaDirective($aria: AriaService): ng.Directive {
+  return {
+    restrict: "A",
+    link: $aria._watchExpr(
+      "ngDisabled",
+      "aria-disabled",
+      nativeAriaNodeNames,
+      false,
+    ),
+  };
 }
 
 ngShowAriaDirective.$inject = [$injectTokens._aria];
 /** Mirrors `ngShow` into `aria-hidden` when needed. */
-export function ngShowAriaDirective($aria: AriaService) {
-  return $aria._watchExpr("ngShow", "aria-hidden", [], true);
+export function ngShowAriaDirective($aria: AriaService): ng.Directive {
+  return {
+    restrict: "A",
+    link: $aria._watchExpr("ngShow", "aria-hidden", [], true),
+  };
 }
 
 /** Adds `aria-live` to `ngMessages` containers when not already present. */
-export function ngMessagesAriaDirective() {
+export function ngMessagesAriaDirective(): ng.Directive {
   return {
     restrict: "A",
     require: "?ngMessages",
@@ -222,52 +228,67 @@ export function ngClickAriaDirective(
 
 ngRequiredAriaDirective.$inject = [$injectTokens._aria];
 /** Mirrors `ngRequired` into `aria-required` when needed. */
-export function ngRequiredAriaDirective($aria: AriaService) {
-  return $aria._watchExpr(
-    "ngRequired",
-    "aria-required",
-    nativeAriaNodeNames,
-    false,
-  );
+export function ngRequiredAriaDirective($aria: AriaService): ng.Directive {
+  return {
+    restrict: "A",
+    link: $aria._watchExpr(
+      "ngRequired",
+      "aria-required",
+      nativeAriaNodeNames,
+      false,
+    ),
+  };
 }
 
 ngCheckedAriaDirective.$inject = [$injectTokens._aria];
 /** Mirrors `ngChecked` into `aria-checked` when needed. */
-export function ngCheckedAriaDirective($aria: AriaService) {
-  return $aria._watchExpr(
-    "ngChecked",
-    "aria-checked",
-    nativeAriaNodeNames,
-    false,
-  );
+export function ngCheckedAriaDirective($aria: AriaService): ng.Directive {
+  return {
+    restrict: "A",
+    link: $aria._watchExpr(
+      "ngChecked",
+      "aria-checked",
+      nativeAriaNodeNames,
+      false,
+    ),
+  };
 }
 
 ngValueAriaDirective.$inject = [$injectTokens._aria];
 /** Mirrors `ngValue` into `aria-checked` for non-native controls when needed. */
-export function ngValueAriaDirective($aria: AriaService) {
-  return $aria._watchExpr(
-    "ngValue",
-    "aria-checked",
-    nativeAriaNodeNames,
-    false,
-  );
+export function ngValueAriaDirective($aria: AriaService): ng.Directive {
+  return {
+    restrict: "A",
+    link: $aria._watchExpr(
+      "ngValue",
+      "aria-checked",
+      nativeAriaNodeNames,
+      false,
+    ),
+  };
 }
 
 ngHideAriaDirective.$inject = [$injectTokens._aria];
 /** Mirrors `ngHide` into `aria-hidden` when needed. */
-export function ngHideAriaDirective($aria: AriaService) {
-  return $aria._watchExpr("ngHide", "aria-hidden", [], false);
+export function ngHideAriaDirective($aria: AriaService): ng.Directive {
+  return {
+    restrict: "A",
+    link: $aria._watchExpr("ngHide", "aria-hidden", [], false),
+  };
 }
 
 ngReadonlyAriaDirective.$inject = [$injectTokens._aria];
 /** Mirrors `ngReadonly` into `aria-readonly` when needed. */
-export function ngReadonlyAriaDirective($aria: AriaService) {
-  return $aria._watchExpr(
-    "ngReadonly",
-    "aria-readonly",
-    nativeAriaNodeNames,
-    false,
-  );
+export function ngReadonlyAriaDirective($aria: AriaService): ng.Directive {
+  return {
+    restrict: "A",
+    link: $aria._watchExpr(
+      "ngReadonly",
+      "aria-readonly",
+      nativeAriaNodeNames,
+      false,
+    ),
+  };
 }
 
 ngModelAriaDirective.$inject = [$injectTokens._aria];
@@ -446,18 +467,19 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive<any> {
 
 ngDblclickAriaDirective.$inject = [$injectTokens._aria];
 /** Adds focusability for `ngDblclick` on non-native interactive controls. */
-export function ngDblclickAriaDirective(
-  $aria: AriaService,
-): import("../../interface.ts").DirectiveLinkFn<any> {
-  return function (_scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) {
-    if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
+export function ngDblclickAriaDirective($aria: AriaService): ng.Directive {
+  return {
+    restrict: "A",
+    link(_scope: ng.Scope, elem: HTMLElement, attr: ng.Attributes) {
+      if (hasOwn(attr, ARIA_DISABLE_ATTR)) return;
 
-    if (
-      $aria.config("tabindex") &&
-      !elem.hasAttribute("tabindex") &&
-      !isNodeOneOf(elem, nativeAriaNodeNames)
-    ) {
-      elem.setAttribute("tabindex", "0");
-    }
+      if (
+        $aria.config("tabindex") &&
+        !elem.hasAttribute("tabindex") &&
+        !isNodeOneOf(elem, nativeAriaNodeNames)
+      ) {
+        elem.setAttribute("tabindex", "0");
+      }
+    },
   };
 }

@@ -3,6 +3,7 @@ import { isDefined } from "../../shared/utils.ts";
 import { removeFrom } from "../../shared/common.ts";
 import { UrlRuleFactory } from "./url-rule.ts";
 import type { MatcherUrlRule, UrlRule } from "./interface.ts";
+import type { StateObject } from "../state/state-object.ts";
 
 /**
  * @param {{ priority: any; }} a
@@ -136,7 +137,7 @@ export class UrlRules {
   /**
    * Gets all registered rules
    *
-   * @returns {import("./interface.ts").UrlRule[]} an array of all the registered rules
+   * @returns {UrlRule[]} an array of all the registered rules
    */
   rules(): UrlRule[] {
     this.ensureSorted();
@@ -279,13 +280,13 @@ export class UrlRules {
    * ```
    *
    * Note: the `handler` may also invoke arbitrary code, such as `$state.go()`
-   * @param {import("../state/state-object.ts").StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
+   * @param {StateObject} matcher A pattern `string` to match, compiled as a [[UrlMatcher]], or a `RegExp`.
    * @param {any} handler The path to redirect to, or a function that returns the path.
    * @param {{ priority: any; }} options `{ priority: number }`
    * @return {UrlRule} the registered [[UrlRule]]
    */
   when(
-    matcher: import("../state/state-object.ts").StateObject,
+    matcher: StateObject,
     handler: any,
     options: { priority: any },
   ): UrlRule {

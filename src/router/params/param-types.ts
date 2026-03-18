@@ -72,8 +72,8 @@ export class ParamTypes {
    *
    * End users should call [[UrlMatcherFactory.type]], which delegates to this method.
    * @param {string} name
-   * @param {import("./interface.ts").ParamTypeDefinition} [definition]
-   * @param {() => import("../params/interface.ts").ParamTypeDefinition} [definitionFn]
+   * @param {ParamTypeDefinition} [definition]
+   * @param {() => ParamTypeDefinition} [definitionFn]
    */
   type(name: string): ParamType | undefined;
   type(

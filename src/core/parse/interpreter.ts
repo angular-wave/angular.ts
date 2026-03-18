@@ -1158,8 +1158,8 @@ function findConstantAndWatchExpressions(
 /**
  * Converts a single expression AST node into an assignment expression if the expression is assignable.
  *
- * @param {import("./ast/ast-node.ts").BodyNode} ast
- * @returns {import("./ast/ast-node.ts").ExpressionNode | undefined}
+ * @param {BodyNode} ast
+ * @returns {ExpressionNode | undefined}
  */
 function assignableAST(ast: BodyNode): ExpressionNode | undefined {
   const stmt = ast._body[0] as ExpressionNode;
@@ -1262,7 +1262,7 @@ function getStringValue(name: any): string {
 }
 
 /**
- * @param {import("./ast/ast").ASTNode} ast
+ * @param {ASTNode} ast
  * @returns {boolean}
  */
 export function isAssignable(ast: ASTNode): boolean {

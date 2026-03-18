@@ -14,6 +14,7 @@ import type { RawParams } from "../params/interface.ts";
 import type { Transition } from "../transition/transition.ts";
 import type { HookResult, TransitionOptions } from "../transition/interface.ts";
 import type {
+  BuilderFunction,
   HrefOptions,
   OnInvalidCallback,
   StateDeclaration,
@@ -136,7 +137,7 @@ export class StateProvider {
     this.$injector = undefined;
 
     /**
-     * @type {import("./interface.ts").OnInvalidCallback[]}
+     * @type {OnInvalidCallback[]}
      */
     this.invalidCallbacks = [];
 
@@ -241,7 +242,7 @@ export class StateProvider {
    * ```
    *
    * @param {string} name The name of the builder function to decorate.
-   * @param {import("./interface.ts").BuilderFunction} func A function that is responsible for decorating the original
+   * @param {BuilderFunction} func A function that is responsible for decorating the original
    * builder function. The function receives two parameters:
    *
    *   - `{object}` - state - The state urlConfig object.
@@ -249,13 +250,13 @@ export class StateProvider {
    *
    * @return {object} $stateProvider - $stateProvider instance
    */
-  decorator(name: string, func: import("./interface.ts").BuilderFunction) {
+  decorator(name: string, func: BuilderFunction) {
     return this._getRegistry().decorator(name, func) || this;
   }
 
   /**
    *
-   * @param {import("./interface.ts").StateDeclaration} definition
+   * @param {StateDeclaration} definition
    */
   state(definition: StateDeclaration) {
     if (!definition.name) {
@@ -295,7 +296,7 @@ export class StateProvider {
 
     const latest = latestThing();
 
-    /** @type {Queue<import("./interface.ts").OnInvalidCallback>} */
+    /** @type {Queue<OnInvalidCallback>} */
     const callbackQueue = new Queue(this.invalidCallbacks.slice());
 
     const injector = this.$injector;
@@ -365,7 +366,7 @@ export class StateProvider {
    * });
    * ```
    *
-   * @param {import("./interface.ts").OnInvalidCallback} callback invoked when the toState is invalid
+   * @param {OnInvalidCallback} callback invoked when the toState is invalid
    *   This function receives the (invalid) toState, the fromState, and an injector.
    *   The function may optionally return a [[TargetState]] or a Promise for a TargetState.
    *   If one is returned, it is treated as a redirect.
@@ -490,7 +491,7 @@ export class StateProvider {
    * This is a factory method for creating a TargetState
    *
    * This may be returned from a Transition Hook to redirect a transition, for example.
-   * @param {string | import("./interface.ts").StateDeclaration | import("./state-object.ts").StateObject} identifier
+   * @param {string | StateDeclaration | StateObject} identifier
    * @param {{}} params
    * @param {any} [options]
    */
@@ -653,10 +654,10 @@ export class StateProvider {
      * ```html
      * <div ng-class="{highlighted: $state.is('.item')}">Item</div>
      * ```
-     * @param {import("./state-matcher.ts").StateOrName} stateOrName The state name (absolute or relative) or state object you'd like to check.
-     * @param {import("../params/interface.ts").RawParams} [params] A param object, e.g. `{sectionId: section.id}`, that you'd like
+     * @param {StateOrName} stateOrName The state name (absolute or relative) or state object you'd like to check.
+     * @param {RawParams} [params] A param object, e.g. `{sectionId: section.id}`, that you'd like
     to test against the current active state.
-     * @param {{ relative: import("./state-matcher.ts").StateOrName | undefined; } | undefined} [options] An options object. The options are:
+     * @param {{ relative: StateOrName | undefined; } | undefined} [options] An options object. The options are:
     - `relative`: If `stateOrName` is a relative state name and `options.relative` is set, .is will
     test relative to `options.relative` state (or name).
      * @returns {boolean | undefined} Returns true if it is the state.
@@ -769,9 +770,9 @@ export class StateProvider {
    * ```js
    * expect($state.href("about.person", { person: "bob" })).toEqual("/about/bob");
    * ```
-   * @param {import("./state-matcher.ts").StateOrName} stateOrName The state name or state object you'd like to generate a url from.
-   * @param {import("../params/interface.ts").RawParams} params An object of parameter values to fill the state's required parameters.
-   * @param {import("./interface.ts").HrefOptions} [options] Options object. The options are:
+   * @param {StateOrName} stateOrName The state name or state object you'd like to generate a url from.
+   * @param {RawParams} params An object of parameter values to fill the state's required parameters.
+   * @param {HrefOptions} [options] Options object. The options are:
    * @returns {string | null} compiled state url
    */
   href(
@@ -832,15 +833,15 @@ export class StateProvider {
    *   // Do not log transitionTo errors
    * });
    * ```
-   * @param {import("../../docs.ts").ExceptionHandler | undefined} [handler] a global error handler function
+   * @param {ng.ExceptionHandlerService | undefined} [handler] a global error handler function
    * @returns the current global error handler
    */
-  defaultErrorHandler(handler?: any) {
+  defaultErrorHandler(handler?: ng.ExceptionHandlerService) {
     return (this._defaultErrorHandler = handler || this._defaultErrorHandler);
   }
 
   /**
-   * @param {import("./interface.ts").StateOrName} stateOrName
+   * @param {StateOrName} stateOrName
    * @param {undefined} [base]
    */
   get(stateOrName?: StateOrName, base?: StateOrName) {
@@ -855,7 +856,7 @@ export class StateProvider {
      * Lazy loads a state
      *
      * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
-     * @param {import("./interface.ts").StateOrName} stateOrName the state that should be lazy loaded
+     * @param {StateOrName} stateOrName the state that should be lazy loaded
      * @param {ng.Transition} transition the optional Transition context to use (if the lazyLoad function requires an injector, etc)
     Note: If no transition is provided, a noop transition is created using the from the current state to the current state.
     This noop transition is not actually run.

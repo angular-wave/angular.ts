@@ -1,6 +1,7 @@
 import { Angular } from "../../angular.ts";
 import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
+import { LocationProvider } from "../../services/location/location.ts";
 
 describe("ngStateRef", () => {
   window.location.hash = "";
@@ -33,7 +34,7 @@ describe("ngStateRef", () => {
     module.config(
       /**
        * @param $stateProvider
-       * @param {import('../../services/location/location.js').LocationProvider} $locationProvider
+       * @param {LocationProvider} $locationProvider
        */
       ($stateProvider, $locationProvider) => {
         _locationProvider = $locationProvider;
