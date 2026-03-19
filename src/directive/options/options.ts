@@ -10,6 +10,7 @@ import {
   isDefined,
   minErr,
 } from "../../shared/utils.ts";
+import { SelectController } from "../select/select-ctrl.ts";
 
 const ngOptionsMinErr = minErr("ngOptions");
 
@@ -57,8 +58,6 @@ type NgOptionsDefinition = {
   _getWatchables: string;
   _getOptions(): NgOptionsCollection;
 };
-
-type SelectControllerLike = Record<string, any>;
 
 export function ngOptionsDirective(
   $compile: ng.CompileService,
@@ -200,7 +199,7 @@ export function ngOptionsDirective(
     scope: ng.Scope & Record<string, any>,
     selectElement: Element,
     attr: ng.Attributes & Record<string, any>,
-    ctrls: [SelectControllerLike, ng.NgModelController & Record<string, any>],
+    ctrls: [SelectController, ng.NgModelController & Record<string, any>],
   ) {
     const selectNode = selectElement as HTMLSelectElement;
 
@@ -217,7 +216,7 @@ export function ngOptionsDirective(
     ) {
       if ((children[i] as HTMLOptionElement).value === "") {
         selectCtrl._hasEmptyOption = true;
-        selectCtrl._emptyOption = children[i];
+        selectCtrl._emptyOption = children[i] as HTMLOptionElement;
         break;
       }
     }
@@ -315,12 +314,15 @@ export function ngOptionsDirective(
     }
 
     if (providedEmptyOption) {
-      const linkFn = $compile(selectCtrl._emptyOption);
+      const linkFn = $compile(selectCtrl._emptyOption as HTMLOptionElement);
 
-      selectNode.prepend(selectCtrl._emptyOption);
+      selectNode.prepend(selectCtrl._emptyOption as HTMLOptionElement);
       linkFn(scope);
 
-      if (selectCtrl._emptyOption.nodeType === NodeType._COMMENT_NODE) {
+      if (
+        (selectCtrl._emptyOption as HTMLOptionElement).nodeType ===
+        NodeType._COMMENT_NODE
+      ) {
         selectCtrl._hasEmptyOption = false;
 
         selectCtrl._registerOption = function (
@@ -458,7 +460,7 @@ export function ngOptionsDirective(
         _scope: ng.Scope,
         _selectElement: Element,
         _attr: ng.Attributes,
-        ctrls: [SelectControllerLike],
+        ctrls: [SelectController],
       ) {
         ctrls[0]._registerOption = () => {
           /* empty */
