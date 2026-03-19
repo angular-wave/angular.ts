@@ -21,12 +21,12 @@ const NG_OPTIONS_REGEXP =
   /^\s*([\s\S]+?)(?:\s+as\s+([\s\S]+?))?(?:\s+group\s+by\s+([\s\S]+?))?(?:\s+disable\s+when\s+([\s\S]+?))?\s+for\s+(?:([$\w][$\w]*)|(?:\(\s*([$\w][$\w]*)\s*,\s*([$\w][$\w]*)\s*\)))\s+in\s+([\s\S]+?)(?:\s+track\s+by\s+([\s\S]+?))?$/;
 
 class OptionItem {
-  element: HTMLOptionElement | null = null;
-  selectValue: any;
-  viewValue: any;
-  label: any;
-  group: any;
-  disabled: any;
+  _element: HTMLOptionElement | null = null;
+  _selectValue: any;
+  _viewValue: any;
+  _label: any;
+  _group: any;
+  _disabled: any;
 
   constructor(
     selectValue: any,
@@ -35,21 +35,27 @@ class OptionItem {
     group: any,
     disabled: any,
   ) {
-    this.selectValue = selectValue;
-    this.viewValue = viewValue;
-    this.label = label;
-    this.group = group;
-    this.disabled = disabled;
+    this._selectValue = selectValue;
+    this._viewValue = viewValue;
+    this._label = label;
+    this._group = group;
+    this._disabled = disabled;
   }
 }
 
 ngOptionsDirective.$inject = [$injectTokens._compile, $injectTokens._parse];
 
 type NgOptionsCollection = {
-  items: OptionItem[];
-  selectValueMap: Record<string, OptionItem>;
-  getOptionFromViewValue(value: any): OptionItem | undefined;
-  getViewValueFromOption(option: OptionItem): any;
+  _items: OptionItem[];
+  _selectValueMap: Record<string, OptionItem>;
+  _getOptionFromViewValue(value: any): OptionItem | undefined;
+  _getViewValueFromOption(option: OptionItem): any;
+};
+
+type NgOptionsDefinition = {
+  _trackBy: string | undefined;
+  _getWatchables: string;
+  _getOptions(): NgOptionsCollection;
 };
 
 type SelectControllerLike = Record<string, any>;
@@ -62,7 +68,7 @@ export function ngOptionsDirective(
     optionsExp: string,
     selectElement: HTMLSelectElement,
     scope: ng.Scope,
-  ) {
+  ): NgOptionsDefinition {
     const match = optionsExp.match(NG_OPTIONS_REGEXP);
 
     if (!match) {
@@ -93,7 +99,7 @@ export function ngOptionsDirective(
     const trackByFn = trackBy ? $parse(trackBy) : undefined;
 
     const getTrackByValueFn = trackBy
-      ? function (value: any, locals: Record<string, any>) {
+      ? function (_value: any, locals: Record<string, any>) {
           return trackByFn!(scope, locals);
         }
       : function getHashOfValue(value: any) {
@@ -115,57 +121,29 @@ export function ngOptionsDirective(
     const locals: Record<string, any> = {};
 
     const getLocals = keyName
-      ? function (value: any, key: any) {
+      ? (value: any, key: any) => {
           locals[keyName] = key;
           locals[valueName] = value;
 
           return locals;
         }
-      : function (value: any) {
+      : (value: any) => {
           locals[valueName] = value;
 
           return locals;
         };
 
-    function getOptionValuesKeys(optionValues: any) {
-      let optionValuesKeys: any[];
-
-      if (!keyName && isArrayLike(optionValues)) {
-        optionValuesKeys = optionValues;
-      } else {
-        optionValuesKeys = [];
-
-        for (const itemKey in optionValues) {
-          if (hasOwn(optionValues, itemKey) && itemKey.charAt(0) !== "$") {
-            optionValuesKeys.push(itemKey);
-          }
-        }
-      }
-
-      return optionValuesKeys;
-    }
-
     return {
-      trackBy,
-      getTrackByValue,
-      getWatchables: match[8],
-      getOptions() {
-        const optionItems = [];
+      _trackBy: trackBy,
+      _getWatchables: match[8],
+      _getOptions() {
+        const optionItems: OptionItem[] = [];
 
         const selectValueMap: Record<string, OptionItem> = {};
 
         const optionValues = valuesFn(scope) || [];
 
-        const optionValuesKeys = getOptionValuesKeys(optionValues);
-
-        const optionValuesLength = optionValuesKeys.length;
-
-        for (let index = 0; index < optionValuesLength; index++) {
-          const key =
-            optionValues === optionValuesKeys ? index : optionValuesKeys[index];
-
-          const value = optionValues[key];
-
+        const addOption = (value: any, key: any) => {
           const updatedLocals = getLocals(value, key);
 
           const viewValue = viewValueFn(scope, updatedLocals);
@@ -188,18 +166,30 @@ export function ngOptionsDirective(
 
           optionItems.push(optionItem);
           selectValueMap[selectValue] = optionItem;
+        };
+
+        if (!keyName && isArrayLike(optionValues)) {
+          for (let index = 0, l = optionValues.length; index < l; index++) {
+            addOption(optionValues[index], index);
+          }
+        } else {
+          for (const itemKey in optionValues) {
+            if (hasOwn(optionValues, itemKey) && itemKey.charAt(0) !== "$") {
+              addOption(optionValues[itemKey], itemKey);
+            }
+          }
         }
 
         return {
-          items: optionItems,
-          selectValueMap,
-          getOptionFromViewValue(value: any) {
+          _items: optionItems,
+          _selectValueMap: selectValueMap,
+          _getOptionFromViewValue(value: any) {
             return selectValueMap[getTrackByValue(value, undefined)];
           },
-          getViewValueFromOption(option: OptionItem) {
+          _getViewValueFromOption(option: OptionItem) {
             return trackBy
-              ? structuredClone(option.viewValue)
-              : option.viewValue;
+              ? structuredClone(option._viewValue)
+              : option._viewValue;
           },
         };
       },
@@ -226,19 +216,15 @@ export function ngOptionsDirective(
       i++
     ) {
       if ((children[i] as HTMLOptionElement).value === "") {
-        selectCtrl.hasEmptyOption = true;
-        selectCtrl.emptyOption = children[i];
+        selectCtrl._hasEmptyOption = true;
+        selectCtrl._emptyOption = children[i];
         break;
       }
     }
 
     emptyElement(selectNode);
 
-    const providedEmptyOption = !!selectCtrl.emptyOption;
-
-    const unknownOption = optionTemplate.cloneNode(false) as HTMLOptionElement;
-
-    unknownOption.nodeValue = "?";
+    const providedEmptyOption = !!selectCtrl._emptyOption;
 
     let options: NgOptionsCollection | undefined;
 
@@ -254,19 +240,19 @@ export function ngOptionsDirective(
 
         const selectedOption = selectNode.options[selectNode.selectedIndex];
 
-        const option = options.getOptionFromViewValue(value);
+        const option = options._getOptionFromViewValue(value);
 
         if (selectedOption) selectedOption.removeAttribute("selected");
 
         if (option) {
-          if (selectNode.value !== option.selectValue) {
+          if (selectNode.value !== option._selectValue) {
             selectCtrl._removeUnknownOption();
 
-            selectNode.value = option.selectValue;
-            option.element!.selected = true;
+            selectNode.value = option._selectValue;
+            option._element!.selected = true;
           }
 
-          option.element!.setAttribute("selected", "selected");
+          option._element!.setAttribute("selected", "selected");
         } else {
           selectCtrl._selectUnknownOrEmptyOption(value);
         }
@@ -274,23 +260,17 @@ export function ngOptionsDirective(
 
       selectCtrl._readValue = function readNgOptionsValue() {
         if (!options) return null;
-        const selectedOption = options.selectValueMap[selectNode.value];
+        const selectedOption = options._selectValueMap[selectNode.value];
 
-        if (selectedOption && !selectedOption.disabled) {
-          selectCtrl._un_selectEmptyOption();
+        if (selectedOption && !selectedOption._disabled) {
+          selectCtrl._unselectEmptyOption();
           selectCtrl._removeUnknownOption();
 
-          return options.getViewValueFromOption(selectedOption);
+          return options._getViewValueFromOption(selectedOption);
         }
 
         return null;
       };
-
-      if (ngOptions.trackBy) {
-        scope.$watch(attr.ngModel, () => {
-          ngModelCtrl.$render();
-        });
-      }
     } else {
       selectCtrl._writeValue = function writeNgOptionsMultiple(values: any[]) {
         if (!options) return;
@@ -298,14 +278,14 @@ export function ngOptionsDirective(
         const selectedOptions =
           (values && values.map(getAndUpdateSelectedOption)) || [];
 
-        options.items.forEach((option) => {
-          if (option.element?.selected && !includes(selectedOptions, option)) {
-            option.element.selected = false;
+        options._items.forEach((option) => {
+          if (option._element?.selected && !includes(selectedOptions, option)) {
+            option._element.selected = false;
           }
         });
       };
 
-      selectCtrl._readValue = function readNgOptionsMultiple() {
+      selectCtrl._readValue = () => {
         if (!options) return [];
 
         const selections: any[] = [];
@@ -316,47 +296,47 @@ export function ngOptionsDirective(
           const optionEl = optionsEls[i];
 
           if (optionEl.selected) {
-            const option = options.selectValueMap[optionEl.value];
+            const option = options._selectValueMap[optionEl.value];
 
-            if (option && !option.disabled) {
-              selections.push(options.getViewValueFromOption(option));
+            if (option && !option._disabled) {
+              selections.push(options._getViewValueFromOption(option));
             }
           }
         }
 
         return selections;
       };
+    }
 
-      if (ngOptions.trackBy) {
-        scope.$watch(attr.ngModel, () => {
-          ngModelCtrl.$render();
-        });
-      }
+    if (ngOptions._trackBy) {
+      scope.$watch(attr.ngModel, () => {
+        ngModelCtrl.$render();
+      });
     }
 
     if (providedEmptyOption) {
-      const linkFn = $compile(selectCtrl.emptyOption);
+      const linkFn = $compile(selectCtrl._emptyOption);
 
-      selectNode.prepend(selectCtrl.emptyOption);
+      selectNode.prepend(selectCtrl._emptyOption);
       linkFn(scope);
 
-      if (selectCtrl.emptyOption.nodeType === NodeType._COMMENT_NODE) {
-        selectCtrl.hasEmptyOption = false;
+      if (selectCtrl._emptyOption.nodeType === NodeType._COMMENT_NODE) {
+        selectCtrl._hasEmptyOption = false;
 
-        selectCtrl.registerOption = function (
+        selectCtrl._registerOption = function (
           _optionScope: ng.Scope,
           optionEl: HTMLOptionElement,
         ) {
           if (optionEl.value === "") {
-            selectCtrl.hasEmptyOption = true;
-            selectCtrl.emptyOption = optionEl;
+            selectCtrl._hasEmptyOption = true;
+            selectCtrl._emptyOption = optionEl;
             ngModelCtrl.$render();
 
             optionEl.addEventListener("$destroy", () => {
               const needsRerender = selectCtrl.$isEmptyOptionSelected();
 
-              selectCtrl.hasEmptyOption = false;
-              selectCtrl.emptyOption = undefined;
+              selectCtrl._hasEmptyOption = false;
+              selectCtrl._emptyOption = undefined;
 
               if (needsRerender) ngModelCtrl.$render();
             });
@@ -365,7 +345,7 @@ export function ngOptionsDirective(
       }
     }
 
-    scope.$watch(ngOptions.getWatchables, updateOptions as any);
+    scope.$watch(ngOptions._getWatchables, updateOptions as any);
 
     function _addOptionElement(
       option: OptionItem,
@@ -380,9 +360,9 @@ export function ngOptionsDirective(
     }
 
     function getAndUpdateSelectedOption(viewValue: any) {
-      const option = options?.getOptionFromViewValue(viewValue);
+      const option = options?._getOptionFromViewValue(viewValue);
 
-      const element = option && option.element;
+      const element = option && option._element;
 
       if (element && !element.selected) element.selected = true;
 
@@ -393,52 +373,53 @@ export function ngOptionsDirective(
       option: OptionItem,
       element: HTMLOptionElement,
     ) {
-      option.element = element;
-      element.disabled = option.disabled;
+      option._element = element;
+      element.disabled = option._disabled;
 
-      if (option.label !== element.label) {
-        element.label = option.label;
-        element.textContent = option.label;
+      if (option._label !== element.label) {
+        element.label = option._label;
+        element.textContent = option._label;
       }
-      element.value = option.selectValue;
+      element.value = option._selectValue;
     }
 
     function updateOptions() {
       const previousValue = options && selectCtrl._readValue();
 
       if (options) {
-        for (let i = options.items.length - 1; i >= 0; i--) {
-          const option = options.items[i];
+        for (let i = options._items.length - 1; i >= 0; i--) {
+          const option = options._items[i];
 
-          if (isDefined(option.group)) {
-            if (option.element?.parentElement) {
-              removeElement(option.element.parentElement);
+          if (isDefined(option._group)) {
+            if (option._element?.parentElement) {
+              removeElement(option._element.parentElement);
             }
           } else {
-            if (option.element) {
-              removeElement(option.element);
+            if (option._element) {
+              removeElement(option._element);
             }
           }
         }
       }
 
-      options = ngOptions.getOptions();
+      options = ngOptions._getOptions();
 
       const groupElementMap: Record<string, HTMLOptGroupElement> = {};
 
-      options.items.forEach((option) => {
+      options._items.forEach((option) => {
         let groupElement;
 
-        if (isDefined(option.group)) {
-          groupElement = groupElementMap[String(option.group)];
+        if (isDefined(option._group)) {
+          groupElement = groupElementMap[String(option._group)];
 
           if (!groupElement) {
             groupElement = optGroupTemplate.cloneNode(
               false,
             ) as HTMLOptGroupElement;
             listFragment.appendChild(groupElement);
-            groupElement.label = option.group === null ? "null" : option.group;
-            groupElementMap[String(option.group)] = groupElement;
+            groupElement.label =
+              option._group === null ? "null" : option._group;
+            groupElementMap[String(option._group)] = groupElement;
           }
 
           _addOptionElement(option, groupElement);
@@ -454,7 +435,7 @@ export function ngOptionsDirective(
       if (!ngModelCtrl.$isEmpty(previousValue)) {
         const nextValue = selectCtrl._readValue();
 
-        const isNotPrimitive = ngOptions.trackBy || multiple;
+        const isNotPrimitive = ngOptions._trackBy || multiple;
 
         if (
           isNotPrimitive
@@ -474,12 +455,12 @@ export function ngOptionsDirective(
     require: ["select", "ngModel"],
     link: {
       pre: function ngOptionsPreLink(
-        scope: ng.Scope,
-        selectElement: Element,
-        attr: ng.Attributes,
+        _scope: ng.Scope,
+        _selectElement: Element,
+        _attr: ng.Attributes,
         ctrls: [SelectControllerLike],
       ) {
-        ctrls[0].registerOption = () => {
+        ctrls[0]._registerOption = () => {
           /* empty */
         };
       },
