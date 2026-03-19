@@ -24,13 +24,13 @@ describe("ngOptions", () => {
   async function compile(html) {
     element.innerHTML = `<form name="form">${html}</form>`;
     formElement = $compile(element)(scope);
-    await wait();
     element = formElement.querySelector("select");
     ngModelCtrl = getController(element, "ngModel");
+    await wait();
   }
 
   function setSelectValue(selectElement, optionIndex) {
-    const option = selectElement.querySelector("option")[optionIndex];
+    const option = selectElement.querySelectorAll("option")[optionIndex];
     selectElement.value = option.value;
     browserTrigger(element, "change");
   }
@@ -254,9 +254,7 @@ describe("ngOptions", () => {
           : '<option value="?">unknown</option>'
         : ""
     }</select>`;
-    element.innerHTML = html;
-
-    await compile(element);
+    await compile(html);
   }
 
   function createSingleSelect(blank, unknown) {
@@ -283,7 +281,9 @@ describe("ngOptions", () => {
   }
 
   fit('should throw when not formated "? for ? in ?"', async () => {
-    compile('<select ng-model="selected" ng-options="i dont parse"></select>');
+    await compile(
+      '<select ng-model="selected" ng-options="i dont parse"></select>',
+    );
     await wait();
     expect(errors[0]).toMatch("iexp");
   });
@@ -507,7 +507,7 @@ describe("ngOptions", () => {
     expect(element.querySelectorAll("option").length).toEqual(1); // we add back the special empty option
   });
 
-  it("should shrink and then grow list", async () => {
+  fit("should shrink and then grow list", async () => {
     element.innerHTML =
       '<select ng-model="selected" ng-options="value.name for value in values"></select>';
     injector = window.angular.bootstrap(element, ["myModule"]);
@@ -532,7 +532,7 @@ describe("ngOptions", () => {
     expect(element.querySelectorAll("option").length).toEqual(3);
   });
 
-  it("should update list", async () => {
+  fit("should update list", async () => {
     element.innerHTML =
       '<select ng-model="selected" ng-options="value.name for value in values"></select>';
     injector = window.angular.bootstrap(element, ["myModule"]);
@@ -553,7 +553,7 @@ describe("ngOptions", () => {
     expect(options[2]).toEqualOption(scope.values[2], "D");
   });
 
-  it("should preserve pre-existing empty option", async () => {
+  fit("should preserve pre-existing empty option", async () => {
     element.innerHTML =
       '<select ng-model="selected" ng-options="value.name for value in values"><option value="">blank</option></select>';
     injector = window.angular.bootstrap(element, ["myModule"]);
@@ -578,7 +578,7 @@ describe("ngOptions", () => {
     expect(element.querySelectorAll("option")[0].textContent).toEqual("blank");
   });
 
-  it("should ignore $ and $$ properties", async () => {
+  fit("should ignore $ and $$ properties", async () => {
     element.innerHTML =
       '<select ng-model="selected" ng-options="key as value for (key, value) in object"></select>';
     injector = window.angular.bootstrap(element, ["myModule"]);
@@ -596,7 +596,7 @@ describe("ngOptions", () => {
     expect(options[0]).toEqualOption("regularProperty", "visible");
   });
 
-  it("should not watch non-numeric array properties", async () => {
+  fit("should not watch non-numeric array properties", async () => {
     element.innerHTML = $compile(
       '<select ng-model="selected" ng-options="value as createLabel(value) for value in array"></select>',
     )(scope);
@@ -617,7 +617,7 @@ describe("ngOptions", () => {
     expect(scope.createLabel).not.toHaveBeenCalledWith(jasmine.any(Function));
   });
 
-  it("should not watch object properties that start with $ or $$", async () => {
+  fit("should not watch object properties that start with $ or $$", async () => {
     element.innerHTML = $compile(
       '<select ng-model="selected" ng-options="key as createLabel(key) for (key, value) in object"></select>',
     )(scope);
@@ -636,7 +636,7 @@ describe("ngOptions", () => {
     expect(scope.createLabel).not.toHaveBeenCalledWith("$property");
   });
 
-  xit("should allow expressions over multiple lines", async () => {
+  fit("should allow expressions over multiple lines", async () => {
     scope.isNotFoo = function (item) {
       return item.name !== "Foo";
     };
@@ -645,11 +645,12 @@ describe("ngOptions", () => {
       { id: 2, name: "Bar" },
       { id: 3, name: "Baz" },
     ];
-    element.innerHTML = $compile(
-      '<select ng-model="selected" ng-options="key.id for key in values | filter:isNotFoo"></select>',
-    )(scope);
-
-    await wait();
+    await compile(
+      `<select
+        ng-model="selected"
+        ng-options="key.id
+          for key in values | filter:isNotFoo"></select>`,
+    );
 
     scope.selected = scope.values[0];
     await wait();
@@ -659,12 +660,12 @@ describe("ngOptions", () => {
     expect(options[2]).toEqualOption(scope.values[2], "3");
   });
 
-  xit("should not update selected property of an option element on digest with no change event", async () => {
+  fit("should not update selected property of an option element on digest with no change event", async () => {
     // ng-options="value.name for value in values"
     // ng-model="selected"
-    element.innerHTML = $compile(
+    await compile(
       '<select ng-model="selected" ng-options="value.name for value in values"></select>',
-    )(scope);
+    );
     await wait();
     scope.values = [{ name: "A" }, { name: "B" }, { name: "C" }];
     scope.selected = scope.values[0];
@@ -672,34 +673,32 @@ describe("ngOptions", () => {
     const options = element.querySelectorAll("option");
 
     expect(scope.selected).toEqual(jasmine.objectContaining({ name: "A" }));
-    expect(options[0][0].selected).toBe(true);
-    expect(options[1][0].selected).toBe(false);
+    expect(options[0].selected).toBe(true);
+    expect(options[1].selected).toBe(false);
 
     const optionToSelect = options[1];
     await wait();
     expect(optionToSelect.textContent).toBe("B");
 
-    optionToSelect[0].selected = true;
+    optionToSelect.selected = true;
     await wait();
-    expect(optionToSelect[0].selected).toBe(true);
+    expect(optionToSelect.selected).toBe(true);
     expect(scope.selected).toBe(scope.values[0]);
   });
 
   // bug fix #9621
-  xit("should update the label property", async () => {
+  fit("should update the label property", async () => {
     // ng-options="value.name for value in values"
     // ng-model="selected"
     scope.values = [{ name: "A" }, { name: "B" }, { name: "C" }];
     scope.selected = scope.values[0];
-    await wait();
-    element.innerHTML = $compile(
+    await compile(
       '<select ng-model="selected" ng-options="value.name for value in values"></select>',
-    )(scope);
-    await wait();
+    );
     const options = element.querySelectorAll("option");
-    expect(options[0][0].label).toEqual("A");
-    expect(options[1][0].label).toEqual("B");
-    expect(options[2][0].label).toEqual("C");
+    expect(options[0].label).toEqual("A");
+    expect(options[1].label).toEqual("B");
+    expect(options[2].label).toEqual("C");
   });
 
   it("should update the label if only the property has changed", async () => {
@@ -723,22 +722,23 @@ describe("ngOptions", () => {
   });
 
   // bug fix #9714
-  it("should select the matching option when the options are updated", () => {
+  fit("should select the matching option when the options are updated", async () => {
     // first set up a select with no options
     scope.selected = "";
-    createSelect({
+    await createSelect({
       "ng-options": "val.id as val.label for val in values",
       "ng-model": "selected",
     });
     let options = element.querySelectorAll("option");
     // we expect the selected option to be the "unknown" option
     expect(options[0]).toEqualUnknownOption("");
-    expect(options[0][0].selected).toEqual(true);
+    expect(options[0].selected).toEqual(true);
 
     // now add some real options - one of which matches the selected value
     scope.$apply(
       'values = [{id:"",label:"A"},{id:"1",label:"B"},{id:"2",label:"C"}]',
     );
+    await wait();
 
     // we expect the selected option to be the one that matches the correct item
     // and for the unknown option to have been removed
@@ -747,13 +747,13 @@ describe("ngOptions", () => {
     expect(options[0]).toEqualOption("", "A");
   });
 
-  it('should remove the "selected" attribute from the previous option when the model changes', () => {
+  fit('should remove the "selected" attribute from the previous option when the model changes', async () => {
     scope.values = [
       { id: 10, label: "ten" },
       { id: 20, label: "twenty" },
     ];
 
-    createSelect(
+    await createSelect(
       {
         "ng-model": "selected",
         "ng-options": "item.label for item in values",
@@ -767,23 +767,27 @@ describe("ngOptions", () => {
     expect(options[2].selected).not.toBe(true);
 
     scope.selected = scope.values[0];
+    await wait();
     expect(options[0].selected).not.toBe(true);
     expect(options[1].selected).toBe(true);
     expect(options[2].selected).not.toBe(true);
 
     scope.selected = scope.values[1];
+    await wait();
     expect(options[0].selected).not.toBe(true);
     expect(options[1].selected).not.toBe(true);
     expect(options[2].selected).toBe(true);
 
     // This will select the empty option
     scope.selected = null;
+    await wait();
     expect(options[0].selected).toBe(true);
     expect(options[1].selected).not.toBe(true);
     expect(options[2].selected).not.toBe(true);
 
     // This will add and select the unknown option
     scope.selected = "unmatched value";
+    await wait();
     options = element.querySelectorAll("option");
 
     expect(options[0].selected).toBe(true);
@@ -793,6 +797,7 @@ describe("ngOptions", () => {
 
     // Back to matched value
     scope.selected = scope.values[1];
+    await wait();
     options = element.querySelectorAll("option");
 
     expect(options[0].selected).not.toBe(true);
@@ -840,10 +845,10 @@ describe("ngOptions", () => {
         const options = element.querySelectorAll("option");
 
         expect(options.length).toEqual(5);
-        expect(options[1][0].disabled).toEqual(false);
-        expect(options[2][0].disabled).toEqual(true);
-        expect(options.eq(3)[0].disabled).toEqual(false);
-        expect(options.eq(4)[0].disabled).toEqual(false);
+        expect(options[1].disabled).toEqual(false);
+        expect(options[2].disabled).toEqual(true);
+        expect(options.eq(3).disabled).toEqual(false);
+        expect(options.eq(4).disabled).toEqual(false);
       });
 
       it("should select disabled options when model changes", () => {
