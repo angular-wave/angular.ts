@@ -8,7 +8,7 @@ import { $injectTokens as $t } from "../../injection-tokens.ts";
 import type { ParseService } from "../parse/parse.ts";
 
 export interface InterpolationFunction {
-  expressions: any[];
+  expressions: string[];
   /**
    * Evaluate the interpolation.
    * @param context - The scope/context

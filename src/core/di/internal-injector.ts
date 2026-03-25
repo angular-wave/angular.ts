@@ -57,7 +57,7 @@ class AbstractInjector {
     this._cache[serviceName] = INSTANTIATING;
 
     try {
-      this._cache[serviceName] = this.factory(serviceName);
+      this._cache[serviceName] = this._factory(serviceName);
     } catch (err) {
       // this is for the error handling being thrown by the providerCache multiple times
       delete this._cache[serviceName];
@@ -179,7 +179,7 @@ class AbstractInjector {
    * @returns {any}
    */
 
-  factory(serviceName: string): any {
+  _factory(serviceName: string): any {
     void serviceName;
 
     return undefined;
@@ -204,7 +204,7 @@ export class ProviderInjector extends AbstractInjector {
    * @param {string} caller - The name of the caller requesting the service.
    * @throws {Error} If the provider is unknown.
    */
-  factory(caller: string): never {
+  _factory(caller: string): never {
     this._path.push(caller);
     // prevents lookups to providers through get
     throw $injectorMinErr(
@@ -244,7 +244,7 @@ export class InjectorService extends AbstractInjector {
    * @param {string} serviceName
    * @returns {*}
    */
-  factory(serviceName: string): any {
+  _factory(serviceName: string): any {
     const provider = this._providerInjector.get(serviceName + providerSuffix);
 
     return this.invoke(provider.$get, provider, undefined, serviceName);

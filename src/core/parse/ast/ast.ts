@@ -14,6 +14,10 @@ const literals: Record<string, unknown> = {
   undefined,
 };
 
+function cloneSelfReferentialNode(node: ASTNode): ASTNode {
+  return { ...node };
+}
+
 export class AST {
   _lexer: Lexer;
   _selfReferential: Record<string, ASTNode>;
@@ -361,7 +365,9 @@ export class AST {
     } else if (this._expect("{")) {
       primary = this._object();
     } else if (hasOwn(this._selfReferential, (peekToken as Token).text)) {
-      primary = structuredClone(this._selfReferential[this._consume().text]);
+      primary = cloneSelfReferentialNode(
+        this._selfReferential[this._consume().text],
+      );
     } else if (hasOwn(literals, (peekToken as Token).text)) {
       primary = {
         _type: ASTType._Literal,
