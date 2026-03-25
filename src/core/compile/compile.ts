@@ -40,7 +40,6 @@ import {
   nullObject,
   simpleCompare,
   trim,
-  values,
 } from "../../shared/utils.ts";
 import { SCE_CONTEXTS } from "../../services/sce/sce.ts";
 import { PREFIX_REGEXP } from "../../shared/constants.ts";
@@ -326,8 +325,8 @@ export interface CompileControllerLocals {
 }
 
 export type ControllerInstanceRef = (() => any) & {
-  instance: any;
-  bindingInfo?: DirectiveBindingInfo;
+  _instance: any;
+  _bindingInfo?: DirectiveBindingInfo;
 };
 
 export type ElementControllers = Record<string, ControllerInstanceRef>;
@@ -516,13 +515,19 @@ export class CompileProvider {
 
       const bindings = nullObject() as IsolateBindingMap;
 
-      entries(scope).forEach(([scopeName, definition]) => {
+      const scopeNames = Object.keys(scope);
+
+      for (let i = 0, l = scopeNames.length; i < l; i++) {
+        const scopeName = scopeNames[i];
+
+        let definition = scope[scopeName];
+
         definition = definition.trim();
 
         if (definition in bindingCache) {
           bindings[scopeName] = bindingCache[definition];
 
-          return;
+          continue;
         }
         const match = definition.match(LOCAL_REGEXP);
 
@@ -550,7 +555,7 @@ export class CompileProvider {
         if (match[4]) {
           bindingCache[definition] = bindings[scopeName];
         }
-      });
+      }
 
       return bindings;
     }
@@ -1150,7 +1155,7 @@ export class CompileProvider {
             if (_transcludeControllers) {
               const controllers = _transcludeControllers as Record<
                 string,
-                { instance: any }
+                { _instance: any }
               >;
 
               for (const controllerName in controllers) {
@@ -1158,7 +1163,7 @@ export class CompileProvider {
                 setCacheData(
                   $linkNode.element,
                   `$${controllerName}Controller`,
-                  controllers[controllerName].instance,
+                  controllers[controllerName]._instance,
                 );
               }
             }
@@ -2171,53 +2176,61 @@ export class CompileProvider {
 
             const controllerInstance = controller();
 
-            controller.instance = controllerScope.$new(controllerInstance);
+            controller._instance = controllerScope.$new(controllerInstance);
             setCacheData(
               $element.node,
               `$${controllerDirective.name}Controller`,
-              controller.instance,
+              controller._instance,
             );
-            controller.bindingInfo = initializeDirectiveBindings(
+            controller._bindingInfo = initializeDirectiveBindings(
               controllerScope,
               attrs,
-              controller.instance,
+              controller._instance,
               bindings,
               controllerDirective,
             );
           }
 
           if (nodeLinkState._controllerDirectives) {
-            entries(controllerDirectives).forEach(
-              ([name, controllerDirective]) => {
-                const { require } = controllerDirective;
+            const controllerNames = Object.keys(controllerDirectives);
 
-                if (
-                  controllerDirective.bindToController &&
-                  !isArray(require) &&
-                  isObject(require)
-                ) {
-                  extend(
-                    elementControllers[name].instance,
-                    getControllers(
-                      name,
-                      require,
-                      $element.element,
-                      elementControllers,
-                    ),
-                  );
-                }
-              },
-            );
+            for (let i = 0, l = controllerNames.length; i < l; i++) {
+              const name = controllerNames[i];
+
+              const controllerDirective = controllerDirectives[name];
+
+              const { require } = controllerDirective;
+
+              if (
+                controllerDirective.bindToController &&
+                !isArray(require) &&
+                isObject(require)
+              ) {
+                extend(
+                  elementControllers[name]._instance,
+                  getControllers(
+                    name,
+                    require,
+                    $element.element,
+                    elementControllers,
+                  ),
+                );
+              }
+            }
           }
 
           if (elementControllers) {
-            values(elementControllers).forEach((controller) => {
-              const controllerInstance = controller.instance;
+            const controllerNames = Object.keys(elementControllers);
+
+            for (let i = 0, l = controllerNames.length; i < l; i++) {
+              const controller = elementControllers[controllerNames[i]];
+
+              const controllerInstance = controller._instance;
 
               if (isFunction(controllerInstance.$onChanges)) {
                 try {
                   controllerInstance.$onChanges(
-                    controller.bindingInfo!.initialChanges,
+                    controller._bindingInfo!.initialChanges,
                   );
                 } catch (err) {
                   $exceptionHandler(err);
@@ -2237,7 +2250,7 @@ export class CompileProvider {
                   controllerInstance.$onDestroy();
                 });
               }
-            });
+            }
           }
 
           for (let i = 0, ii = nodeLinkState._preLinkFns.length; i < ii; i++) {
@@ -2319,13 +2332,17 @@ export class CompileProvider {
           }
 
           if (elementControllers) {
-            values(elementControllers).forEach((controller) => {
-              const controllerInstance = controller.instance;
+            const controllerNames = Object.keys(elementControllers);
+
+            for (let i = 0, l = controllerNames.length; i < l; i++) {
+              const controller = elementControllers[controllerNames[i]];
+
+              const controllerInstance = controller._instance;
 
               if (isFunction(controllerInstance.$postLink)) {
                 controllerInstance.$postLink();
               }
-            });
+            }
           }
         }
 
@@ -2580,27 +2597,35 @@ export class CompileProvider {
                   const filledSlots = nullObject();
 
                   // Parse the element selectors
-                  entries(directiveValue).forEach(
-                    ([slotName, elementSelector]) => {
-                      // If an element selector starts with a ? then it is optional
-                      const optional = elementSelector.charAt(0) === "?";
+                  const slotNames = Object.keys(directiveValue);
 
-                      elementSelector = optional
-                        ? elementSelector.substring(1)
-                        : elementSelector;
+                  for (
+                    let slotIndex = 0, slotCount = slotNames.length;
+                    slotIndex < slotCount;
+                    slotIndex++
+                  ) {
+                    const slotName = slotNames[slotIndex];
 
-                      slotMap[elementSelector] = slotName;
+                    let elementSelector = directiveValue[slotName];
 
-                      // We explicitly assign `null` since this implies that a slot was defined but not filled.
-                      // Later when calling boundTransclusion functions with a slot name we only error if the
-                      // slot is `undefined`
-                      slots[slotName] = null;
+                    // If an element selector starts with a ? then it is optional
+                    const optional = elementSelector.charAt(0) === "?";
 
-                      // filledSlots contains `true` for all slots that are either optional or have been
-                      // filled. This is used to check that we have not missed any required slots
-                      filledSlots[slotName] = optional;
-                    },
-                  );
+                    elementSelector = optional
+                      ? elementSelector.substring(1)
+                      : elementSelector;
+
+                    slotMap[elementSelector] = slotName;
+
+                    // We explicitly assign `null` since this implies that a slot was defined but not filled.
+                    // Later when calling boundTransclusion functions with a slot name we only error if the
+                    // slot is `undefined`
+                    slots[slotName] = null;
+
+                    // filledSlots contains `true` for all slots that are either optional or have been
+                    // filled. This is used to check that we have not missed any required slots
+                    filledSlots[slotName] = optional;
+                  }
 
                   // Clone childnodes before distributing to slots
                   // Clone each node individually to prevent browser DOM normalization
@@ -2633,7 +2658,17 @@ export class CompileProvider {
                   }
 
                   // Check for required slots that were not filled
-                  entries(filledSlots).forEach(([slotName, filled]) => {
+                  const filledSlotNames = Object.keys(filledSlots);
+
+                  for (
+                    let slotIndex = 0, slotCount = filledSlotNames.length;
+                    slotIndex < slotCount;
+                    slotIndex++
+                  ) {
+                    const slotName = filledSlotNames[slotIndex];
+
+                    const filled = filledSlots[slotName];
+
                     if (!filled) {
                       throw $compileMinErr(
                         "reqslot",
@@ -2641,7 +2676,7 @@ export class CompileProvider {
                         slotName,
                       );
                     }
-                  });
+                  }
 
                   for (const slotName in slots) {
                     if (slots[slotName]) {
@@ -2945,7 +2980,7 @@ export class CompileProvider {
               // the element is transcluded (and has no data) and to avoid .data if possible
             } else {
               value = elementControllers && elementControllers[name];
-              value = value && value.instance;
+              value = value && value._instance;
             }
 
             if (!value) {
@@ -2989,14 +3024,20 @@ export class CompileProvider {
             }
           } else if (isObject(require)) {
             value = {};
-            entries(require).forEach(([property, controller]) => {
+            const requireKeys = Object.keys(require);
+
+            for (let i = 0, l = requireKeys.length; i < l; i++) {
+              const property = requireKeys[i];
+
+              const controller = require[property];
+
               value[property] = getControllers(
                 directiveName,
                 controller,
                 $element,
                 elementControllers,
               );
-            });
+            }
           }
 
           return value || null;
@@ -3051,7 +3092,7 @@ export class CompileProvider {
               setCacheData(
                 $element.element,
                 `$${directive.name}Controller`,
-                controllerInstance.instance,
+                controllerInstance._instance,
               );
             }
           }
@@ -3150,7 +3191,13 @@ export class CompileProvider {
           const dstAttr = dst.$attr;
 
           // reapply the old attributes to the new element
-          entries(dstAny).forEach(([key, value]) => {
+          const dstKeys = Object.keys(dstAny);
+
+          for (let i = 0, l = dstKeys.length; i < l; i++) {
+            const key = dstKeys[i];
+
+            let value = dstAny[key];
+
             if (key[0] !== "$" && key[0] !== "_") {
               if (srcAny[key] && srcAny[key] !== value) {
                 if (value.length) {
@@ -3161,10 +3208,16 @@ export class CompileProvider {
               }
               dst.$set(key, value, true, srcAttr[key]);
             }
-          });
+          }
 
           // copy the new attributes on the old attrs object
-          entries(srcAny).forEach(([key, value]) => {
+          const srcKeys = Object.keys(srcAny);
+
+          for (let i = 0, l = srcKeys.length; i < l; i++) {
+            const key = srcKeys[i];
+
+            const value = srcAny[key];
+
             // Check if we already set this attribute in the loop above.
             // `dst` will never contain hasOwnProperty as DOM parser won't let it.
             // You will get an "InvalidCharacterError: DOM Exception 5" error if you
@@ -3176,7 +3229,7 @@ export class CompileProvider {
                 dstAttr[key] = srcAttr[key];
               }
             }
-          });
+          }
         }
 
         /** Compiles an async `templateUrl` directive and returns a delayed node-link descriptor. */
@@ -3723,7 +3776,17 @@ export class CompileProvider {
             attrs._observers || (attrs._observers = nullObject() as any);
 
           if (bindings) {
-            entries(bindings).forEach(([scopeName, definition]) => {
+            const bindingNames = Object.keys(bindings);
+
+            for (
+              let bindingIndex = 0;
+              bindingIndex < bindingNames.length;
+              bindingIndex++
+            ) {
+              const scopeName = bindingNames[bindingIndex];
+
+              const definition = bindings[scopeName];
+
               const {
                 attrName,
                 optional,
@@ -3907,17 +3970,30 @@ export class CompileProvider {
                       } else {
                         // manually set the handler to avoid watch cycles
                         if (isObject(val)) {
-                          entries(val).forEach(([key, value]) => {
-                            scopeTarget[key] = value;
-                          });
+                          const valueKeys = Object.keys(val);
+
+                          for (let i = 0, l = valueKeys.length; i < l; i++) {
+                            const key = valueKeys[i];
+
+                            scopeTarget[key] = val[key];
+                          }
                         } else {
                           parentSet(scopeTarget, (lastValue = val));
                           const attributeWatchers =
                             scope.$handler._watchers.get(attrsAny[attrName]);
 
-                          attributeWatchers?.forEach((watchFn) => {
-                            watchFn._listenerFn(val, scope.$target);
-                          });
+                          if (attributeWatchers) {
+                            for (
+                              let i = 0, l = attributeWatchers.length;
+                              i < l;
+                              i++
+                            ) {
+                              attributeWatchers[i]._listenerFn(
+                                val,
+                                scope.$target,
+                              );
+                            }
+                          }
                         }
                       }
                     },
@@ -3987,7 +4063,7 @@ export class CompileProvider {
 
                   break;
               }
-            });
+            }
           }
 
           /** Records a binding change so `$onChanges` can be invoked once per digest. */

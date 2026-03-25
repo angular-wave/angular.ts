@@ -1,6 +1,5 @@
 import {
   deProxy,
-  entries,
   isDefined,
   isFunction,
   isNullOrUndefined,
@@ -35,6 +34,17 @@ type WatchNode = ASTNode & {
   _input?: CompiledExpression;
   _watchId?: string;
 };
+
+function appendWatchNodes(
+  target: ASTNode[],
+  watchList: ASTNode[] | undefined,
+): void {
+  if (!watchList) return;
+
+  for (let i = 0, l = watchList.length; i < l; i++) {
+    target.push(watchList[i]);
+  }
+}
 
 export class ASTInterpreter {
   _$filter: ng.FilterService;
@@ -71,21 +81,25 @@ export class ASTInterpreter {
     if (toWatch) {
       inputs = [];
 
-      for (const [key, watch] of entries(toWatch) as [string, WatchNode][]) {
+      for (let i = 0, l = toWatch.length; i < l; i++) {
+        const watch = toWatch[i] as WatchNode;
+
         const input = this._recurse(watch) as CompiledExpression;
 
         watch._input = input;
         inputs.push(input);
-        watch._watchId = key;
+        watch._watchId = `${i}`;
       }
     }
     const expressions: CompiledExpressionFunction[] = [];
 
-    body.forEach((expression) => {
+    for (let i = 0, l = body.length; i < l; i++) {
+      const expression = body[i];
+
       expressions.push(
         this._recurse((expression as ExpressionNode)._expression as ASTNode),
       );
-    });
+    }
 
     const fnRaw =
       body.length === 0
@@ -199,9 +213,13 @@ export class ASTInterpreter {
           : this.nonComputedMember(left, right as string, context, create);
       case ASTType._CallExpression:
         args = [];
-        ((ast as ExpressionNode)._arguments as ASTNode[]).forEach((expr) => {
+        const callArguments = (ast as ExpressionNode)._arguments as ASTNode[];
+
+        for (let i = 0, l = callArguments.length; i < l; i++) {
+          const expr = callArguments[i];
+
           args.push(self._recurse(expr));
-        });
+        }
 
         if ((ast as ExpressionNode)._filter)
           right = this._$filter(
@@ -276,9 +294,13 @@ export class ASTInterpreter {
         };
       case ASTType._ArrayExpression:
         args = [];
-        ((ast as ExpressionNode)._elements || []).forEach((expr: ASTNode) => {
+        const elements = (ast as ExpressionNode)._elements || [];
+
+        for (let i = 0, l = elements.length; i < l; i++) {
+          const expr = elements[i] as ASTNode;
+
           args.push(self._recurse(expr));
-        });
+        }
 
         return (scope, locals, assign) => {
           const value: any[] = [];
@@ -291,9 +313,12 @@ export class ASTInterpreter {
         };
       case ASTType._ObjectExpression:
         args = [];
-        (
-          ((ast as ObjectNode)._properties || []) as ObjectPropertyNode[]
-        ).forEach((property: ObjectPropertyNode) => {
+        const properties = ((ast as ObjectNode)._properties ||
+          []) as ObjectPropertyNode[];
+
+        for (let i = 0, l = properties.length; i < l; i++) {
+          const property = properties[i];
+
           if (property._computed) {
             args.push({
               key: self._recurse(property._key as ASTNode),
@@ -310,7 +335,7 @@ export class ASTInterpreter {
               value: self._recurse(property._value as ASTNode),
             });
           }
-        });
+        }
 
         return (scope, locals, assign) => {
           const value: Record<string, any> = {};
@@ -937,7 +962,11 @@ function findConstantAndWatchExpressions(
   switch (ast._type) {
     case ASTType._Program:
       allConstants = true;
-      (decoratedNode as BodyNode)._body.forEach((expr) => {
+      const body = (decoratedNode as BodyNode)._body;
+
+      for (let i = 0, l = body.length; i < l; i++) {
+        const expr = body[i];
+
         const decorated = findConstantAndWatchExpressions(
           (expr as ExpressionNode)._expression as ASTNode,
           $filter,
@@ -945,7 +974,7 @@ function findConstantAndWatchExpressions(
         );
 
         allConstants = allConstants && decorated._constant;
-      });
+      }
       decoratedNode._constant = allConstants;
 
       return decoratedNode;
@@ -979,9 +1008,10 @@ function findConstantAndWatchExpressions(
       );
       decoratedNode._constant =
         decoratedLeft._constant && decoratedRight._constant;
-      decoratedNode._toWatch = (decoratedLeft._toWatch || []).concat(
-        decoratedRight._toWatch || [],
-      );
+      argsToWatch = [];
+      appendWatchNodes(argsToWatch, decoratedLeft._toWatch);
+      appendWatchNodes(argsToWatch, decoratedRight._toWatch);
+      decoratedNode._toWatch = argsToWatch;
 
       return decoratedNode;
     case ASTType._LogicalExpression:
@@ -1052,7 +1082,11 @@ function findConstantAndWatchExpressions(
       isFilter = (ast as ExpressionNode)._filter;
       allConstants = isFilter;
       argsToWatch = [];
-      ((ast as ExpressionNode)._arguments || []).forEach((expr) => {
+      const callArguments = (ast as ExpressionNode)._arguments || [];
+
+      for (let i = 0, l = callArguments.length; i < l; i++) {
+        const expr = callArguments[i];
+
         const decorated = findConstantAndWatchExpressions(
           expr,
           $filter,
@@ -1060,8 +1094,8 @@ function findConstantAndWatchExpressions(
         );
 
         allConstants = allConstants && !!decorated._constant;
-        argsToWatch.push(...(decorated._toWatch || []));
-      });
+        appendWatchNodes(argsToWatch, decorated._toWatch);
+      }
       decoratedNode._constant = allConstants;
       decoratedNode._toWatch = isFilter ? argsToWatch : [decoratedNode];
 
@@ -1085,7 +1119,11 @@ function findConstantAndWatchExpressions(
     case ASTType._ArrayExpression:
       allConstants = true;
       argsToWatch = [];
-      ((ast as ExpressionNode)._elements || []).forEach((expr: ASTNode) => {
+      const elements = (ast as ExpressionNode)._elements || [];
+
+      for (let i = 0, l = elements.length; i < l; i++) {
+        const expr = elements[i] as ASTNode;
+
         const decorated = findConstantAndWatchExpressions(
           expr,
           $filter,
@@ -1093,8 +1131,8 @@ function findConstantAndWatchExpressions(
         );
 
         allConstants = allConstants && !!decorated._constant;
-        argsToWatch.push(...(decorated._toWatch || []));
-      });
+        appendWatchNodes(argsToWatch, decorated._toWatch);
+      }
       decoratedNode._constant = allConstants;
       decoratedNode._toWatch = argsToWatch;
 
@@ -1102,27 +1140,31 @@ function findConstantAndWatchExpressions(
     case ASTType._ObjectExpression:
       allConstants = true;
       argsToWatch = [];
-      (ast as ObjectNode)._properties.forEach((property) => {
+      const properties = (ast as ObjectNode)._properties;
+
+      for (let i = 0, l = properties.length; i < l; i++) {
+        const property = properties[i] as ObjectPropertyNode;
+
         const decorated = findConstantAndWatchExpressions(
-          (property as ObjectPropertyNode)._value,
+          property._value,
           $filter,
           astIsPure,
         );
 
         allConstants = allConstants && !!decorated._constant;
-        argsToWatch.push(...(decorated._toWatch || []));
+        appendWatchNodes(argsToWatch, decorated._toWatch);
 
-        if ((property as ObjectPropertyNode)._computed) {
+        if (property._computed) {
           // `{[key]: value}` implicitly does `key.toString()` which may be non-pure
           decoratedKey = findConstantAndWatchExpressions(
-            (property as ObjectPropertyNode)._key,
+            property._key,
             $filter,
             false,
           );
           allConstants = allConstants && !!decoratedKey._constant;
-          argsToWatch.push(...(decoratedKey._toWatch || []));
+          appendWatchNodes(argsToWatch, decoratedKey._toWatch);
         }
-      });
+      }
       decoratedNode._constant = allConstants;
       decoratedNode._toWatch = argsToWatch;
 

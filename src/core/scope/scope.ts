@@ -1,6 +1,5 @@
 import {
   assert,
-  entries,
   hasOwn,
   isArray,
   isDefined,
@@ -39,6 +38,7 @@ export interface Listener {
   _property: string[];
   watchProp?: string;
   invokeWatchFn?: CompiledExpression;
+  _watchParentFn?: CompiledExpression;
 }
 
 export interface ScopeEvent {
@@ -80,10 +80,10 @@ let $exceptionHandler: ng.ExceptionHandlerService;
 export const $postUpdateQueue: Array<() => void> = [];
 
 export class RootScopeProvider {
-  rootScope: ng.RootScopeService;
+  _rootScope: ng.RootScopeService;
 
   constructor() {
-    this.rootScope = createScope();
+    this._rootScope = createScope();
   }
 
   $get: [
@@ -101,7 +101,7 @@ export class RootScopeProvider {
       $exceptionHandler = exceptionHandler;
       $parse = parse;
 
-      return this.rootScope;
+      return this._rootScope;
     },
   ];
 }
@@ -158,16 +158,40 @@ function resolveWatchKey(node: any): string | undefined {
   return getNodeName(node);
 }
 
+function getWatchParentExpression(watchProp: string): string {
+  const lastDotIndex = watchProp.lastIndexOf(".");
+
+  return lastDotIndex === -1 ? "" : watchProp.slice(0, lastDotIndex);
+}
+
+function pushUniqueListenerKey(
+  keySet: string[],
+  seenKeys: Set<string>,
+  listener: Listener,
+  key: string,
+): void {
+  if (seenKeys.has(key)) return;
+
+  seenKeys.add(key);
+  keySet.push(key);
+  listener._property.push(key);
+}
+
 function registerListenerKeys(
   scope: Scope,
   listener: Listener,
   watchKeys: Array<string | undefined>,
   schedule = false,
 ): void {
+  const seenKeys = new Set<string>();
+
   for (let i = 0, l = watchKeys.length; i < l; i++) {
     const key = watchKeys[i];
 
     if (!key) continue;
+
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
     scope._registerKey(key, listener);
 
     if (schedule) scope._scheduleListener([listener]);
@@ -179,10 +203,16 @@ function deregisterListenerKeys(
   listenerId: number,
   watchKeys: Array<string | undefined>,
 ): void {
+  const seenKeys = new Set<string>();
+
   for (let i = 0, l = watchKeys.length; i < l; i++) {
     const key = watchKeys[i];
 
-    if (key) scope._deregisterKey(key, listenerId);
+    if (!key) continue;
+
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    scope._deregisterKey(key, listenerId);
   }
 }
 
@@ -438,7 +468,7 @@ export class Scope {
 
   $scopename?: string;
 
-  propertyMap: Record<PropertyKey, any>;
+  _propertyMap: Record<PropertyKey, any>;
 
   /**
    * Initializes the handler with the target object and a context.
@@ -477,7 +507,7 @@ export class Scope {
 
     this.$scopename = undefined;
 
-    this.propertyMap = {
+    this._propertyMap = {
       $apply: this.$apply.bind(this),
       $broadcast: this.$broadcast.bind(this),
       _children: this._children,
@@ -739,9 +769,7 @@ export class Scope {
                 continue;
               }
 
-              const wrapperExpr = x.watchProp.split(".").slice(0, -1).join(".");
-
-              const expectedHandler = $parse(wrapperExpr)(x._originalTarget);
+              const expectedHandler = x._watchParentFn?.(x._originalTarget);
 
               if (expectedTarget === expectedHandler?.$target) {
                 scheduled.push(x);
@@ -832,12 +860,12 @@ export class Scope {
       this.$proxy = proxy;
     }
 
-    if (this.propertyMap.$target !== target) {
-      this.propertyMap.$target = target;
+    if (this._propertyMap.$target !== target) {
+      this._propertyMap.$target = target;
     }
 
-    if (this.propertyMap.$proxy !== proxy) {
-      this.propertyMap.$proxy = proxy;
+    if (this._propertyMap.$proxy !== proxy) {
+      this._propertyMap.$proxy = proxy;
     }
 
     if (
@@ -866,10 +894,10 @@ export class Scope {
       }
     }
 
-    if (typeof property !== "symbol" && hasOwn(this.propertyMap, property)) {
+    if (typeof property !== "symbol" && hasOwn(this._propertyMap, property)) {
       this.$target = target;
 
-      return this.propertyMap[property];
+      return this._propertyMap[property];
     } else {
       // we are a simple getter
       return targetProp;
@@ -1041,6 +1069,8 @@ export class Scope {
 
     const keySet: string[] = [];
 
+    const seenKeys = new Set<string>();
+
     const { _type: type } = expr;
 
     switch (type) {
@@ -1056,7 +1086,7 @@ export class Scope {
         if (!key) {
           throw new Error("Unable to determine key");
         }
-        listener._property.push(key);
+        pushUniqueListenerKey(keySet, seenKeys, listener, key);
         break;
       }
       // 5
@@ -1082,7 +1112,7 @@ export class Scope {
           if (!key) {
             throw new Error("Unable to determine key");
           }
-          listener._property.push(key);
+          pushUniqueListenerKey(keySet, seenKeys, listener, key);
           break;
         } else {
           const { _toWatch: toWatch } = expr;
@@ -1113,7 +1143,7 @@ export class Scope {
         if (!key) {
           throw new Error("Unable to determine key");
         }
-        listener._property.push(key);
+        pushUniqueListenerKey(keySet, seenKeys, listener, key);
         break;
       }
       // 8 function
@@ -1155,16 +1185,17 @@ export class Scope {
         if (!key) {
           throw new Error("Unable to determine key");
         }
-        listener._property.push(key);
+        pushUniqueListenerKey(keySet, seenKeys, listener, key);
 
         if (watchProp !== key) {
           // Handle nested expression call
           listener.watchProp = watchProp;
           listener.invokeWatchFn = $parse(`${watchProp}()`);
+          listener._watchParentFn = $parse(getWatchParentExpression(watchProp));
 
-          const potentialProxy = $parse(
-            watchProp.split(".").slice(0, -1).join("."),
-          )(listener._originalTarget);
+          const potentialProxy = listener._watchParentFn(
+            listener._originalTarget,
+          );
 
           if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
             potentialProxy.$handler._registerForeignKey(key, listener);
@@ -1185,7 +1216,7 @@ export class Scope {
         if (!key) {
           throw new Error("Unable to determine key");
         }
-        listener._property.push(key);
+        pushUniqueListenerKey(keySet, seenKeys, listener, key);
         break;
       }
 
@@ -1202,15 +1233,10 @@ export class Scope {
           keyList.push(registerKey);
         }
 
-        for (let i = 0, l = keyList.length; i < l; i++) {
-          this._registerKey(keyList[i], listener);
-          this._scheduleListener([listener]);
-        }
+        registerListenerKeys(this, listener, keyList, true);
 
         return () => {
-          for (let i = 0, l = keyList.length; i < l; i++) {
-            this._deregisterKey(keyList[i], listener._id);
-          }
+          deregisterListenerKeys(this, listener._id, keyList);
         };
       }
 
@@ -1244,17 +1270,13 @@ export class Scope {
           }
 
           if (currentKey) {
-            keySet.push(currentKey);
-            listener._property.push(currentKey);
+            pushUniqueListenerKey(keySet, seenKeys, listener, currentKey);
           }
         }
 
-        collectedKeys.forEach((collectedKey) => {
-          if (!keySet.includes(collectedKey)) {
-            keySet.push(collectedKey);
-            listener._property.push(collectedKey);
-          }
-        });
+        for (const collectedKey of collectedKeys) {
+          pushUniqueListenerKey(keySet, seenKeys, listener, collectedKey);
+        }
         break;
       }
       default: {
@@ -1481,12 +1503,14 @@ export class Scope {
 
   /** Merges enumerable properties from the provided object into the current scope target. */
   $merge(newTarget: object): void {
-    const list = entries(newTarget);
+    const newTargetRecord = newTarget as Record<string, unknown>;
 
-    for (let i = 0, l = list.length; i < l; i++) {
-      const [key, value] = list[i];
+    const keyList = Object.keys(newTargetRecord);
 
-      this.set(this.$target, key, value, this.$proxy);
+    for (let i = 0, l = keyList.length; i < l; i++) {
+      const key = keyList[i];
+
+      this.set(this.$target, key, newTargetRecord[key], this.$proxy);
     }
   }
 

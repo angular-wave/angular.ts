@@ -6318,11 +6318,13 @@ describe("$compile", () => {
           beforeEach(() => {
             dealoc(ELEMENT);
             window.angular = new Angular();
+            angular = window.angular;
+            errorLog = [];
             module = window.angular
               .module("test1", ["ng"])
               .decorator("$exceptionHandler", () => {
                 return (exception) => {
-                  throw new Error(exception.message);
+                  errorLog.push(exception.message);
                 };
               });
             module.directive("template", () => ({
@@ -6331,54 +6333,68 @@ describe("$compile", () => {
             }));
           });
 
-          // TODO these functions pass when being run in isolation. investigate scope pollution
-          // it("should throw if: no root element", () => {
-          //   $templateCache.set("template.html", "dada");
+          it("should throw if: no root element", async () => {
+            ELEMENT.innerHTML = "<p template></p>";
+            window.angular
+              .bootstrap(ELEMENT, ["test1"])
+              .invoke(($templateCache) => {
+                $templateCache.set("template.html", "dada");
+              });
+            await wait();
 
-          //   expect(() => {
-          //     $compile("<p template></p>")($rootScope);
-          //     ;
-          //   }).toThrowError(/tplrt/);
-          // });
+            expect(errorLog[0]).toMatch(/tplrt/);
+          });
 
-          // it("should throw if: multiple root elements", () => {
-          //   $templateCache.set("template.html", "<div></div><div></div>");
+          it("should throw if: multiple root elements", async () => {
+            ELEMENT.innerHTML = "<p template></p>";
+            window.angular
+              .bootstrap(ELEMENT, ["test1"])
+              .invoke(($templateCache) => {
+                $templateCache.set("template.html", "<div></div><div></div>");
+              });
+            await wait();
 
-          //   expect(() => {
-          //     $compile("<p template></p>")($rootScope);
-          //     $rootScope.$();
-          //   }).toThrowError(/tplrt/);
-          // });
+            expect(errorLog[0]).toMatch(/tplrt/);
+          });
 
           it("should not throw if the root element is accompanied by: whitespace", async () => {
             ELEMENT.innerHTML = "<p template></p>";
-            angular.bootstrap(ELEMENT, ["test1"]).invoke(($templateCache) => {
-              $templateCache.set("template.html", "<div>Hello World!</div> \n");
-            });
+            window.angular
+              .bootstrap(ELEMENT, ["test1"])
+              .invoke(($templateCache) => {
+                $templateCache.set(
+                  "template.html",
+                  "<div>Hello World!</div> \n",
+                );
+              });
             await wait();
             expect(ELEMENT.textContent).toBe("Hello World!");
           });
 
           it("should not throw if the root element is accompanied by: comments", async () => {
             ELEMENT.innerHTML = "<p template></p>";
-            angular.bootstrap(ELEMENT, ["test1"]).invoke(($templateCache) => {
-              $templateCache.set(
-                "template.html",
-                "<!-- oh hi --><div>Hello World!</div> \n",
-              );
-            });
+            window.angular
+              .bootstrap(ELEMENT, ["test1"])
+              .invoke(($templateCache) => {
+                $templateCache.set(
+                  "template.html",
+                  "<!-- oh hi --><div>Hello World!</div> \n",
+                );
+              });
             await wait();
             expect(ELEMENT.textContent).toBe("Hello World!");
           });
 
           it("should not throw if the root element is accompanied by: comments + whitespace", async () => {
             ELEMENT.innerHTML = "<p template></p>";
-            angular.bootstrap(ELEMENT, ["test1"]).invoke(($templateCache) => {
-              $templateCache.set(
-                "template.html",
-                "  <!-- oh hi -->  <div>Hello World!</div>  <!-- oh hi -->\n",
-              );
-            });
+            window.angular
+              .bootstrap(ELEMENT, ["test1"])
+              .invoke(($templateCache) => {
+                $templateCache.set(
+                  "template.html",
+                  "  <!-- oh hi -->  <div>Hello World!</div>  <!-- oh hi -->\n",
+                );
+              });
             await wait();
             expect(ELEMENT.textContent).toBe("Hello World!");
           });
@@ -11335,6 +11351,83 @@ describe("$compile", () => {
         expect(MeController.prototype.$onInit).toHaveBeenCalled();
         expect(parentController).toEqual(jasmine.any(ParentController));
         expect(siblingController).toEqual(jasmine.any(SiblingController));
+      });
+
+      it("keeps object-style required controllers bound during controller lifecycle hooks", async () => {
+        let onInitControllers;
+        const changeLog = [];
+
+        function ParentController() {
+          this.name = "Parent";
+        }
+        function SiblingController() {
+          this.name = "Sibling";
+        }
+        function MeController() {}
+
+        MeController.prototype.$onInit = function () {
+          onInitControllers = {
+            container: this.container,
+            friend: this.friend,
+          };
+        };
+        MeController.prototype.$onChanges = function (changes) {
+          changeLog.push({
+            containerName: this.container && this.container.name,
+            friendName: this.friend && this.friend.name,
+            value: changes.value.currentValue,
+          });
+        };
+
+        module
+          .directive("me", () => ({
+            restrict: "E",
+            scope: {},
+            require: { container: "^parent", friend: "sibling" },
+            bindToController: {
+              value: "<",
+            },
+            controller: MeController,
+            controllerAs: "$ctrl",
+          }))
+          .directive("parent", () => ({
+            restrict: "E",
+            scope: {},
+            controller: ParentController,
+          }))
+          .directive("sibling", () => ({
+            controller: SiblingController,
+          }));
+
+        initInjector("test1");
+        element = $compile('<parent><me sibling value="value"></me></parent>')(
+          $rootScope,
+        );
+        await wait();
+
+        expect(onInitControllers.container).toEqual(
+          jasmine.any(ParentController),
+        );
+        expect(onInitControllers.friend).toEqual(
+          jasmine.any(SiblingController),
+        );
+        expect(changeLog[0]).toEqual({
+          containerName: "Parent",
+          friendName: "Sibling",
+          value: undefined,
+        });
+
+        changeLog.length = 0;
+        $rootScope.$apply("value = 42");
+        await wait();
+
+        expect(changeLog).toEqual([
+          {
+            containerName: "Parent",
+            friendName: "Sibling",
+            value: 42,
+          },
+        ]);
       });
 
       it("should use the key if the name of a required controller is omitted", async () => {

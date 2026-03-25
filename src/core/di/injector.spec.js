@@ -103,6 +103,21 @@ describe("injector.modules", () => {
     expect(injector._modules.lazy).toBeDefined();
   });
 
+  it("should expose loadNewModules on the $injector service instance returned by get", () => {
+    angular.module("initial", []);
+    angular.module("lazy", []);
+
+    const injector = createInjector(["initial"]);
+    const serviceInjector = injector.get("$injector");
+
+    expect(serviceInjector.loadNewModules).toEqual(jasmine.any(Function));
+
+    serviceInjector.loadNewModules(["lazy"]);
+
+    expect(serviceInjector._modules.lazy).toBeDefined();
+    expect(injector._modules.lazy).toBeDefined();
+  });
+
   it("should execute runBlocks of new modules", () => {
     const log = [];
     angular.module("initial", []).run(() => {

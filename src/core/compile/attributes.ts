@@ -212,13 +212,15 @@ export class Attributes {
     const { _observers } = this;
 
     if (_observers && _observers[observer]) {
-      _observers[observer].forEach((fn) => {
+      const observerListeners = _observers[observer];
+
+      for (let i = 0, l = observerListeners.length; i < l; i++) {
         try {
-          fn(maybeSanitizedValue);
+          observerListeners[i](maybeSanitizedValue);
         } catch (err) {
           this._exceptionHandler(err);
         }
-      });
+      }
     }
   }
 

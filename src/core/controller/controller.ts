@@ -3,7 +3,6 @@ import type { ControllerConstructor, Injectable } from "../../interface.ts";
 import {
   assertArgFn,
   assertNotHasOwnProperty,
-  entries,
   isArray,
   isFunction,
   isObject,
@@ -85,11 +84,11 @@ function unwrapController(
 }
 
 export class ControllerProvider {
-  controllers: Map<string, InjectableController>;
+  _controllers: Map<string, InjectableController>;
   $get: [string, ($injector: ng.InjectorService) => ControllerService];
 
   constructor() {
-    this.controllers = new Map();
+    this._controllers = new Map();
     this.$get = [
       $injectTokens._injector,
       ($injector): ControllerService => {
@@ -116,7 +115,7 @@ export class ControllerProvider {
             constructorName = match[1];
             identifier = identifier || match[3] || null;
 
-            const lookedUp = this.controllers.get(constructorName);
+            const lookedUp = this._controllers.get(constructorName);
 
             if (!lookedUp) {
               throw $controllerMinErr(
@@ -142,7 +141,7 @@ export class ControllerProvider {
 
             if (identifier) {
               instance.$controllerIdentifier = identifier;
-              this.addIdentifier(locals, identifier, instance, exportName);
+              this._addIdentifier(locals, identifier, instance, exportName);
             }
 
             if (instance?.constructor?.$scopename && locals?.$scope) {
@@ -166,7 +165,7 @@ export class ControllerProvider {
 
                 if (identifier) {
                   instance.$controllerIdentifier = identifier;
-                  this.addIdentifier(locals, identifier, instance, exportName);
+                  this._addIdentifier(locals, identifier, instance, exportName);
                 }
               }
 
@@ -181,7 +180,7 @@ export class ControllerProvider {
           );
 
           if (identifier) {
-            this.addIdentifier(
+            this._addIdentifier(
               locals,
               identifier,
               instance,
@@ -196,7 +195,7 @@ export class ControllerProvider {
   }
 
   has(name: string): boolean {
-    return this.controllers.has(name);
+    return this._controllers.has(name);
   }
 
   register(
@@ -205,19 +204,25 @@ export class ControllerProvider {
   ): void {
     if (isString(name)) {
       assertNotHasOwnProperty(name, "controller");
-      this.controllers.set(name, normalizeControllerDef(constructor, name));
+      this._controllers.set(name, normalizeControllerDef(constructor, name));
 
       return;
     }
 
     if (isObject(name)) {
-      entries(name).forEach(([key, value]) => {
-        this.controllers.set(key, normalizeControllerDef(value, key));
-      });
+      const controllerNames = Object.keys(name);
+
+      for (let i = 0, l = controllerNames.length; i < l; i++) {
+        const key = controllerNames[i];
+
+        const value = name[key];
+
+        this._controllers.set(key, normalizeControllerDef(value, key));
+      }
     }
   }
 
-  addIdentifier(
+  _addIdentifier(
     locals: ControllerLocals | undefined,
     identifier: string,
     instance: object,
