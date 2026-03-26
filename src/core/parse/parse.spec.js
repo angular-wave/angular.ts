@@ -1079,7 +1079,7 @@ describe("parser", () => {
       });
 
       const parsed = $parse("{x: 1} | foo:1");
-      expect(parsed.constant).toBe(true);
+      expect(parsed._constant).toBe(true);
 
       let watcherCalls = 0;
       scope.$watch("{x: 1} | foo:1", (input) => {
@@ -1831,54 +1831,54 @@ describe("parser", () => {
       });
     });
 
-    describe("constant", () => {
+    describe("_constant", () => {
       it("should mark an empty expressions as constant", () => {
-        expect($parse("").constant).toBe(true);
-        expect($parse("   ").constant).toBe(true);
+        expect($parse("")._constant).toBe(true);
+        expect($parse("   ")._constant).toBe(true);
       });
 
       it("should mark scalar value expressions as constant", () => {
-        expect($parse("12.3").constant).toBe(true);
-        expect($parse('"string"').constant).toBe(true);
-        expect($parse("true").constant).toBe(true);
-        expect($parse("false").constant).toBe(true);
-        expect($parse("null").constant).toBe(true);
-        expect($parse("undefined").constant).toBe(true);
+        expect($parse("12.3")._constant).toBe(true);
+        expect($parse('"string"')._constant).toBe(true);
+        expect($parse("true")._constant).toBe(true);
+        expect($parse("false")._constant).toBe(true);
+        expect($parse("null")._constant).toBe(true);
+        expect($parse("undefined")._constant).toBe(true);
       });
 
       it("should mark arrays as constant if they only contain constant elements", () => {
-        expect($parse("[]").constant).toBe(true);
-        expect($parse("[1, 2, 3]").constant).toBe(true);
-        expect($parse('["string", null]').constant).toBe(true);
-        expect($parse("[[]]").constant).toBe(true);
-        expect($parse("[1, [2, 3], {4: 5}]").constant).toBe(true);
+        expect($parse("[]")._constant).toBe(true);
+        expect($parse("[1, 2, 3]")._constant).toBe(true);
+        expect($parse('["string", null]')._constant).toBe(true);
+        expect($parse("[[]]")._constant).toBe(true);
+        expect($parse("[1, [2, 3], {4: 5}]")._constant).toBe(true);
       });
 
       it("should not mark arrays as constant if they contain any non-constant elements", () => {
-        expect($parse("[foo]").constant).toBe(false);
-        expect($parse("[x + 1]").constant).toBe(false);
-        expect($parse("[bar[0]]").constant).toBe(false);
+        expect($parse("[foo]")._constant).toBe(false);
+        expect($parse("[x + 1]")._constant).toBe(false);
+        expect($parse("[bar[0]]")._constant).toBe(false);
       });
 
       it("should mark complex expressions involving constant values as constant", () => {
-        expect($parse("!true").constant).toBe(true);
-        expect($parse("-42").constant).toBe(true);
-        expect($parse("1 - 1").constant).toBe(true);
-        expect($parse('"foo" + "bar"').constant).toBe(true);
-        expect($parse("5 != null").constant).toBe(true);
-        expect($parse("{standard: 4/3, wide: 16/9}").constant).toBe(true);
-        expect($parse("{[standard]: 4/3, wide: 16/9}").constant).toBe(false);
-        expect($parse('{["key"]: 1}').constant).toBe(true);
-        expect($parse("[0].length").constant).toBe(true);
-        expect($parse("[0][0]").constant).toBe(true);
-        expect($parse("{x: 1}.x").constant).toBe(true);
-        expect($parse('{x: 1}["x"]').constant).toBe(true);
+        expect($parse("!true")._constant).toBe(true);
+        expect($parse("-42")._constant).toBe(true);
+        expect($parse("1 - 1")._constant).toBe(true);
+        expect($parse('"foo" + "bar"')._constant).toBe(true);
+        expect($parse("5 != null")._constant).toBe(true);
+        expect($parse("{standard: 4/3, wide: 16/9}")._constant).toBe(true);
+        expect($parse("{[standard]: 4/3, wide: 16/9}")._constant).toBe(false);
+        expect($parse('{["key"]: 1}')._constant).toBe(true);
+        expect($parse("[0].length")._constant).toBe(true);
+        expect($parse("[0][0]")._constant).toBe(true);
+        expect($parse("{x: 1}.x")._constant).toBe(true);
+        expect($parse('{x: 1}["x"]')._constant).toBe(true);
       });
 
       it("should not mark any expression involving variables or function calls as constant", () => {
-        expect($parse("true.toString()").constant).toBe(false);
-        expect($parse("foo(1, 2, 3)").constant).toBe(false);
-        expect($parse('"name" + id').constant).toBe(false);
+        expect($parse("true.toString()")._constant).toBe(false);
+        expect($parse("foo(1, 2, 3)")._constant).toBe(false);
+        expect($parse('"name" + id')._constant).toBe(false);
       });
     });
 

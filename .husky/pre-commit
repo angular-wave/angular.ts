@@ -1,5 +1,5 @@
 make lint
 make check
-make pretty
+make format
 make types
 git add ./

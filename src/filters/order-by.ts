@@ -174,7 +174,7 @@ export function orderByFilter($parse: ng.ParseService) {
         if (predicate !== "") {
           const parsed = $parse(predicate);
 
-          if (parsed.constant) {
+          if (parsed._constant) {
             const key = parsed();
 
             get = (value: Record<string, any>) => value[key];

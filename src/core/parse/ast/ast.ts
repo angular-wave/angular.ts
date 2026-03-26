@@ -203,7 +203,7 @@ export class AST {
     while ((token = this._expect("==", "!=", "===", "!=="))) {
       left = {
         _type: ASTType._BinaryExpression,
-        _operator: /** @type {Token} */ token.text,
+        _operator: /** @type {Token} */ token._text,
         _left: left,
         _right: this._relational(),
       };
@@ -224,7 +224,7 @@ export class AST {
     while ((token = this._expect("<", ">", "<=", ">="))) {
       left = {
         _type: ASTType._BinaryExpression,
-        _operator: /** @type {Token} */ token.text,
+        _operator: /** @type {Token} */ token._text,
         _left: left,
         _right: this._additive(),
       };
@@ -245,7 +245,7 @@ export class AST {
     while ((token = this._expect("+", "-"))) {
       left = {
         _type: ASTType._BinaryExpression,
-        _operator: /** @type {Token} */ token.text,
+        _operator: /** @type {Token} */ token._text,
         _left: left,
         _right: this._multiplicative(),
       };
@@ -266,7 +266,7 @@ export class AST {
     while ((token = this._expect("*", "/", "%"))) {
       left = {
         _type: ASTType._BinaryExpression,
-        _operator: token.text,
+        _operator: token._text,
         _left: left,
         _right: this._unary(),
       };
@@ -299,7 +299,7 @@ export class AST {
 
       return {
         _type: ASTType._UpdateExpression,
-        _operator: /** @type {Token} */ token.text,
+        _operator: /** @type {Token} */ token._text,
         _prefix: true,
         _argument: argument,
       };
@@ -309,7 +309,7 @@ export class AST {
     if ((token = this._expect("+", "-", "!"))) {
       return {
         _type: ASTType._UnaryExpression,
-        _operator: /** @type {Token} */ token.text,
+        _operator: /** @type {Token} */ token._text,
         _prefix: true,
         _argument: this._unary(),
       };
@@ -339,7 +339,7 @@ export class AST {
 
       expr = {
         _type: ASTType._UpdateExpression,
-        _operator: /** @type {Token} */ token.text,
+        _operator: /** @type {Token} */ token._text,
         _prefix: false,
         _argument: expr,
       };
@@ -364,18 +364,18 @@ export class AST {
       primary = this._arrayDeclaration();
     } else if (this._expect("{")) {
       primary = this._object();
-    } else if (hasOwn(this._selfReferential, (peekToken as Token).text)) {
+    } else if (hasOwn(this._selfReferential, (peekToken as Token)._text)) {
       primary = cloneSelfReferentialNode(
-        this._selfReferential[this._consume().text],
+        this._selfReferential[this._consume()._text],
       );
-    } else if (hasOwn(literals, (peekToken as Token).text)) {
+    } else if (hasOwn(literals, (peekToken as Token)._text)) {
       primary = {
         _type: ASTType._Literal,
-        _value: literals[this._consume().text as keyof typeof literals],
+        _value: literals[this._consume()._text as keyof typeof literals],
       };
-    } else if ((peekToken as Token).identifier) {
+    } else if ((peekToken as Token)._identifier) {
       primary = this._identifier();
-    } else if ((peekToken as Token).constant) {
+    } else if ((peekToken as Token)._constant) {
       primary = this._constant();
     } else {
       this._throwError("not a primary expression", this._peek() as Token);
@@ -384,14 +384,14 @@ export class AST {
     let next: Token | false;
 
     while ((next = this._expect("(", "[", "."))) {
-      if (next.text === "(") {
+      if (next._text === "(") {
         primary = {
           _type: ASTType._CallExpression,
           _callee: primary,
           _arguments: this._parseArguments(),
         };
         this._consume(")");
-      } else if (next.text === "[") {
+      } else if (next._text === "[") {
         primary = {
           _type: ASTType._MemberExpression,
           _object: primary,
@@ -399,7 +399,7 @@ export class AST {
           _computed: true,
         };
         this._consume("]");
-      } else if (next.text === ".") {
+      } else if (next._text === ".") {
         primary = {
           _type: ASTType._MemberExpression,
           _object: primary,
@@ -443,7 +443,7 @@ export class AST {
   _parseArguments(): ASTNode[] {
     const args: ASTNode[] = [];
 
-    if (this._peekToken().text !== ")") {
+    if (this._peekToken()._text !== ")") {
       do {
         args.push(this._filterChain());
       } while (this._expect(","));
@@ -459,11 +459,11 @@ export class AST {
   _identifier(): ASTNode {
     const token = this._consume();
 
-    if (!token.identifier) {
+    if (!token._identifier) {
       this._throwError("is not a valid identifier", token);
     }
 
-    return { _type: ASTType._Identifier, _name: token.text };
+    return { _type: ASTType._Identifier, _name: token._text };
   }
 
   /**
@@ -472,7 +472,7 @@ export class AST {
    */
   _constant(): ASTNode {
     // TODO check that it is a constant
-    return { _type: ASTType._Literal, _value: this._consume().value };
+    return { _type: ASTType._Literal, _value: this._consume()._value };
   }
 
   /**
@@ -482,7 +482,7 @@ export class AST {
   _arrayDeclaration(): ASTNode {
     const elements: ASTNode[] = [];
 
-    if (this._peekToken().text !== "]") {
+    if (this._peekToken()._text !== "]") {
       do {
         if (this._peek("]")) {
           // Support trailing commas per ES5.1.
@@ -505,7 +505,7 @@ export class AST {
 
     let property: ObjectPropertyNode;
 
-    if (this._peekToken().text !== "}") {
+    if (this._peekToken()._text !== "}") {
       do {
         if (this._peek("}")) {
           // Support trailing commas per ES5.1.
@@ -520,12 +520,12 @@ export class AST {
           _computed: false,
         };
 
-        if (nextToken.constant) {
+        if (nextToken._constant) {
           property._key = this._constant();
           property._computed = false;
           this._consume(":");
           property._value = this._assignment();
-        } else if (nextToken.identifier) {
+        } else if (nextToken._identifier) {
           property._key = this._identifier();
           property._computed = false;
 
@@ -562,11 +562,11 @@ export class AST {
     throw $parseMinErr(
       "syntax",
       "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].",
-      token.text,
+      token._text,
       msg,
-      token.index + 1,
+      token._index + 1,
       this._text,
-      this._text?.substring(token.index),
+      this._text?.substring(token._index),
     );
   }
 
@@ -626,7 +626,7 @@ export class AST {
 
     if (!j) return token;
 
-    const txt = token.text;
+    const txt = token._text;
 
     if (expected.length === 1) return expected[0] === txt ? token : false;
 

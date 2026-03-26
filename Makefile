@@ -56,7 +56,7 @@ size-html:
 version:
 	@node utils/version.cjs	
 
-pretty:
+format:
 	@npx prettier ./ --write --cache --log-level=silent
 	
 lint:
@@ -84,7 +84,7 @@ serve:
 	node --watch ./utils/express.js & \
 	wait
 
-prepare-release: build test check types doc pretty gzip version size-html
+prepare-release: build test check types doc format gzip version size-html
 
 PLAYWRIGHT_TEST := npx playwright test
 
@@ -110,4 +110,3 @@ coverage-open:
 
 hugo:
 	hugo server --source=docs --disableFastRender
-

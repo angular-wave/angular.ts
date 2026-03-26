@@ -818,7 +818,7 @@ function parseConstantExpr(
   if (isDefined(expression)) {
     parseFn = $parse(expression);
 
-    if (!parseFn.constant) {
+    if (!parseFn._constant) {
       throw ngModelMinErr(
         "constexpr",
         "Expected constant expression for `{0}`, but saw " + "`{1}`.",

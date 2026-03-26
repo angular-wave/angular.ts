@@ -15,7 +15,7 @@ export interface CompiledExpressionProps {
   /** Indicates if the expression is a literal. */
   _literal: boolean;
   /** Indicates if the expression is constant. */
-  constant: boolean;
+  _constant: boolean;
   /** Optional flag for pure expressions. */
   _isPure?: boolean;
   /** AST node decorated with metadata. */
@@ -113,7 +113,7 @@ export class ParseProvider {
 
       fn._interceptor = interceptorFn;
       fn._literal = parsedExpression._literal;
-      fn.constant = parsedExpression.constant;
+      fn._constant = parsedExpression._constant;
       fn._decoratedNode = parsedExpression._decoratedNode;
 
       return fn;

@@ -1011,7 +1011,7 @@ export class Scope {
     const get = $parse(watchProp);
 
     // Constant are immediately passed to listener function
-    if (get.constant) {
+    if (get._constant) {
       if (listenerFn) {
         queueMicrotask(() => {
           let res = get();
