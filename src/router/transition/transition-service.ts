@@ -152,7 +152,7 @@ export class TransitionProvider implements TransitionService {
     this._defineCoreEvents();
     this._registerCoreTransitionHooks();
     this._exceptionHandler = $exceptionHandler.handler;
-    globals._successfulTransitions.onEvict(treeChangesCleanup);
+    globals._successfulTransitions._onEvict(treeChangesCleanup);
   }
 
   /**
@@ -536,7 +536,7 @@ function registerUpdateGlobalState(
     const transitionSuccessful = (): void => {
       const current = trans.$to();
 
-      globals._successfulTransitions.enqueue(trans);
+      globals._successfulTransitions._enqueue(trans);
       globals.$current = current;
       globals.current = current?.self;
       copy(trans.params(), globals.params);
