@@ -183,15 +183,10 @@ function registerListenerKeys(
   watchKeys: Array<string | undefined>,
   schedule = false,
 ): void {
-  const seenKeys = new Set<string>();
-
   for (let i = 0, l = watchKeys.length; i < l; i++) {
     const key = watchKeys[i];
 
     if (!key) continue;
-
-    if (seenKeys.has(key)) continue;
-    seenKeys.add(key);
     scope._registerKey(key, listener);
 
     if (schedule) scope._scheduleListener([listener]);
@@ -203,16 +198,10 @@ function deregisterListenerKeys(
   listenerId: number,
   watchKeys: Array<string | undefined>,
 ): void {
-  const seenKeys = new Set<string>();
-
   for (let i = 0, l = watchKeys.length; i < l; i++) {
     const key = watchKeys[i];
 
-    if (!key) continue;
-
-    if (seenKeys.has(key)) continue;
-    seenKeys.add(key);
-    scope._deregisterKey(key, listenerId);
+    if (key) scope._deregisterKey(key, listenerId);
   }
 }
 

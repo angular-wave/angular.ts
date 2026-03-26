@@ -986,71 +986,6 @@ describe("Scope", () => {
 
         expect(spy).not.toHaveBeenCalled();
       });
-
-      it("deregisters repeated watch keys only once", async () => {
-        const spy = jasmine.createSpy("repeated watch");
-        scope.a = 1;
-
-        const unwatch = scope.$watch("a + a", spy);
-
-        await wait();
-        expect(spy).toHaveBeenCalledTimes(1);
-        spy.calls.reset();
-
-        /** @type {Function} */ (unwatch)();
-        scope.a = 2;
-        await wait();
-
-        expect(spy).not.toHaveBeenCalled();
-      });
-
-      it("does not trigger twice for repeated array expression keys", async () => {
-        const spy = jasmine.createSpy("repeated array watch");
-        scope.a = 1;
-
-        scope.$watch("[a, a]", spy);
-
-        await wait();
-        expect(spy).toHaveBeenCalledTimes(1);
-        spy.calls.reset();
-
-        scope.a = 2;
-        await wait();
-
-        expect(spy).toHaveBeenCalledTimes(1);
-        expect(spy.calls.mostRecent().args[0]).toEqual([2, 2]);
-      });
-
-      it("does not trigger twice for repeated object expression keys and deregisters cleanly", async () => {
-        const spy = jasmine.createSpy("repeated object watch");
-        scope.a = 1;
-
-        const unwatch = scope.$watch("{left: a, right: a}", spy);
-
-        await wait();
-        expect(spy).toHaveBeenCalledTimes(1);
-        expect(spy.calls.mostRecent().args[0]).toEqual({
-          left: 1,
-          right: 1,
-        });
-        spy.calls.reset();
-
-        scope.a = 2;
-        await wait();
-
-        expect(spy).toHaveBeenCalledTimes(1);
-        expect(spy.calls.mostRecent().args[0]).toEqual({
-          left: 2,
-          right: 2,
-        });
-        spy.calls.reset();
-
-        /** @type {Function} */ (unwatch)();
-        scope.a = 3;
-        await wait();
-
-        expect(spy).not.toHaveBeenCalled();
-      });
     });
 
     describe("apply expression", () => {
@@ -1358,25 +1293,6 @@ describe("Scope", () => {
         await wait();
 
         expect(count).toEqual(3);
-      });
-
-      it("does not register duplicate listeners for repeated watch keys", async () => {
-        scope.counter = 0;
-        scope.a = 1;
-
-        scope.$watch("a + a", () => {
-          scope.counter++;
-        });
-        await wait();
-        expect(scope.counter).toBe(1);
-
-        scope.a = 2;
-        await wait();
-        expect(scope.counter).toBe(2);
-
-        scope.a = 3;
-        await wait();
-        expect(scope.counter).toBe(3);
       });
 
       it("calls the listener function when a deeply nested watched value changes", async () => {
