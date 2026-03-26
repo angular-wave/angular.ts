@@ -883,7 +883,7 @@ export class Transition {
 
       _globals._lastStartedTransitionId = this.$id;
       _globals.transition = this;
-      _globals._transitionHistory.enqueue(this);
+      _globals._transitionHistory._enqueue(this);
       trace.traceTransitionStart(this);
 
       return Promise.resolve();

@@ -27,10 +27,10 @@ type TemplateResult =
  * Resolves route templates and components from state view declarations.
  */
 export class TemplateFactoryProvider {
-  $templateRequest: ng.TemplateRequestService | undefined;
-  $http: ng.HttpService | undefined;
-  $templateCache: ng.TemplateCacheService | undefined;
-  $injector: ng.InjectorService | undefined;
+  _templateRequest: ng.TemplateRequestService | undefined;
+  _http: ng.HttpService | undefined;
+  _templateCache: ng.TemplateCacheService | undefined;
+  _injector: ng.InjectorService | undefined;
 
   /**
    * Wires HTTP, template request, cache, and injector services into the factory.
@@ -46,10 +46,10 @@ export class TemplateFactoryProvider {
       $templateRequest: ng.TemplateRequestService,
       $injector: ng.InjectorService,
     ): TemplateFactoryProvider => {
-      this.$templateRequest = $templateRequest;
-      this.$http = $http;
-      this.$templateCache = $templateCache;
-      this.$injector = $injector;
+      this._templateRequest = $templateRequest;
+      this._http = $http;
+      this._templateCache = $templateCache;
+      this._injector = $injector;
 
       return this;
     },
@@ -130,7 +130,7 @@ export class TemplateFactoryProvider {
 
     if (isNullOrUndefined(url)) return null;
 
-    return this.$templateRequest!(url as string);
+    return this._templateRequest!(url as string);
   }
 
   fromProvider(
@@ -211,7 +211,7 @@ export class TemplateFactoryProvider {
       return `${attrName}='$resolve.${resolveName}'`;
     };
 
-    const attrs = getComponentBindings(this.$injector, component)
+    const attrs = getComponentBindings(this._injector, component)
       .map(attributeTpl)
       .join(" ");
 

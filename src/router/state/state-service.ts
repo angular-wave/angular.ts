@@ -292,7 +292,7 @@ export class StateProvider {
 
     const { globals } = this;
 
-    const latestThing = () => globals._transitionHistory.peekTail();
+    const latestThing = () => globals._transitionHistory._peekTail();
 
     const latest = latestThing();
 
@@ -333,7 +333,7 @@ export class StateProvider {
      * @returns {Promise<any>}
      */
     function invokeNextCallback(): Promise<any> {
-      const nextCallback = callbackQueue.dequeue();
+      const nextCallback = callbackQueue._dequeue();
 
       if (nextCallback === undefined)
         return Rejection.invalid(toState.error()).toPromise();
@@ -517,7 +517,7 @@ export class StateProvider {
   getCurrentPath(): PathNode[] {
     const { globals } = this;
 
-    const latestSuccess = globals._successfulTransitions.peekTail();
+    const latestSuccess = globals._successfulTransitions._peekTail();
 
     const rootPath = () => [new PathNode(this._getRegistry().root())];
 

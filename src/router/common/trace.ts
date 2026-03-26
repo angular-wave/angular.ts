@@ -131,13 +131,13 @@ function transLbl(trans: ng.Transition): string {
  */
 export class Trace {
   _enabled: Record<string, boolean>;
-  approximateDigests: number;
-  $logger: TraceLogger;
+  _approximateDigests: number;
+  _logger: TraceLogger;
 
   constructor() {
     this._enabled = {};
-    this.approximateDigests = 0;
-    this.$logger =
+    this._approximateDigests = 0;
+    this._logger =
       (window.angular?.$injector?.get($injectTokens._log) as
         | TraceLogger
         | undefined) || console;
@@ -175,13 +175,13 @@ export class Trace {
   /** @internal called by ng-router code */
   traceTransitionStart(trans: ng.Transition): void {
     if (!this.enabled(Category._TRANSITION)) return;
-    this.$logger.log(`${transLbl(trans)}: Started  -> ${stringify(trans)}`);
+    this._logger.log(`${transLbl(trans)}: Started  -> ${stringify(trans)}`);
   }
 
   /** @internal called by ng-router code */
   traceTransitionIgnored(trans: ng.Transition): void {
     if (!this.enabled(Category._TRANSITION)) return;
-    this.$logger.log(`${transLbl(trans)}: Ignored  <> ${stringify(trans)}`);
+    this._logger.log(`${transLbl(trans)}: Ignored  <> ${stringify(trans)}`);
   }
 
   /** @internal called by ng-router code */
@@ -198,7 +198,7 @@ export class Trace {
         "unknown",
       name = functionToString(step.registeredHook.callback);
 
-    this.$logger.log(
+    this._logger.log(
       `${transLbl(trans)}:   Hook -> ${event} context: ${context}, ${maxLength(200, name)}`,
     );
   }
@@ -206,7 +206,7 @@ export class Trace {
   /** @internal called by ng-router code */
   traceHookResult(hookResult: HookResult, trans: ng.Transition): void {
     if (!this.enabled(Category._HOOK)) return;
-    this.$logger.log(
+    this._logger.log(
       `${transLbl(trans)}:   <- Hook returned: ${maxLength(200, stringify(hookResult))}`,
     );
   }
@@ -218,13 +218,13 @@ export class Trace {
     trans: ng.Transition,
   ): void {
     if (!this.enabled(Category._RESOLVE)) return;
-    this.$logger.log(`${transLbl(trans)}:         Resolving ${path} (${when})`);
+    this._logger.log(`${transLbl(trans)}:         Resolving ${path} (${when})`);
   }
 
   /** @internal called by ng-router code */
   traceResolvableResolved(resolvable: Resolvable, trans: ng.Transition): void {
     if (!this.enabled(Category._RESOLVE)) return;
-    this.$logger.log(
+    this._logger.log(
       `${transLbl(trans)}:               <- Resolved  ${resolvable} to: ${maxLength(200, stringify(resolvable.data))}`,
     );
   }
@@ -232,7 +232,7 @@ export class Trace {
   /** @internal called by ng-router code */
   traceError(reason: unknown, trans: ng.Transition): void {
     if (!this.enabled(Category._TRANSITION)) return;
-    this.$logger.log(
+    this._logger.log(
       `${transLbl(trans)}: <- Rejected ${stringify(trans)}, reason: ${reason}`,
     );
   }
@@ -240,7 +240,7 @@ export class Trace {
   /** @internal called by ng-router code */
   traceSuccess(finalState: StateObject, trans: ng.Transition): void {
     if (!this.enabled(Category._TRANSITION)) return;
-    this.$logger.log(
+    this._logger.log(
       `${transLbl(trans)}: <- Success  ${stringify(trans)}, final state: ${finalState.name}`,
     );
   }
@@ -252,7 +252,7 @@ export class Trace {
     extra = "",
   ): void {
     if (!this.enabled(Category._UIVIEW)) return;
-    this.$logger.log(
+    this._logger.log(
       `ng-view: ${padString(MAX_PAD_LENGTH, event)} ${ngViewString(viewData)}${extra}`,
     );
   }
@@ -295,19 +295,19 @@ export class Trace {
       })
       .sort((a, b) => (a[uivheader] || "").localeCompare(b[uivheader] || ""));
 
-    this.$logger.table(mapping);
+    this._logger.table(mapping);
   }
 
   /** @internal called by ng-router code */
   traceViewServiceEvent(event: string, viewConfig: ViewConfig): void {
     if (!this.enabled(Category._VIEWCONFIG)) return;
-    this.$logger.log(`VIEWCONFIG: ${event} ${viewConfigString(viewConfig)}`);
+    this._logger.log(`VIEWCONFIG: ${event} ${viewConfigString(viewConfig)}`);
   }
 
   /** @internal called by ng-router code */
   traceViewServiceUIViewEvent(event: string, viewData: ActiveUIView): void {
     if (!this.enabled(Category._VIEWCONFIG)) return;
-    this.$logger.log(`VIEWCONFIG: ${event} ${ngViewString(viewData)}`);
+    this._logger.log(`VIEWCONFIG: ${event} ${ngViewString(viewData)}`);
   }
 }
 /**
