@@ -3,20 +3,20 @@
  */
 export interface Token {
   /** Index of the token. */
-  index: number;
+  _index: number;
 
   /** Text of the token. */
-  text: string;
+  _text: string;
 
   /** Indicates if token is an identifier. */
-  identifier?: boolean;
+  _identifier?: boolean;
 
   /** Indicates if token is a constant. */
-  constant?: boolean;
+  _constant?: boolean;
 
   /** Value of the token if it's a constant. */
-  value?: string | number;
+  _value?: string | number;
 
   /** Indicates if token is an operator. */
-  operator?: boolean;
+  _operator?: boolean;
 }

@@ -18,10 +18,10 @@ export class Parser {
   _parse(exp: string): CompiledExpression {
     const ast = this._ast._ast(exp.trim());
 
-    const fn = this._astCompiler.compile(ast);
+    const fn = this._astCompiler._compile(ast);
 
     fn._literal = isLiteral(ast as BodyNode);
-    fn.constant = !!ast._constant;
+    fn._constant = !!ast._constant;
 
     return fn;
   }

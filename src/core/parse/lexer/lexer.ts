@@ -66,7 +66,7 @@ export class Lexer {
       } else if (this._isIdentifierStart(this._peekMultichar())) {
         this._readIdent();
       } else if (this._is(ch, "(){}[].,;:?")) {
-        this._tokens.push({ index: this._index, text: ch });
+        this._tokens.push({ _index: this._index, _text: ch });
         this._index++;
       } else if (this._isWhitespace(ch)) {
         this._index++;
@@ -85,9 +85,9 @@ export class Lexer {
           const token = op3 ? ch3 : op2 ? ch2 : ch;
 
           this._tokens.push({
-            index: this._index,
-            text: token,
-            operator: true,
+            _index: this._index,
+            _text: token,
+            _operator: true,
           });
           this._index += token.length;
         } else {
@@ -245,10 +245,10 @@ export class Lexer {
     }
 
     this._tokens.push({
-      index: start,
-      text: number,
-      constant: true,
-      value: Number(number),
+      _index: start,
+      _text: number,
+      _constant: true,
+      _value: Number(number),
     });
   }
 
@@ -270,9 +270,9 @@ export class Lexer {
     }
 
     this._tokens.push({
-      index: start,
-      text: this._text.slice(start, this._index),
-      identifier: true,
+      _index: start,
+      _text: this._text.slice(start, this._index),
+      _identifier: true,
     });
   }
 
@@ -302,10 +302,10 @@ export class Lexer {
         escape = true;
       } else if (ch === quote) {
         this._tokens.push({
-          index: start,
-          text: this._text.slice(start, this._index + 1),
-          constant: true,
-          value: string,
+          _index: start,
+          _text: this._text.slice(start, this._index + 1),
+          _constant: true,
+          _value: string,
         });
         this._index++;
 

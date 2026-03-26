@@ -61,7 +61,7 @@ export class ASTInterpreter {
    * @param {ASTNode} ast - The AST to compile.
    * @returns {CompiledExpression}
    */
-  compile(ast: ASTNode): CompiledExpression {
+  _compile(ast: ASTNode): CompiledExpression {
     const decoratedNode = findConstantAndWatchExpressions(ast, this._$filter);
 
     const { _body: body } = decoratedNode as BodyNode;
@@ -160,7 +160,7 @@ export class ASTInterpreter {
 
     switch (ast._type) {
       case ASTType._Literal:
-        return this.value((ast as LiteralNode)._value, context);
+        return this._value((ast as LiteralNode)._value, context);
       case ASTType._UnaryExpression:
         right = this._recurse((ast as ExpressionNode)._argument as ASTNode);
 
@@ -183,7 +183,7 @@ export class ASTInterpreter {
           context,
         );
       case ASTType._Identifier:
-        return self.identifier(
+        return self._identifier(
           (ast as LiteralNode)._name as string,
           context,
           create,
@@ -210,7 +210,7 @@ export class ASTInterpreter {
               context,
               create,
             )
-          : this.nonComputedMember(left, right as string, context, create);
+          : this._nonComputedMember(left, right as string, context, create);
       case ASTType._CallExpression:
         args = [];
         const callArguments = (ast as ExpressionNode)._arguments as ASTNode[];
@@ -798,7 +798,7 @@ export class ASTInterpreter {
    * @param {Object} [context] - The context.
    * @returns {CompiledExpressionFunction} The function returning the literal value.
    */
-  value(value: any, context?: LinkContext): CompiledExpressionFunction {
+  _value(value: any, context?: LinkContext): CompiledExpressionFunction {
     return () =>
       context ? { context: undefined, name: undefined, value } : value;
   }
@@ -810,7 +810,7 @@ export class ASTInterpreter {
    * @param {boolean|1} [create] - Whether to create the identifier if it does not exist.
    *  @returns {CompiledExpressionFunction}  The function returning the identifier value.
    */
-  identifier(
+  _identifier(
     name: string,
     context?: LinkContext,
     create?: CreateFlag,
@@ -889,7 +889,7 @@ export class ASTInterpreter {
    * @param {boolean|1} [create] - Whether to create the member if it does not exist.
    * @returns {CompiledExpressionFunction}  The function returning the non-computed member value.
    */
-  nonComputedMember(
+  _nonComputedMember(
     left: CompiledExpressionFunction,
     right: string,
     context?: LinkContext,
