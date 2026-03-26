@@ -182,7 +182,7 @@ export class Attributes {
     let maybeSanitizedValue: string | boolean | null | unknown;
 
     if (nodeName === "img" && key === "srcset") {
-      this[key] = maybeSanitizedValue = this.sanitizeSrcset(
+      this[key] = maybeSanitizedValue = this._sanitizeSrcset(
         value,
         "$set('srcset', value)",
       );
@@ -205,7 +205,7 @@ export class Attributes {
           elem.setAttribute(attrName, maybeSanitizedValue as string);
         }
       } else {
-        this.setSpecialAttr(elem, attrName, maybeSanitizedValue as string);
+        this._setSpecialAttr(elem, attrName, maybeSanitizedValue as string);
       }
     }
 
@@ -240,7 +240,7 @@ export class Attributes {
     };
   }
 
-  setSpecialAttr(
+  _setSpecialAttr(
     element: Element,
     attrName: string,
     value: string | null,
@@ -255,7 +255,7 @@ export class Attributes {
     element.attributes.setNamedItem(attribute);
   }
 
-  sanitizeSrcset(value: unknown, invokeType: string): unknown {
+  _sanitizeSrcset(value: unknown, invokeType: string): unknown {
     let i: number;
 
     if (!value) {

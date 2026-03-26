@@ -36,8 +36,8 @@ export interface Listener {
   _id: number;
   _scopeId: number;
   _property: string[];
-  watchProp?: string;
-  invokeWatchFn?: CompiledExpression;
+  _watchProp?: string;
+  _invokeWatchFn?: CompiledExpression;
   _watchParentFn?: CompiledExpression;
 }
 
@@ -753,7 +753,7 @@ export class Scope {
             for (let i = 0, l = list.length; i < l; i++) {
               const x = list[i];
 
-              if (!x.watchProp) {
+              if (!x._watchProp) {
                 scheduled.push(x);
                 continue;
               }
@@ -1178,8 +1178,8 @@ export class Scope {
 
         if (watchProp !== key) {
           // Handle nested expression call
-          listener.watchProp = watchProp;
-          listener.invokeWatchFn = $parse(`${watchProp}()`);
+          listener._watchProp = watchProp;
+          listener._invokeWatchFn = $parse(`${watchProp}()`);
           listener._watchParentFn = $parse(getWatchParentExpression(watchProp));
 
           const potentialProxy = listener._watchParentFn(
@@ -1739,8 +1739,8 @@ export class Scope {
       }
 
       if (isFunction(newVal)) {
-        newVal = listener.invokeWatchFn
-          ? listener.invokeWatchFn(_originalTarget)
+        newVal = listener._invokeWatchFn
+          ? listener._invokeWatchFn(_originalTarget)
           : newVal(_originalTarget);
       }
 
