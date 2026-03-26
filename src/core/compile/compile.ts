@@ -1800,7 +1800,7 @@ export class CompileProvider {
               applyInterpolatedAttrValue(linkState, attr, interpolateFn(scope));
             });
           } else {
-            applyInterpolatedAttrValue(linkState, attr, newValue);
+            applyInterpolatedAttrValue(linkState, attr, interpolateFn(scope));
           }
         }
 
@@ -3521,6 +3521,13 @@ export class CompileProvider {
             }
 
             return $sce.RESOURCE_URL;
+          }
+
+          if (
+            nodeName === "image" &&
+            (attrNormalizedName === "href" || attrNormalizedName === "ngHref")
+          ) {
+            return $sce.MEDIA_URL;
           }
 
           if (

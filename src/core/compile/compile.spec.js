@@ -14853,6 +14853,85 @@ describe("$compile", () => {
       expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, false);
     });
 
+    it("should use $$sanitizeUri when working with svg image href bindings", async () => {
+      const $$sanitizeUri = jasmine
+        .createSpy("$$sanitizeUri")
+        .and.returnValue("https://clean.example.org");
+      module.config(($provide) =>
+        $provide.value("$$sanitizeUri", $$sanitizeUri),
+      );
+      initInjector("test1");
+      $rootScope.testUrl = "https://bad.example.org";
+
+      const interpolatedHref = $compile(
+        '<svg><image href="{{ testUrl }}"></image></svg>',
+      )($rootScope);
+      await wait();
+      expect(interpolatedHref.querySelector("image").getAttribute("href")).toBe(
+        "https://clean.example.org",
+      );
+      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
+
+      $$sanitizeUri.calls.reset();
+
+      const ngHref = $compile(
+        '<svg><image ng-href="{{ testUrl }}" xlink:href=""></image></svg>',
+      )($rootScope);
+      await wait();
+      expect(ngHref.querySelector("image").getAttribute("href")).toBe(
+        "https://clean.example.org",
+      );
+      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
+
+      $$sanitizeUri.calls.reset();
+
+      const ngAttrHref = $compile(
+        '<svg><image ng-attr-href="{{ testUrl }}"></image></svg>',
+      )($rootScope);
+      await wait();
+      expect(ngAttrHref.querySelector("image").getAttribute("href")).toBe(
+        "https://clean.example.org",
+      );
+      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
+    });
+
+    it("should apply imgSrcSanitizationTrustedUrlList to svg image href bindings", async () => {
+      module.config(($compileProvider) =>
+        $compileProvider.imgSrcSanitizationTrustedUrlList(
+          /^https:\/\/angularjs\.org\//,
+        ),
+      );
+      initInjector("test1");
+
+      const disallowedDataUrl = "data:image/svg+xml;base64,PHN2Zy8+";
+
+      const hrefInterpolated = $compile(
+        '<svg><image href="{{ testUrl }}"></image></svg>',
+      )($rootScope);
+      $rootScope.testUrl = disallowedDataUrl;
+      await wait();
+      expect(hrefInterpolated.querySelector("image").getAttribute("href")).toBe(
+        `unsafe:${disallowedDataUrl}`,
+      );
+
+      const ngHrefInterpolated = $compile(
+        '<svg><image ng-href="{{ testUrl }}" xlink:href=""></image></svg>',
+      )($rootScope);
+      $rootScope.testUrl = disallowedDataUrl;
+      await wait();
+      expect(
+        ngHrefInterpolated.querySelector("image").getAttribute("href"),
+      ).toBe(`unsafe:${disallowedDataUrl}`);
+
+      const ngAttrHref = $compile(
+        '<svg><image ng-attr-href="data:image/svg+xml;base64,PHN2Zy8+"></image></svg>',
+      )($rootScope);
+      await wait();
+      expect(ngAttrHref.querySelector("image").getAttribute("href")).toBe(
+        `unsafe:${disallowedDataUrl}`,
+      );
+    });
+
     it("should require a RESOURCE_URL context for href by if not on an anchor or image", async () => {
       let error = [];
       module.decorator("$exceptionHandler", () => {
