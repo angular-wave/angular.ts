@@ -313,8 +313,8 @@ export type StrictComponentBindingsAccessor = (
 ) => boolean | any;
 
 export interface DirectiveBindingInfo {
-  initialChanges: Record<string, SimpleChange>;
-  removeWatches?: () => void;
+  _initialChanges: Record<string, SimpleChange>;
+  _removeWatches?: () => void;
 }
 
 export interface CompileControllerLocals {
@@ -2161,8 +2161,8 @@ export class CompileProvider {
               nodeLinkState._newIsolateScopeDirective,
             );
 
-            if (scopeBindingInfo.removeWatches) {
-              isolateScope.$on("$destroy", scopeBindingInfo.removeWatches);
+            if (scopeBindingInfo._removeWatches) {
+              isolateScope.$on("$destroy", scopeBindingInfo._removeWatches);
             }
           }
 
@@ -2230,7 +2230,7 @@ export class CompileProvider {
               if (isFunction(controllerInstance.$onChanges)) {
                 try {
                   controllerInstance.$onChanges(
-                    controller._bindingInfo!.initialChanges,
+                    controller._bindingInfo!._initialChanges,
                   );
                 } catch (err) {
                   $exceptionHandler(err);
@@ -4099,8 +4099,8 @@ export class CompileProvider {
           }
 
           return {
-            initialChanges,
-            removeWatches:
+            _initialChanges: initialChanges,
+            _removeWatches:
               removeWatchCollection.length > 0
                 ? function removeWatches() {
                     for (
