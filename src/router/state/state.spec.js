@@ -741,24 +741,8 @@ describe("$state", () => {
           });
         });
 
-        // TODO Can this test even be replicated?
-        // it("dynamic param changes can be observed by watching the global $stateParams", async () => {
-        //   let observedParamValue;
-        //   // need a expression to watch
-        //
-        //   $rootScope.$stateParams = $stateParams;
-        //   $rootScope.$watch("$stateParams.searchDyn", function (newval) {
-
-        //     observedParamValue = newval;
-        //   });
-        //   await wait(100);
-        //   $location.setSearch({ search: "s1", searchDyn: "sd2" });
-        //   $rootScope.$broadcast("$locationChangeSuccess");
-
-        //   await wait(100);
-
-        //   expect(observedParamValue).toBe("sd2");
-        // });
+        // Watching `$stateParams.someProp` does not currently re-fire on dynamic param updates
+        // in this runtime, even though the global `$stateParams` object itself is updated.
       });
 
       describe("[ uiOnParamsChanged ]", function () {

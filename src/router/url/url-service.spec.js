@@ -1,6 +1,7 @@
 import { dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
 import { map, find } from "../../shared/common.ts";
+import { UrlMatcher } from "./url-matcher.ts";
 
 describe("UrlMatcher", () => {
   let $url;
@@ -685,604 +686,543 @@ describe("UrlMatcher", () => {
       });
     });
   });
+  describe("UrlMatcher custom parameter types", () => {
+    function bootstrapConfiguredUrl(configure) {
+      const app = document.getElementById("app");
+
+      dealoc(app);
+      window.angular = new Angular();
+      window.angular.module("configuredUrlModule", []).config(configure);
+
+      const injector = window.angular.bootstrap(app, ["configuredUrlModule"]);
+
+      return {
+        injector,
+        $url: injector.get("$url"),
+        $router: injector.get("$router"),
+      };
+    }
+
+    it("should handle arrays properly with config-time custom type definitions", () => {
+      const { $url } = bootstrapConfiguredUrl(($urlConfigProvider) => {
+        $urlConfigProvider.type("myType", {}, () => ({
+          decode: () => ({ status: "decoded" }),
+          is: (value) => typeof value === "object",
+        }));
+      });
+
+      const matcher = $url.compile("/test?{foo:myType}");
+      expect(matcher.exec("/test", { foo: "1" })).toEqual({
+        foo: { status: "decoded" },
+      });
+      expect(matcher.exec("/test", { foo: ["1", "2"] })).toEqual({
+        foo: [{ status: "decoded" }, { status: "decoded" }],
+      });
+    });
+
+    it("should accept object definitions", () => {
+      const type = { encode: () => {}, decode: () => {} };
+      $url._config.type("myType1", type);
+      expect($url._config.type("myType1").encode).toBe(type.encode);
+    });
+
+    it("compiles patterns", () => {
+      const matcher = $url.compile("/hello/world");
+      expect(matcher instanceof UrlMatcher).toBe(true);
+    });
+
+    it("recognizes matcher-shaped objects", () => {
+      const custom = Object.entries(UrlMatcher.prototype).reduce(
+        (acc, [name, value]) => {
+          if (typeof value === "function") {
+            acc[name] = () => {};
+          }
+
+          return acc;
+        },
+        {},
+      );
+
+      expect($url.isMatcher($url.compile("/"))).toBe(true);
+      expect($url.isMatcher(custom)).toBe(true);
+      expect($url.isMatcher(null)).toBe(false);
+    });
+
+    it("should reject duplicate definitions", () => {
+      $url._config.type("myType2", { encode: () => {}, decode: () => {} });
+      expect(() => {
+        $url._config.type("myType2", {});
+      }).toThrowError("A type named 'myType2' has already been defined.");
+    });
+
+    it("should accept injected function definitions", () => {
+      const { $url, $router } = bootstrapConfiguredUrl(($urlConfigProvider) => {
+        $urlConfigProvider.type("myType3", {}, ($router) => ({
+          decode: () => $router,
+        }));
+      });
+
+      expect($url._config.type("myType3").decode()).toBe($router);
+    });
+
+    it("should accept annotated function definitions", () => {
+      const { $url, $router } = bootstrapConfiguredUrl(($urlConfigProvider) => {
+        $urlConfigProvider.type("myAnnotatedType", {}, [
+          "$router",
+          function (router) {
+            return {
+              decode: () => router,
+            };
+          },
+        ]);
+      });
+
+      expect($url._config.type("myAnnotatedType").decode()).toBe($router);
+    });
+
+    it("should match built-in types", () => {
+      const matcher = $url.compile("/{foo:int}/{flag:bool}");
+      expect(matcher.exec("/1138/1")).toEqual({ foo: 1138, flag: true });
+      expect(matcher.format({ foo: 5, flag: true })).toBe("/5/1");
+      expect(matcher.exec("/-1138/1")).toEqual({ foo: -1138, flag: true });
+      expect(matcher.format({ foo: -5, flag: true })).toBe("/-5/1");
+    });
+
+    it("should match built-in types with spaces", () => {
+      const matcher = $url.compile("/{foo: int}/{flag:  bool}");
+      expect(matcher.exec("/1138/1")).toEqual({ foo: 1138, flag: true });
+      expect(matcher.format({ foo: 5, flag: true })).toBe("/5/1");
+    });
+
+    it("should throw an error if a param type is declared twice", () => {
+      expect(() => {
+        $url.compile("/{foo:int}", {
+          state: {
+            params: {
+              foo: { type: "int" },
+            },
+          },
+        });
+      }).toThrowError("Param 'foo' has two type configurations.");
+    });
+
+    it("should encode and decode dates", () => {
+      const matcher = $url.compile("/calendar/{date:date}");
+      const result = matcher.exec("/calendar/2014-03-26");
+      const date = new Date(2014, 2, 26);
+
+      expect(result.date instanceof Date).toBe(true);
+      expect(result.date.toUTCString()).toEqual(date.toUTCString());
+      expect(matcher.format({ date })).toBe("/calendar/2014-03-26");
+    });
+
+    it("should encode and decode arbitrary objects to json", () => {
+      const matcher = $url.compile("/state/{param1:json}/{param2:json}");
+      const params = {
+        param1: { foo: "huh", count: 3 },
+        param2: { foo: "wha", count: 5 },
+      };
+      const json1 = '{"foo":"huh","count":3}';
+      const json2 = '{"foo":"wha","count":5}';
+
+      expect(matcher.format(params)).toBe(
+        `/state/${encodeURIComponent(json1)}/${encodeURIComponent(json2)}`,
+      );
+      expect(matcher.exec(`/state/${json1}/${json2}`)).toEqual(params);
+    });
+
+    it("should not match invalid typed parameter values", () => {
+      const matcher = $url.compile("/users/{id:int}");
+
+      expect(matcher.exec("/users/1138").id).toBe(1138);
+      expect(matcher.exec("/users/alpha")).toBeNull();
+      expect(matcher.format({ id: 1138 })).toBe("/users/1138");
+      expect(matcher.format({ id: "alpha" })).toBeNull();
+    });
+
+    it("should allow custom types to handle multiple search param values manually", () => {
+      $url._config.type("custArray", {
+        encode: (array) => array.join("-"),
+        decode: (value) => (Array.isArray(value) ? value : value.split(/-/)),
+        equals: (left, right) => JSON.stringify(left) === JSON.stringify(right),
+        is: Array.isArray,
+      });
+
+      const matcher = $url.compile("/foo?{bar:custArray}", {
+        state: { params: { bar: { array: false } } },
+      });
+
+      $url.url("/foo?bar=fox");
+      expect(matcher.exec($url.getPath(), $url.getSearch())).toEqual({
+        bar: ["fox"],
+      });
+      expect(matcher.format({ bar: ["fox"] })).toEqual("/foo?bar=fox");
+
+      $url.url("/foo?bar=quick-brown-fox");
+      expect(matcher.exec($url.getPath(), $url.getSearch())).toEqual({
+        bar: ["quick", "brown", "fox"],
+      });
+      expect(matcher.format({ bar: ["quick", "brown", "fox"] })).toEqual(
+        "/foo?bar=quick-brown-fox",
+      );
+    });
+
+    it("should automatically handle multiple search param values", () => {
+      const matcher = $url.compile("/foo/{fooid:int}?{bar:int}");
+
+      $url.url("/foo/5?bar=1");
+      expect(matcher.exec($url.getPath(), $url.getSearch())).toEqual({
+        fooid: 5,
+        bar: 1,
+      });
+      expect(matcher.format({ fooid: 5, bar: 1 })).toEqual("/foo/5?bar=1");
+
+      $url.url("/foo/5?bar=1&bar=2&bar=3");
+      expect(matcher.exec($url.getPath(), $url.getSearch())).toEqual({
+        fooid: 5,
+        bar: [1, 2, 3],
+      });
+      expect(matcher.format({ fooid: 5, bar: [1, 2, 3] })).toEqual(
+        "/foo/5?bar=1&bar=2&bar=3",
+      );
+    });
+  });
+
+  describe("UrlMatcher optional parameters", () => {
+    it("should match with or without values", () => {
+      const matcher = $url.compile("/users/{id:int}", {
+        state: {
+          params: { id: { value: null, squash: true } },
+        },
+      });
+      expect(matcher.exec("/users/1138")).toEqual({ id: 1138 });
+      expect(matcher.exec("/users1138")).toBeNull();
+      expect(matcher.exec("/users/").id).toBeNull();
+      expect(matcher.exec("/users").id).toBeNull();
+    });
+
+    it("should correctly match multiple", () => {
+      const matcher = $url.compile("/users/{id:int}/{state:[A-Z]+}", {
+        state: {
+          params: {
+            id: { value: null, squash: true },
+            state: { value: null, squash: true },
+          },
+        },
+      });
+      expect(matcher.exec("/users/1138")).toEqual({ id: 1138, state: null });
+      expect(matcher.exec("/users/1138/NY")).toEqual({ id: 1138, state: "NY" });
+      expect(matcher.exec("/users/").id).toBeNull();
+      expect(matcher.exec("/users/").state).toBeNull();
+      expect(matcher.exec("/users").id).toBeNull();
+      expect(matcher.exec("/users").state).toBeNull();
+      expect(matcher.exec("/users/NY").state).toBe("NY");
+      expect(matcher.exec("/users/NY").id).toBeNull();
+    });
+
+    it("should correctly format with or without values", () => {
+      const matcher = $url.compile("/users/{id:int}", {
+        state: {
+          params: { id: { value: null } },
+        },
+      });
+      expect(matcher.format()).toBe("/users/");
+      expect(matcher.format({ id: 1138 })).toBe("/users/1138");
+    });
+
+    it("should correctly format multiple", () => {
+      const matcher = $url.compile("/users/{id:int}/{state:[A-Z]+}", {
+        state: {
+          params: {
+            id: { value: null, squash: true },
+            state: { value: null, squash: true },
+          },
+        },
+      });
+
+      expect(matcher.format()).toBe("/users");
+      expect(matcher.format({ id: 1138 })).toBe("/users/1138");
+      expect(matcher.format({ state: "NY" })).toBe("/users/NY");
+      expect(matcher.format({ id: 1138, state: "NY" })).toBe("/users/1138/NY");
+    });
+
+    it("should match in between static segments", () => {
+      const matcher = $url.compile("/users/{user:int}/photos", {
+        state: {
+          params: { user: { value: 5, squash: true } },
+        },
+      });
+      expect(matcher.exec("/users/photos").user).toBe(5);
+      expect(matcher.exec("/users/6/photos").user).toBe(6);
+      expect(matcher.format()).toBe("/users/photos");
+      expect(matcher.format({ user: 1138 })).toBe("/users/1138/photos");
+    });
+
+    it("should correctly format with an optional followed by a required parameter", () => {
+      const matcher = $url.compile("/home/:user/gallery/photos/:photo", {
+        state: {
+          params: {
+            user: { value: null, squash: true },
+            photo: undefined,
+          },
+        },
+      });
+      expect(matcher.format({ photo: 12 })).toBe("/home/gallery/photos/12");
+      expect(matcher.format({ user: 1138, photo: 13 })).toBe(
+        "/home/1138/gallery/photos/13",
+      );
+    });
+
+    it("should populate defaults if not supplied in URL", () => {
+      const matcher = $url.compile("/users/{id:int}/{test}", {
+        state: {
+          params: {
+            id: { value: 0, squash: true },
+            test: { value: "foo", squash: true },
+          },
+        },
+      });
+      expect(matcher.exec("/users")).toEqual({ id: 0, test: "foo" });
+      expect(matcher.exec("/users/2")).toEqual({ id: 2, test: "foo" });
+      expect(matcher.exec("/users/bar")).toEqual({ id: 0, test: "bar" });
+      expect(matcher.exec("/users/2/bar")).toEqual({ id: 2, test: "bar" });
+      expect(matcher.exec("/users/bar/2")).toBeNull();
+    });
+
+    it("should populate even if the regexp requires 1 or more chars", () => {
+      const matcher = $url.compile(
+        "/record/{appId}/{recordId:[0-9a-fA-F]{10,24}}",
+        {
+          state: {
+            params: { appId: null, recordId: null },
+          },
+        },
+      );
+      expect(matcher.exec("/record/546a3e4dd273c60780e35df3/")).toEqual({
+        appId: "546a3e4dd273c60780e35df3",
+        recordId: null,
+      });
+    });
+
+    it("should allow shorthand definitions", () => {
+      const matcher = $url.compile("/foo/:foo", {
+        state: {
+          params: { foo: "bar" },
+        },
+      });
+      expect(matcher.exec("/foo/")).toEqual({ foo: "bar" });
+    });
+
+    it("should populate query params", () => {
+      const defaults = { order: "name", limit: 25, page: 1 };
+      const matcher = $url.compile("/foo?order&{limit:int}&{page:int}", {
+        state: {
+          params: defaults,
+        },
+      });
+      expect(matcher.exec("/foo")).toEqual(defaults);
+    });
+
+    it("should allow function-calculated values", () => {
+      const barFn = () => "Value from bar()";
+
+      let matcher = $url.compile("/foo/:bar", {
+        state: {
+          params: { bar: barFn },
+        },
+      });
+      expect(matcher.exec("/foo/").bar).toBe("Value from bar()");
+
+      matcher = $url.compile("/foo/:bar", {
+        state: {
+          params: { bar: { value: barFn, squash: true } },
+        },
+      });
+      expect(matcher.exec("/foo").bar).toBe("Value from bar()");
+
+      matcher = $url.compile("/foo?bar", {
+        state: {
+          params: { bar: barFn },
+        },
+      });
+      expect(matcher.exec("/foo").bar).toBe("Value from bar()");
+    });
+
+    it("should allow injectable functions", () => {
+      const router = $injector.get("$router");
+      const matcher = $url.compile("/users/{user:json}", {
+        state: {
+          params: {
+            user: ($router) => $router.params.user,
+          },
+        },
+      });
+      const user = { name: "Bob" };
+
+      router.params.user = user;
+      expect(matcher.exec("/users/").user).toBe(user);
+    });
+
+    it("should match when used as prefix", () => {
+      const matcher = $url.compile("/{lang:[a-z]{2}}/foo", {
+        state: {
+          params: { lang: { value: "de", squash: true } },
+        },
+      });
+      expect(matcher.exec("/de/foo")).toEqual({ lang: "de" });
+      expect(matcher.exec("/foo")).toEqual({ lang: "de" });
+    });
+
+    describe("squash policy", () => {
+      const Session = { username: "loggedinuser" };
+      const getMatcher = (squash) =>
+        $url.compile("/user/:userid/gallery/:galleryid/photo/:photoid", {
+          state: {
+            params: {
+              userid: {
+                squash,
+                value: () => Session.username,
+              },
+              galleryid: { squash, value: "favorites" },
+            },
+          },
+        });
+
+      it(": true should squash the default value and one slash", () => {
+        const matcher = getMatcher(true);
+        const defaultParams = {
+          userid: "loggedinuser",
+          galleryid: "favorites",
+          photoid: "123",
+        };
+        expect(matcher.exec("/user/gallery/photo/123")).toEqual(defaultParams);
+        expect(matcher.exec("/user//gallery//photo/123")).toEqual(
+          defaultParams,
+        );
+        expect(matcher.format(defaultParams)).toBe("/user/gallery/photo/123");
+
+        const nonDefaultParams = {
+          userid: "otheruser",
+          galleryid: "travel",
+          photoid: "987",
+        };
+        expect(
+          matcher.exec("/user/otheruser/gallery/travel/photo/987"),
+        ).toEqual(nonDefaultParams);
+        expect(matcher.format(nonDefaultParams)).toBe(
+          "/user/otheruser/gallery/travel/photo/987",
+        );
+      });
+
+      it(": false should not squash default values", () => {
+        const matcher = getMatcher(false);
+        const defaultParams = {
+          userid: "loggedinuser",
+          galleryid: "favorites",
+          photoid: "123",
+        };
+        expect(
+          matcher.exec("/user/loggedinuser/gallery/favorites/photo/123"),
+        ).toEqual(defaultParams);
+        expect(matcher.format(defaultParams)).toBe(
+          "/user/loggedinuser/gallery/favorites/photo/123",
+        );
+
+        const nonDefaultParams = {
+          userid: "otheruser",
+          galleryid: "travel",
+          photoid: "987",
+        };
+        expect(
+          matcher.exec("/user/otheruser/gallery/travel/photo/987"),
+        ).toEqual(nonDefaultParams);
+        expect(matcher.format(nonDefaultParams)).toBe(
+          "/user/otheruser/gallery/travel/photo/987",
+        );
+      });
+
+      it(": '' should squash the default value to an empty string", () => {
+        const matcher = getMatcher("");
+        const defaultParams = {
+          userid: "loggedinuser",
+          galleryid: "favorites",
+          photoid: "123",
+        };
+        expect(matcher.exec("/user//gallery//photo/123")).toEqual(
+          defaultParams,
+        );
+        expect(matcher.format(defaultParams)).toBe("/user//gallery//photo/123");
+
+        const nonDefaultParams = {
+          userid: "otheruser",
+          galleryid: "travel",
+          photoid: "987",
+        };
+        expect(
+          matcher.exec("/user/otheruser/gallery/travel/photo/987"),
+        ).toEqual(nonDefaultParams);
+        expect(matcher.format(nonDefaultParams)).toBe(
+          "/user/otheruser/gallery/travel/photo/987",
+        );
+      });
+
+      it(": '~' should squash the default value and replace it with '~'", () => {
+        const matcher = getMatcher("~");
+        const defaultParams = {
+          userid: "loggedinuser",
+          galleryid: "favorites",
+          photoid: "123",
+        };
+        expect(matcher.exec("/user//gallery//photo/123")).toEqual(
+          defaultParams,
+        );
+        expect(matcher.exec("/user/~/gallery/~/photo/123")).toEqual(
+          defaultParams,
+        );
+        expect(matcher.format(defaultParams)).toBe(
+          "/user/~/gallery/~/photo/123",
+        );
+
+        const nonDefaultParams = {
+          userid: "otheruser",
+          galleryid: "travel",
+          photoid: "987",
+        };
+        expect(
+          matcher.exec("/user/otheruser/gallery/travel/photo/987"),
+        ).toEqual(nonDefaultParams);
+        expect(matcher.format(nonDefaultParams)).toBe(
+          "/user/otheruser/gallery/travel/photo/987",
+        );
+      });
+    });
+  });
+
+  describe("UrlMatcher strict matching", () => {
+    it("should match with or without trailing slash", () => {
+      const matcher = $url.compile("/users", { strict: false });
+      expect(matcher.exec("/users")).toEqual({});
+      expect(matcher.exec("/users/")).toEqual({});
+    });
+
+    it("should not match multiple trailing slashes", () => {
+      const matcher = $url.compile("/users", { strict: false });
+      expect(matcher.exec("/users//")).toBeNull();
+    });
+
+    it("should match when defined with parameters", () => {
+      const matcher = $url.compile("/users/{name}", {
+        strict: false,
+        state: {
+          params: {
+            name: { value: null },
+          },
+        },
+      });
+      expect(matcher.exec("/users/")).toEqual({ name: null });
+      expect(matcher.exec("/users/bob")).toEqual({ name: "bob" });
+      expect(matcher.exec("/users/bob/")).toEqual({ name: "bob" });
+      expect(matcher.exec("/users/bob//")).toBeNull();
+    });
+  });
 });
-
-// describe("urlMatcherFactoryProvider", ( ) => {
-//   describe(".type()", ( ) => {
-//     let $url;
-//     beforeEach(
-//       module("ng.router.util", function ($urlProvider) {
-//         $url = $urlProvider;
-//         $urlProvider.type("myType", {}, ( ) => {
-//           return {
-//             decode: ( ) => {
-//               return { status: "decoded" };
-//             },
-//             is: angular.isObject,
-//           };
-//         });
-//       }),
-//     );
-
-//     it("should handle arrays properly with config-time custom type definitions", function (
-//       $stateParams,
-//     ) {
-//       const m = $url.compile("/test?{foo:myType}");
-//       expect(m.exec("/test", { foo: "1" })).toEqual({
-//         foo: { status: "decoded" },
-//       });
-//       expect(m.exec("/test", { foo: ["1", "2"] })).toEqual({
-//         foo: [{ status: "decoded" }, { status: "decoded" }],
-//       });
-//     });
-//   });
-
-//   // TODO: Fix object pollution between tests for urlMatcherConfig
-//   afterEach(function ($urlMatcherFactory) {
-//     $urlMatcherFactory.caseInsensitive(false);
-//   });
-// });
-
-// describe("urlMatcherFactory", ( ) => {
-//   let $url;
-//   let $url;
-
-//   beforeEach(function ($urlMatcherFactory, $url) {
-//     $url = $urlMatcherFactory;
-//     $url = $url;
-//   });
-
-//   it("compiles patterns", ( ) => {
-//     const matcher = $url.compile("/hello/world");
-//     expect(matcher instanceof UrlMatcher).toBe(true);
-//   });
-
-//   it("recognizes matchers", ( ) => {
-//     expect($url.isMatcher($url.compile("/"))).toBe(true);
-
-//     const custom = {
-//       format: angular.noop,
-//       exec: angular.noop,
-//       append: angular.noop,
-//       isRoot: angular.noop,
-//       validates: angular.noop,
-//       parameters: angular.noop,
-//       parameter: angular.noop,
-//       _getDecodedParamValue: angular.noop,
-//     };
-//     expect($url.isMatcher(custom)).toBe(true);
-//   });
-
-//   it("should handle case sensitive URL by default", ( ) => {
-//     expect($url.compile("/hello/world").exec("/heLLo/WORLD")).toBeNull();
-//   });
-
-//   it("should handle case insensitive URL", ( ) => {
-//     $url.config.caseInsensitive(true);
-//     expect($url.compile("/hello/world").exec("/heLLo/WORLD")).toEqual({});
-//   });
-
-//   describe("typed parameters", ( ) => {
-//     it("should accept object definitions", ( ) => {
-//       const type = { encode: ( ) => {}, decode: ( ) => {} };
-//       $url.type("myType1", type);
-//       expect($url.type("myType1").encode).toBe(type.encode);
-//     });
-
-//     it("should reject duplicate definitions", ( ) => {
-//       $url.type("myType2", { encode: ( ) => {}, decode: ( ) => {} });
-//       expect(( ) => {
-//         $url.type("myType2", {});
-//       }).toThrowError("A type named 'myType2' has already been defined.");
-//     });
-
-//     it("should accept injected function definitions", function (
-//       $stateParams,
-//     ) {
-//       $url.type("myType3", {}, function ($stateParams) {
-//         return {
-//           decode: ( ) => {
-//             return $stateParams;
-//           },
-//         };
-//       });
-//       expect($url.type("myType3").decode()).toBe($stateParams);
-//     });
-
-//     it("should accept annotated function definitions", function (
-//       $stateParams,
-//     ) {
-//       $url.type("myAnnotatedType", {}, [
-//         "$stateParams",
-//         function (s) {
-//           return {
-//             decode: ( ) => {
-//               return s;
-//             },
-//           };
-//         },
-//       ]);
-//       expect($url.type("myAnnotatedType").decode()).toBe($stateParams);
-//     });
-
-//     it("should match built-in types", ( ) => {
-//       const m = $url.compile("/{foo:int}/{flag:bool}");
-//       expect(m.exec("/1138/1")).toEqual({ foo: 1138, flag: true });
-//       expect(m.format({ foo: 5, flag: true })).toBe("/5/1");
-
-//       expect(m.exec("/-1138/1")).toEqual({ foo: -1138, flag: true });
-//       expect(m.format({ foo: -5, flag: true })).toBe("/-5/1");
-//     });
-
-//     it("should match built-in types with spaces", ( ) => {
-//       const m = $url.compile("/{foo: int}/{flag:  bool}");
-//       expect(m.exec("/1138/1")).toEqual({ foo: 1138, flag: true });
-//       expect(m.format({ foo: 5, flag: true })).toBe("/5/1");
-//     });
-
-//     it("should match types named only in params", ( ) => {
-//       const m = $url.compile("/{foo}/{flag}", {
-//         state: {
-//           params: {
-//             foo: { type: "int" },
-//             flag: { type: "bool" },
-//           },
-//         },
-//       });
-//       expect(m.exec("/1138/1")).toEqual({ foo: 1138, flag: true });
-//       expect(m.format({ foo: 5, flag: true })).toBe("/5/1");
-//     });
-
-//     it("should throw an error if a param type is declared twice", ( ) => {
-//       expect(( ) => {
-//         $url.compile("/{foo:int}", {
-//           state: {
-//             params: {
-//               foo: { type: "int" },
-//             },
-//           },
-//         });
-//       }).toThrow(new Error("Param 'foo' has two type configurations."));
-//     });
-
-//     it("should encode/decode dates", ( ) => {
-//       const m = $url.compile("/calendar/{date:date}"),
-//         result = m.exec("/calendar/2014-03-26");
-//       const date = new Date(2014, 2, 26);
-
-//       expect(result.date instanceof Date).toBe(true);
-//       expect(result.date.toUTCString()).toEqual(date.toUTCString());
-//       expect(m.format({ date: date })).toBe("/calendar/2014-03-26");
-//     });
-
-//     it("should encode/decode arbitrary objects to json", ( ) => {
-//       const m = $url.compile("/state/{param1:json}/{param2:json}");
-
-//       const params = {
-//         param1: { foo: "huh", count: 3 },
-//         param2: { foo: "wha", count: 5 },
-//       };
-
-//       const json1 = '{"foo":"huh","count":3}';
-//       const json2 = '{"foo":"wha","count":5}';
-
-//       expect(m.format(params)).toBe(
-//         "/state/" + encodeURIComponent(json1) + "/" + encodeURIComponent(json2),
-//       );
-//       expect(m.exec("/state/" + json1 + "/" + json2)).toEqual(params);
-//     });
-
-//     it("should not match invalid typed parameter values", ( ) => {
-//       const m = $url.compile("/users/{id:int}");
-
-//       expect(m.exec("/users/1138").id).toBe(1138);
-//       expect(m.exec("/users/alpha")).toBeNull();
-
-//       expect(m.format({ id: 1138 })).toBe("/users/1138");
-//       expect(m.format({ id: "alpha" })).toBeNull();
-//     });
-
-//     it("should automatically handle multiple search param values", ( ) => {
-//       const m = $url.compile("/foo/{fooid:int}?{bar:int}");
-
-//       $url.url("/foo/5?bar=1");
-//       expect(m.exec($url.getPath(), $url.getSearch())).toEqual({ fooid: 5, bar: 1 });
-//       expect(m.format({ fooid: 5, bar: 1 })).toEqual("/foo/5?bar=1");
-
-//       $url.url("/foo/5?bar=1&bar=2&bar=3");
-//       if (Array.isArray($url.getSearch()))
-//         // conditional for angular 1.0.8
-//         expect(m.exec($url.getPath(), $url.getSearch())).toEqual({
-//           fooid: 5,
-//           bar: [1, 2, 3],
-//         });
-//       expect(m.format({ fooid: 5, bar: [1, 2, 3] })).toEqual(
-//         "/foo/5?bar=1&bar=2&bar=3",
-//       );
-
-//       m.format();
-//     });
-
-//     it("should allow custom types to handle multiple search param values manually", ( ) => {
-//       $url.type("custArray", {
-//         encode: function (array) {
-//           return array.join("-");
-//         },
-//         decode: function (val) {
-//           return Array.isArray(val) ? val : val.split(/-/);
-//         },
-//         equals: angular.equals,
-//         is: Array.isArray,
-//       });
-
-//       const m = $url.compile("/foo?{bar:custArray}", {
-//         state: { params: { bar: { array: false } } },
-//       });
-
-//       $url.url("/foo?bar=fox");
-//       expect(m.exec($url.getPath(), $url.getSearch())).toEqual({ bar: ["fox"] });
-//       expect(m.format({ bar: ["fox"] })).toEqual("/foo?bar=fox");
-
-//       $url.url("/foo?bar=quick-brown-fox");
-//       expect(m.exec($url.getPath(), $url.getSearch())).toEqual({
-//         bar: ["quick", "brown", "fox"],
-//       });
-//       expect(m.format({ bar: ["quick", "brown", "fox"] })).toEqual(
-//         "/foo?bar=quick-brown-fox",
-//       );
-//     });
-//   });
-
-//   describe("optional parameters", ( ) => {
-//     it("should match with or without values", ( ) => {
-//       const m = $url.compile("/users/{id:int}", {
-//         state: {
-//           params: { id: { value: null, squash: true } },
-//         },
-//       });
-//       expect(m.exec("/users/1138")).toEqual({ id: 1138 });
-//       expect(m.exec("/users1138")).toBeNull();
-//       expect(m.exec("/users/").id).toBeNull();
-//       expect(m.exec("/users").id).toBeNull();
-//     });
-
-//     it("should correctly match multiple", ( ) => {
-//       const m = $url.compile("/users/{id:int}/{state:[A-Z]+}", {
-//         state: {
-//           params: {
-//             id: { value: null, squash: true },
-//             state: { value: null, squash: true },
-//           },
-//         },
-//       });
-//       expect(m.exec("/users/1138")).toEqual({ id: 1138, state: null });
-//       expect(m.exec("/users/1138/NY")).toEqual({ id: 1138, state: "NY" });
-
-//       expect(m.exec("/users/").id).toBeNull();
-//       expect(m.exec("/users/").state).toBeNull();
-
-//       expect(m.exec("/users").id).toBeNull();
-//       expect(m.exec("/users").state).toBeNull();
-
-//       expect(m.exec("/users/NY").state).toBe("NY");
-//       expect(m.exec("/users/NY").id).toBeNull();
-//     });
-
-//     it("should correctly format with or without values", ( ) => {
-//       const m = $url.compile("/users/{id:int}", {
-//         state: {
-//           params: { id: { value: null } },
-//         },
-//       });
-//       expect(m.format()).toBe("/users/");
-//       expect(m.format({ id: 1138 })).toBe("/users/1138");
-//     });
-
-//     it("should correctly format multiple", ( ) => {
-//       const m = $url.compile("/users/{id:int}/{state:[A-Z]+}", {
-//         state: {
-//           params: {
-//             id: { value: null, squash: true },
-//             state: { value: null, squash: true },
-//           },
-//         },
-//       });
-
-//       expect(m.format()).toBe("/users");
-//       expect(m.format({ id: 1138 })).toBe("/users/1138");
-//       expect(m.format({ state: "NY" })).toBe("/users/NY");
-//       expect(m.format({ id: 1138, state: "NY" })).toBe("/users/1138/NY");
-//     });
-
-//     it("should match in between static segments", ( ) => {
-//       const m = $url.compile("/users/{user:int}/photos", {
-//         state: {
-//           params: { user: { value: 5, squash: true } },
-//         },
-//       });
-//       expect(m.exec("/users/photos").user).toBe(5);
-//       expect(m.exec("/users/6/photos").user).toBe(6);
-//       expect(m.format()).toBe("/users/photos");
-//       expect(m.format({ user: 1138 })).toBe("/users/1138/photos");
-//     });
-
-//     it("should correctly format with an optional followed by a required parameter", ( ) => {
-//       const m = $url.compile("/home/:user/gallery/photos/:photo", {
-//         state: {
-//           params: {
-//             user: { value: null, squash: true },
-//             photo: undefined,
-//           },
-//         },
-//       });
-//       expect(m.format({ photo: 12 })).toBe("/home/gallery/photos/12");
-//       expect(m.format({ user: 1138, photo: 13 })).toBe(
-//         "/home/1138/gallery/photos/13",
-//       );
-//     });
-
-//     describe("default values", ( ) => {
-//       it("should populate if not supplied in URL", ( ) => {
-//         const m = $url.compile("/users/{id:int}/{test}", {
-//           state: {
-//             params: {
-//               id: { value: 0, squash: true },
-//               test: { value: "foo", squash: true },
-//             },
-//           },
-//         });
-//         expect(m.exec("/users")).toEqual({ id: 0, test: "foo" });
-//         expect(m.exec("/users/2")).toEqual({ id: 2, test: "foo" });
-//         expect(m.exec("/users/bar")).toEqual({ id: 0, test: "bar" });
-//         expect(m.exec("/users/2/bar")).toEqual({ id: 2, test: "bar" });
-//         expect(m.exec("/users/bar/2")).toBeNull();
-//       });
-
-//       it("should populate even if the regexp requires 1 or more chars", ( ) => {
-//         const m = $url.compile(
-//           "/record/{appId}/{recordId:[0-9a-fA-F]{10,24}}",
-//           {
-//             state: {
-//               params: { appId: null, recordId: null },
-//             },
-//           },
-//         );
-//         expect(m.exec("/record/546a3e4dd273c60780e35df3/")).toEqual({
-//           appId: "546a3e4dd273c60780e35df3",
-//           recordId: null,
-//         });
-//       });
-
-//       it("should allow shorthand definitions", ( ) => {
-//         const m = $url.compile("/foo/:foo", {
-//           state: {
-//             params: { foo: "bar" },
-//           },
-//         });
-//         expect(m.exec("/foo/")).toEqual({ foo: "bar" });
-//       });
-
-//       it("should populate query params", ( ) => {
-//         const defaults = { order: "name", limit: 25, page: 1 };
-//         const m = $url.compile("/foo?order&{limit:int}&{page:int}", {
-//           state: {
-//             params: defaults,
-//           },
-//         });
-//         expect(m.exec("/foo")).toEqual(defaults);
-//       });
-
-//       it("should allow function-calculated values", ( ) => {
-//         function barFn() {
-//           return "Value from bar()";
-//         }
-//         let m = $url.compile("/foo/:bar", {
-//           state: {
-//             params: { bar: barFn },
-//           },
-//         });
-//         expect(m.exec("/foo/").bar).toBe("Value from bar()");
-
-//         m = $url.compile("/foo/:bar", {
-//           state: {
-//             params: { bar: { value: barFn, squash: true } },
-//           },
-//         });
-//         expect(m.exec("/foo").bar).toBe("Value from bar()");
-
-//         m = $url.compile("/foo?bar", {
-//           state: {
-//             params: { bar: barFn },
-//           },
-//         });
-//         expect(m.exec("/foo").bar).toBe("Value from bar()");
-//       });
-
-//       it("should allow injectable functions", function ($stateParams) {
-//         const m = $url.compile("/users/{user:json}", {
-//           state: {
-//             params: {
-//               user: function ($stateParams) {
-//                 return $stateParams.user;
-//               },
-//             },
-//           },
-//         });
-//         const user = { name: "Bob" };
-
-//         $stateParams.user = user;
-//         expect(m.exec("/users/").user).toBe(user);
-//       });
-
-//       xit("should match when used as prefix", ( ) => {
-//         const m = $url.compile("/{lang:[a-z]{2}}/foo", {
-//           state: {
-//             params: { lang: "de" },
-//           },
-//         });
-//         expect(m.exec("/de/foo")).toEqual({ lang: "de" });
-//         expect(m.exec("/foo")).toEqual({ lang: "de" });
-//       });
-
-//       describe("squash policy", ( ) => {
-//         const Session = { username: "loggedinuser" };
-//         function getMatcher(squash) {
-//           return $url.compile(
-//             "/user/:userid/gallery/:galleryid/photo/:photoid",
-//             {
-//               state: {
-//                 params: {
-//                   userid: {
-//                     squash: squash,
-//                     value: ( ) => {
-//                       return Session.username;
-//                     },
-//                   },
-//                   galleryid: { squash: squash, value: "favorites" },
-//                 },
-//               },
-//             },
-//           );
-//         }
-
-//         it(": true should squash the default value and one slash", function (
-//           $stateParams,
-//         ) {
-//           const m = getMatcher(true);
-
-//           const defaultParams = {
-//             userid: "loggedinuser",
-//             galleryid: "favorites",
-//             photoid: "123",
-//           };
-//           expect(m.exec("/user/gallery/photo/123")).toEqual(defaultParams);
-//           expect(m.exec("/user//gallery//photo/123")).toEqual(defaultParams);
-//           expect(m.format(defaultParams)).toBe("/user/gallery/photo/123");
-
-//           const nonDefaultParams = {
-//             userid: "otheruser",
-//             galleryid: "travel",
-//             photoid: "987",
-//           };
-//           expect(m.exec("/user/otheruser/gallery/travel/photo/987")).toEqual(
-//             nonDefaultParams,
-//           );
-//           expect(m.format(nonDefaultParams)).toBe(
-//             "/user/otheruser/gallery/travel/photo/987",
-//           );
-//         });
-
-//         it(": false should not squash default values", function (
-//           $stateParams,
-//         ) {
-//           const m = getMatcher(false);
-
-//           const defaultParams = {
-//             userid: "loggedinuser",
-//             galleryid: "favorites",
-//             photoid: "123",
-//           };
-//           expect(
-//             m.exec("/user/loggedinuser/gallery/favorites/photo/123"),
-//           ).toEqual(defaultParams);
-//           expect(m.format(defaultParams)).toBe(
-//             "/user/loggedinuser/gallery/favorites/photo/123",
-//           );
-
-//           const nonDefaultParams = {
-//             userid: "otheruser",
-//             galleryid: "travel",
-//             photoid: "987",
-//           };
-//           expect(m.exec("/user/otheruser/gallery/travel/photo/987")).toEqual(
-//             nonDefaultParams,
-//           );
-//           expect(m.format(nonDefaultParams)).toBe(
-//             "/user/otheruser/gallery/travel/photo/987",
-//           );
-//         });
-
-//         it(": '' should squash the default value to an empty string", function (
-//           $stateParams,
-//         ) {
-//           const m = getMatcher("");
-
-//           const defaultParams = {
-//             userid: "loggedinuser",
-//             galleryid: "favorites",
-//             photoid: "123",
-//           };
-//           expect(m.exec("/user//gallery//photo/123")).toEqual(defaultParams);
-//           expect(m.format(defaultParams)).toBe("/user//gallery//photo/123");
-
-//           const nonDefaultParams = {
-//             userid: "otheruser",
-//             galleryid: "travel",
-//             photoid: "987",
-//           };
-//           expect(m.exec("/user/otheruser/gallery/travel/photo/987")).toEqual(
-//             nonDefaultParams,
-//           );
-//           expect(m.format(nonDefaultParams)).toBe(
-//             "/user/otheruser/gallery/travel/photo/987",
-//           );
-//         });
-
-//         it(": '~' should squash the default value and replace it with '~'", function (
-//           $stateParams,
-//         ) {
-//           const m = getMatcher("~");
-
-//           const defaultParams = {
-//             userid: "loggedinuser",
-//             galleryid: "favorites",
-//             photoid: "123",
-//           };
-//           expect(m.exec("/user//gallery//photo/123")).toEqual(defaultParams);
-//           expect(m.exec("/user/~/gallery/~/photo/123")).toEqual(defaultParams);
-//           expect(m.format(defaultParams)).toBe("/user/~/gallery/~/photo/123");
-
-//           const nonDefaultParams = {
-//             userid: "otheruser",
-//             galleryid: "travel",
-//             photoid: "987",
-//           };
-//           expect(m.exec("/user/otheruser/gallery/travel/photo/987")).toEqual(
-//             nonDefaultParams,
-//           );
-//           expect(m.format(nonDefaultParams)).toBe(
-//             "/user/otheruser/gallery/travel/photo/987",
-//           );
-//         });
-//       });
-//     });
-//   });
-
-//   describe("strict matching", ( ) => {
-//     it("should match with or without trailing slash", ( ) => {
-//       const m = $url.compile("/users", { strict: false });
-//       expect(m.exec("/users")).toEqual({});
-//       expect(m.exec("/users/")).toEqual({});
-//     });
-
-//     it("should not match multiple trailing slashes", ( ) => {
-//       const m = $url.compile("/users", { strict: false });
-//       expect(m.exec("/users//")).toBeNull();
-//     });
-
-//     it("should match when defined with parameters", ( ) => {
-//       const m = $url.compile("/users/{name}", {
-//         strict: false,
-//         state: {
-//           params: {
-//             name: { value: null },
-//           },
-//         },
-//       });
-//       expect(m.exec("/users/")).toEqual({ name: null });
-//       expect(m.exec("/users/bob")).toEqual({ name: "bob" });
-//       expect(m.exec("/users/bob/")).toEqual({ name: "bob" });
-//       expect(m.exec("/users/bob//")).toBeNull();
-//     });
-//   });
-// });
