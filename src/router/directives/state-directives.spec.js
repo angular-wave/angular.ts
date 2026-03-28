@@ -105,6 +105,20 @@ describe("ngStateRef", () => {
     el2 = app.querySelectorAll("a")[1];
   }
 
+  async function buildHtml5DOM() {
+    window.history.replaceState(null, "", "/");
+    app.innerHTML =
+      '<a ng-sref="contacts.item.detail({ id: contact.id })">Details</a>' +
+      '<a ng-sref="top">Top</a>';
+    scope = $rootScope;
+    scope.contact = { id: 5 };
+    await wait();
+    $compile(app)(scope);
+    await wait();
+    el = app.querySelectorAll("a")[0];
+    el2 = app.querySelectorAll("a")[1];
+  }
+
   describe("links", () => {
     beforeEach(async () => {
       await buildDOM();
@@ -261,37 +275,81 @@ describe("ngStateRef", () => {
     });
   });
 
-  // TODO: Since this is HTML5 mode, we would want to test this with actual backend
-  // describe('links in html5 mode', () => {
-  //   beforeEach(() => {
-  //     _locationProvider.html5Mode(true);
-  //   });
+  describe("links in html5 mode", () => {
+    let originalUrl;
 
-  //   beforeEach(inject(buildDOM));
+    beforeEach(async () => {
+      originalUrl =
+        window.location.pathname +
+        window.location.search +
+        window.location.hash;
+      dealoc(document.getElementById("app"));
+      app.innerHTML = "";
+      window.history.replaceState(null, "", "/");
+      window.angular = new Angular();
+      const module = window.angular
+        .module("html5Module", [])
+        .decorator("$exceptionHandler", function () {
+          return (exception) => {
+            errorLog.push(exception.message);
+          };
+        });
+      module.config(($stateProvider, $locationProvider) => {
+        _locationProvider = $locationProvider;
+        $locationProvider.html5ModeConf.enabled = true;
+        $locationProvider.html5ModeConf.requireBase = false;
+        $locationProvider.hashPrefixConf = "";
+        $stateProvider
+          .state({ name: "top", url: "" })
+          .state({ name: "other", url: "/other/:id", template: "other" })
+          .state({ name: "other.detail", url: "/detail", template: "detail" })
+          .state({
+            name: "contacts",
+            url: "/contacts",
+            template:
+              '<a ng-sref=".item({ id: 5 })" class="item">Person</a> <ng-view></ng-view>',
+          })
+          .state({
+            name: "contacts.item",
+            url: "/{id:int}",
+            template:
+              '<a ng-sref=".detail" class="item-detail">Detail</a> | <a ng-sref="^" class="item-parent">Parent</a> | <ng-view></ng-view>',
+          })
+          .state({
+            name: "contacts.item.detail",
+            template:
+              '<div class="title">Detail</div> | <a ng-sref="^" class="item-parent2">Item</a>',
+          });
+      });
 
-  //   it('should generate the correct href', () => {
-  //     expect(el.getAttribute('href')).toBe('/contacts/5');
-  //     expect(el2.getAttribute('href')).toBe('');
-  //   });
+      $injector = window.angular.bootstrap(document.getElementById("app"), [
+        "html5Module",
+      ]);
+      $rootScope = $injector.get("$rootScope");
+      $compile = $injector.get("$compile");
+      $state = $injector.get("$state");
+      $stateParams = $injector.get("$router").params;
+      $url = $injector.get("$url");
+      $url.listen();
+      await buildHtml5DOM();
+    });
 
-  //   it('should update the href when parameters change', () => {
-  //     expect(el.getAttribute('href')).toBe('/contacts/5');
-  //     scope.contact.id = 6;
-  //     expect(el.getAttribute('href')).toBe('/contacts/6');
-  //   });
+    afterEach(() => {
+      window.history.replaceState(null, "", originalUrl);
+    });
 
-  //   it('should transition states when the url is empty',  async () => {
-  //     // Odd, in html5Mode, the initial state isn't matching on empty url, but does match if top.url is "/".
-  //     //      expect($state.$current.name).toEqual('top');
+    it("should generate the correct href", () => {
+      expect(el.getAttribute("href")).toBe("/contacts/5");
+      expect(el2.getAttribute("href")).toBe("");
+    });
 
-  //     triggerClick(el2);
-  //     timeoutFlush();
-  //     await wait(100);
-
-  //     expect($state.current.name).toEqual('top');
-  //     expect(obj($stateParams)).toEqual({});
-  //   });
-  // });
+    it("should update the href when parameters change", async () => {
+      expect(el.getAttribute("href")).toBe("/contacts/5");
+      scope.contact.id = 6;
+      await wait();
+      expect(el.getAttribute("href")).toBe("/contacts/6");
+    });
+  });
 
   describe("links with dynamic state definitions", () => {
     let template;

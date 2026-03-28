@@ -1,4 +1,8 @@
-import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
+import {
+  createElementFromHTML,
+  dealoc,
+  getCacheData,
+} from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
 import { wait } from "../../shared/test-utils.ts";
 
@@ -366,6 +370,65 @@ describe("ngView", () => {
     expect(elem.textContent).toBe("mState");
   });
 
+  it("should do transition animations", async () => {
+    elem.innerHTML = "<div><ng-view></ng-view></div>";
+    $compile(elem)(scope);
+
+    await $state.transitionTo("n");
+    await wait(100);
+    expect(elem.querySelector("ng-view").textContent).toBe(nState.template);
+
+    await $state.transitionTo("a");
+    await wait(100);
+    expect(elem.querySelector("ng-view").textContent).toBe(aState.template);
+    expect(log).toContain("animEnter;");
+    expect(log).toContain("animLeave;");
+  });
+
+  it("should expose real ngView animation promises to controllers", async () => {
+    elem.innerHTML = "<div><ng-view></ng-view></div>";
+    $compile(elem)(scope);
+
+    await $state.transitionTo("n");
+    await wait(100);
+    expect(log).toContain("animEnter;");
+
+    await $state.transitionTo("a");
+    await wait(100);
+    expect(log).toContain("destroy;");
+    expect(log).toContain("animLeave;");
+  });
+
+  it("should do ngClass animations", async () => {
+    scope.classOn = false;
+    elem.innerHTML =
+      '<div><ng-view ng-class="{ yay: classOn }">Initial Content</ng-view></div>';
+    $compile(elem)(scope);
+
+    scope.classOn = true;
+    await wait(100);
+    expect(elem.querySelector("ng-view").classList.contains("yay")).toBeTrue();
+
+    scope.classOn = false;
+    await wait(100);
+    expect(elem.querySelector("ng-view").classList.contains("yay")).toBeFalse();
+  });
+
+  it("should do ngIf animations", async () => {
+    scope.shouldShow = false;
+    elem.innerHTML =
+      '<div><ng-view ng-if="shouldShow">Initial Content</ng-view></div>';
+    $compile(elem)(scope);
+
+    scope.shouldShow = true;
+    await wait(100);
+    expect(elem.querySelector("ng-view").textContent).toBe("Initial Content");
+
+    scope.shouldShow = false;
+    await wait(100);
+    expect(elem.querySelector("ng-view")).toBeNull();
+  });
+
   describe("(resolved data)", () => {
     let _scope;
     function controller($scope) {
@@ -642,160 +705,6 @@ describe("ngView", () => {
       });
     });
   });
-
-  // describe("AngularTS Animations", () => {
-  //   it("should do transition animations", async () => {
-  //     let content = "Initial Content",
-  //       animation;
-  //     elem.append(
-  //       $compile("<div><ng-view>" + content + "</ng-view></div>")(scope),
-  //     );
-
-  //     // Enter Animation
-  //     animation = $animate.queue.shift();
-  //     expect(animation.event).toBe("enter");
-  //     expect(animation.element.textContent + "-1").toBe(content + "-1");
-
-  //     $state.transitionTo(aState);
-  //     await wait(100);
-
-  //     // Enter Animation
-  //     animation = $animate.queue.shift();
-  //     expect(animation.event).toBe("enter");
-  //     expect(animation.element.textContent + "-2").toBe(aState.template + "-2");
-  //     // Leave Animation
-  //     animation = $animate.queue.shift();
-  //     expect(animation.event).toBe("leave");
-  //     expect(animation.element.textContent + "-3").toBe(content + "-3");
-
-  //     $state.transitionTo(bState);
-  //     await wait(100);
-
-  //     // Enter Animation
-  //     animation = $animate.queue.shift();
-  //     expect(animation.event).toBe("enter");
-  //     expect(animation.element.textContent + "-4").toBe(bState.template + "-4");
-  //     // Leave Animation
-  //     animation = $animate.queue.shift();
-  //     expect(animation.event).toBe("leave");
-  //     expect(animation.element.textContent + "-5").toBe(aState.template + "-5");
-
-  //     // No more animations
-  //     expect($animate.queue.length).toBe(0);
-  //   });
-
-  //   it("should do ngClass animations", async () => {
-  //     scope.classOn = false;
-  //     let content = "Initial Content",
-  //       className = "yay",
-  //       animation;
-  //     elem.append(
-  //       $compile(
-  //         "<div><ng-view ng-class=\"{'" +
-  //           className +
-  //           "': classOn}\">" +
-  //           content +
-  //           "</ng-view></div>",
-  //       )(scope),
-  //     );
-  //     // Don't care about enter class
-  //     $animate.queue.shift();
-
-  //     scope.classOn = true;
-  //     ;
-
-  //     animation = $animate.queue.shift();
-  //     expect(animation.event).toBe("addClass");
-  //     expect(animation.element.textContent).toBe(content);
-
-  //     scope.classOn = false;
-  //     ;
-
-  //     animation = $animate.queue.shift();
-  //     expect(animation.event).toBe("removeClass");
-  //     expect(animation.element.textContent).toBe(content);
-
-  //     // No more animations
-  //     expect($animate.queue.length).toBe(0);
-  //   });
-
-  //   it("should do ngIf animations", async () => {
-  //     scope.shouldShow = false;
-  //     let content = "Initial Content",
-  //       animation;
-  //     elem.append(
-  //       $compile(
-  //         '<div><ng-view ng-if="shouldShow">' + content + "</ng-view></div>",
-  //       )(scope),
-  //     );
-
-  //     // No animations yet
-  //     expect($animate.queue.length).toBe(0);
-
-  //     scope.shouldShow = true;
-  //     ;
-
-  //     // ViewDirective enter animation - Basically it's just the <!-- ngView --> comment
-  //     animation = $animate.queue.shift();
-  //     expect(animation.event).toBe("enter");
-  //     expect(animation.element.textContent).toBe("");
-
-  //     // ViewDirectiveFill enter animation - The second ngView directive that files in the content
-  //     animation = $animate.queue.shift();
-  //     expect(animation.event).toBe("enter");
-  //     expect(animation.element.textContent).toBe(content);
-
-  //     scope.shouldShow = false;
-  //     ;
-
-  //     // ngView leave animation
-  //     animation = $animate.queue.shift();
-  //     expect(animation.event).toBe("leave");
-  //     expect(animation.element.textContent).toBe(content);
-
-  //     // No more animations
-  //     expect($animate.queue.length).toBe(0);
-  //   });
-
-  //   it("should expose animation promises to controllers", async () => {
-  //     $transitions.onStart({}, function ($transition$) {
-  //       log += "start:" + $transition$.to().name + ";";
-  //     });
-  //     $transitions.onFinish({}, function ($transition$) {
-  //       log += "finish:" + $transition$.to().name + ";";
-  //     });
-  //     $transitions.onSuccess({}, function ($transition$) {
-  //       log += "success:" + $transition$.to().name + ";";
-  //     });
-
-  //     const content = "Initial Content";
-  //     elem.append(
-  //       $compile("<div><ng-view>" + content + "</ng-view></div>")(scope),
-  //     );
-  //     $state.transitionTo("n");
-  //     await wait(100);
-
-  //     expect($state.current.name).toBe("n");
-  //     expect(log).toBe("start:n;finish:n;success:n;");
-
-  //     // animateFlush($animate);
-  //     await wait(100);
-  //     expect(log).toBe("start:n;finish:n;success:n;animEnter;");
-
-  //     $state.transitionTo("a");
-  //     await wait(100);
-  //     expect($state.current.name).toBe("a");
-  //     expect(log).toBe(
-  //       "start:n;finish:n;success:n;animEnter;start:a;finish:a;destroy;success:a;",
-  //     );
-
-  //     // animateFlush($animate);
-  //     await wait(100);
-  //     expect(log).toBe(
-  //       "start:n;finish:n;success:n;animEnter;start:a;finish:a;destroy;success:a;animLeave;",
-  //     );
-  //   });
-  // });
 });
 
 describe("ngView named", () => {

@@ -87,7 +87,13 @@ export class ParamTypes {
     definition?: ParamTypeDefinition,
     definitionFn?: () => ParamTypeDefinition,
   ): ParamTypes | ParamType | undefined {
-    if (!isDefined(definition)) return this.types[name];
+    if (!isDefined(definition)) {
+      if (this.typeQueue.length && this._getInjector()) {
+        this._flushTypeQueue();
+      }
+
+      return this.types[name];
+    }
 
     if (hasOwn(this.types, name))
       throw new Error(`A type named '${name}' has already been defined.`);
@@ -98,13 +104,19 @@ export class ParamTypes {
     if (definitionFn) {
       this.typeQueue.push({ name, def: definitionFn });
 
-      if (!this.enqueue) this._flushTypeQueue();
+      if (!this.enqueue && this._getInjector()) this._flushTypeQueue();
     }
 
     return this;
   }
 
   _flushTypeQueue() {
+    const injector = this._getInjector();
+
+    if (!injector) {
+      return;
+    }
+
     while (this.typeQueue.length) {
       const type = this.typeQueue.shift() as {
         name: string;
@@ -114,8 +126,12 @@ export class ParamTypes {
 
       if (type.pattern)
         throw new Error("You cannot override a type's .pattern at runtime.");
-      Object.assign(this.types[type.name], this.$injector.invoke(type.def));
+      Object.assign(this.types[type.name], injector.invoke(type.def));
     }
+  }
+
+  _getInjector(): InjectorService | undefined {
+    return (this.$injector ||= window.angular?.$injector);
   }
 }
 function initDefaultTypes() {
