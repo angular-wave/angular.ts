@@ -27,7 +27,8 @@ import {
 } from "../../shared/utils.ts";
 import {
   cachedToggleClass,
-  type FormController,
+  type ParentFormController,
+  type ValidityCssHost,
   nullFormCtrl,
   PENDING_CLASS,
 } from "../form/form.ts";
@@ -168,7 +169,7 @@ export class NgModelController {
 
   $name: any;
 
-  _parentForm: any;
+  _parentForm: ParentFormController;
 
   $options: any;
 
@@ -283,14 +284,14 @@ export class NgModelController {
   /**
    * Marks a named validity bucket as present.
    */
-  set(object: Record<string, any>, property: string | number): void {
+  _set(object: Record<string, any>, property: string | number): void {
     object[property] = true;
   }
 
   /**
    * Removes a named validity bucket entry.
    */
-  unset(object: Record<string, any>, property: string | number): void {
+  _unset(object: Record<string, any>, property: string | number): void {
     delete object[property];
   }
 
@@ -314,7 +315,7 @@ export class NgModelController {
       if (!ctrl[name]) {
         ctrl[name] = {};
       }
-      that.set(ctrl[name], value);
+      that._set(ctrl[name], value);
     }
 
     /**
@@ -326,7 +327,7 @@ export class NgModelController {
       value: string,
     ) {
       if (ctrl[name]) {
-        that.unset(ctrl[name], value);
+        that._unset(ctrl[name], value);
       }
 
       if (isObjectEmpty(ctrl[name])) {
@@ -338,7 +339,7 @@ export class NgModelController {
      * Updates the CSS validity classes for a specific validation key.
      */
     function toggleValidationCss(
-      ctrl: NgModelController | FormController,
+      ctrl: ValidityCssHost,
       validationErrorKeyParam: string,
       isValid: any,
     ) {
@@ -369,9 +370,9 @@ export class NgModelController {
       delete this._success[validationErrorKey];
     } else if (state) {
       delete this.$error[validationErrorKey];
-      this.set(this._success, validationErrorKey);
+      this._set(this._success, validationErrorKey);
     } else {
-      this.set(this.$error, validationErrorKey);
+      this._set(this.$error, validationErrorKey);
       delete this._success[validationErrorKey];
     }
 

@@ -20,13 +20,46 @@ import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.ts";
 import type { NgModelController } from "../model/model.ts";
 import type { DirectiveCompileFn, DirectiveLinkFn } from "../../interface.ts";
 
-export const nullFormCtrl = {
+export interface ValidityCssHost {
+  _isAnimated: boolean;
+  _element: Element;
+  _animate: ng.AnimateService;
+  _classCache: Record<string, any>;
+}
+
+export interface FormControlTarget {
+  _parentForm: ParentFormController;
+}
+
+export interface NamedControl {
+  $name: any;
+  $target: FormControlTarget;
+}
+
+export interface ParentFormController {
+  $nonscope?: boolean;
+  $addControl(control: NamedControl): void;
+  $getControls(): ReadonlyArray<FormController | NgModelController>;
+  _renameControl(control: NamedControl, name: string | number): void;
+  $removeControl(control: FormController | NgModelController): void;
+  $setValidity(
+    validationErrorKey: string,
+    state: boolean | undefined | null,
+    controller?: FormController | NgModelController,
+  ): void;
+  $setDirty(): void;
+  $setPristine(): void;
+  $setSubmitted(): void;
+  _setSubmitted(): void;
+}
+
+export const nullFormCtrl: ParentFormController = {
   $nonscope: true,
   $addControl: () => {
     /* empty */
   },
   $getControls: () => [],
-  _renameControl: (control: { $name: any }, name: any) => {
+  _renameControl: (control, name) => {
     control.$name = name;
   },
   $removeControl: () => {
@@ -123,7 +156,7 @@ export class FormController {
 
   $submitted: boolean;
 
-  _parentForm: any;
+  _parentForm: ParentFormController;
 
   _element: HTMLFormElement;
 
@@ -224,7 +257,7 @@ export class FormController {
    * For example, if an input control is added that is already `$dirty` and has `$error` properties,
    * calling `$setDirty()` and `$validate()` afterwards will propagate the state to the parent form.
    */
-  $addControl(control: any): void {
+  $addControl(control: NamedControl): void {
     // Breaking change - before, inputs whose name was "hasOwnProperty" were quietly ignored
     // and not added to the scope.  Now we throw an error.
     assertNotHasOwnProperty(control.$name, "input");
@@ -251,15 +284,17 @@ export class FormController {
    * in the shallow copy. That means you should get a fresh copy from `$getControls()` every time
    * you need access to the controls.
    */
-  $getControls(): ReadonlyArray<FormController> {
-    return shallowCopy(this._controls) as ReadonlyArray<FormController>;
+  $getControls(): ReadonlyArray<FormController | NgModelController> {
+    return shallowCopy(this._controls) as ReadonlyArray<
+      FormController | NgModelController
+    >;
   }
 
   // Private API: rename a form control
   /**
    * Renames a registered control on the form controller.
    */
-  _renameControl(control: any, newName: string | number): void {
+  _renameControl(control: NamedControl, newName: string | number): void {
     const oldName = control.$name;
 
     if ((this as Record<string, any>)[oldName] === control) {
@@ -279,7 +314,7 @@ export class FormController {
    * different from case to case. For example, removing the only `$dirty` control from a form may or
    * may not mean that the form is still `$dirty`.
    */
-  $removeControl(control: any): void {
+  $removeControl(control: FormController | NgModelController): void {
     if (
       control.$name &&
       (this as Record<string, any>)[control.$name] === control
@@ -321,7 +356,7 @@ export class FormController {
     }
     this.$dirty = true;
     this.$pristine = false;
-    (this._parentForm as FormController).$setDirty();
+    this._parentForm.$setDirty();
   }
 
   /**
@@ -402,7 +437,7 @@ export class FormController {
   /**
    * Adds a controller reference to a named validity bucket.
    */
-  set(object: Record<string, any>, property: string, controller: any): void {
+  _set(object: Record<string, any>, property: string, controller: any): void {
     const list = object[property];
 
     if (!list) {
@@ -420,7 +455,7 @@ export class FormController {
   /**
    * Removes a controller reference from a named validity bucket.
    */
-  unset(object: Record<string, any>, property: string, controller: any): void {
+  _unset(object: Record<string, any>, property: string, controller: any): void {
     const list = object[property];
 
     if (!list) {
@@ -471,14 +506,14 @@ export class FormController {
     }
 
     if (!isBoolean(state)) {
-      this.unset(this.$error, validationErrorKey, controller);
-      this.unset(this._success, validationErrorKey, controller);
+      this._unset(this.$error, validationErrorKey, controller);
+      this._unset(this._success, validationErrorKey, controller);
     } else if (state) {
-      this.unset(this.$error, validationErrorKey, controller);
-      this.set(this._success, validationErrorKey, controller);
+      this._unset(this.$error, validationErrorKey, controller);
+      this._set(this._success, validationErrorKey, controller);
     } else {
-      this.set(this.$error, validationErrorKey, controller);
-      this.unset(this._success, validationErrorKey, controller);
+      this._set(this.$error, validationErrorKey, controller);
+      this._unset(this._success, validationErrorKey, controller);
     }
 
     if (this.$pending) {
@@ -527,7 +562,7 @@ export class FormController {
       if (!ctrl[name]) {
         ctrl[name] = {};
       }
-      that.set(ctrl[name], value, controllerParam);
+      that._set(ctrl[name], value, controllerParam);
     }
 
     /**
@@ -540,7 +575,7 @@ export class FormController {
       controllerParam: FormController | NgModelController,
     ) {
       if (ctrl[name]) {
-        that.unset(ctrl[name], value, controllerParam);
+        that._unset(ctrl[name], value, controllerParam);
       }
 
       if (isObjectEmpty(ctrl[name])) {
@@ -552,7 +587,7 @@ export class FormController {
      * Updates the CSS validity classes for the controller and validation key.
      */
     function toggleValidationCss(
-      ctrl: FormController | NgModelController,
+      ctrl: ValidityCssHost,
       validationErrorKeyParam: string,
       isValid: boolean | null | undefined,
     ) {
@@ -780,7 +815,7 @@ export const ngFormDirective = formDirectiveFactory("ngForm");
  * Adds or removes a cached validation class on a controller element.
  */
 export function cachedToggleClass(
-  ctrl: any,
+  ctrl: ValidityCssHost,
   className: string,
   switchValue: boolean,
 ) {
