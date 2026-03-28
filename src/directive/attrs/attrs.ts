@@ -58,7 +58,7 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
       priority: 100,
       link(
         scope: ng.Scope,
-        element: Element,
+        _element: Element,
         attr: Attributes & Record<string, string>,
       ): void {
         // special case ngPattern when a literal regular expression value

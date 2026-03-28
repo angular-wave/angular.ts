@@ -145,7 +145,7 @@ export const patternDirective: [
             return tAttr.ngPattern;
           };
         } else {
-          parseFn = tAttr.ngPattern && $parse(tAttr.ngPattern);
+          parseFn = tAttr.ngPattern ? $parse(tAttr.ngPattern) : undefined;
         }
       }
 
@@ -163,7 +163,9 @@ export const patternDirective: [
         } else {
           patternExp = attr.pattern;
         }
-        let regexp = attrVal && parsePatternAttr(attrVal, patternExp, elm);
+        let regexp = attrVal
+          ? parsePatternAttr(attrVal, patternExp, elm)
+          : undefined;
 
         attr.$observe("pattern", (newVal?: any) => {
           const oldRegexp = regexp;

@@ -3590,8 +3590,11 @@ export class CompileProvider {
           // first check if there are spaces because it's not the same pattern
           const trimmedSrcset = trim(value);
 
-          //                (   999x   ,|   999w   ,|   ,|,   )
-          const srcPattern = /(\s+\d+x\s*,|\s+\d+w\s*,|\s+,|,\s+)/;
+          // Split on candidate separators, including malformed descriptor tokens such as `xyz,`.
+          // Without the generic whitespace-token-comma branch, a payload like
+          // `good.example/img.png xyz,evil.example/img.png` leaves the second URL unsanitized.
+          const srcPattern =
+            /(\s+\d+(?:\.\d+)?x\s*,|\s+\d+w\s*,|\s+[^\s,]+\s*,|\s+,|,\s+)/;
 
           const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
 
