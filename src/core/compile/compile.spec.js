@@ -7058,116 +7058,43 @@ describe("$compile", () => {
         });
       });
 
-      //       describe("with isolate scope directives and directives that manually create a new scope", () => {
-      //         it("should return the new scope at the directive element", () => {
-      //           let directiveElement;
-      //           element = $compile('<div><a ng-if="true" iscope></a></div>')(
-      //             $rootScope,
-      //           );
-      //          await wait();
-      //           directiveElement = element.querySelector("a");
-      //           expect(directiveElement.scope().$parent).toBe($rootScope);
-      //           expect(directiveElement.scope()).not.toBe(
-      //             directiveElement.isolateScope(),
-      //           );
-      //         });
+      describe("with isolate scope directives and directives that manually create a new scope", () => {
+        it("should return the new scope at the directive element", async () => {
+          element = $compile('<div><a ng-if="true" iscope></a></div>')(
+            $rootScope,
+          );
+          await wait();
+          const directiveElement = element.querySelector("a");
 
-      //         it("should return the isolate scope for child elements", () => {
-      //           let directiveElement;
-      //           let child;
-      //           $templateCache.set("tiscope.html", "<span></span>");
-      //           element = $compile('<div><a ng-if="true" tiscope></a></div>')(
-      //             $rootScope,
-      //           );
-      //          await wait();
-      //           ;
-      //           directiveElement = element.querySelector("a");
-      //           child = directiveElement.querySelector("span");
-      //           expect(child.scope()).toBe(directiveElement.isolateScope());
-      //         });
+          expect(getScope(directiveElement).$parent).toBe($rootScope);
+          expect(getScope(directiveElement)).not.toBe(
+            getIsolateScope(directiveElement),
+          );
+        });
 
-      //         it("should return the isolate scope for child elements in directive sync template", () => {
-      //           let directiveElement;
-      //           let child;
-      //           element = $compile('<div><a ng-if="true" stiscope></a></div>')(
-      //             $rootScope,
-      //           );
-      //          await wait();
-      //           directiveElement = element.querySelector("a");
-      //           child = directiveElement.querySelector("span");
-      //           expect(child.scope()).toBe(directiveElement.isolateScope());
-      //         });
-      //       });
-      //     });
+        it("should return the isolate scope for child elements", async () => {
+          $templateCache.set("tiscope.html", "<span></span>");
+          element = $compile('<div><a ng-if="true" tiscope></a></div>')(
+            $rootScope,
+          );
+          await wait();
+          const directiveElement = element.querySelector("a");
+          const child = directiveElement.querySelector("span");
 
-      //     describe("multidir isolated scope error messages", () => {
-      //       angular
-      //         .module("fakeIsoledScopeModule", [])
-      //         .directive("fakeScope", () => ({
-      //           scope: true,
-      //           restrict: "A",
-      //           compile() {
-      //             return {
-      //               pre(scope, element) {
-      //                 log.push(scope.$id);
-      //                 expect(getCacheData(element, "$scope")).toBe(scope);
-      //               },
-      //             };
-      //           },
-      //         }))
-      //         .directive("fakeIScope", () => ({
-      //           scope: {},
-      //           restrict: "A",
-      //           compile() {
-      //             return function (scope, element) {
-      //               iscope = scope;
-      //               log.push(scope.$id);
-      //               expect(getCacheData(element, "$isolateScopeNoTemplate")).toBe(scope);
-      //             };
-      //           },
-      //         });
+          expect(getScope(child)).toBe(getIsolateScope(directiveElement));
+        });
 
-      //       beforeEach(
-      //         module("fakeIsoledScopeModule", () => {
-      //           directive("anonymModuleScopeDirective", () => ({
-      //             scope: true,
-      //             restrict: "A",
-      //             compile() {
-      //               return {
-      //                 pre(scope, element) {
-      //                   log.push(scope.$id);
-      //                   expect(getCacheData(element, "$scope")).toBe(scope);
-      //                 },
-      //               };
-      //             },
-      //           });
-      //         }),
-      //       );
+        it("should return the isolate scope for child elements in directive sync template", async () => {
+          element = $compile('<div><a ng-if="true" stiscope></a></div>')(
+            $rootScope,
+          );
+          await wait();
+          const directiveElement = element.querySelector("a");
+          const child = directiveElement.querySelector("span");
 
-      //       it("should add module name to multidir isolated scope message if directive defined through module", () => {
-      //         expect(() => {
-      //           $compile('<div class="fake-scope; fake-i-scope"></div>');
-      //         }).toThrowError(
-      //           "$compile",
-      //           "multidir",
-      //           "Multiple directives [fakeIScope (module: fakeIsoledScopeModule), fakeScope (module: fakeIsoledScopeModule)] " +
-      //             'asking for new/isolated scope on: <div class="fake-scope; fake-i-scope">',
-      //         );
-      //       });
-
-      //       it("shouldn't add module name to multidir isolated scope message if directive is defined directly with $compileProvider", () => {
-      //         expect(() => {
-      //           $compile(
-      //             '<div class="anonym-module-scope-directive; fake-i-scope"></div>',
-      //           );
-      //         }).toThrowError(
-      //           "$compile",
-      //           "multidir",
-      //           "Multiple directives [anonymModuleScopeDirective, fakeIScope (module: fakeIsoledScopeModule)] " +
-      //             'asking for new/isolated scope on: <div class="anonym-module-scope-directive; fake-i-scope">',
-      //         );
-      //       });
-      //     });
+          expect(getScope(child)).toBe(getIsolateScope(directiveElement));
+        });
+      });
     });
 
     describe("interpolation", () => {
@@ -12580,53 +12507,45 @@ describe("$compile", () => {
           expect(Cache.size).toEqual(cacheSize);
         });
 
-        // it("should not leak when continuing the compilation of elements on a scope that was destroyed", () => {
-        //   const linkFn = jasmine.createSpy("linkFn");
+        it("should not continue linking templateUrl contents on a scope that was destroyed", async () => {
+          const linkFn = jasmine.createSpy("linkFn");
 
-        //   module
-        //     .controller("Leak", ($scope, $timeout) => {
-        //       $scope.code = "red";
-        //       setTimeout(() => {
-        //         $scope.code = "blue";
-        //       });
-        //     })
-        //     .directive("isolateRed", () => ({
-        //       restrict: "A",
-        //       scope: {},
-        //       template: "<div red></div>",
-        //     }))
-        //     .directive("red", () => ({
-        //       restrict: "A",
-        //       templateUrl: "red.html",
-        //       scope: {},
-        //       link: linkFn,
-        //     }));
-        //   initInjector("test1");
-        //   const cacheSize = Cache.size;
-        //   $templateCache.set("red.html", "<p>red</p>");
-        //   const template = $compile(
-        //     '<div ng-controller="Leak">' +
-        //       '<div ng-switch="code">' +
-        //         '<div ng-switch-when="red">' +
-        //           "<div isolate-red></div>" +
-        //         "</div>" +
-        //       "</div>" +
-        //     "</div>",
-        //   );
-        //   element = template($rootScope, function () {});
-        //   ;
+          module
+            .directive("isolateRed", () => ({
+              restrict: "A",
+              scope: {},
+              template: "<div red></div>",
+            }))
+            .directive("red", () => ({
+              restrict: "A",
+              templateUrl: "red.html",
+              scope: {},
+              link: linkFn,
+            }));
+          initInjector("test1");
+          $templateCache.set("red.html", "<p>red</p>");
 
-        //   expect(linkFn).toHaveBeenCalled();
-        //   expect(Cache.size).toEqual(cacheSize + 2);
+          const template = $compile("<div><div isolate-red></div></div>");
+          const liveScope = $rootScope.$new();
 
-        //   $templateCache = new Map();
-        //   const destroyedScope = $rootScope.$new();
-        //   destroyedScope.$destroy();
-        //   const clone = template(destroyedScope, () => { /* empty */ });
-        //   ;
-        //   // expect(linkFn).not.toHaveBeenCalled();
-        //   // clone.remove();
-        // });
+          element = template(liveScope, () => {});
+          await wait();
+          expect(linkFn).toHaveBeenCalledTimes(1);
+
+          const cacheSize = Cache.size;
+          linkFn.calls.reset();
+
+          const destroyedScope = $rootScope.$new();
+          destroyedScope.$destroy();
+          const clone = template(destroyedScope, () => {});
+
+          await wait();
+          expect(linkFn).not.toHaveBeenCalled();
+          expect(Cache.size).toEqual(cacheSize);
+
+          dealoc(clone);
+          await wait();
+        });
 
         it("should clear contents of the ng-transclude element before appending transcluded content if transcluded content exists", async () => {
           module.directive("trans", () => ({
@@ -13378,26 +13297,25 @@ describe("$compile", () => {
             expect(element.textContent).toEqual("transcluded content");
           });
 
-          // REMOVE does not exit. TODO think about cache clean up
-          // it("should not leak memory with nested transclusion", async () => {
-          //   let size;
-          //   const initialSize = Cache.size;
+          it("should not leak memory with nested transclusion", async () => {
+            const scope = $rootScope.$new();
+            const initialSize = Cache.size;
 
-          //   element =
-          //     '<div><ul><li ng-repeat="n in nums">{{n}} => <i ng-if="0 === n%2">Even</i><i ng-if="1 === n%2">Odd</i></li></ul></div>';
-          //   $compile(element)($rootScope.$new());
-          //   await wait();
-          //   $rootScope.nums = [0, 1, 2];
-          //   await wait();
-          //   size = Cache.size;
+            element = $compile(
+              '<div><ul><li ng-repeat="n in nums">{{n}} => <i ng-if="0 === n%2">Even</i><i ng-if="1 === n%2">Odd</i></li></ul></div>',
+            )(scope);
+            scope.nums = [0, 1, 2];
+            await wait();
+            const size = Cache.size;
 
-          //   $rootScope.nums = [3, 4, 5];
-          //   await wait();
-          //   expect(Cache.size).toEqual(size);
+            scope.nums = [3, 4, 5];
+            await wait();
+            expect(Cache.size).toEqual(size);
 
-          //   element.remove();
-          //   expect(Cache.size).toEqual(initialSize);
-          // });
+            dealoc(element);
+            await wait();
+            expect(Cache.size).toEqual(initialSize);
+          });
         });
 
         describe("nested isolated scope transcludes", () => {
@@ -15744,60 +15662,6 @@ describe("$compile", () => {
       ).toBe("1");
     });
   });
-
-  // TODO ANIMATIONS
-  // describe("$animate animation hooks", () => {
-  //   beforeEach(module("ngAnimateMock"));
-
-  //   it("should automatically fire the addClass and removeClass animation hooks", () => {
-  //     let data;
-  //     const element = ('<div class="{{val1}} {{val2}} fire"></div>');
-  //     $compile(element)($rootScope);
-
-  //     ;
-
-  //     expect(element.classList.contains("fire")).toBe(true);
-
-  //     $rootScope.val1 = "ice";
-  //     $rootScope.val2 = "rice";
-  //     ;
-
-  //     data = $animate.queue.shift();
-  //     expect(data.event).toBe("addClass");
-  //     expect(data.args[1]).toBe("ice rice");
-
-  //     expect(element.classList.contains("ice")).toBe(true);
-  //     expect(element.classList.contains("rice")).toBe(true);
-  //     expect(element.classList.contains("fire")).toBe(true);
-
-  //     $rootScope.val2 = "dice";
-  //     ;
-
-  //     data = $animate.queue.shift();
-  //     expect(data.event).toBe("addClass");
-  //     expect(data.args[1]).toBe("dice");
-
-  //     data = $animate.queue.shift();
-  //     expect(data.event).toBe("removeClass");
-  //     expect(data.args[1]).toBe("rice");
-
-  //     expect(element.classList.contains("ice")).toBe(true);
-  //     expect(element.classList.contains("dice")).toBe(true);
-  //     expect(element.classList.contains("fire")).toBe(true);
-
-  //     $rootScope.val1 = "";
-  //     $rootScope.val2 = "";
-  //     ;
-
-  //     data = $animate.queue.shift();
-  //     expect(data.event).toBe("removeClass");
-  //     expect(data.args[1]).toBe("ice dice");
-
-  //     expect(element.classList.contains("ice")).toBe(false);
-  //     expect(element.classList.contains("dice")).toBe(false);
-  //     expect(element.classList.contains(ist.contains("fire")).toBe(true);
-  //   });
-  // });
 
   describe("component helper", () => {
     it("should return the module", () => {
