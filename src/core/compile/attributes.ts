@@ -232,7 +232,7 @@ export class Attributes {
     listeners.push(fn as (value?: unknown) => void);
 
     if (!listeners._inter && hasOwn(this, key) && !isUndefined(this[key])) {
-      fn(this[key]);
+      fn(this[key] as T);
     }
 
     return function () {
@@ -275,7 +275,8 @@ export class Attributes {
 
     const trimmedSrcset = trim(value);
 
-    const srcPattern = /(\s+\d+x\s*,|\s+\d+w\s*,|\s+,|,\s+)/;
+    const srcPattern =
+      /(\s+\d+(?:\.\d+)?x\s*,|\s+\d+w\s*,|\s+[^\s,]+\s*,|\s+,|,\s+)/;
 
     const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
 

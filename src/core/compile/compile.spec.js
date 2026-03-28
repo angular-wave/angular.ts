@@ -7983,6 +7983,40 @@ describe("$compile", () => {
             expect($rootScope.attr.srcset).toEqual("unsafe:evil:foo()");
           });
 
+          it("should sanitize crafted img[srcset] entries that bypass domain allowlists", async () => {
+            module.config(($compileProvider) =>
+              $compileProvider.imgSrcSanitizationTrustedUrlList(
+                /^https:\/\/angularjs\.org\//,
+              ),
+            );
+            initInjector("test1");
+            element = $compile("<img></img>")($rootScope);
+
+            $rootScope.attr.$set(
+              "srcset",
+              "https://angularjs.org/favicon.ico xyz,https://angular.dev/favicon.ico",
+            );
+            await wait();
+            expect(element.getAttribute("srcset")).toEqual(
+              "https://angularjs.org/favicon.ico xyz,unsafe:https://angular.dev/favicon.ico",
+            );
+            expect($rootScope.attr.srcset).toEqual(
+              "https://angularjs.org/favicon.ico xyz,unsafe:https://angular.dev/favicon.ico",
+            );
+
+            $rootScope.attr.$set(
+              "srcset",
+              "https://angularjs.org/favicon.ico xyz,data:image/svg+xml;base64,PHN2Zy8+",
+            );
+            await wait();
+            expect(element.getAttribute("srcset")).toEqual(
+              "https://angularjs.org/favicon.ico xyz,unsafe:data:image/svg+xml;base64,PHN2Zy8+",
+            );
+            expect($rootScope.attr.srcset).toEqual(
+              "https://angularjs.org/favicon.ico xyz,unsafe:data:image/svg+xml;base64,PHN2Zy8+",
+            );
+          });
+
           it("should not accept trusted values for img[srcset]", async () => {
             const trusted = $sce.trustAsMediaUrl("trustme:foo()");
             element = $compile("<img></img>")($rootScope);
@@ -14716,6 +14750,56 @@ describe("$compile", () => {
         expect(element.getAttribute("srcset")).toEqual(ref);
       });
     }
+
+    it("should apply imgSrcSanitizationTrustedUrlList to crafted srcset bindings", async () => {
+      module.config(($compileProvider) =>
+        $compileProvider.imgSrcSanitizationTrustedUrlList(
+          /^https:\/\/angularjs\.org\//,
+        ),
+      );
+      initInjector("test1");
+
+      const disallowedDomainPayload =
+        "https://angularjs.org/favicon.ico xyz,https://angular.dev/favicon.ico";
+      const disallowedDataPayload =
+        "https://angularjs.org/favicon.ico xyz,data:image/svg+xml;base64,PHN2Zy8+";
+
+      let srcsetElement = $compile('<img srcset="{{testUrl}}"></img>')(
+        $rootScope,
+      );
+      $rootScope.testUrl = disallowedDomainPayload;
+      await wait();
+      expect(srcsetElement.getAttribute("srcset")).toEqual(
+        "https://angularjs.org/favicon.ico xyz,unsafe:https://angular.dev/favicon.ico",
+      );
+
+      srcsetElement = $compile('<img ng-srcset="{{testUrl}}"></img>')(
+        $rootScope,
+      );
+      $rootScope.testUrl = disallowedDomainPayload;
+      await wait();
+      expect(srcsetElement.getAttribute("srcset")).toEqual(
+        "https://angularjs.org/favicon.ico xyz,unsafe:https://angular.dev/favicon.ico",
+      );
+
+      srcsetElement = $compile('<img ng-attr-srcset="{{testUrl}}"></img>')(
+        $rootScope,
+      );
+      $rootScope.testUrl = disallowedDomainPayload;
+      await wait();
+      expect(srcsetElement.getAttribute("srcset")).toEqual(
+        "https://angularjs.org/favicon.ico xyz,unsafe:https://angular.dev/favicon.ico",
+      );
+
+      srcsetElement = $compile('<img ng-prop-srcset="testUrl"></img>')(
+        $rootScope,
+      );
+      $rootScope.testUrl = disallowedDataPayload;
+      await wait();
+      expect(srcsetElement.getAttribute("srcset")).toEqual(
+        "https://angularjs.org/favicon.ico xyz,unsafe:data:image/svg+xml;base64,PHN2Zy8+",
+      );
+    });
   });
 
   describe("a[href] sanitization", () => {
