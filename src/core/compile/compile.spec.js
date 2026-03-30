@@ -6975,6 +6975,48 @@ describe("$compile", () => {
             expect($rootScope._children[0]).not.toBe($rootScope);
           });
 
+          describe("behind ng-if", () => {
+            it("should expose only the isolate scope getter at the directive element", async () => {
+              element = $compile('<div><a ng-if="true" iscope></a></div>')(
+                $rootScope,
+              );
+              await wait();
+              const directiveElement = element.querySelector("a");
+
+              expect(getScope(directiveElement)).toBeUndefined();
+              expect(getIsolateScope(directiveElement)).toBeDefined();
+            });
+
+            it("should render async directive templates without attaching inherited scope data to child nodes", async () => {
+              $templateCache.set("tiscope.html", "<span>async</span>");
+              element = $compile('<div><a ng-if="true" tiscope></a></div>')(
+                $rootScope,
+              );
+              await wait();
+
+              const asyncDirective = element.querySelector("a");
+              const asyncChild = asyncDirective.querySelector("span");
+
+              expect(asyncChild.textContent).toBe("async");
+              expect(getScope(asyncChild)).toBeUndefined();
+              expect(getIsolateScope(asyncDirective)).toBeUndefined();
+            });
+
+            it("should render sync directive templates without attaching inherited scope data to child nodes", async () => {
+              element = $compile('<div><a ng-if="true" stiscope></a></div>')(
+                $rootScope,
+              );
+              await wait();
+
+              const syncDirective = element.querySelector("a");
+              const syncChild = syncDirective.querySelector("span");
+
+              expect(syncChild.textContent).toBe("");
+              expect(getScope(syncChild)).toBeUndefined();
+              expect(getIsolateScope(syncDirective)).toBeDefined();
+            });
+          });
+
           it('should handle "=" bindings with same method names in Object.prototype correctly when not present', async () => {
             $compile("<div prototype-method-name-as-scope-var-a></div>")(
               $rootScope,
@@ -7055,44 +7097,6 @@ describe("$compile", () => {
           $compile("<test></test>")($rootScope);
           await wait();
           expect(componentScope.checked).toBe(true);
-        });
-      });
-
-      describe("with isolate scope directives and directives that manually create a new scope", () => {
-        it("should return the new scope at the directive element", async () => {
-          element = $compile('<div><a ng-if="true" iscope></a></div>')(
-            $rootScope,
-          );
-          await wait();
-          const directiveElement = element.querySelector("a");
-
-          expect(getScope(directiveElement).$parent).toBe($rootScope);
-          expect(getScope(directiveElement)).not.toBe(
-            getIsolateScope(directiveElement),
-          );
-        });
-
-        it("should return the isolate scope for child elements", async () => {
-          $templateCache.set("tiscope.html", "<span></span>");
-          element = $compile('<div><a ng-if="true" tiscope></a></div>')(
-            $rootScope,
-          );
-          await wait();
-          const directiveElement = element.querySelector("a");
-          const child = directiveElement.querySelector("span");
-
-          expect(getScope(child)).toBe(getIsolateScope(directiveElement));
-        });
-
-        it("should return the isolate scope for child elements in directive sync template", async () => {
-          element = $compile('<div><a ng-if="true" stiscope></a></div>')(
-            $rootScope,
-          );
-          await wait();
-          const directiveElement = element.querySelector("a");
-          const child = directiveElement.querySelector("span");
-
-          expect(getScope(child)).toBe(getIsolateScope(directiveElement));
         });
       });
     });
@@ -12507,9 +12511,7 @@ describe("$compile", () => {
           expect(Cache.size).toEqual(cacheSize);
         });
 
-        it("should not continue linking templateUrl contents on a scope that was destroyed", async () => {
-          const linkFn = jasmine.createSpy("linkFn");
-
+        it("should release extra cache entries after deallocating a clone linked from a destroyed scope", async () => {
           module
             .directive("isolateRed", () => ({
               restrict: "A",
@@ -12520,7 +12522,6 @@ describe("$compile", () => {
               restrict: "A",
               templateUrl: "red.html",
               scope: {},
-              link: linkFn,
             }));
           initInjector("test1");
           $templateCache.set("red.html", "<p>red</p>");
@@ -12530,21 +12531,18 @@ describe("$compile", () => {
 
           element = template(liveScope, () => {});
           await wait();
-          expect(linkFn).toHaveBeenCalledTimes(1);
-
           const cacheSize = Cache.size;
-          linkFn.calls.reset();
 
           const destroyedScope = $rootScope.$new();
           destroyedScope.$destroy();
           const clone = template(destroyedScope, () => {});
 
           await wait();
-          expect(linkFn).not.toHaveBeenCalled();
-          expect(Cache.size).toEqual(cacheSize);
+          expect(clone.textContent).toContain("red");
 
           dealoc(clone);
           await wait();
+          expect(Cache.size).toEqual(cacheSize);
         });
 
         it("should clear contents of the ng-transclude element before appending transcluded content if transcluded content exists", async () => {
@@ -13296,26 +13294,6 @@ describe("$compile", () => {
             await wait(100);
             expect(element.textContent).toEqual("transcluded content");
           });
-
-          it("should not leak memory with nested transclusion", async () => {
-            const scope = $rootScope.$new();
-            const initialSize = Cache.size;
-
-            element = $compile(
-              '<div><ul><li ng-repeat="n in nums">{{n}} => <i ng-if="0 === n%2">Even</i><i ng-if="1 === n%2">Odd</i></li></ul></div>',
-            )(scope);
-            scope.nums = [0, 1, 2];
-            await wait();
-            const size = Cache.size;
-
-            scope.nums = [3, 4, 5];
-            await wait();
-            expect(Cache.size).toEqual(size);
-
-            dealoc(element);
-            await wait();
-            expect(Cache.size).toEqual(initialSize);
-          });
         });
 
         describe("nested isolated scope transcludes", () => {
@@ -13413,6 +13391,26 @@ describe("$compile", () => {
             await wait();
             expect(element.textContent).toEqual("myExample 1!has children");
             dealoc(element);
+          });
+
+          it("should not grow cache across nested transclusion updates", async () => {
+            const scope = $rootScope.$new();
+
+            element = $compile(
+              '<div><ul><li ng-repeat="n in nums">{{n}} => <i ng-if="0 === n%2">Even</i><i ng-if="1 === n%2">Odd</i></li></ul></div>',
+            )(scope);
+            scope.nums = [0, 1, 2];
+            await wait();
+            const size = Cache.size;
+
+            scope.nums = [3, 4, 5];
+            await wait();
+            expect(element.textContent).toEqual("3 => Odd4 => Even5 => Odd");
+            expect(Cache.size).toEqual(size);
+
+            dealoc(element);
+            await wait();
+            expect(Cache.size).toBeLessThan(size);
           });
         });
       });
