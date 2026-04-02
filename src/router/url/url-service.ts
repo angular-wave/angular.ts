@@ -85,7 +85,7 @@ export class UrlService {
      * @ignore
      * @type {UrlRules}
      */
-    this._rules = new UrlRules(this._urlRuleFactory);
+    this._rules = new UrlRules(this._urlRuleFactory, globals);
     /**
      * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
      * @ignore

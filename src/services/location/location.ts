@@ -56,6 +56,10 @@ export interface Html5Mode {
   rewriteLinks: boolean | string;
 }
 
+type RouterLike = {
+  _hasConfiguredRouting?: () => boolean;
+};
+
 /**
  * Represents default port numbers for various protocols.
  */
@@ -105,6 +109,43 @@ let _search: Record<string, any> = {};
  * The hash string, minus the hash symbol
  */
 let _hash = "";
+
+function createHtml5ModeConfig(
+  value: Html5Mode,
+  onRewriteLinksConfigured: () => void,
+): Html5Mode {
+  return new Proxy(value, {
+    set(target, property, nextValue) {
+      if (property === "rewriteLinks") {
+        onRewriteLinksConfigured();
+      }
+
+      target[property as keyof Html5Mode] = nextValue as never;
+
+      return true;
+    },
+  });
+}
+
+export function hasConfiguredRouter(router?: RouterLike): boolean {
+  return !!router?._hasConfiguredRouting?.();
+}
+
+export function isLinkRewritingEnabled(
+  rewriteLinks: boolean | string,
+  rewriteLinksConfigured: boolean,
+  router?: RouterLike,
+): boolean {
+  if (!rewriteLinks) {
+    return false;
+  }
+
+  if (isString(rewriteLinks) || rewriteLinksConfigured) {
+    return true;
+  }
+
+  return hasConfiguredRouter(router);
+}
 
 export class Location {
   appBase: string;
@@ -485,7 +526,8 @@ export class Location {
 
 export class LocationProvider {
   hashPrefixConf: string;
-  html5ModeConf: Html5Mode;
+  _html5ModeConf: Html5Mode;
+  _rewriteLinksConfigured: boolean;
   _urlChangeListeners: UrlChangeListener[];
   _urlChangeInit: boolean;
   _cachedState: History["state"];
@@ -495,12 +537,17 @@ export class LocationProvider {
 
   constructor() {
     this.hashPrefixConf = "!";
-
-    this.html5ModeConf = {
-      enabled: true,
-      requireBase: false,
-      rewriteLinks: true,
-    };
+    this._rewriteLinksConfigured = false;
+    this._html5ModeConf = createHtml5ModeConfig(
+      {
+        enabled: true,
+        requireBase: false,
+        rewriteLinks: true,
+      },
+      () => {
+        this._rewriteLinksConfigured = true;
+      },
+    );
 
     this._urlChangeListeners = [];
     /** @private */
@@ -510,6 +557,20 @@ export class LocationProvider {
     this._lastHistoryState = null;
     this._lastBrowserUrl = window.location.href;
     this.cacheState();
+  }
+
+  get html5ModeConf(): Html5Mode {
+    return this._html5ModeConf;
+  }
+
+  set html5ModeConf(value: Html5Mode) {
+    this._rewriteLinksConfigured = Object.prototype.hasOwnProperty.call(
+      value,
+      "rewriteLinks",
+    );
+    this._html5ModeConf = createHtml5ModeConfig(value, () => {
+      this._rewriteLinksConfigured = true;
+    });
   }
 
   /// ///////////////////////////////////////////////////////////
@@ -621,10 +682,12 @@ export class LocationProvider {
   $get = [
     $t._rootScope,
     $t._rootElement,
+    $t._router,
     $t._exceptionHandler,
     (
       $rootScope: ng.Scope,
       $rootElement: HTMLElement,
+      $router: ng.RouterService,
       $exceptionHandler: ng.ExceptionHandlerService,
     ) => {
       const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
@@ -691,7 +754,11 @@ export class LocationProvider {
           // currently we open nice url link and redirect then
 
           if (
-            !rewriteLinks ||
+            !isLinkRewritingEnabled(
+              rewriteLinks,
+              this._rewriteLinksConfigured,
+              $router,
+            ) ||
             event.ctrlKey ||
             event.metaKey ||
             event.shiftKey ||

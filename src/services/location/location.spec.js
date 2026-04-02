@@ -1,6 +1,8 @@
 import {
   decodePath,
   encodePath,
+  hasConfiguredRouter,
+  isLinkRewritingEnabled,
   normalizePath,
   Location,
   LocationProvider,
@@ -13,6 +15,7 @@ import {
 } from "./location.ts";
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
+import { RouterProvider } from "../../router/router.ts";
 
 describe("$location", () => {
   let module;
@@ -40,6 +43,60 @@ describe("$location", () => {
       expect(provider.html5ModeConf.enabled).toBeTrue();
       expect(provider.html5ModeConf.requireBase).toBeFalse();
       expect(provider.html5ModeConf.rewriteLinks).toBeTrue();
+    });
+
+    it("should treat default rewriteLinks as auto when router is not configured", () => {
+      const provider = new LocationProvider();
+      const router = new RouterProvider();
+
+      expect(provider._rewriteLinksConfigured).toBeFalse();
+      expect(
+        isLinkRewritingEnabled(
+          provider.html5ModeConf.rewriteLinks,
+          provider._rewriteLinksConfigured,
+          router,
+        ),
+      ).toBeFalse();
+    });
+
+    it("should enable default rewriteLinks when router is configured", () => {
+      const provider = new LocationProvider();
+      const router = new RouterProvider();
+
+      router._markConfiguredRouting();
+
+      expect(
+        isLinkRewritingEnabled(
+          provider.html5ModeConf.rewriteLinks,
+          provider._rewriteLinksConfigured,
+          router,
+        ),
+      ).toBeTrue();
+    });
+
+    it("should allow explicitly forcing rewriteLinks on", () => {
+      const provider = new LocationProvider();
+
+      provider.html5ModeConf.rewriteLinks = true;
+
+      expect(provider._rewriteLinksConfigured).toBeTrue();
+      expect(
+        isLinkRewritingEnabled(
+          provider.html5ModeConf.rewriteLinks,
+          provider._rewriteLinksConfigured,
+          new RouterProvider(),
+        ),
+      ).toBeTrue();
+    });
+
+    it("should detect configured router from router globals", () => {
+      const router = new RouterProvider();
+
+      expect(hasConfiguredRouter(router)).toBeFalse();
+
+      router._markConfiguredRouting();
+
+      expect(hasConfiguredRouter(router)).toBeTrue();
     });
   });
 

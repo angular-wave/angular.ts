@@ -5769,7 +5769,8 @@ describe("$compile", () => {
         expect(predicate()).toBeTrue();
       }
 
-      beforeEach(() => {
+      beforeEach(async () => {
+        await wait(25);
         errors = [];
         myModule
           .decorator("$exceptionHandler", () => {
