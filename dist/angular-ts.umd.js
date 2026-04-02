@@ -1,4 +1,4 @@
-/* Version: 0.23.1 - March 19, 2026 01:29:40 */
+/* Version: 0.24.0 - April 2, 2026 04:06:35 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -1849,7 +1849,7 @@
             this._path.unshift(serviceName);
             this._cache[serviceName] = INSTANTIATING;
             try {
-                this._cache[serviceName] = this.factory(serviceName);
+                this._cache[serviceName] = this._factory(serviceName);
             }
             catch (err) {
                 // this is for the error handling being thrown by the providerCache multiple times
@@ -1936,7 +1936,7 @@
          * @param {string} _serviceName
          * @returns {any}
          */
-        factory(serviceName) {
+        _factory(serviceName) {
             return undefined;
         }
     }
@@ -1957,7 +1957,7 @@
          * @param {string} caller - The name of the caller requesting the service.
          * @throws {Error} If the provider is unknown.
          */
-        factory(caller) {
+        _factory(caller) {
             this._path.push(caller);
             // prevents lookups to providers through get
             throw $injectorMinErr$2("unpr", "Unknown provider: {0}", this._path.join(" <- "));
@@ -1985,7 +1985,7 @@
          * @param {string} serviceName
          * @returns {*}
          */
-        factory(serviceName) {
+        _factory(serviceName) {
             const provider = this._providerInjector.get(serviceName + providerSuffix$1);
             return this.invoke(provider.$get, provider, undefined, serviceName);
         }
@@ -7722,7 +7722,7 @@
     }
     class ControllerProvider {
         constructor() {
-            this.controllers = new Map();
+            this._controllers = new Map();
             this.$get = [
                 $injectTokens._injector,
                 ($injector) => {
@@ -7738,7 +7738,7 @@
                             }
                             constructorName = match[1];
                             identifier = identifier || match[3] || null;
-                            const lookedUp = this.controllers.get(constructorName);
+                            const lookedUp = this._controllers.get(constructorName);
                             if (!lookedUp) {
                                 throw $controllerMinErr("ctrlreg", "The controller with the name '{0}' is not registered.", constructorName);
                             }
@@ -7752,7 +7752,7 @@
                             const exportName = constructorName || meta.name;
                             if (identifier) {
                                 instance.$controllerIdentifier = identifier;
-                                this.addIdentifier(locals, identifier, instance, exportName);
+                                this._addIdentifier(locals, identifier, instance, exportName);
                             }
                             if (instance?.constructor?.$scopename && locals?.$scope) {
                                 locals.$scope.$scopename =
@@ -7765,7 +7765,7 @@
                                     instance = result;
                                     if (identifier) {
                                         instance.$controllerIdentifier = identifier;
-                                        this.addIdentifier(locals, identifier, instance, exportName);
+                                        this._addIdentifier(locals, identifier, instance, exportName);
                                     }
                                 }
                                 return instance;
@@ -7773,7 +7773,7 @@
                         }
                         instance = $injector.instantiate(injectable, locals, constructorName);
                         if (identifier) {
-                            this.addIdentifier(locals, identifier, instance, constructorName || meta.name);
+                            this._addIdentifier(locals, identifier, instance, constructorName || meta.name);
                         }
                         return instance;
                     };
@@ -7781,21 +7781,24 @@
             ];
         }
         has(name) {
-            return this.controllers.has(name);
+            return this._controllers.has(name);
         }
         register(name, constructor) {
             if (isString(name)) {
                 assertNotHasOwnProperty(name, "controller");
-                this.controllers.set(name, normalizeControllerDef(constructor, name));
+                this._controllers.set(name, normalizeControllerDef(constructor, name));
                 return;
             }
             if (isObject(name)) {
-                entries(name).forEach(([key, value]) => {
-                    this.controllers.set(key, normalizeControllerDef(value, key));
-                });
+                const controllerNames = Object.keys(name);
+                for (let i = 0, l = controllerNames.length; i < l; i++) {
+                    const key = controllerNames[i];
+                    const value = name[key];
+                    this._controllers.set(key, normalizeControllerDef(value, key));
+                }
             }
         }
-        addIdentifier(locals, identifier, instance, name) {
+        _addIdentifier(locals, identifier, instance, name) {
             if (!(locals && isObject(locals.$scope))) {
                 throw minErr("$controller")("noscp", "Cannot export controller '{0}' as '{1}'! No $scope object provided via `locals`.", name, identifier);
             }
@@ -7845,10 +7848,10 @@
                 (exceptionHandler, parse) => {
                     $exceptionHandler = exceptionHandler;
                     $parse = parse;
-                    return this.rootScope;
+                    return this._rootScope;
                 },
             ];
-            this.rootScope = createScope();
+            this._rootScope = createScope();
         }
     }
     const nonscopeSetsCache = new WeakMap();
@@ -7889,6 +7892,17 @@
             }
         }
         return getNodeName(node);
+    }
+    function getWatchParentExpression(watchProp) {
+        const lastDotIndex = watchProp.lastIndexOf(".");
+        return lastDotIndex === -1 ? "" : watchProp.slice(0, lastDotIndex);
+    }
+    function pushUniqueListenerKey(keySet, seenKeys, listener, key) {
+        if (seenKeys.has(key))
+            return;
+        seenKeys.add(key);
+        keySet.push(key);
+        listener._property.push(key);
     }
     function registerListenerKeys(scope, listener, watchKeys, schedule = false) {
         for (let i = 0, l = watchKeys.length; i < l; i++) {
@@ -7958,6 +7972,32 @@
         const fallbackKey = getNodeName(node);
         if (fallbackKey)
             watchKeys.add(fallbackKey);
+    }
+    function collectListenerKeys(node, keySet, seenKeys, listener) {
+        if (!node || node._type === ASTType._Literal)
+            return;
+        const watchKeys = new Set();
+        collectWatchKeys(node, watchKeys);
+        for (const watchKey of watchKeys) {
+            pushUniqueListenerKey(keySet, seenKeys, listener, watchKey);
+        }
+    }
+    function collectExpressionListenerKeys(node, keySet, seenKeys, listener) {
+        if (!node)
+            return;
+        switch (node._type) {
+            case ASTType._LogicalExpression:
+                collectExpressionListenerKeys(node._left, keySet, seenKeys, listener);
+                collectExpressionListenerKeys(node._right, keySet, seenKeys, listener);
+                return;
+            case ASTType._ConditionalExpression:
+                collectExpressionListenerKeys(node._test, keySet, seenKeys, listener);
+                collectExpressionListenerKeys(node._alternate, keySet, seenKeys, listener);
+                collectExpressionListenerKeys(node._consequent, keySet, seenKeys, listener);
+                return;
+            default:
+                collectListenerKeys(node, keySet, seenKeys, listener);
+        }
     }
     /**
      * @private
@@ -8109,7 +8149,7 @@
             this._destroyed = false;
             this._scheduled = [];
             this.$scopename = undefined;
-            this.propertyMap = {
+            this._propertyMap = {
                 $apply: this.$apply.bind(this),
                 $broadcast: this.$broadcast.bind(this),
                 _children: this._children,
@@ -8307,12 +8347,11 @@
                             const scheduled = [];
                             for (let i = 0, l = list.length; i < l; i++) {
                                 const x = list[i];
-                                if (!x.watchProp) {
+                                if (!x._watchProp) {
                                     scheduled.push(x);
                                     continue;
                                 }
-                                const wrapperExpr = x.watchProp.split(".").slice(0, -1).join(".");
-                                const expectedHandler = $parse(wrapperExpr)(x._originalTarget);
+                                const expectedHandler = x._watchParentFn?.(x._originalTarget);
                                 if (expectedTarget === expectedHandler?.$target) {
                                     scheduled.push(x);
                                 }
@@ -8381,11 +8420,11 @@
             else {
                 this.$proxy = proxy;
             }
-            if (this.propertyMap.$target !== target) {
-                this.propertyMap.$target = target;
+            if (this._propertyMap.$target !== target) {
+                this._propertyMap.$target = target;
             }
-            if (this.propertyMap.$proxy !== proxy) {
-                this.propertyMap.$proxy = proxy;
+            if (this._propertyMap.$proxy !== proxy) {
+                this._propertyMap.$proxy = proxy;
             }
             if (isArray(target) &&
                 typeof property === "string" &&
@@ -8406,9 +8445,9 @@
                     this._scheduleListener(this._scheduled);
                 }
             }
-            if (typeof property !== "symbol" && hasOwn(this.propertyMap, property)) {
+            if (typeof property !== "symbol" && hasOwn(this._propertyMap, property)) {
                 this.$target = target;
-                return this.propertyMap[property];
+                return this._propertyMap[property];
             }
             else {
                 // we are a simple getter
@@ -8505,7 +8544,7 @@
             watchProp = watchProp.trim();
             const get = $parse(watchProp);
             // Constant are immediately passed to listener function
-            if (get.constant) {
+            if (get._constant) {
                 if (listenerFn) {
                     queueMicrotask(() => {
                         let res = get();
@@ -8541,6 +8580,7 @@
             // simplest case
             let key = getNodeName(expr);
             const keySet = [];
+            const seenKeys = new Set();
             const { _type: type } = expr;
             switch (type) {
                 // 3
@@ -8550,22 +8590,21 @@
                     break;
                 // 4
                 case ASTType._ConditionalExpression: {
-                    key = getNodeName(expr._toWatch?.[0]?._test);
-                    if (!key) {
+                    collectExpressionListenerKeys(expr, keySet, seenKeys, listener);
+                    if (keySet.length === 0) {
                         throw new Error("Unable to determine key");
                     }
-                    listener._property.push(key);
                     break;
                 }
                 // 5
                 case ASTType._LogicalExpression: {
-                    const keyList = [
-                        getNodeName(expr._left?._toWatch?.[0]),
-                        getNodeName(expr._right?._toWatch?.[0]),
-                    ];
-                    registerListenerKeys(this, listener, keyList);
+                    collectExpressionListenerKeys(expr, keySet, seenKeys, listener);
+                    if (keySet.length === 0) {
+                        throw new Error("Unable to determine key");
+                    }
+                    registerListenerKeys(this, listener, keySet);
                     return () => {
-                        deregisterListenerKeys(this, listener._id, keyList);
+                        deregisterListenerKeys(this, listener._id, keySet);
                     };
                 }
                 // 6
@@ -8576,7 +8615,7 @@
                         if (!key) {
                             throw new Error("Unable to determine key");
                         }
-                        listener._property.push(key);
+                        pushUniqueListenerKey(keySet, seenKeys, listener, key);
                         break;
                     }
                     else {
@@ -8602,7 +8641,7 @@
                     if (!key) {
                         throw new Error("Unable to determine key");
                     }
-                    listener._property.push(key);
+                    pushUniqueListenerKey(keySet, seenKeys, listener, key);
                     break;
                 }
                 // 8 function
@@ -8635,12 +8674,13 @@
                     if (!key) {
                         throw new Error("Unable to determine key");
                     }
-                    listener._property.push(key);
+                    pushUniqueListenerKey(keySet, seenKeys, listener, key);
                     if (watchProp !== key) {
                         // Handle nested expression call
-                        listener.watchProp = watchProp;
-                        listener.invokeWatchFn = $parse(`${watchProp}()`);
-                        const potentialProxy = $parse(watchProp.split(".").slice(0, -1).join("."))(listener._originalTarget);
+                        listener._watchProp = watchProp;
+                        listener._invokeWatchFn = $parse(`${watchProp}()`);
+                        listener._watchParentFn = $parse(getWatchParentExpression(watchProp));
+                        const potentialProxy = listener._watchParentFn(listener._originalTarget);
                         if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
                             potentialProxy.$handler._registerForeignKey(key, listener);
                             potentialProxy.$handler._scheduleListener([listener]);
@@ -8657,27 +8697,27 @@
                     if (!key) {
                         throw new Error("Unable to determine key");
                     }
-                    listener._property.push(key);
+                    pushUniqueListenerKey(keySet, seenKeys, listener, key);
                     break;
                 }
                 // 12
                 case ASTType._ArrayExpression: {
                     const { _elements: elements } = expr;
-                    const keyList = [];
                     for (let i = 0, l = elements.length; i < l; i++) {
-                        const registerKey = resolveWatchKey(elements[i]);
-                        if (!registerKey)
+                        const element = elements[i];
+                        const registerKey = resolveWatchKey(element);
+                        if (registerKey) {
+                            pushUniqueListenerKey(keySet, seenKeys, listener, registerKey);
                             continue;
-                        keyList.push(registerKey);
-                    }
-                    for (let i = 0, l = keyList.length; i < l; i++) {
-                        this._registerKey(keyList[i], listener);
-                        this._scheduleListener([listener]);
-                    }
-                    return () => {
-                        for (let i = 0, l = keyList.length; i < l; i++) {
-                            this._deregisterKey(keyList[i], listener._id);
                         }
+                        collectExpressionListenerKeys(element, keySet, seenKeys, listener);
+                    }
+                    if (keySet.length === 0) {
+                        throw new Error("Unable to determine key");
+                    }
+                    registerListenerKeys(this, listener, keySet, true);
+                    return () => {
+                        deregisterListenerKeys(this, listener._id, keySet);
                     };
                 }
                 // 14
@@ -8704,16 +8744,12 @@
                             }
                         }
                         if (currentKey) {
-                            keySet.push(currentKey);
-                            listener._property.push(currentKey);
+                            pushUniqueListenerKey(keySet, seenKeys, listener, currentKey);
                         }
                     }
-                    collectedKeys.forEach((collectedKey) => {
-                        if (!keySet.includes(collectedKey)) {
-                            keySet.push(collectedKey);
-                            listener._property.push(collectedKey);
-                        }
-                    });
+                    for (const collectedKey of collectedKeys) {
+                        pushUniqueListenerKey(keySet, seenKeys, listener, collectedKey);
+                    }
                     break;
                 }
                 default: {
@@ -8881,10 +8917,11 @@
         }
         /** Merges enumerable properties from the provided object into the current scope target. */
         $merge(newTarget) {
-            const list = entries(newTarget);
-            for (let i = 0, l = list.length; i < l; i++) {
-                const [key, value] = list[i];
-                this.set(this.$target, key, value, this.$proxy);
+            const newTargetRecord = newTarget;
+            const keyList = Object.keys(newTargetRecord);
+            for (let i = 0, l = keyList.length; i < l; i++) {
+                const key = keyList[i];
+                this.set(this.$target, key, newTargetRecord[key], this.$proxy);
             }
         }
         /** Evaluates an expression and routes any thrown error through the exception handler. */
@@ -9060,8 +9097,8 @@
                     newVal = _watchFn(target);
                 }
                 if (isFunction(newVal)) {
-                    newVal = listener.invokeWatchFn
-                        ? listener.invokeWatchFn(_originalTarget)
+                    newVal = listener._invokeWatchFn
+                        ? listener._invokeWatchFn(_originalTarget)
                         : newVal(_originalTarget);
                 }
                 if (isArray(newVal)) {
@@ -9632,7 +9669,7 @@
                  */
                 sce.parseAs = (type, expr) => {
                     const parsed = $parse(expr);
-                    if (parsed._literal && parsed.constant) {
+                    if (parsed._literal && parsed._constant) {
                         return parsed;
                     }
                     return $parse(expr, (value) => sce.getTrusted(type, value));
@@ -9978,7 +10015,7 @@
             const nodeName = this._nodeRef?.node.nodeName.toLowerCase();
             let maybeSanitizedValue;
             if (nodeName === "img" && key === "srcset") {
-                this[key] = maybeSanitizedValue = this.sanitizeSrcset(value, "$set('srcset', value)");
+                this[key] = maybeSanitizedValue = this._sanitizeSrcset(value, "$set('srcset', value)");
             }
             else {
                 maybeSanitizedValue = value;
@@ -10002,19 +10039,20 @@
                     }
                 }
                 else {
-                    this.setSpecialAttr(elem, attrName, maybeSanitizedValue);
+                    this._setSpecialAttr(elem, attrName, maybeSanitizedValue);
                 }
             }
             const { _observers } = this;
             if (_observers && _observers[observer]) {
-                _observers[observer].forEach((fn) => {
+                const observerListeners = _observers[observer];
+                for (let i = 0, l = observerListeners.length; i < l; i++) {
                     try {
-                        fn(maybeSanitizedValue);
+                        observerListeners[i](maybeSanitizedValue);
                     }
                     catch (err) {
                         this._exceptionHandler(err);
                     }
-                });
+                }
             }
         }
         $observe(key, fn) {
@@ -10028,7 +10066,7 @@
                 arrayRemove(listeners, fn);
             };
         }
-        setSpecialAttr(element, attrName, value) {
+        _setSpecialAttr(element, attrName, value) {
             specialAttrHolder.innerHTML = `<span ${attrName}>`;
             const { attributes } = specialAttrHolder.firstChild;
             const attribute = attributes[0];
@@ -10036,7 +10074,7 @@
             attribute.value = value ?? "";
             element.attributes.setNamedItem(attribute);
         }
-        sanitizeSrcset(value, invokeType) {
+        _sanitizeSrcset(value, invokeType) {
             let i;
             if (!value) {
                 return value;
@@ -10046,7 +10084,7 @@
             }
             let result = "";
             const trimmedSrcset = trim(value);
-            const srcPattern = /(\s+\d+x\s*,|\s+\d+w\s*,|\s+,|,\s+)/;
+            const srcPattern = /(\s+\d+(?:\.\d+)?x\s*,|\s+\d+w\s*,|\s+[^\s,]+\s*,|\s+,|,\s+)/;
             const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
             const rawUris = trimmedSrcset.split(pattern);
             const nbrUrisWith2parts = Math.floor(rawUris.length / 2);
@@ -10135,11 +10173,14 @@
             function parseIsolateBindings(scope, directiveName, isController) {
                 const LOCAL_REGEXP = /^([@&]|[=<]())(\??)\s*([\w$]*)$/;
                 const bindings = nullObject();
-                entries(scope).forEach(([scopeName, definition]) => {
+                const scopeNames = Object.keys(scope);
+                for (let i = 0, l = scopeNames.length; i < l; i++) {
+                    const scopeName = scopeNames[i];
+                    let definition = scope[scopeName];
                     definition = definition.trim();
                     if (definition in bindingCache) {
                         bindings[scopeName] = bindingCache[definition];
-                        return;
+                        continue;
                     }
                     const match = definition.match(LOCAL_REGEXP);
                     if (!match) {
@@ -10157,7 +10198,7 @@
                     if (match[4]) {
                         bindingCache[definition] = bindings[scopeName];
                     }
-                });
+                }
                 return bindings;
             }
             /** Collects the parsed scope and controller binding configuration for a directive. */
@@ -10599,7 +10640,7 @@
                                 const controllers = _transcludeControllers;
                                 for (const controllerName in controllers) {
                                     assertArg($linkNode.element, "element");
-                                    setCacheData($linkNode.element, `$${controllerName}Controller`, controllers[controllerName].instance);
+                                    setCacheData($linkNode.element, `$${controllerName}Controller`, controllers[controllerName]._instance);
                                 }
                             }
                             if (cloneConnectFn) {
@@ -10947,7 +10988,7 @@
                             });
                         }
                         else {
-                            applyInterpolatedAttrValue(linkState, attr, newValue);
+                            applyInterpolatedAttrValue(linkState, attr, interpolateFn(scope));
                         }
                     }
                     /**
@@ -11122,8 +11163,8 @@
                             isolateScope.$target._isolateBindings = nodeLinkState
                                 ._newIsolateScopeDirective._isolateBindings;
                             scopeBindingInfo = initializeDirectiveBindings(scope, attrs, isolateScope, isolateScope._isolateBindings, nodeLinkState._newIsolateScopeDirective);
-                            if (scopeBindingInfo.removeWatches) {
-                                isolateScope.$on("$destroy", scopeBindingInfo.removeWatches);
+                            if (scopeBindingInfo._removeWatches) {
+                                isolateScope.$on("$destroy", scopeBindingInfo._removeWatches);
                             }
                         }
                         for (const name in elementControllers) {
@@ -11132,26 +11173,31 @@
                             const bindings = controllerDirective._bindings
                                 .bindToController;
                             const controllerInstance = controller();
-                            controller.instance = controllerScope.$new(controllerInstance);
-                            setCacheData($element.node, `$${controllerDirective.name}Controller`, controller.instance);
-                            controller.bindingInfo = initializeDirectiveBindings(controllerScope, attrs, controller.instance, bindings, controllerDirective);
+                            controller._instance = controllerScope.$new(controllerInstance);
+                            setCacheData($element.node, `$${controllerDirective.name}Controller`, controller._instance);
+                            controller._bindingInfo = initializeDirectiveBindings(controllerScope, attrs, controller._instance, bindings, controllerDirective);
                         }
                         if (nodeLinkState._controllerDirectives) {
-                            entries(controllerDirectives).forEach(([name, controllerDirective]) => {
+                            const controllerNames = Object.keys(controllerDirectives);
+                            for (let i = 0, l = controllerNames.length; i < l; i++) {
+                                const name = controllerNames[i];
+                                const controllerDirective = controllerDirectives[name];
                                 const { require } = controllerDirective;
                                 if (controllerDirective.bindToController &&
                                     !isArray(require) &&
                                     isObject(require)) {
-                                    extend(elementControllers[name].instance, getControllers(name, require, $element.element, elementControllers));
+                                    extend(elementControllers[name]._instance, getControllers(name, require, $element.element, elementControllers));
                                 }
-                            });
+                            }
                         }
                         if (elementControllers) {
-                            values(elementControllers).forEach((controller) => {
-                                const controllerInstance = controller.instance;
+                            const controllerNames = Object.keys(elementControllers);
+                            for (let i = 0, l = controllerNames.length; i < l; i++) {
+                                const controller = elementControllers[controllerNames[i]];
+                                const controllerInstance = controller._instance;
                                 if (isFunction(controllerInstance.$onChanges)) {
                                     try {
-                                        controllerInstance.$onChanges(controller.bindingInfo.initialChanges);
+                                        controllerInstance.$onChanges(controller._bindingInfo._initialChanges);
                                     }
                                     catch (err) {
                                         $exceptionHandler(err);
@@ -11170,7 +11216,7 @@
                                         controllerInstance.$onDestroy();
                                     });
                                 }
-                            });
+                            }
                         }
                         for (let i = 0, ii = nodeLinkState._preLinkFns.length; i < ii; i++) {
                             const preLinkFn = nodeLinkState._preLinkFns[i];
@@ -11208,12 +11254,14 @@
                             }
                         }
                         if (elementControllers) {
-                            values(elementControllers).forEach((controller) => {
-                                const controllerInstance = controller.instance;
+                            const controllerNames = Object.keys(elementControllers);
+                            for (let i = 0, l = controllerNames.length; i < l; i++) {
+                                const controller = elementControllers[controllerNames[i]];
+                                const controllerInstance = controller._instance;
                                 if (isFunction(controllerInstance.$postLink)) {
                                     controllerInstance.$postLink();
                                 }
-                            });
+                            }
                         }
                     }
                     /**
@@ -11360,7 +11408,10 @@
                                         const slotMap = nullObject();
                                         const filledSlots = nullObject();
                                         // Parse the element selectors
-                                        entries(directiveValue).forEach(([slotName, elementSelector]) => {
+                                        const slotNames = Object.keys(directiveValue);
+                                        for (let slotIndex = 0, slotCount = slotNames.length; slotIndex < slotCount; slotIndex++) {
+                                            const slotName = slotNames[slotIndex];
+                                            let elementSelector = directiveValue[slotName];
                                             // If an element selector starts with a ? then it is optional
                                             const optional = elementSelector.charAt(0) === "?";
                                             elementSelector = optional
@@ -11374,7 +11425,7 @@
                                             // filledSlots contains `true` for all slots that are either optional or have been
                                             // filled. This is used to check that we have not missed any required slots
                                             filledSlots[slotName] = optional;
-                                        });
+                                        }
                                         // Clone childnodes before distributing to slots
                                         // Clone each node individually to prevent browser DOM normalization
                                         // which can merge adjacent text nodes (see https://github.com/angular/angular.ts/issues/14924)
@@ -11396,11 +11447,14 @@
                                             }
                                         }
                                         // Check for required slots that were not filled
-                                        entries(filledSlots).forEach(([slotName, filled]) => {
+                                        const filledSlotNames = Object.keys(filledSlots);
+                                        for (let slotIndex = 0, slotCount = filledSlotNames.length; slotIndex < slotCount; slotIndex++) {
+                                            const slotName = filledSlotNames[slotIndex];
+                                            const filled = filledSlots[slotName];
                                             if (!filled) {
                                                 throw $compileMinErr("reqslot", "Required transclusion slot `{0}` was not filled.", slotName);
                                             }
-                                        });
+                                        }
                                         for (const slotName in slots) {
                                             if (slots[slotName]) {
                                                 // Only define a transclusion function if the slot was filled
@@ -11576,7 +11630,7 @@
                             }
                             else {
                                 value = elementControllers && elementControllers[name];
-                                value = value && value.instance;
+                                value = value && value._instance;
                             }
                             if (!value) {
                                 const dataName = `$${name}Controller`;
@@ -11607,9 +11661,12 @@
                         }
                         else if (isObject(require)) {
                             value = {};
-                            entries(require).forEach(([property, controller]) => {
+                            const requireKeys = Object.keys(require);
+                            for (let i = 0, l = requireKeys.length; i < l; i++) {
+                                const property = requireKeys[i];
+                                const controller = require[property];
                                 value[property] = getControllers(directiveName, controller, $element, elementControllers);
-                            });
+                            }
                         }
                         return value || null;
                     }
@@ -11638,7 +11695,7 @@
                             // later, once we have the actual element.
                             elementControllers[directive.name] = controllerInstance;
                             if ($element._isElement()) {
-                                setCacheData($element.element, `$${directive.name}Controller`, controllerInstance.instance);
+                                setCacheData($element.element, `$${directive.name}Controller`, controllerInstance._instance);
                             }
                         }
                         return elementControllers;
@@ -11705,7 +11762,10 @@
                         const srcAttr = src.$attr;
                         const dstAttr = dst.$attr;
                         // reapply the old attributes to the new element
-                        entries(dstAny).forEach(([key, value]) => {
+                        const dstKeys = Object.keys(dstAny);
+                        for (let i = 0, l = dstKeys.length; i < l; i++) {
+                            const key = dstKeys[i];
+                            let value = dstAny[key];
                             if (key[0] !== "$" && key[0] !== "_") {
                                 if (srcAny[key] && srcAny[key] !== value) {
                                     if (value.length) {
@@ -11717,9 +11777,12 @@
                                 }
                                 dst.$set(key, value, true, srcAttr[key]);
                             }
-                        });
+                        }
                         // copy the new attributes on the old attrs object
-                        entries(srcAny).forEach(([key, value]) => {
+                        const srcKeys = Object.keys(srcAny);
+                        for (let i = 0, l = srcKeys.length; i < l; i++) {
+                            const key = srcKeys[i];
+                            const value = srcAny[key];
                             // Check if we already set this attribute in the loop above.
                             // `dst` will never contain hasOwnProperty as DOM parser won't let it.
                             // You will get an "InvalidCharacterError: DOM Exception 5" error if you
@@ -11730,7 +11793,7 @@
                                     dstAttr[key] = srcAttr[key];
                                 }
                             }
-                        });
+                        }
                     }
                     /** Compiles an async `templateUrl` directive and returns a delayed node-link descriptor. */
                     function compileTemplateUrl(directives, $compileNode, tAttrs, $rootElement, childTranscludeFn, preLinkFns, postLinkFns, previousCompileContext) {
@@ -11884,6 +11947,10 @@
                             }
                             return $sce.RESOURCE_URL;
                         }
+                        if (nodeName === "image" &&
+                            (attrNormalizedName === "href" || attrNormalizedName === "ngHref")) {
+                            return $sce.MEDIA_URL;
+                        }
                         if (
                         // Formaction
                         (nodeName === "form" && attrNormalizedName === "action") ||
@@ -11922,8 +11989,10 @@
                         let result = "";
                         // first check if there are spaces because it's not the same pattern
                         const trimmedSrcset = trim(value);
-                        //                (   999x   ,|   999w   ,|   ,|,   )
-                        const srcPattern = /(\s+\d+x\s*,|\s+\d+w\s*,|\s+,|,\s+)/;
+                        // Split on candidate separators, including malformed descriptor tokens such as `xyz,`.
+                        // Without the generic whitespace-token-comma branch, a payload like
+                        // `good.example/img.png xyz,evil.example/img.png` leaves the second URL unsanitized.
+                        const srcPattern = /(\s+\d+(?:\.\d+)?x\s*,|\s+\d+w\s*,|\s+[^\s,]+\s*,|\s+,|,\s+)/;
                         const pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
                         // split srcset into tuple of uri and descriptor except for the last item
                         const rawUris = trimmedSrcset.split(pattern);
@@ -12032,7 +12101,10 @@
                         const destinationTarget = destAny.$target;
                         const attrsObservers = attrs._observers || (attrs._observers = nullObject());
                         if (bindings) {
-                            entries(bindings).forEach(([scopeName, definition]) => {
+                            const bindingNames = Object.keys(bindings);
+                            for (let bindingIndex = 0; bindingIndex < bindingNames.length; bindingIndex++) {
+                                const scopeName = bindingNames[bindingIndex];
+                                const definition = bindings[scopeName];
                                 const { attrName, optional, mode, // @, =, <, or &
                                  } = definition;
                                 let lastValue;
@@ -12160,16 +12232,20 @@
                                             else {
                                                 // manually set the handler to avoid watch cycles
                                                 if (isObject(val)) {
-                                                    entries(val).forEach(([key, value]) => {
-                                                        scopeTarget[key] = value;
-                                                    });
+                                                    const valueKeys = Object.keys(val);
+                                                    for (let i = 0, l = valueKeys.length; i < l; i++) {
+                                                        const key = valueKeys[i];
+                                                        scopeTarget[key] = val[key];
+                                                    }
                                                 }
                                                 else {
                                                     parentSet(scopeTarget, (lastValue = val));
                                                     const attributeWatchers = scope.$handler._watchers.get(attrsAny[attrName]);
-                                                    attributeWatchers?.forEach((watchFn) => {
-                                                        watchFn._listenerFn(val, scope.$target);
-                                                    });
+                                                    if (attributeWatchers) {
+                                                        for (let i = 0, l = attributeWatchers.length; i < l; i++) {
+                                                            attributeWatchers[i]._listenerFn(val, scope.$target);
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }, true);
@@ -12223,7 +12299,7 @@
                                         };
                                         break;
                                 }
-                            });
+                            }
                         }
                         /** Records a binding change so `$onChanges` can be invoked once per digest. */
                         function recordChanges(key, currentValue, initial) {
@@ -12251,8 +12327,8 @@
                             changes = undefined;
                         }
                         return {
-                            initialChanges,
-                            removeWatches: removeWatchCollection.length > 0
+                            _initialChanges: initialChanges,
+                            _removeWatches: removeWatchCollection.length > 0
                                 ? function removeWatches() {
                                     for (let i = 0, ii = removeWatchCollection.length; i < ii; ++i) {
                                         removeWatchCollection[i]?.();
@@ -12765,7 +12841,7 @@
                     }
                     if (predicate !== "") {
                         const parsed = $parse(predicate);
-                        if (parsed.constant) {
+                        if (parsed._constant) {
                             const key = parsed();
                             get = (value) => value[key];
                         }
@@ -13115,7 +13191,7 @@
                     this._readIdent();
                 }
                 else if (this._is(ch, "(){}[].,;:?")) {
-                    this._tokens.push({ index: this._index, text: ch });
+                    this._tokens.push({ _index: this._index, _text: ch });
                     this._index++;
                 }
                 else if (this._isWhitespace(ch)) {
@@ -13130,9 +13206,9 @@
                     if (op1 || op2 || op3) {
                         const token = op3 ? ch3 : op2 ? ch2 : ch;
                         this._tokens.push({
-                            index: this._index,
-                            text: token,
-                            operator: true,
+                            _index: this._index,
+                            _text: token,
+                            _operator: true,
                         });
                         this._index += token.length;
                     }
@@ -13254,10 +13330,10 @@
                 this._index++;
             }
             this._tokens.push({
-                index: start,
-                text: number,
-                constant: true,
-                value: Number(number),
+                _index: start,
+                _text: number,
+                _constant: true,
+                _value: Number(number),
             });
         }
         /**
@@ -13274,9 +13350,9 @@
                 this._index += ch.length;
             }
             this._tokens.push({
-                index: start,
-                text: this._text.slice(start, this._index),
-                identifier: true,
+                _index: start,
+                _text: this._text.slice(start, this._index),
+                _identifier: true,
             });
         }
         /**
@@ -13303,10 +13379,10 @@
                 }
                 else if (ch === quote) {
                     this._tokens.push({
-                        index: start,
-                        text: this._text.slice(start, this._index + 1),
-                        constant: true,
-                        value: string,
+                        _index: start,
+                        _text: this._text.slice(start, this._index + 1),
+                        _constant: true,
+                        _value: string,
                     });
                     this._index++;
                     return;
@@ -13330,6 +13406,13 @@
 
     const PURITY_ABSOLUTE = 1;
     const PURITY_RELATIVE = 2;
+    function appendWatchNodes(target, watchList) {
+        if (!watchList)
+            return;
+        for (let i = 0, l = watchList.length; i < l; i++) {
+            target.push(watchList[i]);
+        }
+    }
     class ASTInterpreter {
         /**
          * @param {ng.FilterService} $filter
@@ -13342,7 +13425,7 @@
          * @param {ASTNode} ast - The AST to compile.
          * @returns {CompiledExpression}
          */
-        compile(ast) {
+        _compile(ast) {
             const decoratedNode = findConstantAndWatchExpressions(ast, this._$filter);
             const { _body: body } = decoratedNode;
             const assignable = assignableAST(decoratedNode);
@@ -13354,17 +13437,19 @@
             let inputs;
             if (toWatch) {
                 inputs = [];
-                for (const [key, watch] of entries(toWatch)) {
+                for (let i = 0, l = toWatch.length; i < l; i++) {
+                    const watch = toWatch[i];
                     const input = this._recurse(watch);
                     watch._input = input;
                     inputs.push(input);
-                    watch._watchId = key;
+                    watch._watchId = `${i}`;
                 }
             }
             const expressions = [];
-            body.forEach((expression) => {
+            for (let i = 0, l = body.length; i < l; i++) {
+                const expression = body[i];
                 expressions.push(this._recurse(expression._expression));
-            });
+            }
             const fnRaw = body.length === 0
                 ? () => {
                     /* empty */
@@ -13402,7 +13487,7 @@
             let args;
             switch (ast._type) {
                 case ASTType._Literal:
-                    return this.value(ast._value, context);
+                    return this._value(ast._value, context);
                 case ASTType._UnaryExpression:
                     right = this._recurse(ast._argument);
                     return self[`unary${ast._operator}`](right, context);
@@ -13417,7 +13502,7 @@
                 case ASTType._ConditionalExpression:
                     return this["ternary?:"](this._recurse(ast._test), this._recurse(ast._alternate), this._recurse(ast._consequent), context);
                 case ASTType._Identifier:
-                    return self.identifier(ast._name, context, create);
+                    return self._identifier(ast._name, context, create);
                 case ASTType._MemberExpression:
                     left = this._recurse(ast._object, false, !!create);
                     if (!ast._computed) {
@@ -13428,12 +13513,14 @@
                     }
                     return ast._computed
                         ? this._computedMember(left, right, context, create)
-                        : this.nonComputedMember(left, right, context, create);
+                        : this._nonComputedMember(left, right, context, create);
                 case ASTType._CallExpression:
                     args = [];
-                    ast._arguments.forEach((expr) => {
+                    const callArguments = ast._arguments;
+                    for (let i = 0, l = callArguments.length; i < l; i++) {
+                        const expr = callArguments[i];
                         args.push(self._recurse(expr));
-                    });
+                    }
                     if (ast._filter)
                         right = this._$filter(ast._callee._name);
                     if (!ast._filter) {
@@ -13482,9 +13569,11 @@
                     };
                 case ASTType._ArrayExpression:
                     args = [];
-                    (ast._elements || []).forEach((expr) => {
+                    const elements = ast._elements || [];
+                    for (let i = 0, l = elements.length; i < l; i++) {
+                        const expr = elements[i];
                         args.push(self._recurse(expr));
-                    });
+                    }
                     return (scope, locals, assign) => {
                         const value = [];
                         for (let i = 0; i < args.length; ++i) {
@@ -13494,7 +13583,10 @@
                     };
                 case ASTType._ObjectExpression:
                     args = [];
-                    (ast._properties || []).forEach((property) => {
+                    const properties = (ast._properties ||
+                        []);
+                    for (let i = 0, l = properties.length; i < l; i++) {
+                        const property = properties[i];
                         if (property._computed) {
                             args.push({
                                 key: self._recurse(property._key),
@@ -13511,7 +13603,7 @@
                                 value: self._recurse(property._value),
                             });
                         }
-                    });
+                    }
                     return (scope, locals, assign) => {
                         const value = {};
                         for (let i = 0; i < args.length; ++i) {
@@ -13831,7 +13923,7 @@
          * @param {Object} [context] - The context.
          * @returns {CompiledExpressionFunction} The function returning the literal value.
          */
-        value(value, context) {
+        _value(value, context) {
             return () => context ? { context: undefined, name: undefined, value } : value;
         }
         /**
@@ -13841,7 +13933,7 @@
          * @param {boolean|1} [create] - Whether to create the identifier if it does not exist.
          *  @returns {CompiledExpressionFunction}  The function returning the identifier value.
          */
-        identifier(name, context, create) {
+        _identifier(name, context, create) {
             return (scope, locals) => {
                 const runtimeScope = scope;
                 const base = locals && name in locals
@@ -13897,7 +13989,7 @@
          * @param {boolean|1} [create] - Whether to create the member if it does not exist.
          * @returns {CompiledExpressionFunction}  The function returning the non-computed member value.
          */
-        nonComputedMember(left, right, context, create) {
+        _nonComputedMember(left, right, context, create) {
             return (scope, locals, assign) => {
                 const lhs = left(scope, locals, assign);
                 if (create && create !== 1) {
@@ -13944,10 +14036,12 @@
         switch (ast._type) {
             case ASTType._Program:
                 allConstants = true;
-                decoratedNode._body.forEach((expr) => {
+                const body = decoratedNode._body;
+                for (let i = 0, l = body.length; i < l; i++) {
+                    const expr = body[i];
                     const decorated = findConstantAndWatchExpressions(expr._expression, $filter, astIsPure);
                     allConstants = allConstants && decorated._constant;
-                });
+                }
                 decoratedNode._constant = allConstants;
                 return decoratedNode;
             case ASTType._Literal:
@@ -13965,7 +14059,10 @@
                 decoratedRight = findConstantAndWatchExpressions(decoratedNode._right, $filter, astIsPure);
                 decoratedNode._constant =
                     decoratedLeft._constant && decoratedRight._constant;
-                decoratedNode._toWatch = (decoratedLeft._toWatch || []).concat(decoratedRight._toWatch || []);
+                argsToWatch = [];
+                appendWatchNodes(argsToWatch, decoratedLeft._toWatch);
+                appendWatchNodes(argsToWatch, decoratedRight._toWatch);
+                decoratedNode._toWatch = argsToWatch;
                 return decoratedNode;
             case ASTType._LogicalExpression:
                 decoratedLeft = findConstantAndWatchExpressions(decoratedNode._left, $filter, astIsPure);
@@ -14002,11 +14099,13 @@
                 isFilter = ast._filter;
                 allConstants = isFilter;
                 argsToWatch = [];
-                (ast._arguments || []).forEach((expr) => {
+                const callArguments = ast._arguments || [];
+                for (let i = 0, l = callArguments.length; i < l; i++) {
+                    const expr = callArguments[i];
                     const decorated = findConstantAndWatchExpressions(expr, $filter, astIsPure);
                     allConstants = allConstants && !!decorated._constant;
-                    argsToWatch.push(...(decorated._toWatch || []));
-                });
+                    appendWatchNodes(argsToWatch, decorated._toWatch);
+                }
                 decoratedNode._constant = allConstants;
                 decoratedNode._toWatch = isFilter ? argsToWatch : [decoratedNode];
                 return decoratedNode;
@@ -14020,28 +14119,32 @@
             case ASTType._ArrayExpression:
                 allConstants = true;
                 argsToWatch = [];
-                (ast._elements || []).forEach((expr) => {
+                const elements = ast._elements || [];
+                for (let i = 0, l = elements.length; i < l; i++) {
+                    const expr = elements[i];
                     const decorated = findConstantAndWatchExpressions(expr, $filter, astIsPure);
                     allConstants = allConstants && !!decorated._constant;
-                    argsToWatch.push(...(decorated._toWatch || []));
-                });
+                    appendWatchNodes(argsToWatch, decorated._toWatch);
+                }
                 decoratedNode._constant = allConstants;
                 decoratedNode._toWatch = argsToWatch;
                 return decoratedNode;
             case ASTType._ObjectExpression:
                 allConstants = true;
                 argsToWatch = [];
-                ast._properties.forEach((property) => {
+                const properties = ast._properties;
+                for (let i = 0, l = properties.length; i < l; i++) {
+                    const property = properties[i];
                     const decorated = findConstantAndWatchExpressions(property._value, $filter, astIsPure);
                     allConstants = allConstants && !!decorated._constant;
-                    argsToWatch.push(...(decorated._toWatch || []));
+                    appendWatchNodes(argsToWatch, decorated._toWatch);
                     if (property._computed) {
                         // `{[key]: value}` implicitly does `key.toString()` which may be non-pure
                         decoratedKey = findConstantAndWatchExpressions(property._key, $filter, false);
                         allConstants = allConstants && !!decoratedKey._constant;
-                        argsToWatch.push(...(decoratedKey._toWatch || []));
+                        appendWatchNodes(argsToWatch, decoratedKey._toWatch);
                     }
-                });
+                }
                 decoratedNode._constant = allConstants;
                 decoratedNode._toWatch = argsToWatch;
                 return decoratedNode;
@@ -14165,6 +14268,9 @@
         null: null,
         undefined,
     };
+    function cloneSelfReferentialNode(node) {
+        return { ...node };
+    }
     class AST {
         /**
          * @param {Lexer} lexer - The lexer instance for tokenizing input
@@ -14313,7 +14419,7 @@
             while ((token = this._expect("==", "!=", "===", "!=="))) {
                 left = {
                     _type: ASTType._BinaryExpression,
-                    _operator: /** @type {Token} */ token.text,
+                    _operator: /** @type {Token} */ token._text,
                     _left: left,
                     _right: this._relational(),
                 };
@@ -14330,7 +14436,7 @@
             while ((token = this._expect("<", ">", "<=", ">="))) {
                 left = {
                     _type: ASTType._BinaryExpression,
-                    _operator: /** @type {Token} */ token.text,
+                    _operator: /** @type {Token} */ token._text,
                     _left: left,
                     _right: this._additive(),
                 };
@@ -14347,7 +14453,7 @@
             while ((token = this._expect("+", "-"))) {
                 left = {
                     _type: ASTType._BinaryExpression,
-                    _operator: /** @type {Token} */ token.text,
+                    _operator: /** @type {Token} */ token._text,
                     _left: left,
                     _right: this._multiplicative(),
                 };
@@ -14364,7 +14470,7 @@
             while ((token = this._expect("*", "/", "%"))) {
                 left = {
                     _type: ASTType._BinaryExpression,
-                    _operator: token.text,
+                    _operator: token._text,
                     _left: left,
                     _right: this._unary(),
                 };
@@ -14389,7 +14495,7 @@
                 }
                 return {
                     _type: ASTType._UpdateExpression,
-                    _operator: /** @type {Token} */ token.text,
+                    _operator: /** @type {Token} */ token._text,
                     _prefix: true,
                     _argument: argument,
                 };
@@ -14398,7 +14504,7 @@
             if ((token = this._expect("+", "-", "!"))) {
                 return {
                     _type: ASTType._UnaryExpression,
-                    _operator: /** @type {Token} */ token.text,
+                    _operator: /** @type {Token} */ token._text,
                     _prefix: true,
                     _argument: this._unary(),
                 };
@@ -14420,7 +14526,7 @@
                 }
                 expr = {
                     _type: ASTType._UpdateExpression,
-                    _operator: /** @type {Token} */ token.text,
+                    _operator: /** @type {Token} */ token._text,
                     _prefix: false,
                     _argument: expr,
                 };
@@ -14444,19 +14550,19 @@
             else if (this._expect("{")) {
                 primary = this._object();
             }
-            else if (hasOwn(this._selfReferential, peekToken.text)) {
-                primary = structuredClone(this._selfReferential[this._consume().text]);
+            else if (hasOwn(this._selfReferential, peekToken._text)) {
+                primary = cloneSelfReferentialNode(this._selfReferential[this._consume()._text]);
             }
-            else if (hasOwn(literals, peekToken.text)) {
+            else if (hasOwn(literals, peekToken._text)) {
                 primary = {
                     _type: ASTType._Literal,
-                    _value: literals[this._consume().text],
+                    _value: literals[this._consume()._text],
                 };
             }
-            else if (peekToken.identifier) {
+            else if (peekToken._identifier) {
                 primary = this._identifier();
             }
-            else if (peekToken.constant) {
+            else if (peekToken._constant) {
                 primary = this._constant();
             }
             else {
@@ -14464,7 +14570,7 @@
             }
             let next;
             while ((next = this._expect("(", "[", "."))) {
-                if (next.text === "(") {
+                if (next._text === "(") {
                     primary = {
                         _type: ASTType._CallExpression,
                         _callee: primary,
@@ -14472,7 +14578,7 @@
                     };
                     this._consume(")");
                 }
-                else if (next.text === "[") {
+                else if (next._text === "[") {
                     primary = {
                         _type: ASTType._MemberExpression,
                         _object: primary,
@@ -14481,7 +14587,7 @@
                     };
                     this._consume("]");
                 }
-                else if (next.text === ".") {
+                else if (next._text === ".") {
                     primary = {
                         _type: ASTType._MemberExpression,
                         _object: primary,
@@ -14519,7 +14625,7 @@
          */
         _parseArguments() {
             const args = [];
-            if (this._peekToken().text !== ")") {
+            if (this._peekToken()._text !== ")") {
                 do {
                     args.push(this._filterChain());
                 } while (this._expect(","));
@@ -14532,10 +14638,10 @@
          */
         _identifier() {
             const token = this._consume();
-            if (!token.identifier) {
+            if (!token._identifier) {
                 this._throwError("is not a valid identifier", token);
             }
-            return { _type: ASTType._Identifier, _name: token.text };
+            return { _type: ASTType._Identifier, _name: token._text };
         }
         /**
          * Parses a constant.
@@ -14543,7 +14649,7 @@
          */
         _constant() {
             // TODO check that it is a constant
-            return { _type: ASTType._Literal, _value: this._consume().value };
+            return { _type: ASTType._Literal, _value: this._consume()._value };
         }
         /**
          * Parses an array declaration.
@@ -14551,7 +14657,7 @@
          */
         _arrayDeclaration() {
             const elements = [];
-            if (this._peekToken().text !== "]") {
+            if (this._peekToken()._text !== "]") {
                 do {
                     if (this._peek("]")) {
                         // Support trailing commas per ES5.1.
@@ -14570,7 +14676,7 @@
         _object() {
             const properties = [];
             let property;
-            if (this._peekToken().text !== "}") {
+            if (this._peekToken()._text !== "}") {
                 do {
                     if (this._peek("}")) {
                         // Support trailing commas per ES5.1.
@@ -14583,13 +14689,13 @@
                         _value: { _type: ASTType._Literal, _value: undefined },
                         _computed: false,
                     };
-                    if (nextToken.constant) {
+                    if (nextToken._constant) {
                         property._key = this._constant();
                         property._computed = false;
                         this._consume(":");
                         property._value = this._assignment();
                     }
-                    else if (nextToken.identifier) {
+                    else if (nextToken._identifier) {
                         property._key = this._identifier();
                         property._computed = false;
                         if (this._peek(":")) {
@@ -14623,7 +14729,7 @@
          * @param {Token} token - The token that caused the error.
          */
         _throwError(msg, token) {
-            throw $parseMinErr("syntax", "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].", token.text, msg, token.index + 1, this._text, this._text?.substring(token.index));
+            throw $parseMinErr("syntax", "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].", token._text, msg, token._index + 1, this._text, this._text?.substring(token._index));
         }
         /**
          * Consumes a token if it matches the expected type.
@@ -14664,7 +14770,7 @@
             const j = expected.length;
             if (!j)
                 return token;
-            const txt = token.text;
+            const txt = token._text;
             if (expected.length === 1)
                 return expected[0] === txt ? token : false;
             for (let i = 0; i < j; i++) {
@@ -14695,9 +14801,9 @@
         }
         _parse(exp) {
             const ast = this._ast._ast(exp.trim());
-            const fn = this._astCompiler.compile(ast);
+            const fn = this._astCompiler._compile(ast);
             fn._literal = isLiteral(ast);
-            fn.constant = !!ast._constant;
+            fn._constant = !!ast._constant;
             return fn;
         }
     }
@@ -14751,7 +14857,7 @@
                 };
                 fn._interceptor = interceptorFn;
                 fn._literal = parsedExpression._literal;
-                fn.constant = parsedExpression.constant;
+                fn._constant = parsedExpression._constant;
                 fn._decoratedNode = parsedExpression._decoratedNode;
                 return fn;
             }
@@ -15154,7 +15260,7 @@
         ngAttributeAliasDirectives[ngAttr] = function () {
             return {
                 priority: 100,
-                link(scope, element, attr) {
+                link(scope, _element, attr) {
                     // special case ngPattern when a literal regular expression value
                     // is used as the expression (this way we don't have to watch anything).
                     if (ngAttr === "ngPattern" && attr.ngPattern.charAt(0) === "/") {
@@ -15817,7 +15923,7 @@
         /**
          * Adds a controller reference to a named validity bucket.
          */
-        set(object, property, controller) {
+        _set(object, property, controller) {
             const list = object[property];
             if (!list) {
                 object = deProxy(object);
@@ -15833,7 +15939,7 @@
         /**
          * Removes a controller reference from a named validity bucket.
          */
-        unset(object, property, controller) {
+        _unset(object, property, controller) {
             const list = object[property];
             if (!list) {
                 return;
@@ -15875,16 +15981,16 @@
                 unsetAndCleanup(this, "$pending", validationErrorKey, controller);
             }
             if (!isBoolean(state)) {
-                this.unset(this.$error, validationErrorKey, controller);
-                this.unset(this._success, validationErrorKey, controller);
+                this._unset(this.$error, validationErrorKey, controller);
+                this._unset(this._success, validationErrorKey, controller);
             }
             else if (state) {
-                this.unset(this.$error, validationErrorKey, controller);
-                this.set(this._success, validationErrorKey, controller);
+                this._unset(this.$error, validationErrorKey, controller);
+                this._set(this._success, validationErrorKey, controller);
             }
             else {
-                this.set(this.$error, validationErrorKey, controller);
-                this.unset(this._success, validationErrorKey, controller);
+                this._set(this.$error, validationErrorKey, controller);
+                this._unset(this._success, validationErrorKey, controller);
             }
             if (this.$pending) {
                 cachedToggleClass(this, PENDING_CLASS, true);
@@ -15923,14 +16029,14 @@
                 if (!ctrl[name]) {
                     ctrl[name] = {};
                 }
-                that.set(ctrl[name], value, controllerParam);
+                that._set(ctrl[name], value, controllerParam);
             }
             /**
              * Removes a controller from a bucket and cleans up empty containers.
              */
             function unsetAndCleanup(ctrl, name, value, controllerParam) {
                 if (ctrl[name]) {
-                    that.unset(ctrl[name], value, controllerParam);
+                    that._unset(ctrl[name], value, controllerParam);
                 }
                 if (isObjectEmpty(ctrl[name])) {
                     ctrl[name] = undefined;
@@ -16523,13 +16629,13 @@
         /**
          * Marks a named validity bucket as present.
          */
-        set(object, property) {
+        _set(object, property) {
             object[property] = true;
         }
         /**
          * Removes a named validity bucket entry.
          */
-        unset(object, property) {
+        _unset(object, property) {
             delete object[property];
         }
         /**
@@ -16544,14 +16650,14 @@
                 if (!ctrl[name]) {
                     ctrl[name] = {};
                 }
-                that.set(ctrl[name], value);
+                that._set(ctrl[name], value);
             }
             /**
              * Removes a validity key and clears empty buckets.
              */
             function unsetAndCleanup(ctrl, name, value) {
                 if (ctrl[name]) {
-                    that.unset(ctrl[name], value);
+                    that._unset(ctrl[name], value);
                 }
                 if (isObjectEmpty(ctrl[name])) {
                     ctrl[name] = undefined;
@@ -16579,10 +16685,10 @@
             }
             else if (state) {
                 delete this.$error[validationErrorKey];
-                this.set(this._success, validationErrorKey);
+                this._set(this._success, validationErrorKey);
             }
             else {
-                this.set(this.$error, validationErrorKey);
+                this._set(this.$error, validationErrorKey);
                 delete this._success[validationErrorKey];
             }
             if (this.$pending) {
@@ -18036,7 +18142,7 @@
         let parseFn;
         if (isDefined(expression)) {
             parseFn = $parse(expression);
-            if (!parseFn.constant) {
+            if (!parseFn._constant) {
                 throw ngModelMinErr("constexpr", "Expected constant expression for `{0}`, but saw " + "`{1}`.", name, expression);
             }
             return parseFn(context);
@@ -18501,12 +18607,12 @@
     const NG_OPTIONS_REGEXP = /^\s*([\s\S]+?)(?:\s+as\s+([\s\S]+?))?(?:\s+group\s+by\s+([\s\S]+?))?(?:\s+disable\s+when\s+([\s\S]+?))?\s+for\s+(?:([$\w][$\w]*)|(?:\(\s*([$\w][$\w]*)\s*,\s*([$\w][$\w]*)\s*\)))\s+in\s+([\s\S]+?)(?:\s+track\s+by\s+([\s\S]+?))?$/;
     class OptionItem {
         constructor(selectValue, viewValue, label, group, disabled) {
-            this.element = null;
-            this.selectValue = selectValue;
-            this.viewValue = viewValue;
-            this.label = label;
-            this.group = group;
-            this.disabled = disabled;
+            this._element = null;
+            this._selectValue = selectValue;
+            this._viewValue = viewValue;
+            this._label = label;
+            this._group = group;
+            this._disabled = disabled;
         }
     }
     ngOptionsDirective.$inject = [$injectTokens._compile, $injectTokens._parse];
@@ -18527,7 +18633,7 @@
             const viewValueFn = selectAsFn || valueFn;
             const trackByFn = trackBy ? $parse(trackBy) : undefined;
             const getTrackByValueFn = trackBy
-                ? function (value, locals) {
+                ? function (_value, locals) {
                     return trackByFn(scope, locals);
                 }
                 : function getHashOfValue(value) {
@@ -18542,43 +18648,23 @@
             const valuesFn = $parse(match[8]);
             const locals = {};
             const getLocals = keyName
-                ? function (value, key) {
+                ? (value, key) => {
                     locals[keyName] = key;
                     locals[valueName] = value;
                     return locals;
                 }
-                : function (value) {
+                : (value) => {
                     locals[valueName] = value;
                     return locals;
                 };
-            function getOptionValuesKeys(optionValues) {
-                let optionValuesKeys;
-                if (!keyName && isArrayLike(optionValues)) {
-                    optionValuesKeys = optionValues;
-                }
-                else {
-                    optionValuesKeys = [];
-                    for (const itemKey in optionValues) {
-                        if (hasOwn(optionValues, itemKey) && itemKey.charAt(0) !== "$") {
-                            optionValuesKeys.push(itemKey);
-                        }
-                    }
-                }
-                return optionValuesKeys;
-            }
             return {
-                trackBy,
-                getTrackByValue,
-                getWatchables: match[8],
-                getOptions() {
+                _trackBy: trackBy,
+                _getWatchables: match[8],
+                _getOptions() {
                     const optionItems = [];
                     const selectValueMap = {};
                     const optionValues = valuesFn(scope) || [];
-                    const optionValuesKeys = getOptionValuesKeys(optionValues);
-                    const optionValuesLength = optionValuesKeys.length;
-                    for (let index = 0; index < optionValuesLength; index++) {
-                        const key = optionValues === optionValuesKeys ? index : optionValuesKeys[index];
-                        const value = optionValues[key];
+                    const addOption = (value, key) => {
                         const updatedLocals = getLocals(value, key);
                         const viewValue = viewValueFn(scope, updatedLocals);
                         const selectValue = getTrackByValueFn(viewValue, updatedLocals);
@@ -18588,17 +18674,29 @@
                         const optionItem = new OptionItem(selectValue, viewValue, label, group, disabled);
                         optionItems.push(optionItem);
                         selectValueMap[selectValue] = optionItem;
+                    };
+                    if (!keyName && isArrayLike(optionValues)) {
+                        for (let index = 0, l = optionValues.length; index < l; index++) {
+                            addOption(optionValues[index], index);
+                        }
+                    }
+                    else {
+                        for (const itemKey in optionValues) {
+                            if (hasOwn(optionValues, itemKey) && itemKey.charAt(0) !== "$") {
+                                addOption(optionValues[itemKey], itemKey);
+                            }
+                        }
                     }
                     return {
-                        items: optionItems,
-                        selectValueMap,
-                        getOptionFromViewValue(value) {
+                        _items: optionItems,
+                        _selectValueMap: selectValueMap,
+                        _getOptionFromViewValue(value) {
                             return selectValueMap[getTrackByValue(value, undefined)];
                         },
-                        getViewValueFromOption(option) {
+                        _getViewValueFromOption(option) {
                             return trackBy
-                                ? structuredClone(option.viewValue)
-                                : option.viewValue;
+                                ? structuredClone(option._viewValue)
+                                : option._viewValue;
                         },
                     };
                 },
@@ -18611,15 +18709,13 @@
             const { multiple } = attr;
             for (let i = 0, children = selectNode.childNodes, ii = children.length; i < ii; i++) {
                 if (children[i].value === "") {
-                    selectCtrl.hasEmptyOption = true;
-                    selectCtrl.emptyOption = children[i];
+                    selectCtrl._hasEmptyOption = true;
+                    selectCtrl._emptyOption = children[i];
                     break;
                 }
             }
             emptyElement(selectNode);
-            const providedEmptyOption = !!selectCtrl.emptyOption;
-            const unknownOption = optionTemplate.cloneNode(false);
-            unknownOption.nodeValue = "?";
+            const providedEmptyOption = !!selectCtrl._emptyOption;
             let options;
             const ngOptions = parseOptionsExpression(attr.ngOptions, selectNode, scope);
             const listFragment = document.createDocumentFragment();
@@ -18629,16 +18725,16 @@
                     if (!options)
                         return;
                     const selectedOption = selectNode.options[selectNode.selectedIndex];
-                    const option = options.getOptionFromViewValue(value);
+                    const option = options._getOptionFromViewValue(value);
                     if (selectedOption)
                         selectedOption.removeAttribute("selected");
                     if (option) {
-                        if (selectNode.value !== option.selectValue) {
+                        if (selectNode.value !== option._selectValue) {
                             selectCtrl._removeUnknownOption();
-                            selectNode.value = option.selectValue;
-                            option.element.selected = true;
+                            selectNode.value = option._selectValue;
+                            option._element.selected = true;
                         }
-                        option.element.setAttribute("selected", "selected");
+                        option._element.setAttribute("selected", "selected");
                     }
                     else {
                         selectCtrl._selectUnknownOrEmptyOption(value);
@@ -18647,32 +18743,27 @@
                 selectCtrl._readValue = function readNgOptionsValue() {
                     if (!options)
                         return null;
-                    const selectedOption = options.selectValueMap[selectNode.value];
-                    if (selectedOption && !selectedOption.disabled) {
-                        selectCtrl._un_selectEmptyOption();
+                    const selectedOption = options._selectValueMap[selectNode.value];
+                    if (selectedOption && !selectedOption._disabled) {
+                        selectCtrl._unselectEmptyOption();
                         selectCtrl._removeUnknownOption();
-                        return options.getViewValueFromOption(selectedOption);
+                        return options._getViewValueFromOption(selectedOption);
                     }
                     return null;
                 };
-                if (ngOptions.trackBy) {
-                    scope.$watch(attr.ngModel, () => {
-                        ngModelCtrl.$render();
-                    });
-                }
             }
             else {
                 selectCtrl._writeValue = function writeNgOptionsMultiple(values) {
                     if (!options)
                         return;
                     const selectedOptions = (values && values.map(getAndUpdateSelectedOption)) || [];
-                    options.items.forEach((option) => {
-                        if (option.element?.selected && !includes(selectedOptions, option)) {
-                            option.element.selected = false;
+                    options._items.forEach((option) => {
+                        if (option._element?.selected && !includes(selectedOptions, option)) {
+                            option._element.selected = false;
                         }
                     });
                 };
-                selectCtrl._readValue = function readNgOptionsMultiple() {
+                selectCtrl._readValue = () => {
                     if (!options)
                         return [];
                     const selections = [];
@@ -18680,35 +18771,36 @@
                     for (let i = 0; i < optionsEls.length; i++) {
                         const optionEl = optionsEls[i];
                         if (optionEl.selected) {
-                            const option = options.selectValueMap[optionEl.value];
-                            if (option && !option.disabled) {
-                                selections.push(options.getViewValueFromOption(option));
+                            const option = options._selectValueMap[optionEl.value];
+                            if (option && !option._disabled) {
+                                selections.push(options._getViewValueFromOption(option));
                             }
                         }
                     }
                     return selections;
                 };
-                if (ngOptions.trackBy) {
-                    scope.$watch(attr.ngModel, () => {
-                        ngModelCtrl.$render();
-                    });
-                }
+            }
+            if (ngOptions._trackBy) {
+                scope.$watch(attr.ngModel, () => {
+                    ngModelCtrl.$render();
+                });
             }
             if (providedEmptyOption) {
-                const linkFn = $compile(selectCtrl.emptyOption);
-                selectNode.prepend(selectCtrl.emptyOption);
+                const linkFn = $compile(selectCtrl._emptyOption);
+                selectNode.prepend(selectCtrl._emptyOption);
                 linkFn(scope);
-                if (selectCtrl.emptyOption.nodeType === NodeType._COMMENT_NODE) {
-                    selectCtrl.hasEmptyOption = false;
-                    selectCtrl.registerOption = function (_optionScope, optionEl) {
+                if (selectCtrl._emptyOption.nodeType ===
+                    NodeType._COMMENT_NODE) {
+                    selectCtrl._hasEmptyOption = false;
+                    selectCtrl._registerOption = function (_optionScope, optionEl) {
                         if (optionEl.value === "") {
-                            selectCtrl.hasEmptyOption = true;
-                            selectCtrl.emptyOption = optionEl;
+                            selectCtrl._hasEmptyOption = true;
+                            selectCtrl._emptyOption = optionEl;
                             ngModelCtrl.$render();
                             optionEl.addEventListener("$destroy", () => {
                                 const needsRerender = selectCtrl.$isEmptyOptionSelected();
-                                selectCtrl.hasEmptyOption = false;
-                                selectCtrl.emptyOption = undefined;
+                                selectCtrl._hasEmptyOption = false;
+                                selectCtrl._emptyOption = undefined;
                                 if (needsRerender)
                                     ngModelCtrl.$render();
                             });
@@ -18716,56 +18808,57 @@
                     };
                 }
             }
-            scope.$watch(ngOptions.getWatchables, updateOptions);
+            scope.$watch(ngOptions._getWatchables, updateOptions);
             function _addOptionElement(option, parent) {
                 const optionElement = optionTemplate.cloneNode(false);
                 parent.appendChild(optionElement);
                 updateOptionElement(option, optionElement);
             }
             function getAndUpdateSelectedOption(viewValue) {
-                const option = options?.getOptionFromViewValue(viewValue);
-                const element = option && option.element;
+                const option = options?._getOptionFromViewValue(viewValue);
+                const element = option && option._element;
                 if (element && !element.selected)
                     element.selected = true;
                 return option;
             }
             function updateOptionElement(option, element) {
-                option.element = element;
-                element.disabled = option.disabled;
-                if (option.label !== element.label) {
-                    element.label = option.label;
-                    element.textContent = option.label;
+                option._element = element;
+                element.disabled = option._disabled;
+                if (option._label !== element.label) {
+                    element.label = option._label;
+                    element.textContent = option._label;
                 }
-                element.value = option.selectValue;
+                element.value = option._selectValue;
             }
             function updateOptions() {
                 const previousValue = options && selectCtrl._readValue();
                 if (options) {
-                    for (let i = options.items.length - 1; i >= 0; i--) {
-                        const option = options.items[i];
-                        if (isDefined(option.group)) {
-                            if (option.element?.parentElement) {
-                                removeElement(option.element.parentElement);
+                    for (let i = options._items.length - 1; i >= 0; i--) {
+                        const option = options._items[i];
+                        if (isDefined(option._group)) {
+                            if (option._element?.parentElement) {
+                                removeElement(option._element.parentElement);
                             }
                         }
                         else {
-                            if (option.element) {
-                                removeElement(option.element);
+                            if (option._element) {
+                                removeElement(option._element);
                             }
                         }
                     }
                 }
-                options = ngOptions.getOptions();
+                options = ngOptions._getOptions();
                 const groupElementMap = {};
-                options.items.forEach((option) => {
+                options._items.forEach((option) => {
                     let groupElement;
-                    if (isDefined(option.group)) {
-                        groupElement = groupElementMap[String(option.group)];
+                    if (isDefined(option._group)) {
+                        groupElement = groupElementMap[String(option._group)];
                         if (!groupElement) {
                             groupElement = optGroupTemplate.cloneNode(false);
                             listFragment.appendChild(groupElement);
-                            groupElement.label = option.group === null ? "null" : option.group;
-                            groupElementMap[String(option.group)] = groupElement;
+                            groupElement.label =
+                                option._group === null ? "null" : option._group;
+                            groupElementMap[String(option._group)] = groupElement;
                         }
                         _addOptionElement(option, groupElement);
                     }
@@ -18777,7 +18870,7 @@
                 ngModelCtrl.$render();
                 if (!ngModelCtrl.$isEmpty(previousValue)) {
                     const nextValue = selectCtrl._readValue();
-                    const isNotPrimitive = ngOptions.trackBy || multiple;
+                    const isNotPrimitive = ngOptions._trackBy || multiple;
                     if (isNotPrimitive
                         ? !equals$1(previousValue, nextValue)
                         : previousValue !== nextValue) {
@@ -18792,8 +18885,8 @@
             terminal: true,
             require: ["select", "ngModel"],
             link: {
-                pre: function ngOptionsPreLink(scope, selectElement, attr, ctrls) {
-                    ctrls[0].registerOption = () => {
+                pre: function ngOptionsPreLink(_scope, _selectElement, _attr, ctrls) {
+                    ctrls[0]._registerOption = () => {
                         /* empty */
                     };
                 },
@@ -18802,7 +18895,14 @@
         };
     }
 
+    /**
+     * The controller for the `select` directive.
+     *
+     * It exposes utility methods that can be used to augment the behavior of a
+     * regular or `ngOptions`-backed select element.
+     */
     class SelectController {
+        /** @ignore */
         constructor($element, $scope) {
             this._element = $element;
             this._scope = $scope;
@@ -18821,6 +18921,32 @@
                 };
             });
         }
+        /**
+         * Returns `true` if the select element currently has an empty option
+         * element, i.e. an option that signifies that the select is empty or the
+         * selection is `null`.
+         */
+        $hasEmptyOption() {
+            return this._hasEmptyOption;
+        }
+        /**
+         * Returns `true` if the select element's unknown option is selected.
+         *
+         * The unknown option is added and automatically selected whenever the
+         * select model does not match any option.
+         */
+        $isUnknownOptionSelected() {
+            return this._element.options[0] === this._unknownOption;
+        }
+        /**
+         * Returns `true` if the select element has an empty option and that option
+         * is currently selected.
+         */
+        $isEmptyOptionSelected() {
+            return (this._hasEmptyOption &&
+                this._element.options[this._element.selectedIndex] === this._emptyOption);
+        }
+        /** @ignore */
         _renderUnknownOption(val) {
             const unknownVal = this._generateUnknownOptionValue(val);
             this._unknownOption.value = unknownVal;
@@ -18829,6 +18955,7 @@
             this._unknownOption.setAttribute("selected", "selected");
             this._element.value = unknownVal;
         }
+        /** @ignore */
         _updateUnknownOption(val) {
             const unknownVal = this._generateUnknownOptionValue(val);
             this._unknownOption.value = unknownVal;
@@ -18836,16 +18963,19 @@
             this._unknownOption.setAttribute("selected", "selected");
             this._element.value = unknownVal;
         }
+        /** @ignore */
         _generateUnknownOptionValue(val) {
             if (isUndefined(val)) {
                 return `? undefined:undefined ?`;
             }
             return `? ${hashKey(val)} ?`;
         }
+        /** @ignore */
         _removeUnknownOption() {
             if (this._unknownOption.parentElement)
                 this._unknownOption.remove();
         }
+        /** @ignore */
         _selectEmptyOption() {
             if (this._emptyOption) {
                 this._element.value = "";
@@ -18853,16 +18983,19 @@
                 this._emptyOption.setAttribute("selected", "selected");
             }
         }
-        _un_selectEmptyOption() {
+        /** @ignore */
+        _unselectEmptyOption() {
             if (this._hasEmptyOption && this._emptyOption) {
                 this._emptyOption.selected = false;
             }
         }
+        /** @ignore */
         _readValue() {
             const val = this._element.value;
             const realVal = val in this._selectValueMap ? this._selectValueMap[val] : val;
             return this._hasOption(realVal) ? realVal : null;
         }
+        /** @ignore */
         _writeValue(value) {
             const currentlySelectedOption = this._element.options[this._element.selectedIndex];
             if (currentlySelectedOption)
@@ -18884,6 +19017,7 @@
                 this._selectUnknownOrEmptyOption(value);
             }
         }
+        /** @ignore */
         _addOption(value, element) {
             if (element.nodeType === NodeType._COMMENT_NODE)
                 return;
@@ -18896,6 +19030,7 @@
             this._optionsMap.set(value, count + 1);
             this._scheduleRender();
         }
+        /** @ignore */
         _removeOption(value) {
             const count = this._optionsMap.get(value);
             if (count) {
@@ -18911,19 +19046,11 @@
                 }
             }
         }
+        /** @ignore */
         _hasOption(value) {
             return !!this._optionsMap.get(value);
         }
-        $hasEmptyOption() {
-            return this._hasEmptyOption;
-        }
-        $isUnknownOptionSelected() {
-            return this._element.options[0] === this._unknownOption;
-        }
-        $isEmptyOptionSelected() {
-            return (this._hasEmptyOption &&
-                this._element.options[this._element.selectedIndex] === this._emptyOption);
-        }
+        /** @ignore */
         _selectUnknownOrEmptyOption(value) {
             if (isNullOrUndefined(value) && this._emptyOption) {
                 this._removeUnknownOption();
@@ -18936,6 +19063,7 @@
                 this._renderUnknownOption(value);
             }
         }
+        /** @ignore */
         _scheduleRender() {
             if (this._renderScheduled)
                 return;
@@ -18945,6 +19073,7 @@
                 this._ngModelCtrl.$render();
             });
         }
+        /** @ignore */
         _scheduleViewValueUpdate(renderAfter = false) {
             if (this._updateScheduled)
                 return;
@@ -18958,7 +19087,8 @@
                     this._ngModelCtrl.$render();
             });
         }
-        registerOption(optionScope, optionElement, optionAttrs, interpolateValueFn, interpolateTextFn) {
+        /** @ignore */
+        _registerOption(optionScope, optionElement, optionAttrs, interpolateValueFn, interpolateTextFn) {
             let oldVal;
             let hashedVal;
             let registeredValue = optionAttrs.value;
@@ -19051,13 +19181,8 @@
             });
         }
     }
-    SelectController.$nonscope = [
-        "ngModelCtrl",
-        "selectValueMap",
-        "emptyOption",
-        "optionsMap",
-    ];
     /* @ignore */ SelectController.$inject = [$injectTokens._element, $injectTokens._scope];
+
     function selectDirective() {
         return {
             restrict: "E",
@@ -19074,7 +19199,7 @@
             const selectCtrl = ctrls[0];
             const ngModelCtrl = ctrls[1];
             if (!ngModelCtrl) {
-                selectCtrl.registerOption = () => {
+                selectCtrl._registerOption = () => {
                     /* empty */
                 };
                 return;
@@ -19165,7 +19290,7 @@
                             ? getCacheData(parent.parentElement, selectCtrlName)
                             : undefined);
                     if (selectCtrl) {
-                        selectCtrl.registerOption(scope, optionElementParam, attrParam, interpolateValueFn, interpolateTextFn);
+                        selectCtrl._registerOption(scope, optionElementParam, attrParam, interpolateValueFn, interpolateTextFn);
                     }
                 };
             },
@@ -19875,7 +20000,7 @@
                         };
                     }
                     else {
-                        parseFn = tAttr.ngPattern && $parse(tAttr.ngPattern);
+                        parseFn = tAttr.ngPattern ? $parse(tAttr.ngPattern) : undefined;
                     }
                 }
                 return function (scope, elm, attr, ctrl) {
@@ -19888,7 +20013,9 @@
                     else {
                         patternExp = attr.pattern;
                     }
-                    let regexp = attrVal && parsePatternAttr(attrVal, patternExp, elm);
+                    let regexp = attrVal
+                        ? parsePatternAttr(attrVal, patternExp, elm)
+                        : undefined;
                     attr.$observe("pattern", (newVal) => {
                         const oldRegexp = regexp;
                         regexp = newVal && parsePatternAttr(newVal, patternExp, elm);
@@ -20798,8 +20925,8 @@
     class Trace {
         constructor() {
             this._enabled = {};
-            this.approximateDigests = 0;
-            this.$logger =
+            this._approximateDigests = 0;
+            this._logger =
                 window.angular?.$injector?.get($injectTokens._log) || console;
         }
         _set(enabled, categories) {
@@ -20831,13 +20958,13 @@
         traceTransitionStart(trans) {
             if (!this.enabled(Category._TRANSITION))
                 return;
-            this.$logger.log(`${transLbl(trans)}: Started  -> ${stringify(trans)}`);
+            this._logger.log(`${transLbl(trans)}: Started  -> ${stringify(trans)}`);
         }
         /** @internal called by ng-router code */
         traceTransitionIgnored(trans) {
             if (!this.enabled(Category._TRANSITION))
                 return;
-            this.$logger.log(`${transLbl(trans)}: Ignored  <> ${stringify(trans)}`);
+            this._logger.log(`${transLbl(trans)}: Ignored  <> ${stringify(trans)}`);
         }
         /** @internal called by ng-router code */
         traceHookInvocation(step, trans, options) {
@@ -20846,43 +20973,43 @@
             const event = parse("traceData.hookType")(options) || "internal", context = parse("traceData.context.state.name")(options) ||
                 parse("traceData.context")(options) ||
                 "unknown", name = functionToString(step.registeredHook.callback);
-            this.$logger.log(`${transLbl(trans)}:   Hook -> ${event} context: ${context}, ${maxLength(200, name)}`);
+            this._logger.log(`${transLbl(trans)}:   Hook -> ${event} context: ${context}, ${maxLength(200, name)}`);
         }
         /** @internal called by ng-router code */
         traceHookResult(hookResult, trans) {
             if (!this.enabled(Category._HOOK))
                 return;
-            this.$logger.log(`${transLbl(trans)}:   <- Hook returned: ${maxLength(200, stringify(hookResult))}`);
+            this._logger.log(`${transLbl(trans)}:   <- Hook returned: ${maxLength(200, stringify(hookResult))}`);
         }
         /** @internal called by ng-router code */
         traceResolvePath(path, when, trans) {
             if (!this.enabled(Category._RESOLVE))
                 return;
-            this.$logger.log(`${transLbl(trans)}:         Resolving ${path} (${when})`);
+            this._logger.log(`${transLbl(trans)}:         Resolving ${path} (${when})`);
         }
         /** @internal called by ng-router code */
         traceResolvableResolved(resolvable, trans) {
             if (!this.enabled(Category._RESOLVE))
                 return;
-            this.$logger.log(`${transLbl(trans)}:               <- Resolved  ${resolvable} to: ${maxLength(200, stringify(resolvable.data))}`);
+            this._logger.log(`${transLbl(trans)}:               <- Resolved  ${resolvable} to: ${maxLength(200, stringify(resolvable.data))}`);
         }
         /** @internal called by ng-router code */
         traceError(reason, trans) {
             if (!this.enabled(Category._TRANSITION))
                 return;
-            this.$logger.log(`${transLbl(trans)}: <- Rejected ${stringify(trans)}, reason: ${reason}`);
+            this._logger.log(`${transLbl(trans)}: <- Rejected ${stringify(trans)}, reason: ${reason}`);
         }
         /** @internal called by ng-router code */
         traceSuccess(finalState, trans) {
             if (!this.enabled(Category._TRANSITION))
                 return;
-            this.$logger.log(`${transLbl(trans)}: <- Success  ${stringify(trans)}, final state: ${finalState.name}`);
+            this._logger.log(`${transLbl(trans)}: <- Success  ${stringify(trans)}, final state: ${finalState.name}`);
         }
         /** @internal called by ng-router code */
         traceUIViewEvent(event, viewData, extra = "") {
             if (!this.enabled(Category._UIVIEW))
                 return;
-            this.$logger.log(`ng-view: ${padString(MAX_PAD_LENGTH, event)} ${ngViewString(viewData)}${extra}`);
+            this._logger.log(`ng-view: ${padString(MAX_PAD_LENGTH, event)} ${ngViewString(viewData)}${extra}`);
         }
         /** @internal called by ng-router code */
         traceUIViewConfigUpdated(viewData, context) {
@@ -20910,19 +21037,19 @@
                 return { [uivheader]: uiv, [cfgheader]: cfg };
             })
                 .sort((a, b) => (a[uivheader] || "").localeCompare(b[uivheader] || ""));
-            this.$logger.table(mapping);
+            this._logger.table(mapping);
         }
         /** @internal called by ng-router code */
         traceViewServiceEvent(event, viewConfig) {
             if (!this.enabled(Category._VIEWCONFIG))
                 return;
-            this.$logger.log(`VIEWCONFIG: ${event} ${viewConfigString(viewConfig)}`);
+            this._logger.log(`VIEWCONFIG: ${event} ${viewConfigString(viewConfig)}`);
         }
         /** @internal called by ng-router code */
         traceViewServiceUIViewEvent(event, viewData) {
             if (!this.enabled(Category._VIEWCONFIG))
                 return;
-            this.$logger.log(`VIEWCONFIG: ${event} ${ngViewString(viewData)}`);
+            this._logger.log(`VIEWCONFIG: ${event} ${ngViewString(viewData)}`);
         }
     }
     /**
@@ -24056,23 +24183,23 @@
         /**
          * Register a listener that will be called with the evicted item.
          */
-        onEvict(listener) {
+        _onEvict(listener) {
             this._evictListeners.push(listener);
         }
         /**
          * Adds an item to the end of the queue, evicting the head if over limit.
          */
-        enqueue(item) {
+        _enqueue(item) {
             this._items.push(item);
             if (this._limit !== null && this._items.length > this._limit) {
-                this.evict();
+                this._evict();
             }
             return item;
         }
         /**
          * Removes the head item and notifies eviction listeners.
          */
-        evict() {
+        _evict() {
             const item = this._items.shift();
             if (item !== undefined) {
                 this._evictListeners.forEach((fn) => fn(item));
@@ -24082,14 +24209,14 @@
         /**
          * Removes and returns the first item in the queue.
          */
-        dequeue() {
+        _dequeue() {
             return this._items.length > 0 ? this._items.shift() : undefined;
         }
         /**
          * Clears all items from the queue.
          * @returns The previously stored items.
          */
-        clear() {
+        _clear() {
             const cleared = [...this._items];
             this._items.length = 0;
             return cleared;
@@ -24097,27 +24224,27 @@
         /**
          * Returns the current number of items.
          */
-        size() {
+        _size() {
             return this._items.length;
         }
         /**
          * Removes a specific item from the queue.
          * @returns The removed item, or false if not found.
          */
-        remove(item) {
+        _remove(item) {
             const index = this._items.indexOf(item);
             return index !== -1 ? this._items.splice(index, 1)[0] : false;
         }
         /**
          * Returns the item at the tail (last).
          */
-        peekTail() {
+        _peekTail() {
             return this._items[this._items.length - 1];
         }
         /**
          * Returns the item at the head (first).
          */
-        peekHead() {
+        _peekHead() {
             return this._items[0];
         }
     }
@@ -24192,12 +24319,25 @@
              */
             this.$get = () => this;
             this.params = new StateParams();
+            this._configuredRouting = false;
             this._lastStartedTransitionId = -1;
             this._transitionHistory = new Queue([], 1);
             this._successfulTransitions = new Queue([], 1);
             this.current = undefined;
             this.$current = undefined;
             this.transition = undefined;
+        }
+        /**
+         * Marks that the app has configured URL-driven router behavior.
+         */
+        _markConfiguredRouting() {
+            this._configuredRouting = true;
+        }
+        /**
+         * Returns true when URL-driven router behavior has been configured.
+         */
+        _hasConfiguredRouting() {
+            return this._configuredRouting;
         }
     }
 
@@ -25220,7 +25360,7 @@
                 const { _globals } = this;
                 _globals._lastStartedTransitionId = this.$id;
                 _globals.transition = this;
-                _globals._transitionHistory.enqueue(this);
+                _globals._transitionHistory._enqueue(this);
                 trace.traceTransitionStart(this);
                 return Promise.resolve();
             };
@@ -25617,7 +25757,7 @@
             this._defineCoreEvents();
             this._registerCoreTransitionHooks();
             this._exceptionHandler = $exceptionHandler.handler;
-            globals._successfulTransitions.onEvict(treeChangesCleanup);
+            globals._successfulTransitions._onEvict(treeChangesCleanup);
         }
         /**
          * Creates a new transition from the current path to a target state.
@@ -25806,7 +25946,7 @@
             const globals = trans._globals;
             const transitionSuccessful = () => {
                 const current = trans.$to();
-                globals._successfulTransitions.enqueue(trans);
+                globals._successfulTransitions._enqueue(trans);
                 globals.$current = current;
                 globals.current = current?.self;
                 copy(trans.params(), globals.params);
@@ -26045,7 +26185,7 @@
         _handleInvalidTargetState(fromPath, toState) {
             const fromState = makeTargetState(this._getRegistry(), fromPath);
             const { globals } = this;
-            const latestThing = () => globals._transitionHistory.peekTail();
+            const latestThing = () => globals._transitionHistory._peekTail();
             const latest = latestThing();
             /** @type {Queue<OnInvalidCallback>} */
             const callbackQueue = new Queue(this.invalidCallbacks.slice());
@@ -26069,7 +26209,7 @@
              * @returns {Promise<any>}
              */
             function invokeNextCallback() {
-                const nextCallback = callbackQueue.dequeue();
+                const nextCallback = callbackQueue._dequeue();
                 if (nextCallback === undefined)
                     return Rejection.invalid(toState.error()).toPromise();
                 const callbackResult = Promise.resolve(nextCallback(toState, fromState, injector));
@@ -26233,7 +26373,7 @@
         }
         getCurrentPath() {
             const { globals } = this;
-            const latestSuccess = globals._successfulTransitions.peekTail();
+            const latestSuccess = globals._successfulTransitions._peekTail();
             const rootPath = () => [new PathNode(this._getRegistry().root())];
             return latestSuccess ? latestSuccess._treeChanges.to : rootPath();
         }
@@ -26532,10 +26672,10 @@
                 $injectTokens._templateRequest,
                 $injectTokens._injector,
                 ($http, $templateCache, $templateRequest, $injector) => {
-                    this.$templateRequest = $templateRequest;
-                    this.$http = $http;
-                    this.$templateCache = $templateCache;
-                    this.$injector = $injector;
+                    this._templateRequest = $templateRequest;
+                    this._http = $http;
+                    this._templateCache = $templateCache;
+                    this._injector = $injector;
                     return this;
                 },
             ];
@@ -26589,7 +26729,7 @@
                 url = url(params);
             if (isNullOrUndefined(url))
                 return null;
-            return this.$templateRequest(url);
+            return this._templateRequest(url);
         }
         fromProvider(provider, _params, context) {
             const deps = annotate(provider);
@@ -26635,7 +26775,7 @@
                 }
                 return `${attrName}='$resolve.${resolveName}'`;
             };
-            const attrs = getComponentBindings(this.$injector, component)
+            const attrs = getComponentBindings(this._injector, component)
                 .map(attributeTpl)
                 .join(" ");
             const kebobName = kebob(component);
@@ -26716,25 +26856,36 @@
             this.types = inherit(map(this.defaultTypes, makeType), {});
         }
         type(name, definition, definitionFn) {
-            if (!isDefined(definition))
+            if (!isDefined(definition)) {
+                if (this.typeQueue.length && this._getInjector()) {
+                    this._flushTypeQueue();
+                }
                 return this.types[name];
+            }
             if (hasOwn(this.types, name))
                 throw new Error(`A type named '${name}' has already been defined.`);
             this.types[ /** @type {string} */name] = new ParamType(Object.assign({ name }, definition));
             if (definitionFn) {
                 this.typeQueue.push({ name, def: definitionFn });
-                if (!this.enqueue)
+                if (!this.enqueue && this._getInjector())
                     this._flushTypeQueue();
             }
             return this;
         }
         _flushTypeQueue() {
+            const injector = this._getInjector();
+            if (!injector) {
+                return;
+            }
             while (this.typeQueue.length) {
                 const type = this.typeQueue.shift();
                 if (type.pattern)
                     throw new Error("You cannot override a type's .pattern at runtime.");
-                Object.assign(this.types[type.name], this.$injector.invoke(type.def));
+                Object.assign(this.types[type.name], injector.invoke(type.def));
             }
+        }
+        _getInjector() {
+            return (this.$injector || (this.$injector = window.angular?.$injector));
         }
     }
     function initDefaultTypes() {
@@ -27837,7 +27988,7 @@
      */
     class UrlRules {
         /** @param {UrlRuleFactory} urlRuleFactory */
-        constructor(urlRuleFactory) {
+        constructor(urlRuleFactory, router) {
             this._sorted = false;
             this._sortFn = defaultRuleSortFn;
             /**
@@ -27846,6 +27997,7 @@
             this._rules = [];
             this._id = 0;
             this._urlRuleFactory = urlRuleFactory;
+            this._router = router;
         }
         /**
          * Remove a rule previously registered
@@ -27873,6 +28025,7 @@
             rule.$id = this._id++;
             rule.priority = rule.priority || 0;
             this._rules.push(rule);
+            this._router._markConfiguredRouting();
             this._sorted = false;
             return () => this.removeRule(rule);
         }
@@ -28106,7 +28259,7 @@
              * @ignore
              * @type {UrlRules}
              */
-            this._rules = new UrlRules(this._urlRuleFactory);
+            this._rules = new UrlRules(this._urlRuleFactory, globals);
             /**
              * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
              * @ignore
@@ -29065,6 +29218,38 @@
      * The hash string, minus the hash symbol
      */
     let _hash = "";
+    /**
+     * @ignore
+     */
+    function createHtml5ModeConfig(value, onRewriteLinksConfigured) {
+        return new Proxy(value, {
+            set(target, property, nextValue) {
+                if (property === "rewriteLinks") {
+                    onRewriteLinksConfigured();
+                }
+                target[property] = nextValue;
+                return true;
+            },
+        });
+    }
+    /**
+     * @ignore
+     */
+    function hasConfiguredRouter(router) {
+        return !!router?._hasConfiguredRouting?.();
+    }
+    /**
+     * @ignore
+     */
+    function isLinkRewritingEnabled(rewriteLinks, rewriteLinksConfigured, router) {
+        if (!rewriteLinks) {
+            return false;
+        }
+        if (isString(rewriteLinks) || rewriteLinksConfigured) {
+            return true;
+        }
+        return hasConfiguredRouter(router);
+    }
     class Location {
         /**
          * @param appBase application base URL
@@ -29353,8 +29538,9 @@
             this.$get = [
                 $injectTokens._rootScope,
                 $injectTokens._rootElement,
+                $injectTokens._router,
                 $injectTokens._exceptionHandler,
-                ($rootScope, $rootElement, $exceptionHandler) => {
+                ($rootScope, $rootElement, $router, $exceptionHandler) => {
                     const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
                     const initialUrl = trimEmptyHash(window.location.href);
                     let appBase;
@@ -29395,7 +29581,7 @@
                         const { rewriteLinks } = this.html5ModeConf;
                         // TODO(vojta): rewrite link when opening in new tab/window (in legacy browser)
                         // currently we open nice url link and redirect then
-                        if (!rewriteLinks ||
+                        if (!isLinkRewritingEnabled(rewriteLinks, this._rewriteLinksConfigured, $router) ||
                             event.ctrlKey ||
                             event.metaKey ||
                             event.shiftKey ||
@@ -29515,11 +29701,14 @@
                 },
             ];
             this.hashPrefixConf = "!";
-            this.html5ModeConf = {
+            this._rewriteLinksConfigured = false;
+            this._html5ModeConf = createHtml5ModeConfig({
                 enabled: true,
                 requireBase: false,
                 rewriteLinks: true,
-            };
+            }, () => {
+                this._rewriteLinksConfigured = true;
+            });
             this._urlChangeListeners = [];
             /** @private */
             this._urlChangeInit = false;
@@ -29527,6 +29716,15 @@
             this._lastHistoryState = null;
             this._lastBrowserUrl = window.location.href;
             this.cacheState();
+        }
+        get html5ModeConf() {
+            return this._html5ModeConf;
+        }
+        set html5ModeConf(value) {
+            this._rewriteLinksConfigured = Object.prototype.hasOwnProperty.call(value, "rewriteLinks");
+            this._html5ModeConf = createHtml5ModeConfig(value, () => {
+                this._rewriteLinksConfigured = true;
+            });
         }
         /// ///////////////////////////////////////////////////////////
         // URL API
@@ -30949,7 +31147,7 @@
             super();
             this.subapps = [];
             this._bootsrappedModules = [];
-            this.version = "0.23.1";
+            this.version = "0.24.0";
             this.getController = getController;
             this.getInjector = getInjector;
             this.getScope = getScope;

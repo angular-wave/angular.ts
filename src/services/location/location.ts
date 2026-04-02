@@ -110,6 +110,9 @@ let _search: Record<string, any> = {};
  */
 let _hash = "";
 
+/**
+ * @ignore
+ */
 function createHtml5ModeConfig(
   value: Html5Mode,
   onRewriteLinksConfigured: () => void,
@@ -127,10 +130,16 @@ function createHtml5ModeConfig(
   });
 }
 
+/**
+ * @ignore
+ */
 export function hasConfiguredRouter(router?: RouterLike): boolean {
   return !!router?._hasConfiguredRouting?.();
 }
 
+/**
+ * @ignore
+ */
 export function isLinkRewritingEnabled(
   rewriteLinks: boolean | string,
   rewriteLinksConfigured: boolean,
