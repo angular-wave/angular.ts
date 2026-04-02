@@ -920,6 +920,57 @@ describe("Scope", () => {
         await wait();
         expect(spy).not.toHaveBeenCalled();
       });
+
+      it("watches conditional expressions across parent and branch updates", async () => {
+        const values = [];
+
+        scope.vm = {};
+        scope.$watch(
+          "vm.caseItem ? vm.caseItem.objectAddress : 'Loading case'",
+          (value) => {
+            values.push(value);
+          },
+        );
+
+        await wait();
+        expect(values[values.length - 1]).toBe("Loading case");
+
+        scope.vm.caseItem = { objectAddress: "Main St" };
+        await wait();
+        expect(values[values.length - 1]).toBe("Main St");
+
+        scope.vm.caseItem.objectAddress = "Broadway";
+        await wait();
+        expect(values[values.length - 1]).toBe("Broadway");
+
+        scope.vm.caseItem = null;
+        await wait();
+        expect(values[values.length - 1]).toBe("Loading case");
+      });
+
+      it("watches logical fallback expressions across parent and value updates", async () => {
+        const values = [];
+
+        scope.vm = { caseItem: {} };
+        scope.$watch("vm.caseItem.customerName || 'Unknown'", (value) => {
+          values.push(value);
+        });
+
+        await wait();
+        expect(values.length).toBe(0);
+
+        scope.vm.caseItem.customerName = "Ada";
+        await wait();
+        expect(values[values.length - 1]).toBe("Ada");
+
+        scope.vm.caseItem = { customerName: "" };
+        await wait();
+        expect(values[values.length - 1]).toBe("Unknown");
+
+        scope.vm.caseItem = { customerName: "Grace" };
+        await wait();
+        expect(values[values.length - 1]).toBe("Grace");
+      });
     });
 
     describe("array expressions", () => {
