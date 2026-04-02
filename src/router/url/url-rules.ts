@@ -4,6 +4,7 @@ import { removeFrom } from "../../shared/common.ts";
 import { UrlRuleFactory } from "./url-rule.ts";
 import type { MatcherUrlRule, UrlRule } from "./interface.ts";
 import type { StateObject } from "../state/state-object.ts";
+import type { RouterProvider } from "../router.ts";
 
 /**
  * @param {{ priority: any; }} a
@@ -91,9 +92,10 @@ export class UrlRules {
   _rules: UrlRule[];
   _id: number;
   _urlRuleFactory: UrlRuleFactory;
+  _router: RouterProvider;
   _sorted = false;
   /** @param {UrlRuleFactory} urlRuleFactory */
-  constructor(urlRuleFactory: UrlRuleFactory) {
+  constructor(urlRuleFactory: UrlRuleFactory, router: RouterProvider) {
     this._sortFn = defaultRuleSortFn;
     /**
      * @type {UrlRule[]}
@@ -101,6 +103,7 @@ export class UrlRules {
     this._rules = [];
     this._id = 0;
     this._urlRuleFactory = urlRuleFactory;
+    this._router = router;
   }
 
   /**
@@ -129,6 +132,7 @@ export class UrlRules {
     rule.$id = this._id++;
     rule.priority = rule.priority || 0;
     this._rules.push(rule);
+    this._router._markConfiguredRouting();
     this._sorted = false;
 
     return () => this.removeRule(rule);

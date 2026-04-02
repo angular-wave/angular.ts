@@ -46,6 +46,20 @@ describe("UrlMatcher", () => {
       let m = $url.compile("/");
       expect($url.isMatcher(m)).toBe(true);
     });
+
+    it("should mark router link rewriting as configured when a url rule is added", () => {
+      let $router;
+
+      $injector.invoke((_$router_) => {
+        $router = _$router_;
+      });
+
+      expect($router._hasConfiguredRouting()).toBeFalse();
+
+      $url._rules.when($url.compile("/foo"), "/bar", {});
+
+      expect($router._hasConfiguredRouting()).toBeTrue();
+    });
   });
 
   it("should match static URLs", () => {
