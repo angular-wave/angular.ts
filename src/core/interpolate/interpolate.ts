@@ -6,6 +6,7 @@ import {
 } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import type { ParseService } from "../parse/parse.ts";
+import { SCE_CONTEXTS, type SceContext } from "../../services/sce/sce.ts";
 
 export interface InterpolationFunction {
   expressions: string[];
@@ -22,7 +23,7 @@ export interface InterpolateService {
   (
     text: string,
     mustHaveExpression?: boolean,
-    trustedContext?: string,
+    trustedContext?: SceContext,
     allOrNothing?: boolean,
   ): InterpolationFunction | undefined;
   endSymbol(): string;
@@ -30,9 +31,7 @@ export interface InterpolateService {
 }
 
 type SceLike = {
-  URL: string;
-  MEDIA_URL: string;
-  getTrusted(context: string | undefined, value: any): any;
+  getTrusted(context: SceContext | undefined, value: any): any;
   valueOf(value: any): any;
 };
 
@@ -103,11 +102,12 @@ export class InterpolateProvider {
         const $interpolate = (
           text: string,
           mustHaveExpression?: boolean,
-          trustedContext?: string,
+          trustedContext?: SceContext,
           allOrNothing?: boolean,
         ): InterpolationFunction | undefined => {
           const contextAllowsConcatenation =
-            trustedContext === $sce.URL || trustedContext === $sce.MEDIA_URL;
+            trustedContext === SCE_CONTEXTS._URL ||
+            trustedContext === SCE_CONTEXTS._MEDIA_URL;
 
           if (!text.length || text.indexOf(provider.startSymbol) === -1) {
             if (mustHaveExpression) {

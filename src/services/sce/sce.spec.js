@@ -1,6 +1,6 @@
 import { createInjector } from "../../core/di/injector.ts";
 import { Angular } from "../../angular.ts";
-import { adjustMatcher } from "./sce.ts";
+import { adjustMatcher, SCE_CONTEXTS } from "./sce.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("SCE", () => {
@@ -54,14 +54,21 @@ describe("SCE", () => {
 
     it("should wrap string values with TrustedValueHolder", () => {
       const originalValue = "original_value";
-      let wrappedValue = $sce.trustAs($sce.HTML, originalValue);
+      let wrappedValue = $sce.trustAs(SCE_CONTEXTS._HTML, originalValue);
       expect(typeof wrappedValue).toBe("object");
-      expect($sce.getTrusted($sce.HTML, wrappedValue)).toBe("original_value");
-      $sce.getTrusted($sce.HTML, $sce.trustAs($sce.URL, originalValue));
+      expect($sce.getTrusted(SCE_CONTEXTS._HTML, wrappedValue)).toBe(
+        "original_value",
+      );
+      $sce.getTrusted(
+        SCE_CONTEXTS._HTML,
+        $sce.trustAs(SCE_CONTEXTS._URL, originalValue),
+      );
       expect(logs[0]).toMatch(/unsafe/);
-      wrappedValue = $sce.trustAs($sce.URL, originalValue);
+      wrappedValue = $sce.trustAs(SCE_CONTEXTS._URL, originalValue);
       expect(typeof wrappedValue).toBe("object");
-      expect($sce.getTrusted($sce.URL, wrappedValue)).toBe("original_value");
+      expect($sce.getTrusted(SCE_CONTEXTS._URL, wrappedValue)).toBe(
+        "original_value",
+      );
     });
 
     it("should NOT wrap non-string values", () => {
@@ -84,7 +91,7 @@ describe("SCE", () => {
     });
 
     it("should unwrap undefined into undefined", () => {
-      expect($sce.getTrusted($sce.HTML, undefined)).toBeUndefined();
+      expect($sce.getTrusted(SCE_CONTEXTS._HTML, undefined)).toBeUndefined();
     });
 
     it("should wrap null into null", () => {
@@ -92,7 +99,7 @@ describe("SCE", () => {
     });
 
     it("should unwrap null into null", () => {
-      expect($sce.getTrusted($sce.HTML, null)).toBe(null);
+      expect($sce.getTrusted(SCE_CONTEXTS._HTML, null)).toBe(null);
     });
 
     it('should wrap "" into ""', () => {
@@ -100,19 +107,21 @@ describe("SCE", () => {
     });
 
     it('should unwrap "" into ""', () => {
-      expect($sce.getTrusted($sce.HTML, "")).toBe("");
+      expect($sce.getTrusted(SCE_CONTEXTS._HTML, "")).toBe("");
     });
 
     it("should unwrap values and return the original", () => {
       const originalValue = "originalValue";
-      const wrappedValue = $sce.trustAs($sce.HTML, originalValue);
-      expect($sce.getTrusted($sce.HTML, wrappedValue)).toBe(originalValue);
+      const wrappedValue = $sce.trustAs(SCE_CONTEXTS._HTML, originalValue);
+      expect($sce.getTrusted(SCE_CONTEXTS._HTML, wrappedValue)).toBe(
+        originalValue,
+      );
     });
 
     it("should NOT unwrap values when the type is different", () => {
       const originalValue = "originalValue";
-      const wrappedValue = $sce.trustAs($sce.URL, originalValue);
-      $sce.getTrusted($sce.HTML, wrappedValue);
+      const wrappedValue = $sce.trustAs(SCE_CONTEXTS._URL, originalValue);
+      $sce.getTrusted(SCE_CONTEXTS._HTML, wrappedValue);
       expect(logs[0]).toMatch(/unsafe/);
     });
 
@@ -123,7 +132,7 @@ describe("SCE", () => {
         };
       }
       const wrappedValue = new TrustedValueHolder("originalValue");
-      $sce.getTrusted($sce.HTML, wrappedValue);
+      $sce.getTrusted(SCE_CONTEXTS._HTML, wrappedValue);
       expect(logs[0]).toMatch(/unsafe/);
     });
 
@@ -177,16 +186,16 @@ describe("SCE", () => {
     });
 
     it("should NOT return untrusted values from expression function", () => {
-      const exprFn = $sce.parseAs($sce.HTML, "foo");
+      const exprFn = $sce.parseAs(SCE_CONTEXTS._HTML, "foo");
       exprFn({}, { foo: true });
       expect(logs[0]).toMatch(/unsafe/);
     });
 
     it("should return trusted values from expression function", () => {
-      const exprFn = $sce.parseAs($sce.HTML, "foo");
-      expect(exprFn({}, { foo: $sce.trustAs($sce.HTML, "trustedValue") })).toBe(
-        "trustedValue",
-      );
+      const exprFn = $sce.parseAs(SCE_CONTEXTS._HTML, "foo");
+      expect(
+        exprFn({}, { foo: $sce.trustAs(SCE_CONTEXTS._HTML, "trustedValue") }),
+      ).toBe("trustedValue");
     });
 
     it("should support shorthand methods", () => {

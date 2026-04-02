@@ -85,10 +85,15 @@ function schedule(fn: VoidFunction): void {
 }
 
 export class AnimateRunner {
+  /** @internal */
   _host: AnimationHost;
+  /** @internal */
   _doneCallbacks: Array<(ok: boolean) => void>;
+  /** @internal */
   _state: number;
+  /** @internal */
   _promise: Promise<void> | null;
+  /** @internal */
   _tick: (fn: VoidFunction) => void;
 
   /**
@@ -256,6 +261,7 @@ export class AnimateRunner {
   // ---------------------------------------------------------------------------
 
   /**
+   * @internal
    * Executes a list of runners sequentially.
    * Each must complete before the next starts.
    */
@@ -278,6 +284,7 @@ export class AnimateRunner {
   }
 
   /**
+   * @internal
    * Waits until all runners complete.
    */
   static _all(runners: AnimateRunner[], callback: (ok: boolean) => void): void {

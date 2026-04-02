@@ -1,6 +1,7 @@
 import { createInjector } from "../di/injector.ts";
 import { Angular } from "../../angular.ts";
 import { wait } from "../../shared/test-utils.ts";
+import { SCE_CONTEXTS } from "../../services/sce/sce.ts";
 
 describe("$interpolate", () => {
   let $interpolate, $injector, $rootScope, $sce;
@@ -384,7 +385,7 @@ describe("$interpolate", () => {
       const scope = $rootScope.$new();
       scope.foo = "foo";
       await wait();
-      $interpolate("{{foo}}", true, sce.HTML)(scope);
+      $interpolate("{{foo}}", true, SCE_CONTEXTS._HTML)(scope);
       expect(errors[0]).toMatch("unsafe value");
     });
 
@@ -395,7 +396,9 @@ describe("$interpolate", () => {
 
     it("should interpolate trusted expressions in a specific trustedContext", () => {
       const foo = sce.trustAsHtml("foo");
-      expect($interpolate("{{foo}}", true, sce.HTML)({ foo })).toBe("foo");
+      expect($interpolate("{{foo}}", true, SCE_CONTEXTS._HTML)({ foo })).toBe(
+        "foo",
+      );
     });
 
     // The concatenation of trusted values does not necessarily result in a trusted value.  (For
@@ -405,7 +408,7 @@ describe("$interpolate", () => {
       const foo = sce.trustAsHtml("foo");
       const bar = sce.trustAsHtml("bar");
       expect(() =>
-        $interpolate("{{foo}}{{bar}}", true, sce.HTML)({ foo, bar }),
+        $interpolate("{{foo}}{{bar}}", true, SCE_CONTEXTS._HTML)({ foo, bar }),
       ).toThrowError(/Error while interpolating/);
     });
   });
@@ -491,7 +494,7 @@ describe("$interpolate", () => {
 
   describe("isTrustedContext", () => {
     it("should NOT interpolate a multi-part expression when isTrustedContext is RESOURCE_URL", () => {
-      const isTrustedContext = $sce.RESOURCE_URL;
+      const isTrustedContext = SCE_CONTEXTS._RESOURCE_URL;
       expect(() => {
         $interpolate("constant/{{var}}", true, isTrustedContext)("val");
       }).toThrowError(/Can't interpolate:/);
@@ -510,25 +513,42 @@ describe("$interpolate", () => {
     });
 
     it("should interpolate a multi-part expression when isTrustedContext is URL", () => {
-      expect($interpolate("some/{{id}}", true, $sce.URL)({})).toEqual("some/");
-      expect($interpolate("some/{{id}}", true, $sce.URL)({ id: 1 })).toEqual(
-        "some/1",
+      expect($interpolate("some/{{id}}", true, SCE_CONTEXTS._URL)({})).toEqual(
+        "some/",
       );
       expect(
-        $interpolate("{{foo}}{{bar}}", true, $sce.URL)({ foo: 1, bar: 2 }),
+        $interpolate("some/{{id}}", true, SCE_CONTEXTS._URL)({ id: 1 }),
+      ).toEqual("some/1");
+      expect(
+        $interpolate(
+          "{{foo}}{{bar}}",
+          true,
+          SCE_CONTEXTS._URL,
+        )({
+          foo: 1,
+          bar: 2,
+        }),
       ).toEqual("12");
     });
 
     it("should interpolate and sanitize a multi-part expression when isTrustedContext is URL", () => {
-      expect($interpolate("some/{{id}}", true, $sce.URL)({})).toEqual("some/");
+      expect($interpolate("some/{{id}}", true, SCE_CONTEXTS._URL)({})).toEqual(
+        "some/",
+      );
       expect(
-        $interpolate("some/{{id}}", true, $sce.URL)({ id: "javascript:" }),
+        $interpolate(
+          "some/{{id}}",
+          true,
+          SCE_CONTEXTS._URL,
+        )({
+          id: "javascript:",
+        }),
       ).toEqual("some/javascript:");
       expect(
         $interpolate(
           "{{foo}}{{bar}}",
           true,
-          $sce.URL,
+          SCE_CONTEXTS._URL,
         )({ foo: "javascript:", bar: "javascript:" }),
       ).toEqual("unsafe:javascript:javascript:");
     });

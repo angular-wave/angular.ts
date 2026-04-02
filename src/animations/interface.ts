@@ -40,13 +40,13 @@ export interface AnimationOptions {
   /** Optional completion callback (driver/queue dependent). */
   onDone?: () => void;
 
-  /** Internal flag: whether domOperation has fired. */
+  /** @internal Internal flag: whether domOperation has fired. */
   _domOperationFired?: boolean;
 
-  /** Internal flag: whether preparation has been performed. */
+  /** @internal Internal flag: whether preparation has been performed. */
   _prepared?: boolean;
 
-  /** Internal flag: skip preparation classes. */
+  /** @internal Internal flag: skip preparation classes. */
   _skipPreparationClasses?: boolean;
 
   /** Whether to clean up styles after animation completes. */
@@ -117,7 +117,7 @@ export interface AnimationOptions {
  * `end()` forces completion (may be synchronous depending on driver).
  */
 export interface Animator {
-  /** Whether this handle is expected to perform a real animation. */
+  /** @internal Whether this handle is expected to perform a real animation. */
   _willAnimate: boolean;
 
   /** Start the animation and return a runner you can control/cancel. */

@@ -41,7 +41,7 @@ import {
   simpleCompare,
   trim,
 } from "../../shared/utils.ts";
-import { SCE_CONTEXTS } from "../../services/sce/sce.ts";
+import { SCE_CONTEXTS, type SceContext } from "../../services/sce/sce.ts";
 import { PREFIX_REGEXP } from "../../shared/constants.ts";
 import {
   createEventDirective,
@@ -344,7 +344,7 @@ export interface TextInterpolateLinkState {
 export interface AttrInterpolateLinkState {
   _name: string;
   _value: string;
-  _trustedContext?: string;
+  _trustedContext?: SceContext;
   _allOrNothing: boolean;
   _interpolateFn?: InterpolationFunction;
 }
@@ -910,7 +910,14 @@ export class CompileProvider {
     /**
      * The security context of DOM Properties.
      */
-    const PROP_CONTEXTS = nullObject() as Record<string, string>;
+    const PROP_CONTEXTS = nullObject() as Record<string, SceContext>;
+
+    const LEGACY_SCE_CONTEXTS: Record<string, SceContext> = {
+      html: SCE_CONTEXTS._HTML,
+      mediaUrl: SCE_CONTEXTS._MEDIA_URL,
+      resourceUrl: SCE_CONTEXTS._RESOURCE_URL,
+      url: SCE_CONTEXTS._URL,
+    };
 
     /**
      * Defines the security context for DOM properties bound by ng-prop-*.
@@ -925,20 +932,22 @@ export class CompileProvider {
       propertyName: string,
       ctx: string,
     ) {
+      const normalizedCtx = LEGACY_SCE_CONTEXTS[ctx] || ctx;
+
       const key = `${elementName.toLowerCase()}|${propertyName.toLowerCase()}`;
 
-      if (key in PROP_CONTEXTS && PROP_CONTEXTS[key] !== ctx) {
+      if (key in PROP_CONTEXTS && PROP_CONTEXTS[key] !== normalizedCtx) {
         throw $compileMinErr(
           "ctxoverride",
           "Property context '{0}.{1}' already set to '{2}', cannot override to '{3}'.",
           elementName,
           propertyName,
           PROP_CONTEXTS[key],
-          ctx,
+          normalizedCtx,
         );
       }
 
-      PROP_CONTEXTS[key] = ctx;
+      PROP_CONTEXTS[key] = normalizedCtx as SceContext;
 
       return this;
     };
@@ -953,18 +962,18 @@ export class CompileProvider {
      */
     (function registerNativePropertyContexts() {
       /** Registers the same security context for a list of `element|property` keys. */
-      function registerContext(ctx: string, items: string[]) {
+      function registerContext(ctx: SceContext, items: string[]) {
         items.forEach((v) => {
           PROP_CONTEXTS[v.toLowerCase()] = ctx;
         });
       }
 
-      registerContext(SCE_CONTEXTS.HTML, [
+      registerContext(SCE_CONTEXTS._HTML, [
         "iframe|srcdoc",
         "*|innerHTML",
         "*|outerHTML",
       ]);
-      registerContext(SCE_CONTEXTS.URL, [
+      registerContext(SCE_CONTEXTS._URL, [
         "area|href",
         "area|ping",
         "a|href",
@@ -976,7 +985,7 @@ export class CompileProvider {
         "ins|cite",
         "q|cite",
       ]);
-      registerContext(SCE_CONTEXTS.MEDIA_URL, [
+      registerContext(SCE_CONTEXTS._MEDIA_URL, [
         "audio|src",
         "img|src",
         "img|srcset",
@@ -986,7 +995,7 @@ export class CompileProvider {
         "video|src",
         "video|poster",
       ]);
-      registerContext(SCE_CONTEXTS.RESOURCE_URL, [
+      registerContext(SCE_CONTEXTS._RESOURCE_URL, [
         "*|formAction",
         "applet|code",
         "applet|codebase",
@@ -3490,9 +3499,9 @@ export class CompileProvider {
         function getTrustedAttrContext(
           nodeName: string,
           attrNormalizedName: string,
-        ) {
+        ): SceContext | undefined {
           if (attrNormalizedName === "srcdoc") {
-            return $sce.HTML;
+            return SCE_CONTEXTS._HTML;
           }
 
           // All nodes with src attributes require a RESOURCE_URL value, except for
@@ -3502,30 +3511,30 @@ export class CompileProvider {
               ["img", "video", "audio", "source", "track"].indexOf(nodeName) ===
               -1
             ) {
-              return $sce.RESOURCE_URL;
+              return SCE_CONTEXTS._RESOURCE_URL;
             }
 
-            return $sce.MEDIA_URL;
+            return SCE_CONTEXTS._MEDIA_URL;
           }
 
           if (attrNormalizedName === "xlinkHref") {
             // Some xlink:href are okay, most aren't
             if (nodeName === "image") {
-              return $sce.MEDIA_URL;
+              return SCE_CONTEXTS._MEDIA_URL;
             }
 
             if (nodeName === "a") {
-              return $sce.URL;
+              return SCE_CONTEXTS._URL;
             }
 
-            return $sce.RESOURCE_URL;
+            return SCE_CONTEXTS._RESOURCE_URL;
           }
 
           if (
             nodeName === "image" &&
             (attrNormalizedName === "href" || attrNormalizedName === "ngHref")
           ) {
-            return $sce.MEDIA_URL;
+            return SCE_CONTEXTS._MEDIA_URL;
           }
 
           if (
@@ -3537,14 +3546,14 @@ export class CompileProvider {
             // links can be stylesheets or imports, which can run script in the current origin
             (nodeName === "link" && attrNormalizedName === "href")
           ) {
-            return $sce.RESOURCE_URL;
+            return SCE_CONTEXTS._RESOURCE_URL;
           }
 
           if (
             nodeName === "a" &&
             (attrNormalizedName === "href" || attrNormalizedName === "ngHref")
           ) {
-            return $sce.URL;
+            return SCE_CONTEXTS._URL;
           }
 
           return undefined;
@@ -3554,7 +3563,7 @@ export class CompileProvider {
         function getTrustedPropContext(
           nodeName: string,
           propNormalizedName: string,
-        ) {
+        ): SceContext | undefined {
           const prop = propNormalizedName.toLowerCase();
 
           return (
