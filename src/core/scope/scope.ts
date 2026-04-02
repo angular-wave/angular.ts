@@ -270,6 +270,58 @@ function collectWatchKeys(node: any, watchKeys: Set<string>): void {
   if (fallbackKey) watchKeys.add(fallbackKey);
 }
 
+function collectListenerKeys(
+  node: any,
+  keySet: string[],
+  seenKeys: Set<string>,
+  listener: Listener,
+): void {
+  if (!node || node._type === ASTType._Literal) return;
+
+  const watchKeys = new Set<string>();
+
+  collectWatchKeys(node, watchKeys);
+
+  for (const watchKey of watchKeys) {
+    pushUniqueListenerKey(keySet, seenKeys, listener, watchKey);
+  }
+}
+
+function collectExpressionListenerKeys(
+  node: any,
+  keySet: string[],
+  seenKeys: Set<string>,
+  listener: Listener,
+): void {
+  if (!node) return;
+
+  switch (node._type) {
+    case ASTType._LogicalExpression:
+      collectExpressionListenerKeys(node._left, keySet, seenKeys, listener);
+      collectExpressionListenerKeys(node._right, keySet, seenKeys, listener);
+
+      return;
+    case ASTType._ConditionalExpression:
+      collectExpressionListenerKeys(node._test, keySet, seenKeys, listener);
+      collectExpressionListenerKeys(
+        node._alternate,
+        keySet,
+        seenKeys,
+        listener,
+      );
+      collectExpressionListenerKeys(
+        node._consequent,
+        keySet,
+        seenKeys,
+        listener,
+      );
+
+      return;
+    default:
+      collectListenerKeys(node, keySet, seenKeys, listener);
+  }
+}
+
 /**
  * @private
  * Creates a deep proxy for the target object, intercepting property changes
@@ -1070,25 +1122,25 @@ export class Scope {
         break;
       // 4
       case ASTType._ConditionalExpression: {
-        key = getNodeName(expr._toWatch?.[0]?._test);
+        collectExpressionListenerKeys(expr, keySet, seenKeys, listener);
 
-        if (!key) {
+        if (keySet.length === 0) {
           throw new Error("Unable to determine key");
         }
-        pushUniqueListenerKey(keySet, seenKeys, listener, key);
         break;
       }
       // 5
       case ASTType._LogicalExpression: {
-        const keyList = [
-          getNodeName(expr._left?._toWatch?.[0]),
-          getNodeName(expr._right?._toWatch?.[0]),
-        ];
+        collectExpressionListenerKeys(expr, keySet, seenKeys, listener);
 
-        registerListenerKeys(this, listener, keyList);
+        if (keySet.length === 0) {
+          throw new Error("Unable to determine key");
+        }
+
+        registerListenerKeys(this, listener, keySet);
 
         return () => {
-          deregisterListenerKeys(this, listener._id, keyList);
+          deregisterListenerKeys(this, listener._id, keySet);
         };
       }
       // 6
@@ -1213,19 +1265,27 @@ export class Scope {
       case ASTType._ArrayExpression: {
         const { _elements: elements } = expr;
 
-        const keyList: string[] = [];
-
         for (let i = 0, l = elements.length; i < l; i++) {
-          const registerKey = resolveWatchKey(elements[i]);
+          const element = elements[i];
 
-          if (!registerKey) continue;
-          keyList.push(registerKey);
+          const registerKey = resolveWatchKey(element);
+
+          if (registerKey) {
+            pushUniqueListenerKey(keySet, seenKeys, listener, registerKey);
+            continue;
+          }
+
+          collectExpressionListenerKeys(element, keySet, seenKeys, listener);
         }
 
-        registerListenerKeys(this, listener, keyList, true);
+        if (keySet.length === 0) {
+          throw new Error("Unable to determine key");
+        }
+
+        registerListenerKeys(this, listener, keySet, true);
 
         return () => {
-          deregisterListenerKeys(this, listener._id, keyList);
+          deregisterListenerKeys(this, listener._id, keySet);
         };
       }
 

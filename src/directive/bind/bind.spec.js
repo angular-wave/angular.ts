@@ -117,6 +117,28 @@ describe("ng-bind", () => {
       await wait();
       expect(element.textContent).toEqual("2");
     });
+
+    it("should support conditional fallback expressions", async () => {
+      $rootScope.vm = {};
+      element = $compile(
+        `<div ng-bind="vm.caseItem ? vm.caseItem.objectAddress : 'Loading case'"></div>`,
+      )($rootScope);
+
+      await wait();
+      expect(element.textContent).toEqual("Loading case");
+
+      $rootScope.vm.caseItem = { objectAddress: "Main St" };
+      await wait();
+      expect(element.textContent).toEqual("Main St");
+
+      $rootScope.vm.caseItem.objectAddress = "Broadway";
+      await wait();
+      expect(element.textContent).toEqual("Broadway");
+
+      $rootScope.vm.caseItem = null;
+      await wait();
+      expect(element.textContent).toEqual("Loading case");
+    });
   });
 
   describe("ngBindTemplate", () => {
@@ -135,6 +157,27 @@ describe("ng-bind", () => {
       );
       await wait();
       expect(JSON.parse(element.textContent)).toEqual({ key: "value" });
+    });
+
+    it("should support logical fallback expressions in interpolation", async () => {
+      $rootScope.vm = { caseItem: {} };
+      $rootScope.event = {};
+      element = $compile(
+        `<div ng-bind-template="{{vm.caseItem.customerName || 'Unknown'}} / {{event.fromStatus || 'none'}}"></div>`,
+      )($rootScope);
+
+      await wait();
+      expect(element.textContent).toEqual("Unknown / none");
+
+      $rootScope.vm.caseItem.customerName = "Ada";
+      $rootScope.event.fromStatus = "open";
+      await wait();
+      expect(element.textContent).toEqual("Ada / open");
+
+      $rootScope.vm.caseItem = { customerName: "" };
+      $rootScope.event.fromStatus = "";
+      await wait();
+      expect(element.textContent).toEqual("Unknown / none");
     });
   });
 
