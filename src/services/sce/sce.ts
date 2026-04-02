@@ -53,10 +53,12 @@ export interface SceService {
   parseAsHtml(expression: string): (context: any, locals: any) => any;
   parseAsResourceUrl(expression: string): (context: any, locals: any) => any;
   parseAsUrl(expression: string): (context: any, locals: any) => any;
+  parseAsMediaUrl(expression: string): (context: any, locals: any) => any;
   trustAs(type: string, value: any): any;
   trustAsHtml(value: any): any;
   trustAsResourceUrl(value: any): any;
   trustAsUrl(value: any): any;
+  trustAsMediaUrl(value: any): any;
   isEnabled(): boolean;
   valueOf(value?: any): any;
 }

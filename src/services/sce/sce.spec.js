@@ -10,18 +10,18 @@ describe("SCE", () => {
   let errorLog = [];
 
   describe("when disabled", () => {
-    beforeEach(function () {
+    beforeEach(() => {
       window.angular = new Angular();
       window.angular
         .module("myModule", ["ng"])
-        .decorator("$exceptionHandler", function () {
+        .decorator("$exceptionHandler", () => {
           return (exception) => {
             errorLog.push(exception.message);
           };
         });
       createInjector([
         "myModule",
-        function ($sceProvider, $exceptionHandlerProvider) {
+        ($sceProvider, $exceptionHandlerProvider) => {
           $exceptionHandlerProvider.handler = (err) => logs.push(err.message);
           $sceProvider.enabled(false);
         },
@@ -36,12 +36,12 @@ describe("SCE", () => {
   });
 
   describe("when enabled", () => {
-    beforeEach(function () {
+    beforeEach(() => {
       window.angular = new Angular();
       logs = [];
       createInjector([
         "ng",
-        function ($sceProvider, $exceptionHandlerProvider) {
+        ($sceProvider, $exceptionHandlerProvider) => {
           $exceptionHandlerProvider.handler = (err) => {
             logs.push(err.message);
           };
@@ -550,20 +550,29 @@ describe("SCE", () => {
         const $$sanitizeUri = jasmine
           .createSpy("$$sanitizeUri")
           .and.returnValue("someSanitizedUrl");
-        // module(($provide) => {
-        //   $provide.value("$$sanitizeUri", $$sanitizeUri);
-        // });
-        () => {
-          expect($sce.getTrustedMediaUrl("someUrl")).toEqual(
-            "someSanitizedUrl",
-          );
-          expect($$sanitizeUri).toHaveBeenCalledOnceWith("someUrl", true);
+        window.angular = new Angular();
+        window.angular.module("testSanitizeUri", ["ng"]).config([
+          "$provide",
+          ($provide) => {
+            $provide.value("$$sanitizeUri", $$sanitizeUri);
+          },
+        ]);
+        createInjector([
+          "testSanitizeUri",
+          ($sceProvider, $exceptionHandlerProvider) => {
+            $sceProvider.enabled(true);
+          },
+        ]).invoke((_$sce_) => {
+          $sce = _$sce_;
+        });
 
-          $$sanitizeUri.calls.reset();
+        expect($sce.getTrustedMediaUrl("someUrl")).toEqual("someSanitizedUrl");
+        expect($$sanitizeUri).toHaveBeenCalledOnceWith("someUrl", true);
 
-          expect($sce.getTrustedUrl("someUrl")).toEqual("someSanitizedUrl");
-          expect($$sanitizeUri).toHaveBeenCalledOnceWith("someUrl", false);
-        };
+        $$sanitizeUri.calls.reset();
+
+        expect($sce.getTrustedUrl("someUrl")).toEqual("someSanitizedUrl");
+        expect($$sanitizeUri).toHaveBeenCalledOnceWith("someUrl", false);
       });
     });
 

@@ -447,19 +447,7 @@ describe("$http", function () {
   });
 
   it("does not serialize blobs for requests", async function () {
-    let blob;
-    if (window.Blob) {
-      blob = new Blob(["hello"]);
-    } else {
-      const BlobBuilder =
-        window.BlobBuilder ||
-        window.WebKitBlobBuilder ||
-        window.MozBlobBuilder ||
-        window.MSBlobBuilder;
-      const bb = new BlobBuilder();
-      bb.append("hello");
-      blob = bb.getBlob("text/plain");
-    }
+    let blob = new Blob(["hello"]);
     await $http({
       method: "POST",
       url: "/mock/blob",

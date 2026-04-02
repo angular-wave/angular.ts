@@ -344,7 +344,7 @@ describe("parser", () => {
         scope.fooExp = "barVal";
         // By evaluating hasOwnProperty, the $parse cache will store a getter for
         // the scope's own hasOwnProperty function, which will mess up future cache look ups.
-        // i.e. cache['hasOwnProperty'] = function(scope) { return scope.hasOwnProperty; }
+        // i.e. cache['hasOwnProperty'] = (scope) => scope.hasOwnProperty;
         scope.$eval("hasOwnProperty");
         expect(scope.$eval("fooExp")).toBe("barVal");
       });
