@@ -37,19 +37,16 @@ type TrustedValueHolderConstructor = new (
 
 export interface SceService {
   HTML: string;
-  CSS: string;
   JS: string;
   URL: string;
   RESOURCE_URL: string;
   MEDIA_URL: string;
   getTrusted(type: string, mayBeTrusted: any): any;
-  getTrustedCss(value: any): any;
   getTrustedHtml(value: any): any;
   getTrustedResourceUrl(value: any): any;
   getTrustedUrl(value: any): any;
   getTrustedMediaUrl(value: any): any;
   parse(type: string, expression: string): (context: any, locals: any) => any;
-  parseAsCss(expression: string): (context: any, locals: any) => any;
   parseAsHtml(expression: string): (context: any, locals: any) => any;
   parseAsResourceUrl(expression: string): (context: any, locals: any) => any;
   parseAsUrl(expression: string): (context: any, locals: any) => any;
@@ -72,9 +69,6 @@ export interface SceDelegateService {
 export const SCE_CONTEXTS = {
   // HTML is used when there's HTML rendered (e.g. ng-bind-html, iframe srcdoc binding).
   HTML: "html",
-
-  // Style statements or stylesheets. Currently unused in AngularTS.
-  CSS: "css",
 
   // An URL used in a context where it refers to the source of media, which are not expected to be run
   // as scripts, such as an image, audio, video, etc.
@@ -400,7 +394,6 @@ export class SceDelegateProvider {
         const byType: Record<string, TrustedValueHolderConstructor> = {};
 
         byType[SCE_CONTEXTS.HTML] = generateHolderType(trustedValueHolderBase);
-        byType[SCE_CONTEXTS.CSS] = generateHolderType(trustedValueHolderBase);
         byType[SCE_CONTEXTS.MEDIA_URL] = generateHolderType(
           trustedValueHolderBase,
         );
@@ -426,7 +419,7 @@ export class SceDelegateProvider {
          * escaping.
          *
          * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
-         *     `$sce.RESOURCE_URL`, `$sce.HTML`, `$sce.JS` or `$sce.CSS`.
+         *     `$sce.RESOURCE_URL` or `$sce.HTML`.
          *
          * @param trustedValue The value that should be considered trusted.
          * @returns A trusted representation of value, that can be used in the given context.
@@ -682,7 +675,7 @@ export function SceProvider(this: any): void {
        * interpolations. See {@link ng.$sce $sce} for strict contextual escaping.
        *
        * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
-       *     `$sce.RESOURCE_URL`, `$sce.HTML`, `$sce.JS` or `$sce.CSS`.
+       *     `$sce.RESOURCE_URL` or `$sce.HTML`.
        *
        * @param value The value that that should be considered trusted.
        * @returns A wrapped version of value that can be used as a trusted variant of your `value`
@@ -696,16 +689,6 @@ export function SceProvider(this: any): void {
        * @param value The value to mark as trusted for `$sce.HTML` context.
        * @returns A wrapped version of value that can be used as a trusted variant of your `value`
        *     in `$sce.HTML` context (like `ng-bind-html`).
-       */
-
-      /**
-       * Shorthand method.  `$sce.trustAsCss(value)` →
-       *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.CSS, value)`}
-       *
-       * @param value The value to mark as trusted for `$sce.CSS` context.
-       * @returns A wrapped version of value that can be used as a trusted variant
-       *     of your `value` in `$sce.CSS` context. This context is currently unused, so there are
-       *     almost no reasons to use this function so far.
        */
 
       /**
@@ -752,14 +735,6 @@ export function SceProvider(this: any): void {
        */
 
       /**
-       * Shorthand method.  `$sce.getTrustedCss(value)` →
-       *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.CSS, value)`}
-       *
-       * @param value The value to pass to `$sce.getTrusted`.
-       * @returns The return value of `$sce.getTrusted($sce.CSS, value)`
-       */
-
-      /**
        * Shorthand method.  `$sce.getTrustedUrl(value)` →
        *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.URL, value)`}
        *
@@ -778,19 +753,6 @@ export function SceProvider(this: any): void {
       /**
        * Shorthand method.  `$sce.parseAsHtml(expression string)` →
        *     {@link ng.$sceparseAs `$sce.parseAs($sce.HTML, value)`}
-       *
-       * @param expression String expression to compile.
-       * @returns A function which represents the compiled expression:
-       *
-       *    * `context` – `{object}` – an object against which any expressions embedded in the
-       *      strings are evaluated against (typically a scope object).
-       *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-       *      in `context`.
-       */
-
-      /**
-       * Shorthand method.  `$sce.parseAsCss(value)` →
-       *     {@link ng.$sceparseAs `$sce.parseAs($sce.CSS, value)`}
        *
        * @param expression String expression to compile.
        * @returns A function which represents the compiled expression:

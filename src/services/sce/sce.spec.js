@@ -57,12 +57,7 @@ describe("SCE", () => {
       let wrappedValue = $sce.trustAs($sce.HTML, originalValue);
       expect(typeof wrappedValue).toBe("object");
       expect($sce.getTrusted($sce.HTML, wrappedValue)).toBe("original_value");
-      $sce.getTrusted($sce.CSS, wrappedValue);
-      expect(logs[0]).toMatch(/unsafe/);
-      wrappedValue = $sce.trustAs($sce.CSS, originalValue);
-      expect(typeof wrappedValue).toBe("object");
-      expect($sce.getTrusted($sce.CSS, wrappedValue)).toBe("original_value");
-      $sce.getTrusted($sce.HTML, wrappedValue);
+      $sce.getTrusted($sce.HTML, $sce.trustAs($sce.URL, originalValue));
       expect(logs[0]).toMatch(/unsafe/);
       wrappedValue = $sce.trustAs($sce.URL, originalValue);
       expect(typeof wrappedValue).toBe("object");
@@ -70,7 +65,7 @@ describe("SCE", () => {
     });
 
     it("should NOT wrap non-string values", () => {
-      $sce.trustAsCss(123);
+      $sce.trustAsUrl(123);
       expect(logs[0]).toMatch(/itype/);
     });
 
@@ -116,8 +111,8 @@ describe("SCE", () => {
 
     it("should NOT unwrap values when the type is different", () => {
       const originalValue = "originalValue";
-      const wrappedValue = $sce.trustAs($sce.HTML, originalValue);
-      $sce.getTrusted($sce.CSS, wrappedValue);
+      const wrappedValue = $sce.trustAs($sce.URL, originalValue);
+      $sce.getTrusted($sce.HTML, wrappedValue);
       expect(logs[0]).toMatch(/unsafe/);
     });
 
@@ -199,7 +194,7 @@ describe("SCE", () => {
       expect($sce.parseAsHtml("1")()).toBe(1);
       // Test short trustAs methods.
       expect($sce.trustAsAny).toBeUndefined();
-      $sce.parseAsCss("foo")({}, { foo: $sce.trustAsHtml("1") });
+      $sce.parseAsHtml("foo")({}, { foo: $sce.trustAsUrl("1") });
       expect(logs[0]).toMatch(/unsafe/);
     });
   });
