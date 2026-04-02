@@ -948,7 +948,6 @@ export class CompileProvider {
      * Copy of https://github.com/angular/angular/blob/6.0.6/packages/compiler/src/schema/dom_security_schema.ts#L31-L58
      * Changing:
      * - SecurityContext.* => SCE_CONTEXTS/$sce.*
-     * - STYLE => CSS
      * - various URL => MEDIA_URL
      * - *|formAction, form|action URL => RESOURCE_URL (like the attribute)
      */
@@ -965,7 +964,6 @@ export class CompileProvider {
         "*|innerHTML",
         "*|outerHTML",
       ]);
-      registerContext(SCE_CONTEXTS.CSS, ["*|style"]);
       registerContext(SCE_CONTEXTS.URL, [
         "area|href",
         "area|ping",

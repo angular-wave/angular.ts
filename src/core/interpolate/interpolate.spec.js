@@ -384,28 +384,28 @@ describe("$interpolate", () => {
       const scope = $rootScope.$new();
       scope.foo = "foo";
       await wait();
-      $interpolate("{{foo}}", true, sce.CSS)(scope);
+      $interpolate("{{foo}}", true, sce.HTML)(scope);
       expect(errors[0]).toMatch("unsafe value");
     });
 
     it("should interpolate trusted expressions in a regular context", () => {
-      const foo = sce.trustAsCss("foo");
+      const foo = sce.trustAsHtml("foo");
       expect($interpolate("{{foo}}", true)({ foo })).toBe("foo");
     });
 
     it("should interpolate trusted expressions in a specific trustedContext", () => {
-      const foo = sce.trustAsCss("foo");
-      expect($interpolate("{{foo}}", true, sce.CSS)({ foo })).toBe("foo");
+      const foo = sce.trustAsHtml("foo");
+      expect($interpolate("{{foo}}", true, sce.HTML)({ foo })).toBe("foo");
     });
 
     // The concatenation of trusted values does not necessarily result in a trusted value.  (For
-    // instance, you can construct evil JS code by putting together pieces of JS strings that are by
-    // themselves safe to execute in isolation). Therefore, some contexts disable it, such as CSS.
+    // instance, you can construct unsafe markup by putting together pieces that are
+    // themselves safe to render in isolation). Therefore, some contexts disable it, such as HTML.
     it("should NOT interpolate trusted expressions with multiple parts", () => {
-      const foo = sce.trustAsCss("foo");
-      const bar = sce.trustAsCss("bar");
+      const foo = sce.trustAsHtml("foo");
+      const bar = sce.trustAsHtml("bar");
       expect(() =>
-        $interpolate("{{foo}}{{bar}}", true, sce.CSS)({ foo, bar }),
+        $interpolate("{{foo}}{{bar}}", true, sce.HTML)({ foo, bar }),
       ).toThrowError(/Error while interpolating/);
     });
   });

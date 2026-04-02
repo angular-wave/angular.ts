@@ -666,7 +666,7 @@ describe("ngProp*", () => {
         const element = $compile('<div ng-prop-inner_h_t_m_l="html"></div>')(
           $rootScope,
         );
-        $rootScope.html = $sce.trustAsCss('<div onclick="">hello</div>');
+        $rootScope.html = $sce.trustAsUrl('<div onclick="">hello</div>');
         await wait();
         expect(logs[0]).toMatch(/unsafe/);
       });
@@ -751,23 +751,9 @@ describe("ngProp*", () => {
   });
 
   describe("*[style]", () => {
-    it("should NOT set style for untrusted values", async () => {
-      $compile('<div ng-prop-style="style"></div>')($rootScope);
+    it("should set style for plain string values", async () => {
+      const element = $compile('<div ng-prop-style="style"></div>')($rootScope);
       $rootScope.style = "margin-left: 10px";
-      await wait();
-      expect(logs[0]).toMatch(/unsafe/);
-    });
-
-    it("should NOT set style for wrongly typed values", async () => {
-      const element = $compile('<div ng-prop-style="style"></div>')($rootScope);
-      $rootScope.style = $sce.trustAsHtml("margin-left: 10px");
-      await wait();
-      expect(logs[0]).toMatch(/unsafe/);
-    });
-
-    it("should set style for trusted values", async () => {
-      const element = $compile('<div ng-prop-style="style"></div>')($rootScope);
-      $rootScope.style = $sce.trustAsCss("margin-left: 10px");
       await wait();
       expect(element.style["margin-left"]).toEqual("10px");
     });

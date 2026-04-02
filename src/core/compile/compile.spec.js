@@ -15558,7 +15558,7 @@ describe("$compile", () => {
       $rootScope.bar = "untrusted:test1";
       await wait();
       expect(element.foo).toBe("unsafe:untrusted:test1");
-      $rootScope.bar = $sce.trustAsCss("untrusted:test2");
+      $rootScope.bar = $sce.trustAsHtml("untrusted:test2");
       await wait();
 
       expect(element.foo).toBe("unsafe:untrusted:test2");
@@ -15584,7 +15584,7 @@ describe("$compile", () => {
       await wait();
       expect(element.foo).toBe("unsafe:untrusted:test1");
 
-      $rootScope.bar = $sce.trustAsCss("untrusted:test2");
+      $rootScope.bar = $sce.trustAsHtml("untrusted:test2");
       await wait();
       expect(element.foo).toBe("unsafe:untrusted:test2");
 
@@ -15610,7 +15610,7 @@ describe("$compile", () => {
       await wait();
       expect(element.foo).toBe("unsafe:untrusted:test1");
 
-      $rootScope.bar = $sce.trustAsCss("untrusted:test2");
+      $rootScope.bar = $sce.trustAsHtml("untrusted:test2");
       await wait();
       expect(element.foo).toBe("unsafe:untrusted:test2");
 
