@@ -79,7 +79,7 @@ describe("utility functions", () => {
     });
 
     it("should create appropriate `_hashKey`s for non-primitive values", () => {
-      const fn = function () {};
+      const fn = () => {};
       const arr = [];
       const obj = {};
       const date = new Date();
@@ -145,9 +145,7 @@ describe("utility functions", () => {
     });
 
     it("is function:[unique id] for functions", () => {
-      const fn = function (a) {
-        return a;
-      };
+      const fn = (a) => a;
       expect(hashKey(fn)).toMatch(/^function:\S+$/);
     });
 
@@ -186,7 +184,7 @@ describe("utility functions", () => {
       expect(
         hashKey({
           myKey: "42",
-          _hashKey: function () {
+          _hashKey() {
             return this.myKey;
           },
         }),
