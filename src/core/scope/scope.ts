@@ -23,6 +23,7 @@ export type NonScope = string[] | boolean;
 
 export interface NonScopeMarked {
   $nonscope?: NonScope;
+  /** @internal */
   [key: string]: any;
   constructor?: {
     $nonscope?: NonScope;
@@ -30,14 +31,23 @@ export interface NonScopeMarked {
 }
 
 export interface Listener {
+  /** @internal */
   _originalTarget: any;
+  /** @internal */
   _listenerFn: ListenerFn;
+  /** @internal */
   _watchFn: CompiledExpression;
+  /** @internal */
   _id: number;
+  /** @internal */
   _scopeId: number;
+  /** @internal */
   _property: string[];
+  /** @internal */
   _watchProp?: string;
+  /** @internal */
   _invokeWatchFn?: CompiledExpression;
+  /** @internal */
   _watchParentFn?: CompiledExpression;
 }
 
@@ -77,9 +87,11 @@ let $parse: ng.ParseService;
 
 let $exceptionHandler: ng.ExceptionHandlerService;
 
+/** @internal */
 export const $postUpdateQueue: Array<() => void> = [];
 
 export class RootScopeProvider {
+  /** @internal */
   _rootScope: ng.RootScopeService;
 
   constructor() {
@@ -479,14 +491,19 @@ export function isNonScope(target: unknown): boolean {
  * @extends {Record<string, any>}
  */
 export class Scope {
+  /** @internal */
   _watchers: Map<string, Listener[]>;
 
+  /** @internal */
   _listeners: Map<string, ScopeEventListener[]>;
 
+  /** @internal */
   _foreignListeners: Map<string, Listener[]>;
 
+  /** @internal */
   _foreignProxies: Set<ScopeProxy>;
 
+  /** @internal */
   _objectListeners: WeakMap<object, string[]>;
 
   $proxy!: ScopeProxy;
@@ -495,6 +512,7 @@ export class Scope {
 
   $target: any;
 
+  /** @internal */
   _children: ScopeProxy[];
 
   $id;
@@ -503,12 +521,15 @@ export class Scope {
 
   $parent?: ng.Scope;
 
+  /** @internal */
   _destroyed;
 
+  /** @internal */
   _scheduled: Listener[];
 
   $scopename?: string;
 
+  /** @internal */
   _propertyMap: Record<PropertyKey, any>;
 
   /**
@@ -1010,7 +1031,7 @@ export class Scope {
     return true;
   }
 
-  /** Recursively schedules listeners for every reachable object key in the value. */
+  /** @internal Recursively schedules listeners for every reachable object key in the value. */
   _checkListenersForAllKeys(value: ScopeTarget | undefined): void {
     if (isUndefined(value)) {
       return;
@@ -1032,7 +1053,7 @@ export class Scope {
     }
   }
 
-  /** Queues listener notification for the next microtask, optionally filtering the list first. */
+  /** @internal Queues listener notification for the next microtask, optionally filtering the list first. */
   _scheduleListener(
     listeners: Listener[],
     filter?: (listeners: Listener[]) => Listener[],
@@ -1445,7 +1466,7 @@ export class Scope {
     return proxy;
   }
 
-  /** Registers a listener under a watched key on this scope. */
+  /** @internal Registers a listener under a watched key on this scope. */
   _registerKey(key: string, listener: Listener): void {
     const listeners = this._watchers.get(key);
 
@@ -1458,7 +1479,7 @@ export class Scope {
     this._watchers.set(key, [listener]);
   }
 
-  /** Registers a listener under a watched key owned by a foreign proxied scope. */
+  /** @internal Registers a listener under a watched key owned by a foreign proxied scope. */
   _registerForeignKey(key: string, listener: Listener): void {
     const listeners = this._foreignListeners.get(key);
 
@@ -1471,7 +1492,7 @@ export class Scope {
     this._foreignListeners.set(key, [listener]);
   }
 
-  /** Removes a listener by id from the local watcher map. */
+  /** @internal Removes a listener by id from the local watcher map. */
   _deregisterKey(key: string, id: number): boolean {
     const listenerList = this._watchers.get(key);
 
@@ -1499,7 +1520,7 @@ export class Scope {
     return false;
   }
 
-  /** Removes a listener by id from the foreign watcher map. */
+  /** @internal Removes a listener by id from the foreign watcher map. */
   _deregisterForeignKey(key: string, id: number): boolean {
     const listenerList = this._foreignListeners.get(key);
 
@@ -1612,6 +1633,7 @@ export class Scope {
   }
 
   /**
+   * @internal
    * Internal event propagation helper.
    *
    * Propagates either upward (`$emit`) or downward (`$broadcast`) and
@@ -1725,7 +1747,7 @@ export class Scope {
     }
   }
 
-  /** Returns whether this scope instance is the root scope. */
+  /** @internal Returns whether this scope instance is the root scope. */
   _isRoot() {
     return this.$root === this;
   }
@@ -1784,7 +1806,7 @@ export class Scope {
     this._destroyed = true;
   }
 
-  /** Resolves the watched value and notifies a single listener. */
+  /** @internal Resolves the watched value and notifies a single listener. */
   _notifyListener(
     listener: Listener,
     target: Scope | ScopeProxy | undefined,

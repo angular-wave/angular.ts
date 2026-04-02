@@ -48,7 +48,9 @@ const moduleRegistry: ModuleRegistry = {};
  */
 export class Angular extends EventTarget {
   public subapps: Angular[] = [];
+  /** @internal */
   public _subapp: boolean;
+  /** @internal */
   public _bootsrappedModules: Array<string | any> = [];
 
   public $eventBus!: ng.PubSubService;

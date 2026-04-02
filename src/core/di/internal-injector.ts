@@ -19,9 +19,12 @@ const INSTANTIATING = true;
 type InjectableFn = Function | AnnotatedFactory<(...args: any[]) => any>;
 
 class AbstractInjector {
+  /** @internal */
   _cache: Record<string, any>;
   strictDi: boolean;
+  /** @internal */
   _path: string[];
+  /** @internal */
   _modules: Record<string, NgModule>;
 
   /**
@@ -68,6 +71,7 @@ class AbstractInjector {
   }
 
   /**
+   * @internal
    * Get the injection arguments for a function.
    *
    * @param {Function|ng.AnnotatedFactory<any>} fn
@@ -179,6 +183,7 @@ class AbstractInjector {
    * @returns {any}
    */
 
+  /** @internal */
   _factory(serviceName: string): any {
     void serviceName;
 
@@ -200,6 +205,7 @@ export class ProviderInjector extends AbstractInjector {
   }
 
   /**
+   * @internal
    * Factory method for creating services.
    * @param {string} caller - The name of the caller requesting the service.
    * @throws {Error} If the provider is unknown.
@@ -225,6 +231,7 @@ export class InjectorService extends AbstractInjector {
     /* empty */
   };
 
+  /** @internal */
   _providerInjector: ProviderInjector;
 
   /**
@@ -244,6 +251,7 @@ export class InjectorService extends AbstractInjector {
    * @param {string} serviceName
    * @returns {*}
    */
+  /** @internal */
   _factory(serviceName: string): any {
     const provider = this._providerInjector.get(serviceName + providerSuffix);
 

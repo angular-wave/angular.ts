@@ -13,7 +13,6 @@ import {
   isString,
   isUndefined,
   minErr,
-  shallowCopy,
 } from "../../shared/utils.ts";
 
 import { snakeToCamel } from "../../shared/dom.ts";
@@ -35,23 +34,41 @@ type TrustedValueHolderConstructor = new (
   trustedValue?: string,
 ) => TrustedValueHolder;
 
+export const SCE_CONTEXTS = {
+  // HTML is used when there's HTML rendered (e.g. ng-bind-html, iframe srcdoc binding).
+  _HTML: "html",
+
+  // An URL used in a context where it refers to the source of media, which are not expected to be run
+  // as scripts, such as an image, audio, video, etc.
+  _MEDIA_URL: "mediaUrl",
+
+  // An URL used in a context where it does not refer to a resource that loads code.
+  // A value that can be trusted as a URL can also trusted as a MEDIA_URL.
+  _URL: "url",
+
+  // RESOURCE_URL is a subtype of URL used where the referred-to resource could be interpreted as
+  // code. (e.g. ng-include, script src binding, templateUrl)
+  // A value that can be trusted as a RESOURCE_URL, can also trusted as a URL and a MEDIA_URL.
+  _RESOURCE_URL: "resourceUrl",
+} as const;
+
+export type SceContext = (typeof SCE_CONTEXTS)[keyof typeof SCE_CONTEXTS];
+
 export interface SceService {
-  HTML: string;
-  JS: string;
-  URL: string;
-  RESOURCE_URL: string;
-  MEDIA_URL: string;
-  getTrusted(type: string, mayBeTrusted: any): any;
+  getTrusted(type: SceContext, mayBeTrusted: any): any;
   getTrustedHtml(value: any): any;
   getTrustedResourceUrl(value: any): any;
   getTrustedUrl(value: any): any;
   getTrustedMediaUrl(value: any): any;
-  parse(type: string, expression: string): (context: any, locals: any) => any;
+  parse(
+    type: SceContext,
+    expression: string,
+  ): (context: any, locals: any) => any;
   parseAsHtml(expression: string): (context: any, locals: any) => any;
   parseAsResourceUrl(expression: string): (context: any, locals: any) => any;
   parseAsUrl(expression: string): (context: any, locals: any) => any;
   parseAsMediaUrl(expression: string): (context: any, locals: any) => any;
-  trustAs(type: string, value: any): any;
+  trustAs(type: SceContext, value: any): any;
   trustAsHtml(value: any): any;
   trustAsResourceUrl(value: any): any;
   trustAsUrl(value: any): any;
@@ -61,28 +78,10 @@ export interface SceService {
 }
 
 export interface SceDelegateService {
-  getTrusted(type: string, mayBeTrusted: any): any;
-  trustAs(type: string, value: any): any;
+  getTrusted(type: SceContext, mayBeTrusted: any): any;
+  trustAs(type: SceContext, value: any): any;
   valueOf(value?: any): any;
 }
-
-export const SCE_CONTEXTS = {
-  // HTML is used when there's HTML rendered (e.g. ng-bind-html, iframe srcdoc binding).
-  HTML: "html",
-
-  // An URL used in a context where it refers to the source of media, which are not expected to be run
-  // as scripts, such as an image, audio, video, etc.
-  MEDIA_URL: "mediaUrl",
-
-  // An URL used in a context where it does not refer to a resource that loads code.
-  // A value that can be trusted as a URL can also trusted as a MEDIA_URL.
-  URL: "url",
-
-  // RESOURCE_URL is a subtype of URL used where the referred-to resource could be interpreted as
-  // code. (e.g. ng-include, script src binding, templateUrl)
-  // A value that can be trusted as a RESOURCE_URL, can also trusted as a URL and a MEDIA_URL.
-  RESOURCE_URL: "resourceUrl",
-} as const;
 
 // Copied from:
 // http://docs.closure-library.googlecode.com/git/local_closure_goog_string_string.ts.source.html#line1021
@@ -393,15 +392,15 @@ export class SceDelegateProvider {
 
         const byType: Record<string, TrustedValueHolderConstructor> = {};
 
-        byType[SCE_CONTEXTS.HTML] = generateHolderType(trustedValueHolderBase);
-        byType[SCE_CONTEXTS.MEDIA_URL] = generateHolderType(
+        byType[SCE_CONTEXTS._HTML] = generateHolderType(trustedValueHolderBase);
+        byType[SCE_CONTEXTS._MEDIA_URL] = generateHolderType(
           trustedValueHolderBase,
         );
-        byType[SCE_CONTEXTS.URL] = generateHolderType(
-          byType[SCE_CONTEXTS.MEDIA_URL],
+        byType[SCE_CONTEXTS._URL] = generateHolderType(
+          byType[SCE_CONTEXTS._MEDIA_URL],
         );
-        byType[SCE_CONTEXTS.RESOURCE_URL] = generateHolderType(
-          byType[SCE_CONTEXTS.URL],
+        byType[SCE_CONTEXTS._RESOURCE_URL] = generateHolderType(
+          byType[SCE_CONTEXTS._URL],
         );
 
         /**
@@ -424,7 +423,7 @@ export class SceDelegateProvider {
          * @param trustedValue The value that should be considered trusted.
          * @returns A trusted representation of value, that can be used in the given context.
          */
-        function trustAs(type: string, trustedValue: any): any {
+        function trustAs(type: SceContext, trustedValue: any): any {
           const Constructor =
             isDefined(type) && hasOwn(byType, type) ? byType[type] : null;
 
@@ -520,7 +519,7 @@ export class SceDelegateProvider {
          * @returns A version of the value that's safe to use in the given context, or throws an
          *     exception if this is impossible.
          */
-        function getTrusted(type: string, maybeTrusted: any): any {
+        function getTrusted(type: SceContext, maybeTrusted: any): any {
           if (
             maybeTrusted === null ||
             isUndefined(maybeTrusted) ||
@@ -547,15 +546,15 @@ export class SceDelegateProvider {
           }
 
           // If we get here, then we will either sanitize the value or throw an exception.
-          if (type === SCE_CONTEXTS.MEDIA_URL || type === SCE_CONTEXTS.URL) {
+          if (type === SCE_CONTEXTS._MEDIA_URL || type === SCE_CONTEXTS._URL) {
             // we attempt to sanitize non-resource URLs
             return $$sanitizeUri(
               maybeTrusted.toString(),
-              type === SCE_CONTEXTS.MEDIA_URL,
+              type === SCE_CONTEXTS._MEDIA_URL,
             );
           }
 
-          if (type === SCE_CONTEXTS.RESOURCE_URL) {
+          if (type === SCE_CONTEXTS._RESOURCE_URL) {
             if (isResourceUrlAllowedByPolicy(maybeTrusted)) {
               return maybeTrusted;
             }
@@ -568,7 +567,7 @@ export class SceDelegateProvider {
             );
 
             return undefined;
-          } else if (type === SCE_CONTEXTS.HTML) {
+          } else if (type === SCE_CONTEXTS._HTML) {
             // htmlSanitizer throws its own error when no sanitizer is available.
             return htmlSanitizer();
           }
@@ -613,9 +612,9 @@ export function SceProvider(this: any): void {
      * Creates the runtime `$sce` service.
      */
     ($parse: ng.ParseService, $sceDelegate: ng.SceDelegateService) => {
-      const sce = shallowCopy(SCE_CONTEXTS) as ng.SceService &
+      const sce = {} as ng.SceService &
         Record<string, any> & {
-          parseAs: (type: string, expr: string) => CompiledExpression;
+          parseAs: (type: SceContext, expr: string) => CompiledExpression;
         };
 
       /**
@@ -636,7 +635,7 @@ export function SceProvider(this: any): void {
         /**
          * Disables trust enforcement when SCE is configured off.
          */
-        sce.trustAs = sce.getTrusted = function (type: string, value: any) {
+        sce.trustAs = sce.getTrusted = function (type: SceContext, value: any) {
           return value;
         };
         sce.valueOf = (v?: any) => v;
@@ -657,7 +656,7 @@ export function SceProvider(this: any): void {
        *    * `locals` – `{object=}` – local variables context object, useful for overriding values
        *      in `context`.
        */
-      sce.parseAs = (type: string, expr: string) => {
+      sce.parseAs = (type: SceContext, expr: string) => {
         const parsed = $parse(expr);
 
         if (parsed._literal && parsed._constant) {
@@ -810,7 +809,7 @@ export function SceProvider(this: any): void {
       const { trustAs } = sce;
 
       entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
-        const lName = name.toLowerCase();
+        const lName = name.replace(/^_/, "").toLowerCase();
 
         /** @param expr */
         sce[snakeToCamel(`parse_as_${lName}`)] = function (expr: string) {

@@ -2,6 +2,7 @@
   "entryPoints": ["src/docs.ts"],
   "entryPointStrategy": "expand",
   "excludePrivate": true,
+  "excludeInternal": true,
   "out": "./typedoc",
   "disableSources": true,
   "name": "AngularTS",

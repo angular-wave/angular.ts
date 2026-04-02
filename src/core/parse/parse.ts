@@ -12,19 +12,20 @@ import type { BodyNode } from "./ast/ast-node.ts";
  * Describes metadata and behavior for a compiled AngularTS expression.
  */
 export interface CompiledExpressionProps {
-  /** Indicates if the expression is a literal. */
+  /** @internal Indicates if the expression is a literal. */
   _literal: boolean;
-  /** Indicates if the expression is constant. */
+  /** @internal Indicates if the expression is constant. */
   _constant: boolean;
-  /** Optional flag for pure expressions. */
+  /** @internal Optional flag for pure expressions. */
   _isPure?: boolean;
-  /** AST node decorated with metadata. */
+  /** @internal AST node decorated with metadata. */
   _decoratedNode: BodyNode;
-  /** Expression inputs; may be an array or a function. */
+  /** @internal Expression inputs; may be an array or a function. */
   _inputs?: any[] | Function;
-  /** Optional interceptor applied to the evaluated result. */
+  /** @internal Optional interceptor applied to the evaluated result. */
   _interceptor?: (value: any) => any;
   /**
+   * @internal
    * Optional assign function for two-way binding.
    * Assigns a value to a context.
    * If value is not provided, may return the getter.

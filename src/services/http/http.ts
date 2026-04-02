@@ -51,6 +51,7 @@ export interface HttpHeadersGetter {
 }
 
 export interface HttpRequestConfigHeaders {
+  /** @internal */
   [requestType: string]: any;
   common?: any;
   get?: any;
@@ -70,6 +71,7 @@ export interface HttpResponseTransformer {
 }
 
 export interface HttpHeaderType {
+  /** @internal */
   [requestType: string]: string | ((config: RequestConfig) => string);
 }
 

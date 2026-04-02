@@ -163,8 +163,11 @@ export class Location {
   basePrefix?: string;
   hashPrefix?: string;
   absUrl: string;
+  /** @internal */
   _url = "";
+  /** @internal */
   _updateBrowser?: () => void;
+  /** @internal */
   _state: History["state"] = undefined;
   /**
    * @param appBase application base URL
@@ -374,7 +377,7 @@ export class Location {
   }
 
   /**
-   * @private
+   * @internal
    * Compose url and update `url` and `absUrl` property
    */
   _compose(): void {
@@ -535,12 +538,19 @@ export class Location {
 
 export class LocationProvider {
   hashPrefixConf: string;
+  /** @internal */
   _html5ModeConf: Html5Mode;
+  /** @internal */
   _rewriteLinksConfigured: boolean;
+  /** @internal */
   _urlChangeListeners: UrlChangeListener[];
+  /** @internal */
   _urlChangeInit: boolean;
+  /** @internal */
   _cachedState: History["state"];
+  /** @internal */
   _lastHistoryState: History["state"];
+  /** @internal */
   _lastBrowserUrl: string;
   lastCachedState: History["state"];
 
@@ -648,6 +658,7 @@ export class LocationProvider {
   }
 
   /**
+   * @internal
    * Fires the state or URL change event.
    */
   _fireStateOrUrlChange(): void {
@@ -669,6 +680,7 @@ export class LocationProvider {
   }
 
   /**
+   * @internal
    * Registers a callback that runs when the browser URL changes.
    *
    * @param callback - Listener invoked with the new URL and history state.

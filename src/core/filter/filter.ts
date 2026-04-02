@@ -16,6 +16,7 @@ const SUFFIX = "Filter";
 export class FilterProvider {
   static $inject = [$t._provide];
 
+  /** @internal */
   _$provide: Provider;
   $get: [string, ($injector: ng.InjectorService) => FilterService];
 
