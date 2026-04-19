@@ -62,8 +62,10 @@ export class StateProvider {
   urlService: ng.UrlService | undefined;
   $injector: ng.InjectorService | undefined;
   invalidCallbacks: OnInvalidCallback[];
+  /** @internal */
   _defaultErrorHandler: ng.ExceptionHandlerService;
 
+  /** @internal */
   _getRegistry(): StateRegistryProvider {
     if (!this.stateRegistry)
       throw new Error("State registry is not initialized");
@@ -71,6 +73,7 @@ export class StateProvider {
     return this.stateRegistry;
   }
 
+  /** @internal */
   _getUrlService(): ng.UrlService {
     if (!this.urlService) throw new Error("Url service is not initialized");
 

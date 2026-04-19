@@ -15,8 +15,8 @@ function prioritySort(a: { priority: any }, b: { priority: any }): number {
 }
 
 const typeSort = (
-  a: { type: string | number },
-  b: { type: string | number },
+  a: { _type: string | number },
+  b: { _type: string | number },
 ) => {
   const weights: Record<string, number> = {
     STATE: 4,
@@ -26,7 +26,7 @@ const typeSort = (
     OTHER: 1,
   };
 
-  return (weights[a.type] || 0) - (weights[b.type] || 0);
+  return (weights[a._type] || 0) - (weights[b._type] || 0);
 };
 
 const urlMatcherSort = (a: MatcherUrlRule, b: MatcherUrlRule) =>
@@ -35,8 +35,8 @@ const urlMatcherSort = (a: MatcherUrlRule, b: MatcherUrlRule) =>
     : UrlMatcher.compare(a.urlMatcher, b.urlMatcher);
 
 const idSort = (
-  a: { type: string | number; $id: any },
-  b: { type: string | number; $id: any },
+  a: { _type: string | number; $id: any },
+  b: { _type: string | number; $id: any },
 ) => {
   // Identically sorted STATE and URLMATCHER best rule will be chosen by `matchPriority` after each rule matches the URL
   const useMatchPriority: Record<string, boolean> = {
@@ -44,7 +44,7 @@ const idSort = (
     URLMATCHER: true,
   };
 
-  const equal = useMatchPriority[a.type] && useMatchPriority[b.type];
+  const equal = useMatchPriority[a._type] && useMatchPriority[b._type];
 
   return equal ? 0 : (a.$id || 0) - (b.$id || 0);
 };
@@ -88,11 +88,17 @@ function defaultRuleSortFn(a: UrlRule, b: UrlRule): number {
  * This API is found at `$url.rules` (see: [[UIRouter.urlService]], [[URLService.rules]])
  */
 export class UrlRules {
+  /** @internal */
   _sortFn: typeof defaultRuleSortFn;
+  /** @internal */
   _rules: UrlRule[];
+  /** @internal */
   _id: number;
+  /** @internal */
   _urlRuleFactory: UrlRuleFactory;
+  /** @internal */
   _router: RouterProvider;
+  /** @internal */
   _sorted = false;
   /** @param {UrlRuleFactory} urlRuleFactory */
   constructor(urlRuleFactory: UrlRuleFactory, router: RouterProvider) {

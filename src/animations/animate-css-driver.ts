@@ -19,6 +19,7 @@ const NG_IN_ANCHOR_CLASS_NAME = "ng-anchor-in";
 AnimateCssDriverProvider.$inject = ["$$animationProvider"];
 
 interface AnimationProviderShape {
+  /** @internal */
   _drivers: string[];
 }
 

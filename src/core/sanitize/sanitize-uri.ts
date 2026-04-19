@@ -7,7 +7,9 @@ export type SanitizerFn = (
 ) => string | null | undefined;
 
 export class SanitizeUriProvider {
+  /** @internal */
   _aHrefSanitizationTrustedUrlList: RegExp;
+  /** @internal */
   _imgSrcSanitizationTrustedUrlList: RegExp;
   $get: [string, ($window: Window) => SanitizerFn];
 

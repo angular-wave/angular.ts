@@ -1005,6 +1005,7 @@ export type BuiltStateDeclaration = StateDeclaration & {
   /** Optional inherited data */
   data?: any;
 
+  /** @internal */
   _stateObjectCache?: { nameGlob: Glob } | null;
 };
 

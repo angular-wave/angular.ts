@@ -66,11 +66,13 @@ export function matchState(
  */
 export class RegisteredHook {
   tranSvc: TransitionService;
-  eventType: TransitionEventType;
+  /** @internal */
+  _eventType: TransitionEventType;
   callback: HookFn;
   matchCriteria: HookMatchCriteria;
   removeHookFromRegistry: (hook: RegisteredHook) => void;
   invokeCount: number;
+  /** @internal */
   _deregistered: boolean;
   priority: number;
   bind: unknown;
@@ -78,14 +80,14 @@ export class RegisteredHook {
 
   constructor(
     tranSvc: TransitionService,
-    eventType: TransitionEventType,
+    eventType: unknown,
     callback: HookFn,
     matchCriteria: HookMatchCriteria,
     removeHookFromRegistry: (hook: RegisteredHook) => void,
     options: HookRegOptions = {},
   ) {
     this.tranSvc = tranSvc;
-    this.eventType = eventType;
+    this._eventType = eventType as TransitionEventType;
     this.callback = callback;
     this.matchCriteria = matchCriteria;
     this.removeHookFromRegistry = removeHookFromRegistry;
@@ -96,6 +98,7 @@ export class RegisteredHook {
     this.invokeLimit = options.invokeLimit;
   }
 
+  /** @internal */
   _matchingNodes(
     nodes: PathNode[],
     criterion: HookMatchCriterion,
@@ -110,10 +113,12 @@ export class RegisteredHook {
     return matching.length ? matching : null;
   }
 
+  /** @internal */
   _getDefaultMatchCriteria(): HookMatchCriteria {
     return map(this.tranSvc._getPathTypes(), () => true) as HookMatchCriteria;
   }
 
+  /** @internal */
   _getMatchingNodes(
     treeChanges: TreeChanges,
     transition: Transition,
@@ -169,6 +174,7 @@ export interface RegisteredHooks {
 }
 
 type HookSource = {
+  /** @internal */
   _registeredHooks?: RegisteredHooks;
 } & Record<string, any>;
 
@@ -178,16 +184,18 @@ type HookSource = {
 export function registerHook(
   hookSource: HookSource,
   transitionService: TransitionService,
-  eventType: TransitionEventType,
+  eventType: unknown,
   matchCriteria: HookMatchCriteria,
   callback: HookFn,
   options: HookRegOptions = {},
 ): DeregisterFn {
+  const typedEventType = eventType as TransitionEventType;
+
   const _registeredHooks = (hookSource._registeredHooks =
     hookSource._registeredHooks || ({} as RegisteredHooks));
 
-  const hooks = (_registeredHooks[eventType.name] =
-    _registeredHooks[eventType.name] || []);
+  const hooks = (_registeredHooks[typedEventType.name] =
+    _registeredHooks[typedEventType.name] || []);
 
   const removeHookFn = (hook: RegisteredHook): void => {
     removeFrom(hooks, hook);
@@ -195,7 +203,7 @@ export function registerHook(
 
   const registeredHook = new RegisteredHook(
     transitionService,
-    eventType,
+    typedEventType,
     callback,
     matchCriteria,
     removeHookFn,
@@ -213,7 +221,7 @@ export function registerHook(
 export function makeEvent(
   hookSource: HookSource,
   transitionService: TransitionService,
-  eventType: TransitionEventType,
+  eventType: unknown,
 ): (
   matchObject: HookMatchCriteria,
   callback: HookFn,
@@ -222,7 +230,10 @@ export function makeEvent(
   const _registeredHooks = (hookSource._registeredHooks =
     hookSource._registeredHooks || ({} as RegisteredHooks));
 
-  const hooks = (_registeredHooks[eventType.name] = [] as RegisteredHook[]);
+  const typedEventType = eventType as TransitionEventType;
+
+  const hooks = (_registeredHooks[typedEventType.name] =
+    [] as RegisteredHook[]);
 
   const removeHookFn = (hook: RegisteredHook): void => {
     removeFrom(hooks, hook);
@@ -235,7 +246,7 @@ export function makeEvent(
   ): DeregisterFn {
     const registeredHook = new RegisteredHook(
       transitionService,
-      eventType,
+      typedEventType,
       callback,
       matchObject,
       removeHookFn,
@@ -247,7 +258,7 @@ export function makeEvent(
     return registeredHook.deregister.bind(registeredHook);
   }
 
-  hookSource[eventType.name] = hookRegistrationFn;
+  hookSource[typedEventType.name] = hookRegistrationFn;
 
   return hookRegistrationFn;
 }

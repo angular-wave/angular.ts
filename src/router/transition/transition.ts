@@ -43,9 +43,13 @@ import type { RawParams } from "../params/interface.ts";
 export interface Transition {
   promise: Promise<any>;
   $id: number;
+  /** @internal */
   _aborted?: boolean;
+  /** @internal */
   _globals: ng.RouterService & Record<string, any>;
+  /** @internal */
   _transitionService: TransitionService;
+  /** @internal */
   _treeChanges: TreeChanges;
   addResolvable(resolvable: Resolvable | ResolvableLiteral, state?: any): void;
   entering(): ng.StateDeclaration[];
@@ -101,16 +105,26 @@ export class Transition {
   static diToken: typeof Transition;
   promise: Promise<any>;
   $id: number;
+  /** @internal */
   _aborted?: boolean;
+  /** @internal */
   _globals: ng.RouterService & Record<string, any>;
+  /** @internal */
   _transitionService: TransitionService;
+  /** @internal */
   _treeChanges: TreeChanges;
+  /** @internal */
   _deferred: DeferredPromise<any>;
+  /** @internal */
   _registeredHooks: RegisteredHooks;
+  /** @internal */
   _hookBuilder: HookBuilder;
+  /** @internal */
   _targetState: TargetState;
+  /** @internal */
   _options: TransitionOptions;
   success: boolean | undefined;
+  /** @internal */
   _error: any;
   isActive: () => boolean;
 
@@ -336,6 +350,7 @@ export class Transition {
    * @param {string} eventName
    * @returns {TransitionEventType}
    */
+  /** @internal */
   _getEventType(eventName: string): TransitionEventType {
     const eventType = this._transitionService
       ._getEvents()
@@ -792,6 +807,7 @@ export class Transition {
     return !!this._ignoredReason();
   }
 
+  /** @internal */
   _ignoredReason() {
     const pending = this._globals.transition;
 

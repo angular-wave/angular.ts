@@ -47,10 +47,15 @@ export class TargetState {
     );
   }
 
+  /** @internal */
   _stateRegistry: StateRegistryProvider;
+  /** @internal */
   _identifier: StateOrName;
+  /** @internal */
   _params: RawParams;
+  /** @internal */
   _options: TransitionOptions;
+  /** @internal */
   _definition: StateObject | undefined;
 
   /**

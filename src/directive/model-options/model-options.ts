@@ -23,7 +23,9 @@ class NgModelOptionsController {
   static $nonscope = true;
   static $inject = [$injectTokens._attrs, $injectTokens._scope];
 
+  /** @internal */
   _attrs: ng.Attributes;
+  /** @internal */
   _scope: ng.Scope;
   parentCtrl: NgModelOptionsController | null;
   $options: ModelOptions;
@@ -54,6 +56,7 @@ class NgModelOptionsController {
 export class ModelOptions {
   static $nonscope = true;
 
+  /** @internal */
   _options: ModelOptionsConfig;
 
   constructor(options: ModelOptionsConfig) {

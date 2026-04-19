@@ -3,6 +3,7 @@ import type { StateObject } from "./state-object.ts";
 import type { StateOrName, StateStore } from "./interface.ts";
 
 export class StateMatcher {
+  /** @internal */
   _states: StateStore;
 
   /** @param {StateStore} states */

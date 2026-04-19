@@ -68,8 +68,11 @@ export type CloneAttachFn = (
 ) => any;
 
 export interface TemplateLinkingFunctionOptions {
+  /** @internal */
   _parentBoundTranscludeFn?: BoundTranscludeFn | null;
+  /** @internal */
   _transcludeControllers?: unknown;
+  /** @internal */
   _futureParentElement?: Node | Element | null | undefined;
 }
 
@@ -112,12 +115,14 @@ export type TranscludeFn = {
   ): TranscludedNodes | void;
 
   /** Slot transclusion functions (if the parent declared slots). */
+  /** @internal */
   _slots?: Record<string | number, TranscludeFn | null>;
 
   /** Added by your `controllersBoundTransclude` wrapper. */
   isSlotFilled?: (slotName: string | number) => boolean;
 
   /** Internal: unwraps to the bound transclude when threaded through link options. */
+  /** @internal */
   _boundTransclude?: BoundTranscludeFn;
 };
 
@@ -134,7 +139,9 @@ export interface BoundTranscludeFn {
     containingScope?: Scope,
   ): TranscludedNodes | void;
 
+  /** @internal */
   _slots: Record<string | number, BoundTranscludeFn | null>;
+  /** @internal */
   _boundTransclude?: BoundTranscludeFn;
 }
 
@@ -176,8 +183,11 @@ export type CompileFn = (
  * Represents a mapping of linking functions.
  */
 export interface LinkFnMapping {
+  /** @internal */
   _index: number;
+  /** @internal */
   _nodeLinkFnCtx?: NodeLinkFnCtx;
+  /** @internal */
   _childLinkFn?: ChildLinkFn | CompositeLinkFn | null;
 }
 
@@ -223,12 +233,19 @@ export type StoredNodeLinkFn = (
  * Context information for a NodeLinkFn.
  */
 export interface NodeLinkFnCtx {
+  /** @internal */
   _nodeLinkFn: NodeLinkFn | StoredNodeLinkFn;
+  /** @internal */
   _nodeLinkFnState?: unknown;
+  /** @internal */
   _terminal: boolean;
+  /** @internal */
   _transclude: ChildTranscludeOrLinkFn;
+  /** @internal */
   _transcludeOnThisElement: boolean;
+  /** @internal */
   _templateOnThisElement: boolean;
+  /** @internal */
   _newScope: boolean;
 }
 
@@ -250,16 +267,27 @@ export type CompositeLinkFn = (
  * Internal compile bookkeeping passed through compile/compileNodes/applyDirectivesToNode.
  */
 export interface PreviousCompileContext {
+  /** @internal */
   _index?: number;
+  /** @internal */
   _parentNodeRef?: NodeRef;
+  /** @internal */
   _ctxNodeRef?: NodeRef;
+  /** @internal */
   _needsNewScope?: boolean;
+  /** @internal */
   _hasElementTranscludeDirective?: boolean;
+  /** @internal */
   _nonTlbTranscludeDirective?: ng.Directive | null;
+  /** @internal */
   _futureParentElement?: Node | Element | null;
+  /** @internal */
   _controllerDirectives?: Record<string, ng.Directive> | null;
+  /** @internal */
   _newScopeDirective?: ng.Directive | null;
+  /** @internal */
   _newIsolateScopeDirective?: ng.Directive | null;
+  /** @internal */
   _templateDirective?: ng.Directive | null;
 }
 
@@ -270,10 +298,15 @@ export interface InternalDirective extends ng.Directive {
   name: string;
   priority?: number;
   index?: number;
+  /** @internal */
   _bindings?: any;
+  /** @internal */
   _isolateBindings?: any;
+  /** @internal */
   _isolateScope?: boolean;
+  /** @internal */
   _newScope?: boolean;
+  /** @internal */
   _originalDirective?: any;
   templateNamespace?: string;
 }
@@ -313,7 +346,9 @@ export type StrictComponentBindingsAccessor = (
 ) => boolean | any;
 
 export interface DirectiveBindingInfo {
+  /** @internal */
   _initialChanges: Record<string, SimpleChange>;
+  /** @internal */
   _removeWatches?: () => void;
 }
 
@@ -325,7 +360,9 @@ export interface CompileControllerLocals {
 }
 
 export type ControllerInstanceRef = (() => any) & {
+  /** @internal */
   _instance: any;
+  /** @internal */
   _bindingInfo?: DirectiveBindingInfo;
 };
 
@@ -337,26 +374,38 @@ export type NodeLinkTranscludeFn =
   | ng.TranscludeFn;
 
 export interface TextInterpolateLinkState {
+  /** @internal */
   _interpolateFn: InterpolationFunction;
+  /** @internal */
   _watchExpression: string;
 }
 
 export interface AttrInterpolateLinkState {
+  /** @internal */
   _name: string;
+  /** @internal */
   _value: string;
+  /** @internal */
   _trustedContext?: SceContext;
+  /** @internal */
   _allOrNothing: boolean;
+  /** @internal */
   _interpolateFn?: InterpolationFunction;
 }
 
 export interface PropertyDirectiveLinkState {
+  /** @internal */
   _attrName: string;
+  /** @internal */
   _propName: string;
+  /** @internal */
   _ngPropGetter: CompiledExpression;
+  /** @internal */
   _sanitizer: (value: any) => any;
 }
 
 export type ContextualLinkFn<TLinkCtx = unknown> = ((...args: any[]) => any) & {
+  /** @internal */
   _linkCtx?: TLinkCtx;
 };
 
@@ -366,8 +415,11 @@ export interface ContextualDirectivePrePost<
 > {
   pre?: (...args: any[]) => any;
   post?: (...args: any[]) => any;
+  /** @internal */
   _linkCtx?: unknown;
+  /** @internal */
   _preLinkCtx?: TPreLinkCtx;
+  /** @internal */
   _postLinkCtx?: TPostLinkCtx;
 }
 
@@ -378,18 +430,28 @@ export type CompileDirectiveLinkResult =
   | undefined;
 
 export interface LinkFnRecord {
+  /** @internal */
   _fn: Function;
+  /** @internal */
   _require: string | Array<any> | Record<string, any> | undefined;
+  /** @internal */
   _directiveName: string;
+  /** @internal */
   _isolateScope: boolean;
+  /** @internal */
   _linkCtx?: unknown;
 }
 
 export interface ControllersBoundTranscludeState {
+  /** @internal */
   _boundTranscludeFn: BoundTranscludeFn;
+  /** @internal */
   _elementControllers: ElementControllers;
+  /** @internal */
   _hasElementTranscludeDirective: boolean;
+  /** @internal */
   _scopeToChild: Scope;
+  /** @internal */
   _elementRef: NodeRef;
 }
 
@@ -401,23 +463,35 @@ export interface ControllersBoundTranscludeFn {
     slotName?: string | number,
   ): TranscludedNodes | void;
   isSlotFilled?: (slotName: string | number) => boolean;
+  /** @internal */
   _boundTransclude?: BoundTranscludeFn;
 }
 
 export interface NodeLinkState {
+  /** @internal */
   _compileNode: Node | Element;
+  /** @internal */
   _templateAttrs: Attributes;
+  /** @internal */
   _transcludeFn: NodeLinkTranscludeFn;
+  /** @internal */
   _controllerDirectives?: Record<string, InternalDirective> | null;
+  /** @internal */
   _newIsolateScopeDirective?: InternalDirective | null;
+  /** @internal */
   _newScopeDirective?: InternalDirective | null;
+  /** @internal */
   _hasElementTranscludeDirective: boolean;
+  /** @internal */
   _preLinkFns: LinkFnRecord[];
+  /** @internal */
   _postLinkFns: LinkFnRecord[];
 }
 
 export interface DelayedTemplateReplacementState {
+  /** @internal */
   _templateNodes: Element[];
+  /** @internal */
   _templateAttrs: Attributes;
 }
 
@@ -432,25 +506,39 @@ export type DelayedTemplateLinkQueue = Array<
 >;
 
 export interface DelayedTemplateLinkState {
+  /** @internal */
   _linkQueue: DelayedTemplateLinkQueue | null;
+  /** @internal */
   _afterTemplateNodeLinkFnCtx?: NodeLinkFnCtx;
+  /** @internal */
   _afterTemplateChildLinkFn: CompositeLinkFn | ChildLinkFn | null;
+  /** @internal */
   _beforeTemplateCompileNode: Node | Element;
+  /** @internal */
   _compileNodeRef: NodeRef;
+  /** @internal */
   _origAsyncDirective: InternalDirective;
+  /** @internal */
   _previousCompileContext: PreviousCompileContext;
+  /** @internal */
   _compiledNode?: Element;
 }
 
 export interface DelayedTemplateNodeLinkResult {
+  /** @internal */
   _nodeLinkFn: StoredNodeLinkFn;
+  /** @internal */
   _nodeLinkFnState: DelayedTemplateLinkState;
 }
 
 export interface CompositeLinkState {
+  /** @internal */
   _linkFnsList: LinkFnMapping[];
+  /** @internal */
   _nodeRefList: NodeRef;
+  /** @internal */
   _nodeLinkFnFound?: NodeLinkFn | StoredNodeLinkFn;
+  /** @internal */
   _transcludeFn?: ChildTranscludeOrLinkFn;
 }
 
@@ -1162,6 +1250,7 @@ export class CompileProvider {
             if (_transcludeControllers) {
               const controllers = _transcludeControllers as Record<
                 string,
+                /** @internal */
                 { _instance: any }
               >;
 
@@ -1208,6 +1297,7 @@ export class CompileProvider {
 
             const node = stableNodeList[_index];
 
+            /** @internal */
             (node as Node & { _stable?: boolean })._stable = true;
 
             let childScope: Scope;
@@ -1624,7 +1714,9 @@ export class CompileProvider {
           maxPriority?: number,
           ignoreDirective?: string,
           previousCompileContext?: {
+            /** @internal */
             _nonTlbTranscludeDirective?: any;
+            /** @internal */
             _needsNewScope?: any;
           } | null,
         ): ng.PublicLinkFn | ng.TranscludeFn {
@@ -2130,6 +2222,7 @@ export class CompileProvider {
                 slotName,
               );
             } as ControllersBoundTranscludeFn & {
+              /** @internal */
               _boundTransclude?: BoundTranscludeFn;
             };
 

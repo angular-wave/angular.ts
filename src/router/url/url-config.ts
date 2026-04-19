@@ -19,8 +19,11 @@ import type { ParamType } from "../params/param-type.ts";
 export class UrlConfigProvider {
   static $inject = [$injectTokens._angularProvider];
   paramTypes: ParamTypes;
+  /** @internal */
   _isCaseInsensitive: boolean;
+  /** @internal */
   _isStrictMode: boolean;
+  /** @internal */
   _defaultSquashPolicy: boolean | string;
 
   /**

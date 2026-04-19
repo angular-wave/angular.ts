@@ -158,6 +158,7 @@ export interface AnimateService {
 }
 
 interface AnimateProviderInstance {
+  /** @internal */
   _registeredAnimations: Record<string, string>;
   register: (name: string, factory: Injectable<any>) => void;
   customFilter: (filterFn?: Function) => Function | null;

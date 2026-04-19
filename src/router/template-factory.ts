@@ -27,9 +27,13 @@ type TemplateResult =
  * Resolves route templates and components from state view declarations.
  */
 export class TemplateFactoryProvider {
+  /** @internal */
   _templateRequest: ng.TemplateRequestService | undefined;
+  /** @internal */
   _http: ng.HttpService | undefined;
+  /** @internal */
   _templateCache: ng.TemplateCacheService | undefined;
+  /** @internal */
   _injector: ng.InjectorService | undefined;
 
   /**

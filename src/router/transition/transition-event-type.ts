@@ -11,11 +11,13 @@ type GetErrorHandler = (hook?: {
 /**
  * Immutable metadata describing one transition lifecycle event.
  */
+/** @internal */
 export class TransitionEventType {
   name: string;
   hookPhase: number;
   hookOrder: number;
-  criteriaMatchPath: PathType;
+  /** @internal */
+  _criteriaMatchPath: PathType;
   reverseSort: boolean;
   getResultHandler: GetResultHandler;
   getErrorHandler: GetErrorHandler;
@@ -37,7 +39,7 @@ export class TransitionEventType {
     this.name = name;
     this.hookPhase = hookPhase;
     this.hookOrder = hookOrder;
-    this.criteriaMatchPath = criteriaMatchPath;
+    this._criteriaMatchPath = criteriaMatchPath;
     this.reverseSort = reverseSort;
     this.getResultHandler = getResultHandler;
     this.getErrorHandler = getErrorHandler;

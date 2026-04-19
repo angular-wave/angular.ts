@@ -104,6 +104,7 @@ export function stringify(value: any): string {
     [isPromise, val("[Promise]")],
     [
       isRejection,
+      /** @internal */
       (reg: { _transitionRejection: { toString: () => any } }) =>
         reg._transitionRejection.toString(),
     ],

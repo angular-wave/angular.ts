@@ -46,6 +46,7 @@ export class CookieProvider {
  *  - Global defaults supplied by $cookiesProvider
  */
 export class CookieService {
+  /** @internal */
   private _defaults: ng.CookieOptions;
 
   /**

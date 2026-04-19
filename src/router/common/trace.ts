@@ -130,19 +130,18 @@ function transLbl(trans: ng.Transition): string {
  * Prints ng-router Transition trace information to the console.
  */
 export class Trace {
-  _enabled: Record<string, boolean>;
-  _approximateDigests: number;
-  _logger: TraceLogger;
+  private _enabled: Record<string, boolean>;
+  private _logger: TraceLogger;
 
   constructor() {
     this._enabled = {};
-    this._approximateDigests = 0;
     this._logger =
       (window.angular?.$injector?.get($injectTokens._log) as
         | TraceLogger
         | undefined) || console;
   }
 
+  /** @internal */
   _set(enabled: boolean, categories: TraceCategoryInput[]): void {
     if (!categories.length) {
       categories = Object.values(Category);

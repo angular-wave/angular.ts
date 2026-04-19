@@ -22,7 +22,9 @@ const SIMPLE_ATTR_NAME = /^\w/;
 const specialAttrHolder = document.createElement("div");
 
 type ObserverList = Array<(value?: unknown) => void> & {
+  /** @internal */
   _inter?: boolean;
+  /** @internal */
   _scope?: ng.Scope;
 };
 
@@ -49,11 +51,16 @@ export class Attributes {
    *      source object already contains the correct normalized -> DOM attribute mapping.
    */
 
+  /** @internal */
   _animate: ng.AnimateService;
+  /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
+  /** @internal */
   _sce: ng.SceService;
   $attr: Record<string, string>;
+  /** @internal */
   _nodeRef: NodeRef | undefined;
+  /** @internal */
   _observers: ObserverMap | undefined;
   [key: string]: any;
 
@@ -83,6 +90,7 @@ export class Attributes {
   }
 
   /** @ignore Internal element accessor used by legacy attribute helpers. */
+  /** @internal */
   _element(): Node | Element {
     return this._nodeRef?._getAny() as Node | Element;
   }
@@ -240,6 +248,7 @@ export class Attributes {
     };
   }
 
+  /** @internal */
   _setSpecialAttr(
     element: Element,
     attrName: string,
@@ -255,6 +264,7 @@ export class Attributes {
     element.attributes.setNamedItem(attribute);
   }
 
+  /** @internal */
   _sanitizeSrcset(value: unknown, invokeType: string): unknown {
     let i: number;
 

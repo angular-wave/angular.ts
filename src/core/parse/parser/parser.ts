@@ -7,7 +7,9 @@ import { ASTInterpreter } from "../interpreter.ts";
 import type { Lexer } from "../lexer/lexer.ts";
 
 export class Parser {
+  /** @internal */
   _ast: AST;
+  /** @internal */
   _astCompiler: ASTInterpreter;
 
   constructor(lexer: Lexer, $filter: FilterService) {
@@ -15,6 +17,7 @@ export class Parser {
     this._astCompiler = new ASTInterpreter($filter);
   }
 
+  /** @internal */
   _parse(exp: string): CompiledExpression {
     const ast = this._ast._ast(exp.trim());
 

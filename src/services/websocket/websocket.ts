@@ -28,6 +28,7 @@ export type WebSocketService = (
  */
 export class WebSocketProvider {
   defaults: ng.WebSocketConfig;
+  /** @internal */
   _$log!: LogService;
 
   /**

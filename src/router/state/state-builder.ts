@@ -374,8 +374,11 @@ export function resolvablesBuilder(
  * using the [[builder]] method.
  */
 export class StateBuilder {
+  /** @internal */
   _matcher: StateMatcher;
+  /** @internal */
   _$injector: ng.InjectorService | undefined;
+  /** @internal */
   _builders: Builders;
 
   /**

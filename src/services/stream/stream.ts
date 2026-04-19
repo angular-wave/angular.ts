@@ -32,7 +32,9 @@ export interface StreamConnectionConfig {
 }
 
 export class StreamConnection {
+  /** @internal */
   private _createFn: () => EventSource | WebSocket;
+  /** @internal */
   _config: {
     onOpen?: (event: Event) => void;
     onMessage?: (data: any, event: Event | MessageEvent) => void;
@@ -44,10 +46,15 @@ export class StreamConnection {
     transformMessage: (data: any) => any;
   };
 
+  /** @internal */
   _log: ng.LogService;
+  /** @internal */
   _retryCount: number;
+  /** @internal */
   _closed: boolean;
+  /** @internal */
   _heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
+  /** @internal */
   _connection: EventSource | WebSocket | null;
 
   /**
@@ -132,6 +139,7 @@ export class StreamConnection {
    * Binds event handlers to the underlying connection (EventSource or WebSocket)
    * for open, message, error, and close events.
    */
+  /** @internal */
   private _bindEvents(): void {
     const conn = this._connection;
 
@@ -154,6 +162,7 @@ export class StreamConnection {
    * Handles the open event from the connection.
    * @param event - The open event.
    */
+  /** @internal */
   private _handleOpen(event: Event): void {
     this._retryCount = 0;
     this._config.onOpen?.(event);
@@ -167,6 +176,7 @@ export class StreamConnection {
    * @param data - Raw message data.
    * @param event - The message event.
    */
+  /** @internal */
   private _handleMessage(data: any, event: Event | MessageEvent): void {
     try {
       data = this._config.transformMessage?.(data) ?? data;
@@ -183,6 +193,7 @@ export class StreamConnection {
    * Calls onError callback and schedules a reconnect.
    * @param err - Error object or message.
    */
+  /** @internal */
   private _handleError(err: any): void {
     this._config.onError?.(err);
     this._scheduleReconnect();
@@ -193,6 +204,7 @@ export class StreamConnection {
    * Handles close events for WebSocket connections.
    * Triggers reconnect logic.
    */
+  /** @internal */
   private _handleClose(): void {
     this._scheduleReconnect();
   }
@@ -202,6 +214,7 @@ export class StreamConnection {
    * Schedules a reconnect attempt based on retryCount and config.maxRetries.
    * Calls onReconnect callback if reconnecting.
    */
+  /** @internal */
   private _scheduleReconnect(): void {
     if (this._closed) return;
 
@@ -219,6 +232,7 @@ export class StreamConnection {
    * Resets the heartbeat timer. If the timer expires, the connection is closed
    * and a reconnect is attempted.
    */
+  /** @internal */
   private _resetHeartbeat(): void {
     if (!this._config.heartbeatTimeout) return;
 
@@ -235,6 +249,7 @@ export class StreamConnection {
   /**
    * @private
    */
+  /** @internal */
   private _closeInternal(): void {
     clearTimeout(this._heartbeatTimer);
     this._connection?.close();

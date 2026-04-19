@@ -342,6 +342,7 @@ export interface ParamDeclaration {
    */
   inherit?: boolean;
 
+  /** @internal */
   _fn?: any;
 }
 

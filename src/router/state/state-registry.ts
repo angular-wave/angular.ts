@@ -42,6 +42,7 @@ export class StateRegistryProvider {
   matcher: StateMatcher;
   builder: StateBuilder;
   stateQueue: StateQueueManager;
+  /** @internal */
   _root!: StateObject;
 
   /**
@@ -252,6 +253,7 @@ export class StateRegistryProvider {
    * @param {BuiltStateDeclaration} state
    * @returns {BuiltStateDeclaration[]}
    */
+  /** @internal */
   _deregisterTree(state: BuiltStateDeclaration): BuiltStateDeclaration[] {
     const all = this.getAll().map((x) => x._state());
 

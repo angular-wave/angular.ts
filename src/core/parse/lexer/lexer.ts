@@ -26,8 +26,11 @@ const OPERATORS = new Set<string>(
  * expression string and returns an array of tokens parsed from that string.
  */
 export class Lexer {
+  /** @internal */
   _text: string;
+  /** @internal */
   _index: number;
+  /** @internal */
   _tokens: Token[];
 
   /**
@@ -49,6 +52,7 @@ export class Lexer {
    * @param text
    * @returns Array of tokens.
    */
+  /** @internal */
   _lex(text: string): Token[] {
     this._text = text;
     this._index = 0;
@@ -106,6 +110,7 @@ export class Lexer {
   /**
    * Checks if a character is contained in a set of characters.
    */
+  /** @internal */
   _is(ch: string, chars: string): boolean {
     return chars.indexOf(ch) !== -1;
   }
@@ -113,6 +118,7 @@ export class Lexer {
   /**
    * Peeks at the next character in the text.
    */
+  /** @internal */
   _peek(i = 1): string | false {
     return this._index + i < this._text.length
       ? this._text.charAt(this._index + i)
@@ -122,6 +128,7 @@ export class Lexer {
   /**
    * Checks if a character is a number.
    */
+  /** @internal */
   _isNumber(ch: unknown): boolean {
     return typeof ch === "string" && ch >= "0" && ch <= "9";
   }
@@ -129,6 +136,7 @@ export class Lexer {
   /**
    * Checks if a character is whitespace.
    */
+  /** @internal */
   _isWhitespace(ch: string): boolean {
     return (
       ch === " " || ch === "\r" || ch === "\t" || ch === "\n" || ch === "\v"
@@ -138,6 +146,7 @@ export class Lexer {
   /**
    * Checks if a character is a valid identifier start.
    */
+  /** @internal */
   _isIdentifierStart(ch: string): boolean {
     return (
       (ch >= "a" && ch <= "z") ||
@@ -150,6 +159,7 @@ export class Lexer {
   /**
    * Checks if a character is a valid identifier continuation.
    */
+  /** @internal */
   _isIdentifierContinue(ch: string): boolean {
     return (
       (ch >= "a" && ch <= "z") ||
@@ -163,6 +173,7 @@ export class Lexer {
   /**
    * Peeks at the next multicharacter sequence in the text.
    */
+  /** @internal */
   _peekMultichar(): string {
     const ch = this._text.charAt(this._index);
 
@@ -187,6 +198,7 @@ export class Lexer {
   /**
    * Checks if a character is an exponent operator.
    */
+  /** @internal */
   _isExpOperator(ch: unknown): boolean {
     return ch === "-" || ch === "+" || this._isNumber(ch);
   }
@@ -194,6 +206,7 @@ export class Lexer {
   /**
    * Throws a lexer error.
    */
+  /** @internal */
   _throwError(error: string, start?: number, end?: number): never {
     const endIndex = end ?? this._index;
 
@@ -210,6 +223,7 @@ export class Lexer {
   /**
    * Reads and tokenizes a number from the text.
    */
+  /** @internal */
   _readNumber(): void {
     let number = "";
 
@@ -255,6 +269,7 @@ export class Lexer {
   /**
    * Reads and tokenizes an identifier from the text.
    */
+  /** @internal */
   _readIdent(): void {
     const start = this._index;
 
@@ -279,6 +294,7 @@ export class Lexer {
   /**
    * Reads and tokenizes a string from the text.
    */
+  /** @internal */
   _readString(quote: string): void {
     const start = this._index;
 
@@ -320,6 +336,7 @@ export class Lexer {
     this._throwError("Unterminated quote", start);
   }
 
+  /** @internal */
   _handleUnicodeEscape(): string {
     const hex = this._text.substring(this._index + 1, this._index + 5);
 

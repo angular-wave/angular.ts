@@ -50,7 +50,7 @@ export function registerLazyLoadHook(
 
         const rule = result && result.rule;
 
-        if (rule && rule.type === "STATE" && rule.state) {
+        if (rule && rule._type === "STATE" && rule.state) {
           const { state } = rule;
 
           const params = result.match;

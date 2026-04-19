@@ -37,6 +37,7 @@ const EAGER_WHENS: PolicyWhen[] = [resolvePolicies.when.EAGER];
  * Provides resolve lookup and execution helpers for a specific transition path.
  */
 export class ResolveContext {
+  /** @internal */
   _path: PathNode[];
 
   /**

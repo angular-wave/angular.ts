@@ -182,6 +182,7 @@ export class Param {
   array: boolean | "auto";
   config: ParamDeclaration;
   matchingKeys: RawParams | undefined;
+  /** @internal */
   _defaultValueCache?: { defaultValue: any };
 
   /**

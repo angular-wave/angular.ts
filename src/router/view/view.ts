@@ -46,10 +46,15 @@ type ViewConfigFactory = (
  * view configs produced during state transitions.
  */
 export class ViewService {
+  /** @internal */
   _ngViews: ActiveUIView[];
+  /** @internal */
   _viewConfigs: ViewConfig[];
+  /** @internal */
   _listeners: Array<(tuples: ViewTuple[]) => void>;
+  /** @internal */
   _viewConfigFactory: ViewConfigFactory | undefined;
+  /** @internal */
   _rootContext: StateObject | null | undefined;
 
   /**
@@ -86,6 +91,7 @@ export class ViewService {
   /**
    * Builds a view config for one view declaration along the specified path.
    */
+  /** @internal */
   _createViewConfig(path: PathNode[], decl: ViewDeclaration): ViewConfig {
     const cfgFactory = this._viewConfigFactory;
 

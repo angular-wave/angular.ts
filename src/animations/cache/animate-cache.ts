@@ -32,6 +32,7 @@ const KEY = "$animId";
  * @internal
  */
 export class AnimateCache {
+  /** @internal */
   _cache: Map<string, CacheEntry> = new Map();
 
   /**
@@ -39,6 +40,7 @@ export class AnimateCache {
    * IDs are stored directly on parent nodes under `$animId`.
    *
    */
+  /** @internal */
   _parentCounter = 0;
 
   /**
@@ -53,6 +55,7 @@ export class AnimateCache {
    * If the node is not attached to the DOM, the node itself is used
    * as the parent scope to avoid key collisions.
    */
+  /** @internal */
   _cacheKey(
     node: HTMLElement,
     method: string,
@@ -79,6 +82,7 @@ export class AnimateCache {
    * This is typically used to detect animations that were previously
    * cached but resolved without a duration.
    */
+  /** @internal */
   _containsCachedAnimationWithoutDuration(key: string): boolean {
     const entry = this._cache.get(key);
 
@@ -90,6 +94,7 @@ export class AnimateCache {
    *
    * Does not reset parent IDs.
    */
+  /** @internal */
   _flush(): void {
     this._cache.clear();
   }
@@ -97,6 +102,7 @@ export class AnimateCache {
   /**
    * Returns the number of times a cache entry has been used.
    */
+  /** @internal */
   _count(key: string): number {
     return this._cache.get(key)?.total ?? 0;
   }
@@ -104,6 +110,7 @@ export class AnimateCache {
   /**
    * Retrieves the cached value associated with a cache key.
    */
+  /** @internal */
   _get(key: string): CacheEntry["value"] | undefined {
     return this._cache.get(key)?.value;
   }
@@ -114,6 +121,7 @@ export class AnimateCache {
    * Existing entries will have their usage count incremented
    * and their value replaced.
    */
+  /** @internal */
   _put(key: string, value: CacheEntry["value"], isValid: boolean): void {
     const entry = this._cache.get(key);
 
