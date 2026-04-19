@@ -1279,6 +1279,40 @@ describe("angular 1.5+ style .component()", () => {
       expect(el.textContent).toBe("-DATA!-");
     });
 
+    it("should clear ng-view when routing to a component whose templateUrl was already fetched elsewhere", async () => {
+      $stateProvider.state({
+        name: "route2cmp",
+        url: "/route2cmp",
+        component: "ngComponent",
+        resolve: {
+          data: () => {
+            return "DATA!";
+          },
+        },
+      });
+
+      el.innerHTML =
+        '<div><ng-component data="outsideData"></ng-component><ng-view>fallback content</ng-view></div>';
+      scope.outsideData = "OUTSIDE";
+      svcs.$compile(el)(scope);
+
+      $templateCache.set("/comp_tpl.html", "-{{ $ctrl.data }}-");
+      await wait(100);
+
+      expect(el.textContent).toContain("-OUTSIDE-");
+
+      const $state = svcs.$state;
+
+      $state.transitionTo("route2cmp");
+      await wait(100);
+
+      expect($state.current.name).toBe("route2cmp");
+      expect(el.querySelector("div ng-view").textContent).toBe("-DATA!-");
+      expect(el.querySelector("div ng-view").textContent).not.toContain(
+        "fallback content",
+      );
+    });
+
     it("should only call $onInit() once", async () => {
       $stateProvider.state({
         name: "route2cmp",
