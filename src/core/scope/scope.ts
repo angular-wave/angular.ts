@@ -4,6 +4,7 @@ import {
   isArray,
   isDefined,
   isFunction,
+  isNullOrUndefined,
   isObject,
   isProxy,
   isProxySymbol,
@@ -1552,11 +1553,7 @@ export class Scope {
 
     const res = fn(this, locals);
 
-    if (isUndefined(res) || res === null) {
-      return res;
-    }
-
-    if (res === Object.hasOwnProperty) {
+    if (isNullOrUndefined(res) || res === Object.hasOwnProperty) {
       return res;
     }
 
