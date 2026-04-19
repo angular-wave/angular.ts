@@ -1,4 +1,4 @@
-/* Version: 0.24.0 - April 2, 2026 04:06:37 */
+/* Version: 0.25.0 - April 19, 2026 18:35:14 */
 const VALID_CLASS = "ng-valid";
 const INVALID_CLASS = "ng-invalid";
 const PRISTINE_CLASS = "ng-pristine";
@@ -290,11 +290,12 @@ function snakeCase(name, separator) {
  * @param hashkey the hashkey (!truthy to delete the hashkey)
  */
 function setHashKey(obj, hashkey) {
+    const hashable = obj;
     if (hashkey) {
-        obj._hashKey = hashkey;
+        hashable._hashKey = hashkey;
     }
     else {
-        delete obj._hashKey;
+        delete hashable._hashKey;
     }
 }
 /**
@@ -1853,6 +1854,7 @@ class AbstractInjector {
         return this._cache[serviceName];
     }
     /**
+     * @internal
      * Get the injection arguments for a function.
      *
      * @param {Function|ng.AnnotatedFactory<any>} fn
@@ -1930,6 +1932,7 @@ class AbstractInjector {
      * @param {string} _serviceName
      * @returns {any}
      */
+    /** @internal */
     _factory(serviceName) {
         return undefined;
     }
@@ -1947,6 +1950,7 @@ class ProviderInjector extends AbstractInjector {
         this._cache = cache;
     }
     /**
+     * @internal
      * Factory method for creating services.
      * @param {string} caller - The name of the caller requesting the service.
      * @throws {Error} If the provider is unknown.
@@ -1979,6 +1983,7 @@ class InjectorService extends AbstractInjector {
      * @param {string} serviceName
      * @returns {*}
      */
+    /** @internal */
     _factory(serviceName) {
         const provider = this._providerInjector.get(serviceName + providerSuffix$1);
         return this.invoke(provider.$get, provider, undefined, serviceName);
@@ -4531,6 +4536,7 @@ class AnimateRunner {
      * Completes the animation and invokes all done callbacks.
      * @private
      */
+    /** @internal */
     _finish(status) {
         if (this._state === RunnerState._DONE)
             return;
@@ -4576,6 +4582,7 @@ class AnimateRunner {
     //  STATIC HELPERS
     // ---------------------------------------------------------------------------
     /**
+     * @internal
      * Executes a list of runners sequentially.
      * Each must complete before the next starts.
      */
@@ -4591,6 +4598,7 @@ class AnimateRunner {
         next();
     }
     /**
+     * @internal
      * Waits until all runners complete.
      */
     static _all(runners, callback) {
@@ -4864,7 +4872,8 @@ function getUniqueValues(a, b) {
 AnimateJsDriverProvider.$inject = ["$$animationProvider"];
 /** Registers the JS animation driver with the animation provider. */
 function AnimateJsDriverProvider($$animationProvider) {
-    $$animationProvider._drivers.push($injectTokens._animateJsDriver);
+    const animationProvider = $$animationProvider;
+    animationProvider._drivers.push($injectTokens._animateJsDriver);
     this.$get = [
         $injectTokens._animateJs,
         /** Creates the runtime driver factory around `$$animateJs`. */
@@ -5618,12 +5627,14 @@ const KEY = "$animId";
  */
 class AnimateCache {
     constructor() {
+        /** @internal */
         this._cache = new Map();
         /**
          * Monotonically increasing counter used to assign synthetic parent IDs.
          * IDs are stored directly on parent nodes under `$animId`.
          *
          */
+        /** @internal */
         this._parentCounter = 0;
     }
     /**
@@ -5638,6 +5649,7 @@ class AnimateCache {
      * If the node is not attached to the DOM, the node itself is used
      * as the parent scope to avoid key collisions.
      */
+    /** @internal */
     _cacheKey(node, method, addClass, removeClass) {
         const parent = (node.parentNode ?? node);
         const parentID = parent[KEY] ?? (parent[KEY] = ++this._parentCounter);
@@ -5654,6 +5666,7 @@ class AnimateCache {
      * This is typically used to detect animations that were previously
      * cached but resolved without a duration.
      */
+    /** @internal */
     _containsCachedAnimationWithoutDuration(key) {
         const entry = this._cache.get(key);
         return !!entry && !entry.isValid;
@@ -5663,18 +5676,21 @@ class AnimateCache {
      *
      * Does not reset parent IDs.
      */
+    /** @internal */
     _flush() {
         this._cache.clear();
     }
     /**
      * Returns the number of times a cache entry has been used.
      */
+    /** @internal */
     _count(key) {
         return this._cache.get(key)?.total ?? 0;
     }
     /**
      * Retrieves the cached value associated with a cache key.
      */
+    /** @internal */
     _get(key) {
         return this._cache.get(key)?.value;
     }
@@ -5684,6 +5700,7 @@ class AnimateCache {
      * Existing entries will have their usage count incremented
      * and their value replaced.
      */
+    /** @internal */
     _put(key, value, isValid) {
         const entry = this._cache.get(key);
         if (entry) {
@@ -5717,6 +5734,7 @@ class RafScheduler {
      * Executes the first group of functions in the queue, then
      * schedules the next frame if needed.
      */
+    /** @internal */
     _nextTick() {
         if (!this._queue.length)
             return;
@@ -5737,6 +5755,7 @@ class RafScheduler {
      * The main scheduler function.
      * Accepts an array of functions and schedules them to run in the next available frame(s).
      */
+    /** @internal */
     _schedule(tasks) {
         this._queue.push(...tasks);
         this._nextTick();
@@ -5747,6 +5766,7 @@ class RafScheduler {
      *
      * @param  fn - Function to run when the animation frame is quiet.
      */
+    /** @internal */
     _waitUntilQuiet(fn) {
         if (this._cancelFn !== null) {
             window.cancelAnimationFrame(this._cancelFn);
@@ -5765,6 +5785,7 @@ const RUNNER_STORAGE_KEY = "$$animationRunner";
 const PREPARE_CLASSES_KEY = "$$animatePrepareClasses";
 class AnimationProvider {
     constructor() {
+        /** @internal */
         this._drivers = [];
         this.$get = [
             $injectTokens._rootScope,
@@ -5776,6 +5797,7 @@ class AnimationProvider {
         ];
     }
     /** Builds the animation runtime around the configured driver chain. */
+    /** @internal */
     _createAnimationService($rootScope, $injector, drivers) {
         const NG_ANIMATE_REF_ATTR = "ng-animate-ref";
         const animationQueue = [];
@@ -7624,6 +7646,7 @@ class NodeRef {
         return this._isList ? this._nodes.length : 1;
     }
     /** @returns The first wrapped node or element. */
+    /** @internal */
     _getAny() {
         if (this._isList) {
             return this._nodes[0];
@@ -7633,6 +7656,7 @@ class NodeRef {
         }
     }
     /** @returns All wrapped nodes or the single wrapped node. */
+    /** @internal */
     _getAll() {
         if (this._isList) {
             return this._nodes;
@@ -7642,6 +7666,7 @@ class NodeRef {
         }
     }
     /** @returns A collection view of the wrapped nodes. */
+    /** @internal */
     _collection() {
         if (this._isList) {
             return Array.from(this._nodes);
@@ -7653,6 +7678,7 @@ class NodeRef {
     /**
      * Returns the node at a specific index from this reference.
      */
+    /** @internal */
     _getIndex(index) {
         if (this._isList) {
             return this._nodes[index];
@@ -7664,6 +7690,7 @@ class NodeRef {
     /**
      * Replaces the node at a specific index in this reference.
      */
+    /** @internal */
     _setIndex(index, node) {
         if (this._isList) {
             this._nodes[index] = node;
@@ -7675,12 +7702,14 @@ class NodeRef {
     /**
      * Clones the referenced node or node list.
      */
+    /** @internal */
     _clone() {
         const cloned = this._isList
             ? this.nodes.map((el) => el.cloneNode(true))
             : this.node.cloneNode(true);
         return new NodeRef(cloned);
     }
+    /** @internal */
     _isElement() {
         return this._element !== undefined;
     }
@@ -7792,6 +7821,7 @@ class ControllerProvider {
             }
         }
     }
+    /** @internal */
     _addIdentifier(locals, identifier, instance, name) {
         if (!(locals && isObject(locals.$scope))) {
             throw minErr("$controller")("noscp", "Cannot export controller '{0}' as '{1}'! No $scope object provided via `locals`.", name, identifier);
@@ -7832,6 +7862,7 @@ function nextId() {
 }
 let $parse;
 let $exceptionHandler;
+/** @internal */
 const $postUpdateQueue = [];
 class RootScopeProvider {
     constructor() {
@@ -8497,7 +8528,7 @@ class Scope {
         }
         return true;
     }
-    /** Recursively schedules listeners for every reachable object key in the value. */
+    /** @internal Recursively schedules listeners for every reachable object key in the value. */
     _checkListenersForAllKeys(value) {
         if (isUndefined(value)) {
             return;
@@ -8514,7 +8545,7 @@ class Scope {
             }
         }
     }
-    /** Queues listener notification for the next microtask, optionally filtering the list first. */
+    /** @internal Queues listener notification for the next microtask, optionally filtering the list first. */
     _scheduleListener(listeners, filter) {
         const target = this.$target;
         queueMicrotask(() => {
@@ -8829,7 +8860,7 @@ class Scope {
         this._children.push(proxy);
         return proxy;
     }
-    /** Registers a listener under a watched key on this scope. */
+    /** @internal Registers a listener under a watched key on this scope. */
     _registerKey(key, listener) {
         const listeners = this._watchers.get(key);
         if (listeners) {
@@ -8838,7 +8869,7 @@ class Scope {
         }
         this._watchers.set(key, [listener]);
     }
-    /** Registers a listener under a watched key owned by a foreign proxied scope. */
+    /** @internal Registers a listener under a watched key owned by a foreign proxied scope. */
     _registerForeignKey(key, listener) {
         const listeners = this._foreignListeners.get(key);
         if (listeners) {
@@ -8847,7 +8878,7 @@ class Scope {
         }
         this._foreignListeners.set(key, [listener]);
     }
-    /** Removes a listener by id from the local watcher map. */
+    /** @internal Removes a listener by id from the local watcher map. */
     _deregisterKey(key, id) {
         const listenerList = this._watchers.get(key);
         if (!listenerList) {
@@ -8870,7 +8901,7 @@ class Scope {
         }
         return false;
     }
-    /** Removes a listener by id from the foreign watcher map. */
+    /** @internal Removes a listener by id from the foreign watcher map. */
     _deregisterForeignKey(key, id) {
         const listenerList = this._foreignListeners.get(key);
         if (!listenerList) {
@@ -8895,10 +8926,7 @@ class Scope {
     $eval(expr, locals) {
         const fn = $parse(expr);
         const res = fn(this, locals);
-        if (isUndefined(res) || res === null) {
-            return res;
-        }
-        if (res === Object.hasOwnProperty) {
+        if (isNullOrUndefined(res) || res === Object.hasOwnProperty) {
             return res;
         }
         if (isFunction(res)) {
@@ -8954,6 +8982,7 @@ class Scope {
         return this._eventHelper({ name, event: undefined, broadcast: true }, ...args);
     }
     /**
+     * @internal
      * Internal event propagation helper.
      *
      * Propagates either upward (`$emit`) or downward (`$broadcast`) and
@@ -9034,7 +9063,7 @@ class Scope {
             }
         }
     }
-    /** Returns whether this scope instance is the root scope. */
+    /** @internal Returns whether this scope instance is the root scope. */
     _isRoot() {
         return this.$root === this;
     }
@@ -9082,7 +9111,7 @@ class Scope {
         this._listeners.clear();
         this._destroyed = true;
     }
-    /** Resolves the watched value and notifies a single listener. */
+    /** @internal Resolves the watched value and notifies a single listener. */
     _notifyListener(listener, target) {
         const { _originalTarget, _listenerFn, _watchFn } = listener;
         try {
@@ -9199,19 +9228,17 @@ function collectChildIds(child) {
 const $sceMinErr = minErr("$sce");
 const SCE_CONTEXTS = {
     // HTML is used when there's HTML rendered (e.g. ng-bind-html, iframe srcdoc binding).
-    HTML: "html",
-    // Style statements or stylesheets. Currently unused in AngularTS.
-    CSS: "css",
+    _HTML: "html",
     // An URL used in a context where it refers to the source of media, which are not expected to be run
     // as scripts, such as an image, audio, video, etc.
-    MEDIA_URL: "mediaUrl",
+    _MEDIA_URL: "mediaUrl",
     // An URL used in a context where it does not refer to a resource that loads code.
     // A value that can be trusted as a URL can also trusted as a MEDIA_URL.
-    URL: "url",
+    _URL: "url",
     // RESOURCE_URL is a subtype of URL used where the referred-to resource could be interpreted as
     // code. (e.g. ng-include, script src binding, templateUrl)
     // A value that can be trusted as a RESOURCE_URL, can also trusted as a URL and a MEDIA_URL.
-    RESOURCE_URL: "resourceUrl",
+    _RESOURCE_URL: "resourceUrl",
 };
 // Copied from:
 // http://docs.closure-library.googlecode.com/git/local_closure_goog_string_string.ts.source.html#line1021
@@ -9465,11 +9492,10 @@ class SceDelegateProvider {
                 }
                 const trustedValueHolderBase = generateHolderType();
                 const byType = {};
-                byType[SCE_CONTEXTS.HTML] = generateHolderType(trustedValueHolderBase);
-                byType[SCE_CONTEXTS.CSS] = generateHolderType(trustedValueHolderBase);
-                byType[SCE_CONTEXTS.MEDIA_URL] = generateHolderType(trustedValueHolderBase);
-                byType[SCE_CONTEXTS.URL] = generateHolderType(byType[SCE_CONTEXTS.MEDIA_URL]);
-                byType[SCE_CONTEXTS.RESOURCE_URL] = generateHolderType(byType[SCE_CONTEXTS.URL]);
+                byType[SCE_CONTEXTS._HTML] = generateHolderType(trustedValueHolderBase);
+                byType[SCE_CONTEXTS._MEDIA_URL] = generateHolderType(trustedValueHolderBase);
+                byType[SCE_CONTEXTS._URL] = generateHolderType(byType[SCE_CONTEXTS._MEDIA_URL]);
+                byType[SCE_CONTEXTS._RESOURCE_URL] = generateHolderType(byType[SCE_CONTEXTS._URL]);
                 /**
                  * Returns a trusted representation of the parameter for the specified context. This trusted
                  * object will later on be used as-is, without any security check, by bindings or directives
@@ -9485,7 +9511,7 @@ class SceDelegateProvider {
                  * escaping.
                  *
                  * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
-                 *     `$sce.RESOURCE_URL`, `$sce.HTML`, `$sce.JS` or `$sce.CSS`.
+                 *     `$sce.RESOURCE_URL` or `$sce.HTML`.
                  *
                  * @param trustedValue The value that should be considered trusted.
                  * @returns A trusted representation of value, that can be used in the given context.
@@ -9578,18 +9604,18 @@ class SceDelegateProvider {
                         maybeTrusted = maybeTrusted._unwrapTrustedValue();
                     }
                     // If we get here, then we will either sanitize the value or throw an exception.
-                    if (type === SCE_CONTEXTS.MEDIA_URL || type === SCE_CONTEXTS.URL) {
+                    if (type === SCE_CONTEXTS._MEDIA_URL || type === SCE_CONTEXTS._URL) {
                         // we attempt to sanitize non-resource URLs
-                        return $$sanitizeUri(maybeTrusted.toString(), type === SCE_CONTEXTS.MEDIA_URL);
+                        return $$sanitizeUri(maybeTrusted.toString(), type === SCE_CONTEXTS._MEDIA_URL);
                     }
-                    if (type === SCE_CONTEXTS.RESOURCE_URL) {
+                    if (type === SCE_CONTEXTS._RESOURCE_URL) {
                         if (isResourceUrlAllowedByPolicy(maybeTrusted)) {
                             return maybeTrusted;
                         }
                         $exceptionHandler($sceMinErr("insecurl", "Blocked loading resource from url not allowed by $sceDelegate policy.  URL: {0}", maybeTrusted.toString()));
                         return undefined;
                     }
-                    else if (type === SCE_CONTEXTS.HTML) {
+                    else if (type === SCE_CONTEXTS._HTML) {
                         // htmlSanitizer throws its own error when no sanitizer is available.
                         return htmlSanitizer();
                     }
@@ -9623,7 +9649,7 @@ function SceProvider() {
          * Creates the runtime `$sce` service.
          */
         ($parse, $sceDelegate) => {
-            const sce = shallowCopy(SCE_CONTEXTS);
+            const sce = {};
             /**
              * @returns True if SCE is enabled, false otherwise.  If you want to set the value, you
              *     have to do it at module config time on {@link ng.$sceProvider $sceProvider}.
@@ -9676,7 +9702,7 @@ function SceProvider() {
              * interpolations. See {@link ng.$sce $sce} for strict contextual escaping.
              *
              * @param type The context in which this value is safe for use, e.g. `$sce.URL`,
-             *     `$sce.RESOURCE_URL`, `$sce.HTML`, `$sce.JS` or `$sce.CSS`.
+             *     `$sce.RESOURCE_URL` or `$sce.HTML`.
              *
              * @param value The value that that should be considered trusted.
              * @returns A wrapped version of value that can be used as a trusted variant of your `value`
@@ -9689,15 +9715,6 @@ function SceProvider() {
              * @param value The value to mark as trusted for `$sce.HTML` context.
              * @returns A wrapped version of value that can be used as a trusted variant of your `value`
              *     in `$sce.HTML` context (like `ng-bind-html`).
-             */
-            /**
-             * Shorthand method.  `$sce.trustAsCss(value)` →
-             *     {@link ng.$sceDelegate#trustAs `$sceDelegate.trustAs($sce.CSS, value)`}
-             *
-             * @param value The value to mark as trusted for `$sce.CSS` context.
-             * @returns A wrapped version of value that can be used as a trusted variant
-             *     of your `value` in `$sce.CSS` context. This context is currently unused, so there are
-             *     almost no reasons to use this function so far.
              */
             /**
              * Shorthand method.  `$sce.trustAsUrl(value)` →
@@ -9739,13 +9756,6 @@ function SceProvider() {
              * @returns The return value of `$sce.getTrusted($sce.HTML, value)`
              */
             /**
-             * Shorthand method.  `$sce.getTrustedCss(value)` →
-             *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.CSS, value)`}
-             *
-             * @param value The value to pass to `$sce.getTrusted`.
-             * @returns The return value of `$sce.getTrusted($sce.CSS, value)`
-             */
-            /**
              * Shorthand method.  `$sce.getTrustedUrl(value)` →
              *     {@link ng.$sceDelegate#getTrusted `$sceDelegate.getTrusted($sce.URL, value)`}
              *
@@ -9762,18 +9772,6 @@ function SceProvider() {
             /**
              * Shorthand method.  `$sce.parseAsHtml(expression string)` →
              *     {@link ng.$sceparseAs `$sce.parseAs($sce.HTML, value)`}
-             *
-             * @param expression String expression to compile.
-             * @returns A function which represents the compiled expression:
-             *
-             *    * `context` – `{object}` – an object against which any expressions embedded in the
-             *      strings are evaluated against (typically a scope object).
-             *    * `locals` – `{object=}` – local variables context object, useful for overriding values
-             *      in `context`.
-             */
-            /**
-             * Shorthand method.  `$sce.parseAsCss(value)` →
-             *     {@link ng.$sceparseAs `$sce.parseAs($sce.CSS, value)`}
              *
              * @param expression String expression to compile.
              * @returns A function which represents the compiled expression:
@@ -9824,7 +9822,7 @@ function SceProvider() {
             const { getTrusted } = sce;
             const { trustAs } = sce;
             entries(SCE_CONTEXTS).forEach(([name, enumValue]) => {
-                const lName = name.toLowerCase();
+                const lName = name.replace(/^_/, "").toLowerCase();
                 /** @param expr */
                 sce[snakeToCamel(`parse_as_${lName}`)] = function (expr) {
                     return parse(enumValue, expr);
@@ -9940,6 +9938,7 @@ class Attributes {
         this._nodeRef = nodeRef;
     }
     /** @ignore Internal element accessor used by legacy attribute helpers. */
+    /** @internal */
     _element() {
         return this._nodeRef?._getAny();
     }
@@ -10060,6 +10059,7 @@ class Attributes {
             arrayRemove(listeners, fn);
         };
     }
+    /** @internal */
     _setSpecialAttr(element, attrName, value) {
         specialAttrHolder.innerHTML = `<span ${attrName}>`;
         const { attributes } = specialAttrHolder.firstChild;
@@ -10068,6 +10068,7 @@ class Attributes {
         attribute.value = value ?? "";
         element.attributes.setNamedItem(attribute);
     }
+    /** @internal */
     _sanitizeSrcset(value, invokeType) {
         let i;
         if (!value) {
@@ -10461,6 +10462,12 @@ class CompileProvider {
          * The security context of DOM Properties.
          */
         const PROP_CONTEXTS = nullObject();
+        const LEGACY_SCE_CONTEXTS = {
+            html: SCE_CONTEXTS._HTML,
+            mediaUrl: SCE_CONTEXTS._MEDIA_URL,
+            resourceUrl: SCE_CONTEXTS._RESOURCE_URL,
+            url: SCE_CONTEXTS._URL,
+        };
         /**
          * Defines the security context for DOM properties bound by ng-prop-*.
          *
@@ -10470,11 +10477,12 @@ class CompileProvider {
          * @returns `this` for chaining.
          */
         this.addPropertySecurityContext = function (elementName, propertyName, ctx) {
+            const normalizedCtx = LEGACY_SCE_CONTEXTS[ctx] || ctx;
             const key = `${elementName.toLowerCase()}|${propertyName.toLowerCase()}`;
-            if (key in PROP_CONTEXTS && PROP_CONTEXTS[key] !== ctx) {
-                throw $compileMinErr("ctxoverride", "Property context '{0}.{1}' already set to '{2}', cannot override to '{3}'.", elementName, propertyName, PROP_CONTEXTS[key], ctx);
+            if (key in PROP_CONTEXTS && PROP_CONTEXTS[key] !== normalizedCtx) {
+                throw $compileMinErr("ctxoverride", "Property context '{0}.{1}' already set to '{2}', cannot override to '{3}'.", elementName, propertyName, PROP_CONTEXTS[key], normalizedCtx);
             }
-            PROP_CONTEXTS[key] = ctx;
+            PROP_CONTEXTS[key] = normalizedCtx;
             return this;
         };
         /* Default property contexts.
@@ -10482,7 +10490,6 @@ class CompileProvider {
          * Copy of https://github.com/angular/angular/blob/6.0.6/packages/compiler/src/schema/dom_security_schema.ts#L31-L58
          * Changing:
          * - SecurityContext.* => SCE_CONTEXTS/$sce.*
-         * - STYLE => CSS
          * - various URL => MEDIA_URL
          * - *|formAction, form|action URL => RESOURCE_URL (like the attribute)
          */
@@ -10493,13 +10500,12 @@ class CompileProvider {
                     PROP_CONTEXTS[v.toLowerCase()] = ctx;
                 });
             }
-            registerContext(SCE_CONTEXTS.HTML, [
+            registerContext(SCE_CONTEXTS._HTML, [
                 "iframe|srcdoc",
                 "*|innerHTML",
                 "*|outerHTML",
             ]);
-            registerContext(SCE_CONTEXTS.CSS, ["*|style"]);
-            registerContext(SCE_CONTEXTS.URL, [
+            registerContext(SCE_CONTEXTS._URL, [
                 "area|href",
                 "area|ping",
                 "a|href",
@@ -10511,7 +10517,7 @@ class CompileProvider {
                 "ins|cite",
                 "q|cite",
             ]);
-            registerContext(SCE_CONTEXTS.MEDIA_URL, [
+            registerContext(SCE_CONTEXTS._MEDIA_URL, [
                 "audio|src",
                 "img|src",
                 "img|srcset",
@@ -10521,7 +10527,7 @@ class CompileProvider {
                 "video|src",
                 "video|poster",
             ]);
-            registerContext(SCE_CONTEXTS.RESOURCE_URL, [
+            registerContext(SCE_CONTEXTS._RESOURCE_URL, [
                 "*|formAction",
                 "applet|code",
                 "applet|codebase",
@@ -10657,6 +10663,7 @@ class CompileProvider {
                     for (let i = 0, l = state._linkFnsList.length; i < l; i++) {
                         const { _index, _nodeLinkFnCtx, _childLinkFn } = state._linkFnsList[i];
                         const node = stableNodeList[_index];
+                        /** @internal */
                         node._stable = true;
                         let childScope;
                         let childBoundTranscludeFn;
@@ -11920,30 +11927,30 @@ class CompileProvider {
                 /** Determines the SCE trust context required for a DOM attribute binding. */
                 function getTrustedAttrContext(nodeName, attrNormalizedName) {
                     if (attrNormalizedName === "srcdoc") {
-                        return $sce.HTML;
+                        return SCE_CONTEXTS._HTML;
                     }
                     // All nodes with src attributes require a RESOURCE_URL value, except for
                     // img and various html5 media nodes, which require the MEDIA_URL context.
                     if (attrNormalizedName === "src" || attrNormalizedName === "ngSrc") {
                         if (["img", "video", "audio", "source", "track"].indexOf(nodeName) ===
                             -1) {
-                            return $sce.RESOURCE_URL;
+                            return SCE_CONTEXTS._RESOURCE_URL;
                         }
-                        return $sce.MEDIA_URL;
+                        return SCE_CONTEXTS._MEDIA_URL;
                     }
                     if (attrNormalizedName === "xlinkHref") {
                         // Some xlink:href are okay, most aren't
                         if (nodeName === "image") {
-                            return $sce.MEDIA_URL;
+                            return SCE_CONTEXTS._MEDIA_URL;
                         }
                         if (nodeName === "a") {
-                            return $sce.URL;
+                            return SCE_CONTEXTS._URL;
                         }
-                        return $sce.RESOURCE_URL;
+                        return SCE_CONTEXTS._RESOURCE_URL;
                     }
                     if (nodeName === "image" &&
                         (attrNormalizedName === "href" || attrNormalizedName === "ngHref")) {
-                        return $sce.MEDIA_URL;
+                        return SCE_CONTEXTS._MEDIA_URL;
                     }
                     if (
                     // Formaction
@@ -11953,11 +11960,11 @@ class CompileProvider {
                         (nodeName === "base" && attrNormalizedName === "href") ||
                         // links can be stylesheets or imports, which can run script in the current origin
                         (nodeName === "link" && attrNormalizedName === "href")) {
-                        return $sce.RESOURCE_URL;
+                        return SCE_CONTEXTS._RESOURCE_URL;
                     }
                     if (nodeName === "a" &&
                         (attrNormalizedName === "href" || attrNormalizedName === "ngHref")) {
-                        return $sce.URL;
+                        return SCE_CONTEXTS._URL;
                     }
                     return undefined;
                 }
@@ -13018,7 +13025,8 @@ class InterpolateProvider {
                         .replace(escapedEndRegexp, provider.endSymbol);
                 }
                 const $interpolate = (text, mustHaveExpression, trustedContext, allOrNothing) => {
-                    const contextAllowsConcatenation = trustedContext === $sce.URL || trustedContext === $sce.MEDIA_URL;
+                    const contextAllowsConcatenation = trustedContext === SCE_CONTEXTS._URL ||
+                        trustedContext === SCE_CONTEXTS._MEDIA_URL;
                     if (!text.length || text.indexOf(provider.startSymbol) === -1) {
                         if (mustHaveExpression) {
                             return undefined;
@@ -13168,6 +13176,7 @@ class Lexer {
      * @param text
      * @returns Array of tokens.
      */
+    /** @internal */
     _lex(text) {
         this._text = text;
         this._index = 0;
@@ -13216,12 +13225,14 @@ class Lexer {
     /**
      * Checks if a character is contained in a set of characters.
      */
+    /** @internal */
     _is(ch, chars) {
         return chars.indexOf(ch) !== -1;
     }
     /**
      * Peeks at the next character in the text.
      */
+    /** @internal */
     _peek(i = 1) {
         return this._index + i < this._text.length
             ? this._text.charAt(this._index + i)
@@ -13230,18 +13241,21 @@ class Lexer {
     /**
      * Checks if a character is a number.
      */
+    /** @internal */
     _isNumber(ch) {
         return typeof ch === "string" && ch >= "0" && ch <= "9";
     }
     /**
      * Checks if a character is whitespace.
      */
+    /** @internal */
     _isWhitespace(ch) {
         return (ch === " " || ch === "\r" || ch === "\t" || ch === "\n" || ch === "\v");
     }
     /**
      * Checks if a character is a valid identifier start.
      */
+    /** @internal */
     _isIdentifierStart(ch) {
         return ((ch >= "a" && ch <= "z") ||
             (ch >= "A" && ch <= "Z") ||
@@ -13251,6 +13265,7 @@ class Lexer {
     /**
      * Checks if a character is a valid identifier continuation.
      */
+    /** @internal */
     _isIdentifierContinue(ch) {
         return ((ch >= "a" && ch <= "z") ||
             (ch >= "A" && ch <= "Z") ||
@@ -13261,6 +13276,7 @@ class Lexer {
     /**
      * Peeks at the next multicharacter sequence in the text.
      */
+    /** @internal */
     _peekMultichar() {
         const ch = this._text.charAt(this._index);
         const peek = this._peek();
@@ -13278,12 +13294,14 @@ class Lexer {
     /**
      * Checks if a character is an exponent operator.
      */
+    /** @internal */
     _isExpOperator(ch) {
         return ch === "-" || ch === "+" || this._isNumber(ch);
     }
     /**
      * Throws a lexer error.
      */
+    /** @internal */
     _throwError(error, start, end) {
         const endIndex = end ?? this._index;
         const colStr = isDefined(start)
@@ -13294,6 +13312,7 @@ class Lexer {
     /**
      * Reads and tokenizes a number from the text.
      */
+    /** @internal */
     _readNumber() {
         let number = "";
         const start = this._index;
@@ -13333,6 +13352,7 @@ class Lexer {
     /**
      * Reads and tokenizes an identifier from the text.
      */
+    /** @internal */
     _readIdent() {
         const start = this._index;
         this._index += this._peekMultichar().length;
@@ -13352,6 +13372,7 @@ class Lexer {
     /**
      * Reads and tokenizes a string from the text.
      */
+    /** @internal */
     _readString(quote) {
         const start = this._index;
         let string = "";
@@ -13388,6 +13409,7 @@ class Lexer {
         }
         this._throwError("Unterminated quote", start);
     }
+    /** @internal */
     _handleUnicodeEscape() {
         const hex = this._text.substring(this._index + 1, this._index + 5);
         if (!/[\da-f]{4}/i.test(hex)) {
@@ -13419,6 +13441,7 @@ class ASTInterpreter {
      * @param {ASTNode} ast - The AST to compile.
      * @returns {CompiledExpression}
      */
+    /** @internal */
     _compile(ast) {
         const decoratedNode = findConstantAndWatchExpressions(ast, this._$filter);
         const { _body: body } = decoratedNode;
@@ -13474,6 +13497,7 @@ class ASTInterpreter {
      * @param {boolean|1} [create] - The create flag.
      * @returns {CompiledExpressionFunction} The recursive function.
      */
+    /** @internal */
     _recurse(ast, context, create) {
         let left;
         let right;
@@ -13917,6 +13941,7 @@ class ASTInterpreter {
      * @param {Object} [context] - The context.
      * @returns {CompiledExpressionFunction} The function returning the literal value.
      */
+    /** @internal */
     _value(value, context) {
         return () => context ? { context: undefined, name: undefined, value } : value;
     }
@@ -13927,6 +13952,7 @@ class ASTInterpreter {
      * @param {boolean|1} [create] - Whether to create the identifier if it does not exist.
      *  @returns {CompiledExpressionFunction}  The function returning the identifier value.
      */
+    /** @internal */
     _identifier(name, context, create) {
         return (scope, locals) => {
             const runtimeScope = scope;
@@ -13954,6 +13980,7 @@ class ASTInterpreter {
      * @param {boolean|1} [create] - Whether to create the member if it does not exist.
      * @returns {CompiledExpressionFunction}  The function returning the computed member value.
      */
+    /** @internal */
     _computedMember(left, right, context, create) {
         return (scope, locals, assign) => {
             const lhs = left(scope, locals, assign);
@@ -13983,6 +14010,7 @@ class ASTInterpreter {
      * @param {boolean|1} [create] - Whether to create the member if it does not exist.
      * @returns {CompiledExpressionFunction}  The function returning the non-computed member value.
      */
+    /** @internal */
     _nonComputedMember(left, right, context, create) {
         return (scope, locals, assign) => {
             const lhs = left(scope, locals, assign);
@@ -14270,7 +14298,9 @@ class AST {
      * @param {Lexer} lexer - The lexer instance for tokenizing input
      */
     constructor(lexer) {
+        /** @internal */
         this._text = "";
+        /** @internal */
         this._tokens = [];
         this._lexer = lexer;
         this._selfReferential = {
@@ -14284,6 +14314,7 @@ class AST {
      * @param {string} text - The input text to parse.
      * @returns {ASTNode} The root node of the AST.
      */
+    /** @internal */
     _ast(text) {
         this._text = text;
         this._tokens = this._lexer._lex(text);
@@ -14297,6 +14328,7 @@ class AST {
      * Parses a program.
      * @returns {ASTNode} The program node.
      */
+    /** @internal */
     _program() {
         const body = [];
         let hasMore = true;
@@ -14315,6 +14347,7 @@ class AST {
      * Parses an expression statement.
      * @returns {ASTNode} The expression statement node.
      */
+    /** @internal */
     _expressionStatement() {
         return {
             _type: ASTType._ExpressionStatement,
@@ -14325,6 +14358,7 @@ class AST {
      * Parses a filter chain.
      * @returns {ASTNode} The filter chain node.
      */
+    /** @internal */
     _filterChain() {
         let left = this._assignment();
         while (this._expect("|")) {
@@ -14336,6 +14370,7 @@ class AST {
      * Parses an assignment expression.
      * @returns {ASTNode} The assignment expression node.
      */
+    /** @internal */
     _assignment() {
         let result = this._ternary();
         if (this._expect("=")) {
@@ -14355,6 +14390,7 @@ class AST {
      * Parses a ternary expression.
      * @returns {ASTNode} The ternary expression node.
      */
+    /** @internal */
     _ternary() {
         const test = this._logicalOR();
         if (this._expect("?")) {
@@ -14375,6 +14411,7 @@ class AST {
      * Parses a logical OR expression.
      * @returns {ASTNode} The logical OR expression node.
      */
+    /** @internal */
     _logicalOR() {
         let left = this._logicalAND();
         while (this._expect("||")) {
@@ -14391,6 +14428,7 @@ class AST {
      * Parses a logical AND expression.
      * @returns {ASTNode} The logical AND expression node.
      */
+    /** @internal */
     _logicalAND() {
         let left = this._equality();
         while (this._expect("&&")) {
@@ -14407,6 +14445,7 @@ class AST {
      * Parses an equality expression.
      * @returns {ASTNode} The equality expression node.
      */
+    /** @internal */
     _equality() {
         let left = this._relational();
         let token;
@@ -14424,6 +14463,7 @@ class AST {
      * Parses a relational expression.
      * @returns {ASTNode} The relational expression node.
      */
+    /** @internal */
     _relational() {
         let left = this._additive();
         let token;
@@ -14441,6 +14481,7 @@ class AST {
      * Parses an additive expression.
      * @returns {ASTNode} The additive expression node.
      */
+    /** @internal */
     _additive() {
         let left = this._multiplicative();
         let token;
@@ -14458,6 +14499,7 @@ class AST {
      * Parses a multiplicative expression.
      * @returns {ASTNode} The multiplicative expression node.
      */
+    /** @internal */
     _multiplicative() {
         let left = this._unary();
         let token;
@@ -14479,6 +14521,7 @@ class AST {
      * Parses a unary / prefix update expression.
      * @returns {ASTNode}
      */
+    /** @internal */
     _unary() {
         let token;
         // Prefix update: ++a / --a
@@ -14510,6 +14553,7 @@ class AST {
      * Parses a postfix update expression.
      * @returns {ASTNode}
      */
+    /** @internal */
     _postfix() {
         let expr = this._primary();
         // Only one postfix update is allowed (JS also disallows chaining like a++++ in most contexts)
@@ -14531,6 +14575,7 @@ class AST {
      * Parses a primary expression.
      * @returns {ASTNode} The primary expression node.
      */
+    /** @internal */
     _primary() {
         let primary;
         const peekToken = this._peek();
@@ -14600,6 +14645,7 @@ class AST {
      * @param {ASTNode} baseExpression - The base expression to apply the filter to.
      * @returns {ASTNode} The filter node.
      */
+    /** @internal */
     _filter(baseExpression) {
         const args = [baseExpression];
         const result = {
@@ -14617,6 +14663,7 @@ class AST {
      * Parses function arguments.
      * @returns {ASTNode[]} The arguments array.
      */
+    /** @internal */
     _parseArguments() {
         const args = [];
         if (this._peekToken()._text !== ")") {
@@ -14630,6 +14677,7 @@ class AST {
      * Parses an identifier.
      * @returns {ASTNode} The identifier node.
      */
+    /** @internal */
     _identifier() {
         const token = this._consume();
         if (!token._identifier) {
@@ -14641,6 +14689,7 @@ class AST {
      * Parses a constant.
      * @returns {ASTNode} The constant node.
      */
+    /** @internal */
     _constant() {
         // TODO check that it is a constant
         return { _type: ASTType._Literal, _value: this._consume()._value };
@@ -14649,6 +14698,7 @@ class AST {
      * Parses an array declaration.
      * @returns {ASTNode} The array declaration node.
      */
+    /** @internal */
     _arrayDeclaration() {
         const elements = [];
         if (this._peekToken()._text !== "]") {
@@ -14667,6 +14717,7 @@ class AST {
      * Parses an object.
      * @returns {ASTNode} The object node.
      */
+    /** @internal */
     _object() {
         const properties = [];
         let property;
@@ -14722,6 +14773,7 @@ class AST {
      * @param {string} msg - The error message.
      * @param {Token} token - The token that caused the error.
      */
+    /** @internal */
     _throwError(msg, token) {
         throw $parseMinErr("syntax", "Syntax Error: Token '{0}' {1} at column {2} of the expression [{3}] starting at [{4}].", token._text, msg, token._index + 1, this._text, this._text?.substring(token._index));
     }
@@ -14730,6 +14782,7 @@ class AST {
      * @param {string} [e1] - The expected token type.
      * @returns {Token} The consumed token.
      */
+    /** @internal */
     _consume(e1) {
         if (this._tokens && this._tokens.length === this._index) {
             throw $parseMinErr("ueoe", "Unexpected end of expression: {0}", this._text);
@@ -14744,6 +14797,7 @@ class AST {
      * Returns the next token without consuming it.
      * @returns {Token} The next token.
      */
+    /** @internal */
     _peekToken() {
         if (!this._tokens || this._tokens.length === this._index) {
             throw $parseMinErr("ueoe", "Unexpected end of expression: {0}", this._text);
@@ -14757,6 +14811,7 @@ class AST {
      * @param {...string} expected - The expected token types.
      * @returns {Token|boolean} The next token if it matches, otherwise false.
      */
+    /** @internal */
     _peek(...expected) {
         const token = this._tokens && this._tokens[this._index];
         if (!token)
@@ -14778,6 +14833,7 @@ class AST {
      * @param {...string} expected - The expected token types.
      * @returns {Token|boolean} The consumed token if it matches, otherwise false.
      */
+    /** @internal */
     _expect(...expected) {
         const token = this._peek(...expected);
         if (token) {
@@ -14793,6 +14849,7 @@ class Parser {
         this._ast = new AST(lexer);
         this._astCompiler = new ASTInterpreter($filter);
     }
+    /** @internal */
     _parse(exp) {
         const ast = this._ast._ast(exp.trim());
         const fn = this._astCompiler._compile(ast);
@@ -15789,6 +15846,7 @@ class FormController {
     /**
      * Renames a registered control on the form controller.
      */
+    /** @internal */
     _renameControl(control, newName) {
         const oldName = control.$name;
         if (this[oldName] === control) {
@@ -15900,6 +15958,7 @@ class FormController {
         }
         rootForm._setSubmitted();
     }
+    /** @internal */
     _setSubmitted() {
         if (hasAnimate(this._element)) {
             this._animate.addClass(this._element, SUBMITTED_CLASS);
@@ -15917,6 +15976,7 @@ class FormController {
     /**
      * Adds a controller reference to a named validity bucket.
      */
+    /** @internal */
     _set(object, property, controller) {
         const list = object[property];
         if (!list) {
@@ -15933,6 +15993,7 @@ class FormController {
     /**
      * Removes a controller reference from a named validity bucket.
      */
+    /** @internal */
     _unset(object, property, controller) {
         const list = object[property];
         if (!list) {
@@ -16623,12 +16684,14 @@ class NgModelController {
     /**
      * Marks a named validity bucket as present.
      */
+    /** @internal */
     _set(object, property) {
         object[property] = true;
     }
     /**
      * Removes a named validity bucket entry.
      */
+    /** @internal */
     _unset(object, property) {
         delete object[property];
     }
@@ -16716,6 +16779,7 @@ class NgModelController {
         toggleValidationCss(this, validationErrorKey, combinedState);
         this._parentForm.$setValidity(validationErrorKey, combinedState, this);
     }
+    /** @internal */
     _initGetterSetters() {
         if (this.$options.getOption("getterSetter")) {
             const invokeModelGetter = this._parse(`${this._attr.ngModel}()`);
@@ -16782,6 +16846,7 @@ class NgModelController {
     /**
      * Applies the correct empty/not-empty classes for the current view value.
      */
+    /** @internal */
     _updateEmptyClasses(value) {
         if (this.$isEmpty(value)) {
             if (hasAnimate(this._element)) {
@@ -17013,6 +17078,7 @@ class NgModelController {
     /**
      * Runs synchronous and asynchronous validators for the pending model/view values.
      */
+    /** @internal */
     _runValidators(modelValue, viewValue, doneCallback) {
         this._currentValidationRunId++;
         const localValidationRunId = this._currentValidationRunId;
@@ -17134,6 +17200,7 @@ class NgModelController {
         }
         this._parseAndValidate();
     }
+    /** @internal */
     _parseAndValidate() {
         let modelValue = this._lastCommittedViewValue;
         const that = this;
@@ -17186,6 +17253,7 @@ class NgModelController {
             }
         }
     }
+    /** @internal */
     _writeModelToScope() {
         this._ngModelSet(this._scope, this.$modelValue);
         values(this.$viewChangeListeners).forEach((listener) => {
@@ -17253,6 +17321,7 @@ class NgModelController {
     /**
      * Schedules or commits the current view value based on the configured debounce settings.
      */
+    /** @internal */
     _debounceViewValueCommit(trigger) {
         let debounceDelay = this.$options.getOption("debounce");
         const debounceDelayMap = debounceDelay;
@@ -17432,6 +17501,7 @@ class NgModelController {
     /**
      * This method is called internally to run the $formatters on the $modelValue
      */
+    /** @internal */
     _format() {
         const formatters = this.$formatters;
         let idx = formatters.length;
@@ -17444,6 +17514,7 @@ class NgModelController {
     /**
      * @ignore This method is called internally when the bound scope value changes.
      */
+    /** @internal */
     _setModelValue(modelValue) {
         this.$modelValue = this._rawModelValue = modelValue;
         this._parserValid = undefined;
@@ -17452,10 +17523,12 @@ class NgModelController {
     /**
      * @ignore
      */
+    /** @internal */
     _removeAllEventListeners() {
         this._eventRemovers.forEach((removeCallback) => removeCallback());
         this._eventRemovers.clear();
     }
+    /** @internal */
     _setUpdateOnEvents() {
         if (this._updateEvents) {
             this._updateEvents.split(" ").forEach((ev) => {
@@ -17474,6 +17547,7 @@ class NgModelController {
     /**
      * Handles configured update events by committing the staged view value.
      */
+    /** @internal */
     _updateEventHandler(ev) {
         this._debounceViewValueCommit(ev && ev.type);
     }
@@ -18324,9 +18398,11 @@ class NgMessageCtrl {
         this._default = undefined;
         this._scope.$watch(this._attrs.ngMessages || this._attrs.for, this._render.bind(this));
     }
+    /** @internal */
     _getAttachId() {
         return this._nextAttachId++;
     }
+    /** @internal */
     _render(collection = {}) {
         this._renderLater = false;
         this._cachedCollection = collection;
@@ -18523,6 +18599,7 @@ function ngMessageDirectiveFactory(isDefault) {
                         assignRecords(staticExp);
                     }
                 }
+                /** @internal */
                 let currentElement = null;
                 let messageCtrl;
                 ngMessagesCtrl.register(commentNode, (messageCtrl = {
@@ -18601,6 +18678,7 @@ const optGroupTemplate = document.createElement("optgroup");
 const NG_OPTIONS_REGEXP = /^\s*([\s\S]+?)(?:\s+as\s+([\s\S]+?))?(?:\s+group\s+by\s+([\s\S]+?))?(?:\s+disable\s+when\s+([\s\S]+?))?\s+for\s+(?:([$\w][$\w]*)|(?:\(\s*([$\w][$\w]*)\s*,\s*([$\w][$\w]*)\s*\)))\s+in\s+([\s\S]+?)(?:\s+track\s+by\s+([\s\S]+?))?$/;
 class OptionItem {
     constructor(selectValue, viewValue, label, group, disabled) {
+        /** @internal */
         this._element = null;
         this._selectValue = selectValue;
         this._viewValue = viewValue;
@@ -18654,6 +18732,7 @@ function ngOptionsDirective($compile, $parse) {
         return {
             _trackBy: trackBy,
             _getWatchables: match[8],
+            /** @internal */
             _getOptions() {
                 const optionItems = [];
                 const selectValueMap = {};
@@ -18684,9 +18763,11 @@ function ngOptionsDirective($compile, $parse) {
                 return {
                     _items: optionItems,
                     _selectValueMap: selectValueMap,
+                    /** @internal */
                     _getOptionFromViewValue(value) {
                         return selectValueMap[getTrackByValue(value, undefined)];
                     },
+                    /** @internal */
                     _getViewValueFromOption(option) {
                         return trackBy
                             ? structuredClone(option._viewValue)
@@ -18941,6 +19022,7 @@ class SelectController {
             this._element.options[this._element.selectedIndex] === this._emptyOption);
     }
     /** @ignore */
+    /** @internal */
     _renderUnknownOption(val) {
         const unknownVal = this._generateUnknownOptionValue(val);
         this._unknownOption.value = unknownVal;
@@ -18950,6 +19032,7 @@ class SelectController {
         this._element.value = unknownVal;
     }
     /** @ignore */
+    /** @internal */
     _updateUnknownOption(val) {
         const unknownVal = this._generateUnknownOptionValue(val);
         this._unknownOption.value = unknownVal;
@@ -18958,6 +19041,7 @@ class SelectController {
         this._element.value = unknownVal;
     }
     /** @ignore */
+    /** @internal */
     _generateUnknownOptionValue(val) {
         if (isUndefined(val)) {
             return `? undefined:undefined ?`;
@@ -18965,11 +19049,13 @@ class SelectController {
         return `? ${hashKey(val)} ?`;
     }
     /** @ignore */
+    /** @internal */
     _removeUnknownOption() {
         if (this._unknownOption.parentElement)
             this._unknownOption.remove();
     }
     /** @ignore */
+    /** @internal */
     _selectEmptyOption() {
         if (this._emptyOption) {
             this._element.value = "";
@@ -18978,18 +19064,21 @@ class SelectController {
         }
     }
     /** @ignore */
+    /** @internal */
     _unselectEmptyOption() {
         if (this._hasEmptyOption && this._emptyOption) {
             this._emptyOption.selected = false;
         }
     }
     /** @ignore */
+    /** @internal */
     _readValue() {
         const val = this._element.value;
         const realVal = val in this._selectValueMap ? this._selectValueMap[val] : val;
         return this._hasOption(realVal) ? realVal : null;
     }
     /** @ignore */
+    /** @internal */
     _writeValue(value) {
         const currentlySelectedOption = this._element.options[this._element.selectedIndex];
         if (currentlySelectedOption)
@@ -19012,6 +19101,7 @@ class SelectController {
         }
     }
     /** @ignore */
+    /** @internal */
     _addOption(value, element) {
         if (element.nodeType === NodeType._COMMENT_NODE)
             return;
@@ -19025,6 +19115,7 @@ class SelectController {
         this._scheduleRender();
     }
     /** @ignore */
+    /** @internal */
     _removeOption(value) {
         const count = this._optionsMap.get(value);
         if (count) {
@@ -19041,10 +19132,12 @@ class SelectController {
         }
     }
     /** @ignore */
+    /** @internal */
     _hasOption(value) {
         return !!this._optionsMap.get(value);
     }
     /** @ignore */
+    /** @internal */
     _selectUnknownOrEmptyOption(value) {
         if (isNullOrUndefined(value) && this._emptyOption) {
             this._removeUnknownOption();
@@ -19058,6 +19151,7 @@ class SelectController {
         }
     }
     /** @ignore */
+    /** @internal */
     _scheduleRender() {
         if (this._renderScheduled)
             return;
@@ -19068,6 +19162,7 @@ class SelectController {
         });
     }
     /** @ignore */
+    /** @internal */
     _scheduleViewValueUpdate(renderAfter = false) {
         if (this._updateScheduled)
             return;
@@ -19082,6 +19177,7 @@ class SelectController {
         });
     }
     /** @ignore */
+    /** @internal */
     _registerOption(optionScope, optionElement, optionAttrs, interpolateValueFn, interpolateTextFn) {
         let oldVal;
         let hashedVal;
@@ -20772,6 +20868,7 @@ function stringify(value) {
         [isPromise, val("[Promise]")],
         [
             isRejection,
+            /** @internal */
             (reg) => reg._transitionRejection.toString(),
         ],
         [hasToString, (str) => str.toString()],
@@ -20919,10 +21016,10 @@ function transLbl(trans) {
 class Trace {
     constructor() {
         this._enabled = {};
-        this._approximateDigests = 0;
         this._logger =
             window.angular?.$injector?.get($injectTokens._log) || console;
     }
+    /** @internal */
     _set(enabled, categories) {
         if (!categories.length) {
             categories = Object.values(Category);
@@ -23262,6 +23359,7 @@ class StateObject {
         this._stateObjectCache = { nameGlob };
     }
     /** @returns {StateObject} */
+    /** @internal */
     _state() {
         return this;
     }
@@ -23593,6 +23691,7 @@ class StateRegistryProvider {
      * @param {BuiltStateDeclaration} state
      * @returns {BuiltStateDeclaration[]}
      */
+    /** @internal */
     _deregisterTree(state) {
         const all = this.getAll().map((x) => x._state());
         const getChildren = (states) => {
@@ -24177,12 +24276,14 @@ class Queue {
     /**
      * Register a listener that will be called with the evicted item.
      */
+    /** @internal */
     _onEvict(listener) {
         this._evictListeners.push(listener);
     }
     /**
      * Adds an item to the end of the queue, evicting the head if over limit.
      */
+    /** @internal */
     _enqueue(item) {
         this._items.push(item);
         if (this._limit !== null && this._items.length > this._limit) {
@@ -24193,6 +24294,7 @@ class Queue {
     /**
      * Removes the head item and notifies eviction listeners.
      */
+    /** @internal */
     _evict() {
         const item = this._items.shift();
         if (item !== undefined) {
@@ -24203,6 +24305,7 @@ class Queue {
     /**
      * Removes and returns the first item in the queue.
      */
+    /** @internal */
     _dequeue() {
         return this._items.length > 0 ? this._items.shift() : undefined;
     }
@@ -24210,6 +24313,7 @@ class Queue {
      * Clears all items from the queue.
      * @returns The previously stored items.
      */
+    /** @internal */
     _clear() {
         const cleared = [...this._items];
         this._items.length = 0;
@@ -24218,6 +24322,7 @@ class Queue {
     /**
      * Returns the current number of items.
      */
+    /** @internal */
     _size() {
         return this._items.length;
     }
@@ -24225,6 +24330,7 @@ class Queue {
      * Removes a specific item from the queue.
      * @returns The removed item, or false if not found.
      */
+    /** @internal */
     _remove(item) {
         const index = this._items.indexOf(item);
         return index !== -1 ? this._items.splice(index, 1)[0] : false;
@@ -24232,12 +24338,14 @@ class Queue {
     /**
      * Returns the item at the tail (last).
      */
+    /** @internal */
     _peekTail() {
         return this._items[this._items.length - 1];
     }
     /**
      * Returns the item at the head (first).
      */
+    /** @internal */
     _peekHead() {
         return this._items[0];
     }
@@ -24324,12 +24432,14 @@ class RouterProvider {
     /**
      * Marks that the app has configured URL-driven router behavior.
      */
+    /** @internal */
     _markConfiguredRouting() {
         this._configuredRouting = true;
     }
     /**
      * Returns true when URL-driven router behavior has been configured.
      */
+    /** @internal */
     _hasConfiguredRouting() {
         return this._configuredRouting;
     }
@@ -24396,6 +24506,7 @@ class Rejection {
     /**
      * Returns a rejected promise tagged with this rejection instance.
      */
+    /** @internal */
     toPromise() {
         const promise = Promise.reject(this);
         promise.catch(() => 0);
@@ -24462,8 +24573,8 @@ class TransitionHook {
         this.stateContext = stateContext;
         this.registeredHook = registeredHook;
         this.options = defaults(options, defaultOptions);
-        this.type = registeredHook.eventType;
-        this.isSuperseded = () => this.type.hookPhase === TransitionHookPhase._RUN &&
+        this._type = registeredHook._eventType;
+        this.isSuperseded = () => this._type.hookPhase === TransitionHookPhase._RUN &&
             !this.options.transition?.isActive();
         this._exceptionHandler = exceptionHandler;
     }
@@ -24488,11 +24599,11 @@ class TransitionHook {
         trace.traceHookInvocation(this, this.transition, options);
         const invokeCallback = () => hook.callback.call(options.bind, this.transition, this.stateContext);
         const normalizeErr = (err) => Rejection.normalize(err).toPromise();
-        const handleError = (err) => hook.eventType.getErrorHandler()(err);
-        const handleResult = (result) => hook.eventType.getResultHandler(this)(result);
+        const handleError = (err) => hook._eventType.getErrorHandler()(err);
+        const handleResult = (result) => hook._eventType.getResultHandler(this)(result);
         try {
             const result = invokeCallback();
-            if (!this.type.synchronous && isPromise(result)) {
+            if (!this._type.synchronous && isPromise(result)) {
                 return result
                     .catch(normalizeErr)
                     .then(handleResult, handleError);
@@ -24600,7 +24711,7 @@ function matchState(state, criterion, transition) {
 class RegisteredHook {
     constructor(tranSvc, eventType, callback, matchCriteria, removeHookFromRegistry, options = {}) {
         this.tranSvc = tranSvc;
-        this.eventType = eventType;
+        this._eventType = eventType;
         this.callback = callback;
         this.matchCriteria = matchCriteria;
         this.removeHookFromRegistry = removeHookFromRegistry;
@@ -24610,15 +24721,18 @@ class RegisteredHook {
         this.bind = options.bind || null;
         this.invokeLimit = options.invokeLimit;
     }
+    /** @internal */
     _matchingNodes(nodes, criterion, transition) {
         if (criterion === true)
             return nodes;
         const matching = nodes.filter((node) => matchState(node.state, criterion, transition));
         return matching.length ? matching : null;
     }
+    /** @internal */
     _getDefaultMatchCriteria() {
         return map(this.tranSvc._getPathTypes(), () => true);
     }
+    /** @internal */
     _getMatchingNodes(treeChanges, transition) {
         const criteria = Object.assign(this._getDefaultMatchCriteria(), this.matchCriteria);
         return values(this.tranSvc._getPathTypes()).reduce((mn, pathType) => {
@@ -24648,14 +24762,15 @@ class RegisteredHook {
  * Registers a hook on either the transition service or a single transition.
  */
 function registerHook(hookSource, transitionService, eventType, matchCriteria, callback, options = {}) {
+    const typedEventType = eventType;
     const _registeredHooks = (hookSource._registeredHooks =
         hookSource._registeredHooks || {});
-    const hooks = (_registeredHooks[eventType.name] =
-        _registeredHooks[eventType.name] || []);
+    const hooks = (_registeredHooks[typedEventType.name] =
+        _registeredHooks[typedEventType.name] || []);
     const removeHookFn = (hook) => {
         removeFrom(hooks, hook);
     };
-    const registeredHook = new RegisteredHook(transitionService, eventType, callback, matchCriteria, removeHookFn, options);
+    const registeredHook = new RegisteredHook(transitionService, typedEventType, callback, matchCriteria, removeHookFn, options);
     hooks.push(registeredHook);
     return registeredHook.deregister.bind(registeredHook);
 }
@@ -24665,22 +24780,25 @@ function registerHook(hookSource, transitionService, eventType, matchCriteria, c
 function makeEvent(hookSource, transitionService, eventType) {
     const _registeredHooks = (hookSource._registeredHooks =
         hookSource._registeredHooks || {});
-    const hooks = (_registeredHooks[eventType.name] = []);
+    const typedEventType = eventType;
+    const hooks = (_registeredHooks[typedEventType.name] =
+        []);
     const removeHookFn = (hook) => {
         removeFrom(hooks, hook);
     };
     function hookRegistrationFn(matchObject, callback, options = {}) {
-        const registeredHook = new RegisteredHook(transitionService, eventType, callback, matchObject, removeHookFn, options);
+        const registeredHook = new RegisteredHook(transitionService, typedEventType, callback, matchObject, removeHookFn, options);
         hooks.push(registeredHook);
         return registeredHook.deregister.bind(registeredHook);
     }
-    hookSource[eventType.name] = hookRegistrationFn;
+    hookSource[typedEventType.name] = hookRegistrationFn;
     return hookRegistrationFn;
 }
 
 /**
  * Builds runnable `TransitionHook` instances for a transition phase.
  */
+/** @internal */
 class HookBuilder {
     constructor(transition) {
         this.transition = transition;
@@ -24704,13 +24822,13 @@ class HookBuilder {
         };
         const makeTransitionHooks = (item) => {
             const { hook, matches } = item;
-            const matchingNodes = matches[hookType.criteriaMatchPath.name];
+            const matchingNodes = matches[hookType._criteriaMatchPath.name];
             return matchingNodes.map((node) => {
                 const options = Object.assign({
                     bind: hook.bind,
                     traceData: { hookType: hookType.name, context: node },
                 }, baseHookOptions);
-                const state = hookType.criteriaMatchPath.scope === TransitionHookScope._STATE
+                const state = hookType._criteriaMatchPath.scope === TransitionHookScope._STATE
                     ? node.state.self
                     : null;
                 const transitionHook = new TransitionHook(transition, state, hook, options, this.transition._transitionService._exceptionHandler);
@@ -24917,6 +25035,7 @@ class Transition {
      * @param {string} eventName
      * @returns {TransitionEventType}
      */
+    /** @internal */
     _getEventType(eventName) {
         const eventType = this._transitionService
             ._getEvents()
@@ -25291,6 +25410,7 @@ class Transition {
     ignored() {
         return !!this._ignoredReason();
     }
+    /** @internal */
     _ignoredReason() {
         const pending = this._globals.transition;
         const { reloadState } = this._options;
@@ -25504,7 +25624,7 @@ function registerLazyLoadHook(transitionService, stateService, urlService, state
             }
             const result = urlService?.match(urlService.parts());
             const rule = result && result.rule;
-            if (rule && rule.type === "STATE" && rule.state) {
+            if (rule && rule._type === "STATE" && rule.state) {
                 const { state } = rule;
                 const params = result.match;
                 return stateService?.target(state, params, transition.options());
@@ -25691,6 +25811,7 @@ const registerActivateViews = (transitionService, viewService) => {
 /**
  * Immutable metadata describing one transition lifecycle event.
  */
+/** @internal */
 class TransitionEventType {
     /**
      * Creates one immutable transition event descriptor.
@@ -25699,7 +25820,7 @@ class TransitionEventType {
         this.name = name;
         this.hookPhase = hookPhase;
         this.hookOrder = hookOrder;
-        this.criteriaMatchPath = criteriaMatchPath;
+        this._criteriaMatchPath = criteriaMatchPath;
         this.reverseSort = reverseSort;
         this.getResultHandler = getResultHandler;
         this.getErrorHandler = getErrorHandler;
@@ -25762,6 +25883,7 @@ class TransitionProvider {
     /**
      * Defines the built-in transition lifecycle events and their execution order.
      */
+    /** @internal */
     _defineCoreEvents() {
         const TH = TransitionHook;
         const paths = this._criteriaPaths;
@@ -25778,6 +25900,7 @@ class TransitionProvider {
         this._defineEvent("onSuccess", TransitionHookPhase._SUCCESS, 0, paths.to, NORMAL_SORT, TH.LOG_REJECTED_RESULT, TH.LOG_ERROR, SYNCHRONOUS);
         this._defineEvent("onError", TransitionHookPhase._ERROR, 0, paths.to, NORMAL_SORT, TH.LOG_REJECTED_RESULT, TH.LOG_ERROR, SYNCHRONOUS);
     }
+    /** @internal */
     _defineCorePaths() {
         const { _STATE: STATE, _TRANSITION: TRANSITION } = TransitionHookScope;
         this._definePathType("to", TRANSITION);
@@ -25789,6 +25912,7 @@ class TransitionProvider {
     /**
      * Defines one transition event type and exposes its registration helper.
      */
+    /** @internal */
     _defineEvent(name, hookPhase, hookOrder, criteriaMatchPath, reverseSort = false, getResultHandler = TransitionHook.HANDLE_RESULT, getErrorHandler = TransitionHook.REJECT_ERROR, synchronous = false) {
         const eventType = new TransitionEventType(name, hookPhase, hookOrder, criteriaMatchPath, reverseSort, getResultHandler, getErrorHandler, synchronous);
         this._eventTypes.push(eventType);
@@ -25797,6 +25921,7 @@ class TransitionProvider {
     /**
      * Returns known transition event types, optionally filtered by phase.
      */
+    /** @internal */
     _getEvents(phase) {
         const transitionHookTypes = isDefined(phase)
             ? this._eventTypes.filter((type) => type.hookPhase === phase)
@@ -25809,12 +25934,14 @@ class TransitionProvider {
     /**
      * Defines one path selector used by transition hook matching.
      */
+    /** @internal */
     _definePathType(name, hookScope) {
         this._criteriaPaths[name] = { name, scope: hookScope };
     }
     /**
      * Returns the configured transition hook path selectors.
      */
+    /** @internal */
     _getPathTypes() {
         return this._criteriaPaths;
     }
@@ -25888,6 +26015,7 @@ class TransitionProvider {
     /**
      * Looks up one known transition event type by name.
      */
+    /** @internal */
     _getEventType(eventName) {
         const eventType = this._eventTypes.find((type) => type.name === eventName);
         if (!eventType) {
@@ -25898,6 +26026,7 @@ class TransitionProvider {
     /**
      * Installs the built-in transition hooks that power router behavior.
      */
+    /** @internal */
     _registerCoreTransitionHooks() {
         const fns = this._deregisterHookFns;
         fns.addCoreResolves = registerAddCoreResolvables(this);
@@ -25982,11 +26111,13 @@ const silentRejection = (error) => silenceUncaughtInPromise(Promise.reject(error
  * This API is located at `router.stateService` ([[UIRouter.stateService]])
  */
 class StateProvider {
+    /** @internal */
     _getRegistry() {
         if (!this.stateRegistry)
             throw new Error("State registry is not initialized");
         return this.stateRegistry;
     }
+    /** @internal */
     _getUrlService() {
         if (!this.urlService)
             throw new Error("Url service is not initialized");
@@ -26866,6 +26997,7 @@ class ParamTypes {
         }
         return this;
     }
+    /** @internal */
     _flushTypeQueue() {
         const injector = this._getInjector();
         if (!injector) {
@@ -26878,6 +27010,7 @@ class ParamTypes {
             Object.assign(this.types[type.name], injector.invoke(type.def));
         }
     }
+    /** @internal */
     _getInjector() {
         return (this.$injector || (this.$injector = window.angular?.$injector));
     }
@@ -27403,6 +27536,7 @@ class UrlMatcher {
      * @param {Param} param
      * @returns {any}
      */
+    /** @internal */
     _getDecodedParamValue(value, param) {
         return param.value(value);
     }
@@ -27656,7 +27790,7 @@ const LOWEST = 0.000001;
 class UrlRuleFactory {
     static isUrlRule(obj) {
         return (!!obj &&
-            ["type", "match", "handler"].every((key) => isDefined(obj[key])));
+            ["_type", "match", "handler"].every((key) => isDefined(obj[key])));
     }
     /**
      * @param {ng.UrlService} urlService
@@ -27777,11 +27911,11 @@ class UrlRuleFactory {
             const matched = optional.filter((param) => params[param.id]);
             return matched.length / optional.length;
         }
-        /** @type {{ urlMatcher: UrlMatcher; matchPriority: (params: RawParams) => number; type: "URLMATCHER" }} */
+        /** @type {{ urlMatcher: UrlMatcher; matchPriority: (params: RawParams) => number; _type: "URLMATCHER" }} */
         const details = {
             urlMatcher,
             matchPriority,
-            type: "URLMATCHER",
+            _type: "URLMATCHER",
         };
         return Object.assign(new BaseUrlRule(matchUrlParamters, resolvedHandler), details);
     }
@@ -27827,7 +27961,7 @@ class UrlRuleFactory {
         };
         const details = {
             state,
-            type: "STATE",
+            _type: "STATE",
         };
         return Object.assign(this.fromUrlMatcher(state.url, handler), details);
     }
@@ -27881,7 +28015,7 @@ class UrlRuleFactory {
         const matchParamsFromRegexp = (url) => regexp.exec(url.path);
         const details = {
             regexp,
-            type: "REGEXP",
+            _type: "REGEXP",
         };
         return Object.assign(new BaseUrlRule(matchParamsFromRegexp, _handler), details);
     }
@@ -27898,7 +28032,7 @@ class BaseUrlRule {
      */
     constructor(match, handler) {
         this.match = match;
-        this.type = "RAW";
+        this._type = "RAW";
         this.$id = -1;
         this._group = undefined;
         this.handler = handler || ((x) => x);
@@ -27930,7 +28064,7 @@ const typeSort = (a, b) => {
         RAW: 2,
         OTHER: 1,
     };
-    return (weights[a.type] || 0) - (weights[b.type] || 0);
+    return (weights[a._type] || 0) - (weights[b._type] || 0);
 };
 const urlMatcherSort = (a, b) => !a.urlMatcher || !b.urlMatcher
     ? 0
@@ -27941,7 +28075,7 @@ const idSort = (a, b) => {
         STATE: true,
         URLMATCHER: true,
     };
-    const equal = useMatchPriority[a.type] && useMatchPriority[b.type];
+    const equal = useMatchPriority[a._type] && useMatchPriority[b._type];
     return equal ? 0 : (a.$id || 0) - (b.$id || 0);
 };
 /**
@@ -27983,6 +28117,7 @@ function defaultRuleSortFn(a, b) {
 class UrlRules {
     /** @param {UrlRuleFactory} urlRuleFactory */
     constructor(urlRuleFactory, router) {
+        /** @internal */
         this._sorted = false;
         this._sortFn = defaultRuleSortFn;
         /**
@@ -28208,6 +28343,7 @@ class UrlService {
      * The runtime location service is only available after `$get` runs.
      * Guard access here so the rest of the methods can use a non-optional type.
      */
+    /** @internal */
     _getLocation() {
         if (!this.$location) {
             throw new Error("UrlService location is not initialized");
@@ -28674,6 +28810,7 @@ class ViewService {
     /**
      * Builds a view config for one view declaration along the specified path.
      */
+    /** @internal */
     _createViewConfig(path, decl) {
         const cfgFactory = this._viewConfigFactory;
         if (!cfgFactory) {
@@ -29252,7 +29389,9 @@ class Location {
      * @param [prefix] URL path prefix for html5 mode or hash prefix for hashbang mode
      */
     constructor(appBase, appBaseNoFile, html5 = true, prefix) {
+        /** @internal */
         this._url = "";
+        /** @internal */
         this._state = undefined;
         this.appBase = appBase;
         this.appBaseNoFile = appBaseNoFile;
@@ -29398,7 +29537,7 @@ class Location {
             : this.getSearch();
     }
     /**
-     * @private
+     * @internal
      * Compose url and update `url` and `absUrl` property
      */
     _compose() {
@@ -29776,6 +29915,7 @@ class LocationProvider {
         }
     }
     /**
+     * @internal
      * Fires the state or URL change event.
      */
     _fireStateOrUrlChange() {
@@ -29792,6 +29932,7 @@ class LocationProvider {
         });
     }
     /**
+     * @internal
      * Registers a callback that runs when the browser URL changes.
      *
      * @param callback - Listener invoked with the new URL and history state.
@@ -30046,6 +30187,7 @@ class LogProvider {
      * @private
      * Normalizes `Error` objects into readable log output.
      */
+    /** @internal */
     _formatError(arg) {
         if (isError(arg)) {
             if (arg.stack) {
@@ -30061,6 +30203,7 @@ class LogProvider {
      * @private
      * Builds a console-backed logger for the requested method name.
      */
+    /** @internal */
     _consoleLog(type) {
         const console = window.console ||
             {};
@@ -30663,6 +30806,7 @@ class StreamConnection {
      * Binds event handlers to the underlying connection (EventSource or WebSocket)
      * for open, message, error, and close events.
      */
+    /** @internal */
     _bindEvents() {
         const conn = this._connection;
         if (conn instanceof EventSource) {
@@ -30682,6 +30826,7 @@ class StreamConnection {
      * Handles the open event from the connection.
      * @param event - The open event.
      */
+    /** @internal */
     _handleOpen(event) {
         this._retryCount = 0;
         this._config.onOpen?.(event);
@@ -30694,6 +30839,7 @@ class StreamConnection {
      * @param data - Raw message data.
      * @param event - The message event.
      */
+    /** @internal */
     _handleMessage(data, event) {
         try {
             data = this._config.transformMessage?.(data) ?? data;
@@ -30710,6 +30856,7 @@ class StreamConnection {
      * Calls onError callback and schedules a reconnect.
      * @param err - Error object or message.
      */
+    /** @internal */
     _handleError(err) {
         this._config.onError?.(err);
         this._scheduleReconnect();
@@ -30719,6 +30866,7 @@ class StreamConnection {
      * Handles close events for WebSocket connections.
      * Triggers reconnect logic.
      */
+    /** @internal */
     _handleClose() {
         this._scheduleReconnect();
     }
@@ -30727,6 +30875,7 @@ class StreamConnection {
      * Schedules a reconnect attempt based on retryCount and config.maxRetries.
      * Calls onReconnect callback if reconnecting.
      */
+    /** @internal */
     _scheduleReconnect() {
         if (this._closed)
             return;
@@ -30744,6 +30893,7 @@ class StreamConnection {
      * Resets the heartbeat timer. If the timer expires, the connection is closed
      * and a reconnect is attempted.
      */
+    /** @internal */
     _resetHeartbeat() {
         if (!this._config.heartbeatTimeout)
             return;
@@ -30759,6 +30909,7 @@ class StreamConnection {
     /**
      * @private
      */
+    /** @internal */
     _closeInternal() {
         clearTimeout(this._heartbeatTimer);
         this._connection?.close();
@@ -30809,6 +30960,7 @@ class SseProvider {
     /**
      * Builds a URL with serialized query parameters.
      */
+    /** @internal */
     _buildUrl(url, params) {
         if (!params)
             return url;
@@ -31140,8 +31292,9 @@ class Angular extends EventTarget {
     constructor(subapp = false) {
         super();
         this.subapps = [];
+        /** @internal */
         this._bootsrappedModules = [];
-        this.version = "0.24.0";
+        this.version = "0.25.0";
         this.getController = getController;
         this.getInjector = getInjector;
         this.getScope = getScope;

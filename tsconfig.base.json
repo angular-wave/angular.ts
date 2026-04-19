@@ -11,7 +11,6 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "allowImportingTsExtensions": true,
-    "downlevelIteration": true,
     "lib": ["ESNext", "DOM"],
     "typeRoots": ["node_modules/@types"],
     "noUnusedLocals": true,
