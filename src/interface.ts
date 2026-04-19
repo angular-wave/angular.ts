@@ -490,6 +490,7 @@ export interface Directive<TCtrl = any> {
   /** Currently only used by view directive */
   count?: number;
   /** Internal hook for directive compilation state */
+  /** @internal */
   _addStateInfo?: (...args: any[]) => any;
 }
 
@@ -521,6 +522,7 @@ export interface RootElementService extends HTMLElement {}
 
 export interface InvocationDetail {
   expr: string;
+  /** @internal */
   _reply?: {
     resolve: (value: any) => any;
     reject: (reason: any) => PromiseLike<never>;

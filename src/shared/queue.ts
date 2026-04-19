@@ -5,8 +5,11 @@ import { isArray } from "./utils.ts";
  * @template T
  */
 export class Queue<T> {
+  /** @internal */
   _items: T[];
+  /** @internal */
   _limit: number | null;
+  /** @internal */
   _evictListeners: Array<(item: T) => void>;
 
   /**
@@ -25,6 +28,7 @@ export class Queue<T> {
   /**
    * Register a listener that will be called with the evicted item.
    */
+  /** @internal */
   _onEvict(listener: (item: T) => void): void {
     this._evictListeners.push(listener);
   }
@@ -32,6 +36,7 @@ export class Queue<T> {
   /**
    * Adds an item to the end of the queue, evicting the head if over limit.
    */
+  /** @internal */
   _enqueue(item: T): T {
     this._items.push(item);
 
@@ -45,6 +50,7 @@ export class Queue<T> {
   /**
    * Removes the head item and notifies eviction listeners.
    */
+  /** @internal */
   _evict(): T | undefined {
     const item = this._items.shift();
 
@@ -58,6 +64,7 @@ export class Queue<T> {
   /**
    * Removes and returns the first item in the queue.
    */
+  /** @internal */
   _dequeue(): T | undefined {
     return this._items.length > 0 ? this._items.shift() : undefined;
   }
@@ -66,6 +73,7 @@ export class Queue<T> {
    * Clears all items from the queue.
    * @returns The previously stored items.
    */
+  /** @internal */
   _clear(): T[] {
     const cleared = [...this._items];
 
@@ -77,6 +85,7 @@ export class Queue<T> {
   /**
    * Returns the current number of items.
    */
+  /** @internal */
   _size(): number {
     return this._items.length;
   }
@@ -85,6 +94,7 @@ export class Queue<T> {
    * Removes a specific item from the queue.
    * @returns The removed item, or false if not found.
    */
+  /** @internal */
   _remove(item: T): T | false {
     const index = this._items.indexOf(item);
 
@@ -94,6 +104,7 @@ export class Queue<T> {
   /**
    * Returns the item at the tail (last).
    */
+  /** @internal */
   _peekTail(): T | undefined {
     return this._items[this._items.length - 1];
   }
@@ -101,6 +112,7 @@ export class Queue<T> {
   /**
    * Returns the item at the head (first).
    */
+  /** @internal */
   _peekHead(): T | undefined {
     return this._items[0];
   }

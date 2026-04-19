@@ -8,9 +8,13 @@ import { NodeType } from "./node.ts";
  */
 export class NodeRef {
   static $nonscope = true;
+  /** @internal */
   _node: Node | ChildNode | undefined;
+  /** @internal */
   _element: Element | undefined;
+  /** @internal */
   _nodes: Array<Node>;
+  /** @internal */
   _isList: boolean;
   /**
    * @param element - The DOM node(s) or HTML string to wrap.
@@ -134,6 +138,7 @@ export class NodeRef {
   }
 
   /** @returns The first wrapped node or element. */
+  /** @internal */
   _getAny(): Element | Node | ChildNode {
     if (this._isList) {
       return this._nodes[0] as Element | Node | ChildNode;
@@ -143,6 +148,7 @@ export class NodeRef {
   }
 
   /** @returns All wrapped nodes or the single wrapped node. */
+  /** @internal */
   _getAll(): Element | Array<Node> | Node | ChildNode {
     if (this._isList) {
       return this._nodes;
@@ -152,6 +158,7 @@ export class NodeRef {
   }
 
   /** @returns A collection view of the wrapped nodes. */
+  /** @internal */
   _collection(): Array<Element | Node | ChildNode> {
     if (this._isList) {
       return Array.from(this._nodes);
@@ -163,6 +170,7 @@ export class NodeRef {
   /**
    * Returns the node at a specific index from this reference.
    */
+  /** @internal */
   _getIndex(index: number): Element | Node | ChildNode {
     if (this._isList) {
       return this._nodes[index];
@@ -174,6 +182,7 @@ export class NodeRef {
   /**
    * Replaces the node at a specific index in this reference.
    */
+  /** @internal */
   _setIndex(index: number, node: Element | Node | ChildNode) {
     if (this._isList) {
       this._nodes[index] = node;
@@ -185,6 +194,7 @@ export class NodeRef {
   /**
    * Clones the referenced node or node list.
    */
+  /** @internal */
   _clone(): NodeRef {
     const cloned = this._isList
       ? this.nodes.map((el: Node) => el.cloneNode(true) as Node)
@@ -193,6 +203,7 @@ export class NodeRef {
     return new NodeRef(cloned);
   }
 
+  /** @internal */
   _isElement(): boolean {
     return this._element !== undefined;
   }

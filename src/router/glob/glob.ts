@@ -47,7 +47,9 @@
  *
  */
 export class Glob {
+  /** @internal */
   _text: string;
+  /** @internal */
   _regexp: RegExp;
 
   /** Returns a glob from the string, or null if the string isn't Glob-like. */

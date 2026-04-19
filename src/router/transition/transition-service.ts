@@ -108,12 +108,10 @@ export interface TransitionService extends HookRegistry {
   /** @internal Return the defined path types */
   _getPathTypes(): PathTypes;
 
-  /** @internal router globals */
-  globals: ng.RouterService;
-
   /** @internal view service */
   $view: ng.ViewService;
 
+  /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 }
 
@@ -127,13 +125,19 @@ export class TransitionProvider implements TransitionService {
     $t._exceptionHandlerProvider,
   ] as const;
 
+  /** @internal */
   _transitionCount: number;
+  /** @internal */
   _eventTypes: TransitionEventType[];
+  /** @internal */
   _registeredHooks: RegisteredHooks;
+  /** @internal */
   _criteriaPaths: PathTypes;
-  globals: ng.RouterProvider;
+  private globals: ng.RouterProvider;
   $view: ng.ViewService;
+  /** @internal */
   _deregisterHookFns: Record<string, DeregisterFn | undefined>;
+  /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 
   constructor(
@@ -207,6 +211,7 @@ export class TransitionProvider implements TransitionService {
   /**
    * Defines the built-in transition lifecycle events and their execution order.
    */
+  /** @internal */
   _defineCoreEvents(): void {
     const TH = TransitionHook;
 
@@ -267,6 +272,7 @@ export class TransitionProvider implements TransitionService {
     );
   }
 
+  /** @internal */
   _defineCorePaths(): void {
     const { _STATE: STATE, _TRANSITION: TRANSITION } = TransitionHookScope;
 
@@ -280,6 +286,7 @@ export class TransitionProvider implements TransitionService {
   /**
    * Defines one transition event type and exposes its registration helper.
    */
+  /** @internal */
   _defineEvent(
     name: string,
     hookPhase: TransitionHookPhase,
@@ -308,6 +315,7 @@ export class TransitionProvider implements TransitionService {
   /**
    * Returns known transition event types, optionally filtered by phase.
    */
+  /** @internal */
   _getEvents(phase?: TransitionHookPhase): TransitionEventType[] {
     const transitionHookTypes = isDefined(phase)
       ? this._eventTypes.filter((type) => type.hookPhase === phase)
@@ -323,6 +331,7 @@ export class TransitionProvider implements TransitionService {
   /**
    * Defines one path selector used by transition hook matching.
    */
+  /** @internal */
   _definePathType(name: keyof PathTypes, hookScope: number): void {
     this._criteriaPaths[name] = { name, scope: hookScope } as PathType;
   }
@@ -330,6 +339,7 @@ export class TransitionProvider implements TransitionService {
   /**
    * Returns the configured transition hook path selectors.
    */
+  /** @internal */
   _getPathTypes(): PathTypes {
     return this._criteriaPaths;
   }
@@ -464,6 +474,7 @@ export class TransitionProvider implements TransitionService {
   /**
    * Looks up one known transition event type by name.
    */
+  /** @internal */
   _getEventType(eventName: string): TransitionEventType {
     const eventType = this._eventTypes.find((type) => type.name === eventName);
 
@@ -477,6 +488,7 @@ export class TransitionProvider implements TransitionService {
   /**
    * Installs the built-in transition hooks that power router behavior.
    */
+  /** @internal */
   _registerCoreTransitionHooks(): void {
     const fns = this._deregisterHookFns;
 

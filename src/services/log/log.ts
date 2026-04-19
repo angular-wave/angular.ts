@@ -45,6 +45,7 @@ export type LogServiceFactory = (...args: any[]) => LogService;
  */
 export class LogProvider {
   debug: boolean;
+  /** @internal */
   private _override: LogServiceFactory | null;
 
   /** @private */
@@ -64,6 +65,7 @@ export class LogProvider {
    * @private
    * Normalizes `Error` objects into readable log output.
    */
+  /** @internal */
   private _formatError(arg: unknown): unknown {
     if (isError(arg)) {
       if (arg.stack) {
@@ -81,6 +83,7 @@ export class LogProvider {
    * @private
    * Builds a console-backed logger for the requested method name.
    */
+  /** @internal */
   private _consoleLog(type: string): LogCall {
     const console =
       (window.console as Console & Record<string, LogCall>) ||

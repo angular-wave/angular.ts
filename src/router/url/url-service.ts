@@ -36,14 +36,22 @@ export class UrlService {
   ];
 
   $location: ng.LocationService | undefined;
+  /** @internal */
   _locationProvider: ng.LocationProvider;
-  stateService: StateProvider;
+  private stateService: StateProvider;
+  /** @internal */
   _urlRuleFactory: UrlRuleFactory;
+  /** @internal */
   _rules: UrlRules;
+  /** @internal */
   _config: UrlConfigProvider;
+  /** @internal */
   _paramFactory: ParamFactory;
+  /** @internal */
   _urlListeners: ((evt: ng.ScopeEvent) => void)[];
+  /** @internal */
   _baseHref!: string;
+  /** @internal */
   _stopListeningFn: any;
   location!: string;
 
@@ -51,6 +59,7 @@ export class UrlService {
    * The runtime location service is only available after `$get` runs.
    * Guard access here so the rest of the methods can use a non-optional type.
    */
+  /** @internal */
   _getLocation(): ng.LocationService {
     if (!this.$location) {
       throw new Error("UrlService location is not initialized");

@@ -38,6 +38,7 @@ export class StateObject {
   views: any;
   resolvables: Resolvable[] | undefined;
   self: StateDeclaration;
+  /** @internal */
   _stateObjectCache: { nameGlob: Glob | null };
 
   /**
@@ -53,6 +54,7 @@ export class StateObject {
   }
 
   /** @returns {StateObject} */
+  /** @internal */
   _state(): StateObject {
     return this;
   }

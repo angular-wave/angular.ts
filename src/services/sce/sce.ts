@@ -25,6 +25,7 @@ const $sceMinErr = minErr("$sce");
 type SceMatcher = RegExp | "self";
 
 type TrustedValueHolder = {
+  /** @internal */
   _unwrapTrustedValue(): string;
   valueOf(): string;
   toString(): string;

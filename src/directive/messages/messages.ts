@@ -13,6 +13,7 @@ const INACTIVE_CLASS = "ng-inactive";
 
 type MessageCollection = Record<string, any>;
 
+/** @internal */
 type MessageNodeComment = Comment & { _ngMessageNode?: string };
 
 type LinkedMessageCtrl = {
@@ -27,15 +28,25 @@ type MessageInstance = {
 };
 
 class NgMessageCtrl {
+  /** @internal */
   _element: HTMLElement;
+  /** @internal */
   _scope: ng.Scope;
+  /** @internal */
   _attrs: ng.Attributes;
+  /** @internal */
   _animate: ng.AnimateService;
+  /** @internal */
   _latestKey: number;
+  /** @internal */
   _nextAttachId: number;
+  /** @internal */
   _messages: Record<string, LinkedMessageCtrl>;
+  /** @internal */
   _renderLater: boolean;
+  /** @internal */
   _cachedCollection: MessageCollection | null;
+  /** @internal */
   _default: MessageInstance | undefined;
 
   /**
@@ -66,10 +77,12 @@ class NgMessageCtrl {
     );
   }
 
+  /** @internal */
   _getAttachId(): number {
     return this._nextAttachId++;
   }
 
+  /** @internal */
   _render(collection: MessageCollection = {}): void {
     this._renderLater = false;
     this._cachedCollection = collection;
@@ -331,6 +344,7 @@ function ngMessageDirectiveFactory(
           }
         }
 
+        /** @internal */
         let currentElement: (HTMLElement & { _attachId?: number }) | null =
           null;
 
@@ -346,6 +360,7 @@ function ngMessageDirectiveFactory(
               if (!currentElement) {
                 $transclude((elm, newScope) => {
                   const transcludedElement = elm as HTMLElement & {
+                    /** @internal */
                     _attachId?: number;
                   };
 

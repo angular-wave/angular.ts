@@ -9,9 +9,13 @@ import type { Transition } from "./transition/transition.ts";
  */
 export class RouterProvider {
   params: StateParams;
+  /** @internal */
   _configuredRouting: boolean;
+  /** @internal */
   _lastStartedTransitionId: number;
+  /** @internal */
   _transitionHistory: Queue<Transition>;
+  /** @internal */
   _successfulTransitions: Queue<Transition>;
   current: StateDeclaration | undefined;
   $current: StateObject | undefined;
@@ -34,6 +38,7 @@ export class RouterProvider {
   /**
    * Marks that the app has configured URL-driven router behavior.
    */
+  /** @internal */
   _markConfiguredRouting(): void {
     this._configuredRouting = true;
   }
@@ -41,6 +46,7 @@ export class RouterProvider {
   /**
    * Returns true when URL-driven router behavior has been configured.
    */
+  /** @internal */
   _hasConfiguredRouting(): boolean {
     return this._configuredRouting;
   }

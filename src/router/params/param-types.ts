@@ -110,6 +110,7 @@ export class ParamTypes {
     return this;
   }
 
+  /** @internal */
   _flushTypeQueue() {
     const injector = this._getInjector();
 
@@ -130,6 +131,7 @@ export class ParamTypes {
     }
   }
 
+  /** @internal */
   _getInjector(): InjectorService | undefined {
     return (this.$injector ||= window.angular?.$injector);
   }

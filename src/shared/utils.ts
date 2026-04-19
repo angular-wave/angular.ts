@@ -323,14 +323,13 @@ export function snakeCase(name: string, separator?: string): string {
  * @param obj object
  * @param hashkey the hashkey (!truthy to delete the hashkey)
  */
-export function setHashKey(
-  obj: { [x: string]: any; _hashKey?: any },
-  hashkey: any,
-): void {
+export function setHashKey(obj: { [x: string]: any }, hashkey: any): void {
+  const hashable = obj as { [x: string]: any; _hashKey?: any };
+
   if (hashkey) {
-    obj._hashKey = hashkey;
+    hashable._hashKey = hashkey;
   } else {
-    delete obj._hashKey;
+    delete hashable._hashKey;
   }
 }
 

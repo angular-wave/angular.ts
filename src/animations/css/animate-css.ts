@@ -75,15 +75,25 @@ interface StaggerTimings {
 }
 
 interface AnimationFlags {
+  /** @internal */
   _hasTransitions: boolean;
+  /** @internal */
   _hasAnimations: boolean;
+  /** @internal */
   _hasTransitionAll: boolean;
+  /** @internal */
   _applyTransitionDuration: boolean;
+  /** @internal */
   _applyAnimationDuration: boolean;
+  /** @internal */
   _applyTransitionDelay: boolean;
+  /** @internal */
   _applyAnimationDelay: boolean;
+  /** @internal */
   _recalculateTimingStyles: boolean;
+  /** @internal */
   _blockTransition: boolean;
+  /** @internal */
   _blockKeyframeAnimation: boolean;
 }
 

@@ -29,7 +29,9 @@ export class PubSubProvider {
 }
 
 export class PubSub {
+  /** @internal */
   private _topics: Record<string, ListenerEntry[]>;
+  /** @internal */
   private _disposed: boolean;
   public $exceptionHandler: ng.ExceptionHandlerService;
 

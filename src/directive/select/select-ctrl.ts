@@ -10,6 +10,7 @@ import {
 
 export type SelectScope = ng.Scope &
   Record<string, any> & {
+    /** @internal */
     _destroyed?: boolean;
     $postUpdate(fn: () => void): void;
   };
@@ -29,16 +30,27 @@ export type InterpolateFn = ((scope: ng.Scope) => any) | null | undefined;
 export class SelectController {
   /* @ignore */ static $inject = [$injectTokens._element, $injectTokens._scope];
 
+  /** @internal */
   _element: HTMLSelectElement;
+  /** @internal */
   _scope: SelectScope;
+  /** @internal */
   _selectValueMap: Record<string, any>;
+  /** @internal */
   _ngModelCtrl: NgModelController;
+  /** @internal */
   _multiple: boolean;
+  /** @internal */
   _unknownOption: HTMLOptionElement;
+  /** @internal */
   _hasEmptyOption: boolean;
+  /** @internal */
   _emptyOption?: HTMLOptionElement;
+  /** @internal */
   _optionsMap: Map<any, number>;
+  /** @internal */
   _renderScheduled: boolean;
+  /** @internal */
   _updateScheduled: boolean;
 
   /** @ignore */
@@ -93,6 +105,7 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _renderUnknownOption(val: any) {
     const unknownVal = this._generateUnknownOptionValue(val);
 
@@ -104,6 +117,7 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _updateUnknownOption(val: any) {
     const unknownVal = this._generateUnknownOptionValue(val);
 
@@ -114,6 +128,7 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _generateUnknownOptionValue(val: any) {
     if (isUndefined(val)) {
       return `? undefined:undefined ?`;
@@ -123,11 +138,13 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _removeUnknownOption() {
     if (this._unknownOption.parentElement) this._unknownOption.remove();
   }
 
   /** @ignore */
+  /** @internal */
   _selectEmptyOption() {
     if (this._emptyOption) {
       this._element.value = "";
@@ -137,6 +154,7 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _unselectEmptyOption() {
     if (this._hasEmptyOption && this._emptyOption) {
       this._emptyOption.selected = false;
@@ -144,6 +162,7 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _readValue() {
     const val = this._element.value;
 
@@ -154,6 +173,7 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _writeValue(value: any) {
     const currentlySelectedOption =
       this._element.options[this._element.selectedIndex];
@@ -180,6 +200,7 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _addOption(value: any, element: HTMLOptionElement) {
     if (element.nodeType === NodeType._COMMENT_NODE) return;
 
@@ -196,6 +217,7 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _removeOption(value: any) {
     const count = this._optionsMap.get(value);
 
@@ -214,11 +236,13 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _hasOption(value: any) {
     return !!this._optionsMap.get(value);
   }
 
   /** @ignore */
+  /** @internal */
   _selectUnknownOrEmptyOption(value: any) {
     if (isNullOrUndefined(value) && this._emptyOption) {
       this._removeUnknownOption();
@@ -231,6 +255,7 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _scheduleRender() {
     if (this._renderScheduled) return;
     this._renderScheduled = true;
@@ -241,6 +266,7 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _scheduleViewValueUpdate(renderAfter = false) {
     if (this._updateScheduled) return;
 
@@ -257,6 +283,7 @@ export class SelectController {
   }
 
   /** @ignore */
+  /** @internal */
   _registerOption(
     optionScope: SelectScope,
     optionElement: HTMLOptionElement,

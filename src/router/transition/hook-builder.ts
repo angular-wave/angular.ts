@@ -11,6 +11,7 @@ import {
 import type { Transition, TreeChanges } from "./transition.ts";
 import type { TransitionEventType } from "./transition-event-type.ts";
 
+/** @internal */
 export interface HookTuple {
   hook: RegisteredHook;
   node: PathNode;
@@ -20,6 +21,7 @@ export interface HookTuple {
 /**
  * Builds runnable `TransitionHook` instances for a transition phase.
  */
+/** @internal */
 export class HookBuilder {
   transition: Transition;
 
@@ -59,7 +61,7 @@ export class HookBuilder {
     }): HookTuple[] => {
       const { hook, matches } = item;
 
-      const matchingNodes = matches[hookType.criteriaMatchPath.name];
+      const matchingNodes = matches[hookType._criteriaMatchPath.name];
 
       return matchingNodes.map((node) => {
         const options = Object.assign(
@@ -71,7 +73,7 @@ export class HookBuilder {
         );
 
         const state: StateDeclaration | null =
-          hookType.criteriaMatchPath.scope === TransitionHookScope._STATE
+          hookType._criteriaMatchPath.scope === TransitionHookScope._STATE
             ? node.state.self
             : null;
 

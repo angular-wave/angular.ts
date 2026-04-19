@@ -84,6 +84,7 @@ function unwrapController(
 }
 
 export class ControllerProvider {
+  /** @internal */
   _controllers: Map<string, InjectableController>;
   $get: [string, ($injector: ng.InjectorService) => ControllerService];
 
@@ -222,6 +223,7 @@ export class ControllerProvider {
     }
   }
 
+  /** @internal */
   _addIdentifier(
     locals: ControllerLocals | undefined,
     identifier: string,

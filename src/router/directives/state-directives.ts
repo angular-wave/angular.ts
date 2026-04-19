@@ -31,6 +31,7 @@ type ActiveClassState = {
 };
 
 type StateRefActiveController = {
+  /** @internal */
   _addStateInfo?: (
     newState: unknown,
     newParams: unknown,

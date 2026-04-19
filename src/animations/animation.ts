@@ -158,6 +158,7 @@ export class AnimationProvider {
     ) => AnimationService,
   ];
 
+  /** @internal */
   _drivers = [];
 
   constructor() {
@@ -176,6 +177,7 @@ export class AnimationProvider {
   }
 
   /** Builds the animation runtime around the configured driver chain. */
+  /** @internal */
   _createAnimationService(
     $rootScope: ng.RootScopeService,
     $injector: ng.InjectorService,

@@ -21,13 +21,18 @@ import type { NgModelController } from "../model/model.ts";
 import type { DirectiveCompileFn, DirectiveLinkFn } from "../../interface.ts";
 
 export interface ValidityCssHost {
+  /** @internal */
   _isAnimated: boolean;
+  /** @internal */
   _element: Element;
+  /** @internal */
   _animate: ng.AnimateService;
+  /** @internal */
   _classCache: Record<string, any>;
 }
 
 export interface FormControlTarget {
+  /** @internal */
   _parentForm: ParentFormController;
 }
 
@@ -40,6 +45,7 @@ export interface ParentFormController {
   $nonscope?: boolean;
   $addControl(control: NamedControl): void;
   $getControls(): ReadonlyArray<FormController | NgModelController>;
+  /** @internal */
   _renameControl(control: NamedControl, name: string | number): void;
   $removeControl(control: FormController | NgModelController): void;
   $setValidity(
@@ -50,6 +56,7 @@ export interface ParentFormController {
   $setDirty(): void;
   $setPristine(): void;
   $setSubmitted(): void;
+  /** @internal */
   _setSubmitted(): void;
 }
 
@@ -140,8 +147,10 @@ export class FormController {
     $t._interpolate,
   ];
 
+  /** @internal */
   _isAnimated: boolean;
 
+  /** @internal */
   _controls: any[];
 
   $name: any;
@@ -156,18 +165,23 @@ export class FormController {
 
   $submitted: boolean;
 
+  /** @internal */
   _parentForm: ParentFormController;
 
+  /** @internal */
   _element: HTMLFormElement;
 
+  /** @internal */
   _animate: ng.AnimateService;
 
   $error: Record<string, any>;
 
+  /** @internal */
   _success: Record<string, any>;
 
   $pending: Record<string, any> | undefined;
 
+  /** @internal */
   _classCache: Record<string, any>;
 
   $target: Record<string, any>;
@@ -294,6 +308,7 @@ export class FormController {
   /**
    * Renames a registered control on the form controller.
    */
+  /** @internal */
   _renameControl(control: NamedControl, newName: string | number): void {
     const oldName = control.$name;
 
@@ -420,6 +435,7 @@ export class FormController {
     rootForm._setSubmitted();
   }
 
+  /** @internal */
   _setSubmitted(): void {
     if (hasAnimate(this._element)) {
       this._animate.addClass(this._element, SUBMITTED_CLASS);
@@ -437,6 +453,7 @@ export class FormController {
   /**
    * Adds a controller reference to a named validity bucket.
    */
+  /** @internal */
   _set(object: Record<string, any>, property: string, controller: any): void {
     const list = object[property];
 
@@ -455,6 +472,7 @@ export class FormController {
   /**
    * Removes a controller reference from a named validity bucket.
    */
+  /** @internal */
   _unset(object: Record<string, any>, property: string, controller: any): void {
     const list = object[property];
 

@@ -24,11 +24,17 @@ type WasmOptions = { raw?: boolean; [key: string]: any };
  */
 export class NgModule {
   name: string;
+  /** @internal */
   _requires: string[];
+  /** @internal */
   _invokeQueue: InvokeQueueItem[];
+  /** @internal */
   _configBlocks: InvokeQueueItem[];
+  /** @internal */
   _runBlocks: Array<Injectable<(...args: any[]) => any>>;
+  /** @internal */
   _services: string[];
+  /** @internal */
   _restDefinitions: Array<ng.RestDefinition<any>>;
 
   /**

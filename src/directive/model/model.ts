@@ -131,12 +131,14 @@ export class NgModelController {
 
   [key: string]: any;
 
+  /** @internal */
   _isAnimated: boolean;
 
   $viewValue: any;
 
   $modelValue: any;
 
+  /** @internal */
   _rawModelValue: any;
 
   $validators: Record<string, any>;
@@ -163,50 +165,70 @@ export class NgModelController {
 
   $error: Record<string, boolean>;
 
+  /** @internal */
   _success: Record<string, boolean>;
 
   $pending: Record<string, any> | undefined;
 
   $name: any;
 
+  /** @internal */
   _parentForm: ParentFormController;
 
   $options: any;
 
+  /** @internal */
   _updateEvents: string;
 
+  /** @internal */
   _parsedNgModel: any;
 
+  /** @internal */
   _parsedNgModelAssign: any;
 
+  /** @internal */
   _ngModelGet: any;
 
+  /** @internal */
   _ngModelSet: any;
 
+  /** @internal */
   _pendingDebounce: any;
 
+  /** @internal */
   _parserValid: any;
 
+  /** @internal */
   _parserName: string;
 
+  /** @internal */
   _currentValidationRunId: number;
 
+  /** @internal */
   _scope: ng.Scope;
 
+  /** @internal */
   _attr: ng.Attributes;
 
+  /** @internal */
   _element: HTMLElement;
 
+  /** @internal */
   _animate: ng.AnimateService;
 
+  /** @internal */
   _parse: ng.ParseService;
 
+  /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 
+  /** @internal */
   _hasNativeValidators: boolean;
 
+  /** @internal */
   _classCache: Record<string, any>;
 
+  /** @internal */
   _eventRemovers: Set<() => void>;
 
   /**
@@ -284,6 +306,7 @@ export class NgModelController {
   /**
    * Marks a named validity bucket as present.
    */
+  /** @internal */
   _set(object: Record<string, any>, property: string | number): void {
     object[property] = true;
   }
@@ -291,6 +314,7 @@ export class NgModelController {
   /**
    * Removes a named validity bucket entry.
    */
+  /** @internal */
   _unset(object: Record<string, any>, property: string | number): void {
     delete object[property];
   }
@@ -407,6 +431,7 @@ export class NgModelController {
     this._parentForm.$setValidity(validationErrorKey, combinedState, this);
   }
 
+  /** @internal */
   _initGetterSetters() {
     if (this.$options.getOption("getterSetter")) {
       const invokeModelGetter = this._parse(`${this._attr.ngModel}()`);
@@ -485,6 +510,7 @@ export class NgModelController {
   /**
    * Applies the correct empty/not-empty classes for the current view value.
    */
+  /** @internal */
   _updateEmptyClasses(value: any): void {
     if (this.$isEmpty(value)) {
       if (hasAnimate(this._element)) {
@@ -732,6 +758,7 @@ export class NgModelController {
   /**
    * Runs synchronous and asynchronous validators for the pending model/view values.
    */
+  /** @internal */
   _runValidators(
     modelValue: any,
     viewValue: any,
@@ -900,6 +927,7 @@ export class NgModelController {
     this._parseAndValidate();
   }
 
+  /** @internal */
   _parseAndValidate() {
     let modelValue = this._lastCommittedViewValue;
 
@@ -969,6 +997,7 @@ export class NgModelController {
     }
   }
 
+  /** @internal */
   _writeModelToScope() {
     this._ngModelSet(this._scope, this.$modelValue);
     values(this.$viewChangeListeners).forEach((listener) => {
@@ -1038,6 +1067,7 @@ export class NgModelController {
   /**
    * Schedules or commits the current view value based on the configured debounce settings.
    */
+  /** @internal */
   _debounceViewValueCommit(trigger?: string) {
     let debounceDelay = this.$options.getOption("debounce");
 
@@ -1226,6 +1256,7 @@ export class NgModelController {
   /**
    * This method is called internally to run the $formatters on the $modelValue
    */
+  /** @internal */
   _format() {
     const formatters = this.$formatters;
 
@@ -1243,6 +1274,7 @@ export class NgModelController {
   /**
    * @ignore This method is called internally when the bound scope value changes.
    */
+  /** @internal */
   _setModelValue(modelValue: any): void {
     this.$modelValue = this._rawModelValue = modelValue;
     this._parserValid = undefined;
@@ -1252,6 +1284,7 @@ export class NgModelController {
   /**
    * @ignore
    */
+  /** @internal */
   _removeAllEventListeners() {
     this._eventRemovers.forEach((removeCallback: () => void) =>
       removeCallback(),
@@ -1259,6 +1292,7 @@ export class NgModelController {
     this._eventRemovers.clear();
   }
 
+  /** @internal */
   _setUpdateOnEvents() {
     if (this._updateEvents) {
       this._updateEvents.split(" ").forEach((ev: string) => {
@@ -1284,6 +1318,7 @@ export class NgModelController {
   /**
    * Handles configured update events by committing the staged view value.
    */
+  /** @internal */
   _updateEventHandler(ev: Event) {
     this._debounceViewValueCommit(ev && ev.type);
   }

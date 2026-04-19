@@ -36,6 +36,8 @@ const $injectorMinErr = minErr("$injector");
 
 type ModuleRegistry = Record<string, NgModule | null>;
 
+/** @internal */
+/** @internal */
 type AppElement = { _element: HTMLElement; _module: string | null };
 
 const moduleRegistry: ModuleRegistry = {};

@@ -124,10 +124,15 @@ const defaultConfig = {
  */
 export class UrlMatcher {
   static nameValidator = /^\w+([-.]+\w+)*(?:\[\])?$/;
+  /** @internal */
   _cache: UrlMatcherCache;
+  /** @internal */
   _children: any[];
+  /** @internal */
   _params: Param[];
+  /** @internal */
   _segments: string[];
+  /** @internal */
   _compiled: any[];
   config: any;
   pattern: string;
@@ -453,6 +458,7 @@ export class UrlMatcher {
    * @param {Param} param
    * @returns {any}
    */
+  /** @internal */
   _getDecodedParamValue(value: any, param: Param): any {
     return param.value(value);
   }

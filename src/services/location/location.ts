@@ -57,6 +57,7 @@ export interface Html5Mode {
 }
 
 type RouterLike = {
+  /** @internal */
   _hasConfiguredRouting?: () => boolean;
 };
 

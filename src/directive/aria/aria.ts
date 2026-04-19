@@ -3,6 +3,7 @@ import { $injectTokens } from "../../injection-tokens.ts";
 
 export interface AriaService {
   config(key: string | number): any;
+  /** @internal */
   _watchExpr(
     attrName: string | number,
     ariaAttr: string,

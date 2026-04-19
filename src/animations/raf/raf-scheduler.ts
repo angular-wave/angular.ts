@@ -2,7 +2,9 @@
  * A requestAnimationFrame-based scheduler.
  */
 export class RafScheduler {
+  /** @internal */
   _queue: Array<() => void>;
+  /** @internal */
   _cancelFn: number | null;
 
   constructor() {
@@ -23,6 +25,7 @@ export class RafScheduler {
    * Executes the first group of functions in the queue, then
    * schedules the next frame if needed.
    */
+  /** @internal */
   _nextTick() {
     if (!this._queue.length) return;
 
@@ -46,6 +49,7 @@ export class RafScheduler {
    * The main scheduler function.
    * Accepts an array of functions and schedules them to run in the next available frame(s).
    */
+  /** @internal */
   _schedule(tasks: Array<() => void>): void {
     this._queue.push(...tasks);
     this._nextTick();
@@ -57,6 +61,7 @@ export class RafScheduler {
    *
    * @param  fn - Function to run when the animation frame is quiet.
    */
+  /** @internal */
   _waitUntilQuiet(fn: () => void): void {
     if (this._cancelFn !== null) {
       window.cancelAnimationFrame(this._cancelFn);

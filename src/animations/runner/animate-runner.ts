@@ -203,6 +203,7 @@ export class AnimateRunner {
    * Completes the animation and invokes all done callbacks.
    * @private
    */
+  /** @internal */
   _finish(status: boolean): void {
     if (this._state === RunnerState._DONE) return;
 

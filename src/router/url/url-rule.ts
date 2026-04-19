@@ -36,14 +36,14 @@ import type { RouterProvider } from "../router.ts";
 const LOWEST = 0.000001;
 
 export class UrlRuleFactory {
-  urlService: ng.UrlService;
-  stateService: ng.StateService;
-  routerGlobals: ng.RouterService;
+  private urlService: ng.UrlService;
+  private stateService: ng.StateService;
+  private routerGlobals: ng.RouterService;
 
   static isUrlRule(obj: unknown): obj is UrlRule {
     return (
       !!obj &&
-      ["type", "match", "handler"].every((key) =>
+      ["_type", "match", "handler"].every((key) =>
         isDefined((obj as Record<string, unknown>)[key]),
       )
     );
@@ -202,14 +202,14 @@ export class UrlRuleFactory {
 
       return matched.length / optional.length;
     }
-    /** @type {{ urlMatcher: UrlMatcher; matchPriority: (params: RawParams) => number; type: "URLMATCHER" }} */
+    /** @type {{ urlMatcher: UrlMatcher; matchPriority: (params: RawParams) => number; _type: "URLMATCHER" }} */
     const details: Pick<
       MatcherUrlRule,
-      "urlMatcher" | "matchPriority" | "type"
+      "urlMatcher" | "matchPriority" | "_type"
     > = {
       urlMatcher,
       matchPriority,
-      type: "URLMATCHER",
+      _type: "URLMATCHER",
     };
 
     return Object.assign(
@@ -270,9 +270,9 @@ export class UrlRuleFactory {
       }
     };
 
-    const details: Pick<StateRule, "state" | "type"> = {
+    const details: Pick<StateRule, "state" | "_type"> = {
       state,
-      type: "STATE",
+      _type: "STATE",
     };
 
     return Object.assign(
@@ -335,9 +335,9 @@ export class UrlRuleFactory {
 
     const matchParamsFromRegexp = (url: UrlParts) => regexp.exec(url.path);
 
-    const details: Pick<RegExpRule, "regexp" | "type"> = {
+    const details: Pick<RegExpRule, "regexp" | "_type"> = {
       regexp,
-      type: "REGEXP",
+      _type: "REGEXP",
     };
 
     return Object.assign(
@@ -354,8 +354,10 @@ export class UrlRuleFactory {
  */
 export class BaseUrlRule {
   match: UrlRuleMatchFn;
-  type: UrlRuleType;
+  /** @internal */
+  _type: UrlRuleType;
   $id: number;
+  /** @internal */
   _group: number | undefined;
   handler: UrlRuleHandlerFn;
   priority: number | undefined;
@@ -365,7 +367,7 @@ export class BaseUrlRule {
    */
   constructor(match: UrlRuleMatchFn, handler: UrlRuleHandlerFn) {
     this.match = match;
-    this.type = "RAW";
+    this._type = "RAW";
     this.$id = -1;
     this._group = undefined;
     this.handler = handler || ((x: any) => x);

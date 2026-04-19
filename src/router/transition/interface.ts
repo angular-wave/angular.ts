@@ -985,15 +985,14 @@ export interface TransitionService extends HookRegistry {
   /** @internal Return the defined path types */
   _getPathTypes(): PathTypes;
 
-  /** @internal router globals */
-  globals: ng.RouterService;
-
   /** @internal view service */
   $view: ng.ViewService;
 
+  /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 }
 
+/** @internal */
 export interface HookTuple {
   hook: RegisteredHook;
   node: PathNode;

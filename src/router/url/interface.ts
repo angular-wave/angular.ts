@@ -92,8 +92,8 @@ export interface UrlRule {
   /** @internal */
   _group: number;
 
-  /** The type of the rule */
-  type: UrlRuleType;
+  /** @internal The type of the rule */
+  _type: UrlRuleType;
 
   /** Present for state-backed rules */
   state?: StateObject;
@@ -132,17 +132,20 @@ export interface UrlRule {
 }
 
 export interface MatcherUrlRule extends UrlRule {
-  type: "URLMATCHER" | "STATE";
+  /** @internal */
+  _type: "URLMATCHER" | "STATE";
   urlMatcher: UrlMatcher;
 }
 
 export interface StateRule extends MatcherUrlRule {
-  type: "STATE";
+  /** @internal */
+  _type: "STATE";
   state: StateObject;
 }
 
 export interface RegExpRule extends UrlRule {
-  type: "REGEXP";
+  /** @internal */
+  _type: "REGEXP";
   regexp: RegExp;
 }
 

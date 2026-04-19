@@ -33,9 +33,13 @@ type RestOptions = Record<string, any>;
 export class RestService<T = any, ID = any> {
   static $nonscope = true;
 
+  /** @internal */
   private _$http: HttpService;
+  /** @internal */
   private _baseUrl: string;
+  /** @internal */
   private _entityClass?: EntityClass<T>;
+  /** @internal */
   private _options: RestOptions;
 
   constructor(
@@ -140,6 +144,7 @@ type RestFactory = <T = any, ID = any>(
 ) => RestService<T, ID>;
 
 export class RestProvider {
+  /** @internal */
   private _definitions: RestDefinition<any>[];
 
   $get: [string, ($http: HttpService) => RestFactory];

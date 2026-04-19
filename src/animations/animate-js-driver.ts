@@ -16,9 +16,11 @@ export function AnimateJsDriverProvider(
       ) => (animationDetails: AnimationDetails) => Animator | undefined,
     ];
   },
-  $$animationProvider: { _drivers: string[] },
+  $$animationProvider: unknown,
 ): void {
-  $$animationProvider._drivers.push($injectTokens._animateJsDriver);
+  const animationProvider = $$animationProvider as { _drivers: string[] };
+
+  animationProvider._drivers.push($injectTokens._animateJsDriver);
   this.$get = [
     $injectTokens._animateJs,
     /** Creates the runtime driver factory around `$$animateJs`. */

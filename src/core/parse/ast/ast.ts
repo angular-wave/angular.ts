@@ -19,10 +19,15 @@ function cloneSelfReferentialNode(node: ASTNode): ASTNode {
 }
 
 export class AST {
+  /** @internal */
   _lexer: Lexer;
+  /** @internal */
   _selfReferential: Record<string, ASTNode>;
+  /** @internal */
   _index: number;
+  /** @internal */
   _text = "";
+  /** @internal */
   _tokens: Token[] = [];
 
   /**
@@ -42,6 +47,7 @@ export class AST {
    * @param {string} text - The input text to parse.
    * @returns {ASTNode} The root node of the AST.
    */
+  /** @internal */
   _ast(text: string): ASTNode {
     this._text = text;
     this._tokens = this._lexer._lex(text);
@@ -59,6 +65,7 @@ export class AST {
    * Parses a program.
    * @returns {ASTNode} The program node.
    */
+  /** @internal */
   _program(): ASTNode {
     const body: ASTNode[] = [];
 
@@ -84,6 +91,7 @@ export class AST {
    * Parses an expression statement.
    * @returns {ASTNode} The expression statement node.
    */
+  /** @internal */
   _expressionStatement(): ASTNode {
     return {
       _type: ASTType._ExpressionStatement,
@@ -95,6 +103,7 @@ export class AST {
    * Parses a filter chain.
    * @returns {ASTNode} The filter chain node.
    */
+  /** @internal */
   _filterChain(): ASTNode {
     let left: ASTNode = this._assignment();
 
@@ -109,6 +118,7 @@ export class AST {
    * Parses an assignment expression.
    * @returns {ASTNode} The assignment expression node.
    */
+  /** @internal */
   _assignment(): ASTNode {
     let result: ASTNode = this._ternary();
 
@@ -132,6 +142,7 @@ export class AST {
    * Parses a ternary expression.
    * @returns {ASTNode} The ternary expression node.
    */
+  /** @internal */
   _ternary(): ASTNode {
     const test: ASTNode = this._logicalOR();
 
@@ -157,6 +168,7 @@ export class AST {
    * Parses a logical OR expression.
    * @returns {ASTNode} The logical OR expression node.
    */
+  /** @internal */
   _logicalOR(): ASTNode {
     let left: ASTNode = this._logicalAND();
 
@@ -176,6 +188,7 @@ export class AST {
    * Parses a logical AND expression.
    * @returns {ASTNode} The logical AND expression node.
    */
+  /** @internal */
   _logicalAND(): ASTNode {
     let left: ASTNode = this._equality();
 
@@ -195,6 +208,7 @@ export class AST {
    * Parses an equality expression.
    * @returns {ASTNode} The equality expression node.
    */
+  /** @internal */
   _equality(): ASTNode {
     let left: ASTNode = this._relational();
 
@@ -216,6 +230,7 @@ export class AST {
    * Parses a relational expression.
    * @returns {ASTNode} The relational expression node.
    */
+  /** @internal */
   _relational(): ASTNode {
     let left: ASTNode = this._additive();
 
@@ -237,6 +252,7 @@ export class AST {
    * Parses an additive expression.
    * @returns {ASTNode} The additive expression node.
    */
+  /** @internal */
   _additive(): ASTNode {
     let left: ASTNode = this._multiplicative();
 
@@ -258,6 +274,7 @@ export class AST {
    * Parses a multiplicative expression.
    * @returns {ASTNode} The multiplicative expression node.
    */
+  /** @internal */
   _multiplicative(): ASTNode {
     let left: ASTNode = this._unary();
 
@@ -283,6 +300,7 @@ export class AST {
    * Parses a unary / prefix update expression.
    * @returns {ASTNode}
    */
+  /** @internal */
   _unary(): ASTNode {
     let token: Token | false;
 
@@ -323,6 +341,7 @@ export class AST {
    * Parses a postfix update expression.
    * @returns {ASTNode}
    */
+  /** @internal */
   _postfix(): ASTNode {
     let expr: ASTNode = this._primary();
 
@@ -352,6 +371,7 @@ export class AST {
    * Parses a primary expression.
    * @returns {ASTNode} The primary expression node.
    */
+  /** @internal */
   _primary(): ASTNode {
     let primary: ASTNode;
 
@@ -419,6 +439,7 @@ export class AST {
    * @param {ASTNode} baseExpression - The base expression to apply the filter to.
    * @returns {ASTNode} The filter node.
    */
+  /** @internal */
   _filter(baseExpression: ASTNode): ASTNode {
     const args: ASTNode[] = [baseExpression];
 
@@ -440,6 +461,7 @@ export class AST {
    * Parses function arguments.
    * @returns {ASTNode[]} The arguments array.
    */
+  /** @internal */
   _parseArguments(): ASTNode[] {
     const args: ASTNode[] = [];
 
@@ -456,6 +478,7 @@ export class AST {
    * Parses an identifier.
    * @returns {ASTNode} The identifier node.
    */
+  /** @internal */
   _identifier(): ASTNode {
     const token = this._consume();
 
@@ -470,6 +493,7 @@ export class AST {
    * Parses a constant.
    * @returns {ASTNode} The constant node.
    */
+  /** @internal */
   _constant(): ASTNode {
     // TODO check that it is a constant
     return { _type: ASTType._Literal, _value: this._consume()._value };
@@ -479,6 +503,7 @@ export class AST {
    * Parses an array declaration.
    * @returns {ASTNode} The array declaration node.
    */
+  /** @internal */
   _arrayDeclaration(): ASTNode {
     const elements: ASTNode[] = [];
 
@@ -500,6 +525,7 @@ export class AST {
    * Parses an object.
    * @returns {ASTNode} The object node.
    */
+  /** @internal */
   _object(): ASTNode {
     const properties: ASTNode[] = [];
 
@@ -558,6 +584,7 @@ export class AST {
    * @param {string} msg - The error message.
    * @param {Token} token - The token that caused the error.
    */
+  /** @internal */
   _throwError(msg: string, token: Token): never {
     throw $parseMinErr(
       "syntax",
@@ -575,6 +602,7 @@ export class AST {
    * @param {string} [e1] - The expected token type.
    * @returns {Token} The consumed token.
    */
+  /** @internal */
   _consume(e1?: string): Token {
     if (this._tokens && this._tokens.length === this._index) {
       throw $parseMinErr(
@@ -600,6 +628,7 @@ export class AST {
    * Returns the next token without consuming it.
    * @returns {Token} The next token.
    */
+  /** @internal */
   _peekToken(): Token {
     if (!this._tokens || this._tokens.length === this._index) {
       throw $parseMinErr(
@@ -617,6 +646,7 @@ export class AST {
    * @param {...string} expected - The expected token types.
    * @returns {Token|boolean} The next token if it matches, otherwise false.
    */
+  /** @internal */
   _peek(...expected: string[]): Token | false {
     const token = this._tokens && this._tokens[this._index];
 
@@ -642,6 +672,7 @@ export class AST {
    * @param {...string} expected - The expected token types.
    * @returns {Token|boolean} The consumed token if it matches, otherwise false.
    */
+  /** @internal */
   _expect(...expected: string[]): Token | false {
     const token = this._peek(...expected);
 

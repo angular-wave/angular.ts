@@ -47,6 +47,7 @@ export type SseService = (url: string, config?: SseConfig) => SseConnection;
 
 export class SseProvider {
   defaults: ng.SseConfig;
+  /** @internal */
   _$log!: LogService;
 
   /**
@@ -101,6 +102,7 @@ export class SseProvider {
   /**
    * Builds a URL with serialized query parameters.
    */
+  /** @internal */
   private _buildUrl(url: string, params?: Record<string, any>): string {
     if (!params) return url;
     const query = entries(params)

@@ -28,10 +28,15 @@ type LinkContext = object | boolean | undefined;
 type CreateFlag = boolean | 1 | undefined;
 
 type WatchNode = ASTNode & {
+  /** @internal */
   _constant?: boolean;
+  /** @internal */
   _toWatch?: ASTNode[];
+  /** @internal */
   _isPure?: boolean;
+  /** @internal */
   _input?: CompiledExpression;
+  /** @internal */
   _watchId?: string;
 };
 
@@ -47,6 +52,7 @@ function appendWatchNodes(
 }
 
 export class ASTInterpreter {
+  /** @internal */
   _$filter: ng.FilterService;
 
   /**
@@ -61,6 +67,7 @@ export class ASTInterpreter {
    * @param {ASTNode} ast - The AST to compile.
    * @returns {CompiledExpression}
    */
+  /** @internal */
   _compile(ast: ASTNode): CompiledExpression {
     const decoratedNode = findConstantAndWatchExpressions(ast, this._$filter);
 
@@ -140,6 +147,7 @@ export class ASTInterpreter {
    * @param {boolean|1} [create] - The create flag.
    * @returns {CompiledExpressionFunction} The recursive function.
    */
+  /** @internal */
   _recurse(
     ast: ASTNode,
     context?: LinkContext,
@@ -798,6 +806,7 @@ export class ASTInterpreter {
    * @param {Object} [context] - The context.
    * @returns {CompiledExpressionFunction} The function returning the literal value.
    */
+  /** @internal */
   _value(value: any, context?: LinkContext): CompiledExpressionFunction {
     return () =>
       context ? { context: undefined, name: undefined, value } : value;
@@ -810,6 +819,7 @@ export class ASTInterpreter {
    * @param {boolean|1} [create] - Whether to create the identifier if it does not exist.
    *  @returns {CompiledExpressionFunction}  The function returning the identifier value.
    */
+  /** @internal */
   _identifier(
     name: string,
     context?: LinkContext,
@@ -848,6 +858,7 @@ export class ASTInterpreter {
    * @param {boolean|1} [create] - Whether to create the member if it does not exist.
    * @returns {CompiledExpressionFunction}  The function returning the computed member value.
    */
+  /** @internal */
   _computedMember(
     left: CompiledExpressionFunction,
     right: CompiledExpressionFunction,
@@ -889,6 +900,7 @@ export class ASTInterpreter {
    * @param {boolean|1} [create] - Whether to create the member if it does not exist.
    * @returns {CompiledExpressionFunction}  The function returning the non-computed member value.
    */
+  /** @internal */
   _nonComputedMember(
     left: CompiledExpressionFunction,
     right: string,

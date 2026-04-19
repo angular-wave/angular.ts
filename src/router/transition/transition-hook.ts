@@ -75,8 +75,10 @@ export class TransitionHook {
   stateContext: StateDeclaration | null;
   registeredHook: RegisteredHook;
   options: TransitionHookOptions;
-  type: TransitionEventType;
+  /** @internal */
+  _type: TransitionEventType;
   isSuperseded: () => boolean;
+  /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 
   /**
@@ -131,9 +133,9 @@ export class TransitionHook {
     this.stateContext = stateContext;
     this.registeredHook = registeredHook;
     this.options = defaults(options, defaultOptions) as TransitionHookOptions;
-    this.type = registeredHook.eventType;
+    this._type = registeredHook._eventType;
     this.isSuperseded = () =>
-      this.type.hookPhase === TransitionHookPhase._RUN &&
+      this._type.hookPhase === TransitionHookPhase._RUN &&
       !this.options.transition?.isActive();
     this._exceptionHandler = exceptionHandler;
   }
@@ -173,15 +175,15 @@ export class TransitionHook {
       Rejection.normalize(err).toPromise();
 
     const handleError = (err: Rejection): any =>
-      hook.eventType.getErrorHandler()(err);
+      hook._eventType.getErrorHandler()(err);
 
     const handleResult = (result: HookResult): any =>
-      hook.eventType.getResultHandler(this)(result);
+      hook._eventType.getResultHandler(this)(result);
 
     try {
       const result = invokeCallback();
 
-      if (!this.type.synchronous && isPromise(result)) {
+      if (!this._type.synchronous && isPromise(result)) {
         return (result as Promise<any>)
           .catch(normalizeErr)
           .then(handleResult, handleError);

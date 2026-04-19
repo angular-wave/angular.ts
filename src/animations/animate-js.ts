@@ -13,6 +13,7 @@ AnimateJsProvider.$inject = [$injectTokens._animateProvider];
 type JsAnimationOperation = (done: () => void) => void;
 
 interface AnimateProviderShape {
+  /** @internal */
   _registeredAnimations: Record<string, string>;
 }
 
@@ -42,6 +43,7 @@ export interface AnimateJsFn {
  * `end()` methods that return an {@link AnimateRunner}.
  */
 export interface AnimateJsRunner {
+  /** @internal */
   _willAnimate: true;
   start: () => AnimateRunner;
   end: () => AnimateRunner;

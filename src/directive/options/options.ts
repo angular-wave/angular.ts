@@ -22,11 +22,17 @@ const NG_OPTIONS_REGEXP =
   /^\s*([\s\S]+?)(?:\s+as\s+([\s\S]+?))?(?:\s+group\s+by\s+([\s\S]+?))?(?:\s+disable\s+when\s+([\s\S]+?))?\s+for\s+(?:([$\w][$\w]*)|(?:\(\s*([$\w][$\w]*)\s*,\s*([$\w][$\w]*)\s*\)))\s+in\s+([\s\S]+?)(?:\s+track\s+by\s+([\s\S]+?))?$/;
 
 class OptionItem {
+  /** @internal */
   _element: HTMLOptionElement | null = null;
+  /** @internal */
   _selectValue: any;
+  /** @internal */
   _viewValue: any;
+  /** @internal */
   _label: any;
+  /** @internal */
   _group: any;
+  /** @internal */
   _disabled: any;
 
   constructor(
@@ -47,15 +53,22 @@ class OptionItem {
 ngOptionsDirective.$inject = [$injectTokens._compile, $injectTokens._parse];
 
 type NgOptionsCollection = {
+  /** @internal */
   _items: OptionItem[];
+  /** @internal */
   _selectValueMap: Record<string, OptionItem>;
+  /** @internal */
   _getOptionFromViewValue(value: any): OptionItem | undefined;
+  /** @internal */
   _getViewValueFromOption(option: OptionItem): any;
 };
 
 type NgOptionsDefinition = {
+  /** @internal */
   _trackBy: string | undefined;
+  /** @internal */
   _getWatchables: string;
+  /** @internal */
   _getOptions(): NgOptionsCollection;
 };
 
@@ -135,6 +148,7 @@ export function ngOptionsDirective(
     return {
       _trackBy: trackBy,
       _getWatchables: match[8],
+      /** @internal */
       _getOptions() {
         const optionItems: OptionItem[] = [];
 
@@ -182,9 +196,11 @@ export function ngOptionsDirective(
         return {
           _items: optionItems,
           _selectValueMap: selectValueMap,
+          /** @internal */
           _getOptionFromViewValue(value: any) {
             return selectValueMap[getTrackByValue(value, undefined)];
           },
+          /** @internal */
           _getViewValueFromOption(option: OptionItem) {
             return trackBy
               ? structuredClone(option._viewValue)

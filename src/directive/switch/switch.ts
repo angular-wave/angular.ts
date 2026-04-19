@@ -4,11 +4,14 @@ import { hasAnimate, values } from "../../shared/utils.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
 type NgSwitchBlock = {
+  /** @internal */
   _clone: Node;
+  /** @internal */
   _comment: Comment;
 };
 
 class NgSwitchController {
+  /** @internal */
   _cases: Record<string, { transclude: ng.TranscludeFn; element: Element }[]>;
 
   constructor() {
