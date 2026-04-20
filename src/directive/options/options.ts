@@ -19,7 +19,7 @@ const optionTemplate = document.createElement("option");
 const optGroupTemplate = document.createElement("optgroup");
 
 const NG_OPTIONS_REGEXP =
-  /^\s*([\s\S]+?)(?:\s+as\s+([\s\S]+?))?(?:\s+group\s+by\s+([\s\S]+?))?(?:\s+disable\s+when\s+([\s\S]+?))?\s+for\s+(?:([$\w][$\w]*)|(?:\(\s*([$\w][$\w]*)\s*,\s*([$\w][$\w]*)\s*\)))\s+in\s+([\s\S]+?)(?:\s+track\s+by\s+([\s\S]+?))?$/;
+  /^\s*([\s\S]+?)(?:\s+as\s+([\s\S]+?))?(?:\s+group\s+by\s+([\s\S]+?))?(?:\s+disable\s+when\s+([\s\S]+?))?\s+for\s+(?:([$\w][$\w]*)|(?:\(\s*([$\w][$\w]*)\s*,\s*([$\w][$\w]*)\s*\)))\s+in\s+([\s\S]+?)$/;
 
 class OptionItem {
   /** @internal */
@@ -65,8 +65,6 @@ type NgOptionsCollection = {
 
 type NgOptionsDefinition = {
   /** @internal */
-  _trackBy: string | undefined;
-  /** @internal */
   _getWatchables: string;
   /** @internal */
   _getOptions(): NgOptionsCollection;
@@ -100,27 +98,11 @@ export function ngOptionsDirective(
 
     const selectAs = / as /.test(match[0]) && match[1];
 
-    const trackBy = match[9];
-
     const valueFn = $parse(match[2] ? match[1] : valueName);
 
     const selectAsFn = selectAs && $parse(selectAs);
 
     const viewValueFn = selectAsFn || valueFn;
-
-    const trackByFn = trackBy ? $parse(trackBy) : undefined;
-
-    const getTrackByValueFn = trackBy
-      ? function (_value: any, locals: Record<string, any>) {
-          return trackByFn!(scope, locals);
-        }
-      : function getHashOfValue(value: any) {
-          return hashKey(value);
-        };
-
-    const getTrackByValue = function (value: any, key: any) {
-      return getTrackByValueFn(value, getLocals(value, key));
-    };
 
     const displayFn = $parse(match[2] || match[1]);
 
@@ -146,7 +128,6 @@ export function ngOptionsDirective(
         };
 
     return {
-      _trackBy: trackBy,
       _getWatchables: match[8],
       /** @internal */
       _getOptions() {
@@ -161,7 +142,7 @@ export function ngOptionsDirective(
 
           const viewValue = viewValueFn(scope, updatedLocals);
 
-          const selectValue = getTrackByValueFn(viewValue, updatedLocals);
+          const selectValue = hashKey(viewValue);
 
           const label = displayFn(scope, updatedLocals);
 
@@ -198,13 +179,11 @@ export function ngOptionsDirective(
           _selectValueMap: selectValueMap,
           /** @internal */
           _getOptionFromViewValue(value: any) {
-            return selectValueMap[getTrackByValue(value, undefined)];
+            return selectValueMap[hashKey(value)];
           },
           /** @internal */
           _getViewValueFromOption(option: OptionItem) {
-            return trackBy
-              ? structuredClone(option._viewValue)
-              : option._viewValue;
+            return option._viewValue;
           },
         };
       },
@@ -321,12 +300,6 @@ export function ngOptionsDirective(
 
         return selections;
       };
-    }
-
-    if (ngOptions._trackBy) {
-      scope.$watch(attr.ngModel, () => {
-        ngModelCtrl.$render();
-      });
     }
 
     if (providedEmptyOption) {
@@ -453,7 +426,7 @@ export function ngOptionsDirective(
       if (!ngModelCtrl.$isEmpty(previousValue)) {
         const nextValue = selectCtrl._readValue();
 
-        const isNotPrimitive = ngOptions._trackBy || multiple;
+        const isNotPrimitive = multiple;
 
         if (
           isNotPrimitive
