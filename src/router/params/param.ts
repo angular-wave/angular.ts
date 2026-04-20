@@ -39,11 +39,7 @@ function getParamDeclaration(
   location: DefTypeValue,
   state: ng.StateDeclaration,
 ): ParamDeclaration {
-  const noReloadOnSearch =
-    (state.reloadOnSearch === false && location === DefType._SEARCH) ||
-    undefined;
-
-  const dynamic = find([state.dynamic, noReloadOnSearch], isDefined);
+  const dynamic = find([state.dynamic], isDefined);
 
   const defaultConfig = isDefined(dynamic) ? { dynamic } : {};
 

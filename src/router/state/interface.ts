@@ -954,13 +954,6 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * Note: this value overrides the `dynamic` value on a custom parameter type ([[ParamTypeDefinition.dynamic]]).
    */
   dynamic?: boolean;
-
-  /**
-   * Marks all query parameters as [[ParamDeclaration.dynamic]]
-   *
-   * @deprecated use either [[dynamic]] or [[ParamDeclaration.dynamic]]
-   */
-  reloadOnSearch?: boolean;
 }
 
 /**

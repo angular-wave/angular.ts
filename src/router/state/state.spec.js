@@ -58,7 +58,7 @@ describe("$state", () => {
     RS = {
       name: "RS",
       url: "^/search?term",
-      reloadOnSearch: false,
+      dynamic: true,
       template: "rs",
     },
     OPT = {
@@ -345,7 +345,7 @@ describe("$state", () => {
       dealoc(document.getElementById("app"));
     });
 
-    describe("(with dynamic params because reloadOnSearch=false)", function () {
+    describe("(with dynamic params because dynamic=true)", function () {
       describe("and only query params changed", () => {
         let entered = false;
         beforeEach(async () => {
