@@ -88,13 +88,13 @@ export function ngRepeatDirective($animate: any): ng.Directive {
       const hasAnimate = !!$attr.animate;
 
       let match = expression.match(
-        /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?(?:\s+track\s+by\s+([\s\S]+?))?\s*$/,
+        /^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+as\s+([\s\S]+?))?\s*$/,
       );
 
       if (!match) {
         throw ngRepeatMinErr(
           "iexp",
-          "Expected expression in form of '_item_ in _collection_[ track by _id_]' but got '{0}'.",
+          "Expected expression in form of '_item_ in _collection_' but got '{0}'.",
           expression,
         );
       }
@@ -131,8 +131,6 @@ export function ngRepeatDirective($animate: any): ng.Directive {
           aliasAs,
         );
       }
-
-      let trackByIdExpFn;
 
       const swap = callBackOnce(() => {
         if (isDefined($attr.lazy) && isDefined($attr.swap)) {
@@ -186,9 +184,9 @@ export function ngRepeatDirective($animate: any): ng.Directive {
 
             if (isArrayLike(collection)) {
               collectionKeys = collection;
-              trackByIdFn = trackByIdExpFn || trackByIdArrayFn;
+              trackByIdFn = trackByIdArrayFn;
             } else {
-              trackByIdFn = trackByIdExpFn || trackByIdObjFn;
+              trackByIdFn = trackByIdObjFn;
               collectionKeys = [];
 
               for (const itemKey in collection) {

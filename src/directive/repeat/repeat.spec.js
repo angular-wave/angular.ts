@@ -319,7 +319,7 @@ describe("ngRepeat", () => {
         "<ul>" +
           '<li ng-repeat="item   \t\n  \t  in  \n \t\n\n \nitems \t\t\n | filter:\n\n{' +
           "\n\t name:\n\n 'ko'\n\n}\n\n | orderBy: \t \n 'name' \n\n" +
-          'track \t\n  by \n\n\t $index \t\n ">{{item.name}}/</li>' +
+          '">{{item.name}}/</li>' +
           "</ul>",
       )(scope);
 
