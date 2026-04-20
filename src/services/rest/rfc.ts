@@ -127,8 +127,6 @@ export function expandExpression(
 
   const conf = OP[op];
 
-  if (!conf) throw new Error(`Unsupported operator: ${op}`);
-
   // split varspecs by comma, preserve whitespace trimmed
   const varspecs = varlist
     .split(",")
@@ -254,16 +252,9 @@ export function expandExpression(
           .join(",");
 
         if (conf.named) {
-          if (pairs === "") {
-            expandedParts.push(
-              pctEncode(varname, conf.allowReserved) +
-                (conf.ifEmpty === "=" ? conf.ifEmpty : ""),
-            );
-          } else {
-            expandedParts.push(
-              `${pctEncode(varname, conf.allowReserved)}=${pairs}`,
-            );
-          }
+          expandedParts.push(
+            `${pctEncode(varname, conf.allowReserved)}=${pairs}`,
+          );
         } else {
           expandedParts.push(pairs);
         }
