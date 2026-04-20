@@ -114,9 +114,7 @@ export interface AngularBootstrapConfig {
  */
 export type Expression = string;
 
-export type ExpandoStore = {
-  data: { [key: string]: any };
-};
+export type ExpandoStore = { [key: string]: any };
 
 /**
  * Dependency-annotated factory array used by AngularTS DI system.

@@ -1,22 +1,26 @@
-import { hasOwn, isArray, isDefined, isObject, keys } from "./utils.js";
+import { hasOwn, isArray, isDefined, isObject } from "./utils.js";
 import { NodeType } from "./node.ts";
 import { $injectTokens } from "../injection-tokens.ts";
 import type { ExpandoStore } from "../interface.ts";
-
-let elId = 1;
 
 /**
  * Key for storing isolate scope data attached to an element.
  */
 const ISOLATE_SCOPE_KEY = "$isolateScope";
 
-const EXPANDO = "ng";
+let expandoCache = new WeakMap<object, ExpandoStore>();
 
-/**
- * Stores per-node expando metadata keyed by the generated expando id.
- * This used to be an object in the JQLite decorator, but was swapped out for a `Map`.
- */
-export const Cache = new Map<number, ExpandoStore>();
+let cacheSize = 0;
+
+export const Cache = {
+  get size() {
+    return cacheSize;
+  },
+  clear() {
+    expandoCache = new WeakMap<object, ExpandoStore>();
+    cacheSize = 0;
+  },
+};
 
 /**
  * Key for storing scope data attached to an element.
@@ -77,11 +81,6 @@ const BOOLEAN_ELEMENTS = [
 ////////////        HELPER FUNCTIONS      /////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-/** Returns the next unique expando/cache identifier. */
-function elemNextId() {
-  return ++elId;
-}
-
 function fnCamelCaseReplace(_all: string, letter: string): string {
   return letter.toUpperCase();
 }
@@ -115,15 +114,17 @@ export function removeElementData(
   element: Element & Record<string, any>,
   name?: string,
 ): void {
-  const expandoId = element[EXPANDO];
-
-  const expandoStore = expandoId && Cache.get(expandoId);
+  const expandoStore = expandoCache.get(element);
 
   if (expandoStore) {
     if (name) {
-      delete expandoStore.data[name];
+      delete expandoStore[name];
     } else {
-      expandoStore.data = {};
+      for (const key in expandoStore) {
+        if (hasOwn(expandoStore, key)) {
+          delete expandoStore[key];
+        }
+      }
     }
 
     removeIfEmptyData(element);
@@ -143,16 +144,12 @@ export function getExpando(
   element: Element & Record<string, any>,
   createIfNecessary = false,
 ): ExpandoStore | undefined {
-  let expandoId = element[EXPANDO];
-
-  let expandoStore = expandoId && Cache.get(expandoId);
+  let expandoStore = expandoCache.get(element);
 
   if (createIfNecessary && !expandoStore) {
-    element[EXPANDO] = expandoId = elemNextId();
-    expandoStore = {
-      data: {},
-    };
-    Cache.set(expandoId, expandoStore);
+    expandoStore = {};
+    expandoCache.set(element, expandoStore);
+    cacheSize++;
   }
 
   return expandoStore;
@@ -215,7 +212,6 @@ export function dealoc(
       cleanElementData(domElement.querySelectorAll("*"));
     }
   }
-  delete (element as Element & Record<string, any>)[EXPANDO];
   (element as Element).innerHTML = "";
 }
 
@@ -225,14 +221,20 @@ export function dealoc(
  * @param element - The element whose expando store should be cleaned up.
  */
 function removeIfEmptyData(element: Element & Record<string, any>): void {
-  const expandoId = element[EXPANDO];
+  const expandoStore = expandoCache.get(element);
 
-  const data = expandoId ? Cache.get(expandoId)?.data : undefined;
-
-  if (!data || !keys(data).length) {
-    Cache.delete(expandoId);
-    element[EXPANDO] = undefined; // don't delete DOM expandos. Chrome don't like it
+  if (!expandoStore) {
+    return;
   }
+
+  for (const key in expandoStore) {
+    if (hasOwn(expandoStore, key)) {
+      return;
+    }
+  }
+
+  expandoCache.delete(element);
+  cacheSize--;
 }
 
 /**
@@ -258,21 +260,19 @@ export function getOrSetCacheData(
 
   const expandoStore = getExpando(element, !isSimpleGetter);
 
-  const data = expandoStore && expandoStore.data;
-
-  if (!data) return undefined;
+  if (!expandoStore) return undefined;
 
   if (isSimpleSetter && typeof key === "string") {
-    data[kebabToCamel(key)] = value;
+    expandoStore[kebabToCamel(key)] = value;
   } else if (massGetter) {
-    return data;
+    return expandoStore;
   } else if (isSimpleGetter && typeof key === "string") {
-    return data[kebabToCamel(key)];
+    return expandoStore[kebabToCamel(key)];
   } else if (key && typeof key === "object") {
     // key is now narrowed to object
     for (const prop in key) {
       if (Object.prototype.hasOwnProperty.call(key, prop)) {
-        data[kebabToCamel(prop)] = key[prop];
+        expandoStore[kebabToCamel(prop)] = key[prop];
       }
     }
   }
@@ -300,9 +300,7 @@ export function setCacheData(
       true,
     );
 
-    const { data } = expandoStore!;
-
-    data[kebabToCamel(key)] = value;
+    expandoStore![kebabToCamel(key)] = value;
   } else {
     if (element.parentElement) {
       // TODO: check should occur perhaps prior at compilation level that this is a valid element
@@ -322,13 +320,11 @@ export function getCacheData(element: Element, key?: string): any {
   if (elementAcceptsData(element)) {
     const expandoStore = getExpando(element, false); // Don't create if it doesn't exist
 
-    const data = expandoStore && expandoStore.data;
-
     if (!key) {
       return undefined;
     }
 
-    return data && data[kebabToCamel(key)];
+    return expandoStore && expandoStore[kebabToCamel(key)];
   }
 
   return undefined;
@@ -346,10 +342,9 @@ export function deleteCacheData(element: Element, key?: string): void {
   if (elementAcceptsData(element)) {
     const expandoStore = getExpando(element, false); // Don't create if it doesn't exist
 
-    const data = expandoStore?.data;
-
-    if (data && hasOwn(data, kebabToCamel(key))) {
-      delete data[kebabToCamel(key)];
+    if (expandoStore && hasOwn(expandoStore, kebabToCamel(key))) {
+      delete expandoStore[kebabToCamel(key)];
+      removeIfEmptyData(element as Element & Record<string, any>);
     }
   }
 }

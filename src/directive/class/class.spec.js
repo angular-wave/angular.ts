@@ -512,7 +512,9 @@ describe("ngClass", () => {
 
   // https://github.com/angular/angular.js/issues/15960#issuecomment-299109412
   it("should always reevaluate filters with non-primitive inputs within literals", async () => {
-    document.getElementById("app").ng = undefined;
+    dealoc(document.getElementById("app"));
+    window.angular = new Angular();
+    window.angular.module("test", []);
     injector = window.angular.bootstrap(document.getElementById("app"), [
       "test",
       ($filterProvider) => {
