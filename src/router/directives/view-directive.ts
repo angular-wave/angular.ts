@@ -1,5 +1,10 @@
 import { PromiseResolvers, tail, unnestR } from "../../shared/common.ts";
-import { hasAnimate, isDefined, isFunction } from "../../shared/utils.ts";
+import {
+  hasAnimate,
+  isArray,
+  isDefined,
+  isFunction,
+} from "../../shared/utils.ts";
 import { parse } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { trace } from "../common/trace.ts";
@@ -21,6 +26,36 @@ type Renderer = {
   enter: (element: HTMLElement, target: HTMLElement, cb: () => void) => void;
   leave: (element: HTMLElement, cb: () => void) => void;
 };
+
+function getFirstElementFromClone(
+  clone: Node | Node[] | NodeList | DocumentFragment | null | undefined,
+): HTMLElement | null {
+  if (!clone) return null;
+
+  if (clone instanceof HTMLElement) {
+    return clone;
+  }
+
+  if (clone instanceof DocumentFragment) {
+    const firstElement = clone.firstElementChild;
+
+    return firstElement instanceof HTMLElement ? firstElement : null;
+  }
+
+  if (clone instanceof NodeList || isArray(clone)) {
+    for (let i = 0, l = clone.length; i < l; i++) {
+      const node = clone[i];
+
+      if (node instanceof HTMLElement) {
+        return node;
+      }
+    }
+
+    return null;
+  }
+
+  return clone instanceof Element ? (clone as HTMLElement) : null;
+}
 
 type NgViewAnimData = {
   $animEnter: Promise<void>;
@@ -45,6 +80,10 @@ type ViewControllerInstance = Record<string, any> & {
     trans: ng.Transition,
   ) => void;
   uiCanExit?: (trans: ng.Transition) => unknown;
+  /** @internal */
+  __uiRouterRegisteredScopes__?: WeakSet<object>;
+  /** @internal */
+  __uiRouterLastParamsChangedTransition__?: ng.Transition;
 };
 
 type UiCanExitTransition = ng.Transition &
@@ -269,6 +308,8 @@ export function ViewDirective(
 
         let viewConfig: ViewConfig | undefined;
 
+        let configUpdateVersion = 0;
+
         const parentFqn =
           (parse("$cfg.viewDecl.$context.name")(inherited) as
             | string
@@ -305,7 +346,32 @@ export function ViewDirective(
         function configUpdatedCallback(config: ViewConfig | undefined): void {
           if (config && !(config instanceof ViewConfig)) return;
 
+          const updateVersion = ++configUpdateVersion;
+
+          if (!config) {
+            if (!viewConfig) return;
+
+            queueMicrotask(() => {
+              if (
+                updateVersion !== configUpdateVersion ||
+                viewConfig !== undefined
+              ) {
+                return;
+              }
+
+              trace.traceUIViewConfigUpdated(activeUIView, undefined);
+              activeUIView.config = null;
+              updateView(undefined);
+            });
+
+            viewConfig = undefined;
+            activeUIView.config = null;
+
+            return;
+          }
+
           if (viewConfig === config) return;
+
           trace.traceUIViewConfigUpdated(
             activeUIView,
             config && config.viewDecl && config.viewDecl.$context,
@@ -384,7 +450,11 @@ export function ViewDirective(
            */
           newScope.$emit("$viewContentLoading", name);
           currentEl = transclude(newScope, (clone) => {
-            const elementClone = clone as unknown as HTMLElement;
+            const elementClone = getFirstElementFromClone(clone);
+
+            if (!elementClone) {
+              return;
+            }
 
             setCacheData(elementClone, "$ngViewAnim", $ngViewAnim);
             setCacheData(elementClone, "$ngView", $ngViewData);
@@ -587,6 +657,19 @@ function registerControllerCallbacks(
   $scope: ng.Scope,
   cfg: Pick<ViewConfig, "viewDecl" | "path">,
 ): void {
+  let registeredScopes = controllerInstance.__uiRouterRegisteredScopes__;
+
+  if (!registeredScopes) {
+    registeredScopes = new WeakSet<object>();
+    controllerInstance.__uiRouterRegisteredScopes__ = registeredScopes;
+  }
+
+  if (registeredScopes.has($scope as object)) {
+    return;
+  }
+
+  registeredScopes.add($scope as object);
+
   // Call $onInit() ASAP
   const onInit = controllerInstance.$onInit;
 
@@ -615,6 +698,15 @@ function registerControllerCallbacks(
     // Fire callback on any successful transition
     const paramsUpdated = ($transition$: ng.Transition | undefined) => {
       if (!$transition$) return;
+
+      if (
+        controllerInstance.__uiRouterLastParamsChangedTransition__ ===
+        $transition$
+      ) {
+        return;
+      }
+
+      controllerInstance.__uiRouterLastParamsChangedTransition__ = $transition$;
 
       // Exit early if the $transition$ is the same as the view was created within.
       // Exit early if the $transition$ will exit the state the view is for.
@@ -683,10 +775,38 @@ function registerControllerCallbacks(
       }
     };
 
-    $scope.$on(
-      "$destroy",
-      $transitions.onSuccess({}, paramsUpdated, hookOptions),
+    const hookRegistryKey = [
+      viewState?.name || "",
+      cfg.viewDecl.$ngViewName || "$default",
+      cfg.viewDecl.$ngViewContextAnchor || "^",
+    ].join("::");
+
+    const rootScope = $scope.$root as ng.Scope &
+      Record<string, Map<string, () => void> | undefined>;
+
+    const registryProp = "__uiRouterParamsChangedHooks__";
+
+    const hookRegistry =
+      rootScope[registryProp] ||
+      (rootScope[registryProp] = new Map<string, () => void>());
+
+    hookRegistry.get(hookRegistryKey)?.();
+
+    const deregisterParamsHook = $transitions.onSuccess(
+      {},
+      paramsUpdated,
+      hookOptions,
     );
+
+    hookRegistry.set(hookRegistryKey, deregisterParamsHook);
+
+    $scope.$on("$destroy", () => {
+      if (hookRegistry.get(hookRegistryKey) === deregisterParamsHook) {
+        hookRegistry.delete(hookRegistryKey);
+      }
+
+      deregisterParamsHook();
+    });
   }
 
   // Add component-level hook for uiCanExit

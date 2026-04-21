@@ -50,7 +50,15 @@ export interface Listener {
   _invokeWatchFn?: CompiledExpression;
   /** @internal */
   _watchParentFn?: CompiledExpression;
+  /** @internal */
+  _ownerScope?: Scope;
 }
+
+type ListenerRegistration = {
+  key: string;
+  foreign: boolean;
+  owner: Scope;
+};
 
 type ForeignListenerRef = {
   _handler: Scope;
@@ -540,6 +548,9 @@ export class Scope {
   _propertyMap: Record<PropertyKey, any>;
 
   /** @internal */
+  _listenerRegistrations: Map<number, ListenerRegistration[]>;
+
+  /** @internal */
   _ownedForeignListeners: ForeignListenerRef[];
 
   /**
@@ -558,8 +569,6 @@ export class Scope {
     this._foreignProxies = context?._foreignProxies ?? new Set();
 
     this._objectListeners = context?._objectListeners ?? new WeakMap();
-
-    this.$proxy;
 
     this.$handler = this;
 
@@ -606,6 +615,106 @@ export class Scope {
       $transcluded: this.$transcluded.bind(this),
       $watch: this.$watch.bind(this),
     };
+
+    this._listenerRegistrations = new Map();
+  }
+
+  /** @internal Tracks where a scope-owned listener was registered. */
+  _rememberListenerRegistration(
+    listener: Listener,
+    key: string,
+    foreign: boolean,
+  ): void {
+    const ownerScope = listener._ownerScope;
+
+    if (!ownerScope) return;
+
+    const registrations = ownerScope._listenerRegistrations.get(listener._id);
+
+    if (registrations) {
+      registrations.push({ key, foreign, owner: this });
+
+      return;
+    }
+
+    ownerScope._listenerRegistrations.set(listener._id, [
+      { key, foreign, owner: this },
+    ]);
+  }
+
+  /** @internal Removes listener registration bookkeeping after deregistration. */
+  _forgetListenerRegistration(
+    listener: Listener,
+    key: string,
+    foreign: boolean,
+  ): void {
+    const ownerScope = listener._ownerScope;
+
+    if (!ownerScope) return;
+
+    const registrations = ownerScope._listenerRegistrations.get(listener._id);
+
+    if (!registrations) return;
+
+    for (let i = 0, l = registrations.length; i < l; i++) {
+      const registration = registrations[i];
+
+      if (
+        registration.key === key &&
+        registration.foreign === foreign &&
+        registration.owner === this
+      ) {
+        if (l === 1) {
+          ownerScope._listenerRegistrations.delete(listener._id);
+        } else {
+          registrations[i] = registrations[l - 1];
+          registrations.length = l - 1;
+        }
+
+        return;
+      }
+    }
+  }
+
+  /** @internal Removes only the listeners owned by this scope. */
+  _cleanupOwnedListenerRegistrations(): void {
+    const registrations = Array.from(this._listenerRegistrations.entries());
+
+    this._listenerRegistrations.clear();
+
+    for (let i = 0, l = registrations.length; i < l; i++) {
+      const [listenerId, listenerRegistrations] = registrations[i];
+
+      for (let j = 0, jl = listenerRegistrations.length; j < jl; j++) {
+        const registration = listenerRegistrations[j];
+
+        if (registration.foreign) {
+          registration.owner._deregisterForeignKey(
+            registration.key,
+            listenerId,
+          );
+        } else {
+          registration.owner._deregisterKey(registration.key, listenerId);
+        }
+      }
+    }
+  }
+
+  /** @internal Destroys a displaced direct child scope proxy before it is detached from this handler. */
+  _destroyDisplacedValue(value: any): void {
+    if (!value || !isProxy(value)) return;
+
+    const scopeValue = value as ScopeProxy;
+
+    if (!this._children.includes(scopeValue)) return;
+
+    if (scopeValue.$handler._destroyed) return;
+
+    const destroy = scopeValue.$destroy;
+
+    if (isFunction(destroy)) {
+      destroy();
+    }
   }
 
   /**
@@ -648,6 +757,18 @@ export class Scope {
     this.$target = target;
     const oldValue = target[property];
 
+    if (
+      isArray(target) &&
+      property === "length" &&
+      typeof oldValue === "number" &&
+      typeof value === "number" &&
+      value < oldValue
+    ) {
+      for (let i = oldValue - 1; i >= value; i--) {
+        this._destroyDisplacedValue(target[i]);
+      }
+    }
+
     // Handle NaNs
     if (
       oldValue !== undefined &&
@@ -683,6 +804,10 @@ export class Scope {
       }
 
       if (isObject(value)) {
+        if (oldValue !== value) {
+          this._destroyDisplacedValue(oldValue);
+        }
+
         if (hasOwn(target, property)) {
           const keyList = keys(oldValue);
 
@@ -1135,6 +1260,7 @@ export class Scope {
       _watchFn: get,
       _scopeId: this.$id,
       _id: nextUid(),
+      _ownerScope: this,
       _property: [],
     };
 
@@ -1563,6 +1689,8 @@ export class Scope {
 
     for (let i = 0; i < len; i++) {
       if (listenerList[i]._id === id) {
+        this._forgetListenerRegistration(listenerList[i], key, false);
+
         if (len === 1) {
           // Last element — just delete the key entirely
           this._watchers.delete(key);
@@ -1809,7 +1937,12 @@ export class Scope {
 
   /** Queues a callback to run after the current listener batch completes. */
   $postUpdate(fn: () => void): void {
-    $postUpdateQueue.push(fn);
+    const owner = this;
+
+    $postUpdateQueue.push(() => {
+      if (owner._destroyed) return;
+      fn();
+    });
   }
 
   $destroy() {
@@ -1839,6 +1972,7 @@ export class Scope {
       ref._handler._deregisterForeignKey(ref._key, ref._id);
     }
     this._ownedForeignListeners.length = 0;
+    this._cleanupOwnedListenerRegistrations();
 
     if (this._isRoot()) {
       this._watchers.clear();

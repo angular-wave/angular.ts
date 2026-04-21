@@ -1,6 +1,7 @@
 import {
   createElementFromHTML,
   createNodelistFromHTML,
+  deleteCacheData,
   emptyElement,
   getBooleanAttrName,
   getCacheData,
@@ -2528,6 +2529,7 @@ export class CompileProvider {
 
             try {
               if (postLinkFn._isolateScope && isolateScope) {
+                deleteCacheData($element.element, $t._scope);
                 setIsolateScope($element.element, isolateScope);
               }
 

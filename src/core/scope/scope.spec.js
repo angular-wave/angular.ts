@@ -3112,6 +3112,88 @@ describe("Scope", () => {
       expect(scope.$handler._watchers.get("test").length).toEqual(1);
     });
 
+    it("should destroy a displaced direct child scope when overwriting an object property", () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const onDestroy = jasmine.createSpy("child destroy");
+
+      child.$on("$destroy", onDestroy);
+      scope.current = child;
+
+      scope.current = { replacement: true };
+
+      expect(onDestroy).toHaveBeenCalled();
+      expect(child.$handler._destroyed).toBeTrue();
+      expect(scope._children.includes(child)).toBeFalse();
+      expect(scope.current.replacement).toBeTrue();
+    });
+
+    it("should destroy direct child scopes removed by shrinking an array length", () => {
+      const scope = createScope();
+      const child1 = scope.$new();
+      const child2 = scope.$new();
+      const onDestroy1 = jasmine.createSpy("child1 destroy");
+      const onDestroy2 = jasmine.createSpy("child2 destroy");
+
+      child1.$on("$destroy", onDestroy1);
+      child2.$on("$destroy", onDestroy2);
+      scope.items = [child1, child2];
+
+      scope.items.length = 1;
+
+      expect(onDestroy1).not.toHaveBeenCalled();
+      expect(onDestroy2).toHaveBeenCalled();
+      expect(child1.$handler._destroyed).toBeFalse();
+      expect(child2.$handler._destroyed).toBeTrue();
+      expect(scope._children.includes(child1)).toBeTrue();
+      expect(scope._children.includes(child2)).toBeFalse();
+    });
+
+    it("should destroy a displaced direct child scope when overwritten with undefined", () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const onDestroy = jasmine.createSpy("child destroy on undefined");
+
+      child.$on("$destroy", onDestroy);
+      scope.current = child;
+
+      scope.current = undefined;
+
+      expect(onDestroy).toHaveBeenCalled();
+      expect(child.$handler._destroyed).toBeTrue();
+      expect(scope._children.includes(child)).toBeFalse();
+      expect(scope.current).toBeUndefined();
+    });
+
+    it("should destroy a displaced direct child scope when overwritten with a primitive", () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const onDestroy = jasmine.createSpy("child destroy on primitive");
+
+      child.$on("$destroy", onDestroy);
+      scope.current = child;
+
+      scope.current = 42;
+
+      expect(onDestroy).toHaveBeenCalled();
+      expect(child.$handler._destroyed).toBeTrue();
+      expect(scope._children.includes(child)).toBeFalse();
+      expect(scope.current).toBe(42);
+    });
+
+    it("should not destroy nested proxied objects that share the current handler when overwritten", () => {
+      const scope = createScope();
+
+      scope.current = { nested: true };
+      const previous = scope.current;
+
+      scope.current = { replacement: true };
+
+      expect(previous.$handler).toBe(scope.$handler);
+      expect(scope.$handler._destroyed).toBeFalse();
+      expect(scope.current.replacement).toBeTrue();
+    });
+
     // it("should clean up all watchers for child", () => {
     //   const scope = createScope();
     //   scope.$watch("a", () => { /* empty */ });

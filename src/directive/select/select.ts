@@ -130,6 +130,8 @@ export function selectDirective(): ng.Directive {
     ngModelCtrl.$render = function () {
       selectCtrl._writeValue(ngModelCtrl.$viewValue);
     };
+
+    selectCtrl._scheduleRender();
   }
 }
 

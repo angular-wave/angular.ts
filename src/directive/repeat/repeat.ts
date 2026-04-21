@@ -174,6 +174,20 @@ export function ngRepeatDirective($animate: any): ng.Directive {
         _ctrl: unknown,
         $transclude?: any,
       ) {
+        function insertNodesAfter(nodes: Node[], afterNode: Node): void {
+          const { parentNode } = afterNode;
+
+          if (!parentNode) return;
+
+          const fragment = document.createDocumentFragment();
+
+          for (let i = 0; i < nodes.length; i++) {
+            fragment.appendChild(nodes[i]);
+          }
+
+          parentNode.insertBefore(fragment, afterNode.nextSibling);
+        }
+
         let lastBlockMap: RepeatBlockMap = nullObject();
 
         $scope.$watch(
@@ -312,9 +326,8 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                 } while (nextNode && nextNode[NG_REMOVED]);
 
                 if (getBlockStart(block) !== nextNode) {
-                  $animate.move(
+                  insertNodesAfter(
                     getBlockNodes(existingCloneNodes),
-                    null,
                     previousNode,
                   );
                 }
@@ -349,7 +362,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                       previousNode,
                     );
                   } else {
-                    previousNode.after(...cloneNodes);
+                    insertNodesAfter(cloneNodes, previousNode);
                   }
 
                   previousNode = endNode;
