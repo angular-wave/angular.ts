@@ -53,6 +53,10 @@ export class SelectController {
   _renderScheduled: boolean;
   /** @internal */
   _updateScheduled: boolean;
+  /** @internal */
+  _renderRescheduleRequested: boolean;
+  /** @internal */
+  _updateRescheduleRequested: boolean;
 
   /** @ignore */
   constructor($element: HTMLSelectElement, $scope: SelectScope) {
@@ -67,6 +71,8 @@ export class SelectController {
     this._optionsMap = new Map();
     this._renderScheduled = false;
     this._updateScheduled = false;
+    this._renderRescheduleRequested = false;
+    this._updateRescheduleRequested = false;
 
     $scope.$on("$destroy", () => {
       this._renderUnknownOption = () => {
@@ -215,6 +221,22 @@ export class SelectController {
 
     this._optionsMap.set(value, count + 1);
     this._scheduleRender();
+
+    const currentViewValue = this._ngModelCtrl?.$viewValue;
+
+    const currentModelValue = this._ngModelCtrl?.$modelValue;
+
+    if (
+      currentViewValue === value ||
+      currentModelValue === value ||
+      ((isNullOrUndefined(currentViewValue) || currentViewValue === "") &&
+        value === "")
+    ) {
+      this._scope.$postUpdate(() => {
+        if (this._scope._destroyed) return;
+        this._ngModelCtrl?.$render?.();
+      });
+    }
   }
 
   /** @ignore */
@@ -258,18 +280,32 @@ export class SelectController {
   /** @ignore */
   /** @internal */
   _scheduleRender() {
-    if (this._renderScheduled) return;
+    if (this._renderScheduled) {
+      this._renderRescheduleRequested = true;
+
+      return;
+    }
+
     this._renderScheduled = true;
     this._scope.$postUpdate(() => {
       this._renderScheduled = false;
       this._ngModelCtrl.$render();
+
+      if (this._renderRescheduleRequested) {
+        this._renderRescheduleRequested = false;
+        this._scheduleRender();
+      }
     });
   }
 
   /** @ignore */
   /** @internal */
   _scheduleViewValueUpdate(renderAfter = false) {
-    if (this._updateScheduled) return;
+    if (this._updateScheduled) {
+      this._updateRescheduleRequested = true;
+
+      return;
+    }
 
     this._updateScheduled = true;
 
@@ -280,6 +316,11 @@ export class SelectController {
       this._ngModelCtrl.$setViewValue(this._readValue());
 
       if (renderAfter) this._ngModelCtrl.$render();
+
+      if (this._updateRescheduleRequested) {
+        this._updateRescheduleRequested = false;
+        this._scheduleViewValueUpdate(renderAfter);
+      }
     });
   }
 
@@ -388,17 +429,26 @@ export class SelectController {
 
       const removeValue = oldVal ?? registeredValue;
 
+      const shouldUpdateViewValue =
+        (this._multiple &&
+          Array.isArray(currentValue) &&
+          currentValue.indexOf(removeValue) !== -1) ||
+        currentValue === removeValue;
+
       this._removeOption(removeValue);
       this._scheduleRender();
 
-      if (
-        (this._multiple &&
-          currentValue &&
-          currentValue.indexOf(removeValue) !== -1) ||
-        currentValue === removeValue
-      ) {
-        this._scheduleViewValueUpdate(true);
-      }
+      if (!shouldUpdateViewValue) return;
+
+      optionScope.$postUpdate(() => {
+        queueMicrotask(() => {
+          if (this._scope._destroyed || this._hasOption(removeValue)) {
+            return;
+          }
+
+          this._scheduleViewValueUpdate(true);
+        });
+      });
     });
   }
 }

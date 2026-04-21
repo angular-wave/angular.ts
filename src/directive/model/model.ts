@@ -232,6 +232,9 @@ export class NgModelController {
   _eventRemovers: Set<() => void>;
 
   /** @internal */
+  _updateEventRemovers: Set<() => void>;
+
+  /** @internal */
   _deregisterModelWatcher: () => void;
 
   /**
@@ -302,6 +305,7 @@ export class NgModelController {
     this._classCache[INVALID_CLASS] = !isValid;
 
     this._eventRemovers = new Set();
+    this._updateEventRemovers = new Set();
     this._deregisterModelWatcher = setupModelWatcher(this);
   }
 
@@ -1130,7 +1134,7 @@ export class NgModelController {
    *
    */
   $overrideModelOptions(options: any) {
-    this._removeAllEventListeners();
+    this._removeUpdateOnEventListeners();
     this.$options = this.$options.createChild(options);
     this._updateEvents = this.$options._options.updateOn || "";
     this._setUpdateOnEvents();
@@ -1292,6 +1296,15 @@ export class NgModelController {
       removeCallback(),
     );
     this._eventRemovers.clear();
+    this._removeUpdateOnEventListeners();
+  }
+
+  /** @internal */
+  _removeUpdateOnEventListeners() {
+    this._updateEventRemovers.forEach((removeCallback: () => void) =>
+      removeCallback(),
+    );
+    this._updateEventRemovers.clear();
   }
 
   /** @internal */
@@ -1299,7 +1312,7 @@ export class NgModelController {
     if (this._updateEvents) {
       this._updateEvents.split(" ").forEach((ev: string) => {
         this._element.addEventListener(ev, this._updateEventHandler);
-        this._eventRemovers.add(() =>
+        this._updateEventRemovers.add(() =>
           this._element.removeEventListener(ev, this._updateEventHandler),
         );
       });
@@ -1310,7 +1323,7 @@ export class NgModelController {
     if (this._updateEvents) {
       this._updateEvents.split(" ").forEach((ev: string) => {
         this._element.addEventListener(ev, this._updateEventHandler);
-        this._eventRemovers.add(() =>
+        this._updateEventRemovers.add(() =>
           this._element.removeEventListener(ev, this._updateEventHandler),
         );
       });

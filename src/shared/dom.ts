@@ -186,6 +186,7 @@ function elementAcceptsData(node: Element | Node): boolean {
 export function dealoc(
   element:
     | (Element & Record<string, any>)
+    | Document
     | (Element & Record<string, any>)[]
     | NodeListOf<Element>
     | HTMLCollectionOf<Element>
@@ -206,7 +207,15 @@ export function dealoc(
 
     return;
   } else {
-    const domElement = element as Element & Record<string, any>;
+    const singleNode = element as (Element & Record<string, any>) | Document;
+
+    const domElement =
+      singleNode.nodeType === NodeType._DOCUMENT_NODE
+        ? ((singleNode as Document).documentElement as Element &
+            Record<string, any>)
+        : (singleNode as Element & Record<string, any>);
+
+    if (!domElement) return;
 
     if (!onlyDescendants && elementAcceptsData(domElement)) {
       cleanElementData([domElement]);
@@ -216,7 +225,14 @@ export function dealoc(
       cleanElementData(domElement.querySelectorAll("*"));
     }
   }
-  (element as Element).innerHTML = "";
+  const singleNode = element as (Element & Record<string, any>) | Document;
+
+  if (
+    singleNode.nodeType !== NodeType._DOCUMENT_NODE &&
+    "innerHTML" in (element as Element)
+  ) {
+    (element as Element).innerHTML = "";
+  }
 }
 
 /**
@@ -568,7 +584,7 @@ export function cleanElementData(nodes: NodeListOf<Element> | Element[]): void {
     const node = nodes[i];
 
     if (
-      node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
+      (node instanceof Element && node.hasAttribute(NG_ANIMATE_ATTR_NAME)) ||
       isDefined(getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY))
     ) {
       node.dispatchEvent(new Event("$destroy"));
