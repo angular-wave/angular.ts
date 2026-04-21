@@ -83,6 +83,8 @@ export class NodeRef {
   /** @param el The element to wrap. */
   set element(el: Element) {
     this._element = el;
+    this._node = undefined;
+    this._nodes = [];
     this._isList = false;
   }
 
@@ -119,17 +121,26 @@ export class NodeRef {
 
     if (this._nodes[0].parentElement)
       return this._nodes[0].parentElement.childNodes;
+
+    return this._nodes;
+  }
+
+  /** @returns A detached fragment containing the wrapped node list. */
+  get fragment(): DocumentFragment {
     const fragment = document.createDocumentFragment();
 
     this._nodes.forEach((el) => fragment.appendChild(el));
 
-    return fragment.childNodes;
+    return fragment;
   }
 
   /** @returns The wrapped DOM value. */
-  get dom(): Element | Node | ChildNode | NodeList | Node[] {
-    if (this._isList) return this.nodelist;
-    else return this.node;
+  get dom(): Element | Node | ChildNode | NodeList | Node[] | DocumentFragment {
+    if (this._isList) {
+      return this._nodes.length > 0 && !this._nodes[0].parentElement
+        ? this.fragment
+        : this.nodelist;
+    } else return this.node;
   }
 
   /** @returns The number of wrapped nodes. */
@@ -206,5 +217,13 @@ export class NodeRef {
   /** @internal */
   _isElement(): boolean {
     return this._element !== undefined;
+  }
+
+  /** @internal */
+  _release(): void {
+    this._node = undefined;
+    this._element = undefined;
+    this._nodes = [];
+    this._isList = false;
   }
 }

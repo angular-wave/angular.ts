@@ -8,6 +8,7 @@ import {
   dealoc,
   getCacheData,
   getInheritedData,
+  removeElement,
   setCacheData,
 } from "../../shared/dom.ts";
 import { getLocals } from "../state/state-registry.ts";
@@ -221,7 +222,7 @@ export function ViewDirective(
         if (hasAnimate(element)) {
           $animate.leave(element).done(cb);
         } else {
-          (element.parentElement as HTMLElement).removeChild(element);
+          removeElement(element);
           cb();
         }
       },
@@ -331,7 +332,7 @@ export function ViewDirective(
                 | null
                 | undefined,
             );
-            previousEl.remove();
+            removeElement(previousEl);
             previousEl = null;
           }
 

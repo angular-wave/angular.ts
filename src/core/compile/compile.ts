@@ -55,7 +55,12 @@ import type { InterpolationFunction } from "../interpolate/interpolate.ts";
 import type { SanitizeUriProvider } from "../sanitize/sanitize-uri.ts";
 import type { CompiledExpression } from "../parse/parse.ts";
 
-export type TranscludedNodes = Node | Node[] | NodeList | null;
+export type TranscludedNodes =
+  | Node
+  | Node[]
+  | NodeList
+  | DocumentFragment
+  | null;
 
 export type ChildTranscludeOrLinkFn = TranscludeFn | PublicLinkFn;
 
@@ -453,6 +458,8 @@ export interface ControllersBoundTranscludeState {
   _scopeToChild: Scope;
   /** @internal */
   _elementRef: NodeRef;
+  /** @internal */
+  _destroyed?: boolean;
 }
 
 export interface ControllersBoundTranscludeFn {
@@ -465,6 +472,45 @@ export interface ControllersBoundTranscludeFn {
   isSlotFilled?: (slotName: string | number) => boolean;
   /** @internal */
   _boundTransclude?: BoundTranscludeFn;
+}
+
+const scopeOwnedNodeRefs = new WeakMap<ng.Scope, Set<NodeRef>>();
+
+function registerScopeOwnedNodeRef(scope: ng.Scope, nodeRef: NodeRef): void {
+  let ownedNodeRefs = scopeOwnedNodeRefs.get(scope);
+
+  if (!ownedNodeRefs) {
+    ownedNodeRefs = new Set<NodeRef>();
+    scopeOwnedNodeRefs.set(scope, ownedNodeRefs);
+
+    scope.$on("$destroy", () => {
+      const refs = scopeOwnedNodeRefs.get(scope);
+
+      if (!refs) {
+        return;
+      }
+
+      refs.forEach((ref) => ref._release());
+      refs.clear();
+      scopeOwnedNodeRefs.delete(scope);
+    });
+  }
+
+  ownedNodeRefs.add(nodeRef);
+}
+
+function releaseControllersBoundTranscludeState(
+  transcludeState: ControllersBoundTranscludeState,
+): void {
+  if (transcludeState._destroyed) {
+    return;
+  }
+
+  transcludeState._destroyed = true;
+  transcludeState._boundTranscludeFn = undefined as never;
+  transcludeState._elementControllers = nullObject();
+  transcludeState._scopeToChild = undefined as never;
+  transcludeState._elementRef = undefined as never;
 }
 
 export interface NodeLinkState {
@@ -515,7 +561,7 @@ export interface DelayedTemplateLinkState {
   /** @internal */
   _beforeTemplateCompileNode: Node | Element;
   /** @internal */
-  _compileNodeRef: NodeRef;
+  _compileNodeRef?: NodeRef;
   /** @internal */
   _origAsyncDirective: InternalDirective;
   /** @internal */
@@ -1188,11 +1234,6 @@ export class CompileProvider {
 
             assertArg(scope, "scope");
 
-            // could be empty nodelist
-            if (nodeRef._element) {
-              setScope(nodeRef._element, scope);
-            }
-
             if (
               previousCompileContext &&
               previousCompileContext._needsNewScope
@@ -1245,6 +1286,17 @@ export class CompileProvider {
               $linkNode = nodeRef._clone();
             } else {
               $linkNode = nodeRef;
+            }
+
+            // Attach scope to the live link target, not the reusable compile-time
+            // template blueprint. In clone mode, mutating the blueprint retains
+            // detached template nodes with `$scope` cache data.
+            if ($linkNode._element) {
+              setScope($linkNode._element, scope);
+            }
+
+            if (cloneConnectFn) {
+              registerScopeOwnedNodeRef(scope, $linkNode);
             }
 
             if (_transcludeControllers) {
@@ -1349,11 +1401,13 @@ export class CompileProvider {
                 );
               }
             } else if (_childLinkFn) {
-              _childLinkFn(
-                scope,
-                new NodeRef(node.childNodes),
-                _parentBoundTranscludeFn,
-              );
+              const childNodesRef = new NodeRef(node.childNodes);
+
+              try {
+                _childLinkFn(scope, childNodesRef, _parentBoundTranscludeFn);
+              } finally {
+                childNodesRef._release();
+              }
             }
           }
         }
@@ -1996,7 +2050,7 @@ export class CompileProvider {
 
           const compileNodeRef = delayedState._compileNodeRef;
 
-          if (!afterTemplateNodeLinkFnCtx || !compiledNode) {
+          if (!afterTemplateNodeLinkFnCtx || !compiledNode || !compileNodeRef) {
             return;
           }
 
@@ -2043,6 +2097,39 @@ export class CompileProvider {
         }
 
         /**
+         * Removes one queued async `templateUrl` link request.
+         * This prevents unresolved delayed template state from retaining dead scopes/nodes.
+         */
+        function removeDelayedTemplateNodeLinkEntry(
+          delayedState: DelayedTemplateLinkState,
+          scope: Scope,
+          node: Node | Element,
+          boundTranscludeFn?: BoundTranscludeFn | null,
+        ): void {
+          const linkQueue = delayedState._linkQueue;
+
+          if (!linkQueue) {
+            return;
+          }
+
+          for (
+            let queueIndex = 0;
+            queueIndex < linkQueue.length;
+            queueIndex += 3
+          ) {
+            if (
+              linkQueue[queueIndex] === scope &&
+              linkQueue[queueIndex + 1] === node &&
+              linkQueue[queueIndex + 2] === boundTranscludeFn
+            ) {
+              linkQueue.splice(queueIndex, 3);
+
+              return;
+            }
+          }
+        }
+
+        /**
          * Shared delayed link executor for async `templateUrl` directives. Until the template resolves,
          * it stores link requests in a compact queue; afterwards it links directly against the resolved template.
          */
@@ -2059,6 +2146,15 @@ export class CompileProvider {
 
           if (delayedState._linkQueue) {
             delayedState._linkQueue.push(scope, node, boundTranscludeFn);
+            const removeOnDestroy = scope.$on("$destroy", () => {
+              removeOnDestroy();
+              removeDelayedTemplateNodeLinkEntry(
+                delayedState,
+                scope,
+                node,
+                boundTranscludeFn,
+              );
+            });
 
             return;
           }
@@ -2079,6 +2175,10 @@ export class CompileProvider {
           _futureParentElement?: Node | null,
           slotName?: string | number,
         ) {
+          if (transcludeState._destroyed) {
+            return undefined;
+          }
+
           const hasScope = isScope(scopeParam);
 
           const boundTranscludeFn = transcludeState._boundTranscludeFn;
@@ -2173,6 +2273,7 @@ export class CompileProvider {
             $element = nodeLinkState._templateAttrs._nodeRef as NodeRef;
           } else {
             $element = new NodeRef(linkNode);
+            registerScopeOwnedNodeRef(scope, $element);
             attrs = new Attributes(
               $animate,
               $exceptionHandler,
@@ -2204,6 +2305,11 @@ export class CompileProvider {
               _elementRef: $element,
             };
 
+            scope.$on("$destroy", () => {
+              releaseControllersBoundTranscludeState(transcludeState);
+              newTranscludeFn._boundTransclude = undefined;
+            });
+
             const newTranscludeFn = function (
               scopeParam,
               cloneAttachFn,
@@ -2230,7 +2336,7 @@ export class CompileProvider {
             newTranscludeFn.isSlotFilled = function (
               slotName: string | number,
             ) {
-              return !!boundTranscludeFn._slots[slotName];
+              return !!transcludeState._boundTranscludeFn?._slots[slotName];
             };
             transcludeFn = newTranscludeFn;
           }
@@ -2350,6 +2456,12 @@ export class CompileProvider {
                   controllerInstance.$onDestroy();
                 });
               }
+
+              controllerScope.$on("$destroy", () => {
+                if (!controllerInstance._destroyed) {
+                  controllerInstance.$destroy();
+                }
+              });
             }
           }
 
@@ -2393,11 +2505,13 @@ export class CompileProvider {
             linkNode.childNodes &&
             linkNode.childNodes.length
           ) {
-            childLinkFn(
-              scopeToChild,
-              new NodeRef(linkNode.childNodes),
-              boundTranscludeFn,
-            );
+            const childNodesRef = new NodeRef(linkNode.childNodes);
+
+            try {
+              childLinkFn(scopeToChild, childNodesRef, boundTranscludeFn);
+            } finally {
+              childNodesRef._release();
+            }
           }
 
           for (let i = nodeLinkState._postLinkFns.length - 1; i >= 0; i--) {
@@ -3489,38 +3603,50 @@ export class CompileProvider {
                 undefined,
               );
 
-              for (
-                let queueIndex = 0;
-                delayedState._linkQueue &&
-                queueIndex < delayedState._linkQueue.length;
-                queueIndex += 3
-              ) {
-                const scope = delayedState._linkQueue[queueIndex] as
-                  | ng.Scope
-                  | undefined;
+              try {
+                for (
+                  let queueIndex = 0;
+                  delayedState._linkQueue &&
+                  queueIndex < delayedState._linkQueue.length;
+                  queueIndex += 3
+                ) {
+                  const scope = delayedState._linkQueue[queueIndex] as
+                    | ng.Scope
+                    | undefined;
 
-                const beforeTemplateLinkNode = delayedState._linkQueue[
-                  queueIndex + 1
-                ] as Node | Element;
+                  const beforeTemplateLinkNode = delayedState._linkQueue[
+                    queueIndex + 1
+                  ] as Node | Element;
 
-                const boundTranscludeFn = delayedState._linkQueue[
-                  queueIndex + 2
-                ] as BoundTranscludeFn | null | undefined;
+                  const boundTranscludeFn = delayedState._linkQueue[
+                    queueIndex + 2
+                  ] as BoundTranscludeFn | null | undefined;
 
-                if (!scope) {
-                  continue;
+                  if (!scope) {
+                    continue;
+                  }
+
+                  replayResolvedTemplateNodeLink(
+                    delayedState,
+                    scope,
+                    beforeTemplateLinkNode,
+                    boundTranscludeFn,
+                  );
                 }
-
-                replayResolvedTemplateNodeLink(
-                  delayedState,
-                  scope,
-                  beforeTemplateLinkNode,
-                  boundTranscludeFn,
-                );
+              } finally {
+                delayedState._compileNodeRef?._release();
+                delayedState._compileNodeRef = undefined;
+                delayedState._linkQueue = null;
               }
-              delayedState._linkQueue = null;
             })
             .catch((error) => {
+              delayedState._linkQueue = null;
+              delayedState._afterTemplateNodeLinkFnCtx = undefined;
+              delayedState._afterTemplateChildLinkFn = null;
+              delayedState._compiledNode = undefined;
+              delayedState._compileNodeRef?._release();
+              delayedState._compileNodeRef = undefined;
+
               if (isError(error)) {
                 $exceptionHandler(error);
               } else {

@@ -1891,6 +1891,25 @@ describe("Scope", () => {
 
         expect(count).toBe(4);
       });
+
+      it("should remove foreign listeners when a child scope is destroyed", async () => {
+        const parent = createScope();
+        const child = parent.$new();
+        parent.service = createScope({ b: 2 });
+
+        child.service = parent.service;
+        child.$watch("service.b", () => {
+          /* empty */
+        });
+
+        expect(parent.service.$handler._foreignListeners.get("b").length).toBe(
+          1,
+        );
+
+        child.$destroy();
+
+        expect(parent.service.$handler._foreignListeners.has("b")).toBeFalse();
+      });
     });
 
     describe("$watch", () => {

@@ -45,8 +45,9 @@ export class Attributes {
    * 2. **Clone instance** (`attributesToCopy` provided):
    *    - Used when cloning attributes for directive linking / child scopes.
    *    - Performs a shallow copy of all properties from the source Attributes object,
-   *      including `$attr`, normalized attribute values, and internal fields
-   *      (e.g. `_observers`).
+   *      including `$attr` and normalized attribute values.
+   *    - Observer state is intentionally not copied, because link-time `Attributes`
+   *      instances own their own `$observe(...)` registrations.
    *    - `$attr` is intentionally **not reinitialized** in this case, because the
    *      source object already contains the correct normalized -> DOM attribute mapping.
    */
@@ -81,6 +82,10 @@ export class Attributes {
 
       for (let i = 0, l = attributeKeys.length; i < l; i++) {
         const key = attributeKeys[i];
+
+        if (key === "_observers") {
+          continue;
+        }
 
         this[key] = attributesToCopy[key];
       }

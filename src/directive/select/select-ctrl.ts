@@ -1,5 +1,6 @@
 import { $injectTokens } from "../../injection-tokens.ts";
 import { NodeType } from "../../shared/node.ts";
+import { removeElement } from "../../shared/dom.ts";
 import {
   assertNotHasOwnProperty,
   hashKey,
@@ -140,7 +141,7 @@ export class SelectController {
   /** @ignore */
   /** @internal */
   _removeUnknownOption() {
-    if (this._unknownOption.parentElement) this._unknownOption.remove();
+    if (this._unknownOption.parentElement) removeElement(this._unknownOption);
   }
 
   /** @ignore */

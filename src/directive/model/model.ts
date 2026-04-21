@@ -231,6 +231,9 @@ export class NgModelController {
   /** @internal */
   _eventRemovers: Set<() => void>;
 
+  /** @internal */
+  _deregisterModelWatcher: () => void;
+
   /**
    * Creates a model controller bound to the element, scope, and ngModel expression.
    */
@@ -299,8 +302,7 @@ export class NgModelController {
     this._classCache[INVALID_CLASS] = !isValid;
 
     this._eventRemovers = new Set();
-
-    setupModelWatcher(this);
+    this._deregisterModelWatcher = setupModelWatcher(this);
   }
 
   /**
@@ -1329,7 +1331,7 @@ export class NgModelController {
  */
 function setupModelWatcher(
   ctrl: NgModelController & Record<string, any>,
-): void {
+): () => void {
   // model -> value
   // Note: we cannot use a normal scope.$watch as we want to detect the following:
   // 1. scope value is 'a'
@@ -1338,7 +1340,7 @@ function setupModelWatcher(
   //    -> scope value did not change since the last digest as
   //       ng-change executes in apply phase
   // 4. view should be changed back to 'a'
-  ctrl._scope.$watch("value", () => {
+  return (ctrl._scope.$watch("value", () => {
     const modelValue = ctrl._ngModelGet(ctrl._scope);
 
     // if scope model value and ngModel value are out of sync
@@ -1352,7 +1354,10 @@ function setupModelWatcher(
     ) {
       ctrl._setModelValue(modelValue);
     }
-  });
+  }) ||
+    (() => {
+      /* empty */
+    })) as () => void;
 }
 
 /**
@@ -1394,11 +1399,15 @@ export function ngModelDirective(): ng.Directive {
             // notify others, especially parent forms
             formCtrl.$addControl(modelCtrl);
 
-            attr.$observe("name", (newValue: any) => {
-              if (modelCtrl.$name !== newValue) {
-                modelCtrl._parentForm._renameControl(modelCtrl, newValue);
-              }
-            });
+            const deregisterNameObserver = attr.$observe(
+              "name",
+              (newValue: any) => {
+                if (modelCtrl.$name !== newValue) {
+                  modelCtrl._parentForm._renameControl(modelCtrl, newValue);
+                }
+              },
+            );
+
             const deregisterWatch = (scope.$watch(attr.ngModel, (val: any) => {
               modelCtrl._setModelValue(deProxy(val));
             }) ||
@@ -1407,7 +1416,23 @@ export function ngModelDirective(): ng.Directive {
               })) as () => void;
 
             scope.$on("$destroy", () => {
+              if (modelCtrl._pendingDebounce) {
+                clearTimeout(modelCtrl._pendingDebounce);
+                modelCtrl._pendingDebounce = undefined;
+              }
+
+              modelCtrl._removeAllEventListeners();
+              modelCtrl.$viewChangeListeners.length = 0;
+              modelCtrl._deregisterModelWatcher();
+              modelCtrl._deregisterModelWatcher = () => {
+                /* empty */
+              };
+              modelCtrl._element = undefined as never;
+              deregisterNameObserver();
               modelCtrl._parentForm.$removeControl(modelCtrl);
+              modelCtrl._parentForm = nullFormCtrl;
+              modelCtrl._scope = undefined as never;
+              modelCtrl._attr = undefined as never;
               deregisterWatch();
             });
           },
@@ -1425,9 +1450,14 @@ export function ngModelDirective(): ng.Directive {
               modelCtrl.$setTouched();
             }
 
-            elementPost.addEventListener("blur", () => {
+            const blurListener = () => {
               if (modelCtrl.$touched) return;
               setTouched();
+            };
+
+            elementPost.addEventListener("blur", blurListener);
+            scope.$on("$destroy", () => {
+              elementPost.removeEventListener("blur", blurListener);
             });
 
             modelCtrl.$viewChangeListeners.push(() => {

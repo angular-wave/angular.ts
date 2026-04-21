@@ -1775,8 +1775,22 @@ export class Scope {
       }
     }
 
+    for (const [key, val] of this._foreignListeners) {
+      for (let i = val.length - 1; i >= 0; i--) {
+        if (val[i]._scopeId === scopeId) {
+          val[i] = val[val.length - 1];
+          val.length--;
+        }
+      }
+
+      if (val.length === 0) {
+        this._foreignListeners.delete(key);
+      }
+    }
+
     if (this._isRoot()) {
       this._watchers.clear();
+      this._foreignListeners.clear();
     } else {
       const parent = this.$parent;
 

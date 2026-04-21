@@ -1,5 +1,5 @@
 import { $injectTokens } from "../../injection-tokens.ts";
-import { domInsert } from "../../shared/dom.ts";
+import { domInsert, removeElement } from "../../shared/dom.ts";
 import { hasAnimate, values } from "../../shared/utils.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
@@ -76,7 +76,7 @@ export function ngSwitchDirective(
 
             runner.done(spliceFactory(previousLeaveAnimations, i));
           } else {
-            selected.remove();
+            removeElement(selected);
           }
         }
 

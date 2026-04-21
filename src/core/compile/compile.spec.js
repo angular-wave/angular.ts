@@ -1,6 +1,7 @@
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
 import { NodeRef } from "../../shared/noderef.ts";
+import { Attributes } from "./attributes.ts";
 import {
   dealoc,
   getCacheData,
@@ -232,6 +233,37 @@ describe("$compile", () => {
       expect(stableNodes).toEqual([first, second]);
     });
 
+    it("creates cloned Attributes with independent observer storage", () => {
+      const templateNode = document.createElement("div");
+      const cloneNode = document.createElement("div");
+      const templateAttrs = new Attributes(
+        injector.get("$animate"),
+        injector.get("$exceptionHandler"),
+        $sce,
+        new NodeRef(templateNode),
+      );
+      const templateObserver = jasmine.createSpy("templateObserver");
+      const cloneObserver = jasmine.createSpy("cloneObserver");
+
+      templateAttrs.$set("name", "template", false);
+      templateAttrs.$observe("name", templateObserver);
+
+      const cloneAttrs = new Attributes(
+        injector.get("$animate"),
+        injector.get("$exceptionHandler"),
+        $sce,
+        new NodeRef(cloneNode),
+        templateAttrs,
+      );
+
+      cloneAttrs.$observe("name", cloneObserver);
+      cloneAttrs.$set("name", "clone", false);
+
+      expect(templateObserver.calls.count()).toBe(1);
+      expect(cloneObserver.calls.count()).toBe(2);
+      expect(templateAttrs._observers).not.toBe(cloneAttrs._observers);
+    });
+
     it("replaces a node and updates the node reference", () => {
       const parent = document.createElement("div");
       const original = document.createElement("span");
@@ -243,6 +275,40 @@ describe("$compile", () => {
 
       expect(parent.firstChild).toBe(replacement);
       expect(nodeRef.node).toBe(replacement);
+    });
+
+    it("releases scope-owned link node refs on scope destroy", () => {
+      let capturedNodeRef;
+
+      registerDirectives({
+        captureNodeRef: () => ({
+          restrict: "A",
+          link(_scope, _element, attrs) {
+            capturedNodeRef = attrs._nodeRef;
+          },
+        }),
+      });
+
+      injector = bootstrap("<div></div>");
+      $rootScope = injector.get("$rootScope");
+      $compile = injector.get("$compile");
+
+      const scope = $rootScope.$new();
+      const linkFn = $compile("<div capture-node-ref></div>");
+
+      linkFn(scope, () => {
+        /* empty */
+      });
+
+      expect(capturedNodeRef).toBeDefined();
+      expect(capturedNodeRef._getAny()).toBeDefined();
+
+      scope.$destroy();
+
+      expect(capturedNodeRef._element).toBeUndefined();
+      expect(capturedNodeRef._node).toBeUndefined();
+      expect(capturedNodeRef._nodes).toEqual([]);
+      expect(capturedNodeRef._isList).toBe(false);
     });
   });
 
@@ -3701,6 +3767,32 @@ describe("$compile", () => {
 
       expect(transclude().outerHTML.match(/in-transclude/)).toBeTruthy();
     });
+
+    it("releases bound transclude state after the owning scope is destroyed", () => {
+      let capturedTransclude;
+      registerDirectives({
+        myTranscluder: () => {
+          return {
+            transclude: true,
+            template: "<div ng-transclude></div>",
+            link: function (scope, element, attrs, ctrl, transcludeFn) {
+              capturedTransclude = transcludeFn;
+            },
+          };
+        },
+      });
+      reloadModules();
+      const el = $("<div my-transcluder><div in-transclude></div></div>");
+      const childScope = $rootScope.$new();
+
+      $compile(el)(childScope);
+
+      expect(capturedTransclude).toBeDefined();
+
+      childScope.$destroy();
+
+      expect(capturedTransclude()).toBeUndefined();
+    });
   });
 
   describe("clone attach function", () => {
@@ -3733,6 +3825,21 @@ describe("$compile", () => {
 
       expect(gotClonedEl.isEqualNode(el)).toBe(true);
       expect(gotClonedEl).not.toBe(el);
+    });
+
+    it("does not attach $scope to the detached template blueprint in clone mode", () => {
+      registerDirectives({});
+      reloadModules();
+      const el = $("<div>Hello</div>");
+      const myScope = $rootScope.$new();
+      let gotClonedEl;
+
+      $compile(el)(myScope, function (clonedEl) {
+        gotClonedEl = clonedEl;
+      });
+
+      expect(getScope(el)).toBeUndefined();
+      expect(getScope(gotClonedEl)).toBe(myScope);
     });
 
     it("causes cloned DOM to be linked", () => {
