@@ -97,6 +97,8 @@ const $locationMinErr = minErr("$location");
 
 let urlUpdatedByLocation = false;
 
+const locationCleanupByRootElement = new WeakMap<HTMLElement, () => void>();
+
 /**
  * @ignore
  * The pathname, beginning with "/"
@@ -553,6 +555,10 @@ export class LocationProvider {
   _lastHistoryState: History["state"];
   /** @internal */
   _lastBrowserUrl: string;
+  /** @internal */
+  _urlChangeHandler?: EventListener;
+  /** @internal */
+  _rootClickHandler?: EventListener;
   lastCachedState: History["state"];
 
   constructor() {
@@ -688,14 +694,9 @@ export class LocationProvider {
    */
   _onUrlChange(callback: UrlChangeListener): void {
     if (!this._urlChangeInit) {
-      window.addEventListener(
-        "popstate",
-        this._fireStateOrUrlChange.bind(this),
-      );
-      window.addEventListener(
-        "hashchange",
-        this._fireStateOrUrlChange.bind(this),
-      );
+      this._urlChangeHandler ||= this._fireStateOrUrlChange.bind(this);
+      window.addEventListener("popstate", this._urlChangeHandler);
+      window.addEventListener("hashchange", this._urlChangeHandler);
       this._urlChangeInit = true;
     }
     this._urlChangeListeners.push(callback);
@@ -744,6 +745,8 @@ export class LocationProvider {
 
       const IGNORE_URI_REGEXP = /^\s*(javascript|mailto):/i;
 
+      locationCleanupByRootElement.get($rootElement)?.();
+
       const setBrowserUrlWithFallback = (
         url: string | undefined,
         state: any,
@@ -767,82 +770,92 @@ export class LocationProvider {
         }
       };
 
-      $rootElement.addEventListener(
-        "click",
-        /** @param event */
-        (event: MouseEvent) => {
-          const { rewriteLinks } = this.html5ModeConf;
-          // TODO(vojta): rewrite link when opening in new tab/window (in legacy browser)
-          // currently we open nice url link and redirect then
+      const clickHandler = ((event: MouseEvent) => {
+        const { rewriteLinks } = this.html5ModeConf;
+        // TODO(vojta): rewrite link when opening in new tab/window (in legacy browser)
+        // currently we open nice url link and redirect then
 
-          if (
-            !isLinkRewritingEnabled(
-              rewriteLinks,
-              this._rewriteLinksConfigured,
-              $router,
-            ) ||
-            event.ctrlKey ||
-            event.metaKey ||
-            event.shiftKey ||
-            event.button === 2
-          ) {
-            return;
+        if (
+          !isLinkRewritingEnabled(
+            rewriteLinks,
+            this._rewriteLinksConfigured,
+            $router,
+          ) ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.shiftKey ||
+          event.button === 2
+        ) {
+          return;
+        }
+        let elm = event.target as HTMLElement | null;
+
+        if (!elm) return;
+
+        // traverse the DOM up to find first A tag
+        while (elm.nodeName.toLowerCase() !== "a") {
+          // ignore rewriting if no A tag (reached root element, or no parent - removed from document)
+
+          if (elm === $rootElement || !(elm = elm.parentElement)) return;
+        }
+
+        if (
+          isString(rewriteLinks) &&
+          isUndefined(elm.getAttribute(rewriteLinks))
+        ) {
+          return;
+        }
+
+        let absHref = (elm as HTMLAnchorElement).href as
+          | string
+          | SVGAnimatedString;
+
+        const relHref = elm.getAttribute("href");
+
+        if (
+          isObject(absHref) &&
+          absHref.toString() === "[object SVGAnimatedString]"
+        ) {
+          // SVGAnimatedString.animVal should be identical to SVGAnimatedString.baseVal, unless during
+          // an animation.
+
+          absHref = new URL((absHref as SVGAnimatedString).animVal).href;
+        }
+
+        if (typeof absHref !== "string" && "animVal" in absHref) {
+          absHref = new URL(absHref.animVal).href;
+        }
+
+        // Ignore when url is started with javascript: or mailto:
+        if (IGNORE_URI_REGEXP.test(absHref)) return;
+
+        if (absHref && !elm.getAttribute("target") && !event.defaultPrevented) {
+          if ($location.parseLinkUrl(absHref, relHref)) {
+            // We do a preventDefault for all urls that are part of the AngularTS application,
+            // in html5mode and also without, so that we are able to abort navigation without
+            // getting double entries in the location history.
+            event.preventDefault();
           }
-          let elm = event.target as HTMLElement | null;
+        }
+      }) as EventListener;
 
-          if (!elm) return;
+      this._rootClickHandler = clickHandler;
+      $rootElement.addEventListener("click", clickHandler);
+      locationCleanupByRootElement.set($rootElement, () => {
+        if (this._rootClickHandler) {
+          $rootElement.removeEventListener("click", this._rootClickHandler);
+          this._rootClickHandler = undefined;
+        }
 
-          // traverse the DOM up to find first A tag
-          while (elm.nodeName.toLowerCase() !== "a") {
-            // ignore rewriting if no A tag (reached root element, or no parent - removed from document)
+        if (this._urlChangeHandler) {
+          window.removeEventListener("popstate", this._urlChangeHandler);
+          window.removeEventListener("hashchange", this._urlChangeHandler);
+          this._urlChangeHandler = undefined;
+        }
 
-            if (elm === $rootElement || !(elm = elm.parentElement)) return;
-          }
-
-          if (
-            isString(rewriteLinks) &&
-            isUndefined(elm.getAttribute(rewriteLinks))
-          ) {
-            return;
-          }
-
-          let absHref = (elm as HTMLAnchorElement).href as
-            | string
-            | SVGAnimatedString;
-
-          const relHref = elm.getAttribute("href");
-
-          if (
-            isObject(absHref) &&
-            absHref.toString() === "[object SVGAnimatedString]"
-          ) {
-            // SVGAnimatedString.animVal should be identical to SVGAnimatedString.baseVal, unless during
-            // an animation.
-
-            absHref = new URL((absHref as SVGAnimatedString).animVal).href;
-          }
-
-          if (typeof absHref !== "string" && "animVal" in absHref) {
-            absHref = new URL(absHref.animVal).href;
-          }
-
-          // Ignore when url is started with javascript: or mailto:
-          if (IGNORE_URI_REGEXP.test(absHref)) return;
-
-          if (
-            absHref &&
-            !elm.getAttribute("target") &&
-            !event.defaultPrevented
-          ) {
-            if ($location.parseLinkUrl(absHref, relHref)) {
-              // We do a preventDefault for all urls that are part of the AngularTS application,
-              // in html5mode and also without, so that we are able to abort navigation without
-              // getting double entries in the location history.
-              event.preventDefault();
-            }
-          }
-        },
-      );
+        this._urlChangeInit = false;
+        this._urlChangeListeners.length = 0;
+      });
 
       // rewrite hashbang url <> html5 url
       if ($location.absUrl !== initialUrl) {

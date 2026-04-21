@@ -52,6 +52,12 @@ export interface Listener {
   _watchParentFn?: CompiledExpression;
 }
 
+type ForeignListenerRef = {
+  _handler: Scope;
+  _key: string;
+  _id: number;
+};
+
 export interface ScopeEvent {
   targetScope: typeof Proxy<ng.Scope>;
   currentScope: typeof Proxy<ng.Scope> | null;
@@ -533,6 +539,9 @@ export class Scope {
   /** @internal */
   _propertyMap: Record<PropertyKey, any>;
 
+  /** @internal */
+  _ownedForeignListeners: ForeignListenerRef[];
+
   /**
    * Initializes the handler with the target object and a context.
    *
@@ -569,6 +578,8 @@ export class Scope {
     this._scheduled = [];
 
     this.$scopename = undefined;
+
+    this._ownedForeignListeners = [];
 
     this._propertyMap = {
       $apply: this.$apply.bind(this),
@@ -1260,14 +1271,36 @@ export class Scope {
             listener._originalTarget,
           );
 
-          if (potentialProxy && this._foreignProxies.has(potentialProxy)) {
-            potentialProxy.$handler._registerForeignKey(key, listener);
+          const foreignKey = key;
+
+          if (
+            foreignKey &&
+            potentialProxy &&
+            this._foreignProxies.has(potentialProxy)
+          ) {
+            potentialProxy.$handler._registerForeignKey(foreignKey, listener);
+            this._trackOwnedForeignListener(
+              potentialProxy.$handler,
+              foreignKey,
+              listener._id,
+            );
             potentialProxy.$handler._scheduleListener([listener]);
 
             return () => {
-              potentialProxy.$handler._deregisterForeignKey(key, listener._id);
+              potentialProxy.$handler._deregisterForeignKey(
+                foreignKey,
+                listener._id,
+              );
+              this._untrackOwnedForeignListener(
+                potentialProxy.$handler,
+                foreignKey,
+                listener._id,
+              );
 
-              return potentialProxy.$handler._deregisterKey(key, listener._id);
+              return potentialProxy.$handler._deregisterKey(
+                foreignKey,
+                listener._id,
+              );
             };
           }
         }
@@ -1491,6 +1524,31 @@ export class Scope {
     }
 
     this._foreignListeners.set(key, [listener]);
+  }
+
+  /** @internal Tracks a foreign-listener registration owned by this scope. */
+  _trackOwnedForeignListener(handler: Scope, key: string, id: number): void {
+    this._ownedForeignListeners.push({
+      _handler: handler,
+      _key: key,
+      _id: id,
+    });
+  }
+
+  /** @internal Removes a tracked foreign-listener registration record. */
+  _untrackOwnedForeignListener(handler: Scope, key: string, id: number): void {
+    const refs = this._ownedForeignListeners;
+
+    for (let i = 0; i < refs.length; i++) {
+      const ref = refs[i];
+
+      if (ref._handler === handler && ref._key === key && ref._id === id) {
+        refs[i] = refs[refs.length - 1];
+        refs.length--;
+
+        return;
+      }
+    }
   }
 
   /** @internal Removes a listener by id from the local watcher map. */
@@ -1775,18 +1833,12 @@ export class Scope {
       }
     }
 
-    for (const [key, val] of this._foreignListeners) {
-      for (let i = val.length - 1; i >= 0; i--) {
-        if (val[i]._scopeId === scopeId) {
-          val[i] = val[val.length - 1];
-          val.length--;
-        }
-      }
+    for (let i = 0; i < this._ownedForeignListeners.length; i++) {
+      const ref = this._ownedForeignListeners[i];
 
-      if (val.length === 0) {
-        this._foreignListeners.delete(key);
-      }
+      ref._handler._deregisterForeignKey(ref._key, ref._id);
     }
+    this._ownedForeignListeners.length = 0;
 
     if (this._isRoot()) {
       this._watchers.clear();

@@ -401,16 +401,18 @@ describe("$state", () => {
     });
 
     describe("basic functionality", () => {
-      it("returns a promise for the target state", () => {
+      it("returns a promise for the target state", async () => {
         const promise = $state.transitionTo(A, {});
         expect(isFunction(promise.then)).toBeTruthy();
         expect(promise.transition.to()).toBe(A);
+        await promise;
       });
 
-      it("returns a promise for the target state", () => {
+      it("returns a promise for the target state", async () => {
         const promise = $state.transitionTo(A, {});
         expect(isFunction(promise.then)).toBeTruthy();
         expect(promise.transition.to()).toBe(A);
+        await promise;
       });
 
       it("show return promise with an error on invalid state", async () => {
@@ -424,8 +426,7 @@ describe("$state", () => {
       });
 
       it("allows transitions by name", async () => {
-        $state.transitionTo("A", {});
-        await wait(200);
+        await $state.transitionTo("A", {});
 
         expect($state.current).toEqual(A);
       });
@@ -535,11 +536,13 @@ describe("$state", () => {
         it("is considered fully dynamic when only dynamic params have changed", function () {
           const promise = $state.go(".", { pathDyn: "pd2", searchDyn: "sd2" });
           expect(promise.transition.dynamic()).toBeTruthy();
+          promise.transition.abort();
         });
 
         it("is not considered fully dynamic if any state is entered", function () {
           const promise = $state.go(childWithParam);
           expect(promise.transition.dynamic()).toBeFalsy();
+          promise.transition.abort();
         });
 
         it("is not considered fully dynamic if any state is exited", async () => {
@@ -552,16 +555,19 @@ describe("$state", () => {
           });
           const promise = $state.go(dynamicstate);
           expect(promise.transition.dynamic()).toBeFalsy();
+          promise.transition.abort();
         });
 
         it("is not considered fully dynamic if any state is reloaded", function () {
           const promise = $state.go(dynamicstate, null, { reload: true });
           expect(promise.transition.dynamic()).toBeFalsy();
+          promise.transition.abort();
         });
 
         it("is not considered fully dynamic if any non-dynamic parameter changes", function () {
           const promise = $state.go(dynamicstate, { path: "p2" });
           expect(promise.transition.dynamic()).toBeFalsy();
+          promise.transition.abort();
         });
       });
 
@@ -981,12 +987,10 @@ describe("$state", () => {
 
     // passes in isolation. on success callback being polluted
     it("runs a transition when the location #fragment is updated", async () => {
-      $state.transitionTo("home.item", { id: "world", "#": "frag" });
-      await wait(100);
+      await $state.transitionTo("home.item", { id: "world", "#": "frag" });
       expect($location.getHash()).toBe("frag");
 
-      $state.transitionTo("home.item", { id: "world", "#": "blarg" });
-      await wait(100);
+      await $state.transitionTo("home.item", { id: "world", "#": "blarg" });
       expect($location.getHash()).toBe("blarg");
     });
 
