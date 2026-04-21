@@ -7433,7 +7433,7 @@ describe("$compile", () => {
         expect(element.getAttribute("some-attr")).toEqual("bar-2");
       });
 
-      it("should call observer of non-interpolated attr through $evalAsync", async () => {
+      it("should call observer of non-interpolated attr", async () => {
         $compile('<div some-attr="nonBound" observer></div>')($rootScope);
 
         expect(directiveAttrs.someAttr).toBe("nonBound");
