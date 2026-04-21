@@ -1000,6 +1000,14 @@ export class Scope {
 
     if (property === isProxySymbol) return true;
 
+    if (
+      this._destroyed &&
+      typeof property !== "symbol" &&
+      hasOwn(this._propertyMap, property)
+    ) {
+      return this._propertyMap[property];
+    }
+
     const targetProp =
       typeof property === "string" ? target[property] : target[property];
 
@@ -1945,8 +1953,45 @@ export class Scope {
       }
     }
 
+    this._scheduled = [];
+    this._foreignProxies.clear();
+    this._foreignListeners = new Map();
+    this._objectListeners = new WeakMap();
+
     this._listeners.clear();
     this._destroyed = true;
+
+    queueMicrotask(() => {
+      if (!this._destroyed) return;
+
+      if (this._isRoot()) {
+        this._children.length = 0;
+      } else {
+        this._children.length = 0;
+        this._watchers = new Map();
+      }
+
+      this.$target = null;
+      this.$proxy = undefined as unknown as ScopeProxy;
+
+      if (!this._isRoot()) {
+        this.$parent = undefined;
+        this.$root = undefined as unknown as ng.RootScopeService;
+      }
+
+      this._propertyMap = {
+        $destroy: this._propertyMap.$destroy,
+        $handler: this,
+        $id: this.$id,
+        $isRoot: this._propertyMap.$isRoot,
+        $parent: this.$parent,
+        $proxy: this.$proxy,
+        $root: this.$root,
+        $scopename: this.$scopename,
+        $target: this.$target,
+        _children: this._children,
+      };
+    });
   }
 
   /** @internal Resolves the watched value and notifies a single listener. */

@@ -3112,6 +3112,154 @@ describe("Scope", () => {
       expect(scope.$handler._watchers.get("test").length).toEqual(1);
     });
 
+    it("should clear transient destroy state from child handlers", () => {
+      const scope = createScope();
+
+      scope.$watch("test", () => {
+        /* empty */
+      });
+
+      const child = scope.$new();
+      const sharedForeignListeners = child.$handler._foreignListeners;
+      const sharedObjectListeners = child.$handler._objectListeners;
+
+      child.$handler._foreignProxies.add(scope);
+      child.$handler._scheduled = [{}];
+
+      child.$destroy();
+
+      expect(child.$handler._foreignListeners).not.toBe(sharedForeignListeners);
+      expect(child.$handler._foreignListeners.size).toBe(0);
+      expect(child.$handler._objectListeners).not.toBe(sharedObjectListeners);
+      expect(child.$handler._foreignProxies.size).toBe(0);
+      expect(child.$handler._scheduled.length).toBe(0);
+    });
+
+    it("should release cached target and proxy references after destroy", async () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const handler = child.$handler;
+
+      child.value = 42;
+      expect(handler.$target).not.toBeNull();
+      expect(handler.$proxy).toBeDefined();
+
+      child.$destroy();
+      await wait();
+
+      expect(handler.$target).toBeNull();
+      expect(handler.$proxy).toBeUndefined();
+      expect(handler._propertyMap.$target).toBeNull();
+      expect(handler._propertyMap.$proxy).toBeUndefined();
+    });
+
+    it("should preserve ancestry during destroy listeners and release it afterward", async () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const handler = child.$handler;
+      let destroyParent;
+      let destroyRoot;
+
+      child.$on("$destroy", () => {
+        destroyParent = child.$parent;
+        destroyRoot = child.$root;
+      });
+
+      child.$destroy();
+
+      expect(destroyParent).toBe(scope.$handler);
+      expect(destroyRoot).toBe(scope.$root);
+
+      await wait();
+
+      expect(handler.$parent).toBeUndefined();
+      expect(handler.$root).toBeUndefined();
+      expect(handler._propertyMap.$parent).toBeUndefined();
+      expect(handler._propertyMap.$root).toBeUndefined();
+    });
+
+    it("should release root child references after destroy", async () => {
+      const scope = createScope();
+      const handler = scope.$handler;
+
+      scope.$new();
+      scope.$new();
+
+      expect(scope._children.length).toBe(2);
+
+      scope.$destroy();
+      await wait();
+
+      expect(scope._children.length).toBe(0);
+      expect(handler._propertyMap._children.length).toBe(0);
+    });
+
+    it("should release child scope descendants and watcher map references after destroy", async () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const grandChild = child.$new();
+      const handler = child.$handler;
+      const sharedWatchers = handler._watchers;
+
+      child.$watch("test", () => {
+        /* empty */
+      });
+      grandChild.$watch("test", () => {
+        /* empty */
+      });
+
+      child.$destroy();
+      await wait();
+
+      expect(handler._children.length).toBe(0);
+      expect(handler._propertyMap._children.length).toBe(0);
+      expect(handler._watchers).not.toBe(sharedWatchers);
+      expect(handler._watchers.size).toBe(0);
+      expect(scope.$handler._watchers.get("test").length).toBe(1);
+    });
+
+    it("should not rehydrate cleared caches for destroyed-scope inspection reads", async () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const handler = child.$handler;
+
+      child.value = 42;
+      child.$destroy();
+      await wait();
+
+      expect(handler.$target).toBeNull();
+      expect(handler.$proxy).toBeUndefined();
+
+      void child.$id;
+      void child.$parent;
+      void child.$root;
+      void child.$destroy;
+      void child._children;
+
+      expect(handler.$target).toBeNull();
+      expect(handler.$proxy).toBeUndefined();
+      expect(handler._propertyMap.$target).toBeNull();
+      expect(handler._propertyMap.$proxy).toBeUndefined();
+    });
+
+    it("should slim the destroyed property map to inspection keys", async () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const handler = child.$handler;
+
+      child.$destroy();
+      await wait();
+
+      expect(handler._propertyMap.$destroy).toBeDefined();
+      expect(handler._propertyMap.$handler).toBe(handler);
+      expect(handler._propertyMap.$id).toBe(handler.$id);
+      expect(handler._propertyMap._children).toBe(handler._children);
+      expect(handler._propertyMap.$watch).toBeUndefined();
+      expect(handler._propertyMap.$eval).toBeUndefined();
+      expect(handler._propertyMap.$apply).toBeUndefined();
+      expect(handler._propertyMap.$new).toBeUndefined();
+    });
+
     it("should destroy a displaced direct child scope when overwriting an object property", () => {
       const scope = createScope();
       const child = scope.$new();
