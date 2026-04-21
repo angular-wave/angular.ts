@@ -809,7 +809,9 @@ function registerControllerCallbacks(
         changedKeys.forEach((key: string | number) => {
           if (key in toParams) newValues[key] = toParams[key];
         });
-        onParamsChanged.call(controllerInstance, newValues, $transition$);
+        $scope.$evalAsync(() => {
+          onParamsChanged.call(controllerInstance, newValues, $transition$);
+        });
       }
     };
 
