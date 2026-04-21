@@ -3149,6 +3149,50 @@ describe("Scope", () => {
       expect(scope._children.includes(child2)).toBeFalse();
     });
 
+    it("should destroy direct child scopes contained in a displaced collection when overwritten", () => {
+      const scope = createScope();
+      const child1 = scope.$new();
+      const child2 = scope.$new();
+      const onDestroy1 = jasmine.createSpy(
+        "child1 destroy on collection overwrite",
+      );
+      const onDestroy2 = jasmine.createSpy(
+        "child2 destroy on collection overwrite",
+      );
+
+      child1.$on("$destroy", onDestroy1);
+      child2.$on("$destroy", onDestroy2);
+      scope.items = [child1, child2];
+
+      scope.items = [];
+
+      expect(onDestroy1).toHaveBeenCalled();
+      expect(onDestroy2).toHaveBeenCalled();
+      expect(child1.$handler._destroyed).toBeTrue();
+      expect(child2.$handler._destroyed).toBeTrue();
+      expect(scope._children.includes(child1)).toBeFalse();
+      expect(scope._children.includes(child2)).toBeFalse();
+      expect(scope.items.length).toBe(0);
+    });
+
+    it("should destroy direct child scopes nested inside a displaced collection when overwritten", () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const onDestroy = jasmine.createSpy(
+        "nested child destroy on collection overwrite",
+      );
+
+      child.$on("$destroy", onDestroy);
+      scope.current = { items: [child] };
+
+      scope.current = { replacement: true };
+
+      expect(onDestroy).toHaveBeenCalled();
+      expect(child.$handler._destroyed).toBeTrue();
+      expect(scope._children.includes(child)).toBeFalse();
+      expect(scope.current.replacement).toBeTrue();
+    });
+
     it("should destroy a displaced direct child scope when overwritten with undefined", () => {
       const scope = createScope();
       const child = scope.$new();
@@ -3192,6 +3236,19 @@ describe("Scope", () => {
       expect(previous.$handler).toBe(scope.$handler);
       expect(scope.$handler._destroyed).toBeFalse();
       expect(scope.current.replacement).toBeTrue();
+    });
+
+    it("should not destroy non-child proxied objects contained in a displaced collection", () => {
+      const scope = createScope();
+
+      scope.current = [{ nested: true }];
+      const previous = scope.current[0];
+
+      scope.current = [];
+
+      expect(previous.$handler).toBe(scope.$handler);
+      expect(scope.$handler._destroyed).toBeFalse();
+      expect(scope.current.length).toBe(0);
     });
 
     // it("should clean up all watchers for child", () => {
