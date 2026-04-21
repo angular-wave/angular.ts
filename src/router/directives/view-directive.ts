@@ -604,41 +604,79 @@ export function ViewDirectiveFill(
           const tagRegexp = new RegExp(`^(x-|data-)?${kebobName}$`, "i");
 
           const getComponentController = () => {
-            const directiveEl = Array.from($element.children).find(
+            const candidates = Array.from($element.querySelectorAll("*"));
+
+            const directiveEl = candidates.find(
               (el) => el.tagName && tagRegexp.exec(el.tagName),
             );
 
-            return directiveEl
-              ? (getCacheData(directiveEl, `$${componentName}Controller`) as
-                  | ViewControllerInstance
-                  | undefined)
-              : undefined;
+            if (!directiveEl) {
+              return undefined;
+            }
+
+            const camelNameFromTag = directiveEl.tagName
+              .toLowerCase()
+              .replace(/^(x-|data-)/, "")
+              .replace(/-([a-z])/g, (_all, letter: string) =>
+                letter.toUpperCase(),
+              );
+
+            const tryControllerKey = (key: string) =>
+              (getCacheData(directiveEl, key) as
+                | ViewControllerInstance
+                | undefined) ||
+              (getInheritedData(directiveEl, key) as
+                | ViewControllerInstance
+                | undefined);
+
+            const scopeWithCtrl =
+              (getCacheData(directiveEl, "$isolateScope") as
+                | Record<string, ViewControllerInstance>
+                | undefined) ||
+              (getInheritedData(directiveEl, "$isolateScope") as
+                | Record<string, ViewControllerInstance>
+                | undefined) ||
+              (getCacheData(directiveEl, "$scope") as
+                | Record<string, ViewControllerInstance>
+                | undefined) ||
+              (getInheritedData(directiveEl, "$scope") as
+                | Record<string, ViewControllerInstance>
+                | undefined);
+
+            return (
+              tryControllerKey(`$${componentName}Controller`) ||
+              tryControllerKey(`$${camelNameFromTag}Controller`) ||
+              tryControllerKey("$ngControllerController") ||
+              scopeWithCtrl?.$ctrl
+            );
           };
 
-          const componentCtrl = getComponentController();
+          const registerComponentCallbacks = (attempt = 0) => {
+            if (scope.$handler._destroyed) {
+              return;
+            }
 
-          if (componentCtrl) {
-            registerControllerCallbacks(
-              $transitions,
-              componentCtrl,
-              scope,
-              callbackConfig,
-            );
-          } else {
-            const deregisterWatch = scope.$watch(
-              getComponentController as any,
-              (ctrlInstance: ViewControllerInstance | undefined) => {
-                if (!ctrlInstance) return;
-                registerControllerCallbacks(
-                  $transitions,
-                  ctrlInstance,
-                  scope,
-                  callbackConfig,
-                );
-                deregisterWatch?.();
-              },
-            ) as (() => void) | undefined;
-          }
+            const componentCtrl = getComponentController();
+
+            if (componentCtrl) {
+              registerControllerCallbacks(
+                $transitions,
+                componentCtrl,
+                scope,
+                callbackConfig,
+              );
+
+              return;
+            }
+
+            if (attempt >= 10) {
+              return;
+            }
+
+            queueMicrotask(() => registerComponentCallbacks(attempt + 1));
+          };
+
+          registerComponentCallbacks();
         }
       };
     },
