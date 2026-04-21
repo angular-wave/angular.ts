@@ -606,20 +606,51 @@ export class Scope {
     };
   }
 
-  /** @internal Destroys a displaced direct child scope proxy before it is detached from this handler. */
-  _destroyDisplacedValue(value: any): void {
-    if (!value || !isProxy(value)) return;
+  /** @internal Destroys displaced direct child scopes found in the provided value or collection. */
+  _destroyDisplacedValue(value: any, visited = new Set<object>()): void {
+    if (!value || typeof value !== "object") return;
 
-    const scopeValue = value as ScopeProxy;
+    const objectValue = value as object;
 
-    if (!this._children.includes(scopeValue)) return;
+    if (visited.has(objectValue)) return;
+    visited.add(objectValue);
 
-    if (scopeValue.$handler._destroyed) return;
+    if (isProxy(value)) {
+      const scopeValue = value as ScopeProxy;
 
-    const destroy = scopeValue.$destroy;
+      if (this._children.includes(scopeValue)) {
+        if (scopeValue.$handler._destroyed) return;
 
-    if (isFunction(destroy)) {
-      destroy();
+        const destroy = scopeValue.$destroy;
+
+        if (isFunction(destroy)) {
+          destroy();
+        }
+
+        return;
+      }
+
+      const targetValue = scopeValue.$target as
+        | Record<PropertyKey, any>
+        | undefined;
+
+      if (!targetValue) {
+        return;
+      }
+
+      const keyList = keys(targetValue);
+
+      for (let i = 0, l = keyList.length; i < l; i++) {
+        this._destroyDisplacedValue(targetValue[keyList[i]], visited);
+      }
+
+      return;
+    }
+
+    if (isArray(value)) {
+      for (let i = 0, l = value.length; i < l; i++) {
+        this._destroyDisplacedValue(value[i], visited);
+      }
     }
   }
 
@@ -687,6 +718,8 @@ export class Scope {
     if (oldValue && oldValue[isProxySymbol]) {
       if (isArray(value)) {
         if (oldValue !== value) {
+          this._destroyDisplacedValue(oldValue);
+
           const listeners = this._watchers.get(property);
 
           if (listeners) {
@@ -750,9 +783,7 @@ export class Scope {
 
         const tgt = oldValue.$target;
 
-        let i = 0;
-
-        for (i; i < keyList.length; i++) {
+        for (let i = 0, l = keyList.length; i < l; i++) {
           const k = keyList[i];
 
           const v = tgt[k];
@@ -760,10 +791,13 @@ export class Scope {
           if (v && v[isProxySymbol]) {
             called = true;
           }
-          delete oldValue[k];
         }
 
         this._destroyDisplacedValue(oldValue);
+
+        for (let i = 0, l = keyList.length; i < l; i++) {
+          delete oldValue[keyList[i]];
+        }
 
         target[property] = undefined;
 
