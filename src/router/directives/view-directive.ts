@@ -57,6 +57,22 @@ function getFirstElementFromClone(
   return clone instanceof Element ? (clone as HTMLElement) : null;
 }
 
+function getRootNodesFromClone(
+  clone: Node | Node[] | NodeList | DocumentFragment | null | undefined,
+): Node[] {
+  if (!clone) {
+    return [];
+  }
+
+  if (clone instanceof DocumentFragment) {
+    return Array.from(clone.childNodes);
+  }
+
+  return clone instanceof NodeList || isArray(clone)
+    ? Array.from(clone)
+    : [clone];
+}
+
 type NgViewAnimData = {
   $animEnter: Promise<void>;
   $animLeave: Promise<void>;
@@ -80,10 +96,6 @@ type ViewControllerInstance = Record<string, any> & {
     trans: ng.Transition,
   ) => void;
   uiCanExit?: (trans: ng.Transition) => unknown;
-  /** @internal */
-  __uiRouterRegisteredScopes__?: WeakSet<object>;
-  /** @internal */
-  __uiRouterLastParamsChangedTransition__?: ng.Transition;
 };
 
 type UiCanExitTransition = ng.Transition &
@@ -103,6 +115,16 @@ function withResolvers<T>(): PromiseResolvers<T> {
 
   return { promise, resolve, reject: reject! };
 }
+
+const controllerRegisteredScopes = new WeakMap<
+  ViewControllerInstance,
+  WeakSet<object>
+>();
+
+const controllerLastParamsChangedTransition = new WeakMap<
+  ViewControllerInstance,
+  ng.Transition
+>();
 
 /**
  * `ng-view`: A viewport directive which is filled in by a view from the active state.
@@ -452,12 +474,16 @@ export function ViewDirective(
           currentEl = transclude(newScope, (clone) => {
             const elementClone = getFirstElementFromClone(clone);
 
+            const cloneNodes = getRootNodesFromClone(clone);
+
             if (!elementClone) {
               return;
             }
 
-            setCacheData(elementClone, "$ngViewAnim", $ngViewAnim);
-            setCacheData(elementClone, "$ngView", $ngViewData);
+            cloneNodes.forEach((node) => {
+              setCacheData(node, "$ngViewAnim", $ngViewAnim);
+              setCacheData(node, "$ngView", $ngViewData);
+            });
             renderer.enter(elementClone, $element, () => {
               animEnter.resolve(undefined);
 
@@ -695,11 +721,11 @@ function registerControllerCallbacks(
   $scope: ng.Scope,
   cfg: Pick<ViewConfig, "viewDecl" | "path">,
 ): void {
-  let registeredScopes = controllerInstance.__uiRouterRegisteredScopes__;
+  let registeredScopes = controllerRegisteredScopes.get(controllerInstance);
 
   if (!registeredScopes) {
     registeredScopes = new WeakSet<object>();
-    controllerInstance.__uiRouterRegisteredScopes__ = registeredScopes;
+    controllerRegisteredScopes.set(controllerInstance, registeredScopes);
   }
 
   if (registeredScopes.has($scope as object)) {
@@ -738,13 +764,16 @@ function registerControllerCallbacks(
       if (!$transition$) return;
 
       if (
-        controllerInstance.__uiRouterLastParamsChangedTransition__ ===
+        controllerLastParamsChangedTransition.get(controllerInstance) ===
         $transition$
       ) {
         return;
       }
 
-      controllerInstance.__uiRouterLastParamsChangedTransition__ = $transition$;
+      controllerLastParamsChangedTransition.set(
+        controllerInstance,
+        $transition$,
+      );
 
       // Exit early if the $transition$ is the same as the view was created within.
       // Exit early if the $transition$ will exit the state the view is for.
@@ -809,9 +838,7 @@ function registerControllerCallbacks(
         changedKeys.forEach((key: string | number) => {
           if (key in toParams) newValues[key] = toParams[key];
         });
-        $scope.$evalAsync(() => {
-          onParamsChanged.call(controllerInstance, newValues, $transition$);
-        });
+        onParamsChanged.call(controllerInstance, newValues, $transition$);
       }
     };
 

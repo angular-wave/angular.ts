@@ -34,6 +34,8 @@ const ngMinErr = minErr("ng");
 
 const $injectorMinErr = minErr("$injector");
 
+const rootScopeCleanupByElement = new WeakMap<Element | Document, () => void>();
+
 type ModuleRegistry = Record<string, NgModule | null>;
 
 /** @internal */
@@ -283,6 +285,10 @@ export class Angular extends EventTarget {
     modules?: Array<string | any>,
     config: AngularBootstrapConfig = { strictDi: false },
   ): ng.InjectorService {
+    if (element instanceof Element || element instanceof Document) {
+      rootScopeCleanupByElement.get(element)?.();
+    }
+
     if (
       (element instanceof Element || element instanceof Document) &&
       getInjector(element as unknown as Element)
@@ -319,6 +325,22 @@ export class Angular extends EventTarget {
         this.$rootScope = scope;
         this.$injector = $injector;
 
+        const rootElement = el as Element;
+
+        rootScopeCleanupByElement.set(rootElement, () => {
+          const existingScope = getScope(rootElement);
+
+          if (existingScope?.$handler && !existingScope.$handler._destroyed) {
+            existingScope.$destroy();
+          } else if (scope.$handler && !scope.$handler._destroyed) {
+            scope.$destroy();
+          }
+
+          if (rootScopeCleanupByElement.get(rootElement)) {
+            rootScopeCleanupByElement.delete(rootElement);
+          }
+        });
+
         setCacheData(el, $t._injector, $injector);
 
         const compileFn = compile(el);
@@ -353,6 +375,12 @@ export class Angular extends EventTarget {
               $injector.strictDi,
             );
           });
+
+        scope.$on("$destroy", () => {
+          if (rootScopeCleanupByElement.get(rootElement)) {
+            rootScopeCleanupByElement.delete(rootElement);
+          }
+        });
       },
     ]);
 

@@ -2752,7 +2752,11 @@ export class CompileProvider {
                 compileNode = compileNodeRef.node;
 
                 if (_ctxNodeRef) {
-                  _ctxNodeRef.node = compileNode;
+                  if (_ctxNodeRef._isList && _index !== undefined) {
+                    _ctxNodeRef._setIndex(_index, compileNode);
+                  } else {
+                    _ctxNodeRef.node = compileNode;
+                  }
                 }
                 replaceWith(
                   new NodeRef($template._element as Element),

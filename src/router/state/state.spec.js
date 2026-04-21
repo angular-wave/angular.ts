@@ -360,7 +360,6 @@ describe("$state", () => {
         it("updates $stateParams", async () => {
           await initStateTo(RS);
           $location.setSearch({ term: "hello" });
-          $rootScope.$broadcast("$locationChangeSuccess");
           await wait(100);
           expect($stateParams.term).toEqual("hello");
           expect(entered).toBeFalsy();
@@ -368,7 +367,7 @@ describe("$state", () => {
 
         it("doesn't re-enter state (triggered by url change)", async () => {
           $location.setSearch({ term: "hello" });
-          $rootScope.$broadcast("$locationChangeSuccess");
+          await wait(100);
 
           expect($location.getSearch()).toEqual({ term: "hello" });
           expect(entered).toBeFalsy();
@@ -663,7 +662,7 @@ describe("$state", () => {
 
         it("exits and enters a state when a non-dynamic search param changes", async () => {
           const promise = $state.go(dynamicstate, { search: "s2" });
-          await promise;
+          await wait(100);
           expect(promise.transition.dynamic()).toBeFalsy();
           expect(dynlog).toBe("exit:dyn;enter:dyn;success;");
           Object.entries({
@@ -693,14 +692,12 @@ describe("$state", () => {
 
         it("does not exit nor enter a state when only dynamic params change (triggered via url)", async () => {
           $location.setSearch({ search: "s1", searchDyn: "sd2" });
-          $rootScope.$broadcast("$locationChangeSuccess");
           await wait(100);
           expect(dynlog).toBe("success;[searchDyn=sd2];");
         });
 
         it("exits and enters a state when any non-dynamic params change (triggered via url)", async () => {
           $location.setSearch({ search: "s2", searchDyn: "sd2" });
-          $rootScope.$broadcast("$locationChangeSuccess");
           await wait(100);
           expect(dynlog).toBe("exit:dyn;enter:dyn;success;");
         });
@@ -727,7 +724,6 @@ describe("$state", () => {
 
         it("updates $stateParams and $location.setSearch when only dynamic params change (triggered via url)", async () => {
           $location.setSearch({ search: "s1", searchDyn: "sd2" });
-          $rootScope.$broadcast("$locationChangeSuccess");
           await wait(100);
           expect($stateParams.search).toBe("s1");
           expect($stateParams.searchDyn).toBe("sd2");
@@ -836,7 +832,7 @@ describe("$state", () => {
 
           await $state.go(childWithParam, { pathDyn: "pd2" });
 
-          expect(dynlog).toBe("success;[pathDyn=pd2];");
+          expect(dynlog).toBe("success;[pathDyn=pd2];{pathDyn=pd2};");
 
           dynlog = paramsChangedLog = "";
           await $state.go(childWithParam, {
@@ -845,7 +841,9 @@ describe("$state", () => {
             configDyn: "cd2",
           });
 
-          expect(dynlog).toBe("success;[configDyn=cd2,searchDyn=sd2];");
+          expect(dynlog).toBe(
+            "success;[configDyn=cd2,searchDyn=sd2];{configDyn=cd2,searchDyn=sd2};",
+          );
         });
       });
     });
