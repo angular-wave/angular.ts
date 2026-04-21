@@ -719,7 +719,9 @@ export class Scope {
       if (isArray(value)) {
         if (oldValue !== value) {
           this._destroyDisplacedValue(oldValue);
+        }
 
+        if (oldValue !== value) {
           const listeners = this._watchers.get(property);
 
           if (listeners) {
@@ -777,6 +779,8 @@ export class Scope {
       }
 
       if (isUndefined(value)) {
+        this._destroyDisplacedValue(oldValue);
+
         let called = false;
 
         const keyList = keys(oldValue.$target);
@@ -813,6 +817,8 @@ export class Scope {
       }
 
       if (isDefined(value)) {
+        this._destroyDisplacedValue(oldValue);
+
         this._destroyDisplacedValue(oldValue);
 
         target[property] = value;
