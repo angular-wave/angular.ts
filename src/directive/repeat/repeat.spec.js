@@ -119,6 +119,31 @@ describe("ngRepeat", () => {
     expect(element.textContent).toEqual("x;y;z;");
   });
 
+  it("should remove ng-click listeners before removing non-animated repeated checkboxes", async () => {
+    element = $compile(
+      '<ul><li ng-repeat="todo in tasks">' +
+        '<input type="checkbox" ng-click="todo.done = !todo.done" />' +
+        "</li></ul>",
+    )(scope);
+
+    scope.tasks = [
+      { task: "first", done: false },
+      { task: "second", done: false },
+    ];
+    await wait();
+
+    const removedCheckbox = element.querySelectorAll("input")[0];
+    spyOn(removedCheckbox, "removeEventListener").and.callThrough();
+
+    scope.tasks.shift();
+    await wait();
+
+    expect(removedCheckbox.removeEventListener).toHaveBeenCalledWith(
+      "click",
+      jasmine.any(Function),
+    );
+  });
+
   it("should iterate over on object/map", async () => {
     element = $compile(
       "<ul>" +

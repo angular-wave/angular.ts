@@ -1,6 +1,7 @@
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { Http } from "../../services/http/http.ts";
 import { NodeType } from "../../shared/node.ts";
+import { emptyElement, removeElement } from "../../shared/dom.ts";
 import {
   callBackAfterFirst,
   isDefined,
@@ -422,12 +423,12 @@ export function createHttpDirective(
             case "delete":
               if (animationEnabled) {
                 $animate.leave(target).done(() => {
-                  target.remove(); // safety: actually remove in case $animate.leave didn't
+                  removeElement(target); // safety: actually remove in case $animate.leave didn't
                   scopeParam.$flushQueue();
                 });
                 scopeParam.$flushQueue();
               } else {
-                target.remove();
+                removeElement(target);
               }
               break;
 
@@ -456,6 +457,7 @@ export function createHttpDirective(
                     !Array.isArray(content) &&
                     content.nodeType === NodeType._TEXT_NODE
                   ) {
+                    emptyElement(target);
                     target.replaceChildren(...nodes);
                   } else {
                     $animate.enter(nodes[0] as Element, target);
@@ -463,6 +465,7 @@ export function createHttpDirective(
                   }
                 }
               } else {
+                emptyElement(target);
                 target.replaceChildren(...nodes);
               }
               break;

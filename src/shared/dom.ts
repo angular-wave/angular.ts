@@ -8,6 +8,10 @@ import type { ExpandoStore } from "../interface.ts";
  */
 const ISOLATE_SCOPE_KEY = "$isolateScope";
 
+const ANIMATION_RUNNER_STORAGE_KEY = "$$animationRunner";
+
+const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
+
 let expandoCache = new WeakMap<object, ExpandoStore>();
 
 let cacheSize = 0;
@@ -561,7 +565,15 @@ export function getBooleanAttrName(
 /** Removes cached data for each element in a node collection. */
 export function cleanElementData(nodes: NodeListOf<Element> | Element[]): void {
   for (let i = 0, ii = nodes.length; i < ii; i++) {
-    removeElementData(nodes[i]);
+    const node = nodes[i];
+
+    if (
+      node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
+      isDefined(getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY))
+    ) {
+      node.dispatchEvent(new Event("$destroy"));
+    }
+    removeElementData(node);
   }
 }
 

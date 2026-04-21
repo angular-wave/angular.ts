@@ -93,6 +93,10 @@ export function ngTranscludeDirective(
             return [];
           }
 
+          if (node instanceof DocumentFragment) {
+            return Array.from(node.childNodes);
+          }
+
           return node instanceof NodeList || Array.isArray(node)
             ? Array.from(node)
             : [node];

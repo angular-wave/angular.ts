@@ -68,7 +68,11 @@ export function ngIfDirective($animate: ng.AnimateService): ng.Directive {
                 if (response !== false) previousElements = null;
               });
             } else {
-              $element.nextElementSibling?.remove();
+              const currentElement = $element.nextElementSibling;
+
+              if (currentElement) {
+                removeElement(currentElement);
+              }
             }
             block = null;
           }

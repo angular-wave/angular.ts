@@ -1,5 +1,6 @@
 import { isDefined, hasAnimate } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { removeElement } from "../../shared/dom.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
 ngIncludeDirective.$inject = [
@@ -62,7 +63,7 @@ export function ngIncludeDirective(
 
         const cleanupLastIncludeContent = () => {
           if (previousElement) {
-            previousElement.remove();
+            removeElement(previousElement);
             previousElement = null;
           }
 
@@ -77,7 +78,7 @@ export function ngIncludeDirective(
                 if (response !== false) previousElement = null;
               });
             } else {
-              currentElement.remove();
+              removeElement(currentElement);
             }
 
             previousElement = currentElement;

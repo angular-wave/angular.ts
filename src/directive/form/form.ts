@@ -802,7 +802,12 @@ const formDirectiveFactory = function (
                 });
               }
               formElementParam.addEventListener("$destroy", () => {
-                controller.$target._parentForm.$removeControl(controller);
+                const parentForm =
+                  controller.$target._parentForm ||
+                  controller._parentForm ||
+                  nullFormCtrl;
+
+                parentForm.$removeControl(controller);
                 setter(scope, undefined);
                 extend(controller, nullFormCtrl); // stop propagating child destruction handlers upwards
               });

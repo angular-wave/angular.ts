@@ -145,13 +145,20 @@ function baseInputType(
   // In composition mode, users are still inputting intermediate text buffer,
   // hold the listener until composition is done.
   // More about composition events: https://developer.mozilla.org/en-US/docs/Web/API/CompositionEvent
-  element.addEventListener("compositionstart", () => {
+  const compositionStartListener = () => {
     composing = true;
-  });
+  };
 
-  element.addEventListener("compositionend", () => {
+  const compositionEndListener = () => {
     composing = false;
     listener();
+  };
+
+  element.addEventListener("compositionstart", compositionStartListener);
+  element.addEventListener("compositionend", compositionEndListener);
+  ctrl._eventRemovers.add(() => {
+    element.removeEventListener("compositionstart", compositionStartListener);
+    element.removeEventListener("compositionend", compositionEndListener);
   });
 
   let timeout: ReturnType<typeof setTimeout> | null | undefined;
@@ -187,6 +194,7 @@ function baseInputType(
 
   ["input", "change", "paste", "drop", "cut"].forEach((event) => {
     element.addEventListener(event, listener);
+    ctrl._eventRemovers.add(() => element.removeEventListener(event, listener));
   });
 
   // Some native input types (date-family) have the ability to change validity without
@@ -198,7 +206,7 @@ function baseInputType(
     ctrl._hasNativeValidators &&
     type === attr.type
   ) {
-    element.addEventListener(PARTIAL_VALIDATION_EVENTS, (ev) => {
+    const partialValidationListener = (ev: Event) => {
       if (!timeout) {
         const validity = element[VALIDITY_STATE_PROPERTY];
 
@@ -217,7 +225,18 @@ function baseInputType(
           }
         }, 0);
       }
-    });
+    };
+
+    element.addEventListener(
+      PARTIAL_VALIDATION_EVENTS,
+      partialValidationListener,
+    );
+    ctrl._eventRemovers.add(() =>
+      element.removeEventListener(
+        PARTIAL_VALIDATION_EVENTS,
+        partialValidationListener,
+      ),
+    );
   }
 
   ctrl.$render = function () {
@@ -785,6 +804,9 @@ function radioInputType(
   };
 
   element.addEventListener("change", listener);
+  ctrl._eventRemovers.add(() =>
+    element.removeEventListener("change", listener),
+  );
   // NgModelController call
   ctrl.$render = function () {
     let { value } = attr;
@@ -864,6 +886,9 @@ function checkboxInputType(
   };
 
   element.addEventListener("change", listener);
+  ctrl._eventRemovers.add(() =>
+    element.removeEventListener("change", listener),
+  );
 
   ctrl.$render = function () {
     element.checked = ctrl.$viewValue;
