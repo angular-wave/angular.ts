@@ -336,6 +336,10 @@ export class NgModelController {
     validationErrorKey: string,
     state: boolean | undefined | null,
   ): void {
+    if (this._destroyed || !this._element) {
+      return;
+    }
+
     const that = this;
 
     /**
@@ -522,6 +526,10 @@ export class NgModelController {
    */
   /** @internal */
   _updateEmptyClasses(value: any): void {
+    if (this._destroyed || !this._element) {
+      return;
+    }
+
     if (this.$isEmpty(value)) {
       if (hasAnimate(this._element)) {
         this._animate.removeClass(this._element, NOT_EMPTY_CLASS);
@@ -552,7 +560,7 @@ export class NgModelController {
     this.$dirty = false;
     this.$pristine = true;
 
-    if (!this._element) return;
+    if (this._destroyed || !this._element) return;
 
     if (hasAnimate(this._element)) {
       this._animate.removeClass(this._element, EMPTY_CLASS);
@@ -573,6 +581,10 @@ export class NgModelController {
   $setDirty() {
     this.$dirty = true;
     this.$pristine = false;
+
+    if (this._destroyed || !this._element) {
+      return;
+    }
 
     if (hasAnimate(this._element)) {
       this._animate.removeClass(this._element, PRISTINE_CLASS);
@@ -596,6 +608,10 @@ export class NgModelController {
     this.$touched = false;
     this.$untouched = true;
 
+    if (this._destroyed || !this._element) {
+      return;
+    }
+
     if (hasAnimate(this._element)) {
       this._animate.setClass(this._element, UNTOUCHED_CLASS, TOUCHED_CLASS);
     } else {
@@ -614,6 +630,10 @@ export class NgModelController {
   $setTouched() {
     this.$touched = true;
     this.$untouched = false;
+
+    if (this._destroyed || !this._element) {
+      return;
+    }
 
     if (hasAnimate(this._element)) {
       this._animate.setClass(this._element, TOUCHED_CLASS, UNTOUCHED_CLASS);
@@ -1462,8 +1482,6 @@ export function ngModelDirective(): ng.Directive {
               deregisterNameObserver();
               modelCtrl._parentForm.$removeControl(modelCtrl);
               modelCtrl._parentForm = nullFormCtrl;
-              modelCtrl._scope = undefined as never;
-              modelCtrl._attr = undefined as never;
               deregisterWatch();
             });
           },

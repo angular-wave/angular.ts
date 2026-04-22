@@ -8,7 +8,11 @@ import {
   nullObject,
   values,
 } from "../../shared/utils.ts";
-import { getBlockNodes, removeElement } from "../../shared/dom.ts";
+import {
+  getBlockNodes,
+  removeElement,
+  removeElementData,
+} from "../../shared/dom.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import { NodeType } from "../../shared/node.ts";
 
@@ -91,6 +95,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
       if (node.nodeType === Node.ELEMENT_NODE) {
         removeElement(node as Element);
       } else {
+        removeElementData(node as Element & Record<string, any>);
         node.parentNode?.removeChild(node);
       }
     }

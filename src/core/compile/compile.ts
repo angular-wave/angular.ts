@@ -478,6 +478,10 @@ export interface ControllersBoundTranscludeFn {
 const scopeOwnedNodeRefs = new WeakMap<ng.Scope, Set<NodeRef>>();
 
 function registerScopeOwnedNodeRef(scope: ng.Scope, nodeRef: NodeRef): void {
+  if (!scope || typeof scope.$on !== "function") {
+    return;
+  }
+
   let ownedNodeRefs = scopeOwnedNodeRefs.get(scope);
 
   if (!ownedNodeRefs) {
@@ -1381,7 +1385,10 @@ export class CompileProvider {
                 childBoundTranscludeFn = null;
               }
 
-              if (_nodeLinkFnCtx?._newScope) {
+              if (
+                _nodeLinkFnCtx?._newScope &&
+                node.nodeType === NodeType._ELEMENT_NODE
+              ) {
                 setScope(node, childScope);
               }
 

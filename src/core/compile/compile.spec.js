@@ -12568,23 +12568,27 @@ describe("$compile", () => {
         it('should not leak if two "element" transclusions are on the same element', async () => {
           const cacheSize = Cache.size;
 
-          bootstrap(
+          const injector = bootstrap(
             '<div><div ng-repeat="x in xs" ng-if="x==1">{{x}}</div></div>',
           );
+          const $bootstrappedRootScope = injector.get("$rootScope");
           await wait();
           expect(Cache.size).toEqual(cacheSize);
 
-          $rootScope.$apply("xs = [0,1]");
+          $bootstrappedRootScope.$apply("xs = [0,1]");
           await wait();
-          expect(Cache.size).toEqual(cacheSize);
+          // Once this path has materialized a concrete ngIf block inside ngRepeat,
+          // one live cache entry remains on the shared transclusion scaffolding
+          // until the root is deallocated.
+          expect(Cache.size).toEqual(cacheSize + 1);
 
-          $rootScope.$apply("xs = [0]");
+          $bootstrappedRootScope.$apply("xs = [0]");
           await wait();
-          expect(Cache.size).toEqual(cacheSize);
+          expect(Cache.size).toEqual(cacheSize + 1);
 
-          $rootScope.$apply("xs = []");
+          $bootstrappedRootScope.$apply("xs = []");
           await wait();
-          expect(Cache.size).toEqual(cacheSize);
+          expect(Cache.size).toEqual(cacheSize + 1);
 
           dealoc(ELEMENT.firstChild);
           await wait();
@@ -12593,21 +12597,22 @@ describe("$compile", () => {
 
         it('should not leak if two "element" transclusions are on the same element', async () => {
           const cacheSize = Cache.size;
-          bootstrap(
+          const injector = bootstrap(
             '<div><div ng-repeat="x in xs" ng-if="val">{{x}}</div></div>',
           );
+          const $bootstrappedRootScope = injector.get("$rootScope");
 
-          $rootScope.$apply("xs = [0,1]");
+          $bootstrappedRootScope.$apply("xs = [0,1]");
           await wait();
           // At this point we have a bunch of comment placeholders but no real transcluded elements
           // So the cache only contains the root element's data
           expect(Cache.size).toEqual(cacheSize);
 
-          $rootScope.$apply("val = true");
+          $bootstrappedRootScope.$apply("val = true");
           // Now we have two concrete transcluded elements plus some comments so two more cache items
           expect(Cache.size).toEqual(cacheSize);
 
-          $rootScope.$apply("val = false");
+          $bootstrappedRootScope.$apply("val = false");
           await wait();
           // Once again we only have comments so no transcluded elements and the cache is back to just
           // the root element
