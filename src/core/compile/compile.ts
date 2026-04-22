@@ -318,17 +318,23 @@ export interface InternalDirective extends ng.Directive {
 }
 
 export interface IsolateBinding {
-  mode: string;
-  collection: boolean;
-  optional: boolean;
-  attrName: string;
+  /** @internal */
+  _mode: string;
+  /** @internal */
+  _collection: boolean;
+  /** @internal */
+  _optional: boolean;
+  /** @internal */
+  _attrName: string;
 }
 
 export type IsolateBindingMap = Record<string, IsolateBinding>;
 
 export interface ParsedDirectiveBindings {
-  isolateScope: IsolateBindingMap | null;
-  bindToController: IsolateBindingMap | null;
+  /** @internal */
+  _isolateScope: IsolateBindingMap | null;
+  /** @internal */
+  _bindToController: IsolateBindingMap | null;
 }
 
 export type DirectiveRegistry = Record<string, ng.DirectiveFactory[]>;
@@ -685,10 +691,10 @@ export class CompileProvider {
         }
 
         bindings[scopeName] = {
-          mode: match[1][0],
-          collection: match[2] === "*",
-          optional: match[3] === "?",
-          attrName: match[4] || scopeName,
+          _mode: match[1][0],
+          _collection: match[2] === "*",
+          _optional: match[3] === "?",
+          _attrName: match[4] || scopeName,
         };
 
         if (match[4]) {
@@ -705,20 +711,20 @@ export class CompileProvider {
       directiveName: string,
     ): ParsedDirectiveBindings {
       const bindings: ParsedDirectiveBindings = {
-        isolateScope: null,
-        bindToController: null,
+        _isolateScope: null,
+        _bindToController: null,
       };
 
       if (isObject(directive.scope)) {
         if (directive.bindToController === true) {
-          bindings.bindToController = parseIsolateBindings(
+          bindings._bindToController = parseIsolateBindings(
             directive.scope,
             directiveName,
             true,
           );
-          bindings.isolateScope = {};
+          bindings._isolateScope = {};
         } else {
-          bindings.isolateScope = parseIsolateBindings(
+          bindings._isolateScope = parseIsolateBindings(
             directive.scope,
             directiveName,
             false,
@@ -727,14 +733,14 @@ export class CompileProvider {
       }
 
       if (isObject(directive.bindToController)) {
-        bindings.bindToController = parseIsolateBindings(
+        bindings._bindToController = parseIsolateBindings(
           directive.bindToController,
           directiveName,
           true,
         );
       }
 
-      if (bindings.bindToController && !directive.controller) {
+      if (bindings._bindToController && !directive.controller) {
         // There is no controller
         throw $compileMinErr(
           "noctrl",
@@ -1353,9 +1359,6 @@ export class CompileProvider {
               state._linkFnsList[i];
 
             const node = stableNodeList[_index];
-
-            /** @internal */
-            (node as Node & { _stable?: boolean })._stable = true;
 
             let childScope: Scope;
 
@@ -2386,7 +2389,7 @@ export class CompileProvider {
             const controller = elementControllers[name];
 
             const bindings = controllerDirective._bindings
-              .bindToController as any;
+              ._bindToController as any;
 
             const controllerInstance = controller();
 
@@ -3384,8 +3387,8 @@ export class CompileProvider {
                   const bindings = (directive._bindings =
                     parseDirectiveBindings(directive, directive.name));
 
-                  if (isObject(bindings.isolateScope)) {
-                    directive._isolateBindings = bindings.isolateScope;
+                  if (isObject(bindings._isolateScope)) {
+                    directive._isolateBindings = bindings._isolateScope;
                   }
                 }
                 tDirectives.push(directive);
@@ -4037,9 +4040,9 @@ export class CompileProvider {
               const definition = bindings[scopeName];
 
               const {
-                attrName,
-                optional,
-                mode, // @, =, <, or &
+                _attrName: attrName,
+                _optional: optional,
+                _mode: mode, // @, =, <, or &
               } = definition;
 
               let lastValue: any;

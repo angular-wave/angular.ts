@@ -147,22 +147,6 @@ export class RootScopeProvider {
   ];
 }
 
-const nonscopeSetsCache = new WeakMap<object, Set<string>>();
-
-/** Returns a cached set for `$nonscope` arrays so repeated checks stay cheap. */
-function getNonscopeSet(arr: unknown): Set<string> | null {
-  if (!isArray(arr)) return null;
-
-  let cached = nonscopeSetsCache.get(arr);
-
-  if (!cached) {
-    cached = new Set(arr);
-    nonscopeSetsCache.set(arr, cached);
-  }
-
-  return cached;
-}
-
 function getNodeName(node: any): string | undefined {
   return node?._name;
 }
@@ -382,14 +366,19 @@ export function createScope(target: any = {}, context?: Scope): any {
 
   const keyList = keys(target);
 
-  const ctorNonScope = getNonscopeSet(target.constructor?.$nonscope);
+  const ctorNonScope = target.constructor?.$nonscope;
 
-  const instNonScope = getNonscopeSet(target.$nonscope);
+  const instNonScope = target.$nonscope;
 
   for (let i = 0, l = keyList.length; i < l; i++) {
     const key = keyList[i];
 
-    if (ctorNonScope?.has(key) || instNonScope?.has(key)) continue;
+    if (
+      (isArray(ctorNonScope) && ctorNonScope.includes(key)) ||
+      (isArray(instNonScope) && instNonScope.includes(key))
+    ) {
+      continue;
+    }
     target[key] = createScope(target[key], proxy.$handler);
   }
 
@@ -713,9 +702,7 @@ export class Scope {
 
     const nonscopeProps = target.constructor?.$nonscope ?? target.$nonscope;
 
-    const nsSet = getNonscopeSet(nonscopeProps);
-
-    if (nsSet?.has(property)) {
+    if (isArray(nonscopeProps) && nonscopeProps.includes(property)) {
       target[property] = value;
 
       return true;

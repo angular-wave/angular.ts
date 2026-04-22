@@ -10169,25 +10169,29 @@ describe("$compile", () => {
 
         expect(typeof componentScope._isolateBindings).toBe("object");
 
-        expect(componentScope._isolateBindings.attr.mode).toBe("@");
-        expect(componentScope._isolateBindings.attr.attrName).toBe("attr");
-        expect(componentScope._isolateBindings.attrAlias.attrName).toBe("attr");
+        expect(componentScope._isolateBindings.attr._mode).toBe("@");
+        expect(componentScope._isolateBindings.attr._attrName).toBe("attr");
+        expect(componentScope._isolateBindings.attrAlias._attrName).toBe(
+          "attr",
+        );
 
-        expect(componentScope._isolateBindings.ref.mode).toBe("=");
-        expect(componentScope._isolateBindings.ref.attrName).toBe("ref");
-        expect(componentScope._isolateBindings.refAlias.attrName).toBe("ref");
-        expect(componentScope._isolateBindings.reference.mode).toBe("=");
-        expect(componentScope._isolateBindings.reference.attrName).toBe(
+        expect(componentScope._isolateBindings.ref._mode).toBe("=");
+        expect(componentScope._isolateBindings.ref._attrName).toBe("ref");
+        expect(componentScope._isolateBindings.refAlias._attrName).toBe("ref");
+        expect(componentScope._isolateBindings.reference._mode).toBe("=");
+        expect(componentScope._isolateBindings.reference._attrName).toBe(
           "reference",
         );
-        expect(componentScope._isolateBindings.owRef.mode).toBe("<");
-        expect(componentScope._isolateBindings.owRef.attrName).toBe("owRef");
-        expect(componentScope._isolateBindings.owRefAlias.attrName).toBe(
+        expect(componentScope._isolateBindings.owRef._mode).toBe("<");
+        expect(componentScope._isolateBindings.owRef._attrName).toBe("owRef");
+        expect(componentScope._isolateBindings.owRefAlias._attrName).toBe(
           "owRef",
         );
-        expect(componentScope._isolateBindings.expr.mode).toBe("&");
-        expect(componentScope._isolateBindings.expr.attrName).toBe("expr");
-        expect(componentScope._isolateBindings.exprAlias.attrName).toBe("expr");
+        expect(componentScope._isolateBindings.expr._mode).toBe("&");
+        expect(componentScope._isolateBindings.expr._attrName).toBe("expr");
+        expect(componentScope._isolateBindings.exprAlias._attrName).toBe(
+          "expr",
+        );
 
         const firstComponentScope = componentScope;
         const first$$isolateBindings = componentScope._isolateBindings;
