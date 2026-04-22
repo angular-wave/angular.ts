@@ -14,7 +14,7 @@ AngularTS builds on that foundation and adds:
 - a fully reactive change-detection model without digests or virtual DOMs, like `Vue`
 - access to native DOM APIs at component and directive level (no `JQuery`or `JQLite`)
 - access to native Promises API (no `$q` or `$timetout`)
-- built-in enterprise-level router (`ui-router` ported as `ng-router`)
+- built-in enterprise-level router (`ng-router`, ported from `ui-router`)
 - built-in animations (`animate`)
 - new directives, inspired by `HTMX`
 - new injectables for REST resources, persistent stores, Web Workers, EventSources, WebSockets and WASM modules

@@ -139,8 +139,29 @@ function clickHook(
       el.getAttribute("target");
 
     if (!res) {
-      // HACK: This is to allow ng-clicks to be processed before the transition is initiated:
-      const transition = setTimeout(function () {
+      const originalPreventDefault = event.preventDefault.bind(event);
+
+      let cancelled = false;
+
+      let ignorePreventDefaultCount = type._isAnchor && !target._href ? 1 : 0;
+
+      event.preventDefault = function () {
+        originalPreventDefault();
+
+        if (ignorePreventDefaultCount-- <= 0) {
+          cancelled = true;
+        }
+      };
+
+      originalPreventDefault();
+
+      queueMicrotask(() => {
+        event.preventDefault = originalPreventDefault;
+
+        if (cancelled) {
+          return;
+        }
+
         if (!el.getAttribute("disabled")) {
           $state
             .go(
@@ -153,14 +174,6 @@ function clickHook(
             });
         }
       });
-
-      event.preventDefault();
-      // if the state has no URL, ignore one preventDefault from the <a> directive.
-      let ignorePreventDefaultCount = type._isAnchor && !target._href ? 1 : 0;
-
-      event.preventDefault = function () {
-        if (ignorePreventDefaultCount-- <= 0) clearTimeout(transition);
-      };
     } else {
       // ignored
       event.preventDefault();
@@ -217,7 +230,7 @@ StateRefDirective.$inject = [
 ];
 
 /**
- * Generates `ui-sref` links and keeps their href/state data in sync.
+ * Generates `ng-sref` links and keeps their href/state data in sync.
  */
 export function StateRefDirective(
   $stateService: ng.StateService,

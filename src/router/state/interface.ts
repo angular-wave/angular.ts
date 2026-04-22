@@ -387,8 +387,8 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * Normally, a state's parent is implied from the state's [[name]], e.g., `"parentstate.childstate"`.
    *
    * Alternatively, you can explicitly set the parent state using this property.
-   * This allows shorter state names, e.g., `<a ui-sref="childstate">Child</a>`
-   * instead of `<a ui-sref="parentstate.childstate">Child</a>
+   * This allows shorter state names, e.g., `<a ng-sref="childstate">Child</a>`
+   * instead of `<a ng-sref="parentstate.childstate">Child</a>
    *
    * When using this property, the state's name should not have any dots in it.
    *
@@ -844,7 +844,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * - The `lazyLoad` function is invoked if a transition is going to enter the state.
    * - The function is invoked before the transition starts (using an `onBefore` transition hook).
    * - The function is only invoked once; while the `lazyLoad` function is loading code, it will not be invoked again.
-   *   For example, if the user double clicks a ui-sref, `lazyLoad` is only invoked once even though there were two transition attempts.
+   *   For example, if the user double clicks an `ng-sref`, `lazyLoad` is only invoked once even though there were two transition attempts.
    *   Instead, the existing lazy load promise is re-used.
    * - When the promise resolves successfully, the `lazyLoad` property is deleted from the state declaration.
    * - If the promise resolves to a [[LazyLoadResult]] which has an array of `states`, those states are registered.

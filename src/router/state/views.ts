@@ -13,24 +13,9 @@ import type { TemplateFactoryProvider } from "../template-factory.ts";
 /**
  * @return {(path: PathNode[], view: ViewDeclaration) => ViewConfig}
  */
-export function getViewConfigFactory() {
-  /**
-   * Lazily resolved to avoid a direct bootstrap-time dependency on the ng1 injector.
-   * The factory is cached after first use.
-   * @type {TemplateFactoryProvider | null}
-   */
-  let templateFactory: TemplateFactoryProvider | null = null;
-
-  return (path: PathNode[], view: ViewDeclaration): ViewConfig => {
-    templateFactory =
-      templateFactory || window.angular.$injector.get("$templateFactory"); // TODO: remove static injector
-
-    return new ViewConfig(
-      path,
-      view,
-      templateFactory as TemplateFactoryProvider,
-    );
-  };
+export function getViewConfigFactory(templateFactory: TemplateFactoryProvider) {
+  return (path: PathNode[], view: ViewDeclaration): ViewConfig =>
+    new ViewConfig(path, view, templateFactory);
 }
 
 const hasAnyKey = (keys: string[], obj: Record<string, any>): boolean =>
