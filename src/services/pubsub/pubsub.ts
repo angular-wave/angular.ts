@@ -1,7 +1,7 @@
 import { $injectTokens } from "../../injection-tokens.ts";
 import { nullObject } from "../../shared/utils.ts";
 
-type ListenerEntry = { fn: Function; context: any };
+type ListenerEntry = { _fn: Function; _context: any };
 let eventBusInstance: PubSub | undefined;
 
 /**
@@ -83,7 +83,7 @@ export class PubSub {
 
     if (!listeners) this._topics[topic] = listeners = [];
 
-    const entry = { fn, context };
+    const entry = { _fn: fn, _context: context };
 
     listeners.push(entry);
 
@@ -138,7 +138,7 @@ export class PubSub {
     for (let i = 0; i < listeners.length; i++) {
       const l = listeners[i];
 
-      if (l.fn === fn && l.context === context) {
+      if (l._fn === fn && l._context === context) {
         listeners.splice(i, 1);
 
         return true;
@@ -175,7 +175,7 @@ export class PubSub {
     const snapshot = listeners.slice();
 
     queueMicrotask(() => {
-      for (const { fn, context } of snapshot) {
+      for (const { _fn: fn, _context: context } of snapshot) {
         try {
           fn.apply(context, args);
         } catch (err) {

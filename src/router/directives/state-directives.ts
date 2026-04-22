@@ -9,25 +9,25 @@ import {
 import { parse } from "../../shared/hof.ts";
 import { getInheritedData } from "../../shared/dom.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
-type ParsedStateRef = { state: string | null; paramExpr: string | null };
+type ParsedStateRef = { _state: string | null; _paramExpr: string | null };
 
 type ProcessedDef = {
-  ngState: unknown;
-  ngStateParams: any;
-  ngStateOpts: any;
-  href: string | null | undefined;
+  _ngState: unknown;
+  _ngStateParams: any;
+  _ngStateOpts: any;
+  _href: string | null | undefined;
 };
 
 type TypeInfo = {
-  attr: string;
-  isAnchor: boolean;
-  clickable: boolean;
+  _attr: string;
+  _isAnchor: boolean;
+  _clickable: boolean;
 };
 
 type ActiveClassState = {
-  state: { name: string };
-  params: unknown;
-  activeClass: string;
+  _state: { name: string };
+  _params: unknown;
+  _activeClass: string;
 };
 
 type StateRefActiveController = {
@@ -56,7 +56,7 @@ function parseStateRef(ref: string): ParsedStateRef {
   if (!parsed || parsed.length !== 4)
     throw new Error(`Invalid state ref '${ref}'`);
 
-  return { state: parsed[1] || null, paramExpr: parsed[3] || null };
+  return { _state: parsed[1] || null, _paramExpr: parsed[3] || null };
 }
 
 /**
@@ -82,33 +82,34 @@ function processedDef(
   $element: HTMLElement,
   def: Record<string, any>,
 ): ProcessedDef {
-  const ngState = def.ngState || $state.current?.name;
+  const ngState = def._ngState || $state.current?.name;
 
   const ngStateOpts = Object.assign(
     defaultOpts($element, $state),
-    def.ngStateOpts || {},
+    def._ngStateOpts || {},
   );
 
-  const href = $state.href(ngState, def.ngStateParams, ngStateOpts);
+  const href = $state.href(ngState, def._ngStateParams, ngStateOpts);
 
-  return { ngState, ngStateParams: def.ngStateParams, ngStateOpts, href };
+  return {
+    _ngState: ngState,
+    _ngStateParams: def._ngStateParams,
+    _ngStateOpts: ngStateOpts,
+    _href: href,
+  };
 }
 
 /**
  * Returns the relevant DOM attribute and click behavior metadata for the element.
  */
 function getTypeInfo(el: HTMLElement): TypeInfo {
-  // SVGAElement does not use the href attribute, but rather the 'xlinkHref' attribute.
-  const isSvg =
-    Object.prototype.toString.call(el.getAttribute("href")) ===
-    "[object SVGAnimatedString]";
-
+  // SVG 2 uses the standard `href` attribute; `xlink:href` is obsolete.
   const isForm = el.nodeName === "FORM";
 
   return {
-    attr: isForm ? "action" : isSvg ? "xlink:href" : "href",
-    isAnchor: el.nodeName === "A",
-    clickable: !isForm,
+    _attr: isForm ? "action" : "href",
+    _isAnchor: el.nodeName === "A",
+    _clickable: !isForm,
   };
 }
 
@@ -125,8 +126,9 @@ function clickHook(
   return function (event: Event): void {
     const mouseEvent = event as MouseEvent;
 
-    const button = mouseEvent.which || mouseEvent.button,
-      target = getDef();
+    const { button } = mouseEvent;
+
+    const target = getDef();
 
     const res =
       button > 1 ||
@@ -141,7 +143,11 @@ function clickHook(
       const transition = setTimeout(function () {
         if (!el.getAttribute("disabled")) {
           $state
-            .go(target.ngState as any, target.ngStateParams, target.ngStateOpts)
+            .go(
+              target._ngState as any,
+              target._ngStateParams,
+              target._ngStateOpts,
+            )
             .then(() => {
               scope.$emit("$updateBrowser");
             });
@@ -150,7 +156,7 @@ function clickHook(
 
       event.preventDefault();
       // if the state has no URL, ignore one preventDefault from the <a> directive.
-      let ignorePreventDefaultCount = type.isAnchor && !target.href ? 1 : 0;
+      let ignorePreventDefaultCount = type._isAnchor && !target._href ? 1 : 0;
 
       event.preventDefault = function () {
         if (ignorePreventDefaultCount-- <= 0) clearTimeout(transition);
@@ -241,15 +247,15 @@ export function StateRefDirective(
 
       const ref = parseStateRef(attrs.ngSref);
 
-      rawDef.ngState = ref.state;
-      rawDef.ngStateOpts = attrs.ngSrefOpts
+      rawDef._ngState = ref._state;
+      rawDef._ngStateOpts = attrs.ngSrefOpts
         ? scope.$eval(attrs.ngSrefOpts)
         : {};
 
       function update() {
-        rawDef.ngStateParams = Object.assign(
+        rawDef._ngStateParams = Object.assign(
           {},
-          ref.paramExpr && scope.$eval(ref.paramExpr),
+          ref._paramExpr && scope.$eval(ref._paramExpr),
         );
         const def = getDef();
 
@@ -259,40 +265,40 @@ export function StateRefDirective(
 
         if (active) {
           unlinkInfoFn = active?._addStateInfo?.(
-            def.ngState,
-            def.ngStateParams,
+            def._ngState,
+            def._ngStateParams,
           );
         }
 
-        if (!isNullOrUndefined(def.href)) {
-          attrs.$set(type.attr, def.href);
+        if (!isNullOrUndefined(def._href)) {
+          attrs.$set(type._attr, def._href);
         }
       }
 
-      if (ref.paramExpr) {
+      if (ref._paramExpr) {
         scope.$watch(
-          ref.paramExpr,
+          ref._paramExpr,
           function (val) {
-            rawDef.ngStateParams = Object.assign({}, val);
+            rawDef._ngStateParams = Object.assign({}, val);
             update();
           },
           true,
         );
-        rawDef.ngStateParams = Object.assign({}, scope.$eval(ref.paramExpr));
+        rawDef._ngStateParams = Object.assign({}, scope.$eval(ref._paramExpr));
       }
 
       update();
       scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
       scope.$on("$destroy", $transitions.onSuccess({}, update));
 
-      if (!type.clickable) {
+      if (!type._clickable) {
         return;
       }
       bindEvents(
         element,
         scope,
         clickHook(element, $state, type, getDef, scope),
-        rawDef.ngStateOpts,
+        rawDef._ngStateOpts,
       );
     },
   };
@@ -333,6 +339,12 @@ export function StateRefDynamicDirective(
 
       const inputAttrs = ["ngState", "ngStateParams", "ngStateOpts"] as const;
 
+      const rawDefKeyByAttr = {
+        ngState: "_ngState",
+        ngStateParams: "_ngStateParams",
+        ngStateOpts: "_ngStateOpts",
+      } as const;
+
       const watchDeregFns = inputAttrs.reduce(
         (acc, attr) => (
           (acc[attr] = () => {
@@ -352,24 +364,26 @@ export function StateRefDynamicDirective(
 
         if (active) {
           unlinkInfoFn = active?._addStateInfo?.(
-            def.ngState,
-            def.ngStateParams,
+            def._ngState,
+            def._ngStateParams,
           );
         }
 
-        if (!isNullOrUndefined(def.href)) {
-          attrs.$set(type.attr, def.href);
+        if (!isNullOrUndefined(def._href)) {
+          attrs.$set(type._attr, def._href);
         }
       }
       inputAttrs.forEach((field) => {
-        rawDef[field] = attrs[field] ? scope.$eval(attrs[field]) : null;
+        rawDef[rawDefKeyByAttr[field]] = attrs[field]
+          ? scope.$eval(attrs[field])
+          : null;
         attrs.$observe(field, (expr) => {
           watchDeregFns[field]();
 
           if (!expr) return;
           watchDeregFns[field] =
             scope.$watch(expr as string, (newval) => {
-              rawDef[field] = newval;
+              rawDef[rawDefKeyByAttr[field]] = newval;
               update();
             }) || noopDeregister;
         });
@@ -378,10 +392,10 @@ export function StateRefDynamicDirective(
       scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
       scope.$on("$destroy", $transitions.onSuccess({}, update));
 
-      if (!type.clickable) return;
+      if (!type._clickable) return;
       const hookFn = clickHook(element, $state, type, getDef, scope);
 
-      bindEvents(element, scope, hookFn, rawDef.ngStateOpts);
+      bindEvents(element, scope, hookFn, rawDef._ngStateOpts);
     },
   };
 }
@@ -506,8 +520,8 @@ export function StateRefActiveDirective(
                 const ref = parseStateRef(stateOrNameParam);
 
                 addState(
-                  ref.state,
-                  ref.paramExpr && $scope.$eval(ref.paramExpr),
+                  ref._state,
+                  ref._paramExpr && $scope.$eval(ref._paramExpr),
                   activeClassParam,
                 );
               };
@@ -535,11 +549,11 @@ export function StateRefActiveDirective(
         const state = $state.get(stateName, stateContext($element));
 
         const stateInfo = {
-          state: {
+          _state: {
             name: (state as any)?.name || String(stateName?.name || stateName),
           },
-          params: stateParams,
-          activeClass,
+          _params: stateParams,
+          _activeClass: activeClass,
         };
 
         states.push(stateInfo);
@@ -554,7 +568,7 @@ export function StateRefActiveDirective(
 
         const getClasses = (stateList: ActiveClassState[]) =>
           stateList
-            .map((x) => x.activeClass)
+            .map((x) => x._activeClass)
             .map(splitClasses)
             .reduce(unnestR, []);
 
@@ -563,11 +577,13 @@ export function StateRefActiveDirective(
           .reduce(uniqR, []) as string[];
 
         const fuzzyClasses = getClasses(
-          states.filter((x) => $state.includes(x.state.name, x.params as any)),
+          states.filter((x) =>
+            $state.includes(x._state.name, x._params as any),
+          ),
         ) as string[];
 
         const exactlyMatchesAny = !!states.filter((x) =>
-          $state.is(x.state.name, x.params as any),
+          $state.is(x._state.name, x._params as any),
         ).length;
 
         const exactClasses = exactlyMatchesAny

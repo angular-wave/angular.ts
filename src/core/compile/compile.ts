@@ -3752,19 +3752,6 @@ export class CompileProvider {
             return SCE_CONTEXTS._MEDIA_URL;
           }
 
-          if (attrNormalizedName === "xlinkHref") {
-            // Some xlink:href are okay, most aren't
-            if (nodeName === "image") {
-              return SCE_CONTEXTS._MEDIA_URL;
-            }
-
-            if (nodeName === "a") {
-              return SCE_CONTEXTS._URL;
-            }
-
-            return SCE_CONTEXTS._RESOURCE_URL;
-          }
-
           if (
             nodeName === "image" &&
             (attrNormalizedName === "href" || attrNormalizedName === "ngHref")

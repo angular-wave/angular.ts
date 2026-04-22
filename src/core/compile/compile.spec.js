@@ -14911,7 +14911,7 @@ describe("$compile", () => {
       expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, false);
     });
 
-    it("should use $$sanitizeUri when working with svg and xlink-href", async () => {
+    it("should use $$sanitizeUri when working with svg href bindings", async () => {
       const $$sanitizeUri = jasmine
         .createSpy("$$sanitizeUri")
         .and.returnValue("https://clean.example.org");
@@ -14924,10 +14924,10 @@ describe("$compile", () => {
       $rootScope.testUrl = "https://bad.example.org";
 
       const elementA = $compile(
-        "<svg><a xlink-href=\"{{ testUrl + 'aTag' }}\"></a></svg>",
+        "<svg><a href=\"{{ testUrl + 'aTag' }}\"></a></svg>",
       )($rootScope);
       await wait();
-      expect(elementA.querySelector("a").getAttribute("xlink-href")).toBe(
+      expect(elementA.querySelector("a").getAttribute("href")).toBe(
         "https://clean.example.org",
       );
       expect($$sanitizeUri).toHaveBeenCalledWith(
@@ -14936,12 +14936,12 @@ describe("$compile", () => {
       );
 
       const elementImage = $compile(
-        "<svg><image xlink-href=\"{{ testUrl + 'imageTag' }}\"></image></svg>",
+        "<svg><image href=\"{{ testUrl + 'imageTag' }}\"></image></svg>",
       )($rootScope);
       await wait();
-      expect(
-        elementImage.querySelector("image").getAttribute("xlink-href"),
-      ).toBe("https://clean.example.org");
+      expect(elementImage.querySelector("image").getAttribute("href")).toBe(
+        "https://clean.example.org",
+      );
       expect($$sanitizeUri).toHaveBeenCalledWith(
         `${$rootScope.testUrl}imageTag`,
         true,
@@ -14992,7 +14992,7 @@ describe("$compile", () => {
       $$sanitizeUri.calls.reset();
 
       const ngHref = $compile(
-        '<svg><image ng-href="{{ testUrl }}" xlink:href=""></image></svg>',
+        '<svg><image ng-href="{{ testUrl }}"></image></svg>',
       )($rootScope);
       await wait();
       expect(ngHref.querySelector("image").getAttribute("href")).toBe(
@@ -15032,7 +15032,7 @@ describe("$compile", () => {
       );
 
       const ngHrefInterpolated = $compile(
-        '<svg><image ng-href="{{ testUrl }}" xlink:href=""></image></svg>',
+        '<svg><image ng-href="{{ testUrl }}"></image></svg>',
       )($rootScope);
       $rootScope.testUrl = disallowedDataUrl;
       await wait();
@@ -15049,7 +15049,7 @@ describe("$compile", () => {
       );
     });
 
-    it("should require a RESOURCE_URL context for href by if not on an anchor or image", async () => {
+    it("should not specially handle legacy xlink-href on unsupported svg elements", async () => {
       let error = [];
       module.decorator("$exceptionHandler", () => {
         return (exception, cause) => {
@@ -15062,7 +15062,7 @@ describe("$compile", () => {
       )($rootScope);
       $rootScope.testUrl = "https://bad.example.org";
       await wait();
-      expect(error[0]).toMatch(/insecurl/);
+      expect(error.length).toBe(0);
     });
   });
 

@@ -33,9 +33,9 @@ type RepeatScope = ng.Scope &
 type RepeatClone = Node | Node[];
 
 type RepeatBlock = {
-  id: any;
-  scope?: RepeatScope;
-  clone?: RepeatClone;
+  _id: any;
+  _scope?: RepeatScope;
+  _clone?: RepeatClone;
 };
 
 type RepeatBlockMap = Record<string, RepeatBlock>;
@@ -67,13 +67,13 @@ export function ngRepeatDirective($animate: any): ng.Directive {
   }
 
   function getBlockStart(block: RepeatBlock) {
-    return Array.isArray(block.clone) ? block.clone[0] : block.clone;
+    return Array.isArray(block._clone) ? block._clone[0] : block._clone;
   }
 
   function getBlockEnd(block: RepeatBlock) {
-    return Array.isArray(block.clone)
-      ? block.clone[block.clone.length - 1]
-      : block.clone;
+    return Array.isArray(block._clone)
+      ? block._clone[block._clone.length - 1]
+      : block._clone;
   }
 
   function normalizeCloneNodes(clone: unknown): RepeatClone {
@@ -259,7 +259,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                 nextBlockOrder[index] = block;
               } else if (nextBlockMap[trackById]) {
                 values(nextBlockOrder).forEach((x: RepeatBlock | undefined) => {
-                  if (x && x.scope) lastBlockMap[x.id] = block;
+                  if (x && x._scope) lastBlockMap[x._id] = block;
                 });
                 throw ngRepeatMinErr(
                   "dupes",
@@ -270,9 +270,9 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                 );
               } else {
                 nextBlockOrder[index] = {
-                  id: trackById,
-                  scope: undefined,
-                  clone: undefined,
+                  _id: trackById,
+                  _scope: undefined,
+                  _clone: undefined,
                 };
                 nextBlockMap[trackById] = true;
               }
@@ -281,9 +281,9 @@ export function ngRepeatDirective($animate: any): ng.Directive {
             for (const blockKey in lastBlockMap) {
               block = lastBlockMap[blockKey];
               const blockNodes = getBlockNodes(
-                Array.isArray(block.clone)
-                  ? block.clone
-                  : [block.clone as Node],
+                Array.isArray(block._clone)
+                  ? block._clone
+                  : [block._clone as Node],
               );
 
               elementsToRemove = getBlockStart(block) as Element;
@@ -291,7 +291,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
               if (hasAnimate && elementsToRemove) {
                 $animate.leave(elementsToRemove);
               } else {
-                block.scope?.$destroy();
+                block._scope?.$destroy();
                 removeBlockNodes(blockNodes);
               }
 
@@ -303,7 +303,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
               }
 
               if (hasAnimate && elementsToRemove) {
-                block.scope?.$destroy();
+                block._scope?.$destroy();
               }
             }
 
@@ -313,8 +313,8 @@ export function ngRepeatDirective($animate: any): ng.Directive {
               value = collection[key];
               block = nextBlockOrder[index];
 
-              if (block.scope) {
-                const existingClone = block.clone;
+              if (block._scope) {
+                const existingClone = block._clone;
 
                 if (!existingClone) {
                   continue;
@@ -338,7 +338,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                 }
                 previousNode = getBlockEnd(block);
                 updateScope(
-                  block.scope,
+                  block._scope,
                   index,
                   valueIdentifier,
                   value,
@@ -354,7 +354,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                     ? normalizedClone
                     : [normalizedClone];
 
-                  block.scope = scope;
+                  block._scope = scope;
                   const endNode = cloneNodes[cloneNodes.length - 1];
 
                   if (
@@ -371,10 +371,10 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                   }
 
                   previousNode = endNode;
-                  block.clone = normalizedClone;
-                  nextBlockMap[block.id] = block;
+                  block._clone = normalizedClone;
+                  nextBlockMap[block._id] = block;
                   updateScope(
-                    block.scope,
+                    block._scope,
                     index,
                     valueIdentifier,
                     value,

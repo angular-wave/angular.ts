@@ -116,7 +116,7 @@ describe("ngHref", () => {
 
   if (isDefined(window.SVGElement)) {
     describe("SVGAElement", () => {
-      it("should interpolate the expression and bind to xlink:href", async () => {
+      it("should interpolate the expression and bind to href", async () => {
         element = $compile('<svg><a ng-href="some/{{id}}"></a></svg>')(
           $rootScope,
         );
@@ -129,7 +129,7 @@ describe("ngHref", () => {
         expect(child.getAttribute("href")).toEqual("some/1");
       });
 
-      it("should bind xlink:href even if no interpolation", async () => {
+      it("should bind href even if no interpolation", async () => {
         element = $compile('<svg><a ng-href="http://server"></a></svg>')(
           $rootScope,
         );
