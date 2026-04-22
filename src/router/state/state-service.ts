@@ -151,12 +151,19 @@ export class StateProvider {
   $get = [
     $injectTokens._injector,
     $injectTokens._url,
+    $injectTokens._view,
     /**
      * @param {ng.InjectorService} $injector
      * @param {ng.UrlService} $url
+     * @param {ng.ViewService} _viewService
      * @returns {StateProvider}
      */
-    ($injector: ng.InjectorService, $url: ng.UrlService) => {
+    (
+      $injector: ng.InjectorService,
+      $url: ng.UrlService,
+      _viewService: ng.ViewService,
+    ) => {
+      void _viewService;
       this.urlService = $url;
       this.$injector = $injector;
 

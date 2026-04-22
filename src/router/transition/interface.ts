@@ -19,7 +19,7 @@ export type DeregisterFn = () => void;
  * The TransitionOptions object can be used to change the behavior of a transition.
  *
  * It is passed as the third argument to [[StateService.go]], [[StateService.transitionTo]].
- * It can also be used with a `uiSref`.
+ * It can also be used with an `ngSref`.
  */
 export interface TransitionOptions {
   /**
@@ -84,7 +84,7 @@ export interface TransitionOptions {
 
   /**
    * This option may be used to cancel the active transition (if one is active) in favour of the this one.
-   * This is the default behaviour or ui-router.
+   * This is the default behaviour of ng-router.
    *
    *
    * - When `true`, the active transition will be canceled and new transition will begin.

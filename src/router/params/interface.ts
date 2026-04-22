@@ -329,7 +329,7 @@ export interface ParamDeclaration {
    * `mode: 'list' is inherited, but refresh: true is not inherited.
    * // The param values are thus: `{ fooId: 4567, mode: 'list' }`
    * ```
-   * <ui-sref="foo({ fooId: 4567 })">4567</ui-sref>
+   * <ng-sref="foo({ fooId: 4567 })">4567</ng-sref>
    * ```
    *
    * ---

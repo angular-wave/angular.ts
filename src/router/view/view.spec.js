@@ -7,6 +7,7 @@ import { StateObject } from "../state/state-object.ts";
 import { ViewService } from "./view.ts";
 import { PathNode } from "../path/path-node.ts";
 import { PathUtils } from "../path/path-utils.ts";
+import { getViewConfigFactory } from "../state/views.ts";
 import { tail } from "../../shared/common.ts";
 import { wait } from "../../shared/test-utils.ts";
 
@@ -76,7 +77,11 @@ describe("view", () => {
       };
 
       state = register(stateDeclaration);
-      const $view = new ViewService(null);
+      const $view = new ViewService();
+
+      $view._viewConfigFactory = getViewConfigFactory(
+        $injector.get("$templateFactory"),
+      );
 
       const _states = [root, state];
       path = _states.map((_state) => new PathNode(_state));
@@ -98,7 +103,7 @@ describe("view", () => {
   });
 
   describe("matching", () => {
-    it("matches root default ng-view targets using the active ui-view fqn format", () => {
+    it("matches root default ng-view targets using the active ng-view fqn format", () => {
       const uiView = {
         fqn: "$default",
         name: "$default",
@@ -168,7 +173,7 @@ describe("view", () => {
   });
 
   describe("service helpers", () => {
-    it("normalizes relative ui-view targets", () => {
+    it("normalizes relative ng-view targets", () => {
       const parentContext = register({ name: "parent", parent: root });
       const childContext = register({
         name: "child",

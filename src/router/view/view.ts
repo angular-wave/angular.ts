@@ -1,9 +1,11 @@
 import { equals, removeFrom } from "../../shared/common.ts";
+import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { trace } from "../common/trace.ts";
 import { getViewConfigFactory, type ViewConfig } from "../state/views.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
+import type { TemplateFactoryProvider } from "../template-factory.ts";
 
 /** The context ref can be anything that has a `name` and a `parent` reference to another IContextRef */
 export interface ViewContext {
@@ -26,7 +28,7 @@ export interface ActiveUIView {
   configUpdated: (config: ViewConfig | undefined) => void;
 }
 
-// A uiView and its matching viewConfig
+// An ngView and its matching viewConfig
 export interface ViewTuple {
   ngView: ActiveUIView | undefined;
   viewConfig: ViewConfig | undefined;
@@ -42,7 +44,7 @@ type ViewConfigFactory = (
 ) => ViewConfig;
 
 /**
- * Tracks active `ui-view` instances and matches them with registered
+ * Tracks active `ng-view` instances and matches them with registered
  * view configs produced during state transitions.
  */
 export class ViewService {
@@ -58,20 +60,27 @@ export class ViewService {
   _rootContext: StateObject | null | undefined;
 
   /**
-   * Creates an empty view registry ready to track active `ui-view` instances.
+   * Creates an empty view registry ready to track active `ng-view` instances.
    */
   constructor() {
     this._ngViews = [];
     this._viewConfigs = [];
     this._listeners = [];
-    this._viewConfigFactory = getViewConfigFactory();
+    this._viewConfigFactory = undefined;
     this._rootContext = undefined;
   }
 
   /**
    * Returns the singleton view service instance.
    */
-  $get = (): ViewService => this;
+  $get = [
+    $t._templateFactory,
+    ($templateFactory: TemplateFactoryProvider): ViewService => {
+      this._viewConfigFactory = getViewConfigFactory($templateFactory);
+
+      return this;
+    },
+  ];
 
   onSync(listener: (tuples: ViewTuple[]) => void): () => void {
     this._listeners.push(listener);
@@ -80,7 +89,7 @@ export class ViewService {
   }
 
   /**
-   * Gets or sets the root view context used for relative `ui-view` targeting.
+   * Gets or sets the root view context used for relative `ng-view` targeting.
    */
   rootViewContext(
     context?: StateObject | null,
@@ -119,7 +128,7 @@ export class ViewService {
   }
 
   /**
-   * Re-matches active `ui-view` instances against currently registered view configs
+   * Re-matches active `ng-view` instances against currently registered view configs
    * and notifies both the views and registered listeners of the new assignments.
    */
   sync(): void {
@@ -240,7 +249,7 @@ export class ViewService {
   }
 
   /**
-   * Registers one active `ui-view` and returns a deregistration function.
+   * Registers one active `ng-view` and returns a deregistration function.
    */
   registerUIView(ngView: ActiveUIView): () => void {
     trace.traceViewServiceUIViewEvent("-> Registering", ngView);
@@ -300,7 +309,7 @@ export class ViewService {
 
   /**
    * Builds a predicate that determines whether a view config matches
-   * a specific active `ui-view`.
+   * a specific active `ng-view`.
    */
   static matches(
     ngViewsByFqn: Record<string, ActiveUIView>,
