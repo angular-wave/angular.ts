@@ -743,6 +743,8 @@ export class LocationProvider {
 
       $location._state = this.state();
 
+      let destroyed = false;
+
       const IGNORE_URI_REGEXP = /^\s*(javascript|mailto):/i;
 
       locationCleanupByRootElement.get($rootElement)?.();
@@ -841,7 +843,8 @@ export class LocationProvider {
 
       this._rootClickHandler = clickHandler;
       $rootElement.addEventListener("click", clickHandler);
-      locationCleanupByRootElement.set($rootElement, () => {
+
+      const cleanupLocation = () => {
         if (this._rootClickHandler) {
           $rootElement.removeEventListener("click", this._rootClickHandler);
           this._rootClickHandler = undefined;
@@ -855,6 +858,18 @@ export class LocationProvider {
 
         this._urlChangeInit = false;
         this._urlChangeListeners.length = 0;
+      };
+
+      locationCleanupByRootElement.set($rootElement, cleanupLocation);
+      $rootScope.$on?.("$destroy", () => {
+        destroyed = true;
+        cleanupLocation();
+
+        if (
+          locationCleanupByRootElement.get($rootElement) === cleanupLocation
+        ) {
+          locationCleanupByRootElement.delete($rootElement);
+        }
       });
 
       // rewrite hashbang url <> html5 url
@@ -874,6 +889,8 @@ export class LocationProvider {
         }
 
         queueMicrotask(() => {
+          if (destroyed || typeof $rootScope.$broadcast !== "function") return;
+
           const oldUrl = $location.absUrl;
 
           const oldState = $location._state;
@@ -923,6 +940,10 @@ export class LocationProvider {
             initializing = false;
 
             setTimeout(() => {
+              if (destroyed || typeof $rootScope.$broadcast !== "function") {
+                return;
+              }
+
               newUrl = $location.absUrl;
 
               const { defaultPrevented } = $rootScope.$broadcast(
@@ -961,6 +982,8 @@ export class LocationProvider {
       return $location;
 
       function afterLocationChange(oldUrl: string, oldState: any) {
+        if (destroyed || typeof $rootScope.$broadcast !== "function") return;
+
         $rootScope.$broadcast(
           "$locationChangeSuccess",
           $location.absUrl,
