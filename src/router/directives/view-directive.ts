@@ -431,14 +431,13 @@ export function ViewDirective(
           }
 
           if (currentEl) {
-            const _viewData = getCacheData(
-              currentEl,
-              "$ngViewAnim",
-            ) as NgViewAnimData;
+            const _viewData = getCacheData(currentEl, "$ngViewAnim") as
+              | NgViewAnimData
+              | undefined;
 
             trace.traceUIViewEvent("Animate out", activeUIView);
             renderer.leave(currentEl, function () {
-              _viewData.$$animLeave.resolve();
+              _viewData?.$$animLeave.resolve();
               previousEl = null;
             });
             previousEl = currentEl;
