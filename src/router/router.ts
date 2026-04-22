@@ -1,3 +1,4 @@
+import { $injectTokens as $t } from "../injection-tokens.ts";
 import { Queue } from "../shared/queue.ts";
 import { StateParams } from "./params/state-params.ts";
 import type { StateDeclaration } from "./state/interface.ts";
@@ -17,6 +18,8 @@ export class RouterProvider {
   _transitionHistory: Queue<Transition>;
   /** @internal */
   _successfulTransitions: Queue<Transition>;
+  /** @internal */
+  _injector: ng.InjectorService | undefined;
   current: StateDeclaration | undefined;
   $current: StateObject | undefined;
   transition: Transition | undefined;
@@ -30,6 +33,7 @@ export class RouterProvider {
     this._lastStartedTransitionId = -1;
     this._transitionHistory = new Queue<Transition>([], 1);
     this._successfulTransitions = new Queue<Transition>([], 1);
+    this._injector = undefined;
     this.current = undefined;
     this.$current = undefined;
     this.transition = undefined;
@@ -54,5 +58,12 @@ export class RouterProvider {
   /**
    * Returns the singleton router globals instance.
    */
-  $get = (): RouterProvider => this;
+  $get = [
+    $t._injector,
+    ($injector: ng.InjectorService): RouterProvider => {
+      this._injector = $injector;
+
+      return this;
+    },
+  ];
 }

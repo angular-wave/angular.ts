@@ -1,5 +1,4 @@
-import { pick, tail } from "../../shared/common.ts";
-import { entries, isArray, isDefined, isString } from "../../shared/utils.ts";
+import { isArray, isString } from "../../shared/utils.ts";
 import { isInjectable } from "../../shared/predicates.ts";
 import { trace } from "../common/trace.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
@@ -16,93 +15,6 @@ import type { TemplateFactoryProvider } from "../template-factory.ts";
 export function getViewConfigFactory(templateFactory: TemplateFactoryProvider) {
   return (path: PathNode[], view: ViewDeclaration): ViewConfig =>
     new ViewConfig(path, view, templateFactory);
-}
-
-const hasAnyKey = (keys: string[], obj: Record<string, any>): boolean =>
-  keys.reduce((acc, key) => acc || isDefined(obj[key]), false);
-
-/**
- * This is a [[StateBuilder.builder]] function for angular1 `views`.
- *
- * When the [[StateBuilder]] builds a [[StateObject]] object from a raw [[StateDeclaration]], this builder
- * handles the `views` property with logic specific to @uirouter/angularjs (ng1).
- *
- * If no `views: {}` property exists on the [[StateDeclaration]], then it creates the `views` object
- * and applies the state-level configuration to a view named `$default`.
- * @param {ng.StateObject & Record<string, any>} state
- */
-export function ng1ViewsBuilder(
-  state: StateObject & Record<string, any>,
-): Record<string, any> {
-  // Do not process root state
-  if (!state.parent) return {};
-  const tplKeys = [
-      "templateProvider",
-      "templateUrl",
-      "template",
-      "notify",
-      "async",
-    ],
-    ctrlKeys = [
-      "controller",
-      "controllerProvider",
-      "controllerAs",
-      "resolveAs",
-    ],
-    compKeys = ["component", "bindings", "componentProvider"],
-    nonCompKeys = tplKeys.concat(ctrlKeys),
-    allViewKeys = compKeys.concat(nonCompKeys);
-
-  // Do not allow a state to have both state-level props and also a `views: {}` property.
-  // A state without a `views: {}` property can declare properties for the `$default` view as properties of the state.
-  // However, the `$default` approach should not be mixed with a separate `views: ` block.
-  if (isDefined(state.views) && hasAnyKey(allViewKeys, state)) {
-    throw new Error(
-      `State '${state.name}' has a 'views' object. ` +
-        `It cannot also have "view properties" at the state level.  ` +
-        `Move the following properties into a view (in the 'views' object): ` +
-        ` ${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`,
-    );
-  }
-  const views: Record<string, any> = {};
-
-  const viewsObject = (state.views || {
-    $default: pick(state, allViewKeys),
-  }) as Record<string, any>;
-
-  entries(viewsObject).forEach(([entryName, entryConfig]) => {
-    let name = entryName as string;
-
-    let config = entryConfig as Record<string, any> | string;
-
-    // Account for views: { "": { template... } }
-    name = name || "$default";
-
-    // Account for views: { header: "headerComponent" }
-    if (isString(config)) config = { component: config };
-    // Make a shallow copy of the urlConfig object
-    config = Object.assign({}, config);
-
-    // Do not allow a view to mix props for component-style view with props for template/controller-style view
-    if (hasAnyKey(compKeys, config) && hasAnyKey(nonCompKeys, config)) {
-      throw new Error(
-        `Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in stateview: '${name}@${state.name}'`,
-      );
-    }
-    config.resolveAs = config.resolveAs || "$resolve";
-    config.$context = state;
-    config.$name = name;
-    const normalized = ViewConfig.normalizeUIViewTarget(
-      config.$context as StateObject,
-      config.$name as string,
-    );
-
-    config.$ngViewName = normalized.ngViewName;
-    config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
-    views[name] = config;
-  });
-
-  return views;
 }
 
 /**
@@ -158,12 +70,13 @@ export class ViewConfig {
    * @returns {Promise<ViewConfig>}
    */
   async load(): Promise<ViewConfig> {
-    const context = new ResolveContext(this.path);
+    const context = new ResolveContext(this.path, this.factory._injector);
 
-    const params = this.path.reduce(
-      (acc, node) => Object.assign(acc, node.paramValues),
-      {},
-    );
+    const params: Record<string, any> = {};
+
+    for (let i = 0; i < this.path.length; i++) {
+      Object.assign(params, this.path[i].paramValues);
+    }
 
     const promises = [
       Promise.resolve(this.factory.fromConfig(this.viewDecl, params, context)),
@@ -191,7 +104,7 @@ export class ViewConfig {
     const deps = annotate(provider);
 
     const providerFn = isArray(provider)
-      ? (tail(provider) as Function)
+      ? (provider[provider.length - 1] as Function)
       : provider;
 
     const resolvable = new Resolvable("", providerFn, deps);

@@ -28,6 +28,8 @@ import type { ParamTypeDefinition } from "./interface.ts";
  * ```
  */
 export class ParamTypes {
+  /** @internal */
+  _angular: ng.AngularService;
   $injector: InjectorService;
   enqueue: boolean;
   typeQueue: {
@@ -43,6 +45,7 @@ export class ParamTypes {
    * @param {ng.AngularService} $angular
    */
   constructor($angular: ng.AngularService) {
+    this._angular = $angular;
     this.$injector = $angular.$injector;
     this.enqueue = true;
     this.typeQueue = [];
@@ -133,7 +136,7 @@ export class ParamTypes {
 
   /** @internal */
   _getInjector(): InjectorService | undefined {
-    return (this.$injector ||= window.angular?.$injector);
+    return (this.$injector ||= this._angular.$injector);
   }
 }
 function initDefaultTypes() {

@@ -25,16 +25,17 @@ describe("StateBuilder", function () {
   });
 
   it("should use the state object to build a default view, when no `views` property is found", function () {
-    const config = {
+    const config = builder.build({
+      name: "foo",
+      self: {},
       url: "/foo",
       templateUrl: "/foo.html",
       controller: "FooController",
       parent: parent,
-    };
-    const built = builder.builder("views")(config);
+    });
 
-    expect(built.$default).not.toEqual(config);
-    expect(built.$default).toEqual(
+    expect(config.views.$default).not.toEqual(config);
+    expect(config.views.$default).toEqual(
       jasmine.objectContaining({
         templateUrl: "/foo.html",
         controller: "FooController",
@@ -45,36 +46,43 @@ describe("StateBuilder", function () {
 
   it("It should use the views object to build views, when defined", function () {
     const config = { a: { foo: "bar", controller: "FooController" } };
-    const builtViews = builder.builder("views")({
+    const built = builder.build({
+      name: "foo",
+      self: {},
       parent: parent,
       views: config,
     });
-    expect(builtViews.a.foo).toEqual(config.a.foo);
-    expect(builtViews.a.controller).toEqual(config.a.controller);
+
+    expect(built.views.a.foo).toEqual(config.a.foo);
+    expect(built.views.a.controller).toEqual(config.a.controller);
   });
 
   it("should not allow a view config with both component and template keys", function () {
     const config = {
       name: "foo",
+      self: {},
       url: "/foo",
       template: "<h1>hey</h1>",
       controller: "FooController",
       parent: parent,
     };
-    expect(() => builder.builder("views")(config)).not.toThrow();
+    expect(() => builder.build(Object.assign({}, config))).not.toThrow();
     expect(() =>
-      builder.builder("views")(
-        Object.assign({ component: "fooComponent" }, config),
-      ),
+      builder.build(Object.assign({ component: "fooComponent" }, config)),
     ).toThrow();
     expect(() =>
-      builder.builder("views")(
+      builder.build(
         Object.assign({ componentProvider: () => "fooComponent" }, config),
       ),
     ).toThrow();
     expect(() =>
-      builder.builder("views")(Object.assign({ bindings: {} }, config)),
+      builder.build(Object.assign({ bindings: {} }, config)),
     ).toThrow();
+  });
+
+  it("should not expose views through the generic builder decorator API", function () {
+    expect(builder.builder("views")).toBeUndefined();
+    expect(() => $stateRegistry.decorator("views", () => ({}))).toThrow();
   });
 
   it("should replace a resolve: string value with a function that injects the service of the same name", function () {

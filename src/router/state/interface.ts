@@ -1096,7 +1096,6 @@ export interface Builders {
   url: BuilderFunction[];
   navigable: BuilderFunction[];
   params: BuilderFunction[];
-  views: BuilderFunction[];
   path: BuilderFunction[];
   includes: BuilderFunction[];
   resolvables: BuilderFunction[];

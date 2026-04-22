@@ -519,6 +519,7 @@ ViewDirectiveFill.$inject = [
   $injectTokens._compile,
   $injectTokens._controller,
   $injectTokens._transitions,
+  $injectTokens._injector,
 ];
 
 /**
@@ -528,6 +529,7 @@ export function ViewDirectiveFill(
   $compile: ng.CompileService,
   $controller: ng.ControllerService,
   $transitions: ng.TransitionService,
+  $injector: ng.InjectorService,
 ): ng.Directive {
   const getControllerAs = parse("viewDecl.controllerAs");
 
@@ -561,7 +563,7 @@ export function ViewDirectiveFill(
         }) as Pick<ViewConfig, "viewDecl" | "getTemplate" | "controller"> &
           Partial<Pick<ViewConfig, "path">>;
 
-        const resolveCtx = cfg.path && new ResolveContext(cfg.path);
+        const resolveCtx = cfg.path && new ResolveContext(cfg.path, $injector);
 
         $element.innerHTML =
           cfg.getTemplate($element, resolveCtx as ResolveContext) || initial;
@@ -618,7 +620,8 @@ export function ViewDirectiveFill(
         const componentName = (cfg as ViewConfig & { component?: string })
           .component;
 
-        const callbackConfig = cfg as Pick<ViewConfig, "viewDecl" | "path">;
+        const callbackConfig = cfg as Pick<ViewConfig, "viewDecl" | "path"> &
+          Partial<Pick<ViewConfig, "factory">>;
 
         if (typeof componentName === "string") {
           const kebobName = componentName
@@ -718,7 +721,8 @@ function registerControllerCallbacks(
   $transitions: ng.TransitionService,
   controllerInstance: ViewControllerInstance,
   $scope: ng.Scope,
-  cfg: Pick<ViewConfig, "viewDecl" | "path">,
+  cfg: Pick<ViewConfig, "viewDecl" | "path"> &
+    Partial<Pick<ViewConfig, "factory">>,
 ): void {
   let registeredScopes = controllerRegisteredScopes.get(controllerInstance);
 
@@ -753,7 +757,7 @@ function registerControllerCallbacks(
       trans: ng.Transition,
     ) => void;
 
-    const resolveContext = new ResolveContext(cfg.path);
+    const resolveContext = new ResolveContext(cfg.path, cfg.factory?._injector);
 
     const viewCreationTrans = resolveContext.getResolvable("$transition$")
       .data as ng.Transition;

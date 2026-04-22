@@ -4,9 +4,11 @@ import {
   inherit,
   map,
   omit,
+  pick,
   tail,
 } from "../../shared/common.ts";
 import {
+  entries,
   hasOwn,
   isArray,
   isDefined,
@@ -17,8 +19,8 @@ import {
 import { stringify } from "../../shared/strings.ts";
 import { is, pattern, val } from "../../shared/hof.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
-import { ng1ViewsBuilder } from "./views.ts";
 import { annotate } from "../../core/di/di.ts";
+import { ViewConfig } from "./views.ts";
 import type { ParamDeclaration } from "../params/interface.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
 import type {
@@ -175,6 +177,98 @@ function includesBuilder(state: StateObject): Record<string, boolean> {
   includes[state.name] = true;
 
   return includes;
+}
+
+function hasAnyViewKey(keys: string[], obj: Record<string, any>): boolean {
+  for (let i = 0; i < keys.length; i++) {
+    if (isDefined(obj[keys[i]])) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function viewsBuilder(
+  state: StateObject & Record<string, any>,
+): Record<string, any> {
+  if (!state.parent) {
+    return {};
+  }
+
+  const tplKeys = [
+    "templateProvider",
+    "templateUrl",
+    "template",
+    "notify",
+    "async",
+  ];
+
+  const ctrlKeys = [
+    "controller",
+    "controllerProvider",
+    "controllerAs",
+    "resolveAs",
+  ];
+
+  const compKeys = ["component", "bindings", "componentProvider"];
+
+  const nonCompKeys = tplKeys.concat(ctrlKeys);
+
+  const allViewKeys = compKeys.concat(nonCompKeys);
+
+  if (isDefined(state.views) && hasAnyViewKey(allViewKeys, state)) {
+    throw new Error(
+      `State '${state.name}' has a 'views' object. ` +
+        `It cannot also have "view properties" at the state level.  ` +
+        `Move the following properties into a view (in the 'views' object): ` +
+        ` ${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`,
+    );
+  }
+
+  const views: Record<string, any> = {};
+
+  const viewsObject = (state.views || {
+    $default: pick(state, allViewKeys),
+  }) as Record<string, any>;
+
+  const viewEntries = entries(viewsObject);
+
+  for (let i = 0; i < viewEntries.length; i++) {
+    const [entryName, entryConfig] = viewEntries[i];
+
+    let name = entryName as string;
+
+    let config = entryConfig as Record<string, any> | string;
+
+    name = name || "$default";
+
+    if (isString(config)) {
+      config = { component: config };
+    }
+
+    config = Object.assign({}, config);
+
+    if (hasAnyViewKey(compKeys, config) && hasAnyViewKey(nonCompKeys, config)) {
+      throw new Error(
+        `Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in stateview: '${name}@${state.name}'`,
+      );
+    }
+
+    config.resolveAs = config.resolveAs || "$resolve";
+    config.$context = state;
+    config.$name = name;
+    const normalized = ViewConfig.normalizeUIViewTarget(
+      config.$context as StateObject,
+      config.$name as string,
+    );
+
+    config.$ngViewName = normalized.ngViewName;
+    config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
+    views[name] = config;
+  }
+
+  return views;
 }
 
 /**
@@ -412,7 +506,6 @@ export class StateBuilder {
       navigable: [getNavigableBuilder(isRoot)],
       // TODO
       params: [getParamsBuilder(urlService._paramFactory)],
-      views: [ng1ViewsBuilder],
       // Keep a full path from the root down to this state as this is needed for state activation.
       path: [pathBuilder],
       // Speed up $state.includes() as it's used a lot
@@ -485,6 +578,8 @@ export class StateBuilder {
         state as StateObject & BuiltStateDeclaration,
       );
     }
+
+    state.views = viewsBuilder(state as StateObject & BuiltStateDeclaration);
 
     return state;
   }

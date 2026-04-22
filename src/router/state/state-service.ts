@@ -207,49 +207,12 @@ export class StateProvider {
    *   navigable).
    * - **params** `{object}` - returns an array of state params that are ensured to
    *   be a super-set of parent's params.
-   * - **views** `{object}` - returns a views object where each key is an absolute view
-   *   name (i.e. "viewName@stateName") and each value is the urlConfig object
-   *   (template, controller) for the view. Even when you don't use the views object
-   *   explicitly on a state urlConfig, one is still created for you internally.
-   *   So by decorating this builder function you have access to decorating template
-   *   and controller properties.
    * - **ownParams** `{object}` - returns an array of params that belong to the state,
    *   not including any params defined by ancestor states.
    * - **path** `{string}` - returns the full path from the root down to this state.
    *   Needed for state activation.
    * - **includes** `{object}` - returns an object that includes every state that
    *   would pass a `$state.includes()` test.
-   *
-   * #### Example:
-   * Override the internal 'views' builder with a function that takes the state
-   * definition, and a reference to the internal function being overridden:
-   * ```js
-   * $stateProvider.decorator('views', function (state, parent) {
-   *   let result = {},
-   *       views = parent(state);
-   *
-   *   angular.forEach(views, function (urlConfig, name) {
-   *     let autoName = (state.name + '.' + name).replace('.', '/');
-   *     urlConfig.templateUrl = urlConfig.templateUrl || '/partials/' + autoName + '.html';
-   *     result[name] = urlConfig;
-   *   });
-   *   return result;
-   * });
-   *
-   * $stateProvider.state('home', {
-   *   views: {
-   *     'contact.list': { controller: 'ListController' },
-   *     'contact.item': { controller: 'ItemController' }
-   *   }
-   * });
-   * ```
-   *
-   *
-   * ```js
-   * // Auto-populates list and item views with /partials/home/contact/list.html,
-   * // and /partials/home/contact/item.html, respectively.
-   * $state.go('home');
-   * ```
    *
    * @param {string} name The name of the builder function to decorate.
    * @param {BuilderFunction} func A function that is responsible for decorating the original

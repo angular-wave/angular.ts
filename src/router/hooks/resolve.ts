@@ -10,7 +10,10 @@ import type { StateDeclaration } from "../state/interface.ts";
 export const RESOLVE_HOOK_PRIORITY = 1000;
 
 const eagerResolvePath = (trans: Transition) =>
-  new ResolveContext((trans.treeChanges() as TreeChanges).to)
+  new ResolveContext(
+    (trans.treeChanges() as TreeChanges).to,
+    trans._globals._injector,
+  )
     .resolvePath("EAGER", trans)
     .then(() => {
       /* empty */
@@ -27,7 +30,10 @@ export const registerEagerResolvePath = (
  * Resolves the entering state's lazy resolvables at `onEnter`.
  */
 const lazyResolveState = (trans: Transition, state: StateDeclaration) =>
-  new ResolveContext((trans.treeChanges() as TreeChanges).to)
+  new ResolveContext(
+    (trans.treeChanges() as TreeChanges).to,
+    trans._globals._injector,
+  )
     .subContext((state._state as Function)())
     .resolvePath("LAZY", trans)
     .then(() => {
@@ -45,7 +51,10 @@ export const registerLazyResolveState = (
  * Resolves any remaining lazy resolvables before the transition finishes.
  */
 const resolveRemaining = (trans: Transition) =>
-  new ResolveContext((trans.treeChanges() as TreeChanges).to)
+  new ResolveContext(
+    (trans.treeChanges() as TreeChanges).to,
+    trans._globals._injector,
+  )
     .resolvePath("LAZY", trans)
     .then(() => {
       /* empty */

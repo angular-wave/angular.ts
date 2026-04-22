@@ -3,7 +3,6 @@ import { stringify } from "../../shared/strings.ts";
 import {
   anyTrueR,
   arrayTuples,
-  find,
   omit,
   tail,
   unnestR,
@@ -473,6 +472,7 @@ export class Transition {
   getResolveTokens(pathname = "to") {
     return new ResolveContext(
       (this._treeChanges[pathname] || []) as PathNode[],
+      this._globals._injector,
     ).getTokens();
   }
 
@@ -519,12 +519,19 @@ export class Transition {
 
     const topath = this._treeChanges.to || [];
 
-    const targetNode = find(topath, (/** @type {PathNode} */ node) => {
-      return node.state.name === stateName;
-    });
+    let targetNode: PathNode | undefined;
+
+    for (let i = 0; i < topath.length; i++) {
+      const node = topath[i] as PathNode;
+
+      if (node.state.name === stateName) {
+        targetNode = node;
+        break;
+      }
+    }
 
     assert(!!targetNode, `targetNode not found ${stateName}`);
-    const resolveContext = new ResolveContext(topath);
+    const resolveContext = new ResolveContext(topath, this._globals._injector);
 
     resolveContext.addResolvables([resolvable], (targetNode as PathNode).state);
   }

@@ -40,7 +40,6 @@ import {
   padString,
   stringify,
 } from "../../shared/strings.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import type { HookResult } from "../transition/interface.ts";
 import type {
   TransitionHook,
@@ -135,10 +134,12 @@ export class Trace {
 
   constructor() {
     this._enabled = {};
-    this._logger =
-      (window.angular?.$injector?.get($injectTokens._log) as
-        | TraceLogger
-        | undefined) || console;
+    this._logger = console;
+  }
+
+  /** @internal */
+  _setLogger(logger: TraceLogger): void {
+    this._logger = logger;
   }
 
   /** @internal */
