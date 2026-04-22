@@ -93,20 +93,9 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
         priority: 99, // it needs to run after the attributes are interpolated
         link(
           _scope: ng.Scope,
-          element: Element,
+          _element: Element,
           attr: Attributes & Record<string, string>,
         ): void {
-          let name = attrName;
-
-          if (
-            attrName === "href" &&
-            toString.call((element as Element & { href?: unknown }).href) ===
-              "[object SVGAnimatedString]"
-          ) {
-            name = "xlinkHref";
-            attr.$attr[name] = "href";
-          }
-
           // We need to sanitize the url at least once, in case it is a constant
           // non-interpolated attribute.
           attr.$set(normalized, $sce.getTrustedMediaUrl(attr[normalized]));
@@ -114,13 +103,13 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
           attr.$observe<string>(normalized, (value) => {
             if (!value) {
               if (attrName === "href") {
-                attr.$set(name, null);
+                attr.$set(attrName, null);
               }
 
               return;
             }
 
-            attr.$set(name, value);
+            attr.$set(attrName, value);
           });
         },
       };
