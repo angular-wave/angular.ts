@@ -58,6 +58,28 @@ type ForeignListenerRef = {
   _id: number;
 };
 
+type ListenerScheduleFilter = (listeners: Listener[]) => Listener[];
+
+type ScheduledListenerTask = {
+  _kind: "listener";
+  _listeners: Listener[];
+  _target: Scope | ScopeProxy | undefined;
+  _filter?: ListenerScheduleFilter;
+};
+
+type ScheduledCallbackTask = {
+  _kind: "callback";
+  _callback: () => void;
+};
+
+type ScheduledTask = ScheduledListenerTask | ScheduledCallbackTask;
+
+type ListenerSchedulerState = {
+  _queue: ScheduledTask[];
+  _queued: boolean;
+  _flushing: boolean;
+};
+
 export interface ScopeEvent {
   targetScope: typeof Proxy<ng.Scope>;
   currentScope: typeof Proxy<ng.Scope> | null;
@@ -542,6 +564,9 @@ export class Scope {
   /** @internal */
   _ownedForeignListeners: ForeignListenerRef[];
 
+  /** @internal */
+  _listenerScheduler: ListenerSchedulerState;
+
   /**
    * Initializes the handler with the target object and a context.
    *
@@ -578,6 +603,12 @@ export class Scope {
     this.$scopename = undefined;
 
     this._ownedForeignListeners = [];
+
+    this._listenerScheduler = context?._listenerScheduler ?? {
+      _queue: [],
+      _queued: false,
+      _flushing: false,
+    };
 
     this._propertyMap = {
       $apply: this.$apply.bind(this),
@@ -1148,19 +1179,111 @@ export class Scope {
     }
   }
 
+  /** @internal Queues a shared scheduled task flush for this scope family. */
+  _enqueueScheduledTask(task: ScheduledTask): void {
+    const scheduler = this._listenerScheduler;
+
+    scheduler._queue.push(task);
+
+    if (!scheduler._queued && !scheduler._flushing) {
+      scheduler._queued = true;
+
+      queueMicrotask(() => {
+        this._flushScheduledTasks();
+      });
+    }
+  }
+
+  /** @internal Flushes queued listener and callback tasks in FIFO order. */
+  _flushScheduledTasks(): void {
+    const scheduler = this._listenerScheduler;
+
+    if (scheduler._flushing) {
+      return;
+    }
+
+    scheduler._queued = false;
+    scheduler._flushing = true;
+
+    let processed = 0;
+
+    try {
+      while (processed < scheduler._queue.length) {
+        const task = scheduler._queue[processed++];
+
+        if (task._kind === "callback") {
+          task._callback();
+          this._drainPostUpdateQueue();
+
+          continue;
+        }
+
+        const filteredListeners = task._filter
+          ? task._filter(task._listeners)
+          : task._listeners;
+
+        for (let i = 0, l = filteredListeners.length; i < l; i++) {
+          this._notifyListener(filteredListeners[i], task._target);
+          this._drainPostUpdateQueue();
+        }
+      }
+    } finally {
+      if (processed > 0) {
+        scheduler._queue.splice(0, processed);
+      }
+
+      scheduler._flushing = false;
+
+      if (scheduler._queue.length > 0 && !scheduler._queued) {
+        scheduler._queued = true;
+
+        queueMicrotask(() => {
+          this._flushScheduledTasks();
+        });
+      }
+    }
+  }
+
+  /** @internal Drains post-update callbacks in FIFO order. */
+  _drainPostUpdateQueue(): void {
+    if ($postUpdateQueue.length === 0) {
+      return;
+    }
+
+    let index = 0;
+
+    while (index < $postUpdateQueue.length) {
+      $postUpdateQueue[index++]();
+    }
+
+    $postUpdateQueue.length = 0;
+  }
+
+  /** @internal Schedules a callback to run in the shared listener flush queue. */
+  _scheduleCallback(callback: () => void): void {
+    this._enqueueScheduledTask({
+      _kind: "callback",
+      _callback: callback,
+    });
+  }
+
   /** @internal Queues listener notification for the next microtask, optionally filtering the list first. */
   _scheduleListener(
     listeners: Listener[],
-    filter?: (listeners: Listener[]) => Listener[],
+    filterOrTarget?: ListenerScheduleFilter | Scope | ScopeProxy,
   ): void {
-    const target = this.$target;
+    const filter =
+      typeof filterOrTarget === "function"
+        ? (filterOrTarget as ListenerScheduleFilter)
+        : undefined;
 
-    queueMicrotask(() => {
-      const filteredListeners = filter ? filter(listeners) : listeners;
+    const target = filter ? this.$target : (filterOrTarget ?? this.$target);
 
-      for (let i = 0, l = filteredListeners.length; i < l; i++) {
-        this._notifyListener(filteredListeners[i], target);
-      }
+    this._enqueueScheduledTask({
+      _kind: "listener",
+      _listeners: listeners,
+      _target: target,
+      _filter: filter,
     });
   }
 
@@ -1181,7 +1304,7 @@ export class Scope {
     // Constant are immediately passed to listener function
     if (get._constant) {
       if (listenerFn) {
-        queueMicrotask(() => {
+        this._scheduleCallback(() => {
           let res = get();
 
           while (isFunction(res)) {
@@ -2023,13 +2146,6 @@ export class Scope {
       }
 
       _listenerFn(newVal, _originalTarget);
-
-      if ($postUpdateQueue.length > 0) {
-        for (let qi = 0; qi < $postUpdateQueue.length; qi++) {
-          $postUpdateQueue[qi]();
-        }
-        $postUpdateQueue.length = 0;
-      }
     } catch (err) {
       $exceptionHandler(err);
     }
@@ -2037,10 +2153,7 @@ export class Scope {
 
   /* @ignore */
   $flushQueue() {
-    for (let i = 0; i < $postUpdateQueue.length; i++) {
-      $postUpdateQueue[i]();
-    }
-    $postUpdateQueue.length = 0;
+    this._drainPostUpdateQueue();
   }
 
   /** Searches this scope tree for a scope with the given id. */
