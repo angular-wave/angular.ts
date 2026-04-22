@@ -237,6 +237,9 @@ export class NgModelController {
   /** @internal */
   _deregisterModelWatcher: () => void;
 
+  /** @internal */
+  _destroyed: boolean;
+
   /**
    * Creates a model controller bound to the element, scope, and ngModel expression.
    */
@@ -296,6 +299,7 @@ export class NgModelController {
     this._animate = $animate;
     this._parse = $parse;
     this._exceptionHandler = $exceptionHandler;
+    this._destroyed = false;
 
     this._hasNativeValidators = false;
     this._classCache = {};
@@ -904,6 +908,10 @@ export class NgModelController {
    * usually handles calling this in response to input events.
    */
   $commitViewValue() {
+    if (this._destroyed || !this._element) {
+      return;
+    }
+
     clearTimeout(this._pendingDebounce);
 
     // If the view value has not changed then we should just exit, except in the case where there is
@@ -1246,6 +1254,10 @@ export class NgModelController {
    *
    */
   $processModelValue() {
+    if (this._destroyed || !this._element) {
+      return;
+    }
+
     const viewValue = this._format();
 
     if (this.$viewValue !== viewValue) {
@@ -1282,6 +1294,10 @@ export class NgModelController {
    */
   /** @internal */
   _setModelValue(modelValue: any): void {
+    if (this._destroyed) {
+      return;
+    }
+
     this.$modelValue = this._rawModelValue = modelValue;
     this._parserValid = undefined;
     this.$processModelValue();
@@ -1429,6 +1445,8 @@ export function ngModelDirective(): ng.Directive {
               })) as () => void;
 
             scope.$on("$destroy", () => {
+              modelCtrl._destroyed = true;
+
               if (modelCtrl._pendingDebounce) {
                 clearTimeout(modelCtrl._pendingDebounce);
                 modelCtrl._pendingDebounce = undefined;
