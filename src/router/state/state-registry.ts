@@ -143,6 +143,7 @@ export class StateRegistryProvider {
       ) {
         const resolveContext = new ResolveContext(
           trans.treeChanges(pathname) as PathNode[],
+          that.$injector,
         );
 
         const subContext = resolveContext.subContext(state._state());
@@ -351,6 +352,12 @@ export class StateRegistryProvider {
    * @returns a function which deregisters the BuilderFunction
    */
   decorator(property: string, builderFunction: BuilderFunction) {
+    if (property === "views") {
+      throw new Error(
+        "'views' is built internally and can no longer be decorated",
+      );
+    }
+
     return this.builder.builder(property, builderFunction);
   }
 }

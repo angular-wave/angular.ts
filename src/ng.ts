@@ -297,6 +297,15 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
         },
       ],
     )
+    .run([
+      $t._log,
+      /**
+       * Initializes the router trace singleton with the DI-backed logger.
+       */
+      ($log: Pick<Console, "log" | "table">) => {
+        trace._setLogger($log);
+      },
+    ])
     .factory("$stateParams", [
       $t._router,
       /**

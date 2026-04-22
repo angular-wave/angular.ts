@@ -180,6 +180,8 @@ export class Param {
   matchingKeys: RawParams | undefined;
   /** @internal */
   _defaultValueCache?: { defaultValue: any };
+  /** @internal */
+  _getInjector: () => ng.InjectorService | undefined;
 
   /**
    *
@@ -245,6 +247,7 @@ export class Param {
     this.array = arrayMode;
     this.config = config;
     this.matchingKeys = undefined;
+    this._getInjector = () => urlConfig.paramTypes._getInjector();
   }
 
   /**
@@ -266,11 +269,13 @@ export class Param {
     const getDefaultValue = () => {
       if (this._defaultValueCache) return this._defaultValueCache.defaultValue;
 
-      if (!window.angular.$injector)
+      const injector = this._getInjector();
+
+      if (!injector)
         throw new Error(
           "Injectable functions cannot be called at configuration time",
         );
-      const defaultValue = window.angular.$injector.invoke(this.config._fn);
+      const defaultValue = injector.invoke(this.config._fn);
 
       if (
         defaultValue !== null &&
