@@ -7,6 +7,7 @@ import {
   isNullOrUndefined,
   isString,
   isUndefined,
+  keys,
   minErr,
   nullObject,
   snakeCase,
@@ -78,7 +79,7 @@ export class Attributes {
     this.$attr = {};
 
     if (attributesToCopy) {
-      const attributeKeys = Object.keys(attributesToCopy);
+      const attributeKeys = keys(attributesToCopy);
 
       for (let i = 0, l = attributeKeys.length; i < l; i++) {
         const key = attributeKeys[i];

@@ -37,6 +37,7 @@ import {
   isScope,
   isString,
   isUndefined,
+  keys,
   minErr,
   nullObject,
   simpleCompare,
@@ -660,7 +661,7 @@ export class CompileProvider {
 
       const bindings = nullObject() as IsolateBindingMap;
 
-      const scopeNames = Object.keys(scope);
+      const scopeNames = keys(scope);
 
       for (let i = 0, l = scopeNames.length; i < l; i++) {
         const scopeName = scopeNames[i];
@@ -2409,7 +2410,7 @@ export class CompileProvider {
           }
 
           if (nodeLinkState._controllerDirectives) {
-            const controllerNames = Object.keys(controllerDirectives);
+            const controllerNames = keys(controllerDirectives);
 
             for (let i = 0, l = controllerNames.length; i < l; i++) {
               const name = controllerNames[i];
@@ -2437,7 +2438,7 @@ export class CompileProvider {
           }
 
           if (elementControllers) {
-            const controllerNames = Object.keys(elementControllers);
+            const controllerNames = keys(elementControllers);
 
             for (let i = 0, l = controllerNames.length; i < l; i++) {
               const controller = elementControllers[controllerNames[i]];
@@ -2558,7 +2559,7 @@ export class CompileProvider {
           }
 
           if (elementControllers) {
-            const controllerNames = Object.keys(elementControllers);
+            const controllerNames = keys(elementControllers);
 
             for (let i = 0, l = controllerNames.length; i < l; i++) {
               const controller = elementControllers[controllerNames[i]];
@@ -2827,7 +2828,7 @@ export class CompileProvider {
                   const filledSlots = nullObject();
 
                   // Parse the element selectors
-                  const slotNames = Object.keys(directiveValue);
+                  const slotNames = keys(directiveValue);
 
                   for (
                     let slotIndex = 0, slotCount = slotNames.length;
@@ -2888,7 +2889,7 @@ export class CompileProvider {
                   }
 
                   // Check for required slots that were not filled
-                  const filledSlotNames = Object.keys(filledSlots);
+                  const filledSlotNames = keys(filledSlots);
 
                   for (
                     let slotIndex = 0, slotCount = filledSlotNames.length;
@@ -3254,7 +3255,7 @@ export class CompileProvider {
             }
           } else if (isObject(require)) {
             value = {};
-            const requireKeys = Object.keys(require);
+            const requireKeys = keys(require);
 
             for (let i = 0, l = requireKeys.length; i < l; i++) {
               const property = requireKeys[i];
@@ -3421,7 +3422,7 @@ export class CompileProvider {
           const dstAttr = dst.$attr;
 
           // reapply the old attributes to the new element
-          const dstKeys = Object.keys(dstAny);
+          const dstKeys = keys(dstAny);
 
           for (let i = 0, l = dstKeys.length; i < l; i++) {
             const key = dstKeys[i];
@@ -3441,7 +3442,7 @@ export class CompileProvider {
           }
 
           // copy the new attributes on the old attrs object
-          const srcKeys = Object.keys(srcAny);
+          const srcKeys = keys(srcAny);
 
           for (let i = 0, l = srcKeys.length; i < l; i++) {
             const key = srcKeys[i];
@@ -4015,7 +4016,7 @@ export class CompileProvider {
             attrs._observers || (attrs._observers = nullObject() as any);
 
           if (bindings) {
-            const bindingNames = Object.keys(bindings);
+            const bindingNames = keys(bindings);
 
             for (
               let bindingIndex = 0;
@@ -4209,7 +4210,7 @@ export class CompileProvider {
                       } else {
                         // manually set the handler to avoid watch cycles
                         if (isObject(val)) {
-                          const valueKeys = Object.keys(val);
+                          const valueKeys = keys(val);
 
                           for (let i = 0, l = valueKeys.length; i < l; i++) {
                             const key = valueKeys[i];

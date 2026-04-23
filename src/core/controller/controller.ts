@@ -7,6 +7,7 @@ import {
   isFunction,
   isObject,
   isString,
+  keys,
   minErr,
 } from "../../shared/utils.ts";
 
@@ -211,7 +212,7 @@ export class ControllerProvider {
     }
 
     if (isObject(name)) {
-      const controllerNames = Object.keys(name);
+      const controllerNames = keys(name);
 
       for (let i = 0, l = controllerNames.length; i < l; i++) {
         const key = controllerNames[i];

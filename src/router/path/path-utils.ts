@@ -1,6 +1,6 @@
 import { arrayTuples, find, omit, pick, unnestR } from "../../shared/common.ts";
 import { propEq } from "../../shared/hof.ts";
-import { values } from "../../shared/utils.ts";
+import { keys, values } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
 import type { Param } from "../params/param.ts";
@@ -45,7 +45,7 @@ export class PathUtils {
       return PathUtils.inheritParams(
         fromPath,
         toPath,
-        Object.keys(targetState.params()),
+        keys(targetState.params()),
       );
     }
 

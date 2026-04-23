@@ -5,6 +5,7 @@ import {
   isFunction,
   isRegExp,
   isString,
+  keys,
 } from "./utils.ts";
 
 /**
@@ -55,7 +56,7 @@ export function equals(o1: any, o2: any): boolean {
   ) {
     return false;
   }
-  const keys: Record<string, boolean> = {};
+  const keyItems: Record<string, boolean> = {};
 
   const obj1 = o1 as Record<string, any>;
 
@@ -63,11 +64,11 @@ export function equals(o1: any, o2: any): boolean {
 
   for (const key in obj1) {
     if (!equals(obj1[key], obj2[key])) return false;
-    keys[key] = true;
+    keyItems[key] = true;
   }
 
   for (const key in obj2) {
-    if (!keys[key]) return false;
+    if (!keyItems[key]) return false;
   }
 
   return true;
@@ -131,7 +132,7 @@ export function defaults(opts: any, ...defaultsList: any[]): any {
 
   return Object.assign(
     defaultVals,
-    pick((opts || {}) as Record<string, any>, Object.keys(defaultVals)),
+    pick((opts || {}) as Record<string, any>, keys(defaultVals)),
   );
 }
 
@@ -171,7 +172,7 @@ export function omit<T extends Record<string, any>>(
   obj: T,
   propNames: string[],
 ): Partial<T> {
-  return Object.keys(obj)
+  return keys(obj)
     .filter((x) => !propNames.includes(x))
     .reduce(
       (acc, key) => ((acc[key] = obj[key]), acc),
@@ -458,7 +459,7 @@ export function copy(
 ): Record<string, any> {
   const target = dest || {};
 
-  Object.keys(target).forEach((key) => delete target[key]);
+  keys(target).forEach((key) => delete target[key]);
 
   return Object.assign(target, src);
 }
