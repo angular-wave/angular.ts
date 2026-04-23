@@ -8,11 +8,7 @@ import {
   TransitionOptions,
   HookResult,
 } from "../transition/interface.ts";
-import {
-  ResolvePolicy,
-  ResolvableLiteral,
-  ProviderLike,
-} from "../resolve/interface.ts";
+import { ResolvableLiteral } from "../resolve/interface.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { TargetState } from "./target-state.ts";
 import { Glob } from "../glob/glob.ts";
@@ -31,7 +27,42 @@ export interface TargetStateDef {
   options?: TransitionOptions;
 }
 
-export type ResolveTypes = Resolvable | ResolvableLiteral | ProviderLike;
+/**
+ * Object-style state resolves.
+ *
+ * Use this when resolve tokens are string keys and each value is a normal
+ * AngularTS injectable function or annotated factory.
+ *
+ * Example:
+ * ```js
+ * resolve: {
+ *   user: ["UserService", (UserService) => UserService.current()],
+ *   featureFlags: () => fetchFlags(),
+ * }
+ * ```
+ */
+export type StateResolveObject = { [key: string]: Injectable<any> };
+
+/**
+ * Array-style state resolves.
+ *
+ * Use this when you need explicit resolve metadata such as `token`, `deps`,
+ * `eager`, or pre-resolved `data`.
+ *
+ * Example:
+ * ```js
+ * resolve: [
+ *   {
+ *     token: "user",
+ *     deps: ["UserService", Transition],
+ *     resolveFn: (UserService, trans) =>
+ *       UserService.fetchUser(trans.params().userId),
+ *     eager: true,
+ *   },
+ * ]
+ * ```
+ */
+export type StateResolveArray = ResolvableLiteral[];
 
 export type RawViewConfig = ViewDeclaration | string;
 
@@ -430,7 +461,8 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    *
    * #### Example:
    * The `user` resolve injects the current `Transition` and the `UserService` (using its token, which is a string).
-   * The [[ResolvableLiteral.resolvePolicy]] sets how the resolve is processed.
+   * The [[ResolvableLiteral.eager]] flag controls whether the resolve starts
+   * at transition start instead of when the owning state is entered.
    * The `user` data, fetched asynchronously, can then be used in a view.
    * ```js
    * var state = {
@@ -439,21 +471,12 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    *   resolve: [
    *     {
    *       token: 'user',
-   *       policy: { when: 'EAGER' },
+   *       eager: true,
    *       deps: ['UserService', Transition],
    *       resolveFn: (userSvc, trans) => userSvc.fetchUser(trans.params().userId) },
    *     }
    *   ]
    * }
-   * ```
-   *
-   * Note: an Angular 2 style [`useFactory` provider literal](https://angular.io/docs/ts/latest/cookbook/dependency-injection.html#!#provide)
-   * may also be used.  See [[ProviderLike]].
-   * #### Example:
-   * ```
-   * resolve: [
-   *   { provide: 'token', useFactory: (http) => http.get('/'), deps: [ Http ] },
-   * ]
    * ```
    *
    * ### As an object
@@ -480,7 +503,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * }
    * ```
    *
-   * Note: You cannot specify a policy for each Resolvable, nor can you use non-string
+   * Note: You cannot mark individual entries as eager, nor can you use non-string
    * tokens when using the object style `resolve:` block.
    *
    * ### Lifecycle
@@ -529,29 +552,15 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * resolve: [
    *   // Define a resolve 'allusers' which delegates to the UserService.list()
    *   // which returns a promise (async) for all the users
-   *   { provide: 'allusers', useFactory: (UserService) => UserService.list(), deps: [UserService] },
+   *   { token: 'allusers', resolveFn: (UserService) => UserService.list(), deps: [UserService] },
    *
    *   // Define a resolve 'user' which depends on the allusers resolve.
    *   // This resolve function is not called until 'allusers' is ready.
-   *   { provide: 'user', (allusers, trans) => _.find(allusers, trans.params().userId, deps: ['allusers', Transition] }
+   *   { token: 'user', resolveFn: (allusers, trans) => _.find(allusers, trans.params().userId), deps: ['allusers', Transition] }
    * }
    * ```
    */
-  resolve?: ResolveTypes[] | { [key: string]: Injectable<any> };
-
-  /**
-   * Sets the resolve policy defaults for all resolves on this state
-   *
-   * This should be an [[ResolvePolicy]] object.
-   *
-   * It can contain the following optional keys/values:
-   *
-   * - `when`: (optional) defines when the resolve is fetched. Accepted values: "LAZY" or "EAGER"
-   * - `async`: (optional) if the transition waits for the resolve. Accepted values: "WAIT", "NOWAIT", {@link CustomAsyncPolicy}
-   *
-   * See [[ResolvePolicy]] for more details.
-   */
-  resolvePolicy?: ResolvePolicy;
+  resolve?: StateResolveArray | StateResolveObject;
 
   /**
    * The url fragment for the state
@@ -683,7 +692,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    *   - The return value is processed using the previously mentioned rules.
    *   - If the return value is a promise, the promise is waited for, then the resolved async value is processed using the same rules.
    *
-   * Note: `redirectTo` is processed as an `onStart` hook, before `LAZY` resolves.
+   * Note: `redirectTo` is processed as an `onStart` hook, before non-eager resolves.
    * If your redirect function relies on resolve data, get the [[Transition.injector]] and get a
    * promise for the resolve data using [[UIInjector.getAsync]].
    *
@@ -974,7 +983,7 @@ export type BuiltStateDeclaration = StateDeclaration & {
    */
   _state: () => BuiltStateDeclaration;
 
-  /** Array of Resolvables built from the resolve / resolvePolicy */
+  /** Array of Resolvables built from the state's resolve declarations */
   resolvables: Resolvable[];
 
   /** Full path from root down to this state */

@@ -6,30 +6,7 @@ import type { PathNode } from "../path/path-node.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { Transition } from "../transition/transition.ts";
-import {
-  Resolvable,
-  type PolicyWhen,
-  type ResolvePolicy,
-  type ResolvableLiteral,
-} from "./resolvable.ts";
-
-export const resolvePolicies = {
-  when: {
-    LAZY: "LAZY",
-    EAGER: "EAGER",
-  },
-  async: {
-    WAIT: "WAIT",
-    NOWAIT: "NOWAIT",
-  },
-} as const;
-
-const ALL_WHENS: PolicyWhen[] = [
-  resolvePolicies.when.EAGER,
-  resolvePolicies.when.LAZY,
-];
-
-const EAGER_WHENS: PolicyWhen[] = [resolvePolicies.when.EAGER];
+import { Resolvable, type ResolvableLiteral } from "./resolvable.ts";
 
 /**
  * Provides resolve lookup and execution helpers for a specific transition path.
@@ -89,15 +66,6 @@ export class ResolveContext {
     }
 
     return matching as Resolvable;
-  }
-
-  /**
-   * Computes the effective resolve policy for a resolvable in this context.
-   */
-  getPolicy(resolvable: Resolvable): Required<ResolvePolicy> {
-    const node = this.findNode(resolvable);
-
-    return resolvable.getPolicy(node?.state);
   }
 
   /**
@@ -171,18 +139,10 @@ export class ResolveContext {
   }
 
   /**
-   * Resolves the path's resolvables for the requested policy timing.
+   * Resolves the path's resolvables.
    */
-  resolvePath(
-    when: PolicyWhen = "LAZY",
-    trans: Transition,
-  ): Promise<any> | any {
-    const whenOption = ALL_WHENS.includes(when) ? when : "LAZY";
-
-    const matchedWhens =
-      whenOption === resolvePolicies.when.EAGER ? EAGER_WHENS : ALL_WHENS;
-
-    trace.traceResolvePath(this._path, when, trans);
+  resolvePath(eagerOnly = false, trans: Transition): Promise<any> | any {
+    trace.traceResolvePath(this._path, eagerOnly, trans);
 
     const promises: Promise<{ token: any; value: any }>[] = [];
 
@@ -194,20 +154,13 @@ export class ResolveContext {
       for (let j = 0; j < node.resolvables.length; j++) {
         const resolvable = node.resolvables[j];
 
-        const policy = this.getPolicy(resolvable);
-
-        if (!matchedWhens.includes(policy.when)) {
+        if (eagerOnly && !resolvable.eager) {
           continue;
         }
 
         const promise = resolvable
           .get(subContext, trans)
           .then((value) => ({ token: resolvable.token, value }));
-
-        if (policy.async === "NOWAIT") {
-          void promise;
-          continue;
-        }
 
         promises.push(promise);
       }

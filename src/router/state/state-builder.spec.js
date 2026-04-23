@@ -85,15 +85,52 @@ describe("StateBuilder", function () {
     expect($stateRegistry.decorator).toBeUndefined();
   });
 
-  it("should replace a resolve: string value with a function that injects the service of the same name", function () {
+  it("should reject string shorthand in object-style resolves", function () {
+    expect(() =>
+      builder.build({
+        name: "foo",
+        self: {},
+        parent: parent,
+        resolve: { foo: "bar" },
+      }),
+    ).toThrow();
+  });
+
+  it("should reject provider-style resolvables in a resolve array", function () {
+    expect(() =>
+      builder.build({
+        name: "foo",
+        self: {},
+        parent: parent,
+        resolve: [
+          { provide: "factoryDep", useFactory: () => "ok", deps: ["dep"] },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("should build explicit resolvable literals from a resolve array", function () {
     const config = builder.build({
       name: "foo",
       self: {},
       parent: parent,
-      resolve: { foo: "bar" },
+      resolve: [
+        {
+          token: "factoryDep",
+          resolveFn: () => "ok",
+          deps: ["dep"],
+          eager: true,
+        },
+        { token: "prefetched", data: false },
+      ],
     });
 
-    expect(builder.builder).toBeUndefined();
-    expect(config.resolvables[0].deps).toEqual(["bar"]);
+    expect(config.resolvables[0].token).toBe("factoryDep");
+    expect(config.resolvables[0].deps).toEqual(["dep"]);
+    expect(config.resolvables[0].eager).toBe(true);
+
+    expect(config.resolvables[1].token).toBe("prefetched");
+    expect(config.resolvables[1].data).toBe(false);
+    expect(config.resolvables[1].resolved).toBe(true);
   });
 });

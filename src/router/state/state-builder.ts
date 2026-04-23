@@ -9,6 +9,7 @@ import {
 } from "../../shared/common.ts";
 import {
   entries,
+  hasOwn,
   isArray,
   isDefined,
   isFunction,
@@ -16,7 +17,6 @@ import {
   values,
 } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
-import { is, pattern, val } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { annotate } from "../../core/di/di.ts";
@@ -24,11 +24,7 @@ import { ViewConfig } from "./views.ts";
 import type { ParamDeclaration } from "../params/interface.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
-import type {
-  ResolvePolicy,
-  ResolvableLiteral,
-  ProviderLike,
-} from "../resolve/interface.ts";
+import type { ResolvableLiteral } from "../resolve/interface.ts";
 import type { BuiltStateDeclaration, StateDeclaration } from "./interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { StateMatcher } from "./state-matcher.ts";
@@ -215,12 +211,7 @@ function getResolveLocals(ctx: ResolveContext): Record<string, any> {
 
     const resolvable = ctx.getResolvable(key);
 
-    const waitPolicy = ctx.getPolicy(resolvable).async;
-
-    tuples.push([
-      key,
-      waitPolicy === "NOWAIT" ? resolvable.promise : resolvable.data,
-    ]);
+    tuples.push([key, resolvable.data]);
   }
 
   return tuples.reduce(applyPairs, {});
@@ -254,17 +245,14 @@ function getResolveLocals(ctx: ResolveContext): Record<string, any> {
  *   // then "DependencyName" dep as string
  *   myCorgeResolve: corgeResolve,
  *
- *  // inject service by name
- *  // When a string is found, desugar creating a resolve that injects the named service
- *   myGraultResolve: "SomeService"
  * }
  *
  * or:
  *
  * [
- *   new Resolvable("myFooResolve", function() { return "myFooData" }),
- *   new Resolvable("myBarResolve", function(dep) { return dep.fetchSomethingAsPromise() }, [ "DependencyName" ]),
- *   { provide: "myBazResolve", useFactory: function(dep) { dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
+ *   { token: "myFooResolve", resolveFn: function() { return "myFooData" } },
+ *   { token: "myBarResolve", resolveFn: function(dep) { return dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] },
+ *   { token: "myBazResolve", resolveFn: function(dep) { return dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
  * ]
  * @param {ng.StateObject & ng.StateDeclaration} state
  * @param {boolean | undefined} strictDi
@@ -273,142 +261,90 @@ export function resolvablesBuilder(
   state: StateObject & StateDeclaration,
   strictDi: boolean | undefined,
 ): Resolvable[] {
-  /** convert resolve: {} and resolvePolicy: {} objects to an array of tuples */
-  const objects2Tuples = (
-    resolveObj: Record<string, any> | undefined,
-    resolvePolicies: Record<string, ResolvePolicy>,
-  ) =>
-    Object.keys(resolveObj || {}).map((token) => ({
-      token,
-      val: (resolveObj || {})[token],
-      deps: undefined,
-      policy: resolvePolicies[token],
-    }));
+  type ResolveTuple = {
+    token: any;
+    val: any;
+  };
 
-  /** fetch DI annotations from a function or ng1-style array */
   const annotateFn = (fn: Function) => annotate(fn, strictDi);
 
-  /** true if the object has both `token` and `resolveFn`, and is probably a [[ResolveLiteral]] */
-  const isResolveLiteral = (obj: { token: any; resolveFn: any }) =>
-    !!(obj.token && obj.resolveFn);
+  const objectToTuples = (
+    resolveObj: Record<string, any> | undefined,
+  ): ResolveTuple[] => {
+    const tuples: ResolveTuple[] = [];
 
-  /** true if the object looks like a tuple from obj2Tuples */
-  const isTupleFromObj = (obj: { val: unknown }) =>
-    !!(
-      obj &&
-      obj.val &&
-      (isString(obj.val) || isArray(obj.val) || isFunction(obj.val))
-    );
+    const source = resolveObj || {};
 
-  // Given a literal resolve or provider object, returns a Resolvable
-  const literal2Resolvable = pattern([
-    [
-      (x: { resolveFn: any }) => x.resolveFn,
-      (y: ResolvableLiteral) =>
-        new Resolvable(getToken(y), y.resolveFn, y.deps, y.policy),
-    ],
-    [
-      (x: { useFactory: any }) => x.useFactory,
-      (
-        y: ProviderLike & {
-          token?: any;
-          policy?: ResolvePolicy;
-          dependencies?: any[];
-        },
-      ) =>
-        new Resolvable(
-          getToken(y),
-          y.useFactory,
-          y.deps || y.dependencies,
-          y.policy,
-        ),
-    ],
-    [
-      (x: { useClass: any }) => x.useClass,
-      (
-        y: ProviderLike & {
-          useClass: any;
-          token?: any;
-          policy?: ResolvePolicy;
-        },
-      ) => new Resolvable(getToken(y), () => new y.useClass(), [], y.policy),
-    ],
-    [
-      (x: { useValue: any }) => x.useValue,
-      (
-        y: ProviderLike & {
-          useValue: any;
-          token?: any;
-          policy?: ResolvePolicy;
-        },
-      ) =>
-        new Resolvable(getToken(y), () => y.useValue, [], y.policy, y.useValue),
-    ],
-    [
-      (x: { useExisting: any }) => x.useExisting,
-      (
-        y: ProviderLike & {
-          useExisting: any;
-          token?: any;
-          policy?: ResolvePolicy;
-        },
-      ) =>
-        new Resolvable(getToken(y), (x: any) => x, [y.useExisting], y.policy),
-    ],
-  ]);
+    const tokens = Object.keys(source);
 
-  const tuple2Resolvable = pattern([
-    [
-      (x: { val: unknown }) => isString(x.val),
-      (tuple: { token: any; val: any; policy: ResolvePolicy | undefined }) =>
-        new Resolvable(tuple.token, (x: any) => x, [tuple.val], tuple.policy),
-    ],
-    [
-      (x: { val: any }) => isArray(x.val),
-      (tuple: { token: any; val: any[]; policy?: ResolvePolicy }) =>
-        new Resolvable(
-          tuple.token,
-          tail(tuple.val),
-          tuple.val.slice(0, -1),
-          tuple.policy,
-        ),
-    ],
-    [
-      (x: { val: any }) => isFunction(x.val),
-      (tuple: { token: any; val: Function; policy?: ResolvePolicy }) =>
-        new Resolvable(
-          tuple.token,
-          tuple.val,
-          annotateFn(tuple.val),
-          tuple.policy,
-        ),
-    ],
-  ]);
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
 
-  const item2Resolvable = pattern([
-    [is(Resolvable), (x: Resolvable) => x],
-    [isResolveLiteral, literal2Resolvable],
-    [isTupleFromObj, tuple2Resolvable],
-    [
-      val(true),
-      (obj: any) => {
-        throw new Error(`Invalid resolve value: ${stringify(obj)}`);
-      },
-    ],
-  ]);
+      tuples.push({
+        token,
+        val: source[token],
+      });
+    }
 
-  // If resolveBlock is already an array, use it as-is.
-  // Otherwise, assume it's an object and convert to an Array of tuples
+    return tuples;
+  };
+
+  const tupleToResolvable = (tuple: ResolveTuple): Resolvable => {
+    if (isArray(tuple.val)) {
+      return new Resolvable(
+        tuple.token,
+        tail(tuple.val),
+        tuple.val.slice(0, -1),
+      );
+    }
+
+    if (isFunction(tuple.val)) {
+      return new Resolvable(tuple.token, tuple.val, annotateFn(tuple.val));
+    }
+
+    throw new Error(`Invalid resolve value: ${stringify(tuple)}`);
+  };
+
+  const literalToResolvable = (literal: ResolvableLiteral): Resolvable => {
+    if (hasOwn(literal, "resolveFn") || hasOwn(literal, "data")) {
+      return new Resolvable(literal);
+    }
+
+    throw new Error(`Invalid resolve value: ${stringify(literal)}`);
+  };
+
+  const itemToResolvable = (item: any): Resolvable => {
+    if (
+      item &&
+      hasOwn(item, "token") &&
+      (hasOwn(item, "resolveFn") || hasOwn(item, "data"))
+    ) {
+      return literalToResolvable(item);
+    }
+
+    if (
+      item &&
+      hasOwn(item, "token") &&
+      hasOwn(item, "val") &&
+      (isArray(item.val) || isFunction(item.val))
+    ) {
+      return tupleToResolvable(item);
+    }
+
+    throw new Error(`Invalid resolve value: ${stringify(item)}`);
+  };
+
   const decl = state.resolve;
 
-  const items = isArray(decl)
-    ? decl
-    : objects2Tuples(
-        decl,
-        (state.resolvePolicy || {}) as unknown as Record<string, ResolvePolicy>,
-      );
+  const items = isArray(decl) ? decl : objectToTuples(decl);
 
-  return items.map(item2Resolvable);
+  const resolvables: Resolvable[] = [];
+
+  for (let i = 0; i < items.length; i++) {
+    resolvables.push(itemToResolvable(items[i]));
+  }
+
+  return resolvables;
 }
 /**
  * A internal global service
@@ -583,12 +519,4 @@ export class StateBuilder {
  */
 function isRoot(state: StateObject): boolean {
   return state.name === "";
-}
-
-/**
- * extracts the token from a Provider or provide literal
- * @param {{ provide: any; token: any; }} provider
- */
-function getToken(provider: { provide?: any; token?: any }) {
-  return provider.provide || provider.token;
 }

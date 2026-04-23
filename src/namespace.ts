@@ -131,6 +131,8 @@ import type { ViewService as TViewService } from "./router/view/view.ts";
 import {
   BuiltStateDeclaration as TBuiltStateDeclaration,
   StateDeclaration as TStateDeclaration,
+  StateResolveArray as TStateResolveArray,
+  StateResolveObject as TStateResolveObject,
 } from "./router/state/interface.ts";
 import type { StateObject as TStateObject } from "./router/state/state-object.ts";
 import type { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.ts";
@@ -360,6 +362,10 @@ declare global {
     export type ServiceProvider = TServiceProvider;
 
     export type StateDeclaration = TStateDeclaration;
+
+    export type StateResolveArray = TStateResolveArray;
+
+    export type StateResolveObject = TStateResolveObject;
 
     export type StateObject = TStateObject & Record<string, any>;
 
