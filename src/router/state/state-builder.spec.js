@@ -80,15 +80,20 @@ describe("StateBuilder", function () {
     ).toThrow();
   });
 
-  it("should not expose views through the generic builder decorator API", function () {
-    expect(builder.builder("views")).toBeUndefined();
-    expect(() => $stateRegistry.decorator("views", () => ({}))).toThrow();
+  it("should not expose the old generic builder decorator API", function () {
+    expect(builder.builder).toBeUndefined();
+    expect($stateRegistry.decorator).toBeUndefined();
   });
 
   it("should replace a resolve: string value with a function that injects the service of the same name", function () {
-    const config = { resolve: { foo: "bar" } };
-    expect(builder.builder("resolvables")).toBeDefined();
-    const built = builder.builder("resolvables")(config);
-    expect(built[0].deps).toEqual(["bar"]);
+    const config = builder.build({
+      name: "foo",
+      self: {},
+      parent: parent,
+      resolve: { foo: "bar" },
+    });
+
+    expect(builder.builder).toBeUndefined();
+    expect(config.resolvables[0].deps).toEqual(["bar"]);
   });
 });

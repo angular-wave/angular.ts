@@ -8,7 +8,6 @@ import { isString, keys } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type {
-  BuilderFunction,
   BuiltStateDeclaration,
   _StateDeclaration,
   StateDeclaration,
@@ -18,7 +17,6 @@ import type {
 } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
 import type { UrlRules } from "../url/url-rules.ts";
-import type { PathNode } from "../path/path-node.ts";
 
 /**
  * A registry for all of the application's [[StateDeclaration]]s
@@ -72,10 +70,6 @@ export class StateRegistryProvider {
     this.matcher = new StateMatcher(this.states);
 
     this.builder = new StateBuilder(this.matcher, urlService);
-    // Apply ng1 specific StateBuilder code for `onExit/Retain/Enter` properties
-    this.builder.builder("onExit", this.getStateHookBuilder("onExit"));
-    this.builder.builder("onRetain", this.getStateHookBuilder("onRetain"));
-    this.builder.builder("onEnter", this.getStateHookBuilder("onEnter"));
 
     this.stateQueue = new StateQueueManager(
       this,
@@ -105,64 +99,6 @@ export class StateRegistryProvider {
       return this;
     },
   ];
-
-  /**
-   * This is a [[StateBuilder.builder]] function for angular1 `onEnter`, `onExit`,
-   * `onRetain` callback hooks on a [[StateDeclaration]].
-   *
-   * @param {string} hookName
-   */
-  getStateHookBuilder(
-    hookName: string,
-  ): (
-    stateObject: StateObject & Record<string, any>,
-  ) =>
-    | ((trans: ng.Transition, state: BuiltStateDeclaration) => any)
-    | undefined {
-    const that = this;
-
-    /**
-     * @param {StateObject & Record<string, any>} stateObject
-     * @returns {((trans: ng.Transition, state: ng.BuiltStateDeclaration) => any) | undefined}
-     */
-    return function stateHookBuilder(
-      stateObject: StateObject & Record<string, any>,
-    ) {
-      const hook = stateObject[hookName];
-
-      const pathname = hookName === "onExit" ? "from" : "to";
-
-      /**
-       * @param {ng.Transition} trans
-       * @param {ng.BuiltStateDeclaration} state
-       * @returns {any}
-       */
-      function decoratedNg1Hook(
-        trans: ng.Transition,
-        state: BuiltStateDeclaration,
-      ) {
-        const resolveContext = new ResolveContext(
-          trans.treeChanges(pathname) as PathNode[],
-          that.$injector,
-        );
-
-        const subContext = resolveContext.subContext(state._state());
-
-        const locals = Object.assign(getLocals(subContext), {
-          $state$: state,
-          $transition$: trans,
-        });
-
-        return (that.$injector as ng.InjectorService).invoke(
-          hook,
-          that,
-          locals,
-        );
-      }
-
-      return hook ? decoratedNg1Hook : undefined;
-    };
-  }
 
   /**
    * @private
@@ -339,26 +275,6 @@ export class StateRegistryProvider {
     const found = this.matcher.find(stateOrName as StateOrName, base);
 
     return (found && found.self) || null;
-  }
-
-  /**
-   * Registers a [[BuilderFunction]] for a specific [[StateObject]] property (e.g., `parent`, `url`, or `path`).
-   * More than one BuilderFunction can be registered for a given property.
-   *
-   * The BuilderFunction(s) will be used to define the property on any subsequently built [[StateObject]] objects.
-   *
-   * @param {string} property The name of the State property being registered for.
-   * @param {BuilderFunction} builderFunction The BuilderFunction which will be used to build the State property
-   * @returns a function which deregisters the BuilderFunction
-   */
-  decorator(property: string, builderFunction: BuilderFunction) {
-    if (property === "views") {
-      throw new Error(
-        "'views' is built internally and can no longer be decorated",
-      );
-    }
-
-    return this.builder.builder(property, builderFunction);
   }
 }
 

@@ -5,6 +5,7 @@ import { hasOwn, isFunction, isObject, values } from "../../shared/utils.ts";
 import type { Param } from "../params/param.ts";
 import type { Resolvable } from "../resolve/resolvable.ts";
 import type { StateDeclaration } from "./interface.ts";
+import type { TransitionStateHookFn } from "../transition/interface.ts";
 
 /**
  * Internal representation of a ng-router state.
@@ -30,13 +31,17 @@ export class StateObject {
 
   name;
   navigable: { url: any } | undefined | null;
-  parent: StateObject | undefined;
+  parent: StateObject | null | undefined;
   params: ArrayLike<Param> | undefined;
   url: { parameter: (id: any, opts: {}) => any } | undefined;
+  data: any;
   includes: any;
   path: StateObject[] | undefined;
   views: any;
   resolvables: Resolvable[] | undefined;
+  onEnter: TransitionStateHookFn | undefined;
+  onRetain: TransitionStateHookFn | undefined;
+  onExit: TransitionStateHookFn | undefined;
   self: StateDeclaration;
   /** @internal */
   _stateObjectCache: { nameGlob: Glob | null };
@@ -48,6 +53,7 @@ export class StateObject {
     Object.assign(this, config);
     this.self = config;
     this.name = config.name;
+    config._state = () => this as unknown as ng.BuiltStateDeclaration;
     const nameGlob = this.name ? Glob.fromString(this.name) : null;
 
     this._stateObjectCache = { nameGlob };
