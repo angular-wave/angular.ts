@@ -10,6 +10,7 @@ import {
   isObject,
   isString,
   isUndefined,
+  keys,
   nullObject,
 } from "../../shared/utils.ts";
 import {
@@ -125,11 +126,11 @@ export function AnimateQueueProvider(
    * @return {Record<string, string>}
    */
   function makeTruthyCssClassMap(classString: string): Record<string, boolean> {
-    const keys = classString.split(ONE_SPACE);
+    const classNames = classString.split(ONE_SPACE);
 
     const map: Record<string, boolean> = nullObject();
 
-    keys.forEach((key: string) => {
+    classNames.forEach((key: string) => {
       map[key] = true;
     });
 
@@ -651,7 +652,7 @@ export function AnimateQueueProvider(
         if (!isValidAnimation) {
           isValidAnimation =
             (newAnimation.event === "animate" &&
-              Object.keys(newAnimation.options?.to || {}).length > 0) ||
+              keys(newAnimation.options?.to || {}).length > 0) ||
             hasAnimationClasses(newAnimation);
         }
 

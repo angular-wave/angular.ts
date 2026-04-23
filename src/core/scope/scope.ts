@@ -1823,7 +1823,7 @@ export class Scope {
   $merge(newTarget: object): void {
     const newTargetRecord = newTarget as Record<string, unknown>;
 
-    const keyList = Object.keys(newTargetRecord);
+    const keyList = keys(newTargetRecord);
 
     for (let i = 0, l = keyList.length; i < l; i++) {
       const key = keyList[i];

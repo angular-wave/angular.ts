@@ -7,6 +7,7 @@ import {
   isBoolean,
   isObjectEmpty,
   isUndefined,
+  keys,
   shallowCopy,
   snakeCase,
 } from "../../shared/utils.ts";
@@ -337,15 +338,15 @@ export class FormController {
       delete (this as Record<string, any>)[control.$name];
     }
     this.$pending &&
-      Object.keys(this.$pending).forEach((name) => {
+      keys(this.$pending).forEach((name) => {
         this.$setValidity(name, null, control);
       });
     this.$error &&
-      Object.keys(this.$error).forEach((name) => {
+      keys(this.$error).forEach((name) => {
         this.$setValidity(name, null, control);
       });
     this._success &&
-      Object.keys(this._success).forEach((name) => {
+      keys(this._success).forEach((name) => {
         this.$setValidity(name, null, control);
       });
 

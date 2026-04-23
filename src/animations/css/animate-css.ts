@@ -750,11 +750,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
 
         if (options.from) {
           if (options.cleanupStyles) {
-            registerRestorableStyles(
-              restoreStyles,
-              node,
-              Object.keys(options.from),
-            );
+            registerRestorableStyles(restoreStyles, node, keys(options.from));
           }
           applyAnimationFromStyles(element, options as AnimationOptions);
         }
@@ -1146,11 +1142,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
 
             if (options.to) {
               if (options.cleanupStyles) {
-                registerRestorableStyles(
-                  restoreStyles,
-                  node,
-                  Object.keys(options.to),
-                );
+                registerRestorableStyles(restoreStyles, node, keys(options.to));
               }
               applyAnimationToStyles(element, options as AnimationOptions);
             }

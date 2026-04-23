@@ -5,6 +5,7 @@ import {
   isFunction,
   isNullOrUndefined,
   isObject,
+  keys,
 } from "../shared/utils.ts";
 import { annotate } from "../core/di/di.ts";
 import { DirectiveSuffix } from "../core/compile/compile.ts";
@@ -252,7 +253,7 @@ const getBindings = (def: ng.Directive): BindingTuple[] => {
 };
 
 const scopeBindings = (bindingsObj: Record<string, string>): BindingTuple[] => {
-  const tuples = Object.keys(bindingsObj || {}).map(
+  const tuples = keys(bindingsObj || {}).map(
     (key): [string, RegExpExecArray | null] => {
       const match = /^([=<@&])[?]?(.*)/.exec(bindingsObj[key] || "");
 

@@ -14,6 +14,7 @@ import {
   isDefined,
   isFunction,
   isString,
+  keys,
   values,
 } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
@@ -109,9 +110,9 @@ function buildParams(
     .reduce(applyPairs, {});
 }
 
-function hasAnyViewKey(keys: string[], obj: Record<string, any>): boolean {
-  for (let i = 0; i < keys.length; i++) {
-    if (isDefined(obj[keys[i]])) {
+function hasAnyViewKey(keyItems: string[], obj: Record<string, any>): boolean {
+  for (let i = 0; i < keyItems.length; i++) {
+    if (isDefined(obj[keyItems[i]])) {
       return true;
     }
   }
@@ -275,7 +276,7 @@ export function resolvablesBuilder(
 
     const source = resolveObj || {};
 
-    const tokens = Object.keys(source);
+    const tokens = keys(source);
 
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i];

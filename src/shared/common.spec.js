@@ -27,7 +27,7 @@ describe("common", function () {
       const filtered = filter(input, function (value, _key) {
         return value > 2;
       });
-      expect(Object.keys(filtered).length).toBe(2);
+      expect(keys(filtered).length).toBe(2);
       expect(filtered).toEqual({ baz: 3, qux: 4 });
     });
   });
