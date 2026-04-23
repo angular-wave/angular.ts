@@ -1,4 +1,4 @@
-import { isArray } from "../../shared/utils.ts";
+import { isArray, isNullOrUndefined, keys } from "../../shared/utils.ts";
 
 /**
  * RFC 6570 Level 4 URI Template expander
@@ -149,7 +149,7 @@ export function expandExpression(
     const value = vars[varname];
 
     // undefined or null = skip (no expansion)
-    if (value === undefined || value === null) {
+    if (isNullOrUndefined(value)) {
       continue;
     }
 
@@ -212,9 +212,9 @@ export function expandExpression(
     if (typeof value === "object") {
       const objectValue = value as Record<string, any>;
 
-      const keys = Object.keys(objectValue);
+      const keyItems = keys(objectValue);
 
-      if (keys.length === 0) {
+      if (keyItems.length === 0) {
         if (conf.named) {
           expandedParts.push(
             pctEncode(varname, conf.allowReserved) +
@@ -226,7 +226,7 @@ export function expandExpression(
 
       if (explode) {
         // each key/value pair becomes k=v (named) or k,v? For explode + named, RFC says 'k=v'
-        for (const key of keys) {
+        for (const key of keyItems) {
           const encVal = objectValue[key];
 
           if (encVal === null || encVal === undefined) continue;
@@ -244,7 +244,7 @@ export function expandExpression(
         }
       } else {
         // not exploded: join k,v pairs by ','
-        const pairs = keys
+        const pairs = keyItems
           .map(
             (key) =>
               `${pctEncode(key, conf.allowReserved)},${pctEncode(objectValue[key], conf.allowReserved)}`,

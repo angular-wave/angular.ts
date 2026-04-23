@@ -250,11 +250,11 @@ export function HttpParamSerializerProvider(this: {
         .forEach((key) => {
           const value = params[key as string];
 
-          if (value === null || isUndefined(value) || isFunction(value)) return;
+          if (isNullOrUndefined(value) || isFunction(value)) return;
 
           if (isArray(value)) {
             (value as any[]).forEach((v) => {
-              if (v === null || isUndefined(v) || isFunction(v)) return;
+              if (isNullOrUndefined(v) || isFunction(v)) return;
 
               const serializedValue = serializeValue(
                 v as string | number | boolean | Record<string, any> | Date,

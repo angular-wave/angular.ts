@@ -525,7 +525,7 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
           .join(" ")
           .trim();
 
-        const hasToStyles = !!(styles.to && Object.keys(styles.to).length > 0);
+        const hasToStyles = !!(styles.to && keys(styles.to).length > 0);
 
         const containsKeyframeAnimation =
           (options.keyframeStyle || "").length > 0;

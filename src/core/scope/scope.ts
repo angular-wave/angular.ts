@@ -4,6 +4,7 @@ import {
   isArray,
   isDefined,
   isFunction,
+  isNull,
   isNullOrUndefined,
   isObject,
   isProxy,
@@ -435,7 +436,7 @@ const scopeCache = new WeakSet<object>();
  */
 export function isNonScope(target: unknown): boolean {
   // 1. Null or primitive types are non-scope
-  if (target === null || typeof target !== "object") {
+  if (isNull(target) || typeof target !== "object") {
     return true;
   }
 
