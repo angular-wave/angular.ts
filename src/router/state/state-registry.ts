@@ -284,12 +284,7 @@ export const getLocals = (ctx: ResolveContext): Record<string, any> => {
   const tuples = tokens.map((key) => {
     const resolvable = ctx.getResolvable(key);
 
-    const waitPolicy = ctx.getPolicy(resolvable).async;
-
-    return [
-      key,
-      waitPolicy === "NOWAIT" ? resolvable.promise : resolvable.data,
-    ];
+    return [key, resolvable.data];
   });
 
   return tuples.reduce(applyPairs, {});

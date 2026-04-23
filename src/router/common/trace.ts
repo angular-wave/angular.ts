@@ -46,7 +46,7 @@ import type {
   TransitionHookOptions,
 } from "../transition/transition-hook.ts";
 import type { PathNode } from "../path/path-node.ts";
-import type { PolicyWhen, Resolvable } from "../resolve/resolvable.ts";
+import type { Resolvable } from "../resolve/resolvable.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type {
   ActiveUIView,
@@ -214,11 +214,13 @@ export class Trace {
   /** @internal called by ng-router code */
   traceResolvePath(
     path: PathNode[],
-    when: PolicyWhen,
+    eagerOnly: boolean,
     trans: ng.Transition,
   ): void {
     if (!this.enabled(Category._RESOLVE)) return;
-    this._logger.log(`${transLbl(trans)}:         Resolving ${path} (${when})`);
+    this._logger.log(
+      `${transLbl(trans)}:         Resolving ${path} (${eagerOnly ? "eager" : "all"})`,
+    );
   }
 
   /** @internal called by ng-router code */

@@ -14,7 +14,7 @@ const eagerResolvePath = (trans: Transition) =>
     (trans.treeChanges() as TreeChanges).to,
     trans._globals._injector,
   )
-    .resolvePath("EAGER", trans)
+    .resolvePath(true, trans)
     .then(() => {
       /* empty */
     });
@@ -35,7 +35,7 @@ const lazyResolveState = (trans: Transition, state: StateDeclaration) =>
     trans._globals._injector,
   )
     .subContext((state._state as Function)())
-    .resolvePath("LAZY", trans)
+    .resolvePath(false, trans)
     .then(() => {
       /* empty */
     });
@@ -55,7 +55,7 @@ const resolveRemaining = (trans: Transition) =>
     (trans.treeChanges() as TreeChanges).to,
     trans._globals._injector,
   )
-    .resolvePath("LAZY", trans)
+    .resolvePath(false, trans)
     .then(() => {
       /* empty */
     });
