@@ -1061,21 +1061,6 @@ export type StateRegistryListener = (
   states: StateDeclaration[],
 ) => void;
 
-/**
- * A function that builds the final value for a specific field on a [[StateObject]].
- *
- * A series of builder functions for a given field are chained together.
- * The final value returned from the chain of builders is applied to the built [[StateObject]].
- * Builder functions should call the [[parent]] function either first or last depending on the desired composition behavior.
- *
- * @param state the _partially built_ [[StateObject]]. The [[StateDeclaration]] can be inspected via [[StateObject.self]]
- * @param parent the previous builder function in the series.
- */
-export type BuilderFunction = (
-  state: ng.StateObject & ng.BuiltStateDeclaration,
-  parent?: BuilderFunction,
-) => any;
-
 export type OnInvalidCallback = (
   toState?: TargetState,
   fromState?: TargetState,
@@ -1086,17 +1071,3 @@ export type LazyLoadFn = (
   transition: Transition,
   state: StateDeclaration,
 ) => Promise<LazyLoadResult>;
-
-export interface Builders {
-  [key: string]: BuilderFunction[];
-
-  name: BuilderFunction[];
-  parent: BuilderFunction[];
-  data: BuilderFunction[];
-  url: BuilderFunction[];
-  navigable: BuilderFunction[];
-  params: BuilderFunction[];
-  path: BuilderFunction[];
-  includes: BuilderFunction[];
-  resolvables: BuilderFunction[];
-}

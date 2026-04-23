@@ -156,7 +156,7 @@ export class ViewConfig {
     const relativeMatch = /^(\^(?:\.\^)*)$/;
 
     if (relativeMatch.exec(ngViewContextAnchor)) {
-      let anchorState: StateObject | undefined = context;
+      let anchorState: StateObject | null | undefined = context;
 
       // "^.^.^" -> ["^", "^", "^"] (count how many times we go up)
       const hops = ngViewContextAnchor.split(".").filter(Boolean).length;

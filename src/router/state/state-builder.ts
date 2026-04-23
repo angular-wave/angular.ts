@@ -9,7 +9,6 @@ import {
 } from "../../shared/common.ts";
 import {
   entries,
-  hasOwn,
   isArray,
   isDefined,
   isFunction,
@@ -18,22 +17,20 @@ import {
 } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
 import { is, pattern, val } from "../../shared/hof.ts";
+import { ResolveContext } from "../resolve/resolve-context.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { annotate } from "../../core/di/di.ts";
 import { ViewConfig } from "./views.ts";
 import type { ParamDeclaration } from "../params/interface.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
+import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type {
   ResolvePolicy,
   ResolvableLiteral,
   ProviderLike,
 } from "../resolve/interface.ts";
-import type {
-  BuilderFunction,
-  Builders,
-  BuiltStateDeclaration,
-  StateDeclaration,
-} from "./interface.ts";
+import type { BuiltStateDeclaration, StateDeclaration } from "./interface.ts";
+import type { PathNode } from "../path/path-node.ts";
 import type { StateMatcher } from "./state-matcher.ts";
 import type { StateObject } from "./state-object.ts";
 import type { UrlMatcher } from "../url/url-matcher.ts";
@@ -48,135 +45,72 @@ function parseUrl(url: unknown): false | { val: string; root: boolean } {
   return { val: root ? url.substring(1) : url, root };
 }
 
-/**
- *
- * @param {ng.BuiltStateDeclaration} state
- * @returns {ng.StateDeclaration}
- */
-function selfBuilder(state: BuiltStateDeclaration): StateDeclaration {
-  state.self._state = () => state;
-
-  return state.self;
-}
-
-/**
- * @param {ng.BuiltStateDeclaration} state
- * @returns {any}
- */
-function dataBuilder(state: BuiltStateDeclaration): any {
-  if (state.parent && state.parent.data) {
-    state.data = state.self.data = inherit(state.parent.data, state.data);
-  }
-
-  return state.data;
-}
-
-/**
- * @param {ng.UrlService} $url
- * @param {() => ng.StateObject | ng.BuiltStateDeclaration | undefined} root
- */
-function getUrlBuilder(
+function buildUrl(
+  stateObject: StateObject & BuiltStateDeclaration,
   $url: ng.UrlService,
-  root: () => StateObject | BuiltStateDeclaration | undefined,
-): BuilderFunction {
-  return function (stateObject: StateObject & BuiltStateDeclaration) {
-    let stateDec = stateObject.self;
+  root: StateObject | BuiltStateDeclaration,
+) {
+  let stateDec = stateObject.self;
 
-    // For future states, i.e., states whose name ends with `.**`,
-    // match anything that starts with the url prefix
-    if (
-      stateDec &&
-      stateDec.url &&
-      stateDec.name &&
-      stateDec.name.match(/\.\*\*$/)
-    ) {
-      const newStateDec = {} as BuiltStateDeclaration;
+  // For future states, i.e., states whose name ends with `.**`,
+  // match anything that starts with the url prefix
+  if (
+    stateDec &&
+    stateDec.url &&
+    stateDec.name &&
+    stateDec.name.match(/\.\*\*$/)
+  ) {
+    const newStateDec = {} as BuiltStateDeclaration;
 
-      copy(stateDec, newStateDec);
-      newStateDec.url += "{remainder:any}"; // match any path (.*)
-      stateDec = newStateDec;
-    }
-    const { parent } = stateObject;
+    copy(stateDec, newStateDec);
+    newStateDec.url += "{remainder:any}"; // match any path (.*)
+    stateDec = newStateDec;
+  }
+  const { parent } = stateObject;
 
-    const parsed = parseUrl(stateDec.url);
+  const parsed = parseUrl(stateDec.url);
 
-    const url = (
-      !parsed ? stateDec.url : $url.compile(parsed.val, { state: stateDec })
-    ) as (UrlMatcher & Record<string, any>) | null;
+  const url = (
+    !parsed ? stateDec.url : $url.compile(parsed.val, { state: stateDec })
+  ) as (UrlMatcher & Record<string, any>) | null;
 
-    if (!url) return null;
+  if (!url) return null;
 
-    if (!$url.isMatcher(url))
-      throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
+  if (!$url.isMatcher(url))
+    throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
 
-    return parsed && parsed.root
-      ? url
-      : (
-          (parent && parent?.navigable) ||
-          (root() as StateObject | BuiltStateDeclaration)
-        ).url.append(url);
-  };
-}
-
-/**
- * @param {{ (state: ng.StateObject): boolean; (arg0: any): any; }} rootFn
- */
-function getNavigableBuilder(
-  rootFn: (state: StateObject) => boolean,
-): BuilderFunction {
-  return function (state: StateObject & BuiltStateDeclaration) {
-    return !rootFn(state) && state.url
-      ? state
-      : state.parent
-        ? state.parent.navigable
-        : null;
-  };
+  return parsed && parsed.root
+    ? url
+    : ((parent && parent.navigable) || root).url.append(url);
 }
 
 /**
  * @param {ParamFactory} paramFactory
  */
-function getParamsBuilder(paramFactory: ParamFactory): BuilderFunction {
-  return function (state: BuiltStateDeclaration) {
-    const makeConfigParam = (_config: ParamDeclaration, id: string | number) =>
-      paramFactory.fromConfig(String(id), null, state.self);
+function buildParams(
+  state: BuiltStateDeclaration,
+  paramFactory: ParamFactory,
+): Record<string, any> {
+  const makeConfigParam = (_config: ParamDeclaration, id: string | number) =>
+    paramFactory.fromConfig(String(id), null, state.self);
 
-    const urlParams =
-      (state.url && state.url.parameters({ inherit: false })) || [];
+  const urlParams =
+    (state.url && state.url.parameters({ inherit: false })) || [];
 
-    const nonUrlParams = values(
-      map(
-        omit(
-          state.params || {},
-          urlParams.map((x: any) => x.id),
-        ),
-        makeConfigParam,
+  const nonUrlParams = values(
+    map(
+      omit(
+        state.params || {},
+        urlParams.map((x: any) => x.id),
       ),
-    );
+      makeConfigParam,
+    ),
+  );
 
-    return urlParams
-      .concat(nonUrlParams)
-      .map((x: any) => [x.id, x] as [string, any])
-      .reduce(applyPairs, {});
-  };
-}
-
-/**
- * @param {ng.StateObject} state
- */
-function pathBuilder(state: StateObject): StateObject[] {
-  return state.parent ? (state.parent.path || []).concat(state) : [state];
-}
-
-/**
- * @param {ng.StateObject} state
- */
-function includesBuilder(state: StateObject): Record<string, boolean> {
-  const includes = state.parent ? Object.assign({}, state.parent.includes) : {};
-
-  includes[state.name] = true;
-
-  return includes;
+  return urlParams
+    .concat(nonUrlParams)
+    .map((x: any) => [x.id, x] as [string, any])
+    .reduce(applyPairs, {});
 }
 
 function hasAnyViewKey(keys: string[], obj: Record<string, any>): boolean {
@@ -271,10 +205,31 @@ function viewsBuilder(
   return views;
 }
 
+function getResolveLocals(ctx: ResolveContext): Record<string, any> {
+  const tokens = ctx.getTokens().filter(isString);
+
+  const tuples: [string, any][] = [];
+
+  for (let i = 0; i < tokens.length; i++) {
+    const key = tokens[i];
+
+    const resolvable = ctx.getResolvable(key);
+
+    const waitPolicy = ctx.getPolicy(resolvable).async;
+
+    tuples.push([
+      key,
+      waitPolicy === "NOWAIT" ? resolvable.promise : resolvable.data,
+    ]);
+  }
+
+  return tuples.reduce(applyPairs, {});
+}
+
 /**
- * This is a [[StateBuilder.builder]] function for the `resolve:` block on a [[StateDeclaration]].
+ * Builds the `resolve:` block on a [[StateDeclaration]].
  *
- * When the [[StateBuilder]] builds a [[StateObject]] object from a raw [[StateDeclaration]], this builder
+ * When the [[StateBuilder]] builds a [[StateObject]] object from a raw [[StateDeclaration]], this function
  * validates the `resolve` property and converts it to a [[Resolvable]] array.
  *
  * resolve: input value can be:
@@ -464,8 +419,6 @@ export function resolvablesBuilder(
  * conforms to the [[StateDeclaration]] interface.  This factory takes that object and builds the corresponding
  * [[StateObject]] object, which has an API and is used internally.
  *
- * Custom properties or API may be added to the internal [[StateObject]] object by registering a decorator function
- * using the [[builder]] method.
  */
 export class StateBuilder {
   /** @internal */
@@ -473,7 +426,9 @@ export class StateBuilder {
   /** @internal */
   _$injector: ng.InjectorService | undefined;
   /** @internal */
-  _builders: Builders;
+  _paramFactory: ParamFactory;
+  /** @internal */
+  _urlService: ng.UrlService;
 
   /**
    * @param {StateMatcher} matcher
@@ -482,69 +437,36 @@ export class StateBuilder {
   constructor(matcher: StateMatcher, urlService: ng.UrlService) {
     this._matcher = matcher;
     this._$injector = undefined;
-    const self = this;
-
-    const root = () => matcher.find("");
-
-    /**
-     * @param {ng.StateObject} state
-     */
-    function parentBuilder(state: StateObject) {
-      if (isRoot(state)) return null;
-
-      return matcher.find(self.parentName(state)) || root();
-    }
-    /** @type {Builders} */
-    this._builders = {
-      name: [(state: StateObject) => state.name],
-      self: [selfBuilder],
-      parent: [parentBuilder],
-      data: [dataBuilder],
-      // Build a URLMatcher if necessary, either via a relative or absolute URL
-      url: [getUrlBuilder(urlService, root)],
-      // Keep track of the closest ancestor state that has a URL (i.e. is navigable)
-      navigable: [getNavigableBuilder(isRoot)],
-      // TODO
-      params: [getParamsBuilder(urlService._paramFactory)],
-      // Keep a full path from the root down to this state as this is needed for state activation.
-      path: [pathBuilder],
-      // Speed up $state.includes() as it's used a lot
-      includes: [includesBuilder],
-      resolvables: [
-        (state: StateObject & StateDeclaration) =>
-          resolvablesBuilder(
-            state,
-            this._$injector && this._$injector.strictDi,
-          ),
-      ],
-    };
+    this._paramFactory = urlService._paramFactory;
+    this._urlService = urlService;
   }
 
-  /**
-   * @param {string} name
-   * @param {*} fn
-   * @returns {BuilderFunction | BuilderFunction[] | null | undefined}
-   */
-  builder(
-    name: string,
-    fn?: any,
-  ): BuilderFunction | BuilderFunction[] | (() => null) | undefined {
-    const { _builders: builders } = this;
+  _buildStateHook(
+    stateObject: StateObject & Record<string, any>,
+    hookName: "onEnter" | "onExit" | "onRetain",
+  ): ((trans: ng.Transition, state: BuiltStateDeclaration) => any) | undefined {
+    const hook = stateObject[hookName];
 
-    const array = builders[name] || [];
+    if (!hook) return undefined;
 
-    // Backwards compat: if only one builder exists, return it, else return whole arary.
-    if (isString(name) && !isDefined(fn))
-      return array.length > 1 ? array : array[0];
+    const pathname = hookName === "onExit" ? "from" : "to";
 
-    if (!isString(name) || !isFunction(fn)) return undefined;
-    builders[name] = array;
-    builders[name].push(fn);
+    return (trans: ng.Transition, state: BuiltStateDeclaration) => {
+      const $injector = this._$injector as InjectorService;
 
-    return () => {
-      builders[name].splice(builders[name].indexOf(fn, 1));
+      const resolveContext = new ResolveContext(
+        trans.treeChanges(pathname) as PathNode[],
+        $injector,
+      );
 
-      return null;
+      const subContext = resolveContext.subContext(state._state());
+
+      const locals = Object.assign(getResolveLocals(subContext), {
+        $state$: state,
+        $transition$: trans,
+      });
+
+      return $injector.invoke(hook, this, locals);
     };
   }
 
@@ -556,7 +478,7 @@ export class StateBuilder {
    * @returns {ng.StateObject | null} the built State object
    */
   build(state: StateObject): StateObject | null {
-    const { _matcher: matcher, _builders: builders } = this;
+    const { _matcher: matcher, _urlService: urlService } = this;
 
     const parent = this.parentName(state);
 
@@ -564,21 +486,43 @@ export class StateBuilder {
       return null;
     }
 
-    for (const key in builders) {
-      if (!hasOwn(builders, key)) continue;
-      const chain = builders[key].reduce(
-        (parentFn: BuilderFunction, step: BuilderFunction) => (_state) =>
-          step(_state, parentFn),
-        () => {
-          /* empty */
-        },
-      );
+    state.parent = isRoot(state)
+      ? null
+      : matcher.find(parent) || matcher.find("");
+    state.url = buildUrl(
+      state as StateObject & BuiltStateDeclaration,
+      urlService,
+      matcher.find("") as StateObject | BuiltStateDeclaration,
+    ) as any;
+    state.resolvables = resolvablesBuilder(
+      state as StateObject & StateDeclaration,
+      this._$injector && this._$injector.strictDi,
+    );
+    state.onExit = this._buildStateHook(state, "onExit") as any;
+    state.onRetain = this._buildStateHook(state, "onRetain") as any;
+    state.onEnter = this._buildStateHook(state, "onEnter") as any;
 
-      (state as Record<string, any>)[key] = chain(
-        state as StateObject & BuiltStateDeclaration,
-      );
+    state.navigable =
+      !isRoot(state) && state.url
+        ? state
+        : state.parent
+          ? state.parent.navigable
+          : null;
+    state.params = buildParams(
+      state as StateObject & BuiltStateDeclaration,
+      this._paramFactory,
+    ) as any;
+
+    if (state.parent && state.parent.data) {
+      state.data = state.self.data = inherit(state.parent.data, state.data);
     }
-
+    state.path = state.parent
+      ? (state.parent.path || []).concat(state)
+      : [state];
+    state.includes = state.parent
+      ? Object.assign({}, state.parent.includes)
+      : {};
+    state.includes[state.name] = true;
     state.views = viewsBuilder(state as StateObject & BuiltStateDeclaration);
 
     return state;
@@ -591,7 +535,9 @@ export class StateBuilder {
    */
   parentName(state: StateObject): string {
     // name = 'foo.bar.baz.**'
-    const name = state.name || "";
+    const rawName = (state.self && state.self.name) || state.name || "";
+
+    const name = rawName;
 
     // segments = ['foo', 'bar', 'baz', '.**']
     const segments = name.split(".");
@@ -620,7 +566,7 @@ export class StateBuilder {
 
   /** @param {ng.StateObject} state*/
   name(state: StateObject): string {
-    const { name } = state;
+    const name = (state.self && state.self.name) || state.name;
 
     if (name.indexOf(".") !== -1 || !state.parent) return name;
     const parentName = isString(state.parent)

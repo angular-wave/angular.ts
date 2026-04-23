@@ -14,7 +14,6 @@ import type { RawParams } from "../params/interface.ts";
 import type { Transition } from "../transition/transition.ts";
 import type { HookResult, TransitionOptions } from "../transition/interface.ts";
 import type {
-  BuilderFunction,
   HrefOptions,
   OnInvalidCallback,
   StateDeclaration,
@@ -170,62 +169,6 @@ export class StateProvider {
       return this;
     },
   ];
-
-  /**
-   * Decorates states when they are registered
-   *
-   * Allows you to extend (carefully) or override (at your own peril) the
-   * `stateBuilder` object used internally by [[StateRegistry]].
-   * This can be used to add custom functionality to ng-router,
-   * for example inferring templateUrl based on the state name.
-   *
-   * When passing only a name, it returns the current (original or decorated) builder
-   * function that matches `name`.
-   *
-   * The builder functions that can be decorated are listed below. Though not all
-   * necessarily have a good use case for decoration, that is up to you to decide.
-   *
-   * In addition, users can attach custom decorators, which will generate new
-   * properties within the state's internal definition. There is currently no clear
-   * use-case for this beyond accessing internal states (i.e. $state.$current),
-   * however, expect this to become increasingly relevant as we introduce additional
-   * meta-programming features.
-   *
-   * **Warning**: Decorators should not be interdependent because the order of
-   * execution of the builder functions in non-deterministic. Builder functions
-   * should only be dependent on the state definition object and super function.
-   *
-   *
-   * Existing builder functions and current return values:
-   *
-   * - **parent** `{object}` - returns the parent state object.
-   * - **data** `{object}` - returns state data, including any inherited data that is not
-   *   overridden by own values (if any).
-   * - **url** `{object}` - returns a {@link ui.router.util.type:UrlMatcher UrlMatcher}
-   *   or `null`.
-   * - **navigable** `{object}` - returns closest ancestor state that has a URL (aka is
-   *   navigable).
-   * - **params** `{object}` - returns an array of state params that are ensured to
-   *   be a super-set of parent's params.
-   * - **ownParams** `{object}` - returns an array of params that belong to the state,
-   *   not including any params defined by ancestor states.
-   * - **path** `{string}` - returns the full path from the root down to this state.
-   *   Needed for state activation.
-   * - **includes** `{object}` - returns an object that includes every state that
-   *   would pass a `$state.includes()` test.
-   *
-   * @param {string} name The name of the builder function to decorate.
-   * @param {BuilderFunction} func A function that is responsible for decorating the original
-   * builder function. The function receives two parameters:
-   *
-   *   - `{object}` - state - The state urlConfig object.
-   *   - `{object}` - super - The original builder function.
-   *
-   * @return {object} $stateProvider - $stateProvider instance
-   */
-  decorator(name: string, func: BuilderFunction) {
-    return this._getRegistry().decorator(name, func) || this;
-  }
 
   /**
    *
