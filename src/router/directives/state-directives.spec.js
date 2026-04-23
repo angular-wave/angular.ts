@@ -600,6 +600,7 @@ describe("ngStateRef", () => {
       $state.transitionTo("contacts.item", { id: 5 });
       template = $compile("<div><ng-view></ng-view><div>")(scope);
       await wait(200);
+      errorLog = [];
     });
 
     it("should work", async () => {
@@ -620,6 +621,24 @@ describe("ngStateRef", () => {
       await wait(500);
 
       expect($state.$current.name).toBe("contacts.item");
+    });
+
+    it("should update the browser from root scope after a view-scoped link transition", async () => {
+      $state.transitionTo("contacts");
+      await wait(500);
+
+      const parentToChild = template.querySelector("a.item");
+
+      browserTrigger(parentToChild, "click");
+      await wait(500);
+
+      const childToDetail = template.querySelector("a.item-detail");
+
+      browserTrigger(childToDetail, "click");
+      await wait(500);
+
+      expect($state.$current.name).toBe("contacts.item.detail");
+      expect(errorLog).toEqual([]);
     });
   });
 

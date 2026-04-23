@@ -225,6 +225,7 @@ function bindEvents(
 
 StateRefDirective.$inject = [
   $injectTokens._state,
+  $injectTokens._rootScope,
   $injectTokens._stateRegistry,
   $injectTokens._transitions,
 ];
@@ -234,6 +235,7 @@ StateRefDirective.$inject = [
  */
 export function StateRefDirective(
   $stateService: ng.StateService,
+  $rootScope: ng.Scope,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
 ): ng.Directive {
@@ -310,7 +312,7 @@ export function StateRefDirective(
       bindEvents(
         element,
         scope,
-        clickHook(element, $state, type, getDef, scope),
+        clickHook(element, $state, type, getDef, $rootScope),
         rawDef._ngStateOpts,
       );
     },
@@ -319,6 +321,7 @@ export function StateRefDirective(
 
 StateRefDynamicDirective.$inject = [
   $injectTokens._state,
+  $injectTokens._rootScope,
   $injectTokens._stateRegistry,
   $injectTokens._transitions,
 ];
@@ -328,6 +331,7 @@ StateRefDynamicDirective.$inject = [
  */
 export function StateRefDynamicDirective(
   $state: ng.StateService,
+  $rootScope: ng.Scope,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
 ): ng.Directive {
@@ -406,7 +410,7 @@ export function StateRefDynamicDirective(
       scope.$on("$destroy", $transitions.onSuccess({}, update));
 
       if (!type._clickable) return;
-      const hookFn = clickHook(element, $state, type, getDef, scope);
+      const hookFn = clickHook(element, $state, type, getDef, $rootScope);
 
       bindEvents(element, scope, hookFn, rawDef._ngStateOpts);
     },
