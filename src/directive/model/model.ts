@@ -514,10 +514,7 @@ export class NgModelController {
    */
   $isEmpty(value: any): boolean {
     return (
-      isUndefined(value) ||
-      value === "" ||
-      value === null ||
-      Number.isNaN(value)
+      isUndefined(value) || value === "" || isNull(value) || Number.isNaN(value)
     );
   }
 
@@ -945,7 +942,7 @@ export class NgModelController {
     }
 
     if (
-      this._lastCommittedViewValue === undefined &&
+      isUndefined(this._lastCommittedViewValue) &&
       Number.isNaN(this.$viewValue)
     ) {
       return;

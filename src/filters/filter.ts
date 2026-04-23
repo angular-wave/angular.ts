@@ -4,6 +4,7 @@ import {
   isArray,
   isArrayLike,
   isFunction,
+  isNull,
   isNullOrUndefined,
   isObject,
   isUndefined,
@@ -125,7 +126,7 @@ function createPredicateFn(
         return false;
       }
 
-      if (actual === null || expected === null) {
+      if (isNull(actual) || isNull(expected)) {
         // No substring matching against `null`; only match against `null`
         return actual === expected;
       }
@@ -278,5 +279,5 @@ function deepCompare(
 // Used for easily differentiating between `null` and actual `object`
 /** Returns the filter classification used by the recursive comparison helpers. */
 function getTypeForFilter(val: any): string {
-  return val === null ? "null" : typeof val;
+  return isNull(val) ? "null" : typeof val;
 }

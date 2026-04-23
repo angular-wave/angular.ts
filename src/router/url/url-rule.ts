@@ -3,6 +3,7 @@ import {
   assert,
   isDefined,
   isFunction,
+  isNull,
   isString,
   isUndefined,
 } from "../../shared/utils.ts";
@@ -169,7 +170,7 @@ export class UrlRuleFactory {
       resolvedHandler = (match: any) => {
         const url = matcher.format(match); // string | null
 
-        return url === null ? undefined : url; // string | void
+        return isNull(url) ? undefined : url; // string | void
       };
     } else {
       resolvedHandler = handler as UrlRuleHandlerFn;

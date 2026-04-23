@@ -1,5 +1,11 @@
 import { defaults, removeFrom } from "../../shared/common.ts";
-import { isDefined, isObject, isString, minErr } from "../../shared/utils.ts";
+import {
+  isDefined,
+  isNullOrUndefined,
+  isObject,
+  isString,
+  minErr,
+} from "../../shared/utils.ts";
 import { Queue } from "../../shared/queue.ts";
 import { makeTargetState } from "../path/path-utils.ts";
 import { PathNode } from "../path/path-node.ts";
@@ -8,7 +14,6 @@ import { RejectType, Rejection } from "../transition/reject-factory.ts";
 import { TargetState } from "./target-state.ts";
 import { Param } from "../params/param.ts";
 import { Glob } from "../glob/glob.ts";
-import { lazyLoadState } from "../hooks/lazy-load.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { Transition } from "../transition/transition.ts";
@@ -102,7 +107,8 @@ export class StateProvider {
     return this.globals.$current;
   }
 
-  /* @ignore */ static $inject = [
+  /* @ignore */
+  static $inject = [
     $injectTokens._routerProvider,
     $injectTokens._transitionsProvider,
     $injectTokens._exceptionHandlerProvider,
@@ -720,7 +726,7 @@ export class StateProvider {
       );
     const nav = state && options?.lossy ? state.navigable : state;
 
-    if (!nav || nav.url === undefined || nav.url === null) {
+    if (!nav || isNullOrUndefined(nav.url)) {
       return null;
     }
 
@@ -766,30 +772,5 @@ export class StateProvider {
     if (arguments.length === 0) return reg?.get();
 
     return reg?.get(stateOrName, base || this.$current);
-  }
-
-  /**
-     * Lazy loads a state
-     *
-     * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
-     * @param {StateOrName} stateOrName the state that should be lazy loaded
-     * @param {ng.Transition} transition the optional Transition context to use (if the lazyLoad function requires an injector, etc)
-    Note: If no transition is provided, a noop transition is created using the from the current state to the current state.
-    This noop transition is not actually run.
-     * @returns a promise to lazy load
-     */
-  lazyLoad(stateOrName: StateOrName, transition?: ng.Transition) {
-    const state = this.get(stateOrName) as StateDeclaration | null;
-
-    if (!state || !state.lazyLoad)
-      throw new Error(`Can not lazy load ${stateOrName}`);
-    const currentPath = this.getCurrentPath();
-
-    const target = makeTargetState(this._getRegistry(), currentPath);
-
-    transition =
-      transition || this.transitionService.create(currentPath, target);
-
-    return lazyLoadState(transition, state);
   }
 }

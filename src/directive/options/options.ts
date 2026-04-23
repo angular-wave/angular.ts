@@ -9,6 +9,7 @@ import {
   isArrayLike,
   isDefined,
   minErr,
+  isNull,
 } from "../../shared/utils.ts";
 import { SelectController } from "../select/select-ctrl.ts";
 
@@ -408,8 +409,7 @@ export function ngOptionsDirective(
               false,
             ) as HTMLOptGroupElement;
             listFragment.appendChild(groupElement);
-            groupElement.label =
-              option._group === null ? "null" : option._group;
+            groupElement.label = isNull(option._group) ? "null" : option._group;
             groupElementMap[String(option._group)] = groupElement;
           }
 
