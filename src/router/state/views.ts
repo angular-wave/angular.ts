@@ -10,14 +10,6 @@ import type { StateObject } from "./state-object.ts";
 import type { TemplateFactoryProvider } from "../template-factory.ts";
 
 /**
- * @return {(path: PathNode[], view: ViewDeclaration) => ViewConfig}
- */
-export function getViewConfigFactory(templateFactory: TemplateFactoryProvider) {
-  return (path: PathNode[], view: ViewDeclaration): ViewConfig =>
-    new ViewConfig(path, view, templateFactory);
-}
-
-/**
  * @type {Number}
  */
 let id = 0;

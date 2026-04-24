@@ -1,7 +1,7 @@
 import { equals, removeFrom } from "../../shared/common.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { trace } from "../common/trace.ts";
-import { getViewConfigFactory, type ViewConfig } from "../state/views.ts";
+import { ViewConfig } from "../state/views.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
@@ -38,11 +38,6 @@ export type { ViewConfig } from "../state/views.ts";
 
 const FQN_MULTIPLIER = 10_000;
 
-type ViewConfigFactory = (
-  path: PathNode[],
-  decl: ViewDeclaration,
-) => ViewConfig;
-
 /**
  * Tracks active `ng-view` instances and matches them with registered
  * view configs produced during state transitions.
@@ -55,7 +50,7 @@ export class ViewService {
   /** @internal */
   _listeners: Array<(tuples: ViewTuple[]) => void>;
   /** @internal */
-  _viewConfigFactory: ViewConfigFactory | undefined;
+  _templateFactory: TemplateFactoryProvider | undefined;
   /** @internal */
   _rootContext: StateObject | null | undefined;
 
@@ -66,7 +61,7 @@ export class ViewService {
     this._ngViews = [];
     this._viewConfigs = [];
     this._listeners = [];
-    this._viewConfigFactory = undefined;
+    this._templateFactory = undefined;
     this._rootContext = undefined;
   }
 
@@ -76,7 +71,7 @@ export class ViewService {
   $get = [
     $t._templateFactory,
     ($templateFactory: TemplateFactoryProvider): ViewService => {
-      this._viewConfigFactory = getViewConfigFactory($templateFactory);
+      this._templateFactory = $templateFactory;
 
       return this;
     },
@@ -100,15 +95,14 @@ export class ViewService {
   /**
    * Builds a view config for one view declaration along the specified path.
    */
-  /** @internal */
-  _createViewConfig(path: PathNode[], decl: ViewDeclaration): ViewConfig {
-    const cfgFactory = this._viewConfigFactory;
+  createViewConfig(path: PathNode[], decl: ViewDeclaration): ViewConfig {
+    const templateFactory = this._templateFactory;
 
-    if (!cfgFactory) {
-      throw new Error("ViewService: No view config factory registered");
+    if (!templateFactory) {
+      throw new Error("ViewService: No template factory registered");
     }
 
-    return cfgFactory(path, decl);
+    return new ViewConfig(path, decl, templateFactory);
   }
 
   /**

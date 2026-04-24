@@ -7,7 +7,6 @@ import { StateObject } from "../state/state-object.ts";
 import { ViewService } from "./view.ts";
 import { PathNode } from "../path/path-node.ts";
 import { PathUtils } from "../path/path-utils.ts";
-import { getViewConfigFactory } from "../state/views.ts";
 import { tail } from "../../shared/common.ts";
 import { wait } from "../../shared/test-utils.ts";
 
@@ -79,9 +78,7 @@ describe("view", () => {
       state = register(stateDeclaration);
       const $view = new ViewService();
 
-      $view._viewConfigFactory = getViewConfigFactory(
-        $injector.get("$templateFactory"),
-      );
+      $view._templateFactory = $injector.get("$templateFactory");
 
       const _states = [root, state];
       path = _states.map((_state) => new PathNode(_state));
@@ -173,6 +170,33 @@ describe("view", () => {
   });
 
   describe("service helpers", () => {
+    it("creates view configs through ViewService.createViewConfig", () => {
+      const state = register({
+        name: "withView",
+        views: {
+          $default: {
+            template: "test",
+          },
+        },
+      });
+      const viewService = new ViewService();
+
+      viewService._templateFactory = $injector.get("$templateFactory");
+
+      spyOn(viewService, "createViewConfig").and.callThrough();
+
+      const path = [root, state].map((_state) => new PathNode(_state));
+
+      PathUtils.applyViewConfigs(viewService, path, [state]);
+
+      expect(viewService.createViewConfig).toHaveBeenCalledTimes(1);
+      expect(viewService.createViewConfig).toHaveBeenCalledWith(
+        jasmine.arrayContaining(path),
+        state.views.$default,
+      );
+      expect(path[1].views.length).toBe(1);
+    });
+
     it("normalizes relative ng-view targets", () => {
       const parentContext = register({ name: "parent", parent: root });
       const childContext = register({
