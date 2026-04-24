@@ -33,7 +33,7 @@
  * @packageDocumentation
  */
 import { parse } from "../../shared/hof.ts";
-import { isNumber, keys } from "../../shared/utils.ts";
+import { isNumber, keys, values } from "../../shared/utils.ts";
 import {
   functionToString,
   maxLength,
@@ -145,7 +145,7 @@ export class Trace {
   /** @internal */
   _set(enabled: boolean, categories: TraceCategoryInput[]): void {
     if (!categories.length) {
-      categories = Object.values(Category);
+      categories = values(Category);
     }
     categories
       .map(normalizedCat)
