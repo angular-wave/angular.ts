@@ -3,6 +3,7 @@ import { propEq } from "../../shared/hof.ts";
 import { keys, values } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
+import type { ViewService } from "../view/view.ts";
 import type { Param } from "../params/param.ts";
 import type { GetParamsFn } from "./interface.ts";
 import type { StateObject } from "../state/state-object.ts";
@@ -56,12 +57,12 @@ export class PathUtils {
    * Creates ViewConfig objects and adds to nodes.
    *
    * On each [[PathNode]], creates ViewConfig objects from the views: property of the node's state
-   * @param {ng.ViewService} $view
+   * @param {ViewService} $view
    * @param {PathNode[]} path
    * @param {StateObject[]} states
    */
   static applyViewConfigs(
-    $view: ng.ViewService,
+    $view: ViewService,
     path: PathNode[],
     states: StateObject[],
   ): void {
@@ -73,8 +74,14 @@ export class PathUtils {
 
         const subPath = PathUtils.subPath(path, (x) => x === node);
 
+        if (!subPath) {
+          node.views = [];
+
+          return;
+        }
+
         const viewConfigs = viewDecls.map((view) => {
-          return $view._createViewConfig(subPath as PathNode[], view);
+          return $view.createViewConfig(subPath, view);
         });
 
         node.views = viewConfigs.reduce(unnestR, []);
