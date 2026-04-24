@@ -32,7 +32,7 @@ export interface NonScopeMarked {
   };
 }
 
-export interface Listener {
+interface Listener {
   /** @internal */
   _originalTarget: any;
   /** @internal */
@@ -81,6 +81,18 @@ type ListenerSchedulerState = {
   _flushing: boolean;
 };
 
+export type ArrayMutationMeta = {
+  _version: number;
+  _kind: "splice" | "reorder";
+  _index: number;
+  _deleteCount: number;
+  _insertCount: number;
+  _previousLength: number;
+  _currentLength: number;
+  _headDeletes: boolean;
+  _tailDeletes: boolean;
+};
+
 export interface ScopeEvent {
   targetScope: typeof Proxy<ng.Scope>;
   currentScope: typeof Proxy<ng.Scope> | null;
@@ -119,6 +131,167 @@ let $exceptionHandler: ng.ExceptionHandlerService;
 
 /** @internal */
 export const $postUpdateQueue: Array<() => void> = [];
+
+const arrayMutationMeta = new WeakMap<object, ArrayMutationMeta>();
+
+let arrayMutationVersion = 0;
+
+function toArrayMutationLength(value: unknown): number {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue) || Number.isNaN(numericValue)) {
+    return 0;
+  }
+
+  return Math.trunc(numericValue);
+}
+
+function normalizeSpliceIndex(index: unknown, length: number): number {
+  const numericIndex = toArrayMutationLength(index);
+
+  if (numericIndex < 0) {
+    return Math.max(length + numericIndex, 0);
+  }
+
+  return Math.min(numericIndex, length);
+}
+
+function createSpliceArrayMutationMeta(
+  index: number,
+  deleteCount: number,
+  insertCount: number,
+  previousLength: number,
+  currentLength: number,
+): ArrayMutationMeta | undefined {
+  const normalizedIndex = Math.max(0, Math.min(index, previousLength));
+
+  const normalizedDeleteCount = Math.max(0, deleteCount);
+
+  const normalizedInsertCount = Math.max(0, insertCount);
+
+  if (
+    normalizedDeleteCount === 0 &&
+    normalizedInsertCount === 0 &&
+    previousLength === currentLength
+  ) {
+    return undefined;
+  }
+
+  return {
+    _version: ++arrayMutationVersion,
+    _kind: "splice",
+    _index: normalizedIndex,
+    _deleteCount: normalizedDeleteCount,
+    _insertCount: normalizedInsertCount,
+    _previousLength: previousLength,
+    _currentLength: currentLength,
+    _headDeletes:
+      normalizedDeleteCount > 0 &&
+      normalizedInsertCount === 0 &&
+      normalizedIndex === 0,
+    _tailDeletes:
+      normalizedDeleteCount > 0 &&
+      normalizedInsertCount === 0 &&
+      normalizedIndex + normalizedDeleteCount === previousLength,
+  };
+}
+
+function createReorderArrayMutationMeta(length: number): ArrayMutationMeta {
+  return {
+    _version: ++arrayMutationVersion,
+    _kind: "reorder",
+    _index: 0,
+    _deleteCount: 0,
+    _insertCount: 0,
+    _previousLength: length,
+    _currentLength: length,
+    _headDeletes: false,
+    _tailDeletes: false,
+  };
+}
+
+function getMethodArrayMutationMeta(
+  method: string,
+  args: any[],
+  previousLength: number,
+  currentLength: number,
+): ArrayMutationMeta | undefined {
+  switch (method) {
+    case "pop":
+      return previousLength > 0
+        ? createSpliceArrayMutationMeta(
+            previousLength - 1,
+            1,
+            0,
+            previousLength,
+            currentLength,
+          )
+        : undefined;
+    case "shift":
+      return previousLength > 0
+        ? createSpliceArrayMutationMeta(0, 1, 0, previousLength, currentLength)
+        : undefined;
+    case "unshift":
+      return createSpliceArrayMutationMeta(
+        0,
+        0,
+        args.length,
+        previousLength,
+        currentLength,
+      );
+    case "splice": {
+      const index = normalizeSpliceIndex(args[0], previousLength);
+
+      const deleteCount =
+        args.length < 2
+          ? previousLength - index
+          : Math.min(
+              Math.max(toArrayMutationLength(args[1]), 0),
+              previousLength - index,
+            );
+
+      return createSpliceArrayMutationMeta(
+        index,
+        deleteCount,
+        Math.max(0, args.length - 2),
+        previousLength,
+        currentLength,
+      );
+    }
+    case "reverse":
+    case "sort":
+      return createReorderArrayMutationMeta(previousLength);
+    default:
+      return undefined;
+  }
+}
+
+function clearArrayMutationMeta(proxy: ScopeProxy): void {
+  arrayMutationMeta.delete(proxy as unknown as object);
+}
+
+function setArrayMutationMeta(
+  proxy: ScopeProxy,
+  meta: ArrayMutationMeta | undefined,
+): void {
+  if (!meta) {
+    clearArrayMutationMeta(proxy);
+
+    return;
+  }
+
+  arrayMutationMeta.set(proxy as unknown as object, meta);
+}
+
+export function getArrayMutationMeta(
+  value: unknown,
+): ArrayMutationMeta | undefined {
+  if (!value || !isProxy(value)) {
+    return undefined;
+  }
+
+  return arrayMutationMeta.get(value as object);
+}
 
 export class RootScopeProvider {
   /** @internal */
@@ -388,7 +561,14 @@ export function createScope(target: any = {}, context?: Scope): any {
 
 const global = globalThis;
 
-const arrayMutationMethods = new Set(["pop", "shift", "unshift"]);
+const arrayMutationMethods = new Set([
+  "pop",
+  "splice",
+  "reverse",
+  "shift",
+  "sort",
+  "unshift",
+]);
 
 const wStr = "[object Window]";
 
@@ -546,6 +726,9 @@ export class Scope {
   /** @internal */
   _scheduled: Listener[];
 
+  /** @internal */
+  _arrayOwnerListenersScheduled: boolean;
+
   $scopename?: string;
 
   /** @internal */
@@ -589,6 +772,8 @@ export class Scope {
     this._destroyed = false;
 
     this._scheduled = [];
+
+    this._arrayOwnerListenersScheduled = false;
 
     this.$scopename = undefined;
 
@@ -723,6 +908,10 @@ export class Scope {
       for (let i = oldValue - 1; i >= value; i--) {
         this._destroyDisplacedValue(target[i]);
       }
+    }
+
+    if (isArray(target) && property !== "length") {
+      clearArrayMutationMeta(proxy);
     }
 
     // Handle NaNs
@@ -948,6 +1137,38 @@ export class Scope {
           });
         }
 
+        if (
+          isArray(target) &&
+          property === "length" &&
+          oldValue !== value &&
+          !this._arrayOwnerListenersScheduled
+        ) {
+          if (
+            typeof oldValue === "number" &&
+            typeof value === "number" &&
+            value < oldValue
+          ) {
+            setArrayMutationMeta(
+              proxy,
+              createSpliceArrayMutationMeta(
+                value,
+                oldValue - value,
+                0,
+                oldValue,
+                value,
+              ),
+            );
+          } else if (
+            typeof oldValue === "number" &&
+            typeof value === "number" &&
+            value !== oldValue
+          ) {
+            clearArrayMutationMeta(proxy);
+          }
+
+          this._scheduleArrayOwnerListeners(target, proxy, property, true);
+        }
+
         let _foreignListeners = this._foreignListeners.get(property);
 
         if (!_foreignListeners && this.$parent?._foreignListeners) {
@@ -1049,25 +1270,62 @@ export class Scope {
       typeof property === "string" &&
       arrayMutationMethods.has(property)
     ) {
-      if (this._objectListeners.has(proxy)) {
-        const keyList = this._objectListeners.get(proxy);
+      return (...args: any[]) => {
+        const previousLength = target.length;
 
-        if (keyList) {
-          for (let i = 0, l = keyList.length; i < l; i++) {
-            const key = keyList[i];
+        clearArrayMutationMeta(proxy);
 
-            const listeners = this._watchers.get(key);
+        this._scheduled = [];
+        this._arrayOwnerListenersScheduled = false;
 
-            if (listeners) {
-              this._scheduled = listeners;
+        if (this._objectListeners.has(proxy)) {
+          const keyList = this._objectListeners.get(proxy);
+
+          if (keyList) {
+            for (let i = 0, l = keyList.length; i < l; i++) {
+              const key = keyList[i];
+
+              const listeners = this._watchers.get(key);
+
+              if (listeners) {
+                this._scheduled = listeners;
+              }
             }
           }
         }
-      }
 
-      if (property === "unshift") {
-        this._scheduleListener(this._scheduled);
-      }
+        if (property === "unshift" && this._scheduled.length > 0) {
+          this._scheduleListener(this._scheduled);
+          this._arrayOwnerListenersScheduled = true;
+        }
+
+        try {
+          const result = Reflect.apply(targetProp, proxy, args);
+
+          setArrayMutationMeta(
+            proxy,
+            getMethodArrayMutationMeta(
+              property,
+              args,
+              previousLength,
+              target.length,
+            ),
+          );
+
+          if (
+            this._scheduled.length > 0 &&
+            !this._arrayOwnerListenersScheduled
+          ) {
+            this._scheduleListener(this._scheduled);
+            this._arrayOwnerListenersScheduled = true;
+          }
+
+          return result;
+        } finally {
+          this._scheduled = [];
+          this._arrayOwnerListenersScheduled = false;
+        }
+      };
     }
 
     if (typeof property !== "symbol" && hasOwn(this._propertyMap, property)) {
@@ -1084,10 +1342,15 @@ export class Scope {
    * @param target - The target object.
    * @param property - The name of the property being deleted.
    */
+  // noinspection JSUnusedGlobalSymbols -- Proxy trap invoked via the Proxy handler contract.
   deleteProperty(
     target: ScopeTarget,
     property: string | number | symbol,
   ): boolean {
+    if (isArray(target)) {
+      clearArrayMutationMeta(this.$proxy);
+    }
+
     // Currently deletes $model
     if (target[property] && target[property][isProxySymbol]) {
       target[property] = undefined;
@@ -1098,7 +1361,10 @@ export class Scope {
         this._scheduleListener(listeners);
       }
 
-      if (this._objectListeners.has(this.$proxy)) {
+      if (
+        this._scheduled.length === 0 &&
+        this._objectListeners.has(this.$proxy)
+      ) {
         const keyList = this._objectListeners.get(this.$proxy);
 
         if (keyList) {
@@ -1112,8 +1378,9 @@ export class Scope {
         }
       }
 
-      if (this._scheduled) {
+      if (this._scheduled.length > 0) {
         this._scheduleListener(this._scheduled);
+        this._arrayOwnerListenersScheduled = true;
         this._scheduled = [];
       }
 
@@ -1122,7 +1389,10 @@ export class Scope {
 
     delete target[property];
 
-    if (this._objectListeners.has(this.$proxy)) {
+    if (
+      this._scheduled.length === 0 &&
+      this._objectListeners.has(this.$proxy)
+    ) {
       const keyList = this._objectListeners.get(this.$proxy);
 
       if (keyList) {
@@ -1140,6 +1410,12 @@ export class Scope {
       if (listeners) {
         this._scheduleListener(listeners, target[property]);
       }
+    }
+
+    if (this._scheduled.length > 0) {
+      this._scheduleListener(this._scheduled);
+      this._arrayOwnerListenersScheduled = true;
+      this._scheduled = [];
     }
 
     return true;
@@ -1804,8 +2080,13 @@ export class Scope {
     target: ScopeTarget,
     proxy: ScopeProxy,
     property: string,
+    allowLength = false,
   ): void {
-    if (!isArray(target) || property === "length") {
+    if (
+      !isArray(target) ||
+      (property === "length" && !allowLength) ||
+      this._scheduled.length > 0
+    ) {
       return;
     }
 

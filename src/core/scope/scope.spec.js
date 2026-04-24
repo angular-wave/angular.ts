@@ -1669,62 +1669,94 @@ describe("Scope", () => {
     });
 
     describe("watching arrays", () => {
-      it("can watch arrays", async () => {
-        scope.aValue = [1, 2, 3];
-        scope.counter = 0;
-        scope.$watch("aValue", function (newValue, m) {
-          m.counter++;
-        });
-        await wait();
-        expect(scope.counter).toBe(1);
+      describe("array mutation regressions", () => {
+        it("can watch arrays", async () => {
+          scope.aValue = [1, 2, 3];
+          scope.counter = 0;
+          scope.$watch("aValue", function (newValue, m) {
+            m.counter++;
+          });
+          await wait();
+          expect(scope.counter).toBe(1);
 
-        scope.aValue.push(4);
-        await wait();
-        expect(scope.counter).toBe(2);
+          scope.aValue.push(4);
+          await wait();
+          expect(scope.counter).toBe(2);
 
-        scope.aValue.pop();
-        await wait();
-        expect(scope.counter).toBe(3);
+          scope.aValue.pop();
+          await wait();
+          expect(scope.counter).toBe(3);
 
-        scope.aValue.unshift(4);
-        await wait();
-        expect(scope.counter).toBe(4);
-      });
-
-      it("can pass the new value of the array as well as the previous value of the dropped item", async () => {
-        scope.aValue = [];
-        let newValueGiven;
-        scope.$watch("aValue", function (newValue) {
-          newValueGiven = newValue;
+          scope.aValue.unshift(4);
+          await wait();
+          expect(scope.counter).toBe(4);
         });
 
-        scope.aValue.push(4);
-        await wait();
-        expect(newValueGiven).toEqual(scope.aValue);
+        it("can watch arrays when they are reversed", async () => {
+          scope.aValue = [1, 2, 3];
+          scope.counter = 0;
+          scope.$watch("aValue", function (newValue, m) {
+            m.counter++;
+          });
+          await wait();
+          expect(scope.counter).toBe(1);
 
-        scope.aValue.push(5);
-        await wait();
-        expect(newValueGiven).toEqual([4, 5]);
-
-        scope.aValue[1] = 2;
-        await wait();
-        expect(newValueGiven).toEqual([4, 2]);
-
-        scope.aValue[0] = 2;
-        await wait();
-        expect(newValueGiven).toEqual([2, 2]);
-      });
-
-      it("can detect removal of items", async () => {
-        scope.aValue = [2, 3];
-        let newValueGiven;
-        scope.$watch("aValue", function (newValue) {
-          newValueGiven = newValue;
+          scope.aValue.reverse();
+          await wait();
+          expect(scope.counter).toBe(2);
+          expect(scope.aValue).toEqual([3, 2, 1]);
         });
 
-        scope.aValue.pop();
-        await wait();
-        expect(newValueGiven).toEqual([2]);
+        it("can watch arrays when they are sorted", async () => {
+          scope.aValue = [3, 1, 2];
+          scope.counter = 0;
+          scope.$watch("aValue", function (newValue, m) {
+            m.counter++;
+          });
+          await wait();
+          expect(scope.counter).toBe(1);
+
+          scope.aValue.sort((left, right) => left - right);
+          await wait();
+          expect(scope.counter).toBe(2);
+          expect(scope.aValue).toEqual([1, 2, 3]);
+        });
+
+        it("can pass the new value of the array as well as the previous value of the dropped item", async () => {
+          scope.aValue = [];
+          let newValueGiven;
+          scope.$watch("aValue", function (newValue) {
+            newValueGiven = newValue;
+          });
+
+          scope.aValue.push(4);
+          await wait();
+          expect(newValueGiven).toEqual(scope.aValue);
+
+          scope.aValue.push(5);
+          await wait();
+          expect(newValueGiven).toEqual([4, 5]);
+
+          scope.aValue[1] = 2;
+          await wait();
+          expect(newValueGiven).toEqual([4, 2]);
+
+          scope.aValue[0] = 2;
+          await wait();
+          expect(newValueGiven).toEqual([2, 2]);
+        });
+
+        it("can detect removal of items", async () => {
+          scope.aValue = [2, 3];
+          let newValueGiven;
+          scope.$watch("aValue", function (newValue) {
+            newValueGiven = newValue;
+          });
+
+          scope.aValue.pop();
+          await wait();
+          expect(newValueGiven).toEqual([2]);
+        });
       });
 
       it("should return oldCollection === newCollection only on the first listener call", async () => {

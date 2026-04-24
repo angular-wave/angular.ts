@@ -5,7 +5,6 @@ import type { Attributes as TAttributes } from "./core/compile/attributes.ts";
 import {
   Scope as TScope,
   ListenerFn as TListenerFn,
-  Listener as TListener,
   ScopeEvent as TScopeEvent,
 } from "./core/scope/scope.ts";
 import type { ProviderCache as TProviderCache } from "./core/di/interface.ts";
@@ -340,8 +339,6 @@ declare global {
     export type InterpolationFunction = TInterpolationFunction;
 
     export type InvocationDetail = TInvocationDetail;
-
-    export type Listener = TListener;
 
     export type ListenerFn = TListenerFn;
 
