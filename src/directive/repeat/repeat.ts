@@ -13,6 +13,10 @@ import {
   removeElement,
   removeElementData,
 } from "../../shared/dom.ts";
+import {
+  getArrayMutationMeta,
+  type ArrayMutationMeta,
+} from "../../core/scope/scope.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import { NodeType } from "../../shared/node.ts";
 
@@ -36,11 +40,33 @@ type RepeatBlock = {
   _id: any;
   _scope?: RepeatScope;
   _clone?: RepeatClone;
+  _usesPositionLocals?: boolean;
 };
 
 type RepeatBlockMap = Record<string, RepeatBlock>;
 
 export function ngRepeatDirective($animate: any): ng.Directive {
+  const repeatPositionLocalKeys = [
+    "$index",
+    "$first",
+    "$last",
+    "$middle",
+    "$odd",
+    "$even",
+  ];
+
+  function scopeUsesRepeatPositionLocals(scope: RepeatScope): boolean {
+    const watchers = scope.$handler._watchers;
+
+    for (let i = 0; i < repeatPositionLocalKeys.length; i++) {
+      if (watchers.has(repeatPositionLocalKeys[i])) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   function updateScope(
     scope: RepeatScope,
     index: number,
@@ -49,6 +75,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
     keyIdentifier: string | undefined,
     key: any,
     arrayLength: number,
+    updatePositionLocals = true,
   ) {
     if (scope[valueIdentifier] !== value) {
       scope[valueIdentifier] = value;
@@ -59,6 +86,11 @@ export function ngRepeatDirective($animate: any): ng.Directive {
     if (value) {
       scope.$target._hashKey = value._hashKey;
     }
+
+    if (!updatePositionLocals) {
+      return;
+    }
+
     scope.$index = index;
     scope.$first = index === 0;
     scope.$last = index === arrayLength - 1;
@@ -107,6 +139,28 @@ export function ngRepeatDirective($animate: any): ng.Directive {
 
   function trackByIdObjFn(_$scope: RepeatScope, key: any) {
     return key;
+  }
+
+  function canSkipDomMoveChecks(
+    mutationMeta: ArrayMutationMeta | undefined,
+    blockOrder: RepeatBlock[],
+  ): boolean {
+    if (
+      !mutationMeta ||
+      mutationMeta._kind !== "splice" ||
+      mutationMeta._insertCount !== 0 ||
+      mutationMeta._deleteCount === 0
+    ) {
+      return false;
+    }
+
+    for (let index = 0; index < blockOrder.length; index++) {
+      if (!blockOrder[index]._scope || !blockOrder[index]._clone) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   return {
@@ -195,6 +249,8 @@ export function ngRepeatDirective($animate: any): ng.Directive {
 
         let lastBlockMap: RepeatBlockMap = nullObject();
 
+        let lastSeenArrayMutationVersion = 0;
+
         $scope.$watch(
           rhs,
           (collection: any) => {
@@ -278,6 +334,27 @@ export function ngRepeatDirective($animate: any): ng.Directive {
               }
             }
 
+            const mutationMeta = (() => {
+              const nextMutationMeta = getArrayMutationMeta(collection);
+
+              if (
+                !nextMutationMeta ||
+                nextMutationMeta._version <= lastSeenArrayMutationVersion ||
+                nextMutationMeta._currentLength !== collectionLength
+              ) {
+                return undefined;
+              }
+
+              lastSeenArrayMutationVersion = nextMutationMeta._version;
+
+              return nextMutationMeta;
+            })();
+
+            const canSkipDomMoveChecksForMutation = canSkipDomMoveChecks(
+              mutationMeta,
+              nextBlockOrder,
+            );
+
             for (const blockKey in lastBlockMap) {
               block = lastBlockMap[blockKey];
               const blockNodes = getBlockNodes(
@@ -314,38 +391,51 @@ export function ngRepeatDirective($animate: any): ng.Directive {
               block = nextBlockOrder[index];
 
               if (block._scope) {
+                const shouldUpdatePositionLocals = !!block._usesPositionLocals;
+
                 const existingClone = block._clone;
 
                 if (!existingClone) {
                   continue;
                 }
 
-                const existingCloneNodes = Array.isArray(existingClone)
-                  ? existingClone
-                  : [existingClone];
+                if (!canSkipDomMoveChecksForMutation) {
+                  const existingCloneNodes = Array.isArray(existingClone)
+                    ? existingClone
+                    : [existingClone];
 
-                nextNode = previousNode;
+                  nextNode = previousNode;
 
-                do {
-                  nextNode = nextNode.nextSibling;
-                } while (nextNode && nextNode[NG_REMOVED]);
+                  do {
+                    nextNode = nextNode.nextSibling;
+                  } while (nextNode && nextNode[NG_REMOVED]);
 
-                if (getBlockStart(block) !== nextNode) {
-                  insertNodesAfter(
-                    getBlockNodes(existingCloneNodes),
-                    previousNode,
+                  if (getBlockStart(block) !== nextNode) {
+                    insertNodesAfter(
+                      getBlockNodes(existingCloneNodes),
+                      previousNode,
+                    );
+                  }
+                }
+
+                previousNode = getBlockEnd(block);
+
+                if (
+                  shouldUpdatePositionLocals ||
+                  keyIdentifier ||
+                  block._scope[valueIdentifier] !== value
+                ) {
+                  updateScope(
+                    block._scope,
+                    index,
+                    valueIdentifier,
+                    value,
+                    keyIdentifier,
+                    key,
+                    collectionLength,
+                    shouldUpdatePositionLocals,
                   );
                 }
-                previousNode = getBlockEnd(block);
-                updateScope(
-                  block._scope,
-                  index,
-                  valueIdentifier,
-                  value,
-                  keyIdentifier,
-                  key,
-                  collectionLength,
-                );
               } else {
                 $transclude?.((clone: RepeatClone, scope: RepeatScope) => {
                   const normalizedClone = normalizeCloneNodes(clone);
@@ -381,6 +471,9 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                     keyIdentifier,
                     key,
                     collectionLength,
+                  );
+                  block._usesPositionLocals = scopeUsesRepeatPositionLocals(
+                    block._scope,
                   );
                 });
               }
