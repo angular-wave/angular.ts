@@ -3297,6 +3297,22 @@ describe("Scope", () => {
       expect(scope._children.includes(child2)).toBeFalse();
     });
 
+    it("should destroy a displaced direct child scope when replacing an array item by index", () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const onDestroy = jasmine.createSpy("child destroy on index replace");
+
+      child.$on("$destroy", onDestroy);
+      scope.items = [child];
+
+      scope.items[0] = { replacement: true };
+
+      expect(onDestroy).toHaveBeenCalled();
+      expect(child.$handler._destroyed).toBeTrue();
+      expect(scope._children.includes(child)).toBeFalse();
+      expect(scope.items[0].replacement).toBeTrue();
+    });
+
     it("should destroy direct child scopes contained in a displaced collection when overwritten", () => {
       const scope = createScope();
       const child1 = scope.$new();
