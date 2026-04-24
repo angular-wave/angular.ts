@@ -134,25 +134,31 @@ export class Attributes {
   }
 
   $updateClass(newClasses: string, oldClasses: string): void {
+    if (newClasses === oldClasses) {
+      return;
+    }
+
+    const element = this._element() as Element;
+
+    const hasAnimation = hasAnimate(element);
+
     const toAdd = tokenDifference(newClasses, oldClasses);
 
-    if (toAdd && toAdd.length) {
-      if (hasAnimate(this._element())) {
-        this._animate.addClass(this._element() as Element, toAdd);
+    if (toAdd.length) {
+      if (hasAnimation) {
+        this._animate.addClass(element, toAdd.join(" "));
       } else {
-        this._nodeRef?.element.classList.add(...toAdd.trim().split(/\s+/));
+        this._nodeRef?.element.classList.add(...toAdd);
       }
     }
 
     const toRemove = tokenDifference(oldClasses, newClasses);
 
-    if (toRemove && toRemove.length) {
-      if (hasAnimate(this._element())) {
-        this._animate.removeClass(this._element() as Element, toRemove);
+    if (toRemove.length) {
+      if (hasAnimation) {
+        this._animate.removeClass(element, toRemove.join(" "));
       } else {
-        this._nodeRef?.element.classList.remove(
-          ...toRemove.trim().split(/\s+/),
-        );
+        this._nodeRef?.element.classList.remove(...toRemove);
       }
     }
   }
@@ -320,19 +326,49 @@ export class Attributes {
 }
 
 /**
+ * Splits a space-separated class string into normalized tokens.
+ *
+ * @param value - The class string to split.
+ * @returns The normalized class tokens.
+ */
+function tokenizeClassString(value: string): string[] {
+  const trimmed = value.trim();
+
+  return trimmed ? trimmed.split(/\s+/) : [];
+}
+
+/**
  * Computes the difference between two space-separated token strings.
  *
  * @param str1 - The first string containing space-separated tokens.
  * @param str2 - The second string containing space-separated tokens.
- * @returns A string containing tokens that are in str1 but not in str2, separated by spaces.
- *
+ * @returns Tokens that are present in `str1` but not in `str2`.
  */
-function tokenDifference(str1: string, str2: string): string {
-  const tokens1 = new Set(str1.split(/\s+/));
+function tokenDifference(str1: string, str2: string): string[] {
+  if (str1 === str2) {
+    return [];
+  }
 
-  const tokens2 = new Set(str2.split(/\s+/));
+  const tokens1 = tokenizeClassString(str1);
 
-  const difference = Array.from(tokens1).filter((token) => !tokens2.has(token));
+  if (tokens1.length === 0) {
+    return [];
+  }
 
-  return difference.join(" ");
+  const excludedTokens = new Set(tokenizeClassString(str2));
+
+  const seenTokens = new Set<string>();
+
+  const difference: string[] = [];
+
+  for (let i = 0; i < tokens1.length; i++) {
+    const token = tokens1[i];
+
+    if (!excludedTokens.has(token) && !seenTokens.has(token)) {
+      seenTokens.add(token);
+      difference.push(token);
+    }
+  }
+
+  return difference;
 }

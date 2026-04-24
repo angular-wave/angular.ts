@@ -70,6 +70,8 @@ export const BOOLEAN_ATTR = [
   "open",
 ];
 
+const BOOLEAN_ATTR_SET = new Set(BOOLEAN_ATTR);
+
 /** Element names that support HTML boolean attributes. */
 const BOOLEAN_ELEMENTS = [
   "INPUT",
@@ -80,6 +82,8 @@ const BOOLEAN_ELEMENTS = [
   "FORM",
   "DETAILS",
 ];
+
+const BOOLEAN_ELEMENTS_SET = new Set(BOOLEAN_ELEMENTS);
 
 ///////////////////////////////////////////////////////////////////
 ////////////        HELPER FUNCTIONS      /////////////////////////
@@ -203,7 +207,11 @@ export function dealoc(
     element instanceof NodeList ||
     element instanceof HTMLCollection
   ) {
-    Array.from(element).forEach((item) => dealoc(item, onlyDescendants));
+    const nodes = Array.from(element);
+
+    for (let i = 0; i < nodes.length; i++) {
+      dealoc(nodes[i], onlyDescendants);
+    }
 
     return;
   } else {
@@ -217,11 +225,13 @@ export function dealoc(
 
     if (!domElement) return;
 
-    if (!onlyDescendants && elementAcceptsData(domElement)) {
-      cleanElementData([domElement]);
+    const acceptsData = elementAcceptsData(domElement);
+
+    if (!onlyDescendants && acceptsData) {
+      cleanSingleElementData(domElement);
     }
 
-    if (elementAcceptsData(domElement)) {
+    if (acceptsData) {
       cleanElementData(domElement.querySelectorAll("*"));
     }
   }
@@ -571,25 +581,27 @@ export function getBooleanAttrName(
 ): string | false {
   const normalizedName = name.toLowerCase();
 
-  const isBooleanAttr = BOOLEAN_ATTR.includes(normalizedName);
+  const isBooleanAttr = BOOLEAN_ATTR_SET.has(normalizedName);
 
-  return isBooleanAttr && BOOLEAN_ELEMENTS.includes(element.nodeName)
+  return isBooleanAttr && BOOLEAN_ELEMENTS_SET.has(element.nodeName)
     ? normalizedName
     : false;
+}
+
+function cleanSingleElementData(node: Element): void {
+  if (
+    node.hasAttribute(NG_ANIMATE_ATTR_NAME) ||
+    isDefined(getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY))
+  ) {
+    node.dispatchEvent(new Event("$destroy"));
+  }
+  removeElementData(node);
 }
 
 /** Removes cached data for each element in a node collection. */
 export function cleanElementData(nodes: NodeListOf<Element> | Element[]): void {
   for (let i = 0, ii = nodes.length; i < ii; i++) {
-    const node = nodes[i];
-
-    if (
-      (node instanceof Element && node.hasAttribute(NG_ANIMATE_ATTR_NAME)) ||
-      isDefined(getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY))
-    ) {
-      node.dispatchEvent(new Event("$destroy"));
-    }
-    removeElementData(node);
+    cleanSingleElementData(nodes[i]);
   }
 }
 

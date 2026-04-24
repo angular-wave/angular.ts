@@ -572,6 +572,32 @@ describe("ngMessages", () => {
     expect(Object.keys(ctrl._messages).length).toEqual(0);
   });
 
+  it("should not get stuck waiting to re-render when the collection is null", async () => {
+    const html =
+      '<div ng-messages="items">' +
+      '<div ng-if="show"><div ng-message="x">ERROR</div></div>' +
+      "</div>";
+
+    element = $compile(html)($rootScope);
+
+    const ctrl = getController(element, "ngMessages");
+    await wait();
+
+    $rootScope.$apply("items = null");
+    await wait();
+    expect(ctrl._renderLater).toBeFalse();
+
+    $rootScope.$apply("show = true");
+    await wait();
+    expect(ctrl._renderLater).toBeFalse();
+    expect(Object.keys(ctrl._messages).length).toEqual(1);
+
+    $rootScope.$apply("show = false");
+    await wait();
+    expect(ctrl._renderLater).toBeFalse();
+    expect(Object.keys(ctrl._messages).length).toEqual(0);
+  });
+
   describe("default message", () => {
     it("should render a default message when no message matches", async () => {
       element = $compile(
