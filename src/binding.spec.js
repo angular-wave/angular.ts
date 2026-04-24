@@ -39,30 +39,30 @@ describe("binding", () => {
 
   afterEach(() => dealoc(document.getElementById("app")));
 
-  it("BindUpdate", () => {
+  it("should initialize a scope property with ng-init on a self-closing element", () => {
     $compile('<div ng-init="a=123"/>')($rootScope);
     expect($rootScope.a).toBe(123);
   });
 
-  it("ExecuteInitialization", () => {
+  it("should execute ng-init on a standard opening element", () => {
     $compile('<div ng-init="a=123">')($rootScope);
     expect($rootScope.a).toBe(123);
   });
 
-  it("ExecuteInitializationStatements", () => {
+  it("should execute multiple statements declared in ng-init", () => {
     $compile('<div ng-init="a=123;b=345">')($rootScope);
     expect($rootScope.a).toBe(123);
     expect($rootScope.b).toBe(345);
   });
 
-  it("ApplyTextBindings", async () => {
+  it("should apply ng-bind text updates when the model changes", async () => {
     element = $compile('<div ng-bind="model.a">x</div>')($rootScope);
     $rootScope.model = { a: 123 };
     await wait();
     expect(element.textContent).toBe("123");
   });
 
-  it("InputTypeButtonActionExecutesInScope", () => {
+  it("should execute an ng-click handler on an input button within the current scope", () => {
     let savedCalled = false;
     element = $compile(
       '<input type="button" ng-click="person.save()" value="Apply">',
@@ -81,7 +81,7 @@ describe("binding", () => {
     expect(savedCalled).toBe(true);
   });
 
-  it("InputTypeButtonActionExecutesInScope2", () => {
+  it("should execute an ng-click handler on an input image element", () => {
     let log = "";
     element = $compile('<input type="image" ng-click="action()">')($rootScope);
     $rootScope.action = function () {
@@ -98,7 +98,7 @@ describe("binding", () => {
     expect(log).toEqual("click;");
   });
 
-  it("ButtonElementActionExecutesInScope", () => {
+  it("should execute an ng-click handler on a button element within the current scope", () => {
     let savedCalled = false;
     element = $compile('<button ng-click="person.save()">Apply</button>')(
       $rootScope,
@@ -117,7 +117,7 @@ describe("binding", () => {
     expect(savedCalled).toBe(true);
   });
 
-  it("RepeaterUpdateBindings", async () => {
+  it("should update ng-repeat bindings when items are added and removed", async () => {
     let elem = createElementFromHTML(
       "<ul>" + '<li ng-repeat="item in items" ng-bind="item.a"></li>' + "</ul>",
     );
@@ -156,7 +156,79 @@ describe("binding", () => {
     elem.remove();
   });
 
-  it("RepeaterContentDoesNotBind", async () => {
+  it("should update ng-repeat when proxied collection items are swapped directly", async () => {
+    let elem = createElementFromHTML(
+      "<ul>" + '<li ng-repeat="item in items" ng-bind="item.a"></li>' + "</ul>",
+    );
+    document.getElementById("app").insertAdjacentElement("afterend", elem);
+    $injector = window.angular.bootstrap(elem, ["myModule"]);
+    $rootScope = $injector.get("$rootScope");
+
+    $rootScope.items = [{ a: "A" }, { a: "B" }];
+    await wait();
+
+    let lis = elem.querySelectorAll("li");
+    const firstRow = lis[0];
+    const secondRow = lis[1];
+
+    firstRow.setAttribute("mark", "first");
+    secondRow.setAttribute("mark", "second");
+
+    const tmp = $rootScope.items[0];
+
+    $rootScope.items[0] = $rootScope.items[1];
+    $rootScope.items[1] = tmp;
+    await wait();
+
+    lis = elem.querySelectorAll("li");
+    expect(elem.outerHTML).toBe(
+      "<ul><!---->" +
+        '<li ng-repeat="item in items" ng-bind="item.a" mark="second">B</li>' +
+        '<li ng-repeat="item in items" ng-bind="item.a" mark="first">A</li>' +
+        "</ul>",
+    );
+    expect(lis[0]).toBe(secondRow);
+    expect(lis[1]).toBe(firstRow);
+    elem.remove();
+  });
+
+  it("should keep nested child scopes alive when proxied collection items are swapped directly", async () => {
+    let elem = createElementFromHTML(
+      "<ul>" + '<li ng-repeat="item in items" ng-bind="item.a"></li>' + "</ul>",
+    );
+    document.getElementById("app").insertAdjacentElement("afterend", elem);
+    $injector = window.angular.bootstrap(elem, ["myModule"]);
+    $rootScope = $injector.get("$rootScope");
+
+    const nestedA = $rootScope.$new();
+    const nestedB = $rootScope.$new();
+    const destroyA = jasmine.createSpy("nestedA destroy");
+    const destroyB = jasmine.createSpy("nestedB destroy");
+
+    nestedA.$on("$destroy", destroyA);
+    nestedB.$on("$destroy", destroyB);
+
+    $rootScope.items = [
+      { a: "A", nested: nestedA },
+      { a: "B", nested: nestedB },
+    ];
+    await wait();
+
+    const tmp = $rootScope.items[0];
+
+    $rootScope.items[0] = $rootScope.items[1];
+    $rootScope.items[1] = tmp;
+    await wait();
+
+    expect(elem.textContent).toBe("BA");
+    expect(destroyA).not.toHaveBeenCalled();
+    expect(destroyB).not.toHaveBeenCalled();
+    expect(nestedA.$handler._destroyed).toBeFalse();
+    expect(nestedB.$handler._destroyed).toBeFalse();
+    elem.remove();
+  });
+
+  it("should bind repeated content when the repeated collection becomes available", async () => {
     element = $compile(
       "<ul>" +
         '<LI ng-repeat="item in model.items"><span ng-bind="item.a"></span></li>' +
@@ -172,14 +244,14 @@ describe("binding", () => {
     );
   });
 
-  it("DoNotOverwriteCustomAction", async function () {
+  it("should preserve a custom action attribute on a submit input", async function () {
     const html = await this.compileToHtml(
       '<input type="submit" value="Save" action="foo();">',
     );
     expect(html.indexOf('action="foo();"')).toBeGreaterThan(0);
   });
 
-  it("ItShouldRemoveExtraChildrenWhenIteratingOverHash", async () => {
+  it("should remove extra repeated children when iterating over an object that shrinks", async () => {
     element = $compile('<div><div ng-repeat="i in items">{{i}}</div></div>')(
       $rootScope,
     );
@@ -197,7 +269,7 @@ describe("binding", () => {
     expect(element.textContent).toEqual("");
   });
 
-  it("IfAttrBindingThrowsErrorDecorateTheAttribute", async () => {
+  it("should report interpolation errors from attribute bindings and recover afterward", async () => {
     $compile(
       '<div attr="before {{error.throw()}} after"></div>',
       null,
@@ -222,7 +294,7 @@ describe("binding", () => {
     expect(errors.length).toMatch("0");
   });
 
-  it("NestedRepeater", async () => {
+  it("should render nested ng-repeat blocks for nested collections", async () => {
     element = $compile(
       "<div>" +
         '<div ng-repeat="m in model" name="{{m.name}}">' +
@@ -252,7 +324,7 @@ describe("binding", () => {
     );
   });
 
-  it("HideBindingExpression", async () => {
+  it("should toggle ng-hide from an expression result", async () => {
     element = $compile('<div ng-hide="hidden === 3"/>')($rootScope);
 
     $rootScope.hidden = 3;
@@ -265,7 +337,7 @@ describe("binding", () => {
     expect(element.classList.contains("ng-hide")).toBe(false);
   });
 
-  it("HideBinding", async () => {
+  it("should apply ng-hide according to truthy and falsy values", async () => {
     element = $compile('<div ng-hide="hidden"/>')($rootScope);
 
     $rootScope.hidden = "true";
@@ -289,7 +361,7 @@ describe("binding", () => {
     expect(element.classList.contains("ng-hide")).toBeFalse();
   });
 
-  it("ShowBinding", async () => {
+  it("should apply ng-show according to truthy and falsy values", async () => {
     element = $compile('<div ng-show="show"/>')($rootScope);
 
     $rootScope.show = "true";
@@ -309,7 +381,7 @@ describe("binding", () => {
     expect(element.classList.contains("ng-hide")).toBeTrue();
   });
 
-  it("BindClass", async () => {
+  it("should apply ng-class values from strings and arrays", async () => {
     element = $compile('<div ng-class="clazz"/>')($rootScope);
 
     $rootScope.clazz = "testClass";
@@ -323,7 +395,7 @@ describe("binding", () => {
     expect(element.classList.contains("b")).toBeTrue();
   });
 
-  it("BindClassEvenOdd", async () => {
+  it("should apply ng-class-even and ng-class-odd inside ng-repeat", async () => {
     element = $compile(
       "<div>" +
         '<div ng-repeat="i in [0,1]" ng-class-even="\'e\'" ng-class-odd="\'o\'"></div>' +
@@ -338,7 +410,7 @@ describe("binding", () => {
     expect(d2.classList.contains("e")).toBeTruthy();
   });
 
-  it("BindStyle", async () => {
+  it("should apply ng-style values from the evaluated style object", async () => {
     element = $compile('<div ng-style="style"/>')($rootScope);
 
     $rootScope.$eval('style={height: "10px"}');
@@ -350,7 +422,7 @@ describe("binding", () => {
     await wait();
   });
 
-  it("ActionOnAHrefThrowsError", async () => {
+  it("should report errors thrown from an ng-click handler on a link", async () => {
     const input = $compile('<a ng-click="action()">Add Phone</a>')($rootScope);
     $rootScope.action = function () {
       throw new Error("MyError");
@@ -367,7 +439,7 @@ describe("binding", () => {
     expect(errors[0]).toMatch(/MyError/);
   });
 
-  it("ShouldIgnoreVbNonBindable", async () => {
+  it("should ignore bindings inside ng-non-bindable sections", async () => {
     element = $compile(
       "<div>{{a}}" +
         "<div ng-non-bindable>{{a}}</div>" +
@@ -380,7 +452,7 @@ describe("binding", () => {
     expect(element.textContent).toBe("123{{a}}{{b}}{{c}}");
   });
 
-  it("ShouldTemplateBindPreElements", async () => {
+  it("should preserve and bind interpolation inside preformatted elements", async () => {
     element = $compile("<pre>Hello {{name}}!</pre>")($rootScope);
     $rootScope.name = "World";
     await wait();
@@ -388,7 +460,7 @@ describe("binding", () => {
     expect(element.outerHTML).toBe(`<pre>Hello World!</pre>`);
   });
 
-  it("FillInOptionValueWhenMissing", async () => {
+  it("should fill in option values when an option value attribute is missing", async () => {
     element = $compile(
       '<select ng-model="foo">' +
         '<option selected="true">{{a}}</option>' +
@@ -414,7 +486,7 @@ describe("binding", () => {
     expect(optionC.textContent).toEqual("C");
   });
 
-  it("ItShouldSelectTheCorrectRadioBox", async () => {
+  it("should keep radio inputs synchronized with the bound model", async () => {
     const ELEMENT = document.getElementById("app");
     ELEMENT.innerHTML =
       "<div>" +
@@ -439,7 +511,7 @@ describe("binding", () => {
     expect($rootScope.sex).toBe("male");
   });
 
-  it("ItShouldRepeatOnHashes", async () => {
+  it("should repeat over object literals with ng-repeat", async () => {
     element = $compile(
       "<ul>" +
         '<li ng-repeat="(k,v) in {a:0,b:1}" ng-bind="k + v"></li>' +
@@ -454,7 +526,7 @@ describe("binding", () => {
     );
   });
 
-  it("ItShouldFireChangeListenersBeforeUpdate", async () => {
+  it("should fire change listeners before the bound DOM is updated", async () => {
     element = $compile('<div ng-bind="name"></div>')($rootScope);
     $rootScope.name = "";
     $rootScope.$watch("watched", () => {
@@ -466,7 +538,7 @@ describe("binding", () => {
     expect(element.outerHTML).toBe('<div ng-bind="name">123</div>');
   });
 
-  it("ItShouldHandleMultilineBindings", async () => {
+  it("should evaluate multiline interpolation expressions", async () => {
     element = $compile("<div>{{\n 1 \n + \n 2 \n}}</div>")($rootScope);
     await wait();
     expect(element.textContent).toBe("3");

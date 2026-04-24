@@ -3415,6 +3415,71 @@ describe("Scope", () => {
       expect(scope.current.length).toBe(0);
     });
 
+    describe("proxy rebind safety", () => {
+      it("should not destroy nested child scopes when rebinding one proxied object to another", () => {
+        const scope = createScope();
+        const nestedChild = scope.$new();
+        const onDestroy = jasmine.createSpy(
+          "nested child destroy on proxy rebind",
+        );
+
+        nestedChild.$on("$destroy", onDestroy);
+
+        scope.first = { nested: nestedChild };
+        scope.second = { nested: true };
+
+        const first = scope.first;
+        const second = scope.second;
+
+        scope.current = first;
+        scope.current = second;
+
+        expect(onDestroy).not.toHaveBeenCalled();
+        expect(nestedChild.$handler._destroyed).toBeFalse();
+        expect(scope._children.includes(nestedChild)).toBeTrue();
+        expect(first.nested).toBe(nestedChild);
+        expect(scope.current).toBe(second);
+      });
+
+      it("should not destroy nested child scopes when swapping proxied array items by index", () => {
+        const scope = createScope();
+        const nestedA = scope.$new();
+        const nestedB = scope.$new();
+        const destroyA = jasmine.createSpy(
+          "nestedA destroy on array proxy swap",
+        );
+        const destroyB = jasmine.createSpy(
+          "nestedB destroy on array proxy swap",
+        );
+
+        nestedA.$on("$destroy", destroyA);
+        nestedB.$on("$destroy", destroyB);
+
+        scope.items = [
+          { label: "A", nested: nestedA },
+          { label: "B", nested: nestedB },
+        ];
+
+        const first = scope.items[0];
+        const second = scope.items[1];
+        const tmp = first;
+
+        scope.items[0] = second;
+        scope.items[1] = tmp;
+
+        expect(destroyA).not.toHaveBeenCalled();
+        expect(destroyB).not.toHaveBeenCalled();
+        expect(nestedA.$handler._destroyed).toBeFalse();
+        expect(nestedB.$handler._destroyed).toBeFalse();
+        expect(scope._children.includes(nestedA)).toBeTrue();
+        expect(scope._children.includes(nestedB)).toBeTrue();
+        expect(scope.items[0]).toBe(second);
+        expect(scope.items[1]).toBe(first);
+        expect(scope.items[0].nested).toBe(nestedB);
+        expect(scope.items[1].nested).toBe(nestedA);
+      });
+    });
+
     // it("should clean up all watchers for child", () => {
     //   const scope = createScope();
     //   scope.$watch("a", () => { /* empty */ });

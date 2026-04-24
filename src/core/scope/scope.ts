@@ -736,7 +736,9 @@ export class Scope {
 
     if (oldValue && oldValue[isProxySymbol]) {
       if (isArray(value)) {
-        if (oldValue !== value) {
+        const isProxyRebind = isProxy(value);
+
+        if (oldValue !== value && !isProxyRebind) {
           this._destroyDisplacedValue(oldValue);
         }
 
@@ -753,9 +755,7 @@ export class Scope {
             this._scheduleListener(_foreignListeners);
           }
 
-          if (!isProxy(value)) {
-            this._scheduleArrayOwnerListeners(target, proxy, property);
-          }
+          this._scheduleArrayOwnerListeners(target, proxy, property);
         }
 
         if (this._objectListeners.get(target[property])) {
@@ -768,11 +768,15 @@ export class Scope {
       }
 
       if (isObject(value)) {
-        if (oldValue !== value) {
+        const isProxyRebind = isProxy(value);
+
+        // Moving one existing proxy onto another slot is a rebind, not disposal.
+        // Keep nested child scopes alive and let collection watchers handle the move.
+        if (oldValue !== value && !isProxyRebind) {
           this._destroyDisplacedValue(oldValue);
         }
 
-        if (hasOwn(target, property)) {
+        if (!isProxyRebind && hasOwn(target, property)) {
           const keyList = keys(oldValue);
 
           for (const k of keyList) {
@@ -795,9 +799,7 @@ export class Scope {
 
           this._checkListenersForAllKeys(value);
 
-          if (!isProxy(value)) {
-            this._scheduleArrayOwnerListeners(target, proxy, property);
-          }
+          this._scheduleArrayOwnerListeners(target, proxy, property);
         }
         target[property] = createScope(value, this);
 
