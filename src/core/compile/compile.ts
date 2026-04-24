@@ -149,6 +149,8 @@ export interface BoundTranscludeFn {
   _slots: Record<string | number, BoundTranscludeFn | null>;
   /** @internal */
   _boundTransclude?: BoundTranscludeFn;
+  /** @internal */
+  _state?: unknown;
 }
 
 export type SlotTranscludeFn = BoundTranscludeFn;
@@ -172,6 +174,8 @@ export type PublicLinkFn = {
   ): Element | Node | ChildNode | Node[];
   pre?: any;
   post?: any;
+  /** @internal */
+  _state?: unknown;
 };
 
 /**
@@ -364,19 +368,24 @@ export interface DirectiveBindingInfo {
   _removeWatches?: () => void;
 }
 
+export interface OnChangesQueueState {
+  /** @internal */
+  _exceptionHandler: (error: any) => void;
+  /** @internal */
+  _queue: DirectiveBindingChangeState[];
+  /** @internal */
+  _flush: () => void;
+}
+
 export interface DirectiveBindingChangeState {
   /** @internal */
   _changes?: Record<string, SimpleChange>;
   /** @internal */
   _destAny: Record<string, any>;
   /** @internal */
-  _flushOnChangesQueue: () => void;
-  /** @internal */
-  _onChangesQueue: Array<() => void>;
+  _onChangesQueue: OnChangesQueueState;
   /** @internal */
   _scope: Scope;
-  /** @internal */
-  _triggerOnChangesHook: () => void;
 }
 
 export interface TwoWayBindingState {
@@ -527,6 +536,26 @@ export interface ExpressionBindingState {
   _scopeTarget: any;
 }
 
+export interface LazyCompilationState {
+  /** @internal */
+  _compiled?: ng.PublicLinkFn;
+  /** @internal */
+  _nodes: NodeList | Node | null;
+  /** @internal */
+  _transcludeFn?: ChildTranscludeOrLinkFn | null;
+  /** @internal */
+  _maxPriority?: number;
+  /** @internal */
+  _ignoreDirective?: string;
+  /** @internal */
+  _previousCompileContext?: {
+    /** @internal */
+    _nonTlbTranscludeDirective?: any;
+    /** @internal */
+    _needsNewScope?: any;
+  } | null;
+}
+
 export type ContextualLinkFn<TLinkCtx = unknown> = ((...args: any[]) => any) & {
   /** @internal */
   _linkCtx?: TLinkCtx;
@@ -594,6 +623,8 @@ export interface ControllersBoundTranscludeFn {
   isSlotFilled?: (slotName: string | number) => boolean;
   /** @internal */
   _boundTransclude?: BoundTranscludeFn;
+  /** @internal */
+  _state?: unknown;
 }
 
 export interface BoundTranscludeState {
@@ -1348,22 +1379,15 @@ export class CompileProvider {
         $sce: ng.SceService,
         $animate: ng.AnimateService,
       ) => {
-        // The onChanges hooks should all be run together in a single digest
-        // When changes occur, the call to trigger their hooks will be added to this queue
-        const onChangesQueue: Array<() => void> = [];
+        const onChangesQueueState: OnChangesQueueState = {
+          _exceptionHandler: $exceptionHandler,
+          _queue: [],
+          _flush: undefined as never,
+        };
 
         // This function is called in a $postUpdate to trigger all the onChanges hooks in a single digest
-        function flushOnChangesQueue() {
-          for (let i = 0, ii = onChangesQueue.length; i < ii; ++i) {
-            try {
-              onChangesQueue[i]();
-            } catch (err) {
-              $exceptionHandler(err);
-            }
-          }
-          // Reset the queue to trigger a new schedule next time there is a change
-          onChangesQueue.length = 0;
-        }
+        onChangesQueueState._flush = () =>
+          flushDirectiveBindingOnChangesQueue(onChangesQueueState);
 
         const startSymbol = $interpolate.startSymbol();
 
@@ -1384,6 +1408,23 @@ export class CompileProvider {
           state._changes = undefined;
         }
 
+        /** Flushes queued `$onChanges` hooks in one post-update turn. */
+        function flushDirectiveBindingOnChangesQueue(
+          queueState: OnChangesQueueState,
+        ): void {
+          const queue = queueState._queue;
+
+          for (let i = 0, ii = queue.length; i < ii; ++i) {
+            try {
+              triggerDirectiveBindingOnChanges(queue[i]);
+            } catch (err) {
+              queueState._exceptionHandler(err);
+            }
+          }
+
+          queue.length = 0;
+        }
+
         function recordDirectiveBindingChange(
           state: DirectiveBindingChangeState,
           key: string,
@@ -1394,14 +1435,14 @@ export class CompileProvider {
             return;
           }
 
-          if (!state._onChangesQueue.length) {
-            state._scope.$postUpdate(state._flushOnChangesQueue);
-            state._onChangesQueue.length = 0;
+          if (!state._onChangesQueue._queue.length) {
+            state._scope.$postUpdate(state._onChangesQueue._flush);
+            state._onChangesQueue._queue.length = 0;
           }
 
           if (!state._changes) {
             state._changes = {};
-            state._onChangesQueue.push(state._triggerOnChangesHook);
+            state._onChangesQueue._queue.push(state);
           }
 
           state._changes[key] = {
@@ -1537,7 +1578,7 @@ export class CompileProvider {
             return;
           }
 
-          state._bindingChangeState._triggerOnChangesHook();
+          triggerDirectiveBindingOnChanges(state._bindingChangeState);
           state._firstChange = false;
         }
 
@@ -1721,18 +1762,21 @@ export class CompileProvider {
             previousCompileContext,
           );
 
-          const publicLinkFn: PublicLinkFn = function (
+          const publicLinkFn = function publicLinkFn(
             scope: Scope,
             cloneConnectFn?: CloneAttachFn,
             options?: TemplateLinkingFunctionOptions,
           ) {
             return invokePublicLink(
-              publicLinkState,
+              (publicLinkFn as PublicLinkFn & { _state?: PublicLinkState })
+                ._state as PublicLinkState,
               scope,
               cloneConnectFn,
               options,
             );
-          };
+          } as PublicLinkFn;
+
+          publicLinkFn._state = publicLinkState;
 
           return publicLinkFn;
         }
@@ -1921,18 +1965,29 @@ export class CompileProvider {
             _transcludeFn: transcludeFn,
           };
 
-          return function compositeLinkFn(
+          const compositeLinkFn = function compositeLinkFn(
             scope,
             nodeRef,
             _parentBoundTranscludeFn,
           ) {
             invokeCompositeLink(
-              compositeLinkState,
+              (
+                compositeLinkFn as CompositeLinkFn & {
+                  _state?: CompositeLinkState;
+                }
+              )._state as CompositeLinkState,
               scope,
               nodeRef,
               _parentBoundTranscludeFn,
             );
+          } as CompositeLinkFn & {
+            /** @internal */
+            _state?: CompositeLinkState;
           };
+
+          compositeLinkFn._state = compositeLinkState;
+
+          return compositeLinkFn;
         }
 
         /**
@@ -1949,7 +2004,7 @@ export class CompileProvider {
             _previousBoundTranscludeFn: previousBoundTranscludeFn,
           };
 
-          const boundTranscludeFn = function (
+          const boundTranscludeFn = function boundTranscludeFn(
             transcludedScope?: Scope | null,
             cloneFn?: CloneAttachFn,
             controllers?: unknown,
@@ -1957,14 +2012,20 @@ export class CompileProvider {
             containingScope?: Scope,
           ) {
             return invokeBoundTransclude(
-              boundTranscludeState,
+              (
+                boundTranscludeFn as BoundTranscludeFn & {
+                  _state?: BoundTranscludeState;
+                }
+              )._state as BoundTranscludeState,
               transcludedScope,
               cloneFn,
               controllers,
               _futureParentElement,
               containingScope,
             );
-          };
+          } as BoundTranscludeFn;
+
+          boundTranscludeFn._state = boundTranscludeState;
 
           // We need  to attach the transclusion slots onto the `boundTranscludeFn`
           // so that they are available inside the `controllersBoundTransclude` function
@@ -2170,8 +2231,6 @@ export class CompileProvider {
             _needsNewScope?: any;
           } | null,
         ): ng.PublicLinkFn | ng.TranscludeFn {
-          let compiled: ng.PublicLinkFn | undefined;
-
           if (eager) {
             return compile(
               nodes,
@@ -2182,24 +2241,53 @@ export class CompileProvider {
             );
           }
 
+          const lazyCompilationState: LazyCompilationState = {
+            _nodes: nodes,
+            _transcludeFn: transcludeFn,
+            _maxPriority: maxPriority,
+            _ignoreDirective: ignoreDirective,
+            _previousCompileContext: previousCompileContext,
+          };
+
           /** Defers compilation until the returned linker/transclude function is first invoked. */
-          function lazyCompilation(...args: Parameters<PublicLinkFn>) {
-            if (!compiled) {
-              compiled = compile(
-                nodes,
-                transcludeFn,
-                maxPriority,
-                ignoreDirective,
-                previousCompileContext,
-              );
+          const lazyCompilation = function lazyCompilation(
+            ...args: Parameters<PublicLinkFn>
+          ) {
+            return invokeLazyCompilation(
+              (
+                lazyCompilation as PublicLinkFn & {
+                  _state?: LazyCompilationState;
+                }
+              )._state as LazyCompilationState,
+              ...args,
+            );
+          } as PublicLinkFn;
 
-              nodes = transcludeFn = previousCompileContext = null;
-            }
-
-            return compiled(...args);
-          }
+          lazyCompilation._state = lazyCompilationState;
 
           return lazyCompilation;
+        }
+
+        /** Shared invoker for lazily compiled public-link/transclude functions. */
+        function invokeLazyCompilation(
+          state: LazyCompilationState,
+          ...args: Parameters<PublicLinkFn>
+        ) {
+          if (!state._compiled) {
+            state._compiled = compile(
+              state._nodes,
+              state._transcludeFn,
+              state._maxPriority,
+              state._ignoreDirective,
+              state._previousCompileContext,
+            );
+
+            state._nodes = null;
+            state._transcludeFn = null;
+            state._previousCompileContext = null;
+          }
+
+          return state._compiled(...args);
         }
 
         /**
@@ -2911,31 +2999,43 @@ export class CompileProvider {
         function createControllersBoundTranscludeFn(
           transcludeState: ControllersBoundTranscludeState,
         ): ControllersBoundTranscludeFn {
-          const wrapper = function (
+          const wrapper = function wrapper(
             scopeParam?: Scope | CloneAttachFn | null,
             cloneAttachFn?: CloneAttachFn | Node | null,
             _futureParentElement?: Node | null,
             slotName?: string | number,
           ) {
             return invokeControllersBoundTransclude(
-              transcludeState,
+              (
+                wrapper as ControllersBoundTranscludeFn & {
+                  _state?: ControllersBoundTranscludeState;
+                }
+              )._state as ControllersBoundTranscludeState,
               scopeParam,
               cloneAttachFn,
               _futureParentElement,
               slotName,
             );
-          } as ControllersBoundTranscludeFn & {
-            /** @internal */
-            _boundTransclude?: BoundTranscludeFn;
-          };
+          } as ControllersBoundTranscludeFn;
 
+          wrapper._state = transcludeState;
           wrapper._boundTransclude = transcludeState._boundTranscludeFn;
-          wrapper.isSlotFilled = function (slotName: string | number) {
-            return !!transcludeState._boundTranscludeFn?._slots[slotName];
-          };
+          wrapper.isSlotFilled = isControllersBoundTranscludeSlotFilled;
           transcludeState._wrapper = wrapper;
 
           return wrapper;
+        }
+
+        /** Shared slot-filled predicate for controllers-bound transclude wrappers. */
+        function isControllersBoundTranscludeSlotFilled(
+          this: ControllersBoundTranscludeFn,
+          slotName: string | number,
+        ) {
+          const state = this._state as
+            | ControllersBoundTranscludeState
+            | undefined;
+
+          return !!state?._boundTranscludeFn?._slots[slotName];
         }
 
         /**
@@ -4571,11 +4671,8 @@ export class CompileProvider {
 
           const bindingChangeState: DirectiveBindingChangeState = {
             _destAny: destAny,
-            _flushOnChangesQueue: flushOnChangesQueue,
-            _onChangesQueue: onChangesQueue,
+            _onChangesQueue: onChangesQueueState,
             _scope: scope,
-            _triggerOnChangesHook: () =>
-              triggerDirectiveBindingOnChanges(bindingChangeState),
           };
 
           if (bindings) {
