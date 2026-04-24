@@ -751,6 +751,10 @@ export class Scope {
           if (_foreignListeners) {
             this._scheduleListener(_foreignListeners);
           }
+
+          if (!isProxy(value)) {
+            this._scheduleArrayOwnerListeners(target, proxy, property);
+          }
         }
 
         if (this._objectListeners.get(target[property])) {
@@ -789,6 +793,10 @@ export class Scope {
           }
 
           this._checkListenersForAllKeys(value);
+
+          if (!isProxy(value)) {
+            this._scheduleArrayOwnerListeners(target, proxy, property);
+          }
         }
         target[property] = createScope(value, this);
 
@@ -847,17 +855,7 @@ export class Scope {
         }
 
         if (isArray(target)) {
-          if (this._objectListeners.has(proxy) && property !== "length") {
-            const keyList = this._objectListeners.get(proxy);
-
-            if (keyList) {
-              for (let i = 0, l = keyList.length; i < l; i++) {
-                const currentListeners = this._watchers.get(keyList[i]);
-
-                if (currentListeners) this._scheduleListener(currentListeners);
-              }
-            }
-          }
+          this._scheduleArrayOwnerListeners(target, proxy, property);
         }
 
         return true;
@@ -1796,6 +1794,35 @@ export class Scope {
     }
 
     return false;
+  }
+
+  /** @internal Reschedules watchers that observe this array through its owning scope property. */
+  _scheduleArrayOwnerListeners(
+    target: ScopeTarget,
+    proxy: ScopeProxy,
+    property: string,
+  ): void {
+    if (!isArray(target) || property === "length") {
+      return;
+    }
+
+    if (!this._objectListeners.has(proxy)) {
+      return;
+    }
+
+    const keyList = this._objectListeners.get(proxy);
+
+    if (!keyList) {
+      return;
+    }
+
+    for (let i = 0, l = keyList.length; i < l; i++) {
+      const currentListeners = this._watchers.get(keyList[i]);
+
+      if (currentListeners) {
+        this._scheduleListener(currentListeners);
+      }
+    }
   }
 
   /** Evaluates an Angular expression in the context of this scope. */

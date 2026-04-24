@@ -649,6 +649,34 @@ describe("ngRepeat", () => {
       expect(lis[1].getAttribute("mark")).toEqual("a");
     });
 
+    it("should preserve repeated row DOM when the collection is shallow-cloned with the same items", async () => {
+      element = $compile(
+        '<ul><li ng-repeat="item in items">{{item.name}}|</li></ul>',
+      )(scope);
+      const first = { name: "a" };
+      const second = { name: "b" };
+
+      scope.items = [first, second];
+      await wait();
+
+      let lis = element.querySelectorAll("li");
+      const firstRow = lis[0];
+      const secondRow = lis[1];
+
+      firstRow.setAttribute("mark", "first");
+      secondRow.setAttribute("mark", "second");
+
+      scope.items = [...scope.items];
+      await wait();
+
+      lis = element.querySelectorAll("li");
+      expect(lis[0]).toBe(firstRow);
+      expect(lis[1]).toBe(secondRow);
+      expect(lis[0].getAttribute("mark")).toBe("first");
+      expect(lis[1].getAttribute("mark")).toBe("second");
+      expect(element.textContent).toBe("a|b|");
+    });
+
     it("keeps grouped interpolation bindings when archived items are removed", async () => {
       element = $compile(
         '<ul><li ng-repeat="todo in tasks">{{todo.task}} {{todo.done}}|</li></ul>',
@@ -666,6 +694,24 @@ describe("ngRepeat", () => {
       scope.tasks = scope.tasks.filter((task) => !task.done);
       await wait();
       expect(element.textContent).toBe("Build an AngularTS app false|");
+    });
+
+    it("updates repeated rows when an array item object is replaced by index", async () => {
+      element = $compile(
+        '<ul><li ng-repeat="todo in tasks">{{todo.task}} {{todo.done}}|</li></ul>',
+      )(scope);
+      scope.tasks = [
+        { task: "First Task", done: false },
+        { task: "Second Task", done: true },
+      ];
+
+      await wait();
+      expect(element.textContent).toBe("First Task false|Second Task true|");
+
+      scope.tasks[0] = { task: "New Task", done: false };
+      await wait();
+
+      expect(element.textContent).toBe("New Task false|Second Task true|");
     });
   });
 
