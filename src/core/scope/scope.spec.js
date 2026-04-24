@@ -1,5 +1,10 @@
 import { wait } from "../../shared/test-utils.ts";
-import { $postUpdateQueue, createScope, isNonScope } from "./scope.ts";
+import {
+  $postUpdateQueue,
+  createScope,
+  getArrayMutationMeta,
+  isNonScope,
+} from "./scope.ts";
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
 import { isDefined, isProxy, sliceArgs } from "../../shared/utils.ts";
@@ -1669,6 +1674,19 @@ describe("Scope", () => {
     });
 
     describe("watching arrays", () => {
+      it("should return a stable wrapper for the same observed array mutator", () => {
+        scope.items = [];
+
+        const firstPush = scope.items.push;
+        const secondPush = scope.items.push;
+
+        expect(firstPush).toBe(secondPush);
+
+        firstPush("A");
+
+        expect(scope.items).toEqual(["A"]);
+      });
+
       describe("array mutation regressions", () => {
         it("can watch arrays", async () => {
           scope.aValue = [1, 2, 3];
@@ -3124,6 +3142,26 @@ describe("Scope", () => {
       expect(scope._children.length).toEqual(0);
     });
 
+    it("should keep parent child bookkeeping consistent when destroying a middle child", () => {
+      const scope = createScope();
+      const childA = scope.$new();
+      const childB = scope.$new();
+      const childC = scope.$new();
+
+      expect(scope._children).toEqual([childA, childB, childC]);
+
+      childB.$destroy();
+
+      expect(scope._children.length).toBe(2);
+      expect(scope._children.includes(childA)).toBeTrue();
+      expect(scope._children.includes(childB)).toBeFalse();
+      expect(scope._children.includes(childC)).toBeTrue();
+
+      childC.$destroy();
+
+      expect(scope._children).toEqual([childA]);
+    });
+
     it("should clean up all watchers for child", async () => {
       const scope = createScope();
 
@@ -3421,6 +3459,22 @@ describe("Scope", () => {
       expect(scope.current).toBe(42);
     });
 
+    it("should only invoke displaced child scope destruction once on primitive overwrite", () => {
+      const scope = createScope();
+      const child = scope.$new();
+      const originalDestroy = child.$handler._propertyMap.$destroy;
+      const destroySpy = jasmine
+        .createSpy("bound child destroy")
+        .and.callFake((...args) => originalDestroy(...args));
+
+      child.$handler._propertyMap.$destroy = destroySpy;
+
+      scope.current = child;
+      scope.current = 42;
+
+      expect(destroySpy).toHaveBeenCalledTimes(1);
+    });
+
     it("should not destroy nested proxied objects that share the current handler when overwritten", () => {
       const scope = createScope();
 
@@ -3509,6 +3563,27 @@ describe("Scope", () => {
         expect(scope.items[1]).toBe(first);
         expect(scope.items[0].nested).toBe(nestedB);
         expect(scope.items[1].nested).toBe(nestedA);
+      });
+
+      it("should publish swap mutation metadata when proxied array items are exchanged by index", () => {
+        const scope = createScope();
+
+        scope.items = [{ label: "A" }, { label: "B" }, { label: "C" }];
+
+        const first = scope.items[0];
+        const third = scope.items[2];
+        const tmp = first;
+
+        scope.items[0] = third;
+        scope.items[2] = tmp;
+
+        const mutationMeta = getArrayMutationMeta(scope.items);
+
+        expect(mutationMeta?._kind).toBe("swap");
+        expect(mutationMeta?._swapFromIndex).toBe(0);
+        expect(mutationMeta?._swapToIndex).toBe(2);
+        expect(mutationMeta?._previousLength).toBe(3);
+        expect(mutationMeta?._currentLength).toBe(3);
       });
     });
 
@@ -4009,6 +4084,45 @@ describe("Scope optimizations", () => {
       // the dynamically-added item should also be processed
       expect(signature).toBe("ABCD");
       expect($postUpdateQueue.length).toBe(0);
+    });
+  });
+
+  describe("internal listener scheduler", () => {
+    it("should preserve remaining scheduled callbacks when a flush callback throws", () => {
+      const queuedMicrotasks = [];
+      const queueMicrotaskSpy = spyOn(
+        globalThis,
+        "queueMicrotask",
+      ).and.callFake((callback) => {
+        queuedMicrotasks.push(callback);
+      });
+      let signature = "";
+
+      scope.$handler._scheduleCallback(() => {
+        signature += "A";
+        throw new Error("boom");
+      });
+      scope.$handler._scheduleCallback(() => {
+        signature += "B";
+      });
+
+      expect(queueMicrotaskSpy).toHaveBeenCalledTimes(1);
+      expect(queuedMicrotasks.length).toBe(1);
+
+      const firstFlush = queuedMicrotasks.shift();
+      expect(() => firstFlush()).toThrowError("boom");
+      expect(signature).toBe("A");
+      expect(scope.$handler._listenerScheduler._queue.length).toBe(1);
+      expect(scope.$handler._listenerScheduler._index).toBe(0);
+      expect(queuedMicrotasks.length).toBe(1);
+
+      const secondFlush = queuedMicrotasks.shift();
+      secondFlush();
+
+      expect(signature).toBe("AB");
+      expect(scope.$handler._listenerScheduler._queue.length).toBe(0);
+      expect(scope.$handler._listenerScheduler._index).toBe(0);
+      expect(queuedMicrotasks.length).toBe(0);
     });
   });
 

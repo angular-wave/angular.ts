@@ -5,6 +5,7 @@ import {
   isArray,
   isInstanceOf,
   isString,
+  values,
 } from "../../shared/utils.ts";
 
 const ACTIVE_CLASS = "ng-active";
@@ -97,7 +98,7 @@ class NgMessageCtrl {
 
     let truthyKeys = 0;
 
-    const messageItems = Object.values(this._messages).sort((a, b) => {
+    const messageItems = values(this._messages).sort((a, b) => {
       const position = a.comment.compareDocumentPosition(b.comment);
 
       return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
@@ -161,8 +162,8 @@ class NgMessageCtrl {
     if (!this._renderLater) {
       this._renderLater = true;
       Promise.resolve().then(() => {
-        if (this._renderLater && this._cachedCollection) {
-          this._render(this._cachedCollection);
+        if (this._renderLater) {
+          this._render(this._cachedCollection ?? {});
         }
       });
     }
@@ -257,11 +258,16 @@ ngMessagesIncludeDirective.$inject = [
 export function ngMessagesIncludeDirective(
   $templateRequest: ng.TemplateRequestService,
   $compile: ng.CompileService,
-): ng.Directive<any> {
+): ng.Directive {
   return {
     restrict: "AE",
     require: "^^ngMessages", // we only require this for validation sake
-    link($scope: ng.Scope, element: Element, attrs: ng.Attributes) {
+    link(
+      $scope: ng.Scope,
+      element: Element,
+      attrs: ng.Attributes,
+      ngMessagesCtrl: NgMessageCtrl,
+    ) {
       const src = attrs.ngMessagesInclude || attrs.src;
 
       $templateRequest(src).then((html: string) => {
@@ -276,6 +282,8 @@ export function ngMessagesIncludeDirective(
           ) => {
             isInstanceOf(contents, Node) && element.after(contents);
           }) as (contents?: Node | Element | Node[] | NodeList | null) => void);
+
+          ngMessagesCtrl.reRender();
         }
       });
     },

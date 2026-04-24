@@ -1,4 +1,4 @@
-.PHONY: build build-ts test types coverage coverage-check coverage-open
+.PHONY: build build-ts test types coverage coverage-check coverage-open setup ensure-deps
 
 BUILD_DIR 	= ./dist	
 TS_BUILD_DIR = ./.build
@@ -7,29 +7,25 @@ GZ_JS  		:= $(MIN_JS).gz
 
 
 setup:
-	@rm -r ./node_modules/
-	@npm i
+	@rm -rf ./node_modules/
+	@npm ci
 	@npx playwright install
-	
-build:
+
+ensure-deps:
+	@if [ ! -d ./node_modules ]; then \
+		echo "Installing dependencies..."; \
+		npm ci; \
+	fi
+
+build: ensure-deps
 	@if [ -d "$(BUILD_DIR)" ]; then \
 		echo "Removing $(BUILD_DIR)..."; \
 		rm -r "$(BUILD_DIR)"; \
 	fi
-	@if [ -d "$(TS_BUILD_DIR)" ]; then \
-		echo "Removing $(TS_BUILD_DIR)..."; \
-		rm -r "$(TS_BUILD_DIR)"; \
-	fi
-	@npm i
 	@./node_modules/.bin/tsc --project tsconfig.build.json
 	@./node_modules/.bin/rollup -c
-	@rm -rf .build
 
-build-ts:
-	@if [ -d "$(TS_BUILD_DIR)" ]; then \
-		echo "Removing $(TS_BUILD_DIR)..."; \
-		rm -r "$(TS_BUILD_DIR)"; \
-	fi
+build-ts: ensure-deps
 	@./node_modules/.bin/tsc --project tsconfig.build.json
 
 size:
@@ -62,24 +58,24 @@ format:
 lint:
 	@npx eslint ./src --fix
 
-check:
+check: ensure-deps
 	@echo "Typechecking Js"
 	./node_modules/.bin/tsc 
 
-types:
+types: ensure-deps
 	@echo "Generating *.d.ts"
 	@rm -rf @types
 	@./node_modules/.bin/tsc --project tsconfig.types.json
 	@npx prettier ./@types --write --cache --log-level=silent
 
 TYPEDOC_DIR = docs/static/typedoc
-doc: 
+doc: ensure-deps
 	@rm -rf $(TYPEDOC_DIR)
 	@node_modules/.bin/typedoc
 	@npx prettier ./typedoc --write
 	@mv typedoc $(TYPEDOC_DIR)
 
-serve:
+serve: ensure-deps
 	@node_modules/.bin/vite --config utils/vite.config.js & \
 	node --watch ./utils/express.js & \
 	wait
@@ -88,23 +84,23 @@ prepare-release: build test check types doc format gzip version size-html
 
 PLAYWRIGHT_TEST := npx playwright test
 
-test:
+test: ensure-deps
 	@echo $(INFO) "Playwright test JS"
 	@$(PLAYWRIGHT_TEST) 
 
-test-ui:
+test-ui: ensure-deps
 	@echo $(INFO) "Playwright test JS with ui"
 	@$(PLAYWRIGHT_TEST) --ui
 
-coverage:
+coverage: ensure-deps
 	@echo $(INFO) "Playwright coverage"
 	@node ./utils/run-coverage.mjs
 
-coverage-check:
+coverage-check: ensure-deps
 	@echo $(INFO) "Playwright coverage threshold check"
 	@node ./utils/run-coverage.mjs --check
 
-coverage-open:
+coverage-open: ensure-deps
 	@echo $(INFO) "Open coverage report"
 	@node ./utils/open-coverage.mjs
 

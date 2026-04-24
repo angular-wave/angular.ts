@@ -246,6 +246,30 @@ describe("binding", () => {
       elem.remove();
     });
 
+    it("should still refresh tuple key bindings when the first observed array item is removed", async () => {
+      let elem = createElementFromHTML(
+        "<ul>" +
+          '<li ng-repeat="(key, item) in items"><span class="index" ng-bind="key"></span>:<span class="label" ng-bind="item.a"></span></li>' +
+          "</ul>",
+      );
+      document.getElementById("app").insertAdjacentElement("afterend", elem);
+      $injector = window.angular.bootstrap(elem, ["myModule"]);
+      $rootScope = $injector.get("$rootScope");
+
+      $rootScope.items = [{ a: "A" }, { a: "B" }, { a: "C" }];
+      await wait();
+
+      $rootScope.items.splice(0, 1);
+      await wait();
+
+      const rows = Array.from(elem.querySelectorAll("li")).map(
+        (row) => row.textContent,
+      );
+
+      expect(rows).toEqual(["0:B", "1:C"]);
+      elem.remove();
+    });
+
     it("should preserve surviving repeated DOM nodes when leading observed array items are removed in bulk", async () => {
       let elem = createElementFromHTML(
         "<ul>" +
@@ -280,6 +304,152 @@ describe("binding", () => {
           '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-d">D</li>' +
           "</ul>",
       );
+      elem.remove();
+    });
+
+    it("should preserve existing repeated DOM nodes when observed array items are appended via array replacement", async () => {
+      let elem = createElementFromHTML(
+        "<ul>" +
+          '<li ng-repeat="item in items" ng-bind="item.a"></li>' +
+          "</ul>",
+      );
+      document.getElementById("app").insertAdjacentElement("afterend", elem);
+      $injector = window.angular.bootstrap(elem, ["myModule"]);
+      $rootScope = $injector.get("$rootScope");
+
+      $rootScope.items = [{ a: "A" }, { a: "B" }];
+      await wait();
+
+      const originalRows = elem.querySelectorAll("li");
+      const firstRow = originalRows[0];
+      const secondRow = originalRows[1];
+
+      firstRow.setAttribute("data-row", "survivor-a");
+      secondRow.setAttribute("data-row", "survivor-b");
+
+      $rootScope.items = $rootScope.items.concat([{ a: "C" }, { a: "D" }]);
+      await wait();
+
+      const currentRows = elem.querySelectorAll("li");
+
+      expect(currentRows.length).toBe(4);
+      expect(currentRows[0]).toBe(firstRow);
+      expect(currentRows[1]).toBe(secondRow);
+      expect(elem.outerHTML).toBe(
+        "<ul><!---->" +
+          '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-a">A</li>' +
+          '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-b">B</li>' +
+          '<li ng-repeat="item in items" ng-bind="item.a">C</li>' +
+          '<li ng-repeat="item in items" ng-bind="item.a">D</li>' +
+          "</ul>",
+      );
+      elem.remove();
+    });
+
+    it("should preserve existing repeated DOM nodes when observed array items are appended via push", async () => {
+      let elem = createElementFromHTML(
+        "<ul>" +
+          '<li ng-repeat="item in items" ng-bind="item.a"></li>' +
+          "</ul>",
+      );
+      document.getElementById("app").insertAdjacentElement("afterend", elem);
+      $injector = window.angular.bootstrap(elem, ["myModule"]);
+      $rootScope = $injector.get("$rootScope");
+
+      $rootScope.items = [{ a: "A" }, { a: "B" }];
+      await wait();
+
+      const originalRows = elem.querySelectorAll("li");
+      const firstRow = originalRows[0];
+      const secondRow = originalRows[1];
+
+      firstRow.setAttribute("data-row", "survivor-a");
+      secondRow.setAttribute("data-row", "survivor-b");
+
+      $rootScope.items.push({ a: "C" }, { a: "D" });
+      await wait();
+
+      const currentRows = elem.querySelectorAll("li");
+
+      expect(currentRows.length).toBe(4);
+      expect(currentRows[0]).toBe(firstRow);
+      expect(currentRows[1]).toBe(secondRow);
+      expect(elem.outerHTML).toBe(
+        "<ul><!---->" +
+          '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-a">A</li>' +
+          '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-b">B</li>' +
+          '<li ng-repeat="item in items" ng-bind="item.a">C</li>' +
+          '<li ng-repeat="item in items" ng-bind="item.a">D</li>' +
+          "</ul>",
+      );
+      elem.remove();
+    });
+
+    it("should preserve repeated DOM nodes when observed array items are swapped by index", async () => {
+      let elem = createElementFromHTML(
+        "<ul>" +
+          '<li ng-repeat="item in items" ng-bind="item.a"></li>' +
+          "</ul>",
+      );
+      document.getElementById("app").insertAdjacentElement("afterend", elem);
+      $injector = window.angular.bootstrap(elem, ["myModule"]);
+      $rootScope = $injector.get("$rootScope");
+
+      $rootScope.items = [{ a: "A" }, { a: "B" }, { a: "C" }, { a: "D" }];
+      await wait();
+
+      const originalRows = elem.querySelectorAll("li");
+      const secondRow = originalRows[1];
+      const fourthRow = originalRows[3];
+
+      secondRow.setAttribute("data-row", "survivor-b");
+      fourthRow.setAttribute("data-row", "survivor-d");
+
+      const tmp = $rootScope.items[1];
+
+      $rootScope.items[1] = $rootScope.items[3];
+      $rootScope.items[3] = tmp;
+      await wait();
+
+      const currentRows = elem.querySelectorAll("li");
+
+      expect(currentRows[1]).toBe(fourthRow);
+      expect(currentRows[3]).toBe(secondRow);
+      expect(elem.outerHTML).toBe(
+        "<ul><!---->" +
+          '<li ng-repeat="item in items" ng-bind="item.a">A</li>' +
+          '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-d">D</li>' +
+          '<li ng-repeat="item in items" ng-bind="item.a">C</li>' +
+          '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-b">B</li>' +
+          "</ul>",
+      );
+      elem.remove();
+    });
+
+    it("should still refresh $index bindings when observed array items are swapped by index", async () => {
+      let elem = createElementFromHTML(
+        "<ul>" +
+          '<li ng-repeat="item in items"><span class="index" ng-bind="$index"></span>:<span class="label" ng-bind="item.a"></span></li>' +
+          "</ul>",
+      );
+      document.getElementById("app").insertAdjacentElement("afterend", elem);
+      $injector = window.angular.bootstrap(elem, ["myModule"]);
+      $rootScope = $injector.get("$rootScope");
+
+      $rootScope.items = [{ a: "A" }, { a: "B" }, { a: "C" }];
+      await wait();
+
+      const tmp = $rootScope.items[0];
+
+      $rootScope.items[0] = $rootScope.items[2];
+      $rootScope.items[2] = tmp;
+      await wait();
+
+      const rows = Array.from(elem.querySelectorAll("li")).map(
+        (row) => row.textContent,
+      );
+
+      expect(rows).toEqual(["0:C", "1:B", "2:A"]);
       elem.remove();
     });
 
@@ -363,6 +533,47 @@ describe("binding", () => {
         "<ul><!---->" +
           '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-a">A</li>' +
           '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-d">D</li>' +
+          "</ul>",
+      );
+      elem.remove();
+    });
+
+    it("should preserve surviving repeated DOM nodes when observed array items are removed from the tail", async () => {
+      let elem = createElementFromHTML(
+        "<ul>" +
+          '<li ng-repeat="item in items" ng-bind="item.a"></li>' +
+          "</ul>",
+      );
+      document.getElementById("app").insertAdjacentElement("afterend", elem);
+      $injector = window.angular.bootstrap(elem, ["myModule"]);
+      $rootScope = $injector.get("$rootScope");
+
+      $rootScope.items = [{ a: "A" }, { a: "B" }, { a: "C" }, { a: "D" }];
+      await wait();
+
+      const originalRows = elem.querySelectorAll("li");
+      const survivingFirstRow = originalRows[0];
+      const survivingSecondRow = originalRows[1];
+      const survivingThirdRow = originalRows[2];
+
+      survivingFirstRow.setAttribute("data-row", "survivor-a");
+      survivingSecondRow.setAttribute("data-row", "survivor-b");
+      survivingThirdRow.setAttribute("data-row", "survivor-c");
+
+      $rootScope.items.pop();
+      await wait();
+
+      const currentRows = elem.querySelectorAll("li");
+
+      expect(currentRows.length).toBe(3);
+      expect(currentRows[0]).toBe(survivingFirstRow);
+      expect(currentRows[1]).toBe(survivingSecondRow);
+      expect(currentRows[2]).toBe(survivingThirdRow);
+      expect(elem.outerHTML).toBe(
+        "<ul><!---->" +
+          '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-a">A</li>' +
+          '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-b">B</li>' +
+          '<li ng-repeat="item in items" ng-bind="item.a" data-row="survivor-c">C</li>' +
           "</ul>",
       );
       elem.remove();

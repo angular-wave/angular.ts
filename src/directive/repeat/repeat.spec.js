@@ -396,6 +396,36 @@ describe("ngRepeat", () => {
       expect(element.textContent).toEqual("misko:0|shyam:1|frodo:2|");
     });
 
+    it("should refresh tuple key locals when leading array items are removed", async () => {
+      element = $compile(
+        "<ul>" +
+          '<li ng-repeat="(key, val) in items">{{key}}:{{val}}|</li>' +
+          "</ul>",
+      )(scope);
+      scope.items = ["A", "B", "C"];
+      await wait();
+
+      scope.items.shift();
+      await wait();
+
+      expect(element.textContent).toEqual("0:B|1:C|");
+    });
+
+    it("should refresh tuple key locals when array items are inserted at the head", async () => {
+      element = $compile(
+        "<ul>" +
+          '<li ng-repeat="(key, val) in items">{{key}}:{{val}}|</li>' +
+          "</ul>",
+      )(scope);
+      scope.items = ["A", "B"];
+      await wait();
+
+      scope.items.unshift("X");
+      await wait();
+
+      expect(element.textContent).toEqual("0:X|1:A|2:B|");
+    });
+
     it("should expose iterator offset as $index when iterating over objects", async () => {
       element = $compile(
         "<ul>" +
@@ -713,6 +743,66 @@ describe("ngRepeat", () => {
 
       expect(element.textContent).toBe("New Task false|Second Task true|");
     });
+
+    it("preserves repeated row DOM nodes when proxied array items are swapped by index", async () => {
+      element = $compile(
+        '<ul><li ng-repeat="todo in tasks">{{todo.task}}|</li></ul>',
+      )(scope);
+      scope.tasks = [
+        { task: "First Task" },
+        { task: "Second Task" },
+        { task: "Third Task" },
+        { task: "Fourth Task" },
+      ];
+
+      await wait();
+
+      const rows = element.querySelectorAll("li");
+      const secondRow = rows[1];
+      const fourthRow = rows[3];
+
+      secondRow.setAttribute("data-row", "second-row");
+      fourthRow.setAttribute("data-row", "fourth-row");
+
+      const tmp = scope.tasks[1];
+
+      scope.tasks[1] = scope.tasks[3];
+      scope.tasks[3] = tmp;
+      await wait();
+
+      const currentRows = element.querySelectorAll("li");
+
+      expect(currentRows[1]).toBe(fourthRow);
+      expect(currentRows[3]).toBe(secondRow);
+      expect(element.textContent).toBe(
+        "First Task|Fourth Task|Third Task|Second Task|",
+      );
+    });
+
+    it("refreshes positional locals when proxied array items are swapped by index", async () => {
+      element = $compile(
+        '<ul><li ng-repeat="todo in tasks">{{$index}}:{{todo.task}}:{{$first}}-{{$middle}}-{{$last}}|</li></ul>',
+      )(scope);
+      scope.tasks = [
+        { task: "First Task" },
+        { task: "Second Task" },
+        { task: "Third Task" },
+      ];
+
+      await wait();
+
+      const tmp = scope.tasks[0];
+
+      scope.tasks[0] = scope.tasks[2];
+      scope.tasks[2] = tmp;
+      await wait();
+
+      expect(element.textContent).toBe(
+        "0:Third Task:true-false-false|" +
+          "1:Second Task:false-true-false|" +
+          "2:First Task:false-false-true|",
+      );
+    });
   });
 
   describe("nesting in replaced directive templates", () => {
@@ -941,6 +1031,36 @@ describe("ngRepeat", () => {
       expect(newElements[0]).toEqual(lis[2]);
       expect(newElements[1]).toEqual(lis[1]);
       expect(newElements[2]).toEqual(lis[0]);
+    });
+
+    it("should preserve existing elements when items are appended", async () => {
+      scope.items = [a, b];
+      await wait();
+      lis = element.querySelectorAll("li");
+
+      scope.items.push(d);
+      await wait();
+
+      const newLis = element.querySelectorAll("li");
+
+      expect(newLis.length).toEqual(3);
+      expect(newLis[0]).toEqual(lis[0]);
+      expect(newLis[1]).toEqual(lis[1]);
+    });
+
+    it("should preserve retained elements when items are removed from the tail", async () => {
+      scope.items = [a, b, c];
+      await wait();
+      lis = element.querySelectorAll("li");
+
+      scope.items.pop();
+      await wait();
+
+      const newLis = element.querySelectorAll("li");
+
+      expect(newLis.length).toEqual(2);
+      expect(newLis[0]).toEqual(lis[0]);
+      expect(newLis[1]).toEqual(lis[1]);
     });
 
     it("should reuse elements even when model is composed of primitives", async () => {
