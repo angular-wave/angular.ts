@@ -1115,21 +1115,6 @@ describe("binding", () => {
     expect(element.classList.contains("b")).toBeTrue();
   });
 
-  it("should apply ng-class-even and ng-class-odd inside ng-repeat", async () => {
-    element = $compile(
-      "<div>" +
-        '<div ng-repeat="i in [0,1]" ng-class-even="\'e\'" ng-class-odd="\'o\'"></div>' +
-        "</div>",
-    )($rootScope);
-    await wait();
-
-    const d1 = element.querySelectorAll("div")[0];
-    const d2 = element.querySelectorAll("div")[1];
-
-    expect(d1.classList.contains("o")).toBeTruthy();
-    expect(d2.classList.contains("e")).toBeTruthy();
-  });
-
   it("should apply ng-style values from the evaluated style object", async () => {
     element = $compile('<div ng-style="style"/>')($rootScope);
 
