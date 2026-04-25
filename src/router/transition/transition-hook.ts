@@ -172,7 +172,7 @@ export class TransitionHook {
       ) as HookResult;
 
     const normalizeErr = (err: any): Promise<any> =>
-      Rejection.normalize(err).toPromise();
+      Rejection.normalize(err)._toPromise();
 
     const handleError = (err: Rejection): any =>
       hook._eventType.getErrorHandler()(err);
@@ -214,11 +214,11 @@ export class TransitionHook {
     trace.traceHookResult(result, this.transition);
 
     if (result === false) {
-      return Rejection.aborted("Hook aborted transition").toPromise();
+      return Rejection.aborted("Hook aborted transition")._toPromise();
     }
 
     if (result instanceof TargetState) {
-      return Rejection.redirected(result).toPromise();
+      return Rejection.redirected(result)._toPromise();
     }
 
     return undefined;
@@ -229,11 +229,11 @@ export class TransitionHook {
    */
   getNotCurrentRejection(): Promise<any> | undefined {
     if (this.transition._aborted) {
-      return Rejection.aborted().toPromise();
+      return Rejection.aborted()._toPromise();
     }
 
     if (this.isSuperseded()) {
-      return Rejection.superseded(this.options.current()).toPromise();
+      return Rejection.superseded(this.options.current())._toPromise();
     }
 
     return undefined;

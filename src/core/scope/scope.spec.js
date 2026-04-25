@@ -4144,6 +4144,26 @@ describe("Scope optimizations", () => {
       expect(signature).toContain("WATCH");
       expect(signature).toContain("POST");
     });
+
+    it("should not re-evaluate a local watcher when the first result is undefined", () => {
+      const watchFn = jasmine.createSpy("watchFn").and.returnValue(undefined);
+      const listenerFn = jasmine.createSpy("listenerFn");
+
+      scope.$handler._notifyListener(
+        {
+          _originalTarget: scope.$target,
+          _listenerFn: listenerFn,
+          _watchFn: watchFn,
+          _id: 1,
+          _scopeId: scope.$id,
+          _property: [],
+        },
+        scope.$target,
+      );
+
+      expect(watchFn).toHaveBeenCalledTimes(1);
+      expect(listenerFn).toHaveBeenCalledWith(undefined, scope.$target);
+    });
   });
 
   describe("#scheduleListener target capture", () => {

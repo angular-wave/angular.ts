@@ -237,11 +237,11 @@ export class StateProvider {
       );
 
       if (!target.valid()) {
-        return Rejection.invalid(target.error()).toPromise();
+        return Rejection.invalid(target.error())._toPromise();
       }
 
       if (latestThing() !== latest) {
-        return Rejection.superseded().toPromise();
+        return Rejection.superseded()._toPromise();
       }
 
       return this.transitionTo(
@@ -258,7 +258,7 @@ export class StateProvider {
       const nextCallback = callbackQueue._dequeue();
 
       if (nextCallback === undefined)
-        return Rejection.invalid(toState.error()).toPromise();
+        return Rejection.invalid(toState.error())._toPromise();
       const callbackResult = Promise.resolve(
         nextCallback(toState, fromState, injector),
       );
@@ -489,7 +489,7 @@ export class StateProvider {
     if (options.supercede === false && getCurrent()) {
       return Rejection.ignored(
         "Another transition is in progress and supercede has been set to false in TransitionOptions for the transition. So the transition was ignored in favour of the existing one in progress.",
-      ).toPromise();
+      )._toPromise();
     }
     /**
      * Special handling for Ignored, Aborted, and Redirected transitions

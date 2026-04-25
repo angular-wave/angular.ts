@@ -118,7 +118,7 @@ export class Rejection {
    * Returns a rejected promise tagged with this rejection instance.
    */
   /** @internal */
-  toPromise(): Promise<any> & { _transitionRejection: Rejection } {
+  _toPromise(): Promise<any> & { _transitionRejection: Rejection } {
     const promise = Promise.reject(this);
 
     promise.catch(() => 0);

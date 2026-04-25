@@ -144,6 +144,34 @@ describe("ngRepeat", () => {
     );
   });
 
+  it("should remove ng-click listeners before replacing non-animated repeated checkboxes with a disjoint collection", async () => {
+    element = $compile(
+      '<ul><li ng-repeat="todo in tasks">' +
+        '<input type="checkbox" ng-click="todo.done = !todo.done" />' +
+        "</li></ul>",
+    )(scope);
+
+    scope.tasks = [
+      { task: "first", done: false },
+      { task: "second", done: false },
+    ];
+    await wait();
+
+    const removedCheckbox = element.querySelectorAll("input")[0];
+    spyOn(removedCheckbox, "removeEventListener").and.callThrough();
+
+    scope.tasks = [
+      { task: "third", done: false },
+      { task: "fourth", done: false },
+    ];
+    await wait();
+
+    expect(removedCheckbox.removeEventListener).toHaveBeenCalledWith(
+      "click",
+      jasmine.any(Function),
+    );
+  });
+
   it("should iterate over on object/map", async () => {
     element = $compile(
       "<ul>" +
@@ -1033,6 +1061,26 @@ describe("ngRepeat", () => {
       expect(newElements[2]).toEqual(lis[0]);
     });
 
+    it("should replace all elements when the collection shares no retained items", async () => {
+      lis[0].setAttribute("mark", "first");
+      lis[1].setAttribute("mark", "second");
+      lis[2].setAttribute("mark", "third");
+
+      scope.items = [d, 5];
+      await wait();
+
+      const newElements = element.querySelectorAll("li");
+
+      expect(newElements.length).toEqual(2);
+      expect(newElements[0]).not.toEqual(lis[0]);
+      expect(newElements[0]).not.toEqual(lis[1]);
+      expect(newElements[0]).not.toEqual(lis[2]);
+      expect(newElements[1]).not.toEqual(lis[0]);
+      expect(newElements[1]).not.toEqual(lis[1]);
+      expect(newElements[1]).not.toEqual(lis[2]);
+      expect(element.textContent).toBe("45");
+    });
+
     it("should preserve existing elements when items are appended", async () => {
       scope.items = [a, b];
       await wait();
@@ -1046,6 +1094,30 @@ describe("ngRepeat", () => {
       expect(newLis.length).toEqual(3);
       expect(newLis[0]).toEqual(lis[0]);
       expect(newLis[1]).toEqual(lis[1]);
+    });
+
+    it("should refresh positional locals when items are appended via array replacement", async () => {
+      element = $compile(
+        '<ul><li ng-repeat="item in items">{{$index}}:{{item}}:{{$first}}-{{$middle}}-{{$last}}|</li></ul>',
+      )(scope);
+
+      scope.items = [a, b];
+      await wait();
+
+      lis = element.querySelectorAll("li");
+
+      scope.items = scope.items.concat([d]);
+      await wait();
+
+      const newLis = element.querySelectorAll("li");
+
+      expect(newLis[0]).toEqual(lis[0]);
+      expect(newLis[1]).toEqual(lis[1]);
+      expect(element.textContent).toBe(
+        "0:1:true-false-false|" +
+          "1:2:false-true-false|" +
+          "2:4:false-false-true|",
+      );
     });
 
     it("should preserve retained elements when items are removed from the tail", async () => {

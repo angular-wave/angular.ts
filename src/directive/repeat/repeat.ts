@@ -163,6 +163,25 @@ export function ngRepeatDirective($animate: any): ng.Directive {
     }
   }
 
+  function removeNodeRange(firstNode: Node, lastNode: Node): void {
+    let node: Node | null = firstNode;
+
+    const endNode = lastNode.nextSibling;
+
+    while (node && node !== endNode) {
+      const nextNode: Node | null = node.nextSibling;
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        removeElement(node as Element);
+      } else {
+        removeElementData(node as Element & Record<string, any>);
+        node.parentNode?.removeChild(node);
+      }
+
+      node = nextNode;
+    }
+  }
+
   function trackByIdArrayFn(_$scope: RepeatScope, _key: any, value: any) {
     return hashKey(value);
   }
@@ -246,6 +265,30 @@ export function ngRepeatDirective($animate: any): ng.Directive {
     return [leftIndex, rightIndex];
   }
 
+  function hasStableRetainedPrefix(
+    retainedLength: number,
+    lastBlockOrder: RepeatBlock[],
+    nextBlockOrder: RepeatBlock[],
+  ): boolean {
+    if (
+      retainedLength <= 0 ||
+      retainedLength !== lastBlockOrder.length ||
+      retainedLength >= nextBlockOrder.length
+    ) {
+      return false;
+    }
+
+    for (let index = 0; index < retainedLength; index++) {
+      const block = nextBlockOrder[index];
+
+      if (block !== lastBlockOrder[index] || !block._scope || !block._clone) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   function isPureAppendMutation(
     mutationMeta: ArrayMutationMeta | undefined,
     lastBlockOrder: RepeatBlock[],
@@ -262,23 +305,15 @@ export function ngRepeatDirective($animate: any): ng.Directive {
 
     const retainedLength = mutationMeta._previousLength;
 
-    if (
-      mutationMeta._index !== retainedLength ||
-      retainedLength !== lastBlockOrder.length ||
-      retainedLength >= nextBlockOrder.length
-    ) {
+    if (mutationMeta._index !== retainedLength) {
       return false;
     }
 
-    for (let index = 0; index < retainedLength; index++) {
-      const block = nextBlockOrder[index];
-
-      if (block !== lastBlockOrder[index] || !block._scope || !block._clone) {
-        return false;
-      }
-    }
-
-    return true;
+    return hasStableRetainedPrefix(
+      retainedLength,
+      lastBlockOrder,
+      nextBlockOrder,
+    );
   }
 
   function getPureTailDeleteRetainedLength(
@@ -393,6 +428,12 @@ export function ngRepeatDirective($animate: any): ng.Directive {
           const { parentNode } = afterNode;
 
           if (!parentNode) return;
+
+          if (nodes.length === 1) {
+            parentNode.insertBefore(nodes[0], afterNode.nextSibling);
+
+            return;
+          }
 
           const fragment = document.createDocumentFragment();
 
@@ -518,11 +559,19 @@ export function ngRepeatDirective($animate: any): ng.Directive {
 
             const collectionLength = collectionKeys.length;
 
+            const isIndexKeyedCollection = collection === collectionKeys;
+
             const nextBlockOrder: RepeatBlock[] = new Array(collectionLength);
 
+            let hasRetainedBlocks = false;
+
+            let hasStableAppendRetainedPrefix =
+              !hasAnimate &&
+              lastBlockOrder.length > 0 &&
+              lastBlockOrder.length < collectionLength;
+
             for (index = 0; index < collectionLength; index++) {
-              key =
-                collection === collectionKeys ? index : collectionKeys[index];
+              key = isIndexKeyedCollection ? index : collectionKeys[index];
               value = collection[key];
               trackById = trackByIdFn($scope, key, value);
 
@@ -531,6 +580,17 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                 delete lastBlockMap[trackById];
                 nextBlockMap[trackById] = block;
                 nextBlockOrder[index] = block;
+                hasRetainedBlocks = true;
+
+                if (
+                  hasStableAppendRetainedPrefix &&
+                  index < lastBlockOrder.length &&
+                  (block !== lastBlockOrder[index] ||
+                    !block._scope ||
+                    !block._clone)
+                ) {
+                  hasStableAppendRetainedPrefix = false;
+                }
               } else if (nextBlockMap[trackById]) {
                 values(nextBlockOrder).forEach((x: RepeatBlock | undefined) => {
                   if (x && x._scope) lastBlockMap[x._id] = block;
@@ -543,6 +603,13 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                   value,
                 );
               } else {
+                if (
+                  hasStableAppendRetainedPrefix &&
+                  index < lastBlockOrder.length
+                ) {
+                  hasStableAppendRetainedPrefix = false;
+                }
+
                 nextBlockOrder[index] = {
                   _id: trackById,
                   _scope: undefined,
@@ -552,21 +619,17 @@ export function ngRepeatDirective($animate: any): ng.Directive {
               }
             }
 
-            const mutationMeta = (() => {
-              const nextMutationMeta = getArrayMutationMeta(collection);
+            let mutationMeta = getArrayMutationMeta(collection);
 
-              if (
-                !nextMutationMeta ||
-                nextMutationMeta._version <= lastSeenArrayMutationVersion ||
-                nextMutationMeta._currentLength !== collectionLength
-              ) {
-                return undefined;
-              }
-
-              lastSeenArrayMutationVersion = nextMutationMeta._version;
-
-              return nextMutationMeta;
-            })();
+            if (
+              !mutationMeta ||
+              mutationMeta._version <= lastSeenArrayMutationVersion ||
+              mutationMeta._currentLength !== collectionLength
+            ) {
+              mutationMeta = undefined;
+            } else {
+              lastSeenArrayMutationVersion = mutationMeta._version;
+            }
 
             const swapMutationIndices = !hasAnimate
               ? getSwapMutationIndices(
@@ -582,11 +645,12 @@ export function ngRepeatDirective($animate: any): ng.Directive {
 
             const canSkipDomMoveChecksForAppend =
               !hasAnimate &&
-              isPureAppendMutation(
+              (isPureAppendMutation(
                 mutationMeta,
                 lastBlockOrder,
                 nextBlockOrder,
-              );
+              ) ||
+                hasStableAppendRetainedPrefix);
 
             const canSkipDomMoveChecksForMutation =
               didApplySwapDomMove ||
@@ -615,13 +679,11 @@ export function ngRepeatDirective($animate: any): ng.Directive {
               const lastNode = lastBlock && getBlockEnd(lastBlock);
 
               if (firstNode && lastNode) {
-                const blockNodes = getBlockNodes([firstNode, lastNode]);
-
                 for (let i = 0; i < lastBlockOrder.length; i++) {
                   lastBlockOrder[i]._scope?.$destroy();
                 }
 
-                removeBlockNodes(blockNodes);
+                removeNodeRange(firstNode, lastNode);
                 lastBlockMap = nextBlockMap as RepeatBlockMap;
                 lastBlockOrder = nextBlockOrder;
 
@@ -647,11 +709,6 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                 lastRemovedBlock && getBlockEnd(lastRemovedBlock);
 
               if (firstRemovedNode && lastRemovedNode) {
-                const removedNodes = getBlockNodes([
-                  firstRemovedNode,
-                  lastRemovedNode,
-                ]);
-
                 for (
                   let removedIndex = tailDeleteRetainedLength;
                   removedIndex < lastBlockOrder.length;
@@ -660,7 +717,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                   lastBlockOrder[removedIndex]._scope?.$destroy();
                 }
 
-                removeBlockNodes(removedNodes);
+                removeNodeRange(firstRemovedNode, lastRemovedNode);
 
                 const retainedLastIndex = tailDeleteRetainedLength - 1;
 
@@ -670,10 +727,9 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                   retainedLastBlock?._scope &&
                   retainedLastBlock._usesPositionLocals
                 ) {
-                  key =
-                    collection === collectionKeys
-                      ? retainedLastIndex
-                      : collectionKeys[retainedLastIndex];
+                  key = isIndexKeyedCollection
+                    ? retainedLastIndex
+                    : collectionKeys[retainedLastIndex];
                   value = collection[key];
                   updateScope(
                     retainedLastBlock._scope,
@@ -691,6 +747,31 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                 lastBlockOrder = nextBlockOrder;
 
                 return;
+              }
+            }
+
+            if (
+              !hasAnimate &&
+              collectionLength > 0 &&
+              lastBlockOrder.length > 0 &&
+              !hasRetainedBlocks
+            ) {
+              const firstBlock = lastBlockOrder[0];
+
+              const lastBlock = lastBlockOrder[lastBlockOrder.length - 1];
+
+              const firstNode = firstBlock && getBlockStart(firstBlock);
+
+              const lastNode = lastBlock && getBlockEnd(lastBlock);
+
+              if (firstNode && lastNode) {
+                for (let i = 0; i < lastBlockOrder.length; i++) {
+                  lastBlockOrder[i]._scope?.$destroy();
+                }
+
+                removeNodeRange(firstNode, lastNode);
+                lastBlockMap = nullObject();
+                lastBlockOrder = [];
               }
             }
 
@@ -723,9 +804,44 @@ export function ngRepeatDirective($animate: any): ng.Directive {
               }
             }
 
-            for (index = 0; index < collectionLength; index++) {
-              key =
-                collection === collectionKeys ? index : collectionKeys[index];
+            let startIndex = 0;
+
+            if (canSkipDomMoveChecksForAppend && lastBlockOrder.length > 0) {
+              const retainedLastIndex = lastBlockOrder.length - 1;
+
+              const retainedLastBlock = nextBlockOrder[retainedLastIndex];
+
+              const retainedLastNode =
+                retainedLastBlock && getBlockEnd(retainedLastBlock);
+
+              if (retainedLastNode) {
+                previousNode = retainedLastNode;
+                startIndex = lastBlockOrder.length;
+
+                if (
+                  retainedLastBlock._scope &&
+                  retainedLastBlock._usesPositionLocals
+                ) {
+                  key = isIndexKeyedCollection
+                    ? retainedLastIndex
+                    : collectionKeys[retainedLastIndex];
+                  value = collection[key];
+                  updateScope(
+                    retainedLastBlock._scope,
+                    retainedLastIndex,
+                    valueIdentifier,
+                    value,
+                    keyIdentifier,
+                    key,
+                    collectionLength,
+                    true,
+                  );
+                }
+              }
+            }
+
+            for (index = startIndex; index < collectionLength; index++) {
+              key = isIndexKeyedCollection ? index : collectionKeys[index];
               value = collection[key];
               block = nextBlockOrder[index];
 
@@ -744,26 +860,38 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                   continue;
                 }
 
+                const isExistingCloneArray = Array.isArray(existingClone);
+
+                const blockStart = isExistingCloneArray
+                  ? existingClone[0]
+                  : existingClone;
+
+                const blockEnd = isExistingCloneArray
+                  ? existingClone[existingClone.length - 1]
+                  : existingClone;
+
                 if (!canSkipDomMoveChecksForMutation) {
-                  const existingCloneNodes = Array.isArray(existingClone)
-                    ? existingClone
-                    : [existingClone];
+                  nextNode = previousNode.nextSibling;
 
-                  nextNode = previousNode;
+                  if (blockStart !== nextNode) {
+                    while (nextNode && nextNode[NG_REMOVED]) {
+                      nextNode = nextNode.nextSibling;
+                    }
 
-                  do {
-                    nextNode = nextNode.nextSibling;
-                  } while (nextNode && nextNode[NG_REMOVED]);
+                    if (blockStart !== nextNode) {
+                      const existingCloneNodes = isExistingCloneArray
+                        ? existingClone
+                        : [existingClone];
 
-                  if (getBlockStart(block) !== nextNode) {
-                    insertNodesAfter(
-                      getBlockNodes(existingCloneNodes),
-                      previousNode,
-                    );
+                      insertNodesAfter(
+                        getBlockNodes(existingCloneNodes),
+                        previousNode,
+                      );
+                    }
                   }
                 }
 
-                previousNode = getBlockEnd(block);
+                previousNode = blockEnd;
 
                 if (
                   shouldUpdatePositionLocals ||

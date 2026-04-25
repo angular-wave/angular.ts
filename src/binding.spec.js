@@ -346,6 +346,36 @@ describe("binding", () => {
       elem.remove();
     });
 
+    it("should refresh positional locals while preserving retained DOM nodes when observed array items are appended via array replacement", async () => {
+      let elem = createElementFromHTML(
+        "<ul>" +
+          '<li ng-repeat="item in items"><span class="label" ng-bind="item.a"></span>:<span class="last" ng-bind="$last"></span></li>' +
+          "</ul>",
+      );
+      document.getElementById("app").insertAdjacentElement("afterend", elem);
+      $injector = window.angular.bootstrap(elem, ["myModule"]);
+      $rootScope = $injector.get("$rootScope");
+
+      $rootScope.items = [{ a: "A" }, { a: "B" }];
+      await wait();
+
+      const originalRows = elem.querySelectorAll("li");
+      const firstRow = originalRows[0];
+      const secondRow = originalRows[1];
+
+      $rootScope.items = $rootScope.items.concat([{ a: "C" }]);
+      await wait();
+
+      const currentRows = Array.from(elem.querySelectorAll("li"));
+      const rowTexts = currentRows.map((row) => row.textContent);
+
+      expect(currentRows.length).toBe(3);
+      expect(currentRows[0]).toBe(firstRow);
+      expect(currentRows[1]).toBe(secondRow);
+      expect(rowTexts).toEqual(["A:false", "B:false", "C:true"]);
+      elem.remove();
+    });
+
     it("should preserve existing repeated DOM nodes when observed array items are appended via push", async () => {
       let elem = createElementFromHTML(
         "<ul>" +
@@ -382,6 +412,41 @@ describe("binding", () => {
           '<li ng-repeat="item in items" ng-bind="item.a">D</li>' +
           "</ul>",
       );
+      elem.remove();
+    });
+
+    it("should preserve existing repeated table rows when observed array items are appended via push", async () => {
+      let elem = createElementFromHTML(
+        "<table><tbody>" +
+          '<tr ng-repeat="item in items"><td ng-bind="item.a"></td></tr>' +
+          "</tbody></table>",
+      );
+      document.getElementById("app").insertAdjacentElement("afterend", elem);
+      $injector = window.angular.bootstrap(elem, ["myModule"]);
+      $rootScope = $injector.get("$rootScope");
+
+      $rootScope.items = [{ a: "A" }, { a: "B" }];
+      await wait();
+
+      const originalRows = elem.querySelectorAll("tr");
+      const firstRow = originalRows[0];
+      const secondRow = originalRows[1];
+
+      firstRow.setAttribute("data-row", "survivor-a");
+      secondRow.setAttribute("data-row", "survivor-b");
+
+      $rootScope.items.push({ a: "C" }, { a: "D" });
+      await wait();
+
+      const currentRows = elem.querySelectorAll("tr");
+      const rowTexts = Array.from(currentRows).map((row) => row.textContent);
+
+      expect(currentRows.length).toBe(4);
+      expect(currentRows[0]).toBe(firstRow);
+      expect(currentRows[1]).toBe(secondRow);
+      expect(rowTexts).toEqual(["A", "B", "C", "D"]);
+      expect(currentRows[0].getAttribute("data-row")).toBe("survivor-a");
+      expect(currentRows[1].getAttribute("data-row")).toBe("survivor-b");
       elem.remove();
     });
 
