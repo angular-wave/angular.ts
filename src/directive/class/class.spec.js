@@ -232,6 +232,22 @@ describe("ngClass", () => {
     expect(element.className).toBe("");
   });
 
+  it("should not touch classes when ng-class resolves to the same string", async () => {
+    element = $compile('<div ng-class="dynCls"></div>')($rootScope);
+    $rootScope.dynCls = "foo";
+    await wait();
+
+    const addSpy = spyOn(element.classList, "add").and.callThrough();
+    const removeSpy = spyOn(element.classList, "remove").and.callThrough();
+
+    $rootScope.dynCls = "foo";
+    await wait();
+
+    expect(addSpy).not.toHaveBeenCalled();
+    expect(removeSpy).not.toHaveBeenCalled();
+    expect(element.className).toBe("foo");
+  });
+
   it("should convert undefined and null values to an empty string", async () => {
     element = $compile('<div ng-class="dynCls"></div>')($rootScope);
     await wait();
@@ -707,6 +723,15 @@ describe("toClassString", () => {
 
   it("returns empty string for an object with no truthy keys", () => {
     expect(toClassString({ a: false, b: 0, c: "" })).toBe("");
+  });
+
+  it("does not include inherited enumerable properties", () => {
+    const proto = { inherited: true };
+    const map = Object.create(proto);
+
+    map.own = true;
+
+    expect(toClassString(map)).toBe("own");
   });
 
   it("does not include inherited properties when used with a null-proto map", () => {

@@ -2706,22 +2706,24 @@ export class Scope {
     listener: Listener,
     target: Scope | ScopeProxy | undefined,
   ): void {
-    const { _originalTarget, _listenerFn, _watchFn } = listener;
+    const { _originalTarget, _listenerFn, _watchFn, _invokeWatchFn } = listener;
 
     try {
       let newVal = _watchFn(_originalTarget);
 
-      if (isUndefined(newVal)) {
+      if (isUndefined(newVal) && target !== _originalTarget) {
         newVal = _watchFn(target);
       }
 
       if (isFunction(newVal)) {
-        newVal = listener._invokeWatchFn
-          ? listener._invokeWatchFn(_originalTarget)
+        newVal = _invokeWatchFn
+          ? _invokeWatchFn(_originalTarget)
           : newVal(_originalTarget);
-      }
+      } else if (!isArray(newVal)) {
+        _listenerFn(newVal, _originalTarget);
 
-      if (isArray(newVal)) {
+        return;
+      } else {
         for (let i = 0, l = newVal.length; i < l; i++) {
           if (isFunction(newVal[i])) {
             newVal[i] = newVal[i](_originalTarget);

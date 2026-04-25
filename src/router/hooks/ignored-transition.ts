@@ -14,7 +14,7 @@ function ignoredHook(trans: Transition) {
     pending.abort();
   }
 
-  return Rejection.ignored().toPromise();
+  return Rejection.ignored()._toPromise();
 }
 
 /**

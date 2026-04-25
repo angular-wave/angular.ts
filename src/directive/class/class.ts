@@ -1,10 +1,10 @@
 import { getCacheData, setCacheData } from "../../shared/dom.ts";
 import {
+  hasOwn,
   hasAnimate,
   isArray,
   isObject,
   isString,
-  keys,
   nullObject,
 } from "../../shared/utils.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
@@ -89,6 +89,10 @@ function classDirective(
           oldClassStringParam: string,
           newClassStringParam: string,
         ): void {
+          if (oldClassStringParam === newClassStringParam) {
+            return;
+          }
+
           const oldClassArray = split(oldClassStringParam);
 
           const newClassArray = split(newClassStringParam);
@@ -222,19 +226,24 @@ export function toClassString(classValue: unknown): string {
   if (!classValue) return "";
 
   if (isArray(classValue)) {
-    // Recursively stringify and omit empty results.
-    return classValue.map(toClassString).filter(Boolean).join(" ");
+    let out = "";
+
+    for (let i = 0; i < classValue.length; i++) {
+      const classString = toClassString(classValue[i]);
+
+      if (classString) out += (out ? " " : "") + classString;
+    }
+
+    return out;
   }
 
   if (isObject(classValue)) {
     const valueMap = classValue as Record<string, any>;
 
-    const ks = keys(valueMap);
-
     let out = "";
 
-    for (let i = 0; i < ks.length; i++) {
-      const k = ks[i];
+    for (const k in valueMap) {
+      if (!hasOwn(valueMap, k)) continue;
 
       if (valueMap[k]) out += (out ? " " : "") + k;
     }
