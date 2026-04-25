@@ -255,63 +255,6 @@ describe("ngClass", () => {
     expect(element.className).toBe("");
   });
 
-  it("should ngClass odd/even", async () => {
-    element = $compile(
-      '<ul><li ng-repeat="i in [0,1]" class="existing" ng-class-odd="\'odd\'" ng-class-even="\'even\'"></li><ul>',
-    )($rootScope);
-    await wait();
-    const e1 = element.childNodes[1];
-    const e2 = element.childNodes[2];
-    expect(e1.classList.contains("existing")).toBeTruthy();
-    expect(e1.classList.contains("odd")).toBeTruthy();
-    expect(e2.classList.contains("existing")).toBeTruthy();
-    expect(e2.classList.contains("even")).toBeTruthy();
-  });
-
-  it("should allow both ngClass and ngClassOdd/Even on the same element", async () => {
-    element = $compile(
-      "<ul>" +
-        '<li ng-repeat="i in [0,1]" ng-class="\'plainClass\'" ' +
-        "ng-class-odd=\"'odd'\" ng-class-even=\"'even'\"></li>" +
-        "<ul>",
-    )($rootScope);
-    await wait();
-    const e1 = element.childNodes[1];
-    const e2 = element.childNodes[2];
-
-    expect(e1.classList.contains("plainClass")).toBeTruthy();
-    expect(e1.classList.contains("odd")).toBeTruthy();
-    expect(e1.classList.contains("even")).toBeFalsy();
-    expect(e2.classList.contains("plainClass")).toBeTruthy();
-    expect(e2.classList.contains("even")).toBeTruthy();
-    expect(e2.classList.contains("odd")).toBeFalsy();
-  });
-
-  it("should allow ngClassOdd/Even on the same element with overlapping classes", async () => {
-    element = $compile(
-      "<ul>" +
-        '<li ng-repeat="i in [0,1,2]" ' +
-        "ng-class-odd=\"'same odd'\" " +
-        "ng-class-even=\"'same even'\">" +
-        "</li>" +
-        "<ul>",
-    )($rootScope);
-    await wait();
-    const e1 = element.children[0];
-    const e2 = element.children[1];
-    const e3 = element.children[2];
-
-    expect(e1).toHaveClass("same");
-    expect(e1).toHaveClass("odd");
-    expect(e1).not.toHaveClass("even");
-    expect(e2).toHaveClass("same");
-    expect(e2).not.toHaveClass("odd");
-    expect(e2).toHaveClass("even");
-    expect(e3).toHaveClass("same");
-    expect(e3).toHaveClass("odd");
-    expect(e3).not.toHaveClass("even");
-  });
-
   it("should allow ngClass with overlapping classes", async () => {
     element = $compile(
       "<div ng-class=\"{'same yes': test, 'same no': !test}\"></div>",
@@ -327,32 +270,6 @@ describe("ngClass", () => {
     expect(element).toHaveClass("same");
     expect(element).toHaveClass("yes");
     expect(element).not.toHaveClass("no");
-  });
-
-  it("should allow both ngClass and ngClassOdd/Even with multiple classes", async () => {
-    element = $compile(
-      "<ul>" +
-        "<li ng-repeat=\"i in [0,1]\" ng-class=\"['A', 'B']\" " +
-        "ng-class-odd=\"['C', 'D']\" ng-class-even=\"['E', 'F']\"></li>" +
-        "<ul>",
-    )($rootScope);
-    await wait();
-    const e1 = element.childNodes[1];
-    const e2 = element.childNodes[2];
-
-    expect(e1.classList.contains("A")).toBeTruthy();
-    expect(e1.classList.contains("B")).toBeTruthy();
-    expect(e1.classList.contains("C")).toBeTruthy();
-    expect(e1.classList.contains("D")).toBeTruthy();
-    expect(e1.classList.contains("E")).toBeFalsy();
-    expect(e1.classList.contains("F")).toBeFalsy();
-
-    expect(e2.classList.contains("A")).toBeTruthy();
-    expect(e2.classList.contains("B")).toBeTruthy();
-    expect(e2.classList.contains("E")).toBeTruthy();
-    expect(e2.classList.contains("F")).toBeTruthy();
-    expect(e2.classList.contains("C")).toBeFalsy();
-    expect(e2.classList.contains("D")).toBeFalsy();
   });
 
   it("should apply ngClass with interpolated class attributes", async () => {
@@ -388,107 +305,6 @@ describe("ngClass", () => {
     element = $compile('<div ng-class="{foo:foo}"></div>')($rootScope);
     await wait();
     expect(element.classList.contains("foo")).toBe(false);
-  });
-
-  it("should update ngClassOdd/Even when an item is added to the model", async () => {
-    element = $compile(
-      "<ul>" +
-        '<li ng-repeat="i in items" ' +
-        "ng-class-odd=\"'odd'\" ng-class-even=\"'even'\">i</li>" +
-        "<ul>",
-    )($rootScope);
-    $rootScope.items = ["b", "c", "d"];
-    $rootScope.items.unshift("a");
-    await wait();
-    const e1 = element.childNodes[1];
-    const e4 = element.childNodes[2];
-
-    expect(e1.classList.contains("odd")).toBeTruthy();
-    expect(e1.classList.contains("even")).toBeFalsy();
-
-    expect(e4.classList.contains("even")).toBeTruthy();
-    expect(e4.classList.contains("odd")).toBeFalsy();
-  });
-
-  it("should update ngClassOdd/Even when model is changed by filtering", async () => {
-    element = $compile(
-      "<ul>" +
-        '<li ng-repeat="i in items" ' +
-        "ng-class-odd=\"'odd'\" ng-class-even=\"'even'\"></li>" +
-        "</ul>",
-    )($rootScope);
-    $rootScope.items = ["a", "b", "c"];
-    await wait();
-    $rootScope.items = ["a", "c"];
-    await wait();
-
-    const e1 = element.childNodes[1];
-    const e2 = element.childNodes[2];
-
-    expect(e1.classList.contains("odd")).toBeTruthy();
-    expect(e1.classList.contains("even")).toBeFalsy();
-
-    expect(e2.classList.contains("even")).toBeTruthy();
-    expect(e2.classList.contains("odd")).toBeFalsy();
-  });
-
-  it("should update ngClassOdd/Even when model is changed by sorting", async () => {
-    element = $compile(
-      "<ul>" +
-        '<li ng-repeat="i in items" ' +
-        "ng-class-odd=\"'odd'\" ng-class-even=\"'even'\">i</li>" +
-        "</ul>",
-    )($rootScope);
-    $rootScope.items = ["a", "b"];
-    await wait();
-    const e1 = element.children[0];
-    const e2 = element.children[1];
-
-    expect(e1.classList.contains("odd")).toBeTruthy();
-    expect(e1.classList.contains("even")).toBeFalsy();
-
-    expect(e2.classList.contains("even")).toBeTruthy();
-    expect(e2.classList.contains("odd")).toBeFalsy();
-  });
-
-  it("should add/remove the correct classes when the expression and `$index` change simultaneously", async () => {
-    element = $compile(
-      "<div>" +
-        '<div ng-class-odd="foo"></div>' +
-        '<div ng-class-even="foo"></div>' +
-        "</div>",
-    )($rootScope);
-    await wait();
-    const odd = element.children[0];
-    const even = element.children[1];
-
-    $rootScope.$apply('$index = 0; foo = "class1"');
-    await wait();
-    expect(odd).toHaveClass("class1");
-    expect(odd).not.toHaveClass("class2");
-    expect(even).not.toHaveClass("class1");
-    expect(even).not.toHaveClass("class2");
-
-    $rootScope.$apply('$index = 1; foo = "class2"');
-    await wait();
-    expect(odd).not.toHaveClass("class1");
-    expect(odd).not.toHaveClass("class2");
-    expect(even).not.toHaveClass("class1");
-    expect(even).toHaveClass("class2");
-
-    $rootScope.$apply('foo = "class1"');
-    await wait();
-    expect(odd).not.toHaveClass("class1");
-    expect(odd).not.toHaveClass("class2");
-    expect(even).toHaveClass("class1");
-    expect(even).not.toHaveClass("class2");
-
-    $rootScope.$apply("$index = 2");
-    await wait();
-    expect(odd).toHaveClass("class1");
-    expect(odd).not.toHaveClass("class2");
-    expect(even).not.toHaveClass("class1");
-    expect(even).not.toHaveClass("class2");
   });
 
   it("should support mixed array/object variable with a mutating object", async () => {

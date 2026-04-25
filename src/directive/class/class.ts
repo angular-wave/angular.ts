@@ -9,168 +9,107 @@ import {
 } from "../../shared/utils.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
-/** Creates the family of `ngClass*` directives. */
-function classDirective(
-  name: string,
-  selector: boolean | number,
-): ng.DirectiveFactory {
-  name = `ngClass${name}`;
+/** Creates the `ngClass` directive. */
+export function classDirective(): ng.Directive {
+  return {
+    link(
+      scope: ng.Scope,
+      element: HTMLElement,
+      attr: Attributes & Record<string, string>,
+    ): void {
+      let classCounts = getCacheData(element, "$classCounts") as
+        | Record<string, number>
+        | undefined;
 
-  /** Creates the concrete directive instance for the requested class mode. */
-  return function (): ng.Directive {
-    return {
-      link(
-        scope: ng.Scope,
-        element: HTMLElement,
-        attr: Attributes & Record<string, string>,
+      let oldClassString = "";
+
+      if (!classCounts) {
+        // Use Object.create(null) to prevent assumptions involving Object.prototype keys.
+        classCounts = nullObject() as Record<string, number>;
+        setCacheData(element, "$classCounts", classCounts);
+      }
+
+      const counts = classCounts;
+
+      // Cache once; `hasAnimate(element)` should be stable for this directive instance.
+      const animate = hasAnimate(element);
+
+      scope.$watch(attr.ngClass, (val) => {
+        ngClassWatchAction(toClassString(val));
+      });
+
+      /** Applies the net class change between two class strings. */
+      function updateClasses(
+        oldClassStringParam: string,
+        newClassStringParam: string,
       ): void {
-        let classCounts = getCacheData(element, "$classCounts") as
-          | Record<string, number>
-          | undefined;
-
-        // `ngClassOdd/ngClassEven` use `$index & 1` values (0/1). Plain `ngClass` uses `true`.
-        let oldModulo: number | boolean = true;
-
-        let oldClassString = "";
-
-        if (!classCounts) {
-          // Use Object.create(null) to prevent assumptions involving Object.prototype keys.
-          classCounts = nullObject() as Record<string, number>;
-          setCacheData(element, "$classCounts", classCounts);
+        if (oldClassStringParam === newClassStringParam) {
+          return;
         }
 
-        const counts = classCounts;
+        const oldClassArray = split(oldClassStringParam);
 
-        // Cache once; `hasAnimate(element)` should be stable for this directive instance.
-        const animate = hasAnimate(element);
+        const newClassArray = split(newClassStringParam);
 
-        if (name !== "ngClass") {
-          scope.$watch("$index", () => {
-            ngClassIndexWatchAction(scope.$index & 1);
-          });
+        const toRemoveArray = arrayDifference(oldClassArray, newClassArray);
+
+        const toAddArray = arrayDifference(newClassArray, oldClassArray);
+
+        const toRemove = digestClassCounts(toRemoveArray, -1);
+
+        const toAdd = digestClassCounts(toAddArray, 1);
+
+        if (animate) {
+          if (toAdd.length) attr.$addClass(toAdd.join(" "));
+
+          if (toRemove.length) attr.$removeClass(toRemove.join(" "));
+        } else {
+          if (toAdd.length) element.classList.add(...toAdd);
+
+          if (toRemove.length) element.classList.remove(...toRemove);
         }
+      }
 
-        scope.$watch(attr[name], (val) => {
-          ngClassWatchAction(toClassString(val));
-        });
+      /**
+       * Updates reference-counts for classes and returns the classes that should be
+       * applied/removed for this operation.
+       */
+      function digestClassCounts(
+        classArray: string[],
+        count: number,
+      ): string[] {
+        const classesToUpdate = [];
 
-        /** Increments class reference counts and applies newly active classes. */
-        function addClasses(classString: string): void {
-          const toAdd = digestClassCounts(split(classString), 1);
+        for (let i = 0; i < classArray.length; i++) {
+          const className = classArray[i];
 
-          if (!toAdd.length) return;
+          if (!className) continue;
 
-          if (animate) {
-            attr.$addClass(toAdd.join(" "));
-          } else {
-            scope.$postUpdate(() => {
-              element.classList.add(...toAdd);
-            });
-          }
-        }
+          // Only decrement if we have a count, otherwise we can go negative and
+          // remove classes that were never added.
+          if (count > 0 || counts[className]) {
+            const next = (counts[className] || 0) + count;
 
-        /** Decrements class reference counts and removes classes that reach zero. */
-        function removeClasses(classString: string): void {
-          const toRemove = digestClassCounts(split(classString), -1);
+            counts[className] = next;
 
-          if (!toRemove.length) return;
-
-          if (animate) {
-            attr.$removeClass(toRemove.join(" "));
-          } else {
-            scope.$postUpdate(() => {
-              element.classList.remove(...toRemove);
-            });
-          }
-        }
-
-        /** Applies the net class change between two class strings. */
-        function updateClasses(
-          oldClassStringParam: string,
-          newClassStringParam: string,
-        ): void {
-          if (oldClassStringParam === newClassStringParam) {
-            return;
-          }
-
-          const oldClassArray = split(oldClassStringParam);
-
-          const newClassArray = split(newClassStringParam);
-
-          const toRemoveArray = arrayDifference(oldClassArray, newClassArray);
-
-          const toAddArray = arrayDifference(newClassArray, oldClassArray);
-
-          const toRemove = digestClassCounts(toRemoveArray, -1);
-
-          const toAdd = digestClassCounts(toAddArray, 1);
-
-          if (animate) {
-            if (toAdd.length) attr.$addClass(toAdd.join(" "));
-
-            if (toRemove.length) attr.$removeClass(toRemove.join(" "));
-          } else {
-            if (toAdd.length) element.classList.add(...toAdd);
-
-            if (toRemove.length) element.classList.remove(...toRemove);
-          }
-        }
-
-        /**
-         * Updates reference-counts for classes and returns the classes that should be
-         * applied/removed for this operation.
-         */
-        function digestClassCounts(
-          classArray: string[],
-          count: number,
-        ): string[] {
-          const classesToUpdate = [];
-
-          for (let i = 0; i < classArray.length; i++) {
-            const className = classArray[i];
-
-            if (!className) continue;
-
-            // Only decrement if we have a count, otherwise we can go negative and
-            // remove classes that were never added.
-            if (count > 0 || counts[className]) {
-              const next = (counts[className] || 0) + count;
-
-              counts[className] = next;
-
-              // When adding: push when transitioning 0 -> 1.
-              // When removing: push when transitioning 1 -> 0.
-              if (next === (count > 0 ? 1 : 0)) {
-                classesToUpdate.push(className);
-              }
+            // When adding: push when transitioning 0 -> 1.
+            // When removing: push when transitioning 1 -> 0.
+            if (next === (count > 0 ? 1 : 0)) {
+              classesToUpdate.push(className);
             }
           }
-
-          return classesToUpdate;
         }
 
-        /** Reacts to `$index` changes for `ngClassOdd` and `ngClassEven`. */
-        function ngClassIndexWatchAction(newModulo: number | boolean): void {
-          // Runs before `ngClassWatchAction()`: it adds/removes `oldClassString`.
-          if (newModulo === selector) {
-            addClasses(oldClassString);
-          } else {
-            removeClasses(oldClassString);
-          }
+        return classesToUpdate;
+      }
 
-          oldModulo = newModulo;
-        }
+      /** Reacts to the watched class expression changing. */
+      function ngClassWatchAction(newClassString: string): void {
+        updateClasses(oldClassString, newClassString);
 
-        /** Reacts to the watched class expression changing. */
-        function ngClassWatchAction(newClassString: string): void {
-          if (oldModulo === selector) {
-            updateClasses(oldClassString, newClassString);
-          }
-
-          oldClassString = newClassString;
-        }
-      },
-    };
+        oldClassString = newClassString;
+      }
+    },
   };
 }
 
@@ -257,7 +196,3 @@ export function toClassString(classValue: unknown): string {
 
   return String(classValue);
 }
-
-export const ngClassDirective = classDirective("", true);
-export const ngClassOddDirective = classDirective("Odd", 0);
-export const ngClassEvenDirective = classDirective("Even", 1);

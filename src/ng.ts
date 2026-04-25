@@ -36,11 +36,7 @@ import {
   ngBindTemplateDirective,
 } from "./directive/bind/bind.ts";
 import { ngChannelDirective } from "./directive/channel/channel.ts";
-import {
-  ngClassDirective,
-  ngClassEvenDirective,
-  ngClassOddDirective,
-} from "./directive/class/class.ts";
+import { classDirective } from "./directive/class/class.ts";
 import { ngCloakDirective } from "./directive/cloak/cloak.ts";
 import { ngControllerDirective } from "./directive/controller/controller.ts";
 import { ngElDirective } from "./directive/el/el.ts";
@@ -177,9 +173,7 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
               ngBindHtml: ngBindHtmlDirective,
               ngBindTemplate: ngBindTemplateDirective,
               ngChannel: ngChannelDirective,
-              ngClass: ngClassDirective,
-              ngClassEven: ngClassEvenDirective,
-              ngClassOdd: ngClassOddDirective,
+              ngClass: classDirective,
               ngCloak: ngCloakDirective,
               ngController: ngControllerDirective,
               ngDelete: ngDeleteDirective,
