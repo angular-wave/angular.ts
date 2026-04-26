@@ -26,11 +26,7 @@ import type { UrlRules } from "../url/url-rules.ts";
  *
  */
 export class StateRegistryProvider {
-  /* @ignore */ static $inject = [
-    $t._urlProvider,
-    $t._routerProvider,
-    $t._viewProvider,
-  ];
+  /* @ignore */ static $inject = [$t._urlProvider, $t._routerProvider];
 
   /** @internal */
   _states: StateStore;
@@ -54,13 +50,8 @@ export class StateRegistryProvider {
   /**
    * @param {ng.UrlService} urlService
    * @param {ng.RouterService} globals
-   * @param {ng.ViewService} viewService
    */
-  constructor(
-    urlService: ng.UrlService,
-    globals: ng.RouterService,
-    viewService: ng.ViewService,
-  ) {
+  constructor(urlService: ng.UrlService, globals: ng.RouterService) {
     this._states = {};
 
     this._urlService = urlService;
@@ -84,7 +75,6 @@ export class StateRegistryProvider {
 
     this.registerRoot();
 
-    viewService._rootViewContext(this.root());
     globals.$current = this.root();
     globals.current = globals.$current.self;
   }
