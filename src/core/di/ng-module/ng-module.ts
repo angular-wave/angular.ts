@@ -14,7 +14,16 @@ import type { Injectable } from "../../../interface.ts";
 
 type InvokeQueueItem = [string, string, any[]];
 
-type WasmOptions = { raw?: boolean; [key: string]: any };
+/** Options for registering a WebAssembly module with {@link NgModule.wasm}. */
+export type WasmOptions = {
+  /**
+   * When `false`, the injectable resolves to `instance.exports`.
+   * When `true`, it resolves to the full instantiation result.
+   */
+  raw?: boolean;
+  /** Additional runtime-specific options. */
+  [key: string]: any;
+};
 
 /**
  * Modules are collections of application configuration information for components:
@@ -49,44 +58,17 @@ export class NgModule {
   ) {
     validate(isString, name, "name");
     validate(isArray, requires, "requires");
-    /**
-     * @public
-     * Name of the current module.
-     * @type {string}
-     */
     this.name = name;
-
-    /**
-     * Array of module names that this module depends on.
-     * @ignore
-     * @type {string[]}
-     */
     this._requires = requires;
-
-    /**
-     * Holds a collection of tasks, required to instantiate an angular component
-     * @ignore
-     * @type {!Array<Array<*>>}
-     */
     this._invokeQueue = [];
-
-    /**
-     * @ignore
-     * @type {!Array<Array<*>>}
-     */
     this._configBlocks = [];
-
-    /** @ignore @type {!Array.<ng.Injectable<any>>} */
     this._runBlocks = [];
 
     if (configFn) {
       this.config(configFn);
     }
 
-    /** @ignore @type {!Array.<ng.Injectable<any>>} */
     this._services = [];
-
-    /** @ignore @type {!Array.<ng.RestDefinition<any>>} */
     this._restDefinitions = [];
   }
 

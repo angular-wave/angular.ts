@@ -12,16 +12,25 @@ import {
 } from "../../shared/validate.ts";
 
 export interface CookieOptions {
+  /** URL path scope for the cookie. */
   path?: string;
+  /** Domain scope for the cookie. */
   domain?: string;
+  /** Expiration date, date string, or timestamp. Omit for a session cookie. */
   expires?: Date | string | number;
+  /** Restrict the cookie to HTTPS connections. */
   secure?: boolean;
+  /** SameSite policy applied by the browser. */
   samesite?: "Lax" | "Strict" | "None";
 }
 
+/** Serialization options for cookie-backed stores. */
 export interface CookieStoreOptions {
+  /** Convert values to strings before writing. */
   serialize?: (value: any) => string;
+  /** Convert stored strings back to values after reading. */
   deserialize?: (text: string) => any;
+  /** Cookie attributes used for writes. */
   cookie?: CookieOptions;
 }
 
@@ -29,6 +38,7 @@ export interface CookieStoreOptions {
  * Service provider that creates a {@link CookieService $cookie} service.
  */
 export class CookieProvider {
+  /** Default cookie attributes merged into each write and remove call. */
   defaults: ng.CookieOptions;
 
   constructor() {
@@ -40,10 +50,8 @@ export class CookieProvider {
 
 /**
  *
- * Provides high-level APIs for interacting with browser cookies:
- *  - Raw get/set/remove
- *  - JSON serialization helpers
- *  - Global defaults supplied by $cookiesProvider
+ * High-level API for reading, writing, serializing, and removing browser
+ * cookies through the injectable `$cookie` service.
  */
 export class CookieService {
   /** @internal */
@@ -59,6 +67,8 @@ export class CookieService {
   /**
    * Retrieves a raw cookie value.
    *
+   * @param key - Cookie name to read.
+   * @returns The decoded cookie value, or `null` when not set.
    * @throws {URIError} – If decodeURIComponent fails.
    */
   get(key: string): string | null {
@@ -72,6 +82,8 @@ export class CookieService {
    * Retrieves a cookie and deserializes its JSON content.
    *
    * @template T
+   * @param key - Cookie name to read.
+   * @returns The parsed value, or `null` when not set.
    * @throws {SyntaxError} if cookie JSON is invalid
    */
   getObject<T>(key: string): T | null {
@@ -96,6 +108,9 @@ export class CookieService {
   /**
    * Sets a raw cookie value.
    *
+   * @param key - Cookie name to write.
+   * @param value - String value to write.
+   * @param options - Cookie attributes for this write.
    * @throws {URIError} if key or value cannot be encoded
    */
   put(key: string, value: string, options: ng.CookieOptions = {}): void {
@@ -114,6 +129,9 @@ export class CookieService {
   /**
    * Serializes an object as JSON and stores it as a cookie.
    *
+   * @param key - Cookie name to write.
+   * @param value - JSON-serializable value.
+   * @param options - Cookie attributes for this write.
    * @throws {TypeError} if Object cannot be converted to JSON
    */
   putObject(key: string, value: any, options?: ng.CookieOptions): void {
@@ -127,6 +145,8 @@ export class CookieService {
   /**
    * Removes a cookie by setting an expired date.
    *
+   * @param key - Cookie name to remove.
+   * @param options - Cookie attributes that must match the existing cookie.
    */
   remove(key: string, options: ng.CookieOptions = {}): void {
     validateIsString(key, "key");

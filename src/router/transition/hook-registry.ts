@@ -2,6 +2,7 @@ import { map, removeFrom, tail } from "../../shared/common.ts";
 import { isFunction, isString, values } from "../../shared/utils.ts";
 import { Glob } from "../glob/glob.ts";
 import type { PathNode } from "../path/path-node.ts";
+import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import { TransitionHookScope } from "./transition-hook.ts";
 import type {
@@ -35,7 +36,7 @@ export function matchState(
 ): boolean {
   const toMatch = isString(criterion) ? [criterion] : criterion;
 
-  const matchGlobs = (_state: ng.BuiltStateDeclaration): boolean => {
+  const matchGlobs = (_state: BuiltStateDeclaration): boolean => {
     const globStrings = toMatch as string[];
 
     for (let i = 0; i < globStrings.length; i++) {

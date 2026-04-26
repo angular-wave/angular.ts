@@ -1,40 +1,25 @@
 ---
-title: $anchorScrollProvider
-description: >
-  Configuration provider for `$anchorScroll` service.
+title: "$anchorScrollProvider"
+description: "Configure automatic anchor scrolling when the URL hash changes."
 ---
 
-### Description
+`$anchorScrollProvider` controls whether `$anchorScroll` reacts automatically
+when `$location` changes the URL hash.
 
-Instance of [AnchorScrollProvider](../../../typedoc/classes/AnchorScrollProvider.html) for
-configuring the [$anchorScroll](../../../docs/service/anchorscroll/) service.
+Exact signatures live in TypeDoc:
 
-Used to enable or disable automatic scrolling when URL hash is changed by [$location](../../../docs/service/location/) service.
+- [`AnchorScrollProvider`](../../../typedoc/classes/AnchorScrollProvider.html)
+- [`AnchorScrollService`](../../../typedoc/interfaces/AnchorScrollService.html)
 
-### Properties
+## Disable Automatic Scrolling
 
----
+```js
+angular.module("demo", []).config(($anchorScrollProvider) => {
+  $anchorScrollProvider.autoScrollingEnabled = false;
+});
+```
 
-#### $anchorScrollProvider.autoScrollingEnabled
+Disable automatic scrolling when the application needs to coordinate hash
+changes with custom routing, animation, or focus management.
 
-Enable or disable automatic scrolling on URL hash change 
-
-- **Type:** Boolean
-- **Default:** true
-
-- **Example:**
-
-  ```js
-  angular.module('demo', [])
-    .config([
-      "$anchorScrollProvider",
-      /** @param {ng.AnchorScrollProvider} $anchorScrollProvider */
-      ($anchorScrollProvider) => {
-        anchorScrollProvider.autoScrollingEnabled = false;
-      }
-    ]);
-  ```
-
----
-
-For service description, see [$anchorScroll](../../../docs/service/anchorscroll).
+For service usage, see [$anchorScroll]({{< relref "/docs/service/anchorScroll" >}}).

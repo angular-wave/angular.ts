@@ -5,9 +5,6 @@ import type { ViewDeclaration } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
 import type { TemplateFactoryProvider } from "../template-factory.ts";
 
-/**
- * @type {Number}
- */
 let id = 0;
 
 export class ViewConfig {

@@ -44,6 +44,9 @@ import {
   TransitionHookScope,
 } from "./transition-hook.ts";
 import { Transition } from "./transition.ts";
+import type { StateProvider } from "../state/state-service.ts";
+import type { UrlService } from "../url/url-service.ts";
+import type { ViewService } from "../view/view.ts";
 
 /** @internal */
 export interface PathType {
@@ -110,9 +113,9 @@ export interface TransitionService extends HookRegistry {
 
   /** @internal Wire hooks that require runtime services. */
   _initRuntimeHooks(
-    stateService: ng.StateService,
-    urlService: ng.UrlService,
-    viewService: ng.ViewService,
+    stateService: StateProvider,
+    urlService: UrlService,
+    viewService: ViewService,
   ): void;
 
   /** @internal Return the defined path types */
@@ -120,7 +123,7 @@ export interface TransitionService extends HookRegistry {
 
   /** @internal view service */
   /** @internal */
-  _view: ng.ViewService;
+  _view: ViewService;
 
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
@@ -143,12 +146,12 @@ export class TransitionProvider implements TransitionService {
   /** @internal */
   _routerState: ng._RouterProvider;
   /** @internal */
-  _view!: ng.ViewService;
+  _view!: ViewService;
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 
   constructor(
-    routerState: any,
+    routerState: ng._RouterProvider,
     $exceptionHandler: ng.ExceptionHandlerProvider,
   ) {
     this._transitionCount = 0;
@@ -173,9 +176,9 @@ export class TransitionProvider implements TransitionService {
 
   /** @internal */
   _initRuntimeHooks(
-    stateService: ng.StateService,
-    urlService: ng.UrlService,
-    viewService: ng.ViewService,
+    stateService: StateProvider,
+    urlService: UrlService,
+    viewService: ViewService,
   ): void {
     this._view = viewService;
     registerUpdateUrl(this, stateService, urlService);

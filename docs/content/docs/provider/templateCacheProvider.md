@@ -1,100 +1,61 @@
 ---
-title: $templateCacheProvider
-description: >
-  Cache provider for `$templateCache` service.
+title: "$templateCacheProvider"
+description: "Configure the cache backing the $templateCache service."
 ---
 
-### Description
+`$templateCacheProvider` initializes the cache used by `$templateCache`. The
+default cache is a `Map`, but applications can provide another implementation
+that satisfies the `TemplateCache` contract.
 
-Initializes cache instance for `$templateCache` service as an empty
-[Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map)
-object.
+Exact signatures live in TypeDoc:
 
-An alternative caching implementation can be provided by implementing
-[TemplateCache](../../../typedoc/types/TemplateCache.html) interface for web
-standard storage options like `localStorage`, `sessionStorage`, `IndexedDB`, or
-`Cache API`. You can also use third-party storage engines like
-[pouch](https://github.com/pouchdb/pouchdb) or
-[SQLite](https://sqlite.org/wasm/doc/trunk/index.md). With WebAssembly (WASM),
-even more powerful and flexible storage backends become possible.
+- [`TemplateCacheProvider`](../../../typedoc/classes/TemplateCacheProvider.html)
+- [`TemplateCache`](../../../typedoc/types/TemplateCache.html)
 
-Below is an example implementation using `localStorage`:
+## Use A Custom Cache
 
 ```js
-class LocalStorageMap {
-  constructor(prefix = '') {
+class LocalStorageTemplateCache {
+  constructor(prefix = "tpl:") {
     this.prefix = prefix;
   }
 
-  _key(key) {
-    return `${this.prefix}${key}`;
+  key(name) {
+    return `${this.prefix}${name}`;
   }
 
-  get(key) {
-    const raw = localStorage.getItem(this._key(key));
-    if (raw === null) return undefined;
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return raw;
-    }
+  get(name) {
+    const value = localStorage.getItem(this.key(name));
+    return value === null ? undefined : value;
   }
 
-  set(key, value) {
-    localStorage.setItem(this._key(key), value);
+  set(name, value) {
+    localStorage.setItem(this.key(name), value);
     return this;
   }
 
-  has(key) {
-    return localStorage.getItem(this._key(key)) !== null;
+  has(name) {
+    return localStorage.getItem(this.key(name)) !== null;
   }
 
-  delete(key) {
-    localStorage.removeItem(this._key(key));
+  delete(name) {
+    localStorage.removeItem(this.key(name));
     return true;
   }
 
   clear() {
-    const toRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith(this.prefix)) {
-        toRemove.push(k);
-      }
-    }
-    toRemove.forEach((k) => localStorage.removeItem(k));
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith(this.prefix))
+      .forEach((key) => localStorage.removeItem(key));
   }
 }
-```
 
-Override during configuration phase:
-
-```js
-angular.module('demo', []).config(($templateCacheProvider) => {
-  templateCacheProvider.cache = new LocalStorageMap();
+angular.module("demo", []).config(($templateCacheProvider) => {
+  $templateCacheProvider.cache = new LocalStorageTemplateCache();
 });
 ```
 
-### Properties
+Custom caches are useful when templates should survive reloads, be shared across
+tabs, or be backed by another browser storage layer.
 
----
-
-#### $templateCacheProvider.cache
-
-Customize cache instance.
-
-- **Type:** [TemplateCache](../../../typedoc/types/TemplateCache.html)
-- **Default:** `Map`
-
-- **Example:**
-
-  ```js
-  angular.module('demo', []).config(($templateCacheProvider) => {
-    templateCacheProvider.cache.set('test.html', 'hello');
-  });
-  ```
-
----
-
-For service description, see
-[$templateCache](../../../docs/service/templatecache).
+For service usage, see [$templateCache]({{< relref "/docs/service/templateCache" >}}).

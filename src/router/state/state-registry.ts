@@ -43,11 +43,7 @@ export class StateRegistryProvider {
   /** @internal */
   _root!: StateObject;
 
-  /**
-   * @param {ng.UrlService} urlService
-   * @param routerState
-   */
-  constructor(urlService: ng.UrlService, routerState: any) {
+  constructor(urlService: ng.UrlService, routerState: ng._RouterProvider) {
     this._states = {};
 
     this._urlService = urlService;

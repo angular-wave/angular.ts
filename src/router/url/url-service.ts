@@ -48,7 +48,7 @@ export class UrlService {
   /** @internal */
   _baseHref!: string;
   /** @internal */
-  _stopListeningFn: any;
+  _stopListeningFn?: () => void;
   location!: string;
 
   /**
@@ -73,37 +73,17 @@ export class UrlService {
     return this._stateService;
   }
 
-  /**
-   * @param {ng.LocationProvider} $locationProvider
-   * @param router
-   * @param {UrlConfigProviderType} urlConfigProvider
-   */
   constructor(
     $locationProvider: ng.LocationProvider,
-    router: any,
+    router: Pick<ng._RouterProvider, "_markConfiguredRouting">,
     urlConfigProvider: UrlConfigProviderType,
   ) {
     this._locationProvider = $locationProvider;
     this._stateService = undefined;
     this._stateRoutes = [];
     this._markConfiguredRouting = () => router._markConfiguredRouting();
-    /**
-     * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
-     * @ignore
-     * @type {UrlConfigProvider}
-     */
     this._config = urlConfigProvider;
-
-    /**
-     * @type {ParamFactory} Creates a new [[Param]] for a given location (DefType)
-     * @ignore
-     */
     this._paramFactory = new ParamFactory(this._config);
-
-    /**
-     * @type {((evt: ng.ScopeEvent) => void)[]}
-     * @ignore
-     */
     this._urlListeners = [];
   }
 
@@ -419,7 +399,7 @@ export class UrlService {
     }
 
     if (this.url() === this.location) return;
-    this.url(this.location as string, true);
+    this.url(this.location, true);
   }
 
   /**

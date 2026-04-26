@@ -1,46 +1,29 @@
 ---
-title: $exceptionHandlerProvider
-description: >
-  Configuration provider for `$exceptionHandler` service.
+title: "$exceptionHandlerProvider"
+description: "Configure the $exceptionHandler service used for framework and application errors."
 ---
 
-### Description
+`$exceptionHandlerProvider` configures the function used by `$exceptionHandler`.
+The default handler rethrows the exception, and custom handlers should preserve
+that behavior after reporting the error.
 
-Instance of [ng.ExceptionHandlerProvider](../../../typedoc/classes/ExceptionHandlerProvider.html) for
-configuring the `$exceptionHandler` service. 
+Exact signatures live in TypeDoc:
 
-The default implementation returns 
-[ng.ExceptionHandler](../../../typedoc/types/ExceptionHandler.html) function, which simply rethrows the exception.
+- [`ExceptionHandlerProvider`](../../../typedoc/classes/ExceptionHandlerProvider.html)
+- [`ExceptionHandler`](../../../typedoc/types/ExceptionHandler.html)
 
-**NOTE**: custom implementations should always rethrow the error as the framework assumes that `$exceptionHandler` always does the throwing.
+## Configure Error Reporting
 
+```js
+angular.module("demo", []).config(($exceptionHandlerProvider) => {
+  $exceptionHandlerProvider.handler = (error) => {
+    myLogger.capture(error);
+    throw error;
+  };
+});
+```
 
-### Properties
+Rethrowing matters because the framework assumes `$exceptionHandler` does not
+silently swallow fatal errors.
 
----
-
-#### $exceptionHandler.handler
-
-Customize the `exceptionHandler` function.
-
-- **Type:** [ng.ExceptionHandler](../../../typedoc/classes/PubSub.html)
-- **Default:** Function that rethrows the exception.
-- **Example:**
-  ```js
-  angular.module('demo', [])
-    .config([
-      "$exceptionHandlerProvider",
-      /** @param {ng.ExceptionHandlerProvider} $exceptionHandlerProvider */
-      ($exceptionHandlerProvider) => {
-        exceptionHandlerProvider.handler = (error) => {
-          myLogger.capture(error);
-          // Rethrow to preserve fail-fast behavior:
-          throw error;
-        };
-      }
-    ]);
-  ```
-
----
-
-For service description, see [$exceptionHandler](../../../docs/service/exceptionhandler/).
+For service usage, see [$exceptionHandler]({{< relref "/docs/service/exceptionHandler" >}}).

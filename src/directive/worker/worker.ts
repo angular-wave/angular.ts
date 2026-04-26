@@ -12,7 +12,7 @@ export interface WorkerConfig {
   err?: ng.ExceptionHandlerService;
 }
 
-export interface DefultWorkerConfig {
+export interface DefaultWorkerConfig {
   onMessage: (data: any, event: MessageEvent) => void;
   onError: (err: ErrorEvent) => void;
   autoRestart: boolean;
@@ -185,7 +185,7 @@ export function createWorkerConnection(
 ): WorkerConnection {
   if (!scriptPath) throw new Error("Worker script path required");
 
-  const defaults: DefultWorkerConfig = {
+  const defaults: DefaultWorkerConfig = {
     autoRestart: false,
     autoTerminate: false,
     onMessage() {
@@ -209,7 +209,7 @@ export function createWorkerConnection(
     err: (config?.err || (() => undefined)) as ng.ExceptionHandlerService,
   };
 
-  const cfg = Object.assign({}, defaults, config) as DefultWorkerConfig;
+  const cfg = Object.assign({}, defaults, config) as DefaultWorkerConfig;
 
   let worker = new Worker(scriptPath, { type: "module" });
 

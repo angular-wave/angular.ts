@@ -1,6 +1,7 @@
 import type { TransitionService } from "../transition/transition-service.ts";
 import type { Transition } from "../transition/transition.ts";
 import type { ViewConfig } from "../state/views.ts";
+import type { ViewService } from "../view/view.ts";
 
 /**
  * Loads all view configs for entering states before view activation.
@@ -29,7 +30,7 @@ export const registerLoadEnteringViews = (
  */
 export const registerActivateViews = (
   transitionService: TransitionService,
-  viewService: ng.ViewService,
+  viewService: ViewService,
 ) => {
   const activateViews = (transition: Transition) => {
     const enteringViews = transition.views("entering");

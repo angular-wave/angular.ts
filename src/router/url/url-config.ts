@@ -175,7 +175,7 @@ export class UrlConfigProvider {
       return this.paramTypes.type(name);
     }
 
-    this.paramTypes.type(name, definition as ParamTypeDefinition, definitionFn);
+    this.paramTypes.type(name, definition, definitionFn);
 
     return this;
   }

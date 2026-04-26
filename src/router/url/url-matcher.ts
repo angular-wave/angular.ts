@@ -268,7 +268,7 @@ export class UrlMatcher {
     config: UrlMatcherCompileConfig,
   ) {
     this._cache = {
-      path: [this as UrlMatcher],
+      path: [this],
     };
 
     this._children = [];

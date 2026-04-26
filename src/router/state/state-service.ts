@@ -17,6 +17,7 @@ import { Glob } from "../glob/glob.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { Transition } from "../transition/transition.ts";
+import type { ViewService } from "../view/view.ts";
 import type { HookResult, TransitionOptions } from "../transition/interface.ts";
 import type {
   HrefOptions,
@@ -118,39 +119,17 @@ export class StateProvider {
     $injectTokens._exceptionHandlerProvider,
   ];
 
-  /**
-   *
-   * @param {StateRegistryProvider} stateRegistry
-   * @param routerState
-   * @param {ng.TransitionProvider} transitionService
-   * @param {ng.ExceptionHandlerProvider} exceptionHandlerProvider
-   */
   constructor(
     stateRegistry: StateRegistryProvider,
-    routerState: any,
+    routerState: ng._RouterProvider,
     transitionService: ng.TransitionProvider,
     exceptionHandlerProvider: ng.ExceptionHandlerProvider,
   ) {
-    /**
-     * @type {ng._RouterProvider}
-     */
     this._routerState = routerState;
-    /**
-     * @type {ng.TransitionProvider}
-     */
     this._transitionService = transitionService;
-
-    /**
-     * @type {StateRegistryProvider}
-     */
     this._stateRegistry = stateRegistry;
-
     this._urlService = undefined;
     this._$injector = undefined;
-
-    /**
-     * @type {OnInvalidCallback[]}
-     */
     this._invalidCallbacks = [];
 
     this._defaultErrorHandler = exceptionHandlerProvider.handler;
@@ -165,14 +144,14 @@ export class StateProvider {
      * @param {ng.InjectorService} $injector
      * @param {StateRegistryProvider} $stateRegistry
      * @param {ng.UrlService} $url
-     * @param {ng.ViewService} viewService
+     * @param viewService
      * @returns {StateProvider}
      */
     (
       $injector: ng.InjectorService,
       $stateRegistry: StateRegistryProvider,
       $url: ng.UrlService,
-      viewService: ng.ViewService,
+      viewService: ViewService,
     ) => {
       this._stateRegistry = $stateRegistry;
       this._urlService = $url;
@@ -681,7 +660,7 @@ export class StateProvider {
     if (!isDefined(include[state.name])) return false;
 
     if (!params) return true;
-    const schema = (state as ng.StateObject).parameters({
+    const schema = (state as StateObject).parameters({
       inherit: true,
       matchingKeys: params,
     });

@@ -11,6 +11,7 @@ import {
   TransitionHookScope,
 } from "./transition-hook.ts";
 import { TransitionEventType } from "./transition-event-type.ts";
+import type { ViewService } from "../view/view.ts";
 
 /** Deregistration function returned by hook registrations */
 export type DeregisterFn = () => void;
@@ -135,12 +136,10 @@ export interface TransitionHookOptions {
  * portions, `foo, bar, baz`.  If you transitioned **to** `foo.bar.baz` and inspected the [[TreeChanges.to]]
  * Path, you would find a node in the array for each portion: `foo`, `bar`, and `baz`.
  *
- * ---
- *
- * @todo show visual state tree
+ * A visual state tree example can be added here later.
  */
 export interface TreeChanges {
-  /** @nodoc */
+  /** Additional path collections by name. */
   [key: string]: PathNode[] | undefined;
 
   /** The path of nodes in the state tree that the transition is coming *from* */
@@ -926,7 +925,7 @@ export interface TransitionService extends HookRegistry {
 
   /** @internal view service */
   /** @internal */
-  _view: ng.ViewService;
+  _view: ViewService;
 
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;

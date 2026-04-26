@@ -492,7 +492,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * This fragment will be appended to the parent state's URL in order to build up the overall URL for this state.
    * See [[UrlMatcher]] for details on acceptable patterns.
    *
-   * @examples
+   * @example
    * ```js
    *
    * url: "/home"
