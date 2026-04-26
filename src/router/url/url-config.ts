@@ -42,7 +42,6 @@ export class UrlConfigProvider {
      * This code patches the `path` parameter type so it encoded/decodes slashes as ~2F
      *
      */
-    /** @type {ParamType} */
     const pathType = this.type("path") as ParamType;
 
     pathType.encode = (x: unknown) =>
@@ -176,11 +175,7 @@ export class UrlConfigProvider {
       return this.paramTypes.type(name);
     }
 
-    this.paramTypes.type(
-      name,
-      /** @type {ParamTypeDefinition} */ definition,
-      definitionFn,
-    );
+    this.paramTypes.type(name, definition as ParamTypeDefinition, definitionFn);
 
     return this;
   }

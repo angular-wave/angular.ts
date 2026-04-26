@@ -94,7 +94,7 @@ export interface ViewDeclarationCommon {
    *
    *
    * Note: When using `component` to define a view, you may _not_ use any of: `template`, `templateUrl`,
-   * `templateProvider`, `controller`, `controllerProvider`, `controllerAs`.
+   * `templateProvider`, `controller`, `controllerAs`.
    *
    *
    * See also: Todd Motto's angular 1.3 and 1.4 [backport of .component()](https://github.com/toddmotto/angular-component)
@@ -142,26 +142,6 @@ export interface ViewDeclarationCommon {
   bindings?: { [key: string]: string };
 
   /**
-   * Dynamic component provider function.
-   *
-   * This is an injectable provider function which returns the name of the component to use.
-   * The provider will invoked during a Transition in which the view's state is entered.
-   * The provider is called after the resolve data is fetched.
-   *
-   * #### Example:
-   * ```js
-   * componentProvider: function(MyResolveData, $transition$) {
-   *   if (MyResolveData.foo) {
-   *     return "fooComponent"
-   *   } else if ($transition$.to().name === 'bar') {
-   *     return "barComponent";
-   *   }
-   * }
-   * ```
-   */
-  componentProvider?: Injectable<any>;
-
-  /**
    * The view's controller function or name
    *
    * The controller function, or the name of a registered controller.  The controller function will be used
@@ -181,30 +161,6 @@ export interface ViewDeclarationCommon {
    * See: https://docs.angularjs.org/api/ng/directive/ngController
    */
   controllerAs?: string;
-
-  /**
-   * Dynamic controller provider function.
-   *
-   * This is an injectable provider function which returns the actual controller function, or the name
-   * of a registered controller.  The provider will invoked during a Transition in which the view's state is
-   * entered.  The provider is called after the resolve data is fetched.
-   *
-   * #### Example:
-   * ```js
-   * controllerProvider: function(MyResolveData, $transition$) {
-   *   if (MyResolveData.foo) {
-   *     return "FooCtrl"
-   *   } else if ($transition$.to().name === 'bar') {
-   *     return "BarCtrl";
-   *   } else {
-   *     return function($scope) {
-   *       $scope.baz = "Qux";
-   *     }
-   *   }
-   * }
-   * ```
-   */
-  controllerProvider?: Injectable<any>;
 
   /**
    * The scope variable name to use for resolve data.

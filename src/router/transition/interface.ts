@@ -916,9 +916,6 @@ export interface TransitionService extends HookRegistry {
   /** @internal path type metadata used for matching */
   _criteriaPaths: PathTypes;
 
-  /** @internal stores deregistration fns for core hooks */
-  _deregisterHookFns: Record<string, DeregisterFn | undefined>;
-
   /**
    * @internal Return event types, optionally filtered by phase, sorted by phase/order.
    */

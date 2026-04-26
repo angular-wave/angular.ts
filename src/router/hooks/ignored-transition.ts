@@ -6,7 +6,7 @@ function ignoredHook(trans: Transition) {
   const ignoredReason = trans._ignoredReason();
 
   if (!ignoredReason) return undefined;
-  const pending = trans._globals.transition;
+  const pending = trans._routerState._transition;
 
   if (ignoredReason === "SameAsCurrent" && pending) {
     pending.abort();

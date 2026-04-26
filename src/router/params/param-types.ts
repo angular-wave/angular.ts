@@ -100,7 +100,7 @@ export class ParamTypes {
 
     if (hasOwn(this.types, name))
       throw new Error(`A type named '${name}' has already been defined.`);
-    this.types[/** @type {string} */ name] = new ParamType(
+    this.types[name as string] = new ParamType(
       Object.assign({ name }, definition),
     );
 

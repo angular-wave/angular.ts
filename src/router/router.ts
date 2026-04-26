@@ -1,4 +1,3 @@
-import { $injectTokens as $t } from "../injection-tokens.ts";
 import { Queue } from "../shared/queue.ts";
 import { StateParams } from "./params/state-params.ts";
 import type { StateDeclaration } from "./state/interface.ts";
@@ -6,10 +5,13 @@ import type { StateObject } from "./state/state-object.ts";
 import type { Transition } from "./transition/transition.ts";
 
 /**
- * Mutable router globals shared across state, URL, and transition services.
+ * Mutable router state/config shared across state, URL, and transition services.
+ *
+ * @internal
  */
-export class RouterProvider {
-  params: StateParams;
+export class _RouterProvider {
+  /** @internal */
+  _params: StateParams;
   /** @internal */
   _configuredRouting: boolean;
   /** @internal */
@@ -20,23 +22,26 @@ export class RouterProvider {
   _successfulTransitions: Queue<Transition>;
   /** @internal */
   _injector: ng.InjectorService | undefined;
-  current: StateDeclaration | undefined;
-  $current: StateObject | undefined;
-  transition: Transition | undefined;
+  /** @internal */
+  _current: StateDeclaration | undefined;
+  /** @internal */
+  _currentState: StateObject | undefined;
+  /** @internal */
+  _transition: Transition | undefined;
 
   /**
    * Creates the shared mutable router globals container.
    */
   constructor() {
-    this.params = new StateParams();
+    this._params = new StateParams();
     this._configuredRouting = false;
     this._lastStartedTransitionId = -1;
     this._transitionHistory = new Queue<Transition>([], 1);
     this._successfulTransitions = new Queue<Transition>([], 1);
     this._injector = undefined;
-    this.current = undefined;
-    this.$current = undefined;
-    this.transition = undefined;
+    this._current = undefined;
+    this._currentState = undefined;
+    this._transition = undefined;
   }
 
   /**
@@ -56,14 +61,9 @@ export class RouterProvider {
   }
 
   /**
-   * Returns the singleton router globals instance.
+   * Returns the singleton router internals instance.
    */
-  $get = [
-    $t._injector,
-    ($injector: ng.InjectorService): RouterProvider => {
-      this._injector = $injector;
-
-      return this;
-    },
-  ];
+  $get(): _RouterProvider {
+    return this;
+  }
 }

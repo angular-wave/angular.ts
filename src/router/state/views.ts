@@ -1,8 +1,5 @@
-import { isArray, isString } from "../../shared/utils.ts";
-import { isInjectable } from "../../shared/predicates.ts";
+import { isString } from "../../shared/utils.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
-import { Resolvable } from "../resolve/resolvable.ts";
-import { annotate } from "../../core/di/di.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
@@ -71,7 +68,7 @@ export class ViewConfig {
 
     const promises = [
       Promise.resolve(this.factory.fromConfig(this.viewDecl, params, context)),
-      Promise.resolve(this.getController(context)),
+      Promise.resolve(this.getController()),
     ];
 
     const results = await Promise.all(promises);
@@ -85,21 +82,9 @@ export class ViewConfig {
   /**
    * Gets the controller for a view configuration.
    * @returns {Function | Promise<Function>} Returns a controller, or a promise that resolves to a controller.
-   * @param {ResolveContext} context
    */
-  getController(context: ResolveContext): Function | Promise<Function> {
-    const provider = this.viewDecl.controllerProvider;
-
-    if (!isInjectable(provider)) return this.viewDecl.controller;
-    const deps = annotate(provider);
-
-    const providerFn = isArray(provider)
-      ? (provider[provider.length - 1] as Function)
-      : provider;
-
-    const resolvable = new Resolvable("", providerFn, deps);
-
-    return resolvable.get(context);
+  getController(): Function | Promise<Function> {
+    return this.viewDecl.controller;
   }
 
   /**

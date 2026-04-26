@@ -9,27 +9,36 @@ import { BADARG } from "../../shared/validate.ts";
 import { expandUriTemplate } from "./rfc.ts";
 import type { HttpMethod, HttpResponse, HttpService } from "../http/http.ts";
 
+/** Resource definition registered with {@link RestProvider.rest}. */
 export interface RestDefinition<T = any> {
+  /** Informational name for the resource definition. */
   name: string;
+  /** Base URL or RFC 6570 URI template for the resource. */
   url: string;
-  /** Constructor for mapping JSON to class instance */
+  /** Constructor for mapping JSON objects to entity instances. */
   entityClass?: EntityClass<T>;
+  /** Extra `$http` options merged into each request for this resource. */
   options?: Record<string, any>;
 }
 
-/**
- * A constructor type for mapping JSON objects to entity instances
- */
+/** Constructor type for mapping JSON objects to entity instances. */
 export interface EntityClass<T = any> {
   /**
-   * Creates a new instance of the entity from a raw object
-   * @param data - Raw data (typically JSON) to map
+   * Creates a new entity instance from raw response data.
+   *
+   * @param data - Raw data, typically parsed JSON.
    */
   new (data: any): T;
 }
 
 type RestOptions = Record<string, any>;
 
+/**
+ * Typed REST resource client backed by {@link HttpService}.
+ *
+ * A `RestService` is usually created by injecting `$rest` and calling it with a
+ * base URL, optional {@link EntityClass}, and optional `$http` request defaults.
+ */
 export class RestService<T = any, ID = any> {
   static $nonscope = true;
 
@@ -44,8 +53,11 @@ export class RestService<T = any, ID = any> {
 
   constructor(
     $http: HttpService,
+    /** Base URL or RFC 6570 URI template for this resource. */
     baseUrl: string,
+    /** Optional mapper that converts raw JSON objects into entity instances. */
     entityClass?: EntityClass<T>,
+    /** Extra `$http` options merged into every request. */
     options: RestOptions = {},
   ) {
     assert(isString(baseUrl) && baseUrl.length > 0, "baseUrl required");
@@ -56,6 +68,13 @@ export class RestService<T = any, ID = any> {
     this._options = options;
   }
 
+  /**
+   * Expand an RFC 6570 URI template with the provided parameters.
+   *
+   * @param template - URI template such as `/api/{org}/repos/{repo}`.
+   * @param params - Values used for URI template expansion.
+   * @returns The expanded URL.
+   */
   buildUrl(template: string, params: Record<string, any>): string {
     return expandUriTemplate(template, params || {});
   }
@@ -66,6 +85,12 @@ export class RestService<T = any, ID = any> {
     return this._entityClass ? new this._entityClass(data) : data;
   }
 
+  /**
+   * Fetch a collection.
+   *
+   * Parameters are used for URI template expansion and are also forwarded to
+   * `$http` as query params. Non-array responses resolve to an empty array.
+   */
   async list(params: Record<string, any> = {}): Promise<T[]> {
     const url = this.buildUrl(this._baseUrl, params);
 
@@ -76,6 +101,13 @@ export class RestService<T = any, ID = any> {
     return resp.data.map((data) => this.mapEntity(data) as T);
   }
 
+  /**
+   * Fetch one resource by ID.
+   *
+   * @param id - Resource identifier appended to the base URL.
+   * @param params - Additional URI template or query parameters.
+   * @returns The mapped entity, raw response value, or `null` when empty.
+   */
   async read(
     id: ID,
     params: Record<string, any> = {},
@@ -88,6 +120,12 @@ export class RestService<T = any, ID = any> {
     return this.mapEntity(resp.data) ?? null;
   }
 
+  /**
+   * Create a resource using `POST`.
+   *
+   * @param item - Request body to create.
+   * @returns The server representation, mapped through `entityClass` when set.
+   */
   async create(item: T): Promise<T | unknown> {
     assert(!isNullOrUndefined(item), `${BADARG}:item ${item}`);
     const resp = await this.request<unknown>("POST", this._baseUrl, item);
@@ -95,6 +133,13 @@ export class RestService<T = any, ID = any> {
     return this.mapEntity(resp.data);
   }
 
+  /**
+   * Update a resource using `PUT`.
+   *
+   * @param id - Resource identifier appended to the base URL.
+   * @param item - Request body to send.
+   * @returns The updated entity, raw value, or `null` when the request fails.
+   */
   async update(id: ID, item: Partial<T>): Promise<T | unknown | null> {
     assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
     const url = `${this._baseUrl}/${id}`;
@@ -108,6 +153,12 @@ export class RestService<T = any, ID = any> {
     }
   }
 
+  /**
+   * Delete a resource by ID.
+   *
+   * @param id - Resource identifier appended to the base URL.
+   * @returns `true` when the request succeeds, otherwise `false`.
+   */
   async delete(id: ID): Promise<boolean> {
     assert(!isNullOrUndefined(id), `${BADARG}:id ${id}`);
     const url = `${this._baseUrl}/${id}`;
@@ -171,6 +222,12 @@ export class RestProvider {
     ];
   }
 
+  /**
+   * Register a REST resource definition during module configuration.
+   *
+   * Registered definitions are available to the `$rest` factory when the
+   * provider creates it.
+   */
   rest<T>(
     name: string,
     url: string,

@@ -123,7 +123,7 @@ import {
   type RestService as TRestService,
 } from "./services/rest/rest.ts";
 import type { NgModelController as TNgModelController } from "./directive/model/model.ts";
-import type { RouterProvider as TRouterProvider } from "./router/router.ts";
+import type { _RouterProvider as T_RouterProvider } from "./router/router.ts";
 import type { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.ts";
 import type { UrlService as TUrlService } from "./router/url/url-service.ts";
 import type { ViewService as TViewService } from "./router/view/view.ts";
@@ -219,7 +219,8 @@ declare global {
 
     export type TransitionService = TTransitionService;
 
-    export type RouterProvider = TRouterProvider;
+    /** @internal */
+    export type _RouterProvider = T_RouterProvider;
 
     export type TemplateFactoryProvider = TTemplateFactoryProvider;
 
@@ -272,7 +273,8 @@ declare global {
 
     export type RootScopeService = TScope & Record<string, any>;
 
-    export type RouterService = TRouterProvider;
+    /** @internal */
+    export type _RouterService = T_RouterProvider;
 
     export type StateService = TStateProvider;
 

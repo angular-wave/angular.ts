@@ -430,7 +430,7 @@ StateRefActiveDirective.$inject = [
  */
 export function StateRefActiveDirective(
   $state: ng.StateService,
-  $router: ng.RouterService,
+  $routerState: any,
   $interpolate: ng.InterpolateService,
   $stateRegistry: ng.StateRegistryService,
   $transitions: ng.TransitionService,
@@ -497,8 +497,8 @@ export function StateRefActiveDirective(
       }
       $scope.$on("$destroy", setupEventListeners());
 
-      if ($router.transition) {
-        updateAfterTransition($router.transition);
+      if ($routerState._transition) {
+        updateAfterTransition($routerState._transition);
       }
       function setupEventListeners() {
         const deregisterStatesChangedListener =

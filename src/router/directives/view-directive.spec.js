@@ -865,12 +865,6 @@ describe("angular 1.5+ style .component()", () => {
           controllerAs: "$ctrl",
         };
       })
-      .directive("ng12DynamicDirective", () => {
-        return {
-          restrict: "E",
-          template: "dynamic directive",
-        };
-      })
       .component("ngComponent", {
         bindings: { data: "<", data2: "<" },
         templateUrl: "/comp_tpl.html",
@@ -1077,14 +1071,6 @@ describe("angular 1.5+ style .component()", () => {
           ),
         );
       }).toThrow();
-      expect(() => {
-        $stateProvider.state(
-          Object.assign(
-            { name: "route2cmp", controllerProvider: function () {} },
-            stateDef,
-          ),
-        );
-      }).toThrow();
 
       expect(() => {
         $stateProvider.state(stateDef);
@@ -1243,26 +1229,6 @@ describe("angular 1.5+ style .component()", () => {
       $stateProvider.state({
         name: "route2cmp",
         component: "ngComponent",
-        resolve: {
-          data: () => {
-            return "DATA!";
-          },
-        },
-      });
-
-      const $state = svcs.$state;
-
-      $templateCache.set("/comp_tpl.html", "-{{ $ctrl.data }}-");
-      $state.transitionTo("route2cmp");
-      await wait(100);
-
-      expect(log).toBe("onInit;");
-    });
-
-    it("should only call $onInit() once with componentProvider", async () => {
-      $stateProvider.state({
-        name: "route2cmp",
-        componentProvider: () => "ngComponent",
         resolve: {
           data: () => {
             return "DATA!";
@@ -1598,60 +1564,6 @@ describe("angular 1.5+ style .component()", () => {
     });
   });
 
-  describe("componentProvider", () => {
-    it("should work with angular 1.2+ directives", async () => {
-      $stateProvider.state({
-        name: "ng12-dynamic-directive",
-        url: "/ng12dynamicDirective/:type",
-        componentProvider: [
-          "$stateParams",
-          function ($stateParams) {
-            return $stateParams.type;
-          },
-        ],
-      });
-
-      const $state = svcs.$state;
-
-      $state.transitionTo("ng12-dynamic-directive", {
-        type: "ng12DynamicDirective",
-      });
-      await wait(100);
-
-      const directiveEl = el.querySelector(
-        "div ng-view ng12-dynamic-directive",
-      );
-      expect(directiveEl).toBeDefined();
-      expect($state.current.name).toBe("ng12-dynamic-directive");
-      expect(el.textContent).toBe("dynamic directive");
-    });
-
-    // TODO Invalid transition
-    it("should load correct component when using componentProvider", async () => {
-      $stateProvider.state({
-        name: "dynamicComponent",
-        url: "/dynamicComponent/:type",
-        componentProvider: [
-          "$router",
-          function ($router) {
-            return $router.params.type;
-          },
-        ],
-      });
-
-      const $state = svcs.$state;
-
-      await $state.transitionTo("dynamicComponent", {
-        type: "dynamicComponent",
-      });
-      await wait(100);
-
-      const directiveEl = el.querySelector("div ng-view dynamic-component");
-      expect(directiveEl).toBeDefined();
-      expect($state.current.name).toBe("dynamicComponent");
-    });
-  });
-
   describe("ngOnParamsChanged()", () => {
     let param;
 
@@ -1662,13 +1574,6 @@ describe("angular 1.5+ style .component()", () => {
         name: "dynamic",
         url: "/dynamic/:param",
         component: "dynamicComponent",
-        params: { param: { dynamic: true } },
-      });
-
-      $stateProvider.state({
-        name: "dynamic2",
-        url: "/dynamic2/:param",
-        componentProvider: () => "dynamicComponent",
         params: { param: { dynamic: true } },
       });
     });
@@ -1685,16 +1590,6 @@ describe("angular 1.5+ style .component()", () => {
       $state.go("dynamic", { param: "abc" });
       await wait(100);
       $state.go("dynamic", { param: "def" });
-      await wait(100);
-
-      expect(el.textContent.trim()).toBe("dynamicComponent def");
-    });
-
-    it("should work with componentProvider", async () => {
-      const $state = svcs.$state;
-      $state.go("dynamic2", { param: "abc" });
-      await wait(100);
-      $state.go("dynamic2", { param: "def" });
       await wait(100);
 
       expect(el.textContent.trim()).toBe("dynamicComponent def");

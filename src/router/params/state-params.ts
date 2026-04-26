@@ -25,8 +25,7 @@ export class StateParams {
 
     const inherited: Record<string, any> = {};
 
-    /** @type {string[]} */
-    const inheritList = [];
+    const inheritList: string[] = [];
 
     for (const parent of parents) {
       if (!parent || !parent.params) continue;
@@ -35,7 +34,6 @@ export class StateParams {
         { inherit?: boolean }
       >;
 
-      /** @type {string[]} */
       const parentParamsKeys = keys(parentParams);
 
       if (!parentParamsKeys.length) continue;

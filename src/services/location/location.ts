@@ -56,7 +56,7 @@ export interface Html5Mode {
   rewriteLinks: boolean | string;
 }
 
-type RouterLike = {
+type RouterConfigLike = {
   /** @internal */
   _hasConfiguredRouting?: () => boolean;
 };
@@ -136,7 +136,7 @@ function createHtml5ModeConfig(
 /**
  * @ignore
  */
-export function hasConfiguredRouter(router?: RouterLike): boolean {
+export function hasConfiguredRouter(router?: RouterConfigLike): boolean {
   return !!router?._hasConfiguredRouting?.();
 }
 
@@ -146,7 +146,7 @@ export function hasConfiguredRouter(router?: RouterLike): boolean {
 export function isLinkRewritingEnabled(
   rewriteLinks: boolean | string,
   rewriteLinksConfigured: boolean,
-  router?: RouterLike,
+  router?: RouterConfigLike,
 ): boolean {
   if (!rewriteLinks) {
     return false;
@@ -710,7 +710,7 @@ export class LocationProvider {
     (
       $rootScope: ng.Scope,
       $rootElement: HTMLElement,
-      $router: ng.RouterService,
+      $routerConfig: RouterConfigLike,
       $exceptionHandler: ng.ExceptionHandlerService,
     ) => {
       const baseHref = getBaseHref(); // if base[href] is undefined, it defaults to ''
@@ -781,7 +781,7 @@ export class LocationProvider {
           !isLinkRewritingEnabled(
             rewriteLinks,
             this._rewriteLinksConfigured,
-            $router,
+            $routerConfig,
           ) ||
           event.ctrlKey ||
           event.metaKey ||

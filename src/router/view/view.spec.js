@@ -6,47 +6,33 @@ import { StateBuilder } from "../state/state-builder.ts";
 import { StateObject } from "../state/state-object.ts";
 import { ViewService } from "./view.ts";
 import { PathNode } from "../path/path-node.ts";
-import { PathUtils } from "../path/path-utils.ts";
-import { tail } from "../../shared/common.ts";
-import { wait } from "../../shared/test-utils.ts";
+import { applyViewConfigs } from "../path/path-utils.ts";
 
 describe("view", () => {
-  let scope,
-    $compile,
-    $injector,
-    elem = document.getElementById("app"),
-    $controllerProvider,
-    $urlProvider,
-    $view,
-    root,
-    states;
+  let $injector, $urlProvider, root, states;
 
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     window.angular
       .module("defaultModule", [])
-      .config(function (_$provide_, _$controllerProvider_, _$urlProvider_) {
+      .config(function (_$provide_, _$urlProvider_) {
         _$provide_.factory("foo", () => {
           return "Foo";
         });
-        $controllerProvider = _$controllerProvider_;
         $urlProvider = _$urlProvider_;
       });
     $injector = window.angular.bootstrap(document.getElementById("app"), [
       "defaultModule",
     ]);
 
-    $injector.invoke(($rootScope, _$compile_, _$injector_, _$view_) => {
-      scope = $rootScope.$new();
-      $compile = _$compile_;
+    $injector.invoke((_$injector_) => {
       $injector = _$injector_;
       states = {};
       const matcher = new StateMatcher(states);
       const stateBuilder = new StateBuilder(matcher, $urlProvider);
       register = registerState(states, stateBuilder);
       root = register({ name: "" });
-      $view = _$view_;
     });
   });
 
@@ -55,48 +41,6 @@ describe("view", () => {
     const state = new StateObject(config);
     const built = stateBuilder._build(state);
     return (_states[built.name] = built);
-  });
-
-  describe("controller handling", () => {
-    let state, path, ctrlExpression;
-    beforeEach(() => {
-      ctrlExpression = null;
-      const stateDeclaration = {
-        name: "foo",
-        template: "test",
-        controllerProvider: [
-          "foo",
-          function (/* $stateParams, */ foo) {
-            // todo: reimplement localized $stateParams
-            ctrlExpression =
-              /* $stateParams.type + */ foo + "Controller as foo";
-            return ctrlExpression;
-          },
-        ],
-      };
-
-      state = register(stateDeclaration);
-      const $view = new ViewService();
-
-      $view._templateFactory = $injector.get("$templateFactory");
-
-      const _states = [root, state];
-      path = _states.map((_state) => new PathNode(_state));
-      PathUtils.applyViewConfigs($view, path, _states);
-    });
-
-    it("uses the controllerProvider to get controller dynamically", async () => {
-      $controllerProvider.register("AcmeFooController", () => {
-        /* empty */
-      });
-      elem.innerHTML = "<div><ng-view></ng-view></div>";
-      $compile(elem)(scope);
-      await wait();
-      const view = tail(path)._views[0];
-      view.load();
-      await wait(100);
-      expect(ctrlExpression).toEqual("FooController as foo");
-    });
   });
 
   describe("matching", () => {
@@ -183,7 +127,7 @@ describe("view", () => {
 
       const path = [root, state].map((_state) => new PathNode(_state));
 
-      PathUtils.applyViewConfigs(viewService, path, [state]);
+      applyViewConfigs(viewService, path, [state]);
 
       expect(viewService._createViewConfig).toHaveBeenCalledTimes(1);
       expect(viewService._createViewConfig).toHaveBeenCalledWith(

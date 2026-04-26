@@ -268,7 +268,7 @@ export class UrlMatcher {
     config: UrlMatcherCompileConfig,
   ) {
     this._cache = {
-      path: [/** @type {UrlMatcher} */ this],
+      path: [this as UrlMatcher],
     };
 
     this._children = [];
@@ -679,8 +679,7 @@ export class UrlMatcher {
       return { param, value, isValid, isDefaultValue, squash, encoded };
     }
     // Build up the path-portion from the list of static segments and parameters
-    /** @type {string} */
-    const pathString = pathSegmentsAndParams.reduce(
+    const pathString: string = pathSegmentsAndParams.reduce(
       (acc: string, x: ParamDetails | string) => {
         // The element is a static segment (a raw string); just append it
         if (isString(x)) return acc + x;

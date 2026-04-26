@@ -203,7 +203,7 @@ export class Param {
     type = getType(config, type, location, id, urlConfig.paramTypes);
     const arrayMode = getArrayMode();
 
-    type = /** @type {ParamType} */ arrayMode
+    type = arrayMode
       ? type && type.$asArray(arrayMode, location === DefType._SEARCH)
       : type;
     const isOptional =

@@ -121,14 +121,9 @@ function viewsBuilder(
     "async",
   ];
 
-  const ctrlKeys = [
-    "controller",
-    "controllerProvider",
-    "controllerAs",
-    "resolveAs",
-  ];
+  const ctrlKeys = ["controller", "controllerAs", "resolveAs"];
 
-  const compKeys = ["component", "bindings", "componentProvider"];
+  const compKeys = ["component", "bindings"];
 
   const nonCompKeys = tplKeys.concat(ctrlKeys);
 

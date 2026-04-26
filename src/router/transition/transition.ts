@@ -15,7 +15,13 @@ import {
   type RegisteredHooks,
 } from "./hook-registry.ts";
 import { HookBuilder } from "./hook-builder.ts";
-import { PathUtils } from "../path/path-utils.ts";
+import {
+  applyViewConfigs,
+  buildToPath,
+  matching,
+  nonDynamicParams,
+  treeChanges,
+} from "../path/path-utils.ts";
 import { Param } from "../params/param.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
@@ -44,7 +50,7 @@ export interface Transition {
   /** @internal */
   _aborted?: boolean;
   /** @internal */
-  _globals: ng.RouterService & Record<string, any>;
+  _routerState: ng._RouterService & Record<string, any>;
   /** @internal */
   _transitionService: TransitionService;
   /** @internal */
@@ -106,7 +112,7 @@ export class Transition {
   /** @internal */
   _aborted?: boolean;
   /** @internal */
-  _globals: ng.RouterService & Record<string, any>;
+  _routerState: ng._RouterService & Record<string, any>;
   /** @internal */
   _transitionService: TransitionService;
   /** @internal */
@@ -135,19 +141,18 @@ export class Transition {
    *        encapsulates the "from state".
    * @param {TargetState} targetState The target state and parameters being transitioned to (also, the transition options)
    * @param {TransitionService} transitionService
-   * @param {ng.RouterService} globals
+   * @param routerState
    */
   constructor(
     fromPath: PathNode[],
     targetState: TargetState,
     transitionService: TransitionService,
-    globals: ng.RouterService & Record<string, any>,
+    routerState: any,
   ) {
-    this._globals = globals;
+    this._routerState = routerState;
 
     this._transitionService = transitionService;
 
-    /** @type {DeferredPromise<any>} */
     this._deferred = createDeferredPromise();
 
     /**
@@ -157,15 +162,12 @@ export class Transition {
      * When the transition is unsuccessful, the promise is rejected with the [[Rejection]] or javascript error
      */
     this.promise = this._deferred.promise;
-    /** @type {RegisteredHooks} Holds the hook registration functions such as those passed to Transition.onStart() */
     this._registeredHooks = {};
 
-    /** @type {HookBuilder} */
     this._hookBuilder = new HookBuilder(this);
 
     /** Checks if this transition is currently active/running. */
-    /** @type {() => boolean} */
-    this.isActive = () => this._globals.transition === this;
+    this.isActive = () => this._routerState._transition === this;
 
     this._targetState = targetState;
 
@@ -178,12 +180,11 @@ export class Transition {
       targetState.options(),
     );
     this.$id = transitionService._transitionCount++;
-    const toPath = PathUtils.buildToPath(fromPath, targetState);
+    const toPath = buildToPath(fromPath, targetState);
 
-    /** @type {TreeChanges} */
-    this._treeChanges = PathUtils.treeChanges(
+    this._treeChanges = treeChanges(
       fromPath,
-      /** @type {PathNode[]} */ toPath,
+      toPath as PathNode[],
       this._options.reloadState as StateObject,
     );
     const onCreateHooks = this._hookBuilder.buildHooksForPhase(
@@ -364,7 +365,7 @@ export class Transition {
   applyViewConfigs() {
     const enteringStates = this._treeChanges.entering.map((node) => node.state);
 
-    PathUtils.applyViewConfigs(
+    applyViewConfigs(
       this._transitionService._view,
       this._treeChanges.to,
       enteringStates,
@@ -377,7 +378,7 @@ export class Transition {
   $from() {
     const fromNode = tail(this._treeChanges.from) as PathNode | undefined;
 
-    return /** @type {StateObject} */ fromNode?.state;
+    return fromNode?.state as StateObject;
   }
 
   /**
@@ -386,7 +387,7 @@ export class Transition {
   $to() {
     const toNode = tail(this._treeChanges.to) as PathNode | undefined;
 
-    return /** @type {StateObject} */ toNode?.state;
+    return toNode?.state as StateObject;
   }
 
   /**
@@ -469,7 +470,7 @@ export class Transition {
   getResolveTokens(pathname = "to") {
     return new ResolveContext(
       (this._treeChanges[pathname] || []) as PathNode[],
-      this._globals._injector,
+      this._routerState._injector,
     ).getTokens();
   }
 
@@ -528,7 +529,10 @@ export class Transition {
     }
 
     assert(!!targetNode, `targetNode not found ${stateName}`);
-    const resolveContext = new ResolveContext(topath, this._globals._injector);
+    const resolveContext = new ResolveContext(
+      topath,
+      this._routerState._injector,
+    );
 
     resolveContext.addResolvables([resolvable], (targetNode as PathNode).state);
   }
@@ -728,18 +732,18 @@ export class Transition {
         return reloadState && node.state.includes[reloadState.name];
       };
 
-    const params = /** @type {PathNode[]} */ PathUtils.matching(
+    const params = matching(
       redirectEnteringNodes,
       originalEnteringNodes,
-      PathUtils.nonDynamicParams,
-    );
+      nonDynamicParams,
+    ) as PathNode[];
 
     // Find any "entering" nodes in the redirect path that match the original path and aren't being reloaded
     const matchingEnteringNodes = params.filter(
       (x: PathNode) =>
-        !nodeIsReloading(
-          /** @type {ng.StateObject} */ targetState.options().reloadState,
-        )(x),
+        !nodeIsReloading(targetState.options().reloadState as ng.StateObject)(
+          x,
+        ),
     );
 
     // Use the existing (possibly pre-resolved) resolvables for the matching entering nodes.
@@ -813,18 +817,20 @@ export class Transition {
 
   /** @internal */
   _ignoredReason() {
-    const pending = this._globals.transition;
+    const pending = this._routerState._transition;
 
     const { reloadState } = this._options;
 
     const same = (pathA: PathNode[], pathB: PathNode[]) => {
       if (pathA.length !== pathB.length) return false;
-      const matching = PathUtils.matching(pathA, pathB);
+      const pathPrefix = matching(pathA, pathB);
 
       return (
         pathA.length ===
-        /** @type {PathNode[]} */ matching.filter(
-          (node) => !reloadState || !node.state.includes[reloadState.name],
+        (
+          pathPrefix.filter(
+            (node) => !reloadState || !node.state.includes[reloadState.name],
+          ) as PathNode[]
         ).length
       );
     };
@@ -897,11 +903,11 @@ export class Transition {
     };
 
     const startTransition = () => {
-      const { _globals } = this;
+      const { _routerState } = this;
 
-      _globals._lastStartedTransitionId = this.$id;
-      _globals.transition = this;
-      _globals._transitionHistory._enqueue(this);
+      _routerState._lastStartedTransitionId = this.$id;
+      _routerState._transition = this;
+      _routerState._transitionHistory._enqueue(this);
 
       return Promise.resolve();
     };

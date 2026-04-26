@@ -192,6 +192,7 @@ const controllerLastParamsChangedTransition = new WeakMap<
 
 ViewDirective.$inject = [
   $injectTokens._view,
+  $injectTokens._state,
   $injectTokens._injector,
   $injectTokens._anchorScroll,
   $injectTokens._interpolate,
@@ -202,10 +203,12 @@ ViewDirective.$inject = [
  */
 export function ViewDirective(
   $view: ng.ViewService,
+  _state: ng.StateService,
   $injector: ng.InjectorService,
   $anchorScroll: ng.AnchorScrollService,
   $interpolate: ng.InterpolateService,
 ): ng.Directive {
+  void _state;
   const getAnimate = createLazyAnimate($injector);
 
   function getRenderer(): Renderer {
@@ -665,10 +668,7 @@ function registerControllerCallbacks(
   // Call $onInit() ASAP
   const onInit = controllerInstance.$onInit;
 
-  if (
-    isFunction(onInit) &&
-    !(cfg.viewDecl.component || cfg.viewDecl.componentProvider)
-  ) {
+  if (isFunction(onInit) && !cfg.viewDecl.component) {
     onInit();
   }
   const viewState = (tail(cfg.path) as any).state.self;

@@ -5,8 +5,11 @@ type ListenerEntry = { _fn: Function; _context: any };
 let eventBusInstance: PubSub | undefined;
 
 /**
- * Configurable provider for an injectable event bus
- * @extends {ng.ServiceProvider}
+ * Configurable provider for the application-wide {@link PubSub} event bus.
+ *
+ * The provider creates the singleton `$eventBus` service and also exposes it on
+ * the global Angular service for integrations that publish from outside
+ * dependency injection.
  */
 export class PubSubProvider {
   static $inject = [
@@ -33,8 +36,17 @@ export class PubSub {
   private _topics: Record<string, ListenerEntry[]>;
   /** @internal */
   private _disposed: boolean;
+  /** Exception handler used when a subscriber throws during async delivery. */
   public $exceptionHandler: ng.ExceptionHandlerService;
 
+  /**
+   * Create a publish/subscribe event bus.
+   *
+   * Applications usually receive the singleton instance by injecting
+   * `$eventBus` instead of constructing this class directly.
+   *
+   * @param $exceptionHandler - Handler invoked when a subscriber throws.
+   */
   constructor($exceptionHandler: ng.ExceptionHandlerService) {
     this._topics = nullObject() as Record<string, ListenerEntry[]>;
     this._disposed = false;
@@ -42,7 +54,9 @@ export class PubSub {
   }
 
   /**
-   * Set instance to initial state
+   * Reset the bus to its initial state without disposing it.
+   *
+   * All topics and listeners are removed, and the instance can be reused.
    */
   reset(): void {
     this._topics = nullObject() as Record<string, ListenerEntry[]>;
@@ -68,6 +82,9 @@ export class PubSub {
 
   /**
    * Subscribe a function to a topic.
+   *
+   * The returned function removes only this listener registration.
+   *
    * @param topic - The topic to subscribe to.
    * @param fn - The callback function to invoke when published.
    * @param [context] - Optional `this` context for the callback.
@@ -92,7 +109,9 @@ export class PubSub {
 
   /**
    * Subscribe a function to a topic only once.
+   *
    * Listener is removed before the first invocation.
+   *
    * @param topic - The topic to subscribe to.
    * @param fn - The callback function.
    * @param [context] - Optional `this` context for the callback.
@@ -150,6 +169,9 @@ export class PubSub {
 
   /**
    * Get the number of subscribers for a topic.
+   *
+   * @param topic - Topic name to inspect.
+   * @returns The number of currently registered listeners.
    */
   getCount(topic: string): number {
     const listeners = this._topics[topic];
@@ -159,7 +181,10 @@ export class PubSub {
 
   /**
    * Publish a value to a topic asynchronously.
+   *
    * All listeners are invoked in the order they were added.
+   * Delivery is scheduled with `queueMicrotask`.
+   *
    * @param topic - The topic to publish.
    * @param args - Arguments to pass to listeners.
    * @returns True if any listeners exist for this topic.

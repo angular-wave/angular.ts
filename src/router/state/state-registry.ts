@@ -3,7 +3,6 @@ import { StateBuilder } from "./state-builder.ts";
 import { StateQueueManager } from "./state-queue-manager.ts";
 import { annotate } from "../../core/di/di.ts";
 import { applyPairs, removeFrom } from "../../shared/common.ts";
-import { propEq } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { isString, keys } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
@@ -17,7 +16,6 @@ import type {
   StateStore,
 } from "./interface.ts";
 import type { StateObject } from "./state-object.ts";
-import type { UrlRules } from "../url/url-rules.ts";
 
 /**
  * A registry for all of the application's [[StateDeclaration]]s
@@ -33,8 +31,6 @@ export class StateRegistryProvider {
   /** @internal */
   _urlService: ng.UrlService;
   /** @internal */
-  _urlServiceRules: UrlRules;
-  /** @internal */
   _$injector: ng.InjectorService | undefined;
   /** @internal */
   _listeners: StateRegistryListener[];
@@ -49,14 +45,12 @@ export class StateRegistryProvider {
 
   /**
    * @param {ng.UrlService} urlService
-   * @param {ng.RouterService} globals
+   * @param routerState
    */
-  constructor(urlService: ng.UrlService, globals: ng.RouterService) {
+  constructor(urlService: ng.UrlService, routerState: any) {
     this._states = {};
 
     this._urlService = urlService;
-
-    this._urlServiceRules = urlService._rules;
 
     this._$injector = undefined;
 
@@ -67,7 +61,7 @@ export class StateRegistryProvider {
     this._builder = new StateBuilder(this._matcher, urlService);
 
     this._stateQueue = new StateQueueManager(
-      this._urlServiceRules,
+      this._urlService,
       this._states,
       this._builder,
       this._listeners,
@@ -75,8 +69,8 @@ export class StateRegistryProvider {
 
     this.registerRoot();
 
-    globals.$current = this.root();
-    globals.current = globals.$current.self;
+    routerState._currentState = this.root();
+    routerState._current = routerState._currentState.self;
   }
 
   $get = [
@@ -115,8 +109,7 @@ export class StateRegistryProvider {
    * @private
    */
   registerRoot(): void {
-    /** @type {ng.StateDeclaration} */
-    const rootStateDef = {
+    const rootStateDef: StateDeclaration = {
       name: "",
       url: "^",
       params: {
@@ -222,13 +215,7 @@ export class StateRegistryProvider {
     const deregistered = [state].concat(children).reverse();
 
     deregistered.forEach((_state) => {
-      const rulesApi = this._urlServiceRules;
-
-      // Remove URL rule
-      rulesApi
-        .rules()
-        .filter(propEq("state", _state))
-        .forEach((rule) => rulesApi.removeRule(rule));
+      this._urlService._removeStateRoute(_state as unknown as StateObject);
       // Remove state from registry
       delete this._states[_state.name];
     });

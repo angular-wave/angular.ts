@@ -187,51 +187,39 @@ export function AnimateQueueProvider(
   }
 
   rules.join.push(
-    (/** @type {AnimationOptions} */ newAnimation) =>
+    (newAnimation: AnimationOptions) =>
       !newAnimation.structural && hasAnimationClasses(newAnimation),
   );
 
   rules.skip.push(
-    (/** @type {AnimationOptions} */ newAnimation) =>
+    (newAnimation: AnimationOptions) =>
       !newAnimation.structural && !hasAnimationClasses(newAnimation),
   );
 
   rules.skip.push(
-    (
-      /** @type {AnimationOptions} */ newAnimation,
-      /** @type {AnimationOptions} */ currentAnimation,
-    ) => currentAnimation.event === "leave" && !!newAnimation.structural,
+    (newAnimation: AnimationOptions, currentAnimation: AnimationOptions) =>
+      currentAnimation.event === "leave" && !!newAnimation.structural,
   );
 
   rules.skip.push(
-    (
-      /** @type {AnimationOptions} */ newAnimation,
-      /** @type {AnimationOptions} */ currentAnimation,
-    ) =>
+    (newAnimation: AnimationOptions, currentAnimation: AnimationOptions) =>
       !!currentAnimation.structural &&
       currentAnimation.state === RUNNING_STATE &&
       !newAnimation.structural,
   );
 
   rules.cancel.push(
-    (
-      /** @type {AnimationOptions} */ newAnimation,
-      /** @type {AnimationOptions} */ currentAnimation,
-    ) => !!currentAnimation.structural && !!newAnimation.structural,
+    (newAnimation: AnimationOptions, currentAnimation: AnimationOptions) =>
+      !!currentAnimation.structural && !!newAnimation.structural,
   );
 
   rules.cancel.push(
-    (
-      /** @type {AnimationOptions} */ newAnimation,
-      /** @type {AnimationOptions} */ currentAnimation,
-    ) => currentAnimation.state === RUNNING_STATE && !!newAnimation.structural,
+    (newAnimation: AnimationOptions, currentAnimation: AnimationOptions) =>
+      currentAnimation.state === RUNNING_STATE && !!newAnimation.structural,
   );
 
   rules.cancel.push(
-    (
-      /** @type {AnimationOptions} */ newAnimation,
-      /** @type {AnimationOptions} */ currentAnimation,
-    ) => {
+    (newAnimation: AnimationOptions, currentAnimation: AnimationOptions) => {
       if (currentAnimation.structural) return false;
 
       const nA = newAnimation.addClass;
@@ -394,8 +382,7 @@ export function AnimateQueueProvider(
         }
       }
 
-      /** @type {AnimateQueueService} */
-      const $animate = {
+      const $animate: AnimateQueueService = {
         on(event: string, container: Element, callback: AnimationCallback) {
           const node = extractElementNode(container) as HTMLElement | undefined;
 
@@ -568,7 +555,6 @@ export function AnimateQueueProvider(
           closeChildAnimations(node);
         }
 
-        /** @type {AnimationOptions} */
         const newAnimation: QueueAnimationRecord = {
           structural: isStructural,
           element,
