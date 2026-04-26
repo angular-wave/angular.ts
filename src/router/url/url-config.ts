@@ -14,7 +14,7 @@ import type { ParamType } from "../params/param-type.ts";
  * This information can be used to build absolute URLs, such as
  * `https://example.com:443/basepath/state/substate?param1=a#hashvalue`;
  *
- * This API is found at `router.urlService.config` (see: [[UIRouter.urlService]], [[URLService.config]])
+ * This API is found at `$url.config`.
  */
 export class UrlConfigProvider {
   static $inject = [$injectTokens._angularProvider];
@@ -35,12 +35,9 @@ export class UrlConfigProvider {
     this._isStrictMode = true;
     this._defaultSquashPolicy = false;
     /**
-     * Applys ng1-specific path parameter encoding
+     * Applies path parameter encoding
      *
-     * The Angular 1 `$location` service is a bit weird.
-     * It doesn't allow slashes to be encoded/decoded bi-directionally.
-     *
-     * See the writeup at https://github.com/angular-ui/ui-router/issues/2598
+     * The `$location` service does not allow slashes to be encoded/decoded bi-directionally.
      *
      * This code patches the `path` parameter type so it encoded/decodes slashes as ~2F
      *

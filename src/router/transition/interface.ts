@@ -124,7 +124,7 @@ export interface TransitionHookOptions {
  *
  * Get a TreeChanges object using [[Transition.treeChanges]]
  *
- * A UI-Router Transition is from one Path in a State Tree to another Path.  For a given Transition,
+ * A Transition is from one Path in a State Tree to another Path. For a given Transition,
  * this object stores the "to" and "from" paths, as well as subsets of those: the "retained",
  * "exiting" and "entering" paths.
  *
@@ -539,7 +539,6 @@ export interface HookRegistry {
    *
    * @example
    * ```js
-   * // ng1
    * // state declaration
    * {
    *   name: 'home',
@@ -569,7 +568,6 @@ export interface HookRegistry {
    *
    * #### Example:
    * ```js
-   * // ng1
    * $transitions.onBefore( { to: 'requireauth.**' }, function(trans) {
    *   var myAuthService = trans.injector().get('MyAuthService');
    *   // If isAuthenticated returns false, the transition is cancelled.
@@ -629,7 +627,6 @@ export interface HookRegistry {
    *
    * #### Example:
    * ```js
-   * // ng1
    * $transitions.onStart( { to: 'auth.**' }, function(trans) {
    *   var $state = trans.router.stateService;
    *   var MyAuthService = trans.injector().get('MyAuthService');
@@ -724,8 +721,6 @@ export interface HookRegistry {
    * }
    * ```
    *
-   * Note: A state declaration's `onEnter` function is injected for Angular 1 only.
-   *
    * @param matchCriteria defines which Transitions the Hook should be invoked for.
    * @param callback the hook function which will be injected and invoked.
    * @returns a function which deregisters the hook.
@@ -765,8 +760,6 @@ export interface HookRegistry {
    *
    * Instead of registering `onRetain` hooks using the [[TransitionService]], you may define an `onRetain` hook
    * directly on a state declaration (see: [[StateDeclaration.onRetain]]).
-   *
-   * Note: A state declaration's `onRetain` function is injected for Angular 1 only.
    *
    * @param matchCriteria defines which Transitions the Hook should be invoked for.
    * @param callback the hook function which will be injected and invoked.
@@ -809,8 +802,6 @@ export interface HookRegistry {
    *
    * Instead of registering `onExit` hooks using the [[TransitionService]], you may define an `onExit` hook
    * directly on a state declaration (see: [[StateDeclaration.onExit]]).
-   *
-   * Note: A state declaration's `onExit` function is injected for Angular 1 only.
    *
    * @param matchCriteria defines which Transitions the Hook should be invoked for.
    * @param callback the hook function which will be injected and invoked.

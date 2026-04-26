@@ -462,8 +462,6 @@ export class Transition {
    * Promise.all(promises).then(values => console.log("Resolved values: " + values));
    * ```
    *
-   * Note: Angular 1 users whould use `$q.all()`
-   *
    * @param pathname resolve context's path name (e.g., `to` or `from`)
    *
    * @returns an array of resolve tokens (keys)
@@ -480,7 +478,7 @@ export class Transition {
    *
    * Allows a transition hook to dynamically add a Resolvable to this Transition.
    *
-   * Use the [[Transition.injector]] to retrieve the resolved data in subsequent hooks ([[UIInjector.get]]).
+   * Use the [[Transition.injector]] to retrieve the resolved data in subsequent hooks.
    *
    * If a `state` argument is provided, the Resolvable is processed when that state is being entered.
    * If no `state` is provided then the root state is used.

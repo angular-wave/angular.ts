@@ -759,7 +759,6 @@ describe("ngView named", () => {
     expect($state.current.name).toBe("main.home");
   });
 
-  // Test for https://github.com/angular-ui/ui-router/issues/3355
   it("should target weird nested view setups using the view's simple name", async () => {
     elem.innerHTML = `
       <div>
@@ -1021,7 +1020,7 @@ describe("angular 1.5+ style .component()", () => {
       .component("dynamicComponent", {
         template: "dynamicComponent {{ $ctrl.param }}",
         controller: function () {
-          this.uiOnParamsChanged = function (params) {
+          this.ngOnParamsChanged = function (params) {
             this.param = params.param;
           };
         },
@@ -1694,7 +1693,6 @@ describe("angular 1.5+ style .component()", () => {
       expect(content.textContent).toBe("-DATA!-");
     });
 
-    // Test for https://github.com/angular-ui/ui-router/issues/3353
     it("should allow different states to reuse view declaration", () => {
       const views = {
         header: { component: "header" },
@@ -1821,7 +1819,7 @@ describe("angular 1.5+ style .component()", () => {
     });
   });
 
-  describe("uiOnParamsChanged()", () => {
+  describe("ngOnParamsChanged()", () => {
     let param;
 
     beforeEach(() => {

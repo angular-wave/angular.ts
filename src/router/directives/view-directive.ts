@@ -89,16 +89,16 @@ type ActiveUIViewRootData = {
 
 type ViewControllerInstance = Record<string, any> & {
   $onInit?: () => void;
-  uiOnParamsChanged?: (
+  ngOnParamsChanged?: (
     params: Record<string, unknown>,
     trans: ng.Transition,
   ) => void;
-  uiCanExit?: (trans: ng.Transition) => unknown;
+  ngCanExit?: (trans: ng.Transition) => unknown;
 };
 
-type UiCanExitTransition = ng.Transition &
+type NgCanExitTransition = ng.Transition &
   Record<string, any> & {
-    redirectedFrom(): UiCanExitTransition | null;
+    redirectedFrom(): NgCanExitTransition | null;
   };
 
 function withResolvers<T>(): PromiseResolvers<T> {
@@ -354,7 +354,6 @@ export function ViewDirective(
             ) as ViewContext | undefined;
 
             // Allow <ng-view name="foo"><ng-view name="bar"></ng-view></ng-view>
-            // See https://github.com/angular-ui/ui-router/issues/3355
             const fromParentTag = parse("$ngView.creationContext")(
               inherited,
             ) as ViewContext | undefined;
@@ -698,7 +697,7 @@ export function ViewDirectiveFill(
 }
 /** @ignore */
 /** @ignore incrementing id */
-let _uiCanExitId = 0;
+let _ngCanExitId = 0;
 
 /**
  * @ignore TODO: move these callbacks to $view and/or `/hooks/components.ts` or something
@@ -736,9 +735,9 @@ function registerControllerCallbacks(
 
   const hookOptions = { bind: controllerInstance };
 
-  // Add component-level hook for onUiParamsChanged
-  if (isFunction(controllerInstance.uiOnParamsChanged)) {
-    const onParamsChanged = controllerInstance.uiOnParamsChanged as (
+  // Add component-level hook for ngOnParamsChanged
+  if (isFunction(controllerInstance.ngOnParamsChanged)) {
+    const onParamsChanged = controllerInstance.ngOnParamsChanged as (
       params: Record<string, unknown>,
       trans: ng.Transition,
     ) => void;
@@ -840,7 +839,7 @@ function registerControllerCallbacks(
     const rootScope = $scope.$root as ng.Scope &
       Record<string, Map<string, () => void> | undefined>;
 
-    const registryProp = "__uiRouterParamsChangedHooks__";
+    const registryProp = "__ngRouterParamsChangedHooks__";
 
     const hookRegistry =
       rootScope[registryProp] ||
@@ -865,32 +864,32 @@ function registerControllerCallbacks(
     });
   }
 
-  // Add component-level hook for uiCanExit
-  if (isFunction(controllerInstance.uiCanExit)) {
-    const uiCanExit = controllerInstance.uiCanExit as (
+  // Add component-level hook for ngCanExit
+  if (isFunction(controllerInstance.ngCanExit)) {
+    const ngCanExit = controllerInstance.ngCanExit as (
       trans: ng.Transition,
     ) => boolean | void | TargetState;
 
-    const id = _uiCanExitId++;
+    const id = _ngCanExitId++;
 
-    const cacheProp = "_uiCanExitIds";
+    const cacheProp = "_ngCanExitIds";
 
     /**
      * Returns true if any transition in the redirect chain already answered truthy.
      */
-    const prevTruthyAnswer = (trans: UiCanExitTransition | null): boolean =>
+    const prevTruthyAnswer = (trans: NgCanExitTransition | null): boolean =>
       !!trans &&
       ((trans[cacheProp] && trans[cacheProp][id] === true) ||
         prevTruthyAnswer(trans.redirectedFrom()));
 
     // If a user answered yes, but the transition was later redirected, don't also ask for the new redirect transition
-    const wrappedHook = (trans: UiCanExitTransition) => {
+    const wrappedHook = (trans: NgCanExitTransition) => {
       let promise: Promise<boolean | void | TargetState> | undefined;
 
       const ids = (trans[cacheProp] = trans[cacheProp] || {});
 
       if (!prevTruthyAnswer(trans)) {
-        promise = Promise.resolve(uiCanExit.call(controllerInstance, trans));
+        promise = Promise.resolve(ngCanExit.call(controllerInstance, trans));
         promise.then((val) => (ids[id] = val !== false));
       }
 

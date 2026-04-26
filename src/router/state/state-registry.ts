@@ -21,7 +21,7 @@ import type { UrlRules } from "../url/url-rules.ts";
 /**
  * A registry for all of the application's [[StateDeclaration]]s
  *
- * This API is found at `$stateRegistry` ([[UIRouter.stateRegistry]])
+ * This API is found at `$stateRegistry`.
  *
  */
 export class StateRegistryProvider {
