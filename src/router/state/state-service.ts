@@ -15,6 +15,7 @@ import { TargetState } from "./target-state.ts";
 import { Param } from "../params/param.ts";
 import { Glob } from "../glob/glob.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
+import type { ProviderInjector } from "../../core/di/internal-injector.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { Transition } from "../transition/transition.ts";
 import type { HookResult, TransitionOptions } from "../transition/interface.ts";
@@ -61,6 +62,8 @@ export const silentRejection = <E = unknown>(error: E): Promise<never> =>
  */
 export class StateProvider {
   /** @internal */
+  _providerInjector: ProviderInjector;
+  /** @internal */
   _globals: ng.RouterProvider;
   /** @internal */
   _transitionService: ng.TransitionProvider;
@@ -78,7 +81,9 @@ export class StateProvider {
   /** @internal */
   _getRegistry(): StateRegistryProvider {
     if (!this._stateRegistry)
-      throw new Error("State registry is not initialized");
+      this._stateRegistry = this._providerInjector.get(
+        $injectTokens._stateRegistryProvider,
+      ) as StateRegistryProvider;
 
     return this._stateRegistry;
   }
@@ -115,6 +120,7 @@ export class StateProvider {
 
   /* @ignore */
   static $inject = [
+    $injectTokens._injector,
     $injectTokens._routerProvider,
     $injectTokens._transitionsProvider,
     $injectTokens._exceptionHandlerProvider,
@@ -122,15 +128,18 @@ export class StateProvider {
 
   /**
    *
+   * @param {ProviderInjector} providerInjector
    * @param {ng.RouterProvider} globals
    * @param {ng.TransitionProvider} transitionService
    * @param {ng.ExceptionHandlerProvider} exceptionHandlerProvider
    */
   constructor(
+    providerInjector: ProviderInjector,
     globals: ng.RouterProvider,
     transitionService: ng.TransitionProvider,
     exceptionHandlerProvider: ng.ExceptionHandlerProvider,
   ) {
+    this._providerInjector = providerInjector;
     /**
      * @type {ng.RouterProvider}
      */
@@ -161,20 +170,24 @@ export class StateProvider {
 
   $get = [
     $injectTokens._injector,
+    $injectTokens._stateRegistry,
     $injectTokens._url,
     $injectTokens._view,
     /**
      * @param {ng.InjectorService} $injector
+     * @param {StateRegistryProvider} $stateRegistry
      * @param {ng.UrlService} $url
      * @param {ng.ViewService} _viewService
      * @returns {StateProvider}
      */
     (
       $injector: ng.InjectorService,
+      $stateRegistry: StateRegistryProvider,
       $url: ng.UrlService,
       _viewService: ng.ViewService,
     ) => {
       void _viewService;
+      this._stateRegistry = $stateRegistry;
       this._urlService = $url;
       this._$injector = $injector;
 

@@ -23,12 +23,8 @@ import type {
 import { createInjector } from "./core/di/injector.ts";
 import { NgModule } from "./core/di/ng-module/ng-module.ts";
 import { registerNgModule } from "./ng.ts";
-import { unnestR } from "./shared/common.ts";
 import { $injectTokens as $t } from "./injection-tokens.ts";
-import { annotate } from "./core/di/di.ts";
 import { validateIsString } from "./shared/validate.ts";
-import type { StateRegistryProvider } from "./router/state/state-registry.ts";
-import type { Resolvable } from "./router/resolve/resolvable.ts";
 
 const ngMinErr = minErr("ng");
 
@@ -358,22 +354,6 @@ export class Angular extends EventTarget {
             $injector.strictDi = !!/strict mode/.exec(errorStr);
           }
         }
-
-        const stateRegistry = $injector.get(
-          $t._stateRegistry,
-        ) as StateRegistryProvider;
-
-        stateRegistry
-          .getAll()
-          .map((state) => state._state().resolvables)
-          .reduce(unnestR, [])
-          .filter((resolvable: Resolvable) => resolvable.deps === "deferred")
-          .forEach((resolvable: Resolvable) => {
-            resolvable.deps = annotate(
-              resolvable.resolveFn,
-              $injector.strictDi,
-            );
-          });
 
         scope.$on("$destroy", () => {
           if (rootScopeCleanupByElement.get(rootElement)) {
