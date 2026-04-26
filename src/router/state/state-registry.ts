@@ -1,6 +1,7 @@
 import { StateMatcher } from "./state-matcher.ts";
 import { StateBuilder } from "./state-builder.ts";
 import { StateQueueManager } from "./state-queue-manager.ts";
+import { annotate } from "../../core/di/di.ts";
 import { applyPairs, removeFrom } from "../../shared/common.ts";
 import { propEq } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
@@ -27,7 +28,6 @@ import type { UrlRules } from "../url/url-rules.ts";
 export class StateRegistryProvider {
   /* @ignore */ static $inject = [
     $t._urlProvider,
-    $t._stateProvider,
     $t._routerProvider,
     $t._viewProvider,
   ];
@@ -53,19 +53,15 @@ export class StateRegistryProvider {
 
   /**
    * @param {ng.UrlService} urlService
-   * @param {ng.StateService} stateService
    * @param {ng.RouterService} globals
    * @param {ng.ViewService} viewService
    */
   constructor(
     urlService: ng.UrlService,
-    stateService: ng.StateService,
     globals: ng.RouterService,
     viewService: ng.ViewService,
   ) {
     this._states = {};
-
-    stateService._stateRegistry = this; // <- circular wiring
 
     this._urlService = urlService;
 
@@ -102,10 +98,28 @@ export class StateRegistryProvider {
     ($injector: InjectorService) => {
       this._$injector = $injector;
       this._builder._$injector = $injector;
+      this._annotateDeferredResolvables($injector.strictDi);
 
       return this;
     },
   ];
+
+  /** @internal */
+  _annotateDeferredResolvables(strictDi: boolean | undefined): void {
+    const states = this.getAll();
+
+    for (let i = 0; i < states.length; i++) {
+      const resolvables = states[i]._state().resolvables || [];
+
+      for (let j = 0; j < resolvables.length; j++) {
+        const resolvable = resolvables[j];
+
+        if (resolvable.deps === "deferred") {
+          resolvable.deps = annotate(resolvable.resolveFn, strictDi);
+        }
+      }
+    }
+  }
 
   /**
    * @private
