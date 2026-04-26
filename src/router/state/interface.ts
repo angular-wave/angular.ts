@@ -485,7 +485,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * - Each key (string) is the name of the dependency.
    * - Each value (function) is an injectable function which returns the dependency, or a promise for the dependency.
    *
-   * This style is based on AngularTS injectable functions, but can be used with any UI-Router implementation.
+   * This style is based on AngularTS injectable functions.
    * If your code will be minified, the function should be ["annotated" in the AngularTS manner](https://docs.angularjs.org/guide/di#dependency-annotation).
    *
    * #### AngularTS Example:
@@ -539,7 +539,6 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    *
    * #### Special injectable tokens
    *
-   * - `UIRouter`: The [[UIRouter]] instance which has references to all the UI-Router services.
    * - `Transition`: The current [[Transition]] object; information and API about the current transition, such as
    *    "to" and "from" State Parameters and transition options.
    * - `'$transition$'`: A string alias for the `Transition` injectable
@@ -693,8 +692,8 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    *   - If the return value is a promise, the promise is waited for, then the resolved async value is processed using the same rules.
    *
    * Note: `redirectTo` is processed as an `onStart` hook, before non-eager resolves.
-   * If your redirect function relies on resolve data, get the [[Transition.injector]] and get a
-   * promise for the resolve data using [[UIInjector.getAsync]].
+   * If your redirect function relies on resolve data, get the [[Transition.injector]] and request
+   * the resolve data with `getAsync()`.
    *
    * #### Example:
    * ```js

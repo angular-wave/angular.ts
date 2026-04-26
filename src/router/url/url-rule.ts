@@ -128,7 +128,7 @@ export class UrlRuleFactory {
    *
    * - matched parameter values ([[RawParams]] from [[UrlMatcher.exec]])
    * - url: the current Url ([[UrlParts]])
-   * - router: the router object ([[UIRouter]])
+   * - router: the router object
    *
    * #### Example:
    * ```js
@@ -293,7 +293,7 @@ export class UrlRuleFactory {
    *
    * - regexp match array (from `regexp`)
    * - url: the current Url ([[UrlParts]])
-   * - router: the router object ([[UIRouter]])
+   * - router: the router object
    *
    * #### Example:
    * ```js

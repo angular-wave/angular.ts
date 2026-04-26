@@ -85,7 +85,7 @@ function defaultRuleSortFn(a: UrlRule, b: UrlRule): number {
  *
  * The most commonly used methods are [[otherwise]] and [[when]].
  *
- * This API is found at `$url.rules` (see: [[UIRouter.urlService]], [[URLService.rules]])
+ * This API is found at `$url.rules`.
  */
 export class UrlRules {
   /** @internal */
@@ -276,7 +276,7 @@ export class UrlRules {
    *
    * ---
    *
-   * When the handler is a function, it receives the matched value, the current URL, and the `UIRouter` object (See [[UrlRuleHandlerFn]]).
+   * When the handler is a function, it receives the matched value, the current URL, and the router object (See [[UrlRuleHandlerFn]]).
    * The "matched value" differs based on the `matcher`.
    * For [[UrlMatcher]]s, it will be the matched state params.
    * For `RegExp`, it will be the match array from `regexp.exec()`.

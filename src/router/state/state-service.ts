@@ -57,7 +57,7 @@ export const silentRejection = <E = unknown>(error: E): Promise<never> =>
 /**
  * Provides services related to ng-router states.
  *
- * This API is located at `router.stateService` ([[UIRouter.stateService]])
+ * This API is located at `$state`.
  */
 export class StateProvider {
   globals: ng.RouterProvider;
@@ -310,7 +310,7 @@ export class StateProvider {
    *
    * #### Example:
    * ```js
-   * let app angular.module('app', ['ui.router']);
+   * let app = angular.module('app', []);
    *
    * app.controller('ctrl', function ($scope, $state) {
    *   $scope.reload = function(){
@@ -334,7 +334,7 @@ export class StateProvider {
    * ```js
    * //assuming app application consists of 3 states: 'contacts', 'contacts.detail', 'contacts.detail.item'
    * //and current state is 'contacts.detail.item'
-   * let app angular.module('app', ['ui.router']);
+   * let app = angular.module('app', []);
    *
    * app.controller('ctrl', function ($scope, $state) {
    *   $scope.reload = function(){
@@ -371,7 +371,7 @@ export class StateProvider {
    *
    * #### Example:
    * ```js
-   * let app = angular.module('app', ['ui.router']);
+   * let app = angular.module('app', []);
    *
    * app.controller('ctrl', function ($scope, $state) {
    *   $scope.changeState = function () {
@@ -452,7 +452,7 @@ export class StateProvider {
    *
    * #### Example:
    * ```js
-   * let app = angular.module('app', ['ui.router']);
+   * let app = angular.module('app', []);
    *
    * app.controller('ctrl', function ($scope, $state) {
    *   $scope.changeState = function () {

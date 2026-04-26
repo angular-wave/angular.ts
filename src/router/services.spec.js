@@ -39,7 +39,7 @@ describe("router services", () => {
     $location = $injector.get("$location");
   });
 
-  it("Should expose ng-router providers from the UIRouter instance", () => {
+  it("Should expose ng-router providers through Angular DI", () => {
     expect(providers.$urlProvider).toBeDefined();
     expect(providers.$stateRegistryProvider).toBeDefined();
     expect(providers.$stateRegistryProvider).toBeDefined();
@@ -47,7 +47,7 @@ describe("router services", () => {
     expect(providers.$stateProvider).toBeDefined();
   });
 
-  it("Should expose ng-router services from the UIRouter instance", () => {
+  it("Should expose ng-router services through Angular DI", () => {
     expect($injector.get("$url")).toBeDefined();
     expect($injector.get("$stateRegistry")).toBeDefined();
     expect($injector.get("$router")).toBeDefined();
