@@ -24,7 +24,7 @@ describe("StateBuilder", function () {
     expect($stateRegistry.builder).toBeDefined();
   });
 
-  it("should use the state object to build a default view, when no `views` property is found", function () {
+  it("should build a single default view from state-level view properties", function () {
     const config = builder._build({
       name: "foo",
       self: {},
@@ -34,8 +34,8 @@ describe("StateBuilder", function () {
       parent: parent,
     });
 
-    expect(config.views.$default).not.toEqual(config);
-    expect(config.views.$default).toEqual(
+    expect(config._views.$default).not.toEqual(config);
+    expect(config._views.$default).toEqual(
       jasmine.objectContaining({
         templateUrl: "/foo.html",
         controller: "FooController",
@@ -44,17 +44,47 @@ describe("StateBuilder", function () {
     );
   });
 
-  it("It should use the views object to build views, when defined", function () {
-    const config = { a: { foo: "bar", controller: "FooController" } };
+  it("should build named views from the views object", function () {
     const built = builder._build({
       name: "foo",
       self: {},
       parent: parent,
-      views: config,
+      views: {
+        main: { template: "hello", controller: "FooController" },
+        sidebar: "SidebarComponent",
+      },
     });
 
-    expect(built.views.a.foo).toEqual(config.a.foo);
-    expect(built.views.a.controller).toEqual(config.a.controller);
+    expect(built._views.main.template).toBe("hello");
+    expect(built._views.main.controller).toBe("FooController");
+    expect(built._views.main.$ngViewName).toBe("main");
+    expect(built._views.sidebar.component).toBe("SidebarComponent");
+    expect(built._views.sidebar.$ngViewName).toBe("sidebar");
+  });
+
+  it("should copy state-level view fields into the default view", function () {
+    const built = builder._build({
+      name: "foo",
+      self: {},
+      parent: parent,
+      template: "hello",
+      controller: "FooController",
+    });
+
+    expect(built._views.$default.template).toBe("hello");
+    expect(built._views.$default.controller).toBe("FooController");
+  });
+
+  it("should not allow state-level view fields together with views", function () {
+    expect(() =>
+      builder._build({
+        name: "foo",
+        self: {},
+        parent: parent,
+        template: "hello",
+        views: { main: { controller: "FooController" } },
+      }),
+    ).toThrow();
   });
 
   it("should not allow a view config with both component and template keys", function () {

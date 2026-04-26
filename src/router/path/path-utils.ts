@@ -56,7 +56,7 @@ export class PathUtils {
   /**
    * Creates ViewConfig objects and adds to nodes.
    *
-   * On each [[PathNode]], creates ViewConfig objects from the views: property of the node's state
+   * On each [[PathNode]], creates ViewConfig objects from the node state's built view declarations.
    * @param {ViewService} $view
    * @param {PathNode[]} path
    * @param {StateObject[]} states
@@ -70,21 +70,21 @@ export class PathUtils {
     path
       .filter((node) => states.includes(node.state))
       .forEach((node) => {
-        const viewDecls = values(node.state.views || {});
+        const viewDecls = values(node.state._views || {});
 
         const subPath = PathUtils.subPath(path, (x) => x === node);
 
         if (!subPath) {
-          node.views = [];
+          node._views = [];
 
           return;
         }
 
         const viewConfigs = viewDecls.map((view) => {
-          return $view.createViewConfig(subPath, view);
+          return $view._createViewConfig(subPath, view);
         });
 
-        node.views = viewConfigs.reduce(unnestR, []);
+        node._views = viewConfigs.reduce(unnestR, []);
       });
   }
 

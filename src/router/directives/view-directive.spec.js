@@ -187,18 +187,6 @@ describe("ngView", () => {
       expect(elem.querySelector("ng-view").textContent).toBe(aState.template);
     });
 
-    it("named ng-view should be replaced with the template of the current $state", async () => {
-      elem.innerHTML = '<div><ng-view name="cview"></ng-view></div>';
-      $compile(elem)(scope);
-
-      $state.transitionTo(cState);
-      await wait(100);
-
-      expect(elem.querySelector("ng-view").textContent).toBe(
-        cState.views.cview.template,
-      );
-    });
-
     it("ng-view should be updated after transition to another state", async () => {
       elem.innerHTML = "<div><ng-view></ng-view></div>";
       $compile(elem)(scope);
@@ -215,22 +203,30 @@ describe("ngView", () => {
       expect(elem.querySelector("ng-view").textContent).toBe(bState.template);
     });
 
-    it("should handle NOT nested ng-views", async () => {
-      elem.innerHTML =
-        '<div><ng-view name="dview1" class="dview1"></ng-view><ng-view name="dview2" class="dview2"></ng-view></div>';
+    it("named ng-view should be replaced with a named view declaration", async () => {
+      elem.innerHTML = '<div><ng-view name="cview"></ng-view></div>';
       $compile(elem)(scope);
-      expect(elem.querySelectorAll("ng-view")[0].textContent).toBe("");
-      expect(elem.querySelectorAll("ng-view")[1].textContent).toBe("");
+
+      $state.transitionTo(cState);
+      await wait(100);
+
+      expect(elem.querySelector("ng-view").textContent).toBe(
+        cState.views.cview.template,
+      );
+    });
+
+    it("should handle sibling named ng-views", async () => {
+      elem.innerHTML =
+        '<div><ng-view name="dview1"></ng-view><ng-view name="dview2"></ng-view></div>';
+      $compile(elem)(scope);
 
       $state.transitionTo(dState);
       await wait(100);
 
-      expect(elem.querySelectorAll("ng-view")[0].textContent).toBe(
-        dState.views.dview1.template,
-      );
-      expect(elem.querySelectorAll("ng-view")[1].textContent).toBe(
-        dState.views.dview2.template,
-      );
+      const ngViews = elem.querySelectorAll("ng-view");
+
+      expect(ngViews[0].textContent).toBe(dState.views.dview1.template);
+      expect(ngViews[1].textContent).toBe(dState.views.dview2.template);
     });
 
     it("should handle nested ng-views (testing two levels deep)", async () => {
@@ -244,6 +240,48 @@ describe("ngView", () => {
       expect(elem.querySelector("ng-view").textContent).toBe(
         fState.views.eview.template,
       );
+    });
+
+    it("should support named and relative view targets", async () => {
+      $stateProvider
+        .state({
+          name: "app",
+          template: '<ng-view name="mymessages"></ng-view>',
+        })
+        .state({
+          name: "app.mymessages",
+          views: {
+            mymessages: {
+              template:
+                '<section><ng-view name="messagelist"></ng-view><ng-view name="messagecontent"></ng-view></section>',
+            },
+          },
+        })
+        .state({
+          name: "app.mymessages.messagelist",
+          views: {
+            messagelist: {
+              template: "message list",
+            },
+          },
+        })
+        .state({
+          name: "app.mymessages.messagelist.message",
+          views: {
+            "^.^.messagecontent": {
+              template: "message content",
+            },
+          },
+        });
+
+      elem.innerHTML = "<div><ng-view></ng-view></div>";
+      $compile(elem)(scope);
+
+      $state.transitionTo("app.mymessages.messagelist.message");
+      await wait(100);
+
+      expect(elem.textContent).toContain("message list");
+      expect(elem.textContent).toContain("message content");
     });
   });
 
@@ -523,16 +561,15 @@ describe("ngView", () => {
     });
 
     it("should not allow both view-level resolveAs and state-level resolveAs on the same state", async () => {
-      const views = {
-        $default: {
-          controller: controller,
-          template: "{{$$$resolve.user}}",
-          resolveAs: "$$$resolve",
-        },
-      };
       const state = Object.assign(_state, {
         resolveAs: "foo",
-        views: views,
+        views: {
+          $default: {
+            controller: controller,
+            template: "{{$$$resolve.user}}",
+            resolveAs: "$$$resolve",
+          },
+        },
       });
       expect(() => $stateProvider.state(state)).toThrowError(/resolveAs/);
     });
@@ -619,7 +656,7 @@ describe("ngView", () => {
     describe("working with ngRepeat", () => {
       it("should have correct number of ngViews", async () => {
         elem.innerHTML =
-          '<div><ng-view ng-repeat="view in views" name="{{view}}"></ng-view></div>';
+          '<div><ng-view ng-repeat="view in views"></ng-view></div>';
         $compile(elem)(scope);
         await wait();
         // Should be no ng-views in DOM
@@ -650,133 +687,7 @@ describe("ngView", () => {
           scope.views.length,
         );
       });
-
-      it("should populate each view with content", async () => {
-        elem.innerHTML =
-          '<div><ng-view ng-repeat="view in views" name="{{view}}">defaultcontent</ng-view></div>';
-        $compile(elem)(scope);
-        $state.transitionTo(lState);
-        await wait(100);
-
-        expect(elem.querySelectorAll("ng-view").length).toBe(0);
-
-        scope.views = ["view1", "view2"];
-        await wait(100);
-        let ngViews = elem.querySelectorAll("ng-view");
-        expect(Array.from(ngViews, (view) => view.textContent).sort()).toEqual([
-          "view1",
-          "view2",
-        ]);
-        expect(ngViews.length).toBe(2);
-
-        scope.views.push("view3");
-        await wait(100);
-        ngViews = elem.querySelectorAll("ng-view");
-        expect(Array.from(ngViews, (view) => view.textContent).sort()).toEqual([
-          "view1",
-          "view2",
-          "view3",
-        ]);
-      });
-
-      it("should interpolate ng-view names", async () => {
-        elem.innerHTML =
-          '<div ng-repeat="view in views">' +
-          '<ng-view name="view{{$index + 1}}">hallo</ng-view>' +
-          "</div>";
-        $compile(elem)(scope);
-
-        await wait(100);
-        $state.transitionTo(lState);
-        await wait(100);
-
-        expect(elem.querySelectorAll("ng-view").length).toBe(0);
-
-        scope.views = ["view1", "view2"];
-        await wait(100);
-        let ngViews = elem.querySelectorAll("ng-view");
-        expect(ngViews.length).toBe(2);
-        expect(ngViews.length).toBe(2);
-
-        scope.views.push("view3");
-        await wait(100);
-        ngViews = elem.querySelectorAll("ng-view");
-        expect(ngViews.length).toBe(3);
-      });
     });
-  });
-});
-
-describe("ngView named", () => {
-  let $stateProvider,
-    scope,
-    $compile,
-    elem = document.getElementById("app"),
-    log,
-    app,
-    $injector,
-    $state,
-    $rootScope,
-    $anchorScroll;
-
-  beforeEach(() => {
-    dealoc(document.getElementById("app"));
-    window.angular = new Angular();
-    log = "";
-    app = window.angular
-      .module("defaultModule", [])
-      .config((_$stateProvider_) => {
-        $stateProvider = _$stateProvider_;
-        $stateProvider
-          .state({ name: "main", abstract: true, views: { main: {} } })
-          .state({
-            name: "main.home",
-            views: { content: { template: "HOME" } },
-          })
-          .state({ name: "test", views: { nest: { template: "TEST" } } });
-      });
-
-    $injector = window.angular.bootstrap(document.getElementById("app"), [
-      "defaultModule",
-    ]);
-
-    $injector.invoke((_$state_, _$rootScope_, _$compile_, _$anchorScroll_) => {
-      $rootScope = _$rootScope_;
-      scope = $rootScope.$new();
-      $compile = _$compile_;
-      $state = _$state_;
-      $anchorScroll = _$anchorScroll_;
-    });
-  });
-
-  // TODO targetNode not found
-  it("shouldn't puke on weird nested view setups", async () => {
-    elem.innerHTML = '<div ng-view="main"><div ng-view="content"></div></div>';
-    $compile(elem)($rootScope);
-    await $state.go("main.home");
-    await wait(100);
-
-    expect($state.current.name).toBe("main.home");
-  });
-
-  it("should target weird nested view setups using the view's simple name", async () => {
-    elem.innerHTML = `
-      <div>
-        <div ng-view="main">
-          MAIN-DEFAULT-
-          <div ng-view="content">
-            <div ng-view="nest"></div>
-          </div>
-        </div>
-      </div>
-    `;
-    $compile(elem)($rootScope);
-
-    $state.go("test");
-    await wait(200);
-
-    expect($state.current.name).toBe("test");
-    expect(elem.textContent.replace(/\s*/g, "")).toContain("MAIN-DEFAULT-");
   });
 });
 
@@ -856,19 +767,15 @@ describe("ngView controllers or onEnter handlers", () => {
           .state({
             name: "A",
             url: "/A",
-            template: '<div class="A" ng-view="fwd"></div>',
+            template: '<div class="A" ng-view></div>',
           })
           .state({
             name: "A.fwd",
             url: "/fwd",
-            views: {
-              fwd: {
-                template: '<div class="fwd" ng-view>',
-                controller: function ($state) {
-                  if (count++ < 20 && $state.current.name == "A.fwd")
-                    $state.go(".nest");
-                },
-              },
+            template: '<div class="fwd" ng-view>',
+            controller: function ($state) {
+              if (count++ < 20 && $state.current.name == "A.fwd")
+                $state.go(".nest");
             },
           })
           .state({
@@ -1278,6 +1185,26 @@ describe("angular 1.5+ style .component()", () => {
       expect(el.textContent).toBe("-DATA!-");
     });
 
+    it("should support string component shorthand in named views", async () => {
+      $stateProvider.state({
+        name: "namedComponentView",
+        views: {
+          header: "header",
+        },
+        resolve: {
+          status: () => "ready",
+        },
+      });
+
+      el.innerHTML = '<div><ng-view name="header"></ng-view></div>';
+      svcs.$compile(el)(scope);
+
+      await svcs.$state.transitionTo("namedComponentView");
+      await wait(100);
+
+      expect(el.textContent).toBe("#ready#");
+    });
+
     it("should clear ng-view when routing to a component whose templateUrl was already fetched elsewhere", async () => {
       $stateProvider.state({
         name: "route2cmp",
@@ -1610,100 +1537,6 @@ describe("angular 1.5+ style .component()", () => {
       expect(log).toEqual([]);
       el.querySelector("button").click();
       expect(log).toEqual([123, 456]);
-    });
-  });
-
-  describe("+ named views with component: declaration", () => {
-    let stateDef;
-    beforeEach(() => {
-      stateDef = {
-        name: "route2cmp",
-        url: "/route2cmp",
-        views: {
-          header: { component: "header" },
-          content: { component: "ngComponent" },
-        },
-        resolve: {
-          status: () => {
-            return "awesome";
-          },
-          data: () => {
-            return "DATA!";
-          },
-        },
-      };
-
-      el = createElementFromHTML(
-        '<div><div ng-view="header"></div><div ng-view="content"</div>',
-      );
-      svcs.$compile(el)(scope);
-    });
-
-    it("should disallow controller/template configuration in the view", () => {
-      expect(() => {
-        $stateProvider.state(stateDef);
-      }).not.toThrow();
-      expect(() => {
-        const state = Object.assign({}, stateDef);
-        state.views.header.template = "fails";
-        $stateProvider.state(state);
-      }).toThrow();
-    });
-
-    it("should render components as views", async () => {
-      $stateProvider.state(stateDef);
-      const $state = svcs.$state;
-
-      $templateCache.set("/comp_tpl.html", "-{{ $ctrl.data }}-");
-      $state.transitionTo("route2cmp");
-      await wait(100);
-
-      const header = el.querySelector("[ng-view=header]");
-      const content = el.querySelector("[ng-view=content]");
-
-      expect(header.textContent).toBe("#awesome#");
-      expect(content.textContent).toBe("-DATA!-");
-    });
-
-    it("should allow a component view declaration to use a string as a shorthand", async () => {
-      stateDef = {
-        name: "route2cmp",
-        url: "/route2cmp",
-        views: { header: "header", content: "ngComponent" },
-        resolve: {
-          status: () => {
-            return "awesome";
-          },
-          data: () => {
-            return "DATA!";
-          },
-        },
-      };
-      $stateProvider.state(stateDef);
-      const $state = svcs.$state;
-
-      $templateCache.set("/comp_tpl.html", "-{{ $ctrl.data }}-");
-      $state.transitionTo("route2cmp");
-      await wait(100);
-
-      const header = el.querySelector("[ng-view=header]");
-      const content = el.querySelector("[ng-view=content]");
-
-      expect(header.textContent).toBe("#awesome#");
-      expect(content.textContent).toBe("-DATA!-");
-    });
-
-    it("should allow different states to reuse view declaration", () => {
-      const views = {
-        header: { component: "header" },
-        content: { component: "ngComponent" },
-      };
-
-      const stateDef1 = { name: "def1", url: "/def1", views: views };
-      const stateDef2 = { name: "def2", url: "/def2", views: views };
-
-      $stateProvider.state(stateDef1);
-      $stateProvider.state(stateDef2);
     });
   });
 

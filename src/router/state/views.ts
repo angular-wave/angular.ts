@@ -103,60 +103,43 @@ export class ViewConfig {
   }
 
   /**
-   * Normalizes a view's name from a state.views configuration block.
-   *
-   * This calculates the values for
-   * [[_ViewDeclaration.$ngViewName]] and [[_ViewDeclaration.$ngViewContextAnchor]].
-   *
-   * @param {StateObject} context the context object (state declaration) that the view belongs to
-   * @param {string} rawViewName the name of the view, as declared in the [[StateDeclaration.views]]
-   *
-   * @returns the normalized ngViewName and ngViewContextAnchor that the view targets
+   * Normalizes a view target from a `StateDeclaration.views` key.
    */
-  static normalizeUIViewTarget(
+  static normalizeNgViewTarget(
     context: StateObject,
     rawViewName = "",
   ): { ngViewName: string; ngViewContextAnchor: string } {
-    // TODO: Validate incoming view name with a regexp to allow:
-    // ex: "view.name@foo.bar" , "^.^.view.name" , "view.name@^.^" , "" ,
-    // "@" , "$default@^" , "!$default.$default" , "!foo.bar"
     const viewAtContext = rawViewName.split("@");
 
-    let ngViewName = viewAtContext[0] || "$default"; // default to unnamed view
+    let ngViewName = viewAtContext[0] || "$default";
 
     let ngViewContextAnchor = isString(viewAtContext[1])
       ? viewAtContext[1]
-      : "^"; // default to parent context
+      : "^";
 
-    // Handle relative view-name sugar syntax.
-    // Matches rawViewName "^.^.^.foo.bar" into array: ["^.^.^.foo.bar", "^.^.^", "foo.bar"],
     const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
 
     if (relativeViewNameSugar) {
-      // Clobbers existing contextAnchor (rawViewName validation will fix this)
-      ngViewContextAnchor = relativeViewNameSugar[1]; // set anchor to "^.^.^"
-      ngViewName = relativeViewNameSugar[2]; // set view-name to "foo.bar"
+      ngViewContextAnchor = relativeViewNameSugar[1];
+      ngViewName = relativeViewNameSugar[2];
     }
 
     if (ngViewName.charAt(0) === "!") {
       ngViewName = ngViewName.substring(1);
-      ngViewContextAnchor = ""; // target absolutely from root
+      ngViewContextAnchor = "";
     }
-    // handle parent relative targeting "^.^.^"
+
     const relativeMatch = /^(\^(?:\.\^)*)$/;
 
     if (relativeMatch.exec(ngViewContextAnchor)) {
       let anchorState: StateObject | null | undefined = context;
 
-      // "^.^.^" -> ["^", "^", "^"] (count how many times we go up)
       const hops = ngViewContextAnchor.split(".").filter(Boolean).length;
 
       for (let i = 0; i < hops; i++) {
         anchorState = anchorState && anchorState.parent;
       }
 
-      // If the anchor goes past the root, fall back to the root-most known state
-      // (or keep `context` if you prefer different behavior).
       if (!anchorState) {
         anchorState = context;
 

@@ -79,7 +79,7 @@ export const defaultTransOpts: TransitionOptions = {
  *
  * Note: In this codebase, `$get` returns the provider instance (`return this;`),
  * so the "service" surface includes both the public HookRegistry API and
- * a set of internal fields/methods used by built-in hook registrations/plugins.
+ * a set of internal fields/methods used by built-in hook registrations.
  */
 export interface TransitionService extends HookRegistry {
   /**
@@ -103,6 +103,13 @@ export interface TransitionService extends HookRegistry {
    * @internal Return event types, optionally filtered by phase, sorted by phase/order.
    */
   _getEvents(phase?: TransitionHookPhase): TransitionEventType[];
+
+  /** @internal Register a transition-construction hook used by built-ins. */
+  _onCreate(
+    matchCriteria: HookMatchCriteria,
+    callback: HookFn,
+    options?: HookRegOptions,
+  ): DeregisterFn;
 
   /** @internal Return the defined path types */
   _getPathTypes(): PathTypes;
@@ -363,9 +370,10 @@ export class TransitionProvider implements TransitionService {
   }
 
   /**
-   * Registers an `onCreate` transition hook.
+   * Registers an internal hook that runs while a transition is being constructed.
    */
-  onCreate(
+  /** @internal */
+  _onCreate(
     matchCriteria: HookMatchCriteria,
     callback: HookFn,
     options?: HookRegOptions,
@@ -531,7 +539,7 @@ function registerUpdateUrl(
 function registerUpdateGlobalState(
   transitionService: TransitionService,
 ): DeregisterFn {
-  return transitionService.onCreate({}, (trans: Transition) => {
+  return transitionService._onCreate({}, (trans: Transition) => {
     const globals = trans._globals;
 
     const transitionSuccessful = (): void => {

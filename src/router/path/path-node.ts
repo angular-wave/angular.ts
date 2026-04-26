@@ -19,7 +19,8 @@ export class PathNode {
   paramSchema: Param[];
   paramValues: RawParams;
   resolvables: Resolvable[];
-  views?: ViewConfig[];
+  /** @internal */
+  _views?: ViewConfig[];
 
   /**
    * @param {PathNode | ng.StateObject | undefined} stateOrNode
@@ -32,7 +33,7 @@ export class PathNode {
       this.paramSchema = node.paramSchema.slice();
       this.paramValues = Object.assign({}, node.paramValues);
       this.resolvables = node.resolvables.slice();
-      this.views = node.views && node.views.slice();
+      this._views = node._views && node._views.slice();
     } else {
       const state = stateOrNode;
 

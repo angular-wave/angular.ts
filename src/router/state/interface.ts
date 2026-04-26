@@ -67,16 +67,11 @@ export type StateResolveArray = ResolvableLiteral[];
 export type RawViewConfig = ViewDeclaration | string;
 
 /**
- * Public view options shared by state-level single-view shorthand and named view declarations.
- *
- * States may declare these properties directly when targeting the implicit `$default` view.
- * Named views declared inside `views` use the same option surface.
+ * Public view options shared by state-level view shorthand and named view declarations.
  */
 export interface ViewDeclarationCommon {
   /**
    * The name of the component to use for this view.
-   *
-   * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
    *
    * The name of an [angular 1.5+ `.component()`](https://docs.angularjs.org/guide/component) (or directive with
    * bindToController and/or scope declaration) which will be used for this view.
@@ -87,34 +82,13 @@ export interface ViewDeclarationCommon {
    * is provided to the component as a one-time-binding.  In general, components should likewise declare their
    * input bindings as [one-way ("&lt;")](https://docs.angularjs.org/api/ng/service/$compile#-scope-).
    *
-   * Note: inside a "views:" block, a bare string `"foo"` is shorthand for `{ component: "foo" }`
-   *
    * Note: Mapping from resolve names to component inputs may be specified using [[bindings]].
    *
    * #### Example:
    * ```js
    * .state('profile', {
-   *   // Use the <my-profile></my-profile> component for the Unnamed view
+   *   // Use the <my-profile></my-profile> component for this state.
    *   component: 'MyProfile',
-   * }
-   *
-   * .state('messages', {
-   *   // use the <nav-bar></nav-bar> component for the view named 'header'
-   *   // use the <message-list></message-list> component for the view named 'content'
-   *   views: {
-   *     header: { component: 'NavBar' },
-   *     content: { component: 'MessageList' }
-   *   }
-   * }
-   *
-   * .state('contacts', {
-   *   // Inside a "views:" block, a bare string "NavBar" is shorthand for { component: "NavBar" }
-   *   // use the <nav-bar></nav-bar> component for the view named 'header'
-   *   // use the <contact-list></contact-list> component for the view named 'content'
-   *   views: {
-   *     header: 'NavBar',
-   *     content: 'ContactList'
-   *   }
    * }
    * ```
    *
@@ -129,8 +103,6 @@ export interface ViewDeclarationCommon {
 
   /**
    * An object which maps `resolve`s to [[component]] `bindings`.
-   *
-   * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
    *
    * When using a [[component]] declaration (`component: 'myComponent'`), each input binding for the component is supplied
    * data from a resolve of the same name, by default.  You may supply data from a different resolve name by mapping it here.
@@ -172,8 +144,6 @@ export interface ViewDeclarationCommon {
   /**
    * Dynamic component provider function.
    *
-   * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
-   *
    * This is an injectable provider function which returns the name of the component to use.
    * The provider will invoked during a Transition in which the view's state is entered.
    * The provider is called after the resolve data is fetched.
@@ -194,8 +164,6 @@ export interface ViewDeclarationCommon {
   /**
    * The view's controller function or name
    *
-   * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
-   *
    * The controller function, or the name of a registered controller.  The controller function will be used
    * to control the contents of the [[directives.ngVIew]] directive.
    *
@@ -209,8 +177,6 @@ export interface ViewDeclarationCommon {
   /**
    * A controller alias name.
    *
-   * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
-   *
    * If present, the controller will be published to scope under the `controllerAs` name.
    * See: https://docs.angularjs.org/api/ng/directive/ngController
    */
@@ -218,8 +184,6 @@ export interface ViewDeclarationCommon {
 
   /**
    * Dynamic controller provider function.
-   *
-   * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
    *
    * This is an injectable provider function which returns the actual controller function, or the name
    * of a registered controller.  The provider will invoked during a Transition in which the view's state is
@@ -245,8 +209,6 @@ export interface ViewDeclarationCommon {
   /**
    * The scope variable name to use for resolve data.
    *
-   * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
-   *
    * When a view is activated, the resolved data for the state which the view belongs to is put on the scope.
    * This property sets the name of the scope variable to use for the resolved data.
    *
@@ -256,8 +218,6 @@ export interface ViewDeclarationCommon {
 
   /**
    * The HTML template for the view.
-   *
-   * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
    *
    * HTML template as a string, or a function which returns an html template as a string.
    * This template will be used to render the corresponding [[directives.ngVIew]] directive.
@@ -283,8 +243,6 @@ export interface ViewDeclarationCommon {
   /**
    * The URL for the HTML template for the view.
    *
-   * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
-   *
    * A path or a function that returns a path to an html template.
    * The template will be fetched and used to render the corresponding [[directives.ngVIew]] directive.
    *
@@ -306,10 +264,6 @@ export interface ViewDeclarationCommon {
 
   /**
    * Injected function which returns the HTML template.
-   *
-   * A property of [[StateDeclaration]] or [[ViewDeclaration]]:
-   *
-   * Injected function which returns the HTML template.
    * The template will be used to render the corresponding [[directives.ngVIew]] directive.
    *
    * #### Example:
@@ -329,19 +283,15 @@ export interface ViewDeclarationCommon {
  */
 export interface ViewDeclaration extends ViewDeclarationCommon {
   /**
-   * The raw name for the view declaration, i.e., the [[StateDeclaration.views]] property name.
+   * The raw view declaration name from [[StateDeclaration.views]].
    */
   $name?: string;
 
   /**
    * The normalized address for the `ng-view` which this ViewConfig targets.
    *
-   * A ViewConfig targets a `ng-view` in the DOM (relative to the `ngVIewContextAnchor`) which has
-   * a specific name.
-   * @example `header` or `$default`
-   *
-   * The `ngVIewName` can also target a _nested view_ by providing a dot-notation address
-   * @example `foo.bar` or `foo.$default.bar`
+   * A ViewConfig targets an `ng-view` in the DOM relative to the `$ngViewContextAnchor`.
+   * @example `header`, `messagecontent`, or `$default`
    */
   $ngViewName?: string;
 
@@ -447,6 +397,23 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * @internal
    */
   _state?: () => BuiltStateDeclaration;
+
+  /**
+   * Named view declarations for this state.
+   *
+   * Each key targets an `ng-view`; each value is either a full view declaration or
+   * a string shorthand for `{ component: "componentName" }`.
+   *
+   * Examples:
+   * ```js
+   * views: {
+   *   mymessages: "mymessages",
+   *   messagelist: { component: "messageList" },
+   *   "^.^.messagecontent": "message"
+   * }
+   * ```
+   */
+  views?: Record<string, RawViewConfig>;
 
   /**
    * Resolve - a mechanism to asynchronously fetch data, participating in the Transition lifecycle
@@ -612,53 +579,6 @@ export interface StateDeclaration extends ViewDeclarationCommon {
    * ```
    */
   params?: { [key: string]: ParamDeclaration | any };
-
-  /**
-   * Named views
-   *
-   * An optional object which defines multiple views, or explicitly targets specific named ng-views.
-   *
-   * - What is a view urlConfig
-   * - What is a ng-view
-   * - Shorthand controller/template
-   * - Incompatible with ^
-   *
-   *  Examples:
-   *
-   *  Targets three named ng-views in the parent state's template
-   *
-   * #### Example:
-   * ```js
-   * views: {
-   *   header: {
-   *     controller: "headerCtrl",
-   *     templateUrl: "header.html"
-   *   }, body: {
-   *     controller: "bodyCtrl",
-   *     templateUrl: "body.html"
-   *   }, footer: {
-   *     controller: "footCtrl",
-   *     templateUrl: "footer.html"
-   *   }
-   * }
-   * ```
-   *
-   * @example
-   * ```js
-   * // Targets named ng-view="header" from ancestor state 'top''s template, and
-   * // named `ng-view="body" from parent state's template.
-   * views: {
-   *   'header@top': {
-   *     controller: "msgHeaderCtrl",
-   *     templateUrl: "msgHeader.html"
-   *   }, 'body': {
-   *     controller: "messagesCtrl",
-   *     templateUrl: "messages.html"
-   *   }
-   * }
-   * ```
-   */
-  views?: Record<string, RawViewConfig>;
 
   /**
    * An inherited property to store state data

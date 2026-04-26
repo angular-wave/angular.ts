@@ -626,7 +626,7 @@ export class Transition {
   /**
    * Get the [[ViewConfig]]s associated with this Transition
    *
-   * Each state can define one or more views (template/controller), which are encapsulated as `ViewConfig` objects.
+   * Each entered state's view declaration is encapsulated as a `ViewConfig` object.
    * This method fetches the `ViewConfigs` for a given path in the Transition (e.g., "to" or "entering").
    *
    * @param pathname the name of the path to fetch views for:
@@ -640,7 +640,7 @@ export class Transition {
 
     path = !state ? path : (path.filter(propEq("state", state)) as PathNode[]);
 
-    return path.map((x) => x.views || []).reduce(unnestR, []);
+    return path.map((x) => x._views || []).reduce(unnestR, []);
   }
 
   /**

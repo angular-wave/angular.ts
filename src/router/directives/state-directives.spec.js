@@ -741,12 +741,8 @@ describe("ngSrefActive", () => {
         .state({
           name: "contacts",
           url: "/contacts",
-          views: {
-            $default: {
-              template:
-                '<a ng-sref=".item({ id: 6 })" ng-sref-active="active">Contacts</a>',
-            },
-          },
+          template:
+            '<a ng-sref=".item({ id: 6 })" ng-sref-active="active">Contacts</a>',
         })
         .state({ name: "contacts.item", url: "/:id" })
         .state({ name: "contacts.item.detail", url: "/detail/:foo" })

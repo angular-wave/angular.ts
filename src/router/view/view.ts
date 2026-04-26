@@ -6,13 +6,14 @@ import type { ViewDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
 import type { TemplateFactoryProvider } from "../template-factory.ts";
 
-/** The context ref can be anything that has a `name` and a `parent` reference to another IContextRef */
+/** @internal */
 export interface ViewContext {
   name: string;
   parent: ViewContext;
 }
 
-export interface ActiveUIView {
+/** @internal */
+export interface ActiveNgView {
   /** An auto-incremented id */
   id: number;
   /** The ng-view short name */
@@ -27,12 +28,6 @@ export interface ActiveUIView {
   configUpdated: (config: ViewConfig | undefined) => void;
 }
 
-// An ngView and its matching viewConfig
-export interface ViewTuple {
-  ngView: ActiveUIView | undefined;
-  viewConfig: ViewConfig | undefined;
-}
-
 export type { ViewConfig } from "../state/views.ts";
 
 const FQN_MULTIPLIER = 10_000;
@@ -43,11 +38,9 @@ const FQN_MULTIPLIER = 10_000;
  */
 export class ViewService {
   /** @internal */
-  _ngViews: ActiveUIView[];
+  _ngViews: ActiveNgView[];
   /** @internal */
   _viewConfigs: ViewConfig[];
-  /** @internal */
-  _listeners: Array<(tuples: ViewTuple[]) => void>;
   /** @internal */
   _templateFactory: TemplateFactoryProvider | undefined;
   /** @internal */
@@ -59,7 +52,6 @@ export class ViewService {
   constructor() {
     this._ngViews = [];
     this._viewConfigs = [];
-    this._listeners = [];
     this._templateFactory = undefined;
     this._rootContext = undefined;
   }
@@ -76,16 +68,11 @@ export class ViewService {
     },
   ];
 
-  onSync(listener: (tuples: ViewTuple[]) => void): () => void {
-    this._listeners.push(listener);
-
-    return () => removeFrom(this._listeners, listener);
-  }
-
   /**
    * Gets or sets the root view context used for relative `ng-view` targeting.
    */
-  rootViewContext(
+  /** @internal */
+  _rootViewContext(
     context?: StateObject | null,
   ): StateObject | null | undefined {
     return (this._rootContext = context || this._rootContext);
@@ -94,7 +81,8 @@ export class ViewService {
   /**
    * Builds a view config for one view declaration along the specified path.
    */
-  createViewConfig(path: PathNode[], decl: ViewDeclaration): ViewConfig {
+  /** @internal */
+  _createViewConfig(path: PathNode[], decl: ViewDeclaration): ViewConfig {
     const templateFactory = this._templateFactory;
 
     if (!templateFactory) {
@@ -107,23 +95,26 @@ export class ViewService {
   /**
    * Removes a view config from the active registry.
    */
-  deactivateViewConfig(viewConfig: ViewConfig): void {
+  /** @internal */
+  _deactivateViewConfig(viewConfig: ViewConfig): void {
     removeFrom(this._viewConfigs, viewConfig);
   }
 
   /**
    * Adds a view config to the active registry.
    */
-  activateViewConfig(viewConfig: ViewConfig): void {
+  /** @internal */
+  _activateViewConfig(viewConfig: ViewConfig): void {
     this._viewConfigs.push(viewConfig);
   }
 
   /**
    * Re-matches active `ng-view` instances against currently registered view configs
-   * and notifies both the views and registered listeners of the new assignments.
+   * and notifies each view when its config assignment changes.
    */
-  sync(): void {
-    const ngViewsByFqn: Record<string, ActiveUIView> = {};
+  /** @internal */
+  _sync(): void {
+    const ngViewsByFqn: Record<string, ActiveNgView> = {};
 
     for (let i = 0; i < this._ngViews.length; i++) {
       const ngView = this._ngViews[i];
@@ -144,9 +135,9 @@ export class ViewService {
       return depth;
     };
 
-    const ngViewDepthCache = new Map<ActiveUIView, number>();
+    const ngViewDepthCache = new Map<ActiveNgView, number>();
 
-    const ngViewDepth = (ngView: ActiveUIView): number => {
+    const ngViewDepth = (ngView: ActiveNgView): number => {
       const cached = ngViewDepthCache.get(ngView);
 
       if (cached !== undefined) return cached;
@@ -182,14 +173,10 @@ export class ViewService {
 
     this._ngViews.sort((left, right) => ngViewDepth(left) - ngViewDepth(right));
 
-    const matchedViewConfigs = new Set<ViewConfig>();
-
-    const ngViewTuples: ViewTuple[] = [];
-
     for (let i = 0; i < this._ngViews.length; i++) {
       const ngView = this._ngViews[i];
 
-      const matches = ViewService.matches(ngViewsByFqn, ngView);
+      const matches = ViewService._matches(ngViewsByFqn, ngView);
 
       let selectedViewConfig: ViewConfig | undefined = undefined;
 
@@ -208,44 +195,21 @@ export class ViewService {
         }
       }
 
-      if (selectedViewConfig) {
-        matchedViewConfigs.add(selectedViewConfig);
-      }
-
-      ngViewTuples.push({ ngView, viewConfig: selectedViewConfig });
-    }
-
-    const unmatchedConfigTuples: ViewTuple[] = [];
-
-    for (let i = 0; i < this._viewConfigs.length; i++) {
-      const viewConfig = this._viewConfigs[i];
-
-      if (!matchedViewConfigs.has(viewConfig)) {
-        unmatchedConfigTuples.push({ ngView: undefined, viewConfig });
+      if (this._ngViews.indexOf(ngView) !== -1) {
+        ngView.configUpdated(selectedViewConfig);
       }
     }
-
-    for (let i = 0; i < ngViewTuples.length; i++) {
-      const tuple = ngViewTuples[i];
-
-      if (tuple.ngView && this._ngViews.indexOf(tuple.ngView) !== -1) {
-        tuple.ngView.configUpdated(tuple.viewConfig);
-      }
-    }
-
-    const allTuples = ngViewTuples.concat(unmatchedConfigTuples);
-
-    this._listeners.forEach((cb) => cb(allTuples));
   }
 
   /**
    * Registers one active `ng-view` and returns a deregistration function.
    */
-  registerUIView(ngView: ActiveUIView): () => void {
+  /** @internal */
+  _registerNgView(ngView: ActiveNgView): () => void {
     const ngViews = this._ngViews;
 
     ngViews.push(ngView);
-    this.sync();
+    this._sync();
 
     return () => {
       const idx = ngViews.indexOf(ngView);
@@ -255,45 +219,22 @@ export class ViewService {
       }
 
       ngViews.splice(idx, 1);
-      this.sync();
+      this._sync();
     };
-  }
-
-  /**
-   * Returns the currently registered view configs.
-   */
-  available(): ViewConfig[] {
-    return this._viewConfigs;
-  }
-
-  static normalizeUIViewTarget(
-    context: ViewContext,
-    rawViewName = "$default",
-  ): string {
-    const [uiViewName, uiViewContextAnchor = "^"] = rawViewName.split("@");
-
-    let anchor = uiViewContextAnchor;
-
-    if (anchor === "") {
-      anchor = "";
-    } else if (anchor === "^") {
-      anchor = context.parent ? context.parent.name : "";
-    }
-
-    return `${uiViewName || "$default"}@${anchor}`;
   }
 
   /**
    * Builds a predicate that determines whether a view config matches
    * a specific active `ng-view`.
    */
-  static matches(
-    ngViewsByFqn: Record<string, ActiveUIView>,
-    uiView: ActiveUIView,
+  /** @internal */
+  static _matches(
+    ngViewsByFqn: Record<string, ActiveNgView>,
+    ngView: ActiveNgView,
   ): (viewConfig: ViewConfig) => boolean {
-    const uiViewFqn = uiView.fqn;
+    const ngViewFqn = ngView.fqn;
 
-    const uiViewContext = uiView.creationContext;
+    const ngViewContext = ngView.creationContext;
 
     return (viewConfig: ViewConfig): boolean => {
       if (!viewConfig || !viewConfig.viewDecl) return false;
@@ -303,18 +244,18 @@ export class ViewService {
 
       const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
 
-      if (normalizedTarget !== uiViewFqn) return false;
+      if (normalizedTarget !== ngViewFqn) return false;
 
       const viewContext = viewConfig.viewDecl.$context as ViewContext;
 
       if (
-        !equals(viewContext, uiViewContext) &&
-        vcContext !== uiViewContext.name
+        !equals(viewContext, ngViewContext) &&
+        vcContext !== ngViewContext.name
       ) {
         return false;
       }
 
-      const childViewFqn = `${normalizedTarget}.${uiView.name}`;
+      const childViewFqn = `${normalizedTarget}.${ngView.name}`;
 
       return !ngViewsByFqn[childViewFqn];
     };
