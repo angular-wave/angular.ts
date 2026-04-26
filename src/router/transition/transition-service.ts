@@ -115,7 +115,8 @@ export interface TransitionService extends HookRegistry {
   _getPathTypes(): PathTypes;
 
   /** @internal view service */
-  $view: ng.ViewService;
+  /** @internal */
+  _view: ng.ViewService;
 
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
@@ -139,8 +140,10 @@ export class TransitionProvider implements TransitionService {
   _registeredHooks: RegisteredHooks;
   /** @internal */
   _criteriaPaths: PathTypes;
-  private globals: ng.RouterProvider;
-  $view: ng.ViewService;
+  /** @internal */
+  _globals: ng.RouterProvider;
+  /** @internal */
+  _view: ng.ViewService;
   /** @internal */
   _deregisterHookFns: Record<string, DeregisterFn | undefined>;
   /** @internal */
@@ -155,8 +158,8 @@ export class TransitionProvider implements TransitionService {
     this._eventTypes = [];
     this._registeredHooks = {};
     this._criteriaPaths = {} as PathTypes;
-    this.globals = globals;
-    this.$view = viewService;
+    this._globals = globals;
+    this._view = viewService;
     this._deregisterHookFns = {};
     this._defineCorePaths();
     this._defineCoreEvents();
@@ -202,7 +205,7 @@ export class TransitionProvider implements TransitionService {
    * Creates a new transition from the current path to a target state.
    */
   create(fromPath: PathNode[], targetState: TargetState): Transition {
-    return new Transition(fromPath, targetState, this, this.globals);
+    return new Transition(fromPath, targetState, this, this._globals);
   }
 
   /**
@@ -525,7 +528,7 @@ function registerUpdateUrl(
 
       urlService.push(
         $state.$current.navigable.url,
-        $state.globals.params,
+        $state._globals.params,
         urlOptions,
       );
     }

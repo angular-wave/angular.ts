@@ -758,8 +758,7 @@ export interface StateDeclaration extends ViewDeclarationCommon {
 }
 
 /**
- * Represents a fully built StateObject, after registration in the StateRegistry
- * and application of all StateBuilder decorators.
+ * Represents a fully built StateObject after registration in the StateRegistry.
  */
 export type BuiltStateDeclaration = StateDeclaration & {
   /** Reference to the original StateDeclaration */

@@ -32,14 +32,22 @@ export class StateRegistryProvider {
     $t._viewProvider,
   ];
 
-  states: StateStore;
-  urlService: ng.UrlService;
-  urlServiceRules: UrlRules;
-  $injector: ng.InjectorService | undefined;
-  listeners: StateRegistryListener[];
-  matcher: StateMatcher;
-  builder: StateBuilder;
-  stateQueue: StateQueueManager;
+  /** @internal */
+  _states: StateStore;
+  /** @internal */
+  _urlService: ng.UrlService;
+  /** @internal */
+  _urlServiceRules: UrlRules;
+  /** @internal */
+  _$injector: ng.InjectorService | undefined;
+  /** @internal */
+  _listeners: StateRegistryListener[];
+  /** @internal */
+  _matcher: StateMatcher;
+  /** @internal */
+  _builder: StateBuilder;
+  /** @internal */
+  _stateQueue: StateQueueManager;
   /** @internal */
   _root!: StateObject;
 
@@ -55,27 +63,27 @@ export class StateRegistryProvider {
     globals: ng.RouterService,
     viewService: ng.ViewService,
   ) {
-    this.states = {};
+    this._states = {};
 
-    stateService.stateRegistry = this; // <- circular wiring
+    stateService._stateRegistry = this; // <- circular wiring
 
-    this.urlService = urlService;
+    this._urlService = urlService;
 
-    this.urlServiceRules = urlService._rules;
+    this._urlServiceRules = urlService._rules;
 
-    this.$injector = undefined;
+    this._$injector = undefined;
 
-    this.listeners = [];
+    this._listeners = [];
 
-    this.matcher = new StateMatcher(this.states);
+    this._matcher = new StateMatcher(this._states);
 
-    this.builder = new StateBuilder(this.matcher, urlService);
+    this._builder = new StateBuilder(this._matcher, urlService);
 
-    this.stateQueue = new StateQueueManager(
-      this.urlServiceRules,
-      this.states,
-      this.builder,
-      this.listeners,
+    this._stateQueue = new StateQueueManager(
+      this._urlServiceRules,
+      this._states,
+      this._builder,
+      this._listeners,
     );
 
     this.registerRoot();
@@ -92,8 +100,8 @@ export class StateRegistryProvider {
      * @returns {StateRegistryProvider}
      */
     ($injector: InjectorService) => {
-      this.$injector = $injector;
-      this.builder._$injector = $injector;
+      this._$injector = $injector;
+      this._builder._$injector = $injector;
 
       return this;
     },
@@ -113,7 +121,7 @@ export class StateRegistryProvider {
       abstract: true,
     };
 
-    this._root = this.stateQueue.register(rootStateDef);
+    this._root = this._stateQueue._register(rootStateDef);
     this._root.navigable = null;
   }
 
@@ -148,10 +156,10 @@ export class StateRegistryProvider {
    * @return a function that deregisters the listener
    */
   onStatesChanged(listener: StateRegistryListener): () => void {
-    this.listeners.push(listener);
+    this._listeners.push(listener);
 
     return () => {
-      removeFrom(this.listeners, listener);
+      removeFrom(this._listeners, listener);
     };
   }
 
@@ -181,7 +189,7 @@ export class StateRegistryProvider {
    *          If the state was only queued, then the object is not fully built.
    */
   register(stateDefinition: _StateDeclaration): StateObject {
-    return this.stateQueue.register(stateDefinition);
+    return this._stateQueue._register(stateDefinition);
   }
 
   /**
@@ -210,7 +218,7 @@ export class StateRegistryProvider {
     const deregistered = [state].concat(children).reverse();
 
     deregistered.forEach((_state) => {
-      const rulesApi = this.urlServiceRules;
+      const rulesApi = this._urlServiceRules;
 
       // Remove URL rule
       rulesApi
@@ -218,7 +226,7 @@ export class StateRegistryProvider {
         .filter(propEq("state", _state))
         .forEach((rule) => rulesApi.removeRule(rule));
       // Remove state from registry
-      delete this.states[_state.name];
+      delete this._states[_state.name];
     });
 
     return deregistered;
@@ -240,7 +248,7 @@ export class StateRegistryProvider {
       throw new Error(`Can't deregister state; not found: ${stateOrName}`);
     const deregisteredStates = this._deregisterTree(state._state());
 
-    this.listeners.forEach((listener) =>
+    this._listeners.forEach((listener) =>
       listener(
         "deregistered",
         deregisteredStates.map((x) => x.self),
@@ -254,8 +262,8 @@ export class StateRegistryProvider {
    * @return {ng.BuiltStateDeclaration[]}
    */
   getAll(): BuiltStateDeclaration[] {
-    return keys(this.states).map(
-      (name) => this.states[name].self as BuiltStateDeclaration,
+    return keys(this._states).map(
+      (name) => this._states[name].self as BuiltStateDeclaration,
     );
   }
 
@@ -270,8 +278,8 @@ export class StateRegistryProvider {
     base?: StateOrName,
   ): StateDeclaration | StateDeclaration[] | null {
     if (arguments.length === 0)
-      return keys(this.states).map((name) => this.states[name].self);
-    const found = this.matcher.find(stateOrName as StateOrName, base);
+      return keys(this._states).map((name) => this._states[name].self);
+    const found = this._matcher.find(stateOrName as StateOrName, base);
 
     return (found && found.self) || null;
   }

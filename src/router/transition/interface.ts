@@ -928,7 +928,8 @@ export interface TransitionService extends HookRegistry {
   _getPathTypes(): PathTypes;
 
   /** @internal view service */
-  $view: ng.ViewService;
+  /** @internal */
+  _view: ng.ViewService;
 
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
