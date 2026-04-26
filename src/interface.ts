@@ -284,7 +284,7 @@ export interface OnInit {
 export interface OnChanges {
   /**
    * Called whenever one-way bindings are updated. The onChangesObj is a hash whose keys are the names of the bound
-   * properties that have changed, and the values are an {@link IChangesObject} object  of the form
+   * properties that have changed, and the values are a {@link ChangesObject} object of the form
    * { currentValue, previousValue, isFirstChange() }. Use this hook to trigger updates within a component such as
    * cloning the bound value to prevent accidental mutation of the outer value.
    */
@@ -340,7 +340,7 @@ export interface Controller {
   $onInit?: () => void;
   /**
    * Called whenever one-way bindings are updated. The onChangesObj is a hash whose keys are the names of the bound
-   * properties that have changed, and the values are an {@link IChangesObject} object  of the form
+   * properties that have changed, and the values are a {@link ChangesObject} object of the form
    * { currentValue, previousValue, isFirstChange() }. Use this hook to trigger updates within a component such as
    * cloning the bound value to prevent accidental mutation of the outer value.
    */

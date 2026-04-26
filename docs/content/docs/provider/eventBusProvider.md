@@ -1,40 +1,27 @@
 ---
-title: $eventBusProvider
-description: >
-  Configuration provider for `$eventBus` service.
+title: "$eventBusProvider"
+description: "Configure the application-wide $eventBus service."
 ---
 
-### Description
+`$eventBusProvider` creates the injectable `$eventBus` singleton and exposes the
+same instance through the global Angular service for integrations outside
+dependency injection.
 
-Instance of [PubSubProvider](../../../typedoc/classes/PubSubProvider.html) for
-configuring the `$eventBus` service. The default implementation returns the
-global [angular.EventBus](../../../typedoc/classes/Angular.html#eventbus) instance, which is an async instance of
-[PubSub](../../../typedoc/classes/PubSub.html) class.
+Exact signatures live in TypeDoc:
 
-### Properties
+- [`PubSubProvider`](../../../typedoc/classes/PubSubProvider.html)
+- [`PubSub`](../../../typedoc/classes/PubSub.html)
 
----
+## Replace The Bus
 
-#### $eventBusProvider.eventBus
+```js
+angular.module("demo", []).config(($eventBusProvider) => {
+  $eventBusProvider.eventBus = new MyCustomPubSub();
+});
+```
 
-Customize event bus instance.
+Most applications should use the default `PubSub` instance. Replace it only when
+you need custom dispatch, instrumentation, or compatibility with another event
+system.
 
-- **Type:** [PubSub](../../../typedoc/classes/PubSub.html)
-- **Default:** `angular.EventBus`
-
-- **Example:**
-
-  ```js
-  angular.module('demo', [])
-    .config([
-      "$eventBusProvider",
-      /** @param {ng.PubSubProvider} $eventBusProvider */
-      ($eventBusProvider) => {
-        eventBusProvider.eventBus = new MyCustomPubsub();
-      }
-    ]);
-  ```
-
----
-
-For service description, see [$eventBus](../../../docs/service/eventbus).
+For service usage, see [$eventBus]({{< relref "/docs/service/eventBus" >}}).

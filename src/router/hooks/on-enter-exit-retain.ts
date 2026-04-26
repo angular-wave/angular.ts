@@ -1,3 +1,4 @@
+import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { TransitionStateHookFn } from "../transition/interface.ts";
 import type { TransitionService } from "../transition/transition-service.ts";
 
@@ -29,7 +30,7 @@ const onEnterHook = makeEnterExitRetainHook("onEnter");
 export const registerOnExitHook = (transitionService: TransitionService) =>
   transitionService.onExit(
     {
-      exiting: (state?: ng.BuiltStateDeclaration) => !!state?.onExit,
+      exiting: (state?: BuiltStateDeclaration) => !!state?.onExit,
     },
     onExitHook,
   );
@@ -40,7 +41,7 @@ export const registerOnExitHook = (transitionService: TransitionService) =>
 export const registerOnRetainHook = (transitionService: TransitionService) =>
   transitionService.onRetain(
     {
-      retained: (state?: ng.BuiltStateDeclaration) => !!state?.onRetain,
+      retained: (state?: BuiltStateDeclaration) => !!state?.onRetain,
     },
     onRetainHook,
   );
@@ -51,7 +52,7 @@ export const registerOnRetainHook = (transitionService: TransitionService) =>
 export const registerOnEnterHook = (transitionService: TransitionService) =>
   transitionService.onEnter(
     {
-      entering: (state?: ng.BuiltStateDeclaration) => !!state?.onEnter,
+      entering: (state?: BuiltStateDeclaration) => !!state?.onEnter,
     },
     onEnterHook,
   );

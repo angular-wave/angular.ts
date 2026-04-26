@@ -1,5 +1,7 @@
 import { isFunction, isString } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
+import type { BuiltStateDeclaration } from "../state/interface.ts";
+import type { StateProvider } from "../state/state-service.ts";
 import type { TransitionService } from "../transition/transition-service.ts";
 import type { Transition } from "../transition/transition.ts";
 
@@ -9,7 +11,7 @@ import type { Transition } from "../transition/transition.ts";
  */
 export const registerRedirectToHook = (
   transitionService: TransitionService,
-  stateService: ng.StateService,
+  stateService: StateProvider,
 ) => {
   const redirectToHook = (trans: Transition) => {
     const redirect = trans.to().redirectTo;
@@ -48,7 +50,7 @@ export const registerRedirectToHook = (
 
   return transitionService.onStart(
     {
-      to: (state) => !!(state as ng.BuiltStateDeclaration).redirectTo,
+      to: (state) => !!(state as BuiltStateDeclaration).redirectTo,
     },
     redirectToHook,
   );

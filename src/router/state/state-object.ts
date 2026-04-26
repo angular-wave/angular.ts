@@ -4,7 +4,7 @@ import { Glob } from "../glob/glob.ts";
 import { hasOwn, isFunction, isObject, values } from "../../shared/utils.ts";
 import type { Param } from "../params/param.ts";
 import type { Resolvable } from "../resolve/resolvable.ts";
-import type { StateDeclaration } from "./interface.ts";
+import type { BuiltStateDeclaration, StateDeclaration } from "./interface.ts";
 import type { TransitionStateHookFn } from "../transition/interface.ts";
 
 /**
@@ -54,7 +54,7 @@ export class StateObject {
     Object.assign(this, config);
     this.self = config;
     this.name = config.name;
-    config._state = () => this as unknown as ng.BuiltStateDeclaration;
+    config._state = () => this as unknown as BuiltStateDeclaration;
     const nameGlob = this.name ? Glob.fromString(this.name) : null;
 
     this._stateObjectCache = { nameGlob };

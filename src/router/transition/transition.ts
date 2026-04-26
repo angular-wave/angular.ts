@@ -50,7 +50,7 @@ export interface Transition {
   /** @internal */
   _aborted?: boolean;
   /** @internal */
-  _routerState: ng._RouterService & Record<string, any>;
+  _routerState: ng._RouterService;
   /** @internal */
   _transitionService: TransitionService;
   /** @internal */
@@ -112,7 +112,7 @@ export class Transition {
   /** @internal */
   _aborted?: boolean;
   /** @internal */
-  _routerState: ng._RouterService & Record<string, any>;
+  _routerState: ng._RouterService;
   /** @internal */
   _transitionService: TransitionService;
   /** @internal */
@@ -147,7 +147,7 @@ export class Transition {
     fromPath: PathNode[],
     targetState: TargetState,
     transitionService: TransitionService,
-    routerState: any,
+    routerState: ng._RouterService,
   ) {
     this._routerState = routerState;
 
@@ -184,8 +184,8 @@ export class Transition {
 
     this._treeChanges = treeChanges(
       fromPath,
-      toPath as PathNode[],
-      this._options.reloadState as StateObject,
+      toPath,
+      this._options.reloadState,
     );
     const onCreateHooks = this._hookBuilder.buildHooksForPhase(
       TransitionHookPhase._CREATE,
@@ -635,11 +635,11 @@ export class Transition {
    *
    * @param pathname the name of the path to fetch views for:
    *   (`'to'`, `'from'`, `'entering'`, `'exiting'`, `'retained'`)
-   * @param {ng.StateObject} [state] If provided, only returns the `ViewConfig`s for a single state in the path
+   * @param state If provided, only returns the `ViewConfig`s for a single state in the path
    *
    * @returns {ViewConfig[]} a list of ViewConfig objects for the given path.
    */
-  views(pathname = "entering", state?: ng.StateObject): ViewConfig[] {
+  views(pathname = "entering", state?: StateObject): ViewConfig[] {
     let path = (this._treeChanges[pathname] || []) as PathNode[];
 
     path = !state ? path : (path.filter(propEq("state", state)) as PathNode[]);
@@ -727,23 +727,19 @@ export class Transition {
     // You can wait for the resolve, then redirect to a child state based on the result.
     // The redirected transition does not have to re-fetch the resolve.
     // ---------------------------------------------------------
-    const nodeIsReloading =
-      (reloadState?: ng.StateObject) => (node: PathNode) => {
-        return reloadState && node.state.includes[reloadState.name];
-      };
+    const nodeIsReloading = (reloadState?: StateObject) => (node: PathNode) => {
+      return reloadState && node.state.includes[reloadState.name];
+    };
 
     const params = matching(
       redirectEnteringNodes,
       originalEnteringNodes,
       nonDynamicParams,
-    ) as PathNode[];
+    );
 
     // Find any "entering" nodes in the redirect path that match the original path and aren't being reloaded
     const matchingEnteringNodes = params.filter(
-      (x: PathNode) =>
-        !nodeIsReloading(targetState.options().reloadState as ng.StateObject)(
-          x,
-        ),
+      (x: PathNode) => !nodeIsReloading(targetState.options().reloadState)(x),
     );
 
     // Use the existing (possibly pre-resolved) resolvables for the matching entering nodes.
@@ -827,10 +823,8 @@ export class Transition {
 
       return (
         pathA.length ===
-        (
-          pathPrefix.filter(
-            (node) => !reloadState || !node.state.includes[reloadState.name],
-          ) as PathNode[]
+        pathPrefix.filter(
+          (node) => !reloadState || !node.state.includes[reloadState.name],
         ).length
       );
     };

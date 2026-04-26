@@ -149,7 +149,7 @@ export function inheritParams(
 export function treeChanges(
   fromPath: PathNode[],
   toPath: PathNode[],
-  reloadState: StateObject,
+  reloadState?: StateObject,
 ): TreeChanges {
   const max = Math.min(fromPath.length, toPath.length);
 

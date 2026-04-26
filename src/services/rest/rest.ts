@@ -31,7 +31,8 @@ export interface EntityClass<T = any> {
   new (data: any): T;
 }
 
-type RestOptions = Record<string, any>;
+/** Extra `$http` options merged into requests made by a REST resource. */
+export type RestOptions = Record<string, any>;
 
 /**
  * Typed REST resource client backed by {@link HttpService}.
@@ -188,7 +189,13 @@ export class RestService<T = any, ID = any> {
   }
 }
 
-type RestFactory = <T = any, ID = any>(
+/**
+ * Factory service exposed as `$rest`.
+ *
+ * Creates a typed {@link RestService} for a base URL, optional entity mapper,
+ * and optional `$http` request defaults.
+ */
+export type RestFactory = <T = any, ID = any>(
   baseUrl: string,
   entityClass?: EntityClass<T>,
   options?: RestOptions,

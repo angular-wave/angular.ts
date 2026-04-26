@@ -46,20 +46,30 @@ const moduleRegistry: ModuleRegistry = {};
  * and the lightweight event-based invocation helpers exposed on `window.angular`.
  */
 export class Angular extends EventTarget {
+  /** Sub-application instances created when multiple `ng-app` roots are initialized. */
   public subapps: Angular[] = [];
   /** @internal */
   public _subapp: boolean;
   /** @internal */
   public _bootsrappedModules: Array<string | any> = [];
 
+  /** Application-wide event bus, available after bootstrap providers are created. */
   public $eventBus!: ng.PubSubService;
+  /** Application injector, available after `bootstrap()` or `injector()` completes. */
   public $injector!: ng.InjectorService;
+  /** Root scope for the bootstrapped application. */
   public $rootScope!: ng.Scope;
+  /** AngularTS version string replaced at build time. */
   public version = "[VI]{version}[/VI]";
+  /** Retrieve the controller instance cached on a compiled DOM element. */
   public getController = getController;
+  /** Retrieve the injector cached on a bootstrapped DOM element. */
   public getInjector = getInjector;
+  /** Retrieve the scope cached on a compiled DOM element. */
   public getScope = getScope;
+  /** Global framework error-handling configuration. */
   public errorHandlingConfig = errorHandlingConfig;
+  /** Public injection token names keyed by token value. */
   public $t: ng.InjectionTokens = {} as ng.InjectionTokens;
 
   /**
@@ -116,9 +126,8 @@ export class Angular extends EventTarget {
    * let injector = angular.injector(['ng', 'myModule'])
    * ```
    *
-   * However it's more likely that you'll just use
-   * `ng-app` directive or
-   * {@link bootstrap} to simplify this process for you.
+   * However it's more likely that you'll use the `ng-app` directive or
+   * `bootstrap()` to simplify this process.
    *
    * @param name The name of the module to create or retrieve.
    * @param requires If specified then new module is being created. If
@@ -240,12 +249,10 @@ export class Angular extends EventTarget {
    * each of the subsequent scripts. This prevents strange results in applications, where otherwise
    * multiple instances of AngularTS try to work on the DOM.
    *
-   * <div class="alert alert-warning">
-   * **Note:** Do not bootstrap the app on an element with a directive that uses {@link ng.$compile#transclusion transclusion},
-   * such as {@link ng.ngIf `ngIf`}, {@link ng.ngInclude `ngInclude`} and {@link ngRoute.ngView `ngView`}.
-   * Doing this misplaces the app {@link ng.$rootElement `$rootElement`} and the app's {@link auto.$injector injector},
-   * causing animations to stop working and making the injector inaccessible from outside the app.
-   * </div>
+   * **Note:** Do not bootstrap the app on an element with a directive that uses
+   * transclusion, such as `ng-if`, `ng-include`, or `ng-view`. Doing this
+   * misplaces the app root element and injector, causing animations to stop
+   * working and making the injector inaccessible from outside the app.
    *
    * ```html
    * <!doctype html>
@@ -271,7 +278,7 @@ export class Angular extends EventTarget {
    * @param modules an array of modules to load into the application.
    *     Each item in the array should be the name of a predefined module or a (DI annotated)
    *     function that will be invoked by the injector as a `config` block.
-   *     See: {@link angular.module modules}
+   *     See `angular.module()`.
    * `config` controls bootstrap behavior such as `strictDi`.
    * @returns The created injector instance for this application.
    */
@@ -367,7 +374,11 @@ export class Angular extends EventTarget {
   }
 
   /**
-   * Creates a standalone injector without bootstrapping the DOM.
+   * Create a standalone injector without bootstrapping the DOM.
+   *
+   * @param modules - Module names or config functions to load.
+   * @param strictDi - Require explicit dependency annotations.
+   * @returns The created injector.
    */
   injector(modules: any[], strictDi?: boolean): ng.InjectorService {
     this.$injector = createInjector(modules, strictDi);
@@ -376,7 +387,12 @@ export class Angular extends EventTarget {
   }
 
   /**
-   * Finds `ng-app` roots under the provided element and bootstraps them.
+   * Find `ng-app` roots under the provided element and bootstrap them.
+   *
+   * The first root uses this instance. Additional roots are bootstrapped as
+   * sub-applications and stored in {@link subapps}.
+   *
+   * @param element - Root element or document to scan.
    */
   init(element: HTMLElement | HTMLDocument): void {
     const appElements: AppElement[] = [];
@@ -428,7 +444,10 @@ export class Angular extends EventTarget {
   }
 
   /**
-   * Finds a scope by its registered `$scopename`.
+   * Find a scope by its registered `$scopename`.
+   *
+   * @param name - Scope name to search for.
+   * @returns The matching scope proxy, or `undefined`.
    */
   getScopeByName(name: string): ng.Scope | undefined {
     validateIsString(name, "name");

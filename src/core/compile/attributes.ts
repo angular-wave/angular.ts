@@ -124,7 +124,7 @@ export class Attributes {
    *
    * Also there is special case for Moz prefix starting with upper case letter.
    *
-   * For further information check out the guide on {@link guide/directive#matching-directives Matching Directives}
+   * Normalization follows the directive matching rules used by `$compile`.
    *
    * @param name Name to normalize
    */

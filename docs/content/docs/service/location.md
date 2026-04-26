@@ -1,57 +1,58 @@
 ---
-title: $location
-description: >
-  URL normalization for HTML5/hashbang modes
+title: "$location"
+description: "Normalize and update browser URLs across HTML5 and hashbang modes."
 ---
 
-### Description
+`$location` parses the browser URL into path, search, hash, and state pieces.
+Changes made through `$location` update the browser address bar, and browser
+navigation updates the service.
 
-The `$location` service parses the URL in the browser address bar (based on the
-[window.location](https://developer.mozilla.org/en/window.location)) and makes
-the URL available to your application in a uniform manner. Changes to the URL in
-the address bar are reflected into `$location` service and changes to
-`$location` are reflected into the browser address bar. Using `$location` you
-can:
+Exact signatures live in TypeDoc:
 
-- Watch and observe the URL
-- Change the URL
-- Detect users changes to address bar by clicking on links or using back or
-  forward buttons in browser
+- [`Location`](../../../typedoc/classes/Location.html)
+- [`LocationProvider`](../../../typedoc/classes/LocationProvider.html)
+- [`Html5Mode`](../../../typedoc/interfaces/Html5Mode.html)
 
-To configure the HTML5 mode and link behavior for the service, use the
-`$locationProvider`.
+## Read The Current URL
 
-### Events
+```typescript
+$location.path();
+$location.search();
+$location.hash();
+$location.url();
+$location.absUrl();
+```
 
----
+## Update The URL
 
-#### $location#$locationChangeStart
+```typescript
+$location
+  .path("/settings")
+  .search({ tab: "profile" })
+  .hash("details");
+```
 
-- **Description:** Broadcast on root scope before a URL will change. This change
-  can be prevented by calling `preventDefault` method of the event. See
-  [Scope#$ons](TODO) for more details about event object. Upon successful change
-  `$location#$locationChangeSuccess` is fired.
+Setter methods return `$location`, so updates can be chained.
 
-The `newState` and `oldState` parameters may be defined only in HTML5 mode and
-when the browser supports the HTML5 History API.
+## Navigation Events
 
-- **Parameters:** | `angularEvent` | `Object` | No | Synthetic event object. | |
-  `newUrl` | `string` | No | The new URL being navigated to. | | `oldUrl` |
-  `string` | Yes | The URL prior to the change. | | `newState` | `string` | Yes
-  | New history state object (HTML5 mode only). | | `oldState` | `string` | Yes
-  | Previ
+`$locationChangeStart` is broadcast on `$rootScope` before the URL changes. Call
+`event.preventDefault()` from a listener to cancel the navigation.
 
-## `$location#$locationChangeSuccess`
+`$locationChangeSuccess` is broadcast after the URL changes. In HTML5 mode,
+listeners may also receive the new and old history state values when the browser
+supports the History API.
 
-**Description:**  
- Broadcasted on the root scope **after** a URL was changed. The `newState` and
-`oldState` parameters may be defined only in HTML5 mode and when the browser
-supports the HTML5 History API.
+```typescript
+$rootScope.$on("$locationChangeStart", (event, newUrl, oldUrl) => {
+  if (shouldBlock(newUrl, oldUrl)) {
+    event.preventDefault();
+  }
+});
 
-### Parameters
+$rootScope.$on("$locationChangeSuccess", (_event, newUrl) => {
+  analytics.track("page_view", { url: newUrl });
+});
+```
 
-| `angularEvent` | `Object` | No | Synthetic event object. | | `newUrl` |
-`string` | No | The new URL after change. | | `oldUrl` | `string` | Yes | The
-previous URL before the change. | | `newState` | `string` | Yes | New history
-state object (HTML5 mode only). | | `oldState` | `string` | Yes | Previous
-history state object (HTML5 mode only). |
+For provider configuration, see [$locationProvider]({{< relref "/docs/provider/locationProvider" >}}).

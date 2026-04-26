@@ -16,7 +16,7 @@ import {
 } from "../../shared/dom.ts";
 import { getLocals } from "../state/state-registry.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
-import type { ActiveNgView, ViewContext } from "../view/view.ts";
+import type { ActiveNgView, ViewContext, ViewService } from "../view/view.ts";
 import type { PathNode } from "../path/path-node.ts";
 import { TargetState } from "../state/target-state.ts";
 
@@ -202,7 +202,7 @@ ViewDirective.$inject = [
  * Renders and updates the currently active view configuration.
  */
 export function ViewDirective(
-  $view: ng.ViewService,
+  $view: ViewService,
   _state: ng.StateService,
   $injector: ng.InjectorService,
   $anchorScroll: ng.AnchorScrollService,

@@ -7,7 +7,6 @@ import {
   ListenerFn as TListenerFn,
   ScopeEvent as TScopeEvent,
 } from "./core/scope/scope.ts";
-import type { ProviderCache as TProviderCache } from "./core/di/interface.ts";
 import type { NgModule as TNgModule } from "./core/di/ng-module/ng-module.ts";
 import type { InjectorService as TInjectorService } from "./core/di/internal-injector.ts";
 
@@ -76,6 +75,7 @@ import {
   ServiceProvider as TServiceProvider,
 } from "./interface.ts";
 import type {
+  SseConnection as TSseConnection,
   SseService as TSseService,
   SseConfig as TSseConfig,
 } from "./services/sse/sse.ts";
@@ -87,13 +87,9 @@ import {
   BoundTranscludeFn as TBoundTranscludeFn,
   CompileFn as TCompileFn,
   PublicLinkFn as TPublicLinkFn,
-  NodeLinkFnCtx as TNodeLinkFnCtx,
-  NodeLinkFn as TNodeLinkFn,
   TranscludeFn as TTranscludeFn,
-  LinkFnMapping as TLinkFnMapping,
-  CompositeLinkFn as TCompositeLinkFn,
 } from "./core/compile/compile.ts";
-import {
+import type {
   WorkerConnection as TWorkerConnection,
   WorkerConfig as TWorkerConfig,
 } from "./directive/worker/worker.ts";
@@ -111,29 +107,30 @@ import type {
   StorageBackend as TStorageBackend,
   StorageType as TStorageType,
 } from "./services/storage/storage.ts";
-import type { StreamConnectionConfig as TStreamConnectionConfig } from "./services/stream/stream.ts";
+import type {
+  StreamConnection as TStreamConnection,
+  StreamConnectionConfig as TStreamConnectionConfig,
+} from "./services/stream/stream.ts";
 import type {
   CookieService as TCookieService,
   CookieStoreOptions as TCookieStoreOptions,
   CookieOptions as TCookieOptions,
 } from "./services/cookie/cookie.ts";
-import {
+import type {
   RestDefinition as TRestDefinition,
   EntityClass as TEntityClass,
-  type RestService as TRestService,
+  RestFactory as TRestFactory,
+  RestService as TRestService,
 } from "./services/rest/rest.ts";
 import type { NgModelController as TNgModelController } from "./directive/model/model.ts";
 import type { _RouterProvider as T_RouterProvider } from "./router/router.ts";
 import type { TransitionProvider as TTransitionProvider } from "./router/transition/transition-service.ts";
 import type { UrlService as TUrlService } from "./router/url/url-service.ts";
-import type { ViewService as TViewService } from "./router/view/view.ts";
 import {
-  BuiltStateDeclaration as TBuiltStateDeclaration,
   StateDeclaration as TStateDeclaration,
   StateResolveArray as TStateResolveArray,
   StateResolveObject as TStateResolveObject,
 } from "./router/state/interface.ts";
-import type { StateObject as TStateObject } from "./router/state/state-object.ts";
 import type { StateRegistryProvider as TStateRegistryProvider } from "./router/state/state-registry.ts";
 import type {
   WebSocketConfig as TWebSocketConfig,
@@ -141,7 +138,6 @@ import type {
 } from "./services/websocket/websocket.ts";
 import type { AnimateRunner as TAnimateRunner } from "./animations/runner/animate-runner.ts";
 import type { Transition as TTransition } from "./router/transition/transition.ts";
-import type { TemplateFactoryProvider as TTemplateFactoryProvider } from "./router/template-factory.ts";
 import type { TransitionService as TTransitionService } from "./router/transition/interface.ts";
 import type { UrlConfigProvider as TUrlConfigProvider } from "./router/url/url-config.ts";
 import type { AriaService as TAriaService } from "./directive/aria/aria.ts";
@@ -168,21 +164,13 @@ declare global {
 
     export type Component = TComponent & Record<string, any>;
 
-    export type CompositeLinkFn = TCompositeLinkFn;
-
     export type Controller = TController;
 
     export type Directive<TController = any> = TDirective<TController>;
 
     export type DirectiveFactory = TDirectiveFactory;
 
-    export type LinkFnMapping = TLinkFnMapping;
-
     export type NgModule = TNgModule;
-
-    export type NodeLinkFn = TNodeLinkFn;
-
-    export type NodeLinkFnCtx = TNodeLinkFnCtx;
 
     export type PublicLinkFn = TPublicLinkFn;
 
@@ -221,8 +209,6 @@ declare global {
 
     /** @internal */
     export type _RouterProvider = T_RouterProvider;
-
-    export type TemplateFactoryProvider = TTemplateFactoryProvider;
 
     export type UrlConfigProvider = TUrlConfigProvider;
 
@@ -288,13 +274,13 @@ declare global {
 
     export type SseConfig = TSseConfig;
 
+    export type SseConnection = TSseConnection;
+
     export type TemplateCacheService = Map<string, string>;
 
     export type TemplateRequestService = TTemplateRequestService;
 
     export type UrlService = TUrlService;
-
-    export type ViewService = TViewService;
 
     // Support types
     export type AngularService = Angular;
@@ -303,8 +289,6 @@ declare global {
       TAnnotatedFactory<T>;
 
     export type AnimationOptions = TAnimationOptions;
-
-    export type BuiltStateDeclaration = TBuiltStateDeclaration;
 
     export type ControllerConstructor = TControllerConstructor;
 
@@ -346,13 +330,13 @@ declare global {
 
     export type NgModelController = TNgModelController;
 
-    export type ProviderCache = TProviderCache;
-
     export type RequestConfig = TRequestConfig;
 
     export type RequestShortcutConfig = TRequestShortcutConfig;
 
     export type RestDefinition<T> = TRestDefinition<T>;
+
+    export type RestFactory = TRestFactory;
 
     export type RestService<T, ID> = TRestService<T, ID>;
 
@@ -366,11 +350,11 @@ declare global {
 
     export type StateResolveObject = TStateResolveObject;
 
-    export type StateObject = TStateObject & Record<string, any>;
-
     export type StorageBackend = TStorageBackend;
 
     export type StorageType = TStorageType;
+
+    export type StreamConnection = TStreamConnection;
 
     export type StreamConnectionConfig = TStreamConnectionConfig;
 
