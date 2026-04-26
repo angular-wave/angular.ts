@@ -1,5 +1,5 @@
 import { filter, map } from "../../shared/common.ts";
-import { isArray, isDefined } from "../../shared/utils.ts";
+import { assign, isArray, isDefined } from "../../shared/utils.ts";
 import type { ParamTypeDefinition } from "./interface.ts";
 /**
  * An internal class which implements [[ParamTypeDefinition]].
@@ -37,7 +37,7 @@ export class ParamType {
   constructor(def: ParamTypeDefinition & Record<string, any>) {
     this.pattern = /.*/;
     this.inherit = true;
-    Object.assign(this, def);
+    assign(this, def);
     this.name = undefined;
   }
   // consider these four methods to be "abstract methods" that should be overridden
@@ -186,7 +186,7 @@ function ArrayType(
     this[name] = wrapperFn(paramTypeFn);
   });
 
-  Object.assign(this, {
+  assign(this, {
     dynamic: type.dynamic,
     name: type.name,
     pattern: type.pattern,

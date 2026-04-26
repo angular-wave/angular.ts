@@ -1,3 +1,5 @@
+import { assign } from "../../shared/utils.ts";
+
 export interface StorageBackend {
   /** Read a stored serialized value. */
   get(key: string): string | undefined;
@@ -56,7 +58,7 @@ export function createPersistentProxy<T extends Record<PropertyKey, any>>(
   const saved = storage.getItem(key);
 
   if (saved) {
-    Object.assign(target, deserialize(saved));
+    assign(target, deserialize(saved));
   }
 
   return new Proxy(target, {

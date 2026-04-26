@@ -1,5 +1,6 @@
 import { inherit } from "../../shared/common.ts";
 import {
+  assign,
   entries,
   hasOwn,
   isArray,
@@ -169,7 +170,7 @@ function viewsBuilder(
       config = { component: config };
     }
 
-    config = Object.assign({}, config);
+    config = assign({}, config);
 
     if (hasAnyViewKey(compKeys, config) && hasAnyViewKey(nonCompKeys, config)) {
       throw new Error(
@@ -358,7 +359,7 @@ export class StateBuilder {
 
       const subContext = resolveContext.subContext(state._state());
 
-      const locals = Object.assign(getResolveLocals(subContext), {
+      const locals = assign(getResolveLocals(subContext), {
         $state$: state,
         $transition$: trans,
       });
@@ -417,9 +418,7 @@ export class StateBuilder {
     state.path = state.parent
       ? (state.parent.path || []).concat(state)
       : [state];
-    state.includes = state.parent
-      ? Object.assign({}, state.parent.includes)
-      : {};
+    state.includes = state.parent ? assign({}, state.parent.includes) : {};
     state.includes[state.name] = true;
     state._views = viewsBuilder(state as StateObject & BuiltStateDeclaration);
 

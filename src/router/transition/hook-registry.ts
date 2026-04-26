@@ -1,5 +1,5 @@
 import { map, removeFrom, tail } from "../../shared/common.ts";
-import { isFunction, isString, values } from "../../shared/utils.ts";
+import { assign, isFunction, isString, values } from "../../shared/utils.ts";
 import { Glob } from "../glob/glob.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
@@ -124,7 +124,7 @@ export class RegisteredHook {
     treeChanges: TreeChanges,
     transition: Transition,
   ): IMatchingNodes {
-    const criteria = Object.assign(
+    const criteria = assign(
       this._getDefaultMatchCriteria(),
       this.matchCriteria,
     );

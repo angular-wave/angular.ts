@@ -3,6 +3,7 @@ import type { ControllerConstructor, Injectable } from "../../interface.ts";
 import {
   assertArgFn,
   assertNotHasOwnProperty,
+  createObject,
   isArray,
   isFunction,
   isObject,
@@ -136,7 +137,7 @@ export class ControllerProvider {
           const meta = unwrapController(injectable, constructorName);
 
           if (later) {
-            instance = Object.create(
+            instance = createObject(
               meta.prototype || null,
             ) as ControllerInstance;
             const exportName = constructorName || meta.name;

@@ -1,5 +1,5 @@
 import { $injectTokens } from "../../injection-tokens.ts";
-import { entries, isDefined, keys, trim } from "../../shared/utils.ts";
+import { assign, entries, isDefined, keys, trim } from "../../shared/utils.ts";
 import type { NgModelOptions } from "../model/model.ts";
 
 const DEFAULT_REGEXP = /(\s+|^)default(\s+|$)/;
@@ -72,7 +72,7 @@ export class ModelOptions {
   createChild(options: ModelOptionsConfig = {}): ModelOptions {
     let inheritAll = false;
 
-    const mergedOptions = Object.assign({}, options);
+    const mergedOptions = assign({}, options);
 
     entries(mergedOptions).forEach(([key, option]) => {
       if (option === "$inherit") {

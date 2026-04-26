@@ -1,4 +1,4 @@
-import { isObject, isString } from "../../shared/utils.ts";
+import { assign, isObject, isString } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { TransitionOptions } from "../transition/interface.ts";
@@ -80,8 +80,8 @@ export class TargetState {
   ) {
     this._stateRegistry = _stateRegistry;
     this._identifier = _identifier;
-    this._params = Object.assign({}, _params || {});
-    this._options = Object.assign({}, _options || {});
+    this._params = assign({}, _params || {});
+    this._options = assign({}, _options || {});
     this._definition = _stateRegistry._matcher.find(
       _identifier,
       this._options.relative,
@@ -178,9 +178,7 @@ export class TargetState {
    * @returns {TargetState} A new TargetState instance which targets the same state with the desired parameters
    */
   withParams(params: RawParams, replace = false): TargetState {
-    const newParams = replace
-      ? params
-      : Object.assign({}, this._params, params);
+    const newParams = replace ? params : assign({}, this._params, params);
 
     return new TargetState(
       this._stateRegistry,
@@ -199,9 +197,7 @@ export class TargetState {
    * @returns {TargetState} A new TargetState instance which targets the same state with the desired options
    */
   withOptions(options: TransitionOptions, replace = false): TargetState {
-    const newOpts = replace
-      ? options
-      : Object.assign({}, this._options, options);
+    const newOpts = replace ? options : assign({}, this._options, options);
 
     return new TargetState(
       this._stateRegistry,

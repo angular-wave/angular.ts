@@ -1,6 +1,7 @@
 import { allTrueR, filter, find, map } from "../../shared/common.ts";
 import { isInjectable } from "../../shared/predicates.ts";
 import {
+  assign,
   isArray,
   isDefined,
   isNullOrUndefined,
@@ -45,7 +46,7 @@ function getParamDeclaration(
 
   const paramConfig = unwrapShorthand(state?.params?.[paramName]);
 
-  return Object.assign(defaultConfig, paramConfig);
+  return assign(defaultConfig, paramConfig);
 }
 
 /**
@@ -60,7 +61,7 @@ function unwrapShorthand(cfg: ParamDeclaration | any): ParamDeclaration {
   }
   const _fn = isInjectable(cfg.value) ? cfg.value : getStaticDefaultValue;
 
-  return Object.assign(cfg, { _fn });
+  return assign(cfg, { _fn });
 }
 
 /**
@@ -233,7 +234,7 @@ export class Param {
 
       const arrayParamNomenclature = id.match(/\[\]$/) ? { array: true } : {};
 
-      return Object.assign(arrayDefaults, arrayParamNomenclature, config).array;
+      return assign(arrayDefaults, arrayParamNomenclature, config).array;
     }
     this.isOptional = isOptional;
     this.type = type;

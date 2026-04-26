@@ -6,7 +6,7 @@ import {
   tail,
   unnestR,
 } from "../../shared/common.ts";
-import { assert, isObject, isUndefined } from "../../shared/utils.ts";
+import { assign, assert, isObject, isUndefined } from "../../shared/utils.ts";
 import { is, propEq, val } from "../../shared/hof.ts";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import {
@@ -175,10 +175,7 @@ export class Transition {
       throw new Error(targetState.error());
     }
     // current() is assumed to come from targetState.options, but provide a naive implementation otherwise.
-    this._options = Object.assign(
-      { current: val(this) },
-      targetState.options(),
-    );
+    this._options = assign({ current: val(this) }, targetState.options());
     this.$id = transitionService._transitionCount++;
     const toPath = buildToPath(fromPath, targetState);
 
@@ -701,7 +698,7 @@ export class Transition {
     ) {
       redirectOpts.location = "replace";
     }
-    const newOptions = Object.assign(
+    const newOptions = assign(
       {},
       this.options(),
       targetState.options(),

@@ -1,5 +1,6 @@
 import {
   assert,
+  createObject,
   hasOwn,
   isArray,
   isDefined,
@@ -2163,7 +2164,7 @@ export class Scope {
 
       child = childInstance;
     } else {
-      child = Object.create(this.$target);
+      child = createObject(this.$target);
     }
 
     const proxy = new Proxy(
@@ -2182,7 +2183,7 @@ export class Scope {
 
   /** Creates an isolate child scope that does not inherit watchable properties directly. */
   $newIsolate(instance?: ng.Scope): ng.Scope {
-    const child = instance ? Object.create(instance) : nullObject();
+    const child = instance ? createObject(instance) : nullObject();
 
     const proxy = new Proxy(
       child,
@@ -2200,7 +2201,7 @@ export class Scope {
 
   /** Creates a transcluded child scope linked to this scope and an optional parent instance. */
   $transcluded(parentInstance?: ng.Scope): ng.Scope {
-    const child = Object.create(this.$target);
+    const child = createObject(this.$target);
 
     const proxy = new Proxy(
       child,

@@ -1,5 +1,6 @@
 import { defaults, removeFrom } from "../../shared/common.ts";
 import {
+  assign,
   isDefined,
   isNullOrUndefined,
   isObject,
@@ -465,7 +466,7 @@ export class StateProvider {
     options = defaults(options, defaultTransOpts);
     const getCurrent = () => this._routerState._transition;
 
-    options = Object.assign(options, { current: getCurrent });
+    options = assign(options, { current: getCurrent });
     const ref = this.target(to, toParams, options);
 
     const currentPath = this.getCurrentPath();
@@ -541,7 +542,7 @@ export class StateProvider {
     silenceUncaughtInPromise(transitionToPromise); // issue #2676
 
     // Return a promise for the transition, which also has the transition object on it.
-    return Object.assign(transitionToPromise, { transition });
+    return assign(transitionToPromise, { transition });
   }
 
   /**

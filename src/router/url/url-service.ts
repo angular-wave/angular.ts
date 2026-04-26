@@ -1,4 +1,5 @@
 import {
+  assign,
   entries,
   isDefined,
   isFunction,
@@ -358,7 +359,7 @@ export class UrlService {
    * @returns {any}
    */
   match(url: UrlParts): MatchResult | undefined {
-    url = Object.assign({ path: "", search: {}, hash: "" }, url);
+    url = assign({ path: "", search: {}, hash: "" }, url);
 
     let best: MatchResult | undefined;
 
@@ -480,7 +481,7 @@ export class UrlService {
     // backward-compatible support for config.params -> config.state.params
     const params = config && !config.state && config.params;
 
-    config = params ? Object.assign({ state: { params } }, config) : config;
+    config = params ? assign({ state: { params } }, config) : config;
     const globalConfig = {
       strict: urlConfig._isStrictMode,
       caseInsensitive: urlConfig._isCaseInsensitive,
@@ -490,7 +491,7 @@ export class UrlService {
       urlPattern,
       urlConfig.paramTypes,
       this._paramFactory,
-      Object.assign(globalConfig, config),
+      assign(globalConfig, config),
     );
   }
 

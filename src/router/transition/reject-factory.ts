@@ -1,5 +1,6 @@
 import { is } from "../../shared/hof.ts";
 import { stringify } from "../../shared/strings.ts";
+import { assign } from "../../shared/utils.ts";
 import type { TargetState } from "../state/target-state.ts";
 import type { Transition } from "./transition.ts";
 
@@ -123,7 +124,7 @@ export class Rejection {
 
     promise.catch(() => 0);
 
-    return Object.assign(promise, {
+    return assign(promise, {
       _transitionRejection: this,
     });
   }

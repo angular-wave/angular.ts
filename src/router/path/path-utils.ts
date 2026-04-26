@@ -1,6 +1,6 @@
 import { find, omit, pick } from "../../shared/common.ts";
 import { propEq } from "../../shared/hof.ts";
-import { keys, values } from "../../shared/utils.ts";
+import { assign, keys, values } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
 import type { ViewService } from "../view/view.ts";
@@ -97,7 +97,7 @@ export function inheritParams(
   function nodeParamVals(path: PathNode[], state: StateObject): RawParams {
     const node = find(path, propEq("state", state)) as PathNode | undefined;
 
-    return Object.assign({}, node && node.paramValues);
+    return assign({}, node && node.paramValues);
   }
 
   const noInherit: string[] = [];
@@ -115,7 +115,7 @@ export function inheritParams(
   }
 
   function makeInheritedParamsNode(toNode: PathNode): PathNode {
-    let toParamVals = Object.assign({}, toNode && toNode.paramValues);
+    let toParamVals = assign({}, toNode && toNode.paramValues);
 
     const incomingParamVals = pick(toParamVals, toKeys);
 
@@ -125,11 +125,7 @@ export function inheritParams(
       noInherit,
     );
 
-    const ownParamVals = Object.assign(
-      toParamVals,
-      fromParamVals,
-      incomingParamVals,
-    );
+    const ownParamVals = assign(toParamVals, fromParamVals, incomingParamVals);
 
     return new PathNode(toNode.state).applyRawParams(ownParamVals);
   }
@@ -257,7 +253,7 @@ export function makeTargetState(
   return new TargetState(
     registry,
     tailNode.state,
-    path.reduce((params, node) => Object.assign(params, node.paramValues), {}),
+    path.reduce((params, node) => assign(params, node.paramValues), {}),
     {},
   );
 }

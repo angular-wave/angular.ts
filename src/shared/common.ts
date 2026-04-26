@@ -1,4 +1,6 @@
 import {
+  assign,
+  createObject,
   entries,
   isArray,
   isDate,
@@ -82,10 +84,10 @@ export function inherit<T extends object, U extends object>(
   parent: T,
   extra?: U,
 ): T & U {
-  const newObj = Object.create(parent) as T & U;
+  const newObj = createObject(parent) as T & U;
 
   if (extra) {
-    Object.assign(newObj, extra);
+    assign(newObj, extra);
   }
 
   return newObj;
@@ -128,9 +130,9 @@ export function withResolvers<T>(): PromiseResolvers<T> {
  * Earlier objects in the defaultsList take precedence when applying defaults.
  */
 export function defaults(opts: any, ...defaultsList: any[]): any {
-  const defaultVals = Object.assign({}, ...defaultsList.reverse());
+  const defaultVals = assign({}, ...defaultsList.reverse());
 
-  return Object.assign(
+  return assign(
     defaultVals,
     pick((opts || {}) as Record<string, any>, keys(defaultVals)),
   );
@@ -461,7 +463,7 @@ export function copy(
 
   keys(target).forEach((key) => delete target[key]);
 
-  return Object.assign(target, src);
+  return assign(target, src);
 }
 
 /**

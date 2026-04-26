@@ -24,7 +24,7 @@ export function classDirective(): ng.Directive {
       let oldClassString = "";
 
       if (!classCounts) {
-        // Use Object.create(null) to prevent assumptions involving Object.prototype keys.
+        // Use a null-prototype map to avoid Object.prototype key assumptions.
         classCounts = nullObject() as Record<string, number>;
         setCacheData(element, "$classCounts", classCounts);
       }

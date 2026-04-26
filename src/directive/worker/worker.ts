@@ -1,5 +1,10 @@
 import { $injectTokens as $t } from "../../injection-tokens.ts";
-import { callBackAfterFirst, isDefined, wait } from "../../shared/utils.ts";
+import {
+  assign,
+  callBackAfterFirst,
+  isDefined,
+  wait,
+} from "../../shared/utils.ts";
 import { getEventNameForElement } from "../http/http.ts";
 
 export interface WorkerConfig {
@@ -209,7 +214,7 @@ export function createWorkerConnection(
     err: (config?.err || (() => undefined)) as ng.ExceptionHandlerService,
   };
 
-  const cfg = Object.assign({}, defaults, config) as DefaultWorkerConfig;
+  const cfg = assign({}, defaults, config) as DefaultWorkerConfig;
 
   let worker = new Worker(scriptPath, { type: "module" });
 

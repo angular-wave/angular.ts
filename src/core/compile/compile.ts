@@ -17,6 +17,7 @@ import { NodeRef } from "../../shared/noderef.ts";
 import { identifierForController } from "../controller/controller.ts";
 import { createScope, type Scope } from "../scope/scope.ts";
 import {
+  assign,
   assertArg,
   assertNotHasOwnProperty,
   deProxy,
@@ -1898,7 +1899,7 @@ export class CompileProvider {
                 null,
                 [],
                 [],
-                Object.assign({}, previousCompileContext, {
+                assign({}, previousCompileContext, {
                   _index: i,
                   _parentNodeRef: nodeRefList,
                   _ctxNodeRef: nodeRefList,
