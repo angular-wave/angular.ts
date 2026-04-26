@@ -1,5 +1,10 @@
 import { equals, inherit, map, pick } from "../../shared/common.ts";
-import { hasOwn, isDefined, isNullOrUndefined } from "../../shared/utils.ts";
+import {
+  assign,
+  hasOwn,
+  isDefined,
+  isNullOrUndefined,
+} from "../../shared/utils.ts";
 import { is } from "../../shared/hof.ts";
 import { ParamType } from "./param-type.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
@@ -62,7 +67,7 @@ export class ParamTypes {
     ]) as Record<string, ParamTypeDefinition & Record<string, any>>;
     // Register default types. Store them in the prototype of this.types.
     const makeType = (definition: ParamTypeDefinition, name: string | number) =>
-      new ParamType(Object.assign({ name }, definition));
+      new ParamType(assign({ name }, definition));
 
     this.types = inherit(map(this.defaultTypes, makeType), {}) as Record<
       string,
@@ -100,9 +105,7 @@ export class ParamTypes {
 
     if (hasOwn(this.types, name))
       throw new Error(`A type named '${name}' has already been defined.`);
-    this.types[name as string] = new ParamType(
-      Object.assign({ name }, definition),
-    );
+    this.types[name as string] = new ParamType(assign({ name }, definition));
 
     if (definitionFn) {
       this.typeQueue.push({ name, def: definitionFn });
@@ -130,7 +133,7 @@ export class ParamTypes {
 
       if (type.pattern)
         throw new Error("You cannot override a type's .pattern at runtime.");
-      Object.assign(this.types[type.name], injector.invoke(type.def));
+      assign(this.types[type.name], injector.invoke(type.def));
     }
   }
 
@@ -155,11 +158,11 @@ function initDefaultTypes() {
       equals: (a: any, b: any) => a === b,
     };
 
-    return Object.assign({}, defaultTypeBase, def);
+    return assign({}, defaultTypeBase, def);
   };
 
   // Default Parameter Type Definitions
-  Object.assign(ParamTypes.prototype, {
+  assign(ParamTypes.prototype, {
     string: makeDefaultType({}),
     path: makeDefaultType({
       pattern: /[^/]*/,

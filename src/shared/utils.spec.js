@@ -1,7 +1,58 @@
 import {
+  addDateMinutes,
+  arrayRemove,
+  assert,
+  assertArg,
+  assertArgFn,
+  assertNotHasOwnProperty,
+  assign,
+  baseExtend,
+  bind,
+  callBackAfterFirst,
+  callBackOnce,
+  concat,
+  createObject,
+  deProxy,
+  directiveNormalize,
+  entries,
+  errorHandlingConfig,
   hashKey,
+  hasAnimate,
+  hasCustomToString,
+  hasOwn,
+  includes,
+  inherit,
+  instantiateWasm,
+  isArray,
   mergeClasses,
-  startsWith,
+  isArrowFunction,
+  isBlankObject,
+  isBlob,
+  isBoolean,
+  isFile,
+  isFormData,
+  isFunction,
+  isInstanceOf,
+  isNull,
+  isNullOrUndefined,
+  isNumber,
+  isNumberNaN,
+  isObject,
+  isObjectEmpty,
+  isPromiseLike,
+  isProxy,
+  isProxySymbol,
+  isScope,
+  isString,
+  isUndefined,
+  isValidObjectMaxDepth,
+  keys,
+  lowercase,
+  minErr,
+  nextUid,
+  ngAttrPrefixes,
+  notNullOrUndefined,
+  nullObject,
   encodeUriQuery,
   encodeUriSegment,
   equals,
@@ -14,15 +65,22 @@ import {
   isError,
   isRegExp,
   isWindow,
-  lowercase,
-  nextUid,
   parseKeyValue,
+  setHashKey,
   shallowCopy,
+  simpleCompare,
+  sliceArgs,
   snakeCase,
+  startsWith,
+  stringify,
+  toDebugString,
   toJson,
   toKeyValue,
+  trim,
+  tryDecodeURIComponent,
   uppercase,
-  baseExtend,
+  values,
+  wait,
 } from "./utils.js";
 import { createElementFromHTML, dealoc, startingTag } from "./dom.js";
 import { Angular } from "../angular.ts";
@@ -1078,6 +1136,291 @@ describe("utility functions", () => {
 
     it("should serialize undefined as undefined", () => {
       expect(toJson(undefined)).toEqual(undefined);
+    });
+  });
+
+  describe("exported helper coverage", () => {
+    it("should identify primitive and object types", () => {
+      expect(isUndefined(undefined)).toBe(true);
+      expect(isDefined("value")).toBe(true);
+      expect(isArray([])).toBe(true);
+      expect(isInstanceOf(document.createElement("div"), HTMLElement)).toBe(
+        true,
+      );
+      expect(isObject({})).toBe(true);
+      expect(isBlankObject(createObject(null))).toBe(true);
+      expect(isString("text")).toBe(true);
+      expect(isNull(null)).toBe(true);
+      expect(isNullOrUndefined(undefined)).toBe(true);
+      expect(notNullOrUndefined(0)).toBe(true);
+      expect(isNumber(1)).toBe(true);
+      expect(isNumberNaN(NaN)).toBe(true);
+      expect(isFunction(() => {})).toBe(true);
+      expect(isBoolean(false)).toBe(true);
+      expect(isPromiseLike({ then() {} })).toBe(true);
+      expect(isArrowFunction(() => {})).toBe(true);
+      expect(isArrowFunction(function regular() {})).toBe(false);
+    });
+
+    it("should identify browser native object types", () => {
+      expect(isFile(new File(["content"], "file.txt"))).toBe(true);
+      expect(isFormData(new FormData())).toBe(true);
+      expect(isBlob(new Blob(["content"]))).toBe(true);
+    });
+
+    it("should identify proxies and unwrap them", () => {
+      const target = { value: 1 };
+      const proxy = { [isProxySymbol]: true, $target: target };
+
+      expect(isProxy(proxy)).toBe(true);
+      expect(deProxy(proxy)).toBe(target);
+      expect(deProxy(target)).toBe(target);
+    });
+
+    it("should identify scope-like objects", () => {
+      expect(isScope({ $watch() {} })).toBeTruthy();
+      expect(isScope({})).toBeFalsy();
+    });
+
+    it("should trim strings and leave non-strings unchanged", () => {
+      const obj = {};
+
+      expect(trim("  value  ")).toBe("value");
+      expect(trim(obj)).toBe(obj);
+    });
+
+    it("should set and clear hash keys", () => {
+      const obj = {};
+
+      setHashKey(obj, "abc");
+      expect(obj._hashKey).toBe("abc");
+
+      setHashKey(obj, null);
+      expect(obj._hashKey).toBeUndefined();
+    });
+
+    it("should create inherited objects", () => {
+      const parent = { inherited: true };
+      const child = inherit(parent, { own: true });
+
+      expect(child.inherited).toBe(true);
+      expect(child.own).toBe(true);
+      expect(Object.getPrototypeOf(child)).toBe(parent);
+    });
+
+    it("should create objects with a specified prototype", () => {
+      const parent = { inherited: true };
+      const child = createObject(parent);
+
+      expect(child.inherited).toBe(true);
+      expect(Object.getPrototypeOf(child)).toBe(parent);
+    });
+
+    it("should detect custom toString methods", () => {
+      expect(hasCustomToString({ toString: () => "custom" })).toBe(true);
+    });
+
+    it("should check inclusion and remove array values", () => {
+      const array = ["a", "b", "c"];
+
+      expect(includes(array, "b")).toBe(true);
+      expect(arrayRemove(array, "b")).toBe(1);
+      expect(array).toEqual(["a", "c"]);
+      expect(arrayRemove(array, "missing")).toBe(-1);
+    });
+
+    it("should compare simple values including NaN", () => {
+      expect(simpleCompare(1, 1)).toBe(true);
+      expect(simpleCompare(NaN, NaN)).toBe(true);
+      expect(simpleCompare(1, "1")).toBe(false);
+    });
+
+    it("should reject hasOwnProperty as a public name", () => {
+      expect(() =>
+        assertNotHasOwnProperty("hasOwnProperty", "service"),
+      ).toThrowError(/hasOwnProperty is not a valid service name/);
+      expect(() => assertNotHasOwnProperty("valid", "service")).not.toThrow();
+    });
+
+    it("should stringify values for display", () => {
+      expect(stringify(null)).toBe("");
+      expect(stringify(12)).toBe("12");
+      expect(stringify({ toString: () => "custom" })).toBe("custom");
+      expect(stringify({ a: 1 })).toBe('{"a":1}');
+    });
+
+    it("should validate object max depth values", () => {
+      expect(isValidObjectMaxDepth(1)).toBe(true);
+      expect(isValidObjectMaxDepth(0)).toBe(false);
+      expect(isValidObjectMaxDepth("1")).toBe(false);
+    });
+
+    it("should concatenate and slice array-like values", () => {
+      function collect() {
+        return {
+          concatenated: concat(["a"], arguments, 1),
+          sliced: sliceArgs(arguments, 1),
+        };
+      }
+
+      expect(collect("skip", "b", "c")).toEqual({
+        concatenated: ["a", "b", "c"],
+        sliced: ["b", "c"],
+      });
+    });
+
+    it("should bind context and curry arguments", () => {
+      const context = { prefix: "a" };
+      function join(first, second) {
+        return `${this.prefix}-${first}-${second}`;
+      }
+
+      expect(bind(context, join, "b")("c")).toBe("a-b-c");
+      expect(bind(context, /not-a-function/)).toEqual(/not-a-function/);
+    });
+
+    it("should add minutes without mutating the input date", () => {
+      const date = new Date("2020-01-01T00:00:00Z");
+      const result = addDateMinutes(date, 30);
+
+      expect(result.getTime()).toBe(date.getTime() + 30 * 60 * 1000);
+      expect(result).not.toBe(date);
+    });
+
+    it("should decode URI components safely", () => {
+      expect(tryDecodeURIComponent("a%20b")).toBe("a b");
+      expect(tryDecodeURIComponent("%")).toBeUndefined();
+    });
+
+    it("should assert truthy arguments and functions", () => {
+      const fn = () => "ok";
+
+      expect(assert(true)).toBeUndefined();
+      expect(() => assert(false, "bad")).toThrowError("bad");
+      expect(assertArg("value", "name")).toBe("value");
+      expect(() => assertArg("", "name")).toThrowError(/Argument 'name'/);
+      expect(assertArgFn(fn, "fn")).toBe(fn);
+      expect(assertArgFn(["dep", fn], "fn", true)).toBe(fn);
+      expect(() => assertArgFn("x", "fn")).toThrowError(/not a function/);
+    });
+
+    it("should update and return error handling config", () => {
+      const previous = { ...errorHandlingConfig() };
+
+      errorHandlingConfig({
+        objectMaxDepth: 2,
+        urlErrorParamsEnabled: false,
+      });
+      expect(errorHandlingConfig()).toEqual({
+        objectMaxDepth: 2,
+        urlErrorParamsEnabled: false,
+      });
+
+      errorHandlingConfig(previous);
+    });
+
+    it("should create namespaced errors", () => {
+      const err = minErr("mod")("code", "Value {0}", "x");
+
+      expect(err instanceof Error).toBe(true);
+      expect(err.message).toBe("[mod:code] Value x");
+    });
+
+    it("should convert values to debug strings", () => {
+      expect(toDebugString(undefined)).toBe("undefined");
+      expect(toDebugString("abc")).toBe("abc");
+      expect(toDebugString({ a: 1 })).toBe('{"a":1}');
+      expect(toDebugString(function named() {})).toBe("function named()");
+    });
+
+    it("should normalize directive names", () => {
+      expect(directiveNormalize("data-ng-some-directive")).toBe(
+        "ngSomeDirective",
+      );
+      expect(directiveNormalize("x:ng_test")).toBe("x:ng_test");
+    });
+
+    it("should detect animation attributes only on elements", () => {
+      const animated = document.createElement("div");
+      animated.setAttribute("animate", "true");
+
+      const dataAnimated = document.createElement("div");
+      dataAnimated.dataset.animate = "true";
+
+      expect(hasAnimate(animated)).toBe(true);
+      expect(hasAnimate(dataAnimated)).toBe(true);
+      expect(hasAnimate(document.createTextNode("text"))).toBe(false);
+    });
+
+    it("should inspect object keys, values, entries, ownership, and emptiness", () => {
+      const obj = createObject({ inherited: true });
+      obj.a = 1;
+      obj.b = 2;
+
+      expect(hasOwn(obj, "a")).toBe(true);
+      expect(hasOwn(obj, "inherited")).toBe(false);
+      expect(keys(obj)).toEqual(["a", "b"]);
+      expect(values(obj)).toEqual([1, 2]);
+      expect(entries(obj)).toEqual([
+        ["a", 1],
+        ["b", 2],
+      ]);
+      expect(isObjectEmpty({})).toBe(true);
+      expect(isObjectEmpty(obj)).toBe(false);
+    });
+
+    it("should assign source properties to a target", () => {
+      const target = { a: 1 };
+
+      expect(assign(target, { b: 2 }, { a: 3 })).toBe(target);
+      expect(target).toEqual({ a: 3, b: 2 });
+    });
+
+    it("should run callbacks once or after the first call", () => {
+      const once = jasmine.createSpy("once").and.returnValue("once");
+      const afterFirst = jasmine
+        .createSpy("afterFirst")
+        .and.returnValue("next");
+
+      const runOnce = callBackOnce(once);
+      expect(runOnce("a")).toBe("once");
+      expect(runOnce("b")).toBeUndefined();
+      expect(once).toHaveBeenCalledOnceWith("a");
+
+      const runAfterFirst = callBackAfterFirst(afterFirst);
+      expect(runAfterFirst("a")).toBeUndefined();
+      expect(runAfterFirst("b")).toBe("next");
+      expect(afterFirst).toHaveBeenCalledOnceWith("b");
+    });
+
+    it("should wait for a timeout", async () => {
+      await expectAsync(wait(0)).toBeResolved();
+    });
+
+    it("should expose ng attribute prefixes", () => {
+      expect(ngAttrPrefixes).toEqual(["ng-", "data-ng-"]);
+    });
+
+    it("should create null-prototype objects", () => {
+      const obj = nullObject();
+
+      obj.value = 1;
+      expect(Object.getPrototypeOf(obj)).toBeNull();
+      expect(obj.value).toBe(1);
+    });
+
+    it("should reject failed wasm fetches", async () => {
+      const originalFetch = window.fetch;
+
+      window.fetch = () => Promise.resolve({ ok: false });
+
+      try {
+        await expectAsync(
+          instantiateWasm("/missing.wasm"),
+        ).toBeRejectedWithError("fetch failed");
+      } finally {
+        window.fetch = originalFetch;
+      }
     });
   });
 });

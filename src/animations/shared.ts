@@ -1,5 +1,5 @@
 import type { AnimationOptions } from "./interface.ts";
-import { isArray, isString } from "../shared/utils.ts";
+import { assign, isArray, isString } from "../shared/utils.ts";
 import { NodeType } from "../shared/node.ts";
 
 export const ADD_CLASS_SUFFIX = "-add";
@@ -134,7 +134,7 @@ export function applyAnimationFromStyles(
   options?: AnimationOptions,
 ): void {
   if (options && options.from) {
-    Object.assign(element.style, options.from);
+    assign(element.style, options.from);
     options.from = undefined;
   }
 }
@@ -153,7 +153,7 @@ export function applyAnimationToStyles(
   options?: AnimationOptions,
 ): void {
   if (options && options.to) {
-    Object.assign(element.style, options.to);
+    assign(element.style, options.to);
     options.to = undefined;
   }
 }
@@ -184,7 +184,7 @@ export function mergeAnimationDetails(
   }
 
   // Merge other properties except addClass/removeClass
-  Object.assign(target, newOptions);
+  assign(target, newOptions);
 
   // Combine addClass / removeClass
   const addList = `${target.addClass || ""} ${newOptions.addClass || ""}`

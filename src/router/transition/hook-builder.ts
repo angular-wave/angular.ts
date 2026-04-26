@@ -1,5 +1,5 @@
 import { assertPredicate, unnestR } from "../../shared/common.ts";
-import { isArray } from "../../shared/utils.ts";
+import { assign, isArray } from "../../shared/utils.ts";
 import type { StateDeclaration } from "../state/interface.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { IMatchingNodes, RegisteredHook } from "./hook-registry.ts";
@@ -64,7 +64,7 @@ export class HookBuilder {
       const matchingNodes = matches[hookType._criteriaMatchPath.name];
 
       return matchingNodes.map((node) => {
-        const options = Object.assign(
+        const options = assign(
           {
             bind: hook.bind,
             hookType: hookType.name,

@@ -1,5 +1,6 @@
 import { stringify } from "../../shared/strings.ts";
 import {
+  assign,
   assert,
   hasOwn,
   isFunction,
@@ -50,7 +51,7 @@ export class Resolvable {
     this.promise = undefined;
 
     if (arg1 instanceof Resolvable) {
-      Object.assign(this, arg1);
+      assign(this, arg1);
     } else if (isFunction(resolveFn)) {
       assert(!isNullOrUndefined(arg1), "token argument is required");
       this.token = arg1;

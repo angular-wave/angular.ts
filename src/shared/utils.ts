@@ -409,7 +409,7 @@ export function isNumberNaN(num: any): boolean {
  * Creates a new object that inherits from `parent` and extends it with `extra`.
  */
 export function inherit(parent: any, extra: any): any {
-  return extend(Object.create(parent), extra);
+  return extend(createObject(parent), extra);
 }
 
 /**
@@ -1249,6 +1249,16 @@ export function entries(obj: any): [string, any][] {
 }
 
 /**
+ * Assigns own enumerable properties from sources to a target object.
+ */
+export const { assign } = Object;
+
+/**
+ * Creates a new object with the specified prototype.
+ */
+export const createObject: typeof Object.create = Object.create;
+
+/**
  * Wraps a function so it can only be called once.
  * Subsequent calls do nothing and return undefined.
  *
@@ -1371,5 +1381,5 @@ export function isArrowFunction(fn: any): boolean {
  *
  */
 export function nullObject<T = any>(): Record<string, T> {
-  return Object.create(null);
+  return createObject(null);
 }

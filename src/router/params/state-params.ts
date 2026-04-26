@@ -1,11 +1,11 @@
-import { keys } from "../../shared/utils.ts";
+import { assign, keys } from "../../shared/utils.ts";
 import type { StateObject } from "../state/state-object.ts";
 
 export class StateParams {
   [key: string]: any;
 
   constructor(params: Record<string, any> = {}) {
-    Object.assign(this, params);
+    assign(this, params);
   }
 
   /**
@@ -51,7 +51,7 @@ export class StateParams {
       }
     }
 
-    return Object.assign({}, inherited, newParams);
+    return assign({}, inherited, newParams);
   }
 }
 

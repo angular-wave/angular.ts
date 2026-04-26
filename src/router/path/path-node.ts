@@ -1,5 +1,6 @@
 import { applyPairs, find } from "../../shared/common.ts";
 import { propEq } from "../../shared/hof.ts";
+import { assign } from "../../shared/utils.ts";
 import { Param } from "../params/param.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
@@ -31,7 +32,7 @@ export class PathNode {
 
       this.state = node.state;
       this.paramSchema = node.paramSchema.slice();
-      this.paramValues = Object.assign({}, node.paramValues);
+      this.paramValues = assign({}, node.paramValues);
       this.resolvables = node.resolvables.slice();
       this._views = node._views && node._views.slice();
     } else {

@@ -1,5 +1,5 @@
 import { PromiseResolvers, tail, unnestR } from "../../shared/common.ts";
-import { isArray, isDefined, isFunction } from "../../shared/utils.ts";
+import { assign, isArray, isDefined, isFunction } from "../../shared/utils.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
@@ -518,7 +518,7 @@ export function ViewDirectiveFill(
         if (controller) {
           const controllerInstance = $controller(
             controller,
-            Object.assign({}, locals, { $scope: scope, $element }),
+            assign({}, locals, { $scope: scope, $element }),
           ) as ViewControllerInstance;
 
           if (controllerAs) {

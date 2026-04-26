@@ -1,5 +1,6 @@
 import { removeFrom, tail, uniqR, unnestR } from "../../shared/common.ts";
 import {
+  assign,
   entries,
   isArray,
   isNullOrUndefined,
@@ -84,7 +85,7 @@ function processedDef(
 ): ProcessedDef {
   const ngState = def._ngState || $state.current?.name;
 
-  const ngStateOpts = Object.assign(
+  const ngStateOpts = assign(
     defaultOpts($element, $state),
     def._ngStateOpts || {},
   );
@@ -268,7 +269,7 @@ export function StateRefDirective(
         : {};
 
       function update() {
-        rawDef._ngStateParams = Object.assign(
+        rawDef._ngStateParams = assign(
           {},
           ref._paramExpr && scope.$eval(ref._paramExpr),
         );
@@ -294,12 +295,12 @@ export function StateRefDirective(
         scope.$watch(
           ref._paramExpr,
           function (val) {
-            rawDef._ngStateParams = Object.assign({}, val);
+            rawDef._ngStateParams = assign({}, val);
             update();
           },
           true,
         );
-        rawDef._ngStateParams = Object.assign({}, scope.$eval(ref._paramExpr));
+        rawDef._ngStateParams = assign({}, scope.$eval(ref._paramExpr));
       }
 
       update();

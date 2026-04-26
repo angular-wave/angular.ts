@@ -1,7 +1,13 @@
 import { defaults, find } from "../../shared/common.ts";
 import { propEq } from "../../shared/hof.ts";
 import { Glob } from "../glob/glob.ts";
-import { hasOwn, isFunction, isObject, values } from "../../shared/utils.ts";
+import {
+  assign,
+  hasOwn,
+  isFunction,
+  isObject,
+  values,
+} from "../../shared/utils.ts";
 import type { Param } from "../params/param.ts";
 import type { Resolvable } from "../resolve/resolvable.ts";
 import type { BuiltStateDeclaration, StateDeclaration } from "./interface.ts";
@@ -51,7 +57,7 @@ export class StateObject {
    * @param {StateDeclaration} config
    */
   constructor(config: StateDeclaration) {
-    Object.assign(this, config);
+    assign(this, config);
     this.self = config;
     this.name = config.name;
     config._state = () => this as unknown as BuiltStateDeclaration;

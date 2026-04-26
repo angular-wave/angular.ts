@@ -1,4 +1,4 @@
-import { isString } from "../../shared/utils.ts";
+import { assign, isString } from "../../shared/utils.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "./interface.ts";
@@ -60,7 +60,7 @@ export class ViewConfig {
     const params: Record<string, any> = {};
 
     for (let i = 0; i < this.path.length; i++) {
-      Object.assign(params, this.path[i].paramValues);
+      assign(params, this.path[i].paramValues);
     }
 
     const promises = [
@@ -71,7 +71,7 @@ export class ViewConfig {
     const results = await Promise.all(promises);
 
     this.controller = results[1];
-    Object.assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
+    assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
 
     return this;
   }

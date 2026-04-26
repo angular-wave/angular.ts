@@ -1,4 +1,4 @@
-import { hasOwn, isArray, isDefined, isObject } from "./utils.js";
+import { assign, hasOwn, isArray, isDefined, isObject } from "./utils.js";
 import { NodeType } from "./node.ts";
 import { $injectTokens } from "../injection-tokens.ts";
 import type { ExpandoStore } from "../interface.ts";
@@ -707,7 +707,7 @@ export function animatedomInsert(
 
   const originalPointerEvents = element.style.pointerEvents;
 
-  Object.assign(element.style, {
+  assign(element.style, {
     visibility: "hidden",
     position: "absolute",
     pointerEvents: "none",
