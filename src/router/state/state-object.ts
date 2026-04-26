@@ -1,5 +1,3 @@
-import { defaults, find } from "../../shared/common.ts";
-import { propEq } from "../../shared/hof.ts";
 import { Glob } from "../glob/glob.ts";
 import {
   assign,
@@ -119,20 +117,38 @@ export class StateObject {
    * @returns {Param[]} the list of [[Param]] objects
    */
   parameters(opts?: Partial<Param>): Param[] {
-    const params = defaults(opts, {
-      inherit: true,
-      matchingKeys: null,
-    }) as Param;
+    const params = assign(
+      {
+        inherit: true,
+        matchingKeys: null,
+      },
+      opts || {},
+    ) as Param;
 
     const inherited =
       (params.inherit && this.parent && this.parent.parameters()) || [];
 
-    return inherited
-      .concat(values(this.params || {}))
-      .filter(
-        (param) =>
-          !params.matchingKeys || hasOwn(params.matchingKeys, param.id),
-      );
+    const ownParams = values(this.params || {});
+
+    const result: Param[] = [];
+
+    for (let i = 0; i < inherited.length; i++) {
+      const param = inherited[i];
+
+      if (!params.matchingKeys || hasOwn(params.matchingKeys, param.id)) {
+        result.push(param);
+      }
+    }
+
+    for (let i = 0; i < ownParams.length; i++) {
+      const param = ownParams[i];
+
+      if (!params.matchingKeys || hasOwn(params.matchingKeys, param.id)) {
+        result.push(param);
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -144,11 +160,19 @@ export class StateObject {
    * @returns {Param | undefined} the [[Param]] object, or undefined if it does not exist
    */
   parameter(id: string, opts: Partial<Param> = {}): Param | undefined {
-    return (
-      (this.url && this.url.parameter(id, opts)) ||
-      find(values(this.params || {}), propEq("id", id)) ||
-      (opts.inherit && this.parent && this.parent.parameter(id))
-    );
+    const urlParam = this.url && this.url.parameter(id, opts);
+
+    if (urlParam) return urlParam;
+
+    const ownParams = values(this.params || {});
+
+    for (let i = 0; i < ownParams.length; i++) {
+      const param = ownParams[i];
+
+      if (param.id === id) return param;
+    }
+
+    return opts.inherit && this.parent ? this.parent.parameter(id) : undefined;
   }
 
   toString(): string {

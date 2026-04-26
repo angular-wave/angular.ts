@@ -1242,6 +1242,13 @@ export function values(obj: any): any[] {
 }
 
 /**
+ * Converts an array-like or iterable value into an array.
+ */
+export function arrayFrom<T>(value: ArrayLike<T> | Iterable<T>): T[] {
+  return Array.from(value);
+}
+
+/**
  * Returns the object's own enumerable entries.
  */
 export function entries(obj: any): [string, any][] {

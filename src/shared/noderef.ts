@@ -1,4 +1,4 @@
-import { isArray, isString } from "./utils.ts";
+import { arrayFrom, isArray, isString } from "./utils.ts";
 import { createElementFromHTML } from "./dom.ts";
 import { NodeType } from "./node.ts";
 
@@ -48,7 +48,7 @@ export class NodeRef {
       if (element.length === 1) {
         this.node = element[0];
       } else {
-        this._nodes = Array.from(element);
+        this._nodes = arrayFrom(element);
         this._isList = true;
       }
     }
@@ -172,7 +172,7 @@ export class NodeRef {
   /** @internal */
   _collection(): Array<Element | Node | ChildNode> {
     if (this._isList) {
-      return Array.from(this._nodes);
+      return arrayFrom(this._nodes);
     } else {
       return [(this._element || this._node) as Element | Node | ChildNode];
     }

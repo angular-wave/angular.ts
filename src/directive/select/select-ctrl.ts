@@ -4,6 +4,7 @@ import { removeElement } from "../../shared/dom.ts";
 import {
   assertNotHasOwnProperty,
   hashKey,
+  isArray,
   isDefined,
   isNullOrUndefined,
   isUndefined,
@@ -431,7 +432,7 @@ export class SelectController {
 
       const shouldUpdateViewValue =
         (this._multiple &&
-          Array.isArray(currentValue) &&
+          isArray(currentValue) &&
           currentValue.indexOf(removeValue) !== -1) ||
         currentValue === removeValue;
 

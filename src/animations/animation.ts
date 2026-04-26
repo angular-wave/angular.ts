@@ -5,7 +5,7 @@ import {
   removeElementData,
   setCacheData,
 } from "../shared/dom.ts";
-import { mergeClasses, values } from "../shared/utils.ts";
+import { isArray, mergeClasses, values } from "../shared/utils.ts";
 import {
   NG_ANIMATE_CLASSNAME,
   PREPARE_CLASS_SUFFIX,
@@ -616,7 +616,7 @@ export class AnimationProvider {
       function normalizeClassValue(
         value: string | string[] | null | undefined,
       ): string {
-        if (Array.isArray(value)) return value.join(" ");
+        if (isArray(value)) return value.join(" ");
 
         return value || "";
       }
@@ -711,7 +711,7 @@ export class AnimationProvider {
         options.domOperation?.();
 
         if (tempClasses) {
-          const classList = Array.isArray(tempClasses)
+          const classList = isArray(tempClasses)
             ? tempClasses
             : tempClasses.split(" ");
 

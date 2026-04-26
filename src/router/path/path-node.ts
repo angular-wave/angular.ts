@@ -1,5 +1,3 @@
-import { applyPairs, find } from "../../shared/common.ts";
-import { propEq } from "../../shared/hof.ts";
 import { assign } from "../../shared/utils.ts";
 import { Param } from "../params/param.ts";
 import type { RawParams } from "../params/interface.ts";
@@ -59,15 +57,15 @@ export class PathNode {
    * @returns {PathNode}
    */
   applyRawParams(params: RawParams): PathNode {
-    const getParamVal = (paramDef: Param): [string, any] => [
-      paramDef.id,
-      paramDef.value(params[paramDef.id]),
-    ];
+    const paramValues: RawParams = {};
 
-    this.paramValues = this.paramSchema.reduce(
-      (memo: RawParams, pDef: Param) => applyPairs(memo, getParamVal(pDef)),
-      {},
-    );
+    for (let i = 0; i < this.paramSchema.length; i++) {
+      const paramDef = this.paramSchema[i];
+
+      paramValues[paramDef.id] = paramDef.value(params[paramDef.id]);
+    }
+
+    this.paramValues = paramValues;
 
     return this;
   }
@@ -78,7 +76,13 @@ export class PathNode {
    * @returns {Param | undefined}
    */
   parameter(name: string): Param | undefined {
-    return find(this.paramSchema, propEq("id", name));
+    for (let i = 0; i < this.paramSchema.length; i++) {
+      const param = this.paramSchema[i];
+
+      if (param.id === name) return param;
+    }
+
+    return undefined;
   }
 
   /**

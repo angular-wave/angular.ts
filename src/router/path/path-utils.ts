@@ -1,6 +1,4 @@
-import { find, omit, pick } from "../../shared/common.ts";
-import { propEq } from "../../shared/hof.ts";
-import { assign, keys, values } from "../../shared/utils.ts";
+import { assign, isArray, keys, values } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import { PathNode } from "./path-node.ts";
 import type { ViewService } from "../view/view.ts";
@@ -75,7 +73,7 @@ export function applyViewConfigs(
     for (let j = 0; j < viewDecls.length; j++) {
       const viewConfig = $view._createViewConfig(viewSubPath, viewDecls[j]);
 
-      if (Array.isArray(viewConfig)) {
+      if (isArray(viewConfig)) {
         viewConfigs.push(...viewConfig);
       } else {
         viewConfigs.push(viewConfig);
@@ -94,12 +92,6 @@ export function inheritParams(
   toPath: PathNode[],
   toKeys: string[] = [],
 ): PathNode[] {
-  function nodeParamVals(path: PathNode[], state: StateObject): RawParams {
-    const node = find(path, propEq("state", state)) as PathNode | undefined;
-
-    return assign({}, node && node.paramValues);
-  }
-
   const noInherit: string[] = [];
 
   for (let i = 0; i < fromPath.length; i++) {
@@ -114,26 +106,44 @@ export function inheritParams(
     }
   }
 
-  function makeInheritedParamsNode(toNode: PathNode): PathNode {
-    let toParamVals = assign({}, toNode && toNode.paramValues);
-
-    const incomingParamVals = pick(toParamVals, toKeys);
-
-    toParamVals = omit(toParamVals, toKeys);
-    const fromParamVals = omit(
-      nodeParamVals(fromPath, toNode.state) || {},
-      noInherit,
-    );
-
-    const ownParamVals = assign(toParamVals, fromParamVals, incomingParamVals);
-
-    return new PathNode(toNode.state).applyRawParams(ownParamVals);
-  }
-
   const inheritedPath: PathNode[] = [];
 
   for (let i = 0; i < toPath.length; i++) {
-    inheritedPath.push(makeInheritedParamsNode(toPath[i]));
+    const toNode = toPath[i];
+
+    let fromParamVals: RawParams = {};
+
+    for (let j = 0; j < fromPath.length; j++) {
+      const fromNode = fromPath[j];
+
+      if (fromNode.state === toNode.state) {
+        fromParamVals = assign({}, fromNode.paramValues);
+
+        break;
+      }
+    }
+
+    for (let j = 0; j < noInherit.length; j++) {
+      delete fromParamVals[noInherit[j]];
+    }
+
+    const toParamVals: RawParams = {};
+
+    const incomingParamVals: RawParams = {};
+
+    const toNodeParamValues = toNode.paramValues;
+
+    for (const key in toNodeParamValues) {
+      if (toKeys.indexOf(key) === -1) {
+        toParamVals[key] = toNodeParamValues[key];
+      } else {
+        incomingParamVals[key] = toNodeParamValues[key];
+      }
+    }
+
+    const ownParamVals = assign(toParamVals, fromParamVals, incomingParamVals);
+
+    inheritedPath.push(new PathNode(toNode.state).applyRawParams(ownParamVals));
   }
 
   return inheritedPath;
@@ -221,19 +231,30 @@ export function subPath(
   path: PathNode[],
   predicate: Predicate<PathNode>,
 ): PathNode[] | undefined {
-  const node = find(path, predicate);
+  let elementIdx = -1;
 
-  if (!node) return undefined;
-
-  const elementIdx = path.indexOf(node);
+  for (let i = 0; i < path.length; i++) {
+    if (predicate(path[i])) {
+      elementIdx = i;
+      break;
+    }
+  }
 
   return elementIdx === -1 ? undefined : path.slice(0, elementIdx + 1);
 }
 
 export function nonDynamicParams(node: PathNode): Param[] {
-  return node.state
-    .parameters({ inherit: false })
-    .filter((param) => !param.dynamic);
+  const params = node.state.parameters({ inherit: false });
+
+  const nonDynamic: Param[] = [];
+
+  for (let i = 0; i < params.length; i++) {
+    const param = params[i];
+
+    if (!param.dynamic) nonDynamic.push(param);
+  }
+
+  return nonDynamic;
 }
 
 /** Given a PathNode[], create an TargetState
@@ -250,10 +271,15 @@ export function makeTargetState(
   if (!tailNode)
     throw new Error("Cannot create TargetState from an empty path");
 
-  return new TargetState(
-    registry,
-    tailNode.state,
-    path.reduce((params, node) => assign(params, node.paramValues), {}),
-    {},
-  );
+  return new TargetState(registry, tailNode.state, pathToParams(path), {});
+}
+
+function pathToParams(path: PathNode[]): RawParams {
+  const params: RawParams = {};
+
+  for (let i = 0; i < path.length; i++) {
+    assign(params, path[i].paramValues);
+  }
+
+  return params;
 }

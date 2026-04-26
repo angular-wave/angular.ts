@@ -1,4 +1,3 @@
-import { val } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import type { TransitionService } from "../transition/transition-service.ts";
 import type { Transition, TreeChanges } from "../transition/transition.ts";
@@ -40,12 +39,20 @@ const lazyResolveState = (trans: Transition, state: StateDeclaration) =>
       /* empty */
     });
 
+function matchEnteringState(): boolean {
+  return true;
+}
+
 export const registerLazyResolveState = (
   transitionService: TransitionService,
 ) =>
-  transitionService.onEnter({ entering: val(true) }, lazyResolveState, {
-    priority: RESOLVE_HOOK_PRIORITY,
-  });
+  transitionService.onEnter(
+    { entering: matchEnteringState },
+    lazyResolveState,
+    {
+      priority: RESOLVE_HOOK_PRIORITY,
+    },
+  );
 
 /**
  * Resolves any remaining lazy resolvables before the transition finishes.

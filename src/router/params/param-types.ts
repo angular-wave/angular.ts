@@ -1,11 +1,11 @@
-import { equals, inherit, map, pick } from "../../shared/common.ts";
+import { equals } from "../../shared/common.ts";
 import {
   assign,
+  createObject,
   hasOwn,
   isDefined,
   isNullOrUndefined,
 } from "../../shared/utils.ts";
-import { is } from "../../shared/hof.ts";
 import { ParamType } from "./param-type.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type { ParamTypeDefinition } from "./interface.ts";
@@ -54,7 +54,7 @@ export class ParamTypes {
     this.$injector = $angular.$injector;
     this.enqueue = true;
     this.typeQueue = [];
-    this.defaultTypes = pick(ParamTypes.prototype, [
+    const defaultTypeNames = [
       "hash",
       "string",
       "query",
@@ -64,15 +64,23 @@ export class ParamTypes {
       "date",
       "json",
       "any",
-    ]) as Record<string, ParamTypeDefinition & Record<string, any>>;
-    // Register default types. Store them in the prototype of this.types.
-    const makeType = (definition: ParamTypeDefinition, name: string | number) =>
-      new ParamType(assign({ name }, definition));
+    ];
 
-    this.types = inherit(map(this.defaultTypes, makeType), {}) as Record<
-      string,
-      ParamType
-    >;
+    this.defaultTypes = {};
+
+    const defaultParamTypes: Record<string, ParamType> = {};
+
+    defaultTypeNames.forEach((name) => {
+      const definition = (ParamTypes.prototype as Record<string, any>)[
+        name
+      ] as ParamTypeDefinition & Record<string, any>;
+
+      this.defaultTypes[name] = definition;
+      defaultParamTypes[name] = new ParamType(assign({ name }, definition));
+    });
+
+    // Register default types. Store them in the prototype of this.types.
+    this.types = createObject(defaultParamTypes) as Record<string, ParamType>;
   }
 
   /**
@@ -152,7 +160,7 @@ function initDefaultTypes() {
     const defaultTypeBase = {
       encode: (val: any) => valToString(val),
       decode: (val: string) => valToString(val),
-      is: is(String),
+      is: (val: any) => val instanceof String || typeof val === "string",
       pattern: /.*/,
 
       equals: (a: any, b: any) => a === b,
@@ -187,7 +195,7 @@ function initDefaultTypes() {
     bool: makeDefaultType({
       encode: (val: any) => ((val && 1) || 0).toString(),
       decode: (val: string) => parseInt(val, 10) !== 0,
-      is: is(Boolean),
+      is: (val: any) => val instanceof Boolean || typeof val === "boolean",
       pattern: /[01]/,
     }),
     date: makeDefaultType({
@@ -218,9 +226,10 @@ function initDefaultTypes() {
        * @param {{ [x: string]: () => any; }} right
        */
       equals(left, right) {
-        return ["getFullYear", "getMonth", "getDate"].reduce(
-          (acc, fn) => acc && left[fn]() === right[fn](),
-          true,
+        return (
+          left.getFullYear() === right.getFullYear() &&
+          left.getMonth() === right.getMonth() &&
+          left.getDate() === right.getDate()
         );
       },
       pattern: /[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])/,
@@ -229,7 +238,7 @@ function initDefaultTypes() {
     json: makeDefaultType({
       encode: (x: any) => JSON.stringify(x),
       decode: (x: string) => JSON.parse(x),
-      is: is(Object),
+      is: (val: any) => val instanceof Object,
       equals,
       pattern: /[^/]*/,
     }),

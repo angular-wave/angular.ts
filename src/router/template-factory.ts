@@ -1,4 +1,3 @@
-import { tail, unnestR } from "../shared/common.ts";
 import {
   isArray,
   isDefined,
@@ -139,7 +138,7 @@ export class TemplateFactoryProvider {
     const deps = annotate(provider);
 
     const providerFn = isArray(provider)
-      ? (tail(provider) as Function)
+      ? (provider[provider.length - 1] as Function)
       : provider;
 
     const resolvable = new Resolvable("", providerFn, deps);
@@ -216,7 +215,17 @@ function getComponentBindings(
     throw new Error(`Unable to find component named '${name}'`);
   }
 
-  return cmpDefs.map(getBindings).reduce(unnestR, []);
+  const bindings: BindingTuple[] = [];
+
+  cmpDefs.forEach((def) => {
+    const defBindings = getBindings(def);
+
+    defBindings.forEach((binding) => {
+      bindings.push(binding);
+    });
+  });
+
+  return bindings;
 }
 
 const getBindings = (def: ng.Directive): BindingTuple[] => {
@@ -228,19 +237,17 @@ const getBindings = (def: ng.Directive): BindingTuple[] => {
 };
 
 const scopeBindings = (bindingsObj: Record<string, string>): BindingTuple[] => {
-  const tuples = keys(bindingsObj || {}).map(
-    (key): [string, RegExpExecArray | null] => {
-      const match = /^([=<@&])[?]?(.*)/.exec(bindingsObj[key] || "");
+  const bindingKeys = keys(bindingsObj || {});
 
-      return [key, match];
-    },
-  );
+  const bindings: BindingTuple[] = [];
 
-  const hasMatch = (
-    tuple: [string, RegExpExecArray | null],
-  ): tuple is [string, RegExpExecArray] => tuple[1] !== null;
+  bindingKeys.forEach((key) => {
+    const match = /^([=<@&])[?]?(.*)/.exec(bindingsObj[key] || "");
 
-  return tuples
-    .filter(hasMatch)
-    .map(([key, match]) => ({ name: match[2] || key, type: match[1] }));
+    if (match) {
+      bindings.push({ name: match[2] || key, type: match[1] });
+    }
+  });
+
+  return bindings;
 };

@@ -1,13 +1,13 @@
-import { removeFrom, tail, uniqR, unnestR } from "../../shared/common.ts";
+import { removeFrom } from "../../shared/common.ts";
 import {
   assign,
+  arrayFrom,
   entries,
   isArray,
   isNullOrUndefined,
   isObject,
   isString,
 } from "../../shared/utils.ts";
-import { parse } from "../../shared/hof.ts";
 import { getInheritedData } from "../../shared/dom.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 type ParsedStateRef = { _state: string | null; _paramExpr: string | null };
@@ -43,6 +43,9 @@ type WatchDeregFns = Record<string, () => void>;
 
 const noopDeregister = () => undefined;
 
+const uniqueStrings = (classes: string[]): string[] =>
+  arrayFrom(new Set(classes));
+
 /**
  * Parses an `ng-sref` expression into a target state name and parameter expression.
  */
@@ -66,13 +69,10 @@ function parseStateRef(ref: string): ParsedStateRef {
 function stateContext(el: Node): string | undefined {
   const $ngView = getInheritedData(el, "$ngView");
 
-  const path = parse("$cfg.path")($ngView) as
-    | Array<{ state: { name: string } }>
-    | undefined;
+  const path = ($ngView as { $cfg?: { path?: unknown } } | undefined)?.$cfg
+    ?.path as Array<{ state: { name: string } }> | undefined;
 
-  return path
-    ? (tail(path) as { state: { name: string } }).state.name
-    : undefined;
+  return path ? path[path.length - 1].state.name : undefined;
 }
 
 /**
@@ -363,15 +363,13 @@ export function StateRefDynamicDirective(
         ngStateOpts: "_ngStateOpts",
       } as const;
 
-      const watchDeregFns = inputAttrs.reduce(
-        (acc, attr) => (
-          (acc[attr] = () => {
-            /* empty */
-          }),
-          acc
-        ),
-        {} as WatchDeregFns,
-      );
+      const watchDeregFns = {} as WatchDeregFns;
+
+      inputAttrs.forEach((attr) => {
+        watchDeregFns[attr] = () => {
+          /* empty */
+        };
+      });
 
       function update() {
         const def = getDef();
@@ -588,40 +586,49 @@ export function StateRefActiveDirective(
           stateList
             .map((x) => x._activeClass)
             .map(splitClasses)
-            .reduce(unnestR, []);
+            .flat();
 
-        const allClasses = getClasses(states)
-          .concat(splitClasses(activeEqClass))
-          .reduce(uniqR, []) as string[];
+        const allClasses = getClasses(states).concat(
+          splitClasses(activeEqClass),
+        );
 
-        const fuzzyClasses = getClasses(
-          states.filter((x) =>
-            $state.includes(x._state.name, x._params as any),
-          ),
-        ) as string[];
+        const fuzzyStates: ActiveClassState[] = [];
 
-        const exactlyMatchesAny = !!states.filter((x) =>
-          $state.is(x._state.name, x._params as any),
-        ).length;
+        let exactlyMatchesAny = false;
+
+        states.forEach((state) => {
+          if ($state.includes(state._state.name, state._params as any)) {
+            fuzzyStates.push(state);
+          }
+
+          if ($state.is(state._state.name, state._params as any)) {
+            exactlyMatchesAny = true;
+          }
+        });
+
+        const fuzzyClasses = getClasses(fuzzyStates);
 
         const exactClasses = exactlyMatchesAny
           ? splitClasses(activeEqClass)
           : [];
 
-        const addClasses = fuzzyClasses
-          .concat(exactClasses)
-          .reduce(uniqR, []) as string[];
+        const addClasses = uniqueStrings(fuzzyClasses.concat(exactClasses));
 
-        const removeClasses = allClasses.filter(
-          (cls) => !addClasses.includes(cls),
-        );
+        const removeClasses: string[] = [];
 
-        addClasses.forEach((className: string) =>
-          $element.classList.add(className),
-        );
-        removeClasses.forEach((className: string) =>
-          $element.classList.remove(className),
-        );
+        uniqueStrings(allClasses).forEach((cls) => {
+          if (!addClasses.includes(cls)) {
+            removeClasses.push(cls);
+          }
+        });
+
+        addClasses.forEach((className) => {
+          $element.classList.add(className);
+        });
+
+        removeClasses.forEach((className) => {
+          $element.classList.remove(className);
+        });
       }
       update();
     },

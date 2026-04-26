@@ -1,4 +1,3 @@
-import { filter, map } from "../../shared/common.ts";
 import { assign, isArray, isDefined } from "../../shared/utils.ts";
 import type { ParamTypeDefinition } from "./interface.ts";
 /**
@@ -153,11 +152,21 @@ function ArrayType(
       if (isArray(val) && val.length === 0) return val;
       const arr = arrayWrap(val);
 
-      const result = map(arr, callback) as any[];
+      const result: any[] = [];
 
-      return allTruthyMode === true
-        ? filter(result, (x) => !x).length === 0
-        : arrayUnwrap(result);
+      for (let i = 0; i < arr.length; i++) {
+        result.push(callback(arr[i]));
+      }
+
+      if (allTruthyMode === true) {
+        for (let i = 0; i < result.length; i++) {
+          if (!result[i]) return false;
+        }
+
+        return true;
+      }
+
+      return arrayUnwrap(result);
     };
   }
   // Wraps type (.equals) functions to operate on each value of an array
@@ -178,13 +187,17 @@ function ArrayType(
       return true;
     };
   }
-  ["encode", "decode", "equals", "$normalize"].forEach((name: string) => {
+  const wrappedMethods = ["encode", "decode", "equals", "$normalize"];
+
+  for (let i = 0; i < wrappedMethods.length; i++) {
+    const name = wrappedMethods[i];
+
     const paramTypeFn = type[name].bind(type);
 
     const wrapperFn = name === "equals" ? arrayEqualsHandler : arrayHandler;
 
     this[name] = wrapperFn(paramTypeFn);
-  });
+  }
 
   assign(this, {
     dynamic: type.dynamic,

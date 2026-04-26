@@ -1,6 +1,7 @@
 import { $injectTokens } from "../../injection-tokens.ts";
 import { getCacheData } from "../../shared/dom.ts";
 import {
+  arrayFrom,
   equals,
   includes,
   isDefined,
@@ -62,7 +63,7 @@ export function selectDirective(): ng.Directive {
 
         const options = selectElement.getElementsByTagName("option");
 
-        Array.from(options).forEach((option: HTMLOptionElement) => {
+        arrayFrom(options).forEach((option: HTMLOptionElement) => {
           if (option.selected && !option.disabled) {
             const val = option.value;
 
@@ -80,7 +81,7 @@ export function selectDirective(): ng.Directive {
       selectCtrl._writeValue = function (value: any[]) {
         const options = selectElement.getElementsByTagName("option");
 
-        Array.from(options).forEach((option: HTMLOptionElement) => {
+        arrayFrom(options).forEach((option: HTMLOptionElement) => {
           const shouldBeSelected =
             !!value &&
             (includes(value, option.value) ||

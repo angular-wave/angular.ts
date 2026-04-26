@@ -1,4 +1,5 @@
 import { Attributes } from "../../core/compile/attributes.ts";
+import { arrayFrom } from "../../shared/utils.ts";
 
 /** Evaluates expressions when an element enters or leaves the viewport. */
 export function ngViewportDirective(): ng.Directive {
@@ -37,7 +38,7 @@ export function ngViewportDirective(): ng.Directive {
       if (parent) {
         mutationObserver = new MutationObserver((mutations) => {
           for (const mutation of mutations) {
-            Array.from(mutation.removedNodes).forEach((removedNode: Node) => {
+            arrayFrom(mutation.removedNodes).forEach((removedNode: Node) => {
               if (removedNode === element) {
                 observer.disconnect();
 

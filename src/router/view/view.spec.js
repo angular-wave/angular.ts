@@ -58,7 +58,7 @@ describe("view", () => {
         },
       };
 
-      expect(ViewService._matches({}, ngView)(viewConfig)).toBe(true);
+      expect(ViewService._matches({}, ngView, viewConfig)).toBe(true);
     });
 
     it("matches named child ng-views using context.name fqn format", () => {
@@ -80,7 +80,7 @@ describe("view", () => {
         },
       };
 
-      expect(ViewService._matches({}, ngView)(viewConfig)).toBe(true);
+      expect(ViewService._matches({}, ngView, viewConfig)).toBe(true);
     });
 
     it("does not match a parent config when a more specific child ng-view exists", () => {
@@ -107,7 +107,7 @@ describe("view", () => {
         },
       };
 
-      expect(ViewService._matches(childNgViewsByFqn, ngView)(viewConfig)).toBe(
+      expect(ViewService._matches(childNgViewsByFqn, ngView, viewConfig)).toBe(
         false,
       );
     });
