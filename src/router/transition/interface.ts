@@ -115,10 +115,6 @@ export interface TransitionHookOptions {
   transition?: Transition | null;
   hookType?: string;
   target?: unknown;
-  traceData?: {
-    hookType?: string;
-    context?: any;
-  };
   bind?: unknown;
   stateHook?: boolean;
 }

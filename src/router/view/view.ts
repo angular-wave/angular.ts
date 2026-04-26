@@ -1,6 +1,5 @@
 import { equals, removeFrom } from "../../shared/common.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
-import { trace } from "../common/trace.ts";
 import { ViewConfig } from "../state/views.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "../state/interface.ts";
@@ -109,7 +108,6 @@ export class ViewService {
    * Removes a view config from the active registry.
    */
   deactivateViewConfig(viewConfig: ViewConfig): void {
-    trace.traceViewServiceEvent("<- Removing", viewConfig);
     removeFrom(this._viewConfigs, viewConfig);
   }
 
@@ -117,7 +115,6 @@ export class ViewService {
    * Adds a view config to the active registry.
    */
   activateViewConfig(viewConfig: ViewConfig): void {
-    trace.traceViewServiceEvent("-> Registering", viewConfig);
     this._viewConfigs.push(viewConfig);
   }
 
@@ -239,22 +236,13 @@ export class ViewService {
     const allTuples = ngViewTuples.concat(unmatchedConfigTuples);
 
     this._listeners.forEach((cb) => cb(allTuples));
-    trace.traceViewSync(allTuples);
   }
 
   /**
    * Registers one active `ng-view` and returns a deregistration function.
    */
   registerUIView(ngView: ActiveUIView): () => void {
-    trace.traceViewServiceUIViewEvent("-> Registering", ngView);
     const ngViews = this._ngViews;
-
-    const fqnAndTypeMatches = (uiv: ActiveUIView): boolean =>
-      uiv.fqn === ngView.fqn;
-
-    if (ngViews.filter(fqnAndTypeMatches).length) {
-      trace.traceViewServiceUIViewEvent("!!!! duplicate ngView named:", ngView);
-    }
 
     ngViews.push(ngView);
     this.sync();
@@ -263,15 +251,9 @@ export class ViewService {
       const idx = ngViews.indexOf(ngView);
 
       if (idx === -1) {
-        trace.traceViewServiceUIViewEvent(
-          "Tried removing non-registered ngView",
-          ngView,
-        );
-
         return;
       }
 
-      trace.traceViewServiceUIViewEvent("<- Deregistering", ngView);
       ngViews.splice(idx, 1);
       this.sync();
     };

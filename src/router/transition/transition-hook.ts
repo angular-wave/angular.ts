@@ -1,8 +1,6 @@
 import { defaults } from "../../shared/common.ts";
-import { parse } from "../../shared/hof.ts";
 import { isPromise } from "../../shared/predicates.ts";
 import { fnToString, maxLength } from "../../shared/strings.ts";
-import { trace } from "../common/trace.ts";
 import { TargetState } from "../state/target-state.ts";
 import { Rejection } from "./reject-factory.ts";
 import type { StateDeclaration } from "../state/interface.ts";
@@ -43,10 +41,6 @@ export interface TransitionHookOptions {
   transition?: Transition | null;
   hookType?: string;
   target?: unknown;
-  traceData?: {
-    hookType?: string;
-    context?: any;
-  };
   bind?: unknown;
   stateHook?: boolean;
 }
@@ -54,7 +48,6 @@ export interface TransitionHookOptions {
 const defaultOptions: Partial<TransitionHookOptions> = {
   current: () => undefined,
   transition: null,
-  traceData: {},
   bind: null,
 };
 
@@ -162,8 +155,6 @@ export class TransitionHook {
 
     const { options } = this;
 
-    trace.traceHookInvocation(this, this.transition, options);
-
     const invokeCallback = (): HookResult =>
       hook.callback.call(
         options.bind,
@@ -211,8 +202,6 @@ export class TransitionHook {
       return (result as Promise<any>).then((val) => this.handleHookResult(val));
     }
 
-    trace.traceHookResult(result, this.transition);
-
     if (result === false) {
       return Rejection.aborted("Hook aborted transition")._toPromise();
     }
@@ -239,18 +228,16 @@ export class TransitionHook {
     return undefined;
   }
 
-  /**
-   * Returns a readable trace label for this hook invocation.
-   */
   toString(): string {
     const { options, registeredHook } = this;
 
-    const event = parse("traceData.hookType")(options) || "internal";
+    const event = options.hookType || "internal";
 
-    const context =
-      parse("traceData.context.state.name")(options) ||
-      parse("traceData.context")(options) ||
-      "unknown";
+    const target = options.target as
+      | { state?: { name?: string }; name?: string }
+      | undefined;
+
+    const context = target?.state?.name || target?.name || "unknown";
 
     const name = fnToString(registeredHook.callback);
 

@@ -99,7 +99,6 @@ import {
 import { ngViewportDirective } from "./directive/viewport/viewport.ts";
 import { ngWasmDirective } from "./directive/wasm/wasm.ts";
 import { ngWorkerDirective } from "./directive/worker/worker.ts";
-import { trace } from "./router/common/trace.ts";
 import {
   StateRefActiveDirective,
   StateRefDirective,
@@ -291,21 +290,11 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
         },
       ],
     )
-    .run([
-      $t._log,
-      /**
-       * Initializes the router trace singleton with the DI-backed logger.
-       */
-      ($log: Pick<Console, "log" | "table">) => {
-        trace._setLogger($log);
-      },
-    ])
     .factory("$stateParams", [
       $t._router,
       /**
        * Exposes the router's current parameter bag as `$stateParams`.
        */
       (globals) => globals.params,
-    ])
-    .value("$trace", trace);
+    ]);
 }

@@ -20,7 +20,6 @@ export * from "./core/parse/parse.ts";
 export * from "./filters/filter.ts";
 export * from "./core/filter/filter.ts";
 
-export * from "./router/common/trace.ts";
 export * from "./router/router.ts";
 export * from "./router/state/interface.ts";
 export * from "./router/state/state-object.ts";

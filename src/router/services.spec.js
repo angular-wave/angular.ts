@@ -54,7 +54,6 @@ describe("router services", () => {
     expect($injector.get("$transitions")).toBeDefined();
     expect($injector.get("$state")).toBeDefined();
     expect($injector.get("$view")).toBeDefined();
-    expect($injector.get("$trace")).toBeDefined();
   });
 
   it("activates the initial url-matched state after listen and sync", async () => {

@@ -1,7 +1,6 @@
 import { stringify } from "../../shared/strings.ts";
 import { isUndefined } from "../../shared/utils.ts";
 import { PathUtils } from "../path/path-utils.ts";
-import { trace } from "../common/trace.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
@@ -142,8 +141,6 @@ export class ResolveContext {
    * Resolves the path's resolvables.
    */
   resolvePath(eagerOnly = false, trans: Transition): Promise<any> | any {
-    trace.traceResolvePath(this._path, eagerOnly, trans);
-
     const promises: Promise<{ token: any; value: any }>[] = [];
 
     for (let i = 0; i < this._path.length; i++) {

@@ -1,4 +1,4 @@
-/* Version: 0.26.0 - April 22, 2026 19:41:13 */
+/* Version: 0.26.0 - April 26, 2026 16:44:17 */
 const VALID_CLASS = "ng-valid";
 const INVALID_CLASS = "ng-invalid";
 const PRISTINE_CLASS = "ng-pristine";
@@ -571,41 +571,10 @@ function isValidObjectMaxDepth(maxDepth) {
     return isNumber(maxDepth) && maxDepth > 0;
 }
 /**
- * Concatenates a real array with an array-like collection.
- */
-function concat(array1, array2, index) {
-    return array1.concat(Array.prototype.slice.call(array2, index));
-}
-/**
  * Converts `arguments` or an array-like value into a real array.
  */
 function sliceArgs(args, startIndex) {
     return Array.prototype.slice.call(args, startIndex);
-}
-/**
- * Returns a function which calls function `fn` bound to `self` (`self` becomes the `this` for
- * `fn`). You can supply optional `args` that are prebound to the function. This feature is also
- * known as [partial application](http://en.wikipedia.org/wiki/Partial_application), as
- * distinguished from [function currying](http://en.wikipedia.org/wiki/Currying#Contrast_with_partial_function_application).
- *
- */
-function bind(context, fn) {
-    const curryArgs = arguments.length > 2 ? sliceArgs(arguments, 2) : [];
-    if (isFunction(fn) && !(fn instanceof RegExp)) {
-        return curryArgs.length
-            ? function () {
-                return arguments.length
-                    ? fn.apply(context, concat(curryArgs, arguments, 0))
-                    : fn.apply(context, curryArgs);
-            }
-            : function () {
-                return arguments.length
-                    ? fn.apply(context, arguments)
-                    : fn.call(context);
-            };
-    }
-    // In IE, native methods are not functions so they cannot be bound (note: they don't need to be).
-    return fn;
 }
 /**
  * JSON replacer that strips AngularTS internals and special-cases window/document/scope values.
@@ -1252,6 +1221,7 @@ const BOOLEAN_ATTR = [
     "required",
     "open",
 ];
+const BOOLEAN_ATTR_SET = new Set(BOOLEAN_ATTR);
 /** Element names that support HTML boolean attributes. */
 const BOOLEAN_ELEMENTS = [
     "INPUT",
@@ -1262,6 +1232,7 @@ const BOOLEAN_ELEMENTS = [
     "FORM",
     "DETAILS",
 ];
+const BOOLEAN_ELEMENTS_SET = new Set(BOOLEAN_ELEMENTS);
 ///////////////////////////////////////////////////////////////////
 ////////////        HELPER FUNCTIONS      /////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -1353,7 +1324,10 @@ function dealoc(element, onlyDescendants = false) {
     if (isArray(element) ||
         element instanceof NodeList ||
         element instanceof HTMLCollection) {
-        Array.from(element).forEach((item) => dealoc(item, onlyDescendants));
+        const nodes = Array.from(element);
+        for (let i = 0; i < nodes.length; i++) {
+            dealoc(nodes[i], onlyDescendants);
+        }
         return;
     }
     else {
@@ -1363,10 +1337,11 @@ function dealoc(element, onlyDescendants = false) {
             : singleNode;
         if (!domElement)
             return;
-        if (!onlyDescendants && elementAcceptsData(domElement)) {
-            cleanElementData([domElement]);
+        const acceptsData = elementAcceptsData(domElement);
+        if (!onlyDescendants && acceptsData) {
+            cleanSingleElementData(domElement);
         }
-        if (elementAcceptsData(domElement)) {
+        if (acceptsData) {
             cleanElementData(domElement.querySelectorAll("*"));
         }
     }
@@ -1642,20 +1617,22 @@ function getBlockNodes(nodes) {
  */
 function getBooleanAttrName(element, name) {
     const normalizedName = name.toLowerCase();
-    const isBooleanAttr = BOOLEAN_ATTR.includes(normalizedName);
-    return isBooleanAttr && BOOLEAN_ELEMENTS.includes(element.nodeName)
+    const isBooleanAttr = BOOLEAN_ATTR_SET.has(normalizedName);
+    return isBooleanAttr && BOOLEAN_ELEMENTS_SET.has(element.nodeName)
         ? normalizedName
         : false;
+}
+function cleanSingleElementData(node) {
+    if (node.hasAttribute(NG_ANIMATE_ATTR_NAME$1) ||
+        isDefined(getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY))) {
+        node.dispatchEvent(new Event("$destroy"));
+    }
+    removeElementData(node);
 }
 /** Removes cached data for each element in a node collection. */
 function cleanElementData(nodes) {
     for (let i = 0, ii = nodes.length; i < ii; i++) {
-        const node = nodes[i];
-        if ((node instanceof Element && node.hasAttribute(NG_ANIMATE_ATTR_NAME$1)) ||
-            isDefined(getCacheData(node, ANIMATION_RUNNER_STORAGE_KEY))) {
-            node.dispatchEvent(new Event("$destroy"));
-        }
-        removeElementData(node);
+        cleanSingleElementData(nodes[i]);
     }
 }
 /** Returns the nearest injector service found while walking up the element tree. */
@@ -2517,11 +2494,11 @@ function HttpParamSerializerProvider() {
                 .sort()
                 .forEach((key) => {
                 const value = params[key];
-                if (value === null || isUndefined(value) || isFunction(value))
+                if (isNullOrUndefined(value) || isFunction(value))
                     return;
                 if (isArray(value)) {
                     value.forEach((v) => {
-                        if (v === null || isUndefined(v) || isFunction(v))
+                        if (isNullOrUndefined(v) || isFunction(v))
                             return;
                         const serializedValue = serializeValue(v);
                         parts.push(`${encodeUriQuery(key)}=${encodeUriQuery(String(serializedValue))}`);
@@ -3176,6 +3153,21 @@ function http(method, url, post, callback, headers, timeout, withCredentials, re
     }
 }
 
+/**
+ * Creates a resolver that instantiates `$animate` only when animation-aware code
+ * actually needs it.
+ */
+function createLazyAnimate($injector) {
+    let $animate;
+    return () => ($animate || ($animate = $injector.get($injectTokens._animate)));
+}
+/**
+ * Returns `$animate` only for nodes that opt into animation handling.
+ */
+function getAnimateForNode(getAnimate, node) {
+    return hasAnimate(node) ? getAnimate() : undefined;
+}
+
 /** Creates a directive factory wrapper for one HTTP method attribute. */
 function defineDirective(method, attrOverride) {
     const attrName = attrOverride || `ng${method.charAt(0).toUpperCase()}${method.slice(1)}`;
@@ -3187,7 +3179,7 @@ function defineDirective(method, attrOverride) {
         $injectTokens._parse,
         $injectTokens._state,
         $injectTokens._sse,
-        $injectTokens._animate,
+        $injectTokens._injector,
     ];
     return directive;
 }
@@ -3215,7 +3207,8 @@ function getEventNameForElement(element) {
 /** Creates an HTTP directive factory that supports GET, DELETE, POST, and PUT. */
 function createHttpDirective(method, attrName) {
     /** Builds the runtime directive instance with HTTP, SSE, compile, and routing helpers. */
-    return function ($http, $compile, $log, $parse, $state, $sse, $animate) {
+    return function ($http, $compile, $log, $parse, $state, $sse, $injector) {
+        const getAnimate = createLazyAnimate($injector);
         /** Collects form data from the element or its associated form. */
         function collectFormData(element) {
             let form = null;
@@ -3280,6 +3273,7 @@ function createHttpDirective(method, attrName) {
                     if (attrsParam.animate) {
                         animationEnabled = true;
                     }
+                    const animate = animationEnabled ? getAnimate() : undefined;
                     let nodes = [];
                     if (!["textcontent", "delete", "none"].includes(swap)) {
                         if (!html)
@@ -3313,13 +3307,13 @@ function createHttpDirective(method, attrName) {
                             const placeholder = document.createElement("span");
                             placeholder.style.display = "none";
                             parent.insertBefore(placeholder, target.nextSibling);
-                            $animate.leave(target).done(() => {
+                            animate.leave(target).done(() => {
                                 const insertedNodes = Array.from(frag.childNodes);
                                 // Insert each node in order
                                 for (const x of insertedNodes) {
                                     if (x.nodeType === NodeType._ELEMENT_NODE) {
                                         // Animate elements
-                                        $animate.enter(x, parent, placeholder);
+                                        animate.enter(x, parent, placeholder);
                                     }
                                     else {
                                         // Insert text nodes statically
@@ -3334,9 +3328,9 @@ function createHttpDirective(method, attrName) {
                         }
                         case "textContent":
                             if (animationEnabled) {
-                                $animate.leave(target).done(() => {
+                                animate.leave(target).done(() => {
                                     target.textContent = html;
-                                    $animate.enter(target, target.parentNode);
+                                    animate.enter(target, target.parentNode);
                                     scopeParam.$flushQueue();
                                 });
                                 scopeParam.$flushQueue();
@@ -3352,7 +3346,7 @@ function createHttpDirective(method, attrName) {
                             nodes.forEach((node) => {
                                 if (animationEnabled &&
                                     node.nodeType === NodeType._ELEMENT_NODE) {
-                                    $animate.enter(node, parent, target); // insert before target
+                                    animate.enter(node, parent, target); // insert before target
                                 }
                                 else {
                                     parent.insertBefore(node, target);
@@ -3367,7 +3361,7 @@ function createHttpDirective(method, attrName) {
                             [...nodes].reverse().forEach((node) => {
                                 if (animationEnabled &&
                                     node.nodeType === NodeType._ELEMENT_NODE) {
-                                    $animate.enter(node, target, firstChild); // insert before first child
+                                    animate.enter(node, target, firstChild); // insert before first child
                                 }
                                 else {
                                     target.insertBefore(node, firstChild);
@@ -3381,7 +3375,7 @@ function createHttpDirective(method, attrName) {
                             nodes.forEach((node) => {
                                 if (animationEnabled &&
                                     node.nodeType === NodeType._ELEMENT_NODE) {
-                                    $animate.enter(node, target); // append at end
+                                    animate.enter(node, target); // append at end
                                 }
                                 else {
                                     target.appendChild(node);
@@ -3399,7 +3393,7 @@ function createHttpDirective(method, attrName) {
                             [...nodes].reverse().forEach((node) => {
                                 if (animationEnabled &&
                                     node.nodeType === NodeType._ELEMENT_NODE) {
-                                    $animate.enter(node, parent, nextSibling); // insert after target
+                                    animate.enter(node, parent, nextSibling); // insert after target
                                 }
                                 else {
                                     parent.insertBefore(node, nextSibling);
@@ -3411,7 +3405,7 @@ function createHttpDirective(method, attrName) {
                         }
                         case "delete":
                             if (animationEnabled) {
-                                $animate.leave(target).done(() => {
+                                animate.leave(target).done(() => {
                                     removeElement(target); // safety: actually remove in case $animate.leave didn't
                                     scopeParam.$flushQueue();
                                 });
@@ -3429,9 +3423,9 @@ function createHttpDirective(method, attrName) {
                                 if (content &&
                                     !Array.isArray(content) &&
                                     content.nodeType !== NodeType._TEXT_NODE) {
-                                    $animate.leave(content).done(() => {
+                                    animate.leave(content).done(() => {
                                         content = nodes[0];
-                                        $animate.enter(nodes[0], target);
+                                        animate.enter(nodes[0], target);
                                         scopeParam.$flushQueue();
                                     });
                                     scopeParam.$flushQueue();
@@ -3445,7 +3439,7 @@ function createHttpDirective(method, attrName) {
                                         target.replaceChildren(...nodes);
                                     }
                                     else {
-                                        $animate.enter(nodes[0], target);
+                                        animate.enter(nodes[0], target);
                                         scopeParam.$flushQueue();
                                     }
                                 }
@@ -6479,7 +6473,7 @@ function AnimateCssProvider() {
                 let preparationClasses = [structuralClassName, addRemoveClassName]
                     .join(" ")
                     .trim();
-                const hasToStyles = !!(styles.to && Object.keys(styles.to).length > 0);
+                const hasToStyles = !!(styles.to && keys(styles.to).length > 0);
                 const containsKeyframeAnimation = (options.keyframeStyle || "").length > 0;
                 // there is no way we can trigger an animation if no styles and
                 // no classes are being applied which would then trigger a transition,
@@ -6640,7 +6634,7 @@ function AnimateCssProvider() {
                         (stagger.animationDuration ?? 0) === 0;
                 if (options.from) {
                     if (options.cleanupStyles) {
-                        registerRestorableStyles(restoreStyles, node, Object.keys(options.from));
+                        registerRestorableStyles(restoreStyles, node, keys(options.from));
                     }
                     applyAnimationFromStyles(element, options);
                 }
@@ -6944,7 +6938,7 @@ function AnimateCssProvider() {
                         }
                         if (options.to) {
                             if (options.cleanupStyles) {
-                                registerRestorableStyles(restoreStyles, node, Object.keys(options.to));
+                                registerRestorableStyles(restoreStyles, node, keys(options.to));
                             }
                             applyAnimationToStyles(element, options);
                         }
@@ -7012,9 +7006,9 @@ function AnimateQueueProvider($animateProvider) {
      * @return {Record<string, string>}
      */
     function makeTruthyCssClassMap(classString) {
-        const keys = classString.split(ONE_SPACE);
+        const classNames = classString.split(ONE_SPACE);
         const map = nullObject();
-        keys.forEach((key) => {
+        classNames.forEach((key) => {
             map[key] = true;
         });
         return map;
@@ -7348,7 +7342,7 @@ function AnimateQueueProvider($animateProvider) {
                 if (!isValidAnimation) {
                     isValidAnimation =
                         (newAnimation.event === "animate" &&
-                            Object.keys(newAnimation.options?.to || {}).length > 0) ||
+                            keys(newAnimation.options?.to || {}).length > 0) ||
                             hasAnimationClasses(newAnimation);
                 }
                 if (!isValidAnimation) {
@@ -7838,7 +7832,7 @@ class ControllerProvider {
             return;
         }
         if (isObject(name)) {
-            const controllerNames = Object.keys(name);
+            const controllerNames = keys(name);
             for (let i = 0, l = controllerNames.length; i < l; i++) {
                 const key = controllerNames[i];
                 const value = name[key];
@@ -7889,6 +7883,179 @@ let $parse;
 let $exceptionHandler;
 /** @internal */
 const $postUpdateQueue = [];
+const arrayMutationMeta = new WeakMap();
+const arraySwapCandidates = new WeakMap();
+let arrayMutationVersion = 0;
+function toArrayMutationLength(value) {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || Number.isNaN(numericValue)) {
+        return 0;
+    }
+    return Math.trunc(numericValue);
+}
+function normalizeSpliceIndex(index, length) {
+    const numericIndex = toArrayMutationLength(index);
+    if (numericIndex < 0) {
+        return Math.max(length + numericIndex, 0);
+    }
+    return Math.min(numericIndex, length);
+}
+function createSpliceArrayMutationMeta(index, deleteCount, insertCount, previousLength, currentLength) {
+    const normalizedIndex = Math.max(0, Math.min(index, previousLength));
+    const normalizedDeleteCount = Math.max(0, deleteCount);
+    const normalizedInsertCount = Math.max(0, insertCount);
+    if (normalizedDeleteCount === 0 &&
+        normalizedInsertCount === 0 &&
+        previousLength === currentLength) {
+        return undefined;
+    }
+    return {
+        _version: ++arrayMutationVersion,
+        _kind: "splice",
+        _index: normalizedIndex,
+        _deleteCount: normalizedDeleteCount,
+        _insertCount: normalizedInsertCount,
+        _previousLength: previousLength,
+        _currentLength: currentLength,
+        _headDeletes: normalizedDeleteCount > 0 &&
+            normalizedInsertCount === 0 &&
+            normalizedIndex === 0,
+        _tailDeletes: normalizedDeleteCount > 0 &&
+            normalizedInsertCount === 0 &&
+            normalizedIndex + normalizedDeleteCount === previousLength,
+        _swapFromIndex: -1,
+        _swapToIndex: -1,
+    };
+}
+function createReorderArrayMutationMeta(length) {
+    return {
+        _version: ++arrayMutationVersion,
+        _kind: "reorder",
+        _index: 0,
+        _deleteCount: 0,
+        _insertCount: 0,
+        _previousLength: length,
+        _currentLength: length,
+        _headDeletes: false,
+        _tailDeletes: false,
+        _swapFromIndex: -1,
+        _swapToIndex: -1,
+    };
+}
+function createSwapArrayMutationMeta(previousLength, currentLength, firstIndex, secondIndex) {
+    const leftIndex = Math.min(firstIndex, secondIndex);
+    const rightIndex = Math.max(firstIndex, secondIndex);
+    return {
+        _version: ++arrayMutationVersion,
+        _kind: "swap",
+        _index: leftIndex,
+        _deleteCount: 0,
+        _insertCount: 0,
+        _previousLength: previousLength,
+        _currentLength: currentLength,
+        _headDeletes: false,
+        _tailDeletes: false,
+        _swapFromIndex: leftIndex,
+        _swapToIndex: rightIndex,
+    };
+}
+function getArrayMutationIndex(property) {
+    if (typeof property === "number") {
+        return Number.isInteger(property) && property >= 0 ? property : undefined;
+    }
+    if (typeof property !== "string" || property === "length") {
+        return undefined;
+    }
+    const numericProperty = Number(property);
+    if (!Number.isInteger(numericProperty) ||
+        numericProperty < 0 ||
+        String(numericProperty) !== property) {
+        return undefined;
+    }
+    return numericProperty;
+}
+function unwrapArrayMutationValue(value) {
+    if (isProxy(value) && value.$target) {
+        return value.$target;
+    }
+    return value;
+}
+function clearArraySwapCandidate(proxy) {
+    arraySwapCandidates.delete(proxy);
+}
+function trackArraySwapMutation(proxy, property, oldValue, newValue, currentLength) {
+    const index = getArrayMutationIndex(property);
+    if (index === undefined) {
+        clearArraySwapCandidate(proxy);
+        return;
+    }
+    const normalizedOldValue = unwrapArrayMutationValue(oldValue);
+    const normalizedNewValue = unwrapArrayMutationValue(newValue);
+    if (normalizedOldValue === normalizedNewValue) {
+        clearArraySwapCandidate(proxy);
+        return;
+    }
+    const candidate = arraySwapCandidates.get(proxy);
+    if (candidate &&
+        candidate._length === currentLength &&
+        candidate._index !== index &&
+        candidate._oldValue === normalizedNewValue &&
+        candidate._newValue === normalizedOldValue) {
+        clearArraySwapCandidate(proxy);
+        setArrayMutationMeta(proxy, createSwapArrayMutationMeta(currentLength, currentLength, candidate._index, index));
+        return;
+    }
+    arraySwapCandidates.set(proxy, {
+        _index: index,
+        _oldValue: normalizedOldValue,
+        _newValue: normalizedNewValue,
+        _length: currentLength,
+    });
+}
+function getMethodArrayMutationMeta(method, args, previousLength, currentLength) {
+    switch (method) {
+        case "push":
+            return createSpliceArrayMutationMeta(previousLength, 0, args.length, previousLength, currentLength);
+        case "pop":
+            return previousLength > 0
+                ? createSpliceArrayMutationMeta(previousLength - 1, 1, 0, previousLength, currentLength)
+                : undefined;
+        case "shift":
+            return previousLength > 0
+                ? createSpliceArrayMutationMeta(0, 1, 0, previousLength, currentLength)
+                : undefined;
+        case "unshift":
+            return createSpliceArrayMutationMeta(0, 0, args.length, previousLength, currentLength);
+        case "splice": {
+            const index = normalizeSpliceIndex(args[0], previousLength);
+            const deleteCount = args.length < 2
+                ? previousLength - index
+                : Math.min(Math.max(toArrayMutationLength(args[1]), 0), previousLength - index);
+            return createSpliceArrayMutationMeta(index, deleteCount, Math.max(0, args.length - 2), previousLength, currentLength);
+        }
+        case "reverse":
+        case "sort":
+            return createReorderArrayMutationMeta(previousLength);
+        default:
+            return undefined;
+    }
+}
+function clearArrayMutationMeta(proxy) {
+    arrayMutationMeta.delete(proxy);
+}
+function setArrayMutationMeta(proxy, meta) {
+    if (!meta) {
+        clearArrayMutationMeta(proxy);
+        return;
+    }
+    arrayMutationMeta.set(proxy, meta);
+}
+function getArrayMutationMeta(value) {
+    if (!value || !isProxy(value)) {
+        return undefined;
+    }
+    return arrayMutationMeta.get(value);
+}
 class RootScopeProvider {
     constructor() {
         this.$get = [
@@ -8067,7 +8234,15 @@ function createScope(target = {}, context) {
     return proxy;
 }
 const global = globalThis;
-const arrayMutationMethods = new Set(["pop", "shift", "unshift"]);
+const arrayMutationMethods = new Set([
+    "push",
+    "pop",
+    "splice",
+    "reverse",
+    "shift",
+    "sort",
+    "unshift",
+]);
 const wStr = "[object Window]";
 const nonScopeConstructors = [
     Window,
@@ -8110,7 +8285,7 @@ const scopeCache = new WeakSet();
  */
 function isNonScope(target) {
     // 1. Null or primitive types are non-scope
-    if (target === null || typeof target !== "object") {
+    if (isNull(target) || typeof target !== "object") {
         return true;
     }
     // 2. Fast cache lookups
@@ -8182,18 +8357,26 @@ class Scope {
         this.$handler = this;
         this.$target = null;
         this._children = [];
+        this._childIndices = new WeakMap();
         this.$id = nextId();
         this.$root = context ? context.$root : this;
         this.$parent = parent || (this.$root === this ? undefined : context);
         this._destroyed = false;
         this._scheduled = [];
+        this._arrayOwnerListenersScheduled = false;
         this.$scopename = undefined;
         this._ownedForeignListeners = [];
         this._listenerScheduler = context?._listenerScheduler ?? {
             _queue: [],
+            _index: 0,
             _queued: false,
             _flushing: false,
+            _flushTask: () => {
+                this._flushScheduledTasks();
+            },
         };
+        this._arrayMutationWrappers =
+            context?._arrayMutationWrappers ?? new WeakMap();
         this._propertyMap = {
             $apply: this.$apply.bind(this),
             $broadcast: this.$broadcast.bind(this),
@@ -8290,6 +8473,15 @@ class Scope {
                 this._destroyDisplacedValue(target[i]);
             }
         }
+        if (isArray(target) && property !== "length") {
+            clearArrayMutationMeta(proxy);
+            if (getArrayMutationIndex(property) === undefined) {
+                clearArraySwapCandidate(proxy);
+            }
+        }
+        else if (isArray(target)) {
+            clearArraySwapCandidate(proxy);
+        }
         // Handle NaNs
         if (oldValue !== undefined &&
             Number.isNaN(oldValue) &&
@@ -8298,7 +8490,8 @@ class Scope {
         }
         if (oldValue && oldValue[isProxySymbol]) {
             if (isArray(value)) {
-                if (oldValue !== value) {
+                const isProxyRebind = isProxy(value);
+                if (oldValue !== value && !isProxyRebind) {
                     this._destroyDisplacedValue(oldValue);
                 }
                 if (oldValue !== value) {
@@ -8310,19 +8503,26 @@ class Scope {
                     if (_foreignListeners) {
                         this._scheduleListener(_foreignListeners);
                     }
+                    this._scheduleArrayOwnerListeners(target, proxy, property);
                 }
                 if (this._objectListeners.get(target[property])) {
                     this._objectListeners.delete(target[property]);
                 }
                 target[property] = createScope(value, this);
                 this._objectListeners.set(target[property], [property]);
+                if (oldValue !== value && isArray(target)) {
+                    trackArraySwapMutation(proxy, property, oldValue, value, target.length);
+                }
                 return true;
             }
             if (isObject(value)) {
-                if (oldValue !== value) {
+                const isProxyRebind = isProxy(value);
+                // Moving one existing proxy onto another slot is a rebind, not disposal.
+                // Keep nested child scopes alive and let collection watchers handle the move.
+                if (oldValue !== value && !isProxyRebind) {
                     this._destroyDisplacedValue(oldValue);
                 }
-                if (hasOwn(target, property)) {
+                if (!isProxyRebind && hasOwn(target, property)) {
                     const keyList = keys(oldValue);
                     for (const k of keyList) {
                         if (!hasOwn(value, k))
@@ -8339,8 +8539,12 @@ class Scope {
                         this._scheduleListener(_foreignListeners);
                     }
                     this._checkListenersForAllKeys(value);
+                    this._scheduleArrayOwnerListeners(target, proxy, property);
                 }
                 target[property] = createScope(value, this);
+                if (oldValue !== value && isArray(target)) {
+                    trackArraySwapMutation(proxy, property, oldValue, value, target.length);
+                }
                 //setDeepValue(target[property], value);
                 return true;
             }
@@ -8371,23 +8575,14 @@ class Scope {
             }
             if (isDefined(value)) {
                 this._destroyDisplacedValue(oldValue);
-                this._destroyDisplacedValue(oldValue);
                 target[property] = value;
                 const listeners = this._watchers.get(property);
                 if (listeners) {
                     this._scheduleListener(listeners);
                 }
                 if (isArray(target)) {
-                    if (this._objectListeners.has(proxy) && property !== "length") {
-                        const keyList = this._objectListeners.get(proxy);
-                        if (keyList) {
-                            for (let i = 0, l = keyList.length; i < l; i++) {
-                                const currentListeners = this._watchers.get(keyList[i]);
-                                if (currentListeners)
-                                    this._scheduleListener(currentListeners);
-                            }
-                        }
-                    }
+                    this._scheduleArrayOwnerListeners(target, proxy, property);
+                    trackArraySwapMutation(proxy, property, oldValue, value, target.length);
                 }
                 return true;
             }
@@ -8457,6 +8652,25 @@ class Scope {
                         }
                         return scheduled;
                     });
+                }
+                if (isArray(target) &&
+                    property === "length" &&
+                    oldValue !== value &&
+                    !this._arrayOwnerListenersScheduled) {
+                    if (typeof oldValue === "number" &&
+                        typeof value === "number" &&
+                        value < oldValue) {
+                        setArrayMutationMeta(proxy, createSpliceArrayMutationMeta(value, oldValue - value, 0, oldValue, value));
+                    }
+                    else if (typeof oldValue === "number" &&
+                        typeof value === "number" &&
+                        value !== oldValue) {
+                        clearArrayMutationMeta(proxy);
+                    }
+                    this._scheduleArrayOwnerListeners(target, proxy, property, true);
+                }
+                if (isArray(target) && property !== "length") {
+                    trackArraySwapMutation(proxy, property, oldValue, value, target.length);
                 }
                 let _foreignListeners = this._foreignListeners.get(property);
                 if (!_foreignListeners && this.$parent?._foreignListeners) {
@@ -8533,21 +8747,54 @@ class Scope {
         if (isArray(target) &&
             typeof property === "string" &&
             arrayMutationMethods.has(property)) {
-            if (this._objectListeners.has(proxy)) {
-                const keyList = this._objectListeners.get(proxy);
-                if (keyList) {
-                    for (let i = 0, l = keyList.length; i < l; i++) {
-                        const key = keyList[i];
-                        const listeners = this._watchers.get(key);
-                        if (listeners) {
-                            this._scheduled = listeners;
+            let wrappers = this._arrayMutationWrappers.get(target);
+            if (!wrappers) {
+                wrappers = {};
+                this._arrayMutationWrappers.set(target, wrappers);
+            }
+            const cachedWrapper = wrappers[property];
+            if (cachedWrapper) {
+                return cachedWrapper;
+            }
+            const wrapper = (...args) => {
+                const previousLength = target.length;
+                clearArrayMutationMeta(proxy);
+                clearArraySwapCandidate(proxy);
+                this._scheduled = [];
+                this._arrayOwnerListenersScheduled = false;
+                if (this._objectListeners.has(proxy)) {
+                    const keyList = this._objectListeners.get(proxy);
+                    if (keyList) {
+                        for (let i = 0, l = keyList.length; i < l; i++) {
+                            const key = keyList[i];
+                            const listeners = this._watchers.get(key);
+                            if (listeners) {
+                                this._scheduled = listeners;
+                            }
                         }
                     }
                 }
-            }
-            if (property === "unshift") {
-                this._scheduleListener(this._scheduled);
-            }
+                if (property === "unshift" && this._scheduled.length > 0) {
+                    this._scheduleListener(this._scheduled);
+                    this._arrayOwnerListenersScheduled = true;
+                }
+                try {
+                    const result = Reflect.apply(targetProp, proxy, args);
+                    setArrayMutationMeta(proxy, getMethodArrayMutationMeta(property, args, previousLength, target.length));
+                    if (this._scheduled.length > 0 &&
+                        !this._arrayOwnerListenersScheduled) {
+                        this._scheduleListener(this._scheduled);
+                        this._arrayOwnerListenersScheduled = true;
+                    }
+                    return result;
+                }
+                finally {
+                    this._scheduled = [];
+                    this._arrayOwnerListenersScheduled = false;
+                }
+            };
+            wrappers[property] = wrapper;
+            return wrapper;
         }
         if (typeof property !== "symbol" && hasOwn(this._propertyMap, property)) {
             this.$target = target;
@@ -8562,7 +8809,12 @@ class Scope {
      * @param target - The target object.
      * @param property - The name of the property being deleted.
      */
+    // noinspection JSUnusedGlobalSymbols -- Proxy trap invoked via the Proxy handler contract.
     deleteProperty(target, property) {
+        if (isArray(target)) {
+            clearArrayMutationMeta(this.$proxy);
+            clearArraySwapCandidate(this.$proxy);
+        }
         // Currently deletes $model
         if (target[property] && target[property][isProxySymbol]) {
             target[property] = undefined;
@@ -8570,7 +8822,8 @@ class Scope {
             if (listeners) {
                 this._scheduleListener(listeners);
             }
-            if (this._objectListeners.has(this.$proxy)) {
+            if (this._scheduled.length === 0 &&
+                this._objectListeners.has(this.$proxy)) {
                 const keyList = this._objectListeners.get(this.$proxy);
                 if (keyList) {
                     for (let i = 0, l = keyList.length; i < l; i++) {
@@ -8581,14 +8834,16 @@ class Scope {
                     }
                 }
             }
-            if (this._scheduled) {
+            if (this._scheduled.length > 0) {
                 this._scheduleListener(this._scheduled);
+                this._arrayOwnerListenersScheduled = true;
                 this._scheduled = [];
             }
             return true;
         }
         delete target[property];
-        if (this._objectListeners.has(this.$proxy)) {
+        if (this._scheduled.length === 0 &&
+            this._objectListeners.has(this.$proxy)) {
             const keyList = this._objectListeners.get(this.$proxy);
             if (keyList) {
                 for (let i = 0, l = keyList.length; i < l; i++) {
@@ -8604,6 +8859,11 @@ class Scope {
             if (listeners) {
                 this._scheduleListener(listeners, target[property]);
             }
+        }
+        if (this._scheduled.length > 0) {
+            this._scheduleListener(this._scheduled);
+            this._arrayOwnerListenersScheduled = true;
+            this._scheduled = [];
         }
         return true;
     }
@@ -8625,28 +8885,35 @@ class Scope {
         }
     }
     /** @internal Queues a shared scheduled task flush for this scope family. */
+    _queueScheduledFlush() {
+        const scheduler = this._listenerScheduler;
+        if (scheduler._queued) {
+            return;
+        }
+        scheduler._queued = true;
+        queueMicrotask(scheduler._flushTask);
+    }
+    /** @internal Queues a shared scheduled task flush for this scope family. */
     _enqueueScheduledTask(task) {
         const scheduler = this._listenerScheduler;
         scheduler._queue.push(task);
         if (!scheduler._queued && !scheduler._flushing) {
-            scheduler._queued = true;
-            queueMicrotask(() => {
-                this._flushScheduledTasks();
-            });
+            this._queueScheduledFlush();
         }
     }
     /** @internal Flushes queued listener and callback tasks in FIFO order. */
     _flushScheduledTasks() {
         const scheduler = this._listenerScheduler;
+        const queue = scheduler._queue;
         if (scheduler._flushing) {
             return;
         }
         scheduler._queued = false;
         scheduler._flushing = true;
-        let processed = 0;
+        let processed = scheduler._index;
         try {
-            while (processed < scheduler._queue.length) {
-                const task = scheduler._queue[processed++];
+            while (processed < queue.length) {
+                const task = queue[processed++];
                 if (task._kind === "callback") {
                     task._callback();
                     this._drainPostUpdateQueue();
@@ -8662,15 +8929,21 @@ class Scope {
             }
         }
         finally {
-            if (processed > 0) {
-                scheduler._queue.splice(0, processed);
+            scheduler._index = processed;
+            if (processed >= queue.length) {
+                if (processed > 0) {
+                    queue.length = 0;
+                    scheduler._index = 0;
+                }
+            }
+            else if (processed > 0) {
+                queue.copyWithin(0, processed);
+                queue.length -= processed;
+                scheduler._index = 0;
             }
             scheduler._flushing = false;
-            if (scheduler._queue.length > 0 && !scheduler._queued) {
-                scheduler._queued = true;
-                queueMicrotask(() => {
-                    this._flushScheduledTasks();
-                });
+            if (queue.length > 0 && !scheduler._queued) {
+                this._queueScheduledFlush();
             }
         }
     }
@@ -8999,6 +9272,7 @@ class Scope {
         }
         const proxy = new Proxy(child, new Scope(this));
         this._children.push(proxy);
+        this._childIndices.set(proxy, this._children.length - 1);
         return proxy;
     }
     /** Creates an isolate child scope that does not inherit watchable properties directly. */
@@ -9006,6 +9280,7 @@ class Scope {
         const child = instance ? Object.create(instance) : nullObject();
         const proxy = new Proxy(child, new Scope(this, this.$root));
         this._children.push(proxy);
+        this._childIndices.set(proxy, this._children.length - 1);
         return proxy;
     }
     /** Creates a transcluded child scope linked to this scope and an optional parent instance. */
@@ -9013,6 +9288,7 @@ class Scope {
         const child = Object.create(this.$target);
         const proxy = new Proxy(child, new Scope(this, parentInstance));
         this._children.push(proxy);
+        this._childIndices.set(proxy, this._children.length - 1);
         return proxy;
     }
     /** @internal Registers a listener under a watched key on this scope. */
@@ -9097,6 +9373,27 @@ class Scope {
         }
         return false;
     }
+    /** @internal Reschedules watchers that observe this array through its owning scope property. */
+    _scheduleArrayOwnerListeners(target, proxy, property, allowLength = false) {
+        if (!isArray(target) ||
+            (property === "length" && !allowLength) ||
+            this._scheduled.length > 0) {
+            return;
+        }
+        if (!this._objectListeners.has(proxy)) {
+            return;
+        }
+        const keyList = this._objectListeners.get(proxy);
+        if (!keyList) {
+            return;
+        }
+        for (let i = 0, l = keyList.length; i < l; i++) {
+            const currentListeners = this._watchers.get(keyList[i]);
+            if (currentListeners) {
+                this._scheduleListener(currentListeners);
+            }
+        }
+    }
     /** Evaluates an Angular expression in the context of this scope. */
     $eval(expr, locals) {
         const fn = $parse(expr);
@@ -9115,7 +9412,7 @@ class Scope {
     /** Merges enumerable properties from the provided object into the current scope target. */
     $merge(newTarget) {
         const newTargetRecord = newTarget;
-        const keyList = Object.keys(newTargetRecord);
+        const keyList = keys(newTargetRecord);
         for (let i = 0, l = keyList.length; i < l; i++) {
             const key = keyList[i];
             this.set(this.$target, key, newTargetRecord[key], this.$proxy);
@@ -9284,13 +9581,32 @@ class Scope {
                 this._destroyed = true;
                 return;
             }
-            const children = parent._children;
-            for (let i = 0, l = children.length; i < l; i++) {
-                if (children[i].$id === scopeId) {
-                    // Swap with last and pop for O(1) removal
-                    children[i] = children[l - 1];
-                    children.length = l - 1;
-                    break;
+            const parentHandler = parent.$handler;
+            const children = parentHandler._children;
+            const childProxy = this.$proxy;
+            const childIndex = parentHandler._childIndices.get(childProxy);
+            const lastIndex = children.length - 1;
+            if (childIndex !== undefined && childIndex <= lastIndex) {
+                const movedChild = children[lastIndex];
+                parentHandler._childIndices.delete(childProxy);
+                if (childIndex !== lastIndex) {
+                    children[childIndex] = movedChild;
+                    parentHandler._childIndices.set(movedChild, childIndex);
+                }
+                children.length = lastIndex;
+            }
+            else {
+                for (let i = 0, l = children.length; i < l; i++) {
+                    if (children[i].$id === scopeId) {
+                        const movedChild = children[l - 1];
+                        parentHandler._childIndices.delete(children[i]);
+                        if (i !== l - 1) {
+                            children[i] = movedChild;
+                            parentHandler._childIndices.set(movedChild, i);
+                        }
+                        children.length = l - 1;
+                        break;
+                    }
                 }
             }
         }
@@ -9298,6 +9614,7 @@ class Scope {
         this._foreignProxies.clear();
         this._foreignListeners = new Map();
         this._objectListeners = new WeakMap();
+        this._childIndices = new WeakMap();
         this._listeners.clear();
         this._destroyed = true;
         queueMicrotask(() => {
@@ -9332,18 +9649,22 @@ class Scope {
     }
     /** @internal Resolves the watched value and notifies a single listener. */
     _notifyListener(listener, target) {
-        const { _originalTarget, _listenerFn, _watchFn } = listener;
+        const { _originalTarget, _listenerFn, _watchFn, _invokeWatchFn } = listener;
         try {
             let newVal = _watchFn(_originalTarget);
-            if (isUndefined(newVal)) {
+            if (isUndefined(newVal) && target !== _originalTarget) {
                 newVal = _watchFn(target);
             }
             if (isFunction(newVal)) {
-                newVal = listener._invokeWatchFn
-                    ? listener._invokeWatchFn(_originalTarget)
+                newVal = _invokeWatchFn
+                    ? _invokeWatchFn(_originalTarget)
                     : newVal(_originalTarget);
             }
-            if (isArray(newVal)) {
+            else if (!isArray(newVal)) {
+                _listenerFn(newVal, _originalTarget);
+                return;
+            }
+            else {
                 for (let i = 0, l = newVal.length; i < l; i++) {
                     if (isFunction(newVal[i])) {
                         newVal[i] = newVal[i](_originalTarget);
@@ -10121,8 +10442,17 @@ function createWindowEventDirective($parse, $exceptionHandler, $window, directiv
 const $compileMinErr$1 = minErr("$compile");
 const SIMPLE_ATTR_NAME = /^\w/;
 const specialAttrHolder = document.createElement("div");
+const lazyAnimateByInjector = new WeakMap();
+function getLazyAnimate($injector) {
+    let getAnimate = lazyAnimateByInjector.get($injector);
+    if (!getAnimate) {
+        getAnimate = createLazyAnimate($injector);
+        lazyAnimateByInjector.set($injector, getAnimate);
+    }
+    return getAnimate;
+}
 class Attributes {
-    constructor($animate, $exceptionHandler, $sce, nodeRef, attributesToCopy) {
+    constructor($injector, $exceptionHandler, $sce, nodeRef, attributesToCopy) {
         /**
          * Converts an attribute name (e.g. dash/colon/underscore-delimited string, optionally prefixed with `x-` or
          * `data-`) to its normalized, camelCase form.
@@ -10134,12 +10464,12 @@ class Attributes {
          * @param name Name to normalize
          */
         this.$normalize = directiveNormalize;
-        this._animate = $animate;
+        this._getAnimate = getLazyAnimate($injector);
         this._exceptionHandler = $exceptionHandler;
         this._sce = $sce;
         this.$attr = {};
         if (attributesToCopy) {
-            const attributeKeys = Object.keys(attributesToCopy);
+            const attributeKeys = keys(attributesToCopy);
             for (let i = 0, l = attributeKeys.length; i < l; i++) {
                 const key = attributeKeys[i];
                 if (key === "_observers") {
@@ -10157,8 +10487,10 @@ class Attributes {
     }
     $addClass(classVal) {
         if (classVal && classVal.length > 0) {
-            if (hasAnimate(this._element())) {
-                this._animate.addClass(this._element(), classVal);
+            const element = this._element();
+            const animate = getAnimateForNode(this._getAnimate, element);
+            if (animate) {
+                animate.addClass(element, classVal);
             }
             else {
                 this._nodeRef?.element.classList.add(classVal);
@@ -10167,8 +10499,10 @@ class Attributes {
     }
     $removeClass(classVal) {
         if (classVal && classVal.length > 0) {
-            if (hasAnimate(this._element())) {
-                this._animate.removeClass(this._element(), classVal);
+            const element = this._element();
+            const animate = getAnimateForNode(this._getAnimate, element);
+            if (animate) {
+                animate.removeClass(element, classVal);
             }
             else {
                 this._nodeRef?.element.classList.remove(classVal);
@@ -10176,22 +10510,27 @@ class Attributes {
         }
     }
     $updateClass(newClasses, oldClasses) {
+        if (newClasses === oldClasses) {
+            return;
+        }
+        const element = this._element();
+        const animate = getAnimateForNode(this._getAnimate, element);
         const toAdd = tokenDifference(newClasses, oldClasses);
-        if (toAdd && toAdd.length) {
-            if (hasAnimate(this._element())) {
-                this._animate.addClass(this._element(), toAdd);
+        if (toAdd.length) {
+            if (animate) {
+                animate.addClass(element, toAdd.join(" "));
             }
             else {
-                this._nodeRef?.element.classList.add(...toAdd.trim().split(/\s+/));
+                this._nodeRef?.element.classList.add(...toAdd);
             }
         }
         const toRemove = tokenDifference(oldClasses, newClasses);
-        if (toRemove && toRemove.length) {
-            if (hasAnimate(this._element())) {
-                this._animate.removeClass(this._element(), toRemove);
+        if (toRemove.length) {
+            if (animate) {
+                animate.removeClass(element, toRemove.join(" "));
             }
             else {
-                this._nodeRef?.element.classList.remove(...toRemove.trim().split(/\s+/));
+                this._nodeRef?.element.classList.remove(...toRemove);
             }
         }
     }
@@ -10311,18 +10650,41 @@ class Attributes {
 }
 Attributes.$nonscope = true;
 /**
+ * Splits a space-separated class string into normalized tokens.
+ *
+ * @param value - The class string to split.
+ * @returns The normalized class tokens.
+ */
+function tokenizeClassString(value) {
+    const trimmed = value.trim();
+    return trimmed ? trimmed.split(/\s+/) : [];
+}
+/**
  * Computes the difference between two space-separated token strings.
  *
  * @param str1 - The first string containing space-separated tokens.
  * @param str2 - The second string containing space-separated tokens.
- * @returns A string containing tokens that are in str1 but not in str2, separated by spaces.
- *
+ * @returns Tokens that are present in `str1` but not in `str2`.
  */
 function tokenDifference(str1, str2) {
-    const tokens1 = new Set(str1.split(/\s+/));
-    const tokens2 = new Set(str2.split(/\s+/));
-    const difference = Array.from(tokens1).filter((token) => !tokens2.has(token));
-    return difference.join(" ");
+    if (str1 === str2) {
+        return [];
+    }
+    const tokens1 = tokenizeClassString(str1);
+    if (tokens1.length === 0) {
+        return [];
+    }
+    const excludedTokens = new Set(tokenizeClassString(str2));
+    const seenTokens = new Set();
+    const difference = [];
+    for (let i = 0; i < tokens1.length; i++) {
+        const token = tokens1[i];
+        if (!excludedTokens.has(token) && !seenTokens.has(token)) {
+            seenTokens.add(token);
+            difference.push(token);
+        }
+    }
+    return difference;
 }
 
 /**
@@ -10385,10 +10747,19 @@ function releaseControllersBoundTranscludeState(transcludeState) {
         return;
     }
     transcludeState._destroyed = true;
+    if (transcludeState._wrapper) {
+        transcludeState._wrapper._boundTransclude = undefined;
+        transcludeState._wrapper = undefined;
+    }
     transcludeState._boundTranscludeFn = undefined;
     transcludeState._elementControllers = nullObject();
     transcludeState._scopeToChild = undefined;
     transcludeState._elementRef = undefined;
+}
+function syncControllersBoundTranscludeState(transcludeState, scopeToChild, elementControllers, elementRef) {
+    transcludeState._scopeToChild = scopeToChild;
+    transcludeState._elementControllers = elementControllers;
+    transcludeState._elementRef = elementRef;
 }
 const $compileMinErr = minErr("$compile");
 const EXCLUDED_DIRECTIVES = ["ngIf", "ngRepeat"];
@@ -10412,7 +10783,7 @@ class CompileProvider {
         function parseIsolateBindings(scope, directiveName, isController) {
             const LOCAL_REGEXP = /^([@&]|[=<]())(\??)\s*([\w$]*)$/;
             const bindings = nullObject();
-            const scopeNames = Object.keys(scope);
+            const scopeNames = keys(scope);
             for (let i = 0, l = scopeNames.length; i < l; i++) {
                 const scopeName = scopeNames[i];
                 let definition = scope[scopeName];
@@ -10797,112 +11168,231 @@ class CompileProvider {
             $injectTokens._parse,
             $injectTokens._controller,
             $injectTokens._sce,
-            $injectTokens._animate,
             /** Creates the runtime `$compile` service and its shared helper closures. */
-            ($injector, $interpolate, $exceptionHandler, $templateRequest, $parse, $controller, $sce, $animate) => {
-                // The onChanges hooks should all be run together in a single digest
-                // When changes occur, the call to trigger their hooks will be added to this queue
-                const onChangesQueue = [];
+            ($injector, $interpolate, $exceptionHandler, $templateRequest, $parse, $controller, $sce) => {
+                const onChangesQueueState = {
+                    _exceptionHandler: $exceptionHandler,
+                    _queue: [],
+                    _flush: undefined,
+                };
                 // This function is called in a $postUpdate to trigger all the onChanges hooks in a single digest
-                function flushOnChangesQueue() {
-                    for (let i = 0, ii = onChangesQueue.length; i < ii; ++i) {
-                        try {
-                            onChangesQueue[i]();
-                        }
-                        catch (err) {
-                            $exceptionHandler(err);
-                        }
-                    }
-                    // Reset the queue to trigger a new schedule next time there is a change
-                    onChangesQueue.length = 0;
-                }
+                onChangesQueueState._flush = () => flushDirectiveBindingOnChangesQueue(onChangesQueueState);
                 const startSymbol = $interpolate.startSymbol();
                 const endSymbol = $interpolate.endSymbol();
                 const denormalizeTemplate = startSymbol === "{{" && endSymbol === "}}"
                     ? (x) => x
                     : (x) => x.replace(/\{\{/g, startSymbol).replace(/}}/g, endSymbol);
-                return compile;
-                function compile(element, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
-                    let nodeRef = element ? new NodeRef(element) : null;
-                    /**
-                     * The composite link function is a composite of individual node linking functions.
-                     * It will be invoke by the public link function below.
-                     */
-                    let compositeLinkFn = compileNodes(nodeRef, transcludeFn || undefined, maxPriority, ignoreDirective, previousCompileContext);
-                    let namespace = null;
-                    const publicLinkFn = function (scope, cloneConnectFn, options) {
-                        if (!nodeRef) {
-                            throw $compileMinErr("multilink", "This element has already been linked.");
+                function triggerDirectiveBindingOnChanges(state) {
+                    state._destAny.$onChanges &&
+                        state._changes &&
+                        state._destAny.$onChanges(state._changes);
+                    state._changes = undefined;
+                }
+                /** Flushes queued `$onChanges` hooks in one post-update turn. */
+                function flushDirectiveBindingOnChangesQueue(queueState) {
+                    const queue = queueState._queue;
+                    for (let i = 0, ii = queue.length; i < ii; ++i) {
+                        try {
+                            triggerDirectiveBindingOnChanges(queue[i]);
                         }
-                        assertArg(scope, "scope");
-                        if (previousCompileContext &&
-                            previousCompileContext._needsNewScope) {
-                            // A parent directive did a replace and a directive on this element asked
-                            // for transclusion, which caused us to lose a layer of element on which
-                            // we could hold the new transclusion scope, so we will create it manually
-                            // here.
-                            scope = scope.$parent?.$new() || scope.$new();
+                        catch (err) {
+                            queueState._exceptionHandler(err);
                         }
-                        options = options || {};
-                        let { _parentBoundTranscludeFn } = options;
-                        const { _transcludeControllers, _futureParentElement } = options;
-                        // When `_parentBoundTranscludeFn` is passed, it is a
-                        // `controllersBoundTransclude` function (it was previously passed
-                        // as `transclude` to directive.link) so we must unwrap it to get
-                        // its `boundTranscludeFn`
-                        if (_parentBoundTranscludeFn &&
-                            _parentBoundTranscludeFn._boundTransclude) {
-                            _parentBoundTranscludeFn =
-                                _parentBoundTranscludeFn._boundTransclude;
-                        }
-                        if (!namespace) {
-                            namespace = detectNamespaceForChildElements(_futureParentElement);
-                        }
-                        let $linkNode;
-                        if (namespace !== "html") {
-                            // When using a directive with replace:true and templateUrl the jqCompileNodes
-                            // (or a child element inside of them)
-                            // might change, so we need to recreate the namespace adapted compileNodes
-                            // for call to the link function.
-                            // Note: This will already clone the nodes...
-                            const fragment = createElementFromHTML("<div></div>");
-                            fragment.append(nodeRef.node);
-                            const wrappedTemplate = wrapTemplate(namespace, fragment.innerHTML);
-                            $linkNode = new NodeRef(wrappedTemplate[0]);
-                        }
-                        else if (cloneConnectFn) {
-                            $linkNode = nodeRef._clone();
+                    }
+                    queue.length = 0;
+                }
+                function recordDirectiveBindingChange(state, key, currentValue, initial) {
+                    if (!isFunction(state._destAny.$onChanges)) {
+                        return;
+                    }
+                    if (!state._onChangesQueue._queue.length) {
+                        state._scope.$postUpdate(state._onChangesQueue._flush);
+                        state._onChangesQueue._queue.length = 0;
+                    }
+                    if (!state._changes) {
+                        state._changes = {};
+                        state._onChangesQueue._queue.push(state);
+                    }
+                    state._changes[key] = {
+                        currentValue,
+                        firstChange: initial,
+                    };
+                }
+                function removeDirectiveBindingWatches(removeWatchCollection) {
+                    for (let i = 0, ii = removeWatchCollection.length; i < ii; ++i) {
+                        removeWatchCollection[i]?.();
+                    }
+                }
+                function throwNonassignBindingError(state) {
+                    throw $compileMinErr("nonassign", "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!", state._attrsAny[state._attrName], state._attrName, state._directiveName);
+                }
+                function syncTwoWayParentValue(state, parentValue) {
+                    const destValue = state._destAny[state._scopeName];
+                    if (!state._compare(parentValue, destValue)) {
+                        if (!state._compare(parentValue, state._lastValue)) {
+                            state._destAny[state._scopeName] = parentValue;
                         }
                         else {
-                            $linkNode = nodeRef;
+                            state._parentSet(state._scope, (parentValue = state._destAny[state._scopeName]));
                         }
-                        // Attach scope to the live link target, not the reusable compile-time
-                        // template blueprint. In clone mode, mutating the blueprint retains
-                        // detached template nodes with `$scope` cache data.
-                        if ($linkNode._element) {
-                            setScope($linkNode._element, scope);
+                    }
+                    state._lastValue = parentValue;
+                    return state._lastValue;
+                }
+                function handleTwoWayExpressionChange(state, syncParentValue, val) {
+                    if (val) {
+                        if (state._parentGet && state._parentGet._literal) {
+                            state._scopeTarget[state._attrName] = val;
                         }
-                        if (cloneConnectFn) {
-                            registerScopeOwnedNodeRef(scope, $linkNode);
+                        else {
+                            state._scope[state._attrName] = val;
                         }
-                        if (_transcludeControllers) {
-                            const controllers = _transcludeControllers;
-                            for (const controllerName in controllers) {
-                                assertArg($linkNode.element, "element");
-                                setCacheData($linkNode.element, `$${controllerName}Controller`, controllers[controllerName]._instance);
-                            }
+                        syncParentValue(state._scope);
+                    }
+                    else {
+                        state._scope[state._attrName] = state._scope[state._attrsAny[state._attrName]];
+                    }
+                }
+                function handleTwoWayDestinationChange(state, val) {
+                    if (val === state._lastValue &&
+                        !isUndefined(state._attrsAny[state._attrName])) {
+                        return;
+                    }
+                    if ((state._parentGet &&
+                        !!state._parentGet._inputs &&
+                        !state._parentGet._literal) ||
+                        (isUndefined(state._attrsAny[state._attrName]) && isDefined(val))) {
+                        state._destinationTarget[state._scopeName] = state._lastValue;
+                        throwNonassignBindingError(state);
+                    }
+                    if (isObject(val)) {
+                        const valueKeys = keys(val);
+                        for (let i = 0, l = valueKeys.length; i < l; i++) {
+                            const key = valueKeys[i];
+                            state._scopeTarget[key] = val[key];
                         }
-                        if (cloneConnectFn) {
-                            cloneConnectFn($linkNode.dom, scope);
+                        return;
+                    }
+                    state._parentSet(state._scopeTarget, (state._lastValue = val));
+                    const attributeWatchers = state._scope.$handler._watchers.get(state._attrsAny[state._attrName]);
+                    if (attributeWatchers) {
+                        for (let i = 0, l = attributeWatchers.length; i < l; i++) {
+                            attributeWatchers[i]._listenerFn(val, state._scope.$target);
                         }
-                        if (compositeLinkFn) {
-                            compositeLinkFn(scope, $linkNode, _parentBoundTranscludeFn);
+                    }
+                }
+                function handleStringBindingObserve(state, value) {
+                    if (!isString(value) && !isBoolean(value)) {
+                        return;
+                    }
+                    recordDirectiveBindingChange(state._bindingChangeState, state._scopeName, value, state._firstChange);
+                    state._destAny[state._scopeName] = value;
+                    if (state._firstCall) {
+                        state._firstCall = false;
+                        return;
+                    }
+                    triggerDirectiveBindingOnChanges(state._bindingChangeState);
+                    state._firstChange = false;
+                }
+                function handleOneWayBindingChange(state, val) {
+                    state._destAny.$target[state._scopeName] = val;
+                    recordDirectiveBindingChange(state._bindingChangeState, state._scopeName, val, state._firstChange);
+                    if (state._firstChange) {
+                        state._firstChange = false;
+                    }
+                }
+                function invokePublicLink(state, scope, cloneConnectFn, options) {
+                    const { _nodeRef: nodeRef } = state;
+                    if (!nodeRef) {
+                        throw $compileMinErr("multilink", "This element has already been linked.");
+                    }
+                    assertArg(scope, "scope");
+                    if (state._previousCompileContext?._needsNewScope) {
+                        // A parent directive did a replace and a directive on this element asked
+                        // for transclusion, which caused us to lose a layer of element on which
+                        // we could hold the new transclusion scope, so we will create it manually
+                        // here.
+                        scope = scope.$parent?.$new() || scope.$new();
+                    }
+                    options = options || {};
+                    let { _parentBoundTranscludeFn } = options;
+                    const { _transcludeControllers, _futureParentElement } = options;
+                    if (_parentBoundTranscludeFn &&
+                        _parentBoundTranscludeFn._boundTransclude) {
+                        _parentBoundTranscludeFn =
+                            _parentBoundTranscludeFn._boundTransclude;
+                    }
+                    if (!state._namespace) {
+                        state._namespace =
+                            detectNamespaceForChildElements(_futureParentElement);
+                    }
+                    let $linkNode;
+                    if (state._namespace !== "html") {
+                        const fragment = createElementFromHTML("<div></div>");
+                        fragment.append(nodeRef.node);
+                        const wrappedTemplate = wrapTemplate(state._namespace, fragment.innerHTML);
+                        $linkNode = new NodeRef(wrappedTemplate[0]);
+                    }
+                    else if (cloneConnectFn) {
+                        $linkNode = nodeRef._clone();
+                    }
+                    else {
+                        $linkNode = nodeRef;
+                    }
+                    if ($linkNode._element) {
+                        setScope($linkNode._element, scope);
+                    }
+                    if (cloneConnectFn) {
+                        registerScopeOwnedNodeRef(scope, $linkNode);
+                    }
+                    if (_transcludeControllers) {
+                        const controllers = _transcludeControllers;
+                        for (const controllerName in controllers) {
+                            assertArg($linkNode.element, "element");
+                            setCacheData($linkNode.element, `$${controllerName}Controller`, controllers[controllerName]._instance);
                         }
-                        if (!cloneConnectFn) {
-                            nodeRef = compositeLinkFn = null;
-                        }
-                        return $linkNode._getAll();
+                    }
+                    if (cloneConnectFn) {
+                        cloneConnectFn($linkNode.dom, scope);
+                    }
+                    if (state._compositeLinkFn) {
+                        state._compositeLinkFn(scope, $linkNode, _parentBoundTranscludeFn);
+                    }
+                    if (!cloneConnectFn) {
+                        state._nodeRef = null;
+                        state._compositeLinkFn = null;
+                    }
+                    return $linkNode._getAll();
+                }
+                function invokeCompositeLink(state, scope, nodeRef, _parentBoundTranscludeFn) {
+                    assertArg(nodeRef, "nodeRef");
+                    const stableNodeList = buildStableNodeList(state, nodeRef);
+                    linkCompositeNodes(state, stableNodeList, scope, _parentBoundTranscludeFn || null);
+                }
+                function invokeBoundTransclude(state, transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
+                    if (!transcludedScope) {
+                        transcludedScope = state._scope.$transcluded(containingScope);
+                    }
+                    return state._transcludeFn(transcludedScope, cloneFn, {
+                        _parentBoundTranscludeFn: state._previousBoundTranscludeFn,
+                        _transcludeControllers: controllers,
+                        _futureParentElement,
+                    });
+                }
+                return compile;
+                function compile(element, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
+                    const publicLinkState = {
+                        _nodeRef: element ? new NodeRef(element) : null,
+                        _compositeLinkFn: null,
+                        _namespace: null,
+                        _previousCompileContext: previousCompileContext || null,
                     };
+                    publicLinkState._compositeLinkFn = compileNodes(publicLinkState._nodeRef, transcludeFn || undefined, maxPriority, ignoreDirective, previousCompileContext);
+                    const publicLinkFn = function publicLinkFn(scope, cloneConnectFn, options) {
+                        return invokePublicLink(publicLinkFn
+                            ._state, scope, cloneConnectFn, options);
+                    };
+                    publicLinkFn._state = publicLinkState;
                     return publicLinkFn;
                 }
                 /**
@@ -10964,7 +11454,7 @@ class CompileProvider {
                     let nodeLinkFnFound;
                     let linkFnFound = false;
                     for (let i = 0; i < nodeRefList.size; i++) {
-                        const attrs = new Attributes($animate, $exceptionHandler, $sce);
+                        const attrs = new Attributes($injector, $exceptionHandler, $sce);
                         const directives = collectDirectives(nodeRefList._getIndex(i), attrs, i === 0 ? maxPriority : undefined, ignoreDirective);
                         let nodeLinkFnCtx;
                         if (directives.length) {
@@ -11014,30 +11504,25 @@ class CompileProvider {
                         _nodeLinkFnFound: nodeLinkFnFound,
                         _transcludeFn: transcludeFn,
                     };
-                    return function compositeLinkFn(scope, nodeRef, _parentBoundTranscludeFn) {
-                        assertArg(nodeRef, "nodeRef");
-                        const stableNodeList = buildStableNodeList(compositeLinkState, nodeRef);
-                        linkCompositeNodes(compositeLinkState, stableNodeList, scope, _parentBoundTranscludeFn || null);
+                    const compositeLinkFn = function compositeLinkFn(scope, nodeRef, _parentBoundTranscludeFn) {
+                        invokeCompositeLink(compositeLinkFn._state, scope, nodeRef, _parentBoundTranscludeFn);
                     };
+                    compositeLinkFn._state = compositeLinkState;
+                    return compositeLinkFn;
                 }
                 /**
                  * Prebinds a transclusion function to a parent scope and threads parent-bound transclusion context.
                  */
                 function createBoundTranscludeFn(scope, transcludeFn, previousBoundTranscludeFn = null) {
-                    /**
-                     * Scope-bound wrapper that ensures a transcluded scope exists and forwards to `transcludeFn`.
-                     */
-                    function boundTranscludeFn(transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
-                        if (!transcludedScope) {
-                            transcludedScope = scope.$transcluded(containingScope);
-                        }
-                        const transcludeRes = transcludeFn(transcludedScope, cloneFn, {
-                            _parentBoundTranscludeFn: previousBoundTranscludeFn,
-                            _transcludeControllers: controllers,
-                            _futureParentElement,
-                        });
-                        return transcludeRes;
-                    }
+                    const boundTranscludeState = {
+                        _scope: scope,
+                        _transcludeFn: transcludeFn,
+                        _previousBoundTranscludeFn: previousBoundTranscludeFn,
+                    };
+                    const boundTranscludeFn = function boundTranscludeFn(transcludedScope, cloneFn, controllers, _futureParentElement, containingScope) {
+                        return invokeBoundTransclude(boundTranscludeFn._state, transcludedScope, cloneFn, controllers, _futureParentElement, containingScope);
+                    };
+                    boundTranscludeFn._state = boundTranscludeState;
                     // We need  to attach the transclusion slots onto the `boundTranscludeFn`
                     // so that they are available inside the `controllersBoundTransclude` function
                     const boundSlots = (boundTranscludeFn._slots = nullObject());
@@ -11155,24 +11640,37 @@ class CompileProvider {
                  * linking function.
                  */
                 function compilationGenerator(eager, nodes, transcludeFn, maxPriority, ignoreDirective, previousCompileContext) {
-                    let compiled;
                     if (eager) {
                         return compile(nodes, transcludeFn, maxPriority, ignoreDirective, previousCompileContext);
                     }
+                    const lazyCompilationState = {
+                        _nodes: nodes,
+                        _transcludeFn: transcludeFn,
+                        _maxPriority: maxPriority,
+                        _ignoreDirective: ignoreDirective,
+                        _previousCompileContext: previousCompileContext,
+                    };
                     /** Defers compilation until the returned linker/transclude function is first invoked. */
-                    function lazyCompilation(...args) {
-                        if (!compiled) {
-                            compiled = compile(nodes, transcludeFn, maxPriority, ignoreDirective, previousCompileContext);
-                            nodes = transcludeFn = previousCompileContext = null;
-                        }
-                        return compiled(...args);
-                    }
+                    const lazyCompilation = function lazyCompilation(...args) {
+                        return invokeLazyCompilation(lazyCompilation._state, ...args);
+                    };
+                    lazyCompilation._state = lazyCompilationState;
                     return lazyCompilation;
+                }
+                /** Shared invoker for lazily compiled public-link/transclude functions. */
+                function invokeLazyCompilation(state, ...args) {
+                    if (!state._compiled) {
+                        state._compiled = compile(state._nodes, state._transcludeFn, state._maxPriority, state._ignoreDirective, state._previousCompileContext);
+                        state._nodes = null;
+                        state._transcludeFn = null;
+                        state._previousCompileContext = null;
+                    }
+                    return state._compiled(...args);
                 }
                 /**
                  * Stores link metadata in a compact record so linking can use shared invokers instead of wrapped closures.
                  */
-                function pushLinkFnRecord(linkFns, linkFn, require, directiveName, isolateScope, linkCtx) {
+                function pushLinkFnRecord(linkFns, linkFn, require, directiveName, isolateScope, linkCtx, thisArg) {
                     if (!linkFn) {
                         return;
                     }
@@ -11182,6 +11680,7 @@ class CompileProvider {
                         _directiveName: directiveName,
                         _isolateScope: isolateScope,
                         _linkCtx: linkCtx,
+                        _thisArg: thisArg,
                     });
                 }
                 /** Invokes a link record with consistent scope selection and argument ordering. */
@@ -11189,13 +11688,25 @@ class CompileProvider {
                     if (isDefined(linkFnRecord._linkCtx)) {
                         return linkFnRecord._fn(linkFnRecord._linkCtx, linkFnRecord._isolateScope ? isolateScope : scope, node, attrs, controllers, transcludeFn);
                     }
+                    if (isDefined(linkFnRecord._thisArg)) {
+                        return linkFnRecord._fn.call(linkFnRecord._thisArg, linkFnRecord._isolateScope ? isolateScope : scope, node, attrs, controllers, transcludeFn);
+                    }
                     return linkFnRecord._fn(linkFnRecord._isolateScope ? isolateScope : scope, node, attrs, controllers, transcludeFn);
                 }
                 /** Shared post-link executor for text interpolation directives. */
                 function textInterpolateLinkFn(linkState, scope, node) {
+                    const bindingState = {
+                        _linkState: linkState,
+                        _scope: scope,
+                        _node: node,
+                    };
                     scope.$watch(linkState._watchExpression, () => {
-                        applyTextInterpolationValue(node, linkState._interpolateFn(deProxy(scope)));
+                        handleTextInterpolationWatch(bindingState);
                     });
+                }
+                /** Re-applies text interpolation using explicit per-link state. */
+                function handleTextInterpolationWatch(bindingState) {
+                    applyTextInterpolationValue(bindingState._node, bindingState._linkState._interpolateFn(deProxy(bindingState._scope)));
                 }
                 /**
                  * Applies the latest interpolated attribute value using the same class/srcset special cases
@@ -11210,6 +11721,14 @@ class CompileProvider {
                     attr.$set(linkState._name, linkState._name === "srcset"
                         ? $sce.getTrustedMediaUrl(value)
                         : value);
+                }
+                /** Re-applies the current interpolated attribute value from explicit per-link state. */
+                function handleAttrInterpolationWatch(bindingState) {
+                    const interpolateFn = bindingState._linkState._interpolateFn;
+                    if (!interpolateFn) {
+                        return;
+                    }
+                    applyInterpolatedAttrValue(bindingState._linkState, bindingState._attr, interpolateFn(bindingState._scope));
                 }
                 /**
                  * Shared pre-link executor for interpolated attributes. The mutable link state keeps the
@@ -11235,16 +11754,40 @@ class CompileProvider {
                     const observer = observers[name] || (observers[name] = []);
                     attrsAny[name] = interpolateFn(scope);
                     observer._inter = true;
+                    const bindingState = {
+                        _linkState: linkState,
+                        _scope: scope,
+                        _attr: attr,
+                    };
                     if (expressions.length > 0) {
                         const targetScope = observer._scope || scope;
                         const watchExpression = buildInterpolationWatchExpression(expressions);
                         targetScope.$watch(watchExpression, () => {
-                            applyInterpolatedAttrValue(linkState, attr, interpolateFn(scope));
+                            handleAttrInterpolationWatch(bindingState);
                         });
                     }
                     else {
-                        applyInterpolatedAttrValue(linkState, attr, interpolateFn(scope));
+                        handleAttrInterpolationWatch(bindingState);
                     }
+                }
+                /** Applies the current `ng-prop-*` value from explicit per-link state. */
+                function updatePropertyDirectiveValue(bindingState) {
+                    const linkState = bindingState._linkState;
+                    bindingState._element[linkState._propName] = linkState._sanitizer(linkState._ngPropGetter(bindingState._scope));
+                }
+                /** Shared watch callback for property-name watchers. */
+                function handlePropertyDirectiveValueWatch(bindingState) {
+                    updatePropertyDirectiveValue(bindingState);
+                }
+                /** Shared watch callback for backing attribute-expression watchers. */
+                function handlePropertyDirectiveAttrWatch(bindingState, value) {
+                    $sce.valueOf(value);
+                    updatePropertyDirectiveValue(bindingState);
+                }
+                /** Invokes an expression binding against the stored parent getter and scope target. */
+                function invokeExpressionBinding(bindingState, locals) {
+                    return (bindingState._parentGet &&
+                        bindingState._parentGet(bindingState._scopeTarget, locals));
                 }
                 /**
                  * Shared pre-link executor for `ng-prop-*` bindings. Watch callbacks still need per-link state,
@@ -11252,16 +11795,16 @@ class CompileProvider {
                  */
                 function propertyDirectivePreLinkFn(linkState, scope, $element, attr) {
                     const attrsAny = attr;
-                    const update = () => {
-                        $element[linkState._propName] = linkState._sanitizer(linkState._ngPropGetter(scope));
-                    };
-                    update();
+                    const bindingState = {
+                        _linkState: linkState,
+                        _scope: scope,
+                        _element: $element};
+                    updatePropertyDirectiveValue(bindingState);
                     scope.$watch(linkState._propName, () => {
-                        update();
+                        handlePropertyDirectiveValueWatch(bindingState);
                     });
                     scope.$watch(attrsAny[linkState._attrName], (val) => {
-                        $sce.valueOf(val);
-                        update();
+                        handlePropertyDirectiveAttrWatch(bindingState, val);
                     });
                 }
                 /**
@@ -11356,6 +11899,95 @@ class CompileProvider {
                     }
                     invokeResolvedTemplateNodeLink(delayedState, scope, node, boundTranscludeFn);
                 }
+                function finalizeDelayedTemplateLinkState(delayedState) {
+                    delayedState._compileNodeRef?._release();
+                    delayedState._compileNodeRef = undefined;
+                    delayedState._linkQueue = null;
+                }
+                function replayDelayedTemplateLinkQueue(delayedState) {
+                    for (let queueIndex = 0; delayedState._linkQueue &&
+                        queueIndex < delayedState._linkQueue.length; queueIndex += 3) {
+                        const scope = delayedState._linkQueue[queueIndex];
+                        const beforeTemplateLinkNode = delayedState._linkQueue[queueIndex + 1];
+                        const boundTranscludeFn = delayedState._linkQueue[queueIndex + 2];
+                        if (!scope) {
+                            continue;
+                        }
+                        replayResolvedTemplateNodeLink(delayedState, scope, beforeTemplateLinkNode, boundTranscludeFn);
+                    }
+                }
+                function handleDelayedTemplateLoaded(delayedState, content) {
+                    let compileNode;
+                    let replacementState;
+                    content = denormalizeTemplate(content);
+                    if (delayedState._origAsyncDirective.replace) {
+                        let templateNodes;
+                        if (isTextNode(content)) {
+                            templateNodes = [];
+                        }
+                        else if (isString(content)) {
+                            templateNodes = Array.from(createNodelistFromHTML(content)).filter((node) => node.nodeType !== NodeType._COMMENT_NODE &&
+                                node.nodeType !== NodeType._TEXT_NODE &&
+                                node.nodeType === NodeType._ELEMENT_NODE);
+                        }
+                        else {
+                            templateNodes = Array.from(wrapTemplate(delayedState._templateNamespace, trim(content))).filter((node) => node.nodeType === NodeType._ELEMENT_NODE);
+                        }
+                        compileNode = templateNodes[0];
+                        if (templateNodes.length !== 1 ||
+                            compileNode.nodeType !== NodeType._ELEMENT_NODE) {
+                            throw $compileMinErr("tplrt", "Template for directive '{0}' must have exactly one root element. {1}", delayedState._origAsyncDirective.name, delayedState._templateUrl);
+                        }
+                        replacementState = {
+                            _templateNodes: templateNodes,
+                            _templateAttrs: { $attr: {} },
+                        };
+                        replaceWith(delayedState._compileNodeRef, compileNode, delayedState._previousCompileContext._index);
+                        const templateDirectives = collectDirectives(compileNode, replacementState._templateAttrs);
+                        if (isObject(delayedState._origAsyncDirective.scope)) {
+                            markDirectiveScope(templateDirectives, true);
+                        }
+                        delayedState._directives = templateDirectives.concat(delayedState._directives);
+                        mergeTemplateAttributes(delayedState._tAttrs, replacementState._templateAttrs);
+                    }
+                    else {
+                        compileNode = delayedState._beforeTemplateCompileNode;
+                        delayedState._compileNodeRef.element.innerHTML =
+                            content;
+                    }
+                    delayedState._directives.unshift(delayedState._derivedSyncDirective);
+                    delayedState._afterTemplateNodeLinkFnCtx = applyDirectivesToNode(delayedState._directives, compileNode, delayedState._tAttrs, delayedState._childTranscludeFn, delayedState._origAsyncDirective, delayedState._preLinkFns, delayedState._postLinkFns, {
+                        ...delayedState._previousCompileContext,
+                        _ctxNodeRef: delayedState._compileNodeRef,
+                    });
+                    if (delayedState._rootElement) {
+                        entries(delayedState._rootElement).forEach(([i, node]) => {
+                            if (node === compileNode) {
+                                delayedState._rootElement[i] = delayedState._compileNodeRef;
+                            }
+                        });
+                    }
+                    delayedState._compiledNode = compileNode;
+                    delayedState._afterTemplateChildLinkFn = compileNodes(new NodeRef(delayedState._compileNodeRef._getAny().childNodes), delayedState._childTranscludeFn, undefined, undefined, undefined);
+                    try {
+                        replayDelayedTemplateLinkQueue(delayedState);
+                    }
+                    finally {
+                        finalizeDelayedTemplateLinkState(delayedState);
+                    }
+                }
+                function handleDelayedTemplateLoadError(delayedState, error) {
+                    delayedState._afterTemplateNodeLinkFnCtx = undefined;
+                    delayedState._afterTemplateChildLinkFn = null;
+                    delayedState._compiledNode = undefined;
+                    finalizeDelayedTemplateLinkState(delayedState);
+                    if (isError(error)) {
+                        $exceptionHandler(error);
+                    }
+                    else {
+                        $exceptionHandler(new Error(String(error)));
+                    }
+                }
                 /** Handles `$transclude(...)` calls for the shared node-link executor. */
                 function invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName) {
                     if (transcludeState._destroyed) {
@@ -11386,6 +12018,21 @@ class CompileProvider {
                     }
                     return boundTranscludeFn(transcludedScope, attachFn, transcludeControllers, futureParentElement, transcludeState._scopeToChild);
                 }
+                function createControllersBoundTranscludeFn(transcludeState) {
+                    const wrapper = function wrapper(scopeParam, cloneAttachFn, _futureParentElement, slotName) {
+                        return invokeControllersBoundTransclude(wrapper._state, scopeParam, cloneAttachFn, _futureParentElement, slotName);
+                    };
+                    wrapper._state = transcludeState;
+                    wrapper._boundTransclude = transcludeState._boundTranscludeFn;
+                    wrapper.isSlotFilled = isControllersBoundTranscludeSlotFilled;
+                    transcludeState._wrapper = wrapper;
+                    return wrapper;
+                }
+                /** Shared slot-filled predicate for controllers-bound transclude wrappers. */
+                function isControllersBoundTranscludeSlotFilled(slotName) {
+                    const state = this._state;
+                    return !!state?._boundTranscludeFn?._slots[slotName];
+                }
                 /**
                  * Reuses one implementation for the standard node-link path by passing all compile-time
                  * state explicitly instead of closing over it in a per-node function.
@@ -11405,7 +12052,7 @@ class CompileProvider {
                     else {
                         $element = new NodeRef(linkNode);
                         registerScopeOwnedNodeRef(scope, $element);
-                        attrs = new Attributes($animate, $exceptionHandler, $sce, $element, nodeLinkState._templateAttrs);
+                        attrs = new Attributes($injector, $exceptionHandler, $sce, $element, nodeLinkState._templateAttrs);
                     }
                     controllerScope = scope;
                     if (nodeLinkState._newIsolateScopeDirective) {
@@ -11416,33 +12063,27 @@ class CompileProvider {
                     }
                     controllerScope = controllerScope || scope;
                     let transcludeFn = nodeLinkState._transcludeFn;
+                    let transcludeState;
                     if (boundTranscludeFn) {
-                        const transcludeState = {
+                        transcludeState = {
                             _boundTranscludeFn: boundTranscludeFn,
                             _elementControllers: elementControllers,
                             _hasElementTranscludeDirective: nodeLinkState._hasElementTranscludeDirective,
                             _scopeToChild: scopeToChild,
                             _elementRef: $element,
                         };
+                        const currentTranscludeState = transcludeState;
                         scope.$on("$destroy", () => {
-                            releaseControllersBoundTranscludeState(transcludeState);
-                            newTranscludeFn._boundTransclude = undefined;
+                            releaseControllersBoundTranscludeState(currentTranscludeState);
                         });
-                        const newTranscludeFn = function (scopeParam, cloneAttachFn, _futureParentElement, slotName) {
-                            transcludeState._scopeToChild = scopeToChild;
-                            transcludeState._elementRef = $element;
-                            transcludeState._elementControllers = elementControllers;
-                            return invokeControllersBoundTransclude(transcludeState, scopeParam, cloneAttachFn, _futureParentElement, slotName);
-                        };
-                        newTranscludeFn._boundTransclude = boundTranscludeFn;
-                        newTranscludeFn.isSlotFilled = function (slotName) {
-                            return !!transcludeState._boundTranscludeFn?._slots[slotName];
-                        };
-                        transcludeFn = newTranscludeFn;
+                        transcludeFn = createControllersBoundTranscludeFn(transcludeState);
                     }
                     const controllerDirectives = nodeLinkState._controllerDirectives || nullObject();
                     if (nodeLinkState._controllerDirectives) {
                         elementControllers = setupControllers($element, attrs, transcludeFn, nodeLinkState._controllerDirectives, isolateScope || scope, scope, nodeLinkState._newIsolateScopeDirective);
+                        if (transcludeState) {
+                            syncControllersBoundTranscludeState(transcludeState, scopeToChild, elementControllers, $element);
+                        }
                     }
                     if (nodeLinkState._newIsolateScopeDirective && isolateScope) {
                         isolateScope.$target._isolateBindings = nodeLinkState
@@ -11463,7 +12104,7 @@ class CompileProvider {
                         controller._bindingInfo = initializeDirectiveBindings(controllerScope, attrs, controller._instance, bindings, controllerDirective);
                     }
                     if (nodeLinkState._controllerDirectives) {
-                        const controllerNames = Object.keys(controllerDirectives);
+                        const controllerNames = keys(controllerDirectives);
                         for (let i = 0, l = controllerNames.length; i < l; i++) {
                             const name = controllerNames[i];
                             const controllerDirective = controllerDirectives[name];
@@ -11476,7 +12117,7 @@ class CompileProvider {
                         }
                     }
                     if (elementControllers) {
-                        const controllerNames = Object.keys(elementControllers);
+                        const controllerNames = keys(elementControllers);
                         for (let i = 0, l = controllerNames.length; i < l; i++) {
                             const controller = elementControllers[controllerNames[i]];
                             const controllerInstance = controller._instance;
@@ -11523,6 +12164,9 @@ class CompileProvider {
                         (nodeLinkState._newIsolateScopeDirective.template ||
                             nodeLinkState._newIsolateScopeDirective.templateUrl === null)) {
                         scopeToChild = isolateScope || scope;
+                        if (transcludeState) {
+                            syncControllersBoundTranscludeState(transcludeState, scopeToChild, elementControllers, $element);
+                        }
                     }
                     if (childLinkFn &&
                         linkNode.childNodes &&
@@ -11551,7 +12195,7 @@ class CompileProvider {
                         }
                     }
                     if (elementControllers) {
-                        const controllerNames = Object.keys(elementControllers);
+                        const controllerNames = keys(elementControllers);
                         for (let i = 0, l = controllerNames.length; i < l; i++) {
                             const controller = elementControllers[controllerNames[i]];
                             const controllerInstance = controller._instance;
@@ -11710,7 +12354,7 @@ class CompileProvider {
                                     const slotMap = nullObject();
                                     const filledSlots = nullObject();
                                     // Parse the element selectors
-                                    const slotNames = Object.keys(directiveValue);
+                                    const slotNames = keys(directiveValue);
                                     for (let slotIndex = 0, slotCount = slotNames.length; slotIndex < slotCount; slotIndex++) {
                                         const slotName = slotNames[slotIndex];
                                         let elementSelector = directiveValue[slotName];
@@ -11749,7 +12393,7 @@ class CompileProvider {
                                         }
                                     }
                                     // Check for required slots that were not filled
-                                    const filledSlotNames = Object.keys(filledSlots);
+                                    const filledSlotNames = keys(filledSlots);
                                     for (let slotIndex = 0, slotCount = filledSlotNames.length; slotIndex < slotCount; slotIndex++) {
                                         const slotName = filledSlotNames[slotIndex];
                                         const filled = filledSlots[slotName];
@@ -11859,17 +12503,13 @@ class CompileProvider {
                                     !!directive._isolateScope;
                                 if (isFunction(linkFn)) {
                                     const linkCtx = linkFn._linkCtx;
-                                    pushLinkFnRecord(postLinkFns, isDefined(linkCtx) ? linkFn : bind(context, linkFn), directive.require, directiveName, isolateScope, linkCtx);
+                                    pushLinkFnRecord(postLinkFns, linkFn, directive.require, directiveName, isolateScope, linkCtx, isDefined(linkCtx) ? undefined : context);
                                 }
                                 else if (linkFn) {
                                     const preLinkCtx = linkFn._preLinkCtx || linkFn._linkCtx;
                                     const postLinkCtx = linkFn._postLinkCtx || linkFn._linkCtx;
-                                    pushLinkFnRecord(preLinkFns, isDefined(preLinkCtx)
-                                        ? linkFn.pre
-                                        : bind(context, linkFn.pre), directive.require, directiveName, isolateScope, preLinkCtx);
-                                    pushLinkFnRecord(postLinkFns, isDefined(postLinkCtx)
-                                        ? linkFn.post
-                                        : bind(context, linkFn.post), directive.require, directiveName, isolateScope, postLinkCtx);
+                                    pushLinkFnRecord(preLinkFns, linkFn.pre, directive.require, directiveName, isolateScope, preLinkCtx, isDefined(preLinkCtx) ? undefined : context);
+                                    pushLinkFnRecord(postLinkFns, linkFn.post, directive.require, directiveName, isolateScope, postLinkCtx, isDefined(postLinkCtx) ? undefined : context);
                                 }
                             }
                             catch (err) {
@@ -11963,7 +12603,7 @@ class CompileProvider {
                     }
                     else if (isObject(require)) {
                         value = {};
-                        const requireKeys = Object.keys(require);
+                        const requireKeys = keys(require);
                         for (let i = 0, l = requireKeys.length; i < l; i++) {
                             const property = requireKeys[i];
                             const controller = require[property];
@@ -12064,7 +12704,7 @@ class CompileProvider {
                     const srcAttr = src.$attr;
                     const dstAttr = dst.$attr;
                     // reapply the old attributes to the new element
-                    const dstKeys = Object.keys(dstAny);
+                    const dstKeys = keys(dstAny);
                     for (let i = 0, l = dstKeys.length; i < l; i++) {
                         const key = dstKeys[i];
                         let value = dstAny[key];
@@ -12081,7 +12721,7 @@ class CompileProvider {
                         }
                     }
                     // copy the new attributes on the old attrs object
-                    const srcKeys = Object.keys(srcAny);
+                    const srcKeys = keys(srcAny);
                     for (let i = 0, l = srcKeys.length; i < l; i++) {
                         const key = srcKeys[i];
                         const value = srcAny[key];
@@ -12100,14 +12740,6 @@ class CompileProvider {
                 /** Compiles an async `templateUrl` directive and returns a delayed node-link descriptor. */
                 function compileTemplateUrl(directives, $compileNode, tAttrs, $rootElement, childTranscludeFn, preLinkFns, postLinkFns, previousCompileContext) {
                     const origAsyncDirective = directives.shift();
-                    const delayedState = {
-                        _linkQueue: [],
-                        _afterTemplateChildLinkFn: null,
-                        _beforeTemplateCompileNode: $compileNode._getAny(),
-                        _compileNodeRef: $compileNode,
-                        _origAsyncDirective: origAsyncDirective,
-                        _previousCompileContext: previousCompileContext,
-                    };
                     const derivedSyncDirective = inherit$1(origAsyncDirective, {
                         templateUrl: null,
                         transclude: null,
@@ -12122,91 +12754,30 @@ class CompileProvider {
                         templateUrl = origAsyncDirective.templateUrl || "";
                     }
                     const { templateNamespace } = origAsyncDirective;
+                    const delayedState = {
+                        _linkQueue: [],
+                        _directives: directives,
+                        _afterTemplateChildLinkFn: null,
+                        _beforeTemplateCompileNode: $compileNode._getAny(),
+                        _childTranscludeFn: childTranscludeFn,
+                        _compileNodeRef: $compileNode,
+                        _derivedSyncDirective: derivedSyncDirective,
+                        _origAsyncDirective: origAsyncDirective,
+                        _postLinkFns: postLinkFns,
+                        _preLinkFns: preLinkFns,
+                        _previousCompileContext: previousCompileContext,
+                        _rootElement: $rootElement,
+                        _tAttrs: tAttrs,
+                        _templateUrl: templateUrl,
+                        _templateNamespace: templateNamespace,
+                    };
                     emptyElement($compileNode.element);
                     $templateRequest(templateUrl || "")
                         .then((content) => {
-                        let compileNode;
-                        let replacementState;
-                        content = denormalizeTemplate(content);
-                        if (origAsyncDirective.replace) {
-                            let templateNodes;
-                            if (isTextNode(content)) {
-                                templateNodes = [];
-                            }
-                            else if (isString(content)) {
-                                templateNodes = Array.from(createNodelistFromHTML(content)).filter((node) => node.nodeType !== NodeType._COMMENT_NODE &&
-                                    node.nodeType !== NodeType._TEXT_NODE &&
-                                    node.nodeType === NodeType._ELEMENT_NODE);
-                            }
-                            else {
-                                templateNodes = Array.from(wrapTemplate(templateNamespace, trim(content))).filter((node) => node.nodeType === NodeType._ELEMENT_NODE);
-                            }
-                            compileNode = templateNodes[0];
-                            if (templateNodes.length !== 1 ||
-                                compileNode.nodeType !== NodeType._ELEMENT_NODE) {
-                                throw $compileMinErr("tplrt", "Template for directive '{0}' must have exactly one root element. {1}", origAsyncDirective.name, templateUrl);
-                            }
-                            replacementState = {
-                                _templateNodes: templateNodes,
-                                _templateAttrs: { $attr: {} },
-                            };
-                            replaceWith($compileNode, compileNode, previousCompileContext._index);
-                            const _templateDirectives = collectDirectives(compileNode, replacementState._templateAttrs);
-                            if (isObject(origAsyncDirective.scope)) {
-                                // the original directive that caused the template to be loaded async required
-                                // an isolate scope
-                                markDirectiveScope(_templateDirectives, true);
-                            }
-                            directives = _templateDirectives.concat(directives);
-                            mergeTemplateAttributes(tAttrs, replacementState._templateAttrs);
-                        }
-                        else {
-                            compileNode =
-                                delayedState._beforeTemplateCompileNode;
-                            $compileNode.element.innerHTML = content;
-                        }
-                        directives.unshift(derivedSyncDirective);
-                        delayedState._afterTemplateNodeLinkFnCtx = applyDirectivesToNode(directives, compileNode, tAttrs, childTranscludeFn, origAsyncDirective, preLinkFns, postLinkFns, { ...previousCompileContext, _ctxNodeRef: $compileNode });
-                        if ($rootElement) {
-                            entries($rootElement).forEach(([i, node]) => {
-                                if (node === compileNode) {
-                                    $rootElement[i] = $compileNode;
-                                }
-                            });
-                        }
-                        delayedState._compiledNode = compileNode;
-                        delayedState._afterTemplateChildLinkFn = compileNodes(new NodeRef($compileNode._getAny().childNodes), childTranscludeFn, undefined, undefined, undefined);
-                        try {
-                            for (let queueIndex = 0; delayedState._linkQueue &&
-                                queueIndex < delayedState._linkQueue.length; queueIndex += 3) {
-                                const scope = delayedState._linkQueue[queueIndex];
-                                const beforeTemplateLinkNode = delayedState._linkQueue[queueIndex + 1];
-                                const boundTranscludeFn = delayedState._linkQueue[queueIndex + 2];
-                                if (!scope) {
-                                    continue;
-                                }
-                                replayResolvedTemplateNodeLink(delayedState, scope, beforeTemplateLinkNode, boundTranscludeFn);
-                            }
-                        }
-                        finally {
-                            delayedState._compileNodeRef?._release();
-                            delayedState._compileNodeRef = undefined;
-                            delayedState._linkQueue = null;
-                        }
+                        handleDelayedTemplateLoaded(delayedState, content);
                     })
                         .catch((error) => {
-                        delayedState._linkQueue = null;
-                        delayedState._afterTemplateNodeLinkFnCtx = undefined;
-                        delayedState._afterTemplateChildLinkFn = null;
-                        delayedState._compiledNode = undefined;
-                        delayedState._compileNodeRef?._release();
-                        delayedState._compileNodeRef = undefined;
-                        if (isError(error)) {
-                            $exceptionHandler(error);
-                        }
-                        else {
-                            $exceptionHandler(new Error(error));
-                        }
+                        handleDelayedTemplateLoadError(delayedState, error);
                     });
                     return {
                         _nodeLinkFn: invokeDelayedTemplateNodeLinkFn,
@@ -12229,13 +12800,18 @@ class CompileProvider {
                         };
                         const directive = {
                             priority: 0,
-                            compile: () => ({
-                                post: textInterpolateLinkFn,
-                                _postLinkCtx: linkState,
-                            }),
+                            compile: compileTextInterpolateDirective,
+                            _compileState: linkState,
                         };
                         directives.push(directive);
                     }
+                }
+                /** Shared compile function for synthetic text-interpolation directives. */
+                function compileTextInterpolateDirective() {
+                    return {
+                        post: textInterpolateLinkFn,
+                        _postLinkCtx: this._compileState,
+                    };
                 }
                 /** Determines the SCE trust context required for a DOM attribute binding. */
                 function getTrustedAttrContext(nodeName, attrNormalizedName) {
@@ -12250,16 +12826,6 @@ class CompileProvider {
                             return SCE_CONTEXTS._RESOURCE_URL;
                         }
                         return SCE_CONTEXTS._MEDIA_URL;
-                    }
-                    if (attrNormalizedName === "xlinkHref") {
-                        // Some xlink:href are okay, most aren't
-                        if (nodeName === "image") {
-                            return SCE_CONTEXTS._MEDIA_URL;
-                        }
-                        if (nodeName === "a") {
-                            return SCE_CONTEXTS._URL;
-                        }
-                        return SCE_CONTEXTS._RESOURCE_URL;
                     }
                     if (nodeName === "image" &&
                         (attrNormalizedName === "href" || attrNormalizedName === "ngHref")) {
@@ -12348,19 +12914,27 @@ class CompileProvider {
                     }
                     const directive = {
                         priority: 100,
-                        compile: function ngPropCompileFn(_, attr) {
-                            return {
-                                pre: propertyDirectivePreLinkFn,
-                                _preLinkCtx: {
-                                    _attrName: attrName,
-                                    _propName: propName,
-                                    _ngPropGetter: $parse(attr[attrName]),
-                                    _sanitizer: sanitizer,
-                                },
-                            };
+                        compile: compilePropertyDirective,
+                        _compileState: {
+                            _attrName: attrName,
+                            _propName: propName,
+                            _sanitizer: sanitizer,
                         },
                     };
                     directives.push(directive);
+                }
+                /** Shared compile function for synthetic `ng-prop-*` directives. */
+                function compilePropertyDirective(_, attr) {
+                    const compileState = this._compileState;
+                    return {
+                        pre: propertyDirectivePreLinkFn,
+                        _preLinkCtx: {
+                            _attrName: compileState._attrName,
+                            _propName: compileState._propName,
+                            _ngPropGetter: $parse(attr[compileState._attrName]),
+                            _sanitizer: compileState._sanitizer,
+                        },
+                    };
                 }
                 /** Adds an interpolated-attribute directive for the given attribute value. */
                 function addAttrInterpolateDirective(node, directives, value, name, isNgAttr) {
@@ -12381,20 +12955,23 @@ class CompileProvider {
                     }
                     const directive = {
                         priority: 100,
-                        compile() {
-                            return {
-                                pre: attrInterpolatePreLinkFn,
-                                _preLinkCtx: {
-                                    _name: name,
-                                    _value: value,
-                                    _trustedContext: trustedContext,
-                                    _allOrNothing: allOrNothing,
-                                    _interpolateFn: interpolateFn,
-                                },
-                            };
+                        compile: compileAttrInterpolateDirective,
+                        _compileState: {
+                            _name: name,
+                            _value: value,
+                            _trustedContext: trustedContext,
+                            _allOrNothing: allOrNothing,
+                            _interpolateFn: interpolateFn,
                         },
                     };
                     directives.push(directive);
+                }
+                /** Shared compile function for synthetic interpolated-attribute directives. */
+                function compileAttrInterpolateDirective() {
+                    return {
+                        pre: attrInterpolatePreLinkFn,
+                        _preLinkCtx: this._compileState,
+                    };
                 }
                 /** Enforces strict component binding requirements for required attributes. */
                 function strictBindingsCheck(attrName, directiveName) {
@@ -12408,14 +12985,18 @@ class CompileProvider {
                 function initializeDirectiveBindings(scope, attrs, destination, bindings, directive) {
                     const removeWatchCollection = [];
                     const initialChanges = {};
-                    let changes;
                     const attrsAny = attrs;
                     const destAny = destination;
                     const scopeTarget = scope.$target;
                     const destinationTarget = destAny.$target;
                     const attrsObservers = attrs._observers || (attrs._observers = nullObject());
+                    const bindingChangeState = {
+                        _destAny: destAny,
+                        _onChangesQueue: onChangesQueueState,
+                        _scope: scope,
+                    };
                     if (bindings) {
-                        const bindingNames = Object.keys(bindings);
+                        const bindingNames = keys(bindings);
                         for (let bindingIndex = 0; bindingIndex < bindingNames.length; bindingIndex++) {
                             const scopeName = bindingNames[bindingIndex];
                             const definition = bindings[scopeName];
@@ -12426,29 +13007,20 @@ class CompileProvider {
                             let parentSet;
                             let compare;
                             let removeWatch;
-                            let firstCall = true;
-                            let firstChange = true;
                             switch (mode) {
                                 case "@":
                                     if (!optional && !hasOwn(attrs, attrName)) {
                                         strictBindingsCheck(attrName, directive.name);
                                         destAny[scopeName] = attrsAny[attrName] = undefined;
                                     }
-                                    removeWatch = attrs.$observe(attrName, 
-                                    /** @param value */
-                                    (value) => {
-                                        if (isString(value) || isBoolean(value)) {
-                                            recordChanges(scopeName, value, firstChange);
-                                            destAny[scopeName] = value;
-                                            if (firstCall) {
-                                                firstCall = false;
-                                            }
-                                            else {
-                                                triggerOnChangesHook();
-                                                firstChange = false;
-                                            }
-                                        }
-                                    });
+                                    const stringBindingState = {
+                                        _bindingChangeState: bindingChangeState,
+                                        _destAny: destAny,
+                                        _firstCall: true,
+                                        _firstChange: true,
+                                        _scopeName: scopeName,
+                                    };
+                                    removeWatch = attrs.$observe(attrName, (value) => handleStringBindingObserve(stringBindingState, value));
                                     attrsObservers[attrName]._scope = scope;
                                     lastValue = attrsAny[attrName];
                                     if (isString(lastValue)) {
@@ -12489,7 +13061,6 @@ class CompileProvider {
                                     parentSet =
                                         (parentGet && parentGet._assign) ||
                                             function () {
-                                                // reset the change, or we will throw this exception on every $digest
                                                 throw $compileMinErr("nonassign", "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!", attrsAny[attrName], attrName, directive.name);
                                             };
                                     // store the value that the parent scope had after the last check:
@@ -12497,72 +13068,27 @@ class CompileProvider {
                                     lastValue = destinationTarget[scopeName] = isArray(initialValue)
                                         ? createScope(initialValue, destination.$handler)
                                         : initialValue;
-                                    const parentValueWatch = function parentValueWatch(parentValue) {
-                                        if (!compare(parentValue, destAny[scopeName])) {
-                                            // we are out of sync and need to copy
-                                            if (!compare(parentValue, lastValue)) {
-                                                // parent changed and it has precedence
-                                                destAny[scopeName] = parentValue;
-                                            }
-                                            else {
-                                                // if the parent can be assigned then do so
-                                                parentSet(scope, (parentValue = destAny[scopeName]));
-                                            }
-                                        }
-                                        lastValue = parentValue;
-                                        return lastValue;
+                                    const twoWayBindingState = {
+                                        _attrName: attrName,
+                                        _attrsAny: attrsAny,
+                                        _compare: compare,
+                                        _destAny: destAny,
+                                        _destinationTarget: destinationTarget,
+                                        _directiveName: directive.name,
+                                        _lastValue: lastValue,
+                                        _parentGet: parentGet,
+                                        _parentSet: parentSet,
+                                        _scope: scope,
+                                        _scopeName: scopeName,
+                                        _scopeTarget: scopeTarget,
                                     };
                                     if (attrsAny[attrName]) {
                                         const expr = attrsAny[attrName];
-                                        const syncParentValue = $parse(expr, parentValueWatch);
+                                        const syncParentValue = $parse(expr, (parentValue) => syncTwoWayParentValue(twoWayBindingState, parentValue));
                                         // make it lazy as we dont want to trigger the two way data binding at this point
-                                        scope.$watch(expr, (val) => {
-                                            if (val) {
-                                                if (parentGet && parentGet._literal) {
-                                                    scopeTarget[attrName] = val;
-                                                }
-                                                else {
-                                                    scope[attrName] = val;
-                                                }
-                                                syncParentValue(scope);
-                                            }
-                                            else {
-                                                scope[attrName] = scope[attrsAny[attrName]];
-                                            }
-                                        }, true);
+                                        scope.$watch(expr, (val) => handleTwoWayExpressionChange(twoWayBindingState, syncParentValue, val), true);
                                     }
-                                    removeWatch = destination.$watch(attrName, (val) => {
-                                        if (val === lastValue &&
-                                            !isUndefined(attrsAny[attrName])) {
-                                            return;
-                                        }
-                                        if ((parentGet &&
-                                            !!parentGet._inputs &&
-                                            !parentGet._literal) ||
-                                            (isUndefined(attrsAny[attrName]) && isDefined(val))) {
-                                            destinationTarget[attrName] = lastValue;
-                                            throw $compileMinErr("nonassign", "Expression '{0}' in attribute '{1}' used with directive '{2}' is non-assignable!", attrsAny[attrName], attrName, directive.name);
-                                        }
-                                        else {
-                                            // manually set the handler to avoid watch cycles
-                                            if (isObject(val)) {
-                                                const valueKeys = Object.keys(val);
-                                                for (let i = 0, l = valueKeys.length; i < l; i++) {
-                                                    const key = valueKeys[i];
-                                                    scopeTarget[key] = val[key];
-                                                }
-                                            }
-                                            else {
-                                                parentSet(scopeTarget, (lastValue = val));
-                                                const attributeWatchers = scope.$handler._watchers.get(attrsAny[attrName]);
-                                                if (attributeWatchers) {
-                                                    for (let i = 0, l = attributeWatchers.length; i < l; i++) {
-                                                        attributeWatchers[i]._listenerFn(val, scope.$target);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }, true);
+                                    removeWatch = destination.$watch(attrName, (val) => handleTwoWayDestinationChange(twoWayBindingState, val), true);
                                     removeWatchCollection.push(removeWatch);
                                     break;
                                 }
@@ -12580,19 +13106,19 @@ class CompileProvider {
                                     parentGet = attrsAny[attrName] && $parse(attrsAny[attrName]);
                                     destAny.$target[scopeName] =
                                         parentGet && parentGet(scopeTarget);
+                                    const oneWayBindingState = {
+                                        _bindingChangeState: bindingChangeState,
+                                        _destAny: destAny,
+                                        _firstChange: true,
+                                        _scopeName: scopeName,
+                                    };
                                     initialChanges[scopeName] = {
                                         currentValue: destAny.$target[scopeName],
-                                        firstChange,
+                                        firstChange: oneWayBindingState._firstChange,
                                     };
                                     scope.$target.attrs = attrs;
                                     if (attrsAny[attrName]) {
-                                        removeWatch = scope.$watch(attrsAny[attrName], (val) => {
-                                            destAny.$target[scopeName] = val;
-                                            recordChanges(scopeName, val, firstChange);
-                                            if (firstChange) {
-                                                firstChange = false;
-                                            }
-                                        }, true);
+                                        removeWatch = scope.$watch(attrsAny[attrName], (val) => handleOneWayBindingChange(oneWayBindingState, val), true);
                                         removeWatchCollection.push(removeWatch);
                                     }
                                     break;
@@ -12608,46 +13134,21 @@ class CompileProvider {
                                     if (!parentGet && optional) {
                                         break;
                                     }
+                                    const expressionBindingState = {
+                                        _parentGet: parentGet,
+                                        _scopeTarget: scopeTarget,
+                                    };
                                     destAny.$target[scopeName] = function (locals) {
-                                        return parentGet && parentGet(scopeTarget, locals);
+                                        return invokeExpressionBinding(expressionBindingState, locals);
                                     };
                                     break;
                             }
                         }
                     }
-                    /** Records a binding change so `$onChanges` can be invoked once per digest. */
-                    function recordChanges(key, currentValue, initial) {
-                        if (isFunction(destAny.$onChanges)) {
-                            // If we have not already scheduled the top level onChangesQueue handler then do so now
-                            if (!onChangesQueue.length) {
-                                scope.$postUpdate(flushOnChangesQueue);
-                                onChangesQueue.length = 0;
-                            }
-                            // If we have not already queued a trigger of onChanges for this controller then do so now
-                            if (!changes) {
-                                changes = {};
-                                onChangesQueue.push(triggerOnChangesHook);
-                            }
-                            // Store this change
-                            changes[key] = {
-                                currentValue,
-                                firstChange: initial,
-                            };
-                        }
-                    }
-                    function triggerOnChangesHook() {
-                        destAny.$onChanges && changes && destAny.$onChanges(changes);
-                        // Now clear the changes so that we schedule onChanges when more changes arrive
-                        changes = undefined;
-                    }
                     return {
                         _initialChanges: initialChanges,
                         _removeWatches: removeWatchCollection.length > 0
-                            ? function removeWatches() {
-                                for (let i = 0, ii = removeWatchCollection.length; i < ii; ++i) {
-                                    removeWatchCollection[i]?.();
-                                }
-                            }
+                            ? () => removeDirectiveBindingWatches(removeWatchCollection)
                             : undefined,
                     };
                 }
@@ -12890,7 +13391,7 @@ function createPredicateFn(expression, comparator, anyPropertyKey = "$", matchAg
                 // No substring matching against `undefined`
                 return false;
             }
-            if (actual === null || expected === null) {
+            if (isNull(actual) || isNull(expected)) {
                 // No substring matching against `null`; only match against `null`
                 return actual === expected;
             }
@@ -12967,7 +13468,7 @@ function deepCompare(actual, expected, comparator, anyPropertyKey, matchAgainstA
 // Used for easily differentiating between `null` and actual `object`
 /** Returns the filter classification used by the recursive comparison helpers. */
 function getTypeForFilter(val) {
-    return val === null ? "null" : typeof val;
+    return isNull(val) ? "null" : typeof val;
 }
 
 /**
@@ -15650,25 +16151,18 @@ entries(ALIASED_ATTR).forEach(([ngAttr]) => {
         function ($sce) {
             return {
                 priority: 99, // it needs to run after the attributes are interpolated
-                link(_scope, element, attr) {
-                    let name = attrName;
-                    if (attrName === "href" &&
-                        toString.call(element.href) ===
-                            "[object SVGAnimatedString]") {
-                        name = "xlinkHref";
-                        attr.$attr[name] = "href";
-                    }
+                link(_scope, _element, attr) {
                     // We need to sanitize the url at least once, in case it is a constant
                     // non-interpolated attribute.
                     attr.$set(normalized, $sce.getTrustedMediaUrl(attr[normalized]));
                     attr.$observe(normalized, (value) => {
                         if (!value) {
                             if (attrName === "href") {
-                                attr.$set(name, null);
+                                attr.$set(attrName, null);
                             }
                             return;
                         }
-                        attr.$set(name, value);
+                        attr.$set(attrName, value);
                     });
                 },
             };
@@ -15747,126 +16241,77 @@ function ngChannelDirective($eventBus) {
     };
 }
 
-/** Creates the family of `ngClass*` directives. */
-function classDirective(name, selector) {
-    name = `ngClass${name}`;
-    /** Creates the concrete directive instance for the requested class mode. */
-    return function () {
-        return {
-            link(scope, element, attr) {
-                let classCounts = getCacheData(element, "$classCounts");
-                // `ngClassOdd/ngClassEven` use `$index & 1` values (0/1). Plain `ngClass` uses `true`.
-                let oldModulo = true;
-                let oldClassString = "";
-                if (!classCounts) {
-                    // Use Object.create(null) to prevent assumptions involving Object.prototype keys.
-                    classCounts = nullObject();
-                    setCacheData(element, "$classCounts", classCounts);
+/** Creates the `ngClass` directive. */
+function classDirective() {
+    return {
+        link(scope, element, attr) {
+            let classCounts = getCacheData(element, "$classCounts");
+            let oldClassString = "";
+            if (!classCounts) {
+                // Use Object.create(null) to prevent assumptions involving Object.prototype keys.
+                classCounts = nullObject();
+                setCacheData(element, "$classCounts", classCounts);
+            }
+            const counts = classCounts;
+            // Cache once; `hasAnimate(element)` should be stable for this directive instance.
+            const animate = hasAnimate(element);
+            scope.$watch(attr.ngClass, (val) => {
+                ngClassWatchAction(toClassString(val));
+            });
+            /** Applies the net class change between two class strings. */
+            function updateClasses(oldClassStringParam, newClassStringParam) {
+                if (oldClassStringParam === newClassStringParam) {
+                    return;
                 }
-                const counts = classCounts;
-                // Cache once; `hasAnimate(element)` should be stable for this directive instance.
-                const animate = hasAnimate(element);
-                if (name !== "ngClass") {
-                    scope.$watch("$index", () => {
-                        ngClassIndexWatchAction(scope.$index & 1);
-                    });
-                }
-                scope.$watch(attr[name], (val) => {
-                    ngClassWatchAction(toClassString(val));
-                });
-                /** Increments class reference counts and applies newly active classes. */
-                function addClasses(classString) {
-                    const toAdd = digestClassCounts(split(classString), 1);
-                    if (!toAdd.length)
-                        return;
-                    if (animate) {
+                const oldClassArray = split(oldClassStringParam);
+                const newClassArray = split(newClassStringParam);
+                const toRemoveArray = arrayDifference(oldClassArray, newClassArray);
+                const toAddArray = arrayDifference(newClassArray, oldClassArray);
+                const toRemove = digestClassCounts(toRemoveArray, -1);
+                const toAdd = digestClassCounts(toAddArray, 1);
+                if (animate) {
+                    if (toAdd.length)
                         attr.$addClass(toAdd.join(" "));
-                    }
-                    else {
-                        scope.$postUpdate(() => {
-                            element.classList.add(...toAdd);
-                        });
-                    }
-                }
-                /** Decrements class reference counts and removes classes that reach zero. */
-                function removeClasses(classString) {
-                    const toRemove = digestClassCounts(split(classString), -1);
-                    if (!toRemove.length)
-                        return;
-                    if (animate) {
+                    if (toRemove.length)
                         attr.$removeClass(toRemove.join(" "));
-                    }
-                    else {
-                        scope.$postUpdate(() => {
-                            element.classList.remove(...toRemove);
-                        });
-                    }
                 }
-                /** Applies the net class change between two class strings. */
-                function updateClasses(oldClassStringParam, newClassStringParam) {
-                    const oldClassArray = split(oldClassStringParam);
-                    const newClassArray = split(newClassStringParam);
-                    const toRemoveArray = arrayDifference(oldClassArray, newClassArray);
-                    const toAddArray = arrayDifference(newClassArray, oldClassArray);
-                    const toRemove = digestClassCounts(toRemoveArray, -1);
-                    const toAdd = digestClassCounts(toAddArray, 1);
-                    if (animate) {
-                        if (toAdd.length)
-                            attr.$addClass(toAdd.join(" "));
-                        if (toRemove.length)
-                            attr.$removeClass(toRemove.join(" "));
-                    }
-                    else {
-                        if (toAdd.length)
-                            element.classList.add(...toAdd);
-                        if (toRemove.length)
-                            element.classList.remove(...toRemove);
-                    }
+                else {
+                    if (toAdd.length)
+                        element.classList.add(...toAdd);
+                    if (toRemove.length)
+                        element.classList.remove(...toRemove);
                 }
-                /**
-                 * Updates reference-counts for classes and returns the classes that should be
-                 * applied/removed for this operation.
-                 */
-                function digestClassCounts(classArray, count) {
-                    const classesToUpdate = [];
-                    for (let i = 0; i < classArray.length; i++) {
-                        const className = classArray[i];
-                        if (!className)
-                            continue;
-                        // Only decrement if we have a count, otherwise we can go negative and
-                        // remove classes that were never added.
-                        if (count > 0 || counts[className]) {
-                            const next = (counts[className] || 0) + count;
-                            counts[className] = next;
-                            // When adding: push when transitioning 0 -> 1.
-                            // When removing: push when transitioning 1 -> 0.
-                            if (next === (count > 0 ? 1 : 0)) {
-                                classesToUpdate.push(className);
-                            }
+            }
+            /**
+             * Updates reference-counts for classes and returns the classes that should be
+             * applied/removed for this operation.
+             */
+            function digestClassCounts(classArray, count) {
+                const classesToUpdate = [];
+                for (let i = 0; i < classArray.length; i++) {
+                    const className = classArray[i];
+                    if (!className)
+                        continue;
+                    // Only decrement if we have a count, otherwise we can go negative and
+                    // remove classes that were never added.
+                    if (count > 0 || counts[className]) {
+                        const next = (counts[className] || 0) + count;
+                        counts[className] = next;
+                        // When adding: push when transitioning 0 -> 1.
+                        // When removing: push when transitioning 1 -> 0.
+                        if (next === (count > 0 ? 1 : 0)) {
+                            classesToUpdate.push(className);
                         }
                     }
-                    return classesToUpdate;
                 }
-                /** Reacts to `$index` changes for `ngClassOdd` and `ngClassEven`. */
-                function ngClassIndexWatchAction(newModulo) {
-                    // Runs before `ngClassWatchAction()`: it adds/removes `oldClassString`.
-                    if (newModulo === selector) {
-                        addClasses(oldClassString);
-                    }
-                    else {
-                        removeClasses(oldClassString);
-                    }
-                    oldModulo = newModulo;
-                }
-                /** Reacts to the watched class expression changing. */
-                function ngClassWatchAction(newClassString) {
-                    if (oldModulo === selector) {
-                        updateClasses(oldClassString, newClassString);
-                    }
-                    oldClassString = newClassString;
-                }
-            },
-        };
+                return classesToUpdate;
+            }
+            /** Reacts to the watched class expression changing. */
+            function ngClassWatchAction(newClassString) {
+                updateClasses(oldClassString, newClassString);
+                oldClassString = newClassString;
+            }
+        },
     };
 }
 // Helpers
@@ -15912,15 +16357,20 @@ function toClassString(classValue) {
     if (!classValue)
         return "";
     if (isArray(classValue)) {
-        // Recursively stringify and omit empty results.
-        return classValue.map(toClassString).filter(Boolean).join(" ");
+        let out = "";
+        for (let i = 0; i < classValue.length; i++) {
+            const classString = toClassString(classValue[i]);
+            if (classString)
+                out += (out ? " " : "") + classString;
+        }
+        return out;
     }
     if (isObject(classValue)) {
         const valueMap = classValue;
-        const ks = keys(valueMap);
         let out = "";
-        for (let i = 0; i < ks.length; i++) {
-            const k = ks[i];
+        for (const k in valueMap) {
+            if (!hasOwn(valueMap, k))
+                continue;
             if (valueMap[k])
                 out += (out ? " " : "") + k;
         }
@@ -15931,9 +16381,6 @@ function toClassString(classValue) {
     }
     return String(classValue);
 }
-const ngClassDirective = classDirective("", true);
-const ngClassOddDirective = classDirective("Odd", 0);
-const ngClassEvenDirective = classDirective("Even", 1);
 
 /** Removes the `ng-cloak` attribute during compilation so cloaked content can render. */
 function ngCloakDirective() {
@@ -16064,7 +16511,7 @@ class FormController {
     /**
      * Creates a form controller for a specific form element and its scope.
      */
-    constructor($element, $attrs, $scope, $animate, $interpolate) {
+    constructor($element, $attrs, $scope, $injector, $interpolate) {
         this._isAnimated = hasAnimate($element);
         this._controls = [];
         this.$name =
@@ -16078,7 +16525,7 @@ class FormController {
         this.$submitted = false;
         this._parentForm = nullFormCtrl;
         this._element = $element;
-        this._animate = $animate;
+        this._getAnimate = createLazyAnimate($injector);
         this.$error = {};
         this._success = {};
         this.$pending = undefined;
@@ -16184,15 +16631,15 @@ class FormController {
             delete this[control.$name];
         }
         this.$pending &&
-            Object.keys(this.$pending).forEach((name) => {
+            keys(this.$pending).forEach((name) => {
                 this.$setValidity(name, null, control);
             });
         this.$error &&
-            Object.keys(this.$error).forEach((name) => {
+            keys(this.$error).forEach((name) => {
                 this.$setValidity(name, null, control);
             });
         this._success &&
-            Object.keys(this._success).forEach((name) => {
+            keys(this._success).forEach((name) => {
                 this.$setValidity(name, null, control);
             });
         arrayRemove(this._controls, control);
@@ -16205,9 +16652,10 @@ class FormController {
      * state (ng-dirty class). This method will also propagate to parent forms.
      */
     $setDirty() {
-        if (hasAnimate(this._element)) {
-            this._animate.removeClass(this._element, PRISTINE_CLASS);
-            this._animate.addClass(this._element, DIRTY_CLASS);
+        if (this._isAnimated) {
+            const animate = this._getAnimate();
+            animate.removeClass(this._element, PRISTINE_CLASS);
+            animate.addClass(this._element, DIRTY_CLASS);
         }
         else {
             // Fallback for non-animated environments
@@ -16231,8 +16679,8 @@ class FormController {
      * saving or resetting it.
      */
     $setPristine() {
-        if (hasAnimate(this._element)) {
-            this._animate.setClass(this._element, PRISTINE_CLASS, `${DIRTY_CLASS} ${SUBMITTED_CLASS}`);
+        if (this._isAnimated) {
+            this._getAnimate().setClass(this._element, PRISTINE_CLASS, `${DIRTY_CLASS} ${SUBMITTED_CLASS}`);
         }
         else {
             // Fallback for non-animated environments
@@ -16273,8 +16721,8 @@ class FormController {
     }
     /** @internal */
     _setSubmitted() {
-        if (hasAnimate(this._element)) {
-            this._animate.addClass(this._element, SUBMITTED_CLASS);
+        if (this._isAnimated) {
+            this._getAnimate().addClass(this._element, SUBMITTED_CLASS);
         }
         else {
             this._element.classList.add(SUBMITTED_CLASS);
@@ -16427,7 +16875,7 @@ FormController.$nonscope = true;
     $injectTokens._element,
     $injectTokens._attrs,
     $injectTokens._scope,
-    $injectTokens._animate,
+    $injectTokens._injector,
     $injectTokens._interpolate,
 ];
 /**
@@ -16609,7 +17057,7 @@ const ngFormDirective = formDirectiveFactory("ngForm");
 function cachedToggleClass(ctrl, className, switchValue) {
     if (switchValue && !ctrl._classCache[className]) {
         if (ctrl._isAnimated) {
-            ctrl._animate.addClass(ctrl._element, className);
+            ctrl._getAnimate().addClass(ctrl._element, className);
         }
         else {
             ctrl._element.classList.add(className);
@@ -16618,7 +17066,7 @@ function cachedToggleClass(ctrl, className, switchValue) {
     }
     else if (!switchValue && ctrl._classCache[className]) {
         if (ctrl._isAnimated) {
-            ctrl._animate.removeClass(ctrl._element, className);
+            ctrl._getAnimate().removeClass(ctrl._element, className);
         }
         else {
             ctrl._element.classList.remove(className);
@@ -16627,9 +17075,10 @@ function cachedToggleClass(ctrl, className, switchValue) {
     }
 }
 
-ngIfDirective.$inject = [$injectTokens._animate];
+ngIfDirective.$inject = [$injectTokens._injector];
 /** Conditionally includes or removes a transcluded block based on the watched expression. */
-function ngIfDirective($animate) {
+function ngIfDirective($injector) {
+    const getAnimate = createLazyAnimate($injector);
     return {
         transclude: "element",
         priority: 600,
@@ -16651,8 +17100,9 @@ function ngIfDirective($animate) {
                             // However, we need to keep the reference to the dom wrapper as it might be changed later
                             // by a directive with templateUrl when its template arrives.
                             block = clone;
-                            if (hasAnimate(clone)) {
-                                $animate.enter(clone, $element.parentElement, $element);
+                            const animate = getAnimateForNode(getAnimate, clone);
+                            if (animate) {
+                                animate.enter(clone, $element.parentElement, $element);
                             }
                             else {
                                 $element.after(clone);
@@ -16671,8 +17121,9 @@ function ngIfDirective($animate) {
                     }
                     if (block) {
                         previousElements = block;
-                        if (hasAnimate(previousElements)) {
-                            $animate.leave(previousElements).done((response) => {
+                        const animate = getAnimateForNode(getAnimate, previousElements);
+                        if (animate) {
+                            animate.leave(previousElements).done((response) => {
                                 if (response !== false)
                                     previousElements = null;
                             });
@@ -16694,13 +17145,14 @@ function ngIfDirective($animate) {
 ngIncludeDirective.$inject = [
     $injectTokens._templateRequest,
     $injectTokens._anchorScroll,
-    $injectTokens._animate,
+    $injectTokens._injector,
     $injectTokens._exceptionHandler,
 ];
 /**
  * Loads external template content, transcludes it, and swaps it into the DOM.
  */
-function ngIncludeDirective($templateRequest, $anchorScroll, $animate, $exceptionHandler) {
+function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $exceptionHandler) {
+    const getAnimate = createLazyAnimate($injector);
     return {
         priority: 400,
         terminal: true,
@@ -16736,8 +17188,9 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $animate, $exceptio
                         currentScope = null;
                     }
                     if (currentElement) {
-                        if (hasAnimate(currentElement)) {
-                            $animate.leave(currentElement).done((response) => {
+                        const animate = getAnimateForNode(getAnimate, currentElement);
+                        if (animate) {
+                            animate.leave(currentElement).done((response) => {
                                 if (response !== false)
                                     previousElement = null;
                             });
@@ -16772,8 +17225,9 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $animate, $exceptio
                             // directives to non existing elements.
                             const clone = $transclude(newScope, (cloneParam) => {
                                 cleanupLastIncludeContent();
-                                if (hasAnimate(cloneParam)) {
-                                    $animate
+                                const animate = getAnimateForNode(getAnimate, cloneParam);
+                                if (animate) {
+                                    animate
                                         .enter(cloneParam, null, $element)
                                         .done(afterAnimation);
                                 }
@@ -16952,7 +17406,7 @@ class NgModelController {
     /**
      * Creates a model controller bound to the element, scope, and ngModel expression.
      */
-    constructor($scope, $exceptionHandler, $attr, $element, $parse, $animate, $interpolate) {
+    constructor($scope, $exceptionHandler, $attr, $element, $parse, $injector, $interpolate) {
         this._isAnimated = hasAnimate($element);
         this.$viewValue = Number.NaN;
         this.$modelValue = Number.NaN;
@@ -16989,7 +17443,7 @@ class NgModelController {
         this._scope = $scope; // attempt to bind to nearest controller if present
         this._attr = $attr;
         this._element = $element;
-        this._animate = $animate;
+        this._getAnimate = createLazyAnimate($injector);
         this._parse = $parse;
         this._exceptionHandler = $exceptionHandler;
         this._destroyed = false;
@@ -17162,10 +17616,11 @@ class NgModelController {
      * @returns True if `value` is "empty".
      */
     $isEmpty(value) {
-        return (isUndefined(value) ||
-            value === "" ||
-            value === null ||
-            Number.isNaN(value));
+        return (isUndefined(value) || value === "" || isNull(value) || Number.isNaN(value));
+    }
+    /** @internal */
+    _getAnimateIfEnabled() {
+        return this._isAnimated ? this._getAnimate() : undefined;
     }
     /**
      * Applies the correct empty/not-empty classes for the current view value.
@@ -17176,9 +17631,10 @@ class NgModelController {
             return;
         }
         if (this.$isEmpty(value)) {
-            if (hasAnimate(this._element)) {
-                this._animate.removeClass(this._element, NOT_EMPTY_CLASS);
-                this._animate.addClass(this._element, EMPTY_CLASS);
+            const animate = this._getAnimateIfEnabled();
+            if (animate) {
+                animate.removeClass(this._element, NOT_EMPTY_CLASS);
+                animate.addClass(this._element, EMPTY_CLASS);
             }
             else {
                 this._element.classList.remove(NOT_EMPTY_CLASS);
@@ -17186,9 +17642,10 @@ class NgModelController {
             }
         }
         else {
-            if (hasAnimate(this._element)) {
-                this._animate.removeClass(this._element, EMPTY_CLASS);
-                this._animate.addClass(this._element, NOT_EMPTY_CLASS);
+            const animate = this._getAnimateIfEnabled();
+            if (animate) {
+                animate.removeClass(this._element, EMPTY_CLASS);
+                animate.addClass(this._element, NOT_EMPTY_CLASS);
             }
             else {
                 this._element.classList.remove(EMPTY_CLASS);
@@ -17208,9 +17665,10 @@ class NgModelController {
         this.$pristine = true;
         if (this._destroyed || !this._element)
             return;
-        if (hasAnimate(this._element)) {
-            this._animate.removeClass(this._element, EMPTY_CLASS);
-            this._animate.addClass(this._element, PRISTINE_CLASS);
+        const animate = this._getAnimateIfEnabled();
+        if (animate) {
+            animate.removeClass(this._element, EMPTY_CLASS);
+            animate.addClass(this._element, PRISTINE_CLASS);
         }
         else {
             this._element.classList.remove(EMPTY_CLASS);
@@ -17230,9 +17688,10 @@ class NgModelController {
         if (this._destroyed || !this._element) {
             return;
         }
-        if (hasAnimate(this._element)) {
-            this._animate.removeClass(this._element, PRISTINE_CLASS);
-            this._animate.addClass(this._element, DIRTY_CLASS);
+        const animate = this._getAnimateIfEnabled();
+        if (animate) {
+            animate.removeClass(this._element, PRISTINE_CLASS);
+            animate.addClass(this._element, DIRTY_CLASS);
         }
         else {
             this._element.classList.remove(PRISTINE_CLASS);
@@ -17254,8 +17713,9 @@ class NgModelController {
         if (this._destroyed || !this._element) {
             return;
         }
-        if (hasAnimate(this._element)) {
-            this._animate.setClass(this._element, UNTOUCHED_CLASS, TOUCHED_CLASS);
+        const animate = this._getAnimateIfEnabled();
+        if (animate) {
+            animate.setClass(this._element, UNTOUCHED_CLASS, TOUCHED_CLASS);
         }
         else {
             this._element.classList.remove(TOUCHED_CLASS);
@@ -17275,8 +17735,9 @@ class NgModelController {
         if (this._destroyed || !this._element) {
             return;
         }
-        if (hasAnimate(this._element)) {
-            this._animate.setClass(this._element, TOUCHED_CLASS, UNTOUCHED_CLASS);
+        const animate = this._getAnimateIfEnabled();
+        if (animate) {
+            animate.setClass(this._element, TOUCHED_CLASS, UNTOUCHED_CLASS);
         }
         else {
             this._element.classList.remove(UNTOUCHED_CLASS);
@@ -17527,7 +17988,7 @@ class NgModelController {
             (this.$viewValue !== "" || !this._hasNativeValidators)) {
             return;
         }
-        if (this._lastCommittedViewValue === undefined &&
+        if (isUndefined(this._lastCommittedViewValue) &&
             Number.isNaN(this.$viewValue)) {
             return;
         }
@@ -17910,7 +18371,7 @@ class NgModelController {
     $injectTokens._attrs,
     $injectTokens._element,
     $injectTokens._parse,
-    $injectTokens._animate,
+    $injectTokens._injector,
     $injectTokens._interpolate,
 ];
 /**
@@ -18768,11 +19229,12 @@ class NgMessageCtrl {
     /**
      * Creates a controller that manages message matching and attachment state.
      */
-    constructor($element, $scope, $attrs, $animate) {
+    constructor($element, $scope, $attrs, getAnimate) {
         this._element = $element;
         this._scope = $scope;
         this._attrs = $attrs;
-        this._animate = $animate;
+        this._getAnimate = getAnimate;
+        this._isAnimated = !!getAnimateForNode(getAnimate, $element);
         this._latestKey = 0;
         this._nextAttachId = 0;
         this._messages = {};
@@ -18794,7 +19256,7 @@ class NgMessageCtrl {
         const unmatchedMessages = [];
         const matchedKeys = {};
         let truthyKeys = 0;
-        const messageItems = Object.values(this._messages).sort((a, b) => {
+        const messageItems = values(this._messages).sort((a, b) => {
             const position = a.comment.compareDocumentPosition(b.comment);
             return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
         });
@@ -18837,18 +19299,30 @@ class NgMessageCtrl {
             this._default.detach();
         }
         if (messageMatched || attachDefault) {
-            this._animate.setClass(this._element, ACTIVE_CLASS, INACTIVE_CLASS);
+            if (this._isAnimated) {
+                this._getAnimate().setClass(this._element, ACTIVE_CLASS, INACTIVE_CLASS);
+            }
+            else {
+                this._element.classList.add(ACTIVE_CLASS);
+                this._element.classList.remove(INACTIVE_CLASS);
+            }
         }
         else {
-            this._animate.setClass(this._element, INACTIVE_CLASS, ACTIVE_CLASS);
+            if (this._isAnimated) {
+                this._getAnimate().setClass(this._element, INACTIVE_CLASS, ACTIVE_CLASS);
+            }
+            else {
+                this._element.classList.add(INACTIVE_CLASS);
+                this._element.classList.remove(ACTIVE_CLASS);
+            }
         }
     }
     reRender() {
         if (!this._renderLater) {
             this._renderLater = true;
             Promise.resolve().then(() => {
-                if (this._renderLater && this._cachedCollection) {
-                    this._render(this._cachedCollection);
+                if (this._renderLater) {
+                    this._render(this._cachedCollection ?? {});
                 }
             });
         }
@@ -18888,15 +19362,16 @@ class NgMessageCtrl {
         this.reRender();
     }
 }
-ngMessagesDirective.$inject = [$injectTokens._animate];
+ngMessagesDirective.$inject = [$injectTokens._injector];
 /**
  * Builds the root `ngMessages` directive.
  */
-function ngMessagesDirective($animate) {
+function ngMessagesDirective($injector) {
+    const getAnimate = createLazyAnimate($injector);
     return {
         require: "ngMessages",
         restrict: "AE",
-        controller: ($element, $scope, $attrs) => new NgMessageCtrl($element, $scope, $attrs, $animate),
+        controller: ($element, $scope, $attrs) => new NgMessageCtrl($element, $scope, $attrs, getAnimate),
     };
 }
 /**
@@ -18923,7 +19398,7 @@ function ngMessagesIncludeDirective($templateRequest, $compile) {
     return {
         restrict: "AE",
         require: "^^ngMessages", // we only require this for validation sake
-        link($scope, element, attrs) {
+        link($scope, element, attrs, ngMessagesCtrl) {
             const src = attrs.ngMessagesInclude || attrs.src;
             $templateRequest(src).then((html) => {
                 if ($scope._destroyed)
@@ -18934,6 +19409,7 @@ function ngMessagesIncludeDirective($templateRequest, $compile) {
                     $compile(html)($scope, ((contents) => {
                         isInstanceOf(contents, Node) && element.after(contents);
                     }));
+                    ngMessagesCtrl.reRender();
                 }
             });
         },
@@ -18946,11 +19422,12 @@ const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
  * Creates the directive factory for `ngMessage` and `ngMessageDefault`.
  */
 function ngMessageDirectiveFactory(isDefault) {
-    ngMessageDirectiveFn.$inject = [$injectTokens._animate];
+    ngMessageDirectiveFn.$inject = [$injectTokens._injector];
     /**
      * Builds a concrete `ngMessage` directive definition.
      */
-    function ngMessageDirectiveFn($animate) {
+    function ngMessageDirectiveFn($injector) {
+        const getAnimate = createLazyAnimate($injector);
         return {
             restrict: "AE",
             transclude: "element",
@@ -18993,7 +19470,13 @@ function ngMessageDirectiveFactory(isDefault) {
                         if (!currentElement) {
                             $transclude((elm, newScope) => {
                                 const transcludedElement = elm;
-                                $animate.enter(transcludedElement, null, element);
+                                const animate = getAnimateForNode(getAnimate, transcludedElement);
+                                if (animate) {
+                                    animate.enter(transcludedElement, null, element);
+                                }
+                                else {
+                                    element.after(transcludedElement);
+                                }
                                 currentElement = transcludedElement;
                                 // Each time we attach this node to a message we get a new id that we can match
                                 // when we are destroying the node later.
@@ -19019,7 +19502,13 @@ function ngMessageDirectiveFactory(isDefault) {
                         if (currentElement) {
                             const elm = currentElement;
                             currentElement = null;
-                            $animate.leave(elm);
+                            const animate = getAnimateForNode(getAnimate, elm);
+                            if (animate) {
+                                animate.leave(elm);
+                            }
+                            else {
+                                removeElement(elm);
+                            }
                         }
                     },
                 }), isDefault);
@@ -19294,8 +19783,7 @@ function ngOptionsDirective($compile, $parse) {
                     if (!groupElement) {
                         groupElement = optGroupTemplate.cloneNode(false);
                         listFragment.appendChild(groupElement);
-                        groupElement.label =
-                            option._group === null ? "null" : option._group;
+                        groupElement.label = isNull(option._group) ? "null" : option._group;
                         groupElementMap[String(option._group)] = groupElement;
                     }
                     _addOptionElement(option, groupElement);
@@ -19824,30 +20312,70 @@ function ngRefDirective($parse) {
 const NG_REMOVED = "$$NG_REMOVED";
 const ngRepeatMinErr = minErr("ngRepeat");
 const VAR_OR_TUPLE_REGEX = /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
-ngRepeatDirective.$inject = [$injectTokens._animate];
-function ngRepeatDirective($animate) {
-    function updateScope(scope, index, valueIdentifier, value, keyIdentifier, key, arrayLength) {
+ngRepeatDirective.$inject = [$injectTokens._injector];
+function ngRepeatDirective($injector) {
+    const getAnimate = createLazyAnimate($injector);
+    const repeatPositionLocalKeys = [
+        "$index",
+        "$first",
+        "$last",
+        "$middle",
+        "$odd",
+        "$even",
+    ];
+    function scopeUsesRepeatPositionLocals(scope) {
+        const watchers = scope.$handler._watchers;
+        for (let i = 0; i < repeatPositionLocalKeys.length; i++) {
+            if (watchers.has(repeatPositionLocalKeys[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function updateScope(scope, index, valueIdentifier, value, keyIdentifier, key, arrayLength, updatePositionLocals = true) {
         if (scope[valueIdentifier] !== value) {
             scope[valueIdentifier] = value;
         }
-        if (keyIdentifier)
+        if (keyIdentifier && scope[keyIdentifier] !== key) {
             scope[keyIdentifier] = key;
-        if (value) {
+        }
+        if (value && scope.$target._hashKey !== value._hashKey) {
             scope.$target._hashKey = value._hashKey;
         }
-        scope.$index = index;
-        scope.$first = index === 0;
-        scope.$last = index === arrayLength - 1;
-        scope.$middle = !(scope.$first || scope.$last);
-        scope.$odd = !(scope.$even = (index & 1) === 0);
+        if (!updatePositionLocals) {
+            return;
+        }
+        const isFirst = index === 0;
+        const isLast = index === arrayLength - 1;
+        const isEven = (index & 1) === 0;
+        const isMiddle = !(isFirst || isLast);
+        const isOdd = !isEven;
+        if (scope.$index !== index) {
+            scope.$index = index;
+        }
+        if (scope.$first !== isFirst) {
+            scope.$first = isFirst;
+        }
+        if (scope.$last !== isLast) {
+            scope.$last = isLast;
+        }
+        if (scope.$middle !== isMiddle) {
+            scope.$middle = isMiddle;
+        }
+        if (scope.$even !== isEven) {
+            scope.$even = isEven;
+        }
+        if (scope.$odd !== isOdd) {
+            scope.$odd = isOdd;
+        }
     }
     function getBlockStart(block) {
-        return Array.isArray(block.clone) ? block.clone[0] : block.clone;
+        return Array.isArray(block._clone) ? block._clone[0] : block._clone;
     }
     function getBlockEnd(block) {
-        return Array.isArray(block.clone)
-            ? block.clone[block.clone.length - 1]
-            : block.clone;
+        return Array.isArray(block._clone)
+            ? block._clone[block._clone.length - 1]
+            : block._clone;
     }
     function normalizeCloneNodes(clone) {
         if (clone instanceof DocumentFragment) {
@@ -19861,7 +20389,7 @@ function ngRepeatDirective($animate) {
     function removeBlockNodes(nodes) {
         for (let i = 0; i < nodes.length; i++) {
             const node = nodes[i];
-            if (node.nodeType === Node.ELEMENT_NODE) {
+            if (node.nodeType === NodeType._ELEMENT_NODE) {
                 removeElement(node);
             }
             else {
@@ -19870,11 +20398,124 @@ function ngRepeatDirective($animate) {
             }
         }
     }
+    function removeNodeRange(firstNode, lastNode) {
+        let node = firstNode;
+        const endNode = lastNode.nextSibling;
+        while (node && node !== endNode) {
+            const nextNode = node.nextSibling;
+            if (node.nodeType === NodeType._ELEMENT_NODE) {
+                removeElement(node);
+            }
+            else {
+                removeElementData(node);
+                node.parentNode?.removeChild(node);
+            }
+            node = nextNode;
+        }
+    }
     function trackByIdArrayFn(_$scope, _key, value) {
         return hashKey(value);
     }
     function trackByIdObjFn(_$scope, key) {
         return key;
+    }
+    function canSkipDomMoveChecks(mutationMeta, blockOrder) {
+        if (!mutationMeta ||
+            mutationMeta._kind !== "splice" ||
+            mutationMeta._insertCount !== 0 ||
+            mutationMeta._deleteCount === 0) {
+            return false;
+        }
+        for (let index = 0; index < blockOrder.length; index++) {
+            if (!blockOrder[index]._scope || !blockOrder[index]._clone) {
+                return false;
+            }
+        }
+        return true;
+    }
+    function getSwapMutationIndices(mutationMeta, lastBlockOrder, nextBlockOrder) {
+        if (!mutationMeta || mutationMeta._kind !== "swap") {
+            return undefined;
+        }
+        const leftIndex = mutationMeta._swapFromIndex;
+        const rightIndex = mutationMeta._swapToIndex;
+        if (leftIndex < 0 ||
+            rightIndex <= leftIndex ||
+            rightIndex >= nextBlockOrder.length ||
+            lastBlockOrder.length !== nextBlockOrder.length) {
+            return undefined;
+        }
+        for (let index = 0; index < nextBlockOrder.length; index++) {
+            const block = nextBlockOrder[index];
+            if (!block._scope || !block._clone) {
+                return undefined;
+            }
+            if (index === leftIndex) {
+                if (block !== lastBlockOrder[rightIndex]) {
+                    return undefined;
+                }
+                continue;
+            }
+            if (index === rightIndex) {
+                if (block !== lastBlockOrder[leftIndex]) {
+                    return undefined;
+                }
+                continue;
+            }
+            if (block !== lastBlockOrder[index]) {
+                return undefined;
+            }
+        }
+        return [leftIndex, rightIndex];
+    }
+    function hasStableRetainedPrefix(retainedLength, lastBlockOrder, nextBlockOrder) {
+        if (retainedLength <= 0 ||
+            retainedLength !== lastBlockOrder.length ||
+            retainedLength >= nextBlockOrder.length) {
+            return false;
+        }
+        for (let index = 0; index < retainedLength; index++) {
+            const block = nextBlockOrder[index];
+            if (block !== lastBlockOrder[index] || !block._scope || !block._clone) {
+                return false;
+            }
+        }
+        return true;
+    }
+    function isPureAppendMutation(mutationMeta, lastBlockOrder, nextBlockOrder) {
+        if (!mutationMeta ||
+            mutationMeta._kind !== "splice" ||
+            mutationMeta._deleteCount !== 0 ||
+            mutationMeta._insertCount === 0) {
+            return false;
+        }
+        const retainedLength = mutationMeta._previousLength;
+        if (mutationMeta._index !== retainedLength) {
+            return false;
+        }
+        return hasStableRetainedPrefix(retainedLength, lastBlockOrder, nextBlockOrder);
+    }
+    function getPureTailDeleteRetainedLength(mutationMeta, lastBlockOrder, nextBlockOrder) {
+        if (!mutationMeta ||
+            mutationMeta._kind !== "splice" ||
+            mutationMeta._insertCount !== 0 ||
+            mutationMeta._deleteCount === 0 ||
+            !mutationMeta._tailDeletes) {
+            return undefined;
+        }
+        const retainedLength = mutationMeta._currentLength;
+        if (retainedLength <= 0 ||
+            retainedLength !== nextBlockOrder.length ||
+            mutationMeta._previousLength !== lastBlockOrder.length) {
+            return undefined;
+        }
+        for (let index = 0; index < retainedLength; index++) {
+            const block = nextBlockOrder[index];
+            if (block !== lastBlockOrder[index] || !block._scope || !block._clone) {
+                return undefined;
+            }
+        }
+        return retainedLength;
     }
     return {
         restrict: "A",
@@ -19910,21 +20551,65 @@ function ngRepeatDirective($animate) {
                 }
             });
             function ngRepeatLink($scope, $element, attr, _ctrl, $transclude) {
+                let previousNode;
                 function insertNodesAfter(nodes, afterNode) {
                     const { parentNode } = afterNode;
                     if (!parentNode)
                         return;
+                    if (nodes.length === 1) {
+                        parentNode.insertBefore(nodes[0], afterNode.nextSibling);
+                        return;
+                    }
                     const fragment = document.createDocumentFragment();
                     for (let i = 0; i < nodes.length; i++) {
                         fragment.appendChild(nodes[i]);
                     }
                     parentNode.insertBefore(fragment, afterNode.nextSibling);
                 }
+                function moveSwappedBlocks(leftIndex, rightIndex) {
+                    const firstBlock = lastBlockOrder[leftIndex];
+                    const secondBlock = lastBlockOrder[rightIndex];
+                    if (!firstBlock?._clone || !secondBlock?._clone) {
+                        return false;
+                    }
+                    const firstStart = getBlockStart(firstBlock);
+                    const firstEnd = getBlockEnd(firstBlock);
+                    const secondStart = getBlockStart(secondBlock);
+                    const secondEnd = getBlockEnd(secondBlock);
+                    if (!firstStart || !firstEnd || !secondStart || !secondEnd) {
+                        return false;
+                    }
+                    const anchorBeforeFirst = firstStart.previousSibling;
+                    if (!anchorBeforeFirst) {
+                        return false;
+                    }
+                    const firstCloneNodes = Array.isArray(firstBlock._clone)
+                        ? firstBlock._clone
+                        : [firstBlock._clone];
+                    const secondCloneNodes = Array.isArray(secondBlock._clone)
+                        ? secondBlock._clone
+                        : [secondBlock._clone];
+                    const firstNodes = getBlockNodes(firstCloneNodes);
+                    const secondNodes = getBlockNodes(secondCloneNodes);
+                    if (firstEnd.nextSibling === secondStart) {
+                        insertNodesAfter(secondNodes, anchorBeforeFirst);
+                        return true;
+                    }
+                    const anchorBeforeSecond = secondStart.previousSibling;
+                    if (!anchorBeforeSecond) {
+                        return false;
+                    }
+                    insertNodesAfter(secondNodes, anchorBeforeFirst);
+                    insertNodesAfter(firstNodes, anchorBeforeSecond);
+                    return true;
+                }
                 let lastBlockMap = nullObject();
+                let lastBlockOrder = [];
+                let lastSeenArrayMutationVersion = 0;
                 $scope.$watch(rhs, (collection) => {
                     swap();
                     let index = 0;
-                    let previousNode = $element;
+                    previousNode = $element;
                     let nextNode;
                     const nextBlockMap = nullObject();
                     let key;
@@ -19951,10 +20636,14 @@ function ngRepeatDirective($animate) {
                         }
                     }
                     const collectionLength = collectionKeys.length;
+                    const isIndexKeyedCollection = collection === collectionKeys;
                     const nextBlockOrder = new Array(collectionLength);
+                    let hasRetainedBlocks = false;
+                    let hasStableAppendRetainedPrefix = !hasAnimate &&
+                        lastBlockOrder.length > 0 &&
+                        lastBlockOrder.length < collectionLength;
                     for (index = 0; index < collectionLength; index++) {
-                        key =
-                            collection === collectionKeys ? index : collectionKeys[index];
+                        key = isIndexKeyedCollection ? index : collectionKeys[index];
                         value = collection[key];
                         trackById = trackByIdFn($scope, key, value);
                         if (lastBlockMap[trackById]) {
@@ -19962,34 +20651,130 @@ function ngRepeatDirective($animate) {
                             delete lastBlockMap[trackById];
                             nextBlockMap[trackById] = block;
                             nextBlockOrder[index] = block;
+                            hasRetainedBlocks = true;
+                            if (hasStableAppendRetainedPrefix &&
+                                index < lastBlockOrder.length &&
+                                (block !== lastBlockOrder[index] ||
+                                    !block._scope ||
+                                    !block._clone)) {
+                                hasStableAppendRetainedPrefix = false;
+                            }
                         }
                         else if (nextBlockMap[trackById]) {
                             values(nextBlockOrder).forEach((x) => {
-                                if (x && x.scope)
-                                    lastBlockMap[x.id] = block;
+                                if (x && x._scope)
+                                    lastBlockMap[x._id] = block;
                             });
                             throw ngRepeatMinErr("dupes", "Duplicates keys in a repeater are not allowed. Repeater: {0}, Duplicate key: {1} for value: {2}", expression, trackById, value);
                         }
                         else {
+                            if (hasStableAppendRetainedPrefix &&
+                                index < lastBlockOrder.length) {
+                                hasStableAppendRetainedPrefix = false;
+                            }
                             nextBlockOrder[index] = {
-                                id: trackById,
-                                scope: undefined,
-                                clone: undefined,
+                                _id: trackById,
+                                _scope: undefined,
+                                _clone: undefined,
                             };
                             nextBlockMap[trackById] = true;
                         }
                     }
+                    let mutationMeta = getArrayMutationMeta(collection);
+                    if (!mutationMeta ||
+                        mutationMeta._version <= lastSeenArrayMutationVersion ||
+                        mutationMeta._currentLength !== collectionLength) {
+                        mutationMeta = undefined;
+                    }
+                    else {
+                        lastSeenArrayMutationVersion = mutationMeta._version;
+                    }
+                    const swapMutationIndices = !hasAnimate
+                        ? getSwapMutationIndices(mutationMeta, lastBlockOrder, nextBlockOrder)
+                        : undefined;
+                    const didApplySwapDomMove = !!swapMutationIndices &&
+                        moveSwappedBlocks(swapMutationIndices[0], swapMutationIndices[1]);
+                    const canSkipDomMoveChecksForAppend = !hasAnimate &&
+                        (isPureAppendMutation(mutationMeta, lastBlockOrder, nextBlockOrder) ||
+                            hasStableAppendRetainedPrefix);
+                    const canSkipDomMoveChecksForMutation = didApplySwapDomMove ||
+                        canSkipDomMoveChecks(mutationMeta, nextBlockOrder) ||
+                        canSkipDomMoveChecksForAppend;
+                    const tailDeleteRetainedLength = !hasAnimate
+                        ? getPureTailDeleteRetainedLength(mutationMeta, lastBlockOrder, nextBlockOrder)
+                        : undefined;
+                    if (!hasAnimate &&
+                        collectionLength === 0 &&
+                        lastBlockOrder.length > 0) {
+                        const firstBlock = lastBlockOrder[0];
+                        const lastBlock = lastBlockOrder[lastBlockOrder.length - 1];
+                        const firstNode = firstBlock && getBlockStart(firstBlock);
+                        const lastNode = lastBlock && getBlockEnd(lastBlock);
+                        if (firstNode && lastNode) {
+                            for (let i = 0; i < lastBlockOrder.length; i++) {
+                                lastBlockOrder[i]._scope?.$destroy();
+                            }
+                            removeNodeRange(firstNode, lastNode);
+                            lastBlockMap = nextBlockMap;
+                            lastBlockOrder = nextBlockOrder;
+                            return;
+                        }
+                    }
+                    if (!hasAnimate &&
+                        tailDeleteRetainedLength !== undefined &&
+                        lastBlockOrder.length > tailDeleteRetainedLength) {
+                        const firstRemovedBlock = lastBlockOrder[tailDeleteRetainedLength];
+                        const lastRemovedBlock = lastBlockOrder[lastBlockOrder.length - 1];
+                        const firstRemovedNode = firstRemovedBlock && getBlockStart(firstRemovedBlock);
+                        const lastRemovedNode = lastRemovedBlock && getBlockEnd(lastRemovedBlock);
+                        if (firstRemovedNode && lastRemovedNode) {
+                            for (let removedIndex = tailDeleteRetainedLength; removedIndex < lastBlockOrder.length; removedIndex++) {
+                                lastBlockOrder[removedIndex]._scope?.$destroy();
+                            }
+                            removeNodeRange(firstRemovedNode, lastRemovedNode);
+                            const retainedLastIndex = tailDeleteRetainedLength - 1;
+                            const retainedLastBlock = nextBlockOrder[retainedLastIndex];
+                            if (retainedLastBlock?._scope &&
+                                retainedLastBlock._usesPositionLocals) {
+                                key = isIndexKeyedCollection
+                                    ? retainedLastIndex
+                                    : collectionKeys[retainedLastIndex];
+                                value = collection[key];
+                                updateScope(retainedLastBlock._scope, retainedLastIndex, valueIdentifier, value, keyIdentifier, key, collectionLength, true);
+                            }
+                            lastBlockMap = nextBlockMap;
+                            lastBlockOrder = nextBlockOrder;
+                            return;
+                        }
+                    }
+                    if (!hasAnimate &&
+                        collectionLength > 0 &&
+                        lastBlockOrder.length > 0 &&
+                        !hasRetainedBlocks) {
+                        const firstBlock = lastBlockOrder[0];
+                        const lastBlock = lastBlockOrder[lastBlockOrder.length - 1];
+                        const firstNode = firstBlock && getBlockStart(firstBlock);
+                        const lastNode = lastBlock && getBlockEnd(lastBlock);
+                        if (firstNode && lastNode) {
+                            for (let i = 0; i < lastBlockOrder.length; i++) {
+                                lastBlockOrder[i]._scope?.$destroy();
+                            }
+                            removeNodeRange(firstNode, lastNode);
+                            lastBlockMap = nullObject();
+                            lastBlockOrder = [];
+                        }
+                    }
                     for (const blockKey in lastBlockMap) {
                         block = lastBlockMap[blockKey];
-                        const blockNodes = getBlockNodes(Array.isArray(block.clone)
-                            ? block.clone
-                            : [block.clone]);
+                        const blockNodes = getBlockNodes(Array.isArray(block._clone)
+                            ? block._clone
+                            : [block._clone]);
                         elementsToRemove = getBlockStart(block);
                         if (hasAnimate && elementsToRemove) {
-                            $animate.leave(elementsToRemove);
+                            getAnimate().leave(elementsToRemove);
                         }
                         else {
-                            block.scope?.$destroy();
+                            block._scope?.$destroy();
                             removeBlockNodes(blockNodes);
                         }
                         if (blockNodes.length && blockNodes[0].parentNode) {
@@ -19999,31 +20784,66 @@ function ngRepeatDirective($animate) {
                             }
                         }
                         if (hasAnimate && elementsToRemove) {
-                            block.scope?.$destroy();
+                            block._scope?.$destroy();
                         }
                     }
-                    for (index = 0; index < collectionLength; index++) {
-                        key =
-                            collection === collectionKeys ? index : collectionKeys[index];
+                    let startIndex = 0;
+                    if (canSkipDomMoveChecksForAppend && lastBlockOrder.length > 0) {
+                        const retainedLastIndex = lastBlockOrder.length - 1;
+                        const retainedLastBlock = nextBlockOrder[retainedLastIndex];
+                        const retainedLastNode = retainedLastBlock && getBlockEnd(retainedLastBlock);
+                        if (retainedLastNode) {
+                            previousNode = retainedLastNode;
+                            startIndex = lastBlockOrder.length;
+                            if (retainedLastBlock._scope &&
+                                retainedLastBlock._usesPositionLocals) {
+                                key = isIndexKeyedCollection
+                                    ? retainedLastIndex
+                                    : collectionKeys[retainedLastIndex];
+                                value = collection[key];
+                                updateScope(retainedLastBlock._scope, retainedLastIndex, valueIdentifier, value, keyIdentifier, key, collectionLength, true);
+                            }
+                        }
+                    }
+                    for (index = startIndex; index < collectionLength; index++) {
+                        key = isIndexKeyedCollection ? index : collectionKeys[index];
                         value = collection[key];
                         block = nextBlockOrder[index];
-                        if (block.scope) {
-                            const existingClone = block.clone;
+                        if (block._scope) {
+                            const shouldUpdatePositionLocals = !!block._usesPositionLocals;
+                            const shouldUpdateKeyLocal = !!keyIdentifier && block._scope[keyIdentifier] !== key;
+                            const shouldUpdateValueLocal = block._scope[valueIdentifier] !== value;
+                            const existingClone = block._clone;
                             if (!existingClone) {
                                 continue;
                             }
-                            const existingCloneNodes = Array.isArray(existingClone)
-                                ? existingClone
-                                : [existingClone];
-                            nextNode = previousNode;
-                            do {
-                                nextNode = nextNode.nextSibling;
-                            } while (nextNode && nextNode[NG_REMOVED]);
-                            if (getBlockStart(block) !== nextNode) {
-                                insertNodesAfter(getBlockNodes(existingCloneNodes), previousNode);
+                            const isExistingCloneArray = Array.isArray(existingClone);
+                            const blockStart = isExistingCloneArray
+                                ? existingClone[0]
+                                : existingClone;
+                            const blockEnd = isExistingCloneArray
+                                ? existingClone[existingClone.length - 1]
+                                : existingClone;
+                            if (!canSkipDomMoveChecksForMutation) {
+                                nextNode = previousNode.nextSibling;
+                                if (blockStart !== nextNode) {
+                                    while (nextNode && nextNode[NG_REMOVED]) {
+                                        nextNode = nextNode.nextSibling;
+                                    }
+                                    if (blockStart !== nextNode) {
+                                        const existingCloneNodes = isExistingCloneArray
+                                            ? existingClone
+                                            : [existingClone];
+                                        insertNodesAfter(getBlockNodes(existingCloneNodes), previousNode);
+                                    }
+                                }
                             }
-                            previousNode = getBlockEnd(block);
-                            updateScope(block.scope, index, valueIdentifier, value, keyIdentifier, key, collectionLength);
+                            previousNode = blockEnd;
+                            if (shouldUpdatePositionLocals ||
+                                shouldUpdateKeyLocal ||
+                                shouldUpdateValueLocal) {
+                                updateScope(block._scope, index, valueIdentifier, value, keyIdentifier, key, collectionLength, shouldUpdatePositionLocals);
+                            }
                         }
                         else {
                             $transclude?.((clone, scope) => {
@@ -20031,23 +20851,28 @@ function ngRepeatDirective($animate) {
                                 const cloneNodes = Array.isArray(normalizedClone)
                                     ? normalizedClone
                                     : [normalizedClone];
-                                block.scope = scope;
+                                block._scope = scope;
                                 const endNode = cloneNodes[cloneNodes.length - 1];
                                 if (hasAnimate &&
                                     cloneNodes[0].nodeType === NodeType._ELEMENT_NODE) {
-                                    $animate.enter(cloneNodes[0], null, previousNode);
+                                    getAnimate().enter(cloneNodes[0], null, previousNode);
+                                    previousNode = endNode;
                                 }
                                 else {
                                     insertNodesAfter(cloneNodes, previousNode);
+                                    previousNode = endNode;
                                 }
-                                previousNode = endNode;
-                                block.clone = normalizedClone;
-                                nextBlockMap[block.id] = block;
-                                updateScope(block.scope, index, valueIdentifier, value, keyIdentifier, key, collectionLength);
+                                block._clone = normalizedClone;
+                                nextBlockMap[block._id] = block;
+                                updateScope(block._scope, index, valueIdentifier, value, keyIdentifier, key, collectionLength);
                             });
+                            if (block._scope) {
+                                block._usesPositionLocals = scopeUsesRepeatPositionLocals(block._scope);
+                            }
                         }
                     }
                     lastBlockMap = nextBlockMap;
+                    lastBlockOrder = nextBlockOrder;
                 }, isDefined(attr.lazy));
             }
             return ngRepeatLink;
@@ -20130,11 +20955,12 @@ function ngSetterDirective($parse, $log) {
 
 const NG_HIDE_CLASS = "ng-hide";
 const NG_HIDE_IN_PROGRESS_CLASS = "ng-hide-animate";
-ngShowDirective.$inject = [$injectTokens._animate];
+ngShowDirective.$inject = [$injectTokens._injector];
 /**
  * Removes the `ng-hide` class when the watched expression becomes truthy.
  */
-function ngShowDirective($animate) {
+function ngShowDirective($injector) {
+    const getAnimate = createLazyAnimate($injector);
     return {
         restrict: "A",
         link(scope, element, $attr) {
@@ -20143,8 +20969,9 @@ function ngShowDirective($animate) {
                 // we can control when the element is actually displayed on screen without having
                 // to have a global/greedy CSS selector that breaks when other animations are run.
                 // Read: https://github.com/angular/angular.ts/issues/9103#issuecomment-58335845
-                if (hasAnimate(element)) {
-                    $animate[value ? "removeClass" : "addClass"](element, NG_HIDE_CLASS, {
+                const animate = getAnimateForNode(getAnimate, element);
+                if (animate) {
+                    animate[value ? "removeClass" : "addClass"](element, NG_HIDE_CLASS, {
                         tempClasses: NG_HIDE_IN_PROGRESS_CLASS,
                     });
                 }
@@ -20160,19 +20987,21 @@ function ngShowDirective($animate) {
         },
     };
 }
-ngHideDirective.$inject = [$injectTokens._animate];
+ngHideDirective.$inject = [$injectTokens._injector];
 /**
  * Adds the `ng-hide` class when the watched expression becomes truthy.
  */
-function ngHideDirective($animate) {
+function ngHideDirective($injector) {
+    const getAnimate = createLazyAnimate($injector);
     return {
         restrict: "A",
         link(scope, element, attr) {
             scope.$watch(attr.ngHide, (value) => {
                 // The comment inside of the ngShowDirective explains why we add and
                 // remove a temporary class for the show/hide animation
-                if (hasAnimate(element)) {
-                    $animate[value ? "addClass" : "removeClass"](element, NG_HIDE_CLASS, {
+                const animate = getAnimateForNode(getAnimate, element);
+                if (animate) {
+                    animate[value ? "addClass" : "removeClass"](element, NG_HIDE_CLASS, {
                         tempClasses: NG_HIDE_IN_PROGRESS_CLASS,
                     });
                 }
@@ -20226,9 +21055,10 @@ class NgSwitchController {
         this._cases = {};
     }
 }
-ngSwitchDirective.$inject = [$injectTokens._animate];
+ngSwitchDirective.$inject = [$injectTokens._injector];
 /** Switches between transcluded case blocks and animates block entry/exit. */
-function ngSwitchDirective($animate) {
+function ngSwitchDirective($injector) {
+    const getAnimate = createLazyAnimate($injector);
     return {
         require: "ngSwitch",
         // asks for $scope to fool the BC controller module
@@ -20250,14 +21080,18 @@ function ngSwitchDirective($animate) {
                 let ii;
                 let runner;
                 // Start with the last, in case the array is modified during the loop
+                const animate = previousLeaveAnimations.length
+                    ? getAnimate()
+                    : undefined;
                 while (previousLeaveAnimations.length) {
-                    $animate.cancel(previousLeaveAnimations.pop());
+                    animate?.cancel(previousLeaveAnimations.pop());
                 }
                 for (i = 0, ii = selectedScopes.length; i < ii; ++i) {
                     const selected = selectedElements[i]._clone;
                     selectedScopes[i].$destroy();
-                    if (hasAnimate(selected)) {
-                        runner = previousLeaveAnimations[i] = $animate.leave(selected);
+                    const leaveAnimate = getAnimateForNode(getAnimate, selected);
+                    if (leaveAnimate) {
+                        runner = previousLeaveAnimations[i] = leaveAnimate.leave(selected);
                         runner.done(spliceFactory(previousLeaveAnimations, i));
                     }
                     else {
@@ -20280,18 +21114,19 @@ function ngSwitchDirective($animate) {
                                 _comment: document.createComment(""),
                             };
                             selectedElements.push(block);
-                            if (hasAnimate(caseElement)) {
+                            const enterAnimate = getAnimateForNode(getAnimate, caseElement);
+                            if (enterAnimate) {
                                 const { parentElement } = anchor;
                                 if (!parentElement) {
                                     return;
                                 }
                                 if (runner) {
                                     requestAnimationFrame(() => {
-                                        $animate.enter(caseElement, parentElement, anchor);
+                                        enterAnimate.enter(caseElement, parentElement, anchor);
                                     });
                                 }
                                 else {
-                                    $animate.enter(caseElement, parentElement, anchor);
+                                    enterAnimate.enter(caseElement, parentElement, anchor);
                                 }
                             }
                             else {
@@ -20771,146 +21606,6 @@ function ngWasmDirective() {
 }
 
 /**
- * Returns a new function for [Partial Application](https://en.wikipedia.org/wiki/Partial_application) of the original function.
- *
- * Given a function with N parameters, returns a new function that supports partial application.
- * The new function accepts anywhere from 1 to N parameters.  When that function is called with M parameters,
- * where M is less than N, it returns a new function that accepts the remaining parameters.  It continues to
- * accept more parameters until all N parameters have been supplied.
- *
- *
- * This contrived example uses a partially applied function as an predicate, which returns true
- * if an object is found in both arrays.
- * @example
- * ```
- * // returns true if an object is in both of the two arrays
- * function inBoth(array1, array2, object) {
- *   return array1.indexOf(object) !== -1 &&
- *          array2.indexOf(object) !== 1;
- * }
- * let obj1, obj2, obj3, obj4, obj5, obj6, obj7
- * let foos = [obj1, obj3]
- * let bars = [obj3, obj4, obj5]
- *
- * // A curried "copy" of inBoth
- * let curriedInBoth = curry(inBoth);
- * // Partially apply both the array1 and array2
- * let inFoosAndBars = curriedInBoth(foos, bars);
- *
- * // Supply the final argument; since all arguments are
- * // supplied, the original inBoth function is then called.
- * let obj1InBoth = inFoosAndBars(obj1); // false
- *
- * // Use the inFoosAndBars as a predicate.
- * // Filter, on each iteration, supplies the final argument
- * let allObjs = [ obj1, obj2, obj3, obj4, obj5, obj6, obj7 ];
- * let foundInBoth = allObjs.filter(inFoosAndBars); // [ obj3 ]
- *
- * ```
- *
- * Returns a curried version of the supplied function.
- */
-function curry(fn) {
-    const curried = (...args) => {
-        if (args.length >= fn.length) {
-            return fn(...args);
-        }
-        return (...nextArgs) => curried(...args, ...nextArgs);
-    };
-    return curried;
-}
-/**
- * Given a property name and a value, returns a function that returns a boolean based on whether
- * the passed object has a property that matches the value
- * let obj = { foo: 1, name: "blarg" };
- * let getName = propEq("name", "blarg");
- * getName(obj) === true
- */
-const propEq = curry((name, _val, obj) => obj && obj[name] === _val);
-/**
- * Given a dotted property name, returns a function that returns a nested property from an object, or undefined
- * let obj = { id: 1, nestedObj: { foo: 1, name: "blarg" }, };
- * let getName = prop("nestedObj.name");
- * getName(obj) === "blarg"
- * let propNotFound = prop("this.property.doesnt.exist");
- * propNotFound(obj) === undefined
- */
-const parse = (path) => {
-    const parts = path.split(".");
-    return (obj) => parts.reduce((acc, key) => acc && acc[key], obj);
-};
-/**
- * Given a class constructor, returns a predicate function that checks
- * whether a given object is an instance of that class.
- *
- * @param ctor - The class constructor to check against.
- * @returns A predicate function that returns true if the object is of the given class.
- */
-function is(ctor) {
-    /**
-     * Checks if the provided object is an instance of the given constructor.
-     *
-     * @param obj - The object to test.
-     * @returns True if the object is an instance of the given class.
-     */
-    return function (obj) {
-        return ((obj !== null && obj !== undefined && obj.constructor === ctor) ||
-            obj instanceof ctor);
-    };
-}
-/**
- * Given a value, returns a function which returns that value.
- * @template T
- * @param value - The value to wrap in a function.
- * @returns A function that returns the given value.
- */
-const val = (value) => () => value;
-/**
- * Sorta like Pattern Matching (a functional programming conditional construct)
- *
- * See http://c2.com/cgi/wiki?PatternMatching
- *
- * This is a conditional construct which allows a series of predicates and output functions
- * to be checked and then applied.  Each predicate receives the input.  If the predicate
- * returns truthy, then its matching output function (mapping function) is provided with
- * the input and, then the result is returned.
- *
- * Each combination (2-tuple) of predicate + output function should be placed in an array
- * of size 2: [ predicate, mapFn ]
- *
- * These 2-tuples should be put in an outer array.
- * @example ```
-
-// Here's a 2-tuple where the first element is the isString predicate
-// and the second element is a function that returns a description of the input
-let firstTuple = [ angular.isString, (input) => `Heres your string ${input}` ];
-
-// Second tuple: predicate "isNumber", mapfn returns a description
-let secondTuple = [ angular.isNumber, (input) => `(${input}) That's a number!` ];
-
-let third = [ (input) => input === null,  (input) => `Oh, null...` ];
-
-let fourth = [ (input) => input === undefined,  (input) => `notdefined` ];
-
-let descriptionOf = pattern([ firstTuple, secondTuple, third, fourth ]);
-
-console.log(descriptionOf(undefined)); // 'notdefined'
-console.log(descriptionOf(55)); // '(55) That's a number!'
-console.log(descriptionOf("foo")); // 'Here's your string foo'
-```
- * `struct` is a 2D array of predicate/mapper tuples.
- */
-function pattern(struct) {
-    return function (item) {
-        for (let i = 0; i < struct.length; i++) {
-            if (struct[i][0](item))
-                return struct[i][1](item);
-        }
-        return undefined;
-    };
-}
-
-/**
  * Performs deep equality checks for plain objects, arrays, dates, and regexes.
  */
 function equals(o1, o2) {
@@ -20944,16 +21639,16 @@ function equals(o1, o2) {
     if ([isFunction, isArray, isDate, isRegExp].some((fn) => !!fn(tup))) {
         return false;
     }
-    const keys = {};
+    const keyItems = {};
     const obj1 = o1;
     const obj2 = o2;
     for (const key in obj1) {
         if (!equals(obj1[key], obj2[key]))
             return false;
-        keys[key] = true;
+        keyItems[key] = true;
     }
     for (const key in obj2) {
-        if (!keys[key])
+        if (!keyItems[key])
             return false;
     }
     return true;
@@ -20986,7 +21681,7 @@ function removeFrom(array, obj) {
  */
 function defaults(opts, ...defaultsList) {
     const defaultVals = Object.assign({}, ...defaultsList.reverse());
-    return Object.assign(defaultVals, pick((opts || {}), Object.keys(defaultVals)));
+    return Object.assign(defaultVals, pick((opts || {}), keys(defaultVals)));
 }
 /**
  * Return a copy of the object only containing the whitelisted properties.
@@ -21015,7 +21710,7 @@ var ab = omit(foo, ['a', 'b']); // { c: 3 }
 ```
  */
 function omit(obj, propNames) {
-    return Object.keys(obj)
+    return keys(obj)
         .filter((x) => !propNames.includes(x))
         .reduce((acc, key) => ((acc[key] = obj[key]), acc), {});
 }
@@ -21233,7 +21928,7 @@ function tail(arr) {
  */
 function copy(src, dest) {
     const target = dest || {};
-    Object.keys(target).forEach((key) => delete target[key]);
+    keys(target).forEach((key) => delete target[key]);
     return Object.assign(target, src);
 }
 /**
@@ -21247,6 +21942,527 @@ function _arraysEq(a1, a2) {
             return false;
     }
     return true;
+}
+
+/**
+ * Returns a new function for [Partial Application](https://en.wikipedia.org/wiki/Partial_application) of the original function.
+ *
+ * Given a function with N parameters, returns a new function that supports partial application.
+ * The new function accepts anywhere from 1 to N parameters.  When that function is called with M parameters,
+ * where M is less than N, it returns a new function that accepts the remaining parameters.  It continues to
+ * accept more parameters until all N parameters have been supplied.
+ *
+ *
+ * This contrived example uses a partially applied function as an predicate, which returns true
+ * if an object is found in both arrays.
+ * @example
+ * ```
+ * // returns true if an object is in both of the two arrays
+ * function inBoth(array1, array2, object) {
+ *   return array1.indexOf(object) !== -1 &&
+ *          array2.indexOf(object) !== 1;
+ * }
+ * let obj1, obj2, obj3, obj4, obj5, obj6, obj7
+ * let foos = [obj1, obj3]
+ * let bars = [obj3, obj4, obj5]
+ *
+ * // A curried "copy" of inBoth
+ * let curriedInBoth = curry(inBoth);
+ * // Partially apply both the array1 and array2
+ * let inFoosAndBars = curriedInBoth(foos, bars);
+ *
+ * // Supply the final argument; since all arguments are
+ * // supplied, the original inBoth function is then called.
+ * let obj1InBoth = inFoosAndBars(obj1); // false
+ *
+ * // Use the inFoosAndBars as a predicate.
+ * // Filter, on each iteration, supplies the final argument
+ * let allObjs = [ obj1, obj2, obj3, obj4, obj5, obj6, obj7 ];
+ * let foundInBoth = allObjs.filter(inFoosAndBars); // [ obj3 ]
+ *
+ * ```
+ *
+ * Returns a curried version of the supplied function.
+ */
+function curry(fn) {
+    const curried = (...args) => {
+        if (args.length >= fn.length) {
+            return fn(...args);
+        }
+        return (...nextArgs) => curried(...args, ...nextArgs);
+    };
+    return curried;
+}
+/**
+ * Given a property name and a value, returns a function that returns a boolean based on whether
+ * the passed object has a property that matches the value
+ * let obj = { foo: 1, name: "blarg" };
+ * let getName = propEq("name", "blarg");
+ * getName(obj) === true
+ */
+const propEq = curry((name, _val, obj) => obj && obj[name] === _val);
+/**
+ * Given a dotted property name, returns a function that returns a nested property from an object, or undefined
+ * let obj = { id: 1, nestedObj: { foo: 1, name: "blarg" }, };
+ * let getName = prop("nestedObj.name");
+ * getName(obj) === "blarg"
+ * let propNotFound = prop("this.property.doesnt.exist");
+ * propNotFound(obj) === undefined
+ */
+const parse = (path) => {
+    const parts = path.split(".");
+    return (obj) => parts.reduce((acc, key) => acc && acc[key], obj);
+};
+/**
+ * Given a class constructor, returns a predicate function that checks
+ * whether a given object is an instance of that class.
+ *
+ * @param ctor - The class constructor to check against.
+ * @returns A predicate function that returns true if the object is of the given class.
+ */
+function is(ctor) {
+    /**
+     * Checks if the provided object is an instance of the given constructor.
+     *
+     * @param obj - The object to test.
+     * @returns True if the object is an instance of the given class.
+     */
+    return function (obj) {
+        return ((obj !== null && obj !== undefined && obj.constructor === ctor) ||
+            obj instanceof ctor);
+    };
+}
+/**
+ * Given a value, returns a function which returns that value.
+ * @template T
+ * @param value - The value to wrap in a function.
+ * @returns A function that returns the given value.
+ */
+const val = (value) => () => value;
+/**
+ * Sorta like Pattern Matching (a functional programming conditional construct)
+ *
+ * See http://c2.com/cgi/wiki?PatternMatching
+ *
+ * This is a conditional construct which allows a series of predicates and output functions
+ * to be checked and then applied.  Each predicate receives the input.  If the predicate
+ * returns truthy, then its matching output function (mapping function) is provided with
+ * the input and, then the result is returned.
+ *
+ * Each combination (2-tuple) of predicate + output function should be placed in an array
+ * of size 2: [ predicate, mapFn ]
+ *
+ * These 2-tuples should be put in an outer array.
+ * @example ```
+
+// Here's a 2-tuple where the first element is the isString predicate
+// and the second element is a function that returns a description of the input
+let firstTuple = [ angular.isString, (input) => `Heres your string ${input}` ];
+
+// Second tuple: predicate "isNumber", mapfn returns a description
+let secondTuple = [ angular.isNumber, (input) => `(${input}) That's a number!` ];
+
+let third = [ (input) => input === null,  (input) => `Oh, null...` ];
+
+let fourth = [ (input) => input === undefined,  (input) => `notdefined` ];
+
+let descriptionOf = pattern([ firstTuple, secondTuple, third, fourth ]);
+
+console.log(descriptionOf(undefined)); // 'notdefined'
+console.log(descriptionOf(55)); // '(55) That's a number!'
+console.log(descriptionOf("foo")); // 'Here's your string foo'
+```
+ * `struct` is a 2D array of predicate/mapper tuples.
+ */
+function pattern(struct) {
+    return function (item) {
+        for (let i = 0; i < struct.length; i++) {
+            if (struct[i][0](item))
+                return struct[i][1](item);
+        }
+        return undefined;
+    };
+}
+
+const noopDeregister = () => undefined;
+/**
+ * Parses an `ng-sref` expression into a target state name and parameter expression.
+ */
+function parseStateRef(ref) {
+    const paramsOnly = ref.match(/^\s*({[^}]*})\s*$/);
+    if (paramsOnly)
+        ref = `(${paramsOnly[1]})`;
+    const parsed = ref
+        .replace(/\n/g, " ")
+        .match(/^\s*([^(]*?)\s*(\((.*)\))?\s*$/);
+    if (!parsed || parsed.length !== 4)
+        throw new Error(`Invalid state ref '${ref}'`);
+    return { _state: parsed[1] || null, _paramExpr: parsed[3] || null };
+}
+/**
+ * Resolves the relative state context for a state-ref-bearing element.
+ */
+function stateContext(el) {
+    const $ngView = getInheritedData(el, "$ngView");
+    const path = parse("$cfg.path")($ngView);
+    return path
+        ? tail(path).state.name
+        : undefined;
+}
+/**
+ * Computes the current state-ref definition, href, and navigation options.
+ */
+function processedDef($state, $element, def) {
+    const ngState = def._ngState || $state.current?.name;
+    const ngStateOpts = Object.assign(defaultOpts($element, $state), def._ngStateOpts || {});
+    const href = $state.href(ngState, def._ngStateParams, ngStateOpts);
+    return {
+        _ngState: ngState,
+        _ngStateParams: def._ngStateParams,
+        _ngStateOpts: ngStateOpts,
+        _href: href,
+    };
+}
+/**
+ * Returns the relevant DOM attribute and click behavior metadata for the element.
+ */
+function getTypeInfo(el) {
+    // SVG 2 uses the standard `href` attribute; `xlink:href` is obsolete.
+    const isForm = el.nodeName === "FORM";
+    return {
+        _attr: isForm ? "action" : "href",
+        _isAnchor: el.nodeName === "A",
+        _clickable: !isForm,
+    };
+}
+/**
+ * Creates the click handler that triggers a state transition for a state ref.
+ */
+function clickHook(el, $state, type, getDef, scope) {
+    return function (event) {
+        const mouseEvent = event;
+        const { button } = mouseEvent;
+        const target = getDef();
+        const res = button > 1 ||
+            mouseEvent.ctrlKey ||
+            mouseEvent.metaKey ||
+            mouseEvent.shiftKey ||
+            mouseEvent.altKey ||
+            el.getAttribute("target");
+        if (!res) {
+            const originalPreventDefault = event.preventDefault.bind(event);
+            let cancelled = false;
+            let ignorePreventDefaultCount = type._isAnchor && !target._href ? 1 : 0;
+            event.preventDefault = function () {
+                originalPreventDefault();
+                if (ignorePreventDefaultCount-- <= 0) {
+                    cancelled = true;
+                }
+            };
+            originalPreventDefault();
+            queueMicrotask(() => {
+                event.preventDefault = originalPreventDefault;
+                if (cancelled) {
+                    return;
+                }
+                if (!el.getAttribute("disabled")) {
+                    $state
+                        .go(target._ngState, target._ngStateParams, target._ngStateOpts)
+                        .then(() => {
+                        scope.$emit("$updateBrowser");
+                    });
+                }
+            });
+        }
+        else {
+            // ignored
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+    };
+}
+/**
+ * Produces default navigation options for a state-ref element.
+ */
+function defaultOpts(el, $state) {
+    return {
+        relative: stateContext(el) || $state.$current,
+        inherit: true,
+        source: "sref",
+    };
+}
+/**
+ * Binds the configured activation events and removes them on scope destroy.
+ */
+function bindEvents(element, scope, hookFn, ngStateOpts) {
+    let events = ngStateOpts ? ngStateOpts.events : undefined;
+    if (!isArray(events)) {
+        events = ["click"];
+    }
+    const eventNames = events;
+    //const on = element.on ? "on" : "bind";
+    for (const event of eventNames) {
+        element.addEventListener(event, hookFn);
+    }
+    scope.$on("$destroy", function () {
+        // const off = element.off ? "off" : "unbind";
+        for (const event of eventNames) {
+            element.removeEventListener(event, hookFn);
+        }
+    });
+}
+// // TODO: SEPARATE THESE OUT
+StateRefDirective.$inject = [
+    $injectTokens._state,
+    $injectTokens._rootScope,
+    $injectTokens._stateRegistry,
+    $injectTokens._transitions,
+];
+/**
+ * Generates `ng-sref` links and keeps their href/state data in sync.
+ */
+function StateRefDirective($stateService, $rootScope, $stateRegistry, $transitions) {
+    const $state = $stateService;
+    return {
+        restrict: "A",
+        require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
+        link: (scope, element, attrs, ngSrefActive) => {
+            const type = getTypeInfo(element);
+            const active = ngSrefActive[1] || ngSrefActive[0];
+            let unlinkInfoFn;
+            const rawDef = {};
+            const getDef = () => processedDef($state, element, rawDef);
+            const ref = parseStateRef(attrs.ngSref);
+            rawDef._ngState = ref._state;
+            rawDef._ngStateOpts = attrs.ngSrefOpts
+                ? scope.$eval(attrs.ngSrefOpts)
+                : {};
+            function update() {
+                rawDef._ngStateParams = Object.assign({}, ref._paramExpr && scope.$eval(ref._paramExpr));
+                const def = getDef();
+                if (unlinkInfoFn) {
+                    unlinkInfoFn();
+                }
+                if (active) {
+                    unlinkInfoFn = active?._addStateInfo?.(def._ngState, def._ngStateParams);
+                }
+                if (!isNullOrUndefined(def._href)) {
+                    attrs.$set(type._attr, def._href);
+                }
+            }
+            if (ref._paramExpr) {
+                scope.$watch(ref._paramExpr, function (val) {
+                    rawDef._ngStateParams = Object.assign({}, val);
+                    update();
+                }, true);
+                rawDef._ngStateParams = Object.assign({}, scope.$eval(ref._paramExpr));
+            }
+            update();
+            scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
+            scope.$on("$destroy", $transitions.onSuccess({}, update));
+            if (!type._clickable) {
+                return;
+            }
+            bindEvents(element, scope, clickHook(element, $state, type, getDef, $rootScope), rawDef._ngStateOpts);
+        },
+    };
+}
+StateRefDynamicDirective.$inject = [
+    $injectTokens._state,
+    $injectTokens._rootScope,
+    $injectTokens._stateRegistry,
+    $injectTokens._transitions,
+];
+/**
+ * Generates dynamic `ui-state` links whose target state is read from an expression.
+ */
+function StateRefDynamicDirective($state, $rootScope, $stateRegistry, $transitions) {
+    return {
+        restrict: "A",
+        require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
+        link(scope, element, attrs, ngSrefActive) {
+            const type = getTypeInfo(element);
+            const active = ngSrefActive[1] || ngSrefActive[0];
+            let unlinkInfoFn;
+            const rawDef = {};
+            const getDef = () => processedDef($state, element, rawDef);
+            const inputAttrs = ["ngState", "ngStateParams", "ngStateOpts"];
+            const rawDefKeyByAttr = {
+                ngState: "_ngState",
+                ngStateParams: "_ngStateParams",
+                ngStateOpts: "_ngStateOpts",
+            };
+            const watchDeregFns = inputAttrs.reduce((acc, attr) => ((acc[attr] = () => {
+                /* empty */
+            }),
+                acc), {});
+            function update() {
+                const def = getDef();
+                if (unlinkInfoFn) {
+                    unlinkInfoFn();
+                }
+                if (active) {
+                    unlinkInfoFn = active?._addStateInfo?.(def._ngState, def._ngStateParams);
+                }
+                if (!isNullOrUndefined(def._href)) {
+                    attrs.$set(type._attr, def._href);
+                }
+            }
+            inputAttrs.forEach((field) => {
+                rawDef[rawDefKeyByAttr[field]] = attrs[field]
+                    ? scope.$eval(attrs[field])
+                    : null;
+                attrs.$observe(field, (expr) => {
+                    watchDeregFns[field]();
+                    if (!expr)
+                        return;
+                    watchDeregFns[field] =
+                        scope.$watch(expr, (newval) => {
+                            rawDef[rawDefKeyByAttr[field]] = newval;
+                            update();
+                        }) || noopDeregister;
+                });
+            });
+            update();
+            scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
+            scope.$on("$destroy", $transitions.onSuccess({}, update));
+            if (!type._clickable)
+                return;
+            const hookFn = clickHook(element, $state, type, getDef, $rootScope);
+            bindEvents(element, scope, hookFn, rawDef._ngStateOpts);
+        },
+    };
+}
+StateRefActiveDirective.$inject = [
+    $injectTokens._state,
+    $injectTokens._router,
+    $injectTokens._interpolate,
+    $injectTokens._stateRegistry,
+    $injectTokens._transitions,
+];
+/**
+ * Toggles active CSS classes based on the current router state.
+ */
+function StateRefActiveDirective($state, $router, $interpolate, $stateRegistry, $transitions) {
+    return {
+        restrict: "A",
+        controller($scope, $element, $attrs) {
+            let states = [];
+            let ngSrefActive;
+            // There probably isn't much point in $observing this
+            // ngSrefActive and ngSrefActiveEq share the same directive object with some
+            // slight difference in logic routing
+            const activeEqClass = $interpolate($attrs.ngSrefActiveEq || "", false)($scope) || "";
+            try {
+                ngSrefActive = $scope.$eval($attrs.ngSrefActive);
+            }
+            catch {
+                // Do nothing. ngSrefActive is not a valid expression.
+                // Fall back to using $interpolate below
+            }
+            ngSrefActive =
+                ngSrefActive ||
+                    $interpolate($attrs.ngSrefActive || "", false)($scope) ||
+                    "";
+            setStatesFromDefinitionObject(ngSrefActive);
+            // Allow ngSref to communicate with ngSrefActive[Equals]
+            this._addStateInfo = function (newState, newParams) {
+                // we already got an explicit state provided by ng-sref-active, so we
+                // shadow the one that comes from ng-sref
+                if (isObject(ngSrefActive) && states.length > 0) {
+                    return undefined;
+                }
+                const deregister = addState(newState, newParams, String(ngSrefActive));
+                update();
+                return deregister;
+            };
+            /**
+             * Updates active classes after a transition settles.
+             */
+            function updateAfterTransition(trans) {
+                trans.promise.then(update, () => {
+                    /* empty */
+                });
+            }
+            $scope.$on("$destroy", setupEventListeners());
+            if ($router.transition) {
+                updateAfterTransition($router.transition);
+            }
+            function setupEventListeners() {
+                const deregisterStatesChangedListener = $stateRegistry.onStatesChanged(handleStatesChanged);
+                const deregisterOnStartListener = $transitions.onStart({}, updateAfterTransition);
+                const deregisterStateChangeSuccessListener = $scope.$on("$stateChangeSuccess", update);
+                return function cleanUp() {
+                    deregisterStatesChangedListener();
+                    deregisterOnStartListener();
+                    deregisterStateChangeSuccessListener();
+                };
+            }
+            function handleStatesChanged() {
+                setStatesFromDefinitionObject(ngSrefActive);
+            }
+            /** Updates the tracked state list from the directive definition object. */
+            function setStatesFromDefinitionObject(statesDefinition) {
+                if (isObject(statesDefinition)) {
+                    states = [];
+                    entries(statesDefinition).forEach(([activeClass, stateOrName]) => {
+                        // Helper function to abstract adding state.
+                        const addStateForClass = function (stateOrNameParam, activeClassParam) {
+                            const ref = parseStateRef(stateOrNameParam);
+                            addState(ref._state, ref._paramExpr && $scope.$eval(ref._paramExpr), activeClassParam);
+                        };
+                        if (isString(stateOrName)) {
+                            // If state is string, just add it.
+                            addStateForClass(stateOrName, activeClass);
+                        }
+                        else if (isArray(stateOrName)) {
+                            // If state is an array, iterate over it and add each array item individually.
+                            stateOrName.forEach((stateOrNameParam) => {
+                                addStateForClass(stateOrNameParam, activeClass);
+                            });
+                        }
+                    });
+                }
+            }
+            function addState(stateName, stateParams, activeClass) {
+                const state = $state.get(stateName, stateContext($element));
+                const stateInfo = {
+                    _state: {
+                        name: state?.name || String(stateName?.name || stateName),
+                    },
+                    _params: stateParams,
+                    _activeClass: activeClass,
+                };
+                states.push(stateInfo);
+                return function removeState() {
+                    removeFrom(states, stateInfo);
+                };
+            }
+            // Update route state
+            function update() {
+                const splitClasses = (str) => str.split(/\s/).filter(Boolean);
+                const getClasses = (stateList) => stateList
+                    .map((x) => x._activeClass)
+                    .map(splitClasses)
+                    .reduce(unnestR, []);
+                const allClasses = getClasses(states)
+                    .concat(splitClasses(activeEqClass))
+                    .reduce(uniqR, []);
+                const fuzzyClasses = getClasses(states.filter((x) => $state.includes(x._state.name, x._params)));
+                const exactlyMatchesAny = !!states.filter((x) => $state.is(x._state.name, x._params)).length;
+                const exactClasses = exactlyMatchesAny
+                    ? splitClasses(activeEqClass)
+                    : [];
+                const addClasses = fuzzyClasses
+                    .concat(exactClasses)
+                    .reduce(uniqR, []);
+                const removeClasses = allClasses.filter((cls) => !addClasses.includes(cls));
+                addClasses.forEach((className) => $element.classList.add(className));
+                removeClasses.forEach((className) => $element.classList.remove(className));
+            }
+            update();
+        },
+    };
 }
 
 /**
@@ -21265,20 +22481,6 @@ function maxLength(max, str) {
     if (str.length <= max)
         return str;
     return `${str.substring(0, max - DOTS.length)}${DOTS}`;
-}
-/**
- * Returns a string, with spaces added to the end, up to a desired str length
- *
- * If the string is already longer than the desired length, return the string.
- * Else returns the string, with extra spaces on the end, such that it reaches `length` characters.
- *
- * @param length the desired length of the string to return
- * @param str the input string
- */
-function padString(length, str) {
-    while (str.length < length)
-        str += " ";
-    return str;
 }
 /** Converts a camelCase string into kebab-case. */
 function kebobString(camelCase) {
@@ -21378,595 +22580,6 @@ function joinNeighborsR(acc, str) {
     if (isString(tail(acc)) && isString(str))
         return acc.slice(0, -1).concat(tail(acc) + str);
     return pushR(acc, str);
-}
-
-/**
- * # Transition tracing (debug)
- *
- * Enable transition tracing to print transition information to the console,
- * in order to help debug your application.
- * Tracing logs detailed information about each Transition to your console.
- *
- * To enable tracing, import the [[Trace]] singleton and enable one or more categories.
- *
- * ### ES6
- * ```js
- * import {trace} from "@uirouter/core/index";
- * trace.enable(1, 5); // TRANSITION and VIEWCONFIG
- * ```
- *
- * ### CJS
- * ```js
- * let trace = require("@uirouter/core").trace;
- * trace.enable("TRANSITION", "VIEWCONFIG");
- * ```
- *
- * ### Globals
- * ```js
- * let trace = window["@uirouter/core"].trace;
- * trace.enable(); // Trace everything (very verbose)
- * ```
- *
- * ### Angular 1:
- * ```js
- * app.run($trace => $trace.enable());
- * ```
- *
- * @packageDocumentation
- */
-const MAX_PAD_LENGTH = 30;
-function ngViewString(ngView) {
-    if (!ngView)
-        return "ng-view (defunct)";
-    const state = ngView.creationContext
-        ? ngView.creationContext.name || "(root)"
-        : "(none)";
-    return `[ng-view#${ngView.id}:${ngView.fqn} (${ngView.name}@${state})]`;
-}
-const viewConfigString = (viewConfig) => {
-    const view = viewConfig.viewDecl;
-    const state = view.$context?.name || "(root)";
-    return `[View#${viewConfig.$id} from '${state}' state]: target ng-view: '${view.$ngViewName}@${view.$ngViewContextAnchor}'`;
-};
-function normalizedCat(input) {
-    if (isNumber(input)) {
-        return String(input);
-    }
-    const normalized = String(input);
-    const categoryKey = keys(Category).find((key) => Category[key] === normalized);
-    return categoryKey
-        ? Category[categoryKey]
-        : normalized;
-}
-/**
- * Trace categories Enum
- *
- * Enable or disable a category using [[Trace.enable]] or [[Trace.disable]]
- *
- * `trace.enable(Category.TRANSITION)`
- *
- * These can also be provided using a matching string, or position ordinal
- *
- * `trace.enable("TRANSITION")`
- *
- * `trace.enable(1)`
- */
-const Category = {
-    _RESOLVE: "RESOLVE",
-    _TRANSITION: "TRANSITION",
-    _HOOK: "HOOK",
-    _UIVIEW: "UIVIEW",
-    _VIEWCONFIG: "VIEWCONFIG",
-};
-const _tid = parse("$id");
-const _rid = parse("router.$id");
-function transLbl(trans) {
-    return `Transition #${_tid(trans)}-${_rid(trans)}`;
-}
-/**
- * Prints ng-router Transition trace information to the console.
- */
-class Trace {
-    constructor() {
-        this._enabled = {};
-        this._logger =
-            window.angular?.$injector?.get($injectTokens._log) || console;
-    }
-    /** @internal */
-    _set(enabled, categories) {
-        if (!categories.length) {
-            categories = Object.values(Category);
-        }
-        categories
-            .map(normalizedCat)
-            .forEach((category) => (this._enabled[category] = enabled));
-    }
-    enable(...categories) {
-        this._set(true, categories);
-    }
-    disable(...categories) {
-        this._set(false, categories);
-    }
-    /**
-     * Retrieves the enabled stateus of a [[Category]]
-     *
-     * ```js
-     * trace.enabled("VIEWCONFIG"); // true or false
-     * ```
-     * @returns True if the category is enabled.
-     */
-    enabled(category) {
-        return !!this._enabled[normalizedCat(category)];
-    }
-    /** @internal called by ng-router code */
-    traceTransitionStart(trans) {
-        if (!this.enabled(Category._TRANSITION))
-            return;
-        this._logger.log(`${transLbl(trans)}: Started  -> ${stringify(trans)}`);
-    }
-    /** @internal called by ng-router code */
-    traceTransitionIgnored(trans) {
-        if (!this.enabled(Category._TRANSITION))
-            return;
-        this._logger.log(`${transLbl(trans)}: Ignored  <> ${stringify(trans)}`);
-    }
-    /** @internal called by ng-router code */
-    traceHookInvocation(step, trans, options) {
-        if (!this.enabled(Category._HOOK))
-            return;
-        const event = parse("traceData.hookType")(options) || "internal", context = parse("traceData.context.state.name")(options) ||
-            parse("traceData.context")(options) ||
-            "unknown", name = functionToString(step.registeredHook.callback);
-        this._logger.log(`${transLbl(trans)}:   Hook -> ${event} context: ${context}, ${maxLength(200, name)}`);
-    }
-    /** @internal called by ng-router code */
-    traceHookResult(hookResult, trans) {
-        if (!this.enabled(Category._HOOK))
-            return;
-        this._logger.log(`${transLbl(trans)}:   <- Hook returned: ${maxLength(200, stringify(hookResult))}`);
-    }
-    /** @internal called by ng-router code */
-    traceResolvePath(path, when, trans) {
-        if (!this.enabled(Category._RESOLVE))
-            return;
-        this._logger.log(`${transLbl(trans)}:         Resolving ${path} (${when})`);
-    }
-    /** @internal called by ng-router code */
-    traceResolvableResolved(resolvable, trans) {
-        if (!this.enabled(Category._RESOLVE))
-            return;
-        this._logger.log(`${transLbl(trans)}:               <- Resolved  ${resolvable} to: ${maxLength(200, stringify(resolvable.data))}`);
-    }
-    /** @internal called by ng-router code */
-    traceError(reason, trans) {
-        if (!this.enabled(Category._TRANSITION))
-            return;
-        this._logger.log(`${transLbl(trans)}: <- Rejected ${stringify(trans)}, reason: ${reason}`);
-    }
-    /** @internal called by ng-router code */
-    traceSuccess(finalState, trans) {
-        if (!this.enabled(Category._TRANSITION))
-            return;
-        this._logger.log(`${transLbl(trans)}: <- Success  ${stringify(trans)}, final state: ${finalState.name}`);
-    }
-    /** @internal called by ng-router code */
-    traceUIViewEvent(event, viewData, extra = "") {
-        if (!this.enabled(Category._UIVIEW))
-            return;
-        this._logger.log(`ng-view: ${padString(MAX_PAD_LENGTH, event)} ${ngViewString(viewData)}${extra}`);
-    }
-    /** @internal called by ng-router code */
-    traceUIViewConfigUpdated(viewData, context) {
-        if (!this.enabled(Category._UIVIEW))
-            return;
-        this.traceUIViewEvent("Updating", viewData, ` with ViewConfig from context='${context}'`);
-    }
-    /** @internal called by ng-router code */
-    traceUIViewFill(viewData, html) {
-        if (!this.enabled(Category._UIVIEW))
-            return;
-        this.traceUIViewEvent("Fill", viewData, ` with: ${maxLength(200, html)}`);
-    }
-    /** @internal called by ng-router code */
-    traceViewSync(pairs) {
-        if (!this.enabled(Category._VIEWCONFIG))
-            return;
-        const uivheader = "uiview component fqn";
-        const cfgheader = "view config state (view name)";
-        const mapping = pairs
-            .map(({ ngView, viewConfig }) => {
-            const uiv = ngView && ngView.fqn;
-            const cfg = viewConfig &&
-                `${viewConfig.viewDecl.$context?.name}: (${viewConfig.viewDecl.$name})`;
-            return { [uivheader]: uiv, [cfgheader]: cfg };
-        })
-            .sort((a, b) => (a[uivheader] || "").localeCompare(b[uivheader] || ""));
-        this._logger.table(mapping);
-    }
-    /** @internal called by ng-router code */
-    traceViewServiceEvent(event, viewConfig) {
-        if (!this.enabled(Category._VIEWCONFIG))
-            return;
-        this._logger.log(`VIEWCONFIG: ${event} ${viewConfigString(viewConfig)}`);
-    }
-    /** @internal called by ng-router code */
-    traceViewServiceUIViewEvent(event, viewData) {
-        if (!this.enabled(Category._VIEWCONFIG))
-            return;
-        this._logger.log(`VIEWCONFIG: ${event} ${ngViewString(viewData)}`);
-    }
-}
-/**
- * The [[Trace]] singleton
- *
- * #### Example:
- * ```js
- * import {trace} from "@uirouter/core/index";
- * trace.enable(1, 5);
- * ```
- */
-const trace = new Trace();
-
-const noopDeregister = () => undefined;
-/**
- * Parses an `ng-sref` expression into a target state name and parameter expression.
- */
-function parseStateRef(ref) {
-    const paramsOnly = ref.match(/^\s*({[^}]*})\s*$/);
-    if (paramsOnly)
-        ref = `(${paramsOnly[1]})`;
-    const parsed = ref
-        .replace(/\n/g, " ")
-        .match(/^\s*([^(]*?)\s*(\((.*)\))?\s*$/);
-    if (!parsed || parsed.length !== 4)
-        throw new Error(`Invalid state ref '${ref}'`);
-    return { state: parsed[1] || null, paramExpr: parsed[3] || null };
-}
-/**
- * Resolves the relative state context for a state-ref-bearing element.
- */
-function stateContext(el) {
-    const $ngView = getInheritedData(el, "$ngView");
-    const path = parse("$cfg.path")($ngView);
-    return path
-        ? tail(path).state.name
-        : undefined;
-}
-/**
- * Computes the current state-ref definition, href, and navigation options.
- */
-function processedDef($state, $element, def) {
-    const ngState = def.ngState || $state.current?.name;
-    const ngStateOpts = Object.assign(defaultOpts($element, $state), def.ngStateOpts || {});
-    const href = $state.href(ngState, def.ngStateParams, ngStateOpts);
-    return { ngState, ngStateParams: def.ngStateParams, ngStateOpts, href };
-}
-/**
- * Returns the relevant DOM attribute and click behavior metadata for the element.
- */
-function getTypeInfo(el) {
-    // SVGAElement does not use the href attribute, but rather the 'xlinkHref' attribute.
-    const isSvg = Object.prototype.toString.call(el.getAttribute("href")) ===
-        "[object SVGAnimatedString]";
-    const isForm = el.nodeName === "FORM";
-    return {
-        attr: isForm ? "action" : isSvg ? "xlink:href" : "href",
-        isAnchor: el.nodeName === "A",
-        clickable: !isForm,
-    };
-}
-/**
- * Creates the click handler that triggers a state transition for a state ref.
- */
-function clickHook(el, $state, type, getDef, scope) {
-    return function (event) {
-        const mouseEvent = event;
-        const button = mouseEvent.which || mouseEvent.button, target = getDef();
-        const res = button > 1 ||
-            mouseEvent.ctrlKey ||
-            mouseEvent.metaKey ||
-            mouseEvent.shiftKey ||
-            mouseEvent.altKey ||
-            el.getAttribute("target");
-        if (!res) {
-            // HACK: This is to allow ng-clicks to be processed before the transition is initiated:
-            const transition = setTimeout(function () {
-                if (!el.getAttribute("disabled")) {
-                    $state
-                        .go(target.ngState, target.ngStateParams, target.ngStateOpts)
-                        .then(() => {
-                        scope.$emit("$updateBrowser");
-                    });
-                }
-            });
-            event.preventDefault();
-            // if the state has no URL, ignore one preventDefault from the <a> directive.
-            let ignorePreventDefaultCount = type.isAnchor && !target.href ? 1 : 0;
-            event.preventDefault = function () {
-                if (ignorePreventDefaultCount-- <= 0)
-                    clearTimeout(transition);
-            };
-        }
-        else {
-            // ignored
-            event.preventDefault();
-            event.stopImmediatePropagation();
-        }
-    };
-}
-/**
- * Produces default navigation options for a state-ref element.
- */
-function defaultOpts(el, $state) {
-    return {
-        relative: stateContext(el) || $state.$current,
-        inherit: true,
-        source: "sref",
-    };
-}
-/**
- * Binds the configured activation events and removes them on scope destroy.
- */
-function bindEvents(element, scope, hookFn, ngStateOpts) {
-    let events = ngStateOpts ? ngStateOpts.events : undefined;
-    if (!isArray(events)) {
-        events = ["click"];
-    }
-    const eventNames = events;
-    //const on = element.on ? "on" : "bind";
-    for (const event of eventNames) {
-        element.addEventListener(event, hookFn);
-    }
-    scope.$on("$destroy", function () {
-        // const off = element.off ? "off" : "unbind";
-        for (const event of eventNames) {
-            element.removeEventListener(event, hookFn);
-        }
-    });
-}
-// // TODO: SEPARATE THESE OUT
-StateRefDirective.$inject = [
-    $injectTokens._state,
-    $injectTokens._stateRegistry,
-    $injectTokens._transitions,
-];
-/**
- * Generates `ui-sref` links and keeps their href/state data in sync.
- */
-function StateRefDirective($stateService, $stateRegistry, $transitions) {
-    const $state = $stateService;
-    return {
-        restrict: "A",
-        require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
-        link: (scope, element, attrs, ngSrefActive) => {
-            const type = getTypeInfo(element);
-            const active = ngSrefActive[1] || ngSrefActive[0];
-            let unlinkInfoFn;
-            const rawDef = {};
-            const getDef = () => processedDef($state, element, rawDef);
-            const ref = parseStateRef(attrs.ngSref);
-            rawDef.ngState = ref.state;
-            rawDef.ngStateOpts = attrs.ngSrefOpts
-                ? scope.$eval(attrs.ngSrefOpts)
-                : {};
-            function update() {
-                rawDef.ngStateParams = Object.assign({}, ref.paramExpr && scope.$eval(ref.paramExpr));
-                const def = getDef();
-                if (unlinkInfoFn) {
-                    unlinkInfoFn();
-                }
-                if (active) {
-                    unlinkInfoFn = active?._addStateInfo?.(def.ngState, def.ngStateParams);
-                }
-                if (!isNullOrUndefined(def.href)) {
-                    attrs.$set(type.attr, def.href);
-                }
-            }
-            if (ref.paramExpr) {
-                scope.$watch(ref.paramExpr, function (val) {
-                    rawDef.ngStateParams = Object.assign({}, val);
-                    update();
-                }, true);
-                rawDef.ngStateParams = Object.assign({}, scope.$eval(ref.paramExpr));
-            }
-            update();
-            scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
-            scope.$on("$destroy", $transitions.onSuccess({}, update));
-            if (!type.clickable) {
-                return;
-            }
-            bindEvents(element, scope, clickHook(element, $state, type, getDef, scope), rawDef.ngStateOpts);
-        },
-    };
-}
-StateRefDynamicDirective.$inject = [
-    $injectTokens._state,
-    $injectTokens._stateRegistry,
-    $injectTokens._transitions,
-];
-/**
- * Generates dynamic `ui-state` links whose target state is read from an expression.
- */
-function StateRefDynamicDirective($state, $stateRegistry, $transitions) {
-    return {
-        restrict: "A",
-        require: ["?^ngSrefActive", "?^ngSrefActiveEq"],
-        link(scope, element, attrs, ngSrefActive) {
-            const type = getTypeInfo(element);
-            const active = ngSrefActive[1] || ngSrefActive[0];
-            let unlinkInfoFn;
-            const rawDef = {};
-            const getDef = () => processedDef($state, element, rawDef);
-            const inputAttrs = ["ngState", "ngStateParams", "ngStateOpts"];
-            const watchDeregFns = inputAttrs.reduce((acc, attr) => ((acc[attr] = () => {
-                /* empty */
-            }),
-                acc), {});
-            function update() {
-                const def = getDef();
-                if (unlinkInfoFn) {
-                    unlinkInfoFn();
-                }
-                if (active) {
-                    unlinkInfoFn = active?._addStateInfo?.(def.ngState, def.ngStateParams);
-                }
-                if (!isNullOrUndefined(def.href)) {
-                    attrs.$set(type.attr, def.href);
-                }
-            }
-            inputAttrs.forEach((field) => {
-                rawDef[field] = attrs[field] ? scope.$eval(attrs[field]) : null;
-                attrs.$observe(field, (expr) => {
-                    watchDeregFns[field]();
-                    if (!expr)
-                        return;
-                    watchDeregFns[field] =
-                        scope.$watch(expr, (newval) => {
-                            rawDef[field] = newval;
-                            update();
-                        }) || noopDeregister;
-                });
-            });
-            update();
-            scope.$on("$destroy", $stateRegistry.onStatesChanged(update));
-            scope.$on("$destroy", $transitions.onSuccess({}, update));
-            if (!type.clickable)
-                return;
-            const hookFn = clickHook(element, $state, type, getDef, scope);
-            bindEvents(element, scope, hookFn, rawDef.ngStateOpts);
-        },
-    };
-}
-StateRefActiveDirective.$inject = [
-    $injectTokens._state,
-    $injectTokens._router,
-    $injectTokens._interpolate,
-    $injectTokens._stateRegistry,
-    $injectTokens._transitions,
-];
-/**
- * Toggles active CSS classes based on the current router state.
- */
-function StateRefActiveDirective($state, $router, $interpolate, $stateRegistry, $transitions) {
-    return {
-        restrict: "A",
-        controller($scope, $element, $attrs) {
-            let states = [];
-            let ngSrefActive;
-            // There probably isn't much point in $observing this
-            // ngSrefActive and ngSrefActiveEq share the same directive object with some
-            // slight difference in logic routing
-            const activeEqClass = $interpolate($attrs.ngSrefActiveEq || "", false)($scope) || "";
-            try {
-                ngSrefActive = $scope.$eval($attrs.ngSrefActive);
-            }
-            catch {
-                // Do nothing. ngSrefActive is not a valid expression.
-                // Fall back to using $interpolate below
-            }
-            ngSrefActive =
-                ngSrefActive ||
-                    $interpolate($attrs.ngSrefActive || "", false)($scope) ||
-                    "";
-            setStatesFromDefinitionObject(ngSrefActive);
-            // Allow ngSref to communicate with ngSrefActive[Equals]
-            this._addStateInfo = function (newState, newParams) {
-                // we already got an explicit state provided by ng-sref-active, so we
-                // shadow the one that comes from ng-sref
-                if (isObject(ngSrefActive) && states.length > 0) {
-                    return undefined;
-                }
-                const deregister = addState(newState, newParams, String(ngSrefActive));
-                update();
-                return deregister;
-            };
-            /**
-             * Updates active classes after a transition settles.
-             */
-            function updateAfterTransition(trans) {
-                trans.promise.then(update, () => {
-                    /* empty */
-                });
-            }
-            $scope.$on("$destroy", setupEventListeners());
-            if ($router.transition) {
-                updateAfterTransition($router.transition);
-            }
-            function setupEventListeners() {
-                const deregisterStatesChangedListener = $stateRegistry.onStatesChanged(handleStatesChanged);
-                const deregisterOnStartListener = $transitions.onStart({}, updateAfterTransition);
-                const deregisterStateChangeSuccessListener = $scope.$on("$stateChangeSuccess", update);
-                return function cleanUp() {
-                    deregisterStatesChangedListener();
-                    deregisterOnStartListener();
-                    deregisterStateChangeSuccessListener();
-                };
-            }
-            function handleStatesChanged() {
-                setStatesFromDefinitionObject(ngSrefActive);
-            }
-            /** Updates the tracked state list from the directive definition object. */
-            function setStatesFromDefinitionObject(statesDefinition) {
-                if (isObject(statesDefinition)) {
-                    states = [];
-                    entries(statesDefinition).forEach(([activeClass, stateOrName]) => {
-                        // Helper function to abstract adding state.
-                        const addStateForClass = function (stateOrNameParam, activeClassParam) {
-                            const ref = parseStateRef(stateOrNameParam);
-                            addState(ref.state, ref.paramExpr && $scope.$eval(ref.paramExpr), activeClassParam);
-                        };
-                        if (isString(stateOrName)) {
-                            // If state is string, just add it.
-                            addStateForClass(stateOrName, activeClass);
-                        }
-                        else if (isArray(stateOrName)) {
-                            // If state is an array, iterate over it and add each array item individually.
-                            stateOrName.forEach((stateOrNameParam) => {
-                                addStateForClass(stateOrNameParam, activeClass);
-                            });
-                        }
-                    });
-                }
-            }
-            function addState(stateName, stateParams, activeClass) {
-                const state = $state.get(stateName, stateContext($element));
-                const stateInfo = {
-                    state: {
-                        name: state?.name || String(stateName?.name || stateName),
-                    },
-                    params: stateParams,
-                    activeClass,
-                };
-                states.push(stateInfo);
-                return function removeState() {
-                    removeFrom(states, stateInfo);
-                };
-            }
-            // Update route state
-            function update() {
-                const splitClasses = (str) => str.split(/\s/).filter(Boolean);
-                const getClasses = (stateList) => stateList
-                    .map((x) => x.activeClass)
-                    .map(splitClasses)
-                    .reduce(unnestR, []);
-                const allClasses = getClasses(states)
-                    .concat(splitClasses(activeEqClass))
-                    .reduce(uniqR, []);
-                const fuzzyClasses = getClasses(states.filter((x) => $state.includes(x.state.name, x.params)));
-                const exactlyMatchesAny = !!states.filter((x) => $state.is(x.state.name, x.params)).length;
-                const exactClasses = exactlyMatchesAny
-                    ? splitClasses(activeEqClass)
-                    : [];
-                const addClasses = fuzzyClasses
-                    .concat(exactClasses)
-                    .reduce(uniqR, []);
-                const removeClasses = allClasses.filter((cls) => !addClasses.includes(cls));
-                addClasses.forEach((className) => $element.classList.add(className));
-                removeClasses.forEach((className) => $element.classList.remove(className));
-            }
-            update();
-        },
-    };
 }
 
 /**
@@ -22424,6 +23037,7 @@ class Param {
         this.array = arrayMode;
         this.config = config;
         this.matchingKeys = undefined;
+        this._getInjector = () => urlConfig.paramTypes._getInjector();
     }
     /**
      * @param {any} value
@@ -22443,9 +23057,10 @@ class Param {
         const getDefaultValue = () => {
             if (this._defaultValueCache)
                 return this._defaultValueCache.defaultValue;
-            if (!window.angular.$injector)
+            const injector = this._getInjector();
+            if (!injector)
                 throw new Error("Injectable functions cannot be called at configuration time");
-            const defaultValue = window.angular.$injector.invoke(this.config._fn);
+            const defaultValue = injector.invoke(this.config._fn);
             if (defaultValue !== null &&
                 defaultValue !== undefined &&
                 !this.type.is(defaultValue))
@@ -22638,7 +23253,7 @@ class PathUtils {
     static buildToPath(fromPath, targetState) {
         const toPath = PathUtils.buildPath(targetState);
         if (targetState.options().inherit) {
-            return PathUtils.inheritParams(fromPath, toPath, Object.keys(targetState.params()));
+            return PathUtils.inheritParams(fromPath, toPath, keys(targetState.params()));
         }
         return toPath;
     }
@@ -22646,7 +23261,7 @@ class PathUtils {
      * Creates ViewConfig objects and adds to nodes.
      *
      * On each [[PathNode]], creates ViewConfig objects from the views: property of the node's state
-     * @param {ng.ViewService} $view
+     * @param {ViewService} $view
      * @param {PathNode[]} path
      * @param {StateObject[]} states
      */
@@ -22657,8 +23272,12 @@ class PathUtils {
             .forEach((node) => {
             const viewDecls = values(node.state.views || {});
             const subPath = PathUtils.subPath(path, (x) => x === node);
+            if (!subPath) {
+                node.views = [];
+                return;
+            }
             const viewConfigs = viewDecls.map((view) => {
-                return $view._createViewConfig(subPath, view);
+                return $view.createViewConfig(subPath, view);
             });
             node.views = viewConfigs.reduce(unnestR, []);
         });
@@ -22831,25 +23450,24 @@ function makeTargetState(registry, path) {
 }
 
 /**
- * Default policy used when neither the resolvable nor the owning state
- * overrides resolve timing or async handling.
+ * # The Resolve subsystem
+ *
+ * This subsystem is an asynchronous, hierarchical Dependency Injection system.
+ *
+ * Typically, resolve is configured on a state using a [[StateDeclaration.resolve]] declaration.
  */
-const defaultResolvePolicy = {
-    when: "LAZY",
-    async: "WAIT",
-};
 /**
  * Represents one dependency that can be resolved for a transition.
  *
- * A resolvable tracks its token, dependency list, policy, cached value,
+ * A resolvable tracks its token, dependency list, eager timing, cached value,
  * and in-flight promise so router state resolution stays idempotent.
  */
 class Resolvable {
-    constructor(arg1, resolveFn, deps, policy, data) {
+    constructor(arg1, resolveFn, deps, eager, data) {
         this.token = undefined;
         this.resolveFn = undefined;
         this.deps = [];
-        this.policy = undefined;
+        this.eager = false;
         this.data = undefined;
         this.resolved = false;
         this.promise = undefined;
@@ -22859,7 +23477,7 @@ class Resolvable {
         else if (isFunction(resolveFn)) {
             assert(!isNullOrUndefined(arg1), "token argument is required");
             this.token = arg1;
-            this.policy = policy;
+            this.eager = !!eager;
             this.resolveFn = resolveFn;
             this.deps = deps || [];
             this.data = data;
@@ -22873,22 +23491,11 @@ class Resolvable {
             this.token = literal.token;
             this.resolveFn = literal.resolveFn;
             this.deps = literal.deps || [];
-            this.policy = literal.policy;
+            this.eager = !!literal.eager;
             this.data = literal.data;
             this.resolved = literal.data !== undefined;
             this.promise = this.resolved ? Promise.resolve(this.data) : undefined;
         }
-    }
-    /**
-     * Returns the effective resolve policy for this token in the given state context.
-     */
-    getPolicy(state) {
-        const thisPolicy = this.policy || {};
-        const statePolicy = (state && "resolvePolicy" in state && state.resolvePolicy) || {};
-        return {
-            when: thisPolicy.when || statePolicy.when || defaultResolvePolicy.when,
-            async: thisPolicy.async || statePolicy.async || defaultResolvePolicy.async,
-        };
     }
     /**
      * Resolves this token by first resolving its dependencies, then invoking
@@ -22899,23 +23506,15 @@ class Resolvable {
             .getDependencies(this)
             .map((resolvable) => resolvable.get(resolveContext, trans)));
         const invokeResolveFn = (resolvedDeps) => this.resolveFn?.apply(null, resolvedDeps);
-        const node = resolveContext.findNode(this);
-        const state = node && node.state;
-        const asyncPolicy = this.getPolicy(state).async;
-        const customAsyncPolicy = isFunction(asyncPolicy)
-            ? asyncPolicy
-            : (x) => x;
         const applyResolvedValue = (resolvedValue) => {
             this.data = resolvedValue;
             this.resolved = true;
             this.resolveFn = null;
-            trace.traceResolvableResolved(this, trans);
             return this.data;
         };
         this.promise = Promise.resolve()
             .then(getResolvableDependencies)
             .then(invokeResolveFn)
-            .then(customAsyncPolicy)
             .then(applyResolvedValue);
         return this.promise;
     }
@@ -22946,98 +23545,126 @@ class Resolvable {
     }
 }
 
-const resolvePolicies = {
-    when: {
-        LAZY: "LAZY",
-        EAGER: "EAGER",
-    }};
-const ALL_WHENS = [
-    resolvePolicies.when.EAGER,
-    resolvePolicies.when.LAZY,
-];
-const EAGER_WHENS = [resolvePolicies.when.EAGER];
 /**
  * Provides resolve lookup and execution helpers for a specific transition path.
  */
 class ResolveContext {
     /**
      * @param _path path of nodes whose resolvables are visible in this context
+     * @param _injector injector used when dependency tokens are not resolvables in the path
      */
-    constructor(_path) {
+    constructor(_path, _injector) {
         this._path = _path;
+        this._injector = _injector;
     }
     /**
      * Returns the unique tokens available from all resolvables in this path.
      */
     getTokens() {
-        return this._path
-            .reduce((acc, node) => acc.concat(node.resolvables.map((resolve) => resolve.token)), [])
-            .reduce(uniqR, []);
+        const tokens = [];
+        for (let i = 0; i < this._path.length; i++) {
+            const { resolvables } = this._path[i];
+            for (let j = 0; j < resolvables.length; j++) {
+                const { token } = resolvables[j];
+                if (!tokens.includes(token)) {
+                    tokens.push(token);
+                }
+            }
+        }
+        return tokens;
     }
     /**
      * Returns the most local resolvable registered for the specified token.
      */
     getResolvable(token) {
-        const matching = this._path
-            .map((node) => node.resolvables)
-            .reduce(unnestR, [])
-            .filter((resolve) => resolve.token === token);
-        return tail(matching);
-    }
-    /**
-     * Computes the effective resolve policy for a resolvable in this context.
-     */
-    getPolicy(resolvable) {
-        const node = this.findNode(resolvable);
-        return resolvable.getPolicy(node?.state);
+        let matching;
+        for (let i = 0; i < this._path.length; i++) {
+            const { resolvables } = this._path[i];
+            for (let j = 0; j < resolvables.length; j++) {
+                const candidate = resolvables[j];
+                if (candidate.token === token) {
+                    matching = candidate;
+                }
+            }
+        }
+        return matching;
     }
     /**
      * Returns a child resolve context scoped to the specified state.
      */
     subContext(state) {
         const subPath = PathUtils.subPath(this._path, (node) => node?.state.name === state.name);
-        return new ResolveContext((subPath || this._path));
+        return new ResolveContext((subPath || this._path), this._injector);
     }
     /**
      * Adds or replaces resolvables for a specific state in this path.
      */
     addResolvables(newResolvables, state) {
-        const node = find(this._path, propEq("state", state));
+        let node;
+        for (let i = 0; i < this._path.length; i++) {
+            const candidate = this._path[i];
+            if (candidate.state === state) {
+                node = candidate;
+                break;
+            }
+        }
         if (!node) {
             throw new Error(`Could not find path node for state: ${state.name}`);
         }
-        const resolvables = newResolvables.map((resolve) => resolve instanceof Resolvable ? resolve : new Resolvable(resolve));
-        const keys = resolvables.map((resolve) => resolve.token);
-        node.resolvables = node.resolvables
-            .filter((resolve) => keys.indexOf(resolve.token) === -1)
-            .concat(resolvables);
+        const resolvables = [];
+        const keys = [];
+        for (let i = 0; i < newResolvables.length; i++) {
+            const resolvable = newResolvables[i];
+            const normalized = resolvable instanceof Resolvable
+                ? resolvable
+                : new Resolvable(resolvable);
+            resolvables.push(normalized);
+            keys.push(normalized.token);
+        }
+        const nextResolvables = [];
+        for (let i = 0; i < node.resolvables.length; i++) {
+            const existing = node.resolvables[i];
+            if (!keys.includes(existing.token)) {
+                nextResolvables.push(existing);
+            }
+        }
+        for (let i = 0; i < resolvables.length; i++) {
+            nextResolvables.push(resolvables[i]);
+        }
+        node.resolvables = nextResolvables;
     }
     /**
-     * Resolves the path's resolvables for the requested policy timing.
+     * Resolves the path's resolvables.
      */
-    resolvePath(when = "LAZY", trans) {
-        const whenOption = ALL_WHENS.includes(when) ? when : "LAZY";
-        const matchedWhens = whenOption === resolvePolicies.when.EAGER ? EAGER_WHENS : ALL_WHENS;
-        trace.traceResolvePath(this._path, when, trans);
-        const matchesPolicy = (acceptedVals, whenOrAsync) => (resolvable) => acceptedVals.includes(this.getPolicy(resolvable)[whenOrAsync]);
-        const promises = this._path.reduce((acc, node) => {
-            const nodeResolvables = node.resolvables.filter(matchesPolicy(matchedWhens, "when"));
-            const nowait = nodeResolvables.filter(matchesPolicy(["NOWAIT"], "async"));
-            const wait = nodeResolvables.filter((resolvable) => !matchesPolicy(["NOWAIT"], "async")(resolvable));
+    resolvePath(eagerOnly = false, trans) {
+        const promises = [];
+        for (let i = 0; i < this._path.length; i++) {
+            const node = this._path[i];
             const subContext = this.subContext(node.state);
-            const getResult = (resolve) => resolve
-                .get(subContext, trans)
-                .then((value) => ({ token: resolve.token, value }));
-            nowait.forEach(getResult);
-            return acc.concat(wait.map(getResult));
-        }, []);
+            for (let j = 0; j < node.resolvables.length; j++) {
+                const resolvable = node.resolvables[j];
+                if (eagerOnly && !resolvable.eager) {
+                    continue;
+                }
+                const promise = resolvable
+                    .get(subContext, trans)
+                    .then((value) => ({ token: resolvable.token, value }));
+                promises.push(promise);
+            }
+        }
         return Promise.all(promises);
     }
     /**
      * Finds the path node that owns the provided resolvable.
      */
     findNode(resolvable) {
-        return find(this._path, (node) => node.resolvables.includes(resolvable));
+        for (let i = 0; i < this._path.length; i++) {
+            const node = this._path[i];
+            if (node.resolvables.includes(resolvable)) {
+                return node;
+            }
+        }
+        return undefined;
     }
     /**
      * Resolves the dependency tokens required by a resolvable from either
@@ -23064,99 +23691,32 @@ class ResolveContext {
         const deps = Array.isArray(resolvable.deps)
             ? resolvable.deps
             : [resolvable.deps];
-        return deps.map((token) => {
+        const dependencies = [];
+        for (let i = 0; i < deps.length; i++) {
+            const token = deps[i];
             const matching = latestByToken.get(token);
-            if (matching)
-                return matching;
-            const fromInjector = window.angular.$injector.get(token);
+            if (matching) {
+                dependencies.push(matching);
+                continue;
+            }
+            let fromInjector;
+            if (this._injector) {
+                try {
+                    fromInjector = this._injector.get(token);
+                }
+                catch {
+                    fromInjector = undefined;
+                }
+            }
             if (isUndefined(fromInjector)) {
                 throw new Error(`Could not find Dependency Injection token: ${stringify(token)}`);
             }
-            return new Resolvable(token, () => fromInjector, [], undefined, fromInjector);
-        });
+            dependencies.push(new Resolvable(token, () => fromInjector, [], undefined, fromInjector));
+        }
+        return dependencies;
     }
 }
 
-/**
- * @return {(path: PathNode[], view: ViewDeclaration) => ViewConfig}
- */
-function getViewConfigFactory() {
-    /**
-     * Lazily resolved to avoid a direct bootstrap-time dependency on the ng1 injector.
-     * The factory is cached after first use.
-     * @type {TemplateFactoryProvider | null}
-     */
-    let templateFactory = null;
-    return (path, view) => {
-        templateFactory =
-            templateFactory || window.angular.$injector.get("$templateFactory"); // TODO: remove static injector
-        return new ViewConfig(path, view, templateFactory);
-    };
-}
-const hasAnyKey = (keys, obj) => keys.reduce((acc, key) => acc || isDefined(obj[key]), false);
-/**
- * This is a [[StateBuilder.builder]] function for angular1 `views`.
- *
- * When the [[StateBuilder]] builds a [[StateObject]] object from a raw [[StateDeclaration]], this builder
- * handles the `views` property with logic specific to @uirouter/angularjs (ng1).
- *
- * If no `views: {}` property exists on the [[StateDeclaration]], then it creates the `views` object
- * and applies the state-level configuration to a view named `$default`.
- * @param {ng.StateObject & Record<string, any>} state
- */
-function ng1ViewsBuilder(state) {
-    // Do not process root state
-    if (!state.parent)
-        return {};
-    const tplKeys = [
-        "templateProvider",
-        "templateUrl",
-        "template",
-        "notify",
-        "async",
-    ], ctrlKeys = [
-        "controller",
-        "controllerProvider",
-        "controllerAs",
-        "resolveAs",
-    ], compKeys = ["component", "bindings", "componentProvider"], nonCompKeys = tplKeys.concat(ctrlKeys), allViewKeys = compKeys.concat(nonCompKeys);
-    // Do not allow a state to have both state-level props and also a `views: {}` property.
-    // A state without a `views: {}` property can declare properties for the `$default` view as properties of the state.
-    // However, the `$default` approach should not be mixed with a separate `views: ` block.
-    if (isDefined(state.views) && hasAnyKey(allViewKeys, state)) {
-        throw new Error(`State '${state.name}' has a 'views' object. ` +
-            `It cannot also have "view properties" at the state level.  ` +
-            `Move the following properties into a view (in the 'views' object): ` +
-            ` ${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`);
-    }
-    const views = {};
-    const viewsObject = (state.views || {
-        $default: pick(state, allViewKeys),
-    });
-    entries(viewsObject).forEach(([entryName, entryConfig]) => {
-        let name = entryName;
-        let config = entryConfig;
-        // Account for views: { "": { template... } }
-        name = name || "$default";
-        // Account for views: { header: "headerComponent" }
-        if (isString(config))
-            config = { component: config };
-        // Make a shallow copy of the urlConfig object
-        config = Object.assign({}, config);
-        // Do not allow a view to mix props for component-style view with props for template/controller-style view
-        if (hasAnyKey(compKeys, config) && hasAnyKey(nonCompKeys, config)) {
-            throw new Error(`Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in stateview: '${name}@${state.name}'`);
-        }
-        config.resolveAs = config.resolveAs || "$resolve";
-        config.$context = state;
-        config.$name = name;
-        const normalized = ViewConfig.normalizeUIViewTarget(config.$context, config.$name);
-        config.$ngViewName = normalized.ngViewName;
-        config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
-        views[name] = config;
-    });
-    return views;
-}
 /**
  * @type {Number}
  */
@@ -23188,14 +23748,16 @@ class ViewConfig {
      * @returns {Promise<ViewConfig>}
      */
     async load() {
-        const context = new ResolveContext(this.path);
-        const params = this.path.reduce((acc, node) => Object.assign(acc, node.paramValues), {});
+        const context = new ResolveContext(this.path, this.factory._injector);
+        const params = {};
+        for (let i = 0; i < this.path.length; i++) {
+            Object.assign(params, this.path[i].paramValues);
+        }
         const promises = [
             Promise.resolve(this.factory.fromConfig(this.viewDecl, params, context)),
             Promise.resolve(this.getController(context)),
         ];
         const results = await Promise.all(promises);
-        trace.traceViewServiceEvent("Loaded", this);
         this.controller = results[1];
         Object.assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
         return this;
@@ -23211,7 +23773,7 @@ class ViewConfig {
             return this.viewDecl.controller;
         const deps = annotate(provider);
         const providerFn = isArray(provider)
-            ? tail(provider)
+            ? provider[provider.length - 1]
             : provider;
         const resolvable = new Resolvable("", providerFn, deps);
         return resolvable.get(context);
@@ -23353,100 +23915,153 @@ function parseUrl(url) {
     const root = url.charAt(0) === "^";
     return { val: root ? url.substring(1) : url, root };
 }
-/**
- *
- * @param {ng.BuiltStateDeclaration} state
- * @returns {ng.StateDeclaration}
- */
-function selfBuilder(state) {
-    state.self._state = () => state;
-    return state.self;
-}
-/**
- * @param {ng.BuiltStateDeclaration} state
- * @returns {any}
- */
-function dataBuilder(state) {
-    if (state.parent && state.parent.data) {
-        state.data = state.self.data = inherit(state.parent.data, state.data);
+function buildUrl(stateObject, $url, root) {
+    let stateDec = stateObject.self;
+    // For future states, i.e., states whose name ends with `.**`,
+    // match anything that starts with the url prefix
+    if (stateDec &&
+        stateDec.url &&
+        stateDec.name &&
+        stateDec.name.match(/\.\*\*$/)) {
+        const newStateDec = {};
+        copy(stateDec, newStateDec);
+        newStateDec.url += "{remainder:any}"; // match any path (.*)
+        stateDec = newStateDec;
     }
-    return state.data;
-}
-/**
- * @param {ng.UrlService} $url
- * @param {() => ng.StateObject | ng.BuiltStateDeclaration | undefined} root
- */
-function getUrlBuilder($url, root) {
-    return function (stateObject) {
-        let stateDec = stateObject.self;
-        // For future states, i.e., states whose name ends with `.**`,
-        // match anything that starts with the url prefix
-        if (stateDec &&
-            stateDec.url &&
-            stateDec.name &&
-            stateDec.name.match(/\.\*\*$/)) {
-            const newStateDec = {};
-            copy(stateDec, newStateDec);
-            newStateDec.url += "{remainder:any}"; // match any path (.*)
-            stateDec = newStateDec;
-        }
-        const { parent } = stateObject;
-        const parsed = parseUrl(stateDec.url);
-        const url = (!parsed ? stateDec.url : $url.compile(parsed.val, { state: stateDec }));
-        if (!url)
-            return null;
-        if (!$url.isMatcher(url))
-            throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
-        return parsed && parsed.root
-            ? url
-            : ((parent && parent?.navigable) ||
-                root()).url.append(url);
-    };
-}
-/**
- * @param {{ (state: ng.StateObject): boolean; (arg0: any): any; }} rootFn
- */
-function getNavigableBuilder(rootFn) {
-    return function (state) {
-        return !rootFn(state) && state.url
-            ? state
-            : state.parent
-                ? state.parent.navigable
-                : null;
-    };
+    const { parent } = stateObject;
+    const parsed = parseUrl(stateDec.url);
+    const url = (!parsed ? stateDec.url : $url.compile(parsed.val, { state: stateDec }));
+    if (!url)
+        return null;
+    if (!$url.isMatcher(url))
+        throw new Error(`Invalid url '${url}' in state '${stateObject}'`);
+    return parsed && parsed.root
+        ? url
+        : ((parent && parent.navigable) || root).url.append(url);
 }
 /**
  * @param {ParamFactory} paramFactory
  */
-function getParamsBuilder(paramFactory) {
-    return function (state) {
-        const makeConfigParam = (_config, id) => paramFactory.fromConfig(String(id), null, state.self);
-        const urlParams = (state.url && state.url.parameters({ inherit: false })) || [];
-        const nonUrlParams = values(map(omit(state.params || {}, urlParams.map((x) => x.id)), makeConfigParam));
-        return urlParams
-            .concat(nonUrlParams)
-            .map((x) => [x.id, x])
-            .reduce(applyPairs, {});
-    };
+function buildParams(state, paramFactory) {
+    const urlParams = (state.url && state.url.parameters({ inherit: false })) || [];
+    const params = {};
+    for (let i = 0; i < urlParams.length; i++) {
+        const param = urlParams[i];
+        params[param.id] = param;
+    }
+    const urlParamIds = new Set();
+    for (let i = 0; i < urlParams.length; i++) {
+        urlParamIds.add(urlParams[i].id);
+    }
+    const paramConfigs = state.params || {};
+    const paramConfigKeys = keys(paramConfigs);
+    for (let i = 0; i < paramConfigKeys.length; i++) {
+        const id = paramConfigKeys[i];
+        if (!urlParamIds.has(id)) {
+            params[id] = paramFactory.fromConfig(id, null, state.self);
+        }
+    }
+    return params;
+}
+function hasAnyViewKey(keyItems, obj) {
+    for (let i = 0; i < keyItems.length; i++) {
+        if (isDefined(obj[keyItems[i]])) {
+            return true;
+        }
+    }
+    return false;
+}
+function viewsBuilder(state) {
+    if (!state.parent) {
+        return {};
+    }
+    const tplKeys = [
+        "templateProvider",
+        "templateUrl",
+        "template",
+        "notify",
+        "async",
+    ];
+    const ctrlKeys = [
+        "controller",
+        "controllerProvider",
+        "controllerAs",
+        "resolveAs",
+    ];
+    const compKeys = ["component", "bindings", "componentProvider"];
+    const nonCompKeys = tplKeys.concat(ctrlKeys);
+    const allViewKeys = compKeys.concat(nonCompKeys);
+    if (isDefined(state.views) && hasAnyViewKey(allViewKeys, state)) {
+        throw new Error(`State '${state.name}' has a 'views' object. ` +
+            `It cannot also have "view properties" at the state level.  ` +
+            `Move the following properties into a view (in the 'views' object): ` +
+            ` ${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`);
+    }
+    const views = {};
+    const defaultViewConfig = {};
+    for (let i = 0; i < allViewKeys.length; i++) {
+        const key = allViewKeys[i];
+        if (isDefined(state[key])) {
+            defaultViewConfig[key] = state[key];
+        }
+    }
+    const viewsObject = (state.views || {
+        $default: defaultViewConfig,
+    });
+    const viewEntries = entries(viewsObject);
+    for (let i = 0; i < viewEntries.length; i++) {
+        const [entryName, entryConfig] = viewEntries[i];
+        let name = entryName;
+        let config = entryConfig;
+        name = name || "$default";
+        if (isString(config)) {
+            config = { component: config };
+        }
+        config = Object.assign({}, config);
+        if (hasAnyViewKey(compKeys, config) && hasAnyViewKey(nonCompKeys, config)) {
+            throw new Error(`Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in stateview: '${name}@${state.name}'`);
+        }
+        config.resolveAs = config.resolveAs || "$resolve";
+        config.$context = state;
+        config.$name = name;
+        const normalized = ViewConfig.normalizeUIViewTarget(config.$context, config.$name);
+        config.$ngViewName = normalized.ngViewName;
+        config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
+        views[name] = config;
+    }
+    return views;
+}
+function getResolveLocals(ctx) {
+    const tokens = ctx.getTokens().filter(isString);
+    const locals = {};
+    for (let i = 0; i < tokens.length; i++) {
+        const key = tokens[i];
+        const resolvable = ctx.getResolvable(key);
+        locals[key] = resolvable.data;
+    }
+    return locals;
+}
+function valueToResolvable(token, value, strictDi) {
+    if (isArray(value)) {
+        return new Resolvable(token, value[value.length - 1], value.slice(0, -1));
+    }
+    if (isFunction(value)) {
+        return new Resolvable(token, value, annotate(value, strictDi));
+    }
+    throw new Error(`Invalid resolve value: ${stringify({ token, val: value })}`);
+}
+function literalToResolvable(literal) {
+    if (literal &&
+        hasOwn(literal, "token") &&
+        (hasOwn(literal, "resolveFn") || hasOwn(literal, "data"))) {
+        return new Resolvable(literal);
+    }
+    throw new Error(`Invalid resolve value: ${stringify(literal)}`);
 }
 /**
- * @param {ng.StateObject} state
- */
-function pathBuilder(state) {
-    return state.parent ? (state.parent.path || []).concat(state) : [state];
-}
-/**
- * @param {ng.StateObject} state
- */
-function includesBuilder(state) {
-    const includes = state.parent ? Object.assign({}, state.parent.includes) : {};
-    includes[state.name] = true;
-    return includes;
-}
-/**
- * This is a [[StateBuilder.builder]] function for the `resolve:` block on a [[StateDeclaration]].
+ * Builds the `resolve:` block on a [[StateDeclaration]].
  *
- * When the [[StateBuilder]] builds a [[StateObject]] object from a raw [[StateDeclaration]], this builder
+ * When the [[StateBuilder]] builds a [[StateObject]] object from a raw [[StateDeclaration]], this function
  * validates the `resolve` property and converts it to a [[Resolvable]] array.
  *
  * resolve: input value can be:
@@ -23471,92 +24086,34 @@ function includesBuilder(state) {
  *   // then "DependencyName" dep as string
  *   myCorgeResolve: corgeResolve,
  *
- *  // inject service by name
- *  // When a string is found, desugar creating a resolve that injects the named service
- *   myGraultResolve: "SomeService"
  * }
  *
  * or:
  *
  * [
- *   new Resolvable("myFooResolve", function() { return "myFooData" }),
- *   new Resolvable("myBarResolve", function(dep) { return dep.fetchSomethingAsPromise() }, [ "DependencyName" ]),
- *   { provide: "myBazResolve", useFactory: function(dep) { dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
+ *   { token: "myFooResolve", resolveFn: function() { return "myFooData" } },
+ *   { token: "myBarResolve", resolveFn: function(dep) { return dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] },
+ *   { token: "myBazResolve", resolveFn: function(dep) { return dep.fetchSomethingAsPromise() }, deps: [ "DependencyName" ] }
  * ]
  * @param {ng.StateObject & ng.StateDeclaration} state
  * @param {boolean | undefined} strictDi
  */
 function resolvablesBuilder(state, strictDi) {
-    /** convert resolve: {} and resolvePolicy: {} objects to an array of tuples */
-    const objects2Tuples = (resolveObj, resolvePolicies) => Object.keys(resolveObj || {}).map((token) => ({
-        token,
-        val: (resolveObj || {})[token],
-        deps: undefined,
-        policy: resolvePolicies[token],
-    }));
-    /** fetch DI annotations from a function or ng1-style array */
-    const annotateFn = (fn) => annotate(fn, strictDi);
-    /** true if the object has both `token` and `resolveFn`, and is probably a [[ResolveLiteral]] */
-    const isResolveLiteral = (obj) => !!(obj.token && obj.resolveFn);
-    /** true if the object looks like a tuple from obj2Tuples */
-    const isTupleFromObj = (obj) => !!(obj &&
-        obj.val &&
-        (isString(obj.val) || isArray(obj.val) || isFunction(obj.val)));
-    // Given a literal resolve or provider object, returns a Resolvable
-    const literal2Resolvable = pattern([
-        [
-            (x) => x.resolveFn,
-            (y) => new Resolvable(getToken(y), y.resolveFn, y.deps, y.policy),
-        ],
-        [
-            (x) => x.useFactory,
-            (y) => new Resolvable(getToken(y), y.useFactory, y.deps || y.dependencies, y.policy),
-        ],
-        [
-            (x) => x.useClass,
-            (y) => new Resolvable(getToken(y), () => new y.useClass(), [], y.policy),
-        ],
-        [
-            (x) => x.useValue,
-            (y) => new Resolvable(getToken(y), () => y.useValue, [], y.policy, y.useValue),
-        ],
-        [
-            (x) => x.useExisting,
-            (y) => new Resolvable(getToken(y), (x) => x, [y.useExisting], y.policy),
-        ],
-    ]);
-    const tuple2Resolvable = pattern([
-        [
-            (x) => isString(x.val),
-            (tuple) => new Resolvable(tuple.token, (x) => x, [tuple.val], tuple.policy),
-        ],
-        [
-            (x) => isArray(x.val),
-            (tuple) => new Resolvable(tuple.token, tail(tuple.val), tuple.val.slice(0, -1), tuple.policy),
-        ],
-        [
-            (x) => isFunction(x.val),
-            (tuple) => new Resolvable(tuple.token, tuple.val, annotateFn(tuple.val), tuple.policy),
-        ],
-    ]);
-    const item2Resolvable = pattern([
-        [is(Resolvable), (x) => x],
-        [isResolveLiteral, literal2Resolvable],
-        [isTupleFromObj, tuple2Resolvable],
-        [
-            val(true),
-            (obj) => {
-                throw new Error(`Invalid resolve value: ${stringify(obj)}`);
-            },
-        ],
-    ]);
-    // If resolveBlock is already an array, use it as-is.
-    // Otherwise, assume it's an object and convert to an Array of tuples
     const decl = state.resolve;
-    const items = isArray(decl)
-        ? decl
-        : objects2Tuples(decl, (state.resolvePolicy || {}));
-    return items.map(item2Resolvable);
+    const resolvables = [];
+    if (isArray(decl)) {
+        for (let i = 0; i < decl.length; i++) {
+            resolvables.push(literalToResolvable(decl[i]));
+        }
+        return resolvables;
+    }
+    const resolveObj = decl || {};
+    const resolveKeys = keys(resolveObj);
+    for (let i = 0; i < resolveKeys.length; i++) {
+        const token = resolveKeys[i];
+        resolvables.push(valueToResolvable(token, resolveObj[token], strictDi));
+    }
+    return resolvables;
 }
 /**
  * A internal global service
@@ -23567,8 +24124,6 @@ function resolvablesBuilder(state, strictDi) {
  * conforms to the [[StateDeclaration]] interface.  This factory takes that object and builds the corresponding
  * [[StateObject]] object, which has an API and is used internally.
  *
- * Custom properties or API may be added to the internal [[StateObject]] object by registering a decorator function
- * using the [[builder]] method.
  */
 class StateBuilder {
     /**
@@ -23578,56 +24133,23 @@ class StateBuilder {
     constructor(matcher, urlService) {
         this._matcher = matcher;
         this._$injector = undefined;
-        const self = this;
-        const root = () => matcher.find("");
-        /**
-         * @param {ng.StateObject} state
-         */
-        function parentBuilder(state) {
-            if (isRoot(state))
-                return null;
-            return matcher.find(self.parentName(state)) || root();
-        }
-        /** @type {Builders} */
-        this._builders = {
-            name: [(state) => state.name],
-            self: [selfBuilder],
-            parent: [parentBuilder],
-            data: [dataBuilder],
-            // Build a URLMatcher if necessary, either via a relative or absolute URL
-            url: [getUrlBuilder(urlService, root)],
-            // Keep track of the closest ancestor state that has a URL (i.e. is navigable)
-            navigable: [getNavigableBuilder(isRoot)],
-            // TODO
-            params: [getParamsBuilder(urlService._paramFactory)],
-            views: [ng1ViewsBuilder],
-            // Keep a full path from the root down to this state as this is needed for state activation.
-            path: [pathBuilder],
-            // Speed up $state.includes() as it's used a lot
-            includes: [includesBuilder],
-            resolvables: [
-                (state) => resolvablesBuilder(state, this._$injector && this._$injector.strictDi),
-            ],
-        };
+        this._paramFactory = urlService._paramFactory;
+        this._urlService = urlService;
     }
-    /**
-     * @param {string} name
-     * @param {*} fn
-     * @returns {BuilderFunction | BuilderFunction[] | null | undefined}
-     */
-    builder(name, fn) {
-        const { _builders: builders } = this;
-        const array = builders[name] || [];
-        // Backwards compat: if only one builder exists, return it, else return whole arary.
-        if (isString(name) && !isDefined(fn))
-            return array.length > 1 ? array : array[0];
-        if (!isString(name) || !isFunction(fn))
+    _buildStateHook(stateObject, hookName) {
+        const hook = stateObject[hookName];
+        if (!hook)
             return undefined;
-        builders[name] = array;
-        builders[name].push(fn);
-        return () => {
-            builders[name].splice(builders[name].indexOf(fn, 1));
-            return null;
+        const pathname = hookName === "onExit" ? "from" : "to";
+        return (trans, state) => {
+            const $injector = this._$injector;
+            const resolveContext = new ResolveContext(trans.treeChanges(pathname), $injector);
+            const subContext = resolveContext.subContext(state._state());
+            const locals = Object.assign(getResolveLocals(subContext), {
+                $state$: state,
+                $transition$: trans,
+            });
+            return $injector.invoke(hook, this, locals);
         };
     }
     /**
@@ -23637,20 +24159,39 @@ class StateBuilder {
      * @param {ng.StateObject} state an uninitialized State object
      * @returns {ng.StateObject | null} the built State object
      */
-    build(state) {
-        const { _matcher: matcher, _builders: builders } = this;
-        const parent = this.parentName(state);
+    /** @internal */
+    _build(state) {
+        const { _matcher: matcher, _urlService: urlService } = this;
+        const parent = this._parentName(state);
         if (parent && !matcher.find(parent, undefined, false)) {
             return null;
         }
-        for (const key in builders) {
-            if (!hasOwn(builders, key))
-                continue;
-            const chain = builders[key].reduce((parentFn, step) => (_state) => step(_state, parentFn), () => {
-                /* empty */
-            });
-            state[key] = chain(state);
+        state.parent = isRoot(state)
+            ? null
+            : matcher.find(parent) || matcher.find("");
+        state.url = buildUrl(state, urlService, matcher.find(""));
+        state.resolvables = resolvablesBuilder(state, this._$injector && this._$injector.strictDi);
+        state.onExit = this._buildStateHook(state, "onExit");
+        state.onRetain = this._buildStateHook(state, "onRetain");
+        state.onEnter = this._buildStateHook(state, "onEnter");
+        state.navigable =
+            !isRoot(state) && state.url
+                ? state
+                : state.parent
+                    ? state.parent.navigable
+                    : null;
+        state.params = buildParams(state, this._paramFactory);
+        if (state.parent && state.parent.data) {
+            state.data = state.self.data = inherit(state.parent.data, state.data);
         }
+        state.path = state.parent
+            ? (state.parent.path || []).concat(state)
+            : [state];
+        state.includes = state.parent
+            ? Object.assign({}, state.parent.includes)
+            : {};
+        state.includes[state.name] = true;
+        state.views = viewsBuilder(state);
         return state;
     }
     /**
@@ -23658,9 +24199,11 @@ class StateBuilder {
      * @param {ng.StateObject} state
      * @returns {string}
      */
-    parentName(state) {
+    /** @internal */
+    _parentName(state) {
         // name = 'foo.bar.baz.**'
-        const name = state.name || "";
+        const rawName = (state.self && state.self.name) || state.name || "";
+        const name = rawName;
         // segments = ['foo', 'bar', 'baz', '.**']
         const segments = name.split(".");
         // segments = ['foo', 'bar', 'baz']
@@ -23679,9 +24222,9 @@ class StateBuilder {
             return "";
         return isString(state.parent) ? state.parent : state.parent.name;
     }
-    /** @param {ng.StateObject} state*/
-    name(state) {
-        const { name } = state;
+    /** @internal */
+    _name(state) {
+        const name = (state.self && state.self.name) || state.name;
         if (name.indexOf(".") !== -1 || !state.parent)
             return name;
         const parentName = isString(state.parent)
@@ -23696,13 +24239,6 @@ class StateBuilder {
  */
 function isRoot(state) {
     return state.name === "";
-}
-/**
- * extracts the token from a Provider or provide literal
- * @param {{ provide: any; token: any; }} provider
- */
-function getToken(provider) {
-    return provider.provide || provider.token;
 }
 
 /**
@@ -23806,6 +24342,7 @@ class StateObject {
         Object.assign(this, config);
         this.self = config;
         this.name = config.name;
+        config._state = () => this;
         const nameGlob = this.name ? Glob.fromString(this.name) : null;
         this._stateObjectCache = { nameGlob };
     }
@@ -23932,7 +24469,7 @@ class StateQueueManager {
             if (!state)
                 continue;
             const { name } = state;
-            const result = builder.build(state);
+            const result = builder._build(state);
             const orphanIdx = orphans.indexOf(state);
             if (result) {
                 const existingState = getState(name);
@@ -24016,47 +24553,11 @@ class StateRegistryProvider {
         this.listeners = [];
         this.matcher = new StateMatcher(this.states);
         this.builder = new StateBuilder(this.matcher, urlService);
-        // Apply ng1 specific StateBuilder code for `onExit/Retain/Enter` properties
-        this.builder.builder("onExit", this.getStateHookBuilder("onExit"));
-        this.builder.builder("onRetain", this.getStateHookBuilder("onRetain"));
-        this.builder.builder("onEnter", this.getStateHookBuilder("onEnter"));
         this.stateQueue = new StateQueueManager(this, this.urlServiceRules, this.states, this.builder, this.listeners);
         this.registerRoot();
         viewService.rootViewContext(this.root());
         globals.$current = this.root();
         globals.current = globals.$current.self;
-    }
-    /**
-     * This is a [[StateBuilder.builder]] function for angular1 `onEnter`, `onExit`,
-     * `onRetain` callback hooks on a [[StateDeclaration]].
-     *
-     * @param {string} hookName
-     */
-    getStateHookBuilder(hookName) {
-        const that = this;
-        /**
-         * @param {StateObject & Record<string, any>} stateObject
-         * @returns {((trans: ng.Transition, state: ng.BuiltStateDeclaration) => any) | undefined}
-         */
-        return function stateHookBuilder(stateObject) {
-            const hook = stateObject[hookName];
-            const pathname = hookName === "onExit" ? "from" : "to";
-            /**
-             * @param {ng.Transition} trans
-             * @param {ng.BuiltStateDeclaration} state
-             * @returns {any}
-             */
-            function decoratedNg1Hook(trans, state) {
-                const resolveContext = new ResolveContext(trans.treeChanges(pathname));
-                const subContext = resolveContext.subContext(state._state());
-                const locals = Object.assign(getLocals(subContext), {
-                    $state$: state,
-                    $transition$: trans,
-                });
-                return that.$injector.invoke(hook, that, locals);
-            }
-            return hook ? decoratedNg1Hook : undefined;
-        };
     }
     /**
      * @private
@@ -24200,19 +24701,6 @@ class StateRegistryProvider {
         const found = this.matcher.find(stateOrName, base);
         return (found && found.self) || null;
     }
-    /**
-     * Registers a [[BuilderFunction]] for a specific [[StateObject]] property (e.g., `parent`, `url`, or `path`).
-     * More than one BuilderFunction can be registered for a given property.
-     *
-     * The BuilderFunction(s) will be used to define the property on any subsequently built [[StateObject]] objects.
-     *
-     * @param {string} property The name of the State property being registered for.
-     * @param {BuilderFunction} builderFunction The BuilderFunction which will be used to build the State property
-     * @returns a function which deregisters the BuilderFunction
-     */
-    decorator(property, builderFunction) {
-        return this.builder.builder(property, builderFunction);
-    }
 }
 /* @ignore */ StateRegistryProvider.$inject = [
     $injectTokens._urlProvider,
@@ -24224,11 +24712,7 @@ const getLocals = (ctx) => {
     const tokens = ctx.getTokens().filter(isString);
     const tuples = tokens.map((key) => {
         const resolvable = ctx.getResolvable(key);
-        const waitPolicy = ctx.getPolicy(resolvable).async;
-        return [
-            key,
-            waitPolicy === "NOWAIT" ? resolvable.promise : resolvable.data,
-        ];
+        return [key, resolvable.data];
     });
     return tuples.reduce(applyPairs, {});
 };
@@ -24403,19 +24887,21 @@ const controllerLastParamsChangedTransition = new WeakMap();
  */
 ViewDirective.$inject = [
     $injectTokens._view,
-    $injectTokens._animate,
+    $injectTokens._injector,
     $injectTokens._anchorScroll,
     $injectTokens._interpolate,
 ];
 /**
  * Renders and updates the currently active view configuration.
  */
-function ViewDirective($view, $animate, $anchorScroll, $interpolate) {
+function ViewDirective($view, $injector, $anchorScroll, $interpolate) {
+    const getAnimate = createLazyAnimate($injector);
     function getRenderer() {
         return {
             enter(element, target, cb) {
-                if (hasAnimate(element)) {
-                    $animate.enter(element, null, target).done(cb);
+                const animate = getAnimateForNode(getAnimate, element);
+                if (animate) {
+                    animate.enter(element, null, target).done(cb);
                 }
                 else {
                     target.after(element);
@@ -24423,8 +24909,9 @@ function ViewDirective($view, $animate, $anchorScroll, $interpolate) {
                 }
             },
             leave(element, cb) {
-                if (hasAnimate(element)) {
-                    $animate.leave(element).done(cb);
+                const animate = getAnimateForNode(getAnimate, element);
+                if (animate) {
+                    animate.leave(element).done(cb);
                 }
                 else {
                     removeElement(element);
@@ -24469,7 +24956,6 @@ function ViewDirective($view, $animate, $anchorScroll, $interpolate) {
                             rootData.$cfg.viewDecl.$context);
                     },
                 };
-                trace.traceUIViewEvent("Linking", activeUIView);
                 function configUpdatedCallback(config) {
                     if (config && !(config instanceof ViewConfig))
                         return;
@@ -24482,7 +24968,6 @@ function ViewDirective($view, $animate, $anchorScroll, $interpolate) {
                                 viewConfig !== undefined) {
                                 return;
                             }
-                            trace.traceUIViewConfigUpdated(activeUIView, undefined);
                             activeUIView.config = null;
                             updateView(undefined);
                         });
@@ -24492,7 +24977,6 @@ function ViewDirective($view, $animate, $anchorScroll, $interpolate) {
                     }
                     if (viewConfig === config)
                         return;
-                    trace.traceUIViewConfigUpdated(activeUIView, config && config.viewDecl && config.viewDecl.$context);
                     activeUIView.config = config || null;
                     viewConfig = config;
                     updateView(config);
@@ -24501,23 +24985,19 @@ function ViewDirective($view, $animate, $anchorScroll, $interpolate) {
                 updateView();
                 const unregister = $view.registerUIView(activeUIView);
                 scope.$on("$destroy", function () {
-                    trace.traceUIViewEvent("Destroying/Unregistering", activeUIView);
                     unregister();
                 });
                 function cleanupLastView() {
                     if (previousEl) {
-                        trace.traceUIViewEvent("Removing (previous) el", getCacheData(previousEl, "$ngView"));
                         removeElement(previousEl);
                         previousEl = null;
                     }
                     if (currentScope) {
-                        trace.traceUIViewEvent("Destroying scope", activeUIView);
                         currentScope.$destroy();
                         currentScope = null;
                     }
                     if (currentEl) {
                         const _viewData = getCacheData(currentEl, "$ngViewAnim");
-                        trace.traceUIViewEvent("Animate out", activeUIView);
                         renderer.leave(currentEl, function () {
                             _viewData?.$$animLeave.resolve();
                             previousEl = null;
@@ -24585,11 +25065,12 @@ ViewDirectiveFill.$inject = [
     $injectTokens._compile,
     $injectTokens._controller,
     $injectTokens._transitions,
+    $injectTokens._injector,
 ];
 /**
  * Instantiates the active view template and wires its controller lifecycle.
  */
-function ViewDirectiveFill($compile, $controller, $transitions) {
+function ViewDirectiveFill($compile, $controller, $transitions, $injector) {
     const getControllerAs = parse("viewDecl.controllerAs");
     const getResolveAs = parse("viewDecl.resolveAs");
     return {
@@ -24609,10 +25090,9 @@ function ViewDirectiveFill($compile, $controller, $transitions) {
                     viewDecl: {},
                     getTemplate: () => undefined,
                 });
-                const resolveCtx = cfg.path && new ResolveContext(cfg.path);
+                const resolveCtx = cfg.path && new ResolveContext(cfg.path, $injector);
                 $element.innerHTML =
                     cfg.getTemplate($element, resolveCtx) || initial;
-                trace.traceUIViewFill(data.$ngView, $element.innerHTML);
                 const link = $compile($element.contentDocument ||
                     $element.childNodes);
                 const { controller } = cfg;
@@ -24719,7 +25199,7 @@ function registerControllerCallbacks($transitions, controllerInstance, $scope, c
     // Add component-level hook for onUiParamsChanged
     if (isFunction(controllerInstance.uiOnParamsChanged)) {
         const onParamsChanged = controllerInstance.uiOnParamsChanged;
-        const resolveContext = new ResolveContext(cfg.path);
+        const resolveContext = new ResolveContext(cfg.path, cfg.factory?._injector);
         const viewCreationTrans = resolveContext.getResolvable("$transition$")
             .data;
         // Fire callback on any successful transition
@@ -24977,12 +25457,19 @@ class RouterProvider {
         /**
          * Returns the singleton router globals instance.
          */
-        this.$get = () => this;
+        this.$get = [
+            $injectTokens._injector,
+            ($injector) => {
+                this._injector = $injector;
+                return this;
+            },
+        ];
         this.params = new StateParams();
         this._configuredRouting = false;
         this._lastStartedTransitionId = -1;
         this._transitionHistory = new Queue([], 1);
         this._successfulTransitions = new Queue([], 1);
+        this._injector = undefined;
         this.current = undefined;
         this.$current = undefined;
         this.transition = undefined;
@@ -25065,7 +25552,7 @@ class Rejection {
      * Returns a rejected promise tagged with this rejection instance.
      */
     /** @internal */
-    toPromise() {
+    _toPromise() {
         const promise = Promise.reject(this);
         promise.catch(() => 0);
         return Object.assign(promise, {
@@ -25094,7 +25581,6 @@ const TransitionHookScope = {
 const defaultOptions = {
     current: () => undefined,
     transition: null,
-    traceData: {},
     bind: null,
 };
 /**
@@ -25154,9 +25640,8 @@ class TransitionHook {
         if (notCurrent)
             return notCurrent;
         const { options } = this;
-        trace.traceHookInvocation(this, this.transition, options);
         const invokeCallback = () => hook.callback.call(options.bind, this.transition, this.stateContext);
-        const normalizeErr = (err) => Rejection.normalize(err).toPromise();
+        const normalizeErr = (err) => Rejection.normalize(err)._toPromise();
         const handleError = (err) => hook._eventType.getErrorHandler()(err);
         const handleResult = (result) => hook._eventType.getResultHandler(this)(result);
         try {
@@ -25187,12 +25672,11 @@ class TransitionHook {
         if (isPromise(result)) {
             return result.then((val) => this.handleHookResult(val));
         }
-        trace.traceHookResult(result, this.transition);
         if (result === false) {
-            return Rejection.aborted("Hook aborted transition").toPromise();
+            return Rejection.aborted("Hook aborted transition")._toPromise();
         }
         if (result instanceof TargetState) {
-            return Rejection.redirected(result).toPromise();
+            return Rejection.redirected(result)._toPromise();
         }
         return undefined;
     }
@@ -25201,22 +25685,18 @@ class TransitionHook {
      */
     getNotCurrentRejection() {
         if (this.transition._aborted) {
-            return Rejection.aborted().toPromise();
+            return Rejection.aborted()._toPromise();
         }
         if (this.isSuperseded()) {
-            return Rejection.superseded(this.options.current()).toPromise();
+            return Rejection.superseded(this.options.current())._toPromise();
         }
         return undefined;
     }
-    /**
-     * Returns a readable trace label for this hook invocation.
-     */
     toString() {
         const { options, registeredHook } = this;
-        const event = parse("traceData.hookType")(options) || "internal";
-        const context = parse("traceData.context.state.name")(options) ||
-            parse("traceData.context")(options) ||
-            "unknown";
+        const event = options.hookType || "internal";
+        const target = options.target;
+        const context = target?.state?.name || target?.name || "unknown";
         const name = fnToString(registeredHook.callback);
         return `${event} context: ${context}, ${maxLength(200, name)}`;
     }
@@ -25384,7 +25864,8 @@ class HookBuilder {
             return matchingNodes.map((node) => {
                 const options = Object.assign({
                     bind: hook.bind,
-                    traceData: { hookType: hookType.name, context: node },
+                    hookType: hookType.name,
+                    target: node,
                 }, baseHookOptions);
                 const state = hookType._criteriaMatchPath.scope === TransitionHookScope._STATE
                     ? node.state.self
@@ -25694,7 +26175,7 @@ class Transition {
      * @returns an array of resolve tokens (keys)
      */
     getResolveTokens(pathname = "to") {
-        return new ResolveContext((this._treeChanges[pathname] || [])).getTokens();
+        return new ResolveContext((this._treeChanges[pathname] || []), this._globals._injector).getTokens();
     }
     /**
      * Dynamically adds a new [[Resolvable]] (i.e., [[StateDeclaration.resolve]]) to this transition.
@@ -25734,11 +26215,16 @@ class Transition {
             : new Resolvable(resolvable);
         const stateName = typeof state === "string" ? state : state.name;
         const topath = this._treeChanges.to || [];
-        const targetNode = find(topath, (/** @type {PathNode} */ node) => {
-            return node.state.name === stateName;
-        });
+        let targetNode;
+        for (let i = 0; i < topath.length; i++) {
+            const node = topath[i];
+            if (node.state.name === stateName) {
+                targetNode = node;
+                break;
+            }
+        }
         assert(!!targetNode, `targetNode not found ${stateName}`);
-        const resolveContext = new ResolveContext(topath);
+        const resolveContext = new ResolveContext(topath, this._globals._injector);
         resolveContext.addResolvables([resolvable], targetNode.state);
     }
     /**
@@ -26005,7 +26491,6 @@ class Transition {
         const getHooksFor = (phase) => this._hookBuilder.buildHooksForPhase(phase);
         // When the chain is complete, then resolve or reject the deferred
         const transitionSuccess = () => {
-            trace.traceSuccess(this.$to(), this);
             this.success = true;
             this._deferred.resolve(this.to());
             const hooks = this._hookBuilder.buildHooksForPhase(TransitionHookPhase._SUCCESS);
@@ -26014,7 +26499,6 @@ class Transition {
             });
         };
         const transitionError = (reason) => {
-            trace.traceError(reason, this);
             this.success = false;
             this._deferred.reject(reason);
             this._error = reason;
@@ -26033,7 +26517,6 @@ class Transition {
             _globals._lastStartedTransitionId = this.$id;
             _globals.transition = this;
             _globals._transitionHistory._enqueue(this);
-            trace.traceTransitionStart(this);
             return Promise.resolve();
         };
         const allBeforeHooks = getHooksFor(TransitionHookPhase._BEFORE);
@@ -26144,12 +26627,11 @@ function ignoredHook(trans) {
     const ignoredReason = trans._ignoredReason();
     if (!ignoredReason)
         return undefined;
-    trace.traceTransitionIgnored(trans);
     const pending = trans._globals.transition;
     if (ignoredReason === "SameAsCurrent" && pending) {
         pending.abort();
     }
-    return Rejection.ignored().toPromise();
+    return Rejection.ignored()._toPromise();
 }
 /**
  * Short-circuits transitions that the router determines are ignorable,
@@ -26301,8 +26783,8 @@ const registerRedirectToHook = (transitionService, stateService) => {
  * Base priority for resolve-related transition hooks.
  */
 const RESOLVE_HOOK_PRIORITY = 1000;
-const eagerResolvePath = (trans) => new ResolveContext(trans.treeChanges().to)
-    .resolvePath("EAGER", trans)
+const eagerResolvePath = (trans) => new ResolveContext(trans.treeChanges().to, trans._globals._injector)
+    .resolvePath(true, trans)
     .then(() => {
     /* empty */
 });
@@ -26312,9 +26794,9 @@ const registerEagerResolvePath = (transitionService) => transitionService.onStar
 /**
  * Resolves the entering state's lazy resolvables at `onEnter`.
  */
-const lazyResolveState = (trans, state) => new ResolveContext(trans.treeChanges().to)
+const lazyResolveState = (trans, state) => new ResolveContext(trans.treeChanges().to, trans._globals._injector)
     .subContext(state._state())
-    .resolvePath("LAZY", trans)
+    .resolvePath(false, trans)
     .then(() => {
     /* empty */
 });
@@ -26324,8 +26806,8 @@ const registerLazyResolveState = (transitionService) => transitionService.onEnte
 /**
  * Resolves any remaining lazy resolvables before the transition finishes.
  */
-const resolveRemaining = (trans) => new ResolveContext(trans.treeChanges().to)
-    .resolvePath("LAZY", trans)
+const resolveRemaining = (trans) => new ResolveContext(trans.treeChanges().to, trans._globals._injector)
+    .resolvePath(false, trans)
     .then(() => {
     /* empty */
 });
@@ -26711,12 +27193,14 @@ class StateProvider {
         this.$get = [
             $injectTokens._injector,
             $injectTokens._url,
+            $injectTokens._view,
             /**
              * @param {ng.InjectorService} $injector
              * @param {ng.UrlService} $url
+             * @param {ng.ViewService} _viewService
              * @returns {StateProvider}
              */
-            ($injector, $url) => {
+            ($injector, $url, _viewService) => {
                 this.urlService = $url;
                 this.$injector = $injector;
                 return this;
@@ -26744,98 +27228,6 @@ class StateProvider {
         this.invalidCallbacks = [];
         /** @type {ng.ExceptionHandlerService} */
         this._defaultErrorHandler = exceptionHandlerProvider.handler;
-    }
-    /**
-     * Decorates states when they are registered
-     *
-     * Allows you to extend (carefully) or override (at your own peril) the
-     * `stateBuilder` object used internally by [[StateRegistry]].
-     * This can be used to add custom functionality to ng-router,
-     * for example inferring templateUrl based on the state name.
-     *
-     * When passing only a name, it returns the current (original or decorated) builder
-     * function that matches `name`.
-     *
-     * The builder functions that can be decorated are listed below. Though not all
-     * necessarily have a good use case for decoration, that is up to you to decide.
-     *
-     * In addition, users can attach custom decorators, which will generate new
-     * properties within the state's internal definition. There is currently no clear
-     * use-case for this beyond accessing internal states (i.e. $state.$current),
-     * however, expect this to become increasingly relevant as we introduce additional
-     * meta-programming features.
-     *
-     * **Warning**: Decorators should not be interdependent because the order of
-     * execution of the builder functions in non-deterministic. Builder functions
-     * should only be dependent on the state definition object and super function.
-     *
-     *
-     * Existing builder functions and current return values:
-     *
-     * - **parent** `{object}` - returns the parent state object.
-     * - **data** `{object}` - returns state data, including any inherited data that is not
-     *   overridden by own values (if any).
-     * - **url** `{object}` - returns a {@link ui.router.util.type:UrlMatcher UrlMatcher}
-     *   or `null`.
-     * - **navigable** `{object}` - returns closest ancestor state that has a URL (aka is
-     *   navigable).
-     * - **params** `{object}` - returns an array of state params that are ensured to
-     *   be a super-set of parent's params.
-     * - **views** `{object}` - returns a views object where each key is an absolute view
-     *   name (i.e. "viewName@stateName") and each value is the urlConfig object
-     *   (template, controller) for the view. Even when you don't use the views object
-     *   explicitly on a state urlConfig, one is still created for you internally.
-     *   So by decorating this builder function you have access to decorating template
-     *   and controller properties.
-     * - **ownParams** `{object}` - returns an array of params that belong to the state,
-     *   not including any params defined by ancestor states.
-     * - **path** `{string}` - returns the full path from the root down to this state.
-     *   Needed for state activation.
-     * - **includes** `{object}` - returns an object that includes every state that
-     *   would pass a `$state.includes()` test.
-     *
-     * #### Example:
-     * Override the internal 'views' builder with a function that takes the state
-     * definition, and a reference to the internal function being overridden:
-     * ```js
-     * $stateProvider.decorator('views', function (state, parent) {
-     *   let result = {},
-     *       views = parent(state);
-     *
-     *   angular.forEach(views, function (urlConfig, name) {
-     *     let autoName = (state.name + '.' + name).replace('.', '/');
-     *     urlConfig.templateUrl = urlConfig.templateUrl || '/partials/' + autoName + '.html';
-     *     result[name] = urlConfig;
-     *   });
-     *   return result;
-     * });
-     *
-     * $stateProvider.state('home', {
-     *   views: {
-     *     'contact.list': { controller: 'ListController' },
-     *     'contact.item': { controller: 'ItemController' }
-     *   }
-     * });
-     * ```
-     *
-     *
-     * ```js
-     * // Auto-populates list and item views with /partials/home/contact/list.html,
-     * // and /partials/home/contact/item.html, respectively.
-     * $state.go('home');
-     * ```
-     *
-     * @param {string} name The name of the builder function to decorate.
-     * @param {BuilderFunction} func A function that is responsible for decorating the original
-     * builder function. The function receives two parameters:
-     *
-     *   - `{object}` - state - The state urlConfig object.
-     *   - `{object}` - super - The original builder function.
-     *
-     * @return {object} $stateProvider - $stateProvider instance
-     */
-    decorator(name, func) {
-        return this._getRegistry().decorator(name, func) || this;
     }
     /**
      *
@@ -26881,10 +27273,10 @@ class StateProvider {
             // Recreate the TargetState, in case the state is now defined.
             target = this.target(target.identifier(), target.params(), target.options());
             if (!target.valid()) {
-                return Rejection.invalid(target.error()).toPromise();
+                return Rejection.invalid(target.error())._toPromise();
             }
             if (latestThing() !== latest) {
-                return Rejection.superseded().toPromise();
+                return Rejection.superseded()._toPromise();
             }
             return this.transitionTo(target.identifier(), target.params(), target.options());
         };
@@ -26894,7 +27286,7 @@ class StateProvider {
         function invokeNextCallback() {
             const nextCallback = callbackQueue._dequeue();
             if (nextCallback === undefined)
-                return Rejection.invalid(toState.error()).toPromise();
+                return Rejection.invalid(toState.error())._toPromise();
             const callbackResult = Promise.resolve(nextCallback(toState, fromState, injector));
             return callbackResult
                 .then(checkForRedirect)
@@ -27094,7 +27486,7 @@ class StateProvider {
         if (!ref.valid())
             return silentRejection(ref.error());
         if (options.supercede === false && getCurrent()) {
-            return Rejection.ignored("Another transition is in progress and supercede has been set to false in TransitionOptions for the transition. So the transition was ignored in favour of the existing one in progress.").toPromise();
+            return Rejection.ignored("Another transition is in progress and supercede has been set to false in TransitionOptions for the transition. So the transition was ignored in favour of the existing one in progress.")._toPromise();
         }
         /**
          * Special handling for Ignored, Aborted, and Redirected transitions
@@ -27271,7 +27663,7 @@ class StateProvider {
         if (options?.inherit)
             params = this.globals.params.$inherit(params, this.$current, state);
         const nav = state && options?.lossy ? state.navigable : state;
-        if (!nav || nav.url === undefined || nav.url === null) {
+        if (!nav || isNullOrUndefined(nav.url)) {
             return null;
         }
         return this._getUrlService().href(nav.url, params, {
@@ -27314,28 +27706,9 @@ class StateProvider {
             return reg?.get();
         return reg?.get(stateOrName, base || this.$current);
     }
-    /**
-       * Lazy loads a state
-       *
-       * Explicitly runs a state's [[StateDeclaration.lazyLoad]] function.
-       * @param {StateOrName} stateOrName the state that should be lazy loaded
-       * @param {ng.Transition} transition the optional Transition context to use (if the lazyLoad function requires an injector, etc)
-      Note: If no transition is provided, a noop transition is created using the from the current state to the current state.
-      This noop transition is not actually run.
-       * @returns a promise to lazy load
-       */
-    lazyLoad(stateOrName, transition) {
-        const state = this.get(stateOrName);
-        if (!state || !state.lazyLoad)
-            throw new Error(`Can not lazy load ${stateOrName}`);
-        const currentPath = this.getCurrentPath();
-        const target = makeTargetState(this._getRegistry(), currentPath);
-        transition =
-            transition || this.transitionService.create(currentPath, target);
-        return lazyLoadState(transition, state);
-    }
 }
-/* @ignore */ StateProvider.$inject = [
+/* @ignore */
+StateProvider.$inject = [
     $injectTokens._routerProvider,
     $injectTokens._transitionsProvider,
     $injectTokens._exceptionHandlerProvider,
@@ -27482,7 +27855,7 @@ const getBindings = (def) => {
     return scopeBindings(def.scope);
 };
 const scopeBindings = (bindingsObj) => {
-    const tuples = Object.keys(bindingsObj || {}).map((key) => {
+    const tuples = keys(bindingsObj || {}).map((key) => {
         const match = /^([=<@&])[?]?(.*)/.exec(bindingsObj[key] || "");
         return [key, match];
     });
@@ -27520,6 +27893,7 @@ class ParamTypes {
      * @param {ng.AngularService} $angular
      */
     constructor($angular) {
+        this._angular = $angular;
         this.$injector = $angular.$injector;
         this.enqueue = true;
         this.typeQueue = [];
@@ -27570,7 +27944,7 @@ class ParamTypes {
     }
     /** @internal */
     _getInjector() {
-        return (this.$injector || (this.$injector = window.angular?.$injector));
+        return (this.$injector || (this.$injector = this._angular.$injector));
     }
 }
 function initDefaultTypes() {
@@ -28437,7 +28811,7 @@ class UrlRuleFactory {
             const matcher = handler;
             resolvedHandler = (match) => {
                 const url = matcher.format(match); // string | null
-                return url === null ? undefined : url; // string | void
+                return isNull(url) ? undefined : url; // string | void
             };
         }
         else {
@@ -29337,22 +29711,28 @@ function appendBasePath(url, isHtml5, absolute, baseHref) {
 
 const FQN_MULTIPLIER = 10000;
 /**
- * Tracks active `ui-view` instances and matches them with registered
+ * Tracks active `ng-view` instances and matches them with registered
  * view configs produced during state transitions.
  */
 class ViewService {
     /**
-     * Creates an empty view registry ready to track active `ui-view` instances.
+     * Creates an empty view registry ready to track active `ng-view` instances.
      */
     constructor() {
         /**
          * Returns the singleton view service instance.
          */
-        this.$get = () => this;
+        this.$get = [
+            $injectTokens._templateFactory,
+            ($templateFactory) => {
+                this._templateFactory = $templateFactory;
+                return this;
+            },
+        ];
         this._ngViews = [];
         this._viewConfigs = [];
         this._listeners = [];
-        this._viewConfigFactory = getViewConfigFactory();
+        this._templateFactory = undefined;
         this._rootContext = undefined;
     }
     onSync(listener) {
@@ -29360,7 +29740,7 @@ class ViewService {
         return () => removeFrom(this._listeners, listener);
     }
     /**
-     * Gets or sets the root view context used for relative `ui-view` targeting.
+     * Gets or sets the root view context used for relative `ng-view` targeting.
      */
     rootViewContext(context) {
         return (this._rootContext = context || this._rootContext);
@@ -29368,30 +29748,27 @@ class ViewService {
     /**
      * Builds a view config for one view declaration along the specified path.
      */
-    /** @internal */
-    _createViewConfig(path, decl) {
-        const cfgFactory = this._viewConfigFactory;
-        if (!cfgFactory) {
-            throw new Error("ViewService: No view config factory registered");
+    createViewConfig(path, decl) {
+        const templateFactory = this._templateFactory;
+        if (!templateFactory) {
+            throw new Error("ViewService: No template factory registered");
         }
-        return cfgFactory(path, decl);
+        return new ViewConfig(path, decl, templateFactory);
     }
     /**
      * Removes a view config from the active registry.
      */
     deactivateViewConfig(viewConfig) {
-        trace.traceViewServiceEvent("<- Removing", viewConfig);
         removeFrom(this._viewConfigs, viewConfig);
     }
     /**
      * Adds a view config to the active registry.
      */
     activateViewConfig(viewConfig) {
-        trace.traceViewServiceEvent("-> Registering", viewConfig);
         this._viewConfigs.push(viewConfig);
     }
     /**
-     * Re-matches active `ui-view` instances against currently registered view configs
+     * Re-matches active `ng-view` instances against currently registered view configs
      * and notifies both the views and registered listeners of the new assignments.
      */
     sync() {
@@ -29470,27 +29847,19 @@ class ViewService {
         }
         const allTuples = ngViewTuples.concat(unmatchedConfigTuples);
         this._listeners.forEach((cb) => cb(allTuples));
-        trace.traceViewSync(allTuples);
     }
     /**
-     * Registers one active `ui-view` and returns a deregistration function.
+     * Registers one active `ng-view` and returns a deregistration function.
      */
     registerUIView(ngView) {
-        trace.traceViewServiceUIViewEvent("-> Registering", ngView);
         const ngViews = this._ngViews;
-        const fqnAndTypeMatches = (uiv) => uiv.fqn === ngView.fqn;
-        if (ngViews.filter(fqnAndTypeMatches).length) {
-            trace.traceViewServiceUIViewEvent("!!!! duplicate ngView named:", ngView);
-        }
         ngViews.push(ngView);
         this.sync();
         return () => {
             const idx = ngViews.indexOf(ngView);
             if (idx === -1) {
-                trace.traceViewServiceUIViewEvent("Tried removing non-registered ngView", ngView);
                 return;
             }
-            trace.traceViewServiceUIViewEvent("<- Deregistering", ngView);
             ngViews.splice(idx, 1);
             this.sync();
         };
@@ -29514,7 +29883,7 @@ class ViewService {
     }
     /**
      * Builds a predicate that determines whether a view config matches
-     * a specific active `ui-view`.
+     * a specific active `ng-view`.
      */
     static matches(ngViewsByFqn, uiView) {
         const uiViewFqn = uiView.fqn;
@@ -30886,7 +31255,7 @@ class PubSub {
         let listeners = this._topics[topic];
         if (!listeners)
             this._topics[topic] = listeners = [];
-        const entry = { fn, context };
+        const entry = { _fn: fn, _context: context };
         listeners.push(entry);
         return () => this.unsubscribe(topic, fn, context);
     }
@@ -30928,7 +31297,7 @@ class PubSub {
             return false;
         for (let i = 0; i < listeners.length; i++) {
             const l = listeners[i];
-            if (l.fn === fn && l.context === context) {
+            if (l._fn === fn && l._context === context) {
                 listeners.splice(i, 1);
                 return true;
             }
@@ -30958,7 +31327,7 @@ class PubSub {
         // snapshot to prevent modifications during publish from affecting this call
         const snapshot = listeners.slice();
         queueMicrotask(() => {
-            for (const { fn, context } of snapshot) {
+            for (const { _fn: fn, _context: context } of snapshot) {
                 try {
                     fn.apply(context, args);
                 }
@@ -31086,7 +31455,7 @@ function expandExpression(expression, vars) {
         const prefixLength = varspec[3] ? parseInt(varspec[3], 10) : undefined;
         const value = vars[varname];
         // undefined or null = skip (no expansion)
-        if (value === undefined || value === null) {
+        if (isNullOrUndefined(value)) {
             continue;
         }
         // PROCESS arrays
@@ -31141,8 +31510,8 @@ function expandExpression(expression, vars) {
         // PROCESS objects (associative arrays)
         if (typeof value === "object") {
             const objectValue = value;
-            const keys = Object.keys(objectValue);
-            if (keys.length === 0) {
+            const keyItems = keys(objectValue);
+            if (keyItems.length === 0) {
                 if (conf.named) {
                     expandedParts.push(pctEncode(varname, conf.allowReserved) +
                         (conf.ifEmpty === "=" ? conf.ifEmpty : ""));
@@ -31151,7 +31520,7 @@ function expandExpression(expression, vars) {
             }
             if (explode) {
                 // each key/value pair becomes k=v (named) or k,v? For explode + named, RFC says 'k=v'
-                for (const key of keys) {
+                for (const key of keyItems) {
                     const encVal = objectValue[key];
                     if (encVal === null || encVal === undefined)
                         continue;
@@ -31166,7 +31535,7 @@ function expandExpression(expression, vars) {
             }
             else {
                 // not exploded: join k,v pairs by ','
-                const pairs = keys
+                const pairs = keyItems
                     .map((key) => `${pctEncode(key, conf.allowReserved)},${pctEncode(objectValue[key], conf.allowReserved)}`)
                     .join(",");
                 if (conf.named) {
@@ -31725,9 +32094,7 @@ function registerNgModule(angular) {
                 ngBindHtml: ngBindHtmlDirective,
                 ngBindTemplate: ngBindTemplateDirective,
                 ngChannel: ngChannelDirective,
-                ngClass: ngClassDirective,
-                ngClassEven: ngClassEvenDirective,
-                ngClassOdd: ngClassOddDirective,
+                ngClass: classDirective,
                 ngCloak: ngCloakDirective,
                 ngController: ngControllerDirective,
                 ngDelete: ngDeleteDirective,
@@ -31850,8 +32217,7 @@ function registerNgModule(angular) {
          * Exposes the router's current parameter bag as `$stateParams`.
          */
         (globals) => globals.params,
-    ])
-        .value("$trace", trace);
+    ]);
 }
 
 const ngMinErr = minErr("ng");

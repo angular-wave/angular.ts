@@ -1,6 +1,5 @@
 import { isArray, isString } from "../../shared/utils.ts";
 import { isInjectable } from "../../shared/predicates.ts";
-import { trace } from "../common/trace.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { annotate } from "../../core/di/di.ts";
@@ -77,7 +76,6 @@ export class ViewConfig {
 
     const results = await Promise.all(promises);
 
-    trace.traceViewServiceEvent("Loaded", this);
     this.controller = results[1];
     Object.assign(this, results[0]); // Either { template: "tpl" } or { component: "cmpName" }
 
