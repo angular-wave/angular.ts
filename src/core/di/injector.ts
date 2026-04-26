@@ -46,10 +46,8 @@ export function createInjector(
 ): InjectorService {
   assert(isArray(modulesToLoad), "modules required");
 
-  /** @type {Map<String|Function, boolean>} */
-  const loadedModules = new Map(); // Keep track of loaded modules to avoid circular dependencies
+  const loadedModules = new Map<string | Function, boolean>();
 
-  /** @type {ng.ProviderCache} */
   const providerCache: ProviderCache = {
     $provide: {
       provider: supportObject(provider),
@@ -312,9 +310,7 @@ export function createInjector(
     let moduleRunBlocks: any[] = [];
 
     modules.forEach((module: ModuleLike) => {
-      // Determine a key suitable for Map: string | Function
-      /** @type {string | Function} */
-      const moduleKey = Array.isArray(module)
+      const moduleKey: string | Function = Array.isArray(module)
         ? module[module.length - 1]
         : module;
 
@@ -346,11 +342,7 @@ export function createInjector(
         } else if (isFunction(module)) {
           moduleRunBlocks.push(providerInjector.invoke(module));
         } else if (isArray(module)) {
-          moduleRunBlocks.push(
-            providerInjector.invoke(
-              /** @type {Function | ng.AnnotatedFactory<any>} */ module,
-            ),
-          );
+          moduleRunBlocks.push(providerInjector.invoke(module));
         } else {
           assertArgFn(module, "module");
         }

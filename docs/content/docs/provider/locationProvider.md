@@ -1,26 +1,40 @@
 ---
 title: $locationProvider
 description: >
-  Configuration provider for `$location` service.
+  Configure URL mode and hash-prefix behavior for $location.
 ---
 
-### Description
+Use `$locationProvider` during module configuration to choose how AngularTS reads
+and writes browser URLs.
 
-Use the `$locationProvider` to configure how the application deep linking paths
-are stored.
+Exact provider members are documented in TypeDoc:
 
-### Properties
+- [LocationProvider](../../../typedoc/classes/LocationProvider.html)
 
----
+## HTML5 Mode
 
-#### $locationProvider.html5ModeConf
+HTML5 mode uses the History API for clean URLs. Server routing must return the
+application shell for deep links.
 
-- **Type:** Html5Mode
-- **Default:** `{ enabled: true, requireBase: false, rewriteLinks: true }`
-- **Example:**
+```js
+angular.module('app', []).config(($locationProvider) => {
+  $locationProvider.html5ModeConf = {
+    enabled: true,
+    requireBase: false,
+    rewriteLinks: true,
+  };
+});
+```
 
-  ```js
-  angular.module('demo', []).config(($locationProvider) => {
-    $locationProvider.html5ModeConf.enabled = false;
-  });
-  ```
+## Hash Prefix
+
+Hash mode keeps application state after the `#` fragment. Configure the prefix
+when you need hashbang-style URLs or compatibility with existing links.
+
+```js
+angular.module('app', []).config(($locationProvider) => {
+  $locationProvider.hashPrefixConf = '!';
+});
+```
+
+See also [$location](../../../docs/service/location).

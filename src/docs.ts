@@ -38,16 +38,9 @@ export {
   defaultConfig,
   MatchDetails,
   MatchResult,
-  MatcherUrlRule,
   ParamDetails,
-  RegExpRule,
-  StateRule,
   UrlMatcherCache,
   UrlMatcherCompileConfig,
-  UrlRule,
-  UrlRuleHandlerFn,
-  UrlRuleMatchFn,
-  UrlRuleType,
 } from "./router/url/interface.ts";
 export * from "./router/url/url-config.ts";
 export * from "./router/url/url-service.ts";

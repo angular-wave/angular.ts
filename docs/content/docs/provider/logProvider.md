@@ -1,59 +1,37 @@
 ---
 title: $logProvider
 description: >
-  Configuration provider for `$log` service.
+  Configure logging behavior for $log.
 ---
 
-### Description
+Use `$logProvider` during module configuration to enable debug logging or
+replace the logger implementation.
 
-Instance of [LogProvider](../../../typedoc/classes/LogProvider.html) for
-configuring how the application logs messages.
+Exact provider members are documented in TypeDoc:
 
-### Properties
+- [LogProvider](../../../typedoc/classes/LogProvider.html)
+- [LogService](../../../typedoc/interfaces/LogService.html)
 
----
+## Debug Logging
 
-#### $logProvider.debug
+```js
+angular.module('app', []).config(($logProvider) => {
+  $logProvider.debug = true;
+});
+```
 
-Enable or disable debug-level logging. Also see
-[debug property](../../../typedoc/classes/LogProvider.html#debug).
+## Custom Logger
 
-- **Type:** boolean
-- **Default:** `false`
-- **Example:**
+```js
+angular.module('app', []).config(($logProvider) => {
+  $logProvider.setLogger(() => ({
+    log: console.log,
+    info: console.info,
+    warn: console.warn,
+    error: console.error,
+    debug: console.debug,
+  }));
+});
+```
 
-  ```js
-  angular.module('demo', []).config(($logProvider) => {
-    $logProvider.debug = true;
-  });
-  ```
-
-### Methods
-
----
-
-#### $logProvider.setLogger()
-
-Override the default logger with a custom implementation of the
-[LogService](../../../typedoc/interfaces/LogService.html) interface.
-
-- **Parameter:**
-  [LogServiceFactory](../../../typedoc/types/LogServiceFactory.html)
-
-- **Example:**
-
-  ```js
-  angular.module('demo', []).config(($logProvider) => {
-    $logProvider.setLogger(() => ({
-      log: () => {},
-      info: () => {},
-      warn: () => {},
-      error: () => {},
-      debug: () => {},
-    }));
-  });
-  ```
-
----
-
-For service description, see [$log](../../../docs/service/log).
+See also [$log](../../../docs/service/log).

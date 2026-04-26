@@ -64,10 +64,10 @@ export class ViewService {
     $t._router,
     (
       $templateFactory: TemplateFactoryProvider,
-      $router: ng.RouterService,
+      $routerState: any,
     ): ViewService => {
       this._templateFactory = $templateFactory;
-      this._rootViewContext($router.$current || null);
+      this._rootViewContext($routerState._currentState || null);
 
       return this;
     },

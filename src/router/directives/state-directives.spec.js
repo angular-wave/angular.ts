@@ -69,7 +69,7 @@ describe("ngStateRef", () => {
     $rootScope = $injector.get("$rootScope");
     $compile = $injector.get("$compile");
     $state = $injector.get("$state");
-    $stateParams = $injector.get("$router").params;
+    $stateParams = $injector.get("$stateParams");
     $url = $injector.get("$url");
     $url.listen();
   });
@@ -328,7 +328,7 @@ describe("ngStateRef", () => {
       $rootScope = $injector.get("$rootScope");
       $compile = $injector.get("$compile");
       $state = $injector.get("$state");
-      $stateParams = $injector.get("$router").params;
+      $stateParams = $injector.get("$stateParams");
       $url = $injector.get("$url");
       $url.listen();
       await buildHtml5DOM();
@@ -766,7 +766,7 @@ describe("ngSrefActive", () => {
     $rootScope = $injector.get("$rootScope");
     $compile = $injector.get("$compile");
     $state = $injector.get("$state");
-    $stateParams = $injector.get("$router").params;
+    $stateParams = $injector.get("$stateParams");
   });
 
   it("should update class for sibling ngSref", async () => {

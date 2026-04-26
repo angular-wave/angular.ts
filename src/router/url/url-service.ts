@@ -4,25 +4,21 @@ import {
   isFunction,
   isNull,
   isObject,
-  isString,
 } from "../../shared/utils.ts";
-import { is, pattern } from "../../shared/hof.ts";
-import { UrlRules } from "./url-rules.ts";
-import { TargetState } from "../state/target-state.ts";
 import { removeFrom } from "../../shared/common.ts";
 import { stripLastPathElement } from "../../shared/strings.ts";
 import { UrlMatcher } from "./url-matcher.ts";
 import { ParamFactory } from "../params/param-factory.ts";
-import { UrlRuleFactory } from "./url-rule.ts";
 import { getBaseHref } from "../../shared/dom.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
-import type { MatchResult, UrlParts, UrlRule } from "./interface.ts";
+import type { MatchResult, UrlParts } from "./interface.ts";
 import type { StateProvider } from "../../router/state/state-service.ts";
 import type { UrlConfigProvider } from "./url-config.ts";
-import type { RouterProvider } from "../router.ts";
 import type { UrlConfigProvider as UrlConfigProviderType } from "../../router/url/url-config.ts";
-import type { TargetStateDef } from "../state/interface.ts";
+import type { StateObject } from "../state/state-object.ts";
 import type { StateParams } from "../params/state-params.ts";
+
+const EXACT_ROUTE_MATCH_PRIORITY = Number.EPSILON;
 
 /**
  * API for URL management
@@ -30,7 +26,6 @@ import type { StateParams } from "../params/state-params.ts";
 export class UrlService {
   /* @ignore */ static $inject = [
     $t._locationProvider,
-    $t._stateProvider,
     $t._routerProvider,
     $t._urlConfigProvider,
   ];
@@ -38,11 +33,12 @@ export class UrlService {
   $location: ng.LocationService | undefined;
   /** @internal */
   _locationProvider: ng.LocationProvider;
-  private stateService: StateProvider;
   /** @internal */
-  _urlRuleFactory: UrlRuleFactory;
+  _stateService: StateProvider | undefined;
   /** @internal */
-  _rules: UrlRules;
+  _stateRoutes: StateObject[];
+  /** @internal */
+  _markConfiguredRouting: () => void;
   /** @internal */
   _config: UrlConfigProvider;
   /** @internal */
@@ -68,33 +64,29 @@ export class UrlService {
     return this.$location;
   }
 
+  /** @internal */
+  _getStateService(): StateProvider {
+    if (!this._stateService) {
+      throw new Error("UrlService state service is not initialized");
+    }
+
+    return this._stateService;
+  }
+
   /**
    * @param {ng.LocationProvider} $locationProvider
-   * @param {StateProvider} stateProvider
-   * @param {RouterProvider} globals
+   * @param router
    * @param {UrlConfigProviderType} urlConfigProvider
    */
   constructor(
     $locationProvider: ng.LocationProvider,
-    stateProvider: StateProvider,
-    globals: RouterProvider,
+    router: any,
     urlConfigProvider: UrlConfigProviderType,
   ) {
     this._locationProvider = $locationProvider;
-    this.stateService = stateProvider;
-
-    /**
-     * @type {UrlRuleFactory} Provides services related to the URL
-     * @ignore
-     */
-    this._urlRuleFactory = new UrlRuleFactory(this, stateProvider, globals);
-
-    /**
-     * The nested [[UrlRules]] API for managing URL rules and rewrites
-     * @ignore
-     * @type {UrlRules}
-     */
-    this._rules = new UrlRules(this._urlRuleFactory, globals);
+    this._stateService = undefined;
+    this._stateRoutes = [];
+    this._markConfiguredRouting = () => router._markConfiguredRouting();
     /**
      * The nested [[UrlConfig]] API to configure the URL and retrieve URL information
      * @ignore
@@ -287,7 +279,7 @@ export class UrlService {
   /**
    * Activates the best rule for the current URL
    *
-   * Checks the current URL for a matching [[UrlRule]], then invokes that rule's handler.
+   * Checks the current URL for a matching state URL, then activates that state.
    * This method is called internally any time the URL has changed.
    *
    * This effectively activates the state (or redirect, etc) which matches the current URL.
@@ -306,39 +298,43 @@ export class UrlService {
    */
   sync(evt?: ng.ScopeEvent): void {
     if (evt && evt.defaultPrevented) return;
-    const { stateService } = this;
 
     const url = this.parts();
 
-    /**
-     * @type {*}
-     */
     const best = this.match(url);
 
-    const applyResult = pattern([
-      [isString, (newurl: string | undefined) => this.url(newurl)],
-      [
-        TargetState.isDef,
-        (def: TargetStateDef) =>
-          stateService.go(
-            /** @type {string} */ def.state,
-            def.params,
-            def.options,
-          ),
-      ],
-      [
-        is(TargetState),
-        (target: TargetState) => {
-          const targetState = target.state();
+    if (!best) return;
 
-          return targetState
-            ? stateService.go(targetState, target.params(), target.options())
-            : undefined;
-        },
-      ],
-    ]);
+    this._transitionToStateRoute(best.state, best.match);
+  }
 
-    applyResult(best && best.rule.handler(best.match, url));
+  /** @internal */
+  _registerStateRoute(state: StateObject): void {
+    if (!this._stateRoutes.includes(state)) {
+      this._stateRoutes.push(state);
+      this._markConfiguredRouting();
+    }
+  }
+
+  /** @internal */
+  _removeStateRoute(state: StateObject): void {
+    removeFrom(this._stateRoutes, state);
+  }
+
+  /** @internal */
+  _transitionToStateRoute(
+    state: StateObject,
+    params: Record<string, any>,
+  ): void {
+    const $state = this._getStateService();
+
+    const { current } = $state;
+
+    const currentHref = current ? $state.href(current, $state.params) : null;
+
+    if ($state.href(state, params) !== currentHref) {
+      $state.transitionTo(state, params, { inherit: true, source: "url" });
+    }
   }
 
   /**
@@ -376,40 +372,37 @@ export class UrlService {
   }
 
   /**
-   * Given a URL (as a [[UrlParts]] object), check all rules and determine the best matching rule.
+   * Given a URL (as a [[UrlParts]] object), check all state routes and determine the best match.
    * Return the result as a [[MatchResult]].
    * @param {UrlParts} url
    * @returns {any}
    */
   match(url: UrlParts): MatchResult | undefined {
     url = Object.assign({ path: "", search: {}, hash: "" }, url);
-    const rules = this._rules.rules();
 
-    // Checks a single rule. Returns { rule: rule, match: match, weight: weight } if it matched, or undefined
-    /**
-     *
-     * @param {UrlRule} rule
-     */
-    const checkRule = (rule: UrlRule) => {
-      const match = rule.match(url);
-
-      return match && { match, rule, weight: rule.matchPriority(match) };
-    };
-
-    // The rules are pre-sorted.
-    // - Find the first matching rule.
-    // - Find any other matching rule that sorted *exactly the same*, according to `.sort()`.
-    // - Choose the rule with the highest match weight.
     let best: MatchResult | undefined;
 
-    for (let i = 0; i < rules.length; i++) {
-      // Stop when there is a 'best' rule and the next rule sorts differently than it.
-      if (best && best.rule._group !== rules[i]._group) break;
-      const current = checkRule(rules[i]);
+    for (let i = 0; i < this._stateRoutes.length; i++) {
+      const state = this._stateRoutes[i];
 
-      // Pick the best MatchResult
-      best =
-        !best || (current && current.weight > best.weight) ? current : best;
+      const urlMatcher = state.url;
+
+      if (!(urlMatcher instanceof UrlMatcher)) continue;
+
+      const match = urlMatcher.exec(url.path, url.search, url.hash || "");
+
+      if (match === null || !urlMatcher.validates(match)) continue;
+
+      const weight = stateRouteMatchPriority(urlMatcher, match);
+
+      if (
+        !best ||
+        UrlMatcher.compare(urlMatcher, best.urlMatcher) < 0 ||
+        (UrlMatcher.compare(urlMatcher, best.urlMatcher) === 0 &&
+          weight > best.weight)
+      ) {
+        best = { match, state, urlMatcher, weight };
+      }
     }
 
     return best;
@@ -426,7 +419,7 @@ export class UrlService {
     }
 
     if (this.url() === this.location) return;
-    this.url(/** @type {string} */ this.location, true);
+    this.url(this.location as string, true);
   }
 
   /**
@@ -542,6 +535,23 @@ export class UrlService {
 
     return result;
   }
+}
+
+function stateRouteMatchPriority(
+  urlMatcher: UrlMatcher,
+  params: Record<string, any>,
+): number {
+  const optional = urlMatcher.parameters().filter((param) => param.isOptional);
+
+  if (!optional.length) return EXACT_ROUTE_MATCH_PRIORITY;
+
+  let matched = 0;
+
+  for (let i = 0; i < optional.length; i++) {
+    if (params[optional[i].id]) matched++;
+  }
+
+  return matched / optional.length;
 }
 
 /**

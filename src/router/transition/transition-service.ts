@@ -96,9 +96,6 @@ export interface TransitionService extends HookRegistry {
   /** @internal path type metadata used for matching */
   _criteriaPaths: PathTypes;
 
-  /** @internal stores deregistration fns for core hooks */
-  _deregisterHookFns: Record<string, DeregisterFn | undefined>;
-
   /**
    * @internal Return event types, optionally filtered by phase, sorted by phase/order.
    */
@@ -110,6 +107,13 @@ export interface TransitionService extends HookRegistry {
     callback: HookFn,
     options?: HookRegOptions,
   ): DeregisterFn;
+
+  /** @internal Wire hooks that require runtime services. */
+  _initRuntimeHooks(
+    stateService: ng.StateService,
+    urlService: ng.UrlService,
+    viewService: ng.ViewService,
+  ): void;
 
   /** @internal Return the defined path types */
   _getPathTypes(): PathTypes;
@@ -126,11 +130,7 @@ export interface TransitionService extends HookRegistry {
  * Central registry and factory for transition events, hooks, and transition instances.
  */
 export class TransitionProvider implements TransitionService {
-  static $inject = [
-    $t._routerProvider,
-    $t._viewProvider,
-    $t._exceptionHandlerProvider,
-  ] as const;
+  static $inject = [$t._routerProvider, $t._exceptionHandlerProvider] as const;
 
   /** @internal */
   _transitionCount: number;
@@ -141,71 +141,53 @@ export class TransitionProvider implements TransitionService {
   /** @internal */
   _criteriaPaths: PathTypes;
   /** @internal */
-  _globals: ng.RouterProvider;
+  _routerState: ng._RouterProvider;
   /** @internal */
-  _view: ng.ViewService;
-  /** @internal */
-  _deregisterHookFns: Record<string, DeregisterFn | undefined>;
+  _view!: ng.ViewService;
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
 
   constructor(
-    globals: ng.RouterProvider,
-    viewService: ng.ViewService,
+    routerState: any,
     $exceptionHandler: ng.ExceptionHandlerProvider,
   ) {
     this._transitionCount = 0;
     this._eventTypes = [];
     this._registeredHooks = {};
     this._criteriaPaths = {} as PathTypes;
-    this._globals = globals;
-    this._view = viewService;
-    this._deregisterHookFns = {};
+    this._routerState = routerState;
     this._defineCorePaths();
     this._defineCoreEvents();
     this._registerCoreTransitionHooks();
     this._exceptionHandler = $exceptionHandler.handler;
-    globals._successfulTransitions._onEvict(treeChangesCleanup);
+    routerState._successfulTransitions._onEvict(treeChangesCleanup);
   }
 
   /**
    * Wires runtime services into the transition service and registers the
    * hooks that depend on state/url/view services.
    */
-  $get = [
-    $t._state,
-    $t._url,
-    $t._view,
-    (
-      stateService: ng.StateService,
-      urlService: ng.UrlService,
-      viewService: ng.ViewService,
-    ): TransitionProvider => {
-      this._deregisterHookFns.updateUrl = registerUpdateUrl(
-        this,
-        stateService,
-        urlService,
-      );
+  $get(): TransitionProvider {
+    return this;
+  }
 
-      this._deregisterHookFns.redirectTo = registerRedirectToHook(
-        this,
-        stateService,
-      );
-
-      this._deregisterHookFns.activateViews = registerActivateViews(
-        this,
-        viewService,
-      );
-
-      return this;
-    },
-  ] as const;
+  /** @internal */
+  _initRuntimeHooks(
+    stateService: ng.StateService,
+    urlService: ng.UrlService,
+    viewService: ng.ViewService,
+  ): void {
+    this._view = viewService;
+    registerUpdateUrl(this, stateService, urlService);
+    registerRedirectToHook(this, stateService);
+    registerActivateViews(this, viewService);
+  }
 
   /**
    * Creates a new transition from the current path to a target state.
    */
   create(fromPath: PathNode[], targetState: TargetState): Transition {
-    return new Transition(fromPath, targetState, this, this._globals);
+    return new Transition(fromPath, targetState, this, this._routerState);
   }
 
   /**
@@ -491,19 +473,17 @@ export class TransitionProvider implements TransitionService {
    */
   /** @internal */
   _registerCoreTransitionHooks(): void {
-    const fns = this._deregisterHookFns;
-
-    fns.addCoreResolves = registerAddCoreResolvables(this);
-    fns.ignored = registerIgnoredTransitionHook(this);
-    fns.invalid = registerInvalidTransitionHook(this);
-    fns.onExit = registerOnExitHook(this);
-    fns.onRetain = registerOnRetainHook(this);
-    fns.onEnter = registerOnEnterHook(this);
-    fns.eagerResolve = registerEagerResolvePath(this);
-    fns.lazyResolve = registerLazyResolveState(this);
-    fns.resolveAll = registerResolveRemaining(this);
-    fns.loadViews = registerLoadEnteringViews(this);
-    fns.updateGlobals = registerUpdateGlobalState(this);
+    registerAddCoreResolvables(this);
+    registerIgnoredTransitionHook(this);
+    registerInvalidTransitionHook(this);
+    registerOnExitHook(this);
+    registerOnRetainHook(this);
+    registerOnEnterHook(this);
+    registerEagerResolvePath(this);
+    registerLazyResolveState(this);
+    registerResolveRemaining(this);
+    registerLoadEnteringViews(this);
+    registerUpdateGlobalState(this);
   }
 }
 
@@ -528,7 +508,7 @@ function registerUpdateUrl(
 
       urlService.push(
         $state.$current.navigable.url,
-        $state._globals.params,
+        $state._routerState._params,
         urlOptions,
       );
     }
@@ -543,20 +523,20 @@ function registerUpdateGlobalState(
   transitionService: TransitionService,
 ): DeregisterFn {
   return transitionService._onCreate({}, (trans: Transition) => {
-    const globals = trans._globals;
+    const routerState = trans._routerState;
 
     const transitionSuccessful = (): void => {
       const current = trans.$to();
 
-      globals._successfulTransitions._enqueue(trans);
-      globals.$current = current;
-      globals.current = current?.self;
-      copy(trans.params(), globals.params);
+      routerState._successfulTransitions._enqueue(trans);
+      routerState._currentState = current;
+      routerState._current = current?.self;
+      copy(trans.params(), routerState._params);
     };
 
     const clearCurrentTransition = (): void => {
-      if (globals.transition === trans) {
-        globals.transition = undefined;
+      if (routerState._transition === trans) {
+        routerState._transition = undefined;
       }
     };
 

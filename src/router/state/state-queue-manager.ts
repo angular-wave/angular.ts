@@ -2,11 +2,10 @@ import { hasOwn, isString } from "../../shared/utils.ts";
 import { StateObject } from "./state-object.ts";
 import type { StateRegistryListener, StateStore } from "./interface.ts";
 import type { StateBuilder } from "./state-builder.ts";
-import type { UrlRules } from "../url/url-rules.ts";
 
 export class StateQueueManager {
   /** @internal */
-  _urlServiceRules: UrlRules;
+  _urlService: ng.UrlService;
   /** @internal */
   _states: StateStore;
   /** @internal */
@@ -17,18 +16,18 @@ export class StateQueueManager {
   _queue: StateObject[];
 
   /**
-   * @param {UrlRules} urlServiceRules
+   * @param {ng.UrlService} urlService
    * @param {StateStore} states
    * @param {StateBuilder} builder
    * @param {StateRegistryListener[]} listeners
    */
   constructor(
-    urlServiceRules: UrlRules,
+    urlService: ng.UrlService,
     states: StateStore,
     builder: StateBuilder,
     listeners: StateRegistryListener[],
   ) {
-    this._urlServiceRules = urlServiceRules;
+    this._urlService = urlService;
     this._states = states;
     this._builder = builder;
     this._listeners = listeners;
@@ -135,9 +134,7 @@ export class StateQueueManager {
       !(state as ng.StateDeclaration & { abstract?: boolean }).abstract &&
       state.url
     ) {
-      const rulesApi = this._urlServiceRules;
-
-      rulesApi.rule(rulesApi._urlRuleFactory.create(state as StateObject));
+      this._urlService._registerStateRoute(state as StateObject);
     }
   }
 }

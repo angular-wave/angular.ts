@@ -83,7 +83,6 @@ export class TemplateFactoryProvider {
       | "templateUrl"
       | "templateProvider"
       | "component"
-      | "componentProvider"
       | "default" => {
       if (isDefined(configParam.template)) return "template";
 
@@ -92,8 +91,6 @@ export class TemplateFactoryProvider {
       if (isDefined(configParam.templateProvider)) return "templateProvider";
 
       if (isDefined(configParam.component)) return "component";
-
-      if (isDefined(configParam.componentProvider)) return "componentProvider";
 
       return "default";
     };
@@ -111,10 +108,6 @@ export class TemplateFactoryProvider {
         );
       case "component":
         return asComponent(config.component);
-      case "componentProvider":
-        return asComponent(
-          this.fromComponentProvider(config.componentProvider, context),
-        );
       default:
         return asTemplate(defaultTemplate);
     }
@@ -148,24 +141,6 @@ export class TemplateFactoryProvider {
     const providerFn = isArray(provider)
       ? (tail(provider) as Function)
       : provider;
-
-    const resolvable = new Resolvable("", providerFn, deps);
-
-    return resolvable.get(context);
-  }
-
-  /**
-   * Resolves a component name from an injectable provider in resolve context.
-   */
-  fromComponentProvider(
-    provider: Injectable<any>,
-    context: ResolveContext,
-  ): Promise<any> {
-    const deps = annotate(provider);
-
-    const providerFn = (
-      isArray(provider) ? tail(provider) : provider
-    ) as Function;
 
     const resolvable = new Resolvable("", providerFn, deps);
 

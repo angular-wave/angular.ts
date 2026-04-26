@@ -12,7 +12,7 @@ export const RESOLVE_HOOK_PRIORITY = 1000;
 const eagerResolvePath = (trans: Transition) =>
   new ResolveContext(
     (trans.treeChanges() as TreeChanges).to,
-    trans._globals._injector,
+    trans._routerState._injector,
   )
     .resolvePath(true, trans)
     .then(() => {
@@ -32,7 +32,7 @@ export const registerEagerResolvePath = (
 const lazyResolveState = (trans: Transition, state: StateDeclaration) =>
   new ResolveContext(
     (trans.treeChanges() as TreeChanges).to,
-    trans._globals._injector,
+    trans._routerState._injector,
   )
     .subContext((state._state as Function)())
     .resolvePath(false, trans)
@@ -53,7 +53,7 @@ export const registerLazyResolveState = (
 const resolveRemaining = (trans: Transition) =>
   new ResolveContext(
     (trans.treeChanges() as TreeChanges).to,
-    trans._globals._injector,
+    trans._routerState._injector,
   )
     .resolvePath(false, trans)
     .then(() => {

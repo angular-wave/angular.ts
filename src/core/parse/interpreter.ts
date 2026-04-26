@@ -78,7 +78,7 @@ export class ASTInterpreter {
     let assign: CompiledExpressionFunction | undefined;
 
     if (assignable) {
-      assign = /** @type {CompiledExpression} */ this._recurse(assignable);
+      assign = this._recurse(assignable) as CompiledExpression;
     }
 
     const toWatch = getInputs(body);
@@ -114,7 +114,7 @@ export class ASTInterpreter {
             /* empty */
           }
         : body.length === 1
-          ? /** @type {CompiledExpression} */ expressions[0]
+          ? (expressions[0] as CompiledExpression)
           : (function (scope?: ng.Scope, locals?: object) {
               let lastValue;
 
@@ -381,7 +381,7 @@ export class ASTInterpreter {
           1,
         );
 
-        const op = /** @type {"++"|"--"} */ ast._operator;
+        const op = (ast as ExpressionNode)._operator as "++" | "--";
 
         const prefix = !!ast._prefix;
 
@@ -839,7 +839,7 @@ export class ASTInterpreter {
       let value = undefined;
 
       if (base) {
-        value = /** @type {Record<string, any>} */ deProxy(base)[name];
+        value = (deProxy(base) as Record<string, any>)[name];
       }
 
       if (context) {
@@ -1077,7 +1077,7 @@ function findConstantAndWatchExpressions(
         astIsPure,
       );
 
-      if (/** @type {ExpressionNode} */ ast._computed) {
+      if ((ast as ExpressionNode)._computed) {
         decoratedProperty = findConstantAndWatchExpressions(
           (ast as ExpressionNode)._property as ASTNode,
           $filter,
@@ -1278,7 +1278,7 @@ function isPure(
   switch (node._type) {
     // Computed members might invoke a stateful toString()
     case ASTType._MemberExpression:
-      if (/** @type {ExpressionNode} */ node._computed) {
+      if ((node as ExpressionNode)._computed) {
         return false;
       }
       break;
@@ -1289,7 +1289,7 @@ function isPure(
 
     // The binary + operator can invoke a stateful toString().
     case ASTType._BinaryExpression:
-      return /** @type {ExpressionNode} */ node._operator !== "+"
+      return (node as ExpressionNode)._operator !== "+"
         ? PURITY_ABSOLUTE
         : false;
 

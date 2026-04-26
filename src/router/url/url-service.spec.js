@@ -7,6 +7,7 @@ describe("UrlMatcher", () => {
   let $url;
   let $injector;
   let $location;
+  let $stateRegistry;
 
   beforeEach(() => {
     dealoc(document.getElementById("app"));
@@ -21,9 +22,10 @@ describe("UrlMatcher", () => {
       "defaultModule",
     ]);
 
-    $injector.invoke((_$url_, _$location_) => {
+    $injector.invoke((_$url_, _$location_, _$stateRegistry_) => {
       $url = _$url_;
       $location = _$location_;
+      $stateRegistry = _$stateRegistry_;
     });
   });
 
@@ -47,16 +49,16 @@ describe("UrlMatcher", () => {
       expect($url.isMatcher(m)).toBe(true);
     });
 
-    it("should mark router link rewriting as configured when a url rule is added", () => {
-      let $router;
-
-      $injector.invoke((_$router_) => {
-        $router = _$router_;
-      });
+    it("should mark router link rewriting as configured when a state route is added", () => {
+      const $router = $injector.get("$$r");
 
       expect($router._hasConfiguredRouting()).toBeFalse();
 
-      $url._rules.when($url.compile("/foo"), "/bar", {});
+      $stateRegistry.register({
+        name: "foo",
+        url: "/foo",
+        template: "foo",
+      });
 
       expect($router._hasConfiguredRouting()).toBeTrue();
     });
@@ -713,7 +715,7 @@ describe("UrlMatcher", () => {
       return {
         injector,
         $url: injector.get("$url"),
-        $router: injector.get("$router"),
+        $router: injector.get("$$r"),
       };
     }
 
@@ -771,8 +773,8 @@ describe("UrlMatcher", () => {
 
     it("should accept injected function definitions", () => {
       const { $url, $router } = bootstrapConfiguredUrl(($urlConfigProvider) => {
-        $urlConfigProvider.type("myType3", {}, ($router) => ({
-          decode: () => $router,
+        $urlConfigProvider.type("myType3", {}, ($$r) => ({
+          decode: () => $$r,
         }));
       });
 
@@ -782,10 +784,10 @@ describe("UrlMatcher", () => {
     it("should accept annotated function definitions", () => {
       const { $url, $router } = bootstrapConfiguredUrl(($urlConfigProvider) => {
         $urlConfigProvider.type("myAnnotatedType", {}, [
-          "$router",
-          function (router) {
+          "$$r",
+          function (routerState) {
             return {
-              decode: () => router,
+              decode: () => routerState,
             };
           },
         ]);
@@ -1063,17 +1065,17 @@ describe("UrlMatcher", () => {
     });
 
     it("should allow injectable functions", () => {
-      const router = $injector.get("$router");
+      const $stateParams = $injector.get("$stateParams");
       const matcher = $url.compile("/users/{user:json}", {
         state: {
           params: {
-            user: ($router) => $router.params.user,
+            user: ($stateParams) => $stateParams.user,
           },
         },
       });
       const user = { name: "Bob" };
 
-      router.params.user = user;
+      $stateParams.user = user;
       expect(matcher.exec("/users/").user).toBe(user);
     });
 

@@ -1,6 +1,6 @@
 import { stringify } from "../../shared/strings.ts";
 import { isUndefined } from "../../shared/utils.ts";
-import { PathUtils } from "../path/path-utils.ts";
+import { subPath } from "../path/path-utils.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
@@ -71,13 +71,13 @@ export class ResolveContext {
    * Returns a child resolve context scoped to the specified state.
    */
   subContext(state: StateObject | BuiltStateDeclaration): ResolveContext {
-    const subPath = PathUtils.subPath(
+    const contextPath = subPath(
       this._path,
       (node?: PathNode) => node?.state.name === state.name,
     );
 
     return new ResolveContext(
-      (subPath || this._path) as PathNode[],
+      (contextPath || this._path) as PathNode[],
       this._injector,
     );
   }
@@ -188,13 +188,12 @@ export class ResolveContext {
   getDependencies(resolvable: Resolvable): Resolvable[] {
     const node = this.findNode(resolvable);
 
-    const subPath =
-      PathUtils.subPath(this._path, (x) => x === node) || this._path;
+    const dependencyPath = subPath(this._path, (x) => x === node) || this._path;
 
     const availableResolvables: Resolvable[] = [];
 
-    for (let i = 0; i < subPath.length; i++) {
-      const { resolvables } = subPath[i];
+    for (let i = 0; i < dependencyPath.length; i++) {
+      const { resolvables } = dependencyPath[i];
 
       for (let j = 0; j < resolvables.length; j++) {
         const candidate = resolvables[j] as Resolvable;

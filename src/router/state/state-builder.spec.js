@@ -101,11 +101,6 @@ describe("StateBuilder", function () {
       builder._build(Object.assign({ component: "fooComponent" }, config)),
     ).toThrow();
     expect(() =>
-      builder._build(
-        Object.assign({ componentProvider: () => "fooComponent" }, config),
-      ),
-    ).toThrow();
-    expect(() =>
       builder._build(Object.assign({ bindings: {} }, config)),
     ).toThrow();
   });

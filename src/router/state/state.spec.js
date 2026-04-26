@@ -4,7 +4,7 @@ import { isFunction } from "../../shared/utils.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("$state", () => {
-  let $injector, template, ctrlName, $provide, $compile, module, $stateRegistry;
+  let $injector, template, $provide, $compile, module, $stateRegistry;
   let errorLog = [];
   let app = document.getElementById("app");
   let $stateProvider;
@@ -221,18 +221,6 @@ describe("$state", () => {
                 return "Foo";
               },
             },
-          })
-          .state({
-            name: "dynamicController",
-            url: "/dynamicController/:type",
-            template: "a",
-            controllerProvider: [
-              "$stateParams",
-              function ($stateParams) {
-                ctrlName = $stateParams.type + "Controller";
-                return ctrlName;
-              },
-            ],
           })
           .state({
             name: "home.redirect",
@@ -979,12 +967,6 @@ describe("$state", () => {
       await $state.transitionTo("dynamicTemplate", { type: "Acme" });
 
       expect(template).toEqual("AcmeFooTemplate");
-    });
-
-    it("uses the controllerProvider to get controller dynamically", async () => {
-      await $state.transitionTo("dynamicController", { type: "Acme" });
-
-      expect(ctrlName).toEqual("AcmeController");
     });
 
     it("updates the location #fragment", async () => {

@@ -45,27 +45,38 @@ function withResolvers<T>() {
   return { promise, resolve: resolve!, reject: reject! };
 }
 
+/** Reads response headers returned by {@link HttpResponse.headers}. */
 export interface HttpHeadersGetter {
+  /** Return all parsed response headers keyed by lowercase header name. */
   (): { [name: string]: string };
+  /** Return one response header by name, or an empty string when it is absent. */
   (headerName: string): string;
 }
 
+/** Header defaults grouped by request method. */
 export interface HttpRequestConfigHeaders {
   /** @internal */
   [requestType: string]: any;
+  /** Headers applied to every request unless overridden. */
   common?: any;
+  /** Headers applied to `GET` requests unless overridden. */
   get?: any;
+  /** Headers applied to `POST` requests unless overridden. */
   post?: any;
+  /** Headers applied to `PUT` requests unless overridden. */
   put?: any;
+  /** Headers applied to `PATCH` requests unless overridden. */
   patch?: any;
 }
 
 // See the jsdoc for transformData() at https://github.com/angular/angular.ts/blob/master/src/ng/http.js#L228
+/** Transforms request data before it is sent. */
 export interface HttpRequestTransformer {
   (data: any, headersGetter: HttpHeadersGetter): any;
 }
 
 // The definition of fields are the same as HttpResponse
+/** Transforms response data before the returned promise settles. */
 export interface HttpResponseTransformer {
   (data: any, headersGetter: HttpHeadersGetter, status: number): any;
 }
@@ -86,19 +97,27 @@ export interface HttpHeaderType {
  * https://docs.angularjs.org/api/ng/provider/$httpProvider The properties section
  */
 export interface HttpProviderDefaults {
+  /** Cache used for cacheable requests. `true` enables the default cache. */
   cache?: any;
+  /** Request body transform pipeline. */
   transformRequest?:
     | HttpRequestTransformer
     | HttpRequestTransformer[]
     | undefined;
+  /** Response body transform pipeline. */
   transformResponse?:
     | HttpResponseTransformer
     | HttpResponseTransformer[]
     | undefined;
+  /** Default headers merged into each request. */
   headers?: HttpRequestConfigHeaders | undefined;
+  /** Header name used when sending the XSRF token. */
   xsrfHeaderName?: string | undefined;
+  /** Cookie name used when reading the XSRF token. */
   xsrfCookieName?: string | undefined;
+  /** Whether cross-site requests should include credentials by default. */
   withCredentials?: boolean | undefined;
+  /** Query parameter serializer token or function. */
   paramSerializer?: string | ((obj: any) => string) | undefined;
 }
 
@@ -107,9 +126,13 @@ export interface HttpProviderDefaults {
  * See http://docs.angularjs.org/api/ng/service/$http#usage
  */
 export interface RequestShortcutConfig extends HttpProviderDefaults {
+  /** Query parameters appended to the request URL. */
   params?: any;
+  /** Request body. Shorthand methods with explicit data set this automatically. */
   data?: any;
+  /** Millisecond timeout, or a promise whose resolution aborts the request. */
   timeout?: number | Promise<any> | undefined;
+  /** Native `XMLHttpRequest.responseType` value. */
   responseType?: string | undefined;
 }
 
@@ -118,49 +141,79 @@ export interface RequestShortcutConfig extends HttpProviderDefaults {
  * See http://docs.angularjs.org/api/ng/service/$http#usage
  */
 export interface RequestConfig extends RequestShortcutConfig {
+  /** HTTP verb to use for the request. */
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS";
+  /** Request URL. Query parameters from `params` are appended to this URL. */
   url: string;
+  /** Event handlers attached to the underlying `XMLHttpRequest`. */
   eventHandlers?: Record<string, EventListenerOrEventListenerObject>;
+  /** Event handlers attached to the underlying `XMLHttpRequest.upload`. */
   uploadEventHandlers?: Record<string, EventListenerOrEventListenerObject>;
 }
 
+/** HTTP method accepted by {@link RequestConfig.method}. */
 export type HttpMethod = RequestConfig["method"];
 
+/** Final transport status reported by `XMLHttpRequest` completion handlers. */
 export type HttpResponseStatus = "complete" | "error" | "timeout" | "abort";
 
+/** Response object used to resolve or reject {@link HttpPromise}. */
 export interface HttpResponse<T> {
+  /** Parsed response body. */
   data: T;
+  /** Numeric HTTP status code. Non-2xx statuses reject the promise. */
   status: number;
+  /** Lazy response header reader. */
   headers: HttpHeadersGetter;
+  /** Request configuration that produced this response. */
   config: RequestConfig;
+  /** Native status text such as `OK` or `Not Found`. */
   statusText: string;
+  /** Transport completion status. Useful for distinguishing timeout, abort, and network errors. */
   xhrStatus: HttpResponseStatus;
 }
 
+/** Promise returned by `$http` requests. */
 export type HttpPromise<T> = Promise<HttpResponse<T>>;
 
-/** Runtime surface of the `$http` service and its shorthand request methods. */
+/**
+ * Runtime surface of the `$http` service.
+ *
+ * Call the service directly with a full {@link RequestConfig}, or use a
+ * shorthand method for common HTTP verbs. All methods return an
+ * {@link HttpPromise} that resolves with {@link HttpResponse} for successful
+ * 2xx responses and rejects with the same response shape for errors.
+ */
 export interface HttpService {
+  /** Send a request using the full configuration object. */
   <T>(config: RequestConfig): HttpPromise<T>;
+  /** Send a `GET` request. */
   get<T>(url: string, config?: RequestShortcutConfig): HttpPromise<T>;
+  /** Send a `DELETE` request. */
   delete<T>(url: string, config?: RequestShortcutConfig): HttpPromise<T>;
+  /** Send a `HEAD` request. */
   head<T>(url: string, config?: RequestShortcutConfig): HttpPromise<T>;
+  /** Send a `POST` request with a request body. */
   post<T>(
     url: string,
     data: any,
     config?: RequestShortcutConfig,
   ): HttpPromise<T>;
+  /** Send a `PUT` request with a request body. */
   put<T>(
     url: string,
     data: any,
     config?: RequestShortcutConfig,
   ): HttpPromise<T>;
+  /** Send a `PATCH` request with a request body. */
   patch<T>(
     url: string,
     data: any,
     config?: RequestShortcutConfig,
   ): HttpPromise<T>;
+  /** Runtime defaults shared with `$httpProvider.defaults`. */
   defaults: HttpProviderDefaults;
+  /** Requests currently in flight. */
   pendingRequests: RequestConfig[];
 }
 
@@ -173,15 +226,26 @@ export type HttpParams = Record<
 /** Function that serializes query params into a URL-encoded string. */
 export type HttpParamSerializer = (params?: HttpParams) => string;
 
+/**
+ * Interceptor hooks registered through `$httpProvider.interceptors`.
+ *
+ * Request hooks run in registration order. Response hooks run in reverse order.
+ * Each hook may return the value directly or return a promise.
+ */
 export interface HttpInterceptor {
+  /** Inspect or replace the request config before transport. */
   request?(config: RequestConfig): RequestConfig | Promise<RequestConfig>;
+  /** Recover from a previous request interceptor failure. */
   requestError?(rejection: any): RequestConfig | Promise<RequestConfig>;
+  /** Inspect or replace a successful response. */
   response?<T>(
     response: HttpResponse<T>,
   ): Promise<HttpResponse<T>> | HttpResponse<T>;
+  /** Recover from a transport error or non-2xx response. */
   responseError?<T>(rejection: any): Promise<HttpResponse<T>> | HttpResponse<T>;
 }
 
+/** Factory registered with `$httpProvider.interceptors`. */
 export type HttpInterceptorFactory = () => HttpInterceptor;
 
 /**
@@ -430,10 +494,10 @@ function isSuccess(status: number): boolean {
   return status >= Http._OK && status < Http._MultipleChoices;
 }
 
-/** Configures the default behavior of the {@link ng.$http $http} service. */
+/** Configures the default behavior of the `$http` service. */
 export function HttpProvider(this: any): void {
   /**
-   * Default values applied to all {@link ng.$http $http} requests unless a request overrides them.
+   * Default values applied to all `$http` requests unless a request overrides them.
    *
    * This includes cache behavior, default headers, request/response transforms, XSRF names,
    * credentials defaults, and parameter serialization.
@@ -492,13 +556,13 @@ export function HttpProvider(this: any): void {
   };
 
   /**
-   * Array containing service factories for all synchronous or asynchronous {@link ng.$http $http}
+   * Array containing service factories for all synchronous or asynchronous `$http`
    * pre-processing of request or postprocessing of responses.
    *
    * These service factories are ordered by request, i.e. they are applied in the same order as the
    * array, on request, but reverse order, on response.
    *
-   * {@link ng.$http#interceptors Interceptors detailed info}
+   * See the `$http` service documentation for detailed interceptor behavior.
    */
   this.interceptors = [] as Array<
     string | ng.Injectable<HttpInterceptorFactory>
@@ -506,8 +570,7 @@ export function HttpProvider(this: any): void {
 
   /**
    * Array containing URLs whose origins are trusted to receive the XSRF token. See the
-   * {@link ng.$http#security-considerations Security Considerations} sections for more details on
-   * XSRF.
+   * See the `$http` service documentation for XSRF security considerations.
    *
    * **Note:** An "origin" consists of the [URI scheme](https://en.wikipedia.org/wiki/URI_scheme),
    * the [hostname](https://en.wikipedia.org/wiki/Hostname) and the

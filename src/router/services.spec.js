@@ -17,14 +17,14 @@ describe("router services", () => {
       (
         $urlProvider,
         $stateRegistryProvider,
-        $routerProvider,
+        $$rProvider,
         $transitionsProvider,
         $stateProvider,
       ) => {
         providers = {
           $urlProvider,
           $stateRegistryProvider,
-          $routerProvider,
+          $$rProvider,
           $transitionsProvider,
           $stateProvider,
         };
@@ -39,18 +39,18 @@ describe("router services", () => {
     $location = $injector.get("$location");
   });
 
-  it("Should expose ng-router providers through Angular DI", () => {
+  it("Should expose private ng-router providers through internal Angular DI", () => {
     expect(providers.$urlProvider).toBeDefined();
     expect(providers.$stateRegistryProvider).toBeDefined();
-    expect(providers.$stateRegistryProvider).toBeDefined();
+    expect(providers.$$rProvider).toBeDefined();
     expect(providers.$transitionsProvider).toBeDefined();
     expect(providers.$stateProvider).toBeDefined();
   });
 
-  it("Should expose ng-router services through Angular DI", () => {
+  it("Should expose private ng-router services through internal Angular DI", () => {
     expect($injector.get("$url")).toBeDefined();
     expect($injector.get("$stateRegistry")).toBeDefined();
-    expect($injector.get("$router")).toBeDefined();
+    expect($injector.get("$$r")).toBeDefined();
     expect($injector.get("$transitions")).toBeDefined();
     expect($injector.get("$state")).toBeDefined();
     expect($injector.get("$view")).toBeDefined();

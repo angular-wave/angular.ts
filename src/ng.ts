@@ -108,7 +108,7 @@ import {
   ViewDirectiveFill,
   ViewDirective,
 } from "./router/directives/view-directive.ts";
-import { RouterProvider } from "./router/router.ts";
+import { _RouterProvider } from "./router/router.ts";
 import { StateProvider } from "./router/state/state-service.ts";
 import { StateRegistryProvider } from "./router/state/state-registry.ts";
 import { TemplateFactoryProvider } from "./router/template-factory.ts";
@@ -271,7 +271,7 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
             $parse: ParseProvider,
             $rest: RestProvider,
             $rootScope: RootScopeProvider,
-            $router: RouterProvider,
+            [$t._router]: _RouterProvider,
             $sce: SceProvider,
             $sceDelegate: SceDelegateProvider,
             $sse: SseProvider,
@@ -280,10 +280,10 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
             $urlConfig: UrlConfigProvider,
             $view: ViewService,
             $transitions: TransitionProvider,
-            $state: StateProvider,
             $templateFactory: TemplateFactoryProvider,
             $url: UrlService,
             $stateRegistry: StateRegistryProvider,
+            $state: StateProvider,
             $eventBus: PubSubProvider,
             $websocket: WebSocketProvider,
           });
@@ -295,6 +295,6 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
       /**
        * Exposes the router's current parameter bag as `$stateParams`.
        */
-      (globals) => globals.params,
+      (state: _RouterProvider) => state._params,
     ]);
 }

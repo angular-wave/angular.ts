@@ -217,7 +217,7 @@ export class AST {
     while ((token = this._expect("==", "!=", "===", "!=="))) {
       left = {
         _type: ASTType._BinaryExpression,
-        _operator: /** @type {Token} */ token._text,
+        _operator: token._text,
         _left: left,
         _right: this._relational(),
       };
@@ -239,7 +239,7 @@ export class AST {
     while ((token = this._expect("<", ">", "<=", ">="))) {
       left = {
         _type: ASTType._BinaryExpression,
-        _operator: /** @type {Token} */ token._text,
+        _operator: token._text,
         _left: left,
         _right: this._additive(),
       };
@@ -261,7 +261,7 @@ export class AST {
     while ((token = this._expect("+", "-"))) {
       left = {
         _type: ASTType._BinaryExpression,
-        _operator: /** @type {Token} */ token._text,
+        _operator: token._text,
         _left: left,
         _right: this._multiplicative(),
       };
@@ -317,7 +317,7 @@ export class AST {
 
       return {
         _type: ASTType._UpdateExpression,
-        _operator: /** @type {Token} */ token._text,
+        _operator: token._text,
         _prefix: true,
         _argument: argument,
       };
@@ -327,7 +327,7 @@ export class AST {
     if ((token = this._expect("+", "-", "!"))) {
       return {
         _type: ASTType._UnaryExpression,
-        _operator: /** @type {Token} */ token._text,
+        _operator: token._text,
         _prefix: true,
         _argument: this._unary(),
       };
@@ -358,7 +358,7 @@ export class AST {
 
       expr = {
         _type: ASTType._UpdateExpression,
-        _operator: /** @type {Token} */ token._text,
+        _operator: token._text,
         _prefix: false,
         _argument: expr,
       };

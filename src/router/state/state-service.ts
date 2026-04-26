@@ -15,7 +15,6 @@ import { TargetState } from "./target-state.ts";
 import { Param } from "../params/param.ts";
 import { Glob } from "../glob/glob.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
-import type { ProviderInjector } from "../../core/di/internal-injector.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { Transition } from "../transition/transition.ts";
 import type { HookResult, TransitionOptions } from "../transition/interface.ts";
@@ -62,13 +61,11 @@ export const silentRejection = <E = unknown>(error: E): Promise<never> =>
  */
 export class StateProvider {
   /** @internal */
-  _providerInjector: ProviderInjector;
-  /** @internal */
-  _globals: ng.RouterProvider;
+  _routerState: ng._RouterProvider;
   /** @internal */
   _transitionService: ng.TransitionProvider;
   /** @internal */
-  _stateRegistry: StateRegistryProvider | undefined;
+  _stateRegistry: StateRegistryProvider;
   /** @internal */
   _urlService: ng.UrlService | undefined;
   /** @internal */
@@ -80,11 +77,6 @@ export class StateProvider {
 
   /** @internal */
   _getRegistry(): StateRegistryProvider {
-    if (!this._stateRegistry)
-      this._stateRegistry = this._providerInjector.get(
-        $injectTokens._stateRegistryProvider,
-      ) as StateRegistryProvider;
-
     return this._stateRegistry;
   }
 
@@ -101,26 +93,26 @@ export class StateProvider {
    * @deprecated This is a passthrough through to [[Router.params]]
    */
   get params() {
-    return this._globals.params;
+    return this._routerState._params;
   }
 
   /**
    * The current [[StateDeclaration]]
    */
   get current(): StateDeclaration | undefined {
-    return this._globals.current;
+    return this._routerState._current;
   }
 
   /**
    * The current [[StateObject]] (an internal API)
    */
   get $current(): StateObject | undefined {
-    return this._globals.$current;
+    return this._routerState._currentState;
   }
 
   /* @ignore */
   static $inject = [
-    $injectTokens._injector,
+    $injectTokens._stateRegistryProvider,
     $injectTokens._routerProvider,
     $injectTokens._transitionsProvider,
     $injectTokens._exceptionHandlerProvider,
@@ -128,35 +120,32 @@ export class StateProvider {
 
   /**
    *
-   * @param {ProviderInjector} providerInjector
-   * @param {ng.RouterProvider} globals
+   * @param {StateRegistryProvider} stateRegistry
+   * @param routerState
    * @param {ng.TransitionProvider} transitionService
    * @param {ng.ExceptionHandlerProvider} exceptionHandlerProvider
    */
   constructor(
-    providerInjector: ProviderInjector,
-    globals: ng.RouterProvider,
+    stateRegistry: StateRegistryProvider,
+    routerState: any,
     transitionService: ng.TransitionProvider,
     exceptionHandlerProvider: ng.ExceptionHandlerProvider,
   ) {
-    this._providerInjector = providerInjector;
     /**
-     * @type {ng.RouterProvider}
+     * @type {ng._RouterProvider}
      */
-    this._globals = globals;
+    this._routerState = routerState;
     /**
      * @type {ng.TransitionProvider}
      */
     this._transitionService = transitionService;
 
     /**
-     * @type {StateRegistryProvider | undefined}
+     * @type {StateRegistryProvider}
      */
-    this._stateRegistry = undefined;
+    this._stateRegistry = stateRegistry;
 
-    /** @type {ng.UrlService | undefined } */
     this._urlService = undefined;
-    /** @type {ng.InjectorService | undefined } */
     this._$injector = undefined;
 
     /**
@@ -164,7 +153,6 @@ export class StateProvider {
      */
     this._invalidCallbacks = [];
 
-    /** @type {ng.ExceptionHandlerService} */
     this._defaultErrorHandler = exceptionHandlerProvider.handler;
   }
 
@@ -177,19 +165,21 @@ export class StateProvider {
      * @param {ng.InjectorService} $injector
      * @param {StateRegistryProvider} $stateRegistry
      * @param {ng.UrlService} $url
-     * @param {ng.ViewService} _viewService
+     * @param {ng.ViewService} viewService
      * @returns {StateProvider}
      */
     (
       $injector: ng.InjectorService,
       $stateRegistry: StateRegistryProvider,
       $url: ng.UrlService,
-      _viewService: ng.ViewService,
+      viewService: ng.ViewService,
     ) => {
-      void _viewService;
       this._stateRegistry = $stateRegistry;
       this._urlService = $url;
+      $url._stateService = this;
+      this._transitionService._initRuntimeHooks(this, $url, viewService);
       this._$injector = $injector;
+      this._routerState._injector = $injector;
 
       return this;
     },
@@ -231,14 +221,15 @@ export class StateProvider {
   ): Promise<any> {
     const fromState = makeTargetState(this._getRegistry(), fromPath);
 
-    const globals = this._globals;
+    const routerState = this._routerState;
 
-    const latestThing = () => globals._transitionHistory._peekTail();
+    const latestThing = () => routerState._transitionHistory._peekTail();
 
     const latest = latestThing();
 
-    /** @type {Queue<OnInvalidCallback>} */
-    const callbackQueue = new Queue(this._invalidCallbacks.slice());
+    const callbackQueue = new Queue<OnInvalidCallback>(
+      this._invalidCallbacks.slice(),
+    );
 
     const injector = this._$injector;
 
@@ -366,11 +357,11 @@ export class StateProvider {
    * @returns A promise representing the state of the new transition. See [[StateService.go]]
    */
   reload(reloadState?: string | StateDeclaration | StateObject) {
-    const { current } = this._globals;
+    const current = this._routerState._current;
 
     if (!current) throw new Error("No current state");
 
-    return this.transitionTo(current, this._globals.params, {
+    return this.transitionTo(current, this._routerState._params, {
       reload: isDefined(reloadState) ? reloadState : true,
       inherit: false,
       notify: false,
@@ -455,9 +446,9 @@ export class StateProvider {
   }
 
   getCurrentPath(): PathNode[] {
-    const globals = this._globals;
+    const routerState = this._routerState;
 
-    const latestSuccess = globals._successfulTransitions._peekTail();
+    const latestSuccess = routerState._successfulTransitions._peekTail();
 
     const rootPath = () => [new PathNode(this._getRegistry().root())];
 
@@ -493,7 +484,7 @@ export class StateProvider {
     options: TransitionOptions | any = {},
   ): TransitionPromise | Promise<any> {
     options = defaults(options, defaultTransOpts);
-    const getCurrent = () => this._globals.transition;
+    const getCurrent = () => this._routerState._transition;
 
     options = Object.assign(options, { current: getCurrent });
     const ref = this.target(to, toParams, options);
@@ -518,21 +509,22 @@ export class StateProvider {
      * no error occurred.  Likewise, the transition.run() promise may be rejected because of
      * a Redirect, but the transitionTo() promise is chained to the new Transition's promise.
      */
-    /** @typedef {(error: any) => Promise<any>} RejectionHandler */
-    /** @typedef {(trans: Transition) => RejectionHandler} RejectedTransitionHandler */
+    type RejectionHandler = (error: any) => Promise<any>;
 
-    /** @type {RejectedTransitionHandler} */
-    const rejectedTransitionHandler =
+    type RejectedTransitionHandler = (trans: Transition) => RejectionHandler;
+
+    const rejectedTransitionHandler: RejectedTransitionHandler =
       (trans: Transition) =>
       (error: any): Promise<any> => {
         if (error instanceof Rejection) {
-          const isLatest = this._globals._lastStartedTransitionId <= trans.$id;
+          const isLatest =
+            this._routerState._lastStartedTransitionId <= trans.$id;
 
           if (error.type === RejectType._IGNORED) {
             isLatest && this._getUrlService().update();
 
             // Consider ignored `Transition.run()` as a successful `transitionTo`
-            return Promise.resolve(this._globals.current);
+            return Promise.resolve(this._routerState._current);
           }
           const { detail } = error;
 
@@ -623,7 +615,7 @@ export class StateProvider {
     return Param.equals(
       schema,
       Param.values(schema, params),
-      this._globals.params,
+      this._routerState._params,
     );
   }
 
@@ -689,7 +681,7 @@ export class StateProvider {
     if (!isDefined(include[state.name])) return false;
 
     if (!params) return true;
-    const schema = /** @type {ng.StateObject} */ state.parameters({
+    const schema = (state as ng.StateObject).parameters({
       inherit: true,
       matchingKeys: params,
     });
@@ -697,7 +689,7 @@ export class StateProvider {
     return Param.equals(
       schema,
       Param.values(schema, params),
-      this._globals.params,
+      this._routerState._params,
     );
   }
 
@@ -737,7 +729,7 @@ export class StateProvider {
     if (!isDefined(state)) return null;
 
     if (options?.inherit)
-      params = this._globals.params.$inherit(
+      params = this._routerState._params.$inherit(
         params,
         this.$current as StateObject,
         state,

@@ -413,8 +413,7 @@ export class NgModule {
     validate(isString, name, "name");
     validate(isString, url, "url");
     validate(isFunction, entityClass, "entityClass");
-    /** @type {ng.RestDefinition<T>} */
-    const def = { name, url, entityClass, options };
+    const def: ng.RestDefinition<T> = { name, url, entityClass, options };
 
     this._restDefinitions.push(def);
 
