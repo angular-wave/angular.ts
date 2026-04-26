@@ -87,7 +87,7 @@ export class StateQueueManager {
 
       const { name } = state;
 
-      const result = builder.build(state);
+      const result = builder._build(state);
 
       const orphanIdx = orphans.indexOf(state);
 

@@ -1,12 +1,4 @@
-import {
-  applyPairs,
-  copy,
-  inherit,
-  map,
-  omit,
-  pick,
-  tail,
-} from "../../shared/common.ts";
+import { copy, inherit } from "../../shared/common.ts";
 import {
   entries,
   hasOwn,
@@ -15,14 +7,12 @@ import {
   isFunction,
   isString,
   keys,
-  values,
 } from "../../shared/utils.ts";
 import { stringify } from "../../shared/strings.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { annotate } from "../../core/di/di.ts";
 import { ViewConfig } from "./views.ts";
-import type { ParamDeclaration } from "../params/interface.ts";
 import type { ParamFactory } from "../params/param-factory.ts";
 import type { InjectorService } from "../../core/di/internal-injector.ts";
 import type { ResolvableLiteral } from "../resolve/interface.ts";
@@ -88,26 +78,36 @@ function buildParams(
   state: BuiltStateDeclaration,
   paramFactory: ParamFactory,
 ): Record<string, any> {
-  const makeConfigParam = (_config: ParamDeclaration, id: string | number) =>
-    paramFactory.fromConfig(String(id), null, state.self);
-
   const urlParams =
     (state.url && state.url.parameters({ inherit: false })) || [];
 
-  const nonUrlParams = values(
-    map(
-      omit(
-        state.params || {},
-        urlParams.map((x: any) => x.id),
-      ),
-      makeConfigParam,
-    ),
-  );
+  const params: Record<string, any> = {};
 
-  return urlParams
-    .concat(nonUrlParams)
-    .map((x: any) => [x.id, x] as [string, any])
-    .reduce(applyPairs, {});
+  for (let i = 0; i < urlParams.length; i++) {
+    const param = urlParams[i];
+
+    params[param.id] = param;
+  }
+
+  const urlParamIds = new Set<string>();
+
+  for (let i = 0; i < urlParams.length; i++) {
+    urlParamIds.add(urlParams[i].id);
+  }
+
+  const paramConfigs = state.params || {};
+
+  const paramConfigKeys = keys(paramConfigs);
+
+  for (let i = 0; i < paramConfigKeys.length; i++) {
+    const id = paramConfigKeys[i];
+
+    if (!urlParamIds.has(id)) {
+      params[id] = paramFactory.fromConfig(id, null, state.self);
+    }
+  }
+
+  return params;
 }
 
 function hasAnyViewKey(keyItems: string[], obj: Record<string, any>): boolean {
@@ -159,8 +159,18 @@ function viewsBuilder(
 
   const views: Record<string, any> = {};
 
+  const defaultViewConfig: Record<string, any> = {};
+
+  for (let i = 0; i < allViewKeys.length; i++) {
+    const key = allViewKeys[i];
+
+    if (isDefined(state[key])) {
+      defaultViewConfig[key] = state[key];
+    }
+  }
+
   const viewsObject = (state.views || {
-    $default: pick(state, allViewKeys),
+    $default: defaultViewConfig,
   }) as Record<string, any>;
 
   const viewEntries = entries(viewsObject);
@@ -205,17 +215,45 @@ function viewsBuilder(
 function getResolveLocals(ctx: ResolveContext): Record<string, any> {
   const tokens = ctx.getTokens().filter(isString);
 
-  const tuples: [string, any][] = [];
+  const locals: Record<string, any> = {};
 
   for (let i = 0; i < tokens.length; i++) {
     const key = tokens[i];
 
     const resolvable = ctx.getResolvable(key);
 
-    tuples.push([key, resolvable.data]);
+    locals[key] = resolvable.data;
   }
 
-  return tuples.reduce(applyPairs, {});
+  return locals;
+}
+
+function valueToResolvable(
+  token: string,
+  value: any,
+  strictDi: boolean | undefined,
+): Resolvable {
+  if (isArray(value)) {
+    return new Resolvable(token, value[value.length - 1], value.slice(0, -1));
+  }
+
+  if (isFunction(value)) {
+    return new Resolvable(token, value, annotate(value, strictDi));
+  }
+
+  throw new Error(`Invalid resolve value: ${stringify({ token, val: value })}`);
+}
+
+function literalToResolvable(literal: ResolvableLiteral): Resolvable {
+  if (
+    literal &&
+    hasOwn(literal, "token") &&
+    (hasOwn(literal, "resolveFn") || hasOwn(literal, "data"))
+  ) {
+    return new Resolvable(literal);
+  }
+
+  throw new Error(`Invalid resolve value: ${stringify(literal)}`);
 }
 
 /**
@@ -258,91 +296,30 @@ function getResolveLocals(ctx: ResolveContext): Record<string, any> {
  * @param {ng.StateObject & ng.StateDeclaration} state
  * @param {boolean | undefined} strictDi
  */
-export function resolvablesBuilder(
+function resolvablesBuilder(
   state: StateObject & StateDeclaration,
   strictDi: boolean | undefined,
 ): Resolvable[] {
-  type ResolveTuple = {
-    token: any;
-    val: any;
-  };
-
-  const annotateFn = (fn: Function) => annotate(fn, strictDi);
-
-  const objectToTuples = (
-    resolveObj: Record<string, any> | undefined,
-  ): ResolveTuple[] => {
-    const tuples: ResolveTuple[] = [];
-
-    const source = resolveObj || {};
-
-    const tokens = keys(source);
-
-    for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i];
-
-      tuples.push({
-        token,
-        val: source[token],
-      });
-    }
-
-    return tuples;
-  };
-
-  const tupleToResolvable = (tuple: ResolveTuple): Resolvable => {
-    if (isArray(tuple.val)) {
-      return new Resolvable(
-        tuple.token,
-        tail(tuple.val),
-        tuple.val.slice(0, -1),
-      );
-    }
-
-    if (isFunction(tuple.val)) {
-      return new Resolvable(tuple.token, tuple.val, annotateFn(tuple.val));
-    }
-
-    throw new Error(`Invalid resolve value: ${stringify(tuple)}`);
-  };
-
-  const literalToResolvable = (literal: ResolvableLiteral): Resolvable => {
-    if (hasOwn(literal, "resolveFn") || hasOwn(literal, "data")) {
-      return new Resolvable(literal);
-    }
-
-    throw new Error(`Invalid resolve value: ${stringify(literal)}`);
-  };
-
-  const itemToResolvable = (item: any): Resolvable => {
-    if (
-      item &&
-      hasOwn(item, "token") &&
-      (hasOwn(item, "resolveFn") || hasOwn(item, "data"))
-    ) {
-      return literalToResolvable(item);
-    }
-
-    if (
-      item &&
-      hasOwn(item, "token") &&
-      hasOwn(item, "val") &&
-      (isArray(item.val) || isFunction(item.val))
-    ) {
-      return tupleToResolvable(item);
-    }
-
-    throw new Error(`Invalid resolve value: ${stringify(item)}`);
-  };
-
   const decl = state.resolve;
-
-  const items = isArray(decl) ? decl : objectToTuples(decl);
 
   const resolvables: Resolvable[] = [];
 
-  for (let i = 0; i < items.length; i++) {
-    resolvables.push(itemToResolvable(items[i]));
+  if (isArray(decl)) {
+    for (let i = 0; i < decl.length; i++) {
+      resolvables.push(literalToResolvable(decl[i]));
+    }
+
+    return resolvables;
+  }
+
+  const resolveObj = decl || {};
+
+  const resolveKeys = keys(resolveObj);
+
+  for (let i = 0; i < resolveKeys.length; i++) {
+    const token = resolveKeys[i];
+
+    resolvables.push(valueToResolvable(token, resolveObj[token], strictDi));
   }
 
   return resolvables;
@@ -414,10 +391,11 @@ export class StateBuilder {
    * @param {ng.StateObject} state an uninitialized State object
    * @returns {ng.StateObject | null} the built State object
    */
-  build(state: StateObject): StateObject | null {
+  /** @internal */
+  _build(state: StateObject): StateObject | null {
     const { _matcher: matcher, _urlService: urlService } = this;
 
-    const parent = this.parentName(state);
+    const parent = this._parentName(state);
 
     if (parent && !matcher.find(parent, undefined, false)) {
       return null;
@@ -470,7 +448,8 @@ export class StateBuilder {
    * @param {ng.StateObject} state
    * @returns {string}
    */
-  parentName(state: StateObject): string {
+  /** @internal */
+  _parentName(state: StateObject): string {
     // name = 'foo.bar.baz.**'
     const rawName = (state.self && state.self.name) || state.name || "";
 
@@ -501,8 +480,8 @@ export class StateBuilder {
     return isString(state.parent) ? state.parent : state.parent.name;
   }
 
-  /** @param {ng.StateObject} state*/
-  name(state: StateObject): string {
+  /** @internal */
+  _name(state: StateObject): string {
     const name = (state.self && state.self.name) || state.name;
 
     if (name.indexOf(".") !== -1 || !state.parent) return name;
