@@ -1,8 +1,12 @@
 import { getBooleanAttrName } from "../../shared/dom.ts";
 import {
+  createLazyAnimate,
+  getAnimateForNode,
+  type LazyAnimate,
+} from "../../animations/lazy-animate.ts";
+import {
   arrayRemove,
   directiveNormalize,
-  hasAnimate,
   hasOwn,
   isNullOrUndefined,
   isString,
@@ -21,6 +25,19 @@ const $compileMinErr = minErr("$compile");
 const SIMPLE_ATTR_NAME = /^\w/;
 
 const specialAttrHolder = document.createElement("div");
+
+const lazyAnimateByInjector = new WeakMap<ng.InjectorService, LazyAnimate>();
+
+function getLazyAnimate($injector: ng.InjectorService): LazyAnimate {
+  let getAnimate = lazyAnimateByInjector.get($injector);
+
+  if (!getAnimate) {
+    getAnimate = createLazyAnimate($injector);
+    lazyAnimateByInjector.set($injector, getAnimate);
+  }
+
+  return getAnimate;
+}
 
 type ObserverList = Array<(value?: unknown) => void> & {
   /** @internal */
@@ -54,7 +71,7 @@ export class Attributes {
    */
 
   /** @internal */
-  _animate: ng.AnimateService;
+  _getAnimate: LazyAnimate;
   /** @internal */
   _exceptionHandler: ng.ExceptionHandlerService;
   /** @internal */
@@ -67,13 +84,13 @@ export class Attributes {
   [key: string]: any;
 
   constructor(
-    $animate: ng.AnimateService,
+    $injector: ng.InjectorService,
     $exceptionHandler: ng.ExceptionHandlerService,
     $sce: ng.SceService,
     nodeRef?: NodeRef,
     attributesToCopy?: Record<string, any>,
   ) {
-    this._animate = $animate;
+    this._getAnimate = getLazyAnimate($injector);
     this._exceptionHandler = $exceptionHandler;
     this._sce = $sce;
     this.$attr = {};
@@ -115,8 +132,12 @@ export class Attributes {
 
   $addClass(classVal: string): void {
     if (classVal && classVal.length > 0) {
-      if (hasAnimate(this._element())) {
-        this._animate.addClass(this._element() as Element, classVal);
+      const element = this._element() as Element;
+
+      const animate = getAnimateForNode(this._getAnimate, element);
+
+      if (animate) {
+        animate.addClass(element, classVal);
       } else {
         this._nodeRef?.element.classList.add(classVal);
       }
@@ -125,8 +146,12 @@ export class Attributes {
 
   $removeClass(classVal: string): void {
     if (classVal && classVal.length > 0) {
-      if (hasAnimate(this._element())) {
-        this._animate.removeClass(this._element() as Element, classVal);
+      const element = this._element() as Element;
+
+      const animate = getAnimateForNode(this._getAnimate, element);
+
+      if (animate) {
+        animate.removeClass(element, classVal);
       } else {
         this._nodeRef?.element.classList.remove(classVal);
       }
@@ -140,13 +165,13 @@ export class Attributes {
 
     const element = this._element() as Element;
 
-    const hasAnimation = hasAnimate(element);
+    const animate = getAnimateForNode(this._getAnimate, element);
 
     const toAdd = tokenDifference(newClasses, oldClasses);
 
     if (toAdd.length) {
-      if (hasAnimation) {
-        this._animate.addClass(element, toAdd.join(" "));
+      if (animate) {
+        animate.addClass(element, toAdd.join(" "));
       } else {
         this._nodeRef?.element.classList.add(...toAdd);
       }
@@ -155,8 +180,8 @@ export class Attributes {
     const toRemove = tokenDifference(oldClasses, newClasses);
 
     if (toRemove.length) {
-      if (hasAnimation) {
-        this._animate.removeClass(element, toRemove.join(" "));
+      if (animate) {
+        animate.removeClass(element, toRemove.join(" "));
       } else {
         this._nodeRef?.element.classList.remove(...toRemove);
       }

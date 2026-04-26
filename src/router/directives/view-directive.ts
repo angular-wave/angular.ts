@@ -1,10 +1,9 @@
 import { PromiseResolvers, tail, unnestR } from "../../shared/common.ts";
+import { isArray, isDefined, isFunction } from "../../shared/utils.ts";
 import {
-  hasAnimate,
-  isArray,
-  isDefined,
-  isFunction,
-} from "../../shared/utils.ts";
+  createLazyAnimate,
+  getAnimateForNode,
+} from "../../animations/lazy-animate.ts";
 import { parse } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { trace } from "../common/trace.ts";
@@ -254,7 +253,7 @@ const controllerLastParamsChangedTransition = new WeakMap<
 
 ViewDirective.$inject = [
   $injectTokens._view,
-  $injectTokens._animate,
+  $injectTokens._injector,
   $injectTokens._anchorScroll,
   $injectTokens._interpolate,
 ];
@@ -264,15 +263,19 @@ ViewDirective.$inject = [
  */
 export function ViewDirective(
   $view: ng.ViewService,
-  $animate: ng.AnimateService,
+  $injector: ng.InjectorService,
   $anchorScroll: ng.AnchorScrollService,
   $interpolate: ng.InterpolateService,
 ): ng.Directive {
+  const getAnimate = createLazyAnimate($injector);
+
   function getRenderer(): Renderer {
     return {
       enter(element: HTMLElement, target: HTMLElement, cb: () => void): void {
-        if (hasAnimate(element)) {
-          $animate.enter(element, null, target).done(cb);
+        const animate = getAnimateForNode(getAnimate, element);
+
+        if (animate) {
+          animate.enter(element, null, target).done(cb);
         } else {
           target.after(element);
           cb();
@@ -280,8 +283,10 @@ export function ViewDirective(
       },
 
       leave(element: HTMLElement, cb: () => void): void {
-        if (hasAnimate(element)) {
-          $animate.leave(element).done(cb);
+        const animate = getAnimateForNode(getAnimate, element);
+
+        if (animate) {
+          animate.leave(element).done(cb);
         } else {
           removeElement(element);
           cb();

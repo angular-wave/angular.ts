@@ -1,5 +1,11 @@
 import { $injectTokens } from "../../injection-tokens.ts";
 import {
+  createLazyAnimate,
+  getAnimateForNode,
+  type LazyAnimate,
+} from "../../animations/lazy-animate.ts";
+import { removeElement } from "../../shared/dom.ts";
+import {
   entries,
   hasOwn,
   isArray,
@@ -36,7 +42,9 @@ class NgMessageCtrl {
   /** @internal */
   _attrs: ng.Attributes;
   /** @internal */
-  _animate: ng.AnimateService;
+  _getAnimate: LazyAnimate;
+  /** @internal */
+  _isAnimated: boolean;
   /** @internal */
   _latestKey: number;
   /** @internal */
@@ -57,12 +65,13 @@ class NgMessageCtrl {
     $element: HTMLElement,
     $scope: ng.Scope,
     $attrs: ng.Attributes,
-    $animate: ng.AnimateService,
+    getAnimate: LazyAnimate,
   ) {
     this._element = $element;
     this._scope = $scope;
     this._attrs = $attrs;
-    this._animate = $animate;
+    this._getAnimate = getAnimate;
+    this._isAnimated = !!getAnimateForNode(getAnimate, $element);
 
     this._latestKey = 0;
     this._nextAttachId = 0;
@@ -152,9 +161,27 @@ class NgMessageCtrl {
     }
 
     if (messageMatched || attachDefault) {
-      this._animate.setClass(this._element, ACTIVE_CLASS, INACTIVE_CLASS);
+      if (this._isAnimated) {
+        this._getAnimate().setClass(
+          this._element,
+          ACTIVE_CLASS,
+          INACTIVE_CLASS,
+        );
+      } else {
+        this._element.classList.add(ACTIVE_CLASS);
+        this._element.classList.remove(INACTIVE_CLASS);
+      }
     } else {
-      this._animate.setClass(this._element, INACTIVE_CLASS, ACTIVE_CLASS);
+      if (this._isAnimated) {
+        this._getAnimate().setClass(
+          this._element,
+          INACTIVE_CLASS,
+          ACTIVE_CLASS,
+        );
+      } else {
+        this._element.classList.add(INACTIVE_CLASS);
+        this._element.classList.remove(ACTIVE_CLASS);
+      }
     }
   }
 
@@ -212,13 +239,15 @@ class NgMessageCtrl {
   }
 }
 
-ngMessagesDirective.$inject = [$injectTokens._animate];
+ngMessagesDirective.$inject = [$injectTokens._injector];
 /**
  * Builds the root `ngMessages` directive.
  */
 export function ngMessagesDirective(
-  $animate: ng.AnimateService,
+  $injector: ng.InjectorService,
 ): ng.Directive<NgMessageCtrl> {
+  const getAnimate = createLazyAnimate($injector);
+
   return {
     require: "ngMessages",
     restrict: "AE",
@@ -226,7 +255,7 @@ export function ngMessagesDirective(
       $element: HTMLElement,
       $scope: ng.Scope,
       $attrs: ng.Attributes,
-    ) => new NgMessageCtrl($element, $scope, $attrs, $animate),
+    ) => new NgMessageCtrl($element, $scope, $attrs, getAnimate),
   };
 }
 
@@ -299,14 +328,16 @@ export const ngMessageDefaultDirective = ngMessageDirectiveFactory(true);
  */
 function ngMessageDirectiveFactory(
   isDefault: boolean,
-): ($animate: ng.AnimateService) => ng.Directive<any> {
-  ngMessageDirectiveFn.$inject = [$injectTokens._animate];
+): ($injector: ng.InjectorService) => ng.Directive<any> {
+  ngMessageDirectiveFn.$inject = [$injectTokens._injector];
   /**
    * Builds a concrete `ngMessage` directive definition.
    */
   function ngMessageDirectiveFn(
-    $animate: ng.AnimateService,
+    $injector: ng.InjectorService,
   ): ng.Directive<any> {
+    const getAnimate = createLazyAnimate($injector);
+
     return {
       restrict: "AE",
       transclude: "element",
@@ -372,7 +403,16 @@ function ngMessageDirectiveFactory(
                     _attachId?: number;
                   };
 
-                  $animate.enter(transcludedElement, null, element);
+                  const animate = getAnimateForNode(
+                    getAnimate,
+                    transcludedElement,
+                  );
+
+                  if (animate) {
+                    animate.enter(transcludedElement, null, element);
+                  } else {
+                    element.after(transcludedElement);
+                  }
                   currentElement = transcludedElement;
 
                   // Each time we attach this node to a message we get a new id that we can match
@@ -403,7 +443,13 @@ function ngMessageDirectiveFactory(
                 const elm = currentElement;
 
                 currentElement = null;
-                $animate.leave(elm);
+                const animate = getAnimateForNode(getAnimate, elm);
+
+                if (animate) {
+                  animate.leave(elm);
+                } else {
+                  removeElement(elm);
+                }
               }
             },
           }),

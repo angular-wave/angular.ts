@@ -1367,7 +1367,6 @@ export class CompileProvider {
       $t._parse,
       $t._controller,
       $t._sce,
-      $t._animate,
       /** Creates the runtime `$compile` service and its shared helper closures. */
       (
         $injector: ng.InjectorService,
@@ -1377,7 +1376,6 @@ export class CompileProvider {
         $parse: ng.ParseService,
         $controller: ng.ControllerService,
         $sce: ng.SceService,
-        $animate: ng.AnimateService,
       ) => {
         const onChangesQueueState: OnChangesQueueState = {
           _exceptionHandler: $exceptionHandler,
@@ -1880,7 +1878,7 @@ export class CompileProvider {
           let linkFnFound = false;
 
           for (let i = 0; i < nodeRefList.size; i++) {
-            const attrs = new Attributes($animate, $exceptionHandler, $sce);
+            const attrs = new Attributes($injector, $exceptionHandler, $sce);
 
             const directives = collectDirectives(
               nodeRefList._getIndex(i) as Element,
@@ -3070,7 +3068,7 @@ export class CompileProvider {
             $element = new NodeRef(linkNode);
             registerScopeOwnedNodeRef(scope, $element);
             attrs = new Attributes(
-              $animate,
+              $injector,
               $exceptionHandler,
               $sce,
               $element,
