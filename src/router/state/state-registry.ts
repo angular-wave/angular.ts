@@ -72,7 +72,6 @@ export class StateRegistryProvider {
     this.builder = new StateBuilder(this.matcher, urlService);
 
     this.stateQueue = new StateQueueManager(
-      this,
       this.urlServiceRules,
       this.states,
       this.builder,

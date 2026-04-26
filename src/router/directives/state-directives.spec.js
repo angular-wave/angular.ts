@@ -999,29 +999,6 @@ describe("ngSrefActive", () => {
     expect(a.getAttribute("class")).toMatch(/active also-active/);
   });
 
-  it("should not match fuzzy on lazy loaded future states", async () => {
-    _stateProvider.state({
-      name: "contacts.lazy.**",
-      url: "/lazy",
-      lazyLoad: () => {
-        return Promise.resolve().then(() => {
-          _stateProvider
-            .state({ name: "contacts.lazy", abstract: true, url: "/lazy" })
-            .state({ name: "contacts.lazy.s1", url: "/s1" })
-            .state({ name: "contacts.lazy.s2", url: "/s2" });
-        });
-      },
-    });
-
-    app.innerHTML =
-      '<div ng-sref-active="active"><a ng-sref="contacts.lazy.s1">Lazy</a></div><div ng-sref-active="active"><a ng-sref="contacts.lazy.s2"></a></div>';
-    $compile(app)($rootScope);
-    $state.defaultErrorHandler(() => {});
-    await $state.transitionTo("contacts.lazy.s1").catch(() => {});
-
-    expect(true).toBeTrue();
-  });
-
   describe("ng-{class,style} interface", () => {
     it("should match on abstract states that are included by the current state", async () => {
       el = $compile(
@@ -1077,29 +1054,6 @@ describe("ngSrefActive", () => {
       $state.transitionTo("admin.roles");
       await wait(100);
       expect(el.classList.contains("active")).toBeTruthy();
-    });
-
-    it("should not match fuzzy on lazy loaded future states", async () => {
-      _stateProvider.state({
-        name: "contacts.lazy.**",
-        url: "/lazy",
-        lazyLoad: () => {
-          return Promise.resolve().then(() => {
-            _stateProvider
-              .state({ name: "contacts.lazy", abstract: true, url: "/lazy" })
-              .state({ name: "contacts.lazy.s1", url: "/s1" })
-              .state({ name: "contacts.lazy.s2", url: "/s2" });
-          });
-        },
-      });
-      template = $compile(
-        '<div ng-sref-active="{ active: \'contacts.lazy.s1\' }"><a ng-sref="contacts.lazy.s1">Lazy</a></div><div ng-sref-active="{ active: \'contacts.lazy.s2\' }"></div>',
-      )($rootScope);
-      $state.transitionTo("contacts.lazy.s1");
-      //expect(template.classList.contains("active")).toBeTruthy();
-      await wait(100);
-
-      expect(template.classList.contains("active")).toBeFalsy();
     });
   });
 

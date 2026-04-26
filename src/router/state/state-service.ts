@@ -279,11 +279,10 @@ export class StateProvider {
    *
    * Example:
    * ```js
-   * stateService.onInvalid(function(to, from, injector) {
+   * stateService.onInvalid(function(to) {
    *   if (to.name() === 'foo') {
-   *     let lazyLoader = injector.get('LazyLoadService');
-   *     return lazyLoader.load('foo')
-   *         .then(() => stateService.target('foo'));
+   *     stateService.state({ name: 'foo' });
+   *     return stateService.target('foo');
    *   }
    * });
    * ```
