@@ -61,8 +61,13 @@ export class ViewService {
    */
   $get = [
     $t._templateFactory,
-    ($templateFactory: TemplateFactoryProvider): ViewService => {
+    $t._router,
+    (
+      $templateFactory: TemplateFactoryProvider,
+      $router: ng.RouterService,
+    ): ViewService => {
       this._templateFactory = $templateFactory;
+      this._rootViewContext($router.$current || null);
 
       return this;
     },
