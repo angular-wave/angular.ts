@@ -25,7 +25,7 @@ describe("StateBuilder", function () {
   });
 
   it("should use the state object to build a default view, when no `views` property is found", function () {
-    const config = builder.build({
+    const config = builder._build({
       name: "foo",
       self: {},
       url: "/foo",
@@ -46,7 +46,7 @@ describe("StateBuilder", function () {
 
   it("It should use the views object to build views, when defined", function () {
     const config = { a: { foo: "bar", controller: "FooController" } };
-    const built = builder.build({
+    const built = builder._build({
       name: "foo",
       self: {},
       parent: parent,
@@ -66,17 +66,17 @@ describe("StateBuilder", function () {
       controller: "FooController",
       parent: parent,
     };
-    expect(() => builder.build(Object.assign({}, config))).not.toThrow();
+    expect(() => builder._build(Object.assign({}, config))).not.toThrow();
     expect(() =>
-      builder.build(Object.assign({ component: "fooComponent" }, config)),
+      builder._build(Object.assign({ component: "fooComponent" }, config)),
     ).toThrow();
     expect(() =>
-      builder.build(
+      builder._build(
         Object.assign({ componentProvider: () => "fooComponent" }, config),
       ),
     ).toThrow();
     expect(() =>
-      builder.build(Object.assign({ bindings: {} }, config)),
+      builder._build(Object.assign({ bindings: {} }, config)),
     ).toThrow();
   });
 
@@ -87,7 +87,7 @@ describe("StateBuilder", function () {
 
   it("should reject string shorthand in object-style resolves", function () {
     expect(() =>
-      builder.build({
+      builder._build({
         name: "foo",
         self: {},
         parent: parent,
@@ -98,7 +98,7 @@ describe("StateBuilder", function () {
 
   it("should reject provider-style resolvables in a resolve array", function () {
     expect(() =>
-      builder.build({
+      builder._build({
         name: "foo",
         self: {},
         parent: parent,
@@ -110,7 +110,7 @@ describe("StateBuilder", function () {
   });
 
   it("should build explicit resolvable literals from a resolve array", function () {
-    const config = builder.build({
+    const config = builder._build({
       name: "foo",
       self: {},
       parent: parent,

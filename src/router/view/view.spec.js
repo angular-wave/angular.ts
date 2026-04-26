@@ -53,7 +53,7 @@ describe("view", () => {
   let register;
   const registerState = curry(function (_states, stateBuilder, config) {
     const state = new StateObject(config);
-    const built = stateBuilder.build(state);
+    const built = stateBuilder._build(state);
     return (_states[built.name] = built);
   });
 
