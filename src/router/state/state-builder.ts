@@ -1,4 +1,4 @@
-import { copy, inherit } from "../../shared/common.ts";
+import { inherit } from "../../shared/common.ts";
 import {
   entries,
   hasOwn,
@@ -37,22 +37,8 @@ function buildUrl(
   $url: ng.UrlService,
   root: StateObject | BuiltStateDeclaration,
 ) {
-  let stateDec = stateObject.self;
+  const stateDec = stateObject.self;
 
-  // For future states, i.e., states whose name ends with `.**`,
-  // match anything that starts with the url prefix
-  if (
-    stateDec &&
-    stateDec.url &&
-    stateDec.name &&
-    stateDec.name.match(/\.\*\*$/)
-  ) {
-    const newStateDec = {} as BuiltStateDeclaration;
-
-    copy(stateDec, newStateDec);
-    newStateDec.url += "{remainder:any}"; // match any path (.*)
-    stateDec = newStateDec;
-  }
   const { parent } = stateObject;
 
   const parsed = parseUrl(stateDec.url);
@@ -450,19 +436,13 @@ export class StateBuilder {
    */
   /** @internal */
   _parentName(state: StateObject): string {
-    // name = 'foo.bar.baz.**'
     const rawName = (state.self && state.self.name) || state.name || "";
 
     const name = rawName;
 
-    // segments = ['foo', 'bar', 'baz', '.**']
     const segments = name.split(".");
 
-    // segments = ['foo', 'bar', 'baz']
-    const lastSegment = segments.pop();
-
-    // segments = ['foo', 'bar'] (ignore .** segment for future states)
-    if (lastSegment === "**") segments.pop();
+    segments.pop();
 
     if (segments.length) {
       if (state.parent) {

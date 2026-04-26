@@ -1,12 +1,10 @@
 import { hasOwn, isString } from "../../shared/utils.ts";
 import { StateObject } from "./state-object.ts";
-import type { StateRegistryProvider } from "./state-registry.ts";
 import type { StateRegistryListener, StateStore } from "./interface.ts";
 import type { StateBuilder } from "./state-builder.ts";
 import type { UrlRules } from "../url/url-rules.ts";
 
 export class StateQueueManager {
-  stateRegistry: StateRegistryProvider;
   urlServiceRules: UrlRules;
   states: StateStore;
   builder: StateBuilder;
@@ -14,20 +12,17 @@ export class StateQueueManager {
   queue: StateObject[];
 
   /**
-   * @param {StateRegistryProvider} stateRegistry
    * @param {UrlRules} urlServiceRules
    * @param {StateStore} states
    * @param {StateBuilder} builder
    * @param {StateRegistryListener[]} listeners
    */
   constructor(
-    stateRegistry: StateRegistryProvider,
     urlServiceRules: UrlRules,
     states: StateStore,
     builder: StateBuilder,
     listeners: StateRegistryListener[],
   ) {
-    this.stateRegistry = stateRegistry;
     this.urlServiceRules = urlServiceRules;
     this.states = states;
     this.builder = builder;
@@ -96,12 +91,6 @@ export class StateQueueManager {
 
         if (existingState && existingState.name === name) {
           throw new Error(`State '${name}' is already defined`);
-        }
-        const existingFutureState = getState(`${name}.**`);
-
-        if (existingFutureState) {
-          // Remove future state of the same name
-          this.stateRegistry.deregister(existingFutureState);
         }
         states[name] = state;
         this.attachRoute(state);

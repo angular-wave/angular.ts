@@ -7,7 +7,6 @@ import {
 } from "../hooks/core-resolvables.ts";
 import { registerIgnoredTransitionHook } from "../hooks/ignored-transition.ts";
 import { registerInvalidTransitionHook } from "../hooks/invalid-transition.ts";
-import { registerLazyLoadHook } from "../hooks/lazy-load.ts";
 import {
   registerOnEnterHook,
   registerOnExitHook,
@@ -166,21 +165,12 @@ export class TransitionProvider implements TransitionService {
   $get = [
     $t._state,
     $t._url,
-    $t._stateRegistry,
     $t._view,
     (
       stateService: ng.StateService,
       urlService: ng.UrlService,
-      stateRegistry: ng.StateRegistryService,
       viewService: ng.ViewService,
     ): TransitionProvider => {
-      this._deregisterHookFns.lazyLoad = registerLazyLoadHook(
-        this,
-        stateService,
-        urlService,
-        stateRegistry,
-      );
-
       this._deregisterHookFns.updateUrl = registerUpdateUrl(
         this,
         stateService,
@@ -503,7 +493,6 @@ export class TransitionProvider implements TransitionService {
     fns.resolveAll = registerResolveRemaining(this);
     fns.loadViews = registerLoadEnteringViews(this);
     fns.updateGlobals = registerUpdateGlobalState(this);
-    fns.lazyLoad = registerLazyLoadHook(this);
   }
 }
 

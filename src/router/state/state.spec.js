@@ -424,6 +424,24 @@ describe("$state", () => {
         expect(message).toBeDefined();
       });
 
+      it("can register a missing state asynchronously from onInvalid and retry the transition", async () => {
+        $stateProvider.onInvalid(async (to) => {
+          if (to.name() !== "asyncLoaded") return undefined;
+
+          const imported = await Promise.resolve({
+            states: [{ name: "asyncLoaded", url: "/async-loaded" }],
+          });
+
+          imported.states.forEach((state) => $stateProvider.state(state));
+
+          return to;
+        });
+
+        await $state.transitionTo("asyncLoaded");
+
+        expect($state.current.name).toBe("asyncLoaded");
+      });
+
       it("allows transitions by name", async () => {
         await $state.transitionTo("A", {});
 
