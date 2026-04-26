@@ -1,4 +1,3 @@
-import { trace } from "../common/trace.ts";
 import { stringify } from "../../shared/strings.ts";
 import {
   assert,
@@ -97,7 +96,6 @@ export class Resolvable {
       this.data = resolvedValue;
       this.resolved = true;
       this.resolveFn = null;
-      trace.traceResolvableResolved(this, trans as Transition);
 
       return this.data;
     };

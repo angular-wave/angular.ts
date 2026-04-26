@@ -6,7 +6,6 @@ import {
 } from "../../animations/lazy-animate.ts";
 import { parse } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
-import { trace } from "../common/trace.ts";
 import { ViewConfig } from "../state/views.ts";
 import {
   dealoc,
@@ -368,8 +367,6 @@ export function ViewDirective(
           },
         };
 
-        trace.traceUIViewEvent("Linking", activeUIView);
-
         function configUpdatedCallback(config: ViewConfig | undefined): void {
           if (config && !(config instanceof ViewConfig)) return;
 
@@ -386,7 +383,6 @@ export function ViewDirective(
                 return;
               }
 
-              trace.traceUIViewConfigUpdated(activeUIView, undefined);
               activeUIView.config = null;
               updateView(undefined);
             });
@@ -399,10 +395,6 @@ export function ViewDirective(
 
           if (viewConfig === config) return;
 
-          trace.traceUIViewConfigUpdated(
-            activeUIView,
-            config && config.viewDecl && config.viewDecl.$context,
-          );
           activeUIView.config = config || null;
           viewConfig = config;
           updateView(config);
@@ -413,24 +405,15 @@ export function ViewDirective(
         const unregister = $view.registerUIView(activeUIView);
 
         scope.$on("$destroy", function () {
-          trace.traceUIViewEvent("Destroying/Unregistering", activeUIView);
           unregister();
         });
         function cleanupLastView(): void {
           if (previousEl) {
-            trace.traceUIViewEvent(
-              "Removing (previous) el",
-              getCacheData(previousEl, "$ngView") as
-                | ActiveUIView
-                | null
-                | undefined,
-            );
             removeElement(previousEl);
             previousEl = null;
           }
 
           if (currentScope) {
-            trace.traceUIViewEvent("Destroying scope", activeUIView);
             currentScope.$destroy();
             currentScope = null;
           }
@@ -440,7 +423,6 @@ export function ViewDirective(
               | NgViewAnimData
               | undefined;
 
-            trace.traceUIViewEvent("Animate out", activeUIView);
             renderer.leave(currentEl, function () {
               _viewData?.$$animLeave.resolve();
               previousEl = null;
@@ -572,7 +554,6 @@ export function ViewDirectiveFill(
 
         $element.innerHTML =
           cfg.getTemplate($element, resolveCtx as ResolveContext) || initial;
-        trace.traceUIViewFill(data.$ngView, $element.innerHTML);
         const link = $compile(
           ($element as HTMLIFrameElement).contentDocument ||
             $element.childNodes,

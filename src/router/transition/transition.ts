@@ -1,4 +1,3 @@
-import { trace } from "../common/trace.ts";
 import { stringify } from "../../shared/strings.ts";
 import {
   anyTrueR,
@@ -869,7 +868,6 @@ export class Transition {
 
     // When the chain is complete, then resolve or reject the deferred
     const transitionSuccess = () => {
-      trace.traceSuccess(this.$to()!, this);
       this.success = true;
       this._deferred.resolve(this.to());
       const hooks = this._hookBuilder.buildHooksForPhase(
@@ -882,7 +880,6 @@ export class Transition {
     };
 
     const transitionError = (reason: Rejection) => {
-      trace.traceError(reason, this);
       this.success = false;
       this._deferred.reject(reason);
       this._error = reason;
@@ -907,7 +904,6 @@ export class Transition {
       _globals._lastStartedTransitionId = this.$id;
       _globals.transition = this;
       _globals._transitionHistory._enqueue(this);
-      trace.traceTransitionStart(this);
 
       return Promise.resolve();
     };

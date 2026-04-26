@@ -67,7 +67,8 @@ export class HookBuilder {
         const options = Object.assign(
           {
             bind: hook.bind,
-            traceData: { hookType: hookType.name, context: node },
+            hookType: hookType.name,
+            target: node,
           },
           baseHookOptions,
         );
