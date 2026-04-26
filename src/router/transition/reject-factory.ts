@@ -1,4 +1,3 @@
-import { is } from "../../shared/hof.ts";
 import { stringify } from "../../shared/strings.ts";
 import { assign } from "../../shared/utils.ts";
 import type { TargetState } from "../state/target-state.ts";
@@ -98,9 +97,7 @@ export class Rejection {
   }
 
   static normalize(detail: TransitionRejectionDetail): Rejection {
-    return is(Rejection)(detail)
-      ? (detail as Rejection)
-      : Rejection.errored(detail);
+    return detail instanceof Rejection ? detail : Rejection.errored(detail);
   }
 
   toString(): string {

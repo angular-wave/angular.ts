@@ -1,10 +1,14 @@
-import { PromiseResolvers, tail, unnestR } from "../../shared/common.ts";
-import { assign, isArray, isDefined, isFunction } from "../../shared/utils.ts";
+import {
+  arrayFrom,
+  assign,
+  isArray,
+  isDefined,
+  isFunction,
+} from "../../shared/utils.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
 } from "../../animations/lazy-animate.ts";
-import { parse } from "../../shared/hof.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { ViewConfig } from "../state/views.ts";
 import {
@@ -19,6 +23,12 @@ import { $injectTokens } from "../../injection-tokens.ts";
 import type { ActiveNgView, ViewContext, ViewService } from "../view/view.ts";
 import type { PathNode } from "../path/path-node.ts";
 import { TargetState } from "../state/target-state.ts";
+
+type PromiseResolvers<T> = {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: any) => void;
+};
 
 type Renderer = {
   enter: (element: HTMLElement, target: HTMLElement, cb: () => void) => void;
@@ -63,11 +73,11 @@ function getRootNodesFromClone(
   }
 
   if (clone instanceof DocumentFragment) {
-    return Array.from(clone.childNodes);
+    return arrayFrom(clone.childNodes);
   }
 
   return clone instanceof NodeList || isArray(clone)
-    ? Array.from(clone)
+    ? arrayFrom(clone)
     : [clone];
 }
 
@@ -280,9 +290,7 @@ export function ViewDirective(
         let configUpdateVersion = 0;
 
         const parentFqn =
-          (parse("$cfg.viewDecl.$context.name")(inherited) as
-            | string
-            | undefined) || inherited.$ngView.fqn;
+          inherited.$cfg.viewDecl.$context.name || inherited.$ngView.fqn;
 
         const activeNgView: ActiveNgView = {
           id: directive.count++, // Global sequential ID for ng-view tags added to DOM
@@ -291,18 +299,13 @@ export function ViewDirective(
           config: null, // The active ViewConfig loaded for this ng-view
           configUpdated: configUpdatedCallback, // Called when the matching ViewConfig changes
           get creationContext(): ViewContext {
-            // The context in which this ng-view "tag" was created
-            const fromParentTagConfig = parse("$cfg.viewDecl.$context")(
-              inherited,
-            ) as ViewContext | undefined;
-
             // Inherit the parent view context for nested ng-view elements.
-            const fromParentTag = parse("$ngView.creationContext")(
-              inherited,
-            ) as ViewContext | undefined;
+            const fromParentTag = inherited.$ngView.creationContext as
+              | ViewContext
+              | undefined;
 
             return (
-              fromParentTagConfig ||
+              inherited.$cfg.viewDecl.$context ||
               fromParentTag ||
               rootData.$cfg.viewDecl.$context
             );
@@ -460,10 +463,6 @@ export function ViewDirectiveFill(
   $transitions: ng.TransitionService,
   $injector: ng.InjectorService,
 ): ng.Directive {
-  const getControllerAs = parse("viewDecl.controllerAs");
-
-  const getResolveAs = parse("viewDecl.resolveAs");
-
   return {
     priority: -400,
     compile(tElement: HTMLElement) {
@@ -503,9 +502,9 @@ export function ViewDirectiveFill(
 
         const { controller } = cfg;
 
-        const controllerAs = getControllerAs(cfg);
+        const { controllerAs } = cfg.viewDecl;
 
-        const resolveAs = getResolveAs(cfg);
+        const { resolveAs } = cfg.viewDecl;
 
         const locals = resolveCtx ? getLocals(resolveCtx) : undefined;
 
@@ -533,7 +532,7 @@ export function ViewDirectiveFill(
           // $view.componentLoaded(controllerInstance, { $scope: scope, $element: $element });
           // scope.$on('$destroy', () => $view.componentUnloaded(controllerInstance, { $scope: scope, $element: $element }));
           setCacheData($element, "$ngControllerController", controllerInstance);
-          Array.from($element.children).forEach((ell) => {
+          arrayFrom($element.children).forEach((ell) => {
             setCacheData(ell, "$ngControllerController", controllerInstance);
           });
           registerControllerCallbacks(
@@ -560,7 +559,7 @@ export function ViewDirectiveFill(
           const tagRegexp = new RegExp(`^(x-|data-)?${kebobName}$`, "i");
 
           const getComponentController = () => {
-            const candidates = Array.from($element.querySelectorAll("*"));
+            const candidates = arrayFrom($element.querySelectorAll("*"));
 
             const directiveEl = candidates.find(
               (el) => el.tagName && tagRegexp.exec(el.tagName),
@@ -671,7 +670,7 @@ function registerControllerCallbacks(
   if (isFunction(onInit) && !cfg.viewDecl.component) {
     onInit();
   }
-  const viewState = (tail(cfg.path) as any).state.self;
+  const viewState = (cfg.path[cfg.path.length - 1] as any).state.self;
 
   const hookOptions = { bind: controllerInstance };
 
@@ -716,54 +715,67 @@ function registerControllerCallbacks(
 
       const fromParams = $transition$.params("from");
 
-      const getNodeSchema = (node: { paramSchema: any }) => node.paramSchema;
-
       const treeChanges = $transition$ && $transition$.treeChanges;
 
-      const toNodes = isFunction(treeChanges)
-        ? (treeChanges.call($transition$, "to") ?? [])
-        : [];
+      const toNodes = (
+        isFunction(treeChanges)
+          ? (treeChanges.call($transition$, "to") ?? [])
+          : []
+      ) as PathNode[];
 
-      const fromNodes = isFunction(treeChanges)
-        ? (treeChanges.call($transition$, "from") ?? [])
-        : [];
+      const fromNodes = (
+        isFunction(treeChanges)
+          ? (treeChanges.call($transition$, "from") ?? [])
+          : []
+      ) as PathNode[];
 
-      const toSchema = (toNodes as PathNode[])
-        .map(getNodeSchema)
-        .reduce(unnestR, []);
+      const toSchema: Array<{
+        id: string | number;
+        type: { equals: (a: unknown, b: unknown) => boolean };
+      }> = [];
 
-      const fromSchema = (fromNodes as PathNode[])
-        .map(getNodeSchema)
-        .reduce(unnestR, []);
+      toNodes.forEach((node) => {
+        node.paramSchema.forEach((param) => {
+          toSchema.push(param);
+        });
+      });
+
+      const fromSchema: Array<{
+        id: string | number;
+        type: { equals: (a: unknown, b: unknown) => boolean };
+      }> = [];
+
+      fromNodes.forEach((node) => {
+        node.paramSchema.forEach((param) => {
+          fromSchema.push(param);
+        });
+      });
 
       // Find the to params that have different values than the from params
-      const changedToParams = toSchema.filter(
-        (param: {
-          id: string | number;
-          type: { equals: (a: unknown, b: unknown) => boolean };
-        }) => {
-          const idx = fromSchema.indexOf(param);
+      const changedToParams: Array<{
+        id: string | number;
+        type: { equals: (a: unknown, b: unknown) => boolean };
+      }> = [];
 
-          return (
-            idx === -1 ||
-            !fromSchema[idx].type.equals(
-              toParams[param.id],
-              fromParams[param.id],
-            )
-          );
-        },
-      );
+      toSchema.forEach((param) => {
+        const idx = fromSchema.indexOf(param);
+
+        if (
+          idx === -1 ||
+          !fromSchema[idx].type.equals(toParams[param.id], fromParams[param.id])
+        ) {
+          changedToParams.push(param);
+        }
+      });
 
       // Only trigger callback if a to param has changed or is new
       if (changedToParams.length) {
-        const changedKeys = changedToParams.map(
-          (x: { id: string | number }) => x.id,
-        );
-
         // Filter the params to only changed/new to params.  `$transition$.params()` may be used to get all params.
         const newValues: Record<string | number, unknown> = {};
 
-        changedKeys.forEach((key: string | number) => {
+        changedToParams.forEach((param) => {
+          const key = param.id;
+
           if (key in toParams) newValues[key] = toParams[key];
         });
         onParamsChanged.call(controllerInstance, newValues, $transition$);

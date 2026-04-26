@@ -1,4 +1,4 @@
-import { defaults, removeFrom } from "../../shared/common.ts";
+import { defaults } from "../../shared/common.ts";
 import {
   assign,
   isDefined,
@@ -288,7 +288,11 @@ export class StateProvider {
     this._invalidCallbacks.push(callback);
 
     return () => {
-      removeFrom(this._invalidCallbacks, callback);
+      const index = this._invalidCallbacks.indexOf(callback);
+
+      if (index !== -1) {
+        this._invalidCallbacks.splice(index, 1);
+      }
     };
   }
 

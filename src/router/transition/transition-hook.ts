@@ -1,6 +1,6 @@
-import { defaults } from "../../shared/common.ts";
 import { isPromise } from "../../shared/predicates.ts";
 import { fnToString, maxLength } from "../../shared/strings.ts";
+import { assign } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import { Rejection } from "./reject-factory.ts";
 import type { StateDeclaration } from "../state/interface.ts";
@@ -78,12 +78,15 @@ export class TransitionHook {
    * Runs hooks in sequence, waiting for each async hook before invoking the next.
    */
   static chain(hooks: TransitionHook[], waitFor?: Promise<any>): Promise<any> {
-    const createHookChainR = (
-      prev: Promise<any>,
-      nextHook: TransitionHook,
-    ): Promise<any> => prev.then(() => nextHook.invokeHook());
+    let promise = waitFor || Promise.resolve();
 
-    return hooks.reduce(createHookChainR, waitFor || Promise.resolve());
+    for (let i = 0; i < hooks.length; i++) {
+      const hook = hooks[i];
+
+      promise = promise.then(() => hook.invokeHook());
+    }
+
+    return promise;
   }
 
   static invokeHooks(
@@ -109,7 +112,9 @@ export class TransitionHook {
   }
 
   static runAllHooks(hooks: TransitionHook[]): void {
-    hooks.forEach((hook) => hook.invokeHook());
+    for (let i = 0; i < hooks.length; i++) {
+      hooks[i].invokeHook();
+    }
   }
 
   /**
@@ -125,7 +130,7 @@ export class TransitionHook {
     this.transition = transition;
     this.stateContext = stateContext;
     this.registeredHook = registeredHook;
-    this.options = defaults(options, defaultOptions) as TransitionHookOptions;
+    this.options = assign({}, defaultOptions, options) as TransitionHookOptions;
     this._type = registeredHook._eventType;
     this.isSuperseded = () =>
       this._type.hookPhase === TransitionHookPhase._RUN &&

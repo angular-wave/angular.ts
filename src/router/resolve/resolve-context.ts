@@ -1,5 +1,5 @@
 import { stringify } from "../../shared/strings.ts";
-import { isUndefined } from "../../shared/utils.ts";
+import { isArray, isUndefined } from "../../shared/utils.ts";
 import { subPath } from "../path/path-utils.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
@@ -212,9 +212,7 @@ export class ResolveContext {
       latestByToken.set(candidate.token, candidate);
     }
 
-    const deps = Array.isArray(resolvable.deps)
-      ? resolvable.deps
-      : [resolvable.deps];
+    const deps = isArray(resolvable.deps) ? resolvable.deps : [resolvable.deps];
 
     const dependencies: Resolvable[] = [];
 

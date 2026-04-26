@@ -18,6 +18,7 @@ import { identifierForController } from "../controller/controller.ts";
 import { createScope, type Scope } from "../scope/scope.ts";
 import {
   assign,
+  arrayFrom,
   assertArg,
   assertNotHasOwnProperty,
   deProxy,
@@ -2797,16 +2798,14 @@ export class CompileProvider {
             if (isTextNode(content)) {
               templateNodes = [];
             } else if (isString(content)) {
-              templateNodes = Array.from(
-                createNodelistFromHTML(content),
-              ).filter(
+              templateNodes = arrayFrom(createNodelistFromHTML(content)).filter(
                 (node): node is Element =>
                   node.nodeType !== NodeType._COMMENT_NODE &&
                   node.nodeType !== NodeType._TEXT_NODE &&
                   node.nodeType === NodeType._ELEMENT_NODE,
               );
             } else {
-              templateNodes = Array.from(
+              templateNodes = arrayFrom(
                 wrapTemplate(
                   delayedState._templateNamespace,
                   trim(content),
@@ -3754,7 +3753,7 @@ export class CompileProvider {
                 }
 
                 if (isString($template)) {
-                  $template = Array.from(
+                  $template = arrayFrom(
                     createNodelistFromHTML($template),
                   ).filter((x) => x.nodeType === NodeType._ELEMENT_NODE);
                 }

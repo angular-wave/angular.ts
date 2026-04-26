@@ -1,5 +1,5 @@
 import type { AnimationOptions } from "./interface.ts";
-import { assign, isArray, isString } from "../shared/utils.ts";
+import { arrayFrom, assign, isArray, isString } from "../shared/utils.ts";
 import { NodeType } from "../shared/node.ts";
 
 export const ADD_CLASS_SUFFIX = "-add";
@@ -56,7 +56,7 @@ export function stripCommentsFromElement(
   element: NodeList | Node,
 ): Node[] | Node | undefined {
   if (element instanceof NodeList) {
-    return Array.from(element).filter(
+    return arrayFrom(element).filter(
       (x) => x.nodeType === NodeType._ELEMENT_NODE,
     );
   } else if (element.nodeType === NodeType._ELEMENT_NODE) {

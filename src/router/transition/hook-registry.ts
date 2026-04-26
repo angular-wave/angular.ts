@@ -1,4 +1,4 @@
-import { map, removeFrom, tail } from "../../shared/common.ts";
+import { removeFrom } from "../../shared/common.ts";
 import { assign, isFunction, isString, values } from "../../shared/utils.ts";
 import { Glob } from "../glob/glob.ts";
 import type { PathNode } from "../path/path-node.ts";
@@ -107,16 +107,30 @@ export class RegisteredHook {
   ): PathNode[] | null {
     if (criterion === true) return nodes;
 
-    const matching = nodes.filter((node) =>
-      matchState(node.state, criterion, transition),
-    );
+    const matching: PathNode[] = [];
+
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+
+      if (matchState(node.state, criterion, transition)) {
+        matching.push(node);
+      }
+    }
 
     return matching.length ? matching : null;
   }
 
   /** @internal */
   _getDefaultMatchCriteria(): HookMatchCriteria {
-    return map(this.tranSvc._getPathTypes(), () => true) as HookMatchCriteria;
+    const pathTypes = this.tranSvc._getPathTypes();
+
+    const criteria = {} as HookMatchCriteria;
+
+    for (const key in pathTypes) {
+      criteria[key] = true;
+    }
+
+    return criteria;
   }
 
   /** @internal */
@@ -129,12 +143,18 @@ export class RegisteredHook {
       this.matchCriteria,
     );
 
-    return values(this.tranSvc._getPathTypes()).reduce((mn, pathType) => {
+    const pathTypes = values(this.tranSvc._getPathTypes());
+
+    const matchingNodes = {} as IMatchingNodes;
+
+    for (let i = 0; i < pathTypes.length; i++) {
+      const pathType = pathTypes[i];
+
       const isStateHook = pathType.scope === TransitionHookScope._STATE;
 
       const path = (treeChanges[pathType.name] || []) as PathNode[];
 
-      const transitionNode = tail(path) as PathNode | undefined;
+      const transitionNode = path.length ? path[path.length - 1] : undefined;
 
       const nodes: PathNode[] = isStateHook
         ? path
@@ -142,14 +162,14 @@ export class RegisteredHook {
           ? [transitionNode]
           : [];
 
-      mn[pathType.name] = this._matchingNodes(
+      matchingNodes[pathType.name] = this._matchingNodes(
         nodes,
         criteria[pathType.name] as HookMatchCriterion,
         transition,
       ) as PathNode[];
+    }
 
-      return mn;
-    }, {} as IMatchingNodes);
+    return matchingNodes;
   }
 
   matches(
@@ -158,7 +178,16 @@ export class RegisteredHook {
   ): IMatchingNodes | null {
     const matches = this._getMatchingNodes(treeChanges, transition);
 
-    const allMatched = values(matches).every((x) => x);
+    const matchedPaths = values(matches);
+
+    let allMatched = true;
+
+    for (let i = 0; i < matchedPaths.length; i++) {
+      if (!matchedPaths[i]) {
+        allMatched = false;
+        break;
+      }
+    }
 
     return allMatched ? matches : null;
   }

@@ -4,7 +4,9 @@ import { NodeType } from "../../shared/node.ts";
 import { emptyElement, removeElement } from "../../shared/dom.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import {
+  arrayFrom,
   callBackAfterFirst,
+  isArray,
   isDefined,
   isInstanceOf,
   isObject,
@@ -265,7 +267,7 @@ export function createHttpDirective(
 
             nodes =
               compiled instanceof DocumentFragment
-                ? Array.from(compiled.childNodes)
+                ? arrayFrom(compiled.childNodes)
                 : [compiled];
           }
 
@@ -303,7 +305,7 @@ export function createHttpDirective(
               parent.insertBefore(placeholder, target.nextSibling);
 
               animate!.leave(target).done(() => {
-                const insertedNodes = Array.from(frag.childNodes);
+                const insertedNodes = arrayFrom(frag.childNodes);
 
                 // Insert each node in order
                 for (const x of insertedNodes) {
@@ -445,7 +447,7 @@ export function createHttpDirective(
               if (animationEnabled) {
                 if (
                   content &&
-                  !Array.isArray(content) &&
+                  !isArray(content) &&
                   content.nodeType !== NodeType._TEXT_NODE
                 ) {
                   animate!.leave(content as Element).done(() => {
@@ -459,7 +461,7 @@ export function createHttpDirective(
 
                   if (
                     content &&
-                    !Array.isArray(content) &&
+                    !isArray(content) &&
                     content.nodeType === NodeType._TEXT_NODE
                   ) {
                     emptyElement(target);

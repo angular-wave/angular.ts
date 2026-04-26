@@ -1,6 +1,5 @@
 import {
   assign,
-  createObject,
   entries,
   isArray,
   isDate,
@@ -84,7 +83,7 @@ export function inherit<T extends object, U extends object>(
   parent: T,
   extra?: U,
 ): T & U {
-  const newObj = createObject(parent) as T & U;
+  const newObj = Object.create(parent) as T & U;
 
   if (extra) {
     assign(newObj, extra);
@@ -299,9 +298,7 @@ export const unnestR = (memo: any[], elem: any): any[] => memo.concat(elem);
  * input.reduce(flattenR, []) // [ "a", "b", "c", "d", "double", "nested" ]
  */
 export const flattenR = (memo: any[], elem: any): any[] =>
-  Array.isArray(elem)
-    ? memo.concat(elem.reduce(flattenR, []))
-    : pushR(memo, elem);
+  isArray(elem) ? memo.concat(elem.reduce(flattenR, [])) : pushR(memo, elem);
 
 /**
  * Reduce function that pushes an object to an array, then returns the array.

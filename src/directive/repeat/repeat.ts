@@ -1,7 +1,9 @@
 import {
   callBackOnce,
+  arrayFrom,
   hasOwn,
   hashKey,
+  isArray,
   isArrayLike,
   isDefined,
   minErr,
@@ -132,22 +134,22 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
   }
 
   function getBlockStart(block: RepeatBlock) {
-    return Array.isArray(block._clone) ? block._clone[0] : block._clone;
+    return isArray(block._clone) ? block._clone[0] : block._clone;
   }
 
   function getBlockEnd(block: RepeatBlock) {
-    return Array.isArray(block._clone)
+    return isArray(block._clone)
       ? block._clone[block._clone.length - 1]
       : block._clone;
   }
 
   function normalizeCloneNodes(clone: unknown): RepeatClone {
     if (clone instanceof DocumentFragment) {
-      return Array.from(clone.childNodes);
+      return arrayFrom(clone.childNodes);
     }
 
-    if (clone instanceof NodeList || Array.isArray(clone)) {
-      return Array.from(clone);
+    if (clone instanceof NodeList || isArray(clone)) {
+      return arrayFrom(clone);
     }
 
     return clone as Node;
@@ -477,11 +479,11 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
             return false;
           }
 
-          const firstCloneNodes = Array.isArray(firstBlock._clone)
+          const firstCloneNodes = isArray(firstBlock._clone)
             ? firstBlock._clone
             : [firstBlock._clone];
 
-          const secondCloneNodes = Array.isArray(secondBlock._clone)
+          const secondCloneNodes = isArray(secondBlock._clone)
             ? secondBlock._clone
             : [secondBlock._clone];
 
@@ -781,9 +783,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
             for (const blockKey in lastBlockMap) {
               block = lastBlockMap[blockKey];
               const blockNodes = getBlockNodes(
-                Array.isArray(block._clone)
-                  ? block._clone
-                  : [block._clone as Node],
+                isArray(block._clone) ? block._clone : [block._clone as Node],
               );
 
               elementsToRemove = getBlockStart(block) as Element;
@@ -863,7 +863,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                   continue;
                 }
 
-                const isExistingCloneArray = Array.isArray(existingClone);
+                const isExistingCloneArray = isArray(existingClone);
 
                 const blockStart = isExistingCloneArray
                   ? existingClone[0]
@@ -916,7 +916,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                 $transclude?.((clone: RepeatClone, scope: RepeatScope) => {
                   const normalizedClone = normalizeCloneNodes(clone);
 
-                  const cloneNodes = Array.isArray(normalizedClone)
+                  const cloneNodes = isArray(normalizedClone)
                     ? normalizedClone
                     : [normalizedClone];
 

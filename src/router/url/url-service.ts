@@ -236,7 +236,9 @@ export class UrlService {
   onChange(callback: (evt: ng.ScopeEvent) => void): () => void {
     this._urlListeners.push(callback);
 
-    return () => removeFrom(this._urlListeners, callback);
+    return () => {
+      removeFrom(this._urlListeners, callback);
+    };
   }
 
   /**

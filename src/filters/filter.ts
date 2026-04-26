@@ -1,5 +1,6 @@
 import {
   equals,
+  arrayFrom,
   hasCustomToString,
   isArray,
   isArrayLike,
@@ -78,7 +79,7 @@ export function filterFilter() {
         return array;
     }
 
-    return Array.from(array as ArrayLike<any>).filter(predicateFn);
+    return arrayFrom(array as ArrayLike<any>).filter(predicateFn);
   };
 }
 

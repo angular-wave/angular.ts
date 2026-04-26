@@ -1,6 +1,6 @@
-import { inherit } from "../../shared/common.ts";
 import {
   assign,
+  createObject,
   entries,
   hasOwn,
   isArray,
@@ -70,29 +70,25 @@ function buildParams(
 
   const params: Record<string, any> = {};
 
-  for (let i = 0; i < urlParams.length; i++) {
-    const param = urlParams[i];
-
+  urlParams.forEach((param: { id: string }) => {
     params[param.id] = param;
-  }
+  });
 
   const urlParamIds = new Set<string>();
 
-  for (let i = 0; i < urlParams.length; i++) {
-    urlParamIds.add(urlParams[i].id);
-  }
+  urlParams.forEach((param: { id: string }) => {
+    urlParamIds.add(param.id);
+  });
 
   const paramConfigs = state.params || {};
 
   const paramConfigKeys = keys(paramConfigs);
 
-  for (let i = 0; i < paramConfigKeys.length; i++) {
-    const id = paramConfigKeys[i];
-
+  paramConfigKeys.forEach((id) => {
     if (!urlParamIds.has(id)) {
       params[id] = paramFactory.fromConfig(id, null, state.self);
     }
-  }
+  });
 
   return params;
 }
@@ -143,13 +139,11 @@ function viewsBuilder(
 
   const defaultViewConfig: Record<string, any> = {};
 
-  for (let i = 0; i < allViewKeys.length; i++) {
-    const key = allViewKeys[i];
-
+  allViewKeys.forEach((key) => {
     if (isDefined(state[key])) {
       defaultViewConfig[key] = state[key];
     }
-  }
+  });
 
   const viewsObject = (state.views || {
     $default: defaultViewConfig,
@@ -157,9 +151,7 @@ function viewsBuilder(
 
   const viewEntries = entries(viewsObject);
 
-  for (let i = 0; i < viewEntries.length; i++) {
-    const [entryName, entryConfig] = viewEntries[i];
-
+  viewEntries.forEach(([entryName, entryConfig]) => {
     let name = entryName as string;
 
     let config = entryConfig as Record<string, any> | string;
@@ -191,7 +183,7 @@ function viewsBuilder(
     config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
 
     views[name] = config;
-  }
+  });
 
   return views;
 }
@@ -289,9 +281,9 @@ function resolvablesBuilder(
   const resolvables: Resolvable[] = [];
 
   if (isArray(decl)) {
-    for (let i = 0; i < decl.length; i++) {
-      resolvables.push(literalToResolvable(decl[i]));
-    }
+    decl.forEach((literal) => {
+      resolvables.push(literalToResolvable(literal));
+    });
 
     return resolvables;
   }
@@ -300,11 +292,9 @@ function resolvablesBuilder(
 
   const resolveKeys = keys(resolveObj);
 
-  for (let i = 0; i < resolveKeys.length; i++) {
-    const token = resolveKeys[i];
-
+  resolveKeys.forEach((token) => {
     resolvables.push(valueToResolvable(token, resolveObj[token], strictDi));
-  }
+  });
 
   return resolvables;
 }
@@ -413,7 +403,10 @@ export class StateBuilder {
     ) as any;
 
     if (state.parent && state.parent.data) {
-      state.data = state.self.data = inherit(state.parent.data, state.data);
+      state.data = state.self.data = assign(
+        createObject(state.parent.data),
+        state.data,
+      );
     }
     state.path = state.parent
       ? (state.parent.path || []).concat(state)

@@ -3,6 +3,7 @@ import {
   assign,
   assert,
   hasOwn,
+  isArray,
   isFunction,
   isNullOrUndefined,
   isObject,
@@ -120,7 +121,7 @@ export class Resolvable {
    * Returns a readable description of the resolvable and its dependencies.
    */
   toString(): string {
-    const deps = Array.isArray(this.deps) ? this.deps : [this.deps];
+    const deps = isArray(this.deps) ? this.deps : [this.deps];
 
     return `Resolvable(token: ${stringify(this.token)}, requires: [${deps.map(stringify)}])`;
   }

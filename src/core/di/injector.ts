@@ -310,7 +310,7 @@ export function createInjector(
     let moduleRunBlocks: any[] = [];
 
     modules.forEach((module: ModuleLike) => {
-      const moduleKey: string | Function = Array.isArray(module)
+      const moduleKey: string | Function = isArray(module)
         ? module[module.length - 1]
         : module;
 

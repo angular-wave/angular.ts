@@ -1,13 +1,5 @@
 import { stringify } from "../../shared/strings.ts";
-import {
-  anyTrueR,
-  arrayTuples,
-  omit,
-  tail,
-  unnestR,
-} from "../../shared/common.ts";
 import { assign, assert, isObject, isUndefined } from "../../shared/utils.ts";
-import { is, propEq, val } from "../../shared/hof.ts";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import {
   registerHook,
@@ -175,7 +167,7 @@ export class Transition {
       throw new Error(targetState.error());
     }
     // current() is assumed to come from targetState.options, but provide a naive implementation otherwise.
-    this._options = assign({ current: val(this) }, targetState.options());
+    this._options = assign({ current: () => this }, targetState.options());
     this.$id = transitionService._transitionCount++;
     const toPath = buildToPath(fromPath, targetState);
 
@@ -360,7 +352,13 @@ export class Transition {
   }
 
   applyViewConfigs() {
-    const enteringStates = this._treeChanges.entering.map((node) => node.state);
+    const enteringStates: StateObject[] = [];
+
+    const { entering } = this._treeChanges;
+
+    for (let i = 0; i < entering.length; i++) {
+      enteringStates.push(entering[i].state);
+    }
 
     applyViewConfigs(
       this._transitionService._view,
@@ -373,7 +371,11 @@ export class Transition {
    * @returns {StateObject} the internal from [State] object
    */
   $from() {
-    const fromNode = tail(this._treeChanges.from) as PathNode | undefined;
+    const fromPath = this._treeChanges.from;
+
+    const fromNode = fromPath.length
+      ? (fromPath[fromPath.length - 1] as PathNode)
+      : undefined;
 
     return fromNode?.state as StateObject;
   }
@@ -382,7 +384,11 @@ export class Transition {
    * @returns {StateObject} the internal to [State] object
    */
   $to() {
-    const toNode = tail(this._treeChanges.to) as PathNode | undefined;
+    const toPath = this._treeChanges.to;
+
+    const toNode = toPath.length
+      ? (toPath[toPath.length - 1] as PathNode)
+      : undefined;
 
     return toNode?.state as StateObject;
   }
@@ -427,11 +433,13 @@ export class Transition {
   params(pathname = "to") {
     const path = (this._treeChanges[pathname] || []) as PathNode[];
 
-    return Object.freeze(
-      path
-        .map((x) => x.paramValues)
-        .reduce((acc, obj) => ({ ...acc, ...obj }), {}),
-    );
+    const params: RawParams = {};
+
+    for (let i = 0; i < path.length; i++) {
+      assign(params, path[i].paramValues);
+    }
+
+    return Object.freeze(params);
   }
 
   /**
@@ -507,9 +515,10 @@ export class Transition {
     if (state === void 0) {
       state = "";
     }
-    resolvable = is(Resolvable)(resolvable)
-      ? resolvable
-      : new Resolvable(resolvable);
+    resolvable =
+      resolvable instanceof Resolvable
+        ? resolvable
+        : new Resolvable(resolvable);
     const stateName = typeof state === "string" ? state : state.name;
 
     const topath = this._treeChanges.to || [];
@@ -602,7 +611,7 @@ export class Transition {
    * @returns an array of states that will be entered during this transition.
    */
   entering() {
-    return this._treeChanges.entering.map((node) => node.state.self);
+    return pathStates(this._treeChanges.entering);
   }
 
   /**
@@ -611,7 +620,11 @@ export class Transition {
    * @returns {StateDeclaration[]} an array of states that will be exited during this transition.
    */
   exiting(): StateDeclaration[] {
-    return this._treeChanges.exiting.map((node) => node.state.self).reverse();
+    const states = pathStates(this._treeChanges.exiting);
+
+    states.reverse();
+
+    return states;
   }
 
   /**
@@ -621,7 +634,7 @@ export class Transition {
    *    exited during this Transition
    */
   retained(): StateDeclaration[] {
-    return this._treeChanges.retained.map((node) => node.state.self);
+    return pathStates(this._treeChanges.retained);
   }
 
   /**
@@ -637,11 +650,23 @@ export class Transition {
    * @returns {ViewConfig[]} a list of ViewConfig objects for the given path.
    */
   views(pathname = "entering", state?: StateObject): ViewConfig[] {
-    let path = (this._treeChanges[pathname] || []) as PathNode[];
+    const path = (this._treeChanges[pathname] || []) as PathNode[];
 
-    path = !state ? path : (path.filter(propEq("state", state)) as PathNode[]);
+    const viewConfigs: ViewConfig[] = [];
 
-    return path.map((x) => x._views || []).reduce(unnestR, []);
+    for (let i = 0; i < path.length; i++) {
+      const node = path[i];
+
+      if (state && node.state !== state) continue;
+
+      const views = node._views || [];
+
+      for (let j = 0; j < views.length; j++) {
+        viewConfigs.push(views[j]);
+      }
+    }
+
+    return viewConfigs;
   }
 
   /**
@@ -735,16 +760,24 @@ export class Transition {
     );
 
     // Find any "entering" nodes in the redirect path that match the original path and aren't being reloaded
-    const matchingEnteringNodes = params.filter(
-      (x: PathNode) => !nodeIsReloading(targetState.options().reloadState)(x),
-    );
+    const matchingEnteringNodes: PathNode[] = [];
+
+    const isReloading = nodeIsReloading(targetState.options().reloadState);
+
+    for (let i = 0; i < params.length; i++) {
+      if (!isReloading(params[i])) {
+        matchingEnteringNodes.push(params[i]);
+      }
+    }
 
     // Use the existing (possibly pre-resolved) resolvables for the matching entering nodes.
-    matchingEnteringNodes.forEach((node, idx) => {
-      if (originalEnteringNodes[idx]) {
-        node.resolvables = originalEnteringNodes[idx].resolvables;
+    for (let i = 0; i < matchingEnteringNodes.length; i++) {
+      const node = matchingEnteringNodes[i];
+
+      if (originalEnteringNodes[i]) {
+        node.resolvables = originalEnteringNodes[i].resolvables;
       }
-    });
+    }
 
     return newTransition;
   }
@@ -763,23 +796,32 @@ export class Transition {
     // If to/from path lengths differ
     if (tc.to.length !== tc.from.length) return undefined;
     // If the to/from paths are different
-    const pathsDiffer = arrayTuples(tc.to, tc.from)
-      .map((tuple) => tuple[0].state !== tuple[1].state)
-      .reduce(anyTrueR, false);
+    let pathsDiffer = false;
+
+    for (let i = 0; i < tc.to.length; i++) {
+      if (tc.to[i].state !== tc.from[i].state) {
+        pathsDiffer = true;
+        break;
+      }
+    }
 
     if (pathsDiffer) return undefined;
-    // Find any parameter values that differ
-    const nodeSchemas = tc.to.map((node) => node.paramSchema);
 
-    const [toValues, fromValues] = [tc.to, tc.from].map((path) =>
-      path.map((x) => x.paramValues),
-    );
+    const changes: Param[] = [];
 
-    const tuples = arrayTuples(nodeSchemas, toValues, fromValues);
+    for (let i = 0; i < tc.to.length; i++) {
+      const nodeChanges = Param.changed(
+        tc.to[i].paramSchema,
+        tc.to[i].paramValues,
+        tc.from[i].paramValues,
+      );
 
-    return tuples
-      .map((tuple) => Param.changed(tuple[0], tuple[1], tuple[2]))
-      .reduce(unnestR, []);
+      for (let j = 0; j < nodeChanges.length; j++) {
+        changes.push(nodeChanges[j]);
+      }
+    }
+
+    return changes;
   }
 
   /**
@@ -792,9 +834,13 @@ export class Transition {
   dynamic() {
     const changes = this._changedParams();
 
-    return !changes
-      ? false
-      : changes.map((x: Param) => x.dynamic).reduce(anyTrueR, false);
+    if (!changes) return false;
+
+    for (let i = 0; i < changes.length; i++) {
+      if (changes[i].dynamic) return true;
+    }
+
+    return false;
   }
 
   /**
@@ -818,12 +864,17 @@ export class Transition {
       if (pathA.length !== pathB.length) return false;
       const pathPrefix = matching(pathA, pathB);
 
-      return (
-        pathA.length ===
-        pathPrefix.filter(
-          (node) => !reloadState || !node.state.includes[reloadState.name],
-        ).length
-      );
+      let retainedCount = 0;
+
+      for (let i = 0; i < pathPrefix.length; i++) {
+        const node = pathPrefix[i];
+
+        if (!reloadState || !node.state.includes[reloadState.name]) {
+          retainedCount++;
+        }
+      }
+
+      return pathA.length === retainedCount;
     };
 
     const newTC = this._treeChanges;
@@ -869,9 +920,9 @@ export class Transition {
         TransitionHookPhase._SUCCESS,
       );
 
-      hooks.forEach((hook: TransitionHook) => {
-        hook.invokeHook();
-      });
+      for (let i = 0; i < hooks.length; i++) {
+        hooks[i].invokeHook();
+      }
     };
 
     const transitionError = (reason: Rejection) => {
@@ -880,7 +931,9 @@ export class Transition {
       this._error = reason;
       const hooks = getHooksFor(TransitionHookPhase._ERROR);
 
-      hooks.forEach((hook: TransitionHook) => hook.invokeHook());
+      for (let i = 0; i < hooks.length; i++) {
+        hooks[i].invokeHook();
+      }
     };
 
     const runTransition = () => {
@@ -954,14 +1007,26 @@ export class Transition {
 
     const values = this.params();
 
-    const invalidParams = paramDefs.filter(
-      (param: Param) => !param.validates(values[param.id]),
-    );
+    const invalidParams: Param[] = [];
+
+    for (let i = 0; i < paramDefs.length; i++) {
+      const param = paramDefs[i];
+
+      if (!param.validates(values[param.id])) {
+        invalidParams.push(param);
+      }
+    }
 
     if (invalidParams.length) {
-      const invalidValues = invalidParams
-        .map((param: Param) => `[${param.id}:${stringify(values[param.id])}]`)
-        .join(", ");
+      const invalidValueParts: string[] = [];
+
+      for (let i = 0; i < invalidParams.length; i++) {
+        const param = invalidParams[i];
+
+        invalidValueParts.push(`[${param.id}:${stringify(values[param.id])}]`);
+      }
+
+      const invalidValues = invalidValueParts.join(", ");
 
       const detail = `The following parameter values are not valid for state '${state.name}': ${invalidValues}`;
 
@@ -983,20 +1048,27 @@ export class Transition {
 
     const toStateOrName = this.to();
 
-    const avoidEmptyHash = (params: RawParams) =>
-      params["#"] !== null && params["#"] !== undefined
-        ? params
-        : omit(params, ["#"]);
+    const avoidEmptyHash = (params: RawParams) => {
+      if (params["#"] !== null && params["#"] !== undefined) {
+        return params;
+      }
+
+      const cleanParams: RawParams = {};
+
+      for (const key in params) {
+        if (key !== "#") {
+          cleanParams[key] = params[key];
+        }
+      }
+
+      return cleanParams;
+    };
 
     // (X) means the to state is invalid.
     const id = this.$id,
       from = isObject(fromStateOrName) ? fromStateOrName.name : fromStateOrName,
       fromParams = stringify(
-        avoidEmptyHash(
-          this._treeChanges.from
-            .map((x) => x.paramValues)
-            .reduce((acc, obj) => ({ ...acc, ...obj }), {}),
-        ),
+        avoidEmptyHash(pathParams(this._treeChanges.from)),
       ),
       toValid = this.valid() ? "" : "(X) ",
       to = isObject(toStateOrName) ? toStateOrName.name : toStateOrName,
@@ -1004,6 +1076,26 @@ export class Transition {
 
     return `Transition#${id}( '${from}'${fromParams} -> ${toValid}'${to}'${toParams} )`;
   }
+}
+
+function pathStates(path: PathNode[]): StateDeclaration[] {
+  const states: StateDeclaration[] = [];
+
+  for (let i = 0; i < path.length; i++) {
+    states.push(path[i].state.self);
+  }
+
+  return states;
+}
+
+function pathParams(path: PathNode[]): RawParams {
+  const params: RawParams = {};
+
+  for (let i = 0; i < path.length; i++) {
+    assign(params, path[i].paramValues);
+  }
+
+  return params;
 }
 
 Transition.diToken = Transition;

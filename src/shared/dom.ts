@@ -1,4 +1,11 @@
-import { assign, hasOwn, isArray, isDefined, isObject } from "./utils.js";
+import {
+  arrayFrom,
+  assign,
+  hasOwn,
+  isArray,
+  isDefined,
+  isObject,
+} from "./utils.js";
 import { NodeType } from "./node.ts";
 import { $injectTokens } from "../injection-tokens.ts";
 import type { ExpandoStore } from "../interface.ts";
@@ -207,7 +214,7 @@ export function dealoc(
     element instanceof NodeList ||
     element instanceof HTMLCollection
   ) {
-    const nodes = Array.from(element);
+    const nodes = arrayFrom(element);
 
     for (let i = 0; i < nodes.length; i++) {
       dealoc(nodes[i], onlyDescendants);

@@ -32,6 +32,57 @@ export type { ViewConfig } from "../state/views.ts";
 
 const FQN_MULTIPLIER = 10_000;
 
+function contextDepth(context: ViewContext): number {
+  let cursor: ViewContext | undefined = context;
+
+  let depth = 1;
+
+  while (cursor && cursor.parent) {
+    depth += 1;
+    cursor = cursor.parent;
+  }
+
+  return depth;
+}
+
+function ngViewDepth(
+  cache: Map<ActiveNgView, number>,
+  ngView: ActiveNgView,
+): number {
+  const cached = cache.get(ngView);
+
+  if (cached !== undefined) return cached;
+
+  const computed =
+    ngView.fqn.split(".").length * FQN_MULTIPLIER +
+    contextDepth(ngView.creationContext);
+
+  cache.set(ngView, computed);
+
+  return computed;
+}
+
+function viewConfigDepth(
+  cache: Map<ViewConfig, number>,
+  config: ViewConfig,
+): number {
+  const cached = cache.get(config);
+
+  if (cached !== undefined) return cached;
+
+  let context = config.viewDecl.$context as ViewContext;
+
+  let count = 0;
+
+  while (++count && context.parent) {
+    context = context.parent;
+  }
+
+  cache.set(config, count);
+
+  return count;
+}
+
 /**
  * Tracks active `ng-view` instances and matches them with registered
  * view configs produced during state transitions.
@@ -127,61 +178,18 @@ export class ViewService {
       ngViewsByFqn[ngView.fqn] = ngView;
     }
 
-    const contextDepth = (context: ViewContext): number => {
-      let cursor: ViewContext | undefined = context;
-
-      let depth = 1;
-
-      while (cursor && cursor.parent) {
-        depth += 1;
-        cursor = cursor.parent;
-      }
-
-      return depth;
-    };
-
     const ngViewDepthCache = new Map<ActiveNgView, number>();
-
-    const ngViewDepth = (ngView: ActiveNgView): number => {
-      const cached = ngViewDepthCache.get(ngView);
-
-      if (cached !== undefined) return cached;
-
-      const computed =
-        ngView.fqn.split(".").length * FQN_MULTIPLIER +
-        contextDepth(ngView.creationContext);
-
-      ngViewDepthCache.set(ngView, computed);
-
-      return computed;
-    };
 
     const viewConfigDepthCache = new Map<ViewConfig, number>();
 
-    const viewConfigDepth = (config: ViewConfig): number => {
-      const cached = viewConfigDepthCache.get(config);
-
-      if (cached !== undefined) return cached;
-
-      let context = config.viewDecl.$context as ViewContext;
-
-      let count = 0;
-
-      while (++count && context.parent) {
-        context = context.parent;
-      }
-
-      viewConfigDepthCache.set(config, count);
-
-      return count;
-    };
-
-    this._ngViews.sort((left, right) => ngViewDepth(left) - ngViewDepth(right));
+    this._ngViews.sort(
+      (left, right) =>
+        ngViewDepth(ngViewDepthCache, left) -
+        ngViewDepth(ngViewDepthCache, right),
+    );
 
     for (let i = 0; i < this._ngViews.length; i++) {
       const ngView = this._ngViews[i];
-
-      const matches = ViewService._matches(ngViewsByFqn, ngView);
 
       let selectedViewConfig: ViewConfig | undefined = undefined;
 
@@ -190,9 +198,9 @@ export class ViewService {
       for (let j = 0; j < this._viewConfigs.length; j++) {
         const candidate = this._viewConfigs[j];
 
-        if (!matches(candidate)) continue;
+        if (!ViewService._matches(ngViewsByFqn, ngView, candidate)) continue;
 
-        const candidateDepth = viewConfigDepth(candidate);
+        const candidateDepth = viewConfigDepth(viewConfigDepthCache, candidate);
 
         if (!selectedViewConfig || candidateDepth > bestDepth) {
           selectedViewConfig = candidate;
@@ -236,33 +244,33 @@ export class ViewService {
   static _matches(
     ngViewsByFqn: Record<string, ActiveNgView>,
     ngView: ActiveNgView,
-  ): (viewConfig: ViewConfig) => boolean {
-    const ngViewFqn = ngView.fqn;
+    viewConfig: ViewConfig,
+  ): boolean {
+    if (!viewConfig || !viewConfig.viewDecl) return false;
 
     const ngViewContext = ngView.creationContext;
 
-    return (viewConfig: ViewConfig): boolean => {
-      if (!viewConfig || !viewConfig.viewDecl) return false;
-      const vcName = viewConfig.viewDecl.$ngViewName || "$default";
+    const { viewDecl } = viewConfig;
 
-      const vcContext = viewConfig.viewDecl.$ngViewContextAnchor || "";
+    const vcName = viewDecl.$ngViewName || "$default";
 
-      const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
+    const vcContext = viewDecl.$ngViewContextAnchor || "";
 
-      if (normalizedTarget !== ngViewFqn) return false;
+    const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
 
-      const viewContext = viewConfig.viewDecl.$context as ViewContext;
+    if (normalizedTarget !== ngView.fqn) return false;
 
-      if (
-        !equals(viewContext, ngViewContext) &&
-        vcContext !== ngViewContext.name
-      ) {
-        return false;
-      }
+    const viewContext = viewDecl.$context as ViewContext;
 
-      const childViewFqn = `${normalizedTarget}.${ngView.name}`;
+    if (
+      !equals(viewContext, ngViewContext) &&
+      vcContext !== ngViewContext.name
+    ) {
+      return false;
+    }
 
-      return !ngViewsByFqn[childViewFqn];
-    };
+    const childViewFqn = `${normalizedTarget}.${ngView.name}`;
+
+    return !ngViewsByFqn[childViewFqn];
   }
 }

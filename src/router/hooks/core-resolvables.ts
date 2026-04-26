@@ -1,4 +1,3 @@
-import { uniqR, unnestR } from "../../shared/common.ts";
 import { values } from "../../shared/utils.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import { Transition } from "../transition/transition.ts";
@@ -35,16 +34,33 @@ const TRANSITION_TOKENS = ["$transition$", Transition];
  * falls out of router history, preventing stale retention.
  */
 export function treeChangesCleanup(trans: Transition): void {
-  const nodes = values(trans.treeChanges() as Record<string, PathNode[]>)
-    .reduce(unnestR, [])
-    .reduce(uniqR, []);
+  const paths = values(trans.treeChanges() as Record<string, PathNode[]>);
 
-  const replaceTransitionWithNull = (resolve: Resolvable): Resolvable =>
-    TRANSITION_TOKENS.includes(resolve.token)
-      ? Resolvable.fromData(resolve.token, null)
-      : resolve;
+  const nodes: PathNode[] = [];
 
-  nodes.forEach((node: PathNode) => {
-    node.resolvables = node.resolvables.map(replaceTransitionWithNull);
-  });
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i];
+
+    for (let j = 0; j < path.length; j++) {
+      const node = path[j];
+
+      if (nodes.indexOf(node) === -1) {
+        nodes.push(node);
+      }
+    }
+  }
+
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+
+    const { resolvables } = node;
+
+    for (let j = 0; j < resolvables.length; j++) {
+      const resolve = resolvables[j];
+
+      if (TRANSITION_TOKENS.includes(resolve.token)) {
+        resolvables[j] = Resolvable.fromData(resolve.token, null);
+      }
+    }
+  }
 }

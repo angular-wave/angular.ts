@@ -1,4 +1,4 @@
-import { minErr } from "../../shared/utils.ts";
+import { arrayFrom, isArray, minErr } from "../../shared/utils.ts";
 import { emptyElement, startingTag } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
@@ -94,11 +94,11 @@ export function ngTranscludeDirective(
           }
 
           if (node instanceof DocumentFragment) {
-            return Array.from(node.childNodes);
+            return arrayFrom(node.childNodes);
           }
 
-          return node instanceof NodeList || Array.isArray(node)
-            ? Array.from(node)
+          return node instanceof NodeList || isArray(node)
+            ? arrayFrom(node)
             : [node];
         }
 

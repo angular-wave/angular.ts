@@ -2,7 +2,6 @@ import { StateMatcher } from "./state-matcher.ts";
 import { StateBuilder } from "./state-builder.ts";
 import { StateQueueManager } from "./state-queue-manager.ts";
 import { annotate } from "../../core/di/di.ts";
-import { applyPairs, removeFrom } from "../../shared/common.ts";
 import { ResolveContext } from "../resolve/resolve-context.ts";
 import { isString, keys } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
@@ -88,17 +87,15 @@ export class StateRegistryProvider {
   _annotateDeferredResolvables(strictDi: boolean | undefined): void {
     const states = this.getAll();
 
-    for (let i = 0; i < states.length; i++) {
-      const resolvables = states[i]._state().resolvables || [];
+    states.forEach((state) => {
+      const resolvables = state._state().resolvables || [];
 
-      for (let j = 0; j < resolvables.length; j++) {
-        const resolvable = resolvables[j];
-
+      resolvables.forEach((resolvable) => {
         if (resolvable.deps === "deferred") {
           resolvable.deps = annotate(resolvable.resolveFn, strictDi);
         }
-      }
-    }
+      });
+    });
   }
 
   /**
@@ -152,7 +149,11 @@ export class StateRegistryProvider {
     this._listeners.push(listener);
 
     return () => {
-      removeFrom(this._listeners, listener);
+      const index = this._listeners.indexOf(listener);
+
+      if (index !== -1) {
+        this._listeners.splice(index, 1);
+      }
     };
   }
 
@@ -192,21 +193,30 @@ export class StateRegistryProvider {
    */
   /** @internal */
   _deregisterTree(state: BuiltStateDeclaration): BuiltStateDeclaration[] {
-    const all = this.getAll().map((x) => x._state());
+    const allDeclarations = this.getAll();
 
-    const getChildren = (
-      states: BuiltStateDeclaration[],
-    ): BuiltStateDeclaration[] => {
-      const _children = all.filter(
-        (x) => states.indexOf(x.parent as BuiltStateDeclaration) !== -1,
-      );
+    const all: BuiltStateDeclaration[] = [];
 
-      return _children.length === 0
-        ? _children
-        : _children.concat(getChildren(_children));
-    };
+    allDeclarations.forEach((declaration) => {
+      all.push(declaration._state());
+    });
 
-    const children = getChildren([state]);
+    const children: BuiltStateDeclaration[] = [];
+
+    const queue = [state];
+
+    for (let i = 0; i < queue.length; i++) {
+      const parent = queue[i];
+
+      for (let j = 0; j < all.length; j++) {
+        const candidate = all[j];
+
+        if (candidate.parent === parent) {
+          children.push(candidate);
+          queue.push(candidate);
+        }
+      }
+    }
 
     const deregistered = [state].concat(children).reverse();
 
@@ -235,12 +245,15 @@ export class StateRegistryProvider {
       throw new Error(`Can't deregister state; not found: ${stateOrName}`);
     const deregisteredStates = this._deregisterTree(state._state());
 
-    this._listeners.forEach((listener) =>
-      listener(
-        "deregistered",
-        deregisteredStates.map((x) => x.self),
-      ),
-    );
+    const deregisteredDeclarations: StateDeclaration[] = [];
+
+    deregisteredStates.forEach((stateDeclaration) => {
+      deregisteredDeclarations.push(stateDeclaration.self);
+    });
+
+    this._listeners.forEach((listener) => {
+      listener("deregistered", deregisteredDeclarations);
+    });
 
     return deregisteredStates;
   }
@@ -249,9 +262,15 @@ export class StateRegistryProvider {
    * @return {ng.BuiltStateDeclaration[]}
    */
   getAll(): BuiltStateDeclaration[] {
-    return keys(this._states).map(
-      (name) => this._states[name].self as BuiltStateDeclaration,
-    );
+    const stateNames = keys(this._states);
+
+    const states: BuiltStateDeclaration[] = [];
+
+    stateNames.forEach((name) => {
+      states.push(this._states[name].self as BuiltStateDeclaration);
+    });
+
+    return states;
   }
 
   /**
@@ -264,8 +283,18 @@ export class StateRegistryProvider {
     stateOrName?: StateOrName,
     base?: StateOrName,
   ): StateDeclaration | StateDeclaration[] | null {
-    if (arguments.length === 0)
-      return keys(this._states).map((name) => this._states[name].self);
+    if (arguments.length === 0) {
+      const stateNames = keys(this._states);
+
+      const states: StateDeclaration[] = [];
+
+      stateNames.forEach((name) => {
+        states.push(this._states[name].self);
+      });
+
+      return states;
+    }
+
     const found = this._matcher.find(stateOrName as StateOrName, base);
 
     return (found && found.self) || null;
@@ -273,13 +302,17 @@ export class StateRegistryProvider {
 }
 
 export const getLocals = (ctx: ResolveContext): Record<string, any> => {
-  const tokens = ctx.getTokens().filter(isString);
+  const tokens = ctx.getTokens();
 
-  const tuples = tokens.map((key) => {
-    const resolvable = ctx.getResolvable(key);
+  const locals: Record<string, any> = {};
 
-    return [key, resolvable.data];
-  });
+  for (let i = 0; i < tokens.length; i++) {
+    const key = tokens[i];
 
-  return tuples.reduce(applyPairs, {});
+    if (isString(key)) {
+      locals[key] = ctx.getResolvable(key).data;
+    }
+  }
+
+  return locals;
 };

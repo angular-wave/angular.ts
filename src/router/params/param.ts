@@ -1,7 +1,7 @@
-import { allTrueR, filter, find, map } from "../../shared/common.ts";
 import { isInjectable } from "../../shared/predicates.ts";
 import {
   assign,
+  hasOwn,
   isArray,
   isDefined,
   isNullOrUndefined,
@@ -15,10 +15,19 @@ import type { UrlConfigProvider } from "../url/url-config.ts";
 
 type DefTypeValue = (typeof DefType)[keyof typeof DefType];
 
-const isShorthand = (cfg: ParamDeclaration | any): boolean =>
-  ["value", "type", "squash", "array", "dynamic"].filter(
-    Object.prototype.hasOwnProperty.bind(cfg || {}),
-  ).length === 0;
+const SHORTHAND_KEYS = ["value", "type", "squash", "array", "dynamic"];
+
+function isShorthand(cfg: ParamDeclaration | any): boolean {
+  const config = cfg || {};
+
+  for (let i = 0; i < SHORTHAND_KEYS.length; i++) {
+    if (hasOwn(config, SHORTHAND_KEYS[i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 /**
  * @enum {number}
@@ -40,7 +49,7 @@ function getParamDeclaration(
   location: DefTypeValue,
   state: ng.StateDeclaration,
 ): ParamDeclaration {
-  const dynamic = find([state.dynamic], isDefined);
+  const { dynamic } = state;
 
   const defaultConfig = isDefined(dynamic) ? { dynamic } : {};
 
@@ -148,22 +157,33 @@ function getReplace(
   const defaultPolicy = [
     { from: "", to: isOptional || arrayMode ? undefined : "" },
     { from: null, to: isOptional || arrayMode ? undefined : "" },
-  ];
+  ] as Replace[];
 
   const replace = isArray(config.replace) ? config.replace : [];
 
   if (isString(squash)) replace.push({ from: squash, to: undefined });
 
-  const configuredKeys = map(replace, (x: Replace) => x.from) as Array<
-    string | null
-  >;
+  const configuredKeys: Array<string | null> = [];
 
-  return (
-    filter(
-      defaultPolicy,
-      (item) => configuredKeys.indexOf(item.from) === -1,
-    ) as Replace[]
-  ).concat(replace);
+  for (let i = 0; i < replace.length; i++) {
+    configuredKeys.push(replace[i].from);
+  }
+
+  const result: Replace[] = [];
+
+  for (let i = 0; i < defaultPolicy.length; i++) {
+    const item = defaultPolicy[i];
+
+    if (configuredKeys.indexOf(item.from) === -1) {
+      result.push(item);
+    }
+  }
+
+  for (let i = 0; i < replace.length; i++) {
+    result.push(replace[i]);
+  }
+
+  return result;
 }
 
 export class Param {
@@ -360,9 +380,17 @@ export class Param {
     values1: Record<string, any> = {},
     values2: Record<string, any> = {},
   ): Param[] {
-    return params.filter(
-      (param) => !param.type.equals(values1[param.id], values2[param.id]),
-    );
+    const changed: Param[] = [];
+
+    for (let i = 0; i < params.length; i++) {
+      const param = params[i];
+
+      if (!param.type.equals(values1[param.id], values2[param.id])) {
+        changed.push(param);
+      }
+    }
+
+    return changed;
   }
 
   /**
@@ -387,8 +415,14 @@ export class Param {
    * @return {boolean}
    */
   static validates(params: Param[], values: Record<string, any> = {}): boolean {
-    return params
-      .map((param: Param) => param.validates(values[param.id]))
-      .reduce(allTrueR, true);
+    for (let i = 0; i < params.length; i++) {
+      const param = params[i];
+
+      if (!param.validates(values[param.id])) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }
