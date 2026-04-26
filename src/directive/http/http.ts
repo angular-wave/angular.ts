@@ -2,6 +2,7 @@ import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { Http } from "../../services/http/http.ts";
 import { NodeType } from "../../shared/node.ts";
 import { emptyElement, removeElement } from "../../shared/dom.ts";
+import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import {
   callBackAfterFirst,
   isDefined,
@@ -88,7 +89,7 @@ function defineDirective(
     $t._parse,
     $t._state,
     $t._sse,
-    $t._animate,
+    $t._injector,
   ];
 
   return directive;
@@ -140,8 +141,10 @@ export function createHttpDirective(
     $parse: ng.ParseService,
     $state: ng.StateService,
     $sse: ng.SseService,
-    $animate: ng.AnimateService,
+    $injector: ng.InjectorService,
   ): ng.Directive {
+    const getAnimate = createLazyAnimate($injector);
+
     /** Collects form data from the element or its associated form. */
     function collectFormData(
       element: HttpDirectiveElement,
@@ -250,6 +253,8 @@ export function createHttpDirective(
           if (attrsParam.animate) {
             animationEnabled = true;
           }
+          const animate = animationEnabled ? getAnimate() : undefined;
+
           let nodes: SwapNodes = [];
 
           if (!["textcontent", "delete", "none"].includes(swap)) {
@@ -297,14 +302,14 @@ export function createHttpDirective(
               placeholder.style.display = "none";
               parent.insertBefore(placeholder, target.nextSibling);
 
-              $animate.leave(target).done(() => {
+              animate!.leave(target).done(() => {
                 const insertedNodes = Array.from(frag.childNodes);
 
                 // Insert each node in order
                 for (const x of insertedNodes) {
                   if (x.nodeType === NodeType._ELEMENT_NODE) {
                     // Animate elements
-                    $animate.enter(
+                    animate!.enter(
                       x as Element,
                       parent as Element,
                       placeholder,
@@ -325,9 +330,9 @@ export function createHttpDirective(
 
             case "textContent":
               if (animationEnabled) {
-                $animate.leave(target).done(() => {
+                animate!.leave(target).done(() => {
                   target.textContent = html;
-                  $animate.enter(target, target.parentNode as Element);
+                  animate!.enter(target, target.parentNode as Element);
                   scopeParam.$flushQueue();
                 });
 
@@ -347,7 +352,7 @@ export function createHttpDirective(
                   animationEnabled &&
                   node.nodeType === NodeType._ELEMENT_NODE
                 ) {
-                  $animate.enter(node as Element, parent as Element, target); // insert before target
+                  animate!.enter(node as Element, parent as Element, target); // insert before target
                 } else {
                   parent.insertBefore(node, target);
                 }
@@ -365,7 +370,7 @@ export function createHttpDirective(
                   animationEnabled &&
                   node.nodeType === NodeType._ELEMENT_NODE
                 ) {
-                  $animate.enter(
+                  animate!.enter(
                     node as Element,
                     target,
                     firstChild as Element,
@@ -385,7 +390,7 @@ export function createHttpDirective(
                   animationEnabled &&
                   node.nodeType === NodeType._ELEMENT_NODE
                 ) {
-                  $animate.enter(node as Element, target); // append at end
+                  animate!.enter(node as Element, target); // append at end
                 } else {
                   target.appendChild(node);
                 }
@@ -406,7 +411,7 @@ export function createHttpDirective(
                   animationEnabled &&
                   node.nodeType === NodeType._ELEMENT_NODE
                 ) {
-                  $animate.enter(
+                  animate!.enter(
                     node as Element,
                     parent as Element,
                     nextSibling as Element,
@@ -422,7 +427,7 @@ export function createHttpDirective(
 
             case "delete":
               if (animationEnabled) {
-                $animate.leave(target).done(() => {
+                animate!.leave(target).done(() => {
                   removeElement(target); // safety: actually remove in case $animate.leave didn't
                   scopeParam.$flushQueue();
                 });
@@ -443,9 +448,9 @@ export function createHttpDirective(
                   !Array.isArray(content) &&
                   content.nodeType !== NodeType._TEXT_NODE
                 ) {
-                  $animate.leave(content as Element).done(() => {
+                  animate!.leave(content as Element).done(() => {
                     content = nodes[0] as ChildNode;
-                    $animate.enter(nodes[0] as Element, target);
+                    animate!.enter(nodes[0] as Element, target);
                     scopeParam.$flushQueue();
                   });
                   scopeParam.$flushQueue();
@@ -460,7 +465,7 @@ export function createHttpDirective(
                     emptyElement(target);
                     target.replaceChildren(...nodes);
                   } else {
-                    $animate.enter(nodes[0] as Element, target);
+                    animate!.enter(nodes[0] as Element, target);
                     scopeParam.$flushQueue();
                   }
                 }

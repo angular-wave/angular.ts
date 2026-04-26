@@ -34,6 +34,10 @@ import {
 } from "../form/form.ts";
 import { defaultModelOptions } from "../model-options/model-options.ts";
 import { startingTag } from "../../shared/dom.ts";
+import {
+  createLazyAnimate,
+  type LazyAnimate,
+} from "../../animations/lazy-animate.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 
 export const ngModelMinErr = minErr("ngModel");
@@ -125,7 +129,7 @@ export class NgModelController {
     $t._attrs,
     $t._element,
     $t._parse,
-    $t._animate,
+    $t._injector,
     $t._interpolate,
   ];
 
@@ -214,7 +218,7 @@ export class NgModelController {
   _element: HTMLElement;
 
   /** @internal */
-  _animate: ng.AnimateService;
+  _getAnimate: LazyAnimate;
 
   /** @internal */
   _parse: ng.ParseService;
@@ -249,7 +253,7 @@ export class NgModelController {
     $attr: ng.Attributes,
     $element: HTMLElement,
     $parse: ng.ParseService,
-    $animate: ng.AnimateService,
+    $injector: ng.InjectorService,
     $interpolate: ng.InterpolateService,
   ) {
     this._isAnimated = hasAnimate($element);
@@ -296,7 +300,7 @@ export class NgModelController {
     this._scope = $scope; // attempt to bind to nearest controller if present
     this._attr = $attr;
     this._element = $element;
-    this._animate = $animate;
+    this._getAnimate = createLazyAnimate($injector);
     this._parse = $parse;
     this._exceptionHandler = $exceptionHandler;
     this._destroyed = false;
@@ -518,6 +522,11 @@ export class NgModelController {
     );
   }
 
+  /** @internal */
+  _getAnimateIfEnabled(): ng.AnimateService | undefined {
+    return this._isAnimated ? this._getAnimate() : undefined;
+  }
+
   /**
    * Applies the correct empty/not-empty classes for the current view value.
    */
@@ -528,17 +537,21 @@ export class NgModelController {
     }
 
     if (this.$isEmpty(value)) {
-      if (hasAnimate(this._element)) {
-        this._animate.removeClass(this._element, NOT_EMPTY_CLASS);
-        this._animate.addClass(this._element, EMPTY_CLASS);
+      const animate = this._getAnimateIfEnabled();
+
+      if (animate) {
+        animate.removeClass(this._element, NOT_EMPTY_CLASS);
+        animate.addClass(this._element, EMPTY_CLASS);
       } else {
         this._element.classList.remove(NOT_EMPTY_CLASS);
         this._element.classList.add(EMPTY_CLASS);
       }
     } else {
-      if (hasAnimate(this._element)) {
-        this._animate.removeClass(this._element, EMPTY_CLASS);
-        this._animate.addClass(this._element, NOT_EMPTY_CLASS);
+      const animate = this._getAnimateIfEnabled();
+
+      if (animate) {
+        animate.removeClass(this._element, EMPTY_CLASS);
+        animate.addClass(this._element, NOT_EMPTY_CLASS);
       } else {
         this._element.classList.remove(EMPTY_CLASS);
         this._element.classList.add(NOT_EMPTY_CLASS);
@@ -559,9 +572,11 @@ export class NgModelController {
 
     if (this._destroyed || !this._element) return;
 
-    if (hasAnimate(this._element)) {
-      this._animate.removeClass(this._element, EMPTY_CLASS);
-      this._animate.addClass(this._element, PRISTINE_CLASS);
+    const animate = this._getAnimateIfEnabled();
+
+    if (animate) {
+      animate.removeClass(this._element, EMPTY_CLASS);
+      animate.addClass(this._element, PRISTINE_CLASS);
     } else {
       this._element.classList.remove(EMPTY_CLASS);
       this._element.classList.add(PRISTINE_CLASS);
@@ -583,9 +598,11 @@ export class NgModelController {
       return;
     }
 
-    if (hasAnimate(this._element)) {
-      this._animate.removeClass(this._element, PRISTINE_CLASS);
-      this._animate.addClass(this._element, DIRTY_CLASS);
+    const animate = this._getAnimateIfEnabled();
+
+    if (animate) {
+      animate.removeClass(this._element, PRISTINE_CLASS);
+      animate.addClass(this._element, DIRTY_CLASS);
     } else {
       this._element.classList.remove(PRISTINE_CLASS);
       this._element.classList.add(DIRTY_CLASS);
@@ -609,8 +626,10 @@ export class NgModelController {
       return;
     }
 
-    if (hasAnimate(this._element)) {
-      this._animate.setClass(this._element, UNTOUCHED_CLASS, TOUCHED_CLASS);
+    const animate = this._getAnimateIfEnabled();
+
+    if (animate) {
+      animate.setClass(this._element, UNTOUCHED_CLASS, TOUCHED_CLASS);
     } else {
       this._element.classList.remove(TOUCHED_CLASS);
       this._element.classList.add(UNTOUCHED_CLASS);
@@ -632,8 +651,10 @@ export class NgModelController {
       return;
     }
 
-    if (hasAnimate(this._element)) {
-      this._animate.setClass(this._element, TOUCHED_CLASS, UNTOUCHED_CLASS);
+    const animate = this._getAnimateIfEnabled();
+
+    if (animate) {
+      animate.setClass(this._element, TOUCHED_CLASS, UNTOUCHED_CLASS);
     } else {
       this._element.classList.remove(UNTOUCHED_CLASS);
       this._element.classList.add(TOUCHED_CLASS);

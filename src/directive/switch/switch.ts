@@ -1,6 +1,10 @@
 import { $injectTokens } from "../../injection-tokens.ts";
+import {
+  createLazyAnimate,
+  getAnimateForNode,
+} from "../../animations/lazy-animate.ts";
 import { domInsert, removeElement } from "../../shared/dom.ts";
-import { hasAnimate, values } from "../../shared/utils.ts";
+import { values } from "../../shared/utils.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
 type NgSwitchBlock = {
@@ -19,12 +23,14 @@ class NgSwitchController {
   }
 }
 
-ngSwitchDirective.$inject = [$injectTokens._animate];
+ngSwitchDirective.$inject = [$injectTokens._injector];
 
 /** Switches between transcluded case blocks and animates block entry/exit. */
 export function ngSwitchDirective(
-  $animate: ng.AnimateService,
+  $injector: ng.InjectorService,
 ): ng.Directive<NgSwitchController> {
+  const getAnimate = createLazyAnimate($injector);
+
   return {
     require: "ngSwitch",
 
@@ -62,8 +68,12 @@ export function ngSwitchDirective(
         let runner;
 
         // Start with the last, in case the array is modified during the loop
+        const animate = previousLeaveAnimations.length
+          ? getAnimate()
+          : undefined;
+
         while (previousLeaveAnimations.length) {
-          $animate.cancel(previousLeaveAnimations.pop() as ng.AnimateRunner);
+          animate?.cancel(previousLeaveAnimations.pop() as ng.AnimateRunner);
         }
 
         for (i = 0, ii = selectedScopes.length; i < ii; ++i) {
@@ -71,8 +81,10 @@ export function ngSwitchDirective(
 
           selectedScopes[i].$destroy();
 
-          if (hasAnimate(selected)) {
-            runner = previousLeaveAnimations[i] = $animate.leave(selected);
+          const leaveAnimate = getAnimateForNode(getAnimate, selected);
+
+          if (leaveAnimate) {
+            runner = previousLeaveAnimations[i] = leaveAnimate.leave(selected);
 
             runner.done(spliceFactory(previousLeaveAnimations, i));
           } else {
@@ -109,7 +121,12 @@ export function ngSwitchDirective(
 
                   selectedElements.push(block);
 
-                  if (hasAnimate(caseElement)) {
+                  const enterAnimate = getAnimateForNode(
+                    getAnimate,
+                    caseElement,
+                  );
+
+                  if (enterAnimate) {
                     const { parentElement } = anchor;
 
                     if (!parentElement) {
@@ -118,10 +135,10 @@ export function ngSwitchDirective(
 
                     if (runner) {
                       requestAnimationFrame(() => {
-                        $animate.enter(caseElement, parentElement, anchor);
+                        enterAnimate.enter(caseElement, parentElement, anchor);
                       });
                     } else {
-                      $animate.enter(caseElement, parentElement, anchor);
+                      enterAnimate.enter(caseElement, parentElement, anchor);
                     }
                   } else {
                     const { parentElement } = anchor;

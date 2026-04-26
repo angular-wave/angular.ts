@@ -17,6 +17,7 @@ import {
   getArrayMutationMeta,
   type ArrayMutationMeta,
 } from "../../core/scope/scope.ts";
+import { createLazyAnimate } from "../../animations/lazy-animate.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
 import { NodeType } from "../../shared/node.ts";
 
@@ -27,7 +28,7 @@ const ngRepeatMinErr = minErr("ngRepeat");
 const VAR_OR_TUPLE_REGEX =
   /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
 
-ngRepeatDirective.$inject = [$injectTokens._animate];
+ngRepeatDirective.$inject = [$injectTokens._injector];
 
 type RepeatScope = ng.Scope &
   Record<string, any> & {
@@ -45,7 +46,9 @@ type RepeatBlock = {
 
 type RepeatBlockMap = Record<string, RepeatBlock>;
 
-export function ngRepeatDirective($animate: any): ng.Directive {
+export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
+  const getAnimate = createLazyAnimate($injector);
+
   const repeatPositionLocalKeys = [
     "$index",
     "$first",
@@ -154,7 +157,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
 
-      if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.nodeType === NodeType._ELEMENT_NODE) {
         removeElement(node as Element);
       } else {
         removeElementData(node as Element & Record<string, any>);
@@ -171,7 +174,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
     while (node && node !== endNode) {
       const nextNode: Node | null = node.nextSibling;
 
-      if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.nodeType === NodeType._ELEMENT_NODE) {
         removeElement(node as Element);
       } else {
         removeElementData(node as Element & Record<string, any>);
@@ -786,7 +789,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
               elementsToRemove = getBlockStart(block) as Element;
 
               if (hasAnimate && elementsToRemove) {
-                $animate.leave(elementsToRemove);
+                getAnimate().leave(elementsToRemove);
               } else {
                 block._scope?.$destroy();
                 removeBlockNodes(blockNodes);
@@ -924,7 +927,7 @@ export function ngRepeatDirective($animate: any): ng.Directive {
                     hasAnimate &&
                     cloneNodes[0].nodeType === NodeType._ELEMENT_NODE
                   ) {
-                    $animate.enter(
+                    getAnimate().enter(
                       cloneNodes[0] as Element,
                       null,
                       previousNode,

@@ -1,12 +1,16 @@
-import { isDefined, hasAnimate } from "../../shared/utils.ts";
+import { isDefined } from "../../shared/utils.ts";
 import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { removeElement } from "../../shared/dom.ts";
+import {
+  createLazyAnimate,
+  getAnimateForNode,
+} from "../../animations/lazy-animate.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
 ngIncludeDirective.$inject = [
   $t._templateRequest,
   $t._anchorScroll,
-  $t._animate,
+  $t._injector,
   $t._exceptionHandler,
 ];
 
@@ -16,9 +20,11 @@ ngIncludeDirective.$inject = [
 export function ngIncludeDirective(
   $templateRequest: ng.TemplateRequestService,
   $anchorScroll: ng.AnchorScrollService,
-  $animate: ng.AnimateService,
+  $injector: ng.InjectorService,
   $exceptionHandler: ng.ExceptionHandlerService,
 ): ng.Directive {
+  const getAnimate = createLazyAnimate($injector);
+
   return {
     priority: 400,
     terminal: true,
@@ -73,8 +79,10 @@ export function ngIncludeDirective(
           }
 
           if (currentElement) {
-            if (hasAnimate(currentElement)) {
-              $animate.leave(currentElement).done((response: boolean) => {
+            const animate = getAnimateForNode(getAnimate, currentElement);
+
+            if (animate) {
+              animate.leave(currentElement).done((response: boolean) => {
                 if (response !== false) previousElement = null;
               });
             } else {
@@ -113,8 +121,13 @@ export function ngIncludeDirective(
                 const clone = $transclude(newScope, (cloneParam) => {
                   cleanupLastIncludeContent();
 
-                  if (hasAnimate(cloneParam as HTMLElement)) {
-                    $animate
+                  const animate = getAnimateForNode(
+                    getAnimate,
+                    cloneParam as HTMLElement,
+                  );
+
+                  if (animate) {
+                    animate
                       .enter(cloneParam as HTMLElement, null, $element)
                       .done(afterAnimation);
                   } else {

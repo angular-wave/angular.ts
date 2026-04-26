@@ -1,11 +1,16 @@
 import { $injectTokens } from "../../injection-tokens.ts";
+import {
+  createLazyAnimate,
+  getAnimateForNode,
+} from "../../animations/lazy-animate.ts";
 import { removeElement } from "../../shared/dom.ts";
-import { hasAnimate } from "../../shared/utils.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
-ngIfDirective.$inject = [$injectTokens._animate];
+ngIfDirective.$inject = [$injectTokens._injector];
 /** Conditionally includes or removes a transcluded block based on the watched expression. */
-export function ngIfDirective($animate: ng.AnimateService): ng.Directive {
+export function ngIfDirective($injector: ng.InjectorService): ng.Directive {
+  const getAnimate = createLazyAnimate($injector);
+
   return {
     transclude: "element",
     priority: 600,
@@ -38,8 +43,10 @@ export function ngIfDirective($animate: ng.AnimateService): ng.Directive {
               // by a directive with templateUrl when its template arrives.
               block = clone as Element;
 
-              if (hasAnimate(clone as Node)) {
-                $animate.enter(
+              const animate = getAnimateForNode(getAnimate, clone as Node);
+
+              if (animate) {
+                animate.enter(
                   clone as Element,
                   $element.parentElement as Element,
                   $element,
@@ -63,8 +70,10 @@ export function ngIfDirective($animate: ng.AnimateService): ng.Directive {
           if (block) {
             previousElements = block;
 
-            if (hasAnimate(previousElements)) {
-              $animate.leave(previousElements).done((response: boolean) => {
+            const animate = getAnimateForNode(getAnimate, previousElements);
+
+            if (animate) {
+              animate.leave(previousElements).done((response: boolean) => {
                 if (response !== false) previousElements = null;
               });
             } else {

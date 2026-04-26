@@ -17,6 +17,10 @@ import {
   PRISTINE_CLASS,
   VALID_CLASS,
 } from "../../shared/constants.ts";
+import {
+  createLazyAnimate,
+  type LazyAnimate,
+} from "../../animations/lazy-animate.ts";
 import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.ts";
 import type { NgModelController } from "../model/model.ts";
 import type { DirectiveCompileFn, DirectiveLinkFn } from "../../interface.ts";
@@ -27,7 +31,7 @@ export interface ValidityCssHost {
   /** @internal */
   _element: Element;
   /** @internal */
-  _animate: ng.AnimateService;
+  _getAnimate: LazyAnimate;
   /** @internal */
   _classCache: Record<string, any>;
 }
@@ -144,7 +148,7 @@ export class FormController {
     $t._element,
     $t._attrs,
     $t._scope,
-    $t._animate,
+    $t._injector,
     $t._interpolate,
   ];
 
@@ -173,7 +177,7 @@ export class FormController {
   _element: HTMLFormElement;
 
   /** @internal */
-  _animate: ng.AnimateService;
+  _getAnimate: LazyAnimate;
 
   $error: Record<string, any>;
 
@@ -194,7 +198,7 @@ export class FormController {
     $element: HTMLFormElement,
     $attrs: ng.Attributes,
     $scope: ng.Scope,
-    $animate: ng.AnimateService,
+    $injector: ng.InjectorService,
     $interpolate: ng.InterpolateService,
   ) {
     this._isAnimated = hasAnimate($element);
@@ -218,7 +222,7 @@ export class FormController {
     this._parentForm = nullFormCtrl;
 
     this._element = $element;
-    this._animate = $animate;
+    this._getAnimate = createLazyAnimate($injector);
     this.$error = {};
     this._success = {};
     this.$pending = undefined;
@@ -362,9 +366,11 @@ export class FormController {
    * state (ng-dirty class). This method will also propagate to parent forms.
    */
   $setDirty(): void {
-    if (hasAnimate(this._element)) {
-      this._animate.removeClass(this._element, PRISTINE_CLASS);
-      this._animate.addClass(this._element, DIRTY_CLASS);
+    if (this._isAnimated) {
+      const animate = this._getAnimate();
+
+      animate.removeClass(this._element, PRISTINE_CLASS);
+      animate.addClass(this._element, DIRTY_CLASS);
     } else {
       // Fallback for non-animated environments
       this._element.classList.remove(PRISTINE_CLASS);
@@ -388,8 +394,8 @@ export class FormController {
    * saving or resetting it.
    */
   $setPristine(): void {
-    if (hasAnimate(this._element)) {
-      this._animate.setClass(
+    if (this._isAnimated) {
+      this._getAnimate().setClass(
         this._element,
         PRISTINE_CLASS,
         `${DIRTY_CLASS} ${SUBMITTED_CLASS}`,
@@ -438,8 +444,8 @@ export class FormController {
 
   /** @internal */
   _setSubmitted(): void {
-    if (hasAnimate(this._element)) {
-      this._animate.addClass(this._element, SUBMITTED_CLASS);
+    if (this._isAnimated) {
+      this._getAnimate().addClass(this._element, SUBMITTED_CLASS);
     } else {
       this._element.classList.add(SUBMITTED_CLASS);
     }
@@ -845,14 +851,14 @@ export function cachedToggleClass(
 ) {
   if (switchValue && !ctrl._classCache[className]) {
     if (ctrl._isAnimated) {
-      ctrl._animate.addClass(ctrl._element, className);
+      ctrl._getAnimate().addClass(ctrl._element, className);
     } else {
       ctrl._element.classList.add(className);
     }
     ctrl._classCache[className] = true;
   } else if (!switchValue && ctrl._classCache[className]) {
     if (ctrl._isAnimated) {
-      ctrl._animate.removeClass(ctrl._element, className);
+      ctrl._getAnimate().removeClass(ctrl._element, className);
     } else {
       ctrl._element.classList.remove(className);
     }
