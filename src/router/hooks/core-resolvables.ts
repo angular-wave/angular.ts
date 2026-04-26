@@ -12,17 +12,20 @@ import type { TransitionService } from "../transition/transition-service.ts";
 export function registerAddCoreResolvables(
   transitionService: TransitionService,
 ) {
-  return transitionService.onCreate({}, function addCoreResolvables(trans) {
-    trans.addResolvable(Resolvable.fromData(Transition, trans), "");
-    trans.addResolvable(Resolvable.fromData("$transition$", trans), "");
-    trans.addResolvable(
-      Resolvable.fromData("$stateParams", trans.params()),
-      "",
-    );
-    trans.entering().forEach((state: ng.StateDeclaration) => {
-      trans.addResolvable(Resolvable.fromData("$state$", state), state);
-    });
-  });
+  return transitionService._onCreate(
+    {},
+    function addCoreResolvables(trans: Transition) {
+      trans.addResolvable(Resolvable.fromData(Transition, trans), "");
+      trans.addResolvable(Resolvable.fromData("$transition$", trans), "");
+      trans.addResolvable(
+        Resolvable.fromData("$stateParams", trans.params()),
+        "",
+      );
+      trans.entering().forEach((state: ng.StateDeclaration) => {
+        trans.addResolvable(Resolvable.fromData("$state$", state), state);
+      });
+    },
+  );
 }
 
 const TRANSITION_TOKENS = ["$transition$", Transition];

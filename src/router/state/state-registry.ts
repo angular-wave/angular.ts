@@ -80,7 +80,7 @@ export class StateRegistryProvider {
 
     this.registerRoot();
 
-    viewService.rootViewContext(this.root());
+    viewService._rootViewContext(this.root());
     globals.$current = this.root();
     globals.current = globals.$current.self;
   }

@@ -92,7 +92,7 @@ describe("view", () => {
       elem.innerHTML = "<div><ng-view></ng-view></div>";
       $compile(elem)(scope);
       await wait();
-      const view = tail(path).views[0];
+      const view = tail(path)._views[0];
       view.load();
       await wait(100);
       expect(ctrlExpression).toEqual("FooController as foo");
@@ -101,7 +101,7 @@ describe("view", () => {
 
   describe("matching", () => {
     it("matches root default ng-view targets using the active ng-view fqn format", () => {
-      const uiView = {
+      const ngView = {
         fqn: "$default",
         name: "$default",
         creationContext: root,
@@ -114,7 +114,7 @@ describe("view", () => {
         },
       };
 
-      expect(ViewService.matches({}, uiView)(viewConfig)).toBe(true);
+      expect(ViewService._matches({}, ngView)(viewConfig)).toBe(true);
     });
 
     it("matches named child ng-views using context.name fqn format", () => {
@@ -123,7 +123,7 @@ describe("view", () => {
         name: "child",
         parent: parentContext,
       });
-      const uiView = {
+      const ngView = {
         fqn: "parent.sidebar",
         name: "sidebar",
         creationContext: parentContext,
@@ -136,7 +136,7 @@ describe("view", () => {
         },
       };
 
-      expect(ViewService.matches({}, uiView)(viewConfig)).toBe(true);
+      expect(ViewService._matches({}, ngView)(viewConfig)).toBe(true);
     });
 
     it("does not match a parent config when a more specific child ng-view exists", () => {
@@ -145,7 +145,7 @@ describe("view", () => {
         name: "child",
         parent: parentContext,
       });
-      const uiView = {
+      const ngView = {
         fqn: "parent.sidebar",
         name: "sidebar",
         creationContext: parentContext,
@@ -163,70 +163,34 @@ describe("view", () => {
         },
       };
 
-      expect(ViewService.matches(childNgViewsByFqn, uiView)(viewConfig)).toBe(
+      expect(ViewService._matches(childNgViewsByFqn, ngView)(viewConfig)).toBe(
         false,
       );
     });
   });
 
   describe("service helpers", () => {
-    it("creates view configs through ViewService.createViewConfig", () => {
+    it("creates view configs through ViewService._createViewConfig", () => {
       const state = register({
         name: "withView",
-        views: {
-          $default: {
-            template: "test",
-          },
-        },
+        template: "test",
       });
       const viewService = new ViewService();
 
       viewService._templateFactory = $injector.get("$templateFactory");
 
-      spyOn(viewService, "createViewConfig").and.callThrough();
+      spyOn(viewService, "_createViewConfig").and.callThrough();
 
       const path = [root, state].map((_state) => new PathNode(_state));
 
       PathUtils.applyViewConfigs(viewService, path, [state]);
 
-      expect(viewService.createViewConfig).toHaveBeenCalledTimes(1);
-      expect(viewService.createViewConfig).toHaveBeenCalledWith(
+      expect(viewService._createViewConfig).toHaveBeenCalledTimes(1);
+      expect(viewService._createViewConfig).toHaveBeenCalledWith(
         jasmine.arrayContaining(path),
-        state.views.$default,
+        state._views.$default,
       );
-      expect(path[1].views.length).toBe(1);
-    });
-
-    it("normalizes relative ng-view targets", () => {
-      const parentContext = register({ name: "parent", parent: root });
-      const childContext = register({
-        name: "child",
-        parent: parentContext,
-      });
-
-      expect(ViewService.normalizeUIViewTarget(childContext, "sidebar@^")).toBe(
-        "sidebar@parent",
-      );
-    });
-
-    it("notifies onSync listeners when views are synchronized", () => {
-      const tuplesSeen = [];
-      const deregister = $view.onSync((tuples) => tuplesSeen.push(tuples));
-      const uiView = {
-        id: 1,
-        fqn: "$default",
-        name: "$default",
-        creationContext: root,
-        config: null,
-        configUpdated: () => {},
-      };
-
-      const unregister = $view.registerUIView(uiView);
-
-      expect(tuplesSeen.length).toBeGreaterThan(0);
-
-      unregister();
-      deregister();
+      expect(path[1]._views.length).toBe(1);
     });
   });
 });

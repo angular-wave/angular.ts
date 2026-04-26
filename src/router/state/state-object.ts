@@ -37,7 +37,8 @@ export class StateObject {
   data: any;
   includes: any;
   path: StateObject[] | undefined;
-  views: any;
+  /** @internal */
+  _views: any;
   resolvables: Resolvable[] | undefined;
   onEnter: TransitionStateHookFn | undefined;
   onRetain: TransitionStateHookFn | undefined;

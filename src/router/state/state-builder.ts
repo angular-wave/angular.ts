@@ -137,9 +137,9 @@ function viewsBuilder(
   if (isDefined(state.views) && hasAnyViewKey(allViewKeys, state)) {
     throw new Error(
       `State '${state.name}' has a 'views' object. ` +
-        `It cannot also have "view properties" at the state level.  ` +
-        `Move the following properties into a view (in the 'views' object): ` +
-        ` ${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`,
+        `It cannot also have view properties at the state level. ` +
+        `Move these properties into a view declaration: ` +
+        `${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`,
     );
   }
 
@@ -178,20 +178,22 @@ function viewsBuilder(
 
     if (hasAnyViewKey(compKeys, config) && hasAnyViewKey(nonCompKeys, config)) {
       throw new Error(
-        `Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in stateview: '${name}@${state.name}'`,
+        `Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in state view '${name}@${state.name}'`,
       );
     }
 
     config.resolveAs = config.resolveAs || "$resolve";
     config.$context = state;
     config.$name = name;
-    const normalized = ViewConfig.normalizeUIViewTarget(
+
+    const normalized = ViewConfig.normalizeNgViewTarget(
       config.$context as StateObject,
       config.$name as string,
     );
 
     config.$ngViewName = normalized.ngViewName;
     config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
+
     views[name] = config;
   }
 
@@ -424,7 +426,7 @@ export class StateBuilder {
       ? Object.assign({}, state.parent.includes)
       : {};
     state.includes[state.name] = true;
-    state.views = viewsBuilder(state as StateObject & BuiltStateDeclaration);
+    state._views = viewsBuilder(state as StateObject & BuiltStateDeclaration);
 
     return state;
   }

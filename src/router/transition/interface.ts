@@ -260,23 +260,7 @@ export interface TransitionStateHookFn {
   (transition: Transition, state: StateDeclaration): HookResult;
 }
 
-/**
- * The signature for Transition onCreate Hooks.
- *
- * Transition onCreate Hooks are callbacks that allow customization or preprocessing of
- * a Transition before it is returned from [[TransitionService.create]]
- *
- * @param transition the [[Transition]] that was just created
- * @return a [[Transition]] which will then be returned from [[TransitionService.create]]
- */
-export interface TransitionCreateHookFn {
-  (transition: Transition): void;
-}
-
-export type HookFn =
-  | TransitionHookFn
-  | TransitionStateHookFn
-  | TransitionCreateHookFn;
+export type HookFn = TransitionHookFn | TransitionStateHookFn;
 
 /**
  * The return value of a [[TransitionHookFn]] or [[TransitionStateHookFn]]
@@ -456,35 +440,6 @@ export interface PathTypes {
 export interface HookRegistry {
   /** @internal place to store the hooks */
   _registeredHooks: RegisteredHooks;
-
-  /**
-   * Registers a [[TransitionCreateHookFn]], called *while a transition is being constructed*.
-   *
-   * Registers a transition lifecycle hook, which is invoked during transition construction.
-   *
-   * This low level hook should only be used by plugins.
-   * This can be a useful time for plugins to add resolves or mutate the transition as needed.
-   * The Sticky States plugin uses this hook to modify the treechanges.
-   *
-   * ### Lifecycle
-   *
-   * `onCreate` hooks are invoked *while a transition is being constructed*.
-   *
-   * ### Return value
-   *
-   * The hook's return value is ignored
-   *
-   * @internal
-   * @param matchCriteria defines which Transitions the Hook should be invoked for.
-   * @param callback the hook function which will be invoked.
-   * @param options the registration options
-   * @returns a function which deregisters the hook.
-   */
-  onCreate(
-    matchCriteria: HookMatchCriteria,
-    callback: TransitionCreateHookFn,
-    options?: HookRegOptions,
-  ): DeregisterFn;
 
   /**
    * Registers a [[TransitionHookFn]], called *before a transition starts*.
@@ -940,7 +895,7 @@ export interface HookRegistry {
  *
  * Note: In this codebase, `$get` returns the provider instance (`return this;`),
  * so the "service" surface includes both the public HookRegistry API and
- * a set of internal fields/methods used by built-in hook registrations/plugins.
+ * a set of internal fields/methods used by built-in hook registrations.
  */
 export interface TransitionService extends HookRegistry {
   /* -------------------- Transition factory -------------------- */
@@ -950,7 +905,7 @@ export interface TransitionService extends HookRegistry {
    */
   create(fromPath: PathNode[], targetState: TargetState): Transition;
 
-  /* -------------------- Internal surface used by built-in hooks/plugins -------------------- */
+  /* -------------------- Internal surface used by built-in hooks -------------------- */
 
   /** @internal incremented for each created Transition */
   _transitionCount: number;

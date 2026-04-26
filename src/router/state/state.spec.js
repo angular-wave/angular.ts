@@ -290,25 +290,17 @@ describe("$state", () => {
           .state({
             name: "logA.logB",
             url: "/logB",
-            views: {
-              $default: {
-                template: "<div> <div ng-view/></div>",
-                controller: function () {
-                  log += "logB;";
-                },
-              },
+            template: "<div> <div ng-view/></div>",
+            controller: function () {
+              log += "logB;";
             },
           })
           .state({
             name: "logA.logB.logC",
             url: "/logC",
-            views: {
-              $default: {
-                template: "<div> <div ng-view/></div>",
-                controller: function () {
-                  log += "logC;";
-                },
-              },
+            template: "<div> <div ng-view/></div>",
+            controller: function () {
+              log += "logC;";
             },
           })
           .state({ name: "root.sub2", url: "/2?param2" });

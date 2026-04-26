@@ -16,7 +16,7 @@ import {
 } from "../../shared/dom.ts";
 import { getLocals } from "../state/state-registry.ts";
 import { $injectTokens } from "../../injection-tokens.ts";
-import type { ActiveUIView, ViewContext } from "../view/view.ts";
+import type { ActiveNgView, ViewContext } from "../view/view.ts";
 import type { PathNode } from "../path/path-node.ts";
 import { TargetState } from "../state/target-state.ts";
 
@@ -79,12 +79,12 @@ type NgViewAnimData = {
 
 type NgViewData = {
   $cfg?: ViewConfig;
-  $ngView: ActiveUIView;
+  $ngView: ActiveNgView;
 };
 
-type ActiveUIViewRootData = {
+type ActiveNgViewRootData = {
   $cfg: { viewDecl: { $context: ViewContext } };
-  $ngView: Partial<ActiveUIView>;
+  $ngView: Partial<ActiveNgView>;
 };
 
 type ViewControllerInstance = Record<string, any> & {
@@ -130,9 +130,7 @@ const controllerLastParamsChangedTransition = new WeakMap<
  * ### Attributes
  *
  * - `name`: (Optional) A view name.
- *   The name should be unique amongst the other views in the same state.
- *   You can have views of the same name that live in different states.
- *   The ng-view can be targeted in a View using the name ([[StateDeclaration.views]]).
+ *   Named views are targeted from [[StateDeclaration.views]] entries.
  *
  * - `autoscroll`: an expression. When it evaluates to true, the `ng-view` will be scrolled into view when it is activated.
  *   Uses [[$anchorScroll]] to do the scrolling.
@@ -140,79 +138,21 @@ const controllerLastParamsChangedTransition = new WeakMap<
  * - `onload`: Expression to evaluate whenever the view updates.
  *
  * #### Example:
- * A view can be unnamed or named.
+ * A state can render into the unnamed `$default` view, or target named views.
+ *
  * ```html
- * <!-- Unnamed -->
  * <div ng-view></div>
- *
- * <!-- Named -->
- * <div ng-view="viewName"></div>
- *
- * <!-- Named (different style) -->
- * <ng-view name="viewName"></ng-view>
+ * <div ng-view="messagelist"></div>
  * ```
  *
- * You can only have one unnamed view within any template (or root html). If you are only using a
- * single view and it is unnamed then you can populate it like so:
- *
- * ```html
- * <div ng-view></div>
+ * ```js
  * $stateProvider.state("home", {
  *   template: "<h1>HELLO!</h1>"
  * })
- * ```
  *
- * The above is a convenient shortcut equivalent to specifying your view explicitly with the
- * [[StateDeclaration.views]] config property, by name, in this case an empty name:
- *
- * ```js
- * $stateProvider.state("home", {
+ * $stateProvider.state("messages", {
  *   views: {
- *     "": {
- *       template: "<h1>HELLO!</h1>"
- *     }
- *   }
- * })
- * ```
- *
- * But typically you'll only use the views property if you name your view or have more than one view
- * in the same template. There's not really a compelling reason to name a view if its the only one,
- * but you could if you wanted, like so:
- *
- * ```html
- * <div ng-view="main"></div>
- * ```
- *
- * ```js
- * $stateProvider.state("home", {
- *   views: {
- *     "main": {
- *       template: "<h1>HELLO!</h1>"
- *     }
- *   }
- * })
- * ```
- *
- * Really though, you'll use views to set up multiple views:
- *
- * ```html
- * <div ng-view></div>
- * <div ng-view="chart"></div>
- * <div ng-view="data"></div>
- * ```
- *
- * ```js
- * $stateProvider.state("home", {
- *   views: {
- *     "": {
- *       template: "<h1>HELLO!</h1>"
- *     },
- *     "chart": {
- *       template: "<chart_thing/>"
- *     },
- *     "data": {
- *       template: "<data_thing/>"
- *     }
+ *     messagelist: "messageList"
  *   }
  * })
  * ```
@@ -294,8 +234,8 @@ export function ViewDirective(
     };
   }
 
-  const rootData: ActiveUIViewRootData = {
-    $cfg: { viewDecl: { $context: $view.rootViewContext() as ViewContext } },
+  const rootData: ActiveNgViewRootData = {
+    $cfg: { viewDecl: { $context: $view._rootViewContext() as ViewContext } },
     $ngView: {},
   };
 
@@ -317,7 +257,7 @@ export function ViewDirective(
           renderer = getRenderer(),
           inherited =
             (getInheritedData($element, "$ngView") as
-              | ActiveUIViewRootData
+              | ActiveNgViewRootData
               | undefined) || rootData,
           name =
             (
@@ -341,11 +281,11 @@ export function ViewDirective(
             | string
             | undefined) || inherited.$ngView.fqn;
 
-        const activeUIView: ActiveUIView = {
+        const activeNgView: ActiveNgView = {
           id: directive.count++, // Global sequential ID for ng-view tags added to DOM
-          name, // ng-view name (<div ng-view="name"></div>
+          name, // ng-view name, retained internally for nested view matching
           fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
-          config: null, // The ViewConfig loaded (from a state.views definition)
+          config: null, // The active ViewConfig loaded for this ng-view
           configUpdated: configUpdatedCallback, // Called when the matching ViewConfig changes
           get creationContext(): ViewContext {
             // The context in which this ng-view "tag" was created
@@ -353,7 +293,7 @@ export function ViewDirective(
               inherited,
             ) as ViewContext | undefined;
 
-            // Allow <ng-view name="foo"><ng-view name="bar"></ng-view></ng-view>
+            // Inherit the parent view context for nested ng-view elements.
             const fromParentTag = parse("$ngView.creationContext")(
               inherited,
             ) as ViewContext | undefined;
@@ -382,26 +322,26 @@ export function ViewDirective(
                 return;
               }
 
-              activeUIView.config = null;
+              activeNgView.config = null;
               updateView(undefined);
             });
 
             viewConfig = undefined;
-            activeUIView.config = null;
+            activeNgView.config = null;
 
             return;
           }
 
           if (viewConfig === config) return;
 
-          activeUIView.config = config || null;
+          activeNgView.config = config || null;
           viewConfig = config;
           updateView(config);
         }
 
-        setCacheData($element, "$ngView", { $ngView: activeUIView });
+        setCacheData($element, "$ngView", { $ngView: activeNgView });
         updateView();
-        const unregister = $view.registerUIView(activeUIView);
+        const unregister = $view._registerNgView(activeNgView);
 
         scope.$on("$destroy", function () {
           unregister();
@@ -440,7 +380,7 @@ export function ViewDirective(
 
           const $ngViewData: NgViewData = {
             $cfg: config,
-            $ngView: activeUIView,
+            $ngView: activeNgView,
           };
 
           const $ngViewAnim: NgViewAnimData = {
