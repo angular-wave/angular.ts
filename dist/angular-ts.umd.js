@@ -1,4 +1,4 @@
-/* Version: 0.26.0 - April 26, 2026 16:44:14 */
+/* Version: 0.26.0 - April 26, 2026 17:56:46 */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -22642,7 +22642,7 @@
             this._identifier = _identifier;
             this._params = Object.assign({}, _params || {});
             this._options = Object.assign({}, _options || {});
-            this._definition = _stateRegistry.matcher.find(_identifier, this._options.relative);
+            this._definition = _stateRegistry._matcher.find(_identifier, this._options.relative);
         }
         /** The name of the state this object targets */
         name() {
@@ -23172,7 +23172,7 @@
                 this.paramSchema = node.paramSchema.slice();
                 this.paramValues = Object.assign({}, node.paramValues);
                 this.resolvables = node.resolvables.slice();
-                this.views = node.views && node.views.slice();
+                this._views = node._views && node._views.slice();
             }
             else {
                 const state = stateOrNode;
@@ -23266,7 +23266,7 @@
         /**
          * Creates ViewConfig objects and adds to nodes.
          *
-         * On each [[PathNode]], creates ViewConfig objects from the views: property of the node's state
+         * On each [[PathNode]], creates ViewConfig objects from the node state's built view declarations.
          * @param {ViewService} $view
          * @param {PathNode[]} path
          * @param {StateObject[]} states
@@ -23276,16 +23276,16 @@
             path
                 .filter((node) => states.includes(node.state))
                 .forEach((node) => {
-                const viewDecls = values(node.state.views || {});
+                const viewDecls = values(node.state._views || {});
                 const subPath = PathUtils.subPath(path, (x) => x === node);
                 if (!subPath) {
-                    node.views = [];
+                    node._views = [];
                     return;
                 }
                 const viewConfigs = viewDecls.map((view) => {
-                    return $view.createViewConfig(subPath, view);
+                    return $view._createViewConfig(subPath, view);
                 });
-                node.views = viewConfigs.reduce(unnestR, []);
+                node._views = viewConfigs.reduce(unnestR, []);
             });
         }
         /**
@@ -23785,48 +23785,30 @@
             return resolvable.get(context);
         }
         /**
-         * Normalizes a view's name from a state.views configuration block.
-         *
-         * This calculates the values for
-         * [[_ViewDeclaration.$ngViewName]] and [[_ViewDeclaration.$ngViewContextAnchor]].
-         *
-         * @param {StateObject} context the context object (state declaration) that the view belongs to
-         * @param {string} rawViewName the name of the view, as declared in the [[StateDeclaration.views]]
-         *
-         * @returns the normalized ngViewName and ngViewContextAnchor that the view targets
+         * Normalizes a view target from a `StateDeclaration.views` key.
          */
-        static normalizeUIViewTarget(context, rawViewName = "") {
-            // TODO: Validate incoming view name with a regexp to allow:
-            // ex: "view.name@foo.bar" , "^.^.view.name" , "view.name@^.^" , "" ,
-            // "@" , "$default@^" , "!$default.$default" , "!foo.bar"
+        static normalizeNgViewTarget(context, rawViewName = "") {
             const viewAtContext = rawViewName.split("@");
-            let ngViewName = viewAtContext[0] || "$default"; // default to unnamed view
+            let ngViewName = viewAtContext[0] || "$default";
             let ngViewContextAnchor = isString(viewAtContext[1])
                 ? viewAtContext[1]
-                : "^"; // default to parent context
-            // Handle relative view-name sugar syntax.
-            // Matches rawViewName "^.^.^.foo.bar" into array: ["^.^.^.foo.bar", "^.^.^", "foo.bar"],
+                : "^";
             const relativeViewNameSugar = /^(\^(?:\.\^)*)\.(.*$)/.exec(ngViewName);
             if (relativeViewNameSugar) {
-                // Clobbers existing contextAnchor (rawViewName validation will fix this)
-                ngViewContextAnchor = relativeViewNameSugar[1]; // set anchor to "^.^.^"
-                ngViewName = relativeViewNameSugar[2]; // set view-name to "foo.bar"
+                ngViewContextAnchor = relativeViewNameSugar[1];
+                ngViewName = relativeViewNameSugar[2];
             }
             if (ngViewName.charAt(0) === "!") {
                 ngViewName = ngViewName.substring(1);
-                ngViewContextAnchor = ""; // target absolutely from root
+                ngViewContextAnchor = "";
             }
-            // handle parent relative targeting "^.^.^"
             const relativeMatch = /^(\^(?:\.\^)*)$/;
             if (relativeMatch.exec(ngViewContextAnchor)) {
                 let anchorState = context;
-                // "^.^.^" -> ["^", "^", "^"] (count how many times we go up)
                 const hops = ngViewContextAnchor.split(".").filter(Boolean).length;
                 for (let i = 0; i < hops; i++) {
                     anchorState = anchorState && anchorState.parent;
                 }
-                // If the anchor goes past the root, fall back to the root-most known state
-                // (or keep `context` if you prefer different behavior).
                 if (!anchorState) {
                     anchorState = context;
                     while (anchorState.parent)
@@ -23922,18 +23904,7 @@
         return { val: root ? url.substring(1) : url, root };
     }
     function buildUrl(stateObject, $url, root) {
-        let stateDec = stateObject.self;
-        // For future states, i.e., states whose name ends with `.**`,
-        // match anything that starts with the url prefix
-        if (stateDec &&
-            stateDec.url &&
-            stateDec.name &&
-            stateDec.name.match(/\.\*\*$/)) {
-            const newStateDec = {};
-            copy(stateDec, newStateDec);
-            newStateDec.url += "{remainder:any}"; // match any path (.*)
-            stateDec = newStateDec;
-        }
+        const stateDec = stateObject.self;
         const { parent } = stateObject;
         const parsed = parseUrl(stateDec.url);
         const url = (!parsed ? stateDec.url : $url.compile(parsed.val, { state: stateDec }));
@@ -23999,9 +23970,9 @@
         const allViewKeys = compKeys.concat(nonCompKeys);
         if (isDefined(state.views) && hasAnyViewKey(allViewKeys, state)) {
             throw new Error(`State '${state.name}' has a 'views' object. ` +
-                `It cannot also have "view properties" at the state level.  ` +
-                `Move the following properties into a view (in the 'views' object): ` +
-                ` ${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`);
+                `It cannot also have view properties at the state level. ` +
+                `Move these properties into a view declaration: ` +
+                `${allViewKeys.filter((key) => isDefined(state[key])).join(", ")}`);
         }
         const views = {};
         const defaultViewConfig = {};
@@ -24025,12 +23996,12 @@
             }
             config = Object.assign({}, config);
             if (hasAnyViewKey(compKeys, config) && hasAnyViewKey(nonCompKeys, config)) {
-                throw new Error(`Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in stateview: '${name}@${state.name}'`);
+                throw new Error(`Cannot combine: ${compKeys.join("|")} with: ${nonCompKeys.join("|")} in state view '${name}@${state.name}'`);
             }
             config.resolveAs = config.resolveAs || "$resolve";
             config.$context = state;
             config.$name = name;
-            const normalized = ViewConfig.normalizeUIViewTarget(config.$context, config.$name);
+            const normalized = ViewConfig.normalizeNgViewTarget(config.$context, config.$name);
             config.$ngViewName = normalized.ngViewName;
             config.$ngViewContextAnchor = normalized.ngViewContextAnchor;
             views[name] = config;
@@ -24197,7 +24168,7 @@
                 ? Object.assign({}, state.parent.includes)
                 : {};
             state.includes[state.name] = true;
-            state.views = viewsBuilder(state);
+            state._views = viewsBuilder(state);
             return state;
         }
         /**
@@ -24207,16 +24178,10 @@
          */
         /** @internal */
         _parentName(state) {
-            // name = 'foo.bar.baz.**'
             const rawName = (state.self && state.self.name) || state.name || "";
             const name = rawName;
-            // segments = ['foo', 'bar', 'baz', '.**']
             const segments = name.split(".");
-            // segments = ['foo', 'bar', 'baz']
-            const lastSegment = segments.pop();
-            // segments = ['foo', 'bar'] (ignore .** segment for future states)
-            if (lastSegment === "**")
-                segments.pop();
+            segments.pop();
             if (segments.length) {
                 if (state.parent) {
                     throw new Error(`States that specify the 'parent:' property should not have a '.' in their name (${name})`);
@@ -24429,97 +24394,90 @@
 
     class StateQueueManager {
         /**
-         * @param {StateRegistryProvider} stateRegistry
          * @param {UrlRules} urlServiceRules
          * @param {StateStore} states
          * @param {StateBuilder} builder
          * @param {StateRegistryListener[]} listeners
          */
-        constructor(stateRegistry, urlServiceRules, states, builder, listeners) {
-            this.stateRegistry = stateRegistry;
-            this.urlServiceRules = urlServiceRules;
-            this.states = states;
-            this.builder = builder;
-            this.listeners = listeners;
-            this.queue = [];
+        constructor(urlServiceRules, states, builder, listeners) {
+            this._urlServiceRules = urlServiceRules;
+            this._states = states;
+            this._builder = builder;
+            this._listeners = listeners;
+            this._queue = [];
         }
         /**
          * @param {ng.StateDeclaration} stateDecl
          * @returns {StateObject}
          */
-        register(stateDecl) {
+        _register(stateDecl) {
             const state = new StateObject(stateDecl);
             const { name } = state;
             if (!isString(name))
                 throw new Error("State must have a valid name");
-            if (hasOwn(this.states, state.name) ||
-                this.queue.map((x) => x.name).includes(state.name))
+            if (hasOwn(this._states, state.name) ||
+                this._queue.map((x) => x.name).includes(state.name))
                 throw new Error(`State '${state.name}' is already defined`);
-            this.queue.push(state);
-            this.flush();
+            this._queue.push(state);
+            this._flush();
             return state;
         }
-        flush() {
-            const { queue, states, builder } = this;
+        _flush() {
+            const { _queue, _states, _builder } = this;
             const registered = []; // states that got registered
             const orphans = []; // states that don't yet have a parent registered
             const previousQueueLength = {}; // keep track of how long the queue when an orphan was first encountered
-            const getState = (name) => hasOwn(this.states, name) ? this.states[name] : undefined;
+            const getState = (name) => hasOwn(this._states, name) ? this._states[name] : undefined;
             const notifyListeners = () => {
                 if (registered.length) {
-                    this.listeners.forEach((listener) => listener("registered", registered.map((x) => x.self)));
+                    this._listeners.forEach((listener) => listener("registered", registered.map((x) => x.self)));
                 }
             };
-            while (queue.length > 0) {
-                const state = queue.shift();
+            while (_queue.length > 0) {
+                const state = _queue.shift();
                 if (!state)
                     continue;
                 const { name } = state;
-                const result = builder._build(state);
+                const result = _builder._build(state);
                 const orphanIdx = orphans.indexOf(state);
                 if (result) {
                     const existingState = getState(name);
                     if (existingState && existingState.name === name) {
                         throw new Error(`State '${name}' is already defined`);
                     }
-                    const existingFutureState = getState(`${name}.**`);
-                    if (existingFutureState) {
-                        // Remove future state of the same name
-                        this.stateRegistry.deregister(existingFutureState);
-                    }
-                    states[name] = state;
-                    this.attachRoute(state);
+                    _states[name] = state;
+                    this._attachRoute(state);
                     if (orphanIdx >= 0)
                         orphans.splice(orphanIdx, 1);
                     registered.push(state);
                     continue;
                 }
                 const prev = previousQueueLength[name];
-                previousQueueLength[name] = queue.length;
-                if (orphanIdx >= 0 && prev === queue.length) {
+                previousQueueLength[name] = _queue.length;
+                if (orphanIdx >= 0 && prev === _queue.length) {
                     // Wait until two consecutive iterations where no additional states were dequeued successfully.
                     // throw new Error(`Cannot register orphaned state '${name}'`);
-                    queue.push(state);
+                    _queue.push(state);
                     notifyListeners();
-                    return states;
+                    return _states;
                 }
                 else if (orphanIdx < 0) {
                     orphans.push(state);
                 }
-                queue.push(state);
+                _queue.push(state);
             }
             notifyListeners();
-            return states;
+            return _states;
         }
         /**
          *
          * @param {StateObject | ng.StateDeclaration} state
          * @returns {void} a function that deregisters the rule
          */
-        attachRoute(state) {
+        _attachRoute(state) {
             if (!state.abstract &&
                 state.url) {
-                const rulesApi = this.urlServiceRules;
+                const rulesApi = this._urlServiceRules;
                 rulesApi.rule(rulesApi._urlRuleFactory.create(state));
             }
         }
@@ -24528,7 +24486,7 @@
     /**
      * A registry for all of the application's [[StateDeclaration]]s
      *
-     * This API is found at `$stateRegistry` ([[UIRouter.stateRegistry]])
+     * This API is found at `$stateRegistry`.
      *
      */
     class StateRegistryProvider {
@@ -24546,22 +24504,22 @@
                  * @returns {StateRegistryProvider}
                  */
                 ($injector) => {
-                    this.$injector = $injector;
-                    this.builder._$injector = $injector;
+                    this._$injector = $injector;
+                    this._builder._$injector = $injector;
                     return this;
                 },
             ];
-            this.states = {};
-            stateService.stateRegistry = this; // <- circular wiring
-            this.urlService = urlService;
-            this.urlServiceRules = urlService._rules;
-            this.$injector = undefined;
-            this.listeners = [];
-            this.matcher = new StateMatcher(this.states);
-            this.builder = new StateBuilder(this.matcher, urlService);
-            this.stateQueue = new StateQueueManager(this, this.urlServiceRules, this.states, this.builder, this.listeners);
+            this._states = {};
+            stateService._stateRegistry = this; // <- circular wiring
+            this._urlService = urlService;
+            this._urlServiceRules = urlService._rules;
+            this._$injector = undefined;
+            this._listeners = [];
+            this._matcher = new StateMatcher(this._states);
+            this._builder = new StateBuilder(this._matcher, urlService);
+            this._stateQueue = new StateQueueManager(this._urlServiceRules, this._states, this._builder, this._listeners);
             this.registerRoot();
-            viewService.rootViewContext(this.root());
+            viewService._rootViewContext(this.root());
             globals.$current = this.root();
             globals.current = globals.$current.self;
         }
@@ -24578,7 +24536,7 @@
                 },
                 abstract: true,
             };
-            this._root = this.stateQueue.register(rootStateDef);
+            this._root = this._stateQueue._register(rootStateDef);
             this._root.navigable = null;
         }
         /**
@@ -24612,9 +24570,9 @@
          * @return a function that deregisters the listener
          */
         onStatesChanged(listener) {
-            this.listeners.push(listener);
+            this._listeners.push(listener);
             return () => {
-                removeFrom(this.listeners, listener);
+                removeFrom(this._listeners, listener);
             };
         }
         /**
@@ -24642,7 +24600,7 @@
          *          If the state was only queued, then the object is not fully built.
          */
         register(stateDefinition) {
-            return this.stateQueue.register(stateDefinition);
+            return this._stateQueue._register(stateDefinition);
         }
         /**
          *
@@ -24661,14 +24619,14 @@
             const children = getChildren([state]);
             const deregistered = [state].concat(children).reverse();
             deregistered.forEach((_state) => {
-                const rulesApi = this.urlServiceRules;
+                const rulesApi = this._urlServiceRules;
                 // Remove URL rule
                 rulesApi
                     .rules()
                     .filter(propEq("state", _state))
                     .forEach((rule) => rulesApi.removeRule(rule));
                 // Remove state from registry
-                delete this.states[_state.name];
+                delete this._states[_state.name];
             });
             return deregistered;
         }
@@ -24686,14 +24644,14 @@
             if (!state)
                 throw new Error(`Can't deregister state; not found: ${stateOrName}`);
             const deregisteredStates = this._deregisterTree(state._state());
-            this.listeners.forEach((listener) => listener("deregistered", deregisteredStates.map((x) => x.self)));
+            this._listeners.forEach((listener) => listener("deregistered", deregisteredStates.map((x) => x.self)));
             return deregisteredStates;
         }
         /**
          * @return {ng.BuiltStateDeclaration[]}
          */
         getAll() {
-            return keys(this.states).map((name) => this.states[name].self);
+            return keys(this._states).map((name) => this._states[name].self);
         }
         /**
          *
@@ -24703,8 +24661,8 @@
          */
         get(stateOrName, base) {
             if (arguments.length === 0)
-                return keys(this.states).map((name) => this.states[name].self);
-            const found = this.matcher.find(stateOrName, base);
+                return keys(this._states).map((name) => this._states[name].self);
+            const found = this._matcher.find(stateOrName, base);
             return (found && found.self) || null;
         }
     }
@@ -24772,9 +24730,7 @@
      * ### Attributes
      *
      * - `name`: (Optional) A view name.
-     *   The name should be unique amongst the other views in the same state.
-     *   You can have views of the same name that live in different states.
-     *   The ng-view can be targeted in a View using the name ([[StateDeclaration.views]]).
+     *   Named views are targeted from [[StateDeclaration.views]] entries.
      *
      * - `autoscroll`: an expression. When it evaluates to true, the `ng-view` will be scrolled into view when it is activated.
      *   Uses [[$anchorScroll]] to do the scrolling.
@@ -24782,79 +24738,21 @@
      * - `onload`: Expression to evaluate whenever the view updates.
      *
      * #### Example:
-     * A view can be unnamed or named.
+     * A state can render into the unnamed `$default` view, or target named views.
+     *
      * ```html
-     * <!-- Unnamed -->
      * <div ng-view></div>
-     *
-     * <!-- Named -->
-     * <div ng-view="viewName"></div>
-     *
-     * <!-- Named (different style) -->
-     * <ng-view name="viewName"></ng-view>
+     * <div ng-view="messagelist"></div>
      * ```
      *
-     * You can only have one unnamed view within any template (or root html). If you are only using a
-     * single view and it is unnamed then you can populate it like so:
-     *
-     * ```html
-     * <div ng-view></div>
+     * ```js
      * $stateProvider.state("home", {
      *   template: "<h1>HELLO!</h1>"
      * })
-     * ```
      *
-     * The above is a convenient shortcut equivalent to specifying your view explicitly with the
-     * [[StateDeclaration.views]] config property, by name, in this case an empty name:
-     *
-     * ```js
-     * $stateProvider.state("home", {
+     * $stateProvider.state("messages", {
      *   views: {
-     *     "": {
-     *       template: "<h1>HELLO!</h1>"
-     *     }
-     *   }
-     * })
-     * ```
-     *
-     * But typically you'll only use the views property if you name your view or have more than one view
-     * in the same template. There's not really a compelling reason to name a view if its the only one,
-     * but you could if you wanted, like so:
-     *
-     * ```html
-     * <div ng-view="main"></div>
-     * ```
-     *
-     * ```js
-     * $stateProvider.state("home", {
-     *   views: {
-     *     "main": {
-     *       template: "<h1>HELLO!</h1>"
-     *     }
-     *   }
-     * })
-     * ```
-     *
-     * Really though, you'll use views to set up multiple views:
-     *
-     * ```html
-     * <div ng-view></div>
-     * <div ng-view="chart"></div>
-     * <div ng-view="data"></div>
-     * ```
-     *
-     * ```js
-     * $stateProvider.state("home", {
-     *   views: {
-     *     "": {
-     *       template: "<h1>HELLO!</h1>"
-     *     },
-     *     "chart": {
-     *       template: "<chart_thing/>"
-     *     },
-     *     "data": {
-     *       template: "<data_thing/>"
-     *     }
+     *     messagelist: "messageList"
      *   }
      * })
      * ```
@@ -24927,7 +24825,7 @@
             };
         }
         const rootData = {
-            $cfg: { viewDecl: { $context: $view.rootViewContext() } },
+            $cfg: { viewDecl: { $context: $view._rootViewContext() } },
             $ngView: {},
         };
         const directive = {
@@ -24945,17 +24843,16 @@
                     let viewConfig;
                     let configUpdateVersion = 0;
                     const parentFqn = parse("$cfg.viewDecl.$context.name")(inherited) || inherited.$ngView.fqn;
-                    const activeUIView = {
+                    const activeNgView = {
                         id: directive.count++, // Global sequential ID for ng-view tags added to DOM
-                        name, // ng-view name (<div ng-view="name"></div>
+                        name, // ng-view name, retained internally for nested view matching
                         fqn: parentFqn ? `${parentFqn}.${name}` : name, // fully qualified name, describes location in DOM
-                        config: null, // The ViewConfig loaded (from a state.views definition)
+                        config: null, // The active ViewConfig loaded for this ng-view
                         configUpdated: configUpdatedCallback, // Called when the matching ViewConfig changes
                         get creationContext() {
                             // The context in which this ng-view "tag" was created
                             const fromParentTagConfig = parse("$cfg.viewDecl.$context")(inherited);
-                            // Allow <ng-view name="foo"><ng-view name="bar"></ng-view></ng-view>
-                            // See https://github.com/angular-ui/ui-router/issues/3355
+                            // Inherit the parent view context for nested ng-view elements.
                             const fromParentTag = parse("$ngView.creationContext")(inherited);
                             return (fromParentTagConfig ||
                                 fromParentTag ||
@@ -24974,22 +24871,22 @@
                                     viewConfig !== undefined) {
                                     return;
                                 }
-                                activeUIView.config = null;
+                                activeNgView.config = null;
                                 updateView(undefined);
                             });
                             viewConfig = undefined;
-                            activeUIView.config = null;
+                            activeNgView.config = null;
                             return;
                         }
                         if (viewConfig === config)
                             return;
-                        activeUIView.config = config || null;
+                        activeNgView.config = config || null;
                         viewConfig = config;
                         updateView(config);
                     }
-                    setCacheData($element, "$ngView", { $ngView: activeUIView });
+                    setCacheData($element, "$ngView", { $ngView: activeNgView });
                     updateView();
-                    const unregister = $view.registerUIView(activeUIView);
+                    const unregister = $view._registerNgView(activeNgView);
                     scope.$on("$destroy", function () {
                         unregister();
                     });
@@ -25018,7 +24915,7 @@
                         const animLeave = withResolvers();
                         const $ngViewData = {
                             $cfg: config,
-                            $ngView: activeUIView,
+                            $ngView: activeNgView,
                         };
                         const $ngViewAnim = {
                             $animEnter: animEnter.promise,
@@ -25180,7 +25077,7 @@
     }
     /** @ignore */
     /** @ignore incrementing id */
-    let _uiCanExitId = 0;
+    let _ngCanExitId = 0;
     /**
      * @ignore TODO: move these callbacks to $view and/or `/hooks/components.ts` or something
      */
@@ -25202,9 +25099,9 @@
         }
         const viewState = tail(cfg.path).state.self;
         const hookOptions = { bind: controllerInstance };
-        // Add component-level hook for onUiParamsChanged
-        if (isFunction(controllerInstance.uiOnParamsChanged)) {
-            const onParamsChanged = controllerInstance.uiOnParamsChanged;
+        // Add component-level hook for ngOnParamsChanged
+        if (isFunction(controllerInstance.ngOnParamsChanged)) {
+            const onParamsChanged = controllerInstance.ngOnParamsChanged;
             const resolveContext = new ResolveContext(cfg.path, cfg.factory?._injector);
             const viewCreationTrans = resolveContext.getResolvable("$transition$")
                 .data;
@@ -25263,7 +25160,7 @@
                 cfg.viewDecl.$ngViewContextAnchor || "^",
             ].join("::");
             const rootScope = $scope.$root;
-            const registryProp = "__uiRouterParamsChangedHooks__";
+            const registryProp = "__ngRouterParamsChangedHooks__";
             const hookRegistry = rootScope[registryProp] ||
                 (rootScope[registryProp] = new Map());
             hookRegistry.get(hookRegistryKey)?.();
@@ -25276,11 +25173,11 @@
                 deregisterParamsHook();
             });
         }
-        // Add component-level hook for uiCanExit
-        if (isFunction(controllerInstance.uiCanExit)) {
-            const uiCanExit = controllerInstance.uiCanExit;
-            const id = _uiCanExitId++;
-            const cacheProp = "_uiCanExitIds";
+        // Add component-level hook for ngCanExit
+        if (isFunction(controllerInstance.ngCanExit)) {
+            const ngCanExit = controllerInstance.ngCanExit;
+            const id = _ngCanExitId++;
+            const cacheProp = "_ngCanExitIds";
             /**
              * Returns true if any transition in the redirect chain already answered truthy.
              */
@@ -25292,7 +25189,7 @@
                 let promise;
                 const ids = (trans[cacheProp] = trans[cacheProp] || {});
                 if (!prevTruthyAnswer(trans)) {
-                    promise = Promise.resolve(uiCanExit.call(controllerInstance, trans));
+                    promise = Promise.resolve(ngCanExit.call(controllerInstance, trans));
                     promise.then((val) => (ids[id] = val !== false));
                 }
                 return promise;
@@ -26092,7 +25989,7 @@
         }
         applyViewConfigs() {
             const enteringStates = this._treeChanges.entering.map((node) => node.state);
-            PathUtils.applyViewConfigs(this._transitionService.$view, this._treeChanges.to, enteringStates);
+            PathUtils.applyViewConfigs(this._transitionService._view, this._treeChanges.to, enteringStates);
         }
         /**
          * @returns {StateObject} the internal from [State] object
@@ -26174,8 +26071,6 @@
          * Promise.all(promises).then(values => console.log("Resolved values: " + values));
          * ```
          *
-         * Note: Angular 1 users whould use `$q.all()`
-         *
          * @param pathname resolve context's path name (e.g., `to` or `from`)
          *
          * @returns an array of resolve tokens (keys)
@@ -26188,7 +26083,7 @@
          *
          * Allows a transition hook to dynamically add a Resolvable to this Transition.
          *
-         * Use the [[Transition.injector]] to retrieve the resolved data in subsequent hooks ([[UIInjector.get]]).
+         * Use the [[Transition.injector]] to retrieve the resolved data in subsequent hooks.
          *
          * If a `state` argument is provided, the Resolvable is processed when that state is being entered.
          * If no `state` is provided then the root state is used.
@@ -26319,7 +26214,7 @@
         /**
          * Get the [[ViewConfig]]s associated with this Transition
          *
-         * Each state can define one or more views (template/controller), which are encapsulated as `ViewConfig` objects.
+         * Each entered state's view declaration is encapsulated as a `ViewConfig` object.
          * This method fetches the `ViewConfigs` for a given path in the Transition (e.g., "to" or "entering").
          *
          * @param pathname the name of the path to fetch views for:
@@ -26331,7 +26226,7 @@
         views(pathname = "entering", state) {
             let path = (this._treeChanges[pathname] || []);
             path = !state ? path : path.filter(propEq("state", state));
-            return path.map((x) => x.views || []).reduce(unnestR, []);
+            return path.map((x) => x._views || []).reduce(unnestR, []);
         }
         /**
          * Return the transition's tree changes
@@ -26603,7 +26498,7 @@
      * `$stateParams`, and `$state$` before the transition starts.
      */
     function registerAddCoreResolvables(transitionService) {
-        return transitionService.onCreate({}, function addCoreResolvables(trans) {
+        return transitionService._onCreate({}, function addCoreResolvables(trans) {
             trans.addResolvable(Resolvable.fromData(Transition, trans), "");
             trans.addResolvable(Resolvable.fromData("$transition$", trans), "");
             trans.addResolvable(Resolvable.fromData("$stateParams", trans.params()), "");
@@ -26655,68 +26550,6 @@
      * This keeps invalid targets from progressing into the rest of the hook pipeline.
      */
     const registerInvalidTransitionHook = (transitionService) => transitionService.onBefore({}, invalidTransitionHook, { priority: -1e4 });
-
-    /**
-     * Registers the built-in hook that runs state `lazyLoad` callbacks before entry.
-     */
-    function registerLazyLoadHook(transitionService, stateService, urlService, stateRegistry) {
-        return transitionService.onBefore({
-            entering: (state) => !!state?.lazyLoad,
-        }, (transition) => {
-            function retryTransition() {
-                if (transition.originalTransition().options().source !== "url") {
-                    const orig = transition.targetState();
-                    return stateService.target(orig.identifier(), orig.params(), orig.options());
-                }
-                const result = urlService?.match(urlService.parts());
-                const rule = result && result.rule;
-                if (rule && rule._type === "STATE" && rule.state) {
-                    const { state } = rule;
-                    const params = result.match;
-                    return stateService?.target(state, params, transition.options());
-                }
-                urlService?.sync();
-                return undefined;
-            }
-            const promises = transition
-                .entering()
-                .filter((state) => state._state && !!state._state().lazyLoad)
-                .map((state) => lazyLoadState(transition, state, stateRegistry));
-            return Promise.all(promises).then(retryTransition);
-        });
-    }
-    const lazyLoadPromiseCache = new WeakMap();
-    /**
-     * Invokes one state's `lazyLoad` function and memoizes concurrent calls.
-     */
-    function lazyLoadState(transition, state, stateRegistry) {
-        const lazyLoadFn = (state._state && state._state().lazyLoad);
-        let promise = lazyLoadPromiseCache.get(lazyLoadFn);
-        if (!promise) {
-            const success = (result) => {
-                delete state.lazyLoad;
-                if (state._state)
-                    delete state._state().lazyLoad;
-                lazyLoadPromiseCache.delete(lazyLoadFn);
-                return result;
-            };
-            const error = (err) => {
-                lazyLoadPromiseCache.delete(lazyLoadFn);
-                return Promise.reject(err);
-            };
-            promise = Promise.resolve(lazyLoadFn(transition, state))
-                .then(updateStateRegistry)
-                .then(success, error);
-            lazyLoadPromiseCache.set(lazyLoadFn, promise);
-        }
-        function updateStateRegistry(result) {
-            if (result && isArray(result.states)) {
-                result.states.forEach((_state) => stateRegistry && stateRegistry.register(_state));
-            }
-            return result;
-        }
-        return promise;
-    }
 
     /**
      * Adapts `onEnter`, `onExit`, and `onRetain` state declaration callbacks
@@ -26845,11 +26678,11 @@
             const exitingViews = transition.views("exiting");
             if (!enteringViews.length && !exitingViews.length)
                 return;
-            exitingViews.forEach((vc) => viewService.deactivateViewConfig(vc));
+            exitingViews.forEach((vc) => viewService._deactivateViewConfig(vc));
             enteringViews.forEach((vc) => {
-                viewService.activateViewConfig(vc);
+                viewService._activateViewConfig(vc);
             });
-            viewService.sync();
+            viewService._sync();
         };
         return transitionService.onSuccess({}, activateViews);
     };
@@ -26897,10 +26730,8 @@
             this.$get = [
                 $injectTokens._state,
                 $injectTokens._url,
-                $injectTokens._stateRegistry,
                 $injectTokens._view,
-                (stateService, urlService, stateRegistry, viewService) => {
-                    this._deregisterHookFns.lazyLoad = registerLazyLoadHook(this, stateService, urlService, stateRegistry);
+                (stateService, urlService, viewService) => {
                     this._deregisterHookFns.updateUrl = registerUpdateUrl(this, stateService, urlService);
                     this._deregisterHookFns.redirectTo = registerRedirectToHook(this, stateService);
                     this._deregisterHookFns.activateViews = registerActivateViews(this, viewService);
@@ -26911,8 +26742,8 @@
             this._eventTypes = [];
             this._registeredHooks = {};
             this._criteriaPaths = {};
-            this.globals = globals;
-            this.$view = viewService;
+            this._globals = globals;
+            this._view = viewService;
             this._deregisterHookFns = {};
             this._defineCorePaths();
             this._defineCoreEvents();
@@ -26924,7 +26755,7 @@
          * Creates a new transition from the current path to a target state.
          */
         create(fromPath, targetState) {
-            return new Transition(fromPath, targetState, this, this.globals);
+            return new Transition(fromPath, targetState, this, this._globals);
         }
         /**
          * Defines the built-in transition lifecycle events and their execution order.
@@ -27005,9 +26836,10 @@
             return registerHook(this, this, eventType, matchCriteria, callback, options);
         }
         /**
-         * Registers an `onCreate` transition hook.
+         * Registers an internal hook that runs while a transition is being constructed.
          */
-        onCreate(matchCriteria, callback, options) {
+        /** @internal */
+        _onCreate(matchCriteria, callback, options) {
             return this.on("onCreate", matchCriteria, callback, options);
         }
         /**
@@ -27086,7 +26918,6 @@
             fns.resolveAll = registerResolveRemaining(this);
             fns.loadViews = registerLoadEnteringViews(this);
             fns.updateGlobals = registerUpdateGlobalState(this);
-            fns.lazyLoad = registerLazyLoadHook(this);
         }
     }
     TransitionProvider.$inject = [
@@ -27104,14 +26935,14 @@
                 const urlOptions = {
                     replace: options.location === "replace",
                 };
-                urlService.push($state.$current.navigable.url, $state.globals.params, urlOptions);
+                urlService.push($state.$current.navigable.url, $state._globals.params, urlOptions);
             }
             urlService.update(true);
         };
         return transitionService.onSuccess({}, updateUrl, { priority: 9999 });
     }
     function registerUpdateGlobalState(transitionService) {
-        return transitionService.onCreate({}, (trans) => {
+        return transitionService._onCreate({}, (trans) => {
             const globals = trans._globals;
             const transitionSuccessful = () => {
                 const current = trans.$to();
@@ -27154,20 +26985,20 @@
     /**
      * Provides services related to ng-router states.
      *
-     * This API is located at `router.stateService` ([[UIRouter.stateService]])
+     * This API is located at `$state`.
      */
     class StateProvider {
         /** @internal */
         _getRegistry() {
-            if (!this.stateRegistry)
+            if (!this._stateRegistry)
                 throw new Error("State registry is not initialized");
-            return this.stateRegistry;
+            return this._stateRegistry;
         }
         /** @internal */
         _getUrlService() {
-            if (!this.urlService)
+            if (!this._urlService)
                 throw new Error("Url service is not initialized");
-            return this.urlService;
+            return this._urlService;
         }
         /**
          * The latest successful state parameters
@@ -27175,19 +27006,19 @@
          * @deprecated This is a passthrough through to [[Router.params]]
          */
         get params() {
-            return this.globals.params;
+            return this._globals.params;
         }
         /**
          * The current [[StateDeclaration]]
          */
         get current() {
-            return this.globals.current;
+            return this._globals.current;
         }
         /**
          * The current [[StateObject]] (an internal API)
          */
         get $current() {
-            return this.globals.$current;
+            return this._globals.$current;
         }
         /**
          *
@@ -27207,31 +27038,31 @@
                  * @returns {StateProvider}
                  */
                 ($injector, $url, _viewService) => {
-                    this.urlService = $url;
-                    this.$injector = $injector;
+                    this._urlService = $url;
+                    this._$injector = $injector;
                     return this;
                 },
             ];
             /**
              * @type {ng.RouterProvider}
              */
-            this.globals = globals;
+            this._globals = globals;
             /**
              * @type {ng.TransitionProvider}
              */
-            this.transitionService = transitionService;
+            this._transitionService = transitionService;
             /**
              * @type {StateRegistryProvider | undefined}
              */
-            this.stateRegistry = undefined;
+            this._stateRegistry = undefined;
             /** @type {ng.UrlService | undefined } */
-            this.urlService = undefined;
+            this._urlService = undefined;
             /** @type {ng.InjectorService | undefined } */
-            this.$injector = undefined;
+            this._$injector = undefined;
             /**
              * @type {OnInvalidCallback[]}
              */
-            this.invalidCallbacks = [];
+            this._invalidCallbacks = [];
             /** @type {ng.ExceptionHandlerService} */
             this._defaultErrorHandler = exceptionHandlerProvider.handler;
         }
@@ -27265,12 +27096,12 @@
          */
         _handleInvalidTargetState(fromPath, toState) {
             const fromState = makeTargetState(this._getRegistry(), fromPath);
-            const { globals } = this;
+            const globals = this._globals;
             const latestThing = () => globals._transitionHistory._peekTail();
             const latest = latestThing();
             /** @type {Queue<OnInvalidCallback>} */
-            const callbackQueue = new Queue(this.invalidCallbacks.slice());
-            const injector = this.$injector;
+            const callbackQueue = new Queue(this._invalidCallbacks.slice());
+            const injector = this._$injector;
             const checkForRedirect = (result) => {
                 if (!(result instanceof TargetState)) {
                     return undefined;
@@ -27308,11 +27139,10 @@
          *
          * Example:
          * ```js
-         * stateService.onInvalid(function(to, from, injector) {
+         * stateService.onInvalid(function(to) {
          *   if (to.name() === 'foo') {
-         *     let lazyLoader = injector.get('LazyLoadService');
-         *     return lazyLoader.load('foo')
-         *         .then(() => stateService.target('foo'));
+         *     stateService.state({ name: 'foo' });
+         *     return stateService.target('foo');
          *   }
          * });
          * ```
@@ -27325,9 +27155,9 @@
          * @returns a function which deregisters the callback
          */
         onInvalid(callback) {
-            this.invalidCallbacks.push(callback);
+            this._invalidCallbacks.push(callback);
             return () => {
-                removeFrom(this.invalidCallbacks, callback);
+                removeFrom(this._invalidCallbacks, callback);
             };
         }
         /**
@@ -27338,7 +27168,7 @@
          *
          * #### Example:
          * ```js
-         * let app angular.module('app', ['ui.router']);
+         * let app = angular.module('app', []);
          *
          * app.controller('ctrl', function ($scope, $state) {
          *   $scope.reload = function(){
@@ -27362,7 +27192,7 @@
          * ```js
          * //assuming app application consists of 3 states: 'contacts', 'contacts.detail', 'contacts.detail.item'
          * //and current state is 'contacts.detail.item'
-         * let app angular.module('app', ['ui.router']);
+         * let app = angular.module('app', []);
          *
          * app.controller('ctrl', function ($scope, $state) {
          *   $scope.reload = function(){
@@ -27375,10 +27205,10 @@
          * @returns A promise representing the state of the new transition. See [[StateService.go]]
          */
         reload(reloadState) {
-            const { current } = this.globals;
+            const { current } = this._globals;
             if (!current)
                 throw new Error("No current state");
-            return this.transitionTo(current, this.globals.params, {
+            return this.transitionTo(current, this._globals.params, {
                 reload: isDefined(reloadState) ? reloadState : true,
                 inherit: false,
                 notify: false,
@@ -27390,14 +27220,14 @@
          * Convenience method for transitioning to a new state.
          *
          * `$state.go` calls `$state.transitionTo` internally but automatically sets options to
-         * `{ location: true, inherit: true, relative: router.globals.$current, notify: true }`.
-         * This allows you to use either an absolute or relative `to` argument (because of `relative: router.globals.$current`).
+         * `{ location: true, inherit: true, relative: $state.$current, notify: true }`.
+         * This allows you to use either an absolute or relative `to` argument (because of `relative: $state.$current`).
          * It also allows you to specify * only the parameters you'd like to update, while letting unspecified parameters
          * inherit from the current parameter values (because of `inherit: true`).
          *
          * #### Example:
          * ```js
-         * let app = angular.module('app', ['ui.router']);
+         * let app = angular.module('app', []);
          *
          * app.controller('ctrl', function ($scope, $state) {
          *   $scope.changeState = function () {
@@ -27447,13 +27277,13 @@
             options.reloadState =
                 options.reload === true
                     ? reg.root()
-                    : reg.matcher.find(options.reload, options.relative);
+                    : reg._matcher.find(options.reload, options.relative);
             if (options.reload && !options.reloadState)
                 throw new Error(`No such reload state '${isString(options.reload) ? options.reload : options.reload.name}'`);
             return new TargetState(this._getRegistry(), identifier, params, options);
         }
         getCurrentPath() {
-            const { globals } = this;
+            const globals = this._globals;
             const latestSuccess = globals._successfulTransitions._peekTail();
             const rootPath = () => [new PathNode(this._getRegistry().root())];
             return latestSuccess ? latestSuccess._treeChanges.to : rootPath();
@@ -27465,7 +27295,7 @@
          *
          * #### Example:
          * ```js
-         * let app = angular.module('app', ['ui.router']);
+         * let app = angular.module('app', []);
          *
          * app.controller('ctrl', function ($scope, $state) {
          *   $scope.changeState = function () {
@@ -27483,7 +27313,7 @@
          */
         transitionTo(to, toParams = {}, options = {}) {
             options = defaults(options, defaultTransOpts);
-            const getCurrent = () => this.globals.transition;
+            const getCurrent = () => this._globals.transition;
             options = Object.assign(options, { current: getCurrent });
             const ref = this.target(to, toParams, options);
             const currentPath = this.getCurrentPath();
@@ -27508,11 +27338,11 @@
             /** @type {RejectedTransitionHandler} */
             const rejectedTransitionHandler = (trans) => (error) => {
                 if (error instanceof Rejection) {
-                    const isLatest = this.globals._lastStartedTransitionId <= trans.$id;
+                    const isLatest = this._globals._lastStartedTransitionId <= trans.$id;
                     if (error.type === RejectType._IGNORED) {
                         isLatest && this._getUrlService().update();
                         // Consider ignored `Transition.run()` as a successful `transitionTo`
-                        return Promise.resolve(this.globals.current);
+                        return Promise.resolve(this._globals.current);
                     }
                     const { detail } = error;
                     if (error.type === RejectType._SUPERSEDED &&
@@ -27532,7 +27362,7 @@
                 errorHandler(error);
                 return Promise.reject(error);
             };
-            const transition = this.transitionService.create(currentPath, ref);
+            const transition = this._transitionService.create(currentPath, ref);
             const transitionToPromise = transition
                 .run()
                 .catch(rejectedTransitionHandler(transition));
@@ -27571,7 +27401,7 @@
            */
         is(stateOrName, params, options) {
             options = defaults(options, { relative: this.$current });
-            const state = this.stateRegistry?.matcher.find(stateOrName, options?.relative);
+            const state = this._stateRegistry?._matcher.find(stateOrName, options?.relative);
             if (!isDefined(state))
                 return undefined;
             if (this.$current !== state)
@@ -27579,7 +27409,7 @@
             if (!params)
                 return true;
             const schema = state.parameters({ inherit: true, matchingKeys: params });
-            return Param.equals(schema, Param.values(schema, params), this.globals.params);
+            return Param.equals(schema, Param.values(schema, params), this._globals.params);
         }
         /**
            * Checks if the current state *includes* the provided state
@@ -27626,7 +27456,7 @@
                     return false;
                 stateOrName = currentName;
             }
-            const state = this.stateRegistry?.matcher.find(stateOrName, options?.relative);
+            const state = this._stateRegistry?._matcher.find(stateOrName, options?.relative);
             const include = this.$current?.includes;
             if (!isDefined(state))
                 return undefined;
@@ -27638,7 +27468,7 @@
                 inherit: true,
                 matchingKeys: params,
             });
-            return Param.equals(schema, Param.values(schema, params), this.globals.params);
+            return Param.equals(schema, Param.values(schema, params), this._globals.params);
         }
         /**
          * Generates a URL for a state and parameters
@@ -27663,11 +27493,11 @@
             };
             options = defaults(options, defaultHrefOpts);
             params = params || {};
-            const state = this.stateRegistry?.matcher.find(stateOrName, options?.relative);
+            const state = this._stateRegistry?._matcher.find(stateOrName, options?.relative);
             if (!isDefined(state))
                 return null;
             if (options?.inherit)
-                params = this.globals.params.$inherit(params, this.$current, state);
+                params = this._globals.params.$inherit(params, this.$current, state);
             const nav = state && options?.lossy ? state.navigable : state;
             if (!nav || isNullOrUndefined(nav.url)) {
                 return null;
@@ -27707,7 +27537,7 @@
          * @param {undefined} [base]
          */
         get(stateOrName, base) {
-            const reg = this.stateRegistry;
+            const reg = this._stateRegistry;
             if (arguments.length === 0)
                 return reg?.get();
             return reg?.get(stateOrName, base || this.$current);
@@ -28054,7 +27884,7 @@
      * This information can be used to build absolute URLs, such as
      * `https://example.com:443/basepath/state/substate?param1=a#hashvalue`;
      *
-     * This API is found at `router.urlService.config` (see: [[UIRouter.urlService]], [[URLService.config]])
+     * This API is found at `$url.config`.
      */
     class UrlConfigProvider {
         /**
@@ -28067,12 +27897,9 @@
             this._isStrictMode = true;
             this._defaultSquashPolicy = false;
             /**
-             * Applys ng1-specific path parameter encoding
+             * Applies path parameter encoding
              *
-             * The Angular 1 `$location` service is a bit weird.
-             * It doesn't allow slashes to be encoded/decoded bi-directionally.
-             *
-             * See the writeup at https://github.com/angular-ui/ui-router/issues/2598
+             * The `$location` service does not allow slashes to be encoded/decoded bi-directionally.
              *
              * This code patches the `path` parameter type so it encoded/decodes slashes as ~2F
              *
@@ -28781,7 +28608,7 @@
          *
          * - matched parameter values ([[RawParams]] from [[UrlMatcher.exec]])
          * - url: the current Url ([[UrlParts]])
-         * - router: the router object ([[UIRouter]])
+         * - router: the router object
          *
          * #### Example:
          * ```js
@@ -28914,7 +28741,7 @@
          *
          * - regexp match array (from `regexp`)
          * - url: the current Url ([[UrlParts]])
-         * - router: the router object ([[UIRouter]])
+         * - router: the router object
          *
          * #### Example:
          * ```js
@@ -29050,7 +28877,7 @@
      *
      * The most commonly used methods are [[otherwise]] and [[when]].
      *
-     * This API is found at `$url.rules` (see: [[UIRouter.urlService]], [[URLService.rules]])
+     * This API is found at `$url.rules`.
      */
     class UrlRules {
         /** @param {UrlRuleFactory} urlRuleFactory */
@@ -29212,7 +29039,7 @@
          *
          * ---
          *
-         * When the handler is a function, it receives the matched value, the current URL, and the `UIRouter` object (See [[UrlRuleHandlerFn]]).
+         * When the handler is a function, it receives the matched value, the current URL, and the router object (See [[UrlRuleHandlerFn]]).
          * The "matched value" differs based on the `matcher`.
          * For [[UrlMatcher]]s, it will be the matched state params.
          * For `RegExp`, it will be the match array from `regexp.exec()`.
@@ -29737,24 +29564,21 @@
             ];
             this._ngViews = [];
             this._viewConfigs = [];
-            this._listeners = [];
             this._templateFactory = undefined;
             this._rootContext = undefined;
-        }
-        onSync(listener) {
-            this._listeners.push(listener);
-            return () => removeFrom(this._listeners, listener);
         }
         /**
          * Gets or sets the root view context used for relative `ng-view` targeting.
          */
-        rootViewContext(context) {
+        /** @internal */
+        _rootViewContext(context) {
             return (this._rootContext = context || this._rootContext);
         }
         /**
          * Builds a view config for one view declaration along the specified path.
          */
-        createViewConfig(path, decl) {
+        /** @internal */
+        _createViewConfig(path, decl) {
             const templateFactory = this._templateFactory;
             if (!templateFactory) {
                 throw new Error("ViewService: No template factory registered");
@@ -29764,20 +29588,23 @@
         /**
          * Removes a view config from the active registry.
          */
-        deactivateViewConfig(viewConfig) {
+        /** @internal */
+        _deactivateViewConfig(viewConfig) {
             removeFrom(this._viewConfigs, viewConfig);
         }
         /**
          * Adds a view config to the active registry.
          */
-        activateViewConfig(viewConfig) {
+        /** @internal */
+        _activateViewConfig(viewConfig) {
             this._viewConfigs.push(viewConfig);
         }
         /**
          * Re-matches active `ng-view` instances against currently registered view configs
-         * and notifies both the views and registered listeners of the new assignments.
+         * and notifies each view when its config assignment changes.
          */
-        sync() {
+        /** @internal */
+        _sync() {
             const ngViewsByFqn = {};
             for (let i = 0; i < this._ngViews.length; i++) {
                 const ngView = this._ngViews[i];
@@ -29816,11 +29643,9 @@
                 return count;
             };
             this._ngViews.sort((left, right) => ngViewDepth(left) - ngViewDepth(right));
-            const matchedViewConfigs = new Set();
-            const ngViewTuples = [];
             for (let i = 0; i < this._ngViews.length; i++) {
                 const ngView = this._ngViews[i];
-                const matches = ViewService.matches(ngViewsByFqn, ngView);
+                const matches = ViewService._matches(ngViewsByFqn, ngView);
                 let selectedViewConfig = undefined;
                 let bestDepth = Number.NEGATIVE_INFINITY;
                 for (let j = 0; j < this._viewConfigs.length; j++) {
@@ -29833,81 +29658,50 @@
                         bestDepth = candidateDepth;
                     }
                 }
-                if (selectedViewConfig) {
-                    matchedViewConfigs.add(selectedViewConfig);
-                }
-                ngViewTuples.push({ ngView, viewConfig: selectedViewConfig });
-            }
-            const unmatchedConfigTuples = [];
-            for (let i = 0; i < this._viewConfigs.length; i++) {
-                const viewConfig = this._viewConfigs[i];
-                if (!matchedViewConfigs.has(viewConfig)) {
-                    unmatchedConfigTuples.push({ ngView: undefined, viewConfig });
+                if (this._ngViews.indexOf(ngView) !== -1) {
+                    ngView.configUpdated(selectedViewConfig);
                 }
             }
-            for (let i = 0; i < ngViewTuples.length; i++) {
-                const tuple = ngViewTuples[i];
-                if (tuple.ngView && this._ngViews.indexOf(tuple.ngView) !== -1) {
-                    tuple.ngView.configUpdated(tuple.viewConfig);
-                }
-            }
-            const allTuples = ngViewTuples.concat(unmatchedConfigTuples);
-            this._listeners.forEach((cb) => cb(allTuples));
         }
         /**
          * Registers one active `ng-view` and returns a deregistration function.
          */
-        registerUIView(ngView) {
+        /** @internal */
+        _registerNgView(ngView) {
             const ngViews = this._ngViews;
             ngViews.push(ngView);
-            this.sync();
+            this._sync();
             return () => {
                 const idx = ngViews.indexOf(ngView);
                 if (idx === -1) {
                     return;
                 }
                 ngViews.splice(idx, 1);
-                this.sync();
+                this._sync();
             };
-        }
-        /**
-         * Returns the currently registered view configs.
-         */
-        available() {
-            return this._viewConfigs;
-        }
-        static normalizeUIViewTarget(context, rawViewName = "$default") {
-            const [uiViewName, uiViewContextAnchor = "^"] = rawViewName.split("@");
-            let anchor = uiViewContextAnchor;
-            if (anchor === "") {
-                anchor = "";
-            }
-            else if (anchor === "^") {
-                anchor = context.parent ? context.parent.name : "";
-            }
-            return `${uiViewName || "$default"}@${anchor}`;
         }
         /**
          * Builds a predicate that determines whether a view config matches
          * a specific active `ng-view`.
          */
-        static matches(ngViewsByFqn, uiView) {
-            const uiViewFqn = uiView.fqn;
-            const uiViewContext = uiView.creationContext;
+        /** @internal */
+        static _matches(ngViewsByFqn, ngView) {
+            const ngViewFqn = ngView.fqn;
+            const ngViewContext = ngView.creationContext;
             return (viewConfig) => {
                 if (!viewConfig || !viewConfig.viewDecl)
                     return false;
                 const vcName = viewConfig.viewDecl.$ngViewName || "$default";
                 const vcContext = viewConfig.viewDecl.$ngViewContextAnchor || "";
                 const normalizedTarget = vcContext ? `${vcContext}.${vcName}` : vcName;
-                if (normalizedTarget !== uiViewFqn)
+                if (normalizedTarget !== ngViewFqn)
                     return false;
                 const viewContext = viewConfig.viewDecl.$context;
-                if (!equals(viewContext, uiViewContext) &&
-                    vcContext !== uiViewContext.name) {
+                if (!equals(viewContext, ngViewContext) &&
+                    vcContext !== ngViewContext.name) {
                     return false;
                 }
-                const childViewFqn = `${normalizedTarget}.${uiView.name}`;
+                const childViewFqn = `${normalizedTarget}.${ngView.name}`;
                 return !ngViewsByFqn[childViewFqn];
             };
         }

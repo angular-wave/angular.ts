@@ -365,7 +365,7 @@ export class Transition {
     const enteringStates = this._treeChanges.entering.map((node) => node.state);
 
     PathUtils.applyViewConfigs(
-      this._transitionService.$view,
+      this._transitionService._view,
       this._treeChanges.to,
       enteringStates,
     );

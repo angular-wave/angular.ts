@@ -16,12 +16,12 @@ describe("StateBuilder", function () {
       "default",
     ]);
     $stateRegistry = $injector.get("$stateRegistry");
-    builder = $stateRegistry.builder;
+    builder = $stateRegistry._builder;
   });
 
   it("expect it to be configured by state registry", () => {
     expect($stateRegistry).toBeDefined();
-    expect($stateRegistry.builder).toBeDefined();
+    expect($stateRegistry._builder).toBeDefined();
   });
 
   it("should build a single default view from state-level view properties", function () {
@@ -111,6 +111,7 @@ describe("StateBuilder", function () {
   });
 
   it("should not expose the old generic builder decorator API", function () {
+    expect($stateRegistry.builder).toBeUndefined();
     expect(builder.builder).toBeUndefined();
     expect($stateRegistry.decorator).toBeUndefined();
   });

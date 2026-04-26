@@ -60,28 +60,34 @@ export const silentRejection = <E = unknown>(error: E): Promise<never> =>
  * This API is located at `$state`.
  */
 export class StateProvider {
-  globals: ng.RouterProvider;
-  transitionService: ng.TransitionProvider;
-  stateRegistry: StateRegistryProvider | undefined;
-  urlService: ng.UrlService | undefined;
-  $injector: ng.InjectorService | undefined;
-  invalidCallbacks: OnInvalidCallback[];
+  /** @internal */
+  _globals: ng.RouterProvider;
+  /** @internal */
+  _transitionService: ng.TransitionProvider;
+  /** @internal */
+  _stateRegistry: StateRegistryProvider | undefined;
+  /** @internal */
+  _urlService: ng.UrlService | undefined;
+  /** @internal */
+  _$injector: ng.InjectorService | undefined;
+  /** @internal */
+  _invalidCallbacks: OnInvalidCallback[];
   /** @internal */
   _defaultErrorHandler: ng.ExceptionHandlerService;
 
   /** @internal */
   _getRegistry(): StateRegistryProvider {
-    if (!this.stateRegistry)
+    if (!this._stateRegistry)
       throw new Error("State registry is not initialized");
 
-    return this.stateRegistry;
+    return this._stateRegistry;
   }
 
   /** @internal */
   _getUrlService(): ng.UrlService {
-    if (!this.urlService) throw new Error("Url service is not initialized");
+    if (!this._urlService) throw new Error("Url service is not initialized");
 
-    return this.urlService;
+    return this._urlService;
   }
 
   /**
@@ -90,21 +96,21 @@ export class StateProvider {
    * @deprecated This is a passthrough through to [[Router.params]]
    */
   get params() {
-    return this.globals.params;
+    return this._globals.params;
   }
 
   /**
    * The current [[StateDeclaration]]
    */
   get current(): StateDeclaration | undefined {
-    return this.globals.current;
+    return this._globals.current;
   }
 
   /**
    * The current [[StateObject]] (an internal API)
    */
   get $current(): StateObject | undefined {
-    return this.globals.$current;
+    return this._globals.$current;
   }
 
   /* @ignore */
@@ -128,26 +134,26 @@ export class StateProvider {
     /**
      * @type {ng.RouterProvider}
      */
-    this.globals = globals;
+    this._globals = globals;
     /**
      * @type {ng.TransitionProvider}
      */
-    this.transitionService = transitionService;
+    this._transitionService = transitionService;
 
     /**
      * @type {StateRegistryProvider | undefined}
      */
-    this.stateRegistry = undefined;
+    this._stateRegistry = undefined;
 
     /** @type {ng.UrlService | undefined } */
-    this.urlService = undefined;
+    this._urlService = undefined;
     /** @type {ng.InjectorService | undefined } */
-    this.$injector = undefined;
+    this._$injector = undefined;
 
     /**
      * @type {OnInvalidCallback[]}
      */
-    this.invalidCallbacks = [];
+    this._invalidCallbacks = [];
 
     /** @type {ng.ExceptionHandlerService} */
     this._defaultErrorHandler = exceptionHandlerProvider.handler;
@@ -169,8 +175,8 @@ export class StateProvider {
       _viewService: ng.ViewService,
     ) => {
       void _viewService;
-      this.urlService = $url;
-      this.$injector = $injector;
+      this._urlService = $url;
+      this._$injector = $injector;
 
       return this;
     },
@@ -212,16 +218,16 @@ export class StateProvider {
   ): Promise<any> {
     const fromState = makeTargetState(this._getRegistry(), fromPath);
 
-    const { globals } = this;
+    const globals = this._globals;
 
     const latestThing = () => globals._transitionHistory._peekTail();
 
     const latest = latestThing();
 
     /** @type {Queue<OnInvalidCallback>} */
-    const callbackQueue = new Queue(this.invalidCallbacks.slice());
+    const callbackQueue = new Queue(this._invalidCallbacks.slice());
 
-    const injector = this.$injector;
+    const injector = this._$injector;
 
     const checkForRedirect = (result: HookResult): Promise<any> | undefined => {
       if (!(result instanceof TargetState)) {
@@ -295,10 +301,10 @@ export class StateProvider {
    * @returns a function which deregisters the callback
    */
   onInvalid(callback: OnInvalidCallback): () => void {
-    this.invalidCallbacks.push(callback);
+    this._invalidCallbacks.push(callback);
 
     return () => {
-      removeFrom(this.invalidCallbacks, callback);
+      removeFrom(this._invalidCallbacks, callback);
     };
   }
 
@@ -347,11 +353,11 @@ export class StateProvider {
    * @returns A promise representing the state of the new transition. See [[StateService.go]]
    */
   reload(reloadState?: string | StateDeclaration | StateObject) {
-    const { current } = this.globals;
+    const { current } = this._globals;
 
     if (!current) throw new Error("No current state");
 
-    return this.transitionTo(current, this.globals.params, {
+    return this.transitionTo(current, this._globals.params, {
       reload: isDefined(reloadState) ? reloadState : true,
       inherit: false,
       notify: false,
@@ -364,8 +370,8 @@ export class StateProvider {
    * Convenience method for transitioning to a new state.
    *
    * `$state.go` calls `$state.transitionTo` internally but automatically sets options to
-   * `{ location: true, inherit: true, relative: router.globals.$current, notify: true }`.
-   * This allows you to use either an absolute or relative `to` argument (because of `relative: router.globals.$current`).
+   * `{ location: true, inherit: true, relative: $state.$current, notify: true }`.
+   * This allows you to use either an absolute or relative `to` argument (because of `relative: $state.$current`).
    * It also allows you to specify * only the parameters you'd like to update, while letting unspecified parameters
    * inherit from the current parameter values (because of `inherit: true`).
    *
@@ -425,7 +431,7 @@ export class StateProvider {
     options.reloadState =
       options.reload === true
         ? reg.root()
-        : reg.matcher.find(options.reload, options.relative);
+        : reg._matcher.find(options.reload, options.relative);
 
     if (options.reload && !options.reloadState)
       throw new Error(
@@ -436,7 +442,7 @@ export class StateProvider {
   }
 
   getCurrentPath(): PathNode[] {
-    const { globals } = this;
+    const globals = this._globals;
 
     const latestSuccess = globals._successfulTransitions._peekTail();
 
@@ -474,7 +480,7 @@ export class StateProvider {
     options: TransitionOptions | any = {},
   ): TransitionPromise | Promise<any> {
     options = defaults(options, defaultTransOpts);
-    const getCurrent = () => this.globals.transition;
+    const getCurrent = () => this._globals.transition;
 
     options = Object.assign(options, { current: getCurrent });
     const ref = this.target(to, toParams, options);
@@ -507,13 +513,13 @@ export class StateProvider {
       (trans: Transition) =>
       (error: any): Promise<any> => {
         if (error instanceof Rejection) {
-          const isLatest = this.globals._lastStartedTransitionId <= trans.$id;
+          const isLatest = this._globals._lastStartedTransitionId <= trans.$id;
 
           if (error.type === RejectType._IGNORED) {
             isLatest && this._getUrlService().update();
 
             // Consider ignored `Transition.run()` as a successful `transitionTo`
-            return Promise.resolve(this.globals.current);
+            return Promise.resolve(this._globals.current);
           }
           const { detail } = error;
 
@@ -542,7 +548,7 @@ export class StateProvider {
         return Promise.reject(error);
       };
 
-    const transition = this.transitionService.create(currentPath, ref);
+    const transition = this._transitionService.create(currentPath, ref);
 
     const transitionToPromise = transition
       .run()
@@ -589,7 +595,7 @@ export class StateProvider {
     options?: { relative: StateOrName | undefined },
   ): boolean | undefined {
     options = defaults(options, { relative: this.$current });
-    const state = this.stateRegistry?.matcher.find(
+    const state = this._stateRegistry?._matcher.find(
       stateOrName,
       options?.relative,
     );
@@ -604,7 +610,7 @@ export class StateProvider {
     return Param.equals(
       schema,
       Param.values(schema, params),
-      this.globals.params,
+      this._globals.params,
     );
   }
 
@@ -658,7 +664,7 @@ export class StateProvider {
       if (!currentName || !glob.matches(currentName)) return false;
       stateOrName = currentName;
     }
-    const state = this.stateRegistry?.matcher.find(
+    const state = this._stateRegistry?._matcher.find(
       stateOrName,
       options?.relative,
     );
@@ -678,7 +684,7 @@ export class StateProvider {
     return Param.equals(
       schema,
       Param.values(schema, params),
-      this.globals.params,
+      this._globals.params,
     );
   }
 
@@ -710,7 +716,7 @@ export class StateProvider {
 
     options = defaults(options, defaultHrefOpts);
     params = params || {};
-    const state = this.stateRegistry?.matcher.find(
+    const state = this._stateRegistry?._matcher.find(
       stateOrName,
       options?.relative,
     );
@@ -718,7 +724,7 @@ export class StateProvider {
     if (!isDefined(state)) return null;
 
     if (options?.inherit)
-      params = this.globals.params.$inherit(
+      params = this._globals.params.$inherit(
         params,
         this.$current as StateObject,
         state,
@@ -766,7 +772,7 @@ export class StateProvider {
    * @param {undefined} [base]
    */
   get(stateOrName?: StateOrName, base?: StateOrName) {
-    const reg = this.stateRegistry;
+    const reg = this._stateRegistry;
 
     if (arguments.length === 0) return reg?.get();
 

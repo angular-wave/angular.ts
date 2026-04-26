@@ -82,7 +82,7 @@ export class TargetState {
     this._identifier = _identifier;
     this._params = Object.assign({}, _params || {});
     this._options = Object.assign({}, _options || {});
-    this._definition = _stateRegistry.matcher.find(
+    this._definition = _stateRegistry._matcher.find(
       _identifier,
       this._options.relative,
     );
