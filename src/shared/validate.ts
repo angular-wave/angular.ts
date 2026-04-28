@@ -3,6 +3,7 @@ import type { Validator } from "./interface.ts";
 import {
   isArray,
   isDefined,
+  isInstanceOf,
   isNumber,
   isString,
   notNullOrUndefined,
@@ -66,5 +67,5 @@ export function validateInstanceOf<T>(
   type: new (...args: any[]) => T,
   name: string,
 ): T {
-  return validate((value) => value instanceof type, arg, name) as T;
+  return validate((value) => isInstanceOf(value, type), arg, name) as T;
 }

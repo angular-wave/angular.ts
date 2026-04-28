@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { _element, _scope } from "../../injection-tokens.ts";
 import { NodeType } from "../../shared/node.ts";
 import { removeElement } from "../../shared/dom.ts";
 import {
@@ -30,7 +30,7 @@ export type InterpolateFn = ((scope: ng.Scope) => any) | null | undefined;
  * regular or `ngOptions`-backed select element.
  */
 export class SelectController {
-  /* @ignore */ static $inject = [$injectTokens._element, $injectTokens._scope];
+  /* @ignore */ static $inject = [_element, _scope];
 
   /** @internal */
   _element: HTMLSelectElement;

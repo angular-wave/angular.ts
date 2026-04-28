@@ -1,11 +1,22 @@
+import {
+  _exceptionHandlerProvider,
+  _injector,
+  _routerProvider,
+  _stateRegistry,
+  _stateRegistryProvider,
+  _transitionsProvider,
+  _url,
+  _view,
+} from "../../injection-tokens.ts";
 import { defaults } from "../../shared/common.ts";
 import {
   assign,
   isDefined,
+  isInstanceOf,
   isNullOrUndefined,
   isObject,
-  isString,
   minErr,
+  isString,
 } from "../../shared/utils.ts";
 import { Queue } from "../../shared/queue.ts";
 import { makeTargetState } from "../path/path-utils.ts";
@@ -15,7 +26,6 @@ import { RejectType, Rejection } from "../transition/reject-factory.ts";
 import { TargetState } from "./target-state.ts";
 import { Param } from "../params/param.ts";
 import { Glob } from "../glob/glob.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { Transition } from "../transition/transition.ts";
 import type { ViewService } from "../view/view.ts";
@@ -114,10 +124,10 @@ export class StateProvider {
 
   /* @ignore */
   static $inject = [
-    $injectTokens._stateRegistryProvider,
-    $injectTokens._routerProvider,
-    $injectTokens._transitionsProvider,
-    $injectTokens._exceptionHandlerProvider,
+    _stateRegistryProvider,
+    _routerProvider,
+    _transitionsProvider,
+    _exceptionHandlerProvider,
   ];
 
   constructor(
@@ -137,10 +147,10 @@ export class StateProvider {
   }
 
   $get = [
-    $injectTokens._injector,
-    $injectTokens._stateRegistry,
-    $injectTokens._url,
-    $injectTokens._view,
+    _injector,
+    _stateRegistry,
+    _url,
+    _view,
     /**
      * @param {ng.InjectorService} $injector
      * @param {StateRegistryProvider} $stateRegistry
@@ -214,7 +224,7 @@ export class StateProvider {
     const injector = this._$injector;
 
     const checkForRedirect = (result: HookResult): Promise<any> | undefined => {
-      if (!(result instanceof TargetState)) {
+      if (!isInstanceOf(result, TargetState)) {
         return undefined;
       }
       let target = result;
@@ -500,7 +510,7 @@ export class StateProvider {
     const rejectedTransitionHandler: RejectedTransitionHandler =
       (trans: Transition) =>
       (error: any): Promise<any> => {
-        if (error instanceof Rejection) {
+        if (isInstanceOf(error, Rejection)) {
           const isLatest =
             this._routerState._lastStartedTransitionId <= trans.$id;
 
@@ -515,7 +525,7 @@ export class StateProvider {
           if (
             error.type === RejectType._SUPERSEDED &&
             error.redirected &&
-            detail instanceof TargetState
+            isInstanceOf(detail, TargetState)
           ) {
             // If `Transition.run()` was redirected, allow the `transitionTo()` promise to resolve successfully
             // by returning the promise for the new (redirect) `Transition.run()`.

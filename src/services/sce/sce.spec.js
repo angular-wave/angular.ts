@@ -550,17 +550,9 @@ describe("SCE", () => {
         ).toEqual("javascript:foo");
       });
 
-      it("should use the $$sanitizeUri", () => {
-        const $$sanitizeUri = jasmine
-          .createSpy("$$sanitizeUri")
-          .and.returnValue("someSanitizedUrl");
+      it("should sanitize URL contexts directly", () => {
         window.angular = new Angular();
-        window.angular.module("testSanitizeUri", ["ng"]).config([
-          "$provide",
-          ($provide) => {
-            $provide.value("$$sanitizeUri", $$sanitizeUri);
-          },
-        ]);
+        window.angular.module("testSanitizeUri", ["ng"]);
         createInjector([
           "testSanitizeUri",
           ($sceProvider, $exceptionHandlerProvider) => {
@@ -570,13 +562,12 @@ describe("SCE", () => {
           $sce = _$sce_;
         });
 
-        expect($sce.getTrustedMediaUrl("someUrl")).toEqual("someSanitizedUrl");
-        expect($$sanitizeUri).toHaveBeenCalledOnceWith("someUrl", true);
-
-        $$sanitizeUri.calls.reset();
-
-        expect($sce.getTrustedUrl("someUrl")).toEqual("someSanitizedUrl");
-        expect($$sanitizeUri).toHaveBeenCalledOnceWith("someUrl", false);
+        expect($sce.getTrustedMediaUrl("javascript:foo")).toEqual(
+          "unsafe:javascript:foo",
+        );
+        expect($sce.getTrustedUrl("javascript:foo")).toEqual(
+          "unsafe:javascript:foo",
+        );
       });
     });
 

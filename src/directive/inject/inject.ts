@@ -1,7 +1,7 @@
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { _injector, _log } from "../../injection-tokens.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
-ngInjectDirective.$inject = [$t._log, $t._injector];
+ngInjectDirective.$inject = [_log, _injector];
 
 /**
  * Injects named services from `$injector` onto the current scope.

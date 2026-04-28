@@ -1,3 +1,4 @@
+import { _parse } from "../../injection-tokens.ts";
 import {
   directiveNormalize,
   getNodeName,
@@ -5,11 +6,10 @@ import {
   minErr,
 } from "../../shared/utils.ts";
 import { getCacheData } from "../../shared/dom.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 
 const ngRefMinErr = minErr("ngRef");
 
-ngRefDirective.$inject = [$injectTokens._parse];
+ngRefDirective.$inject = [_parse];
 
 export function ngRefDirective($parse: ng.ParseService): ng.Directive {
   return {

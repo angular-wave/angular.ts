@@ -1,10 +1,13 @@
+import {
+  _animateCss,
+  _animateCssDriver,
+  _rootElement,
+} from "../injection-tokens.ts";
 import type { AnimationOptions, Animator } from "./interface.ts";
 import type { AnimationDetails } from "./animation.ts";
 import type { AnimateCssService } from "./css/animate-css.ts";
-import { $injectTokens } from "../injection-tokens.ts";
 import { NodeType } from "../shared/node.ts";
 import { isString } from "../shared/utils.ts";
-
 import { AnimateRunner } from "./runner/animate-runner.ts";
 import { concatWithSpace } from "./shared.ts";
 
@@ -30,7 +33,7 @@ export function AnimateCssDriverProvider(
   this: { $get?: unknown },
   $$animationProvider: AnimationProviderShape,
 ): void {
-  $$animationProvider._drivers.push($injectTokens._animateCssDriver);
+  $$animationProvider._drivers.push(_animateCssDriver);
 
   /**
    * Returns whether an element is attached inside a document fragment.
@@ -43,8 +46,8 @@ export function AnimateCssDriverProvider(
    * Creates the runtime CSS animation driver factory.
    */
   this.$get = [
-    $injectTokens._animateCss,
-    $injectTokens._rootElement,
+    _animateCss,
+    _rootElement,
     /**
      * Builds animation runners backed by `$animateCss`.
      */

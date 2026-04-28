@@ -1,5 +1,5 @@
+import { _animateCss } from "../../injection-tokens.ts";
 import type { AnimationOptions, Animator } from "../interface.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import {
   getCacheData,
   removeElementData,
@@ -10,9 +10,9 @@ import {
   isArray,
   isDefined,
   isNullOrUndefined,
-  isString,
   keys,
   nullObject,
+  isString,
 } from "../../shared/utils.ts";
 import { AnimateRunner, AnimationHost } from "../runner/animate-runner.ts";
 import {
@@ -97,7 +97,7 @@ interface AnimationFlags {
   _blockKeyframeAnimation: boolean;
 }
 
-const ANIMATE_TIMER_KEY = $injectTokens._animateCss;
+const ANIMATE_TIMER_KEY = _animateCss;
 
 const ONE_SECOND = 1000;
 
@@ -291,10 +291,9 @@ export function AnimateCssProvider(this: { $get?: unknown }): void {
           timings = {
             transitionDuration: Number(computed.transitionDuration || 0),
             transitionDelay: Number(computed.transitionDelay || 0),
-            transitionProperty:
-              typeof computed.transitionProperty === "string"
-                ? computed.transitionProperty
-                : "",
+            transitionProperty: isString(computed.transitionProperty)
+              ? computed.transitionProperty
+              : "",
             animationDuration: Number(computed.animationDuration || 0),
             animationDelay: Number(computed.animationDelay || 0),
             animationIterationCount:

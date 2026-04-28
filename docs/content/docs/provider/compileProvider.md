@@ -1,12 +1,11 @@
 ---
 title: $compileProvider
 description: >
-  Configure compiler behavior and URL sanitization.
+  Configure compiler behavior.
 ---
 
 Use `$compileProvider` during module configuration for compiler-level behavior:
-registering directives, configuring URL sanitization, and controlling debug
-metadata.
+registering directives and controlling debug metadata.
 
 ## Registering Directives
 
@@ -18,17 +17,6 @@ angular.module('app', []).config(($compileProvider) => {
       element.focus();
     },
   }));
-});
-```
-
-## URL Sanitization
-
-Configure trusted URL patterns for links and media sources before templates are
-compiled.
-
-```js
-angular.module('app', []).config(($compileProvider) => {
-  $compileProvider.aHrefSanitizationTrustedUrlList(/^https?:/);
 });
 ```
 

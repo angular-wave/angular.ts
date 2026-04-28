@@ -1,4 +1,4 @@
-import { assign } from "../../shared/utils.ts";
+import { assign, isInstanceOf } from "../../shared/utils.ts";
 import { Param } from "../params/param.ts";
 import type { RawParams } from "../params/interface.ts";
 import type { StateObject } from "../state/state-object.ts";
@@ -25,7 +25,7 @@ export class PathNode {
    * @param {PathNode | ng.StateObject | undefined} stateOrNode
    */
   constructor(stateOrNode?: PathNode | StateObject) {
-    if (stateOrNode instanceof PathNode) {
+    if (isInstanceOf(stateOrNode, PathNode)) {
       const node = stateOrNode;
 
       this.state = node.state;

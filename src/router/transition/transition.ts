@@ -1,5 +1,12 @@
 import { stringify } from "../../shared/strings.ts";
-import { assign, assert, isObject, isUndefined } from "../../shared/utils.ts";
+import {
+  assign,
+  assert,
+  isInstanceOf,
+  isObject,
+  isUndefined,
+  isString,
+} from "../../shared/utils.ts";
 import { TransitionHook, TransitionHookPhase } from "./transition-hook.ts";
 import {
   registerHook,
@@ -515,11 +522,10 @@ export class Transition {
     if (state === void 0) {
       state = "";
     }
-    resolvable =
-      resolvable instanceof Resolvable
-        ? resolvable
-        : new Resolvable(resolvable);
-    const stateName = typeof state === "string" ? state : state.name;
+    resolvable = isInstanceOf(resolvable, Resolvable)
+      ? resolvable
+      : new Resolvable(resolvable);
+    const stateName = isString(state) ? state : state.name;
 
     const topath = this._treeChanges.to || [];
 

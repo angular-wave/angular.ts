@@ -1,4 +1,4 @@
-import { isFunction, isString } from "../../shared/utils.ts";
+import { isFunction, isInstanceOf, isString } from "../../shared/utils.ts";
 import { TargetState } from "../state/target-state.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
 import type { StateProvider } from "../state/state-service.ts";
@@ -22,7 +22,7 @@ export const registerRedirectToHook = (
     function handleResult(result: any) {
       if (!result) return undefined;
 
-      if (result instanceof TargetState) {
+      if (isInstanceOf(result, TargetState)) {
         return result;
       }
 

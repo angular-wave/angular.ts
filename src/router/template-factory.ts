@@ -1,4 +1,10 @@
 import {
+  _http,
+  _injector,
+  _templateCache,
+  _templateRequest,
+} from "../injection-tokens.ts";
+import {
   isArray,
   isDefined,
   isFunction,
@@ -9,7 +15,6 @@ import {
 import { annotate } from "../core/di/di.ts";
 import { DirectiveSuffix } from "../core/compile/compile.ts";
 import { kebobString } from "../shared/strings.ts";
-import { $injectTokens as $t } from "../injection-tokens.ts";
 import { Resolvable } from "./resolve/resolvable.ts";
 import type { ResolveContext } from "./resolve/resolve-context.ts";
 import type { Injectable } from "../interface.ts";
@@ -40,10 +45,10 @@ export class TemplateFactoryProvider {
    * Wires HTTP, template request, cache, and injector services into the factory.
    */
   $get = [
-    $t._http,
-    $t._templateCache,
-    $t._templateRequest,
-    $t._injector,
+    _http,
+    _templateCache,
+    _templateRequest,
+    _injector,
     (
       $http: ng.HttpService,
       $templateCache: ng.TemplateCacheService,

@@ -1,3 +1,4 @@
+import { _injector, _rootScope } from "../injection-tokens.ts";
 import type { AnimationOptions, Animator } from "./interface.ts";
 import {
   deleteCacheData,
@@ -13,7 +14,6 @@ import {
   applyAnimationStyles,
   prepareAnimationOptions,
 } from "./shared.ts";
-import { $injectTokens as $t } from "../injection-tokens.ts";
 import { AnimateRunner } from "./runner/animate-runner.ts";
 import { animateCache } from "./cache/animate-cache.ts";
 import { rafScheduler } from "./raf/raf-scheduler.ts";
@@ -163,8 +163,8 @@ export class AnimationProvider {
 
   constructor() {
     this.$get = [
-      $t._rootScope,
-      $t._injector,
+      _rootScope,
+      _injector,
       /** Creates the runtime animation service. */
       ($rootScope: ng.RootScopeService, $injector: ng.InjectorService) => {
         return this._createAnimationService(
@@ -278,7 +278,9 @@ export class AnimationProvider {
 
         let row: SortedAnimationEntry[] = [];
 
-        for (let j = 0; j < queue.length; j++) {
+        let j = 0;
+
+        while (j < queue.length) {
           const entry = queue[j];
 
           if (remainingLevelEntries <= 0) {
@@ -293,6 +295,7 @@ export class AnimationProvider {
             queue.push(childEntry);
           });
           remainingLevelEntries--;
+          j++;
         }
 
         if (row.length) {

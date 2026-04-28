@@ -1,9 +1,21 @@
 import {
+  _anchorScroll,
+  _compile,
+  _controller,
+  _injector,
+  _interpolate,
+  _state,
+  _transitions,
+  _view,
+} from "../../injection-tokens.ts";
+import {
   arrayFrom,
   assign,
   isArray,
   isDefined,
   isFunction,
+  isInstanceOf,
+  isString,
 } from "../../shared/utils.ts";
 import {
   createLazyAnimate,
@@ -19,7 +31,6 @@ import {
   setCacheData,
 } from "../../shared/dom.ts";
 import { getLocals } from "../state/state-registry.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import type { ActiveNgView, ViewContext, ViewService } from "../view/view.ts";
 import type { PathNode } from "../path/path-node.ts";
 import { TargetState } from "../state/target-state.ts";
@@ -40,21 +51,21 @@ function getFirstElementFromClone(
 ): HTMLElement | null {
   if (!clone) return null;
 
-  if (clone instanceof HTMLElement) {
+  if (isInstanceOf(clone, HTMLElement)) {
     return clone;
   }
 
-  if (clone instanceof DocumentFragment) {
+  if (isInstanceOf(clone, DocumentFragment)) {
     const firstElement = clone.firstElementChild;
 
-    return firstElement instanceof HTMLElement ? firstElement : null;
+    return isInstanceOf(firstElement, HTMLElement) ? firstElement : null;
   }
 
-  if (clone instanceof NodeList || isArray(clone)) {
+  if (isInstanceOf(clone, NodeList) || isArray(clone)) {
     for (let i = 0, l = clone.length; i < l; i++) {
       const node = clone[i];
 
-      if (node instanceof HTMLElement) {
+      if (isInstanceOf(node, HTMLElement)) {
         return node;
       }
     }
@@ -62,7 +73,7 @@ function getFirstElementFromClone(
     return null;
   }
 
-  return clone instanceof Element ? (clone as HTMLElement) : null;
+  return isInstanceOf(clone, Element) ? (clone as HTMLElement) : null;
 }
 
 function getRootNodesFromClone(
@@ -72,11 +83,11 @@ function getRootNodesFromClone(
     return [];
   }
 
-  if (clone instanceof DocumentFragment) {
+  if (isInstanceOf(clone, DocumentFragment)) {
     return arrayFrom(clone.childNodes);
   }
 
-  return clone instanceof NodeList || isArray(clone)
+  return isInstanceOf(clone, NodeList) || isArray(clone)
     ? arrayFrom(clone)
     : [clone];
 }
@@ -200,25 +211,19 @@ const controllerLastParamsChangedTransition = new WeakMap<
  * ```
  */
 
-ViewDirective.$inject = [
-  $injectTokens._view,
-  $injectTokens._state,
-  $injectTokens._injector,
-  $injectTokens._anchorScroll,
-  $injectTokens._interpolate,
-];
+ViewDirective.$inject = [_view, _state, _injector, _anchorScroll, _interpolate];
 
 /**
  * Renders and updates the currently active view configuration.
  */
 export function ViewDirective(
   $view: ViewService,
-  _state: ng.StateService,
+  $state: ng.StateService,
   $injector: ng.InjectorService,
   $anchorScroll: ng.AnchorScrollService,
   $interpolate: ng.InterpolateService,
 ): ng.Directive {
-  void _state;
+  void $state;
   const getAnimate = createLazyAnimate($injector);
 
   function getRenderer(): Renderer {
@@ -313,7 +318,7 @@ export function ViewDirective(
         };
 
         function configUpdatedCallback(config: ViewConfig | undefined): void {
-          if (config && !(config instanceof ViewConfig)) return;
+          if (config && !isInstanceOf(config, ViewConfig)) return;
 
           const updateVersion = ++configUpdateVersion;
 
@@ -447,12 +452,7 @@ export function ViewDirective(
   return directive;
 }
 
-ViewDirectiveFill.$inject = [
-  $injectTokens._compile,
-  $injectTokens._controller,
-  $injectTokens._transitions,
-  $injectTokens._injector,
-];
+ViewDirectiveFill.$inject = [_compile, _controller, _transitions, _injector];
 
 /**
  * Instantiates the active view template and wires its controller lifecycle.
@@ -550,7 +550,7 @@ export function ViewDirectiveFill(
         const callbackConfig = cfg as Pick<ViewConfig, "viewDecl" | "path"> &
           Partial<Pick<ViewConfig, "factory">>;
 
-        if (typeof componentName === "string") {
+        if (isString(componentName)) {
           const kebobName = componentName
             .replace(/([A-Z])/g, "-$1")
             .replace(/^-/, "")

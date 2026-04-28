@@ -1,3 +1,4 @@
+import { _parse } from "../../injection-tokens.ts";
 import {
   deProxy,
   isDefined,
@@ -6,7 +7,6 @@ import {
   isUndefined,
   stringify,
 } from "../../shared/utils.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
 /** Binds the watched expression as plain text content. */
@@ -41,7 +41,7 @@ export function ngBindTemplateDirective(): ng.Directive {
   };
 }
 
-ngBindHtmlDirective.$inject = [$injectTokens._parse];
+ngBindHtmlDirective.$inject = [_parse];
 /** Binds trusted HTML into the element while still validating the expression. */
 export function ngBindHtmlDirective($parse: ng.ParseService): ng.Directive {
   return {

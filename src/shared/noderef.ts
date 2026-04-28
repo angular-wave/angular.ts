@@ -1,5 +1,5 @@
-import { arrayFrom, isArray, isString } from "./utils.ts";
-import { createElementFromHTML } from "./dom.ts";
+import { arrayFrom, isArray, isInstanceOf, isString } from "./utils.ts";
+import { createDocumentFragment, createElementFromHTML } from "./dom.ts";
 import { NodeType } from "./node.ts";
 
 /**
@@ -15,6 +15,8 @@ export class NodeRef {
   /** @internal */
   _nodes: Array<Node>;
   /** @internal */
+  _nodeList: NodeList | undefined;
+  /** @internal */
   _isList: boolean;
   /**
    * @param element - The DOM node(s) or HTML string to wrap.
@@ -27,6 +29,8 @@ export class NodeRef {
 
     this._nodes = [];
 
+    this._nodeList = undefined;
+
     this._isList = false;
 
     // Handle HTML string
@@ -34,32 +38,32 @@ export class NodeRef {
       const res = createElementFromHTML(element);
 
       switch (true) {
-        case res instanceof Element:
+        case isInstanceOf(res, Element):
           this.element = res;
           break;
-        case res instanceof Node:
+        case isInstanceOf(res, Node):
           this.node = res;
           break;
       }
     }
 
     // Handle NodeList
-    else if (element instanceof NodeList) {
+    else if (isInstanceOf(element, NodeList)) {
       if (element.length === 1) {
         this.node = element[0];
       } else {
-        this._nodes = arrayFrom(element);
+        this._nodeList = element;
         this._isList = true;
       }
     }
 
     // Handle single Element
-    else if (element instanceof Element) {
+    else if (isInstanceOf(element, Element)) {
       this.element = element;
     }
 
     // Handle single Node
-    else if (element instanceof Node) {
+    else if (isInstanceOf(element, Node)) {
       this._node = element;
     }
 
@@ -85,6 +89,7 @@ export class NodeRef {
     this._element = el;
     this._node = undefined;
     this._nodes = [];
+    this._nodeList = undefined;
     this._isList = false;
   }
 
@@ -96,6 +101,7 @@ export class NodeRef {
   /** @param node The node to wrap. */
   set node(node: Node | ChildNode) {
     this._node = node;
+    this._nodeList = undefined;
 
     if (node.nodeType === NodeType._ELEMENT_NODE) {
       this._element = node as Element;
@@ -107,16 +113,21 @@ export class NodeRef {
   /** @param nodes The node collection to wrap. */
   set nodes(nodes: Array<Node>) {
     this._nodes = nodes;
+    this._nodeList = undefined;
     this._isList = true;
   }
 
   /** @returns The wrapped node collection. */
   get nodes(): Array<Node> {
+    if (this._nodeList) return arrayFrom(this._nodeList);
+
     return this._nodes;
   }
 
   /** @returns A live node list view of the wrapped nodes. */
   get nodelist(): NodeList | Node[] {
+    if (this._nodeList) return this._nodeList;
+
     if (this._nodes.length === 0) return [];
 
     if (this._nodes[0].parentElement)
@@ -127,9 +138,9 @@ export class NodeRef {
 
   /** @returns A detached fragment containing the wrapped node list. */
   get fragment(): DocumentFragment {
-    const fragment = document.createDocumentFragment();
+    const fragment = createDocumentFragment();
 
-    this._nodes.forEach((el) => fragment.appendChild(el));
+    this._collection().forEach((el) => fragment.appendChild(el));
 
     return fragment;
   }
@@ -137,7 +148,9 @@ export class NodeRef {
   /** @returns The wrapped DOM value. */
   get dom(): Element | Node | ChildNode | NodeList | Node[] | DocumentFragment {
     if (this._isList) {
-      return this._nodes.length > 0 && !this._nodes[0].parentElement
+      const firstNode = this._getIndex(0);
+
+      return firstNode && !firstNode.parentElement
         ? this.fragment
         : this.nodelist;
     } else return this.node;
@@ -145,14 +158,17 @@ export class NodeRef {
 
   /** @returns The number of wrapped nodes. */
   get size() {
-    return this._isList ? this._nodes.length : 1;
+    return this._isList ? this._nodeList?.length || this._nodes.length : 1;
   }
 
   /** @returns The first wrapped node or element. */
   /** @internal */
   _getAny(): Element | Node | ChildNode {
     if (this._isList) {
-      return this._nodes[0] as Element | Node | ChildNode;
+      return (this._nodeList?.[0] || this._nodes[0]) as
+        | Element
+        | Node
+        | ChildNode;
     } else {
       return (this._element || this._node)! as Element | Node | ChildNode;
     }
@@ -162,7 +178,7 @@ export class NodeRef {
   /** @internal */
   _getAll(): Element | Array<Node> | Node | ChildNode {
     if (this._isList) {
-      return this._nodes;
+      return this.nodes;
     } else {
       return (this._element || this._node) as Element | Node | ChildNode;
     }
@@ -172,7 +188,7 @@ export class NodeRef {
   /** @internal */
   _collection(): Array<Element | Node | ChildNode> {
     if (this._isList) {
-      return arrayFrom(this._nodes);
+      return this.nodes;
     } else {
       return [(this._element || this._node) as Element | Node | ChildNode];
     }
@@ -184,7 +200,10 @@ export class NodeRef {
   /** @internal */
   _getIndex(index: number): Element | Node | ChildNode {
     if (this._isList) {
-      return this._nodes[index];
+      return (this._nodeList?.[index] || this._nodes[index]) as
+        | Element
+        | Node
+        | ChildNode;
     } else {
       return this.node;
     }
@@ -196,6 +215,11 @@ export class NodeRef {
   /** @internal */
   _setIndex(index: number, node: Element | Node | ChildNode) {
     if (this._isList) {
+      if (this._nodeList) {
+        this._nodes = arrayFrom(this._nodeList);
+        this._nodeList = undefined;
+      }
+
       this._nodes[index] = node;
     } else {
       this.node = node;
@@ -208,7 +232,7 @@ export class NodeRef {
   /** @internal */
   _clone(): NodeRef {
     const cloned = this._isList
-      ? this.nodes.map((el: Node) => el.cloneNode(true) as Node)
+      ? this._collection().map((el: Node) => el.cloneNode(true) as Node)
       : this.node.cloneNode(true);
 
     return new NodeRef(cloned);
@@ -224,6 +248,7 @@ export class NodeRef {
     this._node = undefined;
     this._element = undefined;
     this._nodes = [];
+    this._nodeList = undefined;
     this._isList = false;
   }
 }

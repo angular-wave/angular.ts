@@ -1,5 +1,5 @@
 import { dealoc } from "./dom.ts";
-
+import { isString } from "./utils.ts";
 /**
  * Browser event descriptor accepted by `browserTrigger`.
  */
@@ -19,7 +19,7 @@ export function browserTrigger(
 
   let eventProps: EventInit | KeyboardEventInit | MouseEventInit = {};
 
-  if (typeof options === "string") {
+  if (isString(options)) {
     type = options;
   } else {
     ({ type } = options);

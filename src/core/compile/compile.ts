@@ -1,4 +1,16 @@
 import {
+  _controller,
+  _exceptionHandler,
+  _injector,
+  _interpolate,
+  _parse,
+  _provide,
+  _sce,
+  _scope,
+  _templateRequest,
+} from "../../injection-tokens.ts";
+import {
+  createDocumentFragment,
   createElementFromHTML,
   createNodelistFromHTML,
   deleteCacheData,
@@ -34,17 +46,19 @@ import {
   isDefined,
   isError,
   isFunction,
+  isInstanceOf,
   isObject,
   isScope,
-  isString,
   isUndefined,
   keys,
   minErr,
   nullObject,
   simpleCompare,
+  stringify,
   trim,
+  isString,
 } from "../../shared/utils.ts";
-import { SCE_CONTEXTS, type SceContext } from "../../services/sce/sce.ts";
+import { SCE_CONTEXTS, type SceContext } from "../../services/sce/context.ts";
 import { PREFIX_REGEXP } from "../../shared/constants.ts";
 import {
   createEventDirective,
@@ -52,10 +66,8 @@ import {
 } from "../../directive/events/events.ts";
 import { Attributes } from "./attributes.ts";
 import { ngObserveDirective } from "../../directive/observe/observe.ts";
-import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.ts";
 import type { Component } from "../../interface.ts";
 import type { InterpolationFunction } from "../interpolate/interpolate.ts";
-import type { SanitizeUriProvider } from "../sanitize/sanitize-uri.ts";
 import type { CompiledExpression } from "../parse/parse.ts";
 
 export type TranscludedNodes =
@@ -207,7 +219,7 @@ export interface LinkFnMapping {
  * Compiles a node (or list of nodes) into a single composite link function.
  */
 export type CompileNodesFn = (
-  nodeRefList: NodeRef | null,
+  nodeRefList: NodeRef | NodeList | null,
   transcludeFn?: ChildTranscludeOrLinkFn,
   maxPriority?: number,
   ignoreDirective?: string,
@@ -216,7 +228,7 @@ export type CompileNodesFn = (
 
 export type ChildLinkFn = (
   scope: Scope,
-  nodeRef: NodeRef,
+  nodeRef: NodeRef | NodeList,
   _parentBoundTranscludeFn: BoundTranscludeFn | null,
 ) => void;
 
@@ -271,7 +283,7 @@ export type ApplyDirectivesToNodeFn = () => NodeLinkFn;
  */
 export type CompositeLinkFn = (
   scope: Scope,
-  $linkNode: NodeRef,
+  $linkNode: NodeRef | NodeList,
   _parentBoundTranscludeFn?: BoundTranscludeFn | null,
 ) => void;
 
@@ -356,8 +368,6 @@ export type RegisterComponentFn = (
   name: string | Record<string, Component>,
   options?: Component,
 ) => any;
-
-export type TrustedUrlListAccessor = (regexp?: RegExp) => RegExp | undefined;
 
 export type StrictComponentBindingsAccessor = (
   enabled?: boolean,
@@ -467,6 +477,8 @@ export interface TextInterpolateLinkState {
   _interpolateFn: InterpolationFunction;
   /** @internal */
   _watchExpression: string;
+  /** @internal */
+  _singleExpression?: boolean;
 }
 
 export interface TextInterpolationBindingState {
@@ -641,7 +653,7 @@ export interface BoundTranscludeState {
 const scopeOwnedNodeRefs = new WeakMap<ng.Scope, Set<NodeRef>>();
 
 function registerScopeOwnedNodeRef(scope: ng.Scope, nodeRef: NodeRef): void {
-  if (!scope || typeof scope.$on !== "function") {
+  if (!scope || !isFunction(scope.$on)) {
     return;
   }
 
@@ -783,7 +795,7 @@ export interface CompositeLinkState {
   /** @internal */
   _linkFnsList: LinkFnMapping[];
   /** @internal */
-  _nodeRefList: NodeRef;
+  _nodeRefList?: NodeRef | null;
   /** @internal */
   _nodeLinkFnFound?: NodeLinkFn | StoredNodeLinkFn;
   /** @internal */
@@ -824,12 +836,10 @@ const valueFn =
 export const DirectiveSuffix = "Directive";
 
 export class CompileProvider {
-  /* @ignore */ static $inject = [$t._provide, $t._sanitizeUriProvider];
+  /* @ignore */ static $inject = [_provide];
 
   directive: RegisterDirectiveFn;
   component: RegisterComponentFn;
-  aHrefSanitizationTrustedUrlList: TrustedUrlListAccessor;
-  imgSrcSanitizationTrustedUrlList: TrustedUrlListAccessor;
   strictComponentBindingsEnabled: StrictComponentBindingsAccessor;
   addPropertySecurityContext: (
     elementName: string,
@@ -840,10 +850,7 @@ export class CompileProvider {
   $get: any;
 
   /** Configures directive registration and compile-time provider behavior. */
-  constructor(
-    $provide: ng.ProvideService,
-    $sanitizeUriProvider: SanitizeUriProvider,
-  ) {
+  constructor($provide: ng.ProvideService) {
     const provider = this;
 
     const hasDirectives: DirectiveRegistry = {};
@@ -981,8 +988,8 @@ export class CompileProvider {
         if (!hasOwn(hasDirectives, name)) {
           hasDirectives[name] = [];
           $provide.factory(name + DirectiveSuffix, [
-            $injectTokens._injector,
-            $injectTokens._exceptionHandler,
+            _injector,
+            _exceptionHandler,
             /** Instantiates and normalizes the registered directive factories for one name. */
             function (
               $injector: ng.InjectorService,
@@ -1168,7 +1175,7 @@ export class CompileProvider {
         }
       });
 
-      factory.$inject = [$injectTokens._injector];
+      factory.$inject = [_injector];
 
       return provider.directive(
         name,
@@ -1177,54 +1184,6 @@ export class CompileProvider {
     } as RegisterComponentFn;
 
     this.component = registerComponent;
-
-    /**
-     * Retrieves or overrides the default regular expression that is used for determining trusted safe
-     * urls during a[href] sanitization.
-     *
-     * The sanitization is a security measure aimed at preventing XSS attacks via html links.
-     *
-     * Any url about to be assigned to a[href] via data-binding is first normalized and turned into
-     * an absolute url. Afterwards, the url is matched against the `aHrefSanitizationTrustedUrlList`
-     * regular expression. If a match is found, the original url is written into the dom. Otherwise,
-     * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
-     *
-     * @param regexp - New regexp to trust urls with.
-     * @returns Current RegExp if called without value or self for
-     *    chaining otherwise.
-     */
-    this.aHrefSanitizationTrustedUrlList = function (regexp?: RegExp) {
-      if (isDefined(regexp)) {
-        $sanitizeUriProvider.aHrefSanitizationTrustedUrlList(regexp);
-      }
-
-      return $sanitizeUriProvider.aHrefSanitizationTrustedUrlList() as RegExp;
-    };
-
-    /**
-     * Retrieves or overrides the default regular expression that is used for determining trusted safe
-     * urls during img[src] sanitization.
-     *
-     * The sanitization is a security measure aimed at prevent XSS attacks via html links.
-     *
-     * Any url about to be assigned to img[src] via data-binding is first normalized and turned into
-     * an absolute url. Afterwards, the url is matched against the `imgSrcSanitizationTrustedUrlList`
-     * regular expression. If a match is found, the original url is written into the dom. Otherwise,
-     * the absolute url is prefixed with `'unsafe:'` string and only then is it written into the DOM.
-     *
-     * @param regexp - New regexp to trust urls with.
-     * @returns Current RegExp if called without value or self for
-     *    chaining otherwise.
-     */
-    this.imgSrcSanitizationTrustedUrlList = function (regexp?: RegExp) {
-      if (isDefined(regexp)) {
-        $sanitizeUriProvider.imgSrcSanitizationTrustedUrlList(regexp);
-
-        return undefined;
-      }
-
-      return $sanitizeUriProvider.imgSrcSanitizationTrustedUrlList() as RegExp;
-    };
 
     /**
      * @param enabled - Update the strictComponentBindingsEnabled state if provided,
@@ -1362,13 +1321,13 @@ export class CompileProvider {
     })();
 
     this.$get = [
-      $t._injector,
-      $t._interpolate,
-      $t._exceptionHandler,
-      $t._templateRequest,
-      $t._parse,
-      $t._controller,
-      $t._sce,
+      _injector,
+      _interpolate,
+      _exceptionHandler,
+      _templateRequest,
+      _parse,
+      _controller,
+      _sce,
       /** Creates the runtime `$compile` service and its shared helper closures. */
       (
         $injector: ng.InjectorService,
@@ -1614,8 +1573,6 @@ export class CompileProvider {
             );
           }
 
-          assertArg(scope, "scope");
-
           if (state._previousCompileContext?._needsNewScope) {
             // A parent directive did a replace and a directive on this element asked
             // for transclusion, which caused us to lose a layer of element on which
@@ -1676,9 +1633,10 @@ export class CompileProvider {
             >;
 
             for (const controllerName in controllers) {
-              assertArg($linkNode.element, "element");
+              const linkElement = $linkNode._element as Element;
+
               setCacheData(
-                $linkNode.element,
+                linkElement,
                 `$${controllerName}Controller`,
                 controllers[controllerName]._instance,
               );
@@ -1704,11 +1662,9 @@ export class CompileProvider {
         function invokeCompositeLink(
           state: CompositeLinkState,
           scope: Scope,
-          nodeRef: NodeRef,
+          nodeRef: NodeRef | NodeList,
           _parentBoundTranscludeFn?: BoundTranscludeFn | null,
         ): void {
-          assertArg(nodeRef, "nodeRef");
-
           const stableNodeList = buildStableNodeList(state, nodeRef);
 
           linkCompositeNodes(
@@ -1848,15 +1804,28 @@ export class CompileProvider {
                 );
               }
             } else if (_childLinkFn) {
-              const childNodesRef = new NodeRef(node.childNodes);
-
-              try {
-                _childLinkFn(scope, childNodesRef, _parentBoundTranscludeFn);
-              } finally {
-                childNodesRef._release();
-              }
+              _childLinkFn(scope, node.childNodes, _parentBoundTranscludeFn);
             }
           }
+        }
+
+        function isNodeRef(value: NodeRef | NodeList): value is NodeRef {
+          return isInstanceOf(value, NodeRef);
+        }
+
+        function getCompileNodeListSize(nodes: NodeRef | NodeList): number {
+          return isNodeRef(nodes) ? nodes.size : nodes.length;
+        }
+
+        function getCompileNodeAt(
+          nodes: NodeRef | NodeList,
+          index: number,
+        ): Element | Node | ChildNode {
+          return isNodeRef(nodes) ? nodes._getIndex(index) : nodes[index];
+        }
+
+        function ensureCompileNodeRef(nodes: NodeRef | NodeList): NodeRef {
+          return isNodeRef(nodes) ? nodes : new NodeRef(nodes);
         }
 
         /**
@@ -1875,15 +1844,19 @@ export class CompileProvider {
           if (!nodeRefList) return null;
           const linkFnsList: LinkFnMapping[] = []; // An array to hold node indices and their linkFns
 
+          let nodeRefListContext = isNodeRef(nodeRefList) ? nodeRefList : null;
+
           let nodeLinkFnFound: NodeLinkFn | StoredNodeLinkFn | undefined;
 
           let linkFnFound = false;
 
-          for (let i = 0; i < nodeRefList.size; i++) {
+          for (let i = 0, l = getCompileNodeListSize(nodeRefList); i < l; i++) {
+            const compileNode = getCompileNodeAt(nodeRefList, i);
+
             const attrs = new Attributes($injector, $exceptionHandler, $sce);
 
             const directives = collectDirectives(
-              nodeRefList._getIndex(i) as Element,
+              compileNode as Element,
               attrs,
               i === 0 ? maxPriority : undefined,
               ignoreDirective,
@@ -1892,9 +1865,12 @@ export class CompileProvider {
             let nodeLinkFnCtx: NodeLinkFnCtx | undefined;
 
             if (directives.length) {
+              nodeRefListContext =
+                nodeRefListContext || ensureCompileNodeRef(nodeRefList);
+
               nodeLinkFnCtx = applyDirectivesToNode(
                 directives,
-                nodeRefList?._getIndex(i),
+                compileNode,
                 attrs,
                 transcludeFn as ChildTranscludeOrLinkFn,
                 null,
@@ -1902,8 +1878,8 @@ export class CompileProvider {
                 [],
                 assign({}, previousCompileContext, {
                   _index: i,
-                  _parentNodeRef: nodeRefList,
-                  _ctxNodeRef: nodeRefList,
+                  _parentNodeRef: nodeRefListContext,
+                  _ctxNodeRef: nodeRefListContext,
                 }),
               );
             }
@@ -1912,7 +1888,11 @@ export class CompileProvider {
 
             const nodeLinkFn = nodeLinkFnCtx?._nodeLinkFn;
 
-            const { childNodes } = nodeRefList._getIndex(i);
+            const childParentNode = nodeRefListContext
+              ? nodeRefListContext._getIndex(i)
+              : compileNode;
+
+            const { childNodes } = childParentNode;
 
             if (
               (nodeLinkFn && nodeLinkFnCtx?._terminal) ||
@@ -1928,11 +1908,8 @@ export class CompileProvider {
                   : undefined
                 : transcludeFn;
 
-              // recursive call
-              const childNodeRef = new NodeRef(childNodes);
-
               childLinkFn = compileNodes(
-                childNodeRef,
+                childNodes,
                 transcluded || undefined,
                 undefined,
                 undefined,
@@ -1960,7 +1937,7 @@ export class CompileProvider {
 
           const compositeLinkState: CompositeLinkState = {
             _linkFnsList: linkFnsList,
-            _nodeRefList: nodeRefList,
+            _nodeRefList: nodeRefListContext,
             _nodeLinkFnFound: nodeLinkFnFound,
             _transcludeFn: transcludeFn,
           };
@@ -2071,7 +2048,7 @@ export class CompileProvider {
 
           switch (nodeType) {
             case NodeType._ELEMENT_NODE /* Element */: {
-              nodeName = node.nodeName.toLowerCase();
+              nodeName = getNodeName(node);
 
               if (ignoreDirective !== directiveNormalize(nodeName)) {
                 // use the node name: <directive>
@@ -2363,6 +2340,14 @@ export class CompileProvider {
           scope: Scope,
           node: Node,
         ) {
+          if (linkState._singleExpression) {
+            scope.$watch(linkState._watchExpression, (value) => {
+              applyTextInterpolationValue(node, stringify(value) as string);
+            });
+
+            return;
+          }
+
           const bindingState = {
             _linkState: linkState,
             _scope: scope,
@@ -2401,6 +2386,14 @@ export class CompileProvider {
             attr.$updateClass(value, element.classList.value);
 
             return;
+          }
+
+          if (
+            (linkState._trustedContext === SCE_CONTEXTS._URL ||
+              linkState._trustedContext === SCE_CONTEXTS._MEDIA_URL) &&
+            !(isString(value) && value.startsWith("unsafe:"))
+          ) {
+            value = $sce.getTrusted(linkState._trustedContext, value);
           }
 
           attr.$set(
@@ -3290,13 +3283,7 @@ export class CompileProvider {
             linkNode.childNodes &&
             linkNode.childNodes.length
           ) {
-            const childNodesRef = new NodeRef(linkNode.childNodes);
-
-            try {
-              childLinkFn(scopeToChild, childNodesRef, boundTranscludeFn);
-            } finally {
-              childNodesRef._release();
-            }
+            childLinkFn(scopeToChild, linkNode.childNodes, boundTranscludeFn);
           }
 
           for (let i = nodeLinkState._postLinkFns.length - 1; i >= 0; i--) {
@@ -3313,7 +3300,7 @@ export class CompileProvider {
 
             try {
               if (postLinkFn._isolateScope && isolateScope) {
-                deleteCacheData($element.element, $t._scope);
+                deleteCacheData($element.element, _scope);
                 setIsolateScope($element.element, isolateScope);
               }
 
@@ -3654,7 +3641,7 @@ export class CompileProvider {
                     if (slotName) {
                       filledSlots[slotName] = true;
                       slots[slotName] =
-                        slots[slotName] || document.createDocumentFragment();
+                        slots[slotName] || createDocumentFragment();
                       slots[slotName].appendChild(node);
                     } else {
                       tempContainer.appendChild(node);
@@ -4334,15 +4321,24 @@ export class CompileProvider {
         function addTextInterpolateDirective(
           directives: InternalDirective[],
           text: string,
-        ) {
+        ): void {
           const interpolateFn = $interpolate(text, true);
 
           if (interpolateFn) {
+            const { expressions } = interpolateFn;
+
+            const watchExpression =
+              buildInterpolationWatchExpression(expressions);
+
             const linkState: TextInterpolateLinkState = {
               _interpolateFn: interpolateFn,
-              _watchExpression: buildInterpolationWatchExpression(
-                interpolateFn.expressions,
-              ),
+              _watchExpression: watchExpression,
+              _singleExpression:
+                expressions.length === 1 &&
+                text ===
+                  $interpolate.startSymbol() +
+                    watchExpression +
+                    $interpolate.endSymbol(),
             };
 
             const directive = {
@@ -4948,7 +4944,7 @@ export function getDirectiveRequire(
   if (!isArray(require) && isObject(require)) {
     const entryList = entries(require);
 
-    for (let i = 0, len = entryList.length; i < len; i++) {
+    for (let i = 0; i < entryList.length; i++) {
       const [key, value] = entryList[i];
 
       const match = value.match(REQUIRE_PREFIX_REGEXP);
@@ -5007,32 +5003,32 @@ export function detectNamespaceForChildElements(
  */
 export function buildStableNodeList(
   state: CompositeLinkState,
-  nodeRef: NodeRef,
+  nodeRef: NodeRef | NodeList,
 ): Node[] {
   let stableNodeList = [];
 
   if (state._nodeLinkFnFound) {
-    const stableLength = nodeRef._isList ? nodeRef.nodes.length : 1;
+    const stableLength = isInstanceOf(nodeRef, NodeRef)
+      ? nodeRef.size
+      : nodeRef.length;
 
     stableNodeList = new Array(stableLength);
 
     for (let i = 0, l = state._linkFnsList.length; i < l; i++) {
       const { _index: idx } = state._linkFnsList[i];
 
-      if (idx === 0) {
-        stableNodeList[idx] = nodeRef._isList
-          ? nodeRef.nodes[idx]
-          : nodeRef.node;
-      } else if (state._nodeRefList?._getIndex(idx)) {
-        stableNodeList[idx] = nodeRef.nodes[idx];
-      }
+      stableNodeList[idx] = isInstanceOf(nodeRef, NodeRef)
+        ? (nodeRef._getIndex(idx) as Node)
+        : nodeRef[idx];
     }
-  } else if (nodeRef._isList) {
-    for (let i = 0, l = nodeRef.nodes.length; i < l; i++) {
-      stableNodeList.push(nodeRef.nodes[i]);
+  } else if (isInstanceOf(nodeRef, NodeRef)) {
+    for (let i = 0, l = nodeRef.size; i < l; i++) {
+      stableNodeList.push(nodeRef._getIndex(i) as Node);
     }
   } else {
-    stableNodeList.push(nodeRef.node);
+    for (let i = 0, l = nodeRef.length; i < l; i++) {
+      stableNodeList.push(nodeRef[i]);
+    }
   }
 
   return stableNodeList;
@@ -5129,7 +5125,7 @@ export function replaceWith(
     }
   }
 
-  const fragment = document.createDocumentFragment();
+  const fragment = createDocumentFragment();
 
   elementsToRemove._collection().forEach((element) => {
     fragment.appendChild(element);

@@ -1,6 +1,6 @@
+import { _angularProvider } from "../../injection-tokens.ts";
 import { ParamTypes } from "../params/param-types.ts";
 import { isDefined, isNullOrUndefined, isString } from "../../shared/utils.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import type { ParamTypeDefinition } from "../params/interface.ts";
 import type { ParamType } from "../params/param-type.ts";
 /**
@@ -17,7 +17,7 @@ import type { ParamType } from "../params/param-type.ts";
  * This API is found at `$url.config`.
  */
 export class UrlConfigProvider {
-  static $inject = [$injectTokens._angularProvider];
+  static $inject = [_angularProvider];
   paramTypes: ParamTypes;
   /** @internal */
   _isCaseInsensitive: boolean;

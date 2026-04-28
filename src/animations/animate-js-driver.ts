@@ -1,4 +1,4 @@
-import { $injectTokens } from "../injection-tokens.ts";
+import { _animateJs, _animateJsDriver } from "../injection-tokens.ts";
 import { AnimateRunner } from "./runner/animate-runner.ts";
 import type { Animator } from "./interface.ts";
 import type { AnimateJsFn } from "./animate-js.ts";
@@ -20,9 +20,9 @@ export function AnimateJsDriverProvider(
 ): void {
   const animationProvider = $$animationProvider as { _drivers: string[] };
 
-  animationProvider._drivers.push($injectTokens._animateJsDriver);
+  animationProvider._drivers.push(_animateJsDriver);
   this.$get = [
-    $injectTokens._animateJs,
+    _animateJs,
     /** Creates the runtime driver factory around `$$animateJs`. */
     function ($$animateJs: AnimateJsFn) {
       function initDriverFn(

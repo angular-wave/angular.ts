@@ -1,40 +1,13 @@
-import { $injectTokens as $t } from "../../injection-tokens.ts";
+import { _exceptionHandler, _log, _parse } from "../../injection-tokens.ts";
+import { callBackAfterFirst, isDefined, wait } from "../../shared/utils.ts";
 import {
-  assign,
-  callBackAfterFirst,
-  isDefined,
-  wait,
-} from "../../shared/utils.ts";
-import { getEventNameForElement } from "../http/http.ts";
+  createWorkerConnection,
+  type WorkerConfig,
+  type WorkerConnection,
+} from "../../services/worker/worker.ts";
+import { getEventNameForElement } from "../events/event-name.ts";
 
-export interface WorkerConfig {
-  onMessage?: (data: any, event: MessageEvent) => void;
-  onError?: (err: ErrorEvent) => void;
-  autoRestart?: boolean;
-  autoTerminate?: boolean;
-  transformMessage?: (data: any) => any;
-  logger?: ng.LogService;
-  err?: ng.ExceptionHandlerService;
-}
-
-export interface DefaultWorkerConfig {
-  onMessage: (data: any, event: MessageEvent) => void;
-  onError: (err: ErrorEvent) => void;
-  autoRestart: boolean;
-  autoTerminate: boolean;
-  transformMessage: (data: any) => any;
-  logger: ng.LogService;
-  err: ng.ExceptionHandlerService;
-}
-
-export interface WorkerConnection {
-  post(data: any): void;
-  terminate(): void;
-  restart(): void;
-  config: WorkerConfig;
-}
-
-ngWorkerDirective.$inject = [$t._parse, $t._log, $t._exceptionHandler];
+ngWorkerDirective.$inject = [_parse, _log, _exceptionHandler];
 
 /**
  * Usage: <div ng-worker="workerName" data-params="{{ expression }}" data-on-result="callback($result)"></div>
@@ -181,104 +154,5 @@ function handleSwap(result: string, swap: string, element: HTMLElement): void {
   }
 }
 
-/**
- * Creates a managed Web Worker connection.
- */
-export function createWorkerConnection(
-  scriptPath: string | URL,
-  config?: WorkerConfig,
-): WorkerConnection {
-  if (!scriptPath) throw new Error("Worker script path required");
-
-  const defaults: DefaultWorkerConfig = {
-    autoRestart: false,
-    autoTerminate: false,
-    onMessage() {
-      /* empty */
-    },
-    onError() {
-      /* empty */
-    },
-    transformMessage(data: unknown) {
-      if (typeof data !== "string") {
-        return data;
-      }
-
-      try {
-        return JSON.parse(data);
-      } catch {
-        return data;
-      }
-    },
-    logger: (config?.logger || console) as ng.LogService,
-    err: (config?.err || (() => undefined)) as ng.ExceptionHandlerService,
-  };
-
-  const cfg = assign({}, defaults, config) as DefaultWorkerConfig;
-
-  let worker = new Worker(scriptPath, { type: "module" });
-
-  let terminated = false;
-
-  const wire = (workerParam: Worker) => {
-    workerParam.onmessage = (event: MessageEvent) => {
-      let { data } = event;
-
-      try {
-        data = cfg.transformMessage(data);
-      } catch {
-        /* no-op */
-      }
-
-      cfg.onMessage(data, event);
-    };
-
-    workerParam.onerror = (err: ErrorEvent) => {
-      cfg.onError(err);
-
-      if (cfg.autoRestart) {
-        reconnect();
-      }
-    };
-  };
-
-  const reconnect = () => {
-    if (terminated) return;
-
-    cfg.logger.info("Worker: restarting...");
-    worker.terminate();
-    worker = new Worker(scriptPath, { type: "module" });
-    wire(worker);
-  };
-
-  wire(worker);
-
-  return {
-    post(data: unknown) {
-      if (terminated) {
-        cfg.logger.warn("Worker already terminated");
-      }
-
-      try {
-        worker.postMessage(data);
-      } catch (err) {
-        cfg.logger.log("Worker post failed", err);
-      }
-    },
-
-    terminate() {
-      terminated = true;
-      worker.terminate();
-    },
-
-    restart() {
-      if (terminated) {
-        cfg.logger.warn("Worker cannot restart after terminate");
-      }
-
-      reconnect();
-    },
-
-    config: cfg,
-  };
-}
+export { createWorkerConnection };
+export type { WorkerConfig, WorkerConnection };

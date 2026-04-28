@@ -1,10 +1,11 @@
+import { _location, _rootScope } from "../../injection-tokens.ts";
 import {
   getNodeName,
   isFunction,
+  isInstanceOf,
   isNumber,
   isString,
 } from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { urlResolve } from "../../shared/url-utils/url-utils.ts";
 
 export interface AnchorScrollService {
@@ -29,8 +30,8 @@ export class AnchorScrollProvider {
   }
 
   $get = [
-    $t._location,
-    $t._rootScope,
+    _location,
+    _rootScope,
     /** Creates the runtime anchor-scroll service. */
     ($location: ng.LocationService, $rootScope: ng.Scope) => {
       // Helper function to get first anchor from a NodeList
@@ -57,7 +58,7 @@ export class AnchorScrollProvider {
 
         if (isFunction(offset)) {
           offset = offset();
-        } else if (offset instanceof Element) {
+        } else if (isInstanceOf(offset, Element)) {
           const style = window.getComputedStyle(offset);
 
           if (style.position !== "fixed") {
@@ -96,7 +97,7 @@ export class AnchorScrollProvider {
 
       const scroll: ng.AnchorScrollService = (hashOrElement) => {
         // Direct element scrolling
-        if (hashOrElement instanceof HTMLElement) {
+        if (isInstanceOf(hashOrElement, HTMLElement)) {
           scrollTo(hashOrElement);
 
           return;

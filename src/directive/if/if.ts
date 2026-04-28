@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { _injector } from "../../injection-tokens.ts";
 import {
   createLazyAnimate,
   getAnimateForNode,
@@ -6,7 +6,7 @@ import {
 import { removeElement } from "../../shared/dom.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
-ngIfDirective.$inject = [$injectTokens._injector];
+ngIfDirective.$inject = [_injector];
 /** Conditionally includes or removes a transcluded block based on the watched expression. */
 export function ngIfDirective($injector: ng.InjectorService): ng.Directive {
   const getAnimate = createLazyAnimate($injector);

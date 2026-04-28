@@ -1,38 +1,85 @@
+import { _exceptionHandler, _parse } from "../../injection-tokens.ts";
 import { directiveNormalize } from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { Attributes } from "../../core/compile/attributes.ts";
 /*
  * A collection of directives that allows creation of custom event handlers that are defined as
  * AngularTS expressions and are compiled and executed within the current scope.
  */
 
-export const ngEventDirectives: Record<string, ng.Injectable<any>> = {};
+const EVENT_NAMES = [
+  "blur",
+  "change",
+  "click",
+  "copy",
+  "cut",
+  "dblclick",
+  "focus",
+  "input",
+  "keydown",
+  "keyup",
+  "load",
+  "mousedown",
+  "mouseenter",
+  "mouseleave",
+  "mousemove",
+  "mouseout",
+  "mouseover",
+  "mouseup",
+  "paste",
+  "submit",
+  "touchstart",
+  "touchend",
+  "touchmove",
+] as const;
 
-"blur change click copy cut dblclick focus input keydown keyup load mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup paste submit touchstart touchend touchmove"
-  .split(" ")
-  .forEach((eventName: string) => {
-    const directiveName = directiveNormalize(`ng-${eventName}`);
+export type NgEventName = (typeof EVENT_NAMES)[number];
 
-    ngEventDirectives[directiveName] = [
-      $t._parse,
-      $t._exceptionHandler,
+export type NgEventDirectiveName = `ng${Capitalize<NgEventName>}`;
 
-      /**
-       * Creates the event directive factory for this DOM event name.
-       */
-      (
-        $parse: ng.ParseService,
-        $exceptionHandler: ng.ExceptionHandlerService,
-      ) => {
-        return createEventDirective(
-          $parse,
-          $exceptionHandler,
-          directiveName,
-          eventName,
-        );
-      },
-    ];
-  });
+function directiveNameForEvent(eventName: NgEventName): NgEventDirectiveName {
+  return directiveNormalize(`ng-${eventName}`) as NgEventDirectiveName;
+}
+
+function createEventDirectiveFactory(
+  eventName: NgEventName,
+): ng.Injectable<any> {
+  const directiveName = directiveNameForEvent(eventName);
+
+  return [
+    _parse,
+    _exceptionHandler,
+
+    /**
+     * Creates the event directive factory for this DOM event name.
+     */
+    (
+      $parse: ng.ParseService,
+      $exceptionHandler: ng.ExceptionHandlerService,
+    ) => {
+      return createEventDirective(
+        $parse,
+        $exceptionHandler,
+        directiveName,
+        eventName,
+      );
+    },
+  ];
+}
+
+export const ngClickDirective = createEventDirectiveFactory("click");
+
+export const ngEventDirectives: Record<
+  NgEventDirectiveName,
+  ng.Injectable<any>
+> = EVENT_NAMES.reduce(
+  (directives, eventName) => {
+    directives[directiveNameForEvent(eventName)] =
+      createEventDirectiveFactory(eventName);
+
+    return directives;
+  },
+  {} as Record<NgEventDirectiveName, ng.Injectable<any>>,
+);
 
 /**
  * Creates a directive that evaluates an expression when the element event fires.

@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { _log } from "../../injection-tokens.ts";
 import {
   StreamConnection,
   type StreamConnectionConfig,
@@ -55,7 +55,7 @@ export class WebSocketProvider {
    * Returns the `$websocket` connection factory bound to the configured defaults.
    */
   $get = [
-    $injectTokens._log,
+    _log,
     (log: ng.LogService): WebSocketService => {
       this._$log = log;
 

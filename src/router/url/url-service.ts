@@ -1,8 +1,16 @@
 import {
+  _location,
+  _locationProvider,
+  _rootScope,
+  _routerProvider,
+  _urlConfigProvider,
+} from "../../injection-tokens.ts";
+import {
   assign,
   entries,
   isDefined,
   isFunction,
+  isInstanceOf,
   isNull,
   isObject,
 } from "../../shared/utils.ts";
@@ -11,7 +19,6 @@ import { stripLastPathElement } from "../../shared/strings.ts";
 import { UrlMatcher } from "./url-matcher.ts";
 import { ParamFactory } from "../params/param-factory.ts";
 import { getBaseHref } from "../../shared/dom.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
 import type { MatchResult, UrlParts } from "./interface.ts";
 import type { StateProvider } from "../../router/state/state-service.ts";
 import type { UrlConfigProvider } from "./url-config.ts";
@@ -26,9 +33,9 @@ const EXACT_ROUTE_MATCH_PRIORITY = Number.EPSILON;
  */
 export class UrlService {
   /* @ignore */ static $inject = [
-    $t._locationProvider,
-    $t._routerProvider,
-    $t._urlConfigProvider,
+    _locationProvider,
+    _routerProvider,
+    _urlConfigProvider,
   ];
 
   $location: ng.LocationService | undefined;
@@ -122,8 +129,8 @@ export class UrlService {
   }
 
   $get = [
-    $t._location,
-    $t._rootScope,
+    _location,
+    _rootScope,
     /**
      *
      * @param {ng.LocationService} $location
@@ -309,7 +316,9 @@ export class UrlService {
     state: StateObject,
     params: Record<string, any>,
   ): void {
-    const $state = this._getStateService();
+    const $state = this._stateService;
+
+    if (!$state) return;
 
     const { current } = $state;
 
@@ -370,7 +379,7 @@ export class UrlService {
 
       const urlMatcher = state.url;
 
-      if (!(urlMatcher instanceof UrlMatcher)) continue;
+      if (!isInstanceOf(urlMatcher, UrlMatcher)) continue;
 
       const match = urlMatcher.exec(url.path, url.search, url.hash || "");
 

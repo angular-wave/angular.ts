@@ -153,6 +153,14 @@ export class ASTInterpreter {
     context?: LinkContext,
     create?: CreateFlag,
   ): CompiledExpressionFunction {
+    if (!context && !create) {
+      const path = getNonComputedPath(ast);
+
+      if (path) {
+        return this._path(path);
+      }
+    }
+
     let left!: CompiledExpressionFunction;
 
     let right:
@@ -174,6 +182,14 @@ export class ASTInterpreter {
 
         return self[`unary${ast._operator}`](right, context);
       case ASTType._BinaryExpression:
+        if (!context) {
+          const binaryPath = getPathBinary(ast);
+
+          if (binaryPath) {
+            return binaryPath;
+          }
+        }
+
         left = this._recurse((ast as ExpressionNode)._left as ASTNode);
         right = this._recurse((ast as ExpressionNode)._right as ASTNode);
 
@@ -239,6 +255,50 @@ export class ASTInterpreter {
             (ast as ExpressionNode)._callee as ASTNode,
             true,
           );
+        }
+
+        if (!(ast as ExpressionNode)._filter && args.length <= 1) {
+          const arg = args[0];
+
+          return args.length
+            ? (scope, locals, assign) => {
+                const runtimeScope = scope as any;
+
+                const rhs = (right as Function)(
+                  runtimeScope?.$target ? runtimeScope.$target : scope,
+                  locals,
+                  assign,
+                );
+
+                let value: any;
+
+                if (!isNullOrUndefined(rhs.value) && isFunction(rhs.value)) {
+                  const res = arg(scope, locals, assign);
+
+                  value = rhs.value.call(
+                    rhs.context,
+                    isFunction(res) ? res() : res,
+                  );
+                }
+
+                return context ? { value } : value;
+              }
+            : (scope, locals, assign) => {
+                const runtimeScope = scope as any;
+
+                const rhs = (right as Function)(
+                  runtimeScope?.$target ? runtimeScope.$target : scope,
+                  locals,
+                  assign,
+                );
+
+                const value =
+                  !isNullOrUndefined(rhs.value) && isFunction(rhs.value)
+                    ? rhs.value.call(rhs.context)
+                    : undefined;
+
+                return context ? { value } : value;
+              };
         }
 
         return (ast as ExpressionNode)._filter
@@ -323,6 +383,25 @@ export class ASTInterpreter {
         args = [];
         const properties = ((ast as ObjectNode)._properties ||
           []) as ObjectPropertyNode[];
+
+        if (!context && properties.length === 1 && !properties[0]._computed) {
+          const property = properties[0];
+
+          const key =
+            (property._key as ASTNode)._type === ASTType._Identifier
+              ? (property._key as LiteralNode)._name
+              : `${(property._key as LiteralNode)._value}`;
+
+          const value = self._recurse(property._value as ASTNode);
+
+          return (scope, locals, assign) => {
+            const object: Record<string, any> = {};
+
+            object[key as string] = value(scope, locals, assign);
+
+            return object;
+          };
+        }
 
         for (let i = 0, l = properties.length; i < l; i++) {
           const property = properties[i];
@@ -850,6 +929,11 @@ export class ASTInterpreter {
     };
   }
 
+  /** @internal */
+  _path(path: string[]): CompiledExpressionFunction {
+    return createPathGetter(path);
+  }
+
   /**
    * Returns the value of a computed member expression.
    * @param {function} left - The left operand function.
@@ -924,6 +1008,124 @@ export class ASTInterpreter {
       return value;
     };
   }
+}
+
+function getNonComputedPath(ast: ASTNode): string[] | undefined {
+  if (ast._type === ASTType._Identifier) {
+    return [(ast as LiteralNode)._name as string];
+  }
+
+  if (ast._type !== ASTType._MemberExpression || ast._computed) {
+    return undefined;
+  }
+
+  const parentPath = getNonComputedPath(
+    (ast as ExpressionNode)._object as ASTNode,
+  );
+
+  if (!parentPath) {
+    return undefined;
+  }
+
+  parentPath.push(
+    ((ast as ExpressionNode)._property as LiteralNode)._name as string,
+  );
+
+  return parentPath;
+}
+
+function getPathBase(
+  head: string,
+  scope: ng.Scope | typeof Proxy<ng.Scope> | undefined,
+  locals: object | undefined,
+): Record<string, any> | undefined {
+  const runtimeScope = scope as any;
+
+  const base =
+    locals && head in locals
+      ? locals
+      : ((runtimeScope && runtimeScope.$proxy) ?? scope);
+
+  return base ? (deProxy(base) as Record<string, any>) : undefined;
+}
+
+function createPathGetter(path: string[]): CompiledExpressionFunction {
+  const p0 = path[0];
+
+  switch (path.length) {
+    case 1:
+      return (scope, locals) => getPathBase(p0, scope, locals)?.[p0];
+    case 2: {
+      const p1 = path[1];
+
+      return (scope, locals) => {
+        const value = getPathBase(p0, scope, locals)?.[p0];
+
+        return isNullOrUndefined(value) ? undefined : value[p1];
+      };
+    }
+    case 3: {
+      const p1 = path[1];
+
+      const p2 = path[2];
+
+      return (scope, locals) => {
+        const value = getPathBase(p0, scope, locals)?.[p0];
+
+        if (isNullOrUndefined(value)) {
+          return undefined;
+        }
+
+        const next = value[p1];
+
+        return isNullOrUndefined(next) ? undefined : next[p2];
+      };
+    }
+  }
+
+  return (scope, locals) => {
+    let value = getPathBase(p0, scope, locals)?.[p0];
+
+    for (let i = 1, l = path.length; i < l; i++) {
+      if (isNullOrUndefined(value)) {
+        return undefined;
+      }
+
+      value = value[path[i]];
+    }
+
+    return value;
+  };
+}
+
+function getPathBinary(ast: ASTNode): CompiledExpressionFunction | undefined {
+  const operator = ast._operator;
+
+  if (operator !== "===" && operator !== "!==") {
+    return undefined;
+  }
+
+  const leftPath = getNonComputedPath((ast as ExpressionNode)._left as ASTNode);
+
+  if (!leftPath) {
+    return undefined;
+  }
+
+  const rightPath = getNonComputedPath(
+    (ast as ExpressionNode)._right as ASTNode,
+  );
+
+  if (!rightPath) {
+    return undefined;
+  }
+
+  const left = createPathGetter(leftPath);
+
+  const right = createPathGetter(rightPath);
+
+  return operator === "==="
+    ? (scope, locals) => left(scope, locals) === right(scope, locals)
+    : (scope, locals) => left(scope, locals) !== right(scope, locals);
 }
 
 /**

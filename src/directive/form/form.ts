@@ -1,4 +1,12 @@
 import {
+  _attrs,
+  _element,
+  _injector,
+  _interpolate,
+  _parse,
+  _scope,
+} from "../../injection-tokens.ts";
+import {
   arrayRemove,
   assertNotHasOwnProperty,
   deProxy,
@@ -21,7 +29,6 @@ import {
   createLazyAnimate,
   type LazyAnimate,
 } from "../../animations/lazy-animate.ts";
-import { $injectTokens, $injectTokens as $t } from "../../injection-tokens.ts";
 import type { NgModelController } from "../model/model.ts";
 import type { DirectiveCompileFn, DirectiveLinkFn } from "../../interface.ts";
 
@@ -145,11 +152,11 @@ const SUBMITTED_CLASS = "ng-submitted";
 export class FormController {
   static $nonscope = true;
   /* @ignore */ static $inject = [
-    $t._element,
-    $t._attrs,
-    $t._scope,
-    $t._injector,
-    $t._interpolate,
+    _element,
+    _attrs,
+    _scope,
+    _injector,
+    _interpolate,
   ];
 
   /** @internal */
@@ -726,7 +733,7 @@ const formDirectiveFactory = function (
   isNgForm?: string,
 ): ng.AnnotatedDirectiveFactory {
   return [
-    $injectTokens._parse,
+    _parse,
     /**
      * Builds the form/ngForm directive definition.
      */

@@ -1,4 +1,10 @@
 import {
+  _animateProvider,
+  _animation,
+  _injector,
+  _rootScope,
+} from "../../injection-tokens.ts";
+import {
   getOrSetCacheData,
   extractElementNode,
   setCacheData,
@@ -7,11 +13,12 @@ import {
   extend,
   isArray,
   isDefined,
+  isInstanceOf,
   isObject,
-  isString,
   isUndefined,
   keys,
   nullObject,
+  isString,
 } from "../../shared/utils.ts";
 import {
   NG_ANIMATE_CHILDREN_DATA,
@@ -24,7 +31,6 @@ import {
   stripCommentsFromElement,
 } from "../shared.ts";
 import type { AnimationOptions } from "../interface.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { AnimateRunner } from "../runner/animate-runner.ts";
 import { NodeType } from "../../shared/node.ts";
 
@@ -86,7 +92,7 @@ const NG_ANIMATE_ATTR_NAME = "data-ng-animate";
 
 const NG_ANIMATE_PIN_DATA = "$ngAnimatePin";
 
-AnimateQueueProvider.$inject = [$t._animateProvider];
+AnimateQueueProvider.$inject = [_animateProvider];
 
 /**
  * @param {any} $animateProvider
@@ -245,9 +251,9 @@ export function AnimateQueueProvider(
   );
 
   this.$get = [
-    $t._rootScope,
-    $t._injector,
-    $t._animation,
+    _rootScope,
+    _injector,
+    _animation,
     /**
      * @param {ng.RootScopeService} $rootScope
      * @param {ng.InjectorService} $injector
@@ -386,7 +392,7 @@ export function AnimateQueueProvider(
         on(event: string, container: Element, callback: AnimationCallback) {
           const node = extractElementNode(container) as HTMLElement | undefined;
 
-          if (!node || !(node instanceof Element) || !callback) return;
+          if (!node || !isInstanceOf(node, Element) || !callback) return;
 
           callbackRegistry[event] = callbackRegistry[event] || [];
           callbackRegistry[event].push({

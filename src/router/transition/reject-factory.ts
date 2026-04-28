@@ -1,5 +1,5 @@
 import { stringify } from "../../shared/strings.ts";
-import { assign } from "../../shared/utils.ts";
+import { assign, isInstanceOf } from "../../shared/utils.ts";
 import type { TargetState } from "../state/target-state.ts";
 import type { Transition } from "./transition.ts";
 
@@ -97,7 +97,7 @@ export class Rejection {
   }
 
   static normalize(detail: TransitionRejectionDetail): Rejection {
-    return detail instanceof Rejection ? detail : Rejection.errored(detail);
+    return isInstanceOf(detail, Rejection) ? detail : Rejection.errored(detail);
   }
 
   toString(): string {

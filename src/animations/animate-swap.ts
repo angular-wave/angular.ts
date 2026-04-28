@@ -1,5 +1,6 @@
-import { $injectTokens } from "../injection-tokens.ts";
-ngAnimateSwapDirective.$inject = [$injectTokens._animate];
+import { _animate } from "../injection-tokens.ts";
+import { isInstanceOf } from "../shared/utils.ts";
+ngAnimateSwapDirective.$inject = [_animate];
 /** Swaps a transcluded block with enter/leave animations as the watched value changes. */
 export function ngAnimateSwapDirective(
   $animate: ng.AnimateService,
@@ -37,7 +38,7 @@ export function ngAnimateSwapDirective(
               clone?: Node | Element | Node[] | NodeList | null,
               childScope?: ng.Scope | null,
             ) => {
-              if (clone instanceof Element) {
+              if (isInstanceOf(clone, Element)) {
                 previousElement = clone as HTMLElement;
                 previousScope = childScope;
                 $animate.enter(clone as HTMLElement, null, $element);

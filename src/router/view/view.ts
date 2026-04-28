@@ -1,5 +1,5 @@
+import { _router, _templateFactory } from "../../injection-tokens.ts";
 import { equals, removeFrom } from "../../shared/common.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { ViewConfig } from "../state/views.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { ViewDeclaration } from "../state/interface.ts";
@@ -111,8 +111,8 @@ export class ViewService {
    * Returns the singleton view service instance.
    */
   $get = [
-    $t._templateFactory,
-    $t._router,
+    _templateFactory,
+    _router,
     (
       $templateFactory: TemplateFactoryProvider,
       $routerState: any,

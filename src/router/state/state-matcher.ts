@@ -1,4 +1,4 @@
-import { isString, values } from "../../shared/utils.ts";
+import { values, isString } from "../../shared/utils.ts";
 import type { StateObject } from "./state-object.ts";
 import type { StateOrName, StateStore } from "./interface.ts";
 

@@ -2,6 +2,7 @@
  * Shared Stream Connection Manager
  * Handles reconnect, heartbeat, and event callbacks for SSE or WebSocket
  */
+import { isFunction, isInstanceOf } from "../../shared/utils.ts";
 
 export interface StreamConnectionConfig {
   /** Called when the connection opens */
@@ -98,7 +99,7 @@ export class StreamConnection {
     if (this._closed) return;
 
     // Close the old connection if it exists
-    if (this._connection && typeof this._connection.close === "function") {
+    if (this._connection && isFunction(this._connection.close)) {
       this._connection.close();
     }
 
@@ -115,7 +116,7 @@ export class StreamConnection {
    * @param data - Data to send.
    */
   send(data: any): void {
-    if (this._connection instanceof WebSocket) {
+    if (isInstanceOf(this._connection, WebSocket)) {
       this._connection.send(JSON.stringify(data));
     } else {
       this._log.warn("Send is only supported on WebSocket connections");
@@ -143,13 +144,13 @@ export class StreamConnection {
   private _bindEvents(): void {
     const conn = this._connection;
 
-    if (conn instanceof EventSource) {
+    if (isInstanceOf(conn, EventSource)) {
       conn.addEventListener("open", (err) => this._handleOpen(err));
       conn.addEventListener("message", (err) =>
         this._handleMessage(err.data, err),
       );
       conn.addEventListener("error", (err) => this._handleError(err));
-    } else if (conn instanceof WebSocket) {
+    } else if (isInstanceOf(conn, WebSocket)) {
       conn.onopen = (err) => this._handleOpen(err);
       conn.onmessage = (err) => this._handleMessage(err.data, err);
       conn.onerror = (err) => this._handleError(err);

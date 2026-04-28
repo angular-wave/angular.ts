@@ -1,3 +1,4 @@
+import { _parse } from "../injection-tokens.ts";
 import {
   hasCustomToString,
   isArray,
@@ -5,10 +6,9 @@ import {
   isFunction,
   isNullOrUndefined,
   isObject,
-  isString,
   minErr,
+  isString,
 } from "../shared/utils.ts";
-import { $injectTokens } from "../injection-tokens.ts";
 
 type PredicateValue = { value: any; type: string; index: number };
 
@@ -25,7 +25,7 @@ type PredicateDescriptor = {
   descending: number;
 };
 
-orderByFilter.$inject = [$injectTokens._parse];
+orderByFilter.$inject = [_parse];
 
 /** Registers the built-in stable ordering filter. */
 export function orderByFilter($parse: ng.ParseService) {

@@ -1,9 +1,16 @@
+import {
+  _exceptionHandler,
+  _rootElement,
+  _rootScope,
+  _router,
+} from "../../injection-tokens.ts";
 import { trimEmptyHash, urlResolve } from "../../shared/url-utils/url-utils.ts";
 import {
   encodeUriSegment,
   entries,
   equals,
   isDefined,
+  isFunction,
   isNull,
   isNumber,
   isObject,
@@ -15,7 +22,6 @@ import {
   toKeyValue,
 } from "../../shared/utils.ts";
 import { getBaseHref } from "../../shared/dom.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
 import { validateRequired } from "../../shared/validate.ts";
 
 /**
@@ -703,10 +709,10 @@ export class LocationProvider {
   }
 
   $get = [
-    $t._rootScope,
-    $t._rootElement,
-    $t._router,
-    $t._exceptionHandler,
+    _rootScope,
+    _rootElement,
+    _router,
+    _exceptionHandler,
     (
       $rootScope: ng.Scope,
       $rootElement: HTMLElement,
@@ -824,7 +830,7 @@ export class LocationProvider {
           absHref = new URL((absHref as SVGAnimatedString).animVal).href;
         }
 
-        if (typeof absHref !== "string" && "animVal" in absHref) {
+        if (!isString(absHref) && "animVal" in absHref) {
           absHref = new URL(absHref.animVal).href;
         }
 
@@ -889,7 +895,7 @@ export class LocationProvider {
         }
 
         queueMicrotask(() => {
-          if (destroyed || typeof $rootScope.$broadcast !== "function") return;
+          if (destroyed || !isFunction($rootScope.$broadcast)) return;
 
           const oldUrl = $location.absUrl;
 
@@ -940,7 +946,7 @@ export class LocationProvider {
             initializing = false;
 
             setTimeout(() => {
-              if (destroyed || typeof $rootScope.$broadcast !== "function") {
+              if (destroyed || !isFunction($rootScope.$broadcast)) {
                 return;
               }
 
@@ -982,7 +988,7 @@ export class LocationProvider {
       return $location;
 
       function afterLocationChange(oldUrl: string, oldState: any) {
-        if (destroyed || typeof $rootScope.$broadcast !== "function") return;
+        if (destroyed || !isFunction($rootScope.$broadcast)) return;
 
         $rootScope.$broadcast(
           "$locationChangeSuccess",

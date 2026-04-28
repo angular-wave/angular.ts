@@ -1,6 +1,6 @@
+import { _http, _templateCache } from "../../injection-tokens.ts";
 import { defaultHttpResponseTransform } from "../http/http.ts";
 import { extend, isArray } from "../../shared/utils.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 
 export interface TemplateRequestService {
   /**
@@ -59,8 +59,8 @@ export class TemplateRequestProvider {
   }
 
   $get = [
-    $injectTokens._templateCache,
-    $injectTokens._http,
+    _templateCache,
+    _http,
     /**
      * Creates the `$templateRequest` service.
      */

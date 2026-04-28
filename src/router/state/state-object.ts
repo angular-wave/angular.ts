@@ -3,6 +3,7 @@ import {
   assign,
   hasOwn,
   isFunction,
+  isInstanceOf,
   isObject,
   values,
 } from "../../shared/utils.ts";
@@ -90,7 +91,7 @@ export class StateObject {
    * @returns {string} Returns a dot-separated name of the state.
    */
   fqn(): string {
-    if (!this.parent || !(this.parent instanceof this.constructor))
+    if (!this.parent || !isInstanceOf(this.parent, this.constructor))
       return this.name;
     const name = this.parent.fqn();
 

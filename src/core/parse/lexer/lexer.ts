@@ -1,4 +1,4 @@
-import { isDefined, minErr } from "../../../shared/utils.ts";
+import { isDefined, minErr, isString } from "../../../shared/utils.ts";
 import type { Token } from "./token.ts";
 
 export type { Token } from "./token.ts";
@@ -130,7 +130,7 @@ export class Lexer {
    */
   /** @internal */
   _isNumber(ch: unknown): boolean {
-    return typeof ch === "string" && ch >= "0" && ch <= "9";
+    return isString(ch) && ch >= "0" && ch <= "9";
   }
 
   /**

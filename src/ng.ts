@@ -1,3 +1,11 @@
+import {
+  _angular,
+  _compile,
+  _document,
+  _provide,
+  _router,
+  _window,
+} from "./injection-tokens.ts";
 import { $$AnimateChildrenDirective } from "./animations/animate-children-directive.ts";
 import { AnimateCssDriverProvider } from "./animations/animate-css-driver.ts";
 import { AnimateJsDriverProvider } from "./animations/animate-js-driver.ts";
@@ -12,9 +20,7 @@ import { ControllerProvider } from "./core/controller/controller.ts";
 import { FilterProvider } from "./core/filter/filter.ts";
 import { InterpolateProvider } from "./core/interpolate/interpolate.ts";
 import { ParseProvider } from "./core/parse/parse.ts";
-import { SanitizeUriProvider } from "./core/sanitize/sanitize-uri.ts";
 import { RootScopeProvider } from "./core/scope/scope.ts";
-import { $injectTokens as $t } from "./injection-tokens.ts";
 import {
   AriaProvider,
   ngCheckedAriaDirective,
@@ -132,6 +138,8 @@ import { SseProvider } from "./services/sse/sse.ts";
 import { TemplateCacheProvider } from "./services/template-cache/template-cache.ts";
 import { TemplateRequestProvider } from "./services/template-request/template-request.ts";
 import { WebSocketProvider } from "./services/websocket/websocket.ts";
+import { WorkerProvider } from "./services/worker/worker.ts";
+import { WasmProvider } from "./services/wasm/wasm.ts";
 
 /**
  * Initializes and registers the core `ng` module.
@@ -145,22 +153,18 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
       "ng",
       [],
       [
-        $t._provide,
+        _provide,
         ($provide: ng.ProvideService) => {
-          // $$sanitizeUriProvider needs to be before $compileProvider as it is used by it.
-          $provide.provider({
-            $$sanitizeUri: SanitizeUriProvider,
-          });
           $provide.provider(
-            $t._angular,
+            _angular,
             class {
               $get = () => angular;
             },
           );
-          $provide.value($t._window, window);
-          $provide.value($t._document, document);
+          $provide.value(_window, window);
+          $provide.value(_document, document);
           $provide
-            .provider($t._compile, CompileProvider)
+            .provider(_compile, CompileProvider)
             .directive({
               input: inputDirective,
               textarea: inputDirective,
@@ -271,7 +275,7 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
             $parse: ParseProvider,
             $rest: RestProvider,
             $rootScope: RootScopeProvider,
-            [$t._router]: _RouterProvider,
+            [_router]: _RouterProvider,
             $sce: SceProvider,
             $sceDelegate: SceDelegateProvider,
             $sse: SseProvider,
@@ -286,12 +290,14 @@ export function registerNgModule(angular: ng.Angular): ng.NgModule {
             $state: StateProvider,
             $eventBus: PubSubProvider,
             $websocket: WebSocketProvider,
+            $worker: WorkerProvider,
+            $wasm: WasmProvider,
           });
         },
       ],
     )
     .factory("$stateParams", [
-      $t._router,
+      _router,
       /**
        * Exposes the router's current parameter bag as `$stateParams`.
        */

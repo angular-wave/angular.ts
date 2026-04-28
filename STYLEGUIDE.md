@@ -12,12 +12,13 @@ user-controlled data.
 Any assert must:
 -   fail early and loudly with developer-only "sanity" checks
 -   maintain and support **public** API contracts and types
--   must itself be part of the API via `@throw` tag
+-   be documented with `@throws` when exposed through public API
 
 #### ✅ When to Use Asserts
 
-Use asserts **only** when the error indicates a **fatal error**
-or **misuse of an internal API** such that a framework cannot function.
+Use asserts **only** when the error indicates a framework invariant violation
+or **misuse of an internal API** such that continuing would make framework
+state unreliable.
 
 Asserts SHOULD be used when:
 
@@ -27,7 +28,7 @@ Asserts SHOULD be used when:
     to be correct.
 -   The input originates from the framework itself, not from end-users or
     dynamic data.
--   The failure shoudl notify the developer to immediately stop what they are
+-   The failure should notify the developer to immediately stop what they are
     doing and refactor their code.
 
 #### ❌ When *Not* to Use Asserts
@@ -42,11 +43,17 @@ Asserts SHOULD NOT be used for:
 -   Errors that are part of expected runtime behavior.
 -   Validation of business rules.
 
-Assert SHOULD NOT be used in "hot code paths" or any place where
+Asserts SHOULD NOT be used in "hot code paths" or any place where
 its use can degrade the performance of the application over a period of time.
+This includes frequently repeated paths such as digest watchers, parser
+evaluation, directive link/update loops, DOM reconciliation, or event dispatch,
+unless the invariant cannot be checked earlier.
 
 These should be handled either by the developer, before it reaches the framework API, 
 or by a unified error sink at the framework level, such as `$exceptionHandler`;
+
+Internal invariant failures should throw immediately. Do not route them through
+`$exceptionHandler`, since doing so can hide corrupted framework state.
 
 ###### Examples
 
@@ -55,4 +62,3 @@ or by a unified error sink at the framework level, such as `$exceptionHandler`;
 -   Missing runtime config.
 -   Event payloads have unexpected types.
 -   Anything that can be corrected by the user instead of the developer.
-

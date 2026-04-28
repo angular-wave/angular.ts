@@ -1,4 +1,4 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { _parse } from "../../injection-tokens.ts";
 import type { NgModelController } from "../model/model.ts";
 import type { ScopeProxied } from "../../core/scope/scope.ts";
 import {
@@ -9,10 +9,10 @@ import {
   isNumberNaN,
   isObject,
   isProxy,
-  isString,
   isUndefined,
   nextUid,
   trim,
+  isString,
 } from "../../shared/utils.ts";
 import { ngModelMinErr } from "./../model/model.ts";
 
@@ -906,7 +906,7 @@ function checkboxInputType(
   ctrl.$parsers.push((value: any) => (value ? trueValue : falseValue));
 }
 
-inputDirective.$inject = [$injectTokens._parse];
+inputDirective.$inject = [_parse];
 
 /**
  * Builds the core input directive and delegates to the appropriate input-type handler.

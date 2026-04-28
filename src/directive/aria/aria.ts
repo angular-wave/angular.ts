@@ -1,5 +1,5 @@
+import { _aria, _parse } from "../../injection-tokens.ts";
 import { extend, hasOwn } from "../../shared/utils.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 
 export interface AriaService {
   config(key: string | number): any;
@@ -129,7 +129,7 @@ export function AriaProvider(this: AriaProviderInstance): void {
   };
 }
 
-ngDisabledAriaDirective.$inject = [$injectTokens._aria];
+ngDisabledAriaDirective.$inject = [_aria];
 /** Mirrors `ngDisabled` into `aria-disabled` when needed. */
 export function ngDisabledAriaDirective($aria: AriaService): ng.Directive {
   return {
@@ -143,7 +143,7 @@ export function ngDisabledAriaDirective($aria: AriaService): ng.Directive {
   };
 }
 
-ngShowAriaDirective.$inject = [$injectTokens._aria];
+ngShowAriaDirective.$inject = [_aria];
 /** Mirrors `ngShow` into `aria-hidden` when needed. */
 export function ngShowAriaDirective($aria: AriaService): ng.Directive {
   return {
@@ -167,7 +167,7 @@ export function ngMessagesAriaDirective(): ng.Directive {
   };
 }
 
-ngClickAriaDirective.$inject = [$injectTokens._aria, $injectTokens._parse];
+ngClickAriaDirective.$inject = [_aria, _parse];
 
 /** Adds keyboard and role accessibility behavior for `ngClick` on non-native controls. */
 export function ngClickAriaDirective(
@@ -227,7 +227,7 @@ export function ngClickAriaDirective(
   };
 }
 
-ngRequiredAriaDirective.$inject = [$injectTokens._aria];
+ngRequiredAriaDirective.$inject = [_aria];
 /** Mirrors `ngRequired` into `aria-required` when needed. */
 export function ngRequiredAriaDirective($aria: AriaService): ng.Directive {
   return {
@@ -241,7 +241,7 @@ export function ngRequiredAriaDirective($aria: AriaService): ng.Directive {
   };
 }
 
-ngCheckedAriaDirective.$inject = [$injectTokens._aria];
+ngCheckedAriaDirective.$inject = [_aria];
 /** Mirrors `ngChecked` into `aria-checked` when needed. */
 export function ngCheckedAriaDirective($aria: AriaService): ng.Directive {
   return {
@@ -255,7 +255,7 @@ export function ngCheckedAriaDirective($aria: AriaService): ng.Directive {
   };
 }
 
-ngValueAriaDirective.$inject = [$injectTokens._aria];
+ngValueAriaDirective.$inject = [_aria];
 /** Mirrors `ngValue` into `aria-checked` for non-native controls when needed. */
 export function ngValueAriaDirective($aria: AriaService): ng.Directive {
   return {
@@ -269,7 +269,7 @@ export function ngValueAriaDirective($aria: AriaService): ng.Directive {
   };
 }
 
-ngHideAriaDirective.$inject = [$injectTokens._aria];
+ngHideAriaDirective.$inject = [_aria];
 /** Mirrors `ngHide` into `aria-hidden` when needed. */
 export function ngHideAriaDirective($aria: AriaService): ng.Directive {
   return {
@@ -278,7 +278,7 @@ export function ngHideAriaDirective($aria: AriaService): ng.Directive {
   };
 }
 
-ngReadonlyAriaDirective.$inject = [$injectTokens._aria];
+ngReadonlyAriaDirective.$inject = [_aria];
 /** Mirrors `ngReadonly` into `aria-readonly` when needed. */
 export function ngReadonlyAriaDirective($aria: AriaService): ng.Directive {
   return {
@@ -292,7 +292,7 @@ export function ngReadonlyAriaDirective($aria: AriaService): ng.Directive {
   };
 }
 
-ngModelAriaDirective.$inject = [$injectTokens._aria];
+ngModelAriaDirective.$inject = [_aria];
 /** Adds ARIA validity, checked, and range metadata for `ngModel` controls. */
 export function ngModelAriaDirective($aria: AriaService): ng.Directive<any> {
   /** Determines whether an ARIA attribute should be attached to an element. */
@@ -466,7 +466,7 @@ export function ngModelAriaDirective($aria: AriaService): ng.Directive<any> {
   };
 }
 
-ngDblclickAriaDirective.$inject = [$injectTokens._aria];
+ngDblclickAriaDirective.$inject = [_aria];
 /** Adds focusability for `ngDblclick` on non-native interactive controls. */
 export function ngDblclickAriaDirective($aria: AriaService): ng.Directive {
   return {

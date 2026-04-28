@@ -5,6 +5,7 @@ import {
   hasOwn,
   isArray,
   isFunction,
+  isInstanceOf,
   isNullOrUndefined,
   isObject,
 } from "../../shared/utils.ts";
@@ -36,6 +37,9 @@ export class Resolvable {
   resolved: boolean;
   promise: Promise<any> | undefined;
 
+  /**
+   * @throws Error when a resolve function is provided without a token.
+   */
   constructor(
     arg1: any,
     resolveFn?: Function | undefined,
@@ -51,7 +55,7 @@ export class Resolvable {
     this.resolved = false;
     this.promise = undefined;
 
-    if (arg1 instanceof Resolvable) {
+    if (isInstanceOf(arg1, Resolvable)) {
       assign(this, arg1);
     } else if (isFunction(resolveFn)) {
       assert(!isNullOrUndefined(arg1), "token argument is required");

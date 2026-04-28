@@ -134,12 +134,21 @@ export type {
   WebSocketConfig,
   WebSocketService,
 } from "./services/websocket/websocket.ts";
-
-export { createWorkerConnection } from "./directive/worker/worker.ts";
+export {
+  WorkerProvider,
+  createWorkerConnection,
+} from "./services/worker/worker.ts";
 export type {
   WorkerConfig,
   WorkerConnection,
-} from "./directive/worker/worker.ts";
+  WorkerService,
+} from "./services/worker/worker.ts";
+export { WasmProvider } from "./services/wasm/wasm.ts";
+export type {
+  WasmInstantiationResult,
+  WasmOptions,
+  WasmService,
+} from "./services/wasm/wasm.ts";
 export type { AriaService } from "./directive/aria/aria.ts";
 export { SwapMode } from "./directive/http/http.ts";
 export { NgModelController } from "./directive/model/model.ts";

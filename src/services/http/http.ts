@@ -1,4 +1,10 @@
 import {
+  _cookie,
+  _httpParamSerializer,
+  _injector,
+  _sce,
+} from "../../injection-tokens.ts";
+import {
   trimEmptyHash,
   urlIsAllowedOriginFactory,
 } from "../../shared/url-utils/url-utils.ts";
@@ -28,7 +34,6 @@ import {
   trim,
   uppercase,
 } from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
 
 const APPLICATION_JSON = "application/json";
 
@@ -527,7 +532,7 @@ export function HttpProvider(this: any): void {
     },
     xsrfCookieName: "XSRF-TOKEN",
     xsrfHeaderName: "X-XSRF-TOKEN",
-    paramSerializer: $t._httpParamSerializer,
+    paramSerializer: _httpParamSerializer,
   });
 
   let useApplyAsync = false;
@@ -613,9 +618,9 @@ export function HttpProvider(this: any): void {
   };
 
   this.$get = [
-    $t._injector,
-    $t._sce,
-    $t._cookie,
+    _injector,
+    _sce,
+    _cookie,
     /** Creates the runtime `$http` service. */
     function (
       $injector: ng.InjectorService,
@@ -1036,7 +1041,7 @@ export function HttpProvider(this: any): void {
                 }
 
                 function callEventHandler() {
-                  if (typeof eventHandler === "function") {
+                  if (isFunction(eventHandler)) {
                     eventHandler(event);
                   } else if (
                     eventHandler &&

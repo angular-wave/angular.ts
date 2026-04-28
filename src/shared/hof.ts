@@ -1,3 +1,5 @@
+import { isInstanceOf } from "./utils.ts";
+
 export type Predicate<X> = (x?: X) => boolean;
 
 export type PredicateBinary<X, Y> = (x?: X, y?: Y) => boolean;
@@ -97,7 +99,7 @@ export function is<T>(ctor: new (...args: any[]) => T): (obj: any) => boolean {
   return function (obj: any) {
     return (
       (obj !== null && obj !== undefined && obj.constructor === ctor) ||
-      obj instanceof ctor
+      isInstanceOf(obj, ctor)
     );
   };
 }

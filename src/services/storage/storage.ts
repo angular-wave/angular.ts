@@ -41,10 +41,10 @@ export type StorageType = "local" | "session" | "cookie" | "custom";
  * The proxy also restores previously serialized state on creation and
  * persists deletions in addition to property assignments.
  */
-export function createPersistentProxy<T extends Record<PropertyKey, any>>(
+export function createPersistentProxy<T extends Record<PropertyKey, unknown>>(
   target: T,
   key: string,
-  storage: StorageLike & any,
+  storage: StorageLike,
   options: {
     serialize?: (value: T) => string;
     deserialize?: (value: string) => Partial<T>;
@@ -63,7 +63,7 @@ export function createPersistentProxy<T extends Record<PropertyKey, any>>(
 
   return new Proxy(target, {
     set(obj, prop, value): boolean {
-      (obj as Record<PropertyKey, any>)[prop] = value;
+      (obj as Record<PropertyKey, unknown>)[prop] = value;
       storage.setItem(key, serialize(obj));
 
       return true;

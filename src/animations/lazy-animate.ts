@@ -1,4 +1,4 @@
-import { $injectTokens } from "../injection-tokens.ts";
+import { _animate } from "../injection-tokens.ts";
 import { hasAnimate } from "../shared/utils.ts";
 
 export type LazyAnimate = () => ng.AnimateService;
@@ -10,8 +10,7 @@ export type LazyAnimate = () => ng.AnimateService;
 export function createLazyAnimate($injector: ng.InjectorService): LazyAnimate {
   let $animate: ng.AnimateService | undefined;
 
-  return () =>
-    ($animate ||= $injector.get($injectTokens._animate) as ng.AnimateService);
+  return () => ($animate ||= $injector.get(_animate) as ng.AnimateService);
 }
 
 /**

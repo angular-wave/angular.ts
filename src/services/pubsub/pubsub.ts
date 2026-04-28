@@ -1,4 +1,7 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import {
+  _angularProvider,
+  _exceptionHandlerProvider,
+} from "../../injection-tokens.ts";
 import { nullObject } from "../../shared/utils.ts";
 
 type ListenerEntry = { _fn: Function; _context: any };
@@ -12,10 +15,7 @@ let eventBusInstance: PubSub | undefined;
  * dependency injection.
  */
 export class PubSubProvider {
-  static $inject = [
-    $injectTokens._exceptionHandlerProvider,
-    $injectTokens._angularProvider,
-  ];
+  static $inject = [_exceptionHandlerProvider, _angularProvider];
 
   eventBus: PubSub;
 

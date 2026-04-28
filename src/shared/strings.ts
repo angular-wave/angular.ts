@@ -6,8 +6,8 @@ import {
   isFunction,
   isNull,
   isObject,
-  isString,
   isUndefined,
+  isString,
 } from "./utils.ts";
 
 /**
@@ -82,11 +82,7 @@ export function stringify(value: any): string {
   const seen: any[] = [];
 
   const isRejection = (obj: Promise<any>) => {
-    return (
-      obj &&
-      typeof obj.then === "function" &&
-      obj.constructor.name === "Rejection"
-    );
+    return obj && isFunction(obj.then) && obj.constructor.name === "Rejection";
   };
 
   const hasToString = (obj: {

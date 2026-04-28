@@ -133,6 +133,68 @@ describe("NgModule", () => {
     ]);
   });
 
+  it("can store persistent stores", () => {
+    const model = { counter: 0 };
+    const backend = {
+      getItem() {
+        return null;
+      },
+      setItem() {
+        /* empty */
+      },
+      removeItem() {
+        /* empty */
+      },
+    };
+
+    ngModule.store("aStore", model, "custom", { backend });
+
+    expect(ngModule._invokeQueue[0][0]).toBe($t._provide);
+    expect(ngModule._invokeQueue[0][1]).toBe("store");
+    expect(ngModule._invokeQueue[0][2][0]).toBe("aStore");
+    expect(ngModule._invokeQueue[0][2][1]()).toBe(model);
+    expect(ngModule._invokeQueue[0][2][2]).toBe("custom");
+    expect(ngModule._invokeQueue[0][2][3]).toEqual({ backend });
+  });
+
+  it("stores high-level injectable helpers as provider factories", () => {
+    ngModule
+      .rest("posts", "/api/posts")
+      .worker("backgroundWorker", "/workers/bg.js")
+      .wasm("mathLib", "/wasm/math.wasm")
+      .sse("notifications", "/events")
+      .websocket("chat", "wss://chat.example.com", ["json"]);
+
+    expect(ngModule._invokeQueue.map((item) => item[0])).toEqual([
+      $t._provide,
+      $t._provide,
+      $t._provide,
+      $t._provide,
+      $t._provide,
+    ]);
+    expect(ngModule._invokeQueue.map((item) => item[1])).toEqual([
+      "factory",
+      "factory",
+      "factory",
+      "factory",
+      "factory",
+    ]);
+    expect(ngModule._invokeQueue.map((item) => item[2][0])).toEqual([
+      "posts",
+      "backgroundWorker",
+      "mathLib",
+      "notifications",
+      "chat",
+    ]);
+    expect(ngModule._invokeQueue.map((item) => item[2][1][0])).toEqual([
+      $t._rest,
+      $t._worker,
+      $t._wasm,
+      $t._sse,
+      $t._websocket,
+    ]);
+  });
+
   it("can store providers", () => {
     ngModule.provider("aProvider", a).provider("bProvider", b);
     expect(ngModule._invokeQueue[0]).toEqual([

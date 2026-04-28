@@ -49,6 +49,8 @@ export const PublicInjectionTokens = {
   $view: "$view",
   $window: "$window",
   $websocket: "$websocket",
+  $worker: "$worker",
+  $wasm: "$wasm",
   $provide: "$provide",
   $injector: "$injector",
   $angularProvider: "$angularProvider",
@@ -82,6 +84,8 @@ export const PublicInjectionTokens = {
   $urlProvider: "$urlProvider",
   $viewProvider: "$viewProvider",
   $websocketProvider: "$websocketProvider",
+  $workerProvider: "$workerProvider",
+  $wasmProvider: "$wasmProvider",
   $controllerProvider: "$controllerProvider",
 } as const;
 

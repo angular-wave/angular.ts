@@ -1,3 +1,4 @@
+import { _injector } from "../../injection-tokens.ts";
 import {
   callBackOnce,
   arrayFrom,
@@ -6,11 +7,13 @@ import {
   isArray,
   isArrayLike,
   isDefined,
+  isInstanceOf,
   minErr,
   nullObject,
   values,
 } from "../../shared/utils.ts";
 import {
+  createDocumentFragment,
   getBlockNodes,
   removeElement,
   removeElementData,
@@ -20,7 +23,6 @@ import {
   type ArrayMutationMeta,
 } from "../../core/scope/scope.ts";
 import { createLazyAnimate } from "../../animations/lazy-animate.ts";
-import { $injectTokens } from "../../injection-tokens.ts";
 import { NodeType } from "../../shared/node.ts";
 
 const NG_REMOVED = "$$NG_REMOVED";
@@ -30,7 +32,7 @@ const ngRepeatMinErr = minErr("ngRepeat");
 const VAR_OR_TUPLE_REGEX =
   /^(?:(\s*[$\w]+)|\(\s*([$\w]+)\s*,\s*([$\w]+)\s*\))$/;
 
-ngRepeatDirective.$inject = [$injectTokens._injector];
+ngRepeatDirective.$inject = [_injector];
 
 type RepeatScope = ng.Scope &
   Record<string, any> & {
@@ -144,11 +146,11 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
   }
 
   function normalizeCloneNodes(clone: unknown): RepeatClone {
-    if (clone instanceof DocumentFragment) {
+    if (isInstanceOf(clone, DocumentFragment)) {
       return arrayFrom(clone.childNodes);
     }
 
-    if (clone instanceof NodeList || isArray(clone)) {
+    if (isInstanceOf(clone, NodeList) || isArray(clone)) {
       return arrayFrom(clone);
     }
 
@@ -185,6 +187,38 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
       node = nextNode;
     }
+  }
+
+  function removeNodeRangeFast(firstNode: Node, lastNode: Node): void {
+    const parent = firstNode.parentNode;
+
+    if (!parent || lastNode.parentNode !== parent) {
+      removeNodeRange(firstNode, lastNode);
+
+      return;
+    }
+
+    const range = document.createRange();
+
+    range.setStartBefore(firstNode);
+    range.setEndAfter(lastNode);
+
+    const removedNodes = range.extractContents();
+
+    const descendants = removedNodes.querySelectorAll("*");
+
+    for (let i = 0; i < descendants.length; i++) {
+      removeElementData(descendants[i]);
+    }
+
+    let node: Node | null = removedNodes.firstChild;
+
+    while (node) {
+      removeElementData(node as Element & Record<string, any>);
+      node = node.nextSibling;
+    }
+
+    range.detach();
   }
 
   function trackByIdArrayFn(_$scope: RepeatScope, _key: any, value: any) {
@@ -239,32 +273,19 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
       return undefined;
     }
 
-    for (let index = 0; index < nextBlockOrder.length; index++) {
-      const block = nextBlockOrder[index];
+    const leftBlock = nextBlockOrder[leftIndex];
 
-      if (!block._scope || !block._clone) {
-        return undefined;
-      }
+    const rightBlock = nextBlockOrder[rightIndex];
 
-      if (index === leftIndex) {
-        if (block !== lastBlockOrder[rightIndex]) {
-          return undefined;
-        }
-
-        continue;
-      }
-
-      if (index === rightIndex) {
-        if (block !== lastBlockOrder[leftIndex]) {
-          return undefined;
-        }
-
-        continue;
-      }
-
-      if (block !== lastBlockOrder[index]) {
-        return undefined;
-      }
+    if (
+      !leftBlock?._scope ||
+      !leftBlock._clone ||
+      !rightBlock?._scope ||
+      !rightBlock._clone ||
+      leftBlock !== lastBlockOrder[rightIndex] ||
+      rightBlock !== lastBlockOrder[leftIndex]
+    ) {
+      return undefined;
     }
 
     return [leftIndex, rightIndex];
@@ -440,7 +461,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
             return;
           }
 
-          const fragment = document.createDocumentFragment();
+          const fragment = createDocumentFragment();
 
           for (let i = 0; i < nodes.length; i++) {
             fragment.appendChild(nodes[i]);
@@ -688,7 +709,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                   lastBlockOrder[i]._scope?.$destroy();
                 }
 
-                removeNodeRange(firstNode, lastNode);
+                removeNodeRangeFast(firstNode, lastNode);
                 lastBlockMap = nextBlockMap as RepeatBlockMap;
                 lastBlockOrder = nextBlockOrder;
 
@@ -722,7 +743,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                   lastBlockOrder[removedIndex]._scope?.$destroy();
                 }
 
-                removeNodeRange(firstRemovedNode, lastRemovedNode);
+                removeNodeRangeFast(firstRemovedNode, lastRemovedNode);
 
                 const retainedLastIndex = tailDeleteRetainedLength - 1;
 
@@ -774,7 +795,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
                   lastBlockOrder[i]._scope?.$destroy();
                 }
 
-                removeNodeRange(firstNode, lastNode);
+                removeNodeRangeFast(firstNode, lastNode);
                 lastBlockMap = nullObject();
                 lastBlockOrder = [];
               }

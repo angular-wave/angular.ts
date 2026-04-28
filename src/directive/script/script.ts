@@ -1,7 +1,7 @@
-import { $injectTokens } from "../../injection-tokens.ts";
+import { _templateCache } from "../../injection-tokens.ts";
 import type { Attributes } from "../../core/compile/attributes.ts";
 
-scriptDirective.$inject = [$injectTokens._templateCache];
+scriptDirective.$inject = [_templateCache];
 
 /**
  * Captures inline `text/ng-template` script contents into `$templateCache`.

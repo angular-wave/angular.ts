@@ -1,5 +1,5 @@
 import { stringify } from "../../shared/strings.ts";
-import { isArray, isUndefined } from "../../shared/utils.ts";
+import { isArray, isInstanceOf, isUndefined } from "../../shared/utils.ts";
 import { subPath } from "../path/path-utils.ts";
 import type { PathNode } from "../path/path-node.ts";
 import type { BuiltStateDeclaration } from "../state/interface.ts";
@@ -111,10 +111,9 @@ export class ResolveContext {
     for (let i = 0; i < newResolvables.length; i++) {
       const resolvable = newResolvables[i];
 
-      const normalized =
-        resolvable instanceof Resolvable
-          ? resolvable
-          : new Resolvable(resolvable);
+      const normalized = isInstanceOf(resolvable, Resolvable)
+        ? resolvable
+        : new Resolvable(resolvable);
 
       resolvables.push(normalized);
       keys.push(normalized.token);

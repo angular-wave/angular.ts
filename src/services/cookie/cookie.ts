@@ -1,9 +1,10 @@
 import {
   isDefined,
+  isInstanceOf,
   isNullOrUndefined,
   isNumber,
-  isString,
   nullObject,
+  isString,
 } from "../../shared/utils.ts";
 import {
   validateIsString,
@@ -230,7 +231,7 @@ function buildOptions(opts: ng.CookieOptions = {}): string {
   if (!isNullOrUndefined(opts.expires)) {
     let expDate;
 
-    if (opts.expires instanceof Date) {
+    if (isInstanceOf(opts.expires, Date)) {
       expDate = opts.expires;
     } else if (isNumber(opts.expires) || isString(opts.expires)) {
       expDate = new Date(opts.expires);

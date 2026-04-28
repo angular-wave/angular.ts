@@ -35,7 +35,6 @@ then AngularTS is your new (old) secret weapon.
 
 ```bash
 $ npm i @angular-wave/angular.ts
-
 ```
 
 The published package includes generated TypeScript declarations under `@types/`.
@@ -54,19 +53,37 @@ Initialize your app
 <div ng-app ng-init="x='world'">Hello {{ x }}</div>
 ```
 
+### Runtime builds 
+
+The default package comes with full a 'kitchen-sink' to explore the Web platform. 
+This is great for experimentation and hacking, but come production time and bundle-size becomes a priority.
+AngularTS allows you to pay only for what you use.
+
+Assume your application uses only `ng-bind` and `ng-repeat` directives.
+
+```js
+import { createAngularCustom } from "@angular-wave/angular.ts/runtime";
+import { ngBindDirective } from "@angular-wave/angular.ts/directives/bind";
+import { ngRepeatDirective } from "@angular-wave/angular.ts/directives/repeat";
+
+const angular = createAngularCustom({
+  attachToWindow: true,
+  ngModule: {
+    directives: {
+      ngBind: ngBindDirective,
+      ngRepeat: ngRepeatDirective,
+    },
+  },
+});
+
+angular.module("app", []);
+angular.bootstrap(document, ["app"]);
+```
+The example above will come in around *32KB* (GZIP).
+
 Or check out the updated [Angular seed](https://github.com/angular-wave/angular-seed), which can serve as a solid starting point
 or a source of inspiration for new ideas.
 
 ## Documentation
 
 Go to https://angular-wave.github.io/angular.ts/
-
-## Development
-
-- Run the Playwright suite: `make test`
-- Generate browser coverage for `src/` tests only: `make coverage`
-- Generate browser coverage with threshold enforcement for `src/` tests only: `make coverage-check`
-- Open the HTML report at `coverage/index.html`
-- Open the HTML report automatically: `make coverage-open`
-- Docs example tests under `docs/` are excluded from coverage runs
-- `coverage-check` currently enforces minimums of 80% statements, 80% lines, 80% functions, and 70% branches

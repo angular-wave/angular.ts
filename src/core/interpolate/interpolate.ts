@@ -1,12 +1,14 @@
+import { _parse, _sce } from "../../injection-tokens.ts";
 import {
+  deProxy,
   isDefined,
+  isFunction,
   isUndefined,
   minErr,
   stringify,
 } from "../../shared/utils.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
 import type { ParseService } from "../parse/parse.ts";
-import { SCE_CONTEXTS, type SceContext } from "../../services/sce/sce.ts";
+import { SCE_CONTEXTS, type SceContext } from "../../services/sce/context.ts";
 
 export interface InterpolationFunction {
   expressions: string[];
@@ -70,8 +72,8 @@ export class InterpolateProvider {
     this.endSymbol = "}}";
 
     this.$get = [
-      $t._parse,
-      $t._sce,
+      _parse,
+      _sce,
       ($parse: ParseService, $sce: SceLike): InterpolateService => {
         const provider = this;
 
@@ -184,11 +186,46 @@ export class InterpolateProvider {
               ? undefined
               : parseStringifyInterceptor;
 
-          const parseFns = expressions.map((expression) =>
-            $parse(expression, interceptor),
-          );
-
           if (!mustHaveExpression || expressions.length > 0) {
+            if (singleExpression) {
+              const expression = expressions[0];
+
+              const parseFn = $parse(expression);
+
+              const watchProp = expression.trim();
+
+              const compute = interceptor
+                ? (context: any) => {
+                    const value = parseFn(context);
+
+                    return parseStringifyInterceptor(
+                      deProxy(isFunction(value) ? value() : value),
+                    );
+                  }
+                : (context: any) => parseFn(context);
+
+              const fn = ((context: any, cb?: (val: any) => void) => {
+                try {
+                  if (cb) {
+                    context.$watch(watchProp, () => cb(compute(context)));
+                  }
+
+                  return compute(context);
+                } catch (err) {
+                  return interr(text, err as Error);
+                }
+              }) as InterpolationFunction;
+
+              fn.exp = text;
+              fn.expressions = expressions;
+
+              return fn;
+            }
+
+            const parseFns = expressions.map((expression) =>
+              $parse(expression, interceptor),
+            );
+
             const compute = (values: any[]) => {
               for (let i = 0; i < expressions.length; i++) {
                 if (allOrNothing && isUndefined(values[i])) {

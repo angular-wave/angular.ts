@@ -1,4 +1,11 @@
 import {
+  _exceptionHandler,
+  _injector,
+  _parse,
+  _sceDelegate,
+  _window,
+} from "../../injection-tokens.ts";
+import {
   type ParsedUrl,
   urlIsSameOrigin,
   urlIsSameOriginAsBaseUrl,
@@ -9,6 +16,7 @@ import {
   hasOwn,
   isDefined,
   isFunction,
+  isInstanceOf,
   isRegExp,
   isString,
   isUndefined,
@@ -16,11 +24,18 @@ import {
 } from "../../shared/utils.ts";
 
 import { snakeToCamel } from "../../shared/dom.ts";
-import { $injectTokens as $t } from "../../injection-tokens.ts";
-import type { SanitizerFn } from "../../core/sanitize/sanitize-uri.ts";
 import type { CompiledExpression } from "../../core/parse/parse.ts";
+export { SCE_CONTEXTS } from "./context.ts";
+export type { SceContext } from "./context.ts";
+import { SCE_CONTEXTS, type SceContext } from "./context.ts";
 
 const $sceMinErr = minErr("$sce");
+
+const DEFAULT_A_HREF_SANITIZATION_TRUSTED_URL_LIST =
+  /^\s*(https?|s?ftp|mailto|tel|file):/;
+
+const DEFAULT_IMG_SRC_SANITIZATION_TRUSTED_URL_LIST =
+  /^\s*((https?|ftp|file|blob):|data:image\/)/;
 
 type SceMatcher = RegExp | "self";
 
@@ -34,26 +49,6 @@ type TrustedValueHolder = {
 type TrustedValueHolderConstructor = new (
   trustedValue?: string,
 ) => TrustedValueHolder;
-
-export const SCE_CONTEXTS = {
-  // HTML is used when there's HTML rendered (e.g. ng-bind-html, iframe srcdoc binding).
-  _HTML: "html",
-
-  // An URL used in a context where it refers to the source of media, which are not expected to be run
-  // as scripts, such as an image, audio, video, etc.
-  _MEDIA_URL: "mediaUrl",
-
-  // An URL used in a context where it does not refer to a resource that loads code.
-  // A value that can be trusted as a URL can also trusted as a MEDIA_URL.
-  _URL: "url",
-
-  // RESOURCE_URL is a subtype of URL used where the referred-to resource could be interpreted as
-  // code. (e.g. ng-include, script src binding, templateUrl)
-  // A value that can be trusted as a RESOURCE_URL, can also trusted as a URL and a MEDIA_URL.
-  _RESOURCE_URL: "resourceUrl",
-} as const;
-
-export type SceContext = (typeof SCE_CONTEXTS)[keyof typeof SCE_CONTEXTS];
 
 export interface SceService {
   getTrusted(type: SceContext, mayBeTrusted: any): any;
@@ -82,6 +77,19 @@ export interface SceDelegateService {
   getTrusted(type: SceContext, mayBeTrusted: any): any;
   trustAs(type: SceContext, value: any): any;
   valueOf(value?: any): any;
+}
+
+export interface UriSanitizationConfig {
+  /**
+   * Retrieves or overrides the regular expression used to trust safe URLs for
+   * a[href] sanitization.
+   */
+  aHrefSanitizationTrustedUrlList(regexp?: RegExp): RegExp | this;
+  /**
+   * Retrieves or overrides the regular expression used to trust safe URLs for
+   * media source sanitization.
+   */
+  imgSrcSanitizationTrustedUrlList(regexp?: RegExp): RegExp | this;
 }
 
 // Copied from:
@@ -212,9 +220,11 @@ export function adjustMatcher(matcher: string | RegExp | "self"): SceMatcher {
  * from the trusted resource URL lsit. This helps to mitigate the security impact of certain types
  * of issues, like for instance attacker-controlled `ng-includes`.
  */
-export class SceDelegateProvider {
+export class SceDelegateProvider implements UriSanitizationConfig {
   trustedResourceUrlList: (value?: SceMatcher[] | null) => SceMatcher[];
   bannedResourceUrlList: (value?: SceMatcher[] | null) => SceMatcher[];
+  aHrefSanitizationTrustedUrlList: (regexp?: RegExp) => RegExp | this;
+  imgSrcSanitizationTrustedUrlList: (regexp?: RegExp) => RegExp | this;
   $get: any[];
 
   constructor() {
@@ -222,6 +232,12 @@ export class SceDelegateProvider {
     let trustedResourceUrlList: SceMatcher[] = ["self"];
 
     let bannedResourceUrlList: SceMatcher[] = [];
+
+    let aHrefSanitizationTrustedUrlList =
+      DEFAULT_A_HREF_SANITIZATION_TRUSTED_URL_LIST;
+
+    let imgSrcSanitizationTrustedUrlList =
+      DEFAULT_IMG_SRC_SANITIZATION_TRUSTED_URL_LIST;
 
     /**
      *
@@ -286,16 +302,73 @@ export class SceDelegateProvider {
       return bannedResourceUrlList;
     };
 
+    /**
+     * Retrieves or overrides the default regular expression that is used for
+     * determining trusted safe urls during a[href] sanitization.
+     *
+     * The sanitization is a security measure aimed at preventing XSS attacks
+     * via html links.
+     *
+     * Any url about to be assigned to a[href] via data-binding is first
+     * normalized and turned into an absolute url. Afterwards, the url is
+     * matched against the `aHrefSanitizationTrustedUrlList` regular expression.
+     * If a match is found, the original url is written into the DOM. Otherwise,
+     * the absolute url is prefixed with `'unsafe:'` string and only then is it
+     * written into the DOM.
+     *
+     * @param regexp - New regexp to trust urls with.
+     * @returns Current RegExp if called without value or self for chaining
+     * otherwise.
+     */
+    this.aHrefSanitizationTrustedUrlList = function (regexp?: RegExp) {
+      if (isDefined(regexp)) {
+        aHrefSanitizationTrustedUrlList = regexp;
+
+        return this;
+      }
+
+      return aHrefSanitizationTrustedUrlList;
+    };
+
+    /**
+     * Retrieves or overrides the default regular expression that is used for
+     * determining trusted safe urls during media src sanitization.
+     *
+     * The sanitization is a security measure aimed at preventing XSS attacks
+     * via html links.
+     *
+     * Any url about to be assigned to img[src], srcset, or compatible media
+     * bindings via data-binding is first normalized and turned into an absolute
+     * url. Afterwards, the url is matched against the
+     * `imgSrcSanitizationTrustedUrlList` regular expression. If a match is
+     * found, the original url is written into the DOM. Otherwise, the absolute
+     * url is prefixed with `'unsafe:'` string and only then is it written into
+     * the DOM.
+     *
+     * @param regexp - New regexp to trust urls with.
+     * @returns Current RegExp if called without value or self for chaining
+     * otherwise.
+     */
+    this.imgSrcSanitizationTrustedUrlList = function (regexp?: RegExp) {
+      if (isDefined(regexp)) {
+        imgSrcSanitizationTrustedUrlList = regexp;
+
+        return this;
+      }
+
+      return imgSrcSanitizationTrustedUrlList;
+    };
+
     this.$get = [
-      $t._injector,
-      $t._sanitizeUri,
-      $t._exceptionHandler,
+      _injector,
+      _window,
+      _exceptionHandler,
       /**
        * Creates the `$sceDelegate` service using the configured policies and sanitizers.
        */
       function (
         $injector: ng.InjectorService,
-        $$sanitizeUri: SanitizerFn,
+        $window: Window,
         $exceptionHandler: ng.ExceptionHandlerService,
       ) {
         let htmlSanitizer: (...args: any[]) => any = function () {
@@ -356,6 +429,27 @@ export class SceDelegateProvider {
           }
 
           return allowed;
+        }
+
+        function sanitizeUri(
+          uri: string | null | undefined,
+          isMediaUrl?: boolean,
+        ): string | null | undefined {
+          if (!uri) {
+            return uri;
+          }
+
+          const regex = isMediaUrl
+            ? imgSrcSanitizationTrustedUrlList
+            : aHrefSanitizationTrustedUrlList;
+
+          const normalizedVal = new URL(uri.trim(), $window.location.href).href;
+
+          if (normalizedVal !== "" && !normalizedVal.match(regex)) {
+            return `unsafe:${normalizedVal}`;
+          }
+
+          return uri;
         }
 
         /**
@@ -451,7 +545,7 @@ export class SceDelegateProvider {
 
           // All the current contexts in SCE_CONTEXTS happen to be strings.  In order to avoid trusting
           // mutable objects, we ensure here that the value passed in is actually a string.
-          if (typeof trustedValue !== "string") {
+          if (!isString(trustedValue)) {
             $exceptionHandler(
               $sceMinErr(
                 "itype",
@@ -483,7 +577,7 @@ export class SceDelegateProvider {
          *     `value` unchanged.
          */
         function valueOf(maybeTrusted: any): any {
-          if (maybeTrusted instanceof trustedValueHolderBase) {
+          if (isInstanceOf(maybeTrusted, trustedValueHolderBase)) {
             return (maybeTrusted as TrustedValueHolder)._unwrapTrustedValue();
           }
 
@@ -532,7 +626,7 @@ export class SceDelegateProvider {
 
           // If maybeTrusted is a trusted class instance or subclass instance, then unwrap and return
           // as-is.
-          if (constructor && maybeTrusted instanceof constructor) {
+          if (constructor && isInstanceOf(maybeTrusted, constructor)) {
             return maybeTrusted._unwrapTrustedValue();
           }
 
@@ -549,7 +643,7 @@ export class SceDelegateProvider {
           // If we get here, then we will either sanitize the value or throw an exception.
           if (type === SCE_CONTEXTS._MEDIA_URL || type === SCE_CONTEXTS._URL) {
             // we attempt to sanitize non-resource URLs
-            return $$sanitizeUri(
+            return sanitizeUri(
               maybeTrusted.toString(),
               type === SCE_CONTEXTS._MEDIA_URL,
             );
@@ -607,8 +701,8 @@ export function SceProvider(this: any): void {
   };
 
   this.$get = [
-    $t._parse,
-    $t._sceDelegate,
+    _parse,
+    _sceDelegate,
     /**
      * Creates the runtime `$sce` service.
      */

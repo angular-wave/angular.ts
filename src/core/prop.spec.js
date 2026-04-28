@@ -278,20 +278,7 @@ describe("ngProp*", () => {
       expect(element.src).toEqual("someuntrustedthing:foo();");
     });
 
-    it("should use $$sanitizeUri", async () => {
-      const $$sanitizeUri = jasmine
-        .createSpy("$$sanitizeUri")
-        .and.returnValue("someSanitizedUrl");
-      createInjector([
-        "myModule",
-        ($provide) => {
-          $provide.value("$$sanitizeUri", $$sanitizeUri);
-        },
-      ]).invoke((_$compile_, _$rootScope_) => {
-        $compile = _$compile_;
-        $rootScope = _$rootScope_;
-      });
-
+    it("should sanitize plain values through SCE", async () => {
       app.innerHTML = '<img ng-prop-src="testUrl"></img>';
 
       $compile(app)($rootScope);
@@ -299,27 +286,10 @@ describe("ngProp*", () => {
 
       await wait();
 
-      expect(app.querySelector("img").src).toMatch(
-        /^http:\/\/.*\/someSanitizedUrl$/,
-      );
-      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
+      expect(app.querySelector("img").src).toMatch(/^http:\/\/.*\/someUrl$/);
     });
 
-    it("should not use $$sanitizeUri with trusted values", async () => {
-      const $$sanitizeUri = jasmine
-        .createSpy("$$sanitizeUri")
-        .and.throwError("Should not have been called");
-      createInjector([
-        "myModule",
-        ($provide) => {
-          $provide.value("$$sanitizeUri", $$sanitizeUri);
-        },
-      ]).invoke((_$compile_, _$rootScope_, _$sce_) => {
-        $compile = _$compile_;
-        $rootScope = _$rootScope_;
-        $sce = _$sce_;
-      });
-
+    it("should pass through trusted values", async () => {
       app.innerHTML = '<img ng-prop-src="testUrl"></img>';
 
       $compile(app)($rootScope);
@@ -378,37 +348,17 @@ describe("ngProp*", () => {
       expect(element.title).toBe("javascript:doEvilStuff()");
     });
 
-    it("should use $$sanitizeUri", async () => {
-      const $$sanitizeUri = jasmine
-        .createSpy("$$sanitizeUri")
-        .and.returnValue("someSanitizedUrl");
-      createInjector([
-        "myModule",
-        ($provide) => {
-          $provide.value("$$sanitizeUri", $$sanitizeUri);
-        },
-      ]).invoke((_$compile_, _$rootScope_) => {
-        $compile = _$compile_;
-        $rootScope = _$rootScope_;
-      });
+    it("should sanitize plain values through SCE", async () => {
       app.innerHTML = '<a ng-prop-href="testUrl"></a>';
       $compile(app)($rootScope);
       $rootScope.testUrl = "someUrl";
       await wait();
-      expect(app.querySelector("a").href).toMatch(
-        /^http:\/\/.*\/someSanitizedUrl$/,
-      );
-      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, false);
-
-      $$sanitizeUri.calls.reset();
+      expect(app.querySelector("a").href).toMatch(/^http:\/\/.*\/someUrl$/);
 
       app.innerHTML = '<a ng-prop-href="testUrl"></a>';
       $compile(app)($rootScope);
       await wait();
-      expect(app.querySelector("a").href).toMatch(
-        /^http:\/\/.*\/someSanitizedUrl$/,
-      );
-      expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, false);
+      expect(app.querySelector("a").href).toMatch(/^http:\/\/.*\/someUrl$/);
     });
 
     it("should not have endless digests when given arrays in concatenable context", () => {

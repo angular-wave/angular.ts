@@ -5,8 +5,8 @@ import {
   isDate,
   isFunction,
   isRegExp,
-  isString,
   keys,
+  isString,
 } from "./utils.ts";
 
 /**
