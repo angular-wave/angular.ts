@@ -3,11 +3,12 @@
 - Run the Playwright suite: `make test`
 - Generate browser coverage for `src/` tests only: `make coverage`
 - Generate browser coverage with threshold enforcement for `src/` tests only: `make coverage-check`
+- Refresh the committed coverage baseline after an intentional coverage change: `make coverage-update-baseline`
 - Open the HTML report at `coverage/index.html`
 - Open the HTML report automatically: `make coverage-open`
 - Docs example tests under `docs/` are excluded from coverage runs
-- `coverage-check` currently enforces minimums of 80% statements, 80% lines, 80% functions, and 70% branches
-- 
+- `coverage-check` currently enforces minimums of 80% statements, 80% lines, 78% functions, and 70% branches, and fails if coverage drops below `utils/coverage-baseline.json`
+
 - [Development Setup](#setup)
 - [Running Tests](#tests)
 - [Coding Rules](#rules)
@@ -349,4 +350,3 @@ yarn grunt build
 (This is also necessary if you are making changes to minErrors).
 
 To view the docs, see [Running a Local Development Web Server](#local-server).
-

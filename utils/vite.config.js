@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import istanbul from "vite-plugin-istanbul";
 const coverageEnabled = process.env.PW_COVERAGE === "1";
+const port = Number(process.env.PORT || 4000);
 export default defineConfig({
   plugins: coverageEnabled
     ? [
@@ -14,7 +15,7 @@ export default defineConfig({
       ]
     : [],
   server: {
-    port: 4000,
+    port,
     strictPort: true,
     proxy: {
       "/mock": {

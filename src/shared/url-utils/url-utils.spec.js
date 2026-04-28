@@ -16,7 +16,7 @@ describe("urlUtils", () => {
 
     it("should normalize a relative url", () => {
       expect(urlResolve("/src/core/url-utils/foo").href).toEqual(
-        "http://localhost:4000/src/core/url-utils/foo",
+        `${window.location.origin}/src/core/url-utils/foo`,
       );
     });
 

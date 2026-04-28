@@ -1,4 +1,4 @@
-.PHONY: build build-ts test types coverage coverage-check coverage-open setup ensure-deps
+.PHONY: build build-ts test types coverage coverage-check coverage-update-baseline coverage-open setup ensure-deps
 
 BUILD_DIR 	= ./dist	
 TS_BUILD_DIR = ./.build
@@ -99,6 +99,10 @@ coverage: ensure-deps
 coverage-check: ensure-deps
 	@echo $(INFO) "Playwright coverage threshold check"
 	@node ./utils/run-coverage.mjs --check
+
+coverage-update-baseline: ensure-deps
+	@echo $(INFO) "Playwright coverage baseline update"
+	@node ./utils/run-coverage.mjs --update-baseline
 
 coverage-open: ensure-deps
 	@echo $(INFO) "Open coverage report"
